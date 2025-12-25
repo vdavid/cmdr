@@ -1,0 +1,133 @@
+name: CI
+
+on:
+    pull_request:
+        branches:
+            - main
+    push:
+        branches:
+            - main
+
+jobs:
+    rust-checks:
+        name: Rust
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Install mise
+              uses: jdx/mise-action@v2
+
+            - name: Install tools with mise
+              run: mise install
+
+            - name: Cache Cargo
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      ~/.cargo/registry
+                      ~/.cargo/git
+                      src-tauri/target
+                  key: ${{ runner.os }}-cargo-${{ hashFiles('src-tauri/Cargo.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-cargo-
+
+            - name: Install Tauri dependencies (Linux)
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+            - name: Build check tool
+              run: go build -o check .
+              working-directory: ./scripts/check
+
+            - name: Check rustfmt
+              run: ./scripts/check/check --check rustfmt --ci
+
+            - name: Run clippy
+              run: ./scripts/check/check --check clippy --ci
+
+            - name: Run cargo-audit
+              run: ./scripts/check/check --check cargo-audit --ci
+
+            - name: Run cargo-deny
+              run: ./scripts/check/check --check cargo-deny --ci
+
+            - name: Run Rust tests
+              run: ./scripts/check/check --check rust-tests --ci
+
+    svelte-checks:
+        name: Svelte
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Install mise
+              uses: jdx/mise-action@v2
+
+            - name: Install tools with mise
+              run: mise install
+
+            - name: Cache pnpm
+              uses: actions/cache@v4
+              with:
+                  path: ~/.pnpm-store
+                  key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+                  restore-keys: |
+                      ${{ runner.os }}-pnpm-
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Build check tool
+              run: go build -o check .
+              working-directory: ./scripts/check
+
+            - name: Check Prettier
+              run: ./scripts/check/check --check prettier --ci
+
+            - name: Run ESLint
+              run: ./scripts/check/check --check eslint --ci
+
+            - name: Run Svelte tests
+              run: ./scripts/check/check --check svelte-tests --ci
+
+    e2e-tests:
+        name: E2E Tests
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Install mise
+              uses: jdx/mise-action@v2
+
+            - name: Install tools with mise
+              run: mise install
+
+            - name: Cache pnpm
+              uses: actions/cache@v4
+              with:
+                  path: ~/.pnpm-store
+                  key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+                  restore-keys: |
+                      ${{ runner.os }}-pnpm-
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Install Playwright browsers
+              run: pnpm exec playwright install --with-deps chromium
+
+            - name: Build check tool
+              run: go build -o check .
+              working-directory: ./scripts/check
+
+            - name: Run E2E tests
+              run: ./scripts/check/check --check e2e-tests --ci
