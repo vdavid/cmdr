@@ -59,6 +59,12 @@ Only add JSDoc that actually adds info.
 - For maps, try to name them like `somethingToSomeethingElseMap`. That avoids unnecessary comments.
 - Keep interfaces minimal: only export what you must export.
 
+### Rust
+
+- Max line width: 120 characters
+- 4 spaces indentation
+- Cognitive complexity threshold: 15 (enforced by clippy)
+
 ## Git
 
 ### Commit messages
