@@ -58,6 +58,22 @@ export default tseslint.config(
         },
     },
     {
+        files: ['vite.config.js', 'vitest.config.ts', 'playwright.config.ts'],
+        plugins: {
+            prettier,
+        },
+        languageOptions: {
+            ecmaVersion: 'latest',
+            sourceType: 'module',
+            globals: {
+                ...globals.node,
+            },
+        },
+        rules: {
+            'prettier/prettier': 'error',
+        },
+    },
+    {
         files: ['**/*.svelte'],
         plugins: {
             prettier,

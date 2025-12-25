@@ -22,11 +22,12 @@ allow = [
     "Zlib",
     "MPL-2.0",
     "Unicode-3.0",
-    "Unicode-DFS-2016",
+    "CC0-1.0",
+    "AGPL-3.0",
 ]
 
 [bans]
-multiple-versions = "warn"
+multiple-versions = "allow"
 wildcards = "deny"
 highlight = "all"
 
