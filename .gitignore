@@ -1,10 +1,12 @@
-
 # VS Code
 .vscode/
 
 # IntelliJ IDEA project files
 .idea/
 /*.iml
+
+# Ignored design files and similar
+_ignored/
 
 # macOS system files
 .DS_Store
