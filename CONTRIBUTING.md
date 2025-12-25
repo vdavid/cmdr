@@ -26,15 +26,19 @@ This starts both the Svelte frontend and the Rust backend with hot reload.
 Run all checks before committing with `./scripts/check.sh`. And here is a more complete list:
 
 ```bash
-./scripts/check.sh             # to run all checks before committing - USE THIS BY DEFAULT
-./scripts/check.sh --help`     # for more options.
+./scripts/check.sh                # to run all checks before committing - USE THIS BY DEFAULT
+./scripts/check.sh --rust         # to run Rust checks
+./scripts/check.sh --svelte       # to run Svelte checks
+./scripts/check.sh --check clippy # to run specific checks
+./scripts/check.sh --help`        # for more options.
 # Alternatively, some specific checks, but these are rarely needed:
-cargo fmt                      # to format Rust code
-cargo clippy                   # to lint Rust code
-cargo test                     # to run Rust tests
-pnpm format                    # to format frontend code
-pnpm lint --fix                # to lint frontend code
-pnpm test                      # to run frontend tests
+cargo fmt                         # to format Rust code
+cargo clippy                      # to lint Rust code
+cargo audit                       # to check Rust dependencies for security vulnerabilities
+cargo test                        # to run Rust tests
+pnpm format                       # to format frontend code
+pnpm lint --fix                   # to lint frontend code
+pnpm test                         # to run frontend tests
 ```
 
 ## Building
