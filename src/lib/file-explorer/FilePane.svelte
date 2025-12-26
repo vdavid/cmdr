@@ -40,14 +40,21 @@
         }
     }
 
-    async function loadDirectory(path: string) {
+    async function loadDirectory(path: string, selectName?: string) {
         loading = true
         error = null
         try {
             const entries = await fileService.listDirectory(path)
             const parentEntry = createParentEntry(path)
             files = parentEntry ? [parentEntry, ...entries] : entries
-            selectedIndex = 0
+
+            // If selectName is provided, find and select that entry
+            if (selectName) {
+                const targetIndex = files.findIndex((f) => f.name === selectName)
+                selectedIndex = targetIndex >= 0 ? targetIndex : 0
+            } else {
+                selectedIndex = 0
+            }
         } catch (e) {
             error = e instanceof Error ? e.message : String(e)
             files = []
@@ -63,10 +70,13 @@
 
     async function handleNavigate(entry: FileEntry) {
         if (entry.isDirectory) {
-            // Navigate into directory
+            // When navigating to parent (..), remember current folder name to select it
+            const isGoingUp = entry.name === '..'
+            const currentFolderName = isGoingUp ? currentPath.split('/').pop() : undefined
+
             currentPath = entry.path
             onPathChange?.(entry.path)
-            await loadDirectory(entry.path)
+            await loadDirectory(entry.path, currentFolderName)
         } else {
             // Open file with default application
             try {

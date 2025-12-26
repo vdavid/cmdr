@@ -16,11 +16,15 @@
     function handleLeftPathChange(path: string) {
         leftPath = path
         void saveAppStatus({ leftPath: path })
+        // Re-focus to maintain keyboard handling after navigation
+        containerElement?.focus()
     }
 
     function handleRightPathChange(path: string) {
         rightPath = path
         void saveAppStatus({ rightPath: path })
+        // Re-focus to maintain keyboard handling after navigation
+        containerElement?.focus()
     }
 
     function handleLeftFocus() {
@@ -60,9 +64,13 @@
             focusedPane = status.focusedPane
             initialized = true
         })
+    })
 
-        // Add global keydown handler for Tab
-        containerElement?.focus()
+    // Focus the container after initialization so keyboard events work
+    $effect(() => {
+        if (initialized) {
+            containerElement?.focus()
+        }
     })
 </script>
 
