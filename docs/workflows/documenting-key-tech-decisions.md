@@ -37,7 +37,7 @@ What are we doing about it?
 - Additional context, links, future considerations
 ```
 
-3. Link from AGENTS.md or code comments if relevant
+3. Link from `AGENTS.md` (or code comments if relevant)
 4. Do not commit unless asked to
 
 ## Examples of decisions worth documenting

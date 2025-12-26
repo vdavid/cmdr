@@ -11,7 +11,7 @@ Do `go run scripts/test-data-generator/main.go`.
 Creates (or syncs to) four folders under `_ignored/test-data/`:
 
 | Folder                    | Target file count |
-|---------------------------|-------------------|
+| ------------------------- | ----------------- |
 | `folder with 1000 files`  | 1,000             |
 | `folder with 5000 files`  | 5,000             |
 | `folder with 20000 files` | 20,000            |
@@ -20,6 +20,7 @@ Creates (or syncs to) four folders under `_ignored/test-data/`:
 No magic.
 
 Each file:
+
 - Named with a random timestamp: `{YYYY}-{MM}-{DD} {hh}-{mm}-{ss}.md`
 - Contains one random sentence between 60 and 100 chars or so.
 

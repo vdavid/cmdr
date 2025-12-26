@@ -35,10 +35,11 @@ Uses Rust, Tauri 2, Svelte 5, TypeScript, Tailwind 4. Targets macOS now, Win and
 - Updating dependencies: see [here](docs/workflows/update-dependencies.md)
 - Adding a new Rust dependency: see [here](docs/workflows/add-rust-dependency.md)
 - Adding a new npm dependency: see [here](docs/workflows/add-npm-dependency.md)
-- Making key tech decisions: see [here](docs/workflows/making-key-tech-decisions.md) - Examples for when to use this:
-  choosing between competing libraries/frameworks; changing build/test processes; adopting conventions that differ from
-  defaults.
-- Generating test data: see [here](docs/workflows/generating-test-files.md) - Creates folders with 1k-50k files for stress-testing.
+- Making key tech decisions: see [here](docs/workflows/documenting-key-tech-decisions.md) - Examples for when to use
+  this: choosing between competing libraries/frameworks; changing build/test processes; adopting conventions that differ
+  from defaults.
+- Generating test data: see [here](docs/workflows/generating-test-files.md) - Creates folders with 1k-50k files for
+  stress-testing.
 - Running a specific Rust test: `cd src-tauri && cargo nextest run <test_name>`.
 - Running a specific Svelte test: `pnpm vitest run -t "<test_name>"`
 - Running a specific E2E test: `pnpm test:e2e --grep "<test_name>"` or `pnpm test:e2e <test-file>`
@@ -76,7 +77,7 @@ GitHub Actions workflow in `.github/workflows/ci.yml`:
 ## Decisions
 
 See [docs/adr](docs/adr) for all key technical decisions, and the
-[How to document important technical decisions](docs/workflows/making-key-tech-decisions.md) process.
+[How to document important technical decisions](docs/workflows/documenting-key-tech-decisions.md) process.
 
 - **Check script is in Go** (not Bash) for better cross-platform support and maintainability. See
   [ADR-001](docs/adr/001-use-go-for-check-script.md)
