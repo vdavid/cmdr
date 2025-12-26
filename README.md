@@ -2,6 +2,8 @@
 
 ![License](https://img.shields.io/github/license/vdavid/rusty-commander)
 
+<img alt="Rusty Commander logo" src="./src-tauri/icons/128x128.png" width="128" height="128" style="display:block; margin:0 auto;" />
+
 An extremely fast, keyboard-driven, two-pane file manager written in Rust for folks who miss the golden days of Norton
 Commander and Total Commander.
 
