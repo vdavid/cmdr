@@ -46,6 +46,9 @@ Uses Rust, Tauri 2, Svelte 5, TypeScript, Tailwind 4. Targets macOS now, Win and
 - Debugging front end: Open dev console in running app (`Cmd+Option+I` on macOS). Use temp `console.log`s as needed.
 - Debugging Rust: Use `println!` or `dbg!` macros
 - Regenerating the icon: `cargo tauri icon ./path/to/your-high-res-icon.png` (in project root)
+- Adding a new library: NEVER rely on your training data! ALWAYS use npm/ncu, or another source to find the latest
+  versions of libraries. Check out their GitHub, too, and see if they are active. Check Google/Reddit for the latest
+  best solutions!
 
 ## Code style
 
