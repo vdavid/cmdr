@@ -123,7 +123,7 @@ jobs:
               run: pnpm install --frozen-lockfile
 
             - name: Install Playwright browsers
-              run: pnpm exec playwright install --with-deps chromium
+              run: pnpm exec playwright install --with-deps chromium webkit
 
             - name: Build check tool
               run: go build -o check .
