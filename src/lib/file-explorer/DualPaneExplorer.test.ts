@@ -20,6 +20,15 @@ vi.mock('$lib/tauri-commands', () => ({
     openFile: vi.fn().mockResolvedValue(undefined),
 }))
 
+// Mock settings-store to avoid Tauri event API dependency in tests
+vi.mock('$lib/settings-store', () => ({
+    loadSettings: vi.fn().mockResolvedValue({
+        showHiddenFiles: true,
+    }),
+    saveSettings: vi.fn().mockResolvedValue(undefined),
+    subscribeToSettingsChanges: vi.fn().mockResolvedValue(() => {}),
+}))
+
 describe('DualPaneExplorer', () => {
     it('renders dual pane container', () => {
         const target = document.createElement('div')

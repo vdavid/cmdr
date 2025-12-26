@@ -10,6 +10,7 @@
         initialPath: string
         fileService?: FileService
         isFocused?: boolean
+        showHiddenFiles?: boolean
         onPathChange?: (path: string) => void
         onRequestFocus?: () => void
     }
@@ -18,16 +19,27 @@
         initialPath,
         fileService = defaultFileService,
         isFocused = false,
+        showHiddenFiles = true,
         onPathChange,
         onRequestFocus,
     }: Props = $props()
 
     let currentPath = $state(initialPath)
-    let files = $state<FileEntry[]>([])
+    let allFiles = $state<FileEntry[]>([])
     let loading = $state(true)
     let error = $state<string | null>(null)
     let selectedIndex = $state(0)
     let fileListRef: FileList | undefined = $state()
+
+    // Filter files based on showHiddenFiles setting
+    // Always keep ".." visible for parent navigation
+    function filterFiles(entries: FileEntry[], showHidden: boolean): FileEntry[] {
+        if (showHidden) return entries
+        return entries.filter((e) => !e.name.startsWith('.') || e.name === '..')
+    }
+
+    // Compute visible files based on showHiddenFiles prop
+    const files = $derived(filterFiles(allFiles, showHiddenFiles))
 
     // Create ".." entry for parent navigation
     function createParentEntry(path: string): FileEntry | null {
@@ -46,18 +58,22 @@
         try {
             const entries = await fileService.listDirectory(path)
             const parentEntry = createParentEntry(path)
-            files = parentEntry ? [parentEntry, ...entries] : entries
+            allFiles = parentEntry ? [parentEntry, ...entries] : entries
 
             // If selectName is provided, find and select that entry
+            // But only if it's visible (not filtered out)
             if (selectName) {
-                const targetIndex = files.findIndex((f) => f.name === selectName)
+                const visibleFiles = filterFiles(allFiles, showHiddenFiles)
+                const targetIndex = visibleFiles.findIndex((f) => f.name === selectName)
+                // If target is hidden (e.g., navigating up from .config with hidden files off),
+                // fall back to index 0
                 selectedIndex = targetIndex >= 0 ? targetIndex : 0
             } else {
                 selectedIndex = 0
             }
         } catch (e) {
             error = e instanceof Error ? e.message : String(e)
-            files = []
+            allFiles = []
         } finally {
             loading = false
         }
@@ -117,6 +133,16 @@
         if (initialPath !== currentPath) {
             currentPath = initialPath
             void loadDirectory(initialPath)
+        }
+    })
+
+    // Reset selection when showHiddenFiles changes and current selection becomes invalid
+    $effect(() => {
+        // Re-run when files change (which depends on showHiddenFiles)
+        if (selectedIndex >= files.length && files.length > 0) {
+            selectedIndex = 0
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            fileListRef?.scrollToIndex(0)
         }
     })
 

@@ -1,17 +1,21 @@
 <script lang="ts">
-    import { onMount } from 'svelte'
+    import { onMount, onDestroy } from 'svelte'
     import FilePane from './FilePane.svelte'
     import { loadAppStatus, saveAppStatus } from '$lib/app-status-store'
+    import { loadSettings, saveSettings, subscribeToSettingsChanges } from '$lib/settings-store'
     import { pathExists } from '$lib/tauri-commands'
+    import type { UnlistenFn } from '@tauri-apps/api/event'
 
     let leftPath = $state('~')
     let rightPath = $state('~')
     let focusedPane = $state<'left' | 'right'>('left')
+    let showHiddenFiles = $state(true)
     let initialized = $state(false)
 
     let containerElement: HTMLDivElement | undefined = $state()
     let leftPaneRef: FilePane | undefined = $state()
     let rightPaneRef: FilePane | undefined = $state()
+    let unlistenSettings: UnlistenFn | undefined
 
     function handleLeftPathChange(path: string) {
         leftPath = path
@@ -56,14 +60,28 @@
         activePaneRef?.handleKeyDown(e)
     }
 
-    onMount(() => {
-        // Load persisted state
-        void loadAppStatus(pathExists).then((status) => {
-            leftPath = status.leftPath
-            rightPath = status.rightPath
-            focusedPane = status.focusedPane
-            initialized = true
+    onMount(async () => {
+        // Load persisted state and settings in parallel
+        const [status, settings] = await Promise.all([loadAppStatus(pathExists), loadSettings()])
+
+        leftPath = status.leftPath
+        rightPath = status.rightPath
+        focusedPane = status.focusedPane
+        showHiddenFiles = settings.showHiddenFiles
+        initialized = true
+
+        // Subscribe to settings changes from the backend menu
+        unlistenSettings = await subscribeToSettingsChanges((newSettings) => {
+            if (newSettings.showHiddenFiles !== undefined) {
+                showHiddenFiles = newSettings.showHiddenFiles
+                // Persist to settings store
+                void saveSettings({ showHiddenFiles: newSettings.showHiddenFiles })
+            }
         })
+    })
+
+    onDestroy(() => {
+        unlistenSettings?.()
     })
 
     // Focus the container after initialization so keyboard events work
@@ -88,6 +106,7 @@
             bind:this={leftPaneRef}
             initialPath={leftPath}
             isFocused={focusedPane === 'left'}
+            {showHiddenFiles}
             onPathChange={handleLeftPathChange}
             onRequestFocus={handleLeftFocus}
         />
@@ -95,6 +114,7 @@
             bind:this={rightPaneRef}
             initialPath={rightPath}
             isFocused={focusedPane === 'right'}
+            {showHiddenFiles}
             onPathChange={handleRightPathChange}
             onRequestFocus={handleRightFocus}
         />

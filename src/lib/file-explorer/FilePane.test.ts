@@ -85,4 +85,60 @@ describe('FilePane', () => {
 
         expect(target.textContent).not.toContain('[..]')
     })
+
+    it('hides hidden files when showHiddenFiles is false', async () => {
+        const filesWithHidden: FileEntry[] = [
+            { name: '.hidden', path: '/test/.hidden', isDirectory: false },
+            { name: '.config', path: '/test/.config', isDirectory: true },
+            { name: 'visible.txt', path: '/test/visible.txt', isDirectory: false },
+        ]
+        mockService.setMockData('/test', filesWithHidden)
+        const target = document.createElement('div')
+        mount(FilePane, {
+            target,
+            props: { initialPath: '/test', fileService: mockService, showHiddenFiles: false },
+        })
+
+        await tick()
+        await tick()
+
+        expect(target.textContent).toContain('visible.txt')
+        expect(target.textContent).not.toContain('.hidden')
+        expect(target.textContent).not.toContain('[.config]')
+    })
+
+    it('shows hidden files when showHiddenFiles is true', async () => {
+        const filesWithHidden: FileEntry[] = [
+            { name: '.hidden', path: '/test/.hidden', isDirectory: false },
+            { name: 'visible.txt', path: '/test/visible.txt', isDirectory: false },
+        ]
+        mockService.setMockData('/test', filesWithHidden)
+        const target = document.createElement('div')
+        mount(FilePane, {
+            target,
+            props: { initialPath: '/test', fileService: mockService, showHiddenFiles: true },
+        })
+
+        await tick()
+        await tick()
+
+        expect(target.textContent).toContain('visible.txt')
+        expect(target.textContent).toContain('.hidden')
+    })
+
+    it('always shows .. entry even when showHiddenFiles is false', async () => {
+        const filesWithHidden: FileEntry[] = [{ name: '.hidden', path: '/test/.hidden', isDirectory: false }]
+        mockService.setMockData('/test', filesWithHidden)
+        const target = document.createElement('div')
+        mount(FilePane, {
+            target,
+            props: { initialPath: '/test', fileService: mockService, showHiddenFiles: false },
+        })
+
+        await tick()
+        await tick()
+
+        // Parent entry should still be visible
+        expect(target.textContent).toContain('[..]')
+    })
 })
