@@ -31,14 +31,16 @@
     --color-error: #d32f2f;
 
     /* === Spacing === */
+    --spacing-xxs: 2px;
     --spacing-xs: 4px;
     --spacing-sm: 8px;
     --spacing-md: 16px;
 
     /* === Typography === */
+    --font-system: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
     --font-mono: 'SF Mono', Monaco, monospace;
     --font-size-xs: 0.75rem;
-    --font-size-sm: 0.8125rem;
+    --font-size-sm: 0.75rem;
     --font-size-base: 0.875rem;
 }
 

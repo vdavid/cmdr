@@ -204,7 +204,7 @@
     }
 
     .path {
-        font-family: var(--font-mono) monospace;
+        font-family: var(--font-system) sans-serif;
         color: var(--color-text-secondary);
     }
 

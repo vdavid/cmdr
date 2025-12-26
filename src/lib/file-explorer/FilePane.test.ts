@@ -47,8 +47,8 @@ describe('FilePane', () => {
         await tick()
         await tick() // Wait for async operations
 
-        // Directory names are now wrapped in brackets
-        expect(target.textContent).toContain('[Documents]')
+        // Directory names are displayed without brackets
+        expect(target.textContent).toContain('Documents')
         expect(target.textContent).toContain('file.txt')
     })
 
@@ -71,8 +71,8 @@ describe('FilePane', () => {
         await tick()
         await tick()
 
-        // Should show [..] for parent navigation
-        expect(target.textContent).toContain('[..]')
+        // Should show .. for parent navigation
+        expect(target.textContent).toContain('..')
     })
 
     it('does not display parent entry at root', async () => {
@@ -83,7 +83,7 @@ describe('FilePane', () => {
         await tick()
         await tick()
 
-        expect(target.textContent).not.toContain('[..]')
+        expect(target.textContent).not.toMatch(/📁\s*\.\./)
     })
 
     it('hides hidden files when showHiddenFiles is false', async () => {
@@ -104,7 +104,7 @@ describe('FilePane', () => {
 
         expect(target.textContent).toContain('visible.txt')
         expect(target.textContent).not.toContain('.hidden')
-        expect(target.textContent).not.toContain('[.config]')
+        expect(target.textContent).not.toContain('.config')
     })
 
     it('shows hidden files when showHiddenFiles is true', async () => {
@@ -139,6 +139,6 @@ describe('FilePane', () => {
         await tick()
 
         // Parent entry should still be visible
-        expect(target.textContent).toContain('[..]')
+        expect(target.textContent).toContain('..')
     })
 })

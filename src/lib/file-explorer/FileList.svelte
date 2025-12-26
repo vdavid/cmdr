@@ -12,12 +12,8 @@
 
     let listElement: HTMLUListElement | undefined = $state()
 
-    // Format display name: wrap directories in [...]
     function formatName(entry: FileEntry): string {
-        if (entry.name === '..') {
-            return '[..]'
-        }
-        return entry.isDirectory ? `[${entry.name}]` : entry.name
+        return entry.name
     }
 
     function handleClick(index: number) {
@@ -78,14 +74,14 @@
         margin: 0;
         padding: 0;
         overflow-y: auto;
-        font-family: var(--font-mono) monospace;
+        font-family: var(--font-system) sans-serif;
         font-size: var(--font-size-sm);
         flex: 1;
         outline: none;
     }
 
     .file-entry {
-        padding: var(--spacing-xs) var(--spacing-sm);
+        padding: var(--spacing-xxs) var(--spacing-sm);
         display: flex;
         align-items: center;
         gap: var(--spacing-sm);
@@ -96,7 +92,7 @@
     }
 
     .icon {
-        font-size: var(--font-size-base);
+        font-size: var(--font-size-sm);
         flex-shrink: 0;
     }
 

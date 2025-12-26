@@ -6,7 +6,7 @@ import type { FileEntry } from './types'
 describe('FileList', () => {
     const noop = () => {}
 
-    it('renders file entries with directories wrapped in brackets', () => {
+    it('renders file entries', () => {
         const files: FileEntry[] = [
             {
                 name: 'Documents',
@@ -26,7 +26,7 @@ describe('FileList', () => {
             props: { files, selectedIndex: 0, onSelect: noop, onNavigate: noop },
         })
 
-        expect(target.textContent).toContain('[Documents]')
+        expect(target.textContent).toContain('Documents')
         expect(target.textContent).toContain('file.txt')
     })
 
@@ -102,7 +102,7 @@ describe('FileList', () => {
         expect(entries[1].classList.contains('is-selected')).toBe(true)
     })
 
-    it('formats parent directory as [..]', () => {
+    it('formats parent directory as ..', () => {
         const files: FileEntry[] = [{ name: '..', path: '/home', isDirectory: true }]
 
         const target = document.createElement('div')
@@ -111,7 +111,7 @@ describe('FileList', () => {
             props: { files, selectedIndex: 0, onSelect: noop, onNavigate: noop },
         })
 
-        expect(target.textContent).toContain('[..]')
+        expect(target.textContent).toContain('..')
     })
 
     it('calls onSelect when item is clicked', () => {
