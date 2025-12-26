@@ -43,6 +43,7 @@ Uses Rust, Tauri 2, Svelte 5, TypeScript, Tailwind 4. Targets macOS now, Win and
 - Running a specific E2E test: `pnpm test:e2e --grep "<test_name>"` or `pnpm test:e2e <test-file>`
 - Debugging front end: Open dev console in running app (`Cmd+Option+I` on macOS). Use temp `console.log`s as needed.
 - Debugging Rust: Use `println!` or `dbg!` macros
+- Regenerating the icon: `cargo tauri icon ./path/to/your-high-res-icon.png` (in project root)
 
 ## Code style
 
