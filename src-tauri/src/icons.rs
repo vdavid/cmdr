@@ -120,10 +120,41 @@ pub fn get_icons(icon_ids: Vec<String>) -> HashMap<String, String> {
     result
 }
 
+/// Fetches a fresh icon for an extension, bypassing any OS cache.
+/// On macOS, this goes directly to the app bundle. On other platforms, falls back to temp files.
+fn fetch_fresh_extension_icon(ext: &str) -> Option<String> {
+    // On macOS, try to get the icon directly from the default app's bundle
+    // This bypasses the Launch Services icon cache
+    #[cfg(target_os = "macos")]
+    {
+        eprintln!("[DEBUG] Trying fresh icon for ext: {}", ext);
+        if let Some(img) = crate::macos_icons::fetch_fresh_icon_for_extension(ext) {
+            eprintln!(
+                "[DEBUG] Got fresh icon for ext: {} ({}x{})",
+                ext,
+                img.width(),
+                img.height()
+            );
+            return image_to_data_url(&img);
+        }
+        eprintln!("[DEBUG] Fresh icon failed for ext: {}, falling back to temp file", ext);
+    }
+
+    // Fallback: use temp file approach (works on all platforms, but may use cached icons)
+    let sample_path = std::env::temp_dir().join(format!("rusty_commander_icon_sample.{}", ext));
+    if !sample_path.exists() {
+        let _ = std::fs::File::create(&sample_path);
+    }
+    fetch_icon_for_path(&sample_path)
+}
+
 /// Refreshes icons for a directory listing.
 /// Fetches icons in parallel for:
 /// 1. All unique extensions (checking for file association changes)
 /// 2. All directory paths (for custom folder icons)
+///
+/// On macOS, extension icons are fetched directly from app bundles to bypass
+/// the Launch Services icon cache, ensuring we always show the current association.
 ///
 /// Returns only the icons that were successfully fetched, regardless of cache state.
 /// This allows the frontend to detect changes by comparing with its cached icons.
@@ -136,12 +167,7 @@ pub fn refresh_icons_for_directory(directory_paths: Vec<String>, extensions: Vec
             .par_iter()
             .map(|ext| {
                 let icon_id = format!("ext:{}", ext.to_lowercase());
-                let sample_path = std::env::temp_dir().join(format!("rusty_commander_icon_sample.{}", ext));
-                // Create the file if it doesn't exist
-                if !sample_path.exists() {
-                    let _ = std::fs::File::create(&sample_path);
-                }
-                let data_url = fetch_icon_for_path(&sample_path);
+                let data_url = fetch_fresh_extension_icon(ext);
                 (icon_id, data_url)
             })
             .collect();

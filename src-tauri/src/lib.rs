@@ -7,6 +7,8 @@ mod commands;
 pub mod config;
 mod file_system;
 pub mod icons;
+#[cfg(target_os = "macos")]
+mod macos_icons;
 mod menu;
 mod settings;
 
