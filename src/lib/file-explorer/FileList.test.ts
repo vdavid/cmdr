@@ -4,6 +4,12 @@ import FileList from './FileList.svelte'
 import type { FileEntry } from './types'
 import { createFileEntry } from './test-helpers'
 
+// Mock icon-cache to avoid Tauri dependency
+vi.mock('$lib/icon-cache', () => ({
+    getCachedIcon: vi.fn().mockReturnValue(undefined),
+    prefetchIcons: vi.fn().mockResolvedValue(undefined),
+}))
+
 describe('FileList', () => {
     const noop = () => {}
 
@@ -82,7 +88,7 @@ describe('FileList', () => {
             props: { files, selectedIndex: 0, onSelect: noop, onNavigate: noop },
         })
 
-        const icons = target.querySelectorAll('.icon')
+        const icons = target.querySelectorAll('.icon, .icon-emoji')
         expect(icons.length).toBeGreaterThan(0)
     })
 

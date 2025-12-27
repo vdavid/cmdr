@@ -30,3 +30,12 @@ export async function pathExists(path: string): Promise<boolean> {
 export async function openFile(path: string): Promise<void> {
     await openPath(path)
 }
+
+/**
+ * Gets icon data URLs for the requested icon IDs.
+ * @param iconIds - Array of icon IDs like "ext:jpg", "dir", "symlink"
+ * @returns Map of icon_id → base64 WebP data URL
+ */
+export async function getIcons(iconIds: string[]): Promise<Record<string, string>> {
+    return invoke<Record<string, string>>('get_icons', { iconIds })
+}

@@ -1,5 +1,6 @@
 <script lang="ts">
     import type { FileEntry } from './types'
+    import { getCachedIcon, prefetchIcons } from '$lib/icon-cache'
 
     interface Props {
         files: FileEntry[]
@@ -12,6 +13,31 @@
     const { files, selectedIndex, isFocused = true, onSelect, onNavigate }: Props = $props()
 
     let listElement: HTMLUListElement | undefined = $state()
+
+    // Track which icons we've prefetched to avoid redundant calls (module-level, non-reactive)
+    // Using a plain Set outside the reactive system since we only add to it
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity
+    const prefetchedSet: Set<string> = new Set()
+
+    // Prefetch icons when files change
+    $effect(() => {
+        const newIconIds = files.map((f) => f.iconId).filter((id) => id && !prefetchedSet.has(id))
+        if (newIconIds.length > 0) {
+            // Add to set first to avoid re-fetching during async
+            newIconIds.forEach((id) => prefetchedSet.add(id))
+            void prefetchIcons(newIconIds)
+        }
+    })
+
+    function getIconUrl(file: FileEntry): string | undefined {
+        return getCachedIcon(file.iconId)
+    }
+
+    function getFallbackEmoji(file: FileEntry): string {
+        if (file.isSymlink) return '🔗'
+        if (file.isDirectory) return '📁'
+        return '📄'
+    }
 
     function formatName(entry: FileEntry): string {
         return entry.name
@@ -60,10 +86,10 @@
             role="option"
             aria-selected={index === selectedIndex}
         >
-            {#if file.isDirectory}
-                <span class="icon">📁</span>
+            {#if getIconUrl(file)}
+                <img class="icon" src={getIconUrl(file)} alt="" width="16" height="16" />
             {:else}
-                <span class="icon">📄</span>
+                <span class="icon-emoji">{getFallbackEmoji(file)}</span>
             {/if}
             <span class="name">{formatName(file)}</span>
         </li>
@@ -98,8 +124,17 @@
     }
 
     .icon {
+        width: 16px;
+        height: 16px;
+        flex-shrink: 0;
+        object-fit: contain;
+    }
+
+    .icon-emoji {
         font-size: var(--font-size-sm);
         flex-shrink: 0;
+        width: 16px;
+        text-align: center;
     }
 
     .name {

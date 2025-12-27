@@ -18,6 +18,7 @@ vi.mock('$lib/tauri-commands', () => ({
     pathExists: vi.fn().mockResolvedValue(true),
     listDirectoryContents: vi.fn().mockResolvedValue([]),
     openFile: vi.fn().mockResolvedValue(undefined),
+    getIcons: vi.fn().mockResolvedValue({}),
 }))
 
 // Mock settings-store to avoid Tauri event API dependency in tests

@@ -3,6 +3,7 @@
 
 mod commands;
 mod file_system;
+mod icons;
 mod menu;
 
 use menu::{MenuState, SHOW_HIDDEN_FILES_ID};
@@ -58,7 +59,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             greet,
             commands::file_system::list_directory_contents,
-            commands::file_system::path_exists
+            commands::file_system::path_exists,
+            commands::icons::get_icons
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

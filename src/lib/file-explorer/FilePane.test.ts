@@ -1,10 +1,16 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from 'svelte'
 import { tick } from 'svelte'
 import FilePane from './FilePane.svelte'
 import { MockFileService } from '$lib/file-service'
 import type { FileEntry } from './types'
 import { createFileEntry } from './test-helpers'
+
+// Mock icon-cache to avoid Tauri dependency
+vi.mock('$lib/icon-cache', () => ({
+    getCachedIcon: vi.fn().mockReturnValue(undefined),
+    prefetchIcons: vi.fn().mockResolvedValue(undefined),
+}))
 
 describe('FilePane', () => {
     let mockService: MockFileService
