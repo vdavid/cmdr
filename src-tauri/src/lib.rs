@@ -8,6 +8,7 @@ pub mod config;
 mod file_system;
 pub mod icons;
 mod menu;
+mod settings;
 
 use menu::{MenuState, SHOW_HIDDEN_FILES_ID};
 use tauri::{Emitter, Manager};
@@ -30,9 +31,11 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
-            // Build and set the application menu
-            // Default to showing hidden files (true)
-            let (menu, show_hidden_item) = menu::build_menu(app.handle(), true)?;
+            // Load persisted settings to initialize menu with correct state
+            let saved_settings = settings::load_settings(app.handle());
+
+            // Build and set the application menu with persisted showHiddenFiles
+            let (menu, show_hidden_item) = menu::build_menu(app.handle(), saved_settings.show_hidden_files)?;
             app.set_menu(menu)?;
 
             // Store the CheckMenuItem reference in app state
