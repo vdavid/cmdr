@@ -75,17 +75,12 @@ fn fetch_icon_for_path(path: &Path) -> Option<String> {
 /// Gets the sample file path to use for fetching an icon by ID.
 /// For extension-based icons, we create an actual temp file since the OS may need it to exist.
 fn get_sample_path_for_icon_id(icon_id: &str) -> Option<PathBuf> {
-    if icon_id == "dir" {
-        // Use home directory as sample directory
+    if icon_id == "dir" || icon_id == "symlink-dir" {
+        // Use home directory as sample directory (symlinks to dirs get folder icon)
         return dirs::home_dir();
     }
-    if icon_id == "symlink" {
-        // For symlinks, use a generic file icon (not a directory!)
-        // Use /etc/hosts which exists on all macOS systems
-        return Some(PathBuf::from("/etc/hosts"));
-    }
-    if icon_id == "file" {
-        // Generic file with no extension - use /etc/hosts
+    if icon_id == "symlink-file" || icon_id == "symlink" || icon_id == "file" {
+        // Generic file icon - use /etc/hosts which exists on all macOS systems
         return Some(PathBuf::from("/etc/hosts"));
     }
     if let Some(ext) = icon_id.strip_prefix("ext:") {

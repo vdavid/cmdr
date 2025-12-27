@@ -251,11 +251,22 @@ func createIconTestData(baseDir string) error {
 		}
 	}
 
-	// Create a symlink
-	fmt.Println("  Creating symlink...")
+	// Create a symlink to a file
+	fmt.Println("  Creating symlinks...")
 	symlinkPath := filepath.Join(iconDir, "symlink-to-fake-photo.jpg")
 	if err := os.Symlink("fake-photo.jpg", symlinkPath); err != nil {
-		return fmt.Errorf("failed to create symlink: %w", err)
+		return fmt.Errorf("failed to create symlink to file: %w", err)
+	}
+
+	// Create a symlink to a folder (for testing symlink folder navigation)
+	symlinkToFolderPath := filepath.Join(iconDir, "symlink-to-regular-folder")
+	// Create the target folder first (will be created below, so use absolute path)
+	regularFolder := filepath.Join(iconDir, "regular-folder")
+	if err := os.MkdirAll(regularFolder, 0755); err != nil {
+		return fmt.Errorf("failed to create regular folder: %w", err)
+	}
+	if err := os.Symlink("regular-folder", symlinkToFolderPath); err != nil {
+		return fmt.Errorf("failed to create symlink to folder: %w", err)
 	}
 
 	// Create folders with custom icons
@@ -289,11 +300,7 @@ func createIconTestData(baseDir string) error {
 		}
 	}
 
-	// Create a regular folder (no custom icon)
-	regularFolder := filepath.Join(iconDir, "regular-folder")
-	if err := os.MkdirAll(regularFolder, 0755); err != nil {
-		return fmt.Errorf("failed to create regular folder: %w", err)
-	}
+	// Add README to regular folder (already created earlier as symlink target)
 	if err := os.WriteFile(filepath.Join(regularFolder, "README.md"), []byte("# Regular Folder\n\nThis folder has the default macOS folder icon.\n"), 0644); err != nil {
 		return fmt.Errorf("failed to create README in regular folder: %w", err)
 	}

@@ -52,7 +52,12 @@ fn get_group_name(gid: u32) -> String {
 /// Generates icon ID based on file type and extension.
 fn get_icon_id(is_dir: bool, is_symlink: bool, name: &str) -> String {
     if is_symlink {
-        return "symlink".to_string();
+        // Distinguish symlinks to directories vs files
+        return if is_dir {
+            "symlink-dir".to_string()
+        } else {
+            "symlink-file".to_string()
+        };
     }
     if is_dir {
         return "dir".to_string();
@@ -97,7 +102,15 @@ pub fn list_directory(path: &Path) -> Result<Vec<FileEntry>, std::io::Error> {
         let file_type = entry.file_type()?;
         let is_symlink = file_type.is_symlink();
 
-        // For symlinks, get metadata of the link itself (not target)
+        // For symlinks, check if the TARGET is a directory by following the link
+        // fs::metadata follows symlinks, fs::symlink_metadata does not
+        let target_is_dir = if is_symlink {
+            fs::metadata(entry.path()).map(|m| m.is_dir()).unwrap_or(false) // Broken symlink = treat as file
+        } else {
+            false
+        };
+
+        // For symlinks, get metadata of the link itself (not target) for size/timestamps
         let metadata = if is_symlink {
             fs::symlink_metadata(entry.path())
         } else {
@@ -107,7 +120,8 @@ pub fn list_directory(path: &Path) -> Result<Vec<FileEntry>, std::io::Error> {
         match metadata {
             Ok(metadata) => {
                 let name = entry.file_name().to_string_lossy().to_string();
-                let is_dir = metadata.is_dir();
+                // is_directory: true if it's a real dir OR a symlink pointing to a dir
+                let is_dir = metadata.is_dir() || target_is_dir;
 
                 let modified = metadata
                     .modified()
