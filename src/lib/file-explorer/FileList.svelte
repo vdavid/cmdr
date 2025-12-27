@@ -37,6 +37,14 @@
     function getIconUrl(file: FileEntry): string | undefined {
         // Read _cacheVersion to establish reactive dependency (it's used implicitly)
         void _cacheVersion
+
+        // For directories, try path-based icon first (for custom folder icons)
+        if (file.isDirectory) {
+            const pathIcon = getCachedIcon(`path:${file.path}`)
+            if (pathIcon) return pathIcon
+        }
+
+        // Fall back to generic icon ID
         return getCachedIcon(file.iconId)
     }
 

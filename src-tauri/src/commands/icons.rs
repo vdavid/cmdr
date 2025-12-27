@@ -10,3 +10,11 @@ use std::collections::HashMap;
 pub fn get_icons(icon_ids: Vec<String>) -> HashMap<String, String> {
     icons::get_icons(icon_ids)
 }
+
+/// Refreshes icons for a directory listing.
+/// Fetches icons in parallel for all directories and extensions.
+/// Returns all fetched icons (frontend can compare with cache to detect changes).
+#[tauri::command]
+pub fn refresh_directory_icons(directory_paths: Vec<String>, extensions: Vec<String>) -> HashMap<String, String> {
+    icons::refresh_icons_for_directory(directory_paths, extensions)
+}

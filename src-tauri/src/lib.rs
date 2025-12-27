@@ -1,9 +1,12 @@
+// Deny unused code to catch dead code early (like knip for TS)
+#![deny(unused)]
 // Warn on unused dependencies to catch platform-specific cfg mismatches
 #![warn(unused_crate_dependencies)]
 
 mod commands;
+pub mod config;
 mod file_system;
-mod icons;
+pub mod icons;
 mod menu;
 
 use menu::{MenuState, SHOW_HIDDEN_FILES_ID};
@@ -60,7 +63,8 @@ pub fn run() {
             greet,
             commands::file_system::list_directory_contents,
             commands::file_system::path_exists,
-            commands::icons::get_icons
+            commands::icons::get_icons,
+            commands::icons::refresh_directory_icons
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

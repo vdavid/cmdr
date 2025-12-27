@@ -2,7 +2,7 @@
 // Caches icon data URLs by icon ID to avoid redundant Tauri calls
 
 import { writable } from 'svelte/store'
-import { getIcons } from './tauri-commands'
+import { getIcons, refreshDirectoryIcons as refreshIconsCommand } from './tauri-commands'
 
 const STORAGE_KEY = 'rusty-commander-icon-cache'
 
@@ -80,4 +80,33 @@ export async function prefetchIcons(iconIds: string[]): Promise<void> {
  */
 export function getCachedIcon(iconId: string): string | undefined {
     return memoryCache.get(iconId)
+}
+
+/**
+ * Refreshes icons for a directory listing.
+ * Fetches icons in parallel for:
+ * - All directories by exact path (for custom folder icons)
+ * - All unique extensions (for file association changes)
+ *
+ * Updates the cache and triggers re-render if any icons changed.
+ * @knipignore Used via dynamic import in FilePane.svelte
+ */
+export async function refreshDirectoryIcons(directoryPaths: string[], extensions: string[]): Promise<void> {
+    if (directoryPaths.length === 0 && extensions.length === 0) return
+
+    const icons = await refreshIconsCommand(directoryPaths, extensions)
+
+    let changed = false
+    for (const [id, url] of Object.entries(icons)) {
+        const existing = memoryCache.get(id)
+        if (existing !== url) {
+            memoryCache.set(id, url)
+            changed = true
+        }
+    }
+
+    if (changed) {
+        saveToStorage()
+        iconCacheVersion.update((v) => v + 1)
+    }
 }

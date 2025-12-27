@@ -76,12 +76,36 @@
             } else {
                 selectedIndex = 0
             }
+
+            // Refresh icons for directories and extensions in the background
+            void refreshIconsForCurrentDirectory(entries)
         } catch (e) {
             error = e instanceof Error ? e.message : String(e)
             allFiles = []
         } finally {
             loading = false
         }
+    }
+
+    // Refresh icons for directories (custom folder icons) and extensions (file association changes)
+    async function refreshIconsForCurrentDirectory(entries: FileEntry[]) {
+        // Use static import since knip doesn't detect dynamic imports
+        const { refreshDirectoryIcons } = await import('$lib/icon-cache')
+
+        // Collect all directory paths (for custom folder icons)
+        const directoryPaths = entries.filter((e) => e.isDirectory).map((e) => e.path)
+
+        // Collect all unique extensions (for file association changes)
+        // eslint-disable-next-line svelte/prefer-svelte-reactivity
+        const extensionSet = new Set<string>()
+        for (const entry of entries) {
+            if (!entry.isDirectory && entry.name.includes('.')) {
+                const ext = entry.name.split('.').pop()
+                if (ext) extensionSet.add(ext.toLowerCase())
+            }
+        }
+
+        await refreshDirectoryIcons(directoryPaths, [...extensionSet])
     }
 
     function handleSelect(index: number) {

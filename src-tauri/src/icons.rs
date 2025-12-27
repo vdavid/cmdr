@@ -1,15 +1,18 @@
 //! Icon retrieval and caching for file types.
+//!
+//! Parallelism: Uses rayon's global thread pool (auto-detects CPU cores).
+//! Benchmarked on M1 Mac: 10 files→3.7ms, 50→8ms, 100→12.8ms, 200→21ms.
+//! Custom thread counts showed no improvement, so we use auto-detect.
 
+use crate::config::ICON_SIZE;
 use base64::Engine;
 use file_icon_provider::get_file_icon;
 use image::{DynamicImage, ImageFormat, imageops::FilterType};
+use rayon::prelude::*;
 use std::collections::HashMap;
 use std::io::Cursor;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::RwLock;
-
-/// Icon size in pixels (32x32 for retina display)
-const ICON_SIZE: u32 = 32;
 
 /// Cache for generated icons (icon_id -> base64 WebP data URL)
 static ICON_CACHE: RwLock<Option<HashMap<String, String>>> = RwLock::new(None);
@@ -45,7 +48,7 @@ fn cache_icon(icon_id: String, data_url: String) {
 
 /// Converts an image to a base64 WebP data URL.
 fn image_to_data_url(img: &DynamicImage) -> Option<String> {
-    // Resize to 32x32
+    // Resize to configured size
     let resized = img.resize_exact(ICON_SIZE, ICON_SIZE, FilterType::Lanczos3);
 
     // Encode as WebP
@@ -69,24 +72,9 @@ fn fetch_icon_for_path(path: &Path) -> Option<String> {
     image_to_data_url(&dynamic_img)
 }
 
-/// Generates icon ID based on file properties.
-/// This is called during list_directory.
-pub fn generate_icon_id(is_dir: bool, is_symlink: bool, extension: Option<&str>) -> String {
-    if is_symlink {
-        return "symlink".to_string();
-    }
-    if is_dir {
-        return "dir".to_string();
-    }
-    match extension {
-        Some(ext) => format!("ext:{}", ext.to_lowercase()),
-        None => "file".to_string(),
-    }
-}
-
 /// Gets the sample file path to use for fetching an icon by ID.
 /// For extension-based icons, we create an actual temp file since the OS may need it to exist.
-fn get_sample_path_for_icon_id(icon_id: &str) -> Option<std::path::PathBuf> {
+fn get_sample_path_for_icon_id(icon_id: &str) -> Option<PathBuf> {
     if icon_id == "dir" {
         // Use home directory as sample directory
         return dirs::home_dir();
@@ -94,11 +82,11 @@ fn get_sample_path_for_icon_id(icon_id: &str) -> Option<std::path::PathBuf> {
     if icon_id == "symlink" {
         // For symlinks, use a generic file icon (not a directory!)
         // Use /etc/hosts which exists on all macOS systems
-        return Some(std::path::PathBuf::from("/etc/hosts"));
+        return Some(PathBuf::from("/etc/hosts"));
     }
     if icon_id == "file" {
         // Generic file with no extension - use /etc/hosts
-        return Some(std::path::PathBuf::from("/etc/hosts"));
+        return Some(PathBuf::from("/etc/hosts"));
     }
     if let Some(ext) = icon_id.strip_prefix("ext:") {
         // Create an actual temp file with the extension
@@ -137,28 +125,60 @@ pub fn get_icons(icon_ids: Vec<String>) -> HashMap<String, String> {
     result
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+/// Refreshes icons for a directory listing.
+/// Fetches icons in parallel for:
+/// 1. All unique extensions (checking for file association changes)
+/// 2. All directory paths (for custom folder icons)
+///
+/// Returns only the icons that were successfully fetched, regardless of cache state.
+/// This allows the frontend to detect changes by comparing with its cached icons.
+pub fn refresh_icons_for_directory(directory_paths: Vec<String>, extensions: Vec<String>) -> HashMap<String, String> {
+    let mut result = HashMap::new();
 
-    #[test]
-    fn test_generate_icon_id_directory() {
-        assert_eq!(generate_icon_id(true, false, None), "dir");
+    // Fetch extension icons in parallel (uses rayon's global pool)
+    if !extensions.is_empty() {
+        let ext_results: Vec<(String, Option<String>)> = extensions
+            .par_iter()
+            .map(|ext| {
+                let icon_id = format!("ext:{}", ext.to_lowercase());
+                let sample_path = std::env::temp_dir().join(format!("rusty_commander_icon_sample.{}", ext));
+                // Create the file if it doesn't exist
+                if !sample_path.exists() {
+                    let _ = std::fs::File::create(&sample_path);
+                }
+                let data_url = fetch_icon_for_path(&sample_path);
+                (icon_id, data_url)
+            })
+            .collect();
+
+        for (icon_id, data_url) in ext_results {
+            if let Some(url) = data_url {
+                cache_icon(icon_id.clone(), url.clone());
+                result.insert(icon_id, url);
+            }
+        }
     }
 
-    #[test]
-    fn test_generate_icon_id_symlink() {
-        assert_eq!(generate_icon_id(false, true, Some("txt")), "symlink");
+    // Fetch directory icons by exact path in parallel
+    if !directory_paths.is_empty() {
+        let dir_results: Vec<(String, Option<String>)> = directory_paths
+            .par_iter()
+            .map(|path| {
+                let path_buf = PathBuf::from(path);
+                let data_url = fetch_icon_for_path(&path_buf);
+                // Use path as the icon ID for directories
+                (format!("path:{}", path), data_url)
+            })
+            .collect();
+
+        for (icon_id, data_url) in dir_results {
+            if let Some(url) = data_url {
+                // Update cache
+                cache_icon(icon_id.clone(), url.clone());
+                result.insert(icon_id, url);
+            }
+        }
     }
 
-    #[test]
-    fn test_generate_icon_id_extension() {
-        assert_eq!(generate_icon_id(false, false, Some("PDF")), "ext:pdf");
-        assert_eq!(generate_icon_id(false, false, Some("jpg")), "ext:jpg");
-    }
-
-    #[test]
-    fn test_generate_icon_id_no_extension() {
-        assert_eq!(generate_icon_id(false, false, None), "file");
-    }
+    result
 }

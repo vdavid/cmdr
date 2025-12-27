@@ -39,3 +39,20 @@ export async function openFile(path: string): Promise<void> {
 export async function getIcons(iconIds: string[]): Promise<Record<string, string>> {
     return invoke<Record<string, string>>('get_icons', { iconIds })
 }
+
+/**
+ * Refreshes icons for a directory listing.
+ * Fetches icons in parallel for directories (by path) and extensions.
+ * @param directoryPaths - Array of directory paths to fetch icons for
+ * @param extensions - Array of file extensions (without dot)
+ * @returns Map of icon_id → base64 WebP data URL
+ */
+export async function refreshDirectoryIcons(
+    directoryPaths: string[],
+    extensions: string[],
+): Promise<Record<string, string>> {
+    return invoke<Record<string, string>>('refresh_directory_icons', {
+        directoryPaths,
+        extensions,
+    })
+}

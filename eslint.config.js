@@ -23,7 +23,7 @@ import globals from 'globals'
 
 export default tseslint.config(
     {
-        ignores: ['dist', 'build', '.svelte-kit', 'node_modules', 'src-tauri/target'],
+        ignores: ['dist', 'build', '.svelte-kit', 'node_modules', 'src-tauri/target', '_ignored'],
     },
     js.configs.recommended,
     prettierConfig,

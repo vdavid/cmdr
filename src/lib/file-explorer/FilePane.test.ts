@@ -11,6 +11,7 @@ import { createFileEntry } from './test-helpers'
 vi.mock('$lib/icon-cache', () => ({
     getCachedIcon: vi.fn().mockReturnValue(undefined),
     prefetchIcons: vi.fn().mockResolvedValue(undefined),
+    refreshDirectoryIcons: vi.fn().mockResolvedValue(undefined),
     iconCacheVersion: {
         subscribe: vi.fn((fn: (value: number) => void) => {
             fn(0)
@@ -85,7 +86,7 @@ describe('FilePane', () => {
         await tick()
         await tick()
 
-        // Should show .. for parent navigation
+        // Should show `..` for parent navigation
         expect(target.textContent).toContain('..')
     })
 

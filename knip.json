@@ -1,6 +1,6 @@
 {
     "$schema": "https://unpkg.com/knip@5/schema.json",
-    "ignore": [],
+    "ignore": ["src/lib/icon-cache.ts"],
     "ignoreDependencies": ["@tauri-apps/plugin-window-state", "@testing-library/svelte"],
     "ignoreExportsUsedInFile": true
 }
