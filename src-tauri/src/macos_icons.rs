@@ -111,7 +111,13 @@ fn get_document_icon_name_from_bundle(app_path: &Path, uti: &str) -> Option<Stri
     }
 
     // No document-specific icon found.
-    // Fallback to the app's main icon - this is actually desirable because:
+    // Check if we should fall back to the app's main icon (configurable).
+    if !crate::config::USE_APP_ICONS_AS_DOCUMENT_ICONS {
+        // Return None to fall back to temp file approach → Finder-style document icons
+        return None;
+    }
+
+    // Fallback to the app's main icon - this is desirable because:
     // 1. It clearly shows which app will open this file type
     // 2. It updates immediately when the user changes file associations
     // 3. It's more informative than a generic document icon
