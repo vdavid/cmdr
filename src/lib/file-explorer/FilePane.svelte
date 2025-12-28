@@ -256,6 +256,13 @@
         } else if (e.key === 'Enter') {
             e.preventDefault()
             void handleNavigate(files[selectedIndex])
+        } else if (e.key === 'Backspace') {
+            e.preventDefault()
+            // Navigate to parent directory (same as activating ".." entry)
+            const parentEntry = files.find((f) => f.name === '..')
+            if (parentEntry) {
+                void handleNavigate(parentEntry)
+            }
         }
         // Tab key bubbles up to DualPaneExplorer
     }
