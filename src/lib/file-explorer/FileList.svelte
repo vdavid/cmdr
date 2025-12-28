@@ -13,16 +13,39 @@
 
     const { files, selectedIndex, isFocused = true, onSelect, onNavigate, onContextMenu }: Props = $props()
 
-    let listElement: HTMLUListElement | undefined = $state()
+    // ==== Virtual scrolling constants ====
+    // Row height in pixels - must match CSS (.file-entry height)
+    // Current CSS: padding 2px top/bottom + ~16px line height = ~20px
+    const ROW_HEIGHT = 20
+    // Buffer items above/below viewport to reduce gaps during fast scrolling
+    const BUFFER_SIZE = 20
+
+    // ==== Virtual scrolling state ====
+    let scrollContainer: HTMLDivElement | undefined = $state()
+    let containerHeight = $state(0)
+    let scrollTop = $state(0)
+
+    // ==== Virtual scrolling derived calculations ====
+    const startIndex = $derived(Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - BUFFER_SIZE))
+    const visibleCount = $derived(Math.ceil(containerHeight / ROW_HEIGHT) + BUFFER_SIZE * 2)
+    const endIndex = $derived(Math.min(startIndex + visibleCount, files.length))
+    const visibleFiles = $derived(files.slice(startIndex, endIndex))
+    const totalHeight = $derived(files.length * ROW_HEIGHT)
+    const offsetY = $derived(startIndex * ROW_HEIGHT)
+
+    function handleScroll(e: Event) {
+        const target = e.target as HTMLDivElement
+        scrollTop = target.scrollTop
+    }
 
     // Track which icons we've prefetched to avoid redundant calls (module-level, non-reactive)
     // Using a plain Set outside the reactive system since we only add to it
     // eslint-disable-next-line svelte/prefer-svelte-reactivity
     const prefetchedSet: Set<string> = new Set()
 
-    // Prefetch icons when files change
+    // Prefetch icons for visible files when they change
     $effect(() => {
-        const newIconIds = files.map((f) => f.iconId).filter((id) => id && !prefetchedSet.has(id))
+        const newIconIds = visibleFiles.map((f) => f.iconId).filter((id) => id && !prefetchedSet.has(id))
         if (newIconIds.length > 0) {
             // Add to set first to avoid re-fetching during async
             newIconIds.forEach((id) => prefetchedSet.add(id))
@@ -59,72 +82,89 @@
         return entry.name
     }
 
-    function handleClick(index: number) {
-        onSelect(index)
+    function handleClick(actualIndex: number) {
+        onSelect(actualIndex)
     }
 
-    function handleDoubleClick(index: number) {
-        onNavigate(files[index])
+    function handleDoubleClick(actualIndex: number) {
+        onNavigate(files[actualIndex])
     }
 
     // Exported for parent to call when arrow keys change selection
+    // With virtual scrolling, we calculate the target scroll position mathematically
     export function scrollToIndex(index: number) {
-        if (!listElement) return
-        const items = listElement.querySelectorAll('.file-entry')
-        const item = items[index] as HTMLElement | undefined
-        if (item) {
-            item.scrollIntoView({ block: 'nearest' })
+        if (!scrollContainer) return
+
+        const targetTop = index * ROW_HEIGHT
+        const targetBottom = targetTop + ROW_HEIGHT
+        const viewportBottom = scrollTop + containerHeight
+
+        if (targetTop < scrollTop) {
+            // Item is above viewport - scroll up to show it
+            scrollContainer.scrollTop = targetTop
+        } else if (targetBottom > viewportBottom) {
+            // Item is below viewport - scroll down to show it
+            scrollContainer.scrollTop = targetBottom - containerHeight
         }
+        // else: item already visible, no scroll needed
     }
 </script>
 
-<ul
+<div
     class="file-list"
     class:is-focused={isFocused}
-    bind:this={listElement}
+    bind:this={scrollContainer}
+    bind:clientHeight={containerHeight}
+    onscroll={handleScroll}
     tabindex="-1"
     role="listbox"
     aria-activedescendant={files[selectedIndex] ? `file-${String(selectedIndex)}` : undefined}
 >
-    {#each files as file, index (file.path)}
-        <!-- svelte-ignore a11y_click_events_have_key_events -->
-        <li
-            id={`file-${String(index)}`}
-            class="file-entry"
-            class:is-directory={file.isDirectory}
-            class:is-selected={index === selectedIndex}
-            onclick={() => {
-                handleClick(index)
-            }}
-            ondblclick={() => {
-                handleDoubleClick(index)
-            }}
-            oncontextmenu={(e) => {
-                e.preventDefault()
-                onSelect(index)
-                onContextMenu?.(files[index])
-            }}
-            role="option"
-            aria-selected={index === selectedIndex}
-        >
-            <span class="icon-wrapper">
-                {#if getIconUrl(file)}
-                    <img class="icon" src={getIconUrl(file)} alt="" width="16" height="16" />
-                {:else}
-                    <span class="icon-emoji">{getFallbackEmoji(file)}</span>
-                {/if}
-                {#if file.isSymlink}
-                    <span class="symlink-badge">🔗</span>
-                {/if}
-            </span>
-            <span class="name">{formatName(file)}</span>
-        </li>
-    {/each}
-</ul>
+    <!-- Spacer div provides accurate scrollbar for full list size -->
+    <div class="virtual-spacer" style="height: {totalHeight}px;">
+        <!-- Visible window positioned with translateY -->
+        <div class="virtual-window" style="transform: translateY({offsetY}px);">
+            {#each visibleFiles as file, localIndex (file.path)}
+                {@const actualIndex = startIndex + localIndex}
+                <!-- svelte-ignore a11y_click_events_have_key_events a11y_interactive_supports_focus -->
+                <div
+                    id={`file-${String(actualIndex)}`}
+                    class="file-entry"
+                    class:is-directory={file.isDirectory}
+                    class:is-selected={actualIndex === selectedIndex}
+                    onclick={() => {
+                        handleClick(actualIndex)
+                    }}
+                    ondblclick={() => {
+                        handleDoubleClick(actualIndex)
+                    }}
+                    oncontextmenu={(e) => {
+                        e.preventDefault()
+                        onSelect(actualIndex)
+                        onContextMenu?.(files[actualIndex])
+                    }}
+                    role="option"
+                    aria-selected={actualIndex === selectedIndex}
+                >
+                    <span class="icon-wrapper">
+                        {#if getIconUrl(file)}
+                            <img class="icon" src={getIconUrl(file)} alt="" width="16" height="16" />
+                        {:else}
+                            <span class="icon-emoji">{getFallbackEmoji(file)}</span>
+                        {/if}
+                        {#if file.isSymlink}
+                            <span class="symlink-badge">🔗</span>
+                        {/if}
+                    </span>
+                    <span class="name">{formatName(file)}</span>
+                </div>
+            {/each}
+        </div>
+    </div>
+</div>
 
 <style>
     .file-list {
-        list-style: none;
         margin: 0;
         padding: 0;
         overflow-y: auto;
@@ -132,6 +172,17 @@
         font-size: var(--font-size-sm);
         flex: 1;
         outline: none;
+    }
+
+    /* Virtual scrolling container - sets total height for accurate scrollbar */
+    .virtual-spacer {
+        position: relative;
+        width: 100%;
+    }
+
+    /* Visible window - positioned with translateY for smooth scrolling */
+    .virtual-window {
+        will-change: transform;
     }
 
     .file-entry {
