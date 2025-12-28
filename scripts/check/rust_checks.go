@@ -164,3 +164,48 @@ func (c *RustTestsCheck) Run(ctx *CheckContext) error {
 	}
 	return nil
 }
+
+// CargoUdepsCheck detects unused dependencies.
+type CargoUdepsCheck struct{}
+
+func (c *CargoUdepsCheck) Name() string {
+	return "cargo-udeps"
+}
+
+func (c *CargoUdepsCheck) Run(ctx *CheckContext) error {
+	rustDir := filepath.Join(ctx.RootDir, "src-tauri")
+
+	// Check if cargo-udeps is installed
+	if !commandExists("cargo-udeps") {
+		fmt.Printf("%sInstalling cargo-udeps...%s ", colorYellow, colorReset)
+		installCmd := exec.Command("cargo", "install", "cargo-udeps", "--locked")
+		if _, err := runCommand(installCmd, true); err != nil {
+			return fmt.Errorf("failed to install cargo-udeps: %w", err)
+		}
+	}
+
+	// cargo-udeps requires nightly
+	cmd := exec.Command("cargo", "+nightly", "udeps", "--all-targets")
+	cmd.Dir = rustDir
+	output, err := runCommand(cmd, true)
+	if err != nil {
+		// Check if nightly is not installed
+		if strings.Contains(output, "toolchain 'nightly'") {
+			fmt.Printf("\n%sInstalling nightly toolchain...%s ", colorYellow, colorReset)
+			installCmd := exec.Command("rustup", "toolchain", "install", "nightly")
+			if _, err := runCommand(installCmd, true); err != nil {
+				return fmt.Errorf("failed to install nightly")
+			}
+			// Retry
+			cmd = exec.Command("cargo", "+nightly", "udeps", "--all-targets")
+			cmd.Dir = rustDir
+			output, err = runCommand(cmd, true)
+		}
+		if err != nil {
+			fmt.Println()
+			fmt.Print(indentOutput(output, "      "))
+			return fmt.Errorf("unused dependencies found")
+		}
+	}
+	return nil
+}

@@ -16,6 +16,8 @@ func getCheckByName(name string) Check {
 		return &CargoAuditCheck{}
 	case "cargo-deny":
 		return &CargoDenyCheck{}
+	case "cargo-udeps":
+		return &CargoUdepsCheck{}
 	case "rust-tests":
 		return &RustTestsCheck{}
 	case "prettier":
@@ -58,6 +60,7 @@ func getRustChecks() []Check {
 		&ClippyCheck{},
 		&CargoAuditCheck{},
 		&CargoDenyCheck{},
+		&CargoUdepsCheck{},
 		&RustTestsCheck{},
 	}
 }

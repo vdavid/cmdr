@@ -25,6 +25,9 @@ node_modules
 # Tauri build files
 build/
 
+# Go build files
+scripts/check/check
+
 # Test results
 playwright-report/
 test-results/

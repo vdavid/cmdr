@@ -55,6 +55,12 @@ jobs:
             - name: Run cargo-deny
               run: ./scripts/check/check --check cargo-deny --ci
 
+            - name: Install nightly toolchain (for cargo-udeps)
+              run: rustup toolchain install nightly
+
+            - name: Run cargo-udeps
+              run: ./scripts/check/check --check cargo-udeps --ci
+
             - name: Run Rust tests
               run: ./scripts/check/check --check rust-tests --ci
 
