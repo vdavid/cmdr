@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount, untrack } from 'svelte'
+    import { onMount, tick, untrack } from 'svelte'
     import type { FileEntry } from './types'
     import { openFile } from '$lib/tauri-commands'
     import FileList from './FileList.svelte'
@@ -111,6 +111,12 @@
                 const visibleFiles = filterFiles(firstChunk, showHiddenFiles)
                 const targetIndex = visibleFiles.findIndex((f) => f.name === selectName)
                 selectedIndex = targetIndex >= 0 ? targetIndex : 0
+
+                // Scroll the selected folder into view (after DOM updates)
+                void tick().then(() => {
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+                    fileListRef?.scrollToIndex(selectedIndex)
+                })
             } else {
                 selectedIndex = 0
             }
