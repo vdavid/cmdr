@@ -30,6 +30,8 @@ impl MockFileSystemProvider {
                     size: Some(1024 * (i as u64)),
                     modified_at: Some(1640000000 + i as u64),
                     created_at: Some(1639000000 + i as u64),
+                    added_at: Some(1638000000 + i as u64),
+                    opened_at: Some(1641000000 + i as u64),
                     permissions: 0o644,
                     owner: "testuser".to_string(),
                     group: "staff".to_string(),

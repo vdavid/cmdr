@@ -3,6 +3,7 @@
     import type { FileEntry } from './types'
     import { openFile } from '$lib/tauri-commands'
     import FileList from './FileList.svelte'
+    import SelectionInfo from './SelectionInfo.svelte'
 
     /** Chunk size for loading large directories */
     const CHUNK_SIZE = 5000
@@ -30,6 +31,8 @@
     let error = $state<string | null>(null)
     let selectedIndex = $state(0)
     let fileListRef: FileList | undefined = $state()
+    /** Metadata for the current directory (used for ".." entry in SelectionInfo) */
+    const currentDirModifiedAt = $state<number | undefined>(undefined)
 
     // Track the current load operation to cancel outdated ones
     let loadGeneration = 0
@@ -47,6 +50,9 @@
         void filesVersion // Dependency trigger
         return filterFiles(allFilesRaw, showHiddenFiles)
     })
+
+    // Currently selected entry for SelectionInfo (must be after files declaration)
+    const selectedEntry = $derived(files[selectedIndex] ?? null)
 
     // Create ".." entry for parent navigation
     function createParentEntry(path: string): FileEntry | null {
@@ -310,6 +316,7 @@
             {/if}
         {/if}
     </div>
+    <SelectionInfo entry={selectedEntry} {currentDirModifiedAt} />
 </div>
 
 <style>

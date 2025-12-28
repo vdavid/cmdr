@@ -1,5 +1,7 @@
 //! File system module - operations, watchers, and providers.
 
+#[cfg(target_os = "macos")]
+mod macos_metadata;
 #[cfg(test)]
 mod mock_provider;
 mod operations;

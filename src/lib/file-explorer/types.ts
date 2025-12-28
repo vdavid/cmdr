@@ -6,6 +6,10 @@ export interface FileEntry {
     size?: number
     modifiedAt?: number
     createdAt?: number
+    /** When the file was added to its current directory (macOS only) */
+    addedAt?: number
+    /** When the file was last opened (macOS only) */
+    openedAt?: number
     permissions: number
     owner: string
     group: string

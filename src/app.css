@@ -30,6 +30,12 @@
     /* === Semantic Colors === */
     --color-error: #d32f2f;
 
+    /* === Size tier colors (20% offset toward target color) === */
+    --color-size-kb: color-mix(in srgb, var(--color-text-secondary) 70%, #f0c000);
+    --color-size-mb: color-mix(in srgb, var(--color-text-secondary) 70%, #ff8c00);
+    --color-size-gb: color-mix(in srgb, var(--color-text-secondary) 70%, #ff4444);
+    --color-size-tb: color-mix(in srgb, var(--color-text-secondary) 70%, #aa44ff);
+
     /* === Spacing === */
     --spacing-xxs: 2px;
     --spacing-xs: 4px;

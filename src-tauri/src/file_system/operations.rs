@@ -94,6 +94,10 @@ pub struct FileEntry {
     pub size: Option<u64>,
     pub modified_at: Option<u64>,
     pub created_at: Option<u64>,
+    /// When the file was added to its current directory (macOS only)
+    pub added_at: Option<u64>,
+    /// When the file was last opened (macOS only)
+    pub opened_at: Option<u64>,
     pub permissions: u32,
     pub owner: String,
     pub group: String,
@@ -170,6 +174,15 @@ pub fn list_directory(path: &Path) -> Result<Vec<FileEntry>, std::io::Error> {
                 owner_lookup_time += owner_start.elapsed();
 
                 let create_start = std::time::Instant::now();
+                // Get macOS-specific metadata (added_at, opened_at)
+                #[cfg(target_os = "macos")]
+                let (added_at, opened_at) = {
+                    let macos_meta = super::macos_metadata::get_macos_metadata(&entry.path());
+                    (macos_meta.added_at, macos_meta.opened_at)
+                };
+                #[cfg(not(target_os = "macos"))]
+                let (added_at, opened_at) = (None, None);
+
                 entries.push(FileEntry {
                     name: name.clone(),
                     path: entry.path().to_string_lossy().to_string(),
@@ -178,6 +191,8 @@ pub fn list_directory(path: &Path) -> Result<Vec<FileEntry>, std::io::Error> {
                     size: if metadata.is_file() { Some(metadata.len()) } else { None },
                     modified_at: modified,
                     created_at: created,
+                    added_at,
+                    opened_at,
                     permissions: metadata.permissions().mode(),
                     owner,
                     group,
@@ -196,6 +211,8 @@ pub fn list_directory(path: &Path) -> Result<Vec<FileEntry>, std::io::Error> {
                     size: None,
                     modified_at: None,
                     created_at: None,
+                    added_at: None,
+                    opened_at: None,
                     permissions: 0,
                     owner: String::new(),
                     group: String::new(),
