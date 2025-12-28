@@ -2,12 +2,14 @@
 
 ![License](https://img.shields.io/github/license/vdavid/rusty-commander)
 
-<img alt="Rusty Commander logo" src="./src-tauri/icons/128x128.png" width="128" height="128" style="display:block; margin:0 auto;" />
-
 An extremely fast, keyboard-driven, two-pane file manager written in Rust for folks who miss the golden days of Norton
 Commander and Total Commander.
 
+![rusty-commander](https://github.com/user-attachments/assets/d50c1b19-f947-47b6-8b29-b800b0f1ce31)
+
 ## Overview
+
+<img alt="Rusty Commander logo" src="./src-tauri/icons/128x128.png" width="128" height="128" style="display:block; margin:0 auto;" />
 
 Rusty Commander is a desktop file manager that brings back the classic two-pane layout. It's built for speed and
 keyboard navigation. If you've ever used Norton Commander, Midnight Commander, or Total Commander, you'll feel right at
