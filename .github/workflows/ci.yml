@@ -26,10 +26,7 @@ jobs:
             - name: Cache Cargo
               uses: actions/cache@v4
               with:
-                  path: |
-                      ~/.cargo/registry
-                      ~/.cargo/git
-                      src-tauri/target
+                  path: ~/.cargo/registry/cache
                   key: ${{ runner.os }}-cargo-${{ hashFiles('src-tauri/Cargo.lock') }}
                   restore-keys: |
                       ${{ runner.os }}-cargo-
