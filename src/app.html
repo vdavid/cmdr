@@ -19,6 +19,10 @@
                     --text: #ffffff;
                     --muted: #888888;
                 }
+
+                .loader:after {
+                    box-shadow: 0 2px 0 #a13200 inset;
+                }
             }
 
             html,
@@ -47,23 +51,41 @@
                 position: relative;
                 width: 100px;
                 height: 100px;
+                animation: fade-in 500ms ease-out forwards;
             }
 
-            .loader:before , .loader:after{
+            @keyframes fade-in {
+                from {
+                    opacity: 0;
+                }
+
+                to {
+                    opacity: 1;
+                }
+            }
+
+            .loader:before,
+            .loader:after {
                 content: '';
                 border-radius: 50%;
                 position: absolute;
                 inset: 0;
                 box-shadow: 0 0 10px 2px rgba(0, 0, 0, 0.3) inset;
             }
+
             .loader:after {
-                box-shadow: 0 2px 0 #a13200 inset;
+                box-shadow: 0 2px 0 #ff9e1b inset;
                 animation: rotate 2s linear infinite;
             }
 
             @keyframes rotate {
-                0% {  transform: rotate(0)}
-                100% { transform: rotate(360deg)}
+                0% {
+                    transform: rotate(0);
+                }
+
+                100% {
+                    transform: rotate(360deg);
+                }
             }
         </style>
         %sveltekit.head%
