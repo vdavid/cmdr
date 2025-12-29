@@ -101,6 +101,14 @@ export async function updateMenuContext(path: string, filename: string): Promise
 }
 
 /**
+ * Shows the main window.
+ * Should be called when the frontend is ready to avoid white flash.
+ */
+export async function showMainWindow(): Promise<void> {
+    await invoke('show_main_window')
+}
+
+/**
  * Gets sync status for multiple file paths.
  * Returns a map of path → sync status.
  * Only works on macOS with files in cloud-synced folders (Dropbox, iCloud, etc.)

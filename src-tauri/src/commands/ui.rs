@@ -32,6 +32,11 @@ pub fn show_file_context_menu<R: Runtime>(
     Ok(())
 }
 
+#[tauri::command]
+pub fn show_main_window<R: Runtime>(window: Window<R>) -> Result<(), String> {
+    window.show().map_err(|e| e.to_string())
+}
+
 /// Executes a menu action for the current context.
 pub fn execute_menu_action<R: Runtime>(app: &AppHandle<R>, id: &str) {
     let state = app.state::<MenuState<R>>();
