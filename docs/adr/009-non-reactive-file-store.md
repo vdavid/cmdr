@@ -31,14 +31,14 @@ the full array assignment internally.
 
 **Benchmark data (50k files):**
 
-| Step                   | Time      |
-| ---------------------- | --------- |
-| Rust list_directory    | 308ms     |
-| JSON serialize (Rust)  | 18ms      |
-| IPC transfer (17.4 MB) | ~4,100ms  |
-| JSON.parse (JS)        | 67ms      |
-| Svelte reactivity      | **9.5s**  |
-| **Total**              | **~14s**  |
+| Step                   | Time     |
+| ---------------------- | -------- |
+| Rust list_directory    | 308ms    |
+| JSON serialize (Rust)  | 18ms     |
+| IPC transfer (17.4 MB) | ~4,100ms |
+| JSON.parse (JS)        | 67ms     |
+| Svelte reactivity      | **9.5s** |
+| **Total**              | **~14s** |
 
 The Svelte reactivity step alone takes 9.5 seconds for 50k files—this is the freeze the user experiences.
 
@@ -70,8 +70,8 @@ Load files into Svelte state in small chunks (500 at a time) to spread out the r
 
 **Option 1: Non-reactive FileDataStore + visible-range requests**
 
-Create a plain JavaScript class that holds all file data outside of Svelte's reactivity system. Virtual scroll components
-request only the visible range of items to put into a small reactive array.
+Create a plain JavaScript class that holds all file data outside of Svelte's reactivity system. Virtual scroll
+components request only the visible range of items to put into a small reactive array.
 
 **Architecture:**
 

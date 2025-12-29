@@ -22,8 +22,8 @@ A short summary of the context, problem, solution, and consequences. In clear la
 
 ### Context
 
-Give all information that helps understand the background and reasoning behind the decision,
-everything that leads up to the problem statement, but not the problem itself.
+Give all information that helps understand the background and reasoning behind the decision, everything that leads up to
+the problem statement, but not the problem itself.
 
 ### Problem
 

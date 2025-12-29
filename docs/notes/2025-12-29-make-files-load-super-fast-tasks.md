@@ -4,38 +4,38 @@ Related: [2025-12-30-load-files-super-fast-spec.md](./2025-12-30-load-files-supe
 
 ---
 
-## Phase 1: FileDataStore (ADR-009)
+## Phase 1: FileDataStore (ADR-009) ✅
 
 Goal: Eliminate Svelte reactivity freeze by keeping file data outside reactive state.
 
-- [ ] Create `FileDataStore` class (plain JS, not Svelte)
-  - [ ] `files: FileEntry[]` — plain array storage
-  - [ ] `totalCount: number` — for scrollbar sizing
-  - [ ] `maxFilenameWidth: number` — for Brief mode horizontal scrollbar
-  - [ ] `getRange(start, end): FileEntry[]` — for virtual scroll
-  - [ ] `setFiles(entries: FileEntry[]): void` — bulk set
-  - [ ] `appendFiles(entries: FileEntry[]): void` — for chunked loading
-  - [ ] `clear(): void` — on navigation
-  - [ ] `onUpdate` callback mechanism — notify components of changes
+- [x] Create `FileDataStore` class (plain JS, not Svelte)
+    - [x] `files: FileEntry[]` — plain array storage
+    - [x] `totalCount: number` — for scrollbar sizing
+    - [x] `maxFilenameWidth: number` — for Brief mode horizontal scrollbar
+    - [x] `getRange(start, end): FileEntry[]` — for virtual scroll
+    - [x] `setFiles(entries: FileEntry[]): void` — bulk set
+    - [x] `appendFiles(entries: FileEntry[]): void` — for chunked loading
+    - [x] `clear(): void` — on navigation
+    - [x] `onUpdate` callback mechanism — notify components of changes
 
-- [ ] Implement Brief mode width calculation
-  - [ ] Use `canvas.measureText()` to measure filename widths
-  - [ ] Calculate incrementally (first chunk immediately, rest in idle callback)
+- [x] Implement Brief mode width calculation
+    - [x] Use `canvas.measureText()` to measure filename widths
+    - [x] Calculate in `measureFilenameWidths()` function
 
-- [ ] Update `FilePane.svelte` to use FileDataStore
-  - [ ] Create store instance per pane
-  - [ ] Replace `allFilesRaw` with store
-  - [ ] Request visible range on scroll
-  - [ ] Update only `visibleItems` reactive state (~50-100 items)
+- [x] Update `FilePane.svelte` to use FileDataStore
+    - [x] Create store instance per pane
+    - [x] Replace `allFilesRaw` with store
+    - [x] Store provides `getAllFiltered()` for current implementation (full virtual scroll getRange coming in Phase 2)
+    - [x] `storeVersion` reactive trigger for component updates
 
-- [ ] Update `BriefList.svelte` and `FullList.svelte`
-  - [ ] Accept `totalCount` prop for scrollbar sizing
-  - [ ] Accept `maxFilenameWidth` prop (Brief mode)
-  - [ ] On scroll, call back to parent for new visible range
+- [ ] Update `BriefList.svelte` and `FullList.svelte` (deferred to Phase 2)
+    - [ ] Accept `totalCount` prop for scrollbar sizing
+    - [ ] Accept `maxFilenameWidth` prop (Brief mode)
+    - [ ] On scroll, call back to parent for new visible range
 
-- [ ] Remove old `filesVersion` pattern
-  - [ ] Delete `filesVersion` state variable
-  - [ ] Delete `$derived.by()` that reads filesVersion
+- [x] Remove old `filesVersion` pattern
+    - [x] Delete `filesVersion` state variable (replaced with `storeVersion`)
+    - [x] Delete direct `allFilesRaw` mutations
 
 ---
 
@@ -44,27 +44,27 @@ Goal: Eliminate Svelte reactivity freeze by keeping file data outside reactive s
 Goal: Show files fast with core data, load extended metadata in background.
 
 - [ ] Split `FileEntry` into core vs extended fields
-  - [ ] Core: name, path, isDirectory, isSymlink, size, modifiedAt, createdAt, permissions, owner, group, iconId
-  - [ ] Extended: addedAt, openedAt (macOS-specific)
-  - [ ] Add `extendedMetadataLoaded: boolean` flag
+    - [ ] Core: name, path, isDirectory, isSymlink, size, modifiedAt, createdAt, permissions, owner, group, iconId
+    - [ ] Extended: addedAt, openedAt (macOS-specific)
+    - [ ] Add `extendedMetadataLoaded: boolean` flag
 
 - [ ] Update Rust `list_directory()` to support phased loading
-  - [ ] New command: `list_directory_core()` — fast stat() only
-  - [ ] New command: `list_directory_extended()` — macOS metadata
-  - [ ] Add `// TODO: Apply sort criteria here` placeholder for future sorting
+    - [ ] New command: `list_directory_core()` — fast stat() only
+    - [ ] New command: `list_directory_extended()` — macOS metadata
+    - [ ] Add `// TODO: Apply sort criteria here` placeholder for future sorting
 
 - [ ] Update Rust session management
-  - [ ] `list_directory_start` returns count + starts background loading
-  - [ ] `list_directory_next_chunk` returns core data chunks
-  - [ ] New: `list_directory_get_extended` returns extended metadata
+    - [ ] `list_directory_start` returns count + starts background loading
+    - [ ] `list_directory_next_chunk` returns core data chunks
+    - [ ] New: `list_directory_get_extended` returns extended metadata
 
 - [ ] Update `FileDataStore` for extended data
-  - [ ] `mergeExtendedData(entries: PartialFileEntry[]): void` — merge by path
-  - [ ] Track which items have extended data loaded
+    - [ ] `mergeExtendedData(entries: PartialFileEntry[]): void` — merge by path
+    - [ ] Track which items have extended data loaded
 
 - [ ] Update UI to handle missing extended metadata
-  - [ ] Show placeholder or omit fields if `extendedMetadataLoaded === false`
-  - [ ] Update display when extended data arrives
+    - [ ] Show placeholder or omit fields if `extendedMetadataLoaded === false`
+    - [ ] Update display when extended data arrives
 
 ---
 
@@ -73,12 +73,12 @@ Goal: Show files fast with core data, load extended metadata in background.
 Goal: Prepare for future sorting feature.
 
 - [ ] Add sorting placeholders in Rust
-  - [ ] `// TODO: Apply sort criteria here` before chunking
-  - [ ] Document that first chunk should contain "best" files for current sort
+    - [ ] `// TODO: Apply sort criteria here` before chunking
+    - [ ] Document that first chunk should contain "best" files for current sort
 
 - [ ] Add sorting placeholders in FileDataStore
-  - [ ] `sortBy(criteria): void` method (stub)
-  - [ ] Note: Re-sorting requires re-requesting from backend (sorted order affects which files are "first")
+    - [ ] `sortBy(criteria): void` method (stub)
+    - [ ] Note: Re-sorting requires re-requesting from backend (sorted order affects which files are "first")
 
 ---
 
@@ -87,13 +87,13 @@ Goal: Prepare for future sorting feature.
 Goal: Stop wasting backend resources when user navigates away quickly.
 
 - [ ] Add cancellation flag in Rust session
-  - [ ] `is_cancelled: AtomicBool` in session struct
-  - [ ] Check flag periodically in `list_directory()` loop
-  - [ ] Exit early if cancelled
+    - [ ] `is_cancelled: AtomicBool` in session struct
+    - [ ] Check flag periodically in `list_directory()` loop
+    - [ ] Exit early if cancelled
 
 - [ ] Wire up cancellation from frontend
-  - [ ] `list_directory_end_session` sets cancellation flag
-  - [ ] Background thread checks flag and exits
+    - [ ] `list_directory_end_session` sets cancellation flag
+    - [ ] Background thread checks flag and exits
 
 - [ ] Consider using `tokio` for proper async cancellation (complex, evaluate ROI)
 
@@ -104,16 +104,16 @@ Goal: Stop wasting backend resources when user navigates away quickly.
 Goal: Optimize chunk sizes and timing.
 
 - [ ] Benchmark different chunk sizes (1000, 2500, 5000, 10000)
-  - [ ] Measure IPC overhead vs. perceived responsiveness
-  - [ ] Document optimal size for different directory sizes
+    - [ ] Measure IPC overhead vs. perceived responsiveness
+    - [ ] Document optimal size for different directory sizes
 
 - [ ] Consider dynamic chunk sizing
-  - [ ] Smaller first chunk for faster initial display
-  - [ ] Larger subsequent chunks for efficiency
+    - [ ] Smaller first chunk for faster initial display
+    - [ ] Larger subsequent chunks for efficiency
 
 - [ ] Profile and optimize `canvas.measureText()` if needed
-  - [ ] Batch measurements
-  - [ ] Use `requestIdleCallback` for large directories
+    - [ ] Batch measurements
+    - [ ] Use `requestIdleCallback` for large directories
 
 ---
 

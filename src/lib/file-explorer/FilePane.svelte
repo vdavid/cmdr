@@ -17,7 +17,7 @@
     import BriefList from './BriefList.svelte'
     import SelectionInfo from './SelectionInfo.svelte'
     import LoadingIcon from '../LoadingIcon.svelte'
-    import { applyDiff } from './apply-diff'
+    import { createFileDataStore } from './FileDataStore'
 
     /** Chunk size for loading large directories */
     const CHUNK_SIZE = 5000
@@ -42,15 +42,21 @@
 
     let currentPath = $state(untrack(() => initialPath))
 
-    // PERFORMANCE: Store files in plain JS (NOT reactive) to avoid 50k-item reactivity overhead
-    // Use filesVersion to manually trigger re-renders when the list changes
+    // PERFORMANCE: FileDataStore keeps files outside Svelte's reactivity system
+    // to avoid O(n) reactivity costs for large directories (20k+ files).
+    // Only storeVersion is reactive - when it changes, components re-read from store.
+    const fileStore = createFileDataStore()
+    let storeVersion = $state(0)
 
-    let allFilesRaw: FileEntry[] = []
-    let filesVersion = $state(0)
+    // Subscribe to store updates
+    $effect(() => {
+        return fileStore.onUpdate(() => {
+            storeVersion++
+        })
+    })
 
     let loading = $state(true)
     let loadingMore = $state(false)
-    let totalCount = $state(0)
     let error = $state<string | null>(null)
     let selectedIndex = $state(0)
     let fullListRef: FullList | undefined = $state()
@@ -65,24 +71,25 @@
     let lastSequence = 0
     let unlisten: UnlistenFn | undefined
     let unlistenMenuAction: UnlistenFn | undefined
-    // Sync status map for cloud-synced files (Dropbox, iCloud, etc.)
-    let syncStatusMap = $state<Record<string, SyncStatus>>({})
     // Polling interval for sync status (visible files only)
     let syncPollInterval: ReturnType<typeof setInterval> | undefined
     const SYNC_POLL_INTERVAL_MS = 2000 // Poll every 2 seconds
 
-    // Filter files based on showHiddenFiles setting
-    // Always keep ".." visible for parent navigation
-    function filterFiles(entries: FileEntry[], showHidden: boolean): FileEntry[] {
-        if (showHidden) return entries
-        return entries.filter((e) => !e.name.startsWith('.') || e.name === '..')
-    }
+    // Note: totalCount and maxFilenameWidth are available via fileStore.totalCount
+    // and fileStore.maxFilenameWidth - they'll be passed to List components in Phase 2
 
-    // Compute visible files based on showHiddenFiles prop
-    // Note: filesVersion is read to trigger re-computation when allFilesRaw changes
+    // Derive syncStatusMap from store (reactive via storeVersion)
+    const syncStatusMap = $derived.by(() => {
+        void storeVersion
+        return fileStore.syncStatusMap as Record<string, SyncStatus>
+    })
+
+    // Get all visible files from store
+    // Note: This is used for operations that need the full list (keyboard nav, context menu)
+    // Virtual scroll components should use getRange() instead
     const files = $derived.by(() => {
-        void filesVersion // Dependency trigger
-        return filterFiles(allFilesRaw, showHiddenFiles)
+        void storeVersion
+        return fileStore.getAllFiltered()
     })
 
     // Currently selected entry for SelectionInfo (must be after files declaration)
@@ -118,10 +125,7 @@
         loading = true
         loadingMore = false
         error = null
-        allFilesRaw = []
-        filesVersion++ // Trigger reactivity
-        totalCount = 0
-        syncStatusMap = {} // Reset sync status on directory change
+        fileStore.clear() // Reset store on directory change
 
         try {
             // Start session - reads directory ONCE, returns first chunk immediately
@@ -141,17 +145,12 @@
             const parentEntry = createParentEntry(path)
             const firstChunk = parentEntry ? [parentEntry, ...startResult.entries] : startResult.entries
 
-            // +1 for parent entry if present
-            totalCount = parentEntry ? startResult.totalCount + 1 : startResult.totalCount
-
-            // Display first chunk immediately!
-            allFilesRaw = firstChunk
-            filesVersion++
+            // Display first chunk immediately via FileDataStore
+            fileStore.setFiles(firstChunk)
 
             // Set selection
             if (selectName) {
-                const visibleFiles = filterFiles(firstChunk, showHiddenFiles)
-                const targetIndex = visibleFiles.findIndex((f) => f.name === selectName)
+                const targetIndex = fileStore.findIndex(selectName)
                 selectedIndex = targetIndex >= 0 ? targetIndex : 0
 
                 // Scroll the selected folder into view (after DOM updates)
@@ -177,7 +176,6 @@
                 loadingMore = true
                 void loadRemainingChunksFromSession(
                     startResult.sessionId,
-                    firstChunk,
                     thisGeneration,
                     listDirectoryNextChunk,
                     listDirectoryEndSession,
@@ -186,9 +184,7 @@
         } catch (e) {
             if (thisGeneration !== loadGeneration) return
             error = e instanceof Error ? e.message : String(e)
-            allFilesRaw = []
-            filesVersion++ // Trigger reactivity
-            totalCount = 0
+            fileStore.clear()
             loading = false
             currentSessionId = ''
             lastSequence = 0
@@ -197,12 +193,10 @@
 
     /**
      * Apply a diff from the file watcher to the file list.
-     * Wrapper around the extracted applyDiff function that updates component state.
+     * Uses FileDataStore's applyDiff method which handles internal state updates.
      */
-    function applyDiffToList(changes: Parameters<typeof applyDiff>[2]) {
-        selectedIndex = applyDiff(allFilesRaw, selectedIndex, changes)
-        filesVersion++ // Trigger re-render
-        totalCount = allFilesRaw.length
+    function applyDiffToList(changes: { type: 'add' | 'remove' | 'modify'; entry: FileEntry }[]) {
+        selectedIndex = fileStore.applyDiff(changes, selectedIndex)
     }
 
     /**
@@ -211,12 +205,10 @@
      */
     async function loadRemainingChunksFromSession(
         sessionId: string,
-        initialEntries: FileEntry[],
         generation: number,
         nextChunk: (id: string, size: number) => Promise<{ entries: FileEntry[]; hasMore: boolean }>,
         endSession: (id: string) => Promise<void>,
     ) {
-        let currentEntries = initialEntries
         let hasMore = true
 
         while (hasMore) {
@@ -239,10 +231,8 @@
             const result = await nextChunk(sessionId, CHUNK_SIZE)
             hasMore = result.hasMore
 
-            // Append entries
-            currentEntries = [...currentEntries, ...result.entries]
-            allFilesRaw = currentEntries
-            filesVersion++
+            // Append entries to store
+            fileStore.appendFiles(result.entries)
 
             // Refresh icons for new entries
             void refreshIconsForCurrentDirectory(result.entries.filter((e) => e.name !== '..'))
@@ -285,8 +275,8 @@
 
         try {
             const statuses = await getSyncStatus(paths)
-            // Merge with existing map
-            syncStatusMap = { ...syncStatusMap, ...statuses }
+            // Merge with existing map in store
+            fileStore.setSyncStatusMap({ ...fileStore.syncStatusMap, ...statuses })
         } catch {
             // Silently ignore - sync status is optional
         }
@@ -371,6 +361,11 @@
         }
         // Tab key bubbles up to DualPaneExplorer
     }
+
+    // Sync showHiddenFiles prop with store
+    $effect(() => {
+        fileStore.setShowHiddenFiles(showHiddenFiles)
+    })
 
     // Update path when initialPath prop changes (for persistence loading)
     $effect(() => {
@@ -480,15 +475,16 @@
             if (visiblePaths.length > 0) {
                 void getSyncStatus(visiblePaths).then((statuses) => {
                     // Only update if statuses actually changed
+                    const currentMap = fileStore.syncStatusMap
                     let changed = false
                     for (const [path, status] of Object.entries(statuses)) {
-                        if (syncStatusMap[path] !== status) {
+                        if (currentMap[path] !== status) {
                             changed = true
                             break
                         }
                     }
                     if (changed) {
-                        syncStatusMap = { ...syncStatusMap, ...statuses }
+                        fileStore.setSyncStatusMap({ ...currentMap, ...statuses })
                     }
                 })
             }
@@ -545,9 +541,7 @@
             />
         {/if}
         {#if loadingMore}
-            <div class="loading-more">
-                Loading {totalCount - allFilesRaw.length} more files...
-            </div>
+            <div class="loading-more">Loading more files...</div>
         {/if}
     </div>
     <!-- SelectionInfo shown in brief mode (full mode will have inline metadata in the future) -->
