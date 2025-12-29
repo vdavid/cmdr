@@ -16,6 +16,9 @@ export interface FileEntry {
     iconId: string
 }
 
+/** Cloud sync status for files in Dropbox/iCloud/etc. folders */
+export type SyncStatus = 'synced' | 'online_only' | 'uploading' | 'downloading' | 'unknown'
+
 /**
  * Result of starting a new directory listing session.
  * The session caches entries on the backend for fast subsequent chunk fetches.

@@ -16,12 +16,24 @@
 - [x] Add file watching to auto-update changes. It should be as close to immediate as possible
 - [x] Implement proper Full view (with fixed columns)
 - [x] Add Brief view with view switching option
+- [x] Make sure it lists Dropbox files correctly, incl. files that are loaded on the fly
 - [ ] Add different sorting options
-- [ ] Make sure it lists Dropbox files correctly, incl. files that are loaded on the fly
 - [ ] When sorting alphabetically, sort numbers ascending, not alphabetically
 - [ ] Add "change drive" feature
 - [ ] Tweak chunked loading to load in chunks on the backend based on drive speed. So far, we've only tested with fast
       drives, and chunk sizes are constant.
+- [ ] Load iCloud sync statuses, too
+- [ ] Load Google Drive sync statuses, too
+- [ ] Load OneDrive sync statuses, too?
+- 
+## Cleanup
+
+- Rename FileList to FullList
+- In Full mode, size display coloring is ugly, fix it
+- When the app starts, it's temporarily all white bg for like 1 second. Go around this by delaying opening the window,
+  or show a nice loading screen via normal HTML (no svelte) if that solves it. What can we do?
+- Big dir reading is wrong: takes 7 seconds for the 50k dir, and it looks weird: it shows 45k files Loading but then it
+  loads immediately
 
 ## Settings
 

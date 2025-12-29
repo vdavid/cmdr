@@ -114,7 +114,9 @@ pub fn run() {
             commands::icons::get_icons,
             commands::icons::refresh_directory_icons,
             commands::ui::show_file_context_menu,
-            commands::ui::update_menu_context
+            commands::ui::update_menu_context,
+            #[cfg(target_os = "macos")]
+            commands::sync_status::get_sync_status
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

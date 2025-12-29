@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { FileEntry } from './types'
+    import type { FileEntry, SyncStatus } from './types'
     import { getCachedIcon, prefetchIcons, iconCacheVersion } from '$lib/icon-cache'
     import { calculateVirtualWindow, getScrollToPosition } from './virtual-scroll'
 
@@ -7,12 +7,37 @@
         files: FileEntry[]
         selectedIndex: number
         isFocused?: boolean
+        syncStatusMap?: Record<string, SyncStatus>
         onSelect: (index: number) => void
         onNavigate: (entry: FileEntry) => void
         onContextMenu?: (entry: FileEntry) => void
     }
 
-    const { files, selectedIndex, isFocused = true, onSelect, onNavigate, onContextMenu }: Props = $props()
+    const {
+        files,
+        selectedIndex,
+        isFocused = true,
+        syncStatusMap = {},
+        onSelect,
+        onNavigate,
+        onContextMenu,
+    }: Props = $props()
+
+    // Sync status icon paths - returns undefined if no icon should be shown
+    function getSyncIconPath(status: SyncStatus | undefined): string | undefined {
+        if (!status) return undefined
+        const iconMap: Record<SyncStatus, string | undefined> = {
+            synced: '/icons/sync-synced.svg',
+            online_only: '/icons/sync-online-only.svg',
+            uploading: '/icons/sync-uploading.svg',
+            downloading: '/icons/sync-downloading.svg',
+            unknown: undefined,
+        }
+        return iconMap[status]
+    }
+
+    // Width of sync icon + gap (only added when sync status is available)
+    const SYNC_ICON_WIDTH = 16 // 12px icon + 4px gap
 
     // ==== Layout constants ====
     const ROW_HEIGHT = 20
@@ -51,13 +76,17 @@
         const font = '13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
         let maxWidth = 0
 
+        // Check if any file has a sync status (need extra width for icon)
+        const hasSyncStatus = files.some((f) => getSyncIconPath(syncStatusMap[f.path]))
+        const syncIconExtra = hasSyncStatus ? SYNC_ICON_WIDTH : 0
+
         for (const file of files) {
             const width = measureTextWidth(file.name, font)
             if (width > maxWidth) maxWidth = width
         }
 
-        // Add space for icon (16px) + gap (8px) + padding
-        const totalWidth = maxWidth + 16 + 8 + COLUMN_PADDING * 2
+        // Add space for icon (16px) + gap (8px) + sync icon (if any) + padding
+        const totalWidth = maxWidth + 16 + 8 + syncIconExtra + COLUMN_PADDING * 2
 
         // Clamp: minimum width, and max is containerWidth - 10px so next column peeks
         const maxAllowed = containerWidth > 10 ? containerWidth - 10 : containerWidth
@@ -187,6 +216,11 @@
         }
         return undefined
     }
+
+    // Returns paths of currently visible files (for sync status polling)
+    export function getVisiblePaths(): string[] {
+        return visibleColumns.flatMap((col) => col.files.map((f) => f.file.path))
+    }
 </script>
 
 <div
@@ -207,6 +241,7 @@
             {#each visibleColumns as column (column.columnIndex)}
                 <div class="column" style="width: {maxFilenameWidth}px;">
                     {#each column.files as { file, globalIndex } (file.path)}
+                        {@const syncIcon = getSyncIconPath(syncStatusMap[file.path])}
                         <!-- svelte-ignore a11y_click_events_have_key_events a11y_interactive_supports_focus -->
                         <div
                             id={`file-${String(globalIndex)}`}
@@ -238,6 +273,9 @@
                                 {/if}
                             </span>
                             <span class="name">{file.name}</span>
+                            {#if syncIcon}
+                                <img class="sync-icon" src={syncIcon} alt="" width="12" height="12" />
+                            {/if}
                         </div>
                     {/each}
                 </div>
@@ -329,6 +367,12 @@
 
     .is-directory .name {
         font-weight: 600;
+    }
+
+    .sync-icon {
+        flex-shrink: 0;
+        margin-left: auto;
+        opacity: 0.9;
     }
 
     @media (prefers-color-scheme: dark) {

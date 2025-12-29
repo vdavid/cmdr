@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { FileEntry } from './types'
+    import type { FileEntry, SyncStatus } from './types'
     import { getCachedIcon, prefetchIcons, iconCacheVersion } from '$lib/icon-cache'
     import { calculateVirtualWindow, getScrollToPosition } from './virtual-scroll'
 
@@ -7,12 +7,34 @@
         files: FileEntry[]
         selectedIndex: number
         isFocused?: boolean
+        syncStatusMap?: Record<string, SyncStatus>
         onSelect: (index: number) => void
         onNavigate: (entry: FileEntry) => void
         onContextMenu?: (entry: FileEntry) => void
     }
 
-    const { files, selectedIndex, isFocused = true, onSelect, onNavigate, onContextMenu }: Props = $props()
+    const {
+        files,
+        selectedIndex,
+        isFocused = true,
+        syncStatusMap = {},
+        onSelect,
+        onNavigate,
+        onContextMenu,
+    }: Props = $props()
+
+    // Sync status icon paths - returns undefined if no icon should be shown
+    function getSyncIconPath(status: SyncStatus | undefined): string | undefined {
+        if (!status) return undefined
+        const iconMap: Record<SyncStatus, string | undefined> = {
+            synced: '/icons/sync-synced.svg',
+            online_only: '/icons/sync-online-only.svg',
+            uploading: '/icons/sync-uploading.svg',
+            downloading: '/icons/sync-downloading.svg',
+            unknown: undefined,
+        }
+        return iconMap[status]
+    }
 
     // ==== Virtual scrolling constants ====
     // Row height in pixels - must match CSS (.file-entry height)
@@ -159,6 +181,7 @@
     }
 
     // Exported for parent to call when arrow keys change selection
+    // noinspection JSUnusedGlobalSymbols -- it's actually used
     export function scrollToIndex(index: number) {
         if (!scrollContainer) return
 
@@ -166,6 +189,11 @@
         if (newScrollTop !== undefined) {
             scrollContainer.scrollTop = newScrollTop
         }
+    }
+
+    // Returns paths of currently visible files (for sync status polling)
+    export function getVisiblePaths(): string[] {
+        return visibleFiles.map((f) => f.path)
     }
 </script>
 
@@ -185,6 +213,7 @@
         <div class="virtual-window" style="transform: translateY({virtualWindow.offset}px);">
             {#each visibleFiles as file, localIndex (file.path)}
                 {@const actualIndex = virtualWindow.startIndex + localIndex}
+                {@const syncIcon = getSyncIconPath(syncStatusMap[file.path])}
                 <!-- svelte-ignore a11y_click_events_have_key_events a11y_interactive_supports_focus -->
                 <div
                     id={`file-${String(actualIndex)}`}
@@ -215,7 +244,18 @@
                             <span class="symlink-badge">🔗</span>
                         {/if}
                     </span>
-                    <span class="col-name">{file.name}</span>
+                    <span class="col-name">
+                        <span class="name-text">{file.name}</span>
+                        {#if syncIcon}
+                            <img
+                                class="sync-icon"
+                                src={syncIcon}
+                                alt={syncStatusMap[file.path] ?? ''}
+                                width="12"
+                                height="12"
+                            />
+                        {/if}
+                    </span>
                     <span class="col-size" title={file.size !== undefined ? formatHumanReadable(file.size) : ''}>
                         {#if file.isDirectory}
                             <span class="size-dir">DIR</span>
@@ -281,13 +321,27 @@
 
     .col-name {
         flex: 1;
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
         overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
         min-width: 0;
     }
 
-    .is-directory .col-name {
+    .name-text {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .sync-icon {
+        flex-shrink: 0;
+        opacity: 0.9;
+    }
+
+    .is-directory .col-name .name-text {
         font-weight: 600;
     }
 

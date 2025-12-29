@@ -3,7 +3,7 @@
 import { invoke } from '@tauri-apps/api/core'
 import { openPath } from '@tauri-apps/plugin-opener'
 import { listen, type UnlistenFn, type Event } from '@tauri-apps/api/event'
-import type { ChunkNextResult, SessionStartResult } from './file-explorer/types'
+import type { ChunkNextResult, SessionStartResult, SyncStatus } from './file-explorer/types'
 
 export type { Event, UnlistenFn }
 export { listen }
@@ -98,4 +98,20 @@ export async function showFileContextMenu(path: string, filename: string, isDire
  */
 export async function updateMenuContext(path: string, filename: string): Promise<void> {
     await invoke('update_menu_context', { path, filename })
+}
+
+/**
+ * Gets sync status for multiple file paths.
+ * Returns a map of path → sync status.
+ * Only works on macOS with files in cloud-synced folders (Dropbox, iCloud, etc.)
+ * @param paths - Array of absolute file paths.
+ * @returns Map of path → SyncStatus
+ */
+export async function getSyncStatus(paths: string[]): Promise<Record<string, SyncStatus>> {
+    try {
+        return await invoke<Record<string, SyncStatus>>('get_sync_status', { paths })
+    } catch {
+        // Command not available (non-macOS) - return empty map
+        return {}
+    }
 }

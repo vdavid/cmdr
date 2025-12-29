@@ -9,6 +9,8 @@ mod operations;
 mod provider;
 #[cfg(test)]
 mod real_provider;
+#[cfg(target_os = "macos")]
+pub mod sync_status;
 mod watcher;
 
 // Re-export public types

@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount, tick, untrack, onDestroy } from 'svelte'
-    import type { FileEntry, DirectoryDiff } from './types'
+    import type { FileEntry, DirectoryDiff, SyncStatus } from './types'
     import {
         listen,
         openFile,
@@ -9,6 +9,7 @@
         listDirectoryStartSession,
         listDirectoryNextChunk,
         listDirectoryEndSession,
+        getSyncStatus,
         type UnlistenFn,
     } from '$lib/tauri-commands'
     import type { ViewMode } from '$lib/app-status-store'
@@ -42,6 +43,7 @@
 
     // PERFORMANCE: Store files in plain JS (NOT reactive) to avoid 50k-item reactivity overhead
     // Use filesVersion to manually trigger re-renders when the list changes
+
     let allFilesRaw: FileEntry[] = []
     let filesVersion = $state(0)
 
@@ -62,6 +64,11 @@
     let lastSequence = 0
     let unlisten: UnlistenFn | undefined
     let unlistenMenuAction: UnlistenFn | undefined
+    // Sync status map for cloud-synced files (Dropbox, iCloud, etc.)
+    let syncStatusMap = $state<Record<string, SyncStatus>>({})
+    // Polling interval for sync status (visible files only)
+    let syncPollInterval: ReturnType<typeof setInterval> | undefined
+    const SYNC_POLL_INTERVAL_MS = 2000 // Poll every 2 seconds
 
     // Filter files based on showHiddenFiles setting
     // Always keep ".." visible for parent navigation
@@ -113,6 +120,7 @@
         allFilesRaw = []
         filesVersion++ // Trigger reactivity
         totalCount = 0
+        syncStatusMap = {} // Reset sync status on directory change
 
         try {
             // Start session - reads directory ONCE, returns first chunk immediately
@@ -159,6 +167,9 @@
 
             // Start icon refresh for first chunk (non-blocking)
             void refreshIconsForCurrentDirectory(firstChunk.filter((e) => e.name !== '..'))
+
+            // Fetch sync status for visible files (non-blocking)
+            void fetchSyncStatusForEntries(firstChunk)
 
             // Load remaining chunks in background
             if (startResult.hasMore) {
@@ -259,6 +270,25 @@
         }
 
         await refreshDirectoryIcons(directoryPaths, [...extensionSet])
+    }
+
+    /**
+     * Fetch sync status for entries in the current directory.
+     * Called lazily after directory loads to avoid blocking the UI.
+     */
+    async function fetchSyncStatusForEntries(entries: FileEntry[]) {
+        // Fetch for both files and directories (but not "..")
+        const paths = entries.filter((e) => e.name !== '..').map((e) => e.path)
+
+        if (paths.length === 0) return
+
+        try {
+            const statuses = await getSyncStatus(paths)
+            // Merge with existing map
+            syncStatusMap = { ...syncStatusMap, ...statuses }
+        } catch {
+            // Silently ignore - sync status is optional
+        }
     }
 
     function handleSelect(index: number) {
@@ -404,10 +434,16 @@
                 lastSequence = diff.sequence
                 applyDiffToList(diff.changes)
 
-                // Refresh icons for any new entries
-                const newEntries = diff.changes.filter((c) => c.type === 'add').map((c) => c.entry)
-                if (newEntries.length > 0) {
-                    void refreshIconsForCurrentDirectory(newEntries)
+                // Get all added and modified entries for icon and sync status refresh
+                const changedEntries = diff.changes
+                    .filter((c) => c.type === 'add' || c.type === 'modify')
+                    .map((c) => c.entry)
+
+                if (changedEntries.length > 0) {
+                    // Refresh icons for new/modified entries
+                    void refreshIconsForCurrentDirectory(changedEntries)
+                    // Refresh sync status for changed entries
+                    void fetchSyncStatusForEntries(changedEntries)
                 }
             })
         } catch {
@@ -433,11 +469,37 @@
         }
 
         void loadDirectory(currentPath)
+
+        // Start polling visible files for sync status changes
+        // Always poll - both panes are visible even when not focused
+        syncPollInterval = setInterval(() => {
+            const listRef = viewMode === 'brief' ? briefListRef : fileListRef
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
+            const visiblePaths: string[] = listRef?.getVisiblePaths?.() ?? []
+            if (visiblePaths.length > 0) {
+                void getSyncStatus(visiblePaths).then((statuses) => {
+                    // Only update if statuses actually changed
+                    let changed = false
+                    for (const [path, status] of Object.entries(statuses)) {
+                        if (syncStatusMap[path] !== status) {
+                            changed = true
+                            break
+                        }
+                    }
+                    if (changed) {
+                        syncStatusMap = { ...syncStatusMap, ...statuses }
+                    }
+                })
+            }
+        }, SYNC_POLL_INTERVAL_MS)
     })
 
     onDestroy(() => {
         unlisten?.()
         unlistenMenuAction?.()
+        if (syncPollInterval) {
+            clearInterval(syncPollInterval)
+        }
     })
 </script>
 
@@ -464,6 +526,7 @@
                 {files}
                 {selectedIndex}
                 {isFocused}
+                {syncStatusMap}
                 onSelect={handleSelect}
                 onNavigate={handleNavigate}
                 onContextMenu={handleContextMenu}
@@ -474,6 +537,7 @@
                 {files}
                 {selectedIndex}
                 {isFocused}
+                {syncStatusMap}
                 onSelect={handleSelect}
                 onNavigate={handleNavigate}
                 onContextMenu={handleContextMenu}
