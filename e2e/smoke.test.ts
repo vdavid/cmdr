@@ -18,6 +18,6 @@ test('dual pane interface renders', async ({ page }) => {
 
     // Check that panes have either file lists OR error messages (both are valid)
     const firstPane = panes.first()
-    const fileListOrError = firstPane.locator('.file-list, .error-message, .message')
-    await expect(fileListOrError).toBeVisible({ timeout: 10000 })
+    const fullListOrError = firstPane.locator('.full-list, .error-message, .message')
+    await expect(fullListOrError).toBeVisible({ timeout: 10000 })
 })

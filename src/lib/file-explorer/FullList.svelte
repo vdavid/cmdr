@@ -198,7 +198,7 @@
 </script>
 
 <div
-    class="file-list"
+    class="full-list"
     class:is-focused={isFocused}
     bind:this={scrollContainer}
     bind:clientHeight={containerHeight}
@@ -273,7 +273,7 @@
 </div>
 
 <style>
-    .file-list {
+    .full-list {
         margin: 0;
         padding: 0;
         overflow-y: auto;
@@ -307,7 +307,7 @@
         background-color: rgba(204, 228, 247, 0.1);
     }
 
-    .file-list.is-focused .file-entry.is-selected {
+    .full-list.is-focused .file-entry.is-selected {
         background-color: var(--color-selection-bg);
     }
 

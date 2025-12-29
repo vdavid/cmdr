@@ -25,10 +25,10 @@
 - [ ] Load iCloud sync statuses, too
 - [ ] Load Google Drive sync statuses, too
 - [ ] Load OneDrive sync statuses, too?
-- 
+-
+
 ## Cleanup
 
-- Rename FileList to FullList
 - In Full mode, size display coloring is ugly, fix it
 - When the app starts, it's temporarily all white bg for like 1 second. Go around this by delaying opening the window,
   or show a nice loading screen via normal HTML (no svelte) if that solves it. What can we do?

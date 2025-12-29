@@ -13,7 +13,7 @@
         type UnlistenFn,
     } from '$lib/tauri-commands'
     import type { ViewMode } from '$lib/app-status-store'
-    import FileList from './FileList.svelte'
+    import FullList from './FullList.svelte'
     import BriefList from './BriefList.svelte'
     import SelectionInfo from './SelectionInfo.svelte'
     import { applyDiff } from './apply-diff'
@@ -52,7 +52,7 @@
     let totalCount = $state(0)
     let error = $state<string | null>(null)
     let selectedIndex = $state(0)
-    let fileListRef: FileList | undefined = $state()
+    let fullListRef: FullList | undefined = $state()
     let briefListRef: BriefList | undefined = $state()
     /** Metadata for the current directory (used for ".." entry in SelectionInfo) */
     const currentDirModifiedAt = $state<number | undefined>(undefined)
@@ -155,7 +155,7 @@
 
                 // Scroll the selected folder into view (after DOM updates)
                 void tick().then(() => {
-                    const listRef = viewMode === 'brief' ? briefListRef : fileListRef
+                    const listRef = viewMode === 'brief' ? briefListRef : fullListRef
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-call
                     listRef?.scrollToIndex(selectedIndex)
                 })
@@ -359,13 +359,13 @@
                 const newIndex = Math.min(selectedIndex + 1, files.length - 1)
                 selectedIndex = newIndex
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                fileListRef?.scrollToIndex(newIndex)
+                fullListRef?.scrollToIndex(newIndex)
             } else if (e.key === 'ArrowUp') {
                 e.preventDefault()
                 const newIndex = Math.max(selectedIndex - 1, 0)
                 selectedIndex = newIndex
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                fileListRef?.scrollToIndex(newIndex)
+                fullListRef?.scrollToIndex(newIndex)
             }
         }
         // Tab key bubbles up to DualPaneExplorer
@@ -395,7 +395,7 @@
         if (selectedIndex >= files.length && files.length > 0) {
             selectedIndex = 0
 
-            const listRef = viewMode === 'brief' ? briefListRef : fileListRef
+            const listRef = viewMode === 'brief' ? briefListRef : fullListRef
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call
             listRef?.scrollToIndex(0)
         }
@@ -407,7 +407,7 @@
         void viewMode
         // Wait for the new list component to mount and render
         void tick().then(() => {
-            const listRef = viewMode === 'brief' ? briefListRef : fileListRef
+            const listRef = viewMode === 'brief' ? briefListRef : fullListRef
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call
             listRef?.scrollToIndex(selectedIndex)
         })
@@ -473,7 +473,7 @@
         // Start polling visible files for sync status changes
         // Always poll - both panes are visible even when not focused
         syncPollInterval = setInterval(() => {
-            const listRef = viewMode === 'brief' ? briefListRef : fileListRef
+            const listRef = viewMode === 'brief' ? briefListRef : fullListRef
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
             const visiblePaths: string[] = listRef?.getVisiblePaths?.() ?? []
             if (visiblePaths.length > 0) {
@@ -532,8 +532,8 @@
                 onContextMenu={handleContextMenu}
             />
         {:else}
-            <FileList
-                bind:this={fileListRef}
+            <FullList
+                bind:this={fullListRef}
                 {files}
                 {selectedIndex}
                 {isFocused}

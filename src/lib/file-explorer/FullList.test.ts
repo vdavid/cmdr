@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from 'svelte'
-import FileList from './FileList.svelte'
+import FullList from './FullList.svelte'
 import type { FileEntry } from './types'
 import { createFileEntry } from './test-helpers'
 
@@ -17,7 +17,7 @@ vi.mock('$lib/icon-cache', () => ({
     },
 }))
 
-describe('FileList', () => {
+describe('FullList', () => {
     const noop = () => {}
 
     it('renders file entries', () => {
@@ -35,7 +35,7 @@ describe('FileList', () => {
         ]
 
         const target = document.createElement('div')
-        mount(FileList, {
+        mount(FullList, {
             target,
             props: { files, selectedIndex: 0, onSelect: noop, onNavigate: noop },
         })
@@ -59,7 +59,7 @@ describe('FileList', () => {
         ]
 
         const target = document.createElement('div')
-        mount(FileList, {
+        mount(FullList, {
             target,
             props: { files, selectedIndex: 0, onSelect: noop, onNavigate: noop },
         })
@@ -71,12 +71,12 @@ describe('FileList', () => {
 
     it('renders empty list', () => {
         const target = document.createElement('div')
-        mount(FileList, {
+        mount(FullList, {
             target,
             props: { files: [], selectedIndex: 0, onSelect: noop, onNavigate: noop },
         })
 
-        expect(target.querySelector('.file-list')).toBeTruthy()
+        expect(target.querySelector('.full-list')).toBeTruthy()
         expect(target.querySelectorAll('.file-entry')).toHaveLength(0)
     })
 
@@ -90,7 +90,7 @@ describe('FileList', () => {
         ]
 
         const target = document.createElement('div')
-        mount(FileList, {
+        mount(FullList, {
             target,
             props: { files, selectedIndex: 0, onSelect: noop, onNavigate: noop },
         })
@@ -106,7 +106,7 @@ describe('FileList', () => {
         ]
 
         const target = document.createElement('div')
-        mount(FileList, {
+        mount(FullList, {
             target,
             props: { files, selectedIndex: 1, onSelect: noop, onNavigate: noop },
         })
@@ -120,7 +120,7 @@ describe('FileList', () => {
         const files: FileEntry[] = [createFileEntry({ name: '..', path: '/home', isDirectory: true })]
 
         const target = document.createElement('div')
-        mount(FileList, {
+        mount(FullList, {
             target,
             props: { files, selectedIndex: 0, onSelect: noop, onNavigate: noop },
         })
@@ -133,7 +133,7 @@ describe('FileList', () => {
         const onSelect = vi.fn()
 
         const target = document.createElement('div')
-        mount(FileList, {
+        mount(FullList, {
             target,
             props: { files, selectedIndex: 0, onSelect, onNavigate: noop },
         })
