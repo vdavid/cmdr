@@ -16,6 +16,7 @@
     import FullList from './FullList.svelte'
     import BriefList from './BriefList.svelte'
     import SelectionInfo from './SelectionInfo.svelte'
+    import LoadingIcon from '../LoadingIcon.svelte'
     import { applyDiff } from './apply-diff'
 
     /** Chunk size for loading large directories */
@@ -517,7 +518,7 @@
     </div>
     <div class="content">
         {#if loading}
-            <div class="message">Loading...</div>
+            <LoadingIcon />
         {:else if error}
             <div class="error-message">{error}</div>
         {:else if viewMode === 'brief'}
@@ -586,17 +587,11 @@
         flex-direction: column;
     }
 
-    .message,
     .error-message {
         display: flex;
         align-items: center;
         justify-content: center;
         height: 100%;
-        color: var(--color-text-secondary);
-        font-size: var(--font-size-base);
-    }
-
-    .error-message {
         color: var(--color-error);
         text-align: center;
         padding: var(--spacing-md);

@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte'
     import FilePane from './FilePane.svelte'
+    import LoadingIcon from '../LoadingIcon.svelte'
     import { loadAppStatus, saveAppStatus, type ViewMode } from '$lib/app-status-store'
     import { loadSettings, saveSettings, subscribeToSettingsChanges } from '$lib/settings-store'
     import { pathExists, listen, type UnlistenFn } from '$lib/tauri-commands'
@@ -140,7 +141,7 @@
             onRequestFocus={handleRightFocus}
         />
     {:else}
-        <div class="loading">Loading...</div>
+        <LoadingIcon />
     {/if}
 </div>
 
@@ -151,14 +152,5 @@
         height: 100%;
         gap: 0;
         outline: none;
-    }
-
-    .loading {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        height: 100%;
-        color: var(--color-text-secondary);
     }
 </style>
