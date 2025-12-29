@@ -66,12 +66,6 @@
                 100% { transform: rotate(360deg)}
             }
         </style>
-        <script>
-            // Timing instrumentation - T1: HTML parse started
-            window.__STARTUP_TIMES__ = {
-                htmlParse: performance.now(),
-            }
-        </script>
         %sveltekit.head%
     </head>
 
@@ -79,10 +73,6 @@
         <div id="loading-screen">
             <div class="loader"></div>
         </div>
-        <script>
-            // T2: Loading screen rendered (DOM ready for this element)
-            window.__STARTUP_TIMES__.loadingScreenRendered = performance.now()
-        </script>
         <div style="display: contents">%sveltekit.body%</div>
     </body>
 </html>
