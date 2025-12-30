@@ -1,10 +1,9 @@
 //! Tauri commands for file system operations.
 
 use crate::file_system::{
-    ExtendedMetadata, FileEntry, ListingStartResult, find_file_index as ops_find_file_index,
-    get_extended_metadata_batch, get_file_at as ops_get_file_at, get_file_range as ops_get_file_range,
-    get_total_count as ops_get_total_count, list_directory_end as ops_list_directory_end,
-    list_directory_start as ops_list_directory_start,
+    FileEntry, ListingStartResult, find_file_index as ops_find_file_index, get_file_at as ops_get_file_at,
+    get_file_range as ops_get_file_range, get_total_count as ops_get_total_count,
+    list_directory_end as ops_list_directory_end, list_directory_start as ops_list_directory_start,
 };
 use std::path::PathBuf;
 
@@ -98,22 +97,6 @@ pub fn get_file_at(listing_id: String, index: usize, include_hidden: bool) -> Re
 #[tauri::command]
 pub fn list_directory_end(listing_id: String) {
     ops_list_directory_end(&listing_id);
-}
-
-// ============================================================================
-// Two-phase metadata loading
-// ============================================================================
-
-/// Fetches extended metadata for a batch of file paths.
-///
-/// This is called after the initial directory listing to populate
-/// macOS-specific metadata (addedAt, openedAt) without blocking initial render.
-///
-/// # Arguments
-/// * `paths` - File paths to fetch extended metadata for.
-#[tauri::command]
-pub fn get_extended_metadata(paths: Vec<String>) -> Vec<ExtendedMetadata> {
-    get_extended_metadata_batch(paths)
 }
 
 // ============================================================================

@@ -17,8 +17,8 @@ mod watcher;
 #[cfg(test)]
 pub use mock_provider::MockFileSystemProvider;
 pub use operations::{
-    ExtendedMetadata, FileEntry, ListingStartResult, find_file_index, get_extended_metadata_batch, get_file_at,
-    get_file_range, get_total_count, list_directory_end, list_directory_start,
+    FileEntry, ListingStartResult, find_file_index, get_file_at, get_file_range, get_total_count, list_directory_end,
+    list_directory_start,
 };
 // FileEntry also re-exported for internal test modules
 #[cfg(test)]

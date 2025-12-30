@@ -70,7 +70,7 @@ export default tseslint.config(
             'no-console': 'warn',
             // Complexity limit - matches Rust clippy's cognitive-complexity-threshold
             complexity: [
-                'warn',
+                'error',
                 {
                     max: 15,
                 },
@@ -129,7 +129,7 @@ export default tseslint.config(
             '@typescript-eslint/no-unused-vars': 'error',
             'no-console': 'warn',
             complexity: [
-                'warn',
+                'error',
                 {
                     max: 15,
                 },

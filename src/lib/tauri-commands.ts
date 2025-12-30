@@ -3,7 +3,7 @@
 import { invoke } from '@tauri-apps/api/core'
 import { openPath } from '@tauri-apps/plugin-opener'
 import { listen, type UnlistenFn, type Event } from '@tauri-apps/api/event'
-import type { ExtendedMetadata, FileEntry, ListingStartResult, SyncStatus } from './file-explorer/types'
+import type { FileEntry, ListingStartResult, SyncStatus } from './file-explorer/types'
 
 export type { Event, UnlistenFn }
 export { listen }
@@ -159,19 +159,4 @@ export async function getSyncStatus(paths: string[]): Promise<Record<string, Syn
         // Command not available (non-macOS) - return empty map
         return {}
     }
-}
-
-// ============================================================================
-// Two-phase metadata loading
-// ============================================================================
-
-/**
- * Fetches extended metadata for a batch of file paths.
- * This is called after the initial directory listing to populate
- * macOS-specific metadata (addedAt, openedAt) without blocking initial render.
- * @param paths - Array of absolute file paths.
- * @returns Array of ExtendedMetadata
- */
-export async function getExtendedMetadata(paths: string[]): Promise<ExtendedMetadata[]> {
-    return invoke<ExtendedMetadata[]>('get_extended_metadata', { paths })
 }

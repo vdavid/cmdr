@@ -247,75 +247,78 @@
     function handlePaneClick() {
         onRequestFocus?.()
     }
+    // Helper: Handle navigation result by updating selection and scrolling
+    function applyNavigation(newIndex: number, listRef: { scrollToIndex: (index: number) => void } | undefined) {
+        selectedIndex = newIndex
+        listRef?.scrollToIndex(newIndex)
+        void fetchSelectedEntry()
+    }
+
+    // Helper: Handle brief mode key navigation
+    function handleBriefModeKeys(e: KeyboardEvent): boolean {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+        const newIndex: number | undefined = briefListRef?.handleKeyNavigation(e.key, e)
+        if (newIndex !== undefined) {
+            e.preventDefault()
+            applyNavigation(newIndex, briefListRef)
+            return true
+        }
+        return false
+    }
+
+    // Helper: Handle full mode key navigation
+    function handleFullModeKeys(e: KeyboardEvent): boolean {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+        const visibleItems: number = fullListRef?.getVisibleItemsCount() ?? 20
+        const shortcutResult = handleNavigationShortcut(e, {
+            currentIndex: selectedIndex,
+            totalCount: effectiveTotalCount,
+            visibleItems,
+        })
+        if (shortcutResult) {
+            e.preventDefault()
+            applyNavigation(shortcutResult.newIndex, fullListRef)
+            return true
+        }
+
+        // Handle Up/Down arrow navigation
+        if (e.key === 'ArrowDown') {
+            e.preventDefault()
+            applyNavigation(Math.min(selectedIndex + 1, effectiveTotalCount - 1), fullListRef)
+            return true
+        }
+        if (e.key === 'ArrowUp') {
+            e.preventDefault()
+            applyNavigation(Math.max(selectedIndex - 1, 0), fullListRef)
+            return true
+        }
+        return false
+    }
 
     // Exported so DualPaneExplorer can forward keyboard events
     export function handleKeyDown(e: KeyboardEvent) {
-        // Handle navigation keys (Enter, Backspace)
-        if (e.key === 'Enter') {
+        // Handle Enter key - navigate into selected item
+        if (e.key === 'Enter' && selectedEntry) {
             e.preventDefault()
-            // Need to get the selected entry to navigate
-            if (selectedEntry) {
-                void handleNavigate(selectedEntry)
-            }
+            void handleNavigate(selectedEntry)
             return
         }
-        if (e.key === 'Backspace') {
+
+        // Handle Backspace - go to parent directory
+        if (e.key === 'Backspace' && hasParent) {
             e.preventDefault()
-            if (hasParent) {
-                const parentEntry = createParentEntry(currentPath)
-                if (parentEntry) {
-                    void handleNavigate(parentEntry)
-                }
+            const parentEntry = createParentEntry(currentPath)
+            if (parentEntry) {
+                void handleNavigate(parentEntry)
             }
             return
         }
 
-        // Handle arrow keys based on view mode
+        // Delegate to view-mode-specific handler
         if (viewMode === 'brief') {
-            // BriefList handles all arrow keys and shortcuts
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-            const newIndex: number | undefined = briefListRef?.handleKeyNavigation(e.key, e)
-            if (newIndex !== undefined) {
-                e.preventDefault()
-                selectedIndex = newIndex
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                briefListRef?.scrollToIndex(newIndex)
-                void fetchSelectedEntry()
-            }
+            handleBriefModeKeys(e)
         } else {
-            // Full mode: try navigation shortcuts first
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-            const visibleItems: number = fullListRef?.getVisibleItemsCount() ?? 20
-            const shortcutResult = handleNavigationShortcut(e, {
-                currentIndex: selectedIndex,
-                totalCount: effectiveTotalCount,
-                visibleItems,
-            })
-            if (shortcutResult) {
-                e.preventDefault()
-                selectedIndex = shortcutResult.newIndex
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                fullListRef?.scrollToIndex(shortcutResult.newIndex)
-                void fetchSelectedEntry()
-                return
-            }
-
-            // Then handle Up/Down arrow navigation
-            if (e.key === 'ArrowDown') {
-                e.preventDefault()
-                const newIndex = Math.min(selectedIndex + 1, effectiveTotalCount - 1)
-                selectedIndex = newIndex
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                fullListRef?.scrollToIndex(newIndex)
-                void fetchSelectedEntry()
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault()
-                const newIndex = Math.max(selectedIndex - 1, 0)
-                selectedIndex = newIndex
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                fullListRef?.scrollToIndex(newIndex)
-                void fetchSelectedEntry()
-            }
+            handleFullModeKeys(e)
         }
     }
 

@@ -23,6 +23,77 @@ export interface NavigationContext {
     visibleItems?: number
 }
 
+/** Helper: Handle Page Up key in Brief mode (horizontal navigation) */
+function handleBriefPageUp(
+    currentIndex: number,
+    totalCount: number,
+    itemsPerColumn: number,
+    visibleColumns: number,
+): number {
+    const columnsToMove = Math.max(1, visibleColumns - 1)
+    const currentColumn = Math.floor(currentIndex / itemsPerColumn)
+    const targetColumn = currentColumn - columnsToMove
+
+    // If we'd go to or past the leftmost column, jump to first item
+    if (targetColumn <= 0) {
+        return 0
+    }
+
+    // Otherwise, go to the bottommost item in the target column
+    const targetColumnStart = targetColumn * itemsPerColumn
+    return Math.min(totalCount - 1, targetColumnStart + itemsPerColumn - 1)
+}
+
+/** Helper: Handle Page Down key in Brief mode (horizontal navigation) */
+function handleBriefPageDown(
+    currentIndex: number,
+    totalCount: number,
+    itemsPerColumn: number,
+    visibleColumns: number,
+): number {
+    const columnsToMove = Math.max(1, visibleColumns - 1)
+    const currentColumn = Math.floor(currentIndex / itemsPerColumn)
+    const totalColumns = Math.ceil(totalCount / itemsPerColumn)
+    const targetColumn = currentColumn + columnsToMove
+
+    // If we'd go to or past the rightmost column, jump to last item
+    if (targetColumn >= totalColumns - 1) {
+        return totalCount - 1
+    }
+
+    // Otherwise, go to the bottommost item in the target column
+    const targetColumnStart = targetColumn * itemsPerColumn
+    return Math.min(totalCount - 1, targetColumnStart + itemsPerColumn - 1)
+}
+
+/** Helper: Handle Page Up/Down in Full mode (vertical navigation) */
+function handleFullPageNavigation(
+    currentIndex: number,
+    totalCount: number,
+    visibleItems: number | undefined,
+    isPageDown: boolean,
+): number {
+    const pageSize = visibleItems ? Math.max(1, visibleItems - 1) : 20
+    if (isPageDown) {
+        return Math.min(totalCount - 1, currentIndex + pageSize)
+    }
+    return Math.max(0, currentIndex - pageSize)
+}
+
+/**
+ * Checks if the event is a Home shortcut (Option+Up or Fn+Left/Home).
+ */
+function isHomeShortcut(event: KeyboardEvent): boolean {
+    return (event.altKey && event.key === 'ArrowUp') || (event.key === 'Home' && !event.metaKey)
+}
+
+/**
+ * Checks if the event is an End shortcut (Option+Down or Fn+Right/End).
+ */
+function isEndShortcut(event: KeyboardEvent): boolean {
+    return (event.altKey && event.key === 'ArrowDown') || (event.key === 'End' && !event.metaKey)
+}
+
 /**
  * Handles keyboard navigation shortcuts for file lists.
  * Returns the new index and whether the event was handled.
@@ -30,68 +101,32 @@ export interface NavigationContext {
 export function handleNavigationShortcut(event: KeyboardEvent, context: NavigationContext): NavigationResult | null {
     const { currentIndex, totalCount, itemsPerColumn, visibleColumns, visibleItems } = context
 
-    // Home/End shortcuts (both Option+Arrow and Fn+Arrow)
-    // Option+Up or Fn+Left = Home (go to first item)
-    if ((event.altKey && event.key === 'ArrowUp') || (event.key === 'Home' && !event.metaKey)) {
+    // Home shortcut (Option+Up or Fn+Left)
+    if (isHomeShortcut(event)) {
         return { newIndex: 0, handled: true }
     }
 
-    // Option+Down or Fn+Right = End (go to last item)
-    if ((event.altKey && event.key === 'ArrowDown') || (event.key === 'End' && !event.metaKey)) {
+    // End shortcut (Option+Down or Fn+Right)
+    if (isEndShortcut(event)) {
         return { newIndex: Math.max(0, totalCount - 1), handled: true }
     }
 
-    // Page Up/Down shortcuts (Fn+Up/Down)
-    // In Brief mode: move horizontally by (visibleColumns - 1) and go to bottommost item
-    //                if near edge, go to first/last item instead
-    // In Full mode: move vertically by (visibleItems - 1)
+    const isBriefMode = visibleColumns !== undefined && itemsPerColumn !== undefined
+
+    // Page Up
     if (event.key === 'PageUp') {
-        if (visibleColumns !== undefined && itemsPerColumn !== undefined) {
-            // Brief mode: horizontal page navigation
-            const columnsToMove = Math.max(1, visibleColumns - 1)
-            const currentColumn = Math.floor(currentIndex / itemsPerColumn)
-            const targetColumn = currentColumn - columnsToMove
-
-            // If we'd go to or past the leftmost column, jump to first item
-            if (targetColumn <= 0) {
-                return { newIndex: 0, handled: true }
-            }
-
-            // Otherwise, go to the bottommost item in the target column
-            const targetColumnStart = targetColumn * itemsPerColumn
-            const targetColumnEnd = Math.min(totalCount - 1, targetColumnStart + itemsPerColumn - 1)
-            return { newIndex: targetColumnEnd, handled: true }
-        } else {
-            // Full mode: vertical page navigation by (visible items - 1)
-            const pageSize = visibleItems ? Math.max(1, visibleItems - 1) : 20
-            const newIndex = Math.max(0, currentIndex - pageSize)
-            return { newIndex, handled: true }
-        }
+        const newIndex = isBriefMode
+            ? handleBriefPageUp(currentIndex, totalCount, itemsPerColumn, visibleColumns)
+            : handleFullPageNavigation(currentIndex, totalCount, visibleItems, false)
+        return { newIndex, handled: true }
     }
 
+    // Page Down
     if (event.key === 'PageDown') {
-        if (visibleColumns !== undefined && itemsPerColumn !== undefined) {
-            // Brief mode: horizontal page navigation
-            const columnsToMove = Math.max(1, visibleColumns - 1)
-            const currentColumn = Math.floor(currentIndex / itemsPerColumn)
-            const totalColumns = Math.ceil(totalCount / itemsPerColumn)
-            const targetColumn = currentColumn + columnsToMove
-
-            // If we'd go to or past the rightmost column, jump to last item
-            if (targetColumn >= totalColumns - 1) {
-                return { newIndex: totalCount - 1, handled: true }
-            }
-
-            // Otherwise, go to the bottommost item in the target column
-            const targetColumnStart = targetColumn * itemsPerColumn
-            const targetColumnEnd = Math.min(totalCount - 1, targetColumnStart + itemsPerColumn - 1)
-            return { newIndex: targetColumnEnd, handled: true }
-        } else {
-            // Full mode: vertical page navigation by (visible items - 1)
-            const pageSize = visibleItems ? Math.max(1, visibleItems - 1) : 20
-            const newIndex = Math.min(totalCount - 1, currentIndex + pageSize)
-            return { newIndex, handled: true }
-        }
+        const newIndex = isBriefMode
+            ? handleBriefPageDown(currentIndex, totalCount, itemsPerColumn, visibleColumns)
+            : handleFullPageNavigation(currentIndex, totalCount, visibleItems, true)
+        return { newIndex, handled: true }
     }
 
     // Not a handled shortcut

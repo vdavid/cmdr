@@ -18,19 +18,6 @@ export interface FileEntry {
     extendedMetadataLoaded: boolean
 }
 
-/**
- * Extended metadata for a single file (macOS-specific fields).
- * Used for two-phase metadata loading.
- */
-export interface ExtendedMetadata {
-    /** File path (key for merging) */
-    path: string
-    /** When the file was added to its current directory (macOS only) */
-    addedAt?: number
-    /** When the file was last opened (macOS only) */
-    openedAt?: number
-}
-
 /** Cloud sync status for files in Dropbox/iCloud/etc. folders */
 export type SyncStatus = 'synced' | 'online_only' | 'uploading' | 'downloading' | 'unknown'
 
