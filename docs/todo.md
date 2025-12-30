@@ -41,6 +41,7 @@
 - Fix calculating the Brief mode widths in Rust!
 - Cancel requests in Rust when the dir is closed
 - A round of refactoring is due
+- Better test coverage to avoid regressions!
 
 ## Settings
 
