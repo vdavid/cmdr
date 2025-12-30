@@ -281,7 +281,7 @@
             return true
         }
 
-        // Handle Up/Down arrow navigation
+        // Handle arrow navigation
         if (e.key === 'ArrowDown') {
             e.preventDefault()
             applyNavigation(Math.min(selectedIndex + 1, effectiveTotalCount - 1), fullListRef)
@@ -290,6 +290,17 @@
         if (e.key === 'ArrowUp') {
             e.preventDefault()
             applyNavigation(Math.max(selectedIndex - 1, 0), fullListRef)
+            return true
+        }
+        // Left/Right arrows jump to first/last (same as Brief mode at boundaries)
+        if (e.key === 'ArrowLeft') {
+            e.preventDefault()
+            applyNavigation(0, fullListRef)
+            return true
+        }
+        if (e.key === 'ArrowRight') {
+            e.preventDefault()
+            applyNavigation(effectiveTotalCount - 1, fullListRef)
             return true
         }
         return false

@@ -192,11 +192,7 @@
     const _cacheVersion = $derived($iconCacheVersion)
 
     function getIconUrl(file: FileEntry): string | undefined {
-        void _cacheVersion
-        if (file.isDirectory) {
-            const pathIcon = getCachedIcon(`path:${file.path}`)
-            if (pathIcon) return pathIcon
-        }
+        void _cacheVersion // Track cache version for reactivity
         return getCachedIcon(file.iconId)
     }
 
@@ -407,7 +403,7 @@
 
     .file-entry {
         display: grid;
-        grid-template-columns: 24px 1fr 85px 120px;
+        grid-template-columns: 16px 1fr 85px 120px;
         gap: var(--spacing-sm);
         align-items: center;
         padding: var(--spacing-xxs) var(--spacing-sm);
@@ -474,7 +470,6 @@
 
     .col-size {
         text-align: right;
-        font-family: var(--font-mono, monospace);
         font-size: var(--font-size-xs);
     }
 
@@ -482,28 +477,32 @@
         color: var(--color-text-secondary);
     }
 
+    /*noinspection CssUnusedSymbol*/
     .size-bytes {
-        color: var(--color-text-tertiary);
-    }
-
-    .size-kb {
         color: var(--color-text-secondary);
     }
 
+    /*noinspection CssUnusedSymbol*/
+    .size-kb {
+        color: var(--color-size-kb);
+    }
+
+    /*noinspection CssUnusedSymbol*/
     .size-mb {
-        color: var(--color-text-primary);
+        color: var(--color-size-mb);
     }
 
+    /*noinspection CssUnusedSymbol*/
     .size-gb {
-        color: var(--color-accent);
+        color: var(--color-size-gb);
     }
 
+    /*noinspection CssUnusedSymbol*/
     .size-tb {
-        color: var(--color-error);
+        color: var(--color-size-tb);
     }
 
     .col-date {
-        font-family: var(--font-mono, monospace);
         font-size: var(--font-size-xs);
         color: var(--color-text-secondary);
     }
