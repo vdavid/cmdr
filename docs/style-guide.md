@@ -35,6 +35,10 @@ Writing and code styles.
       user".
     - **Give examples in placeholder text**: Use "Example: 2025-01-01" or "name@example.com" rather than an instruction
       like "Enter your email".
+- Specific terms
+    - **Folder vs directory**: We know these mean the same. We allow both. Use whichever feels better in each situation.
+      Like, on the backend, listing "folders" with `readdir` feels wrong, but also, "folder" comes more natural on the
+      front-end and end-user docs.
 
 ## Code
 

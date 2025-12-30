@@ -38,9 +38,9 @@
   loads immediately
 - Split-second "Loading..." state in panes at each dir change, ugly. → In "Loading" state, display empty div for 200 ms,
   and just THEN show "Loading..." if needed.
-- Clean up "folder" vs "directory" → Decide an standardize, then document it in the style guide.
 - Fix calculating the Brief mode widths in Rust!
 - Cancel requests in Rust when the dir is closed
+- A round of refactoring is due
 
 ## Settings
 
