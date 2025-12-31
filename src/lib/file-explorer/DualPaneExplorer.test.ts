@@ -40,6 +40,8 @@ vi.mock('$lib/tauri-commands', () => ({
     listen: vi.fn(() => Promise.resolve(() => {})),
     showFileContextMenu: vi.fn(() => Promise.resolve()),
     updateMenuContext: vi.fn(() => Promise.resolve()),
+    hasFontMetrics: vi.fn().mockResolvedValue(true),
+    storeFontMetrics: vi.fn().mockResolvedValue(undefined),
 }))
 
 // Mock settings-store to avoid Tauri event API dependency in tests

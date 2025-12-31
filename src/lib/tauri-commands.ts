@@ -160,3 +160,20 @@ export async function getSyncStatus(paths: string[]): Promise<Record<string, Syn
         return {}
     }
 }
+/**
+ * Stores font metrics for a font configuration.
+ * @param fontId - Font identifier (e.g., "system-400-12")
+ * @param widths - Map of code point → width in pixels
+ */
+export async function storeFontMetrics(fontId: string, widths: Record<number, number>): Promise<void> {
+    await invoke('store_font_metrics', { fontId, widths })
+}
+
+/**
+ * Checks if font metrics are available for a font ID.
+ * @param fontId - Font identifier to check
+ * @returns True if metrics are cached
+ */
+export async function hasFontMetrics(fontId: string): Promise<boolean> {
+    return invoke<boolean>('has_font_metrics', { fontId })
+}

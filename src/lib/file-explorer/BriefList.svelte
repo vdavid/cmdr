@@ -17,6 +17,7 @@
         syncStatusMap?: Record<string, SyncStatus>
         hasParent: boolean
         parentPath: string
+        maxFilenameWidth?: number // From backend font metrics, if available
         onSelect: (index: number) => void
         onNavigate: (entry: FileEntry) => void
         onContextMenu?: (entry: FileEntry) => void
@@ -32,6 +33,7 @@
         syncStatusMap = {},
         hasParent,
         parentPath,
+        maxFilenameWidth: backendMaxWidth,
         onSelect,
         onNavigate,
         onContextMenu,
@@ -75,9 +77,20 @@
     // Number of items that fit in one column
     const itemsPerColumn = $derived(Math.max(1, Math.floor(containerHeight / ROW_HEIGHT)))
 
-    // For now, use a fixed column width until we can calculate from visible files
-    // TODO: Calculate from visible entries after fetching
-    const maxFilenameWidth = $derived(Math.min(200, Math.max(MIN_COLUMN_WIDTH, containerWidth / 3)))
+    // For column width: use backend-calculated width if available, otherwise estimate
+    // Backend calculation is based on actual font metrics and considers all filenames
+    // Add space for: icon (16px) + gap (8px) + left padding (8px) + right padding (8px) + rounding buffer (2px)
+    // The 2px buffer accounts for sub-pixel rendering differences between calculated and actual widths
+    const COLUMN_PADDING = 16 + 8 + 8 + 8 + 2 // icon + gap + left padding + right padding + rounding buffer
+    const maxFilenameWidth = $derived(
+        (backendMaxWidth ?? Math.min(200, Math.max(MIN_COLUMN_WIDTH, containerWidth / 3))) + COLUMN_PADDING,
+    )
+
+    // Debug logging
+    $effect(() => {
+        // eslint-disable-next-line no-console
+        console.log('[BRIEF] maxFilenameWidth:', { backendMaxWidth, containerWidth, maxFilenameWidth, COLUMN_PADDING })
+    })
 
     // Total number of columns needed
     const totalColumns = $derived(Math.ceil(totalCount / itemsPerColumn))

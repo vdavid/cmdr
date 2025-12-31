@@ -5,6 +5,7 @@
     import { loadAppStatus, saveAppStatus, type ViewMode } from '$lib/app-status-store'
     import { loadSettings, saveSettings, subscribeToSettingsChanges } from '$lib/settings-store'
     import { pathExists, listen, type UnlistenFn } from '$lib/tauri-commands'
+    import { ensureFontMetricsLoaded } from '$lib/font-metrics'
 
     let leftPath = $state('~')
     let rightPath = $state('~')
@@ -65,6 +66,9 @@
     }
 
     onMount(async () => {
+        // Start font metrics measurement in background (non-blocking)
+        void ensureFontMetricsLoaded()
+
         // Load persisted state and settings in parallel
         const [status, settings] = await Promise.all([loadAppStatus(pathExists), loadSettings()])
 

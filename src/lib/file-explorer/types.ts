@@ -30,6 +30,8 @@ export interface ListingStartResult {
     listingId: string
     /** Total number of visible entries in the directory */
     totalCount: number
+    /** Maximum filename width in pixels (for Brief mode columns). None if font metrics not available. */
+    maxFilenameWidth?: number
 }
 
 /**

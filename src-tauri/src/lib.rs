@@ -14,6 +14,7 @@ pub mod benchmark;
 mod commands;
 pub mod config;
 mod file_system;
+mod font_metrics;
 pub mod icons;
 #[cfg(target_os = "macos")]
 mod macos_icons;
@@ -51,6 +52,9 @@ pub fn run() {
 
             // Initialize the file watcher manager with app handle for events
             file_system::init_watcher_manager(app.handle().clone());
+
+            // Initialize font metrics for default font (system font at 12px)
+            font_metrics::init_font_metrics(app.handle(), "system-400-12");
 
             // Load persisted settings to initialize menu with correct state
             let saved_settings = settings::load_settings(app.handle());
@@ -119,6 +123,8 @@ pub fn run() {
             commands::file_system::find_file_index,
             commands::file_system::path_exists,
             commands::file_system::benchmark_log,
+            commands::font_metrics::store_font_metrics,
+            commands::font_metrics::has_font_metrics,
             commands::icons::get_icons,
             commands::icons::refresh_directory_icons,
             commands::ui::show_file_context_menu,

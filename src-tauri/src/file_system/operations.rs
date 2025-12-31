@@ -275,6 +275,9 @@ pub struct ListingStartResult {
     pub listing_id: String,
     /// Total number of entries in the directory
     pub total_count: usize,
+    /// Maximum filename width in pixels (for Brief mode columns)
+    /// None if font metrics are not available
+    pub max_filename_width: Option<f32>,
 }
 
 /// Starts a new directory listing.
@@ -319,15 +322,23 @@ pub fn list_directory_start(path: &Path, include_hidden: bool) -> Result<Listing
             listing_id.clone(),
             CachedListing {
                 path: path.to_path_buf(),
-                entries: all_entries,
+                entries: all_entries.clone(), // Clone to allow reuse below
             },
         );
     }
+
+    // Calculate max filename width if font metrics are available
+    let max_filename_width = {
+        let font_id = "system-400-12"; // Default font for now
+        let filenames: Vec<&str> = all_entries.iter().map(|e| e.name.as_str()).collect();
+        crate::font_metrics::calculate_max_width(&filenames, font_id)
+    };
 
     benchmark::log_event("list_directory_start RETURNING");
     Ok(ListingStartResult {
         listing_id,
         total_count,
+        max_filename_width,
     })
 }
 

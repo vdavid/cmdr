@@ -45,6 +45,7 @@
     // New architecture: store listingId and totalCount, not files
     let listingId = $state('')
     let totalCount = $state(0)
+    let maxFilenameWidth = $state<number | undefined>(undefined)
     let loading = $state(true)
     let error = $state<string | null>(null)
     let selectedIndex = $state(0)
@@ -145,6 +146,7 @@
             // Store listing info
             listingId = result.listingId
             totalCount = result.totalCount
+            maxFilenameWidth = result.maxFilenameWidth
             lastSequence = 0
 
             // Determine initial selection
@@ -479,6 +481,7 @@
                 {isFocused}
                 {syncStatusMap}
                 {hasParent}
+                {maxFilenameWidth}
                 parentPath={hasParent ? currentPath.substring(0, currentPath.lastIndexOf('/')) || '/' : ''}
                 onSelect={handleSelect}
                 onNavigate={handleNavigate}
