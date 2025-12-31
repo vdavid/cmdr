@@ -501,10 +501,6 @@
         text-overflow: ellipsis;
     }
 
-    .is-directory .name {
-        font-weight: 600;
-    }
-
     @media (prefers-color-scheme: dark) {
         .file-entry.is-selected {
             background-color: rgba(10, 80, 208, 0.1);

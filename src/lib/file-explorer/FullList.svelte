@@ -474,10 +474,6 @@
         white-space: nowrap;
     }
 
-    .is-directory .name-text {
-        font-weight: 600;
-    }
-
     .col-size {
         text-align: right;
         font-size: var(--font-size-xs);
