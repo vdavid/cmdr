@@ -1,6 +1,6 @@
 <script lang="ts">
     import type { FileEntry, SyncStatus } from './types'
-    import { getCachedIcon, prefetchIcons, iconCacheVersion } from '$lib/icon-cache'
+    import { getCachedIcon, iconCacheVersion, prefetchIcons } from '$lib/icon-cache'
     import { calculateVirtualWindow, getScrollToPosition } from './virtual-scroll'
     import { getFileRange } from '$lib/tauri-commands'
 
@@ -280,9 +280,7 @@
         // Read reactive dependencies
         const currentListingId = listingId
         const currentIncludeHidden = includeHidden
-        const height = containerHeight
-
-        if (!currentListingId || height <= 0) return
+        if (!currentListingId || containerHeight <= 0) return
 
         // Check if listingId or includeHidden actually changed
         if (currentListingId !== prevListingId || currentIncludeHidden !== prevIncludeHidden) {
