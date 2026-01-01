@@ -49,6 +49,12 @@ pnpm tauri build
 
 This creates a production build for your current platform in `src-tauri/target/release/`.
 
+For an universal installer:
+
+- `rustup target add x86_64-apple-darwin` once
+- Then `pnpm tauri build --target universal-apple-darwin` each time.
+- Then the binary is at `src-tauri/target/universal-apple-darwin/release/bundle/dmg/Rusty Commander_0.1.0_universal.dmg`
+
 ## Agent integration (MCP)
 
 The app uses [MCP Server Tauri](https://github.com/hypothesi/mcp-server-tauri) to let AI assistants (Claude Code,
