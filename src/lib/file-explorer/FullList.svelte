@@ -3,6 +3,7 @@
     import { getCachedIcon, iconCacheVersion, prefetchIcons } from '$lib/icon-cache'
     import { calculateVirtualWindow, getScrollToPosition } from './virtual-scroll'
     import { getFileRange } from '$lib/tauri-commands'
+    import { startDragTracking } from '$lib/drag-drop'
 
     /** Prefetch buffer - load this many items around visible range */
     const PREFETCH_BUFFER = 200
@@ -253,8 +254,18 @@
         return `${String(year)}-${month}-${day} ${hours}:${mins}`
     }
 
-    function handleClick(actualIndex: number) {
-        onSelect(actualIndex)
+    // Handle file mousedown - selects and initiates drag tracking
+    function handleMouseDown(event: MouseEvent, index: number) {
+        // Always select on mousedown
+        onSelect(index)
+
+        // Only start drag tracking for left mouse button and non-parent entries
+        if (event.button !== 0) return
+        const entry = getEntryAt(index)
+        if (!entry || entry.name === '..') return
+
+        // Start tracking for potential drag
+        startDragTracking(event, entry.path, entry.iconId)
     }
 
     function handleDoubleClick(actualIndex: number) {
@@ -329,19 +340,19 @@
         <div class="virtual-window" style="transform: translateY({virtualWindow.offset}px);">
             {#each visibleFiles as { file, globalIndex } (file.path)}
                 {@const syncIcon = getSyncIconPath(syncStatusMap[file.path])}
-                <!-- svelte-ignore a11y_click_events_have_key_events,a11y_interactive_supports_focus -->
+                <!-- svelte-ignore a11y_interactive_supports_focus -->
                 <div
                     id={`file-${String(globalIndex)}`}
                     class="file-entry"
                     class:is-directory={file.isDirectory}
                     class:is-selected={globalIndex === selectedIndex}
-                    onclick={() => {
-                        handleClick(globalIndex)
+                    onmousedown={(e: MouseEvent) => {
+                        handleMouseDown(e, globalIndex)
                     }}
                     ondblclick={() => {
                         handleDoubleClick(globalIndex)
                     }}
-                    oncontextmenu={(e) => {
+                    oncontextmenu={(e: MouseEvent) => {
                         e.preventDefault()
                         onSelect(globalIndex)
                         onContextMenu?.(file)

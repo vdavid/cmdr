@@ -4,6 +4,7 @@
     import { calculateVirtualWindow, getScrollToPosition } from './virtual-scroll'
     import { getFileRange } from '$lib/tauri-commands'
     import { handleNavigationShortcut } from './keyboard-shortcuts'
+    import { startDragTracking } from '$lib/drag-drop'
 
     /** Prefetch buffer - load this many items around visible range */
     const PREFETCH_BUFFER = 200
@@ -245,7 +246,21 @@
         return '📄'
     }
 
-    // Handle file click
+    // Handle file mousedown - selects and initiates drag tracking
+    function handleMouseDown(event: MouseEvent, index: number) {
+        // Always select on mousedown
+        onSelect(index)
+
+        // Only start drag tracking for left mouse button and non-parent entries
+        if (event.button !== 0) return
+        const entry = getEntryAt(index)
+        if (!entry || entry.name === '..') return
+
+        // Start tracking for potential drag
+        startDragTracking(event, entry.path, entry.iconId)
+    }
+
+    // Handle file click - for double-click detection
     let lastClickTime = 0
     let lastClickIndex = -1
     const DOUBLE_CLICK_MS = 300
@@ -256,9 +271,6 @@
             // Double click
             const entry = getEntryAt(index)
             if (entry) onNavigate(entry)
-        } else {
-            // Single click
-            onSelect(index)
         }
         lastClickTime = now
         lastClickIndex = index
@@ -390,13 +402,16 @@
                             class="file-entry"
                             class:is-directory={file.isDirectory}
                             class:is-selected={globalIndex === selectedIndex}
+                            onmousedown={(e: MouseEvent) => {
+                                handleMouseDown(e, globalIndex)
+                            }}
                             onclick={() => {
                                 handleClick(globalIndex)
                             }}
                             ondblclick={() => {
                                 handleDoubleClick(globalIndex)
                             }}
-                            oncontextmenu={(e) => {
+                            oncontextmenu={(e: MouseEvent) => {
                                 e.preventDefault()
                                 onSelect(globalIndex)
                                 onContextMenu?.(file)
