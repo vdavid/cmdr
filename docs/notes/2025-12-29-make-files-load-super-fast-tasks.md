@@ -28,10 +28,10 @@ Goal: Eliminate Svelte reactivity freeze by keeping file data outside reactive s
     - [x] Store provides `getAllFiltered()` for current implementation (full virtual scroll getRange coming in Phase 2)
     - [x] `storeVersion` reactive trigger for component updates
 
-- [ ] Update `BriefList.svelte` and `FullList.svelte` (deferred to Phase 2)
-    - [ ] Accept `totalCount` prop for scrollbar sizing
-    - [ ] Accept `maxFilenameWidth` prop (Brief mode)
-    - [ ] On scroll, call back to parent for new visible range
+- [x] Update `BriefList.svelte` and `FullList.svelte` (deferred to Phase 2)
+    - [x] Accept `totalCount` prop for scrollbar sizing
+    - [x] Accept `maxFilenameWidth` prop (Brief mode)
+    - [x] On scroll, call back to parent for new visible range
 
 - [x] Remove old `filesVersion` pattern
     - [x] Delete `filesVersion` state variable (replaced with `storeVersion`)

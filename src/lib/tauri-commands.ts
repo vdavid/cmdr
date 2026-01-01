@@ -3,7 +3,7 @@
 import { invoke } from '@tauri-apps/api/core'
 import { openPath } from '@tauri-apps/plugin-opener'
 import { listen, type UnlistenFn, type Event } from '@tauri-apps/api/event'
-import type { FileEntry, ListingStartResult, SyncStatus } from './file-explorer/types'
+import type { FileEntry, ListingStartResult, SyncStatus, VolumeInfo } from './file-explorer/types'
 
 export type { Event, UnlistenFn }
 export { listen }
@@ -176,4 +176,38 @@ export async function storeFontMetrics(fontId: string, widths: Record<number, nu
  */
 export async function hasFontMetrics(fontId: string): Promise<boolean> {
     return invoke<boolean>('has_font_metrics', { fontId })
+}
+
+// ============================================================================
+// Volume management (macOS only)
+// ============================================================================
+
+/** Default volume ID for the root filesystem */
+export const DEFAULT_VOLUME_ID = 'root'
+
+/**
+ * Lists all mounted volumes.
+ * Only available on macOS.
+ * @returns Array of VolumeInfo objects, sorted with root first
+ */
+export async function listVolumes(): Promise<VolumeInfo[]> {
+    try {
+        return await invoke<VolumeInfo[]>('list_volumes')
+    } catch {
+        // Command not available (non-macOS) - return empty array
+        return []
+    }
+}
+
+/**
+ * Gets the default volume ID (root filesystem).
+ * @returns The default volume ID string
+ */
+export async function getDefaultVolumeId(): Promise<string> {
+    try {
+        return await invoke<string>('get_default_volume_id')
+    } catch {
+        // Fallback for non-macOS
+        return DEFAULT_VOLUME_ID
+    }
 }

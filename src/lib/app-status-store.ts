@@ -6,6 +6,7 @@ import type { Store } from '@tauri-apps/plugin-store'
 const STORE_NAME = 'app-status.json'
 const DEFAULT_PATH = '~'
 const ROOT_PATH = '/'
+const DEFAULT_VOLUME_ID = 'root'
 
 export type ViewMode = 'full' | 'brief'
 
@@ -15,6 +16,8 @@ export interface AppStatus {
     focusedPane: 'left' | 'right'
     leftViewMode: ViewMode
     rightViewMode: ViewMode
+    leftVolumeId: string
+    rightVolumeId: string
 }
 
 const DEFAULT_STATUS: AppStatus = {
@@ -23,6 +26,8 @@ const DEFAULT_STATUS: AppStatus = {
     focusedPane: 'left',
     leftViewMode: 'brief',
     rightViewMode: 'brief',
+    leftVolumeId: DEFAULT_VOLUME_ID,
+    rightVolumeId: DEFAULT_VOLUME_ID,
 }
 
 let storeInstance: Store | null = null
@@ -75,6 +80,8 @@ export async function loadAppStatus(pathExists: (p: string) => Promise<boolean>)
         const focusedPane: 'left' | 'right' = rawFocusedPane === 'right' ? 'right' : 'left'
         const leftViewMode = parseViewMode(await store.get('leftViewMode'))
         const rightViewMode = parseViewMode(await store.get('rightViewMode'))
+        const leftVolumeId = ((await store.get('leftVolumeId')) as string) || DEFAULT_VOLUME_ID
+        const rightVolumeId = ((await store.get('rightVolumeId')) as string) || DEFAULT_VOLUME_ID
 
         // Resolve paths with fallback
         const resolvedLeftPath = await resolvePathWithFallback(leftPath, pathExists)
@@ -86,6 +93,8 @@ export async function loadAppStatus(pathExists: (p: string) => Promise<boolean>)
             focusedPane,
             leftViewMode,
             rightViewMode,
+            leftVolumeId,
+            rightVolumeId,
         }
     } catch {
         // If store fails, return defaults
@@ -110,6 +119,12 @@ export async function saveAppStatus(status: Partial<AppStatus>): Promise<void> {
         }
         if (status.rightViewMode !== undefined) {
             await store.set('rightViewMode', status.rightViewMode)
+        }
+        if (status.leftVolumeId !== undefined) {
+            await store.set('leftVolumeId', status.leftVolumeId)
+        }
+        if (status.rightVolumeId !== undefined) {
+            await store.set('rightVolumeId', status.rightVolumeId)
         }
     } catch {
         // Silently fail - persistence is nice-to-have

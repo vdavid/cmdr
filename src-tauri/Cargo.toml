@@ -50,7 +50,8 @@ plist = "1.8.0"
 urlencoding = "2.1.3"
 objc2 = "0.6"
 objc2-foundation = { version = "0.3", features = [
-    "NSURL", "NSString", "NSDictionary", "NSDate", "NSArray", "NSValue", "NSError"
+    "NSURL", "NSString", "NSDictionary", "NSDate", "NSArray", "NSValue", "NSError",
+    "NSFileManager"
 ] }
 
 [dev-dependencies]

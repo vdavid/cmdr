@@ -9,6 +9,8 @@ vi.mock('$lib/app-status-store', () => ({
         leftPath: '~',
         rightPath: '~',
         focusedPane: 'left',
+        leftVolumeId: 'root',
+        rightVolumeId: 'root',
     }),
     saveAppStatus: vi.fn().mockResolvedValue(undefined),
 }))
@@ -42,6 +44,13 @@ vi.mock('$lib/tauri-commands', () => ({
     updateMenuContext: vi.fn(() => Promise.resolve()),
     hasFontMetrics: vi.fn().mockResolvedValue(true),
     storeFontMetrics: vi.fn().mockResolvedValue(undefined),
+    listVolumes: vi
+        .fn()
+        .mockResolvedValue([
+            { id: 'root', name: 'Macintosh HD', path: '/', category: 'main_volume', isEjectable: false },
+        ]),
+    getDefaultVolumeId: vi.fn().mockResolvedValue('root'),
+    DEFAULT_VOLUME_ID: 'root',
 }))
 
 // Mock settings-store to avoid Tauri event API dependency in tests
@@ -65,7 +74,9 @@ describe('DualPaneExplorer', () => {
         const target = document.createElement('div')
         mount(DualPaneExplorer, { target })
 
-        // Wait for async initialization
+        // Wait for async initialization (paths, volumes, settings)
+        await tick()
+        await tick()
         await tick()
         await tick()
         await tick()

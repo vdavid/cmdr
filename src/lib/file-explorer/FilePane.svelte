@@ -19,24 +19,31 @@
     import BriefList from './BriefList.svelte'
     import SelectionInfo from './SelectionInfo.svelte'
     import LoadingIcon from '../LoadingIcon.svelte'
+    import VolumeBreadcrumb from './VolumeBreadcrumb.svelte'
     import * as benchmark from '$lib/benchmark'
     import { handleNavigationShortcut } from './keyboard-shortcuts'
 
     interface Props {
         initialPath: string
+        volumeId?: string
+        volumePath?: string
         isFocused?: boolean
         showHiddenFiles?: boolean
         viewMode?: ViewMode
         onPathChange?: (path: string) => void
+        onVolumeChange?: (volumeId: string, volumePath: string) => void
         onRequestFocus?: () => void
     }
 
     const {
         initialPath,
+        volumeId = 'root',
+        volumePath = '/',
         isFocused = false,
         showHiddenFiles = true,
         viewMode = 'brief',
         onPathChange,
+        onVolumeChange,
         onRequestFocus,
     }: Props = $props()
 
@@ -56,6 +63,13 @@
     // Component refs for keyboard navigation
     let fullListRef: FullList | undefined = $state()
     let briefListRef: BriefList | undefined = $state()
+    let volumeBreadcrumbRef: VolumeBreadcrumb | undefined = $state()
+
+    // Export method for keyboard shortcut
+    export function toggleVolumeChooser() {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        volumeBreadcrumbRef?.toggle()
+    }
 
     // Track the current load operation to cancel outdated ones
     let loadGeneration = 0
@@ -90,8 +104,8 @@
         }
     }
 
-    // Check if current directory has a parent
-    const hasParent = $derived(currentPath !== '/')
+    // Check if current directory has a parent (not at filesystem root AND not at volume root)
+    const hasParent = $derived(currentPath !== '/' && currentPath !== volumePath)
 
     // Effective total count includes ".." entry if not at root
     const effectiveTotalCount = $derived(hasParent ? totalCount + 1 : totalCount)
@@ -464,7 +478,16 @@
     aria-label="File pane"
 >
     <div class="header">
-        <span class="path">{currentPath}</span>
+        <VolumeBreadcrumb
+            bind:this={volumeBreadcrumbRef}
+            {volumeId}
+            onVolumeChange={(newVolumeId: string, newVolumePath: string) => {
+                onVolumeChange?.(newVolumeId, newVolumePath)
+            }}
+        />
+        <span class="path"
+            >{currentPath.startsWith(volumePath) ? currentPath.slice(volumePath.length) || '/' : currentPath}</span
+        >
     </div>
     <div class="content">
         {#if loading}
@@ -526,14 +549,18 @@
         background-color: var(--color-bg-secondary);
         border-bottom: 1px solid var(--color-border-primary);
         font-size: var(--font-size-xs);
-        overflow: hidden;
-        text-overflow: ellipsis;
         white-space: nowrap;
+        display: flex;
+        align-items: center;
     }
 
     .path {
         font-family: var(--font-system) sans-serif;
         color: var(--color-text-secondary);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex: 1;
+        min-width: 0;
     }
 
     .content {

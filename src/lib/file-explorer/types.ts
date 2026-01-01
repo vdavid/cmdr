@@ -55,3 +55,26 @@ export interface DirectoryDiff {
     /** List of changes */
     changes: DiffChange[]
 }
+
+/**
+ * Category of a location item.
+ */
+export type LocationCategory = 'favorite' | 'main_volume' | 'attached_volume' | 'cloud_drive' | 'network'
+
+/**
+ * Information about a location (volume, folder, or cloud drive).
+ */
+export interface VolumeInfo {
+    /** Unique identifier for the location */
+    id: string
+    /** Display name (e.g., "Macintosh HD", "Dropbox") */
+    name: string
+    /** Path to the location */
+    path: string
+    /** Category of this location */
+    category: LocationCategory
+    /** Base64-encoded icon (WebP format), optional */
+    icon?: string
+    /** Whether this can be ejected */
+    isEjectable: boolean
+}

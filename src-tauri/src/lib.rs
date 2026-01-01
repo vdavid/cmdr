@@ -20,6 +20,8 @@ pub mod icons;
 mod macos_icons;
 mod menu;
 mod settings;
+#[cfg(target_os = "macos")]
+mod volumes;
 
 use menu::{MenuState, SHOW_HIDDEN_FILES_ID, VIEW_MODE_BRIEF_ID, VIEW_MODE_FULL_ID, ViewMode};
 use tauri::{Emitter, Manager};
@@ -136,7 +138,11 @@ pub fn run() {
             commands::ui::show_main_window,
             commands::ui::update_menu_context,
             #[cfg(target_os = "macos")]
-            commands::sync_status::get_sync_status
+            commands::sync_status::get_sync_status,
+            #[cfg(target_os = "macos")]
+            commands::volumes::list_volumes,
+            #[cfg(target_os = "macos")]
+            commands::volumes::get_default_volume_id
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

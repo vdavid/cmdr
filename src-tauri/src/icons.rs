@@ -72,6 +72,12 @@ fn fetch_icon_for_path(path: &Path) -> Option<String> {
     image_to_data_url(&dynamic_img)
 }
 
+/// Gets icon for a path as base64 data URL.
+/// Public API for use by volumes module.
+pub fn get_icon_for_path(path: &str) -> Option<String> {
+    fetch_icon_for_path(Path::new(path))
+}
+
 /// Gets the sample file path to use for fetching an icon by ID.
 /// For extension-based icons, we create an actual temp file since the OS may need it to exist.
 fn get_sample_path_for_icon_id(icon_id: &str) -> Option<PathBuf> {

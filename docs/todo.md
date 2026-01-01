@@ -1,12 +1,10 @@
 ## Listing
 
-- [x] Build a (set of) dmg release(s) and document the process
-- [...] Enable file drag&drop from the app to other apps.
-- [ ] Add "change drive" feature
-- [ ] Test with slow drives like network drives
 - [ ] We need to ask for permissions for `Downloads`, etc. Handle permission denial gracefully!
 - [ ] Add different sorting options
 - [ ] When sorting alphabetically, sort numbers ascending, not alphabetically
+- [ ] Make it handle network drives
+- [ ] Test with slow drives like network drives
 - [ ] Load iCloud sync statuses, too
 - [ ] Load Google Drive sync statuses, too
 - [ ] Load OneDrive sync statuses, too?
