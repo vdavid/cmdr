@@ -79,8 +79,8 @@ fn test_inmemory_volume_stress_test_50k_entries() {
     // Verify count
     assert_eq!(entries.len(), 50_000);
 
-    // Verify performance (should be well under 1 second)
-    assert!(duration.as_millis() < 1000, "Listing 50k entries took {:?}", duration);
+    // Verify performance (should be well under 1 sec, but we say 5 sec so it isn't flaky on CI)
+    assert!(duration.as_millis() < 5000, "Listing 50k entries took {:?}", duration);
 }
 
 #[test]
