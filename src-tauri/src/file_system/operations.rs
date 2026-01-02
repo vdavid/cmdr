@@ -21,9 +21,14 @@ static GROUP_CACHE: LazyLock<RwLock<HashMap<u32, String>>> = LazyLock::new(|| Rw
 
 /// Cache for directory listings (on-demand virtual scrolling).
 /// Key: listing_id, Value: cached listing with all entries.
+#[cfg(not(test))]
 static LISTING_CACHE: LazyLock<RwLock<HashMap<String, CachedListing>>> = LazyLock::new(|| RwLock::new(HashMap::new()));
+#[cfg(test)]
+pub(super) static LISTING_CACHE: LazyLock<RwLock<HashMap<String, CachedListing>>> =
+    LazyLock::new(|| RwLock::new(HashMap::new()));
 
 /// Cached directory listing for on-demand virtual scrolling.
+#[cfg(not(test))]
 struct CachedListing {
     /// Volume ID this listing belongs to (e.g., "root", "dropbox")
     volume_id: String,
@@ -31,6 +36,17 @@ struct CachedListing {
     path: std::path::PathBuf,
     /// Cached file entries
     entries: Vec<FileEntry>,
+}
+
+/// Cached directory listing for on-demand virtual scrolling.
+#[cfg(test)]
+pub(super) struct CachedListing {
+    /// Volume ID this listing belongs to (e.g., "root", "dropbox")
+    pub volume_id: String,
+    /// Path within the volume (absolute path for now)
+    pub path: std::path::PathBuf,
+    /// Cached file entries
+    pub entries: Vec<FileEntry>,
 }
 
 /// Resolves a uid to a username, with caching.

@@ -65,3 +65,6 @@ mod mock_provider_test;
 
 #[cfg(test)]
 mod integration_test;
+
+#[cfg(test)]
+mod hidden_files_test;
