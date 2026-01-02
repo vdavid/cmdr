@@ -331,8 +331,8 @@
             return
         }
 
-        // Handle Backspace - go to parent directory
-        if (e.key === 'Backspace' && hasParent) {
+        // Handle Backspace or ⌘↑ - go to parent directory
+        if ((e.key === 'Backspace' || (e.key === 'ArrowUp' && e.metaKey)) && hasParent) {
             e.preventDefault()
             const parentEntry = createParentEntry(currentPath)
             if (parentEntry) {
