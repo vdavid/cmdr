@@ -9,7 +9,7 @@ use std::path::PathBuf;
 use tauri::Manager;
 
 /// User's choice regarding full disk access permission.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub enum FullDiskAccessChoice {
     /// User clicked "Open System Settings" (presumably granted)
@@ -17,13 +17,8 @@ pub enum FullDiskAccessChoice {
     /// User clicked "Deny" - don't ask again
     Deny,
     /// First launch, haven't shown prompt yet
+    #[default]
     NotAskedYet,
-}
-
-impl Default for FullDiskAccessChoice {
-    fn default() -> Self {
-        Self::NotAskedYet
-    }
 }
 
 /// User settings structure, matching the frontend settings-store.ts

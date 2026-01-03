@@ -296,6 +296,16 @@
     function handlePaneClick() {
         onRequestFocus?.()
     }
+
+    function handleVolumeChangeFromBreadcrumb(newVolumeId: string, newVolumePath: string, targetPath: string) {
+        // Navigate to the target path (may differ from volume root for favorites)
+        // Note: We intentionally don't call onPathChange here - the volume change handler
+        // in DualPaneExplorer takes care of saving both the old volume's path and the new path.
+        // Calling onPathChange would save the new path under the OLD volume ID (race condition).
+        currentPath = targetPath
+        onVolumeChange?.(newVolumeId, newVolumePath, targetPath)
+        void loadDirectory(targetPath)
+    }
     // Helper: Handle navigation result by updating selection and scrolling
     function applyNavigation(newIndex: number, listRef: { scrollToIndex: (index: number) => void } | undefined) {
         selectedIndex = newIndex
@@ -525,15 +535,7 @@
             bind:this={volumeBreadcrumbRef}
             {volumeId}
             {currentPath}
-            onVolumeChange={(newVolumeId: string, newVolumePath: string, targetPath: string) => {
-                // Navigate to the target path (may differ from volume root for favorites)
-                // Note: We intentionally don't call onPathChange here - the volume change handler
-                // in DualPaneExplorer takes care of saving both the old volume's path and the new path.
-                // Calling onPathChange would save the new path under the OLD volume ID (race condition).
-                currentPath = targetPath
-                onVolumeChange?.(newVolumeId, newVolumePath, targetPath)
-                void loadDirectory(targetPath)
-            }}
+            onVolumeChange={handleVolumeChangeFromBreadcrumb}
         />
         <span class="path"
             >{currentPath.startsWith(volumePath) ? currentPath.slice(volumePath.length) || '/' : currentPath}</span

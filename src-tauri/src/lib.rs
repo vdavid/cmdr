@@ -8,6 +8,7 @@
 // and transitive dependencies (notify is used by notify-debouncer-full)
 #[cfg(test)]
 use criterion as _;
+//noinspection RsUnusedImport
 use notify as _;
 
 pub mod benchmark;
