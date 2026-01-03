@@ -19,7 +19,7 @@
         "test:e2e": "playwright test",
         "knip": "knip"
     },
-    "license": "MIT",
+    "license": "AGPL-3.0-or-later",
     "dependencies": {
         "@crabnebula/tauri-plugin-drag": "^2.1.0",
         "@lottiefiles/dotlottie-svelte": "^0.8.12",
