@@ -14,7 +14,14 @@ type VolumePathMap = Record<string, string>
 interface MockState {
     leftVolumeId: string
     leftPath: string
+    rightVolumeId: string
+    rightPath: string
     lastUsedPaths: VolumePathMap
+}
+
+interface OtherPaneState {
+    otherPaneVolumeId: string
+    otherPanePath: string
 }
 
 // Helper to simulate the determineNavigationPath logic
@@ -25,10 +32,16 @@ async function determineNavigationPath(
     lastUsedPaths: VolumePathMap,
     pathExists: (p: string) => Promise<boolean>,
     defaultVolumeId: string,
+    otherPane: OtherPaneState,
 ): Promise<string> {
     // User selected a favorite - go to the favorite's path directly
     if (targetPath !== volumePath) {
         return targetPath
+    }
+
+    // If the other pane is on the same volume, use its path (allows copying paths between panes)
+    if (otherPane.otherPaneVolumeId === volumeId && (await pathExists(otherPane.otherPanePath))) {
+        return otherPane.otherPanePath
     }
 
     // Look up the last used path for this volume
@@ -45,7 +58,7 @@ async function determineNavigationPath(
 }
 
 // Simulates handleLeftVolumeChange logic
-async function handleVolumeChange(
+async function handleLeftVolumeChange(
     state: MockState,
     volumeId: string,
     volumePath: string,
@@ -58,7 +71,7 @@ async function handleVolumeChange(
     const savedPath = state.leftPath
     state.lastUsedPaths[savedVolumeId] = savedPath
 
-    // Determine where to navigate
+    // Determine where to navigate (passing right pane state)
     const pathToNavigate = await determineNavigationPath(
         volumeId,
         volumePath,
@@ -66,6 +79,7 @@ async function handleVolumeChange(
         state.lastUsedPaths,
         pathExists,
         defaultVolumeId,
+        { otherPaneVolumeId: state.rightVolumeId, otherPanePath: state.rightPath },
     )
 
     // Update state
@@ -93,10 +107,12 @@ describe('Volume path saving logic', () => {
             const state: MockState = {
                 leftVolumeId: 'installer-vol',
                 leftPath: '/Volumes/InstallerDisk/SomeApp',
+                rightVolumeId: 'root',
+                rightPath: '~',
                 lastUsedPaths: {},
             }
 
-            const result = await handleVolumeChange(state, 'root', '/', '/', pathExists, DEFAULT_VOLUME_ID)
+            const result = await handleLeftVolumeChange(state, 'root', '/', '/', pathExists, DEFAULT_VOLUME_ID)
 
             expect(result.savedVolumeId).toBe('installer-vol')
             expect(result.savedPath).toBe('/Volumes/InstallerDisk/SomeApp')
@@ -107,11 +123,13 @@ describe('Volume path saving logic', () => {
             const state: MockState = {
                 leftVolumeId: 'root',
                 leftPath: '~',
+                rightVolumeId: 'installer-vol',
+                rightPath: '/Volumes/InstallerDisk',
                 lastUsedPaths: {},
             }
 
             // Switch from Mac HD (~) to Dropbox
-            await handleVolumeChange(
+            await handleLeftVolumeChange(
                 state,
                 'dropbox',
                 '/Users/test/Library/CloudStorage/Dropbox',
@@ -126,14 +144,16 @@ describe('Volume path saving logic', () => {
             expect(state.lastUsedPaths['dropbox']).toBeUndefined() // Not yet saved for new volume
         })
 
-        it('defaults to ~ for main volume when no lastUsedPath exists', async () => {
+        it('defaults to ~ for main volume when no lastUsedPath exists and other pane is on different volume', async () => {
             const state: MockState = {
                 leftVolumeId: 'installer-vol',
                 leftPath: '/Volumes/InstallerDisk',
+                rightVolumeId: 'dropbox',
+                rightPath: '/Users/test/Library/CloudStorage/Dropbox',
                 lastUsedPaths: {},
             }
 
-            const result = await handleVolumeChange(state, 'root', '/', '/', pathExists, DEFAULT_VOLUME_ID)
+            const result = await handleLeftVolumeChange(state, 'root', '/', '/', pathExists, DEFAULT_VOLUME_ID)
 
             expect(result.newPath).toBe('~')
         })
@@ -142,10 +162,12 @@ describe('Volume path saving logic', () => {
             const state: MockState = {
                 leftVolumeId: 'root',
                 leftPath: '~',
+                rightVolumeId: 'root',
+                rightPath: '/Users/test/Documents',
                 lastUsedPaths: {},
             }
 
-            const result = await handleVolumeChange(
+            const result = await handleLeftVolumeChange(
                 state,
                 'dropbox',
                 '/Users/test/Library/CloudStorage/Dropbox',
@@ -157,31 +179,35 @@ describe('Volume path saving logic', () => {
             expect(result.newPath).toBe('/Users/test/Library/CloudStorage/Dropbox')
         })
 
-        it('restores lastUsedPath when switching back to a volume', async () => {
+        it('restores lastUsedPath when switching back to a volume (and other pane on different volume)', async () => {
             const state: MockState = {
                 leftVolumeId: 'dropbox',
                 leftPath: '/Users/test/Library/CloudStorage/Dropbox/WorkFolder',
+                rightVolumeId: 'installer-vol',
+                rightPath: '/Volumes/InstallerDisk',
                 lastUsedPaths: {
                     root: '/Users/test/Documents',
                 },
             }
 
-            const result = await handleVolumeChange(state, 'root', '/', '/', pathExists, DEFAULT_VOLUME_ID)
+            const result = await handleLeftVolumeChange(state, 'root', '/', '/', pathExists, DEFAULT_VOLUME_ID)
 
             expect(result.newPath).toBe('/Users/test/Documents')
         })
 
-        it('navigates directly to favorite path without looking up lastUsedPath', async () => {
+        it('navigates directly to favorite path without looking up lastUsedPath or other pane', async () => {
             const state: MockState = {
                 leftVolumeId: 'root',
                 leftPath: '/Users/test/Documents',
+                rightVolumeId: 'root',
+                rightPath: '/Users/test/Projects', // Other pane is on same volume with different path
                 lastUsedPaths: {
                     root: '/some/other/path',
                 },
             }
 
             // Selecting a favorite: targetPath !== volumePath
-            const result = await handleVolumeChange(
+            const result = await handleLeftVolumeChange(
                 state,
                 'root', // Favorites resolve to their containing volume
                 '/',
@@ -190,7 +216,81 @@ describe('Volume path saving logic', () => {
                 DEFAULT_VOLUME_ID,
             )
 
-            // Should go to the favorite's path, not the lastUsedPath
+            // Should go to the favorite's path, not the lastUsedPath or other pane
+            expect(result.newPath).toBe('/Users/test/Downloads')
+        })
+    })
+
+    describe('other pane path copying', () => {
+        it('uses other pane path when switching to the same volume the other pane is on', async () => {
+            const state: MockState = {
+                leftVolumeId: 'dropbox',
+                leftPath: '/Users/test/Library/CloudStorage/Dropbox',
+                rightVolumeId: 'root',
+                rightPath: '/Users/test/Documents/ProjectA',
+                lastUsedPaths: {
+                    root: '/Users/test/Desktop', // This should be ignored in favor of other pane
+                },
+            }
+
+            const result = await handleLeftVolumeChange(state, 'root', '/', '/', pathExists, DEFAULT_VOLUME_ID)
+
+            // Should use the right pane's path, not lastUsedPaths
+            expect(result.newPath).toBe('/Users/test/Documents/ProjectA')
+        })
+
+        it('allows copying path by re-selecting the same volume when other pane is on same volume', async () => {
+            const state: MockState = {
+                leftVolumeId: 'root',
+                leftPath: '/Users/test/Desktop',
+                rightVolumeId: 'root',
+                rightPath: '/Users/test/Documents/ImportantFolder',
+                lastUsedPaths: {},
+            }
+
+            // User re-selects root volume - should copy from right pane
+            const result = await handleLeftVolumeChange(state, 'root', '/', '/', pathExists, DEFAULT_VOLUME_ID)
+
+            expect(result.newPath).toBe('/Users/test/Documents/ImportantFolder')
+        })
+
+        it('falls back to lastUsedPath when other pane is on different volume', async () => {
+            const state: MockState = {
+                leftVolumeId: 'installer-vol',
+                leftPath: '/Volumes/InstallerDisk',
+                rightVolumeId: 'dropbox',
+                rightPath: '/Users/test/Library/CloudStorage/Dropbox',
+                lastUsedPaths: {
+                    root: '/Users/test/Projects',
+                },
+            }
+
+            const result = await handleLeftVolumeChange(state, 'root', '/', '/', pathExists, DEFAULT_VOLUME_ID)
+
+            // Other pane is on dropbox, so we use lastUsedPaths for root
+            expect(result.newPath).toBe('/Users/test/Projects')
+        })
+
+        it('prioritizes favorite path over other pane path', async () => {
+            const state: MockState = {
+                leftVolumeId: 'dropbox',
+                leftPath: '/Users/test/Library/CloudStorage/Dropbox',
+                rightVolumeId: 'root',
+                rightPath: '/Users/test/Documents', // Other pane is on root
+                lastUsedPaths: {},
+            }
+
+            // Selecting a favorite (Downloads) on root volume
+            const result = await handleLeftVolumeChange(
+                state,
+                'root',
+                '/',
+                '/Users/test/Downloads', // Favorite path
+                pathExists,
+                DEFAULT_VOLUME_ID,
+            )
+
+            // Favorite takes priority over other pane
             expect(result.newPath).toBe('/Users/test/Downloads')
         })
     })
@@ -200,20 +300,22 @@ describe('Volume path saving logic', () => {
             const state: MockState = {
                 leftVolumeId: 'installer-vol',
                 leftPath: '/Volumes/qBittorrent/App',
+                rightVolumeId: 'dropbox',
+                rightPath: '/Users/test/Library/CloudStorage/Dropbox',
                 lastUsedPaths: {},
             }
 
             // Step 1: Start on installer volume, switch to Mac HD
-            await handleVolumeChange(state, 'root', '/', '/', pathExists, DEFAULT_VOLUME_ID)
+            await handleLeftVolumeChange(state, 'root', '/', '/', pathExists, DEFAULT_VOLUME_ID)
 
             expect(state.lastUsedPaths).toEqual({
                 'installer-vol': '/Volumes/qBittorrent/App',
             })
             expect(state.leftVolumeId).toBe('root')
-            expect(state.leftPath).toBe('~')
+            expect(state.leftPath).toBe('~') // Default for root when other pane is on different volume
 
             // Step 2: Switch from Mac HD to Dropbox
-            await handleVolumeChange(
+            await handleLeftVolumeChange(
                 state,
                 'dropbox',
                 '/Users/test/Library/CloudStorage/Dropbox',
@@ -227,13 +329,16 @@ describe('Volume path saving logic', () => {
                 root: '~',
             })
             expect(state.leftVolumeId).toBe('dropbox')
+            // Should copy from right pane since both are now on dropbox
             expect(state.leftPath).toBe('/Users/test/Library/CloudStorage/Dropbox')
 
-            // Step 3: Simulate navigation within Dropbox
+            // Step 3: Simulate navigation within Dropbox (left pane)
             state.leftPath = '/Users/test/Library/CloudStorage/Dropbox/Work'
 
-            // Step 4: Switch back to Mac HD
-            await handleVolumeChange(state, 'root', '/', '/', pathExists, DEFAULT_VOLUME_ID)
+            // Step 4: Switch back to Mac HD (right pane is still on Dropbox)
+            state.rightVolumeId = 'dropbox'
+            state.rightPath = '/Users/test/Library/CloudStorage/Dropbox/Personal'
+            await handleLeftVolumeChange(state, 'root', '/', '/', pathExists, DEFAULT_VOLUME_ID)
 
             expect(state.lastUsedPaths).toEqual({
                 'installer-vol': '/Volumes/qBittorrent/App',
@@ -241,7 +346,35 @@ describe('Volume path saving logic', () => {
                 dropbox: '/Users/test/Library/CloudStorage/Dropbox/Work',
             })
             expect(state.leftVolumeId).toBe('root')
-            expect(state.leftPath).toBe('~') // Restored from lastUsedPaths
+            expect(state.leftPath).toBe('~') // Restored from lastUsedPaths (other pane on different volume)
+        })
+
+        it('correctly uses other pane path when switching between panes on same volume', async () => {
+            const state: MockState = {
+                leftVolumeId: 'root',
+                leftPath: '/Users/test/Desktop',
+                rightVolumeId: 'root',
+                rightPath: '/Users/test/Documents/Work',
+                lastUsedPaths: {},
+            }
+
+            // Left pane switches to Dropbox
+            await handleLeftVolumeChange(
+                state,
+                'dropbox',
+                '/Users/test/Library/CloudStorage/Dropbox',
+                '/Users/test/Library/CloudStorage/Dropbox',
+                pathExists,
+                DEFAULT_VOLUME_ID,
+            )
+
+            expect(state.leftVolumeId).toBe('dropbox')
+            expect(state.lastUsedPaths['root']).toBe('/Users/test/Desktop')
+
+            // Left pane switches back to root - should get right pane's path
+            await handleLeftVolumeChange(state, 'root', '/', '/', pathExists, DEFAULT_VOLUME_ID)
+
+            expect(state.leftPath).toBe('/Users/test/Documents/Work') // Copied from right pane
         })
     })
 })

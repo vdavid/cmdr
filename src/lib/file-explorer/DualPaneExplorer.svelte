@@ -64,7 +64,11 @@
         // Save the current path for the old volume before switching
         void saveLastUsedPathForVolume(leftVolumeId, leftPath)
 
-        const pathToNavigate = await determineNavigationPath(volumeId, volumePath, targetPath)
+        // Pass the right pane's state so we can copy its path if it's on the same volume
+        const pathToNavigate = await determineNavigationPath(volumeId, volumePath, targetPath, {
+            otherPaneVolumeId: rightVolumeId,
+            otherPanePath: rightPath,
+        })
 
         leftVolumeId = volumeId
         leftPath = pathToNavigate
@@ -75,22 +79,44 @@
         // Save the current path for the old volume before switching
         void saveLastUsedPathForVolume(rightVolumeId, rightPath)
 
-        const pathToNavigate = await determineNavigationPath(volumeId, volumePath, targetPath)
+        // Pass the left pane's state so we can copy its path if it's on the same volume
+        const pathToNavigate = await determineNavigationPath(volumeId, volumePath, targetPath, {
+            otherPaneVolumeId: leftVolumeId,
+            otherPanePath: leftPath,
+        })
 
         rightVolumeId = volumeId
         rightPath = pathToNavigate
         void saveAppStatus({ rightVolumeId: volumeId, rightPath: pathToNavigate })
     }
 
+    interface OtherPaneState {
+        otherPaneVolumeId: string
+        otherPanePath: string
+    }
+
     /**
      * Determines which path to navigate to when switching volumes.
-     * - If targetPath !== volumePath: user selected a favorite → go there directly
-     * - Otherwise: look up last used path, or default to ~ for main volume, volume root for others
+     * Priority order:
+     * 1. Favorite path (if targetPath !== volumePath)
+     * 2. Other pane's path (if the other pane is on the same volume)
+     * 3. Stored lastUsedPath for this volume
+     * 4. Default: ~ for main volume, volume root for others
      */
-    async function determineNavigationPath(volumeId: string, volumePath: string, targetPath: string): Promise<string> {
+    async function determineNavigationPath(
+        volumeId: string,
+        volumePath: string,
+        targetPath: string,
+        otherPane: OtherPaneState,
+    ): Promise<string> {
         // User selected a favorite - go to the favorite's path directly
         if (targetPath !== volumePath) {
             return targetPath
+        }
+
+        // If the other pane is on the same volume, use its path (allows copying paths between panes)
+        if (otherPane.otherPaneVolumeId === volumeId && (await pathExists(otherPane.otherPanePath))) {
+            return otherPane.otherPanePath
         }
 
         // Look up the last used path for this volume
