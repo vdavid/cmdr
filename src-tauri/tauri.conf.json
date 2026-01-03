@@ -10,12 +10,14 @@
         "frontendDist": "../build"
     },
     "app": {
-            "withGlobalTauri": false,
+        "withGlobalTauri": false,
         "windows": [
             {
                 "title": "Rusty Commander",
-                "width": 800,
-                "height": 600,
+                "width": 1080,
+                "height": 720,
+                "minWidth": 950,
+                "minHeight": 550,
                 "visible": false
             }
         ],
