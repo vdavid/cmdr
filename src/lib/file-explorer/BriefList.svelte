@@ -83,14 +83,24 @@
     // Add space for: icon (16px) + gap (8px) + left padding (8px) + right padding (8px) + rounding buffer (2px)
     // The 2px buffer accounts for sub-pixel rendering differences between calculated and actual widths
     const COLUMN_PADDING = 16 + 8 + 8 + 8 + 2 // icon + gap + left padding + right padding + rounding buffer
-    const maxFilenameWidth = $derived(
+    const calculatedColumnWidth = $derived(
         (backendMaxWidth ?? Math.min(200, Math.max(MIN_COLUMN_WIDTH, containerWidth / 3))) + COLUMN_PADDING,
+    )
+    // Cap column width to container width - columns should never be wider than the pane
+    const maxFilenameWidth = $derived(
+        containerWidth > 0 ? Math.min(calculatedColumnWidth, containerWidth) : calculatedColumnWidth,
     )
 
     // Debug logging
     $effect(() => {
         // eslint-disable-next-line no-console
-        console.log('[BRIEF] maxFilenameWidth:', { backendMaxWidth, containerWidth, maxFilenameWidth, COLUMN_PADDING })
+        console.log('[BRIEF] maxFilenameWidth:', {
+            backendMaxWidth,
+            containerWidth,
+            calculatedColumnWidth,
+            maxFilenameWidth,
+            COLUMN_PADDING,
+        })
     })
 
     // Total number of columns needed
