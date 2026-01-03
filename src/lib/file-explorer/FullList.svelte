@@ -96,7 +96,7 @@
     }
 
     // Get entry at global index (handling ".." entry)
-    function getEntryAt(globalIndex: number): FileEntry | undefined {
+    export function getEntryAt(globalIndex: number): FileEntry | undefined {
         if (hasParent && globalIndex === 0) {
             return createParentEntry()
         }

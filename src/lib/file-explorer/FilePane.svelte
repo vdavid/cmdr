@@ -331,10 +331,17 @@
     // Exported so DualPaneExplorer can forward keyboard events
     export function handleKeyDown(e: KeyboardEvent) {
         // Handle Enter key - navigate into selected item
-        if (e.key === 'Enter' && selectedEntry) {
-            e.preventDefault()
-            void handleNavigate(selectedEntry)
-            return
+        // Use the list component's cached entry instead of selectedEntry to avoid race conditions
+        // (selectedEntry is fetched asynchronously and may not be ready yet)
+        if (e.key === 'Enter') {
+            const listRef = viewMode === 'brief' ? briefListRef : fullListRef
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
+            const entry: FileEntry | undefined = listRef?.getEntryAt(selectedIndex)
+            if (entry) {
+                e.preventDefault()
+                void handleNavigate(entry)
+                return
+            }
         }
 
         // Handle Backspace or ⌘↑ - go to parent directory
@@ -438,8 +445,14 @@
     $effect(() => {
         void listen<string>('menu-action', (event) => {
             const action = event.payload
-            if (action === 'open' && selectedEntry) {
-                void handleNavigate(selectedEntry)
+            if (action === 'open') {
+                // Use the list component's cached entry for consistency
+                const listRef = viewMode === 'brief' ? briefListRef : fullListRef
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
+                const entry: FileEntry | undefined = listRef?.getEntryAt(selectedIndex)
+                if (entry) {
+                    void handleNavigate(entry)
+                }
             }
         })
             .then((unsub) => {
