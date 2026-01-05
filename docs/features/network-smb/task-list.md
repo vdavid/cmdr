@@ -2,6 +2,8 @@
 
 All implementation tasks for network SMB support, organized by area.
 
+See [index.md](./index.md) for an overview of this whole feature. It's a helpful starting point.
+
 ## Legend
 
 - ⬜ Not started
@@ -17,22 +19,22 @@ See [host-discovery.md](./host-discovery.md) for details.
 
 ### Backend (Rust)
 
-- ⬜ **1.1** Create `network` module in `src-tauri/src/`
-- ⬜ **1.2** Implement `NSNetServiceBrowserDelegate` using `objc2` `declare_class!`
-- ⬜ **1.3** Create `BonjourDiscovery` struct that manages the browser lifecycle
-- ⬜ **1.4** Implement service resolution (get IP/hostname from `NSNetService`)
-- ⬜ **1.5** Create Tauri commands: `start_network_discovery`, `get_discovered_hosts`
-- ⬜ **1.6** Add event emission for real-time host updates to frontend
-- ⬜ **1.7** Start discovery at app initialization (in `lib.rs`)
-- ⬜ **1.8** Add unit tests with mocked Bonjour responses
+- ✅ **1.1** Create `network` module in `src-tauri/src/`
+- ✅ **1.2** Implement `NSNetServiceBrowserDelegate` using `objc2` `define_class!`
+- ✅ **1.3** Create `BonjourDiscovery` struct that manages the browser lifecycle
+- ✅ **1.4** Implement service resolution (lazy hostname generation + DNS lookup)
+- ✅ **1.5** Create Tauri commands: `list_network_hosts`, `get_network_discovery_state`, `resolve_host`
+- ✅ **1.6** Add event emission for real-time host updates to frontend
+- ✅ **1.7** Start discovery at app initialization (in `lib.rs`)
+- ✅ **1.8** Add unit tests for hostname conversion and serialization
 
 ### Frontend (Svelte)
 
-- ⬜ **1.9** Add "Network" section to volume selector
-- ⬜ **1.10** Subscribe to host discovery events from backend
-- ⬜ **1.11** Display discovered hosts with appropriate icons
-- ⬜ **1.12** Show "Searching..." indicator during initial discovery
-- ⬜ **1.13** Add frontend tests for network host display
+- ✅ **1.9** Add "Network" section to volume selector
+- ✅ **1.10** Subscribe to host discovery events from backend
+- ✅ **1.11** Display discovered hosts with appropriate icons
+- ✅ **1.12** Show "Searching..." indicator during initial discovery
+- ✅ **1.13** Add frontend tests for network host display
 
 ---
 

@@ -106,3 +106,24 @@ export interface ResortResult {
     /** New index of the cursor file after re-sorting, if found. */
     newCursorIndex?: number
 }
+
+// ============================================================================
+// Network discovery types
+// ============================================================================
+
+/** State of network host discovery. */
+export type DiscoveryState = 'idle' | 'searching' | 'active'
+
+/** A discovered network host advertising SMB services. */
+export interface NetworkHost {
+    /** Unique identifier for the host (derived from service name) */
+    id: string
+    /** Display name (the advertised service name) */
+    name: string
+    /** Resolved hostname (e.g., "macbook.local"), or undefined if not yet resolved */
+    hostname?: string
+    /** Resolved IP address, or undefined if not yet resolved */
+    ipAddress?: string
+    /** SMB port (usually 445) */
+    port: number
+}

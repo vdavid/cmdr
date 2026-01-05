@@ -23,7 +23,12 @@
     let containingVolumeId = $state<string | null>(null)
 
     // Current volume info derived from volumes list (the actual containing volume)
-    const currentVolume = $derived(volumes.find((v) => v.id === containingVolumeId))
+    // Special case: 'network' is a virtual volume, not from the backend
+    const currentVolume = $derived(
+        volumeId === 'network'
+            ? { id: 'network', name: 'Network', path: 'smb://', category: 'network' as const, isEjectable: false }
+            : volumes.find((v) => v.id === containingVolumeId),
+    )
     const currentVolumeName = $derived(currentVolume?.name ?? 'Volume')
     const currentVolumeIcon = $derived(getIconForVolume(currentVolume))
 
@@ -69,17 +74,37 @@
         const groups: { category: LocationCategory; label: string; items: VolumeInfo[] }[] = []
 
         for (const { category, label } of categoryOrder) {
-            const items = vols.filter((v) => v.category === category)
-            if (items.length > 0) {
-                // Merge attached_volume into the previous group (main_volume)
-                if (category === 'attached_volume' && groups.length > 0) {
-                    const lastGroup = groups[groups.length - 1]
-                    if (lastGroup.category === 'main_volume') {
-                        lastGroup.items.push(...items)
-                        continue
-                    }
+            if (category === 'network') {
+                // Network section: show a single "Network" item that opens NetworkBrowser
+                // Also include any pre-mounted network volumes (mounted shares)
+                const networkVolumes = vols.filter((v) => v.category === 'network')
+
+                // Create the single "Network" entry that opens NetworkBrowser
+                const networkItem: VolumeInfo = {
+                    id: 'network',
+                    name: 'Network',
+                    path: 'smb://', // Virtual path
+                    category: 'network' as const,
+                    icon: undefined, // Will use 🌐 placeholder
+                    isEjectable: false,
                 }
-                groups.push({ category, label, items })
+
+                // Show network entry plus any mounted shares
+                const allItems = [networkItem, ...networkVolumes]
+                groups.push({ category, label, items: allItems })
+            } else {
+                const items = vols.filter((v) => v.category === category)
+                if (items.length > 0) {
+                    // Merge attached_volume into the previous group (main_volume)
+                    if (category === 'attached_volume' && groups.length > 0) {
+                        const lastGroup = groups[groups.length - 1]
+                        if (lastGroup.category === 'main_volume') {
+                            lastGroup.items.push(...items)
+                            continue
+                        }
+                    }
+                    groups.push({ category, label, items })
+                }
             }
         }
 
@@ -233,6 +258,8 @@
     <span class="volume-name" class:is-open={isOpen} onclick={handleToggle}>
         {#if currentVolumeIcon}
             <img class="icon" src={currentVolumeIcon} alt="" />
+        {:else if volumeId === 'network'}
+            <span class="icon-emoji">🌐</span>
         {/if}
         {currentVolumeName}
         <span class="chevron">▾</span>
@@ -298,7 +325,6 @@
         color: var(--color-text-primary);
         padding: 2px 4px;
         border-radius: 4px;
-        transition: background-color 0.15s ease;
         display: inline-flex;
         align-items: center;
         gap: 4px;
@@ -316,6 +342,11 @@
         width: 14px;
         height: 14px;
         object-fit: contain;
+    }
+
+    .icon-emoji {
+        font-size: 14px;
+        line-height: 1;
     }
 
     .chevron {
@@ -364,7 +395,6 @@
         gap: 8px;
         padding: 6px 12px;
         cursor: default;
-        transition: background-color 0.1s ease;
     }
 
     .volume-item:hover,

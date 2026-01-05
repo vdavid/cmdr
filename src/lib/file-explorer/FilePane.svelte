@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onDestroy, onMount, tick, untrack } from 'svelte'
-    import type { DirectoryDiff, FileEntry, SortColumn, SortOrder, SyncStatus } from './types'
+    import type { DirectoryDiff, FileEntry, NetworkHost, SortColumn, SortOrder, SyncStatus } from './types'
     import {
         findFileIndex,
         getFileAt,
@@ -21,6 +21,7 @@
     import LoadingIcon from '../LoadingIcon.svelte'
     import VolumeBreadcrumb from './VolumeBreadcrumb.svelte'
     import PermissionDeniedPane from './PermissionDeniedPane.svelte'
+    import NetworkBrowser from './NetworkBrowser.svelte'
     import * as benchmark from '$lib/benchmark'
     import { handleNavigationShortcut } from './keyboard-shortcuts'
 
@@ -71,6 +72,10 @@
     let fullListRef: FullList | undefined = $state()
     let briefListRef: BriefList | undefined = $state()
     let volumeBreadcrumbRef: VolumeBreadcrumb | undefined = $state()
+    let networkBrowserRef: NetworkBrowser | undefined = $state()
+
+    // Check if we're viewing the network (special virtual volume)
+    const isNetworkView = $derived(volumeId === 'network')
 
     // Export method for keyboard shortcut
     export function toggleVolumeChooser() {
@@ -334,7 +339,18 @@
         // Calling onPathChange would save the new path under the OLD volume ID (race condition).
         currentPath = targetPath
         onVolumeChange?.(newVolumeId, newVolumePath, targetPath)
-        void loadDirectory(targetPath)
+
+        // Don't load directory for network virtual volume - NetworkBrowser handles its own data
+        if (newVolumeId !== 'network') {
+            void loadDirectory(targetPath)
+        }
+    }
+
+    // Handle network host selection - no-op for now, share listing not implemented
+    function handleNetworkHostSelect(_host: NetworkHost) {
+        // TODO: Future - show shares on this host or attempt to connect
+        // For now, do nothing when user selects a network host
+        void _host // Parameter unused until share listing is implemented
     }
     // Helper: Handle navigation result by updating selection and scrolling
     function applyNavigation(newIndex: number, listRef: { scrollToIndex: (index: number) => void } | undefined) {
@@ -397,6 +413,13 @@
 
     // Exported so DualPaneExplorer can forward keyboard events
     export function handleKeyDown(e: KeyboardEvent) {
+        // Delegate to NetworkBrowser when in network view
+        if (isNetworkView) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            networkBrowserRef?.handleKeyDown(e)
+            return
+        }
+
         // Handle Enter key - navigate into selected item
         // Use the list component's cached entry instead of selectedEntry to avoid race conditions
         // (selectedEntry is fetched asynchronously and may not be ready yet)
@@ -411,7 +434,7 @@
             }
         }
 
-        // Handle Backspace or ⌘↑ - go to parent directory
+        // Handle Backspace or ⌘↑ - go to parent directory (not available in network view)
         if ((e.key === 'Backspace' || (e.key === 'ArrowUp' && e.metaKey)) && hasParent) {
             e.preventDefault()
             void navigateToParent()
@@ -441,8 +464,9 @@
     })
 
     // Update path when initialPath prop changes (for persistence loading)
+    // Skip for network view - NetworkBrowser handles its own data
     $effect(() => {
-        if (initialPath !== currentPath) {
+        if (!isNetworkView && initialPath !== currentPath) {
             currentPath = initialPath
             void loadDirectory(initialPath)
         }
@@ -530,7 +554,10 @@
     })
 
     onMount(() => {
-        void loadDirectory(currentPath)
+        // Skip directory loading for network view - NetworkBrowser handles its own data
+        if (!isNetworkView) {
+            void loadDirectory(currentPath)
+        }
 
         // Set up sync status polling for visible files
         syncPollInterval = setInterval(() => {
@@ -572,7 +599,9 @@
         >
     </div>
     <div class="content">
-        {#if loading}
+        {#if isNetworkView}
+            <NetworkBrowser bind:this={networkBrowserRef} {isFocused} onHostSelect={handleNetworkHostSelect} />
+        {:else if loading}
             <LoadingIcon />
         {:else if isPermissionDenied}
             <PermissionDeniedPane folderPath={currentPath} />
@@ -629,8 +658,8 @@
             />
         {/if}
     </div>
-    <!-- SelectionInfo shown in brief mode -->
-    {#if viewMode === 'brief'}
+    <!-- SelectionInfo shown in brief mode (not in network view) -->
+    {#if viewMode === 'brief' && !isNetworkView}
         <SelectionInfo entry={selectedEntry} currentDirModifiedAt={undefined} />
     {/if}
 </div>

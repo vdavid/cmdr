@@ -66,6 +66,10 @@ vi.mock('$lib/tauri-commands', () => ({
     }),
     getDefaultVolumeId: vi.fn().mockResolvedValue('root'),
     DEFAULT_VOLUME_ID: 'root',
+    // Network discovery mocks
+    listNetworkHosts: vi.fn().mockResolvedValue([]),
+    getNetworkDiscoveryState: vi.fn().mockResolvedValue('idle'),
+    resolveNetworkHost: vi.fn().mockResolvedValue(null),
 }))
 
 // Mock settings-store to avoid Tauri event API dependency in tests

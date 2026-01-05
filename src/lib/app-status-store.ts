@@ -100,9 +100,11 @@ export async function loadAppStatus(pathExists: (p: string) => Promise<boolean>)
         const leftSortBy = parseSortColumn(await store.get('leftSortBy'))
         const rightSortBy = parseSortColumn(await store.get('rightSortBy'))
 
-        // Resolve paths with fallback
-        const resolvedLeftPath = await resolvePathWithFallback(leftPath, pathExists)
-        const resolvedRightPath = await resolvePathWithFallback(rightPath, pathExists)
+        // Resolve paths with fallback - skip for virtual 'network' volume
+        const resolvedLeftPath =
+            leftVolumeId === 'network' ? leftPath : await resolvePathWithFallback(leftPath, pathExists)
+        const resolvedRightPath =
+            rightVolumeId === 'network' ? rightPath : await resolvePathWithFallback(rightPath, pathExists)
 
         return {
             leftPath: resolvedLeftPath,

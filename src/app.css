@@ -23,16 +23,21 @@
     /* === Borders === */
     --color-border-primary: #ccc;
     --color-border: #ddd;
+    --color-border-secondary: #e0e0e0;
 
     /* === Text === */
     --color-text-primary: #000000;
     --color-text-secondary: #666666;
+    --color-text-tertiary: #888888;
     --color-text-muted: #999999;
 
     /* === Interactive States === */
     --color-hover-bg: rgba(0, 120, 215, 0.1);
     --color-bg-hover: rgba(0, 120, 215, 0.08);
     --color-selection-bg: #cce4f7;
+    --color-bg-selected: #0078d4;
+    --color-bg-selected-unfocused: #e0e0e0;
+    --color-text-selected: #ffffff;
     --color-focus-border: #0078d4;
     --color-accent: #0078d4;
 
@@ -72,16 +77,21 @@
         /* === Borders === */
         --color-border-primary: #444444;
         --color-border: #555555;
+        --color-border-secondary: #3a3a3a;
 
         /* === Text === */
         --color-text-primary: #ffffff;
         --color-text-secondary: #aaaaaa;
+        --color-text-tertiary: #888888;
         --color-text-muted: #808080;
 
         /* === Interactive States === */
         --color-hover-bg: rgba(100, 180, 255, 0.15);
         --color-bg-hover: rgba(100, 180, 255, 0.12);
         --color-selection-bg: #0a50d0;
+        --color-bg-selected: #0a50d0;
+        --color-bg-selected-unfocused: #3a3a3a;
+        --color-text-selected: #ffffff;
         --color-focus-border: #4da3ff;
         --color-accent: #4da3ff;
 

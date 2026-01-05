@@ -21,6 +21,8 @@ pub mod icons;
 mod macos_icons;
 mod menu;
 #[cfg(target_os = "macos")]
+mod network;
+#[cfg(target_os = "macos")]
 mod permissions;
 mod settings;
 #[cfg(target_os = "macos")]
@@ -65,6 +67,10 @@ pub fn run() {
 
             // Initialize the volume manager with the root volume
             file_system::init_volume_manager();
+
+            // Start network host discovery (Bonjour)
+            #[cfg(target_os = "macos")]
+            network::start_discovery(app.handle().clone());
 
             // Initialize font metrics for default font (system font at 12px)
             font_metrics::init_font_metrics(app.handle(), "system-400-12");
@@ -161,6 +167,14 @@ pub fn run() {
             commands::volumes::get_default_volume_id,
             #[cfg(target_os = "macos")]
             commands::volumes::find_containing_volume,
+            #[cfg(target_os = "macos")]
+            commands::network::list_network_hosts,
+            #[cfg(target_os = "macos")]
+            commands::network::get_network_discovery_state,
+            #[cfg(target_os = "macos")]
+            commands::network::resolve_host,
+            #[cfg(target_os = "macos")]
+            commands::network::fe_log,
             #[cfg(target_os = "macos")]
             permissions::check_full_disk_access,
             #[cfg(target_os = "macos")]

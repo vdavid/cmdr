@@ -35,6 +35,7 @@
         canGoForward,
         type NavigationHistory,
     } from './navigation-history'
+    import { initNetworkDiscovery, cleanupNetworkDiscovery } from '$lib/network-store.svelte'
 
     let leftPath = $state('~')
     let rightPath = $state('~')
@@ -65,9 +66,13 @@
     let leftHistory = $state<NavigationHistory>(createHistory('~'))
     let rightHistory = $state<NavigationHistory>(createHistory('~'))
 
-    // Derived volume paths
-    const leftVolumePath = $derived(volumes.find((v) => v.id === leftVolumeId)?.path ?? '/')
-    const rightVolumePath = $derived(volumes.find((v) => v.id === rightVolumeId)?.path ?? '/')
+    // Derived volume paths - handle 'network' virtual volume specially
+    const leftVolumePath = $derived(
+        leftVolumeId === 'network' ? 'smb://' : (volumes.find((v) => v.id === leftVolumeId)?.path ?? '/'),
+    )
+    const rightVolumePath = $derived(
+        rightVolumeId === 'network' ? 'smb://' : (volumes.find((v) => v.id === rightVolumeId)?.path ?? '/'),
+    )
 
     function handleLeftPathChange(path: string) {
         leftPath = path
@@ -328,6 +333,9 @@
         // Start font metrics measurement in background (non-blocking)
         void ensureFontMetricsLoaded()
 
+        // Start network discovery in background (non-blocking)
+        void initNetworkDiscovery()
+
         // Load volumes first
         volumes = await listVolumes()
 
@@ -350,13 +358,22 @@
 
         // Determine the correct volume IDs by finding which volume contains each path
         // This is more reliable than trusting the stored volumeId, which may be stale
+        // Exception: 'network' is a virtual volume, trust the stored ID for that
         const defaultId = await getDefaultVolumeId()
-        const [leftContaining, rightContaining] = await Promise.all([
-            findContainingVolume(status.leftPath),
-            findContainingVolume(status.rightPath),
-        ])
-        leftVolumeId = leftContaining?.id ?? defaultId
-        rightVolumeId = rightContaining?.id ?? defaultId
+
+        if (status.leftVolumeId === 'network') {
+            leftVolumeId = 'network'
+        } else {
+            const leftContaining = await findContainingVolume(status.leftPath)
+            leftVolumeId = leftContaining?.id ?? defaultId
+        }
+
+        if (status.rightVolumeId === 'network') {
+            rightVolumeId = 'network'
+        } else {
+            const rightContaining = await findContainingVolume(status.rightPath)
+            rightVolumeId = rightContaining?.id ?? defaultId
+        }
 
         // Initialize history with loaded paths
         leftHistory = createHistory(status.leftPath)
@@ -492,6 +509,7 @@
         unlistenViewMode?.()
         unlistenVolumeUnmount?.()
         unlistenNavigation?.()
+        cleanupNetworkDiscovery()
     })
 
     // Focus the container after initialization so keyboard events work

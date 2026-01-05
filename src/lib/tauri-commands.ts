@@ -4,8 +4,10 @@ import { invoke } from '@tauri-apps/api/core'
 import { openPath } from '@tauri-apps/plugin-opener'
 import { listen, type UnlistenFn, type Event } from '@tauri-apps/api/event'
 import type {
+    DiscoveryState,
     FileEntry,
     ListingStartResult,
+    NetworkHost,
     ResortResult,
     SortColumn,
     SortOrder,
@@ -290,4 +292,65 @@ export async function openPrivacySettings(): Promise<void> {
     } catch {
         // Command not available (non-macOS) - silently fail
     }
+}
+
+// ============================================================================
+// Network discovery (macOS only)
+// ============================================================================
+
+/**
+ * Gets all currently discovered network hosts.
+ * Only available on macOS.
+ * @returns Array of NetworkHost objects
+ */
+export async function listNetworkHosts(): Promise<NetworkHost[]> {
+    try {
+        return await invoke<NetworkHost[]>('list_network_hosts')
+    } catch {
+        // Command not available (non-macOS) - return empty array
+        return []
+    }
+}
+
+/**
+ * Gets the current network discovery state.
+ * Only available on macOS.
+ * @returns Current DiscoveryState
+ */
+export async function getNetworkDiscoveryState(): Promise<DiscoveryState> {
+    try {
+        return await invoke<DiscoveryState>('get_network_discovery_state')
+    } catch {
+        // Command not available (non-macOS) - return idle
+        return 'idle'
+    }
+}
+
+/**
+ * Resolves a network host's hostname and IP address.
+ * This performs lazy resolution - only called on hover or when connecting.
+ * Only available on macOS.
+ * @param hostId The host ID to resolve
+ * @returns Updated NetworkHost with hostname and IP, or null if not found
+ */
+export async function resolveNetworkHost(hostId: string): Promise<NetworkHost | null> {
+    try {
+        return await invoke<NetworkHost | null>('resolve_host', { hostId })
+    } catch {
+        // Command not available (non-macOS) - return null
+        return null
+    }
+}
+
+// noinspection JSUnusedGlobalSymbols -- This is a utility mechanism for debugging
+/**
+ * Logs a message through the backend for unified timestamp tracking.
+ * Used for debugging timing issues between frontend and backend.
+ */
+export function feLog(message: string): void {
+    void invoke('fe_log', { message }).catch(() => {
+        // Fallback to console if command not available
+        // eslint-disable-next-line no-console -- We do want to log to the console here
+        console.log('[FE]', message)
+    })
 }

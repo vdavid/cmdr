@@ -79,6 +79,10 @@ vi.mock('$lib/tauri-commands', () => ({
     } as VolumeInfo),
     getDefaultVolumeId: vi.fn().mockResolvedValue('root'),
     DEFAULT_VOLUME_ID: 'root',
+    // Network discovery mocks
+    listNetworkHosts: vi.fn().mockResolvedValue([]),
+    getNetworkDiscoveryState: vi.fn().mockResolvedValue('idle'),
+    resolveNetworkHost: vi.fn().mockResolvedValue(null),
 }))
 
 vi.mock('$lib/icon-cache', async () => {

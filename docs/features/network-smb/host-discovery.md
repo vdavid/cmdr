@@ -5,7 +5,7 @@ How Rusty Commander discovers SMB hosts on the local network.
 ## Overview
 
 Network hosts are discovered automatically using **Bonjour** (Apple's implementation of mDNS/DNS-SD). When an
-SMB-capable device advertises itself on the local network, it appears in the volume selector under "Network".
+SMB-capable device advertises itself on the local network, it appears in the Network browser view.
 
 ## How Bonjour works
 
@@ -43,35 +43,35 @@ Delegate receives callbacks as services appear/disappear
 NSNetService objects (one per discovered host)
     │
     ▼
-resolve() each to get IP address + port
+hostname/IP derived from service name (lazy resolution)
 ```
 
 ### Challenges
 
-| Challenge              | Solution                                                                                                  |
-| ---------------------- | --------------------------------------------------------------------------------------------------------- |
-| **Delegate pattern**   | Create a Rust struct that implements `NSNetServiceBrowserDelegate` using `objc2`'s `declare_class!` macro |
-| **Async/streaming**    | Services appear over time; use Rust channels or async streams to propagate updates                        |
-| **Service resolution** | Each `NSNetService` needs `resolve()` call for IP/hostname (another async operation)                      |
-| **Run loop**           | Bonjour callbacks require a run loop; use Tauri's main thread or dedicated run loop                       |
+| Challenge              | Solution                                                                                                 |
+| ---------------------- | -------------------------------------------------------------------------------------------------------- |
+| **Delegate pattern**   | Create a Rust struct that implements `NSNetServiceBrowserDelegate` using `objc2`'s `define_class!` macro |
+| **Async/streaming**    | Services appear over time; use Tauri events to propagate updates                                         |
+| **Service resolution** | Hostname derived from service name, IP resolved via DNS on hover/demand                                  |
+| **Run loop**           | Bonjour callbacks require a run loop; use Tauri's main thread                                            |
 
 ### Lifecycle
 
 1. **App startup**: Start `NSNetServiceBrowser` listening for `_smb._tcp.local`
 2. **Continuous**: Receive callbacks as hosts appear/disappear on network
-3. **Cache results**: Keep discovered hosts in memory for instant volume selector display
-4. **Volume selector opened**: Show cached hosts immediately; continue updating as new hosts found
+3. **Cache results**: Keep discovered hosts in memory for instant display
+4. **Network view opened**: Show cached hosts immediately; continue updating as new hosts found
 
 ### Lazy resolution
 
-Resolution (getting IP/hostname from `NSNetService`) adds ~50–200 ms latency per host. To keep discovery snappy:
+Resolution (getting IP/hostname) is deferred until needed to keep discovery fast:
 
 - **On discovery**: Store host name only (from mDNS announcement)
-- **On hover (500 ms debounce)**: Resolve that specific host
+- **On hover**: Resolve that specific host's hostname and IP
 - **On navigate**: Resolve if not already cached
 - **Cache**: Keep resolved addresses in memory
 
-This way the volume selector populates instantly with host names, and resolution happens just-in-time.
+This way the network browser populates instantly with host names, and resolution happens just-in-time.
 
 ### Host disappearance
 
@@ -79,25 +79,14 @@ Bonjour proactively notifies when hosts stop advertising (via `netServiceBrowser
 
 **UI behavior when a host disappears:**
 
-- **In volume selector**: Remove host from list, keep cursor at same index (or last item if was last)
-- **In file pane browsing network hosts**: Remove disappeared host, handle gracefully like any deleted item
-
-### Prefetching for known hosts
-
-After discovery settles (~3 seconds), prefetch share information for hosts in `knownNetworkShares`:
-
-```
-Discovery complete
-    → For each known host that was discovered:
-        → Queue share enumeration (parallel, cap at 10)
-        → Cache results for instant display when user navigates
-```
-
-This provides instant response for servers the user has connected to before, without probing unknown hosts.
+- **In Network browser**: Remove host from list, adjust selection
+- **During connection**: Show appropriate error if mid-operation
 
 ## UX behavior
 
-### In the volume selector
+### Volume selector
+
+The volume selector shows a single "Network" item under the Network section:
 
 ```
 📁 Favorites
@@ -105,28 +94,52 @@ This provides instant response for servers the user has connected to before, wit
    └── Downloads
 📁 Macintosh HD
 📁 External Drive
-📶 Network ← Click to expand or show inline
-   └── David's M1 MBP
-   └── Naspolya
-   └── PI
-   └── (Searching...) ← While initial discovery in progress
+🌐 Network ← Click to open Network browser
 ```
 
-### Progress indication
+### Network browser view
 
-- **While searching**: Subtle spinner or "Searching..." text
-- **Hosts appear incrementally**: Each host shows up as discovered (streaming UX)
-- **After ~3–5 seconds**: Consider discovery "complete" but keep listening for changes
+When user clicks "Network" in the volume selector, the pane switches to the Network browser view:
+
+```
+┌────────────────────────────────────────────────────────────┐
+│ Name              │ IP address     │ Hostname      │ Status │
+├────────────────────────────────────────────────────────────┤
+│ 🖥️ David's MacBook │ 192.168.1.10  │ macbook.local │   —    │
+│ 🖥️ NAS-Server      │ 192.168.1.50  │ nas.local     │   —    │
+│ 🖥️ Office-PC       │ —             │ —             │   —    │
+│                                                            │
+│ Searching... (if discovery in progress)                    │
+└────────────────────────────────────────────────────────────┘
+```
+
+**Columns:**
+
+- **Name**: Host's advertised name from Bonjour
+- **IP address**: Resolved IP (on hover/demand), or "—" if not yet resolved
+- **Hostname**: Derived `.local` hostname
+- **Shares**: Share count (future, currently "—")
+- **Status**: Connection status (future, currently "—")
+
+**Keyboard navigation:**
+
+- Arrow Up/Down: Navigate between hosts
+- Enter: Select host (future: show shares)
+- Backspace: No-op (can't go "up" from network root)
+
+**Back/Forward navigation:**
+
+- Works as expected: going Back returns to previous file view
+- Coming Forward again returns to Network browser
 
 ## Network change detection
 
-Bonjour automatically handles network changes, but we enhance this:
+Bonjour automatically handles network changes:
 
-| Event                    | Detection               | Action                 |
-| ------------------------ | ----------------------- | ---------------------- |
-| Host starts advertising  | Bonjour callback        | Add to list            |
-| Host stops advertising   | Bonjour callback        | Remove from list       |
-| Network interface change | `SCNetworkReachability` | Pause/resume discovery |
+| Event                   | Detection        | Action           |
+| ----------------------- | ---------------- | ---------------- |
+| Host starts advertising | Bonjour callback | Add to list      |
+| Host stops advertising  | Bonjour callback | Remove from list |
 
 ## What Bonjour doesn't cover
 
@@ -156,16 +169,13 @@ Discovery is lightweight enough to start immediately at app launch.
 
 ## Testing
 
-### Unit tests
+### Backend unit tests
 
-- Mock `NSNetServiceBrowser` to simulate host discovery
-- Test callback handling for service found/lost events
-- Test caching and deduplication logic
-- Test lazy resolution caching
+- `test_service_name_to_hostname`: Tests hostname derivation from service names
+- `test_service_name_to_id`: Tests ID generation from service names
+- `test_network_host_serialization`: Tests JSON serialization of NetworkHost
 
-### Integration tests
+### Frontend tests
 
-- Verify hosts appear in volume list when discovered
-- Test host disappearance when service goes offline
-- Test behavior when no hosts found (empty "Network" section)
-- Test prefetching triggers for known hosts
+- `network-hosts.test.ts`: Tests network host type interfaces and event handling logic
+- Integration tests verify NetworkBrowser renders correctly and handles events

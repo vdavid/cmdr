@@ -29,11 +29,11 @@ export default tseslint.config(
     prettierConfig,
     ...tseslint.configs.strictTypeChecked.map((config) => ({
         ...config,
-        files: ['**/*.{ts,tsx,svelte}'],
+        files: ['**/*.{ts,tsx,svelte.ts,svelte}'],
     })),
     ...svelte.configs['flat/recommended'],
     {
-        files: ['**/*.{ts,tsx}'],
+        files: ['**/*.{ts,tsx,svelte.ts}'],
         plugins: {
             '@typescript-eslint': tseslint.plugin,
             prettier,
@@ -108,6 +108,47 @@ export default tseslint.config(
         },
         rules: {
             'prettier/prettier': 'error',
+        },
+    },
+    {
+        // Svelte 5 runes files (.svelte.ts) - TypeScript with Svelte runes support
+        files: ['**/*.svelte.ts'],
+        plugins: {
+            '@typescript-eslint': tseslint.plugin,
+            prettier,
+        },
+        languageOptions: {
+            parser: tseslint.parser,
+            ecmaVersion: 'latest',
+            sourceType: 'module',
+            globals: {
+                ...globals.browser,
+                ...globals.node,
+                ...globals.es2021,
+            },
+            parserOptions: {
+                projectService: true,
+                tsconfigRootDir: import.meta.dirname,
+            },
+        },
+        rules: {
+            'prettier/prettier': 'error',
+            // Type safety rules - same as main TypeScript files
+            '@typescript-eslint/no-unused-vars': 'error',
+            '@typescript-eslint/no-unsafe-assignment': 'error',
+            '@typescript-eslint/no-unsafe-call': 'error',
+            '@typescript-eslint/no-unsafe-member-access': 'error',
+            '@typescript-eslint/no-unsafe-return': 'error',
+            // Async/Promise safety
+            '@typescript-eslint/no-floating-promises': 'error',
+            '@typescript-eslint/await-thenable': 'error',
+            '@typescript-eslint/no-misused-promises': 'error',
+            '@typescript-eslint/require-await': 'error',
+            // No any
+            '@typescript-eslint/no-explicit-any': 'error',
+            'no-console': 'warn',
+            // Complexity limit
+            complexity: ['error', { max: 15 }],
         },
     },
     {
