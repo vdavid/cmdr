@@ -6,7 +6,7 @@ your changes, and submit a PR. This doc will help you get started.
 ## Dev setup
 
 The project uses [mise](https://mise.jdx.dev) for tool version management. It handles Node, pnpm, and Go versions. Rust
-is managed separately by `rustup`.
+is managed separately by `rustup`. This version is tested with Rust 1.92.0.
 
 1. Install mise: `brew install mise` (see [alternatives](https://mise.jdx.dev/getting-started.html))
 2. Install Rust: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`

@@ -96,11 +96,12 @@ fn extract_extension_for_sort(name: &str) -> (bool, bool, String) {
     }
 
     // Check for extension
-    if let Some(dot_pos) = name.rfind('.') {
-        if dot_pos > 0 && dot_pos < name.len() - 1 {
-            let ext = name[dot_pos + 1..].to_lowercase();
-            return (false, true, ext);
-        }
+    if let Some(dot_pos) = name.rfind('.')
+        && dot_pos > 0
+        && dot_pos < name.len() - 1
+    {
+        let ext = name[dot_pos + 1..].to_lowercase();
+        return (false, true, ext);
     }
 
     // No extension
@@ -121,7 +122,7 @@ pub fn sort_entries(entries: &mut [FileEntry], sort_by: SortColumn, sort_order: 
 
         // Compare by the selected column
         let primary = match sort_by {
-            SortColumn::Name => alphanumeric_sort::compare_str(&a.name.to_lowercase(), &b.name.to_lowercase()),
+            SortColumn::Name => alphanumeric_sort::compare_str(a.name.to_lowercase(), b.name.to_lowercase()),
             SortColumn::Extension => {
                 let (a_dotfile, a_has_ext, a_ext) = extract_extension_for_sort(&a.name);
                 let (b_dotfile, b_has_ext, b_ext) = extract_extension_for_sort(&b.name);
@@ -130,17 +131,15 @@ pub fn sort_entries(entries: &mut [FileEntry], sort_by: SortColumn, sort_order: 
                 match (a_dotfile, b_dotfile) {
                     (true, false) => std::cmp::Ordering::Less,
                     (false, true) => std::cmp::Ordering::Greater,
-                    (true, true) => alphanumeric_sort::compare_str(&a.name.to_lowercase(), &b.name.to_lowercase()),
+                    (true, true) => alphanumeric_sort::compare_str(a.name.to_lowercase(), b.name.to_lowercase()),
                     (false, false) => match (a_has_ext, b_has_ext) {
                         (false, true) => std::cmp::Ordering::Less,
                         (true, false) => std::cmp::Ordering::Greater,
-                        (false, false) => {
-                            alphanumeric_sort::compare_str(&a.name.to_lowercase(), &b.name.to_lowercase())
-                        }
+                        (false, false) => alphanumeric_sort::compare_str(a.name.to_lowercase(), b.name.to_lowercase()),
                         (true, true) => {
                             let ext_cmp = alphanumeric_sort::compare_str(&a_ext, &b_ext);
                             if ext_cmp == std::cmp::Ordering::Equal {
-                                alphanumeric_sort::compare_str(&a.name.to_lowercase(), &b.name.to_lowercase())
+                                alphanumeric_sort::compare_str(a.name.to_lowercase(), b.name.to_lowercase())
                             } else {
                                 ext_cmp
                             }
@@ -151,20 +150,20 @@ pub fn sort_entries(entries: &mut [FileEntry], sort_by: SortColumn, sort_order: 
             SortColumn::Size => {
                 // For directories, size is None - sort them by name among themselves
                 match (a.size, b.size) {
-                    (None, None) => alphanumeric_sort::compare_str(&a.name.to_lowercase(), &b.name.to_lowercase()),
+                    (None, None) => alphanumeric_sort::compare_str(a.name.to_lowercase(), b.name.to_lowercase()),
                     (None, Some(_)) => std::cmp::Ordering::Less,
                     (Some(_), None) => std::cmp::Ordering::Greater,
                     (Some(a_size), Some(b_size)) => a_size.cmp(&b_size),
                 }
             }
             SortColumn::Modified => match (a.modified_at, b.modified_at) {
-                (None, None) => alphanumeric_sort::compare_str(&a.name.to_lowercase(), &b.name.to_lowercase()),
+                (None, None) => alphanumeric_sort::compare_str(a.name.to_lowercase(), b.name.to_lowercase()),
                 (None, Some(_)) => std::cmp::Ordering::Less,
                 (Some(_), None) => std::cmp::Ordering::Greater,
                 (Some(a_time), Some(b_time)) => a_time.cmp(&b_time),
             },
             SortColumn::Created => match (a.created_at, b.created_at) {
-                (None, None) => alphanumeric_sort::compare_str(&a.name.to_lowercase(), &b.name.to_lowercase()),
+                (None, None) => alphanumeric_sort::compare_str(a.name.to_lowercase(), b.name.to_lowercase()),
                 (None, Some(_)) => std::cmp::Ordering::Less,
                 (Some(_), None) => std::cmp::Ordering::Greater,
                 (Some(a_time), Some(b_time)) => a_time.cmp(&b_time),

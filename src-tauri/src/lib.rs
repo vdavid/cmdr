@@ -10,6 +10,10 @@
 use criterion as _;
 //noinspection RsUnusedImport
 use notify as _;
+//noinspection RsUnusedImport
+// tokio is used in commands/network.rs for spawn_blocking
+#[cfg(target_os = "macos")]
+use tokio as _;
 
 pub mod benchmark;
 mod commands;
