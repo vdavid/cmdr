@@ -1,10 +1,10 @@
 ## Listing
 
-- [ ] Create ESLint rules or sg so that font sizes are always rem, but margins and paddings are always px.
-- [ ] Add different sorting options
-    - UI: I want to display a header in Full and Brief mode.
-- [ ] When sorting alphabetically, sort numbers ascending, not alphabetically
-- [ ] Make it handle network drives
+- Back/forward is buggy, it doesn't remember when I change volumes, and it jumps weirdly even after normal dir navi.
+- Close the volume dropdown if the user clicks outside of it.
+- VolumeBreadcrumb max height should be window max the panel size (to end within the window). If it'd be longer, make it
+  scroll.
+- [...] Big: Make it handle network drives (already planned out! See features/network-smb/\*)
 - [ ] Test with slow drives like network drives
 - [ ] Load iCloud sync statuses, too
 - [ ] Load Google Drive sync statuses, too
@@ -12,14 +12,19 @@
 - [ ] Read the "dataless" flag for Dropbox/Drive files to avoid triggering a massive download when iterating through the
       files later, to generate thumbnails or whatnot. Files are only placeholders in this case: they have a file size in
       `stat`, but zero bytes on disk.
-- [ ] Make the path bar more elaborate with dropdown selectors
-- [ ] Add tabs
+- [ ] Bigger: Make the path bar more elaborate with dropdown selectors
+- [ ] Bigger: Add tabs
+- [ ] Bigger: Add command palette
+- [ ] Add dir size measurement trigger option, and let dirs sort by size.
 
-## Cleanup
+## Cleanup / housekeeping
 
 - A round of refactoring is due
 - Mark macOS vs generic code clearer, and add this to the guide. Is there a way to run some coherence checks for
   `#[cfg(target_os = "macos")]` == true/false separately?
+- Docs are kinda outdated
+- Upgrade to latest Rust version (1.92.0) and update dependencies
+- CSS is a mess. Probably unused rules
 
 ## Settings
 
@@ -28,6 +33,7 @@
 - [ ] Add quick actions menu
 - [ ] Add toggle for showing/hiding hidden files (files starting with '.')
 - [ ] Make sorting configurable (by name, size, date, etc.)
+- [ ] Move all our constants and possibly some env var overrides into settings. Make it a cockpit.
 
 ## Actions
 
@@ -49,7 +55,11 @@
 
 - Add "View" to File menu and context menu
 
-## Add AI features
+## Additional features
+
+- [ ] Keep log of user actions (allow for undo where possible)
+
+## AI features
 
 Ideas
 
@@ -61,8 +71,3 @@ Ideas
 - [ ] "Explain this" in context menu: Right-click a minified JS file, a binary, or a cryptic config -> "Explain what
       this does."
 - [ ] Add a small local LLM for privacy-conscious users.
-
-## Why not Nimble Commander?
-
-- No Dropbox sync icons
-- Silently fails when trying to access a network drive
