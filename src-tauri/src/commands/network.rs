@@ -212,3 +212,32 @@ pub async fn list_shares_with_credentials(
     )
     .await
 }
+
+// --- Mount Commands ---
+
+use crate::network::mount::{self, MountError, MountResult};
+
+/// Mounts an SMB share to the local filesystem.
+///
+/// Attempts to mount the specified share on the server. If credentials are
+/// provided, they are used for authentication. If the share is already mounted,
+/// returns the existing mount path without re-mounting.
+///
+/// # Arguments
+/// * `server` - Server hostname or IP address
+/// * `share` - Name of the share to mount
+/// * `username` - Optional username for authentication
+/// * `password` - Optional password for authentication
+///
+/// # Returns
+/// * `Ok(MountResult)` - Mount successful, with path to mount point
+/// * `Err(MountError)` - Mount failed with specific error type
+#[tauri::command]
+pub async fn mount_network_share(
+    server: String,
+    share: String,
+    username: Option<String>,
+    password: Option<String>,
+) -> Result<MountResult, MountError> {
+    mount::mount_share(server, share, username, password).await
+}

@@ -91,21 +91,21 @@ See [mounting.md](./mounting.md) for details.
 
 ### Backend (Rust)
 
-- ⬜ **3.1** Add NetFS.framework linking to Cargo.toml / build.rs
-- ⬜ **3.2** Create Rust bindings for `NetFSMountURLAsync`
-- ⬜ **3.3** Implement `mount_smb_share` async function
-- ⬜ **3.4** Create Tauri command: `mount_network_share`
-- ⬜ **3.5** Handle mount errors and map to user-friendly messages
-- ⬜ **3.6** Detect already-mounted shares (don't re-mount)
-- ⬜ **3.7** Add unit tests with mocked NetFS
+- ✅ **3.1** Add NetFS.framework linking to Cargo.toml / build.rs
+- ✅ **3.2** Create Rust bindings for `NetFSMountURLAsync`
+- ✅ **3.3** Implement `mount_smb_share` async function
+- ✅ **3.4** Create Tauri command: `mount_network_share`
+- ✅ **3.5** Handle mount errors and map to user-friendly messages
+- ✅ **3.6** Detect already-mounted shares (don't re-mount)
+- ✅ **3.7** Add unit tests with mocked NetFS
 
 ### Frontend (Svelte)
 
-- ⬜ **3.8** Call mount command when user selects a share
-- ⬜ **3.9** Show mounting progress/spinner
-- ⬜ **3.10** Navigate to mounted path on success
-- ⬜ **3.11** Display error messages on failure
-- ⬜ **3.12** Add frontend tests
+- ✅ **3.8** Call mount command when user selects a share
+- ✅ **3.9** Show mounting progress/spinner
+- ✅ **3.10** Navigate to mounted path on success
+- ✅ **3.11** Display error messages on failure
+- ✅ **3.12** Add frontend tests
 
 ---
 
@@ -159,7 +159,8 @@ See [known-shares-store.md](./known-shares-store.md) for details.
 
 ## 6. Pre-mounted shares
 
-Pre-mounted SMB shares (e.g., mounted via Finder) appear automatically in the volume selector because the existing volume listing code at `/Volumes/*` picks them up. The macOS APIs return the correct network share icon.
+Pre-mounted SMB shares (e.g., mounted via Finder) appear automatically in the volume selector because the existing
+volume listing code at `/Volumes/*` picks them up. The macOS APIs return the correct network share icon.
 
 ### Backend (Rust)
 

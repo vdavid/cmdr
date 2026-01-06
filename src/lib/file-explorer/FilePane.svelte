@@ -1,6 +1,15 @@
 <script lang="ts">
     import { onDestroy, onMount, tick, untrack } from 'svelte'
-    import type { DirectoryDiff, FileEntry, NetworkHost, ShareInfo, SortColumn, SortOrder, SyncStatus } from './types'
+    import type {
+        DirectoryDiff,
+        FileEntry,
+        MountError,
+        NetworkHost,
+        ShareInfo,
+        SortColumn,
+        SortOrder,
+        SyncStatus,
+    } from './types'
     import {
         findFileIndex,
         getFileAt,
@@ -9,6 +18,7 @@
         listDirectoryEnd,
         listDirectoryStart,
         listen,
+        mountNetworkShare,
         openFile,
         showFileContextMenu,
         type UnlistenFn,
@@ -361,11 +371,49 @@
         selectedNetworkHost = null
     }
 
-    // Handle share selection from ShareBrowser
-    function handleShareSelect(_share: ShareInfo) {
-        // TODO: Mount the share and navigate to it
-        // For now, just log - mounting will be implemented in task 3.x
-        void _share // Parameter unused until mounting is implemented
+    // Mounting state
+    let isMounting = $state(false)
+    let mountError = $state<MountError | null>(null)
+
+    // Handle share selection from ShareBrowser - mount and navigate
+    async function handleShareSelect(share: ShareInfo, credentials: { username: string; password: string } | null) {
+        if (!selectedNetworkHost) return
+
+        isMounting = true
+        mountError = null
+
+        try {
+            // Get server address - prefer IP, fall back to hostname
+            const server = selectedNetworkHost.ipAddress ?? selectedNetworkHost.hostname ?? selectedNetworkHost.name
+
+            // Use provided credentials if available
+            const result = await mountNetworkShare(
+                server,
+                share.name,
+                credentials?.username ?? null,
+                credentials?.password ?? null,
+            )
+
+            // Navigate to the mounted share
+            // Clear network host selection first
+            selectedNetworkHost = null
+
+            // Find the volume for the mounted path and switch to it
+            // The mount path is typically /Volumes/<ShareName>
+            const mountPath = result.mountPath
+
+            // Use a special volume ID for the network share
+            const volumeId = `smb://${server}/${share.name}`
+
+            // Trigger volume change to switch to the mounted share
+            onVolumeChange?.(volumeId, mountPath, mountPath)
+        } catch (e) {
+            mountError = e as MountError
+            // eslint-disable-next-line no-console
+            console.error('Mount failed:', mountError)
+        } finally {
+            isMounting = false
+        }
     }
     // Helper: Handle navigation result by updating selection and scrolling
     function applyNavigation(newIndex: number, listRef: { scrollToIndex: (index: number) => void } | undefined) {
@@ -620,7 +668,22 @@
     </div>
     <div class="content">
         {#if isNetworkView}
-            {#if selectedNetworkHost}
+            {#if isMounting}
+                <div class="mounting-state">
+                    <span class="spinner"></span>
+                    <span class="mounting-text">Mounting {selectedNetworkHost?.name ?? 'share'}...</span>
+                </div>
+            {:else if mountError}
+                <div class="mount-error-state">
+                    <div class="error-icon">❌</div>
+                    <div class="error-title">Couldn't mount share</div>
+                    <div class="error-message">{mountError.message}</div>
+                    <div class="error-actions">
+                        <button type="button" class="btn" onclick={() => (mountError = null)}>Try again</button>
+                        <button type="button" class="btn" onclick={handleNetworkBack}>Back</button>
+                    </div>
+                </div>
+            {:else if selectedNetworkHost}
                 <ShareBrowser
                     bind:this={shareBrowserRef}
                     host={selectedNetworkHost}
@@ -737,5 +800,84 @@
         color: var(--color-error);
         text-align: center;
         padding: var(--spacing-md);
+    }
+
+    .mounting-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        gap: 12px;
+        color: var(--color-text-secondary);
+    }
+
+    .mounting-state .spinner {
+        width: 24px;
+        height: 24px;
+        border: 3px solid var(--color-border-primary);
+        border-top-color: var(--color-accent);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .mounting-text {
+        font-size: var(--font-size-sm);
+    }
+
+    .mount-error-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        padding: 24px;
+        gap: 12px;
+        color: var(--color-text-secondary);
+    }
+
+    .mount-error-state .error-icon {
+        font-size: 32px;
+    }
+
+    .mount-error-state .error-title {
+        font-size: 16px;
+        font-weight: 500;
+        color: var(--color-text-primary);
+    }
+
+    .mount-error-state .error-message {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
+        text-align: center;
+        height: auto;
+        padding: 0;
+    }
+
+    .mount-error-state .error-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+    }
+
+    .mount-error-state .btn {
+        padding: 8px 16px;
+        border: 1px solid var(--color-border-primary);
+        border-radius: 6px;
+        background-color: var(--color-bg-secondary);
+        color: var(--color-text-primary);
+        font-size: var(--font-size-sm);
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+    }
+
+    .mount-error-state .btn:hover {
+        background-color: var(--color-bg-hover);
     }
 </style>

@@ -20,8 +20,8 @@
         host: NetworkHost
         /** Whether this pane is focused */
         isFocused?: boolean
-        /** Callback when user selects a share */
-        onShareSelect?: (share: ShareInfo) => void
+        /** Callback when user selects a share, includes credentials if auth was used */
+        onShareSelect?: (share: ShareInfo, credentials: { username: string; password: string } | null) => void
         /** Callback to go back to host list */
         onBack?: () => void
     }
@@ -39,6 +39,9 @@
     let showLoginForm = $state(false)
     let loginError = $state<string | undefined>()
     let isConnecting = $state(false)
+
+    // Track authenticated credentials for mounting
+    let authenticatedCredentials = $state<{ username: string; password: string } | null>(null)
 
     // Load shares on mount
     onMount(async () => {
@@ -130,6 +133,13 @@
             error = null
             showLoginForm = false
 
+            // Store credentials for mounting
+            if (username && password) {
+                authenticatedCredentials = { username, password }
+            } else {
+                authenticatedCredentials = null
+            }
+
             // Save credentials to Keychain if requested
             if (rememberInKeychain && username && password) {
                 await saveSmbCredentials(host.name, null, username, password)
@@ -172,7 +182,7 @@
 
     function handleShareDoubleClick(index: number) {
         if (index >= 0 && index < shares.length) {
-            onShareSelect?.(shares[index])
+            onShareSelect?.(shares[index], authenticatedCredentials)
         }
     }
 
@@ -206,7 +216,7 @@
             case 'Enter':
                 e.preventDefault()
                 if (selectedIndex >= 0 && selectedIndex < shares.length) {
-                    onShareSelect?.(shares[selectedIndex])
+                    onShareSelect?.(shares[selectedIndex], authenticatedCredentials)
                 }
                 return true
             case 'Escape':

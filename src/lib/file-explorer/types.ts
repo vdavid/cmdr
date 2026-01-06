@@ -210,3 +210,27 @@ export type KeychainError =
     | { type: 'not_found'; message: string }
     | { type: 'access_denied'; message: string }
     | { type: 'other'; message: string }
+
+// ============================================================================
+// Mount types
+// ============================================================================
+
+/** Result of a successful mount operation. */
+export interface MountResult {
+    /** Path where the share was mounted (e.g., "/Volumes/Documents") */
+    mountPath: string
+    /** Whether the share was already mounted (we didn't mount it ourselves) */
+    alreadyMounted: boolean
+}
+
+/** Error types for mount operations. */
+export type MountError =
+    | { type: 'host_unreachable'; message: string }
+    | { type: 'share_not_found'; message: string }
+    | { type: 'auth_required'; message: string }
+    | { type: 'auth_failed'; message: string }
+    | { type: 'permission_denied'; message: string }
+    | { type: 'timeout'; message: string }
+    | { type: 'cancelled'; message: string }
+    | { type: 'protocol_error'; message: string }
+    | { type: 'mount_path_conflict'; message: string }

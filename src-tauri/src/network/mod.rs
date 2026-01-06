@@ -6,6 +6,7 @@
 mod bonjour;
 pub mod keychain;
 pub mod known_shares;
+pub mod mount;
 pub mod smb_client;
 
 use log::{info, warn};

@@ -228,6 +228,8 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             commands::network::list_shares_with_credentials,
             #[cfg(target_os = "macos")]
+            commands::network::mount_network_share,
+            #[cfg(target_os = "macos")]
             permissions::check_full_disk_access,
             #[cfg(target_os = "macos")]
             permissions::open_privacy_settings

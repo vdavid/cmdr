@@ -12,6 +12,8 @@ import type {
     KeychainError,
     KnownNetworkShare,
     ListingStartResult,
+    MountError,
+    MountResult,
     NetworkHost,
     ResortResult,
     ShareListResult,
@@ -594,5 +596,57 @@ export function isKeychainError(error: unknown): error is KeychainError {
         'type' in error &&
         typeof (error as KeychainError).type === 'string' &&
         ['not_found', 'access_denied', 'other'].includes((error as KeychainError).type)
+    )
+}
+
+// ============================================================================
+// SMB mounting (macOS only)
+// ============================================================================
+
+/**
+ * Mounts an SMB share to the local filesystem.
+ * If the share is already mounted, returns the existing mount path without re-mounting.
+ *
+ * @param server Server hostname or IP address
+ * @param share Name of the share to mount
+ * @param username Optional username for authentication
+ * @param password Optional password for authentication
+ * @returns MountResult with mount path on success
+ * @throws MountError on failure
+ */
+export async function mountNetworkShare(
+    server: string,
+    share: string,
+    username: string | null,
+    password: string | null,
+): Promise<MountResult> {
+    return invoke<MountResult>('mount_network_share', {
+        server,
+        share,
+        username,
+        password,
+    })
+}
+
+/**
+ * Helper to check if an error is a MountError
+ */
+export function isMountError(error: unknown): error is MountError {
+    return (
+        typeof error === 'object' &&
+        error !== null &&
+        'type' in error &&
+        typeof (error as MountError).type === 'string' &&
+        [
+            'host_unreachable',
+            'share_not_found',
+            'auth_required',
+            'auth_failed',
+            'permission_denied',
+            'timeout',
+            'cancelled',
+            'protocol_error',
+            'mount_path_conflict',
+        ].includes((error as MountError).type)
     )
 }

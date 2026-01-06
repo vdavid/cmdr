@@ -1,12 +1,16 @@
 ## Listing
 
-- Back/forward is buggy, it doesn't remember when I change volumes, and it jumps weirdly even after normal dir navi.
-- Close the volume dropdown if the user clicks outside of it.
-- VolumeBreadcrumb max height should be window max the panel size (to end within the window). If it'd be longer, make it
-  scroll.
+- Fixed? Back/forward is buggy, it doesn't remember when I change volumes, and it jumps weirdly even after normal dir
+  navi.
+- Small: Close the volume dropdown if the user clicks outside of it.
+- Small: VolumeBreadcrumb max height should be window max the panel size (to end within the window). If it'd be longer,
+  make it scroll.
 - [...] Big: Make it handle network drives (already planned out! See features/network-smb/\*)
-- Clean up `RUSTY_INJECT_TEST_SMB=1 pnpm tauri dev`, probably not needed
+- Small: Clean up `RUSTY_INJECT_TEST_SMB=1 pnpm tauri dev`, probably not needed
+- Small: Sort network hosts alphabetically
+- Small: Sort network shares alphabetically
 - [ ] Test with slow drives like network drives
+- Add settings (see below)
 - [ ] Load iCloud sync statuses, too
 - [ ] Load Google Drive sync statuses, too
 - [ ] Load OneDrive sync statuses, too?
@@ -20,12 +24,11 @@
 
 ## Cleanup / housekeeping
 
-- Add "prefer const" ESLint rule
+- Small: Add "prefer const" ESLint rule
 - A round of refactoring is due
 - Mark macOS vs generic code clearer, and add this to the guide. Is there a way to run some coherence checks for
   `#[cfg(target_os = "macos")]` == true/false separately?
 - Docs are kinda outdated
-- Upgrade to latest Rust version (1.92.0) and update dependencies
 - CSS is a mess. Probably unused rules
 
 ## Settings
