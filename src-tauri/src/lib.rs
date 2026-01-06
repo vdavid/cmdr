@@ -85,6 +85,11 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             network::start_discovery(app.handle().clone());
 
+            // Inject Docker SMB test hosts if enabled (dev mode only)
+            // Enable with: RUSTY_INJECT_TEST_SMB=1 pnpm tauri dev
+            #[cfg(target_os = "macos")]
+            network::inject_test_hosts_if_enabled(app.handle());
+
             // Initialize font metrics for default font (system font at 12px)
             font_metrics::init_font_metrics(app.handle(), "system-400-12");
 

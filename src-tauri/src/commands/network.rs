@@ -66,22 +66,24 @@ pub async fn resolve_host(host_id: String) -> Option<NetworkHost> {
 /// * `host_id` - Unique identifier for the host (used for caching)
 /// * `hostname` - Hostname to connect to (for example, "NASPOLYA.local")
 /// * `ip_address` - Optional resolved IP address (preferred over hostname for reliability)
+/// * `port` - SMB port (default 445, but Docker containers may use different ports)
 #[tauri::command]
 pub async fn list_shares_on_host(
     host_id: String,
     hostname: String,
     ip_address: Option<String>,
+    port: u16,
 ) -> Result<ShareListResult, ShareListError> {
-    smb_client::list_shares(&host_id, &hostname, ip_address.as_deref(), None).await
+    smb_client::list_shares(&host_id, &hostname, ip_address.as_deref(), port, None).await
 }
 
 /// Prefetches shares for a host (for example, on hover).
 /// Same as list_shares_on_host but designed for prefetching - errors are silently ignored.
 /// Returns immediately if shares are already cached.
 #[tauri::command]
-pub async fn prefetch_shares(host_id: String, hostname: String, ip_address: Option<String>) {
+pub async fn prefetch_shares(host_id: String, hostname: String, ip_address: Option<String>, port: u16) {
     // Fire and forget - we don't care about the result for prefetching
-    let _ = smb_client::list_shares(&host_id, &hostname, ip_address.as_deref(), None).await;
+    let _ = smb_client::list_shares(&host_id, &hostname, ip_address.as_deref(), port, None).await;
 }
 
 /// Gets auth mode detected for a host (from cached share list if available).

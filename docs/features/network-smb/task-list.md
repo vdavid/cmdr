@@ -51,34 +51,35 @@ See [share-listing.md](./share-listing.md) for details. Decision: [ADR 013](../.
     - Test against Linux Samba
     - Test guest access and authenticated access
     - Measure latency
-    - **Outcome**: Confirm smb-rs works or identify edge cases needing fallback
+    - **Outcome**: smb-rs works with commercial NAS; has RPC compatibility issues with Samba.
+      Implemented `smbutil` fallback for macOS.
 
 ### Backend (Rust)
 
-- ⬜ **2.1** Add `smb` crate to Cargo.toml dependencies
-- ⬜ **2.2** Create `smb_client` module in `src-tauri/src/network/`
-- ⬜ **2.3** Implement `list_shares` async function using smb-rs
-- ⬜ **2.4** Filter to show only disk shares (hide IPC$, printers, admin shares)
-- ⬜ **2.5** Create Tauri command: `list_shares_on_host`
-- ⬜ **2.6** Handle guest vs. authenticated enumeration
-- ⬜ **2.7** Implement `smbutil` fallback for edge cases
-- ⬜ **2.8** Add timeout handling (10–15 second limit)
+- ✅ **2.1** Add `smb` crate to Cargo.toml dependencies
+- ✅ **2.2** Create `smb_client` module in `src-tauri/src/network/`
+- ✅ **2.3** Implement `list_shares` async function using smb-rs
+- ✅ **2.4** Filter to show only disk shares (hide IPC$, printers, admin shares)
+- ✅ **2.5** Create Tauri command: `list_shares_on_host`
+- ✅ **2.6** Handle guest vs. authenticated enumeration
+- ✅ **2.7** Implement `smbutil` fallback for edge cases
+- ✅ **2.8** Add timeout handling (10–15 second limit)
 - ⬜ **2.9** Implement connection pool (60 sec TTL, max 20 connections)
-- ⬜ **2.10** Implement auth mode detection (try guest, detect `GuestAllowed` vs `CredsRequired`)
-- ⬜ **2.11** Add unit tests with mocked SMB responses
+- ✅ **2.10** Implement auth mode detection (try guest, detect `GuestAllowed` vs `CredsRequired`)
+- ✅ **2.11** Add unit tests with mocked SMB responses
 
 ### Prefetching (Backend)
 
-- ⬜ **2.12** Prefetch shares for known hosts after discovery settles (parallel, cap 10)
-- ⬜ **2.13** Cache prefetched results for instant display
+- ✅ **2.12** Prefetch shares for known hosts after discovery settles (parallel, cap 10)
+- ✅ **2.13** Cache prefetched results for instant display
 
 ### Frontend (Svelte)
 
-- ⬜ **2.14** Display shares when user enters a network host
-- ⬜ **2.15** Show loading state with cancel option while enumerating
-- ⬜ **2.16** Implement brief caching (~30 seconds) for share lists
-- ⬜ **2.17** Handle errors (host unreachable, timeout, auth required)
-- ⬜ **2.18** Prefetch on hover (500 ms debounce)
+- ✅ **2.14** Display shares when user enters a network host
+- ✅ **2.15** Show loading state with cancel option while enumerating
+- ✅ **2.16** Implement brief caching (~30 seconds) for share lists
+- ✅ **2.17** Handle errors (host unreachable, timeout, auth required)
+- ✅ **2.18** Prefetch on hover (500 ms debounce)
 - ⬜ **2.19** Add frontend tests
 
 ---
@@ -213,6 +214,14 @@ For high-fidelity testing, we spin up a farm of Docker SMB test servers. See
 [test-docker-server-list.md](./test-docker-server-list.md) for the container list and rationale, and
 [SMB servers docs](../../testing/smb-servers.md) for setup and usage.
 
+**Two deployment modes:**
+
+1. **Local (macOS)**: Port-mapped containers at `localhost:PORT`. Limited due to Docker networking issues.
+   Use `RUSTY_INJECT_TEST_SMB=1` to inject hosts into the app.
+
+2. **Raspberry Pi (recommended)**: Macvlan networking with real LAN IPs. Containers advertise via mDNS/Bonjour
+   and appear automatically in the app. See [Setting up SMB test containers on Linux](../../testing/setting-up-smb-test-containers-on-linux.md).
+
 **Implementation**: `test/smb-servers/`
 
 - Containers start once per test suite (not per test)
@@ -220,12 +229,20 @@ For high-fidelity testing, we spin up a farm of Docker SMB test servers. See
 - Run via `--features integration-tests` flag
 - In CI: Always run. Locally: Optional (developer can skip for faster iteration)
 
-Quick start:
+Quick start (local):
 
 ```bash
 ./test/smb-servers/start.sh          # Core containers
 ./test/smb-servers/start.sh minimal  # Just guest + auth
 ./test/smb-servers/start.sh all      # All 17 containers
+```
+
+Quick start (Raspberry Pi):
+
+```bash
+ssh pi@raspberrypi.local
+cd rusty-commander/test/smb-servers
+./start-pi.sh
 ```
 
 ### Manual testing checklist

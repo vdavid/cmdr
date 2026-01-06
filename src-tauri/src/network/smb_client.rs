@@ -168,6 +168,7 @@ pub async fn list_shares(
     host_id: &str,
     hostname: &str,
     ip_address: Option<&str>,
+    port: u16,
     credentials: Option<(&str, &str)>,
 ) -> Result<ShareListResult, ShareListError> {
     // Check cache first
@@ -176,7 +177,7 @@ pub async fn list_shares(
     }
 
     // Try to list shares
-    let result = list_shares_uncached(hostname, ip_address, credentials).await?;
+    let result = list_shares_uncached(hostname, ip_address, port, credentials).await?;
 
     // Cache successful result
     cache_shares(host_id, &result);
@@ -186,32 +187,64 @@ pub async fn list_shares(
 
 /// Lists shares without checking cache.
 /// Uses IP address when available to bypass mDNS resolution issues with smb-rs.
+/// Falls back to smbutil on macOS when smb-rs fails with protocol errors.
 async fn list_shares_uncached(
     hostname: &str,
     ip_address: Option<&str>,
+    port: u16,
     credentials: Option<(&str, &str)>,
 ) -> Result<ShareListResult, ShareListError> {
     // Debug log the incoming params
     debug!(
-        "list_shares_uncached: hostname={:?}, ip_address={:?}, has_creds={}",
+        "list_shares_uncached: hostname={:?}, ip_address={:?}, port={}, has_creds={}",
         hostname,
         ip_address,
+        port,
         credentials.is_some()
     );
 
-    // Create SMB client
-    let client = Client::new(ClientConfig::default());
+    // Try smb-rs first
+    match list_shares_smb_rs(hostname, ip_address, port, credentials).await {
+        Ok(result) => Ok(result),
+        Err(ShareListError::ProtocolError(ref msg)) => {
+            // Protocol error (likely RPC incompatibility with Samba)
+            // Try smbutil fallback on macOS
+            debug!("smb-rs failed with protocol error: {}, trying smbutil fallback", msg);
+            list_shares_smbutil(hostname, ip_address, port).await
+        }
+        Err(e) => Err(e),
+    }
+}
 
-    // Get the server name (strip .local suffix for SMB protocol)
-    let server_name = hostname.strip_suffix(".local").unwrap_or(hostname);
+/// Lists shares using smb-rs (pure Rust implementation).
+async fn list_shares_smb_rs(
+    hostname: &str,
+    ip_address: Option<&str>,
+    port: u16,
+    credentials: Option<(&str, &str)>,
+) -> Result<ShareListResult, ShareListError> {
+    // Create SMB client with unsigned guest access allowed
+    // (some servers like Samba don't require signing for anonymous access)
+    let mut config = ClientConfig::default();
+    config.connection.allow_unsigned_guest_access = true;
+    let client = Client::new(config);
+
+    // Determine the server name to use for SMB protocol
+    // When we have an IP, use it as the server name for smb-rs connection lookup
+    // (smb-rs associates connections by server name, and hostname lookup can fail)
+    let server_name = if let Some(ip) = ip_address {
+        ip
+    } else {
+        hostname.strip_suffix(".local").unwrap_or(hostname)
+    };
 
     // Try guest access first, then authenticated
-    let (shares, auth_mode) = match try_list_shares_as_guest(&client, server_name, hostname, ip_address).await {
+    let (shares, auth_mode) = match try_list_shares_as_guest(&client, server_name, hostname, ip_address, port).await {
         Ok(shares) => (shares, AuthMode::GuestAllowed),
         Err(e) if is_auth_error(&e) => {
             // Guest failed with auth error - try with credentials if provided
             if let Some((user, pass)) = credentials {
-                let shares = try_list_shares_authenticated(&client, server_name, hostname, ip_address, user, pass)
+                let shares = try_list_shares_authenticated(&client, server_name, hostname, ip_address, port, user, pass)
                     .await
                     .map_err(|e| classify_error(&e))?;
                 (shares, AuthMode::CredsRequired)
@@ -234,6 +267,144 @@ async fn list_shares_uncached(
     })
 }
 
+/// Lists shares using macOS smbutil command as fallback.
+/// This works with Samba servers that have RPC compatibility issues with smb-rs.
+#[cfg(target_os = "macos")]
+async fn list_shares_smbutil(
+    hostname: &str,
+    ip_address: Option<&str>,
+    port: u16,
+) -> Result<ShareListResult, ShareListError> {
+    use std::process::Command;
+
+    // Build the SMB URL: //host:port or //ip:port
+    let host = ip_address.unwrap_or(hostname);
+    let url = if port == 445 {
+        format!("//{}", host)
+    } else {
+        format!("//{}:{}", host, port)
+    };
+
+    debug!("Running smbutil view -G -N {}", url);
+
+    // Run smbutil with guest access (-G) and no password prompt (-N)
+    let output = tokio::task::spawn_blocking(move || {
+        Command::new("smbutil")
+            .args(["view", "-G", "-N", &url])
+            .output()
+    })
+    .await
+    .map_err(|e| ShareListError::ProtocolError(format!("Failed to spawn smbutil: {}", e)))?
+    .map_err(|e| ShareListError::ProtocolError(format!("Failed to run smbutil: {}", e)))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        debug!("smbutil failed: exit={:?}, stderr={}, stdout={}", output.status.code(), stderr, stdout);
+
+        if stderr.contains("Authentication error") || stderr.contains("rejected the authentication") {
+            return Err(ShareListError::AuthRequired(
+                "smbutil: Authentication required".to_string(),
+            ));
+        }
+        return Err(ShareListError::ProtocolError(format!(
+            "smbutil failed: {}",
+            stderr.trim()
+        )));
+    }
+
+    // Parse smbutil output
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let shares = parse_smbutil_output(&stdout);
+
+    Ok(ShareListResult {
+        shares,
+        auth_mode: AuthMode::GuestAllowed,
+        from_cache: false,
+    })
+}
+
+/// Fallback for non-macOS platforms - smbutil is not available.
+#[cfg(not(target_os = "macos"))]
+async fn list_shares_smbutil(
+    _hostname: &str,
+    _ip_address: Option<&str>,
+    _port: u16,
+) -> Result<ShareListResult, ShareListError> {
+    Err(ShareListError::ProtocolError(
+        "smbutil fallback not available on this platform".to_string(),
+    ))
+}
+
+/// Parses smbutil view output to extract share information.
+/// Example output:
+/// ```
+/// Share                                           Type    Comments
+/// -------------------------------
+/// public                                          Disk
+/// Documents                                       Disk    My documents
+/// ```
+fn parse_smbutil_output(output: &str) -> Vec<ShareInfo> {
+    let mut shares = Vec::new();
+    let mut in_shares_section = false;
+
+    for line in output.lines() {
+        // Skip header and separator
+        if line.starts_with("Share") && line.contains("Type") {
+            in_shares_section = true;
+            continue;
+        }
+        if line.starts_with("---") {
+            continue;
+        }
+        if line.contains("shares listed") {
+            break;
+        }
+
+        if !in_shares_section {
+            continue;
+        }
+
+        // Parse share line: NAME (padded)  TYPE  COMMENT
+        let line = line.trim();
+        if line.is_empty() {
+            continue;
+        }
+
+        // Split by multiple spaces (columns are space-padded)
+        let parts: Vec<&str> = line.split_whitespace().collect();
+        if parts.len() < 2 {
+            continue;
+        }
+
+        let name = parts[0].to_string();
+        let share_type = parts[1].to_lowercase();
+
+        // Skip hidden shares (ending with $) and non-disk shares
+        if name.ends_with('$') {
+            continue;
+        }
+        if share_type != "disk" {
+            continue;
+        }
+
+        // Comment is everything after the type
+        let comment = if parts.len() > 2 {
+            Some(parts[2..].join(" "))
+        } else {
+            None
+        };
+
+        shares.push(ShareInfo {
+            name,
+            is_disk: true,
+            comment,
+        });
+    }
+
+    shares
+}
+
 /// Attempts to list shares as guest (anonymous).
 /// Connects via IP address when available (preferred), falling back to hostname resolution.
 async fn try_list_shares_as_guest(
@@ -241,28 +412,38 @@ async fn try_list_shares_as_guest(
     server_name: &str,
     hostname: &str,
     ip_address: Option<&str>,
+    port: u16,
 ) -> Result<Vec<ShareInfo1>, String> {
     timeout(LIST_SHARES_TIMEOUT, async {
         // Determine how to connect: by IP (preferred) or by hostname
         let connect_name = if let Some(ip) = ip_address {
             // Use IP address for connection to bypass mDNS resolution issues
-            let socket_addr: SocketAddr = format!("{}:445", ip)
+            let socket_addr: SocketAddr = format!("{}:{}", ip, port)
                 .parse()
                 .map_err(|e| format!("Invalid IP {}: {}", ip, e))?;
+
+            debug!(
+                "Connecting to server_name='{}' at socket_addr='{}'",
+                server_name, socket_addr
+            );
 
             client
                 .connect_to_address(server_name, socket_addr)
                 .await
                 .map_err(|e| format!("Connect to {} failed: {}", ip, e))?;
 
+            debug!("connect_to_address succeeded, now calling ipc_connect with server_name='{}'", server_name);
+
             // After connect_to_address, use server_name for IPC (without .local)
             server_name
         } else {
             // No IP - try hostname resolution (may fail for .local)
+            debug!("No IP address provided, using hostname='{}' for ipc_connect", hostname);
             hostname
         };
 
         // Connect to IPC$ with "Guest" user
+        debug!("Calling ipc_connect with connect_name='{}'", connect_name);
         client
             .ipc_connect(connect_name, "Guest", String::new())
             .await
@@ -285,6 +466,7 @@ async fn try_list_shares_authenticated(
     server_name: &str,
     hostname: &str,
     ip_address: Option<&str>,
+    port: u16,
     username: &str,
     password: &str,
 ) -> Result<Vec<ShareInfo1>, String> {
@@ -292,7 +474,7 @@ async fn try_list_shares_authenticated(
         // Determine how to connect: by IP (preferred) or by hostname
         let connect_name = if let Some(ip) = ip_address {
             // Use IP address for connection to bypass mDNS resolution issues
-            let socket_addr: SocketAddr = format!("{}:445", ip)
+            let socket_addr: SocketAddr = format!("{}:{}", ip, port)
                 .parse()
                 .map_err(|e| format!("Invalid IP {}: {}", ip, e))?;
 
@@ -492,5 +674,44 @@ mod tests {
         // Invalidate
         invalidate_cache(host_id);
         assert!(get_cached_shares(host_id).is_none());
+    }
+
+    #[test]
+    fn test_parse_smbutil_output() {
+        let output = r#"Share                                           Type    Comments
+-------------------------------
+Public                                          Disk    System default share
+Web                                             Disk    
+Multimedia                                      Disk    System default share
+IPC$                                            Pipe    IPC Service (NAS Server)
+home                                            Disk    Home
+ADMIN$                                          Disk    Admin share
+
+6 shares listed
+"#;
+
+        let shares = parse_smbutil_output(output);
+        
+        // Should have 4 disk shares (excluding IPC$ and ADMIN$)
+        assert_eq!(shares.len(), 4);
+        
+        // Check names
+        let names: Vec<&str> = shares.iter().map(|s| s.name.as_str()).collect();
+        assert!(names.contains(&"Public"));
+        assert!(names.contains(&"Web"));
+        assert!(names.contains(&"Multimedia"));
+        assert!(names.contains(&"home"));
+        assert!(!names.contains(&"IPC$"));
+        assert!(!names.contains(&"ADMIN$"));
+        
+        // Check that all are marked as disk
+        assert!(shares.iter().all(|s| s.is_disk));
+        
+        // Check comments
+        let public = shares.iter().find(|s| s.name == "Public").unwrap();
+        assert_eq!(public.comment.as_deref(), Some("System default share"));
+        
+        let web = shares.iter().find(|s| s.name == "Web").unwrap();
+        assert!(web.comment.is_none());
     }
 }

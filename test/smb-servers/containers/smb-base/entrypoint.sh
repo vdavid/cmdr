@@ -7,6 +7,7 @@ READ_ONLY="${READ_ONLY:-no}"
 SERVER_SIGNING="${SERVER_SIGNING:-auto}"
 SERVER_STRING="${SERVER_STRING:-Samba Test Server}"
 SMB_SHARE_NAME="${SMB_SHARE_NAME:-share}"
+MDNS_NAME="${MDNS_NAME:-}"
 
 # Generate smb.conf from template
 sed -e "s/__SERVER_STRING__/${SERVER_STRING}/" \
@@ -43,5 +44,27 @@ if [ ! -f /share/test.txt ]; then
     echo "Nested content" > /share/subfolder/nested.txt
 fi
 
+# Set hostname for mDNS if specified
+if [ -n "$MDNS_NAME" ]; then
+    echo "$MDNS_NAME" > /etc/hostname
+    hostname "$MDNS_NAME"
+    # Update avahi hostname
+    sed -i "s/^#host-name=.*/host-name=$MDNS_NAME/" /etc/avahi/avahi-daemon.conf 2>/dev/null || true
+fi
+
+# Start dbus (required by avahi)
+echo "Starting dbus..."
+mkdir -p /run/dbus
+rm -f /run/dbus/pid
+dbus-daemon --system --fork
+
+# Start avahi-daemon for mDNS advertisement
+echo "Starting avahi-daemon..."
+avahi-daemon --daemonize --no-chroot
+
+# Give avahi a moment to start
+sleep 1
+
 echo "Starting Samba..."
 exec smbd --foreground --no-process-group --debug-stdout
+

@@ -15,6 +15,21 @@ use tauri::{AppHandle, Emitter};
 pub use bonjour::start_discovery;
 pub use smb_client::{AuthMode, ShareListError, ShareListResult};
 
+/// Injects Docker SMB test hosts for QA testing if enabled.
+/// Call this after `start_discovery()` in dev mode.
+/// Enable with: `RUSTY_INJECT_TEST_SMB=1 pnpm tauri dev`
+#[cfg(debug_assertions)]
+pub fn inject_test_hosts_if_enabled(app_handle: &tauri::AppHandle) {
+    if std::env::var("RUSTY_INJECT_TEST_SMB").is_ok() {
+        inject_test_hosts(app_handle);
+    }
+}
+
+/// No-op in release builds.
+#[cfg(not(debug_assertions))]
+pub fn inject_test_hosts_if_enabled(_app_handle: &tauri::AppHandle) {}
+
+
 /// A discovered network host advertising SMB services.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -283,6 +298,54 @@ pub fn resolve_network_host_sync(host_id: &str) -> Option<NetworkHost> {
 
     // Update host (brief mutex hold)
     update_host_resolution(host_id, hostname, ip_address)
+}
+
+/// Docker SMB test hosts for QA testing.
+/// These match the containers in test/smb-servers/docker-compose.yml
+#[cfg(debug_assertions)]
+const TEST_HOSTS: &[(&str, &str, u16)] = &[
+    // Core authentication scenarios
+    ("smb-guest", "SMB Guest (Docker)", 9445),
+    ("smb-auth", "SMB Auth (Docker)", 9446),
+    ("smb-both", "SMB Both (Docker)", 9447),
+    // Edge cases and stress tests
+    ("smb-flaky", "SMB Flaky (Docker)", 9448),
+    ("smb-50shares", "SMB 50 Shares (Docker)", 9449),
+    ("smb-slow", "SMB Slow (Docker)", 9450),
+    ("smb-readonly", "SMB Readonly (Docker)", 9451),
+    // Protocol edge cases
+    ("smb-ancient", "SMB Ancient/SMB1 (Docker)", 9452),
+    ("smb-signing", "SMB Signing (Docker)", 9453),
+    // Name/path stress tests
+    ("smb-unicode", "SMB Unicode (Docker)", 9454),
+    ("smb-longnames", "SMB Long Names (Docker)", 9455),
+    ("smb-deepnest", "SMB Deep Nest (Docker)", 9456),
+    ("smb-manyfiles", "SMB Many Files (Docker)", 9457),
+    // Simulated server types
+    ("smb-like-windows", "SMB Windows-like (Docker)", 9458),
+    ("smb-like-synology", "SMB Synology-like (Docker)", 9459),
+    ("smb-like-linux", "SMB Linux-like (Docker)", 9460),
+];
+
+/// Injects Docker SMB test hosts for QA testing.
+/// These hosts point to localhost with the Docker container ports.
+#[cfg(debug_assertions)]
+fn inject_test_hosts(app_handle: &tauri::AppHandle) {
+    info!(
+        "Injecting {} Docker SMB test hosts (RUSTY_INJECT_TEST_SMB=1)",
+        TEST_HOSTS.len()
+    );
+
+    for (id, name, port) in TEST_HOSTS {
+        let host = NetworkHost {
+            id: id.to_string(),
+            name: name.to_string(),
+            hostname: Some("localhost".to_string()),
+            ip_address: Some("127.0.0.1".to_string()),
+            port: *port,
+        };
+        on_host_found(host, app_handle);
+    }
 }
 
 #[cfg(test)]

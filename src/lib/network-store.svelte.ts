@@ -82,7 +82,7 @@ function startPrefetchShares(host: NetworkHost) {
 
     prefetchingHosts.add(host.id)
 
-    void prefetchSharesCmd(host.id, host.hostname, host.ipAddress)
+    void prefetchSharesCmd(host.id, host.hostname, host.ipAddress, host.port)
         .then(() => {
             // Prefetch succeeded - backend has cached it
             if (!shareStates.has(host.id)) {
@@ -105,7 +105,7 @@ async function fetchSharesSilent(host: NetworkHost): Promise<void> {
     if (!host.hostname) return
 
     try {
-        const result = await listSharesOnHost(host.id, host.hostname, host.ipAddress)
+        const result = await listSharesOnHost(host.id, host.hostname, host.ipAddress, host.port)
         shareStates.set(host.id, { status: 'loaded', result, fetchedAt: Date.now() })
     } catch (error) {
         const shareError = error as ShareListError
@@ -262,7 +262,7 @@ export async function fetchShares(host: NetworkHost): Promise<ShareListResult> {
     shareStates.set(host.id, { status: 'loading' })
 
     try {
-        const result = await listSharesOnHost(host.id, host.hostname, host.ipAddress)
+        const result = await listSharesOnHost(host.id, host.hostname, host.ipAddress, host.port)
         shareStates.set(host.id, { status: 'loaded', result, fetchedAt: Date.now() })
         return result
     } catch (error) {

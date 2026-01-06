@@ -355,12 +355,18 @@ export async function resolveNetworkHost(hostId: string): Promise<NetworkHost | 
  * @param hostId Unique identifier for the host (used for caching)
  * @param hostname Hostname to connect to (for example, "NASPOLYA.local")
  * @param ipAddress Optional resolved IP address (preferred over hostname for reliability)
+ * @param port SMB port (default 445, but Docker containers may use different ports)
  * @returns Result with shares and auth mode, or error
  */
-export async function listSharesOnHost(hostId: string, hostname: string, ipAddress?: string): Promise<ShareListResult> {
+export async function listSharesOnHost(
+    hostId: string,
+    hostname: string,
+    ipAddress: string | undefined,
+    port: number,
+): Promise<ShareListResult> {
     // The Rust command returns Result<ShareListResult, ShareListError>
     // Tauri auto-converts Ok to value and Err to thrown error
-    return invoke<ShareListResult>('list_shares_on_host', { hostId, hostname, ipAddress })
+    return invoke<ShareListResult>('list_shares_on_host', { hostId, hostname, ipAddress, port })
 }
 
 /**
@@ -370,10 +376,16 @@ export async function listSharesOnHost(hostId: string, hostname: string, ipAddre
  * @param hostId Unique identifier for the host
  * @param hostname Hostname to connect to
  * @param ipAddress Optional resolved IP address
+ * @param port SMB port
  */
-export async function prefetchShares(hostId: string, hostname: string, ipAddress?: string): Promise<void> {
+export async function prefetchShares(
+    hostId: string,
+    hostname: string,
+    ipAddress: string | undefined,
+    port: number,
+): Promise<void> {
     try {
-        await invoke('prefetch_shares', { hostId, hostname, ipAddress })
+        await invoke('prefetch_shares', { hostId, hostname, ipAddress, port })
     } catch {
         // Silently ignore prefetch errors
     }

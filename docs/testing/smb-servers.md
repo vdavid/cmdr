@@ -7,12 +7,17 @@ This document describes the Docker-based SMB test server infrastructure for inte
 We maintain a farm of Docker containers running various SMB server configurations. These provide deterministic,
 reproducible test environments covering authentication modes, edge cases, and server behaviors.
 
-All containers use port-mapped networking (`localhost:PORT`) for direct connection testing. Bonjour/mDNS discovery
-testing should use real network devices, as Docker's host networking doesn't properly bridge mDNS on macOS.
+**Two deployment modes are supported:**
+
+1. **Local (macOS)**: Port-mapped networking (`localhost:PORT`). Requires test host injection to appear in the app.
+   Limited by macOS Docker networking issues with SMB (see [Known limitations](#known-limitations)).
+
+2. **Raspberry Pi**: Macvlan networking with real LAN IPs. Containers advertise via mDNS/Bonjour and appear
+   automatically in the app's network browser. **Recommended for realistic testing.**
 
 **Location**: `test/smb-servers/`
 
-## Quick start
+## Quick start (local)
 
 ```bash
 # Start core containers (recommended for most development)
@@ -27,6 +32,57 @@ testing should use real network devices, as Docker's host networking doesn't pro
 # Stop everything
 ./test/smb-servers/stop.sh
 ```
+
+## Quick start (Raspberry Pi) – recommended
+
+Run containers on a Pi for real network testing with Bonjour discovery:
+
+```bash
+# SSH into your Pi
+ssh pi@raspberrypi.local
+
+# Clone the repo (or sync it)
+git clone <repo-url>
+cd rusty-commander
+
+# Edit network settings to match your LAN
+vi test/smb-servers/docker-compose.pi.yml
+# Update: parent (eth0 or wlan0), subnet, gateway, ip_range
+
+# Reserve IPs 192.168.1.200-215 on your router's DHCP settings
+
+# Start containers
+./test/smb-servers/start-pi.sh
+
+# Test from your Mac
+smbutil view -G -N //smb-guest-test.local
+```
+
+The containers will appear in the app's Network browser via Bonjour as:
+- `smb-guest-test.local` (192.168.1.200)
+- `smb-auth-test.local` (192.168.1.201)
+- `smb-both-test.local` (192.168.1.202)
+- `smb-readonly-test.local` (192.168.1.203)
+
+## Using test hosts in the app (local mode)
+
+To see Docker SMB hosts in the app's Network section (alongside real Bonjour-discovered hosts), enable test host
+injection:
+
+```bash
+# Start Docker containers first
+./test/smb-servers/start.sh
+
+# Then run the app with injection enabled
+RUSTY_INJECT_TEST_SMB=1 pnpm tauri dev
+```
+
+This injects all 16 Docker hosts into the network discovery list with names like "SMB Guest (Docker)". They're
+pre-resolved to `127.0.0.1` with the correct port, so they work immediately for browsing shares.
+
+> **Note**: This only works in dev builds (`debug_assertions`). Production builds ignore this env var.
+
+
 
 ## Container list
 
@@ -197,6 +253,28 @@ smbclient -L localhost -p 9445 -N
 mkdir -p /tmp/smb-test
 mount_smbfs -o port=9445 //guest@localhost/public /tmp/smb-test
 ```
+
+## Known limitations
+
+### smb-rs and Samba RPC compatibility
+
+The `smb-rs` crate has a known compatibility issue with Samba's DCE-RPC implementation for the `list_shares` operation.
+Specifically, smb-rs uses NDR64 transfer syntax which Samba may not support for SRVSVC (Server Service) RPC calls.
+
+**Symptoms:**
+- Docker SMB containers show as "Reachable" but fail to list shares
+- Error: `BindAck result for syntax (71710533-beba-4937-8319-b5dbef9ccc36/1) was not acceptance: ProviderRejection, reason: ProposedTransferSyntaxesNotSupported`
+
+**Impact:**
+- Docker-based Samba containers cannot be used for share listing tests
+- Real NAS devices (QNAP, Synology, Windows) typically work fine as they use different RPC implementations
+
+**Workarounds:**
+1. Test against real SMB servers on your network (QNAP, Synology, Windows)
+2. Use the Docker containers for connection/authentication testing only
+3. Follow [smb-rs GitHub issues](https://github.com/afiffon/smb-rs/issues) for updates
+
+This doesn't affect production use with real network devices, only Docker-based testing.
 
 ## Related
 

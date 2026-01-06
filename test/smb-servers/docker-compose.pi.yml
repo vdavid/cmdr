@@ -1,0 +1,133 @@
+# SMB test server farm with macvlan networking for Bonjour discovery
+# This compose file is designed to run on a Raspberry Pi or Linux host
+# where you want containers to be discoverable via mDNS/Bonjour
+#
+# IMPORTANT: Before using, configure the network settings below to match your LAN:
+#   - parent: eth0           # Your Pi's network interface (check with 'ip link')
+#   - subnet: 192.168.1.0/24 # Your LAN subnet
+#   - gateway: 192.168.1.1   # Your router IP
+#   - ip_range: 192.168.1.200/28  # IPs to assign (200-215, reserve on your router!)
+#
+# Usage:
+#   docker compose -f docker-compose.pi.yml up -d
+#   docker compose -f docker-compose.pi.yml down
+#
+# The containers will advertise themselves on Bonjour as:
+#   smb-guest-test.local, smb-auth-test.local, etc.
+
+services:
+  smb-guest:
+    build:
+      context: ./containers/smb-base
+      args:
+        GUEST_OK: 'yes'
+    container_name: smb-guest
+    hostname: smb-guest-test
+    volumes:
+      - smb-guest-data:/share
+    environment:
+      - SMB_SHARE_NAME=public
+      - SERVER_STRING=SMB Guest Test (Docker)
+      - MDNS_NAME=smb-guest-test
+    networks:
+      smb_lan:
+        ipv4_address: 192.168.1.200
+    healthcheck:
+      test: [ 'CMD', 'smbclient', '-L', 'localhost', '-N' ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  smb-auth:
+    build:
+      context: ./containers/smb-base
+      args:
+        GUEST_OK: 'no'
+        CREATE_USER: 'testuser:testpass'
+    container_name: smb-auth
+    hostname: smb-auth-test
+    volumes:
+      - smb-auth-data:/share
+    environment:
+      - SMB_SHARE_NAME=private
+      - SERVER_STRING=SMB Auth Test (Docker)
+      - MDNS_NAME=smb-auth-test
+    networks:
+      smb_lan:
+        ipv4_address: 192.168.1.201
+    healthcheck:
+      test: [ 'CMD', 'smbclient', '-L', 'localhost', '-U', 'testuser%testpass' ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  smb-both:
+    build:
+      context: ./containers/smb-base
+      args:
+        GUEST_OK: 'yes'
+        CREATE_USER: 'testuser:testpass'
+    container_name: smb-both
+    hostname: smb-both-test
+    volumes:
+      - smb-both-data:/share
+    environment:
+      - SMB_SHARE_NAME=mixed
+      - SERVER_STRING=SMB Both Test (Docker)
+      - MDNS_NAME=smb-both-test
+    networks:
+      smb_lan:
+        ipv4_address: 192.168.1.202
+    healthcheck:
+      test: [ 'CMD', 'smbclient', '-L', 'localhost', '-N' ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  smb-readonly:
+    build:
+      context: ./containers/smb-base
+      args:
+        GUEST_OK: 'yes'
+        READ_ONLY: 'yes'
+    container_name: smb-readonly
+    hostname: smb-readonly-test
+    volumes:
+      - smb-readonly-data:/share
+    environment:
+      - SMB_SHARE_NAME=readonly
+      - SERVER_STRING=SMB Readonly Test (Docker)
+      - MDNS_NAME=smb-readonly-test
+    networks:
+      smb_lan:
+        ipv4_address: 192.168.1.203
+    healthcheck:
+      test: [ 'CMD', 'smbclient', '-L', 'localhost', '-N' ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+networks:
+  smb_lan:
+    driver: macvlan
+    driver_opts:
+      # IMPORTANT: Change 'eth0' to your Pi's network interface
+      # Check with: ip link show
+      parent: eth0
+    ipam:
+      config:
+        # IMPORTANT: Update these to match your LAN
+        - subnet: 192.168.1.0/24
+          gateway: 192.168.1.1
+          # Reserve IPs 200-215 on your router's DHCP settings
+          ip_range: 192.168.1.200/28
+
+volumes:
+  smb-guest-data:
+  smb-auth-data:
+  smb-both-data:
+  smb-readonly-data:
