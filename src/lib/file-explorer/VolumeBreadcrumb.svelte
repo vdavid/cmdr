@@ -379,6 +379,8 @@
         left: 0;
         margin-top: 4px;
         min-width: 220px;
+        max-height: calc(100vh - 30px);
+        overflow-y: auto;
         background-color: var(--color-bg-secondary);
         border: 1px solid var(--color-border-primary);
         border-radius: 6px;
