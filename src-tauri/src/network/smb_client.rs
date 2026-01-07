@@ -428,7 +428,9 @@ async fn list_shares_smbutil_authenticated_from_keychain(
         );
 
         if stderr.contains("Authentication error") || stderr.contains("rejected the authentication") {
-            return Err(ShareListError::AuthRequired("Keychain credentials invalid or missing".to_string()));
+            return Err(ShareListError::AuthRequired(
+                "Keychain credentials invalid or missing".to_string(),
+            ));
         }
         return Err(ShareListError::AuthRequired(format!(
             "No valid Keychain credentials: {}",
@@ -441,7 +443,9 @@ async fn list_shares_smbutil_authenticated_from_keychain(
     let shares = parse_smbutil_output(&stdout);
 
     if shares.is_empty() {
-        return Err(ShareListError::AuthRequired("Keychain auth returned no shares".to_string()));
+        return Err(ShareListError::AuthRequired(
+            "Keychain auth returned no shares".to_string(),
+        ));
     }
 
     info!("smbutil with Keychain auth succeeded, got {} shares", shares.len());

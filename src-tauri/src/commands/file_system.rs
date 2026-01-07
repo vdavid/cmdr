@@ -2,7 +2,8 @@
 
 use crate::file_system::{
     FileEntry, ListingStartResult, ResortResult, SortColumn, SortOrder, find_file_index as ops_find_file_index,
-    get_file_at as ops_get_file_at, get_file_range as ops_get_file_range, get_total_count as ops_get_total_count,
+    get_file_at as ops_get_file_at, get_file_range as ops_get_file_range,
+    get_max_filename_width as ops_get_max_filename_width, get_total_count as ops_get_total_count,
     list_directory_end as ops_list_directory_end,
     list_directory_start_with_volume as ops_list_directory_start_with_volume, resort_listing as ops_resort_listing,
 };
@@ -99,6 +100,19 @@ pub fn get_file_range(
 #[tauri::command]
 pub fn get_total_count(listing_id: String, include_hidden: bool) -> Result<usize, String> {
     ops_get_total_count(&listing_id, include_hidden)
+}
+
+/// Gets the maximum filename width for a cached listing.
+///
+/// Recalculates the width based on current entries using font metrics.
+/// This is useful after files are added/removed by the file watcher.
+///
+/// # Arguments
+/// * `listing_id` - The listing ID from `list_directory_start`.
+/// * `include_hidden` - Whether to include hidden files.
+#[tauri::command]
+pub fn get_max_filename_width(listing_id: String, include_hidden: bool) -> Result<Option<f32>, String> {
+    ops_get_max_filename_width(&listing_id, include_hidden)
 }
 
 /// Finds the index of a file by name in a cached listing.

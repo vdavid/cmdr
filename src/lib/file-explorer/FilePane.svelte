@@ -14,6 +14,7 @@
         findContainingVolume,
         findFileIndex,
         getFileAt,
+        getMaxFilenameWidth,
         getSyncStatus,
         getTotalCount,
         listDirectoryEnd,
@@ -630,10 +631,14 @@
             if (diff.sequence <= lastSequence) return
             lastSequence = diff.sequence
 
-            // For now, just refetch total count - the List components
+            // Refetch total count and max filename width - the List components
             // will refetch their visible range on the next render
-            void getTotalCount(listingId, includeHidden).then((count) => {
+            void Promise.all([
+                getTotalCount(listingId, includeHidden),
+                getMaxFilenameWidth(listingId, includeHidden),
+            ]).then(([count, newMaxWidth]) => {
                 totalCount = count
+                maxFilenameWidth = newMaxWidth
                 // Re-fetch selected entry as it may have changed
                 void fetchSelectedEntry()
             })

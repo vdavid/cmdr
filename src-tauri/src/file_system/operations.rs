@@ -589,6 +589,42 @@ pub fn get_total_count(listing_id: &str, include_hidden: bool) -> Result<usize, 
     }
 }
 
+/// Gets the maximum filename width for a cached listing.
+///
+/// Recalculates the width based on current entries using font metrics.
+/// This is useful after files are added/removed by the file watcher.
+///
+/// # Arguments
+/// * `listing_id` - The listing ID from `list_directory_start`
+/// * `include_hidden` - Whether to include hidden files
+///
+/// # Returns
+/// Maximum filename width in pixels, or None if font metrics are not available.
+pub fn get_max_filename_width(listing_id: &str, include_hidden: bool) -> Result<Option<f32>, String> {
+    let cache = LISTING_CACHE.read().map_err(|_| "Failed to acquire cache lock")?;
+
+    let listing = cache
+        .get(listing_id)
+        .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
+
+    let font_id = "system-400-12"; // Default font (must match list_directory_start_with_volume)
+
+    let max_width = if include_hidden {
+        let filenames: Vec<&str> = listing.entries.iter().map(|e| e.name.as_str()).collect();
+        crate::font_metrics::calculate_max_width(&filenames, font_id)
+    } else {
+        let filenames: Vec<&str> = listing
+            .entries
+            .iter()
+            .filter(|e| !e.name.starts_with('.'))
+            .map(|e| e.name.as_str())
+            .collect();
+        crate::font_metrics::calculate_max_width(&filenames, font_id)
+    };
+
+    Ok(max_width)
+}
+
 /// Finds the index of a file by name in a cached listing.
 ///
 /// # Arguments
