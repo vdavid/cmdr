@@ -40,6 +40,11 @@
     let error = $state<ShareListError | null>(null)
     let selectedIndex = $state(0)
 
+    // Sorted shares for display (case-insensitive alphabetical)
+    const sortedShares = $derived(
+        [...shares].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
+    )
+
     // Login form state
     let showLoginForm = $state(false)
     let loginError = $state<string | undefined>()
@@ -206,8 +211,8 @@
     }
 
     function handleShareDoubleClick(index: number) {
-        if (index >= 0 && index < shares.length) {
-            onShareSelect?.(shares[index], authenticatedCredentials)
+        if (index >= 0 && index < sortedShares.length) {
+            onShareSelect?.(sortedShares[index], authenticatedCredentials)
         }
     }
 
@@ -224,7 +229,7 @@
         switch (e.key) {
             case 'ArrowDown':
                 e.preventDefault()
-                selectedIndex = Math.min(selectedIndex + 1, shares.length - 1)
+                selectedIndex = Math.min(selectedIndex + 1, sortedShares.length - 1)
                 return true
             case 'ArrowUp':
                 e.preventDefault()
@@ -236,12 +241,12 @@
                 return true
             case 'End':
                 e.preventDefault()
-                selectedIndex = shares.length - 1
+                selectedIndex = sortedShares.length - 1
                 return true
             case 'Enter':
                 e.preventDefault()
-                if (selectedIndex >= 0 && selectedIndex < shares.length) {
-                    onShareSelect?.(shares[selectedIndex], authenticatedCredentials)
+                if (selectedIndex >= 0 && selectedIndex < sortedShares.length) {
+                    onShareSelect?.(sortedShares[selectedIndex], authenticatedCredentials)
                 }
                 return true
             case 'Escape':
@@ -286,7 +291,7 @@
                 <button type="button" class="btn" onclick={onBack}>Back</button>
             </div>
         </div>
-    {:else if shares.length === 0}
+    {:else if sortedShares.length === 0}
         <div class="empty-state">
             <div class="empty-icon">📁</div>
             <div class="empty-title">No shares available</div>
@@ -297,10 +302,10 @@
         <div class="header-row">
             <button type="button" class="back-button" onclick={onBack}>← Back</button>
             <span class="host-name">{host.name}</span>
-            <span class="share-count">{shares.length} {shares.length === 1 ? 'share' : 'shares'}</span>
+            <span class="share-count">{sortedShares.length} {sortedShares.length === 1 ? 'share' : 'shares'}</span>
         </div>
         <div class="share-list">
-            {#each shares as share, index (share.name)}
+            {#each sortedShares as share, index (share.name)}
                 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
                 <div
                     class="share-row"

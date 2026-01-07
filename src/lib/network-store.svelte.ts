@@ -192,10 +192,10 @@ export function cleanupNetworkDiscovery(): void {
 }
 
 /**
- * Get reactive network hosts array.
+ * Get reactive network hosts array, sorted alphabetically by name.
  */
 export function getNetworkHosts(): NetworkHost[] {
-    return hosts
+    return [...hosts].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
 }
 
 /**
