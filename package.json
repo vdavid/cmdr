@@ -4,6 +4,8 @@
     "scripts": {
         "dev": "pnpm --filter @cmdr/desktop tauri dev",
         "build": "pnpm --filter @cmdr/desktop tauri build",
+        "dev:website": "pnpm --filter @cmdr/website dev",
+        "build:website": "pnpm --filter @cmdr/website build",
         "check": "./scripts/check.sh"
     }
 }

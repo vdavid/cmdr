@@ -1,0 +1,94 @@
+@import 'tailwindcss';
+
+/* CSS-first Tailwind v4 configuration */
+@theme {
+    /* Colors - Linear-inspired dark palette */
+    --color-background: #0a0a0b;
+    --color-surface: #111113;
+    --color-surface-elevated: #18181b;
+    --color-border: #27272a;
+    --color-border-subtle: #1c1c1f;
+
+    --color-text-primary: #fafafa;
+    --color-text-secondary: #a1a1aa;
+    --color-text-tertiary: #71717a;
+
+    /* Accent - vibrant blue/purple gradient */
+    --color-accent: #6366f1;
+    --color-accent-hover: #818cf8;
+    --color-accent-glow: rgba(99, 102, 241, 0.4);
+
+    /* Fonts */
+    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+    /* Spacing */
+    --spacing-section: 8rem;
+
+    /* Animation */
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --duration-normal: 300ms;
+    --duration-slow: 500ms;
+}
+
+/* Global styles */
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Selection */
+::selection {
+    background-color: var(--color-accent);
+    color: white;
+}
+
+/* Gradient text utility */
+.gradient-text {
+    background: linear-gradient(135deg, #fff 0%, #a1a1aa 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Glow effect */
+.glow {
+    box-shadow: 0 0 40px var(--color-accent-glow);
+}
+
+/* Fade in animation */
+@keyframes fade-in-up {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in-up {
+    animation: fade-in-up var(--duration-slow) var(--ease-out-expo) forwards;
+}
+
+/* Stagger delays */
+.delay-100 {
+    animation-delay: 100ms;
+}
+.delay-200 {
+    animation-delay: 200ms;
+}
+.delay-300 {
+    animation-delay: 300ms;
+}
+.delay-400 {
+    animation-delay: 400ms;
+}

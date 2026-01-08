@@ -1,0 +1,13 @@
+services:
+  getcmdr-static:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: getcmdr-static
+    restart: unless-stopped
+    networks:
+      - caddy_network
+
+networks:
+  caddy_network:
+    external: true

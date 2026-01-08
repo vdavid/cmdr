@@ -1,0 +1,37 @@
+---
+const currentYear = new Date().getFullYear()
+---
+
+<footer class="border-t border-[var(--color-border-subtle)] px-6 py-12">
+    <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 md:flex-row">
+        <!-- Logo -->
+        <div class="flex items-center gap-2">
+            <span class="text-xl text-[var(--color-accent)]">⌘</span>
+            <span class="font-semibold">Cmdr</span>
+        </div>
+
+        <!-- Links -->
+        <div class="flex items-center gap-6 text-sm text-[var(--color-text-secondary)]">
+            <a href="https://github.com/vdavid/cmdr" class="transition-colors hover:text-[var(--color-text-primary)]">
+                GitHub
+            </a>
+            <a
+                href="https://github.com/vdavid/cmdr/issues"
+                class="transition-colors hover:text-[var(--color-text-primary)]"
+            >
+                Issues
+            </a>
+            <a
+                href="https://github.com/vdavid/cmdr/blob/main/LICENSE"
+                class="transition-colors hover:text-[var(--color-text-primary)]"
+            >
+                License
+            </a>
+        </div>
+
+        <!-- Copyright -->
+        <p class="text-sm text-[var(--color-text-tertiary)]">
+            © {currentYear} David Veszelovszki
+        </p>
+    </div>
+</footer>

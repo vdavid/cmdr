@@ -1,0 +1,44 @@
+---
+const navLinks = [
+    { href: '#features', label: 'Features' },
+    { href: '#download', label: 'Download' },
+    { href: 'https://github.com/vdavid/cmdr', label: 'GitHub', external: true },
+]
+---
+
+<header
+    class="fixed top-0 left-0 right-0 z-50 border-b border-[var(--color-border-subtle)] bg-[var(--color-background)]/80 backdrop-blur-xl"
+>
+    <nav class="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+        <!-- Logo -->
+        <a href="/" class="flex items-center gap-2 text-xl font-semibold transition-opacity hover:opacity-80">
+            <span class="text-[var(--color-accent)]">⌘</span>
+            <span>Cmdr</span>
+        </a>
+
+        <!-- Navigation -->
+        <div class="flex items-center gap-8">
+            {
+                navLinks.map((link) => (
+                    <a
+                        href={link.href}
+                        target={link.external ? '_blank' : undefined}
+                        rel={link.external ? 'noopener noreferrer' : undefined}
+                        class="text-sm text-[var(--color-text-secondary)] transition-colors duration-200 hover:text-[var(--color-text-primary)]"
+                    >
+                        {link.label}
+                        {link.external && <span class="ml-1 text-xs">↗</span>}
+                    </a>
+                ))
+            }
+
+            <!-- CTA Button -->
+            <a
+                href="#download"
+                class="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-[var(--color-accent-hover)] hover:shadow-lg hover:shadow-[var(--color-accent-glow)]"
+            >
+                Download
+            </a>
+        </div>
+    </nav>
+</header>
