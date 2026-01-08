@@ -24,3 +24,6 @@ npm-debug.log*
 
 # Astro
 .astro/
+
+# Lighthouse CI
+.lighthouseci/
