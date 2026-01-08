@@ -43,15 +43,15 @@ ssh user@192.168.1.x
 ### 3. Clone the repository
 
 ```bash
-git clone https://github.com/your-org/rusty-commander.git
-cd rusty-commander
+git clone https://github.com/your-org/cmdr.git
+cd cmdr
 ```
 
 Or sync your local changes:
 
 ```bash
 rsync -avz --exclude node_modules --exclude target \
-  ~/path/to/rusty-commander/ pi@raspberrypi.local:~/rusty-commander/
+  ~/path/to/cmdr/ pi@raspberrypi.local:~/cmdr/
 ```
 
 ### 4. Configure network settings

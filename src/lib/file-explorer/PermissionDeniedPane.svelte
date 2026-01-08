@@ -18,7 +18,7 @@
         <ol>
             <li>Click <strong>Open System Settings</strong> below</li>
             <li>Click <strong>Files & Folders</strong> in the list</li>
-            <li>Find <strong>Rusty Commander</strong> and toggle the switch for this folder.</li>
+            <li>Find <strong>Cmdr</strong> and toggle the switch for this folder.</li>
             <li>Confirm it and click <strong>Quit & Reopen</strong></li>
         </ol>
         <button onclick={() => openPrivacySettings()}>Open System Settings</button>

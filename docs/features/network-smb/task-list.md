@@ -246,7 +246,7 @@ Quick start (Raspberry Pi):
 
 ```bash
 ssh pi@raspberrypi.local
-cd rusty-commander/test/smb-servers
+cd cmdr/test/smb-servers
 ./start-pi.sh
 ```
 

@@ -43,7 +43,7 @@ impl Default for Settings {
 /// Loads settings from the persistent store file.
 /// Returns defaults if the file doesn't exist or can't be parsed.
 pub fn load_settings<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Settings {
-    // Get the app data directory (e.g., ~/Library/Application Support/com.veszelovszki.rusty-commander/)
+    // Get the app data directory (e.g., ~/Library/Application Support/com.veszelovszki.cmdr/)
     let Some(data_dir) = app.path().app_data_dir().ok() else {
         return Settings::default();
     };

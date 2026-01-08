@@ -101,7 +101,7 @@ Standalone Rust binary compiled with `-O` (for reference):
 | 1000 files | 0.9ms    | 4.4ms        | 0.9ms | **6.1ms** |
 | 5000 files | 3.2ms    | 25.2ms       | 4.7ms | **33ms**  |
 
-### Debug build timing (from /tmp/rusty_commander_timing.log)
+### Debug build timing (from /tmp/cmdr_timing.log)
 
 | Folder     | list_directory | serialize | JSON size | **Total Rust** |
 | ---------- | -------------- | --------- | --------- | -------------- |

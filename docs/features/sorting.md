@@ -1,6 +1,6 @@
 # File sorting
 
-Rusty Commander supports sorting files by column headers in the file list.
+Cmdr supports sorting files by column headers in the file list.
 
 ## User interaction
 

@@ -92,7 +92,7 @@ fn get_sample_path_for_icon_id(icon_id: &str) -> Option<PathBuf> {
     if let Some(ext) = icon_id.strip_prefix("ext:") {
         // Create an actual temp file with the extension
         // macOS Launch Services needs the file to exist to get the correct icon
-        let temp_path = std::env::temp_dir().join(format!("rusty_commander_icon_sample.{}", ext));
+        let temp_path = std::env::temp_dir().join(format!("cmdr_icon_sample.{}", ext));
         // Create the file if it doesn't exist (empty file is fine)
         if !temp_path.exists() {
             let _ = std::fs::File::create(&temp_path);
@@ -139,7 +139,7 @@ fn fetch_fresh_extension_icon(ext: &str) -> Option<String> {
     }
 
     // Fallback: use temp file approach (works on all platforms, but may use cached icons)
-    let sample_path = std::env::temp_dir().join(format!("rusty_commander_icon_sample.{}", ext));
+    let sample_path = std::env::temp_dir().join(format!("cmdr_icon_sample.{}", ext));
     if !sample_path.exists() {
         let _ = std::fs::File::create(&sample_path);
     }

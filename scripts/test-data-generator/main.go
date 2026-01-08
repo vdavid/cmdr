@@ -1,4 +1,4 @@
-// Test data generator for Rusty Commander.
+// Test data generator for Cmdr.
 // Creates folders with markdown files containing humorous random sentences.
 // Run with: go run scripts/test-data-generator/main.go
 package main

@@ -15,7 +15,7 @@ mode. This ensures filenames are never truncated unnecessarily while avoiding ex
     - Takes ~100-300ms, runs in background using `requestIdleCallback`
 
 2. **Binary storage**: Measurements are serialized using bincode2 and saved to disk
-    - Location: `~/Library/Application Support/com.veszelovszki.rusty-commander/font-metrics/system-400-12.bin`
+    - Location: `~/Library/Application Support/com.veszelovszki.cmdr/font-metrics/system-400-12.bin`
     - Size: ~426KB (500KB theoretical max)
     - Load time: ~5ms
 

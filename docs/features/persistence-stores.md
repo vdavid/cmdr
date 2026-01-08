@@ -1,7 +1,7 @@
 # Persistence stores
 
-Rusty Commander uses three persistent storage mechanisms, each for a distinct purpose. All are stored in the app's data
-directory (on macOS: `~/Library/Application Support/com.rustycommander.app/`).
+Cmdr uses three persistent storage mechanisms, each for a distinct purpose. All are stored in the app's data directory
+(on macOS: `~/Library/Application Support/com.cmdr.app/`).
 
 ## 1. App status store (`app-status.json`)
 

@@ -9,7 +9,7 @@ use std::fs;
 fn test_list_directory() {
     let provider = RealFileSystemProvider;
     // Create our own temp directory to avoid permission issues
-    let temp_dir = std::env::temp_dir().join("rusty_commander_list_test");
+    let temp_dir = std::env::temp_dir().join("cmdr_list_test");
     fs::create_dir_all(&temp_dir).expect("Failed to create test directory");
 
     let result = provider.list_directory(&temp_dir);
@@ -23,7 +23,7 @@ fn test_list_directory() {
 #[test]
 fn test_list_directory_entries_have_names() {
     let provider = RealFileSystemProvider;
-    let temp_dir = std::env::temp_dir().join("rusty_commander_ops_test");
+    let temp_dir = std::env::temp_dir().join("cmdr_ops_test");
     fs::create_dir_all(&temp_dir).unwrap();
 
     let test_file = temp_dir.join("test_file.txt");
@@ -45,7 +45,7 @@ fn test_list_directory_entries_have_names() {
 
 #[test]
 fn test_list_directory_core_returns_entries_without_extended_metadata() {
-    let temp_dir = std::env::temp_dir().join("rusty_commander_core_test");
+    let temp_dir = std::env::temp_dir().join("cmdr_core_test");
     fs::create_dir_all(&temp_dir).unwrap();
 
     let test_file = temp_dir.join("core_test.txt");
@@ -73,7 +73,7 @@ fn test_list_directory_core_returns_entries_without_extended_metadata() {
 
 #[test]
 fn test_list_directory_core_is_sorted() {
-    let temp_dir = std::env::temp_dir().join("rusty_commander_sort_test");
+    let temp_dir = std::env::temp_dir().join("cmdr_sort_test");
     fs::create_dir_all(&temp_dir).unwrap();
 
     // Create files in non-alphabetical order
@@ -97,7 +97,7 @@ fn test_list_directory_core_is_sorted() {
 
 #[test]
 fn test_get_extended_metadata_batch() {
-    let temp_dir = std::env::temp_dir().join("rusty_commander_extended_test");
+    let temp_dir = std::env::temp_dir().join("cmdr_extended_test");
     fs::create_dir_all(&temp_dir).unwrap();
 
     let test_file = temp_dir.join("extended_test.txt");
@@ -133,7 +133,7 @@ fn test_get_extended_metadata_batch_empty_input() {
 
 #[test]
 fn test_get_single_entry_file() {
-    let temp_dir = std::env::temp_dir().join("rusty_commander_single_entry_test");
+    let temp_dir = std::env::temp_dir().join("cmdr_single_entry_test");
     fs::create_dir_all(&temp_dir).unwrap();
 
     let test_file = temp_dir.join("single_file.txt");
@@ -154,7 +154,7 @@ fn test_get_single_entry_file() {
 
 #[test]
 fn test_get_single_entry_directory() {
-    let temp_dir = std::env::temp_dir().join("rusty_commander_single_dir_test");
+    let temp_dir = std::env::temp_dir().join("cmdr_single_dir_test");
     fs::create_dir_all(&temp_dir).unwrap();
 
     let entry = super::operations::get_single_entry(&temp_dir).unwrap();
@@ -162,7 +162,7 @@ fn test_get_single_entry_directory() {
     // Cleanup
     let _ = fs::remove_dir(&temp_dir);
 
-    assert!(entry.name.contains("rusty_commander_single_dir_test"));
+    assert!(entry.name.contains("cmdr_single_dir_test"));
     assert!(entry.is_directory);
     assert!(!entry.is_symlink);
     assert!(entry.size.is_none());

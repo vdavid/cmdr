@@ -1,6 +1,6 @@
 # Authentication
 
-How Rusty Commander handles SMB authentication and Keychain integration.
+How Cmdr handles SMB authentication and Keychain integration.
 
 **Related ADR**: [ADR 012: Custom auth UI with Keychain integration](../../adr/012-custom-auth-ui-keychain.md)
 
@@ -124,7 +124,7 @@ use security_framework::passwords::set_generic_password;
 
 fn save_credentials(server: &str, username: &str, password: &str) -> Result<(), Error> {
     set_generic_password(
-        "Rusty Commander",           // Service name
+        "Cmdr",           // Service name
         &format!("smb://{}", server), // Account (we use server URL)
         password.as_bytes(),
     )?;
@@ -140,7 +140,7 @@ use security_framework::passwords::get_generic_password;
 
 fn get_credentials(server: &str) -> Option<Credentials> {
     let password = get_generic_password(
-        "Rusty Commander",
+        "Cmdr",
         &format!("smb://{}", server),
     ).ok()?;
 
@@ -153,8 +153,8 @@ fn get_credentials(server: &str) -> Option<Credentials> {
 
 ### Keychain item visibility
 
-Credentials appear in Keychain Access.app under "Rusty Commander" entries, allowing users to view/edit/delete them
-independently of our app.
+Credentials appear in Keychain Access.app under "Cmdr" entries, allowing users to view/edit/delete them independently of
+our app.
 
 ## Known shares store
 

@@ -1,4 +1,4 @@
-//! Configuration constants for Rusty Commander.
+//! Configuration constants.
 //!
 //! These can be extracted to environment variables or a config file in the future.
 

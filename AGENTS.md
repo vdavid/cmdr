@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Welcome! This is Rusty Commander, blazing a fast, keyboard-driven, two-pane file manager built with Rust. First, see
+This is Cmdr, a blazing a fast, keyboard-driven, two-pane file manager built with Rust. First, see
 [README.md](README.md) to get oriented.
 
 Uses Rust, Tauri 2, Svelte 5, TypeScript, Tailwind 4. Targets macOS now, Win and Linux later.

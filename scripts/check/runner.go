@@ -9,7 +9,7 @@ import (
 func showUsage() {
 	fmt.Println("Usage: go run ./scripts/check [OPTIONS]")
 	fmt.Println()
-	fmt.Println("Run code quality checks for the Rusty Commander project.")
+	fmt.Println("Run code quality checks for the Cmdr project.")
 	fmt.Println()
 	fmt.Println("OPTIONS:")
 	fmt.Println("    --rust, --rust-only      Run only Rust checks")

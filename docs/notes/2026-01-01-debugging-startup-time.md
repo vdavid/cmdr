@@ -57,7 +57,7 @@ The delay is happening **inside the WKWebView** - not in Rust, not in network I/
 
 ### 4. ❌ Cleared WebKit cache
 
-- Deleted `~/Library/Caches/rusty-commander/WebKit/` (58MB)
+- Deleted `~/Library/Caches/cmdr/WebKit/` (58MB)
 - Restarted app
 - **No improvement** - still 20+ seconds
 

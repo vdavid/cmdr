@@ -1,7 +1,7 @@
 # Contributing
 
-Thanks for your interest in contributing to Rusty Commander! The easiest way to contribute is to fork the repo, make
-your changes, and submit a PR. This doc will help you get started.
+Thanks for your interest in contributing to Cmdr! The easiest way to contribute is to fork the repo, make your changes,
+and submit a PR. This doc will help you get started.
 
 ## Dev setup
 
@@ -53,7 +53,7 @@ For an universal installer:
 
 - `rustup target add x86_64-apple-darwin` once
 - Then `pnpm tauri build --target universal-apple-darwin` each time.
-- Then the binary is at `src-tauri/target/universal-apple-darwin/release/bundle/dmg/Rusty Commander_0.1.0_universal.dmg`
+- Then the binary is at `src-tauri/target/universal-apple-darwin/release/bundle/dmg/Cmdr_0.1.0_universal.dmg`
 
 ## Agent integration (MCP)
 

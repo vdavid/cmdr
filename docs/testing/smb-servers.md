@@ -43,7 +43,7 @@ ssh pi@raspberrypi.local
 
 # Clone the repo (or sync it)
 git clone <repo-url>
-cd rusty-commander
+cd cmdr
 
 # Edit network settings to match your LAN
 vi test/smb-servers/docker-compose.pi.yml

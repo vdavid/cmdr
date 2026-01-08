@@ -1,11 +1,11 @@
 # Disk access and permissions
 
-How Rusty Commander handles macOS file system permissions.
+How Cmdr handles macOS file system permissions.
 
 ## Full disk access
 
 macOS requires apps to request permission before accessing protected folders like Downloads, Documents, and Desktop.
-Rusty Commander can request **full disk access** (FDA) at first launch, which grants access to all folders at once.
+Cmdr can request **full disk access** (FDA) at first launch, which grants access to all folders at once.
 
 ### First launch behavior
 
@@ -43,12 +43,12 @@ Possible values:
 - `allow` — User clicked "Open System Settings" (presumably granted FDA).
 - `deny` — User clicked "Deny". Don't show prompt again.
 
-**Location**: `~/Library/Application Support/com.veszelovszki.rusty-commander/settings.json`
+**Location**: `~/Library/Application Support/com.veszelovszki.cmdr/settings.json`
 
 To reset and show the prompt again:
 
 ```bash
-rm ~/Library/Application\ Support/com.veszelovszki.rusty-commander/settings.json
+rm ~/Library/Application\ Support/com.veszelovszki.cmdr/settings.json
 ```
 
 ---
@@ -85,11 +85,11 @@ This check takes under 5 ms and happens at every launch.
 
 To test FDA manually:
 
-1. Disable FDA in System Settings for the app you run Rusty Commander with, like Warp Terminal. This _should_ do the
-   trick but it seemlingly doesn't. So the next steps are needed.
-2. Run `osascript -e 'id of app "Warp"'` (replace `Warp` with the name of the app you run Rusty Commander with)
+1. Disable FDA in System Settings for the app you run Cmdr with, like Warp Terminal. This _should_ do the trick but it
+   seemlingly doesn't. So the next steps are needed.
+2. Run `osascript -e 'id of app "Warp"'` (replace `Warp` with the name of the app you run Cmdr with)
 3. Then `tccutil reset SystemPolicyDownloadsFolder dev.warp.Warp-Terminal` - Replace `dev.warp.Warp-Terminal` with
    whatever the previous call returned.
     - Or even `tccutil reset All dev.warp.Warp-Terminal`
 
-And to reset the allow/deny setting: `rm ~/Library/Application\ Support/com.veszelovszki.rusty-commander/settings.json`
+And to reset the allow/deny setting: `rm ~/Library/Application\ Support/com.veszelovszki.cmdr/settings.json`

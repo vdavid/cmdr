@@ -1,6 +1,6 @@
 # Host discovery
 
-How Rusty Commander discovers SMB hosts on the local network.
+How Cmdr discovers SMB hosts on the local network.
 
 ## Overview
 

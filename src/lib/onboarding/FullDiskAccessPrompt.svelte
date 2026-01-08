@@ -53,7 +53,7 @@
         <ol>
             <li>Click <strong>Open System Settings</strong> below</li>
             <li>Click <strong>Full Disk Access</strong> in the list</li>
-            <li>Find <strong>Rusty Commander</strong> in the list and toggle it on</li>
+            <li>Find <strong>Cmdr</strong> in the list and toggle it on</li>
             <li>Confirm it and click <strong>Quit & Reopen</strong></li>
         </ol>
 

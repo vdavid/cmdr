@@ -125,7 +125,7 @@ fn test_symlink_to_file_detected() {
     use std::os::unix::fs::symlink;
 
     // Create a test file and symlink in /tmp
-    let test_dir = std::env::temp_dir().join("rusty_symlink_file_test");
+    let test_dir = std::env::temp_dir().join("cmdr_symlink_file_test");
     let _ = fs::remove_dir_all(&test_dir);
     fs::create_dir_all(&test_dir).unwrap();
 
@@ -155,7 +155,7 @@ fn test_symlink_to_directory_detected() {
     use std::fs;
     use std::os::unix::fs::symlink;
 
-    let test_dir = std::env::temp_dir().join("rusty_symlink_dir_test");
+    let test_dir = std::env::temp_dir().join("cmdr_symlink_dir_test");
     let _ = fs::remove_dir_all(&test_dir);
     fs::create_dir_all(&test_dir).unwrap();
 
@@ -182,7 +182,7 @@ fn test_broken_symlink_still_exists() {
     use std::fs;
     use std::os::unix::fs::symlink;
 
-    let test_dir = std::env::temp_dir().join("rusty_broken_symlink_test");
+    let test_dir = std::env::temp_dir().join("cmdr_broken_symlink_test");
     let _ = fs::remove_dir_all(&test_dir);
     fs::create_dir_all(&test_dir).unwrap();
 
@@ -208,7 +208,7 @@ fn test_list_directory_includes_symlinks() {
     use std::fs;
     use std::os::unix::fs::symlink;
 
-    let test_dir = std::env::temp_dir().join("rusty_symlink_list_test");
+    let test_dir = std::env::temp_dir().join("cmdr_symlink_list_test");
     let _ = fs::remove_dir_all(&test_dir);
     fs::create_dir_all(&test_dir).unwrap();
 

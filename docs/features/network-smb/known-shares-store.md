@@ -1,6 +1,6 @@
 # Known shares store
 
-How Rusty Commander persists network connection history.
+How Cmdr persists network connection history.
 
 ## Overview
 
@@ -54,7 +54,7 @@ Stored in `settings.json` alongside other user preferences:
 
 ### Storage location
 
-Same as other settings: `~/Library/Application Support/com.veszelovszki.rusty-commander/settings.json`
+Same as other settings: `~/Library/Application Support/com.veszelovszki.cmdr/settings.json`
 
 ## UX scenarios
 

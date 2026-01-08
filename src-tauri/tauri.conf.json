@@ -1,8 +1,8 @@
 {
     "$schema": "https://schema.tauri.app/config/2",
-    "productName": "Rusty Commander",
-    "version": "0.1.0",
-    "identifier": "com.veszelovszki.rusty-commander",
+    "productName": "Cmdr",
+    "version": "0.2.0",
+    "identifier": "com.veszelovszki.cmdr",
     "build": {
         "beforeDevCommand": "pnpm dev",
         "devUrl": "http://localhost:1420",
@@ -13,7 +13,7 @@
         "withGlobalTauri": false,
         "windows": [
             {
-                "title": "Rusty Commander",
+                "title": "Cmdr",
                 "width": 1080,
                 "height": 720,
                 "minWidth": 950,

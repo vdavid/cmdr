@@ -4,7 +4,7 @@
 import { writable } from 'svelte/store'
 import { getIcons, refreshDirectoryIcons as refreshIconsCommand } from './tauri-commands'
 
-const STORAGE_KEY = 'rusty-commander-icon-cache'
+const STORAGE_KEY = 'cmdr-icon-cache'
 
 /** In-memory cache for current session */
 const memoryCache = new Map<string, string>()

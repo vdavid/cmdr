@@ -935,6 +935,49 @@ dependencies = [
 ]
 
 [[package]]
+name = "cmdr"
+version = "0.1.0"
+dependencies = [
+ "alphanumeric-sort",
+ "base64 0.22.1",
+ "bincode2",
+ "chrono",
+ "core-foundation",
+ "core-services",
+ "criterion",
+ "dirs",
+ "env_logger",
+ "file_icon_provider",
+ "icns",
+ "image",
+ "log",
+ "notify",
+ "notify-debouncer-full",
+ "objc2 0.6.3",
+ "objc2-foundation 0.3.2",
+ "plist",
+ "rayon",
+ "security-framework",
+ "serde",
+ "serde_json",
+ "smb",
+ "smb-rpc",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-clipboard-manager",
+ "tauri-plugin-drag",
+ "tauri-plugin-fs",
+ "tauri-plugin-mcp-bridge",
+ "tauri-plugin-opener",
+ "tauri-plugin-store",
+ "tauri-plugin-window-state",
+ "tokio",
+ "urlencoding",
+ "uuid",
+ "uzers",
+]
+
+[[package]]
 name = "cocoa"
 version = "0.26.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5458,49 +5501,6 @@ name = "rustversion"
 version = "1.0.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b39cdef0fa800fc44525c84ccb54a029961a8215f9619753635a9c0d2538d46d"
-
-[[package]]
-name = "rusty-commander"
-version = "0.1.0"
-dependencies = [
- "alphanumeric-sort",
- "base64 0.22.1",
- "bincode2",
- "chrono",
- "core-foundation",
- "core-services",
- "criterion",
- "dirs",
- "env_logger",
- "file_icon_provider",
- "icns",
- "image",
- "log",
- "notify",
- "notify-debouncer-full",
- "objc2 0.6.3",
- "objc2-foundation 0.3.2",
- "plist",
- "rayon",
- "security-framework",
- "serde",
- "serde_json",
- "smb",
- "smb-rpc",
- "tauri",
- "tauri-build",
- "tauri-plugin-clipboard-manager",
- "tauri-plugin-drag",
- "tauri-plugin-fs",
- "tauri-plugin-mcp-bridge",
- "tauri-plugin-opener",
- "tauri-plugin-store",
- "tauri-plugin-window-state",
- "tokio",
- "urlencoding",
- "uuid",
- "uzers",
-]
 
 [[package]]
 name = "ryu"

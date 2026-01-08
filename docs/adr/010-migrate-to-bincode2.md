@@ -34,7 +34,7 @@ Migrated to `bincode2` v2, a maintained fork by Pravega, which provides:
 ## Impact
 
 - **Breaking change for cached data**: Existing font metrics cache files may need to be regenerated
-- **Location**: `~/Library/Application Support/com.rusty-commander.app/font-metrics/`
+- **Location**: `~/Library/Application Support/com.cmdr.app/font-metrics/`
 - **Mitigation**: The app will automatically regenerate metrics if deserialization fails
 
 ## Testing

@@ -14,7 +14,7 @@ use std::sync::RwLock;
 
 /// Service name used for Keychain items.
 /// This appears in Keychain Access.app.
-const SERVICE_NAME: &str = "Rusty Commander";
+const SERVICE_NAME: &str = "Cmdr";
 
 /// In-memory cache for credentials to avoid repeated Keychain dialogs.
 /// Key is the account name (e.g., "smb://server" or "smb://server/share").

@@ -1,6 +1,6 @@
 # Benchmarking file loading performance
 
-A comprehensive guide to benchmarking directory loading performance in Rusty Commander.
+A comprehensive guide to benchmarking directory loading performance in Cmdr.
 
 ## Overview
 
@@ -35,10 +35,10 @@ Test folders are created at `_ignored/test-data/folder with XXXXX files`.
 ### Step 1: Start the app with benchmarking enabled
 
 ```bash
-cd /path/to/rusty-commander
+cd /path/to/cmdr
 
 # Kill any existing dev server
-pkill -f "rusty-commander" || true
+pkill -f "cmdr" || true
 
 # Start with benchmarking enabled
 RUSTY_COMMANDER_BENCHMARK=1 VITE_BENCHMARK=1 pnpm tauri dev 2>&1 | tee benchmark.log

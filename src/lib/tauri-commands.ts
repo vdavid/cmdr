@@ -519,7 +519,7 @@ export async function getUsernameHints(): Promise<Record<string, string>> {
 
 /**
  * Saves SMB credentials to the Keychain.
- * Credentials are stored under "Rusty Commander" service name in Keychain Access.
+ * Credentials are stored under "Cmdr" service name in Keychain Access.
  * @param server Server hostname or IP
  * @param share Optional share name (null for server-level credentials)
  * @param username Username for authentication

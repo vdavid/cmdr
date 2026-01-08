@@ -30,9 +30,9 @@ Use this checklist before each release to verify features that cannot be automat
 
 ### File watcher (requires real file system events)
 
-- [ ] Create file in Finder → appears in Rusty Commander
-- [ ] Delete file in Finder → disappears from Rusty Commander
-- [ ] Rename file in Finder → updates in Rusty Commander
+- [ ] Create file in Finder → appears in Cmdr
+- [ ] Delete file in Finder → disappears from Cmdr
+- [ ] Rename file in Finder → updates in Cmdr
 
 ### Visual verification (requires human eye)
 

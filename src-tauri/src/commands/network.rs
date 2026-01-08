@@ -149,7 +149,7 @@ pub fn get_username_hints() -> std::collections::HashMap<String, String> {
 use crate::network::keychain::{self, KeychainError, SmbCredentials};
 
 /// Saves SMB credentials to the Keychain.
-/// Credentials are stored under "Rusty Commander" service name.
+/// Credentials are stored under "Cmdr" service name.
 #[tauri::command]
 pub fn save_smb_credentials(
     server: String,

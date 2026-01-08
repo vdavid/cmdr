@@ -10,7 +10,7 @@ use std::path::PathBuf;
 /// Creates test files with various extensions for benchmarking.
 fn setup_test_files(count: usize) -> Vec<PathBuf> {
     let extensions = ["txt", "pdf", "jpg", "png", "rs", "go", "ts", "md", "json", "toml"];
-    let temp_dir = std::env::temp_dir().join("rusty_commander_bench");
+    let temp_dir = std::env::temp_dir().join("cmdr_bench");
     let _ = fs::create_dir_all(&temp_dir);
 
     (0..count)
@@ -46,7 +46,7 @@ fn bench_icon_fetching(c: &mut Criterion) {
             BenchmarkId::new("refresh_directory", count),
             &(paths.clone(), extensions.clone()),
             |b, (dir_paths, exts)| {
-                b.iter(|| rusty_commander_lib::icons::refresh_icons_for_directory(dir_paths.clone(), exts.clone()))
+                b.iter(|| cmdr_lib::icons::refresh_icons_for_directory(dir_paths.clone(), exts.clone()))
             },
         );
     }

@@ -1,6 +1,6 @@
 # Keyboard shortcuts
 
-This document lists all keyboard shortcuts available in Rusty Commander.
+This document lists all keyboard shortcuts available in Cmdr.
 
 ## Navigation
 

@@ -1,6 +1,6 @@
 # Network SMB support
 
-This directory contains documentation for Rusty Commander's network drive (SMB/Samba) support feature.
+This directory contains documentation for Cmdr's network drive (SMB/Samba) support feature.
 
 ## Overview
 

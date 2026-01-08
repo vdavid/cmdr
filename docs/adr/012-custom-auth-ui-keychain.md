@@ -41,6 +41,6 @@ Build a custom login UI with direct Keychain integration via Security.framework.
 ### Notes
 
 - Use `security-framework` crate for Keychain access (simpler than raw Security.framework FFI)
-- Credentials stored under "Rusty Commander" service name, visible in Keychain Access.app
+- Credentials stored under "Cmdr" service name, visible in Keychain Access.app
 - Passwords never stored in our settings file—only in Keychain
 - See [authentication.md](../features/network-smb/authentication.md) for implementation details

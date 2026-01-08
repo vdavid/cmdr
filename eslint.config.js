@@ -1,5 +1,5 @@
 /**
- * ESLint Configuration for Rusty Commander
+ * ESLint Configuration for Cmdr
  *
  * This config uses the flat config format (ESLint 9+) and enforces:
  * - Strict TypeScript type checking for safety
