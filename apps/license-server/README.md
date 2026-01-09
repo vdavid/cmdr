@@ -67,7 +67,38 @@ them to customers via Resend.
 - Test it with `4000 0566 5566 5556` / CVC: `100`, or one of the other test cards from
   https://developer.paddle.com/concepts/payment-methods/credit-debit-card#test-payment-details.
 
-purchase URLs: https://sandbox-vendors.paddle.com/checkout/new?product_id=123456
+## Testing Paddle checkout
+
+Test the full purchase flow through Paddle's sandbox. **This only works with sandbox credentials.**
+
+### Prerequisites
+
+1. **Set a default payment link** in Paddle sandbox:
+   - Go to https://sandbox-vendors.paddle.com/checkout-settings
+   - Under "Default payment link", enter `http://localhost:3333` (or any URL)
+   - Save
+
+2. **Create a client-side token**:
+   - Go to https://sandbox-vendors.paddle.com/authentication-v2
+   - Click "Client-side tokens" tab
+   - Create a new token (will start with `test_`)
+
+### Run the test
+
+```bash
+# Get values from Paddle sandbox dashboard
+PADDLE_CLIENT_TOKEN=test_xxx PADDLE_PRICE_ID=pri_xxx pnpm test:checkout
+```
+
+Then open http://localhost:3333 and click "Buy Cmdr".
+
+### Troubleshooting
+
+| Error | Fix |
+|-------|-----|
+| "Something went wrong" | Set default payment link in Paddle Checkout settings |
+| Token doesn't start with `test_` | Use sandbox token from sandbox-vendors.paddle.com |
+| "Invalid price" | Ensure price ID is from the same sandbox account |
 
 ## Endpoints
 
