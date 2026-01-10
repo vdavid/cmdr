@@ -13,6 +13,9 @@ importers:
       '@crabnebula/tauri-plugin-drag':
         specifier: ^2.1.0
         version: 2.1.0
+      '@leeoniya/ufuzzy':
+        specifier: ^1.0.19
+        version: 1.0.19
       '@lottiefiles/dotlottie-svelte':
         specifier: ^0.8.12
         version: 0.8.12(svelte@5.46.1)
@@ -1248,6 +1251,9 @@ packages:
 
   '@keyv/serialize@1.1.1':
     resolution: {integrity: sha512-dXn3FZhPv0US+7dtJsIi2R+c7qWYiReoEh5zUntWCf4oSpMNib8FDhSoed6m3QyZdx5hK7iLFkYk3rNxwt8vTA==}
+
+  '@leeoniya/ufuzzy@1.0.19':
+    resolution: {integrity: sha512-0pikDeYt0IHEUPza5RTCDXc/17S1pTrYnReEMp8Aa6k1ovzw5QdZLwicW8TjljwEZRb6oYag0xmALohrcq/yOQ==}
 
   '@lhci/cli@0.14.0':
     resolution: {integrity: sha512-TxOH9pFBnmmN7Jmo2Aimxx5UhE8veqXpHfFJDMWsCVxkwh7mGxcAWchGl84mK139SZbbRmerqZ72c+h2nG9/QQ==}
@@ -6148,6 +6154,8 @@ snapshots:
       keyv: 5.5.5
 
   '@keyv/serialize@1.1.1': {}
+
+  '@leeoniya/ufuzzy@1.0.19': {}
 
   '@lhci/cli@0.14.0':
     dependencies:

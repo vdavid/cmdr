@@ -4,9 +4,35 @@
     import FullDiskAccessPrompt from '$lib/onboarding/FullDiskAccessPrompt.svelte'
     import ExpirationModal from '$lib/licensing/ExpirationModal.svelte'
     import AboutWindow from '$lib/licensing/AboutWindow.svelte'
-    import { showMainWindow, checkFullDiskAccess, listen, type UnlistenFn } from '$lib/tauri-commands'
+    import CommandPalette from '$lib/command-palette/CommandPalette.svelte'
+    import {
+        showMainWindow,
+        checkFullDiskAccess,
+        listen,
+        type UnlistenFn,
+        openExternalUrl,
+        showInFinder,
+        copyToClipboard,
+        quickLook,
+        getInfo,
+        toggleHiddenFiles,
+        setViewMode,
+    } from '$lib/tauri-commands'
     import { loadSettings, saveSettings } from '$lib/settings-store'
     import { hideExpirationModal } from '$lib/licensing-store.svelte'
+    import type { ViewMode } from '$lib/app-status-store'
+
+    // Interface for DualPaneExplorer's exported methods
+    interface ExplorerAPI {
+        refocus: () => void
+        switchPane: () => void
+        toggleVolumeChooser: (pane: 'left' | 'right') => void
+        toggleHiddenFiles: () => void
+        setViewMode: (mode: ViewMode) => void
+        navigate: (action: 'back' | 'forward' | 'parent') => void
+        getCurrentSelection: () => { path: string; filename: string } | null
+        sendKeyToFocusedPane: (key: string) => void
+    }
 
     let showFdaPrompt = $state(false)
     let fdaWasRevoked = $state(false)
@@ -15,11 +41,15 @@
     let expiredOrgName = $state<string | null>(null)
     let expiredAt = $state<string>('')
     let showAboutWindow = $state(false)
+    let showCommandPalette = $state(false)
+    let explorerRef: ExplorerAPI | undefined = $state()
 
     // Event handlers stored for cleanup
     let handleKeyDown: ((e: KeyboardEvent) => void) | undefined
     let handleContextMenu: ((e: MouseEvent) => void) | undefined
     let unlistenShowAbout: UnlistenFn | undefined
+    let unlistenCommandPalette: UnlistenFn | undefined
+    let unlistenSwitchPane: UnlistenFn | undefined
 
     onMount(async () => {
         // Hide loading screen
@@ -84,8 +114,33 @@
             // Not in Tauri environment
         }
 
+        // Listen for command palette event from menu
+        try {
+            unlistenCommandPalette = await listen('show-command-palette', () => {
+                showCommandPalette = true
+            })
+        } catch {
+            // Not in Tauri environment
+        }
+
+        // Listen for switch pane event from menu
+        try {
+            unlistenSwitchPane = await listen('switch-pane', () => {
+                explorerRef?.switchPane()
+            })
+        } catch {
+            // Not in Tauri environment
+        }
+
         // Global keyboard shortcuts
         handleKeyDown = (e: KeyboardEvent) => {
+            // Command palette: ⌘⇧P
+            if (e.metaKey && e.shiftKey && e.key.toLowerCase() === 'p') {
+                e.preventDefault()
+                showCommandPalette = true
+                return
+            }
+
             // Suppress Cmd+A (select all) - always
             if (e.metaKey && e.key === 'a') {
                 e.preventDefault()
@@ -115,6 +170,12 @@
         if (unlistenShowAbout) {
             unlistenShowAbout()
         }
+        if (unlistenCommandPalette) {
+            unlistenCommandPalette()
+        }
+        if (unlistenSwitchPane) {
+            unlistenSwitchPane()
+        }
     })
 
     function handleFdaComplete() {
@@ -125,15 +186,199 @@
     function handleExpirationModalClose() {
         showExpiredModal = false
         hideExpirationModal()
+        explorerRef?.refocus()
     }
 
     function handleAboutClose() {
         showAboutWindow = false
+        explorerRef?.refocus()
+    }
+
+    function handleCommandPaletteClose() {
+        showCommandPalette = false
+        explorerRef?.refocus()
+    }
+
+    // eslint-disable-next-line complexity -- Command dispatcher handles many cases; switch is the clearest pattern
+    async function handleCommandExecute(commandId: string) {
+        showCommandPalette = false
+
+        // Handle known commands by category
+        switch (commandId) {
+            // === App commands ===
+            case 'app.quit':
+                // Quit is handled by the OS/Tauri, we just need to trigger the window close
+                try {
+                    const { getCurrentWindow } = await import('@tauri-apps/api/window')
+                    await getCurrentWindow().close()
+                } catch {
+                    // Not in Tauri environment
+                }
+                return
+
+            case 'app.hide':
+                try {
+                    const { getCurrentWindow } = await import('@tauri-apps/api/window')
+                    await getCurrentWindow().hide()
+                } catch {
+                    // Not in Tauri environment
+                }
+                return
+
+            case 'app.about':
+                showAboutWindow = true
+                return
+
+            // === View commands ===
+            case 'view.showHidden':
+                // Use Tauri command to toggle and sync menu checkbox state
+                await toggleHiddenFiles()
+                explorerRef?.refocus()
+                return
+
+            case 'view.briefMode':
+                // Use Tauri command to set mode and sync menu radio state
+                await setViewMode('brief')
+                explorerRef?.refocus()
+                return
+
+            case 'view.fullMode':
+                // Use Tauri command to set mode and sync menu radio state
+                await setViewMode('full')
+                explorerRef?.refocus()
+                return
+
+            // === Pane commands ===
+            case 'pane.switch':
+                explorerRef?.switchPane()
+                return
+
+            case 'pane.leftVolumeChooser':
+                explorerRef?.toggleVolumeChooser('left')
+                explorerRef?.refocus()
+                return
+
+            case 'pane.rightVolumeChooser':
+                explorerRef?.toggleVolumeChooser('right')
+                explorerRef?.refocus()
+                return
+
+            // === Navigation commands ===
+            case 'nav.open':
+                explorerRef?.sendKeyToFocusedPane('Enter')
+                explorerRef?.refocus()
+                return
+
+            case 'nav.parent':
+                explorerRef?.navigate('parent')
+                explorerRef?.refocus()
+                return
+
+            case 'nav.back':
+                explorerRef?.navigate('back')
+                explorerRef?.refocus()
+                return
+
+            case 'nav.forward':
+                explorerRef?.navigate('forward')
+                explorerRef?.refocus()
+                return
+
+            case 'nav.home':
+                explorerRef?.sendKeyToFocusedPane('Home')
+                explorerRef?.refocus()
+                return
+
+            case 'nav.end':
+                explorerRef?.sendKeyToFocusedPane('End')
+                explorerRef?.refocus()
+                return
+
+            case 'nav.pageUp':
+                explorerRef?.sendKeyToFocusedPane('PageUp')
+                explorerRef?.refocus()
+                return
+
+            case 'nav.pageDown':
+                explorerRef?.sendKeyToFocusedPane('PageDown')
+                explorerRef?.refocus()
+                return
+
+            // === File action commands ===
+            case 'file.showInFinder': {
+                const selection = explorerRef?.getCurrentSelection()
+                if (selection) {
+                    await showInFinder(selection.path)
+                }
+                explorerRef?.refocus()
+                return
+            }
+
+            case 'file.copyPath': {
+                const selection = explorerRef?.getCurrentSelection()
+                if (selection) {
+                    await copyToClipboard(selection.path)
+                }
+                explorerRef?.refocus()
+                return
+            }
+
+            case 'file.copyFilename': {
+                const selection = explorerRef?.getCurrentSelection()
+                if (selection) {
+                    await copyToClipboard(selection.filename)
+                }
+                explorerRef?.refocus()
+                return
+            }
+
+            case 'file.quickLook': {
+                const selection = explorerRef?.getCurrentSelection()
+                if (selection) {
+                    await quickLook(selection.path)
+                }
+                explorerRef?.refocus()
+                return
+            }
+
+            case 'file.getInfo': {
+                const selection = explorerRef?.getCurrentSelection()
+                if (selection) {
+                    await getInfo(selection.path)
+                }
+                explorerRef?.refocus()
+                return
+            }
+
+            // === About window commands ===
+            case 'about.openWebsite':
+                await openExternalUrl('https://getcmdr.com')
+                explorerRef?.refocus()
+                return
+
+            case 'about.openUpgrade':
+                await openExternalUrl('https://getcmdr.com/upgrade')
+                explorerRef?.refocus()
+                return
+
+            case 'about.close':
+                showAboutWindow = false
+                explorerRef?.refocus()
+                return
+
+            default:
+                // Unknown command - just refocus
+                explorerRef?.refocus()
+        }
     }
 </script>
 
 {#if showAboutWindow}
     <AboutWindow onClose={handleAboutClose} />
+{/if}
+
+{#if showCommandPalette}
+    <CommandPalette onExecute={handleCommandExecute} onClose={handleCommandPaletteClose} />
 {/if}
 
 {#if showExpiredModal}
@@ -143,5 +388,5 @@
 {#if showFdaPrompt}
     <FullDiskAccessPrompt onComplete={handleFdaComplete} wasRevoked={fdaWasRevoked} />
 {:else if showApp}
-    <DualPaneExplorer />
+    <DualPaneExplorer bind:this={explorerRef} />
 {/if}

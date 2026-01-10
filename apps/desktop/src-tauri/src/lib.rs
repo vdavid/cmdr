@@ -50,8 +50,8 @@ mod settings;
 mod volumes;
 
 use menu::{
-    ABOUT_ID, GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID, MenuState, SHOW_HIDDEN_FILES_ID, VIEW_MODE_BRIEF_ID,
-    VIEW_MODE_FULL_ID, ViewMode,
+    ABOUT_ID, COMMAND_PALETTE_ID, GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID, MenuState, SHOW_HIDDEN_FILES_ID,
+    SWITCH_PANE_ID, VIEW_MODE_BRIEF_ID, VIEW_MODE_FULL_ID, ViewMode,
 };
 use tauri::{Emitter, Manager};
 
@@ -185,6 +185,12 @@ pub fn run() {
             } else if id == ABOUT_ID {
                 // Emit event to show our custom About window
                 let _ = app.emit("show-about", ());
+            } else if id == COMMAND_PALETTE_ID {
+                // Emit event to show the command palette
+                let _ = app.emit("show-command-palette", ());
+            } else if id == SWITCH_PANE_ID {
+                // Emit event to switch pane
+                let _ = app.emit("switch-pane", ());
             } else {
                 // Handle file actions
                 commands::ui::execute_menu_action(app, id);
@@ -209,6 +215,12 @@ pub fn run() {
             commands::ui::show_file_context_menu,
             commands::ui::show_main_window,
             commands::ui::update_menu_context,
+            commands::ui::toggle_hidden_files,
+            commands::ui::set_view_mode,
+            commands::ui::show_in_finder,
+            commands::ui::copy_to_clipboard,
+            commands::ui::quick_look,
+            commands::ui::get_info,
             #[cfg(target_os = "macos")]
             commands::sync_status::get_sync_status,
             #[cfg(target_os = "macos")]

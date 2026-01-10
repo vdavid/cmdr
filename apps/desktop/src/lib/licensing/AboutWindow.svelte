@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount } from 'svelte'
+    import { onMount, tick } from 'svelte'
     import { getCachedStatus } from '$lib/licensing-store.svelte'
     import { openExternalUrl } from '$lib/tauri-commands'
 
@@ -15,8 +15,14 @@
 
     // Version will be loaded from Tauri
     let version = $state('0.0.0')
+    let overlayElement: HTMLDivElement | undefined = $state()
 
     onMount(async () => {
+        // Focus overlay so keyboard events work immediately
+        void tick().then(() => {
+            overlayElement?.focus()
+        })
+
         try {
             const { getVersion } = await import('@tauri-apps/api/app')
             version = await getVersion()
@@ -62,6 +68,8 @@
     }
 
     function handleKeydown(event: KeyboardEvent) {
+        // Stop propagation to prevent file explorer from handling keys while modal is open
+        event.stopPropagation()
         if (event.key === 'Escape') {
             onClose()
         }
@@ -75,9 +83,15 @@
     }
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
-
-<div class="about-overlay" role="dialog" aria-modal="true" aria-labelledby="about-title">
+<div
+    bind:this={overlayElement}
+    class="about-overlay"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="about-title"
+    tabindex="-1"
+    onkeydown={handleKeydown}
+>
     <div class="about-window">
         <button class="close-button" onclick={onClose} aria-label="Close">×</button>
 

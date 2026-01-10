@@ -27,9 +27,17 @@
         // Open renew page in the system browser
         await openExternalUrl('https://getcmdr.com/renew')
     }
+
+    function handleKeydown(event: KeyboardEvent) {
+        // Stop propagation to prevent file explorer from handling keys while modal is open
+        event.stopPropagation()
+        if (event.key === 'Escape') {
+            void handleDismiss()
+        }
+    }
 </script>
 
-<div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+<div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title" onkeydown={handleKeydown}>
     <div class="modal-content">
         <h2 id="modal-title">Your commercial license has expired</h2>
 

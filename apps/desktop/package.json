@@ -24,6 +24,7 @@
     "license": "SEE LICENSE IN LICENSE",
     "dependencies": {
         "@crabnebula/tauri-plugin-drag": "^2.1.0",
+        "@leeoniya/ufuzzy": "^1.0.19",
         "@lottiefiles/dotlottie-svelte": "^0.8.12",
         "@tauri-apps/api": "^2",
         "@tauri-apps/plugin-fs": "^2.4.4",

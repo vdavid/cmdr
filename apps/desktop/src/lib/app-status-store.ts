@@ -248,3 +248,34 @@ export async function saveLastUsedPathForVolume(volumeId: string, path: string):
         // Silently fail - persistence is nice-to-have
     }
 }
+
+// ============================================================================
+// Command palette query persistence
+// ============================================================================
+
+/**
+ * Loads the last used command palette query.
+ * Returns empty string if not previously saved.
+ */
+export async function loadPaletteQuery(): Promise<string> {
+    try {
+        const store = await getStore()
+        const query = await store.get('paletteQuery')
+        return typeof query === 'string' ? query : ''
+    } catch {
+        return ''
+    }
+}
+
+/**
+ * Saves the current command palette query for next time.
+ */
+export async function savePaletteQuery(query: string): Promise<void> {
+    try {
+        const store = await getStore()
+        await store.set('paletteQuery', query)
+        await store.save()
+    } catch {
+        // Silently fail
+    }
+}

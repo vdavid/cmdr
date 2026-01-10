@@ -612,6 +612,88 @@
             containerElement?.focus()
         }
     })
+
+    /**
+     * Refocus the file explorer container.
+     * Call this after closing modals to restore keyboard navigation.
+     */
+    export function refocus() {
+        containerElement?.focus()
+    }
+
+    /**
+     * Switch focus to the other pane.
+     */
+    export function switchPane() {
+        const newFocus = focusedPane === 'left' ? 'right' : 'left'
+        focusedPane = newFocus
+        void saveAppStatus({ focusedPane: newFocus })
+        containerElement?.focus()
+    }
+
+    /**
+     * Open/toggle volume chooser for the specified pane.
+     */
+    export function toggleVolumeChooser(pane: 'left' | 'right') {
+        if (pane === 'left') {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            leftPaneRef?.toggleVolumeChooser()
+        } else {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            rightPaneRef?.toggleVolumeChooser()
+        }
+    }
+
+    /**
+     * Toggle show hidden files.
+     */
+    export function toggleHiddenFiles() {
+        showHiddenFiles = !showHiddenFiles
+        void saveSettings({ showHiddenFiles })
+    }
+
+    /**
+     * Set view mode for the focused pane.
+     */
+    export function setViewMode(mode: ViewMode) {
+        if (focusedPane === 'left') {
+            leftViewMode = mode
+            void saveAppStatus({ leftViewMode: mode })
+        } else {
+            rightViewMode = mode
+            void saveAppStatus({ rightViewMode: mode })
+        }
+    }
+
+    /**
+     * Navigate the focused pane (back/forward/parent).
+     */
+    export function navigate(action: 'back' | 'forward' | 'parent') {
+        void handleNavigationAction(action)
+    }
+
+    /**
+     * Get the current selected file path and filename in the focused pane.
+     */
+    export function getCurrentSelection(): { path: string; filename: string } | null {
+        const paneRef = focusedPane === 'left' ? leftPaneRef : rightPaneRef
+        const currentPath = focusedPane === 'left' ? leftPath : rightPath
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const filename = paneRef?.getSelectedFilename?.() as string | undefined
+        if (!filename || filename === '..') return null
+        const path = currentPath === '~' ? `${currentPath}/${filename}` : `${currentPath}/${filename}`
+        return { path, filename }
+    }
+
+    /**
+     * Simulate a key press on the focused pane (for commands like Enter to open).
+     */
+    export function sendKeyToFocusedPane(key: string) {
+        const paneRef = focusedPane === 'left' ? leftPaneRef : rightPaneRef
+        const event = new KeyboardEvent('keydown', { key, bubbles: false })
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        paneRef?.handleKeyDown(event)
+    }
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex,a11y_no_noninteractive_element_interactions -->

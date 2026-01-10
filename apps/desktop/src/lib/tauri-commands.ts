@@ -202,6 +202,58 @@ export async function updateMenuContext(path: string, filename: string): Promise
 }
 
 /**
+ * Toggle hidden files visibility and sync menu checkbox state.
+ * @returns The new state of showHiddenFiles.
+ */
+export async function toggleHiddenFiles(): Promise<boolean> {
+    return invoke<boolean>('toggle_hidden_files')
+}
+
+/**
+ * Set view mode and sync menu radio button state.
+ * @param mode - 'full' or 'brief'
+ */
+export async function setViewMode(mode: 'full' | 'brief'): Promise<void> {
+    await invoke('set_view_mode', { mode })
+}
+
+// ============================================================================
+// File action commands (for command palette)
+// ============================================================================
+
+/**
+ * Show a file in Finder (reveal in parent folder).
+ * @param path - Absolute path to the file.
+ */
+export async function showInFinder(path: string): Promise<void> {
+    await invoke('show_in_finder', { path })
+}
+
+/**
+ * Copy text to clipboard.
+ * @param text - Text to copy.
+ */
+export async function copyToClipboard(text: string): Promise<void> {
+    await invoke('copy_to_clipboard', { text })
+}
+
+/**
+ * Quick Look preview (macOS only).
+ * @param path - Absolute path to the file.
+ */
+export async function quickLook(path: string): Promise<void> {
+    await invoke('quick_look', { path })
+}
+
+/**
+ * Open Get Info window in Finder (macOS only).
+ * @param path - Absolute path to the file.
+ */
+export async function getInfo(path: string): Promise<void> {
+    await invoke('get_info', { path })
+}
+
+/**
  * Shows the main window.
  * Should be called when the frontend is ready to avoid white flash.
  */

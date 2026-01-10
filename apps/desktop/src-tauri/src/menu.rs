@@ -17,6 +17,12 @@ pub const COPY_FILENAME_ID: &str = "copy_filename";
 pub const GET_INFO_ID: &str = "get_info";
 pub const QUICK_LOOK_ID: &str = "quick_look";
 
+/// Menu item ID for command palette.
+pub const COMMAND_PALETTE_ID: &str = "command_palette";
+
+/// Menu item ID for Switch Pane.
+pub const SWITCH_PANE_ID: &str = "switch_pane";
+
 /// Menu item IDs for navigation (Go menu).
 pub const GO_BACK_ID: &str = "go_back";
 pub const GO_FORWARD_ID: &str = "go_forward";
@@ -111,7 +117,7 @@ pub fn build_menu<R: Runtime>(
     let copy_filename_item =
         tauri::menu::MenuItem::with_id(app, COPY_FILENAME_ID, "Copy filename", true, None::<&str>)?;
     let get_info_item = tauri::menu::MenuItem::with_id(app, GET_INFO_ID, "Get info", true, Some("Cmd+I"))?;
-    let quick_look_item = tauri::menu::MenuItem::with_id(app, QUICK_LOOK_ID, "Quick look", true, None::<&str>)?;
+    let quick_look_item = tauri::menu::MenuItem::with_id(app, QUICK_LOOK_ID, "Quick look", true, Some("Space"))?;
 
     // Find the existing File submenu and add our items to it
     for item in menu.items()? {
@@ -171,6 +177,19 @@ pub fn build_menu<R: Runtime>(
             submenu.append(&view_mode_brief_item)?;
             submenu.append(&tauri::menu::PredefinedMenuItem::separator(app)?)?;
             submenu.append(&show_hidden_item)?;
+            // Add command palette and switch pane after separator
+            submenu.append(&tauri::menu::PredefinedMenuItem::separator(app)?)?;
+            let command_palette_item = tauri::menu::MenuItem::with_id(
+                app,
+                COMMAND_PALETTE_ID,
+                "Command palette...",
+                true,
+                Some("Cmd+Shift+P"),
+            )?;
+            submenu.append(&command_palette_item)?;
+            let switch_pane_item =
+                tauri::menu::MenuItem::with_id(app, SWITCH_PANE_ID, "Switch pane", true, Some("Tab"))?;
+            submenu.append(&switch_pane_item)?;
             found_view = true;
             break;
         }
