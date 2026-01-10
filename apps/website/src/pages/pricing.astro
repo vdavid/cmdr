@@ -4,103 +4,183 @@ import Header from '../components/Header.astro'
 import Footer from '../components/Footer.astro'
 ---
 
-<Layout title="Pricing — Cmdr" description="Cmdr pricing: $29 one-time purchase, lifetime updates, 14-day free trial.">
+<Layout
+    title="Pricing — Cmdr"
+    description="Cmdr is free forever for personal use. Commercial licenses from $59/year."
+>
     <Header />
-    <main class="mx-auto max-w-4xl px-6 pt-32 pb-24">
+    <main class="mx-auto max-w-5xl px-6 pt-32 pb-24">
         <!-- Hero -->
         <header class="mb-16 text-center">
             <h1 class="mb-4 text-4xl font-bold tracking-tight text-[var(--color-text-primary)] md:text-5xl">
-                One price. Forever yours.
+                Free forever for personal use
             </h1>
             <p class="text-lg text-[var(--color-text-secondary)]">
-                No subscriptions. No feature gates. Just a file manager that respects your wallet.
+                Use Cmdr at home without paying a cent. Using it at work? We'd appreciate your support.
             </p>
         </header>
 
-        <!-- Pricing Card -->
-        <div
-            class="mx-auto mb-16 max-w-md rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8"
-        >
-            <div class="mb-6 text-center">
-                <div class="mb-2 text-sm text-[var(--color-text-tertiary)]">One-time purchase</div>
-                <div class="flex items-baseline justify-center gap-1">
-                    <span class="text-5xl font-bold text-[var(--color-text-primary)]">$29</span>
-                    <span class="text-[var(--color-text-tertiary)]">USD</span>
-                </div>
-            </div>
-
-            <ul class="mb-8 space-y-3">
-                <li class="flex items-start gap-3">
-                    <span class="mt-1 text-[var(--color-accent)]">✓</span>
-                    <span class="text-[var(--color-text-secondary)]"
-                        ><strong class="text-[var(--color-text-primary)]">Lifetime updates</strong> — every future version,
-                        forever</span
-                    >
-                </li>
-                <li class="flex items-start gap-3">
-                    <span class="mt-1 text-[var(--color-accent)]">✓</span>
-                    <span class="text-[var(--color-text-secondary)]"
-                        ><strong class="text-[var(--color-text-primary)]">Unlimited machines</strong> — use it on all your
-                        devices, as long as you're the only user</span
-                    >
-                </li>
-                <li class="flex items-start gap-3">
-                    <span class="mt-1 text-[var(--color-accent)]">✓</span>
-                    <span class="text-[var(--color-text-secondary)]"
-                        ><strong class="text-[var(--color-text-primary)]">Signed and notarized</strong> — no macOS Gatekeeper
-                        warnings</span
-                    >
-                </li>
-                <li class="flex items-start gap-3">
-                    <span class="mt-1 text-[var(--color-accent)]">✓</span>
-                    <span class="text-[var(--color-text-secondary)]"
-                        ><strong class="text-[var(--color-text-primary)]">Automatic updates</strong> — stay up to date effortlessly</span
-                    >
-                </li>
-                <li class="flex items-start gap-3">
-                    <span class="mt-1 text-[var(--color-accent)]">✓</span>
-                    <span class="text-[var(--color-text-secondary)]"
-                        ><strong class="text-[var(--color-text-primary)]">30-day refund</strong> — no questions asked</span
-                    >
-                </li>
-            </ul>
-
+        <!-- Download Button -->
+        <div class="mb-16 text-center">
             <a
-                href="#download"
-                class="block w-full rounded-lg bg-[var(--color-accent)] py-3 text-center font-medium text-white transition-all duration-200 hover:bg-[var(--color-accent-hover)] hover:shadow-[var(--color-accent-glow)]"
+                href="/#download"
+                class="inline-block rounded-lg bg-[var(--color-accent)] px-8 py-4 text-lg font-medium text-white transition-all duration-200 hover:bg-[var(--color-accent-hover)] hover:shadow-[var(--color-accent-glow)]"
             >
-                Start 14-day free trial
+                Download Cmdr
             </a>
-            <p class="mt-3 text-center text-sm text-[var(--color-text-tertiary)]">No credit card required</p>
+            <p class="mt-3 text-sm text-[var(--color-text-tertiary)]">
+                macOS only • Source-available (BSL 1.1)
+            </p>
         </div>
 
-        <!-- The Honest Truth Section -->
-        <section class="mb-16">
-            <h2 class="mb-6 text-center text-2xl font-bold text-[var(--color-text-primary)]">
-                The honest truth about the trial
-            </h2>
-            <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
-                <p class="mb-4 text-[var(--color-text-secondary)]">
-                    Look, we'll level with you: Cmdr is
-                    <strong class="text-[var(--color-text-primary)]">nagware</strong>. 🫣
-                </p>
-                <p class="mb-4 text-[var(--color-text-secondary)]">
-                    For 14 days, you get the full experience — every feature, no limitations. After that? An increasingly
-                    persistent popup will remind you that your trial has expired. It's not
-                    <em>aggressive</em>, but it's definitely
-                    <em>motivated</em>.
-                </p>
-                <p class="mb-4 text-[var(--color-text-secondary)]">
-                    We could lock you out entirely, but that felt mean. Instead, we're betting that if you use Cmdr for
-                    a week, you'll <em>want</em> to buy it — partly because it's genuinely useful, and partly to make the
-                    popup go away. 😅
-                </p>
-                <p class="text-[var(--color-text-secondary)]">
-                    It's a fair trade: you get a tool that makes file management faster, and we get to keep building it.
-                    Deal?
-                </p>
+        <!-- Pricing Cards -->
+        <div class="mb-16 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <!-- Personal (Free) -->
+            <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold text-[var(--color-text-primary)]">Personal</h3>
+                    <p class="text-sm text-[var(--color-text-tertiary)]">For hobbyists and side projects</p>
+                </div>
+                <div class="mb-6">
+                    <span class="text-3xl font-bold text-[var(--color-text-primary)]">Free</span>
+                    <span class="text-[var(--color-text-tertiary)]"> forever</span>
+                </div>
+                <ul class="mb-6 space-y-2 text-sm text-[var(--color-text-secondary)]">
+                    <li class="flex items-start gap-2">
+                        <span class="text-[var(--color-accent)]">✓</span>
+                        All features
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-[var(--color-accent)]">✓</span>
+                        Unlimited machines
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-[var(--color-accent)]">✓</span>
+                        Automatic updates
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-[var(--color-text-tertiary)]">✗</span>
+                        <span class="text-[var(--color-text-tertiary)]">Commercial use</span>
+                    </li>
+                </ul>
+                <div class="text-center text-sm text-[var(--color-text-tertiary)]">Just download and use it</div>
             </div>
-        </section>
+
+            <!-- Supporter -->
+            <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold text-[var(--color-text-primary)]">Supporter</h3>
+                    <p class="text-sm text-[var(--color-text-tertiary)]">Show some love ❤️</p>
+                </div>
+                <div class="mb-6">
+                    <span class="text-3xl font-bold text-[var(--color-text-primary)]">$10</span>
+                    <span class="text-[var(--color-text-tertiary)]"> one-time</span>
+                </div>
+                <ul class="mb-6 space-y-2 text-sm text-[var(--color-text-secondary)]">
+                    <li class="flex items-start gap-2">
+                        <span class="text-[var(--color-accent)]">✓</span>
+                        Everything in Personal
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-[var(--color-accent)]">✓</span>
+                        "Supporter" badge in app
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-[var(--color-accent)]">✓</span>
+                        Warm fuzzy feeling
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-[var(--color-text-tertiary)]">✗</span>
+                        <span class="text-[var(--color-text-tertiary)]">Commercial use</span>
+                    </li>
+                </ul>
+                <a
+                    href="#"
+                    class="block w-full rounded-lg border border-[var(--color-border)] py-2 text-center text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-hover)]"
+                >
+                    Buy supporter pack
+                </a>
+            </div>
+
+            <!-- Commercial Subscription -->
+            <div
+                class="relative rounded-2xl border-2 border-[var(--color-accent)] bg-[var(--color-surface)] p-6 shadow-lg"
+            >
+                <div
+                    class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[var(--color-accent)] px-3 py-1 text-xs font-medium text-white"
+                >
+                    Most popular
+                </div>
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold text-[var(--color-text-primary)]">Commercial</h3>
+                    <p class="text-sm text-[var(--color-text-tertiary)]">For work use</p>
+                </div>
+                <div class="mb-6">
+                    <span class="text-3xl font-bold text-[var(--color-text-primary)]">$59</span>
+                    <span class="text-[var(--color-text-tertiary)]">/year</span>
+                </div>
+                <ul class="mb-6 space-y-2 text-sm text-[var(--color-text-secondary)]">
+                    <li class="flex items-start gap-2">
+                        <span class="text-[var(--color-accent)]">✓</span>
+                        All features
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-[var(--color-accent)]">✓</span>
+                        <strong class="text-[var(--color-text-primary)]">Commercial use</strong>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-[var(--color-accent)]">✓</span>
+                        Per user, unlimited machines
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-[var(--color-accent)]">✓</span>
+                        Auto-renews annually
+                    </li>
+                </ul>
+                <a
+                    href="#"
+                    class="block w-full rounded-lg bg-[var(--color-accent)] py-2 text-center text-sm font-medium text-white transition-all duration-200 hover:bg-[var(--color-accent-hover)]"
+                >
+                    Buy commercial license
+                </a>
+            </div>
+
+            <!-- Commercial Perpetual -->
+            <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold text-[var(--color-text-primary)]">Perpetual</h3>
+                    <p class="text-sm text-[var(--color-text-tertiary)]">Buy once, use forever</p>
+                </div>
+                <div class="mb-6">
+                    <span class="text-3xl font-bold text-[var(--color-text-primary)]">$149</span>
+                    <span class="text-[var(--color-text-tertiary)]"> one-time</span>
+                </div>
+                <ul class="mb-6 space-y-2 text-sm text-[var(--color-text-secondary)]">
+                    <li class="flex items-start gap-2">
+                        <span class="text-[var(--color-accent)]">✓</span>
+                        All features
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-[var(--color-accent)]">✓</span>
+                        <strong class="text-[var(--color-text-primary)]">Commercial use</strong>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-[var(--color-accent)]">✓</span>
+                        Per user, unlimited machines
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-[var(--color-accent)]">✓</span>
+                        Lifetime updates
+                    </li>
+                </ul>
+                <a
+                    href="#"
+                    class="block w-full rounded-lg border border-[var(--color-border)] py-2 text-center text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-hover)]"
+                >
+                    Buy perpetual license
+                </a>
+            </div>
+        </div>
 
         <!-- FAQ Section -->
         <section>
@@ -108,15 +188,15 @@ import Footer from '../components/Footer.astro'
                 Frequently asked questions
             </h2>
 
-            <div class="space-y-6">
+            <div class="grid gap-6 md:grid-cols-2">
                 <div class="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-5">
                     <h3 class="mb-2 font-semibold text-[var(--color-text-primary)]">
-                        Is it really one-time, or will you add a subscription later?
+                        What counts as "commercial use"?
                     </h3>
                     <p class="text-[var(--color-text-secondary)]">
-                        It's really one-time. Your $29 gets you the current version and every future update. No
-                        subscription, no "premium tier," no "wait, that feature costs extra." We're allergic to that
-                        stuff.
+                        If you're using Cmdr as part of your job (employment, freelancing, consulting), that's commercial
+                        use. Side projects, open source work, and personal file management are all fine without a
+                        commercial license.
                     </p>
                 </div>
 
@@ -126,24 +206,34 @@ import Footer from '../components/Footer.astro'
                     </h3>
                     <p class="text-[var(--color-text-secondary)]">
                         Yes! Use Cmdr on as many machines as you like — laptop, desktop, remote debugging rig, whatever.
-                        Just make sure you're the only person using your license.
+                        Just make sure you're the one using your license.
                     </p>
                 </div>
 
                 <div class="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-5">
                     <h3 class="mb-2 font-semibold text-[var(--color-text-primary)]">
-                        Wait, the source code is open? Can I just compile it myself?
+                        What's the difference between subscription and perpetual?
                     </h3>
                     <p class="text-[var(--color-text-secondary)]">
-                        Yep! Cmdr is <a
+                        Subscription ($59/year) auto-renews annually. Perpetual ($149) is a one-time purchase that never
+                        expires. Both include all future updates. If you plan to use Cmdr for 3+ years, perpetual is the
+                        better deal.
+                    </p>
+                </div>
+
+                <div class="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-5">
+                    <h3 class="mb-2 font-semibold text-[var(--color-text-primary)]">
+                        Can I see the source code?
+                    </h3>
+                    <p class="text-[var(--color-text-secondary)]">
+                        Yes! Cmdr is <a
                             href="https://github.com/vdavid/cmdr"
                             target="_blank"
                             rel="noopener noreferrer"
                             class="text-[var(--color-accent)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]"
-                            >open source (AGPL-3.0)</a
-                        >. You can absolutely clone the repo and compile it yourself. You'll need Rust, Node, and Xcode,
-                        and your build won't be signed (so macOS will show scary warnings). The $29 is for the
-                        convenience of a signed, notarized, auto-updating app.
+                            >source-available on GitHub</a
+                        >. You can view, learn from, and modify the code. The license (BSL 1.1) converts to AGPL-3.0 after
+                        3 years.
                     </p>
                 </div>
 
@@ -154,28 +244,18 @@ import Footer from '../components/Footer.astro'
                             href="/refund"
                             class="text-[var(--color-accent)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]"
                             >30-day, no-questions-asked refund</a
-                        >. Between the 14-day trial and the refund period, you have 44 days to decide. That's more than a
-                        month. Take your time.
-                    </p>
-                </div>
-
-                <div class="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-5">
-                    <h3 class="mb-2 font-semibold text-[var(--color-text-primary)]">What about Windows and Linux?</h3>
-                    <p class="text-[var(--color-text-secondary)]">
-                        macOS only for now. Windows and Linux are on the roadmap. Your license will work on all
-                        platforms once they're available.
+                        >. Just email us and we'll sort it out.
                     </p>
                 </div>
 
                 <div class="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-5">
                     <h3 class="mb-2 font-semibold text-[var(--color-text-primary)]">Do you offer team licenses?</h3>
                     <p class="text-[var(--color-text-secondary)]">
-                        Not yet, but if you're a team looking for licenses, email us at
-                        <a
+                        Each person needs their own license. For teams of 5+, email us at <a
                             href="mailto:legal@getcmdr.com"
                             class="text-[var(--color-accent)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]"
                             >legal@getcmdr.com</a
-                        > and we'll figure something out.
+                        > for volume pricing.
                     </p>
                 </div>
             </div>

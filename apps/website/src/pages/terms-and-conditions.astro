@@ -5,7 +5,7 @@ import LegalLayout from '../layouts/LegalLayout.astro'
 <LegalLayout
     title="Terms of service"
     description="Terms and conditions for using Cmdr, the AI-native file manager."
-    lastUpdated="2026-01-08"
+    lastUpdated="2026-01-10"
 >
     <p>
         Welcome to Cmdr! These terms govern your use of Cmdr, the desktop file manager application. By downloading,
@@ -14,9 +14,9 @@ import LegalLayout from '../layouts/LegalLayout.astro'
 
     <div class="highlight-box">
         <p>
-            <strong>The short version:</strong> Cmdr is open source (AGPL-3.0). You can view, modify, and compile the source
-            code. The official signed binary includes a 14-day trial, after which a $29 license is required. Be nice, don't
-            abuse the system, and we'll all get along great.
+            <strong>The short version:</strong> Cmdr is source-available under the Business Source License (BSL 1.1).
+            It's free forever for personal use. Commercial use requires a paid license ($59/year or $149 perpetual).
+            The source code converts to AGPL-3.0 after 3 years. Be nice, and we'll all get along great.
         </p>
     </div>
 
@@ -32,48 +32,71 @@ import LegalLayout from '../layouts/LegalLayout.astro'
 
     <h2>2. The software and its license</h2>
 
-    <h3>Open source code</h3>
+    <h3>Source-available code</h3>
     <p>
         Cmdr's source code is licensed under the
-        <a href="https://www.gnu.org/licenses/agpl-3.0.en.html" target="_blank" rel="noopener noreferrer"
-            >GNU Affero General Public License v3.0 (AGPL-3.0)</a
+        <a href="https://mariadb.com/bsl11/" target="_blank" rel="noopener noreferrer">Business Source License 1.1 (BSL)</a
         >. This means:
     </p>
     <ul>
         <li>You can view, study, and modify the source code</li>
-        <li>You can compile and run the software yourself without purchasing a license</li>
-        <li>Any modifications you distribute must also be licensed under AGPL-3.0</li>
+        <li>You can use Cmdr for free for personal, non-commercial purposes</li>
+        <li>Commercial use requires a paid license</li>
+        <li>After 3 years from each release date, that version converts to AGPL-3.0</li>
     </ul>
 
-    <h3>Official binary distribution</h3>
+    <h3>Personal use (free)</h3>
     <p>
-        The official Cmdr binary (the signed and notarized macOS app) is what you're paying for when you purchase a
-        license. It includes:
+        You may use Cmdr for free if:
     </p>
     <ul>
-        <li>A 14-day free trial with full functionality</li>
-        <li>After the trial, a $29 one-time license purchase is required</li>
-        <li>Code signing and notarization (no macOS Gatekeeper warnings)</li>
-        <li>Automatic updates</li>
-        <li>Lifetime access to all future versions</li>
+        <li>You're using it for personal, non-commercial purposes</li>
+        <li>You're not using it as part of your employment, freelancing, or business activities</li>
+        <li>You're the only person using your installation</li>
     </ul>
+    <p>
+        Personal use is completely free — no trial, no limitations, no nags.
+    </p>
 
-    <h3>What the license grants you</h3>
+    <h3>Commercial use (paid)</h3>
+    <p>
+        A commercial license is required if you're using Cmdr for work. This includes:
+    </p>
+    <ul>
+        <li>Use during employment (even for side tasks)</li>
+        <li>Freelancing and consulting work</li>
+        <li>Any business activity</li>
+    </ul>
+    <p>
+        Commercial licenses are available as:
+    </p>
+    <ul>
+        <li><strong>Subscription</strong> — $59/year per user, auto-renews</li>
+        <li><strong>Perpetual</strong> — $149 one-time per user, never expires</li>
+    </ul>
+    <p>
+        Both options include all features and unlimited machines per user.
+    </p>
+
+    <h3>Evaluation</h3>
+    <p>
+        You may evaluate Cmdr for commercial use for up to 14 days before purchasing a license.
+    </p>
+
+    <h2>3. What the license grants you</h2>
     <p>When you purchase a Cmdr license, you receive:</p>
     <ul>
-        <li>A personal, non-transferable license to use Cmdr</li>
+        <li>A personal, non-transferable license to use Cmdr commercially</li>
         <li>The right to install Cmdr on unlimited machines you own (as long as you're the only user)</li>
         <li>All future updates at no additional cost</li>
     </ul>
 
-    <h2>3. Acceptable use</h2>
+    <h2>4. Acceptable use</h2>
     <p>You agree not to:</p>
     <ul>
+        <li>Share your license key with others or use it on behalf of multiple people</li>
         <li>Redistribute the official signed Cmdr binary commercially or claim it as your own product</li>
-        <li>
-            Circumvent or tamper with the licensing system in the official binary (note: per AGPL, you <em>can</em> modify
-            the source code and compile your own version — that's different)
-        </li>
+        <li>Circumvent or tamper with the licensing system in the official binary</li>
         <li>Use Cmdr for any illegal activities</li>
         <li>Attempt to reverse engineer our license key signing infrastructure</li>
     </ul>
@@ -82,7 +105,7 @@ import LegalLayout from '../layouts/LegalLayout.astro'
         keeps Cmdr alive.
     </p>
 
-    <h2>4. AI features disclaimer</h2>
+    <h2>5. AI features disclaimer</h2>
     <p>Cmdr includes AI-powered features (such as natural language file renaming and search). Please be aware:</p>
     <ul>
         <li>
@@ -93,18 +116,22 @@ import LegalLayout from '../layouts/LegalLayout.astro'
         <li>Cmdr is not liable for data loss resulting from AI-suggested operations you confirm</li>
     </ul>
 
-    <h2>5. Payment and refunds</h2>
+    <h2>6. Payment and refunds</h2>
     <p>
         Payments are processed by
         <a href="https://paddle.com" target="_blank" rel="noopener noreferrer">Paddle</a>, our Merchant of Record.
         Paddle handles all payment processing, tax collection, and invoicing.
     </p>
     <p>
+        <strong>Subscription renewals:</strong> Commercial subscriptions auto-renew annually. You can cancel anytime
+        from your Paddle account, and you'll retain access until the end of your billing period.
+    </p>
+    <p>
         We offer a <strong>30-day, no-questions-asked refund policy</strong>. See our <a href="/refund">Refund policy</a
         > for details.
     </p>
 
-    <h2>6. Disclaimer of warranties</h2>
+    <h2>7. Disclaimer of warranties</h2>
     <p>Cmdr is provided "as is" without warranty of any kind, express or implied. We don't guarantee that:</p>
     <ul>
         <li>The software will be error-free or uninterrupted</li>
@@ -113,27 +140,27 @@ import LegalLayout from '../layouts/LegalLayout.astro'
     </ul>
     <p>That said, we work hard to make Cmdr reliable and will do our best to fix issues you report.</p>
 
-    <h2>7. Limitation of liability</h2>
+    <h2>8. Limitation of liability</h2>
     <p>
         To the maximum extent permitted by law, Rymdskottkärra AB shall not be liable for any indirect, incidental,
         special, consequential, or punitive damages, including loss of data, arising from your use of Cmdr.
     </p>
     <p>Our total liability shall not exceed the amount you paid for your Cmdr license.</p>
 
-    <h2>8. Changes to these terms</h2>
+    <h2>9. Changes to these terms</h2>
     <p>
         We may update these terms from time to time. We'll notify you of significant changes via email (if you've
         purchased a license) or by posting a notice on our website.
     </p>
     <p>Continued use of Cmdr after changes constitutes acceptance of the new terms.</p>
 
-    <h2>9. Governing law</h2>
+    <h2>10. Governing law</h2>
     <p>
         These terms are governed by the laws of Sweden. Any disputes shall be resolved in Swedish courts. However,
         nothing in these terms limits your statutory consumer rights under EU law.
     </p>
 
-    <h2>10. Contact</h2>
+    <h2>11. Contact</h2>
     <p>
         Questions? Concerns? We're happy to help. Reach out at
         <a href="mailto:legal@getcmdr.com">legal@getcmdr.com</a>.

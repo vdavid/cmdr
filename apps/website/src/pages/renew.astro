@@ -1,0 +1,71 @@
+---
+import Layout from '../layouts/Layout.astro'
+import Header from '../components/Header.astro'
+import Footer from '../components/Footer.astro'
+---
+
+<Layout title="Renew your license — Cmdr" description="Renew your Cmdr commercial license subscription.">
+    <Header />
+    <main class="mx-auto max-w-2xl px-6 pt-32 pb-24">
+        <header class="mb-12 text-center">
+            <h1 class="mb-4 text-4xl font-bold tracking-tight text-[var(--color-text-primary)]">
+                Renew your license
+            </h1>
+            <p class="text-lg text-[var(--color-text-secondary)]">
+                Keep using Cmdr at work with a renewed commercial license.
+            </p>
+        </header>
+
+        <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8">
+            <h2 class="mb-4 text-xl font-semibold text-[var(--color-text-primary)]">Commercial subscription</h2>
+            <p class="mb-6 text-[var(--color-text-secondary)]">
+                Your subscription auto-renews annually. If your subscription has lapsed or you'd like to renew early,
+                use the button below.
+            </p>
+
+            <div class="mb-6 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg)] p-4">
+                <div class="flex items-baseline justify-between">
+                    <span class="text-[var(--color-text-secondary)]">Annual renewal</span>
+                    <span class="text-2xl font-bold text-[var(--color-text-primary)]">$59/year</span>
+                </div>
+            </div>
+
+            <a
+                href="#"
+                class="mb-4 block w-full rounded-lg bg-[var(--color-accent)] py-3 text-center font-medium text-white transition-all duration-200 hover:bg-[var(--color-accent-hover)]"
+            >
+                Renew subscription
+            </a>
+
+            <p class="text-center text-sm text-[var(--color-text-tertiary)]">
+                You'll use the same license key — no need to re-enter anything in the app.
+            </p>
+        </div>
+
+        <div class="mt-8 text-center">
+            <h3 class="mb-2 font-semibold text-[var(--color-text-primary)]">Prefer a perpetual license?</h3>
+            <p class="mb-4 text-[var(--color-text-secondary)]">
+                Pay once ($149) and never worry about renewals again.
+            </p>
+            <a
+                href="/pricing"
+                class="text-[var(--color-accent)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]"
+            >
+                View all pricing options →
+            </a>
+        </div>
+
+        <div class="mt-12 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-6">
+            <h3 class="mb-2 font-semibold text-[var(--color-text-primary)]">Questions about your license?</h3>
+            <p class="text-[var(--color-text-secondary)]">
+                If you're having trouble renewing or need help with your license, email us at
+                <a
+                    href="mailto:legal@getcmdr.com"
+                    class="text-[var(--color-accent)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]"
+                    >legal@getcmdr.com</a
+                >. We're happy to help.
+            </p>
+        </div>
+    </main>
+    <Footer />
+</Layout>
