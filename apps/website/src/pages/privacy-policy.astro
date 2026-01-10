@@ -15,7 +15,7 @@ import LegalLayout from '../layouts/LegalLayout.astro'
     <div class="highlight-box">
         <p>
             <strong>The short version:</strong> We collect minimal data. The website uses analytics and collects your email
-            if you subscribe. The app validates your license using a machine identifier. We don't sell your data. Ever.
+            if you subscribe. The app periodically validates your license with our servers. We don't sell your data. Ever.
         </p>
     </div>
 
@@ -54,12 +54,12 @@ import LegalLayout from '../layouts/LegalLayout.astro'
     <h3>In the desktop app</h3>
     <ul>
         <li>
-            <strong>Machine identifier</strong> — when validating your license, we generate a pseudonymous machine ID to prevent
-            license sharing across too many devices. This ID doesn't identify you personally.
+            <strong>License key</strong> — stored locally on your machine. We verify it cryptographically and periodically
+            check subscription status with our servers.
         </li>
         <li>
-            <strong>License key</strong> — stored locally on your machine. We verify it cryptographically without contacting
-            our servers for every check.
+            <strong>Organization name</strong> — for commercial licenses, we store the organization name you provide at
+            checkout. This is displayed in the app's About window.
         </li>
     </ul>
 
@@ -74,8 +74,8 @@ import LegalLayout from '../layouts/LegalLayout.astro'
     <p>Under GDPR, we need a legal basis for processing your data:</p>
     <ul>
         <li>
-            <strong>Contract performance</strong> — machine ID for license validation (you need it to use the software you
-            purchased)
+            <strong>Contract performance</strong> — license validation and subscription status checks (you need it to use
+            the software you purchased)
         </li>
         <li>
             <strong>Legitimate interest</strong> — analytics to improve our website and product, fraud prevention
@@ -133,9 +133,6 @@ import LegalLayout from '../layouts/LegalLayout.astro'
         </li>
         <li>
             <strong>Analytics data</strong> — typically 2 years, then aggregated or deleted
-        </li>
-        <li>
-            <strong>Machine identifiers</strong> — stored as long as your license is active
         </li>
     </ul>
 

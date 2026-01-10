@@ -1,9 +1,12 @@
 import * as ed from '@noble/ed25519'
 
+export type LicenseType = 'supporter' | 'commercial_subscription' | 'commercial_perpetual'
+
 export interface LicenseData {
     email: string
     transactionId: string
     issuedAt: string
+    type: LicenseType
 }
 
 /**

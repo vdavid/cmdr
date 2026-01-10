@@ -27,11 +27,9 @@ This is a monorepo with the following structure:
 - `/apps/website/` - Marketing website (getcmdr.com)
     - Astro + Tailwind v4
     - Deployed via Docker + nginx
-    - Proprietary license
 - `/apps/license-server/` - License key generation webhook
     - Cloudflare Worker (Hono framework)
     - Receives Paddle webhooks, generates Ed25519-signed keys
-    - Proprietary license
 - `/scripts/check/` - Go-based unified check runner (replaces individual scripts)
 - `/docs/` - Docs including `style-guide.md`
 
@@ -111,8 +109,8 @@ See [docs/adr](docs/adr) for all key technical decisions, and the
 - **Clippy `--allow-dirty --allow-staged`** is used locally to allow auto-fixes even with uncommitted changes
 - **Paddle for payments**: Chosen for MoR model (handles taxes/invoicing), all-inclusive fees. See
   [ADR-014](docs/adr/014-payment-provider-paddle.md)
-- **AGPL + trial license model**: Source is open (AGPL), official binary has 14-day trial. See
-  [ADR-015](docs/adr/015-license-model-agpl-trial.md) and [licensing docs](docs/features/licensing.md)
+- **BSL license model**: Source-available (BSL 1.1), free for personal use, paid for commercial. See
+  [ADR-016](docs/adr/016-license-model-bsl.md) and [licensing docs](docs/features/licensing.md)
 
 ## MCP
 

@@ -43,6 +43,7 @@ describe('generateLicenseKey', () => {
             email: 'test@example.com',
             transactionId: 'txn_123',
             issuedAt: '2026-01-08T12:00:00Z',
+            type: 'commercial_subscription',
         }
 
         const key = await generateLicenseKey(licenseData, privateKeyHex)
@@ -64,6 +65,7 @@ describe('generateLicenseKey', () => {
             email: 'user@domain.com',
             transactionId: 'txn_abc123',
             issuedAt: '2026-01-08T12:00:00Z',
+            type: 'commercial_subscription',
         }
 
         const key = await generateLicenseKey(licenseData, privateKeyHex)
@@ -85,6 +87,7 @@ describe('generateLicenseKey', () => {
             email: 'test@test.com',
             transactionId: 'txn_verify',
             issuedAt: '2026-01-08T12:00:00Z',
+            type: 'commercial_perpetual',
         }
 
         const key = await generateLicenseKey(licenseData, privateKeyHex)
@@ -108,6 +111,7 @@ describe('generateLicenseKey', () => {
             email: 'original@test.com',
             transactionId: 'txn_original',
             issuedAt: '2026-01-08T12:00:00Z',
+            type: 'supporter',
         }
 
         const key = await generateLicenseKey(licenseData, privateKeyHex)
@@ -118,6 +122,7 @@ describe('generateLicenseKey', () => {
             email: 'hacker@evil.com',
             transactionId: 'txn_original',
             issuedAt: '2026-01-08T12:00:00Z',
+            type: 'supporter',
         }
         const tamperedPayload = JSON.stringify(tamperedData)
         const tamperedPayloadBytes = new TextEncoder().encode(tamperedPayload)

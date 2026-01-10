@@ -10,5 +10,10 @@ SUPPORT_EMAIL = "veszelovszki@gmail.com"
 # Secrets (set via `wrangler secret put <NAME>`):
 # - PADDLE_WEBHOOK_SECRET_LIVE     (from Paddle live dashboard)
 # - PADDLE_WEBHOOK_SECRET_SANDBOX  (from Paddle sandbox dashboard)
+# - PADDLE_API_KEY_LIVE            (from Paddle live dashboard - for /validate)
+# - PADDLE_API_KEY_SANDBOX         (from Paddle sandbox dashboard - for /validate)
 # - ED25519_PRIVATE_KEY            (from generate-keys script)
 # - RESEND_API_KEY                 (from resend.com)
+# - PRICE_ID_SUPPORTER             (Price ID for $10 supporter product)
+# - PRICE_ID_COMMERCIAL_SUBSCRIPTION (Price ID for $59/yr subscription)
+# - PRICE_ID_COMMERCIAL_PERPETUAL  (Price ID for $149 perpetual)

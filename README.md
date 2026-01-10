@@ -1,36 +1,33 @@
 # Cmdr
 
-![License](https://img.shields.io/github/license/vdavid/cmdr)
+![License](https://img.shields.io/badge/license-BSL--1.1-blue)
 
-An extremely fast, keyboard-driven, two-pane file manager written in Rust for folks who miss the golden days of Norton
-Commander and Total Commander.
+An extremely fast AI-native file manager written in Rust, free forever for personal use on macOS.
+
+Cmdr is for folks who love a rock-solid, keyboard-driven, two-pane file manager with a modern UI in 2026.
+
+Give it a try: [Download for macOS](https://getcmdr.com) on the website, or do `brew install cmdr`.
 
 ![cmdr](https://github.com/user-attachments/assets/7827b88d-e0a9-447e-b195-af7216c0fa35)
 
-
 ## Overview
 
-Cmdr is a desktop file manager that brings back the classic two-pane layout. It's built for speed and keyboard
-navigation. If you've ever used Norton Commander, Midnight Commander, or Total Commander, you'll feel right at home.
+Cmdr is the first AI-native file manager, written by modern standards with built-in AI to support natural language
+search, smart renaming, and auto-organization. Built on the spiritual foundations of `mc` and Total Commander.
 
 Core features:
 
-- **Two-pane layout**: see two directories side by side
-- **Keyboard-first navigation**: do everything without touching your mouse
-- **Fast file operations**: copy, move, rename, and delete with a few keystrokes
-- **Cross-platform**: runs on macOS, Windows, and Linux
+- **Two-pane layout**: see two dirs side by side.
+- **Keyboard-first**: do anything without touching your mouse, using your familiar shortcuts.
+- **Blazing fast file operations**: copy, move, rename, and delete with a few keystrokes
+- **AI native**: search, rename, organize like you're in 2026.
 
 ## Installation
 
-Download the latest release for your platform from the [Releases](https://github.com/vdavid/cmdr/releases) page.
+Download from [getcmdr.com](https://getcmdr.com) or just do `brew install cmdr`.
 
-### macOS
-
-(Downloadable installer coming soon)
-
-### Windows and Linux
-
-Sorry, only macOS for now
+Windows and Linux users: sorry, you'll need to wait. The Rust+Tauri stack allows for cross-platform deployment, but the app
+uses OS-specific features by nature, so I've only had time to write and test it on macOS for now.
 
 ## Usage
 
@@ -53,21 +50,26 @@ gives it native performance with a modern, responsive UI.
 
 ## License
 
-Cmdr is available under a **dual license**:
+Cmdr is **source-available** under the [Business Source License 1.1](LICENSE).
 
-### Open source (AGPL-3.0-or-later)
+### Free for personal use
 
-For open-source projects, personal use, and those who can comply with the
-[GNU Affero General Public License v3](https://www.gnu.org/licenses/agpl-3.0.html), Cmdr is free to use, modify, and
-distribute. The AGPL requires that if you modify Cmdr and make it available to users over a network, you must also make
-your source code available under the same license.
+Use Cmdr for free on any number of machines for personal, non-commercial projects. No nags, no trial timers, no
+restrictions.
 
-### Commercial license
+### Commercial use
 
-For companies and individuals who cannot comply with the AGPL (e.g., you want to use Cmdr in proprietary software, or
-you don't want to disclose your source code), a commercial license is available.
+For work projects, you'll need a license:
 
-**Contact**: [veszelovszki@gmail.com](mailto:veszelovszki@gmail.com) for pricing and terms.
+- **$59/year** — subscription, auto-renews
+- **$149 one-time** — perpetual license
+
+Purchase at [getcmdr.com/pricing](https://getcmdr.com/pricing).
+
+### Source code
+
+The source becomes [AGPL-3.0](https://www.gnu.org/licenses/agpl-3.0.html) after 3 years (rolling per release). Until
+then, you can view, modify, and learn from the code — just not use it commercially without a license.
 
 ---
 
@@ -76,9 +78,9 @@ you don't want to disclose your source code), a commercial license is available.
 Contributions are welcome! Report issues and feature requests in the
 [issue tracker](https://github.com/vdavid/cmdr/issues).
 
-By submitting a contribution, you agree to license your contribution under the AGPL-3.0-or-later license and grant the
-project owner the right to use your contribution under both the AGPL and any commercial license offered for this
-project.
+By submitting a contribution, you agree to license your contribution under the same terms as the project (BSL 1.1,
+converting to AGPL-3.0) and grant the project owner the right to use your contribution under any commercial license
+offered for this project.
 
 Happy browsing!
 

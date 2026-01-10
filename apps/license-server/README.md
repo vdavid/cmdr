@@ -103,15 +103,16 @@ Then open http://localhost:3333 and click "Buy Cmdr".
 
 ## Endpoints
 
-| Method | Path              | Description                                      |
-| ------ | ----------------- | ------------------------------------------------ |
-| `GET`  | `/`               | Health check                                     |
-| `POST` | `/webhook/paddle` | Paddle webhook (generates and emails license)    |
-| `POST` | `/admin/generate` | Manual license generation (requires auth header) |
+| Method | Path              | Description                                       |
+| ------ | ----------------- | ------------------------------------------------- |
+| `GET`  | `/`               | Health check                                      |
+| `POST` | `/webhook/paddle` | Paddle webhook (generates and emails license)     |
+| `POST` | `/validate`       | Validate license key (returns subscription status)|
+| `POST` | `/admin/generate` | Manual license generation (requires auth header)  |
 
 
 ## Architecture decisions
 
 - See [ADR 014: Payment provider choice](../../docs/adr/014-payment-provider-paddle.md) for why Paddle
-- See [ADR 015: License model](../../docs/adr/015-license-model-agpl-trial.md) for the AGPL + trial approach
+- See [ADR 016: License model](../../docs/adr/016-license-model-bsl.md) for the BSL license approach
 - See [Licensing feature docs](../../docs/features/licensing.md) for the full feature overview

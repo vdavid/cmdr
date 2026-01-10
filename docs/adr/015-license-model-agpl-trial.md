@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by [ADR-016](016-license-model-bsl.md)
 
 ## Summary
 
