@@ -50,8 +50,8 @@ mod settings;
 mod volumes;
 
 use menu::{
-    GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID, MenuState, SHOW_HIDDEN_FILES_ID, VIEW_MODE_BRIEF_ID, VIEW_MODE_FULL_ID,
-    ViewMode,
+    ABOUT_ID, GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID, MenuState, SHOW_HIDDEN_FILES_ID, VIEW_MODE_BRIEF_ID,
+    VIEW_MODE_FULL_ID, ViewMode,
 };
 use tauri::{Emitter, Manager};
 
@@ -129,6 +129,13 @@ pub fn run() {
             *menu_state.view_mode_brief.lock().unwrap() = Some(menu_items.view_mode_brief);
             app.manage(menu_state);
 
+            // Set window title based on license status
+            let license_status = licensing::get_app_status(app.handle());
+            let title = licensing::get_window_title(&license_status);
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.set_title(&title);
+            }
+
             Ok(())
         })
         .on_menu_event(|app, event| {
@@ -175,6 +182,9 @@ pub fn run() {
                     _ => return,
                 };
                 let _ = app.emit("navigation-action", serde_json::json!({ "action": action }));
+            } else if id == ABOUT_ID {
+                // Emit event to show our custom About window
+                let _ = app.emit("show-about", ());
             } else {
                 // Handle file actions
                 commands::ui::execute_menu_action(app, id);
@@ -247,9 +257,13 @@ pub fn run() {
             permissions::open_privacy_settings,
             // Licensing commands
             commands::licensing::get_license_status,
+            commands::licensing::get_window_title,
             commands::licensing::activate_license,
             commands::licensing::get_license_info,
-            commands::licensing::reset_trial
+            commands::licensing::mark_expiration_modal_shown,
+            commands::licensing::reset_license,
+            commands::licensing::needs_license_validation,
+            commands::licensing::validate_license_with_server
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

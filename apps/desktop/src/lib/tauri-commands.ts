@@ -1,7 +1,7 @@
 // Typed wrapper functions for Tauri commands
 
 import { invoke } from '@tauri-apps/api/core'
-import { openPath } from '@tauri-apps/plugin-opener'
+import { openPath, openUrl } from '@tauri-apps/plugin-opener'
 import { type Event, listen, type UnlistenFn } from '@tauri-apps/api/event'
 import type {
     AuthMode,
@@ -147,6 +147,14 @@ export async function pathExists(path: string): Promise<boolean> {
  */
 export async function openFile(path: string): Promise<void> {
     await openPath(path)
+}
+
+/**
+ * Opens a URL in the system's default browser.
+ * @param url - URL to open (e.g., "https://getcmdr.com/renew")
+ */
+export async function openExternalUrl(url: string): Promise<void> {
+    await openUrl(url)
 }
 
 /**
@@ -657,4 +665,91 @@ export function isMountError(error: unknown): error is MountError {
             'mount_path_conflict',
         ].includes((error as MountError).type)
     )
+}
+
+// ============================================================================
+// Licensing
+// ============================================================================
+
+/** License types */
+export type LicenseType = 'supporter' | 'commercial_subscription' | 'commercial_perpetual'
+
+/** Application license status */
+export type LicenseStatus =
+    | { type: 'personal' }
+    | { type: 'supporter' }
+    | { type: 'commercial'; licenseType: LicenseType; organizationName: string | null; expiresAt: string | null }
+    | { type: 'expired'; organizationName: string | null; expiredAt: string; showModal: boolean }
+
+/** License information from activation */
+export interface LicenseInfo {
+    email: string
+    transactionId: string
+    issuedAt: string
+}
+
+/**
+ * Gets the current application license status.
+ * @returns Current license status (personal, supporter, commercial, or expired)
+ */
+export async function getLicenseStatus(): Promise<LicenseStatus> {
+    return invoke<LicenseStatus>('get_license_status')
+}
+
+/**
+ * Gets the window title based on current license status.
+ * @returns Window title string (e.g., "Cmdr – Personal use only")
+ */
+export async function getWindowTitle(): Promise<string> {
+    return invoke<string>('get_window_title')
+}
+
+/**
+ * Activates a license key.
+ * @param licenseKey The license key to activate
+ * @returns License info on success
+ * @throws Error message on failure
+ */
+export async function activateLicense(licenseKey: string): Promise<LicenseInfo> {
+    return invoke<LicenseInfo>('activate_license', { licenseKey })
+}
+
+/**
+ * Gets information about the current stored license.
+ * @returns License info if a valid license is stored, null otherwise
+ */
+export async function getLicenseInfo(): Promise<LicenseInfo | null> {
+    return invoke<LicenseInfo | null>('get_license_info')
+}
+
+/**
+ * Marks the expiration modal as shown to prevent showing it again.
+ */
+export async function markExpirationModalShown(): Promise<void> {
+    await invoke('mark_expiration_modal_shown')
+}
+
+/**
+ * Resets all license data (debug builds only).
+ */
+export async function resetLicense(): Promise<void> {
+    await invoke('reset_license')
+}
+
+/**
+ * Checks if the license needs re-validation with the server.
+ * Should be called on app startup to determine if validateLicenseWithServer should be invoked.
+ * @returns True if validation is needed (7+ days since last validation)
+ */
+export async function needsLicenseValidation(): Promise<boolean> {
+    return invoke<boolean>('needs_license_validation')
+}
+
+/**
+ * Validates the license with the license server.
+ * Call this when needsLicenseValidation returns true, or after activating a new license.
+ * @returns Updated license status from server
+ */
+export async function validateLicenseWithServer(): Promise<LicenseStatus> {
+    return invoke<LicenseStatus>('validate_license_with_server')
 }

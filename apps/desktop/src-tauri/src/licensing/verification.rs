@@ -187,6 +187,7 @@ mod tests {
             email: "test@example.com".to_string(),
             transaction_id: "txn_test_123".to_string(),
             issued_at: "2026-01-08T12:00:00Z".to_string(),
+            license_type: None,
         };
 
         // Serialize payload (same as server)
@@ -226,6 +227,7 @@ mod tests {
             email: "original@example.com".to_string(),
             transaction_id: "txn_original".to_string(),
             issued_at: "2026-01-08T12:00:00Z".to_string(),
+            license_type: None,
         };
         let original_json = serde_json::to_string(&original_data).unwrap();
         let signature = signing_key.sign(original_json.as_bytes());
@@ -236,6 +238,7 @@ mod tests {
             email: "hacker@evil.com".to_string(),
             transaction_id: "txn_original".to_string(),
             issued_at: "2026-01-08T12:00:00Z".to_string(),
+            license_type: None,
         };
         let tampered_json = serde_json::to_string(&tampered_data).unwrap();
         let tampered_payload_base64 = BASE64.encode(tampered_json.as_bytes());
@@ -269,6 +272,7 @@ mod tests {
             email: "test@example.com".to_string(),
             transaction_id: "txn_test".to_string(),
             issued_at: "2026-01-08T12:00:00Z".to_string(),
+            license_type: None,
         };
         let payload_json = serde_json::to_string(&license_data).unwrap();
         let signature = signing_key.sign(payload_json.as_bytes());

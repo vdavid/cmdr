@@ -64,6 +64,9 @@ pub enum ViewMode {
     Brief,
 }
 
+/// Menu item ID for About window.
+pub const ABOUT_ID: &str = "about";
+
 /// Builds the application menu with default macOS items plus a custom View and File submenu enhancements.
 pub fn build_menu<R: Runtime>(
     app: &AppHandle<R>,
@@ -72,6 +75,32 @@ pub fn build_menu<R: Runtime>(
 ) -> tauri::Result<MenuItems<R>> {
     // Start with the default menu (includes app menu with Quit, Hide, etc.)
     let menu = Menu::default(app)?;
+
+    // Replace the default About item with our custom one that emits an event
+    // The app menu is typically the first item
+    for item in menu.items()? {
+        if let tauri::menu::MenuItemKind::Submenu(submenu) = item {
+            let text = submenu.text()?;
+            if text == "cmdr" || text.to_lowercase().contains("cmdr") {
+                // Find and remove the default About item, add our custom one
+                let about_item = tauri::menu::MenuItem::with_id(app, ABOUT_ID, "About cmdr", true, None::<&str>)?;
+
+                // Get all items and recreate without the default about
+                let items = submenu.items()?;
+                for (i, sub_item) in items.iter().enumerate() {
+                    if let tauri::menu::MenuItemKind::Predefined(pred) = sub_item {
+                        // Check if this is the About item by position (typically first)
+                        if i == 0 {
+                            submenu.remove(pred)?;
+                            submenu.insert(&about_item, 0)?;
+                            break;
+                        }
+                    }
+                }
+                break;
+            }
+        }
+    }
 
     // Add File menu items
     let open_item = tauri::menu::MenuItem::with_id(app, OPEN_ID, "Open", true, None::<&str>)?;

@@ -57,51 +57,22 @@ app.get('/', (c) => {
 
 // Validate license - called by app to check subscription status
 app.post('/validate', async (c) => {
-    const { licenseKey, transactionId } = await c.req.json<{ licenseKey?: string; transactionId?: string }>()
+    const { transactionId } = await c.req.json<{ transactionId?: string }>()
 
     if (!transactionId) {
-        const response: ValidationResponse = {
-            status: 'invalid',
-            type: null,
-            organizationName: null,
-            expiresAt: null,
-        }
-        return c.json(response)
+        return c.json(invalidResponse())
     }
 
-    // Try sandbox first, then live (based on transaction ID prefix)
-    const isSandbox = transactionId.startsWith('txn_') // Sandbox uses different prefix in practice
-    const apiKey = isSandbox ? c.env.PADDLE_API_KEY_SANDBOX : c.env.PADDLE_API_KEY_LIVE
-    const environment = isSandbox ? 'sandbox' : 'live'
-
-    if (!apiKey) {
-        // Fall back to the other environment
-        const fallbackKey = isSandbox ? c.env.PADDLE_API_KEY_LIVE : c.env.PADDLE_API_KEY_SANDBOX
-        if (!fallbackKey) {
-            console.error('No Paddle API key configured')
-            const response: ValidationResponse = {
-                status: 'invalid',
-                type: null,
-                organizationName: null,
-                expiresAt: null,
-            }
-            return c.json(response)
-        }
+    // Determine which Paddle environment to use
+    const paddleConfig = getPaddleConfig(transactionId, c.env)
+    if (!paddleConfig) {
+        console.error('No Paddle API key configured')
+        return c.json(invalidResponse())
     }
 
-    const result = await getSubscriptionStatus(transactionId, {
-        apiKey: apiKey ?? c.env.PADDLE_API_KEY_LIVE ?? c.env.PADDLE_API_KEY_SANDBOX ?? '',
-        environment,
-    })
-
+    const result = await getSubscriptionStatus(transactionId, paddleConfig)
     if (!result) {
-        const response: ValidationResponse = {
-            status: 'invalid',
-            type: null,
-            organizationName: null,
-            expiresAt: null,
-        }
-        return c.json(response)
+        return c.json(invalidResponse())
     }
 
     // Determine license type from cached data (we don't have price ID here)
@@ -118,6 +89,33 @@ app.post('/validate', async (c) => {
 
     return c.json(response)
 })
+
+/** Helper to create invalid response */
+function invalidResponse(): ValidationResponse {
+    return {
+        status: 'invalid',
+        type: null,
+        organizationName: null,
+        expiresAt: null,
+    }
+}
+
+/** Determine Paddle API config based on transaction ID */
+function getPaddleConfig(
+    transactionId: string,
+    env: Bindings,
+): { apiKey: string; environment: 'sandbox' | 'live' } | null {
+    // Try sandbox first, then live (based on transaction ID prefix)
+    const isSandbox = transactionId.startsWith('txn_') // Sandbox uses different prefix in practice
+    const primaryKey = isSandbox ? env.PADDLE_API_KEY_SANDBOX : env.PADDLE_API_KEY_LIVE
+    const fallbackKey = isSandbox ? env.PADDLE_API_KEY_LIVE : env.PADDLE_API_KEY_SANDBOX
+    const environment = isSandbox ? 'sandbox' : 'live'
+
+    const apiKey = primaryKey ?? fallbackKey
+    if (!apiKey) return null
+
+    return { apiKey, environment }
+}
 
 // Paddle webhook - called when purchase completes
 app.post('/webhook/paddle', async (c) => {
@@ -140,13 +138,9 @@ app.post('/webhook/paddle', async (c) => {
         return c.json({ status: 'ignored', event: payload.event_type })
     }
 
-    const customerEmail = payload.data?.customer?.email
-    const customerName = payload.data?.customer?.name ?? 'there'
-    const transactionId = payload.data?.id
-    const priceId = payload.data?.items?.[0]?.price?.id
-    const organizationName = payload.data?.custom_data?.organization_name
-
-    if (!customerEmail || !transactionId) {
+    // Extract and validate purchase data
+    const purchaseData = extractPurchaseData(payload)
+    if (!purchaseData) {
         return c.json({ error: 'Missing customer email or transaction ID' }, 400)
     }
 
@@ -156,39 +150,91 @@ app.post('/webhook/paddle', async (c) => {
         commercialSubscription: c.env.PRICE_ID_COMMERCIAL_SUBSCRIPTION,
         commercialPerpetual: c.env.PRICE_ID_COMMERCIAL_PERPETUAL,
     }
-    const licenseType = priceId ? getLicenseTypeFromPriceId(priceId, priceIds) : 'commercial_subscription'
+    const licenseType = purchaseData.priceId
+        ? getLicenseTypeFromPriceId(purchaseData.priceId, priceIds)
+        : 'commercial_subscription'
 
-    // Generate license key with type
-    const licenseData = {
-        email: customerEmail,
-        transactionId,
-        issuedAt: new Date().toISOString(),
-        type: licenseType ?? 'commercial_subscription',
-    }
-
-    const licenseKey = await generateLicenseKey(licenseData, c.env.ED25519_PRIVATE_KEY)
-    const formattedKey = formatLicenseKey(licenseKey)
-
-    // Send license email (include org name and expiration for commercial)
-    await sendLicenseEmail({
-        to: customerEmail,
-        customerName,
-        licenseKey: formattedKey,
+    // Generate and send license
+    const result = await generateAndSendLicense({
+        customerEmail: purchaseData.customerEmail,
+        customerName: purchaseData.customerName,
+        transactionId: purchaseData.transactionId,
+        licenseType: licenseType ?? 'commercial_subscription',
+        organizationName: licenseType !== 'supporter' ? purchaseData.organizationName : undefined,
+        privateKey: c.env.ED25519_PRIVATE_KEY,
         productName: c.env.PRODUCT_NAME,
         supportEmail: c.env.SUPPORT_EMAIL,
         resendApiKey: c.env.RESEND_API_KEY,
-        organizationName: licenseType !== 'supporter' ? organizationName : undefined,
-        licenseType: licenseType ?? undefined,
     })
 
-    return c.json({ status: 'ok', email: customerEmail, licenseType })
+    return c.json({ status: 'ok', email: purchaseData.customerEmail, licenseType: result.licenseType })
 })
+
+/** Extract and validate purchase data from webhook payload */
+function extractPurchaseData(payload: PaddleWebhookPayload): {
+    customerEmail: string
+    customerName: string
+    transactionId: string
+    priceId: string | undefined
+    organizationName: string | undefined
+} | null {
+    const customerEmail = payload.data?.customer?.email
+    const transactionId = payload.data?.id
+
+    if (!customerEmail || !transactionId) return null
+
+    return {
+        customerEmail,
+        customerName: payload.data?.customer?.name ?? 'there',
+        transactionId,
+        priceId: payload.data?.items?.[0]?.price?.id,
+        organizationName: payload.data?.custom_data?.organization_name,
+    }
+}
+
+/** Helper to generate license and send email */
+async function generateAndSendLicense(params: {
+    customerEmail: string
+    customerName: string
+    transactionId: string
+    licenseType: LicenseType
+    organizationName: string | undefined
+    privateKey: string
+    productName: string
+    supportEmail: string
+    resendApiKey: string
+}): Promise<{ licenseType: LicenseType }> {
+    const licenseData = {
+        email: params.customerEmail,
+        transactionId: params.transactionId,
+        issuedAt: new Date().toISOString(),
+        type: params.licenseType,
+    }
+
+    const licenseKey = await generateLicenseKey(licenseData, params.privateKey)
+    const formattedKey = formatLicenseKey(licenseKey)
+
+    await sendLicenseEmail({
+        to: params.customerEmail,
+        customerName: params.customerName,
+        licenseKey: formattedKey,
+        productName: params.productName,
+        supportEmail: params.supportEmail,
+        resendApiKey: params.resendApiKey,
+        organizationName: params.organizationName,
+        licenseType: params.licenseType,
+    })
+
+    return { licenseType: params.licenseType }
+}
 
 // Manual license generation (for testing or customer service)
 // Protected by bearer token matching either live or sandbox webhook secret
 app.post('/admin/generate', async (c) => {
     const authHeader = c.req.header('Authorization')
-    const validSecrets = [c.env.PADDLE_WEBHOOK_SECRET_LIVE, c.env.PADDLE_WEBHOOK_SECRET_SANDBOX].filter(Boolean)
+    const validSecrets = [c.env.PADDLE_WEBHOOK_SECRET_LIVE, c.env.PADDLE_WEBHOOK_SECRET_SANDBOX].filter(
+        (s): s is string => !!s,
+    )
     const isAuthorized = validSecrets.some((secret) => authHeader === `Bearer ${secret}`)
     if (!isAuthorized) {
         return c.json({ error: 'Unauthorized' }, 401)

@@ -1,94 +1,106 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Paddle Checkout Test</title>
-    <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            max-width: 600px;
-            margin: 100px auto;
-            padding: 20px;
-            text-align: center;
-        }
-        button {
-            background: #5433FF;
-            color: white;
-            border: none;
-            padding: 16px 32px;
-            font-size: 18px;
-            border-radius: 8px;
-            cursor: pointer;
-            margin: 10px;
-        }
-        button:hover {
-            background: #4020DD;
-        }
-        .config {
-            background: #f5f5f5;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
-            text-align: left;
-            font-family: monospace;
-            font-size: 12px;
-        }
-        .test-cards {
-            background: #e8f4e8;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 30px;
-            text-align: left;
-        }
-        .test-cards h3 { margin-top: 0; }
-        code { background: #ddd; padding: 2px 6px; border-radius: 3px; }
-    </style>
-</head>
-<body>
-    <h1>⌘ Cmdr Checkout Test</h1>
-    <p>Test the Paddle checkout flow in sandbox environment.</p>
-    
-    <div class="config" id="config">Loading config...</div>
-    
-    <button id="buy">Buy Cmdr - $29</button>
-    
-    <div class="test-cards">
-        <h3>Test card details</h3>
-        <p><strong>Card:</strong> <code>4000 0566 5566 5556</code></p>
-        <p><strong>Expiry:</strong> Any future date (e.g., <code>12/30</code>)</p>
-        <p><strong>CVC:</strong> <code>100</code></p>
-        <p><a href="https://developer.paddle.com/concepts/payment-methods/credit-debit-card#test-payment-details" target="_blank">More test cards →</a></p>
-    </div>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Paddle Checkout Test</title>
+        <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
+        <style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                max-width: 600px;
+                margin: 100px auto;
+                padding: 20px;
+                text-align: center;
+            }
+            button {
+                background: #5433ff;
+                color: white;
+                border: none;
+                padding: 16px 32px;
+                font-size: 18px;
+                border-radius: 8px;
+                cursor: pointer;
+                margin: 10px;
+            }
+            button:hover {
+                background: #4020dd;
+            }
+            .config {
+                background: #f5f5f5;
+                padding: 20px;
+                border-radius: 8px;
+                margin: 20px 0;
+                text-align: left;
+                font-family: monospace;
+                font-size: 12px;
+            }
+            .test-cards {
+                background: #e8f4e8;
+                padding: 15px;
+                border-radius: 8px;
+                margin-top: 30px;
+                text-align: left;
+            }
+            .test-cards h3 {
+                margin-top: 0;
+            }
+            code {
+                background: #ddd;
+                padding: 2px 6px;
+                border-radius: 3px;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>⌘ Cmdr Checkout Test</h1>
+        <p>Test the Paddle checkout flow in sandbox environment.</p>
 
-    <script>
-        // Config is injected by the server
-        const config = window.PADDLE_CONFIG || {
-            environment: 'sandbox',
-            clientToken: 'MISSING_TOKEN',
-            priceId: 'MISSING_PRICE_ID'
-        };
-        
-        // Show config
-        document.getElementById('config').innerHTML = `
+        <div class="config" id="config">Loading config...</div>
+
+        <button id="buy">Buy Cmdr - $29</button>
+
+        <div class="test-cards">
+            <h3>Test card details</h3>
+            <p><strong>Card:</strong> <code>4000 0566 5566 5556</code></p>
+            <p><strong>Expiry:</strong> Any future date (e.g., <code>12/30</code>)</p>
+            <p><strong>CVC:</strong> <code>100</code></p>
+            <p>
+                <a
+                    href="https://developer.paddle.com/concepts/payment-methods/credit-debit-card#test-payment-details"
+                    target="_blank"
+                    >More test cards →</a
+                >
+            </p>
+        </div>
+
+        <script>
+            // Config is injected by the server
+            const config = window.PADDLE_CONFIG || {
+                environment: 'sandbox',
+                clientToken: 'MISSING_TOKEN',
+                priceId: 'MISSING_PRICE_ID',
+            }
+
+            // Show config
+            document.getElementById('config').innerHTML = `
             <strong>Environment:</strong> ${config.environment}<br>
             <strong>Client Token:</strong> ${config.clientToken.slice(0, 20)}...<br>
             <strong>Price ID:</strong> ${config.priceId}
-        `;
-        
-        // Initialize Paddle
-        if (config.environment === 'sandbox') {
-            Paddle.Environment.set('sandbox');
-        }
-        Paddle.Initialize({ token: config.clientToken });
-        
-        // Handle buy button
-        document.getElementById('buy').addEventListener('click', () => {
-            Paddle.Checkout.open({
-                items: [{ priceId: config.priceId }]
-            });
-        });
-    </script>
-</body>
+        `
+
+            // Initialize Paddle
+            if (config.environment === 'sandbox') {
+                Paddle.Environment.set('sandbox')
+            }
+            Paddle.Initialize({ token: config.clientToken })
+
+            // Handle buy button
+            document.getElementById('buy').addEventListener('click', () => {
+                Paddle.Checkout.open({
+                    items: [{ priceId: config.priceId }],
+                })
+            })
+        </script>
+    </body>
 </html>

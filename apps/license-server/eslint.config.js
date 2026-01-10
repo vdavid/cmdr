@@ -69,4 +69,20 @@ export default tseslint.config(
             'prettier/prettier': 'error',
         },
     },
+    {
+        files: ['test/*.js'],
+        plugins: {
+            prettier,
+        },
+        languageOptions: {
+            ecmaVersion: 'latest',
+            sourceType: 'module',
+            globals: {
+                ...globals.node,
+            },
+        },
+        rules: {
+            'prettier/prettier': 'error',
+        },
+    },
 )

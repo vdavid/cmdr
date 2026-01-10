@@ -34,7 +34,7 @@ mod tests {
     fn test_has_full_disk_access_returns_bool() {
         // Just verify it doesn't panic and returns a bool
         let result = check_full_disk_access();
-        assert!(result == true || result == false);
+        assert!(result || !result);
     }
 
     #[test]

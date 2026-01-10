@@ -2,16 +2,16 @@
 // Usage: PADDLE_CLIENT_TOKEN=test_xxx PADDLE_PRICE_ID=pri_xxx node server.js
 // Then open http://localhost:3333
 
-import { readFileSync } from 'fs';
-import { createServer } from 'http';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { readFileSync } from 'fs'
+import { createServer } from 'http'
+import { fileURLToPath } from 'url'
+import { dirname, join } from 'path'
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
-const PORT = process.env.PORT || 3333;
-const PADDLE_CLIENT_TOKEN = process.env.PADDLE_CLIENT_TOKEN;
-const PADDLE_PRICE_ID = process.env.PADDLE_PRICE_ID;
+const PORT = process.env.PORT || 3333
+const PADDLE_CLIENT_TOKEN = process.env.PADDLE_CLIENT_TOKEN
+const PADDLE_PRICE_ID = process.env.PADDLE_PRICE_ID
 
 // Validate inputs
 if (!PADDLE_CLIENT_TOKEN || !PADDLE_PRICE_ID) {
@@ -34,8 +34,8 @@ if (!PADDLE_CLIENT_TOKEN || !PADDLE_PRICE_ID) {
 │  PADDLE_CLIENT_TOKEN=test_abc PADDLE_PRICE_ID=pri_01xxx  │
 │  pnpm test:checkout                                      │
 ╰──────────────────────────────────────────────────────────╯
-`);
-    process.exit(1);
+`)
+    process.exit(1)
 }
 
 // Enforce sandbox-only
@@ -51,11 +51,11 @@ if (!PADDLE_CLIENT_TOKEN.startsWith('test_')) {
 │  https://sandbox-vendors.paddle.com/authentication-v2    │
 │                                                          │
 ╰──────────────────────────────────────────────────────────╯
-`);
-    process.exit(1);
+`)
+    process.exit(1)
 }
 
-const html = readFileSync(join(__dirname, 'checkout.html'), 'utf-8');
+const html = readFileSync(join(__dirname, 'checkout.html'), 'utf-8')
 
 // Always use sandbox environment
 const configScript = `<script>
@@ -64,14 +64,14 @@ const configScript = `<script>
         clientToken: '${PADDLE_CLIENT_TOKEN}',
         priceId: '${PADDLE_PRICE_ID}'
     };
-</script>`;
+</script>`
 
-const injectedHtml = html.replace('</head>', `${configScript}\n</head>`);
+const injectedHtml = html.replace('</head>', `${configScript}\n</head>`)
 
 const server = createServer((req, res) => {
-    res.writeHead(200, { 'Content-Type': 'text/html' });
-    res.end(injectedHtml);
-});
+    res.writeHead(200, { 'Content-Type': 'text/html' })
+    res.end(injectedHtml)
+})
 
 server.listen(PORT, () => {
     console.log(`
@@ -94,5 +94,5 @@ server.listen(PORT, () => {
 │  2. Set a "Default payment link" (can be localhost)               │
 │  3. Save and try again                                            │
 ╰───────────────────────────────────────────────────────────────────╯
-`);
-});
+`)
+})

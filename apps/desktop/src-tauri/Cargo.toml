@@ -41,6 +41,8 @@ tauri-plugin-fs = "2.4.4"
 alphanumeric-sort = "1.5"
 ed25519-dalek = { version = "2.1", features = ["rand_core"] }
 env_logger = "0.11.8"
+# HTTP client for license server validation
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-window-state = "2"
 

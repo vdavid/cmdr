@@ -135,3 +135,48 @@ Compared to self-compiling:
 - ✅ Automatic updates
 - ✅ Priority support
 - ✅ Supporting indie development
+
+## Development and testing
+
+### Mock mode (`CMDR_MOCK_LICENSE`)
+
+For local development and testing, you can mock the license status using the `CMDR_MOCK_LICENSE` environment variable. This bypasses real license validation and returns a fixed status.
+
+**Usage:**
+
+```bash
+CMDR_MOCK_LICENSE=expired pnpm tauri dev
+```
+
+**Possible values:**
+
+| Value | Description | Window title |
+|-------|-------------|--------------|
+| `personal` | No license - personal use only | "Cmdr – Personal use only" |
+| `supporter` | Supporter license (personal badge) | "Cmdr – Personal" |
+| `commercial` | Commercial subscription license | "Cmdr" |
+| `perpetual` | Commercial perpetual license | "Cmdr" |
+| `expired` | Expired commercial license (shows modal) | "Cmdr – Personal use only" |
+| `expired_no_modal` | Expired license (modal already dismissed) | "Cmdr – Personal use only" |
+
+**Mock data:**
+
+- Commercial/perpetual org: "Test Corporation" / "Perpetual Inc."
+- Expiration date (commercial): 2027-01-10
+- Expired at (expired): 2026-01-01
+
+**Notes:**
+
+- Only works in debug builds (`pnpm tauri dev`, not `pnpm tauri build`)
+- Environment variable must be set for the Tauri process, not just the terminal
+- When `CMDR_MOCK_LICENSE` is set, server validation is skipped entirely
+- The About window (Cmdr → About cmdr) reflects the mocked license status
+
+**Troubleshooting:**
+
+If mock mode doesn't seem to work:
+
+1. Make sure you're using `pnpm tauri dev`, not `pnpm dev` (the latter runs only the frontend)
+2. Check the terminal output for `[License]` log messages
+3. Open DevTools (Cmd+Opt+I in dev mode) and check for `[License]` console logs
+4. Verify the env var is set: `echo $CMDR_MOCK_LICENSE` before running
