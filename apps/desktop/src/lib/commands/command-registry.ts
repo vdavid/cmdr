@@ -53,6 +53,18 @@ export const commands: Command[] = [
     },
 
     // ============================================================================
+    // Main window - Sort commands (also accessible via menu)
+    // ============================================================================
+    { id: 'sort.byName', name: 'Sort by name', scope: 'Main window', showInPalette: true, shortcuts: [] },
+    { id: 'sort.byExtension', name: 'Sort by extension', scope: 'Main window', showInPalette: true, shortcuts: [] },
+    { id: 'sort.bySize', name: 'Sort by size', scope: 'Main window', showInPalette: true, shortcuts: [] },
+    { id: 'sort.byModified', name: 'Sort by date modified', scope: 'Main window', showInPalette: true, shortcuts: [] },
+    { id: 'sort.byCreated', name: 'Sort by date created', scope: 'Main window', showInPalette: true, shortcuts: [] },
+    { id: 'sort.ascending', name: 'Sort ascending', scope: 'Main window', showInPalette: true, shortcuts: [] },
+    { id: 'sort.descending', name: 'Sort descending', scope: 'Main window', showInPalette: true, shortcuts: [] },
+    { id: 'sort.toggleOrder', name: 'Toggle sort order', scope: 'Main window', showInPalette: true, shortcuts: [] },
+
+    // ============================================================================
     // Main window - Pane commands
     // ============================================================================
     { id: 'pane.switch', name: 'Switch pane', scope: 'Main window', showInPalette: true, shortcuts: ['Tab'] },

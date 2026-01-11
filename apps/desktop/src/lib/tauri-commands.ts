@@ -218,6 +218,49 @@ export async function setViewMode(mode: 'full' | 'brief'): Promise<void> {
 }
 
 // ============================================================================
+// MCP pane state commands
+// ============================================================================
+
+/** File entry for pane state updates. */
+export interface PaneFileEntry {
+    name: string
+    path: string
+    isDirectory: boolean
+    size?: number
+    modified?: string
+}
+
+/** State of a single pane. */
+export interface PaneState {
+    path: string
+    volumeId?: string
+    files: PaneFileEntry[]
+    selectedIndex: number
+    viewMode: string
+}
+
+/**
+ * Update left pane state for MCP context tools.
+ */
+export async function updateLeftPaneState(state: PaneState): Promise<void> {
+    await invoke('update_left_pane_state', { state })
+}
+
+/**
+ * Update right pane state for MCP context tools.
+ */
+export async function updateRightPaneState(state: PaneState): Promise<void> {
+    await invoke('update_right_pane_state', { state })
+}
+
+/**
+ * Update focused pane for MCP context tools.
+ */
+export async function updateFocusedPane(pane: 'left' | 'right'): Promise<void> {
+    await invoke('update_focused_pane', { pane })
+}
+
+// ============================================================================
 // File action commands (for command palette)
 // ============================================================================
 

@@ -28,6 +28,15 @@ pub const GO_BACK_ID: &str = "go_back";
 pub const GO_FORWARD_ID: &str = "go_forward";
 pub const GO_PARENT_ID: &str = "go_parent";
 
+/// Menu item IDs for sorting.
+pub const SORT_BY_NAME_ID: &str = "sort_by_name";
+pub const SORT_BY_EXTENSION_ID: &str = "sort_by_extension";
+pub const SORT_BY_SIZE_ID: &str = "sort_by_size";
+pub const SORT_BY_MODIFIED_ID: &str = "sort_by_modified";
+pub const SORT_BY_CREATED_ID: &str = "sort_by_created";
+pub const SORT_ASCENDING_ID: &str = "sort_ascending";
+pub const SORT_DESCENDING_ID: &str = "sort_descending";
+
 /// Context for the current menu selection.
 #[derive(Clone, Default)]
 pub struct MenuContext {
@@ -177,6 +186,36 @@ pub fn build_menu<R: Runtime>(
             submenu.append(&view_mode_brief_item)?;
             submenu.append(&tauri::menu::PredefinedMenuItem::separator(app)?)?;
             submenu.append(&show_hidden_item)?;
+
+            // Add Sort by submenu
+            let sort_by_name = tauri::menu::MenuItem::with_id(app, SORT_BY_NAME_ID, "Name", true, None::<&str>)?;
+            let sort_by_ext =
+                tauri::menu::MenuItem::with_id(app, SORT_BY_EXTENSION_ID, "Extension", true, None::<&str>)?;
+            let sort_by_size = tauri::menu::MenuItem::with_id(app, SORT_BY_SIZE_ID, "Size", true, None::<&str>)?;
+            let sort_by_modified =
+                tauri::menu::MenuItem::with_id(app, SORT_BY_MODIFIED_ID, "Date modified", true, None::<&str>)?;
+            let sort_by_created =
+                tauri::menu::MenuItem::with_id(app, SORT_BY_CREATED_ID, "Date created", true, None::<&str>)?;
+            let sort_asc = tauri::menu::MenuItem::with_id(app, SORT_ASCENDING_ID, "Ascending", true, None::<&str>)?;
+            let sort_desc = tauri::menu::MenuItem::with_id(app, SORT_DESCENDING_ID, "Descending", true, None::<&str>)?;
+
+            let sort_submenu = Submenu::with_items(
+                app,
+                "Sort by",
+                true,
+                &[
+                    &sort_by_name,
+                    &sort_by_ext,
+                    &sort_by_size,
+                    &sort_by_modified,
+                    &sort_by_created,
+                    &tauri::menu::PredefinedMenuItem::separator(app)?,
+                    &sort_asc,
+                    &sort_desc,
+                ],
+            )?;
+            submenu.append(&sort_submenu)?;
+
             // Add command palette and switch pane after separator
             submenu.append(&tauri::menu::PredefinedMenuItem::separator(app)?)?;
             let command_palette_item = tauri::menu::MenuItem::with_id(

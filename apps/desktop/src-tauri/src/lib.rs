@@ -40,6 +40,7 @@ pub mod icons;
 pub mod licensing;
 #[cfg(target_os = "macos")]
 mod macos_icons;
+mod mcp;
 mod menu;
 #[cfg(target_os = "macos")]
 mod network;
@@ -51,7 +52,8 @@ mod volumes;
 
 use menu::{
     ABOUT_ID, COMMAND_PALETTE_ID, GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID, MenuState, SHOW_HIDDEN_FILES_ID,
-    SWITCH_PANE_ID, VIEW_MODE_BRIEF_ID, VIEW_MODE_FULL_ID, ViewMode,
+    SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID,
+    SORT_DESCENDING_ID, SWITCH_PANE_ID, VIEW_MODE_BRIEF_ID, VIEW_MODE_FULL_ID, ViewMode,
 };
 use tauri::{Emitter, Manager};
 
@@ -136,6 +138,13 @@ pub fn run() {
                 let _ = window.set_title(&title);
             }
 
+            // Initialize pane state store for MCP context tools
+            app.manage(mcp::PaneStateStore::new());
+
+            // Start MCP server for AI agent integration
+            let mcp_config = mcp::McpConfig::from_env();
+            mcp::start_mcp_server(app.handle().clone(), mcp_config);
+
             Ok(())
         })
         .on_menu_event(|app, event| {
@@ -191,6 +200,29 @@ pub fn run() {
             } else if id == SWITCH_PANE_ID {
                 // Emit event to switch pane
                 let _ = app.emit("switch-pane", ());
+            } else if id == SORT_BY_NAME_ID
+                || id == SORT_BY_EXTENSION_ID
+                || id == SORT_BY_SIZE_ID
+                || id == SORT_BY_MODIFIED_ID
+                || id == SORT_BY_CREATED_ID
+            {
+                // Handle sort by column
+                let column = match id {
+                    SORT_BY_NAME_ID => "name",
+                    SORT_BY_EXTENSION_ID => "extension",
+                    SORT_BY_SIZE_ID => "size",
+                    SORT_BY_MODIFIED_ID => "modified",
+                    SORT_BY_CREATED_ID => "created",
+                    _ => return,
+                };
+                let _ = app.emit("menu-sort", serde_json::json!({ "action": "sortBy", "value": column }));
+            } else if id == SORT_ASCENDING_ID || id == SORT_DESCENDING_ID {
+                // Handle sort order
+                let order = if id == SORT_ASCENDING_ID { "asc" } else { "desc" };
+                let _ = app.emit(
+                    "menu-sort",
+                    serde_json::json!({ "action": "sortOrder", "value": order }),
+                );
             } else {
                 // Handle file actions
                 commands::ui::execute_menu_action(app, id);
@@ -221,6 +253,9 @@ pub fn run() {
             commands::ui::copy_to_clipboard,
             commands::ui::quick_look,
             commands::ui::get_info,
+            mcp::pane_state::update_left_pane_state,
+            mcp::pane_state::update_right_pane_state,
+            mcp::pane_state::update_focused_pane,
             #[cfg(target_os = "macos")]
             commands::sync_status::get_sync_status,
             #[cfg(target_os = "macos")]

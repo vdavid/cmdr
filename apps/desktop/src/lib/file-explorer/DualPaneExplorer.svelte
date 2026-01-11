@@ -21,6 +21,7 @@
         resortListing,
         DEFAULT_VOLUME_ID,
         type UnlistenFn,
+        updateFocusedPane,
     } from '$lib/tauri-commands'
     import type { VolumeInfo, SortColumn, SortOrder, NetworkHost } from './types'
     import { defaultSortOrders, DEFAULT_SORT_BY } from './types'
@@ -304,6 +305,7 @@
         if (focusedPane !== 'left') {
             focusedPane = 'left'
             void saveAppStatus({ focusedPane: 'left' })
+            void updateFocusedPane('left')
         }
     }
 
@@ -311,6 +313,7 @@
         if (focusedPane !== 'right') {
             focusedPane = 'right'
             void saveAppStatus({ focusedPane: 'right' })
+            void updateFocusedPane('right')
         }
     }
     // Helper: Route key event to any open volume chooser
@@ -694,6 +697,86 @@
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         paneRef?.handleKeyDown(event)
     }
+
+    /**
+     * Set sort column for the focused pane.
+     * Used by command palette and MCP.
+     */
+    export function setSortColumn(column: SortColumn) {
+        if (focusedPane === 'left') {
+            void handleLeftSortChange(column)
+        } else {
+            void handleRightSortChange(column)
+        }
+    }
+
+    /**
+     * Set sort order for the focused pane.
+     * Used by command palette and MCP.
+     */
+    export function setSortOrder(order: 'asc' | 'desc' | 'toggle') {
+        const currentOrder = focusedPane === 'left' ? leftSortOrder : rightSortOrder
+        const currentColumn = focusedPane === 'left' ? leftSortBy : rightSortBy
+
+        let newOrder: SortOrder
+        if (order === 'toggle') {
+            newOrder = currentOrder === 'ascending' ? 'descending' : 'ascending'
+        } else {
+            newOrder = order === 'asc' ? 'ascending' : 'descending'
+        }
+
+        // Re-apply sort with new order by pretending to click same column
+        // This triggers the toggle logic in the handler
+        if (newOrder !== currentOrder) {
+            // Force the column to match so it will toggle order
+            if (focusedPane === 'left') {
+                void handleLeftSortChange(currentColumn)
+            } else {
+                void handleRightSortChange(currentColumn)
+            }
+        }
+    }
+
+    /**
+     * Get the focused pane identifier.
+     * Used by MCP context tools.
+     */
+    export function getFocusedPane(): 'left' | 'right' {
+        return focusedPane
+    }
+
+    /**
+     * Get the list of available volumes.
+     * Used by MCP volume.list tool.
+     */
+    export function getVolumes(): VolumeInfo[] {
+        return volumes
+    }
+
+    /**
+     * Select a volume by index for a specific pane.
+     * Used by MCP volume.selectLeft/volume.selectRight tools.
+     * @param pane - 'left' or 'right'
+     * @param index - Zero-based index into the volumes array
+     */
+    export async function selectVolumeByIndex(pane: 'left' | 'right', index: number): Promise<boolean> {
+        if (index < 0 || index >= volumes.length) {
+            // eslint-disable-next-line no-console
+            console.warn(`Invalid volume index: ${String(index)} (valid range: 0-${String(volumes.length - 1)})`)
+            return false
+        }
+
+        const volume = volumes[index]
+
+        // Trigger the same volume change handler as user selection
+        if (pane === 'left') {
+            await handleLeftVolumeChange(volume.id, volume.path, volume.path)
+        } else {
+            await handleRightVolumeChange(volume.id, volume.path, volume.path)
+        }
+
+        return true
+    }
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex,a11y_no_noninteractive_element_interactions -->
@@ -708,6 +791,7 @@
     {#if initialized}
         <FilePane
             bind:this={leftPaneRef}
+            paneId="left"
             initialPath={leftPath}
             volumeId={leftVolumeId}
             volumePath={leftVolumePath}
@@ -724,6 +808,7 @@
         />
         <FilePane
             bind:this={rightPaneRef}
+            paneId="right"
             initialPath={rightPath}
             volumeId={rightVolumeId}
             volumePath={rightVolumePath}

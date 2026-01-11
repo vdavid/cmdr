@@ -20,13 +20,15 @@
         checkCredentialsForHost,
     } from '$lib/network-store.svelte'
     import type { NetworkHost } from './types'
+    import { updateLeftPaneState, updateRightPaneState, type PaneState, type PaneFileEntry } from '$lib/tauri-commands'
 
     interface Props {
+        paneId?: 'left' | 'right'
         isFocused?: boolean
         onHostSelect?: (host: NetworkHost) => void
     }
 
-    const { isFocused = false, onHostSelect }: Props = $props()
+    const { paneId, isFocused = false, onHostSelect }: Props = $props()
 
     // Get reactive state from the network store
     const hosts = $derived(getNetworkHosts())
@@ -49,7 +51,42 @@
                 void checkCredentialsForHost(host.name)
             }
         }
+        // Sync to MCP
+        void syncPaneStateToMcp()
     })
+
+    /**
+     * Sync network hosts to MCP for context tools.
+     * Represents hosts as "files" for simplicity.
+     */
+    async function syncPaneStateToMcp() {
+        if (!paneId) return
+
+        try {
+            // Represent hosts as file entries (simple approach)
+            const files: PaneFileEntry[] = hosts.map((host) => ({
+                name: host.name,
+                path: `network://${host.name}`,
+                isDirectory: true, // Hosts act like directories (contain shares)
+            }))
+
+            const state: PaneState = {
+                path: 'network://',
+                volumeId: 'network',
+                files,
+                selectedIndex,
+                viewMode: 'full',
+            }
+
+            if (paneId === 'left') {
+                await updateLeftPaneState(state)
+            } else {
+                await updateRightPaneState(state)
+            }
+        } catch {
+            // Silently ignore sync errors
+        }
+    }
 
     // Handle keyboard navigation
     export function handleKeyDown(e: KeyboardEvent): boolean {

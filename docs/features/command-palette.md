@@ -64,7 +64,8 @@ To add a new command:
 
 - [x] Add Tauri menu item to trigger palette (View → Command palette...)
 - [x] Unit tests for fuzzy search
-- [ ] Wire up remaining command handlers
+- [x] Wire up remaining command handlers
+- [x] Component tests for CommandPalette
 - [ ] Command context (pass selected file info to commands)
 - [ ] Recently used commands section
 - [ ] Custom keyboard shortcut configuration

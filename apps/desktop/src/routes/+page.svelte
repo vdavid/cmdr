@@ -32,6 +32,11 @@
         navigate: (action: 'back' | 'forward' | 'parent') => void
         getCurrentSelection: () => { path: string; filename: string } | null
         sendKeyToFocusedPane: (key: string) => void
+        setSortColumn: (column: 'name' | 'extension' | 'size' | 'modified' | 'created') => void
+        setSortOrder: (order: 'asc' | 'desc' | 'toggle') => void
+        getFocusedPane: () => 'left' | 'right'
+        getVolumes: () => { id: string; name: string; path: string }[]
+        selectVolumeByIndex: (pane: 'left' | 'right', index: number) => Promise<boolean>
     }
 
     let showFdaPrompt = $state(false)
@@ -105,32 +110,8 @@
         // Show window when ready
         void showMainWindow()
 
-        // Listen for show-about event from menu
-        try {
-            unlistenShowAbout = await listen('show-about', () => {
-                showAboutWindow = true
-            })
-        } catch {
-            // Not in Tauri environment
-        }
-
-        // Listen for command palette event from menu
-        try {
-            unlistenCommandPalette = await listen('show-command-palette', () => {
-                showCommandPalette = true
-            })
-        } catch {
-            // Not in Tauri environment
-        }
-
-        // Listen for switch pane event from menu
-        try {
-            unlistenSwitchPane = await listen('switch-pane', () => {
-                explorerRef?.switchPane()
-            })
-        } catch {
-            // Not in Tauri environment
-        }
+        // Set up Tauri event listeners (extracted to reduce complexity)
+        await setupTauriEventListeners()
 
         // Global keyboard shortcuts
         handleKeyDown = (e: KeyboardEvent) => {
@@ -159,6 +140,88 @@
         document.addEventListener('keydown', handleKeyDown)
         document.addEventListener('contextmenu', handleContextMenu)
     })
+
+    /**
+     * Set up Tauri event listeners for menu actions, MCP events, etc.
+     */
+    async function setupTauriEventListeners() {
+        // Listen for show-about event from menu
+        try {
+            unlistenShowAbout = await listen('show-about', () => {
+                showAboutWindow = true
+            })
+        } catch {
+            // Not in Tauri environment
+        }
+
+        // Listen for command palette event from menu
+        try {
+            unlistenCommandPalette = await listen('show-command-palette', () => {
+                showCommandPalette = true
+            })
+        } catch {
+            // Not in Tauri environment
+        }
+
+        // Listen for switch pane event from menu
+        try {
+            unlistenSwitchPane = await listen('switch-pane', () => {
+                explorerRef?.switchPane()
+            })
+        } catch {
+            // Not in Tauri environment
+        }
+
+        // Listen for MCP key events (navigation via MCP)
+        try {
+            await listen<{ key: string }>('mcp-key', (event) => {
+                const { key } = event.payload
+                if (key === 'GoBack') {
+                    explorerRef?.navigate('back')
+                } else if (key === 'GoForward') {
+                    explorerRef?.navigate('forward')
+                } else {
+                    explorerRef?.sendKeyToFocusedPane(key)
+                }
+            })
+        } catch {
+            // Not in Tauri environment
+        }
+
+        // Listen for MCP and menu sort events
+        const handleSort = (event: { payload: { action: string; value: string } }) => {
+            const { action, value } = event.payload
+            if (action === 'sortBy') {
+                const column = value as 'name' | 'extension' | 'size' | 'modified' | 'created'
+                explorerRef?.setSortColumn(column)
+            } else if (action === 'sortOrder') {
+                const order = value as 'asc' | 'desc' | 'toggle'
+                explorerRef?.setSortOrder(order)
+            }
+        }
+
+        try {
+            await listen<{ action: string; value: string }>('mcp-sort', handleSort)
+        } catch {
+            // Not in Tauri environment
+        }
+
+        try {
+            await listen<{ action: string; value: string }>('menu-sort', handleSort)
+        } catch {
+            // Not in Tauri environment
+        }
+
+        // Listen for MCP volume select events
+        try {
+            await listen<{ pane: 'left' | 'right'; index: number }>('mcp-volume-select', (event) => {
+                const { pane, index } = event.payload
+                void explorerRef?.selectVolumeByIndex(pane, index)
+            })
+        } catch {
+            // Not in Tauri environment
+        }
+    }
 
     onDestroy(() => {
         if (handleKeyDown) {
@@ -301,6 +364,47 @@
 
             case 'nav.pageDown':
                 explorerRef?.sendKeyToFocusedPane('PageDown')
+                explorerRef?.refocus()
+                return
+
+            // === Sort commands ===
+            case 'sort.byName':
+                explorerRef?.setSortColumn('name')
+                explorerRef?.refocus()
+                return
+
+            case 'sort.byExtension':
+                explorerRef?.setSortColumn('extension')
+                explorerRef?.refocus()
+                return
+
+            case 'sort.bySize':
+                explorerRef?.setSortColumn('size')
+                explorerRef?.refocus()
+                return
+
+            case 'sort.byModified':
+                explorerRef?.setSortColumn('modified')
+                explorerRef?.refocus()
+                return
+
+            case 'sort.byCreated':
+                explorerRef?.setSortColumn('created')
+                explorerRef?.refocus()
+                return
+
+            case 'sort.ascending':
+                explorerRef?.setSortOrder('asc')
+                explorerRef?.refocus()
+                return
+
+            case 'sort.descending':
+                explorerRef?.setSortOrder('desc')
+                explorerRef?.refocus()
+                return
+
+            case 'sort.toggleOrder':
+                explorerRef?.setSortOrder('toggle')
                 explorerRef?.refocus()
                 return
 

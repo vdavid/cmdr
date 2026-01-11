@@ -26,6 +26,10 @@
         showFileContextMenu,
         type UnlistenFn,
         updateMenuContext,
+        updateLeftPaneState,
+        updateRightPaneState,
+        type PaneState,
+        type PaneFileEntry,
     } from '$lib/tauri-commands'
     import type { ViewMode } from '$lib/app-status-store'
     import FullList from './FullList.svelte'
@@ -41,6 +45,7 @@
 
     interface Props {
         initialPath: string
+        paneId?: 'left' | 'right'
         volumeId?: string
         volumePath?: string
         isFocused?: boolean
@@ -58,6 +63,7 @@
 
     const {
         initialPath,
+        paneId,
         volumeId = 'root',
         volumePath = '/',
         isFocused = false,
@@ -183,6 +189,54 @@
     // Derive includeHidden from showHiddenFiles prop
     const includeHidden = $derived(showHiddenFiles)
 
+    /**
+     * Sync pane state to Rust for MCP context tools.
+     * Called when files load, selection changes, or view mode changes.
+     */
+    async function syncPaneStateToMcp() {
+        if (!paneId) return // No pane ID, can't sync
+
+        try {
+            // Build file list from current state
+            const files: PaneFileEntry[] = []
+
+            // For network views, we don't sync files
+            if (!isNetworkView && listingId && totalCount > 0) {
+                // Get visible files - for now, just get first 100 for context
+                const maxToFetch = Math.min(totalCount, 100)
+                for (let i = 0; i < maxToFetch; i++) {
+                    const backendIndex = hasParent ? i : i
+                    const entry = await getFileAt(listingId, backendIndex, includeHidden)
+                    if (entry) {
+                        files.push({
+                            name: entry.name,
+                            path: entry.path,
+                            isDirectory: entry.isDirectory,
+                            size: entry.size,
+                            modified: entry.modifiedAt ? new Date(entry.modifiedAt * 1000).toISOString() : undefined,
+                        })
+                    }
+                }
+            }
+
+            const state: PaneState = {
+                path: currentPath,
+                volumeId,
+                files,
+                selectedIndex,
+                viewMode,
+            }
+
+            if (paneId === 'left') {
+                await updateLeftPaneState(state)
+            } else {
+                await updateRightPaneState(state)
+            }
+        } catch {
+            // Silently ignore sync errors - MCP is optional
+        }
+    }
+
     // Check if error is a permission denied error
     const isPermissionDenied = $derived(
         error !== null && (error.includes('Permission denied') || error.includes('os error 13')),
@@ -280,6 +334,9 @@
 
             // Fetch selected entry for SelectionInfo
             void fetchSelectedEntry()
+
+            // Sync state to MCP for context tools
+            void syncPaneStateToMcp()
 
             // Scroll to selection after DOM updates
             void tick().then(() => {
@@ -750,7 +807,12 @@
                     onBack={handleNetworkBack}
                 />
             {:else}
-                <NetworkBrowser bind:this={networkBrowserRef} {isFocused} onHostSelect={handleNetworkHostSelect} />
+                <NetworkBrowser
+                    bind:this={networkBrowserRef}
+                    {paneId}
+                    {isFocused}
+                    onHostSelect={handleNetworkHostSelect}
+                />
             {/if}
         {:else if loading}
             <LoadingIcon />
