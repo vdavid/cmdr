@@ -6,7 +6,7 @@ An extremely fast AI-native file manager written in Rust, free forever for perso
 
 Cmdr is for folks who love a rock-solid, keyboard-driven, two-pane file manager with a modern UI in 2026.
 
-Give it a try: [Download for macOS](https://getcmdr.com) on the website, or do `brew install cmdr`.
+Give it a try: [Download for macOS](https://getcmdr.com) on the website, or do `brew install --cask cmdr`.
 
 ![cmdr](https://github.com/user-attachments/assets/7827b88d-e0a9-447e-b195-af7216c0fa35)
 
@@ -24,7 +24,7 @@ Core features:
 
 ## Installation
 
-Download from [getcmdr.com](https://getcmdr.com) or just do `brew install cmdr`.
+Download from [getcmdr.com](https://getcmdr.com) or just do `brew install --cask cmdr`.
 
 Windows and Linux users: sorry, you'll need to wait. The Rust+Tauri stack allows for cross-platform deployment, but the app
 uses OS-specific features by nature, so I've only had time to write and test it on macOS for now.
