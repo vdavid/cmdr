@@ -52,27 +52,27 @@ impl Tool {
 /// Get app-level command tools.
 fn get_app_tools() -> Vec<Tool> {
     vec![
-        Tool::no_params("app.quit", "Quit the application"),
-        Tool::no_params("app.hide", "Hide the application window"),
-        Tool::no_params("app.about", "Show the about window"),
+        Tool::no_params("app_quit", "Quit the application"),
+        Tool::no_params("app_hide", "Hide the application window"),
+        Tool::no_params("app_about", "Show the about window"),
     ]
 }
 
 /// Get view command tools.
 fn get_view_tools() -> Vec<Tool> {
     vec![
-        Tool::no_params("view.showHidden", "Toggle hidden files visibility"),
-        Tool::no_params("view.briefMode", "Switch to Brief view mode"),
-        Tool::no_params("view.fullMode", "Switch to Full view mode"),
+        Tool::no_params("view_showHidden", "Toggle hidden files visibility"),
+        Tool::no_params("view_briefMode", "Switch to Brief view mode"),
+        Tool::no_params("view_fullMode", "Switch to Full view mode"),
     ]
 }
 
 /// Get pane command tools.
 fn get_pane_tools() -> Vec<Tool> {
     vec![
-        Tool::no_params("pane.switch", "Switch focus to the other pane"),
-        Tool::no_params("pane.leftVolumeChooser", "Open volume chooser for left pane"),
-        Tool::no_params("pane.rightVolumeChooser", "Open volume chooser for right pane"),
+        Tool::no_params("pane_switch", "Switch focus to the other pane"),
+        Tool::no_params("pane_leftVolumeChooser", "Open volume chooser for left pane"),
+        Tool::no_params("pane_rightVolumeChooser", "Open volume chooser for right pane"),
     ]
 }
 
@@ -81,22 +81,22 @@ fn get_nav_tools() -> Vec<Tool> {
     vec![
         // Basic navigation
         Tool::no_params(
-            "nav.open",
+            "nav_open",
             "Open/enter the selected item (directory, file, network host, share)",
         ),
-        Tool::no_params("nav.parent", "Navigate to parent folder"),
-        Tool::no_params("nav.back", "Navigate back in history"),
-        Tool::no_params("nav.forward", "Navigate forward in history"),
+        Tool::no_params("nav_parent", "Navigate to parent folder"),
+        Tool::no_params("nav_back", "Navigate back in history"),
+        Tool::no_params("nav_forward", "Navigate forward in history"),
         // Cursor movement
-        Tool::no_params("nav.up", "Select previous file (move cursor up)"),
-        Tool::no_params("nav.down", "Select next file (move cursor down)"),
-        Tool::no_params("nav.home", "Go to first file"),
-        Tool::no_params("nav.end", "Go to last file"),
-        Tool::no_params("nav.pageUp", "Page up"),
-        Tool::no_params("nav.pageDown", "Page down"),
+        Tool::no_params("nav_up", "Select previous file (move cursor up)"),
+        Tool::no_params("nav_down", "Select next file (move cursor down)"),
+        Tool::no_params("nav_home", "Go to first file"),
+        Tool::no_params("nav_end", "Go to last file"),
+        Tool::no_params("nav_pageUp", "Page up"),
+        Tool::no_params("nav_pageDown", "Page down"),
         // Brief mode column navigation
-        Tool::no_params("nav.left", "Move to previous column (Brief mode only)"),
-        Tool::no_params("nav.right", "Move to next column (Brief mode only)"),
+        Tool::no_params("nav_left", "Move to previous column (Brief mode only)"),
+        Tool::no_params("nav_right", "Move to next column (Brief mode only)"),
     ]
 }
 
@@ -104,35 +104,35 @@ fn get_nav_tools() -> Vec<Tool> {
 fn get_sort_tools() -> Vec<Tool> {
     vec![
         // Sort by column
-        Tool::no_params("sort.byName", "Sort by filename"),
-        Tool::no_params("sort.byExtension", "Sort by file extension"),
-        Tool::no_params("sort.bySize", "Sort by file size"),
-        Tool::no_params("sort.byModified", "Sort by modification date"),
-        Tool::no_params("sort.byCreated", "Sort by creation date"),
+        Tool::no_params("sort_byName", "Sort by filename"),
+        Tool::no_params("sort_byExtension", "Sort by file extension"),
+        Tool::no_params("sort_bySize", "Sort by file size"),
+        Tool::no_params("sort_byModified", "Sort by modification date"),
+        Tool::no_params("sort_byCreated", "Sort by creation date"),
         // Sort order
-        Tool::no_params("sort.ascending", "Set sort order to ascending"),
-        Tool::no_params("sort.descending", "Set sort order to descending"),
-        Tool::no_params("sort.toggleOrder", "Toggle between ascending and descending"),
+        Tool::no_params("sort_ascending", "Set sort order to ascending"),
+        Tool::no_params("sort_descending", "Set sort order to descending"),
+        Tool::no_params("sort_toggleOrder", "Toggle between ascending and descending"),
     ]
 }
 
 /// Get file action tools.
 fn get_file_tools() -> Vec<Tool> {
     vec![
-        Tool::no_params("file.showInFinder", "Show selected file in Finder"),
-        Tool::no_params("file.copyPath", "Copy selected file path to clipboard"),
-        Tool::no_params("file.copyFilename", "Copy selected filename to clipboard"),
-        Tool::no_params("file.quickLook", "Preview selected file with Quick Look"),
-        Tool::no_params("file.getInfo", "Open Get Info window for selected file"),
+        Tool::no_params("file_showInFinder", "Show selected file in Finder"),
+        Tool::no_params("file_copyPath", "Copy selected file path to clipboard"),
+        Tool::no_params("file_copyFilename", "Copy selected filename to clipboard"),
+        Tool::no_params("file_quickLook", "Preview selected file with Quick Look"),
+        Tool::no_params("file_getInfo", "Open Get Info window for selected file"),
     ]
 }
 
 /// Get volume tools.
 fn get_volume_tools() -> Vec<Tool> {
     vec![
-        Tool::no_params("volume.list", "List all available volumes with current selection"),
-        Tool::with_index("volume.selectLeft", "Select a volume for the left pane by index"),
-        Tool::with_index("volume.selectRight", "Select a volume for the right pane by index"),
+        Tool::no_params("volume_list", "List all available volumes with current selection"),
+        Tool::with_index("volume_selectLeft", "Select a volume for the left pane by index"),
+        Tool::with_index("volume_selectRight", "Select a volume for the right pane by index"),
     ]
 }
 
@@ -141,23 +141,23 @@ fn get_context_tools() -> Vec<Tool> {
     vec![
         // Pane state
         Tool::no_params(
-            "context.getFocusedPane",
+            "context_getFocusedPane",
             "Get which pane is currently focused (left or right)",
         ),
-        Tool::no_params("context.getLeftPanePath", "Get current volume and path of left pane"),
-        Tool::no_params("context.getRightPanePath", "Get current volume and path of right pane"),
+        Tool::no_params("context_getLeftPanePath", "Get current volume and path of left pane"),
+        Tool::no_params("context_getRightPanePath", "Get current volume and path of right pane"),
         // File listing
         Tool::no_params(
-            "context.getLeftPaneContent",
+            "context_getLeftPaneContent",
             "Get visible files in left pane (name only in Brief, full details in Full mode)",
         ),
         Tool::no_params(
-            "context.getRightPaneContent",
+            "context_getRightPaneContent",
             "Get visible files in right pane (name only in Brief, full details in Full mode)",
         ),
         // Selected file info
         Tool::no_params(
-            "context.getSelectedFileInfo",
+            "context_getSelectedFileInfo",
             "Get info for selected file (name, size, modified date)",
         ),
     ]

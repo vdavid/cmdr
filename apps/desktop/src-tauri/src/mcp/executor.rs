@@ -40,21 +40,21 @@ impl ToolError {
 pub fn execute_tool<R: Runtime>(app: &AppHandle<R>, name: &str, params: &Value) -> ToolResult {
     match name {
         // App commands
-        n if n.starts_with("app.") => execute_app_command(app, n),
+        n if n.starts_with("app_") => execute_app_command(app, n),
         // View commands
-        n if n.starts_with("view.") => execute_view_command(app, n),
+        n if n.starts_with("view_") => execute_view_command(app, n),
         // Pane commands
-        n if n.starts_with("pane.") => execute_pane_command(app, n),
+        n if n.starts_with("pane_") => execute_pane_command(app, n),
         // Navigation commands
-        n if n.starts_with("nav.") => execute_nav_command(app, n),
+        n if n.starts_with("nav_") => execute_nav_command(app, n),
         // Sort commands
-        n if n.starts_with("sort.") => execute_sort_command(app, n),
+        n if n.starts_with("sort_") => execute_sort_command(app, n),
         // File commands
-        n if n.starts_with("file.") => execute_file_command(app, n),
+        n if n.starts_with("file_") => execute_file_command(app, n),
         // Volume commands
-        n if n.starts_with("volume.") => execute_volume_command(app, n, params),
+        n if n.starts_with("volume_") => execute_volume_command(app, n, params),
         // Context commands
-        n if n.starts_with("context.") => execute_context_command(app, n),
+        n if n.starts_with("context_") => execute_context_command(app, n),
         _ => Err(ToolError::invalid_params(format!("Unknown tool: {name}"))),
     }
 }
@@ -62,17 +62,17 @@ pub fn execute_tool<R: Runtime>(app: &AppHandle<R>, name: &str, params: &Value) 
 /// Execute an app command.
 fn execute_app_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolResult {
     match name {
-        "app.quit" => {
+        "app_quit" => {
             app.emit("mcp-action", json!({"action": "quit"}))
                 .map_err(|e| ToolError::internal(e.to_string()))?;
             Ok(json!({"success": true}))
         }
-        "app.hide" => {
+        "app_hide" => {
             app.emit("mcp-action", json!({"action": "hide"}))
                 .map_err(|e| ToolError::internal(e.to_string()))?;
             Ok(json!({"success": true}))
         }
-        "app.about" => {
+        "app_about" => {
             app.emit("show-about", ())
                 .map_err(|e| ToolError::internal(e.to_string()))?;
             Ok(json!({"success": true}))
@@ -84,15 +84,15 @@ fn execute_app_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolResult
 /// Execute a view command.
 fn execute_view_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolResult {
     match name {
-        "view.showHidden" => {
+        "view_showHidden" => {
             let result = toggle_hidden_files(app.clone()).map_err(ToolError::internal)?;
             Ok(json!({"success": true, "showHiddenFiles": result}))
         }
-        "view.briefMode" => {
+        "view_briefMode" => {
             set_view_mode(app.clone(), "brief".to_string()).map_err(ToolError::internal)?;
             Ok(json!({"success": true, "viewMode": "brief"}))
         }
-        "view.fullMode" => {
+        "view_fullMode" => {
             set_view_mode(app.clone(), "full".to_string()).map_err(ToolError::internal)?;
             Ok(json!({"success": true, "viewMode": "full"}))
         }
@@ -103,17 +103,17 @@ fn execute_view_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolResul
 /// Execute a pane command.
 fn execute_pane_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolResult {
     match name {
-        "pane.switch" => {
+        "pane_switch" => {
             app.emit("switch-pane", ())
                 .map_err(|e| ToolError::internal(e.to_string()))?;
             Ok(json!({"success": true}))
         }
-        "pane.leftVolumeChooser" => {
+        "pane_leftVolumeChooser" => {
             app.emit("mcp-action", json!({"action": "leftVolumeChooser"}))
                 .map_err(|e| ToolError::internal(e.to_string()))?;
             Ok(json!({"success": true}))
         }
-        "pane.rightVolumeChooser" => {
+        "pane_rightVolumeChooser" => {
             app.emit("mcp-action", json!({"action": "rightVolumeChooser"}))
                 .map_err(|e| ToolError::internal(e.to_string()))?;
             Ok(json!({"success": true}))
@@ -126,18 +126,18 @@ fn execute_pane_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolResul
 /// These emit keyboard-equivalent events to the frontend.
 fn execute_nav_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolResult {
     let key = match name {
-        "nav.open" => "Enter",
-        "nav.parent" => "Backspace",
-        "nav.back" => "GoBack",       // Custom event, handled by frontend
-        "nav.forward" => "GoForward", // Custom event
-        "nav.up" => "ArrowUp",
-        "nav.down" => "ArrowDown",
-        "nav.left" => "ArrowLeft",
-        "nav.right" => "ArrowRight",
-        "nav.home" => "Home",
-        "nav.end" => "End",
-        "nav.pageUp" => "PageUp",
-        "nav.pageDown" => "PageDown",
+        "nav_open" => "Enter",
+        "nav_parent" => "Backspace",
+        "nav_back" => "GoBack",       // Custom event, handled by frontend
+        "nav_forward" => "GoForward", // Custom event
+        "nav_up" => "ArrowUp",
+        "nav_down" => "ArrowDown",
+        "nav_left" => "ArrowLeft",
+        "nav_right" => "ArrowRight",
+        "nav_home" => "Home",
+        "nav_end" => "End",
+        "nav_pageUp" => "PageUp",
+        "nav_pageDown" => "PageDown",
         _ => return Err(ToolError::invalid_params(format!("Unknown nav command: {name}"))),
     };
 
@@ -149,14 +149,14 @@ fn execute_nav_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolResult
 /// Execute a sort command.
 fn execute_sort_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolResult {
     let (action, value) = match name {
-        "sort.byName" => ("sortBy", "name"),
-        "sort.byExtension" => ("sortBy", "extension"),
-        "sort.bySize" => ("sortBy", "size"),
-        "sort.byModified" => ("sortBy", "modified"),
-        "sort.byCreated" => ("sortBy", "created"),
-        "sort.ascending" => ("sortOrder", "asc"),
-        "sort.descending" => ("sortOrder", "desc"),
-        "sort.toggleOrder" => ("sortOrder", "toggle"),
+        "sort_byName" => ("sortBy", "name"),
+        "sort_byExtension" => ("sortBy", "extension"),
+        "sort_bySize" => ("sortBy", "size"),
+        "sort_byModified" => ("sortBy", "modified"),
+        "sort_byCreated" => ("sortBy", "created"),
+        "sort_ascending" => ("sortOrder", "asc"),
+        "sort_descending" => ("sortOrder", "desc"),
+        "sort_toggleOrder" => ("sortOrder", "toggle"),
         _ => return Err(ToolError::invalid_params(format!("Unknown sort command: {name}"))),
     };
 
@@ -168,11 +168,11 @@ fn execute_sort_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolResul
 /// Execute a file command.
 fn execute_file_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolResult {
     let action = match name {
-        "file.showInFinder" => "showInFinder",
-        "file.copyPath" => "copyPath",
-        "file.copyFilename" => "copyFilename",
-        "file.quickLook" => "quickLook",
-        "file.getInfo" => "getInfo",
+        "file_showInFinder" => "showInFinder",
+        "file_copyPath" => "copyPath",
+        "file_copyFilename" => "copyFilename",
+        "file_quickLook" => "quickLook",
+        "file_getInfo" => "getInfo",
         _ => return Err(ToolError::invalid_params(format!("Unknown file command: {name}"))),
     };
 
@@ -184,20 +184,20 @@ fn execute_file_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolResul
 /// Execute a volume command.
 fn execute_volume_command<R: Runtime>(app: &AppHandle<R>, name: &str, params: &Value) -> ToolResult {
     match name {
-        "volume.list" => {
+        "volume_list" => {
             // Request volume list from frontend - it will respond via event
             app.emit("mcp-volume-list-request", ())
                 .map_err(|e| ToolError::internal(e.to_string()))?;
             // For now, return a placeholder - real implementation needs async response
             Ok(json!({"note": "Volume list requested, check mcp-volume-list-response event"}))
         }
-        "volume.selectLeft" | "volume.selectRight" => {
+        "volume_selectLeft" | "volume_selectRight" => {
             let index = params
                 .get("index")
                 .and_then(|v| v.as_i64())
                 .ok_or_else(|| ToolError::invalid_params("Missing 'index' parameter"))?;
 
-            let pane = if name == "volume.selectLeft" { "left" } else { "right" };
+            let pane = if name == "volume_selectLeft" { "left" } else { "right" };
 
             app.emit("mcp-volume-select", json!({"pane": pane, "index": index}))
                 .map_err(|e| ToolError::internal(e.to_string()))?;
@@ -214,12 +214,12 @@ fn execute_context_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolRe
         .ok_or_else(|| ToolError::internal("Pane state not initialized"))?;
 
     match name {
-        "context.getFocusedPane" => {
+        "context_getFocusedPane" => {
             let focused = store.get_focused_pane();
             Ok(json!({"focusedPane": focused}))
         }
 
-        "context.getLeftPanePath" => {
+        "context_getLeftPanePath" => {
             let left = store.get_left();
             Ok(json!({
                 "path": left.path,
@@ -227,7 +227,7 @@ fn execute_context_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolRe
             }))
         }
 
-        "context.getRightPanePath" => {
+        "context_getRightPanePath" => {
             let right = store.get_right();
             Ok(json!({
                 "path": right.path,
@@ -235,7 +235,7 @@ fn execute_context_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolRe
             }))
         }
 
-        "context.getLeftPaneContent" => {
+        "context_getLeftPaneContent" => {
             let left = store.get_left();
             Ok(json!({
                 "path": left.path,
@@ -246,7 +246,7 @@ fn execute_context_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolRe
             }))
         }
 
-        "context.getRightPaneContent" => {
+        "context_getRightPaneContent" => {
             let right = store.get_right();
             Ok(json!({
                 "path": right.path,
@@ -257,7 +257,7 @@ fn execute_context_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolRe
             }))
         }
 
-        "context.getSelectedFileInfo" => {
+        "context_getSelectedFileInfo" => {
             let focused = store.get_focused_pane();
             let pane = if focused == "right" {
                 store.get_right()

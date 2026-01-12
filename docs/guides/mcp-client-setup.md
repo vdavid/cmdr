@@ -5,10 +5,10 @@ This guide shows how to configure popular AI assistants to use cmdr's MCP server
 ## Prerequisites
 
 1. cmdr must be running with MCP enabled
-2. Default port is `9223` (configurable via `CMDR_MCP_PORT`)
+2. Default port is `9224` (configurable via `CMDR_MCP_PORT`)
 3. Verify the server is running:
    ```bash
-   curl http://localhost:9223/mcp/health
+   curl http://localhost:9224/mcp/health
    # Should return: {"status":"ok"}
    ```
 
@@ -22,7 +22,7 @@ Add to your Claude Desktop configuration file:
 {
   "mcpServers": {
     "cmdr": {
-      "url": "http://localhost:9223/mcp"
+      "url": "http://localhost:9224/mcp"
     }
   }
 }
@@ -44,7 +44,7 @@ Add to your VS Code settings (`settings.json`):
 ```json
 "amp.mcpServers": {
     "cmdr": {
-        "url": "http://localhost:9223/mcp"
+        "url": "http://localhost:9224/mcp"
     }
 }
 ```
@@ -60,7 +60,7 @@ Add to your Cursor settings (`.cursor/mcp.json` in your project or global config
   "mcpServers": {
     "cmdr": {
       "transport": "http",
-      "url": "http://localhost:9223/mcp"
+      "url": "http://localhost:9224/mcp"
     }
   }
 }
@@ -77,7 +77,7 @@ Add to your Continue configuration (`~/.continue/config.json`):
       "name": "cmdr",
       "transport": {
         "type": "http",
-        "url": "http://localhost:9223/mcp"
+        "url": "http://localhost:9224/mcp"
       }
     }
   ]
@@ -91,30 +91,30 @@ For any MCP-compatible client, use these connection details:
 | Setting | Value |
 |---------|-------|
 | Transport | HTTP |
-| URL | `http://localhost:9223/mcp` |
-| SSE endpoint | `http://localhost:9223/mcp/sse` |
-| Health check | `http://localhost:9223/mcp/health` |
+| URL | `http://localhost:9224/mcp` |
+| SSE endpoint | `http://localhost:9224/mcp/sse` |
+| Health check | `http://localhost:9224/mcp/health` |
 
 ### Manual testing with curl
 
 ```bash
 # Initialize connection
-curl -X POST http://localhost:9223/mcp \
+curl -X POST http://localhost:9224/mcp \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}'
 
 # List available tools
-curl -X POST http://localhost:9223/mcp \
+curl -X POST http://localhost:9224/mcp \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
 
 # Navigate down
-curl -X POST http://localhost:9223/mcp \
+curl -X POST http://localhost:9224/mcp \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"nav.down","arguments":{}}}'
 
 # Get focused pane
-curl -X POST http://localhost:9223/mcp \
+curl -X POST http://localhost:9224/mcp \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"context.getFocusedPane","arguments":{}}}'
 ```
@@ -125,7 +125,7 @@ curl -X POST http://localhost:9223/mcp \
 
 1. Ensure cmdr is running
 2. Check MCP is enabled: look for "MCP server listening" in logs
-3. Verify port: `lsof -i :9223`
+3. Verify port: `lsof -i :9224`
 
 ### "Server not found" in Claude Desktop
 

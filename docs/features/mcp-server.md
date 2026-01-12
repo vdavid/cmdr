@@ -20,7 +20,7 @@ The MCP server is controlled by environment variables:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `CMDR_MCP_ENABLED` | `true` in dev, `false` in prod | Enable the MCP server |
-| `CMDR_MCP_PORT` | `9223` | Port for the HTTP server |
+| `CMDR_MCP_PORT` | `9224` | Port for the HTTP server |
 
 ### Enabling in development
 
@@ -32,7 +32,7 @@ pnpm tauri dev
 
 The server will log:
 ```
-MCP server listening on http://127.0.0.1:9223
+MCP server listening on http://127.0.0.1:9224
 ```
 
 ### Enabling in production
@@ -143,7 +143,7 @@ The MCP server uses JSON-RPC 2.0 over HTTP:
 ### Example request
 
 ```bash
-curl -X POST http://localhost:9223/mcp \
+curl -X POST http://localhost:9224/mcp \
   -H "Content-Type: application/json" \
   -d '{
     "jsonrpc": "2.0",
@@ -218,7 +218,7 @@ CMDR_MCP_PORT=9225 pnpm tauri dev
 ### Connection refused
 
 1. Ensure the app is running
-2. Check the port: `curl http://localhost:9223/mcp/health`
+2. Check the port: `curl http://localhost:9224/mcp/health`
 3. Verify MCP is enabled in logs
 
 ### Tools not responding

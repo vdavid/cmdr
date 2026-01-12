@@ -56,7 +56,7 @@ tower-http = { version = "0.5", features = ["cors"] }
 
 **Implement in `server.rs`:**
 - [x] Create `start_mcp_server()` function
-- [x] Bind to `127.0.0.1:9223` (changed from 9224)
+- [x] Bind to `127.0.0.1:9224`
 - [x] Add routes:
   - `POST /mcp` - JSON-RPC endpoint
   - `GET /mcp/sse` - SSE stream
@@ -166,7 +166,7 @@ Execute app commands in `executor.rs`.
 
 **Implement:**
 - [x] Read `CMDR_MCP_ENABLED` (default: debug only)
-- [x] Read `CMDR_MCP_PORT` (default: 9223)
+- [x] Read `CMDR_MCP_PORT` (default: 9224)
 - [N/A] Read `CMDR_MCP_ALLOW_SHELL` - Removed in Phase 6
 - [N/A] Read `CMDR_MCP_ALLOW_WRITE` - Removed in Phase 6
 
