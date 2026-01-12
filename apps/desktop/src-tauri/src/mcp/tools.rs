@@ -69,11 +69,7 @@ fn get_view_tools() -> Vec<Tool> {
 
 /// Get pane command tools.
 fn get_pane_tools() -> Vec<Tool> {
-    vec![
-        Tool::no_params("pane_switch", "Switch focus to the other pane"),
-        Tool::no_params("pane_leftVolumeChooser", "Open volume chooser for left pane"),
-        Tool::no_params("pane_rightVolumeChooser", "Open volume chooser for right pane"),
-    ]
+    vec![Tool::no_params("pane_switch", "Switch focus to the other pane")]
 }
 
 /// Get navigation command tools.
@@ -128,38 +124,11 @@ fn get_file_tools() -> Vec<Tool> {
 }
 
 /// Get volume tools.
+/// Note: volume listing is now a resource (cmdr://volumes), not a tool.
 fn get_volume_tools() -> Vec<Tool> {
     vec![
-        Tool::no_params("volume_list", "List all available volumes with current selection"),
         Tool::with_index("volume_selectLeft", "Select a volume for the left pane by index"),
         Tool::with_index("volume_selectRight", "Select a volume for the right pane by index"),
-    ]
-}
-
-/// Get context/state query tools.
-fn get_context_tools() -> Vec<Tool> {
-    vec![
-        // Pane state
-        Tool::no_params(
-            "context_getFocusedPane",
-            "Get which pane is currently focused (left or right)",
-        ),
-        Tool::no_params("context_getLeftPanePath", "Get current volume and path of left pane"),
-        Tool::no_params("context_getRightPanePath", "Get current volume and path of right pane"),
-        // File listing
-        Tool::no_params(
-            "context_getLeftPaneContent",
-            "Get visible files in left pane (name only in Brief, full details in Full mode)",
-        ),
-        Tool::no_params(
-            "context_getRightPaneContent",
-            "Get visible files in right pane (name only in Brief, full details in Full mode)",
-        ),
-        // Selected file info
-        Tool::no_params(
-            "context_getSelectedFileInfo",
-            "Get info for selected file (name, size, modified date)",
-        ),
     ]
 }
 
@@ -173,7 +142,6 @@ pub fn get_all_tools() -> Vec<Tool> {
     tools.extend(get_sort_tools());
     tools.extend(get_file_tools());
     tools.extend(get_volume_tools());
-    tools.extend(get_context_tools());
     tools
 }
 
@@ -202,8 +170,9 @@ mod tests {
     #[test]
     fn test_all_tools_count() {
         let tools = get_all_tools();
-        // 3 app + 3 view + 3 pane + 12 nav + 8 sort + 5 file + 3 volume + 6 context = 43
-        assert_eq!(tools.len(), 43);
+        // 3 app + 3 view + 1 pane + 12 nav + 8 sort + 5 file + 2 volume = 34
+        // (context tools and volume_list moved to resources)
+        assert_eq!(tools.len(), 34);
     }
 
     #[test]

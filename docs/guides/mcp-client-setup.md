@@ -35,17 +35,19 @@ After saving, restart Claude Desktop. You should see "cmdr" in the MCP servers l
 Ask Claude:
 > "What tools are available from the cmdr MCP server?"
 
-Claude should list the 43 available tools.
+Claude should list the 34 available tools.
 
 ## Amp (ampcode.com)
 
 Add to your VS Code settings (`settings.json`):
 
 ```json
-"amp.mcpServers": {
+{
+  "amp.mcpServers": {
     "cmdr": {
-        "url": "http://localhost:9224/mcp"
+      "url": "http://localhost:9224/mcp"
     }
+  }
 }
 ```
 
@@ -88,11 +90,10 @@ Add to your Continue configuration (`~/.continue/config.json`):
 
 For any MCP-compatible client, use these connection details:
 
-| Setting | Value |
-|---------|-------|
-| Transport | HTTP |
-| URL | `http://localhost:9224/mcp` |
-| SSE endpoint | `http://localhost:9224/mcp/sse` |
+| Setting      | Value                              |
+|--------------|------------------------------------|
+| Transport    | Streamable HTTP                    |
+| URL          | `http://localhost:9224/mcp`        |
 | Health check | `http://localhost:9224/mcp/health` |
 
 ### Manual testing with curl

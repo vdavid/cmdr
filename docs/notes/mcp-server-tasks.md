@@ -34,7 +34,7 @@ apps/desktop/src-tauri/src/
 
 **Files to create:**
 - [x] `src/mcp/mod.rs` - Export submodules, feature flag check
-- [x] `src/mcp/server.rs` - HTTP server with SSE support
+- [x] `src/mcp/server.rs` - HTTP server (Streamable HTTP transport)
 - [x] `src/mcp/protocol.rs` - MCP JSON-RPC message parsing
 - [x] `src/mcp/tools.rs` - Tool definitions and schemas
 - [x] `src/mcp/executor.rs` - Tool execution dispatcher
@@ -59,7 +59,7 @@ tower-http = { version = "0.5", features = ["cors"] }
 - [x] Bind to `127.0.0.1:9224`
 - [x] Add routes:
   - `POST /mcp` - JSON-RPC endpoint
-  - `GET /mcp/sse` - SSE stream
+  - `GET /mcp` - Optional SSE stream (Streamable HTTP spec)
   - `GET /mcp/health` - Returns `{"status": "ok"}`
 - [x] Call from `lib.rs` setup if enabled
 

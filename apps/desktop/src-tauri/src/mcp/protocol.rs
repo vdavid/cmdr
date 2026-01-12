@@ -1,4 +1,7 @@
-//! MCP protocol message types and handling.
+//! MCP protocol message types and handling (spec version 2025-11-25).
+//!
+//! Implements JSON-RPC 2.0 message format as required by MCP.
+//! See: https://modelcontextprotocol.io/specification/2025-11-25
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -35,11 +38,9 @@ pub struct McpError {
     pub data: Option<Value>,
 }
 
-// MCP error codes (JSON-RPC standard + MCP specific)
-// Some are reserved for future use
+// JSON-RPC 2.0 standard error codes
 #[allow(dead_code)]
 pub const PARSE_ERROR: i32 = -32700;
-#[allow(dead_code)]
 pub const INVALID_REQUEST: i32 = -32600;
 pub const METHOD_NOT_FOUND: i32 = -32601;
 pub const INVALID_PARAMS: i32 = -32602;
@@ -98,12 +99,20 @@ pub struct ServerCapabilities {
 #[derive(Debug, Clone, Serialize)]
 pub struct Capabilities {
     pub tools: ToolCapabilities,
+    pub resources: ResourceCapabilities,
 }
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ToolCapabilities {
     #[serde(rename = "listChanged")]
     pub list_changed: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ResourceCapabilities {
+    #[serde(rename = "listChanged")]
+    pub list_changed: bool,
+    pub subscribe: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -118,6 +127,10 @@ impl Default for ServerCapabilities {
             protocol_version: "2024-11-05".to_string(),
             capabilities: Capabilities {
                 tools: ToolCapabilities { list_changed: false },
+                resources: ResourceCapabilities {
+                    list_changed: false,
+                    subscribe: false,
+                },
             },
             server_info: ServerInfo {
                 name: "cmdr".to_string(),
@@ -187,5 +200,18 @@ mod tests {
         let caps = ServerCapabilities::default();
         assert_eq!(caps.server_info.name, "cmdr");
         assert!(!caps.capabilities.tools.list_changed);
+    }
+
+    #[test]
+    fn test_error_with_data() {
+        let response = McpResponse::error_with_data(
+            Some(json!(1)),
+            INVALID_PARAMS,
+            "Invalid params",
+            json!({"details": "missing field"}),
+        );
+        let json = serde_json::to_value(&response).unwrap();
+
+        assert_eq!(json["error"]["data"]["details"], "missing field");
     }
 }

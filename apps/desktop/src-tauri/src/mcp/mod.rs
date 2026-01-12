@@ -1,12 +1,13 @@
 //! MCP (Model Context Protocol) server module.
 //!
-//! Provides an HTTP+SSE server that exposes cmdr functionality as MCP tools,
+//! Provides a Streamable HTTP server that exposes cmdr functionality as MCP tools,
 //! enabling AI agents to control the file manager.
 
 mod config;
 mod executor;
 pub mod pane_state;
 mod protocol;
+mod resources;
 mod server;
 mod tools;
 

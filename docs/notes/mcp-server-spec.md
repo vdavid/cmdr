@@ -37,7 +37,7 @@ This document specifies the MCP (Model Context Protocol) server for cmdr, enabli
 │           │                                                     │
 │           ▼                                                     │
 │  ┌─────────────────┐        ┌─────────────────────────────────┐│
-│  │ HTTP+SSE Server │◀───────│ External clients (Claude, etc.) ││
+│  │ HTTP Server     │◀───────│ External clients (Claude, etc.) ││
 │  │ localhost:9224  │        └─────────────────────────────────┘│
 │  └─────────────────┘                                           │
 │           │                                                     │
@@ -114,7 +114,7 @@ Get current app state for context-aware operations.
 
 ### Transport
 
-- **Protocol**: HTTP + Server-Sent Events (SSE)
+- **Protocol**: Streamable HTTP (MCP spec 2025-11-25)
 - **Port**: 9224 (configurable via `CMDR_MCP_PORT`)
 - **Host**: localhost only (security)
 
@@ -122,7 +122,7 @@ Get current app state for context-aware operations.
 
 ```
 POST /mcp                 # JSON-RPC endpoint for all MCP messages
-GET  /mcp/sse             # SSE stream for server-initiated messages
+GET  /mcp                 # Optional SSE stream (Streamable HTTP spec)
 GET  /mcp/health          # Health check
 ```
 

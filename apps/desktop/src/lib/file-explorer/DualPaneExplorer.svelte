@@ -756,6 +756,7 @@
     /**
      * Select a volume by index for a specific pane.
      * Used by MCP volume.selectLeft/volume.selectRight tools.
+     * Matches the behavior of VolumeBreadcrumb's handleVolumeSelect.
      * @param pane - 'left' or 'right'
      * @param index - Zero-based index into the volumes array
      */
@@ -767,12 +768,22 @@
         }
 
         const volume = volumes[index]
+        const handler = pane === 'left' ? handleLeftVolumeChange : handleRightVolumeChange
 
-        // Trigger the same volume change handler as user selection
-        if (pane === 'left') {
-            await handleLeftVolumeChange(volume.id, volume.path, volume.path)
+        // Handle favorites differently from actual volumes (same as VolumeBreadcrumb)
+        if (volume.category === 'favorite') {
+            // For favorites, find the actual containing volume
+            const containingVolume = await findContainingVolume(volume.path)
+            if (containingVolume) {
+                // Navigate to the favorite's path, but set the volume to the containing volume
+                await handler(containingVolume.id, containingVolume.path, volume.path)
+            } else {
+                // Fallback: use root volume
+                await handler('root', '/', volume.path)
+            }
         } else {
-            await handleRightVolumeChange(volume.id, volume.path, volume.path)
+            // For actual volumes, navigate to the volume's root
+            await handler(volume.id, volume.path, volume.path)
         }
 
         return true

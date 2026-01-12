@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "cmdr": {
+      "url": "http://localhost:9224/mcp"
+    }
+  }
+}
