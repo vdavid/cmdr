@@ -91,3 +91,10 @@ meaningful extra details on what the commit does.
 - In the desc., write a thorough, organized, but concise, often bulleted list of the changes. Use no headings.
 - At the bottom of the PR description, use a single "## Test plan" heading, in which, explain how the changes were
   tested. Assume that the changes were also tested manually if it makes sense for the type of changes.
+
+## Docs
+
+### Guides
+
+See [this diff](https://github.com/vdavid/cmdr/commit/13ad8f3#diff-795210f) before writing guides. This diff shows how
+we like our guides formatted. (Before: was AI-written. After: matching our standards for conciseness and clarity.)   
