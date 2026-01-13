@@ -59,6 +59,14 @@ export interface ListingProgressEvent {
 }
 
 /**
+ * Read-complete event payload emitted when read_dir finishes (before sorting/caching).
+ */
+export interface ListingReadCompleteEvent {
+    listingId: string
+    totalCount: number
+}
+
+/**
  * Completion event payload emitted when streaming directory listing finishes.
  */
 export interface ListingCompleteEvent {

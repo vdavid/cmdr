@@ -26,6 +26,11 @@ Frontend                          Rust Backend
    |<---- listing-progress event ------| (every 500ms)
    |     { listingId, loadedCount }    |
    |                                   |
+   |<---- listing-read-complete event -| (when read_dir finishes)
+   |     { listingId, totalCount }     |
+   |                                   |
+   |                                   | (sorting, caching, etc.)
+   |                                   |
    |<---- listing-complete event ------|
    |     { listingId, totalCount,      |
    |       maxFilenameWidth }          |
@@ -114,10 +119,11 @@ The [operations module](../../apps/desktop/src-tauri/src/file_system/operations.
 1. Iterates directory entries with `fs::read_dir()`
 2. Checks cancellation flag on each entry
 3. Emits `listing-progress` event every 500ms
-4. Sorts entries when complete
-5. Caches in `LISTING_CACHE`
-6. Starts file watcher (if supported)
-7. Emits `listing-complete` event
+4. Emits `listing-read-complete` event when read_dir finishes
+5. Sorts entries
+6. Caches in `LISTING_CACHE`
+7. Starts file watcher (if supported)
+8. Emits `listing-complete` event
 
 ## Progress display
 
@@ -125,6 +131,7 @@ While loading, the `LoadingIcon` component shows:
 
 - A spinning loader animation
 - "Loaded N files..." with the current count (updated every 500ms)
+- "All N files loaded, just a moment now." when read_dir finishes (before sorting/caching)
 - "Press ESC to cancel and go back" hint
 
 ## Cancellation behavior

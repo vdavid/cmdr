@@ -9,6 +9,7 @@ import LoadingIcon from './LoadingIcon.svelte'
 import type {
     StreamingListingStartResult,
     ListingProgressEvent,
+    ListingReadCompleteEvent,
     ListingCompleteEvent,
     ListingErrorEvent,
     ListingCancelledEvent,
@@ -55,7 +56,7 @@ describe('LoadingIcon component', () => {
             await tick()
 
             const loadingText = target.querySelector('.loading-text')
-            expect(loadingText?.textContent).toBe('Loaded 1500 files...')
+            expect(loadingText?.textContent).toBe('Loaded 1,500 files...')
         })
 
         it('shows count of 0 when loadedCount is 0', async () => {
@@ -113,6 +114,35 @@ describe('LoadingIcon component', () => {
         })
     })
 
+    describe('finalizingCount prop', () => {
+        it('shows finalizing message when finalizingCount is provided', async () => {
+            mount(LoadingIcon, { target, props: { finalizingCount: 600 } })
+            await tick()
+
+            const loadingText = target.querySelector('.loading-text')
+            expect(loadingText?.textContent).toBe('All 600 files loaded, just a moment now.')
+        })
+
+        it('finalizingCount takes precedence over loadedCount', async () => {
+            mount(LoadingIcon, { target, props: { loadedCount: 500, finalizingCount: 600 } })
+            await tick()
+
+            const loadingText = target.querySelector('.loading-text')
+            expect(loadingText?.textContent).toBe('All 600 files loaded, just a moment now.')
+        })
+
+        it('shows finalizing message with cancel hint', async () => {
+            mount(LoadingIcon, { target, props: { finalizingCount: 1000, showCancelHint: true } })
+            await tick()
+
+            const loadingText = target.querySelector('.loading-text')
+            const cancelHint = target.querySelector('.cancel-hint')
+
+            expect(loadingText?.textContent).toBe('All 1,000 files loaded, just a moment now.')
+            expect(cancelHint?.textContent).toBe('Press ESC to cancel and go back')
+        })
+    })
+
     describe('Accessibility', () => {
         it('has loading container element', async () => {
             mount(LoadingIcon, { target, props: {} })
@@ -155,6 +185,16 @@ describe('Streaming types', () => {
 
         expect(event.listingId).toBe('test-456')
         expect(event.loadedCount).toBe(1000)
+    })
+
+    it('ListingReadCompleteEvent has correct shape', () => {
+        const event: ListingReadCompleteEvent = {
+            listingId: 'test-read',
+            totalCount: 600,
+        }
+
+        expect(event.listingId).toBe('test-read')
+        expect(event.totalCount).toBe(600)
     })
 
     it('ListingCompleteEvent has correct shape', () => {

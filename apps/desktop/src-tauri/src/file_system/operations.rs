@@ -142,6 +142,14 @@ pub struct ListingCancelledEvent {
     pub listing_id: String,
 }
 
+/// Read-complete event payload (emitted when read_dir finishes, before sorting/caching)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListingReadCompleteEvent {
+    pub listing_id: String,
+    pub total_count: usize,
+}
+
 /// State for an in-progress streaming listing
 pub struct StreamingListingState {
     /// Cancellation flag - checked periodically during iteration
@@ -1258,6 +1266,15 @@ fn read_directory_with_progress(
     }
     let read_dir_time = read_start.elapsed();
     benchmark::log_event_value("read_dir COMPLETE, entries", entries.len());
+
+    // Emit read-complete event (before sorting/caching) so UI can show "All N files loaded"
+    let _ = app.emit(
+        "listing-read-complete",
+        ListingReadCompleteEvent {
+            listing_id: listing_id.to_string(),
+            total_count: entries.len(),
+        },
+    );
 
     // Check cancellation one more time before finalizing
     if state.cancelled.load(Ordering::Relaxed) {

@@ -7,6 +7,7 @@
         ListingCompleteEvent,
         ListingErrorEvent,
         ListingProgressEvent,
+        ListingReadCompleteEvent,
         MountError,
         NetworkHost,
         ShareInfo,
@@ -199,6 +200,9 @@
     let unlistenCancelled: UnlistenFn | undefined
     // Loading progress state for streaming
     let loadingCount = $state<number | undefined>(undefined)
+    // Finalizing state (read_dir done, now sorting/caching)
+    let finalizingCount = $state<number | undefined>(undefined)
+    let unlistenReadComplete: UnlistenFn | undefined
     // Polling interval for sync status (visible files only)
     let syncPollInterval: ReturnType<typeof setInterval> | undefined
     const SYNC_POLL_INTERVAL_MS = 2000 // Poll every 2 seconds
@@ -303,6 +307,7 @@
 
         // Clean up previous event listeners
         unlistenProgress?.()
+        unlistenReadComplete?.()
         unlistenComplete?.()
         unlistenError?.()
         unlistenCancelled?.()
@@ -311,6 +316,7 @@
         // This ensures the UI shows the loading spinner immediately
         loading = true
         loadingCount = undefined
+        finalizingCount = undefined
         error = null
         syncStatusMap = {}
         totalCount = 0 // Reset to show empty list immediately
@@ -345,6 +351,13 @@
                 }
             })
 
+            // Subscribe to read-complete event (read_dir finished, now sorting/caching)
+            unlistenReadComplete = await listen<ListingReadCompleteEvent>('listing-read-complete', (event) => {
+                if (event.payload.listingId === newListingId && thisGeneration === loadGeneration) {
+                    finalizingCount = event.payload.totalCount
+                }
+            })
+
             // Subscribe to completion event
             unlistenComplete = await listen<ListingCompleteEvent>('listing-complete', (event) => {
                 if (event.payload.listingId === newListingId && thisGeneration === loadGeneration) {
@@ -360,6 +373,7 @@
                     totalCount = 0
                     loading = false
                     loadingCount = undefined
+                    finalizingCount = undefined
                 }
             })
 
@@ -370,6 +384,7 @@
                     listingId = ''
                     loading = false
                     loadingCount = undefined
+                    finalizingCount = undefined
                 }
             })
 
@@ -391,6 +406,7 @@
             totalCount = 0
             loading = false
             loadingCount = undefined
+            finalizingCount = undefined
         }
     }
 
@@ -415,6 +431,7 @@
 
         loading = false
         loadingCount = undefined
+        finalizingCount = undefined
         benchmark.logEvent('loading = false (UI can render)')
 
         // NOW push to history (only on successful completion)
@@ -853,6 +870,7 @@
         unlisten?.()
         unlistenMenuAction?.()
         unlistenProgress?.()
+        unlistenReadComplete?.()
         unlistenComplete?.()
         unlistenError?.()
         unlistenCancelled?.()
@@ -916,7 +934,7 @@
                 />
             {/if}
         {:else if loading}
-            <LoadingIcon loadedCount={loadingCount} showCancelHint={true} />
+            <LoadingIcon loadedCount={loadingCount} {finalizingCount} showCancelHint={true} />
         {:else if isPermissionDenied}
             <PermissionDeniedPane folderPath={currentPath} />
         {:else if error}

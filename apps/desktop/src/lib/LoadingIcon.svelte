@@ -1,16 +1,23 @@
 <script lang="ts">
     interface Props {
         loadedCount?: number
+        finalizingCount?: number
         showCancelHint?: boolean
     }
 
-    const { loadedCount, showCancelHint = false }: Props = $props()
+    const { loadedCount, finalizingCount, showCancelHint = false }: Props = $props()
+
+    function formatNumber(n: number): string {
+        return n.toLocaleString()
+    }
 </script>
 
 <div class="loading-container">
     <div class="loader"></div>
-    {#if loadedCount !== undefined}
-        <div class="loading-text">Loaded {loadedCount} files...</div>
+    {#if finalizingCount !== undefined}
+        <div class="loading-text">All {formatNumber(finalizingCount)} files loaded, just a moment now.</div>
+    {:else if loadedCount !== undefined}
+        <div class="loading-text">Loaded {formatNumber(loadedCount)} files...</div>
     {:else}
         <div class="loading-text">Loading...</div>
     {/if}
