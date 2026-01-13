@@ -47,7 +47,7 @@ jobs:
                   releaseBody: 'See CHANGELOG.md for details.'
                   releaseDraft: false
                   prerelease: false
-                  args: --target universal-apple-darwin
+                  args: --target universal-apple-darwin --bin cmdr
 
             - name: Extract changelog for this version
               id: changelog
