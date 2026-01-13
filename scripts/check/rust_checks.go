@@ -165,6 +165,45 @@ func (c *RustTestsCheck) Run(ctx *CheckContext) error {
 	return nil
 }
 
+// RustTestsLinuxCheck runs Rust tests in a Linux Docker container.
+// This catches platform-specific issues (e.g., #[cfg(target_os = "macos")]) before CI.
+type RustTestsLinuxCheck struct{}
+
+func (c *RustTestsLinuxCheck) Name() string {
+	return "tests (Linux)"
+}
+
+func (c *RustTestsLinuxCheck) Run(ctx *CheckContext) error {
+	rustDir := filepath.Join(ctx.RootDir, "apps", "desktop", "src-tauri")
+
+	// Check if Docker is available
+	if !commandExists("docker") {
+		fmt.Printf("%sSKIPPED%s (Docker not installed)\n", colorYellow, colorReset)
+		return nil
+	}
+
+	// Check if Docker daemon is running
+	checkCmd := exec.Command("docker", "info")
+	if _, err := runCommand(checkCmd, true); err != nil {
+		fmt.Printf("%sSKIPPED%s (Docker not running)\n", colorYellow, colorReset)
+		return nil
+	}
+
+	// Run tests in a Rust container
+	cmd := exec.Command("docker", "run", "--rm",
+		"-v", rustDir+":/app",
+		"-w", "/app",
+		"rust:latest",
+		"sh", "-c", "cargo test --no-fail-fast")
+	output, err := runCommand(cmd, true)
+	if err != nil {
+		fmt.Println()
+		fmt.Print(indentOutput(output, "      "))
+		return fmt.Errorf("rust tests failed on Linux")
+	}
+	return nil
+}
+
 // CargoUdepsCheck detects unused dependencies.
 type CargoUdepsCheck struct{}
 

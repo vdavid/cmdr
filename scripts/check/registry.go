@@ -21,6 +21,8 @@ func getCheckByName(name string) Check {
 		return &CargoUdepsCheck{}
 	case "rust-tests":
 		return &RustTestsCheck{}
+	case "rust-tests-linux":
+		return &RustTestsLinuxCheck{}
 	// Desktop/Svelte checks
 	case "prettier":
 		return &PrettierCheck{}
@@ -88,6 +90,7 @@ func getRustChecks() []Check {
 		&CargoDenyCheck{},
 		&CargoUdepsCheck{},
 		&RustTestsCheck{},
+		&RustTestsLinuxCheck{},
 	}
 }
 
@@ -139,6 +142,8 @@ func getCheckCLIName(check Check) string {
 			return "svelte-tests"
 		}
 		return "tests"
+	case "tests (linux)":
+		return "rust-tests-linux"
 	case "e2e tests":
 		return "e2e-tests"
 	case "prettier (website)":

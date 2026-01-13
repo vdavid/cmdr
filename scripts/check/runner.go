@@ -30,7 +30,7 @@ func showUsage() {
 	fmt.Println("    go run ./scripts/check --ci             # CI mode (no auto-fix)")
 	fmt.Println()
 	fmt.Println("Available check names:")
-	fmt.Println("  Desktop/Rust: rustfmt, clippy, cargo-audit, cargo-deny, rust-tests")
+	fmt.Println("  Desktop/Rust: rustfmt, clippy, cargo-audit, cargo-deny, rust-tests, rust-tests-linux")
 	fmt.Println("  Desktop/Svelte: prettier, eslint, stylelint, svelte-check, knip, svelte-tests, e2e-tests")
 	fmt.Println("  Website: website-prettier, website-eslint, website-typecheck, website-build")
 	fmt.Println("  License server: license-server-prettier, license-server-eslint, license-server-typecheck, license-server-tests")

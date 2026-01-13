@@ -132,7 +132,10 @@ fn test_no_duplicate_tool_names() {
 #[test]
 fn test_resource_count() {
     let resources = get_all_resources();
+    #[cfg(target_os = "macos")]
     assert_eq!(resources.len(), 8, "Expected 8 resources");
+    #[cfg(not(target_os = "macos"))]
+    assert_eq!(resources.len(), 7, "Expected 7 resources");
 }
 
 #[test]
@@ -294,6 +297,7 @@ fn test_volume_tools_exist() {
     assert_eq!(volume_tools.len(), 2, "Expected 2 volume tools");
 }
 
+#[cfg(target_os = "macos")]
 #[test]
 fn test_volumes_resource_exists() {
     // volume_list is now a resource (cmdr://volumes), not a tool
