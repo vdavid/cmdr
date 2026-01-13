@@ -94,7 +94,8 @@ jobs:
                   # Read notes from file, escape for JSON
                   NOTES=$(cat /tmp/notes.txt | jq -Rs .)
 
-                  cat > apps/website/public/latest.json << EOF
+                  # Write to /tmp first (will copy to main branch later)
+                  cat > /tmp/latest.json << EOF
                   {
                     "version": "$VERSION",
                     "notes": $NOTES,
@@ -108,11 +109,29 @@ jobs:
                   }
                   EOF
 
-            - name: Commit latest.json
+            - name: Commit latest.json to main
               run: |
                   git config user.name "github-actions[bot]"
                   git config user.email "github-actions[bot]@users.noreply.github.com"
 
+                  # Fetch and checkout main branch
+                  git fetch origin main
+                  git checkout main
+
+                  # Copy the generated file and commit
+                  cp /tmp/latest.json apps/website/public/latest.json
                   git add apps/website/public/latest.json
                   git commit -m "chore(release): update latest.json for ${{ github.ref_name }} [skip ci]"
-                  git push origin HEAD:main
+                  git push origin main
+
+            - name: Trigger website deploy
+              run: |
+                  # Compute HMAC-SHA256 signature
+                  PAYLOAD='{}'
+                  SIGNATURE=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "${{ secrets.DEPLOY_WEBHOOK_SECRET }}" | cut -d' ' -f2)
+
+                  # Send signed request to webhook
+                  curl -f -X POST https://getcmdr.com/hooks/deploy-website \
+                      -H "Content-Type: application/json" \
+                      -H "X-Hub-Signature-256: sha256=$SIGNATURE" \
+                      -d "$PAYLOAD"

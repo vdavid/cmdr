@@ -1,11 +1,11 @@
 {
-    "version": "0.2.0",
-    "notes": "Initial public release",
-    "pub_date": "2025-01-10T00:00:00Z",
+    "version": "0.3.0",
+    "notes": "MCP server, streaming folder contents, bug fixes",
+    "pub_date": "2026-01-14T00:00:00Z",
     "platforms": {
         "darwin-universal": {
             "signature": "",
-            "url": ""
+            "url": "https://github.com/vdavid/cmdr/releases/download/v0.3.0/Cmdr_universal.app.tar.gz"
         }
     }
 }
