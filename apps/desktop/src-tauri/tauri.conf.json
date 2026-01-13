@@ -25,6 +25,12 @@
             "csp": null
         }
     },
+    "plugins": {
+        "updater": {
+            "endpoints": ["https://getcmdr.com/latest.json"],
+            "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEEyNjAxRjM2QkIxNjhDMEEKUldRS2pCYTdOaDlnb2lwTE5wZUNVZE5FTTBScXRrTWJPb1EvN3J2Q0FVcC9JNzJkSmphUTl3V3MK"
+        }
+    },
     "bundle": {
         "active": true,
         "targets": "all",

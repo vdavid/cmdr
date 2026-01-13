@@ -1,0 +1,99 @@
+name: Release
+
+on:
+    push:
+        tags:
+            - 'v*'
+
+permissions:
+    contents: write
+
+jobs:
+    release:
+        name: Build and release
+        runs-on: macos-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Install mise
+              uses: jdx/mise-action@v2
+
+            - name: Install tools with mise
+              run: mise install
+
+            - name: Install frontend dependencies
+              run: pnpm install --frozen-lockfile
+              working-directory: ./apps/desktop
+
+            - name: Build and release
+              uses: tauri-apps/tauri-action@v0
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+                  TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+              with:
+                  projectPath: ./apps/desktop
+                  tagName: ${{ github.ref_name }}
+                  releaseName: 'Cmdr ${{ github.ref_name }}'
+                  releaseBody: 'See CHANGELOG.md for details.'
+                  releaseDraft: false
+                  prerelease: false
+                  args: --target universal-apple-darwin
+
+            - name: Extract changelog for this version
+              id: changelog
+              run: |
+                  VERSION="${{ github.ref_name }}"
+                  VERSION="${VERSION#v}"  # Remove 'v' prefix
+
+                  # Extract section for this version from CHANGELOG.md
+                  NOTES=$(sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | sed '1d;$d')
+
+                  # Write to file to preserve newlines
+                  echo "$NOTES" > /tmp/notes.txt
+
+            - name: Get artifact paths and signatures
+              id: artifacts
+              run: |
+                  # Find the .app.tar.gz and its signature
+                  BUNDLE=$(find apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle -name "*.app.tar.gz" | head -1)
+                  SIG_FILE="${BUNDLE}.sig"
+
+                  SIGNATURE=$(cat "$SIG_FILE")
+                  FILENAME=$(basename "$BUNDLE")
+
+                  echo "signature=$SIGNATURE" >> $GITHUB_OUTPUT
+                  echo "filename=$FILENAME" >> $GITHUB_OUTPUT
+
+            - name: Generate latest.json
+              run: |
+                  VERSION="${{ github.ref_name }}"
+                  VERSION="${VERSION#v}"
+
+                  # Read notes from file, escape for JSON
+                  NOTES=$(cat /tmp/notes.txt | jq -Rs .)
+
+                  cat > apps/website/public/latest.json << EOF
+                  {
+                    "version": "$VERSION",
+                    "notes": $NOTES,
+                    "pub_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+                    "platforms": {
+                      "darwin-universal": {
+                        "signature": "${{ steps.artifacts.outputs.signature }}",
+                        "url": "https://github.com/vdavid/cmdr/releases/download/${{ github.ref_name }}/${{ steps.artifacts.outputs.filename }}"
+                      }
+                    }
+                  }
+                  EOF
+
+            - name: Commit latest.json
+              run: |
+                  git config user.name "github-actions[bot]"
+                  git config user.email "github-actions[bot]@users.noreply.github.com"
+
+                  git add apps/website/public/latest.json
+                  git commit -m "chore(release): update latest.json for ${{ github.ref_name }} [skip ci]"
+                  git push origin HEAD:main

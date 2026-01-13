@@ -1,0 +1,11 @@
+{
+    "version": "0.2.0",
+    "notes": "Initial public release",
+    "pub_date": "2025-01-10T00:00:00Z",
+    "platforms": {
+        "darwin-universal": {
+            "signature": "",
+            "url": ""
+        }
+    }
+}
