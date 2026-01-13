@@ -355,10 +355,20 @@ async fn handle_mcp_post<R: Runtime>(
         };
     }
 
-    // 7. Process the request
+    // 7. Handle notifications (no id) - return 202 Accepted with no body per spec
+    // Per MCP spec: "If the input is a JSON-RPC notification: the server MUST return
+    // HTTP status code 202 Accepted with no body."
+    let is_notification = request.id.is_none() || request.method.starts_with("notifications/");
+    if is_notification {
+        // Still process the notification for side effects
+        let _ = process_request(&state, request, &client_version).await;
+        return StatusCode::ACCEPTED.into_response();
+    }
+
+    // 8. Process the request
     let (response, new_session_id) = process_request(&state, request, &client_version).await;
 
-    // 8. Build response (SSE or JSON based on Accept header)
+    // 9. Build response (SSE or JSON based on Accept header)
     if use_sse {
         build_sse_response(response, new_session_id)
     } else {

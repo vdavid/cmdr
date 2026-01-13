@@ -7,15 +7,18 @@ This guide explains how to extend the cmdr MCP server with new tools and test yo
 The MCP server consists of these components:
 
 ```
-apps/desktop/src-tauri/src/mcp/
-├── mod.rs           # Module exports
-├── config.rs        # Configuration (env vars)
-├── server.rs        # HTTP server (axum)
-├── protocol.rs      # JSON-RPC message handling
-├── tools.rs         # Tool definitions and schemas
-├── executor.rs      # Tool execution logic
-├── pane_state.rs    # Frontend state synchronization
-└── tests.rs         # Comprehensive test suite
+apps/desktop/src-tauri/src/
+├── mcp/
+│   ├── mod.rs           # Module exports
+│   ├── config.rs        # Configuration (env vars)
+│   ├── server.rs        # HTTP server (axum)
+│   ├── protocol.rs      # JSON-RPC message handling
+│   ├── tools.rs         # Tool definitions and schemas
+│   ├── executor.rs      # Tool execution logic
+│   ├── pane_state.rs    # Frontend state synchronization
+│   └── tests.rs         # Comprehensive test suite
+└── bin/
+    └── cmdr-mcp-stdio.rs  # STDIO bridge binary
 ```
 
 ### Data flow
@@ -268,6 +271,34 @@ let result = toggle_hidden_files(app.clone())
     .map_err(ToolError::internal)?;
 Ok(json!({"success": true, "value": result}))
 ```
+
+## STDIO bridge
+
+The `cmdr-mcp-stdio` binary provides STDIO transport for MCP clients.
+
+### Building
+
+```bash
+cd apps/desktop/src-tauri
+cargo build --bin cmdr-mcp-stdio
+# Binary at: target/debug/cmdr-mcp-stdio
+```
+
+### Testing manually
+
+```bash
+# Start cmdr app first, then:
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | ./target/debug/cmdr-mcp-stdio
+```
+
+### How it works
+
+1. Reads newline-delimited JSON-RPC from stdin
+2. POSTs each message to `http://127.0.0.1:9224/mcp`
+3. Writes response to stdout (newline-delimited)
+4. Logs errors to stderr
+
+The bridge is stateless—all state lives in the main cmdr app's HTTP server.
 
 ## Troubleshooting development
 

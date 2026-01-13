@@ -5,6 +5,7 @@ description = "A blazing fast, keyboard-driven, two-pane file manager built, Rus
 authors = ["David Veszelovszki <veszelovszki@gmail.com>"]
 edition = "2024"
 license = "LicenseRef-BSL-1.1"
+default-run = "cmdr"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -77,3 +78,7 @@ rand_core = { version = "0.6", features = ["getrandom"] }
 [[bench]]
 name = "icon_benchmarks"
 harness = false
+
+[[bin]]
+name = "cmdr-mcp-stdio"
+path = "src/bin/cmdr-mcp-stdio.rs"

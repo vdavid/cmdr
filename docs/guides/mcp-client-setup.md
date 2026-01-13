@@ -2,6 +2,15 @@
 
 This guide shows how to configure popular AI assistants to use cmdr's MCP server.
 
+## Transport options
+
+cmdr supports two MCP transports:
+
+| Transport       | URL / Command                              | When to use                      |
+|-----------------|--------------------------------------------|----------------------------------|
+| Streamable HTTP | `http://localhost:9224/mcp`                | Most clients (Claude, Amp, etc.) |
+| STDIO           | `cmdr-mcp-stdio` binary                    | Clients that spawn subprocesses  |
+
 ## Prerequisites
 
 1. cmdr must be running with MCP enabled
@@ -95,6 +104,38 @@ For any MCP-compatible client, use these connection details:
 | Transport    | Streamable HTTP                    |
 | URL          | `http://localhost:9224/mcp`        |
 | Health check | `http://localhost:9224/mcp/health` |
+
+## STDIO transport
+
+For clients that prefer spawning a subprocess (rather than HTTP), use the `cmdr-mcp-stdio` binary:
+
+```json
+{
+  "mcpServers": {
+    "cmdr": {
+      "command": "/path/to/cmdr-mcp-stdio"
+    }
+  }
+}
+```
+
+The binary location after building:
+- **Development**: `{cmdr root}/apps/desktop/src-tauri/target/debug/cmdr-mcp-stdio`
+- **Release**: `{cmdr root}/apps/desktop/src-tauri/target/release/cmdr-mcp-stdio`
+
+The STDIO bridge forwards all requests to the HTTP server, so cmdr must still be running.
+
+### Environment variables
+
+| Variable         | Description                          | Default |
+|------------------|--------------------------------------|---------|
+| `CMDR_MCP_PORT`  | Port of the HTTP server to connect   | `9224`  |
+
+### Command line options
+
+```bash
+cmdr-mcp-stdio --port 9225  # Connect to a different port
+```
 
 ### Manual testing with curl
 

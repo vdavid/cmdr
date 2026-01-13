@@ -112,19 +112,33 @@ Get current app state for context-aware operations.
 
 ## MCP protocol implementation
 
-### Transport
+### Transports
+
+cmdr supports two MCP transports:
+
+#### Streamable HTTP (primary)
 
 - **Protocol**: Streamable HTTP (MCP spec 2025-11-25)
 - **Port**: 9224 (configurable via `CMDR_MCP_PORT`)
 - **Host**: localhost only (security)
 
-### Endpoints
+**Endpoints:**
 
 ```
 POST /mcp                 # JSON-RPC endpoint for all MCP messages
 GET  /mcp                 # Optional SSE stream (Streamable HTTP spec)
 GET  /mcp/health          # Health check
 ```
+
+#### STDIO (bridge)
+
+For clients that spawn subprocesses, the `cmdr-mcp-stdio` binary bridges STDIO to the HTTP server:
+
+- **Binary**: `cmdr-mcp-stdio`
+- **Protocol**: Newline-delimited JSON-RPC over stdin/stdout
+- **Requires**: cmdr app running with HTTP server enabled
+
+The STDIO binary forwards all requests to `http://127.0.0.1:9224/mcp`.
 
 ### MCP messages supported
 
