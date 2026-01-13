@@ -16,7 +16,7 @@ Target: Match Commander One performance (~3s for 50k files to full load).
 
 ## Context
 
-See [2025-12-28-dir-load-bench-findings.md](./2025-12-28-dir-load-bench-findings.md) for detailed benchmarks.
+See [2025-12-28-dir-load-bench-findings.md](../notes/2025-12-28-dir-load-bench-findings.md) for detailed benchmarks.
 
 **Current bottlenecks:**
 
@@ -175,4 +175,4 @@ eslint, svelte-check, etc.).
 ## Related documents
 
 - [ADR-009: Non-reactive file data store](../adr/009-non-reactive-file-store.md) — why we need FileDataStore
-- [2025-12-28-dir-load-bench-findings.md](./2025-12-28-dir-load-bench-findings.md) — benchmark data
+- [2025-12-28-dir-load-bench-findings.md](../notes/2025-12-28-dir-load-bench-findings.md) — benchmark data

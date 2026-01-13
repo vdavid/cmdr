@@ -11,7 +11,7 @@ This document specifies how to persist the trial start date across app reinstall
 
 ## Relation to other specs
 
-This spec shares the **machine ID generation code** with the [activation system spec](./license-activation-spec.md). Implement this spec first since:
+This spec shares the **machine ID generation code** with the [activation system spec](license-activation-spec.md). Implement this spec first since:
 1. It's simpler (no server-side component)
 2. The machine ID code can be reused by the activation system
 3. Trial is the first thing users experience
@@ -52,7 +52,7 @@ Store trial start date in **macOS Keychain**, keyed by a hardware fingerprint.
 
 ## Machine ID generation
 
-Shared code with [activation spec](./license-activation-spec.md#machine-id-generation).
+Shared code with [activation spec](license-activation-spec.mdachine-id-generation).
 
 ```rust
 // In src/licensing/machine_id.rs

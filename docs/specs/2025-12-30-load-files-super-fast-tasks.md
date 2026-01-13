@@ -1,6 +1,6 @@
 # Make files load super fast: task list
 
-Related: [2025-12-30-load-files-super-fast-spec.md](./2025-12-30-load-files-super-fast-spec.md)
+Related: [2025-12-30-load-files-super-fast-spec.md](2025-12-30-load-files-super-fast-spec.md)
 
 ---
 

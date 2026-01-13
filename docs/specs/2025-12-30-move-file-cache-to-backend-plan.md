@@ -13,12 +13,12 @@ When opening a 50k-file directory, we currently serialize all 50k FileEntry obje
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                          RUST BACKEND                            │
+│                          RUST BACKEND                           │
 ├─────────────────────────────────────────────────────────────────┤
 │  LISTING_CACHE: HashMap<listing_id, CachedListing>              │
-│    - entries: Vec<FileEntry>  (all files, unfiltered, sorted)  │
-│    - path: PathBuf                                               │
-│                                                                  │
+│    - entries: Vec<FileEntry>  (all files, unfiltered, sorted)   │
+│    - path: PathBuf                                              │
+│                                                                 │
 │  APIs return filtered data based on include_hidden param:       │
 │    get_range(listing_id, start, count, include_hidden)          │
 │    get_total_count(listing_id, include_hidden)                  │
@@ -29,13 +29,13 @@ When opening a 50k-file directory, we currently serialize all 50k FileEntry obje
                               │ IPC (~100-500 items per request)
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                       SVELTE FRONTEND                            │
+│                       SVELTE FRONTEND                           │
 ├─────────────────────────────────────────────────────────────────┤
-│  FilePane.svelte:                                                │
-│    - listingId: string                                           │
-│    - totalCount: number                                          │
-│    - selectedIndex: number                                       │
-│                                                                  │
+│  FilePane.svelte:                                               │
+│    - listingId: string                                          │
+│    - totalCount: number                                         │
+│    - selectedIndex: number                                      │
+│                                                                 │
 │  BriefList/FullList.svelte:                                     │
 │    - Prefetch buffer: ~500 items around current position        │
 │    - Throttled scroll handling (100ms)                          │

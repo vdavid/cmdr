@@ -11,7 +11,7 @@ This document specifies the license activation system that enables machine limit
 
 ## Relation to other specs
 
-This spec shares the **machine ID generation code** with the [trial persistence spec](./trial-persistence-spec.md). 
+This spec shares the **machine ID generation code** with the [trial persistence spec](trial-persistence-spec.md). 
 
 **Recommended development order:**
 1. **Trial persistence first** — simpler, no server component, machine ID code is reused

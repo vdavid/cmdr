@@ -1,6 +1,6 @@
 # Volume filesystem abstraction: task list
 
-**Parent document**: [2025-12-31-volume-fs-abstraction-plan.md](./2025-12-31-volume-fs-abstraction-plan.md)
+**Parent document**: [2025-12-31-volume-fs-abstraction-plan.md](2025-12-31-volume-fs-abstraction-plan.md)
 
 ---
 
