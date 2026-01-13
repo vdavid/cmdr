@@ -332,38 +332,29 @@
         })
 
         try {
-            // Start streaming listing - returns immediately with listingId and "loading" status
-            benchmark.logEvent('IPC listDirectoryStartStreaming CALL')
-            const result = await listDirectoryStartStreaming(path, includeHidden, sortBy, sortOrder)
-            benchmark.logEventValue('IPC listDirectoryStartStreaming RETURNED', result.listingId)
-
-            // Check if this load was cancelled while we were starting
-            if (thisGeneration !== loadGeneration) {
-                // Cancel the abandoned listing
-                void cancelListing(result.listingId)
-                return
-            }
-
-            listingId = result.listingId
+            // Generate listingId first and set up listeners BEFORE starting the streaming
+            // This prevents a race condition where fast folders complete before listeners are ready
+            const newListingId = crypto.randomUUID()
+            listingId = newListingId
             lastSequence = 0
 
             // Subscribe to progress events
             unlistenProgress = await listen<ListingProgressEvent>('listing-progress', (event) => {
-                if (event.payload.listingId === listingId && thisGeneration === loadGeneration) {
+                if (event.payload.listingId === newListingId && thisGeneration === loadGeneration) {
                     loadingCount = event.payload.loadedCount
                 }
             })
 
             // Subscribe to completion event
             unlistenComplete = await listen<ListingCompleteEvent>('listing-complete', (event) => {
-                if (event.payload.listingId === listingId && thisGeneration === loadGeneration) {
+                if (event.payload.listingId === newListingId && thisGeneration === loadGeneration) {
                     void handleListingComplete(event.payload, loadPath, loadSelectName)
                 }
             })
 
             // Subscribe to error event
             unlistenError = await listen<ListingErrorEvent>('listing-error', (event) => {
-                if (event.payload.listingId === listingId && thisGeneration === loadGeneration) {
+                if (event.payload.listingId === newListingId && thisGeneration === loadGeneration) {
                     error = event.payload.message
                     listingId = ''
                     totalCount = 0
@@ -374,13 +365,25 @@
 
             // Subscribe to cancelled event
             unlistenCancelled = await listen<ListingCancelledEvent>('listing-cancelled', (event) => {
-                if (event.payload.listingId === listingId && thisGeneration === loadGeneration) {
+                if (event.payload.listingId === newListingId && thisGeneration === loadGeneration) {
                     // Cancellation handled by onCancelLoading callback
                     listingId = ''
                     loading = false
                     loadingCount = undefined
                 }
             })
+
+            // Now start streaming listing - listeners are already set up
+            benchmark.logEvent('IPC listDirectoryStartStreaming CALL')
+            const result = await listDirectoryStartStreaming(path, includeHidden, sortBy, sortOrder, newListingId)
+            benchmark.logEventValue('IPC listDirectoryStartStreaming RETURNED', result.listingId)
+
+            // Check if this load was cancelled while we were starting
+            if (thisGeneration !== loadGeneration) {
+                // Cancel the abandoned listing
+                void cancelListing(newListingId)
+                return
+            }
         } catch (e) {
             if (thisGeneration !== loadGeneration) return
             error = e instanceof Error ? e.message : String(e)

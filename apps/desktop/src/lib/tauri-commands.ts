@@ -72,18 +72,21 @@ export async function listDirectoryStart(
  * @param includeHidden - Whether to include hidden files in total count.
  * @param sortBy - Column to sort by.
  * @param sortOrder - Ascending or descending.
+ * @param listingId - Unique identifier for the listing (used for cancellation)
  */
 export async function listDirectoryStartStreaming(
     path: string,
     includeHidden: boolean,
     sortBy: SortColumn,
     sortOrder: SortOrder,
+    listingId: string,
 ): Promise<StreamingListingStartResult> {
     return invoke<StreamingListingStartResult>('list_directory_start_streaming', {
         path,
         includeHidden,
         sortBy,
         sortOrder,
+        listingId,
     })
 }
 

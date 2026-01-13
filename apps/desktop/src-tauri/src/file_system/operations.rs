@@ -1128,13 +1128,11 @@ pub async fn list_directory_start_streaming(
     include_hidden: bool,
     sort_by: SortColumn,
     sort_order: SortOrder,
+    listing_id: String,
 ) -> Result<StreamingListingStartResult, std::io::Error> {
     // Reset benchmark epoch for this navigation
     benchmark::reset_epoch();
     benchmark::log_event_value("list_directory_start_streaming CALLED", path.display());
-
-    // Generate listing ID immediately
-    let listing_id = Uuid::new_v4().to_string();
 
     // Create streaming state with cancellation flag
     let state = Arc::new(StreamingListingState {

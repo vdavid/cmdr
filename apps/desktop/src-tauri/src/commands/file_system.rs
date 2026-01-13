@@ -79,10 +79,11 @@ pub async fn list_directory_start_streaming(
     include_hidden: bool,
     sort_by: SortColumn,
     sort_order: SortOrder,
+    listing_id: String,
 ) -> Result<StreamingListingStartResult, String> {
     let expanded_path = expand_tilde(&path);
     let path_buf = PathBuf::from(&expanded_path);
-    ops_list_directory_start_streaming(app, "root", &path_buf, include_hidden, sort_by, sort_order)
+    ops_list_directory_start_streaming(app, "root", &path_buf, include_hidden, sort_by, sort_order, listing_id)
         .await
         .map_err(|e| format!("Failed to start directory listing '{}': {}", path, e))
 }
