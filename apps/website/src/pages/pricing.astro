@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro'
 import Header from '../components/Header.astro'
 import Footer from '../components/Footer.astro'
+import { version, dmgUrl } from '../lib/release'
 ---
 
 <Layout title="Pricing — Cmdr" description="Cmdr is free forever for personal use. Commercial licenses from $59/year.">
@@ -20,10 +21,11 @@ import Footer from '../components/Footer.astro'
         <!-- Download Button -->
         <div class="mb-16 text-center">
             <a
-                href="/#download"
-                class="inline-block rounded-lg bg-[var(--color-accent)] px-8 py-4 text-lg font-medium text-white transition-all duration-200 hover:bg-[var(--color-accent-hover)] hover:shadow-[var(--color-accent-glow)]"
+                href={dmgUrl}
+                class="inline-flex flex-col items-center gap-1 rounded-lg bg-[var(--color-accent)] px-8 py-4 text-white transition-all duration-200 hover:bg-[var(--color-accent-hover)] hover:shadow-[var(--color-accent-glow)]"
             >
-                Download Cmdr
+                <span class="text-lg font-medium">Download Cmdr</span>
+                <span class="text-sm opacity-80">{version}</span>
             </a>
             <p class="mt-3 text-sm text-[var(--color-text-tertiary)]">macOS only • Source-available (BSL 1.1)</p>
         </div>

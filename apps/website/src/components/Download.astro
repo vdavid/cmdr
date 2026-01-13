@@ -1,5 +1,5 @@
 ---
-
+import { version, dmgUrl } from '../lib/release'
 ---
 
 <section id="download" class="relative px-6 py-32">
@@ -37,19 +37,20 @@
             </div>
 
             <a
-                href="https://github.com/vdavid/cmdr/releases/latest"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="glow mb-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-accent)] px-8 py-4 font-semibold text-white transition-all duration-300 hover:scale-[1.02] hover:bg-[var(--color-accent-hover)]"
+                href={dmgUrl}
+                class="glow mb-4 inline-flex w-full flex-col items-center justify-center gap-1 rounded-xl bg-[var(--color-accent)] px-8 py-4 text-white transition-all duration-300 hover:scale-[1.02] hover:bg-[var(--color-accent-hover)]"
             >
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                </svg>
-                Download for macOS
+                <span class="flex items-center gap-2 font-semibold">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                    </svg>
+                    Download for macOS
+                </span>
+                <span class="text-sm opacity-80">{version}</span>
             </a>
 
             <div class="space-y-2 text-sm text-[var(--color-text-tertiary)]">
