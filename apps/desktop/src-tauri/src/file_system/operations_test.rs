@@ -173,3 +173,104 @@ fn test_get_single_entry_nonexistent() {
     let result = super::operations::get_single_entry(std::path::Path::new("/definitely_does_not_exist_12345"));
     assert!(result.is_err());
 }
+
+// ============================================================================
+// Tests for streaming directory listing
+// ============================================================================
+
+#[test]
+fn test_cancel_listing_sets_flag() {
+    use super::operations::{STREAMING_STATE, StreamingListingState, cancel_listing};
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicBool, Ordering};
+
+    // Create a test listing ID and state
+    let listing_id = "test-cancel-listing-12345";
+    let state = Arc::new(StreamingListingState {
+        cancelled: AtomicBool::new(false),
+    });
+
+    // Store it in the streaming state cache
+    {
+        let mut cache = STREAMING_STATE.write().unwrap();
+        cache.insert(listing_id.to_string(), Arc::clone(&state));
+    }
+
+    // Verify flag is initially false
+    assert!(!state.cancelled.load(Ordering::Relaxed));
+
+    // Call cancel_listing
+    cancel_listing(listing_id);
+
+    // Verify flag is now true
+    assert!(state.cancelled.load(Ordering::Relaxed));
+
+    // Cleanup
+    {
+        let mut cache = STREAMING_STATE.write().unwrap();
+        cache.remove(listing_id);
+    }
+}
+
+#[test]
+fn test_cancel_listing_nonexistent_does_not_panic() {
+    use super::operations::cancel_listing;
+
+    // Should not panic when listing doesn't exist
+    cancel_listing("nonexistent-listing-id");
+}
+
+#[test]
+fn test_process_dir_entry_returns_file_entry() {
+    use super::operations::process_dir_entry;
+
+    let temp_dir = std::env::temp_dir().join("cmdr_process_entry_test");
+    fs::create_dir_all(&temp_dir).unwrap();
+
+    let test_file = temp_dir.join("process_test.txt");
+    fs::write(&test_file, "test content").unwrap();
+
+    // Read directory and get a DirEntry
+    let entries: Vec<_> = fs::read_dir(&temp_dir).unwrap().filter_map(|e| e.ok()).collect();
+    let dir_entry = entries.iter().find(|e| e.file_name() == "process_test.txt").unwrap();
+
+    let file_entry = process_dir_entry(dir_entry);
+
+    // Cleanup
+    let _ = fs::remove_file(&test_file);
+    let _ = fs::remove_dir(&temp_dir);
+
+    assert!(file_entry.is_some());
+    let entry = file_entry.unwrap();
+    assert_eq!(entry.name, "process_test.txt");
+    assert!(!entry.is_directory);
+    assert!(!entry.is_symlink);
+    assert_eq!(entry.size, Some(12)); // "test content" is 12 bytes
+}
+
+#[test]
+fn test_process_dir_entry_handles_directory() {
+    use super::operations::process_dir_entry;
+
+    let temp_dir = std::env::temp_dir().join("cmdr_process_dir_test");
+    fs::create_dir_all(&temp_dir).unwrap();
+
+    let sub_dir = temp_dir.join("sub_directory");
+    fs::create_dir(&sub_dir).unwrap();
+
+    // Read directory and get a DirEntry
+    let entries: Vec<_> = fs::read_dir(&temp_dir).unwrap().filter_map(|e| e.ok()).collect();
+    let dir_entry = entries.iter().find(|e| e.file_name() == "sub_directory").unwrap();
+
+    let file_entry = process_dir_entry(dir_entry);
+
+    // Cleanup
+    let _ = fs::remove_dir(&sub_dir);
+    let _ = fs::remove_dir(&temp_dir);
+
+    assert!(file_entry.is_some());
+    let entry = file_entry.unwrap();
+    assert_eq!(entry.name, "sub_directory");
+    assert!(entry.is_directory);
+    assert!(entry.size.is_none());
+}

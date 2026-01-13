@@ -3,6 +3,10 @@
     import type {
         DirectoryDiff,
         FileEntry,
+        ListingCancelledEvent,
+        ListingCompleteEvent,
+        ListingErrorEvent,
+        ListingProgressEvent,
         MountError,
         NetworkHost,
         ShareInfo,
@@ -11,6 +15,7 @@
         SyncStatus,
     } from './types'
     import {
+        cancelListing,
         findContainingVolume,
         findFileIndex,
         getFileAt,
@@ -18,7 +23,7 @@
         getSyncStatus,
         getTotalCount,
         listDirectoryEnd,
-        listDirectoryStart,
+        listDirectoryStartStreaming,
         listen,
         listVolumes,
         mountNetworkShare,
@@ -59,6 +64,8 @@
         onRequestFocus?: () => void
         /** Called when network host selection changes (for history tracking) */
         onNetworkHostChange?: (host: NetworkHost | null) => void
+        /** Called when user cancels loading (ESC key) - parent should navigate back */
+        onCancelLoading?: () => void
     }
 
     const {
@@ -76,6 +83,7 @@
         onSortChange,
         onRequestFocus,
         onNetworkHostChange,
+        onCancelLoading,
     }: Props = $props()
 
     let currentPath = $state(untrack(() => initialPath))
@@ -127,6 +135,11 @@
         return listingId
     }
 
+    // Check if the pane is currently loading
+    export function isLoading(): boolean {
+        return loading
+    }
+
     // Get selected filename for cursor tracking during re-sort
     export function getSelectedFilename(): string | undefined {
         return selectedEntry?.name
@@ -168,7 +181,7 @@
         const parentPath = lastSlash > 0 ? currentPath.substring(0, lastSlash) : '/'
 
         currentPath = parentPath
-        onPathChange?.(parentPath)
+        // Note: onPathChange is called in listing-complete handler after successful load
         await loadDirectory(parentPath, currentFolderName)
         return true
     }
@@ -179,6 +192,13 @@
     let lastSequence = 0
     let unlisten: UnlistenFn | undefined
     let unlistenMenuAction: UnlistenFn | undefined
+    // Streaming event listeners
+    let unlistenProgress: UnlistenFn | undefined
+    let unlistenComplete: UnlistenFn | undefined
+    let unlistenError: UnlistenFn | undefined
+    let unlistenCancelled: UnlistenFn | undefined
+    // Loading progress state for streaming
+    let loadingCount = $state<number | undefined>(undefined)
     // Polling interval for sync status (visible files only)
     let syncPollInterval: ReturnType<typeof setInterval> | undefined
     const SYNC_POLL_INTERVAL_MS = 2000 // Poll every 2 seconds
@@ -273,20 +293,32 @@
         // Increment generation to cancel any in-flight requests
         const thisGeneration = ++loadGeneration
 
-        // End previous listing when navigating away
+        // Cancel any abandoned listing from previous navigation
         if (listingId) {
+            void cancelListing(listingId)
             void listDirectoryEnd(listingId)
             listingId = ''
             lastSequence = 0
         }
 
-        // Set loading state BEFORE starting expensive IPC call
+        // Clean up previous event listeners
+        unlistenProgress?.()
+        unlistenComplete?.()
+        unlistenError?.()
+        unlistenCancelled?.()
+
+        // Set loading state BEFORE starting IPC call
         // This ensures the UI shows the loading spinner immediately
         loading = true
+        loadingCount = undefined
         error = null
         syncStatusMap = {}
         totalCount = 0 // Reset to show empty list immediately
         selectedEntry = null // Clear old selection
+
+        // Store path and selectName for use in event handlers
+        const loadPath = path
+        const loadSelectName = selectName
 
         // CRITICAL: Wait for browser to actually PAINT the loading state before IPC call
         // tick() only flushes Svelte render, requestAnimationFrame waits for paint
@@ -300,49 +332,54 @@
         })
 
         try {
-            // Start listing - returns just listingId and totalCount (no entries!)
-            benchmark.logEvent('IPC listDirectoryStart CALL')
-            const result = await listDirectoryStart(path, includeHidden, sortBy, sortOrder)
-            benchmark.logEventValue('IPC listDirectoryStart RETURNED, totalCount', result.totalCount)
+            // Start streaming listing - returns immediately with listingId and "loading" status
+            benchmark.logEvent('IPC listDirectoryStartStreaming CALL')
+            const result = await listDirectoryStartStreaming(path, includeHidden, sortBy, sortOrder)
+            benchmark.logEventValue('IPC listDirectoryStartStreaming RETURNED', result.listingId)
 
-            // Check if this load was cancelled
+            // Check if this load was cancelled while we were starting
             if (thisGeneration !== loadGeneration) {
-                // Clean up abandoned listing
-                void listDirectoryEnd(result.listingId)
+                // Cancel the abandoned listing
+                void cancelListing(result.listingId)
                 return
             }
 
-            // Store listing info
             listingId = result.listingId
-            totalCount = result.totalCount
-            maxFilenameWidth = result.maxFilenameWidth
             lastSequence = 0
 
-            // Determine initial selection
-            if (selectName) {
-                // Find the index of the folder we came from
-                const foundIndex = await findFileIndex(listingId, selectName, includeHidden)
-                // Account for ".." entry at index 0 if present
-                const adjustedIndex = hasParent ? (foundIndex ?? -1) + 1 : (foundIndex ?? 0)
-                selectedIndex = adjustedIndex >= 0 ? adjustedIndex : 0
-            } else {
-                selectedIndex = 0
-            }
+            // Subscribe to progress events
+            unlistenProgress = await listen<ListingProgressEvent>('listing-progress', (event) => {
+                if (event.payload.listingId === listingId && thisGeneration === loadGeneration) {
+                    loadingCount = event.payload.loadedCount
+                }
+            })
 
-            loading = false
-            benchmark.logEvent('loading = false (UI can render)')
+            // Subscribe to completion event
+            unlistenComplete = await listen<ListingCompleteEvent>('listing-complete', (event) => {
+                if (event.payload.listingId === listingId && thisGeneration === loadGeneration) {
+                    void handleListingComplete(event.payload, loadPath, loadSelectName)
+                }
+            })
 
-            // Fetch selected entry for SelectionInfo
-            void fetchSelectedEntry()
+            // Subscribe to error event
+            unlistenError = await listen<ListingErrorEvent>('listing-error', (event) => {
+                if (event.payload.listingId === listingId && thisGeneration === loadGeneration) {
+                    error = event.payload.message
+                    listingId = ''
+                    totalCount = 0
+                    loading = false
+                    loadingCount = undefined
+                }
+            })
 
-            // Sync state to MCP for context tools
-            void syncPaneStateToMcp()
-
-            // Scroll to selection after DOM updates
-            void tick().then(() => {
-                const listRef = viewMode === 'brief' ? briefListRef : fullListRef
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                listRef?.scrollToIndex(selectedIndex)
+            // Subscribe to cancelled event
+            unlistenCancelled = await listen<ListingCancelledEvent>('listing-cancelled', (event) => {
+                if (event.payload.listingId === listingId && thisGeneration === loadGeneration) {
+                    // Cancellation handled by onCancelLoading callback
+                    listingId = ''
+                    loading = false
+                    loadingCount = undefined
+                }
             })
         } catch (e) {
             if (thisGeneration !== loadGeneration) return
@@ -350,7 +387,59 @@
             listingId = ''
             totalCount = 0
             loading = false
+            loadingCount = undefined
         }
+    }
+
+    // Handle listing completion event
+    async function handleListingComplete(
+        payload: ListingCompleteEvent,
+        loadPath: string,
+        loadSelectName: string | undefined,
+    ) {
+        benchmark.logEventValue('listing-complete received, totalCount', payload.totalCount)
+        totalCount = payload.totalCount
+        maxFilenameWidth = payload.maxFilenameWidth
+
+        // Determine initial selection
+        if (loadSelectName) {
+            const foundIndex = await findFileIndex(listingId, loadSelectName, includeHidden)
+            const adjustedIndex = hasParent ? (foundIndex ?? -1) + 1 : (foundIndex ?? 0)
+            selectedIndex = adjustedIndex >= 0 ? adjustedIndex : 0
+        } else {
+            selectedIndex = 0
+        }
+
+        loading = false
+        loadingCount = undefined
+        benchmark.logEvent('loading = false (UI can render)')
+
+        // NOW push to history (only on successful completion)
+        onPathChange?.(loadPath)
+
+        // Fetch selected entry for SelectionInfo
+        void fetchSelectedEntry()
+
+        // Sync state to MCP for context tools
+        void syncPaneStateToMcp()
+
+        // Scroll to selection after DOM updates
+        void tick().then(() => {
+            const listRef = viewMode === 'brief' ? briefListRef : fullListRef
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            listRef?.scrollToIndex(selectedIndex)
+        })
+    }
+
+    // Handle cancellation during loading (called from DualPaneExplorer on ESC)
+    export function handleCancelLoading() {
+        if (!loading || !listingId) return
+
+        // Cancel the Rust-side operation
+        void cancelListing(listingId)
+
+        // Navigate back or to home via callback
+        onCancelLoading?.()
     }
 
     // Fetch the currently selected entry for SelectionInfo
@@ -406,7 +495,7 @@
             const currentFolderName = isGoingUp ? currentPath.split('/').pop() : undefined
 
             currentPath = entry.path
-            onPathChange?.(entry.path)
+            // Note: onPathChange is called in listing-complete handler after successful load
             await loadDirectory(entry.path, currentFolderName)
         } else {
             // Open file with default application
@@ -644,10 +733,14 @@
 
     // Update path when initialPath prop changes (for persistence loading)
     // Skip for network view - NetworkBrowser handles its own data
+    // Use untrack for currentPath so this effect only fires when initialPath changes,
+    // not when the user navigates (which changes currentPath before onPathChange is called)
     $effect(() => {
-        if (!isNetworkView && initialPath !== currentPath) {
-            currentPath = initialPath
-            void loadDirectory(initialPath)
+        const newPath = initialPath // Track this
+        const curPath = untrack(() => currentPath) // Don't track this
+        if (!isNetworkView && newPath !== curPath) {
+            currentPath = newPath
+            void loadDirectory(newPath)
         }
     })
 
@@ -751,10 +844,15 @@
     onDestroy(() => {
         // Clean up listing
         if (listingId) {
+            void cancelListing(listingId)
             void listDirectoryEnd(listingId)
         }
         unlisten?.()
         unlistenMenuAction?.()
+        unlistenProgress?.()
+        unlistenComplete?.()
+        unlistenError?.()
+        unlistenCancelled?.()
         if (syncPollInterval) {
             clearInterval(syncPollInterval)
         }
@@ -815,7 +913,7 @@
                 />
             {/if}
         {:else if loading}
-            <LoadingIcon />
+            <LoadingIcon loadedCount={loadingCount} showCancelHint={true} />
         {:else if isPermissionDenied}
             <PermissionDeniedPane folderPath={currentPath} />
         {:else if error}

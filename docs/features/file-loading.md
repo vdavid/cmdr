@@ -4,44 +4,57 @@ How directory listings are loaded, from user action to rendered list.
 
 ## Overview
 
-When a user navigates to a directory, the app:
+When a user navigates to a directory, the app uses **streaming directory loading**:
 
-1. Reads the directory contents from disk (Rust)
-2. Transfers the data to the frontend (Tauri IPC with JSON)
-3. Renders the file list progressively (Svelte)
+1. Frontend requests a directory listing (non-blocking)
+2. Rust reads the directory in a background task
+3. Progress events are emitted every 500ms
+4. On completion, the frontend renders the file list
 
-For large directories (50k+ files), this uses **cursor-based pagination** to show the first chunk immediately while
-loading the rest in the background.
+This architecture prevents UI freezing when opening large directories or slow network paths.
 
-## Architecture diagram
+## Event flow diagram
 
-```mermaid
-sequenceDiagram
-    participant User
-    participant FilePane
-    participant TauriIPC
-    participant RustBackend
-    participant FileSystem
+```
+Frontend                          Rust Backend
+   |                                   |
+   |-- listDirectoryStartStreaming --->|
+   |<-- { listingId, status: loading } | (immediate return)
+   |                                   |
+   |                                   | (background task starts)
+   |                                   |
+   |<---- listing-progress event ------| (every 500ms)
+   |     { listingId, loadedCount }    |
+   |                                   |
+   |<---- listing-complete event ------|
+   |     { listingId, totalCount,      |
+   |       maxFilenameWidth }          |
+   |                                   |
+   |-- getFileRange(listingId, ...) -->| (on-demand fetching)
+   |<-- [FileEntry, FileEntry, ...]    |
+   |                                   |
+```
 
-    User->>FilePane: Navigate to directory
-    FilePane->>TauriIPC: listDirectoryStartSession(path, 5000)
-    TauriIPC->>RustBackend: list_directory_start_session
-    RustBackend->>FileSystem: Read directory
-    FileSystem-->>RustBackend: All entries
-    RustBackend->>RustBackend: Sort, cache in session
-    RustBackend-->>TauriIPC: First 5000 entries + sessionId
-    TauriIPC-->>FilePane: JSON response
-    FilePane->>User: Render first chunk immediately
+### Error handling
 
-    loop While hasMore
-        FilePane->>TauriIPC: listDirectoryNextChunk(sessionId, 5000)
-        TauriIPC->>RustBackend: list_directory_next_chunk
-        RustBackend-->>TauriIPC: Next chunk from cache
-        TauriIPC-->>FilePane: JSON response
-        FilePane->>User: Append entries
-    end
+```
+Frontend                          Rust Backend
+   |                                   |
+   |<---- listing-error event ---------|
+   |     { listingId, message }        |
+   |                                   |
+```
 
-    FilePane->>TauriIPC: listDirectoryEndSession(sessionId)
+### Cancellation
+
+```
+Frontend                          Rust Backend
+   |                                   |
+   |-- cancelListing(listingId) ------>|
+   |                                   |
+   |<---- listing-cancelled event -----|
+   |     { listingId }                 |
+   |                                   |
 ```
 
 ## Data flow layers
@@ -52,91 +65,94 @@ The [FilePane](../../apps/desktop/src/lib/file-explorer/FilePane.svelte) compone
 
 **Key function:** `loadDirectory(path, selectName?)`
 
-1. Shows loading state
-2. Calls `listDirectoryStartSession()` to get first chunk
-3. Renders first chunk immediately
-4. Calls `listDirectoryNextChunk()` in a loop for remaining data
-5. Uses `requestAnimationFrame()` between chunks to keep UI responsive
-6. Calls `listDirectoryEndSession()` to clean up
+1. Cancels any in-progress listing
+2. Shows loading state with progress indicator
+3. Calls `listDirectoryStartStreaming()` (returns immediately)
+4. Subscribes to streaming events
+5. On `listing-complete`: stores listing ID, sets total count, updates history
+6. On-demand fetching via `getFileRange()` for visible entries
 
-**Reactivity optimization:** The file list is stored in a plain array (`allFilesRaw`) rather than Svelte's `$state` to
-avoid the overhead of making 50k objects reactive. A simple counter (`filesVersion`) triggers updates.
+**Cancellation handling:** Users can press ESC to cancel loading. The `handleCancelLoading()` function cancels the Rust
+task and navigates back in history (or to home if history is empty).
 
 ### 2. IPC layer: tauri-commands.ts
 
 The [tauri-commands](../../apps/desktop/src/lib/tauri-commands.ts) module provides typed wrappers for Rust commands.
 
-**Session API functions:**
+**Streaming API functions:**
 
-- `listDirectoryStartSession(path, chunkSize)` → `SessionStartResult`
-- `listDirectoryNextChunk(sessionId, chunkSize)` → `ChunkNextResult`
-- `listDirectoryEndSession(sessionId)` → void
-
-For serialization format rationale, see [ADR 007: Use JSON for Tauri IPC](../artifacts/adr/007-json-for-ipc.md).
+- `listDirectoryStartStreaming(path, includeHidden, sortBy, sortOrder)` → `StreamingListingStartResult`
+- `cancelListing(listingId)` → void
+- `getFileRange(listingId, start, count, includeHidden)` → `FileEntry[]`
+- `listDirectoryEnd(listingId)` → void
 
 ### 3. Rust commands: commands/file_system.rs
 
-The [file_system commands](../../apps/desktop/src-tauri/src/commands/file_system.rs) expose Tauri commands that call the file system
-operations.
+The [file_system commands](../../apps/desktop/src-tauri/src/commands/file_system.rs) expose Tauri commands that call the
+file system operations.
 
 **Commands:**
 
-- `list_directory_start_session` - Starts a session, reads directory, caches entries, returns first chunk
-- `list_directory_next_chunk` - Returns next chunk from cache
-- `list_directory_end_session` - Cleans up the session cache
+- `list_directory_start_streaming` - Starts async background task, returns immediately with listing ID
+- `cancel_listing` - Sets cancellation flag on in-progress listing
+- `get_file_range` - Returns entries from cached listing
+- `list_directory_end` - Cleans up the listing cache
 
 ### 4. File system operations: file_system/operations.rs
 
 The [operations module](../../apps/desktop/src-tauri/src/file_system/operations.rs) contains the core logic.
 
-**Session cache:** A static `HashMap<String, CachedDirectory>` stores directory listings keyed by session ID. Sessions
-expire after 60 seconds to prevent memory leaks.
+**Key function:** `list_directory_start_streaming()`
 
-**Key function:** `list_directory(path)`
+1. Generates listing ID
+2. Creates cancellation state in `STREAMING_STATE` cache
+3. Spawns background task with `tokio::spawn`
+4. Returns immediately with `{ listingId, status: "loading" }`
 
-1. Reads directory entries with `fs::read_dir()`
-2. Extracts metadata (size, permissions, timestamps)
-3. Resolves owner/group names (with caching)
-4. Generates icon IDs
-5. Sorts: directories first, then files, both alphabetically
+**Background task:** `read_directory_with_progress()`
 
-## Latency breakdown (50k files)
+1. Iterates directory entries with `fs::read_dir()`
+2. Checks cancellation flag on each entry
+3. Emits `listing-progress` event every 500ms
+4. Sorts entries when complete
+5. Caches in `LISTING_CACHE`
+6. Starts file watcher (if supported)
+7. Emits `listing-complete` event
 
-Based on benchmarks on a MacBook Pro M1:
+## Progress display
 
-| Step                    | Time        | Notes                             |
-| ----------------------- | ----------- | --------------------------------- |
-| Rust `list_directory()` | ~300ms      | Disk I/O + metadata extraction    |
-| JSON serialization      | ~18ms       | 17 MB payload                     |
-| IPC transfer            | ~1.4s       | WebView JSON parsing              |
-| Svelte reactivity       | ~50ms       | With optimized non-reactive array |
-| **First chunk visible** | **~350ms**  | User sees files quickly           |
-| **Full list loaded**    | **~2-2.5s** | Competitive with Commander One    |
+While loading, the `LoadingIcon` component shows:
 
-## Configuration
+- A spinning loader animation
+- "Loaded N files..." with the current count (updated every 500ms)
+- "Press ESC to cancel and go back" hint
 
-**Chunk size:** 5000 entries (defined in `FilePane.svelte`)
+## Cancellation behavior
 
-This balances:
+Users can cancel an in-progress directory load by pressing ESC. When cancelled:
 
-- Time to first content (smaller = faster)
-- Number of IPC calls (larger = fewer calls)
-- Memory overhead (larger = more cached)
+1. The Rust task stops iterating directory entries
+2. A `listing-cancelled` event is emitted
+3. The frontend navigates back in history, or to home (`~`) if history is empty
+
+## Latency characteristics
+
+| Scenario           | Behavior                                                     |
+| ------------------ | ------------------------------------------------------------ |
+| Local directory    | Usually completes before first progress event                |
+| 50k files          | Progress updates every 500ms, ~2-3s total                    |
+| Slow network path  | Progress visible immediately, user can cancel anytime        |
+| Navigation away    | Previous listing cancelled automatically                     |
 
 ## Key design decisions
 
-1. **JSON over MessagePack**: Native JSON is faster through Tauri's IPC. See [ADR 007](../artifacts/adr/007-json-for-ipc.md)
+1. **Streaming over chunking**: The previous chunk-based approach required multiple IPC calls. Streaming uses events
+   which are more efficient and provide better UX for slow operations.
 
-2. **Session-based caching**: Directory is read once, chunks served from memory. Avoids O(n²) re-reading.
+2. **Cancellation support**: Network paths can be very slow. Users can cancel anytime without waiting.
 
-3. **Non-reactive file array**: Svelte's `$state` on 50k objects caused ~9.5 sec overhead. Using a plain array with
-   manual reactivity trigger reduced this to ~50 ms.
+3. **Progress indication**: The 500ms progress events give users feedback that something is happening.
 
-4. **Progressive rendering**: First chunk appears in ~350ms. Remaining chunks load without blocking the UI.
+4. **Virtual scrolling**: Entries are cached on the backend. Frontend fetches only visible rows via `getFileRange()`.
 
-## Future improvements
-
-- **Virtual scrolling**: Only render visible rows (phase 4)
-- **Lazy metadata loading**: Load only names first, fetch metadata on demand
-- **File system watcher**: Auto-refresh on external changes
-- **Cancellation**: Cancel in-progress directory reads when navigating away
+5. **History timing**: Path is only added to history on successful completion, preventing broken history entries.

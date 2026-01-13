@@ -1,6 +1,22 @@
+<script lang="ts">
+    interface Props {
+        loadedCount?: number
+        showCancelHint?: boolean
+    }
+
+    const { loadedCount, showCancelHint = false }: Props = $props()
+</script>
+
 <div class="loading-container">
     <div class="loader"></div>
-    <div class="loading-text">Loading...</div>
+    {#if loadedCount !== undefined}
+        <div class="loading-text">Loaded {loadedCount} files...</div>
+    {:else}
+        <div class="loading-text">Loading...</div>
+    {/if}
+    {#if showCancelHint}
+        <div class="cancel-hint">Press ESC to cancel and go back</div>
+    {/if}
 </div>
 
 <style>
@@ -74,5 +90,11 @@
         50% {
             transform: scale(1.1);
         }
+    }
+
+    .cancel-hint {
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-xs);
+        margin-top: var(--spacing-sm);
     }
 </style>

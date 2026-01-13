@@ -200,3 +200,124 @@ fn test_volume_manager_with_inmemory() {
     assert_eq!(dropbox_files[0].name, "Personal"); // Alphabetical order
     assert_eq!(dropbox_files[1].name, "Work");
 }
+
+// ============================================================================
+// Streaming state management integration tests
+// ============================================================================
+
+#[test]
+fn test_streaming_state_lifecycle() {
+    use super::operations::{STREAMING_STATE, StreamingListingState, cancel_listing};
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicBool, Ordering};
+
+    // Create and register a streaming state
+    let listing_id = "integration-test-lifecycle";
+    let state = Arc::new(StreamingListingState {
+        cancelled: AtomicBool::new(false),
+    });
+
+    // Insert into cache
+    {
+        let mut cache = STREAMING_STATE.write().unwrap();
+        cache.insert(listing_id.to_string(), Arc::clone(&state));
+    }
+
+    // Verify it exists in cache
+    {
+        let cache = STREAMING_STATE.read().unwrap();
+        assert!(cache.contains_key(listing_id));
+    }
+
+    // Cancel it
+    cancel_listing(listing_id);
+    assert!(state.cancelled.load(Ordering::Relaxed));
+
+    // Cleanup (simulate what the streaming task does)
+    {
+        let mut cache = STREAMING_STATE.write().unwrap();
+        cache.remove(listing_id);
+    }
+
+    // Verify it's gone
+    {
+        let cache = STREAMING_STATE.read().unwrap();
+        assert!(!cache.contains_key(listing_id));
+    }
+}
+
+#[test]
+fn test_multiple_concurrent_streaming_states() {
+    use super::operations::{STREAMING_STATE, StreamingListingState, cancel_listing};
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicBool, Ordering};
+
+    // Create multiple streaming states
+    let ids = ["stream-1", "stream-2", "stream-3"];
+    let states: Vec<Arc<StreamingListingState>> = ids
+        .iter()
+        .map(|_| {
+            Arc::new(StreamingListingState {
+                cancelled: AtomicBool::new(false),
+            })
+        })
+        .collect();
+
+    // Insert all into cache
+    {
+        let mut cache = STREAMING_STATE.write().unwrap();
+        for (id, state) in ids.iter().zip(states.iter()) {
+            cache.insert(id.to_string(), Arc::clone(state));
+        }
+    }
+
+    // Verify all exist
+    {
+        let cache = STREAMING_STATE.read().unwrap();
+        assert!(cache.len() >= 3); // May have other tests' entries
+    }
+
+    // Cancel only the second one
+    cancel_listing("stream-2");
+
+    // Verify only second is cancelled
+    assert!(!states[0].cancelled.load(Ordering::Relaxed));
+    assert!(states[1].cancelled.load(Ordering::Relaxed));
+    assert!(!states[2].cancelled.load(Ordering::Relaxed));
+
+    // Cleanup
+    {
+        let mut cache = STREAMING_STATE.write().unwrap();
+        for id in ids.iter() {
+            cache.remove(*id);
+        }
+    }
+}
+
+#[test]
+fn test_streaming_entries_are_sorted() {
+    use super::operations::{SortColumn, SortOrder, sort_entries};
+
+    // Create unsorted entries
+    let mut entries = vec![
+        create_test_entry("zebra.txt", false),
+        create_test_entry("aardvark", true),
+        create_test_entry("banana.txt", false),
+        create_test_entry("zoo", true),
+    ];
+
+    // Sort by name ascending (default)
+    sort_entries(&mut entries, SortColumn::Name, SortOrder::Ascending);
+
+    // Directories should come first, sorted alphabetically
+    assert_eq!(entries[0].name, "aardvark");
+    assert!(entries[0].is_directory);
+    assert_eq!(entries[1].name, "zoo");
+    assert!(entries[1].is_directory);
+
+    // Then files, sorted alphabetically
+    assert_eq!(entries[2].name, "banana.txt");
+    assert!(!entries[2].is_directory);
+    assert_eq!(entries[3].name, "zebra.txt");
+    assert!(!entries[3].is_directory);
+}

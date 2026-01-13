@@ -338,12 +338,86 @@
         return false
     }
 
+    // Handle cancel loading for left pane - navigate back in history or to home
+    function handleLeftCancelLoading() {
+        if (canGoBack(leftHistory)) {
+            void handleNavigationAction('back')
+        } else {
+            // Navigate to home
+            leftPath = '~'
+            leftVolumeId = DEFAULT_VOLUME_ID
+            void saveAppStatus({ leftPath: '~', leftVolumeId: DEFAULT_VOLUME_ID })
+        }
+    }
+
+    // Handle cancel loading for right pane - navigate back in history or to home
+    function handleRightCancelLoading() {
+        if (canGoBack(rightHistory)) {
+            // Need to handle this specially since handleNavigationAction uses focusedPane
+            const history = rightHistory
+            const newHistory = back(history)
+            const targetEntry = getCurrentEntry(newHistory)
+
+            if (targetEntry.volumeId === 'network') {
+                rightHistory = newHistory
+                rightPath = targetEntry.path
+                rightVolumeId = 'network'
+                void saveAppStatus({ rightVolumeId: 'network', rightPath: targetEntry.path })
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+                rightPaneRef?.setNetworkHost?.(targetEntry.networkHost ?? null)
+            } else {
+                void resolveValidPath(targetEntry.path).then((resolvedPath) => {
+                    if (resolvedPath !== null) {
+                        rightHistory = newHistory
+                        rightPath = resolvedPath
+                        if (targetEntry.volumeId !== rightVolumeId) {
+                            rightVolumeId = targetEntry.volumeId
+                            void saveAppStatus({ rightVolumeId: targetEntry.volumeId, rightPath: resolvedPath })
+                        } else {
+                            void saveAppStatus({ rightPath: resolvedPath })
+                        }
+                        void saveLastUsedPathForVolume(targetEntry.volumeId, resolvedPath)
+                    }
+                })
+            }
+        } else {
+            // Navigate to home
+            rightPath = '~'
+            rightVolumeId = DEFAULT_VOLUME_ID
+            void saveAppStatus({ rightPath: '~', rightVolumeId: DEFAULT_VOLUME_ID })
+        }
+        containerElement?.focus()
+    }
+
+    // Helper: Handle Tab key (switch pane focus)
+    function handleTabKey() {
+        const newFocus = focusedPane === 'left' ? 'right' : 'left'
+        focusedPane = newFocus
+        void saveAppStatus({ focusedPane: newFocus })
+    }
+
+    // Helper: Handle ESC key during loading (cancel and go back)
+    function handleEscapeDuringLoading(): boolean {
+        const paneRef = focusedPane === 'left' ? leftPaneRef : rightPaneRef
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        if (paneRef?.isLoading?.()) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            paneRef.handleCancelLoading?.()
+            return true
+        }
+        return false
+    }
+
     function handleKeyDown(e: KeyboardEvent) {
         if (e.key === 'Tab') {
             e.preventDefault()
-            const newFocus = focusedPane === 'left' ? 'right' : 'left'
-            focusedPane = newFocus
-            void saveAppStatus({ focusedPane: newFocus })
+            handleTabKey()
+            return
+        }
+
+        // ESC during loading = cancel and go back
+        if (e.key === 'Escape' && handleEscapeDuringLoading()) {
+            e.preventDefault()
             return
         }
 
@@ -816,6 +890,7 @@
             onRequestFocus={handleLeftFocus}
             onSortChange={handleLeftSortChange}
             onNetworkHostChange={handleLeftNetworkHostChange}
+            onCancelLoading={handleLeftCancelLoading}
         />
         <FilePane
             bind:this={rightPaneRef}
@@ -833,6 +908,7 @@
             onRequestFocus={handleRightFocus}
             onSortChange={handleRightSortChange}
             onNetworkHostChange={handleRightNetworkHostChange}
+            onCancelLoading={handleRightCancelLoading}
         />
     {:else}
         <LoadingIcon />

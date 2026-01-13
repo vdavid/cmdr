@@ -6,9 +6,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::os::unix::fs::{MetadataExt, PermissionsExt};
-use std::path::Path;
-use std::sync::LazyLock;
-use std::sync::RwLock;
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, LazyLock, RwLock};
 use uuid::Uuid;
 use uzers::{get_group_by_gid, get_user_by_uid};
 
@@ -81,6 +81,76 @@ pub(super) struct CachedListing {
     /// Current sort order
     pub sort_order: SortOrder,
 }
+
+// ============================================================================
+// Streaming directory listing types
+// ============================================================================
+
+/// Status of a streaming directory listing
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", tag = "status")]
+pub enum ListingStatus {
+    /// Listing is in progress
+    Loading,
+    /// Listing completed successfully
+    Ready,
+    /// Listing was cancelled by the user
+    Cancelled,
+    /// Listing failed with an error
+    Error { message: String },
+}
+
+/// Result of starting a streaming directory listing
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StreamingListingStartResult {
+    /// Unique listing ID for subsequent API calls
+    pub listing_id: String,
+    /// Initial status (always "loading")
+    pub status: ListingStatus,
+}
+
+/// Progress event payload
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListingProgressEvent {
+    pub listing_id: String,
+    pub loaded_count: usize,
+}
+
+/// Completion event payload
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListingCompleteEvent {
+    pub listing_id: String,
+    pub total_count: usize,
+    pub max_filename_width: Option<f32>,
+}
+
+/// Error event payload
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListingErrorEvent {
+    pub listing_id: String,
+    pub message: String,
+}
+
+/// Cancelled event payload
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListingCancelledEvent {
+    pub listing_id: String,
+}
+
+/// State for an in-progress streaming listing
+pub struct StreamingListingState {
+    /// Cancellation flag - checked periodically during iteration
+    pub cancelled: AtomicBool,
+}
+
+/// Cache for streaming state (separate from completed listings cache)
+pub(crate) static STREAMING_STATE: LazyLock<RwLock<HashMap<String, Arc<StreamingListingState>>>> =
+    LazyLock::new(|| RwLock::new(HashMap::new()));
 
 // ============================================================================
 // Sorting implementation
@@ -1030,4 +1100,304 @@ pub fn get_extended_metadata_batch(paths: Vec<String>) -> Vec<ExtendedMetadata> 
             opened_at: None,
         })
         .collect()
+}
+
+// ============================================================================
+// Streaming directory listing implementation
+// ============================================================================
+
+/// Starts a streaming directory listing that returns immediately and emits progress events.
+///
+/// This is non-blocking - the actual directory reading happens in a background task.
+/// Progress is reported via Tauri events every 500ms.
+///
+/// # Arguments
+/// * `app` - Tauri app handle for emitting events
+/// * `volume_id` - The volume ID to use (e.g., "root", "dropbox")
+/// * `path` - The directory path to list
+/// * `include_hidden` - Whether to include hidden files in total count
+/// * `sort_by` - Column to sort by
+/// * `sort_order` - Ascending or descending
+///
+/// # Returns
+/// A `StreamingListingStartResult` with listing ID and initial status.
+pub async fn list_directory_start_streaming(
+    app: tauri::AppHandle,
+    volume_id: &str,
+    path: &Path,
+    include_hidden: bool,
+    sort_by: SortColumn,
+    sort_order: SortOrder,
+) -> Result<StreamingListingStartResult, std::io::Error> {
+    // Reset benchmark epoch for this navigation
+    benchmark::reset_epoch();
+    benchmark::log_event_value("list_directory_start_streaming CALLED", path.display());
+
+    // Generate listing ID immediately
+    let listing_id = Uuid::new_v4().to_string();
+
+    // Create streaming state with cancellation flag
+    let state = Arc::new(StreamingListingState {
+        cancelled: AtomicBool::new(false),
+    });
+
+    // Store state for cancellation
+    if let Ok(mut cache) = STREAMING_STATE.write() {
+        cache.insert(listing_id.clone(), Arc::clone(&state));
+    }
+
+    // Clone values for the spawned task
+    let listing_id_for_spawn = listing_id.clone();
+    let path_owned = path.to_path_buf();
+    let volume_id_owned = volume_id.to_string();
+    let app_for_spawn = app.clone();
+
+    // Spawn background task
+    tokio::spawn(async move {
+        // Clone again for use after spawn_blocking
+        let listing_id_for_cleanup = listing_id_for_spawn.clone();
+        let app_for_error = app_for_spawn.clone();
+
+        // Run blocking I/O on dedicated thread pool
+        let result = tokio::task::spawn_blocking(move || {
+            read_directory_with_progress(
+                &app_for_spawn,
+                &listing_id_for_spawn,
+                &state,
+                &volume_id_owned,
+                &path_owned,
+                include_hidden,
+                sort_by,
+                sort_order,
+            )
+        })
+        .await;
+
+        // Clean up streaming state
+        if let Ok(mut cache) = STREAMING_STATE.write() {
+            cache.remove(&listing_id_for_cleanup);
+        }
+
+        // Handle task result
+        if let Err(e) = result {
+            // Task panicked or was cancelled
+            use tauri::Emitter;
+            let _ = app_for_error.emit(
+                "listing-error",
+                ListingErrorEvent {
+                    listing_id: listing_id_for_cleanup,
+                    message: format!("Task failed: {}", e),
+                },
+            );
+        }
+        // Note: read_directory_with_progress handles its own event emission for success/error/cancel
+    });
+
+    benchmark::log_event("list_directory_start_streaming RETURNING");
+    Ok(StreamingListingStartResult {
+        listing_id,
+        status: ListingStatus::Loading,
+    })
+}
+
+/// Reads a directory with progress reporting.
+///
+/// This function runs on a blocking thread pool and emits progress events.
+fn read_directory_with_progress(
+    app: &tauri::AppHandle,
+    listing_id: &str,
+    state: &Arc<StreamingListingState>,
+    volume_id: &str,
+    path: &PathBuf,
+    include_hidden: bool,
+    sort_by: SortColumn,
+    sort_order: SortOrder,
+) -> Result<(), std::io::Error> {
+    use tauri::Emitter;
+
+    let mut entries = Vec::new();
+    let mut last_progress_time = std::time::Instant::now();
+    const PROGRESS_INTERVAL: std::time::Duration = std::time::Duration::from_millis(500);
+
+    benchmark::log_event("read_directory_with_progress START");
+
+    // Read directory entries one by one
+    let read_start = std::time::Instant::now();
+    for entry_result in fs::read_dir(path)? {
+        // Check cancellation
+        if state.cancelled.load(Ordering::Relaxed) {
+            benchmark::log_event("read_directory_with_progress CANCELLED");
+            let _ = app.emit(
+                "listing-cancelled",
+                ListingCancelledEvent {
+                    listing_id: listing_id.to_string(),
+                },
+            );
+            return Ok(());
+        }
+
+        let entry = match entry_result {
+            Ok(e) => e,
+            Err(_) => continue, // Skip unreadable entries
+        };
+
+        // Process entry (same logic as list_directory_core)
+        if let Some(file_entry) = process_dir_entry(&entry) {
+            entries.push(file_entry);
+        }
+
+        // Emit progress every 500ms
+        if last_progress_time.elapsed() >= PROGRESS_INTERVAL {
+            let _ = app.emit(
+                "listing-progress",
+                ListingProgressEvent {
+                    listing_id: listing_id.to_string(),
+                    loaded_count: entries.len(),
+                },
+            );
+            last_progress_time = std::time::Instant::now();
+        }
+    }
+    let read_dir_time = read_start.elapsed();
+    benchmark::log_event_value("read_dir COMPLETE, entries", entries.len());
+
+    // Check cancellation one more time before finalizing
+    if state.cancelled.load(Ordering::Relaxed) {
+        benchmark::log_event("read_directory_with_progress CANCELLED (after read)");
+        let _ = app.emit(
+            "listing-cancelled",
+            ListingCancelledEvent {
+                listing_id: listing_id.to_string(),
+            },
+        );
+        return Ok(());
+    }
+
+    // Sort entries
+    benchmark::log_event("sort START");
+    sort_entries(&mut entries, sort_by, sort_order);
+    benchmark::log_event("sort END");
+
+    // Calculate counts based on include_hidden setting
+    let total_count = if include_hidden {
+        entries.len()
+    } else {
+        entries.iter().filter(|e| !e.name.starts_with('.')).count()
+    };
+
+    // Calculate max filename width if font metrics are available
+    let max_filename_width = {
+        let font_id = "system-400-12"; // Default font (must match list_directory_start_with_volume)
+        let filenames: Vec<&str> = entries.iter().map(|e| e.name.as_str()).collect();
+        crate::font_metrics::calculate_max_width(&filenames, font_id)
+    };
+
+    // Cache the completed listing
+    if let Ok(mut cache) = LISTING_CACHE.write() {
+        cache.insert(
+            listing_id.to_string(),
+            CachedListing {
+                volume_id: volume_id.to_string(),
+                path: path.clone(),
+                entries,
+                sort_by,
+                sort_order,
+            },
+        );
+    }
+
+    // Get the volume from VolumeManager to check if it supports watching
+    if let Some(volume) = super::get_volume_manager().get(volume_id)
+        && volume.supports_watching()
+        && let Err(e) = start_watching(listing_id, path)
+    {
+        eprintln!("[LISTING] Failed to start watcher: {}", e);
+        // Continue anyway - watcher is optional enhancement
+    }
+
+    // Emit completion event
+    let _ = app.emit(
+        "listing-complete",
+        ListingCompleteEvent {
+            listing_id: listing_id.to_string(),
+            total_count,
+            max_filename_width,
+        },
+    );
+
+    benchmark::log_event_value(
+        "read_directory_with_progress COMPLETE, read_dir_time_ms",
+        read_dir_time.as_millis(),
+    );
+    Ok(())
+}
+
+/// Process a single directory entry into a FileEntry.
+/// Returns None if the entry cannot be processed (permissions, etc).
+pub(crate) fn process_dir_entry(entry: &fs::DirEntry) -> Option<FileEntry> {
+    let file_type = entry.file_type().ok()?;
+    let is_symlink = file_type.is_symlink();
+
+    // For symlinks, check if the TARGET is a directory
+    let target_is_dir = if is_symlink {
+        fs::metadata(entry.path()).map(|m| m.is_dir()).unwrap_or(false)
+    } else {
+        false
+    };
+
+    // For symlinks, get metadata of the link itself (not target)
+    let metadata = if is_symlink {
+        fs::symlink_metadata(entry.path()).ok()?
+    } else {
+        entry.metadata().ok()?
+    };
+
+    let name = entry.file_name().to_string_lossy().to_string();
+    let is_dir = metadata.is_dir() || target_is_dir;
+
+    let modified = metadata
+        .modified()
+        .ok()
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_secs());
+
+    let created = metadata
+        .created()
+        .ok()
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_secs());
+
+    let uid = metadata.uid();
+    let gid = metadata.gid();
+    let owner = get_owner_name(uid);
+    let group = get_group_name(gid);
+
+    Some(FileEntry {
+        name: name.clone(),
+        path: entry.path().to_string_lossy().to_string(),
+        is_directory: is_dir,
+        is_symlink,
+        size: if metadata.is_file() { Some(metadata.len()) } else { None },
+        modified_at: modified,
+        created_at: created,
+        added_at: None,  // Will be loaded later if needed
+        opened_at: None, // Will be loaded later if needed
+        permissions: metadata.permissions().mode(),
+        owner,
+        group,
+        icon_id: get_icon_id(is_dir, is_symlink, &name),
+        extended_metadata_loaded: false, // Not loaded yet
+    })
+}
+
+/// Cancels an in-progress streaming listing.
+///
+/// Sets the cancellation flag, which will be checked by the background task.
+pub fn cancel_listing(listing_id: &str) {
+    if let Ok(cache) = STREAMING_STATE.read()
+        && let Some(state) = cache.get(listing_id)
+    {
+        state.cancelled.store(true, Ordering::Relaxed);
+        benchmark::log_event_value("cancel_listing", listing_id);
+    }
 }

@@ -11,6 +11,10 @@ import type {
     FileEntry,
     KeychainError,
     KnownNetworkShare,
+    ListingCancelledEvent,
+    ListingCompleteEvent,
+    ListingErrorEvent,
+    ListingProgressEvent,
     ListingStartResult,
     MountError,
     MountResult,
@@ -20,9 +24,18 @@ import type {
     SmbCredentials,
     SortColumn,
     SortOrder,
+    StreamingListingStartResult,
     SyncStatus,
     VolumeInfo,
 } from './file-explorer/types'
+
+export type {
+    ListingProgressEvent,
+    ListingCompleteEvent,
+    ListingErrorEvent,
+    ListingCancelledEvent,
+    StreamingListingStartResult,
+}
 
 export type { Event, UnlistenFn }
 export { listen }
@@ -32,9 +45,11 @@ export { listen }
 // ============================================================================
 
 /**
- * Starts a new directory listing.
+ * Starts a new directory listing (synchronous version).
  * Reads the directory once, caches on backend, returns listing ID + total count.
  * Frontend then fetches visible ranges on demand via getFileRange.
+ * NOTE: This blocks until the directory is fully read. For non-blocking operation,
+ * use listDirectoryStartStreaming instead.
  * @param path - Directory path to list. Supports tilde expansion (~).
  * @param includeHidden - Whether to include hidden files in total count.
  * @param sortBy - Column to sort by.
@@ -47,6 +62,38 @@ export async function listDirectoryStart(
     sortOrder: SortOrder,
 ): Promise<ListingStartResult> {
     return invoke<ListingStartResult>('list_directory_start', { path, includeHidden, sortBy, sortOrder })
+}
+
+/**
+ * Starts a new streaming directory listing (async version).
+ * Returns immediately with listing ID and "loading" status.
+ * Progress is reported via events: listing-progress, listing-complete, listing-error, listing-cancelled.
+ * @param path - Directory path to list. Supports tilde expansion (~).
+ * @param includeHidden - Whether to include hidden files in total count.
+ * @param sortBy - Column to sort by.
+ * @param sortOrder - Ascending or descending.
+ */
+export async function listDirectoryStartStreaming(
+    path: string,
+    includeHidden: boolean,
+    sortBy: SortColumn,
+    sortOrder: SortOrder,
+): Promise<StreamingListingStartResult> {
+    return invoke<StreamingListingStartResult>('list_directory_start_streaming', {
+        path,
+        includeHidden,
+        sortBy,
+        sortOrder,
+    })
+}
+
+/**
+ * Cancels an in-progress streaming directory listing.
+ * The task will emit a listing-cancelled event when it stops.
+ * @param listingId - The listing ID to cancel.
+ */
+export async function cancelListing(listingId: string): Promise<void> {
+    await invoke('cancel_listing', { listingId })
 }
 
 /**

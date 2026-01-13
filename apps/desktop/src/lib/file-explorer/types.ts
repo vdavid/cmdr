@@ -22,7 +22,7 @@ export interface FileEntry {
 export type SyncStatus = 'synced' | 'online_only' | 'uploading' | 'downloading' | 'unknown'
 
 /**
- * Result of starting a new directory listing.
+ * Result of starting a new directory listing (synchronous).
  * The listing caches entries on the backend for on-demand fetching.
  */
 export interface ListingStartResult {
@@ -32,6 +32,54 @@ export interface ListingStartResult {
     totalCount: number
     /** Maximum filename width in pixels (for Brief mode columns). None if font metrics not available. */
     maxFilenameWidth?: number
+}
+
+/**
+ * Status of a streaming directory listing.
+ */
+export type ListingStatus = 'loading' | 'ready' | 'cancelled' | { error: string }
+
+/**
+ * Result of starting a streaming directory listing (async).
+ * Returns immediately with listing ID and loading status.
+ */
+export interface StreamingListingStartResult {
+    /** Unique listing ID for subsequent API calls */
+    listingId: string
+    /** Initial status (always "loading") */
+    status: ListingStatus
+}
+
+/**
+ * Progress event payload emitted during streaming directory listing.
+ */
+export interface ListingProgressEvent {
+    listingId: string
+    loadedCount: number
+}
+
+/**
+ * Completion event payload emitted when streaming directory listing finishes.
+ */
+export interface ListingCompleteEvent {
+    listingId: string
+    totalCount: number
+    maxFilenameWidth?: number
+}
+
+/**
+ * Error event payload emitted when streaming directory listing fails.
+ */
+export interface ListingErrorEvent {
+    listingId: string
+    message: string
+}
+
+/**
+ * Cancelled event payload emitted when streaming directory listing is cancelled.
+ */
+export interface ListingCancelledEvent {
+    listingId: string
 }
 
 /**

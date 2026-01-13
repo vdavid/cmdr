@@ -1,10 +1,11 @@
 //! Tauri commands for file system operations.
 
 use crate::file_system::{
-    FileEntry, ListingStartResult, ResortResult, SortColumn, SortOrder, find_file_index as ops_find_file_index,
-    get_file_at as ops_get_file_at, get_file_range as ops_get_file_range,
-    get_max_filename_width as ops_get_max_filename_width, get_total_count as ops_get_total_count,
-    list_directory_end as ops_list_directory_end,
+    FileEntry, ListingStartResult, ResortResult, SortColumn, SortOrder, StreamingListingStartResult,
+    cancel_listing as ops_cancel_listing, find_file_index as ops_find_file_index, get_file_at as ops_get_file_at,
+    get_file_range as ops_get_file_range, get_max_filename_width as ops_get_max_filename_width,
+    get_total_count as ops_get_total_count, list_directory_end as ops_list_directory_end,
+    list_directory_start_streaming as ops_list_directory_start_streaming,
     list_directory_start_with_volume as ops_list_directory_start_with_volume, resort_listing as ops_resort_listing,
 };
 use std::path::PathBuf;
@@ -27,10 +28,13 @@ pub fn path_exists(path: String) -> bool {
 // On-demand virtual scrolling API
 // ============================================================================
 
-/// Starts a new directory listing.
+/// Starts a new directory listing (synchronous version).
 ///
 /// Reads the directory once, caches it, and returns listing ID + total count.
 /// Frontend then fetches visible ranges on demand via `get_file_range`.
+///
+/// NOTE: This is the synchronous version. For non-blocking operation, use
+/// `list_directory_start_streaming` instead.
 ///
 /// # Arguments
 /// * `path` - The directory path to list. Supports tilde expansion (~).
@@ -48,6 +52,51 @@ pub fn list_directory_start(
     let path_buf = PathBuf::from(&expanded_path);
     ops_list_directory_start_with_volume("root", &path_buf, include_hidden, sort_by, sort_order)
         .map_err(|e| format!("Failed to start directory listing '{}': {}", path, e))
+}
+
+/// Starts a new streaming directory listing (async version).
+///
+/// Returns immediately with a listing ID and "loading" status. The actual
+/// directory reading happens in a background task, with progress events
+/// emitted every 500ms.
+///
+/// # Events emitted
+/// * `listing-progress` - Every 500ms with `{ listingId, loadedCount }`
+/// * `listing-complete` - When done with `{ listingId, totalCount, maxFilenameWidth }`
+/// * `listing-error` - On error with `{ listingId, message }`
+/// * `listing-cancelled` - If cancelled with `{ listingId }`
+///
+/// # Arguments
+/// * `app` - Tauri app handle (injected by Tauri).
+/// * `path` - The directory path to list. Supports tilde expansion (~).
+/// * `include_hidden` - Whether to include hidden files in total count.
+/// * `sort_by` - Column to sort by (name, extension, size, modified, created).
+/// * `sort_order` - Ascending or descending.
+#[tauri::command]
+pub async fn list_directory_start_streaming(
+    app: tauri::AppHandle,
+    path: String,
+    include_hidden: bool,
+    sort_by: SortColumn,
+    sort_order: SortOrder,
+) -> Result<StreamingListingStartResult, String> {
+    let expanded_path = expand_tilde(&path);
+    let path_buf = PathBuf::from(&expanded_path);
+    ops_list_directory_start_streaming(app, "root", &path_buf, include_hidden, sort_by, sort_order)
+        .await
+        .map_err(|e| format!("Failed to start directory listing '{}': {}", path, e))
+}
+
+/// Cancels an in-progress streaming directory listing.
+///
+/// Sets the cancellation flag, which will be checked by the background task.
+/// The task will emit a `listing-cancelled` event when it stops.
+///
+/// # Arguments
+/// * `listing_id` - The listing ID to cancel.
+#[tauri::command]
+pub fn cancel_listing(listing_id: String) {
+    ops_cancel_listing(&listing_id);
 }
 
 /// Re-sorts an existing cached listing in-place.
