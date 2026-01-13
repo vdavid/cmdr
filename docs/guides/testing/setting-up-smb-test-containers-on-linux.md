@@ -28,7 +28,7 @@ connections.
 
 ### 1. Reserve IP addresses on your router
 
-Reserve IPs 192.168.1.200-215 for the Docker containers. This prevents DHCP conflicts.
+Reserve IPs 192.168.1.200–215 for the Docker containers. This prevents DHCP conflicts.
 
 The exact steps vary by router. Look for "DHCP Reservation" or "Static Leases" in your router's admin panel.
 
@@ -65,7 +65,7 @@ networks:
         driver_opts:
             # Change to your device's network interface
             # Check with: ip link show
-            parent: eth0 # or wlan0 for WiFi
+            parent: eth0 # or wlan0 for Wi-Fi
         ipam:
             config:
                 # Update to match your LAN
@@ -167,6 +167,6 @@ To add more containers, edit `docker-compose.pi.yml`:
 
 ## Related documentation
 
-- [SMB test server farm](../../testing/smb-servers.md) - Full container documentation
-- [Docker server list](./test-docker-server-list.md) - Original planning document
-- [Share listing](./share-listing.md) - Implementation details
+- [SMB test server farm](smb-servers.md): Full container documentation
+- [Docker server list](../../features/network-smb/test-docker-server-list.md): Original planning document
+- [Share listing](../../features/network-smb/share-listing.md): Implementation details

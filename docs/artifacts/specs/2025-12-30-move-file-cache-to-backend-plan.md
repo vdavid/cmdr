@@ -89,7 +89,7 @@ fn get_file_at(
 ) -> Result<Option<FileEntry>, String>
 ```
 
-### 1.3 Modify [list_directory_start](../../src-tauri/src/file_system/operations.rs)
+### 1.3 Modify [list_directory_start](../../../apps/desktop/src-tauri/src/file_system/operations.rs)
 
 **Current return:**
 
@@ -107,7 +107,7 @@ The `include_hidden` param is passed at start to get correct initial `total_coun
 
 ### 1.4 Sync status in FileEntry
 
-Add sync status to [FileEntry](../../src-tauri/src/file_system/operations.rs) struct so it's returned with file data:
+Add sync status to [FileEntry](../../../apps/desktop/src-tauri/src/file_system/operations.rs) struct so it's returned with file data:
 
 ```rust
 pub struct FileEntry {
@@ -214,7 +214,7 @@ function onScroll() {
 **Location**: Rust
 
 **Implementation**: APIs accept `include_hidden: bool`. Rust iterates
-[entries](../../src-tauri/src/file_system/mock_provider_test.rs) and skips hidden files when calculating indices/ranges
+[entries](../../../apps/desktop/src-tauri/src/file_system/mock_provider_test.rs) and skips hidden files when calculating indices/ranges
 if `include_hidden = false`.
 
 ### 3.2 File watcher with index shifting
@@ -260,7 +260,7 @@ When navigating up, call:
 
 **Location**: Rust
 
-Include `sync_status` in [FileEntry](../../src-tauri/src/file_system/operations.rs). Fetch when building range response
+Include `sync_status` in [FileEntry](../../../apps/desktop/src-tauri/src/file_system/operations.rs). Fetch when building range response
 (Dropbox SDK calls are already async-friendly).
 
 ### 3.5 Max filename width

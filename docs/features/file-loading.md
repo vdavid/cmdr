@@ -48,7 +48,7 @@ sequenceDiagram
 
 ### 1. Frontend: FilePane.svelte
 
-The [FilePane](../../src/lib/file-explorer/FilePane.svelte) component orchestrates directory loading.
+The [FilePane](../../apps/desktop/src/lib/file-explorer/FilePane.svelte) component orchestrates directory loading.
 
 **Key function:** `loadDirectory(path, selectName?)`
 
@@ -64,7 +64,7 @@ avoid the overhead of making 50k objects reactive. A simple counter (`filesVersi
 
 ### 2. IPC layer: tauri-commands.ts
 
-The [tauri-commands](../../src/lib/tauri-commands.ts) module provides typed wrappers for Rust commands.
+The [tauri-commands](../../apps/desktop/src/lib/tauri-commands.ts) module provides typed wrappers for Rust commands.
 
 **Session API functions:**
 
@@ -76,7 +76,7 @@ For serialization format rationale, see [ADR 007: Use JSON for Tauri IPC](../art
 
 ### 3. Rust commands: commands/file_system.rs
 
-The [file_system commands](../../src-tauri/src/commands/file_system.rs) expose Tauri commands that call the file system
+The [file_system commands](../../apps/desktop/src-tauri/src/commands/file_system.rs) expose Tauri commands that call the file system
 operations.
 
 **Commands:**
@@ -87,7 +87,7 @@ operations.
 
 ### 4. File system operations: file_system/operations.rs
 
-The [operations module](../../src-tauri/src/file_system/operations.rs) contains the core logic.
+The [operations module](../../apps/desktop/src-tauri/src/file_system/operations.rs) contains the core logic.
 
 **Session cache:** A static `HashMap<String, CachedDirectory>` stores directory listings keyed by session ID. Sessions
 expire after 60 seconds to prevent memory leaks.
@@ -130,7 +130,7 @@ This balances:
 2. **Session-based caching**: Directory is read once, chunks served from memory. Avoids O(n²) re-reading.
 
 3. **Non-reactive file array**: Svelte's `$state` on 50k objects caused ~9.5 sec overhead. Using a plain array with
-   manual reactivity trigger reduced this to ~50ms.
+   manual reactivity trigger reduced this to ~50 ms.
 
 4. **Progressive rendering**: First chunk appears in ~350ms. Remaining chunks load without blocking the UI.
 

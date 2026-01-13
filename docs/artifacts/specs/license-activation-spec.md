@@ -179,7 +179,7 @@ The machine ID must be:
 use std::process::Command;
 
 /// Generate a stable machine ID from hardware identifiers.
-/// Uses IOPlatformUUID which is stable and unique per Mac.
+/// Uses IOPlatformUUID, which is stable and unique per Mac.
 pub fn get_machine_id() -> String {
     let output = Command::new("ioreg")
         .args(["-rd1", "-c", "IOPlatformExpertDevice"])
@@ -271,7 +271,7 @@ export async function getActiveActivations(db: D1Database, licenseKeyHash: strin
         `SELECT * FROM activations 
          WHERE license_key_hash = ? AND deactivated_at IS NULL`
     ).bind(licenseKeyHash).all<Activation>()
-    
+
     return result.results
 }
 
@@ -283,14 +283,15 @@ export async function createActivation(
 ): Promise<Activation> {
     const id = crypto.randomUUID()
     const now = new Date().toISOString()
-    
+
     await db.prepare(
         `INSERT INTO activations (id, license_key_hash, machine_id, machine_name, activated_at, last_seen_at)
          VALUES (?, ?, ?, ?, ?, ?)
          ON CONFLICT(license_key_hash, machine_id) 
          DO UPDATE SET last_seen_at = ?, deactivated_at = NULL`
     ).bind(id, licenseKeyHash, machineId, machineName, now, now, now).run()
-    
+
+    // noinspection JSAnnotator
     return { id, license_key_hash: licenseKeyHash, machine_id: machineId, machine_name: machineName, activated_at: now, last_seen_at: now, deactivated_at: null }
 }
 
@@ -299,7 +300,7 @@ export async function deactivate(db: D1Database, licenseKeyHash: string, machine
         `UPDATE activations SET deactivated_at = ? 
          WHERE license_key_hash = ? AND machine_id = ? AND deactivated_at IS NULL`
     ).bind(new Date().toISOString(), licenseKeyHash, machineId).run()
-    
+
     return result.meta.changes > 0
 }
 ```

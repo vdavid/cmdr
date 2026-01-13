@@ -8,8 +8,8 @@
 
 Introduce a `Volume` trait that abstracts file system operations. This enables:
 
-1. **LocalPosixVolume** - Real file system access (with configurable root path)
-2. **InMemoryVolume** - In-memory file system for testing
+1. **LocalPosixVolume**: Real file system access (with configurable root path)
+2. **InMemoryVolume**: In-memory file system for testing
 
 Future implementations (out of scope): NetworkShareVolume (SMB/AFP), S3Volume, SftpVolume.
 
@@ -177,7 +177,7 @@ pub struct InMemoryVolume {
 
 A registry of available volumes, used by the command layer:
 
-```rust
+```
 pub struct VolumeManager {
     volumes: RwLock<HashMap<String, Arc<dyn Volume>>>,
     default_volume_id: RwLock<Option<String>>,
@@ -227,7 +227,7 @@ impl VolumeManager {
 
 ### Phase 4: Update command layer
 
-- [ ] **4.1** Initialize VolumeManager in app setup (create "root" LocalPosixVolume)
+- [ ] **4.1** Initialize VolumeManager in-app setup (create "root" LocalPosixVolume)
 - [ ] **4.2** Update `list_directory_start` command to use default volume
 - [ ] **4.3** Add volume ID parameter to commands (optional, for future multi-volume)
 

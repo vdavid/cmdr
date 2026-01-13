@@ -97,9 +97,5 @@ The design is inspired by [linear.app](https://linear.app):
 - Dark background (`#0a0a0b`)
 - Subtle gradients and grid patterns
 - Accent color: Indigo (`#6366f1`)
-- Inter font family
+- `Inter` font family
 - Smooth fade-in animations
-
-## License
-
-Proprietary. See [LICENSE](./LICENSE).

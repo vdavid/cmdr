@@ -40,20 +40,6 @@ Core structure:
     - `tooling/` - Like "features", but for internal tooling
     - `user-docs/` - The rest of `/docs` are all dev docs. These are user-facing, written with that audience in mind. 
 
-## Common tasks
-
-- Capturing decisions: see [here](docs/guides/creating-adrs.md). When choosing between competing tech or processes.
-- Adding new dependencies: NEVER rely on your training data! ALWAYS use npm/ncu, or another source to find the latest
-  versions of libraries. Check out their GitHub, too, and see if they are active. Check Google/Reddit for the latest
-  best solutions!
-- ALWAYS read the [full style guide](docs/style-guide.md) before touching the repo!
-- When writing CSS, ALWAYS use variables defined in `apps/desktop/src/app.css`. Stylelint catches
-  undefined/hallucinated CSS variables.
-
-## Debugging
-
-- Use temporary logging when needed. TODO: What loggers to use in Svelte, Rust, etc.?
-
 ## Testing & checking
 
 Run the smallest set of checks possible for efficiency while maintaining confidence.
@@ -67,6 +53,31 @@ Run the smallest set of checks possible for efficiency while maintaining confide
 - Run all: `./scripts/check.sh`. CI runs this. Runs all tests, linters, and formatters (with auto fixing) for all apps.
 - See also `./scripts/check.sh --help`
 
+## Debugging
+
+- Use temporary logging when needed. TODO: What loggers to use in Svelte, Rust, etc.?
+
+## MCP
+
+There are two MCP servers available to you:
+- "cmdr" to control the app (high level).
+- "tauri" to access Tauri (low level).
+  If you don't find these but need them, ask the user for them!
+  Run the app in dev mode, then use these for control, screenshots, and logs.
+
+## Common tasks and reminders
+
+- Capturing decisions: see [here](docs/guides/creating-adrs.md). When choosing between competing tech or processes.
+- Adding new dependencies: NEVER rely on your training data! ALWAYS use npm/ncu, or another source to find the latest
+  versions of libraries. Check out their GitHub, too, and see if they are active. Check Google/Reddit for the latest
+  best solutions!
+- ALWAYS read the [full style guide](docs/style-guide.md) before touching the repo!
+- When writing CSS, ALWAYS use variables defined in `apps/desktop/src/app.css`. Stylelint catches
+  undefined/hallucinated CSS variables.
+- When adding new code that loads remote content (like `fetch` from external URLs or `iframe`), always add a condition
+  to **disable** that functionality in dev mode, and use static/mock data instead. See
+  [security docs](docs/security.md#withglobaltauri) for more reasoning.
+
 ## Things to avoid
 
 - ❌ Don't touch git, user handles commits manually
@@ -75,24 +86,6 @@ Run the smallest set of checks possible for efficiency while maintaining confide
 - ❌ Don't use `any` type (ESLint will error)
 - ❌ Don't ignore linter warnings (fix them or justify with a comment)
 - ❌ Don't add dependencies without checking license compatibility (`cargo deny check`)
-
-## Decisions
-
-See [docs/adr](docs/artifacts/adr) for all key decisions, and the
-
-## MCP
-
-There are two MCP servers available to you:
-- "cmdr" to control the app (high level).
-- "tauri" to access Tauri (low level).
-If you don't find these but need them, ask the user for them!
-Run the app in dev mode, then use the MCP server to take screenshots, click buttons, read front-end logs, and the such.
-
-## Security warnings
-
-- When adding new code that loads remote content (like `fetch` from external URLs or `iframe`), always add a condition
-  to **disable** that functionality in dev mode, and use static/mock data instead. See
-  [security docs](docs/security.md#withglobaltauri) for more reasoning.
 
 ## Useful references
 
