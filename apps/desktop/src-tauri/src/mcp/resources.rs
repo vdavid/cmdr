@@ -8,6 +8,7 @@ use serde_json::json;
 use tauri::{Manager, Runtime};
 
 use super::pane_state::PaneStateStore;
+#[cfg(target_os = "macos")]
 use crate::volumes;
 
 /// A resource definition for MCP.
@@ -74,6 +75,7 @@ pub fn get_all_resources() -> Vec<Resource> {
             description: "Current status of the Cmdr application".to_string(),
             mime_type: "application/json".to_string(),
         },
+        #[cfg(target_os = "macos")]
         Resource {
             uri: "cmdr://volumes".to_string(),
             name: "Volumes".to_string(),
@@ -147,6 +149,7 @@ pub fn read_resource<R: Runtime>(app: &tauri::AppHandle<R>, uri: &str) -> Result
             (json!({ "selected": selected }), "application/json")
         }
         "cmdr://status" => (json!({ "status": "ok", "app": "cmdr" }), "application/json"),
+        #[cfg(target_os = "macos")]
         "cmdr://volumes" => {
             let locations = volumes::list_locations();
             let vols: Vec<serde_json::Value> = locations
@@ -182,7 +185,10 @@ mod tests {
     #[test]
     fn test_resource_count() {
         let resources = get_all_resources();
+        #[cfg(target_os = "macos")]
         assert_eq!(resources.len(), 8);
+        #[cfg(not(target_os = "macos"))]
+        assert_eq!(resources.len(), 7);
     }
 
     #[test]

@@ -100,7 +100,7 @@ async fn health_check() -> impl IntoResponse {
 
 /// Validate Origin header for security (DNS rebinding protection).
 /// Per spec: Servers MUST validate the Origin header on all incoming connections.
-pub fn validate_origin(headers: &HeaderMap) -> Result<(), Response> {
+pub fn validate_origin(headers: &HeaderMap) -> Result<(), Box<Response>> {
     if let Some(origin) = headers.get(header::ORIGIN) {
         let origin_str = origin.to_str().unwrap_or("");
 
@@ -121,7 +121,7 @@ pub fn validate_origin(headers: &HeaderMap) -> Result<(), Response> {
         if !is_localhost {
             log::warn!("MCP: Rejected request with invalid Origin: {}", origin_str);
             let error_response = McpResponse::error(None, INVALID_REQUEST, "Invalid Origin header");
-            return Err((StatusCode::FORBIDDEN, Json(error_response)).into_response());
+            return Err(Box::new((StatusCode::FORBIDDEN, Json(error_response)).into_response()));
         }
     }
     // If no Origin header, allow (non-browser clients typically don't send it)
@@ -155,7 +155,8 @@ fn is_localhost_origin(origin: &str) -> bool {
 
 /// Validate Accept header for MCP compliance.
 /// Per spec: The client MUST include an Accept header listing both application/json and text/event-stream.
-pub fn validate_accept_header(headers: &HeaderMap) -> Result<(), Response> {
+/// We log a warning but allow requests for backwards compatibility.
+pub fn validate_accept_header(headers: &HeaderMap) {
     if let Some(accept) = headers.get(header::ACCEPT) {
         let accept_str = accept.to_str().unwrap_or("");
         let has_json = accept_str.contains("application/json") || accept_str.contains("*/*");
@@ -166,11 +167,8 @@ pub fn validate_accept_header(headers: &HeaderMap) -> Result<(), Response> {
                 "MCP: Accept header missing required types (got: {}), but allowing for compatibility",
                 accept_str
             );
-            // Per spec this is a MUST, but we're lenient for backwards compatibility
         }
     }
-    // If no Accept header, allow for backwards compatibility
-    Ok(())
 }
 
 /// Check if client prefers SSE over JSON based on Accept header.
@@ -217,7 +215,7 @@ async fn handle_mcp_get(headers: HeaderMap) -> Response {
     // Validate Origin header (security requirement)
     if let Err(response) = validate_origin(&headers) {
         log::warn!("MCP: GET rejected due to Origin validation failure");
-        return response;
+        return *response;
     }
 
     // For backwards compatibility with 2024-11-05 transport, we send an SSE stream
@@ -290,13 +288,11 @@ async fn handle_mcp_post<R: Runtime>(
     // 1. Validate Origin header (security requirement)
     if let Err(response) = validate_origin(&headers) {
         log::warn!("MCP: POST rejected due to Origin validation failure");
-        return response;
+        return *response;
     }
 
     // 2. Validate Accept header (recommended but we're lenient)
-    if let Err(response) = validate_accept_header(&headers) {
-        return response;
-    }
+    validate_accept_header(&headers);
 
     // 3. Get protocol version from header
     let client_version = get_protocol_version(&headers);
