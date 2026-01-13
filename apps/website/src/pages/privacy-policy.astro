@@ -8,30 +8,25 @@ import LegalLayout from '../layouts/LegalLayout.astro'
     lastUpdated="2026-01-08"
 >
     <p>
-        Your privacy matters to us. This policy explains what data we collect, why we collect it, and how we protect it.
-        We've tried to keep it readable — no walls of legalese.
+        Your privacy matters to us a lot. This policy explains what data we collect, why, and how we protect it.
+        We've tried our best to keep it readable so you don't need lawyers to read it.
     </p>
 
     <div class="highlight-box">
         <p>
             <strong>The short version:</strong> We collect minimal data. The website uses analytics and collects your email
-            if you subscribe. The app periodically validates your license with our servers. We don't sell your data. Ever.
+            if you subscribe. The app periodically validates your license with our servers. We don't sell your data.
         </p>
     </div>
 
     <h2>1. Who we are</h2>
     <p>
         <strong>Rymdskottkärra AB</strong> (the "data controller") is responsible for your personal data. We're a Swedish
-        company located at:
+        company located at Vattmyragränd 47, 177 39 Järfälla, Sweden. Few people know that the company name actually
+        means "Space wheelbarrow".
     </p>
     <p>
-        Vattmyragränd 47<br />
-        177 39 Järfälla<br />
-        Sweden
-    </p>
-    <p>
-        For privacy-related questions, contact us at
-        <a href="mailto:legal@getcmdr.com">legal@getcmdr.com</a>.
+        For privacy-related questions, contact us at <a href="mailto:legal@getcmdr.com">legal@getcmdr.com</a>.
     </p>
 
     <h2>2. What data we collect</h2>
@@ -39,67 +34,80 @@ import LegalLayout from '../layouts/LegalLayout.astro'
     <h3>On the website (getcmdr.com)</h3>
     <ul>
         <li>
-            <strong>Email address</strong> — if you subscribe to our newsletter or contact us
+            <strong>Email address</strong>: if you subscribe to our newsletter or contact us
         </li>
         <li>
-            <strong>Analytics data</strong> — we use PostHog to understand how visitors use our website. This includes pages
-            visited, referrer, browser type, and approximate location (country level). PostHog may set cookies for this purpose.
+            <strong>Analytics</strong>: we use PostHog to understand how visitors use our website. This includes pages
+            visited, referrer, browser type, and approximate location (country level). PostHog may set cookies for this.
         </li>
         <li>
-            <strong>Payment information</strong> — if you purchase a license, payment is handled by Paddle. We receive your
-            email and purchase details, but not your credit card number.
+            <strong>Payment info</strong>: if you buy a license, payment is handled by Paddle. We see your
+            email address and purchase details, but never your credit card number—that'd be too much risk for us.
         </li>
     </ul>
 
     <h3>In the desktop app</h3>
     <ul>
         <li>
-            <strong>License key</strong> — stored locally on your machine. We verify it cryptographically and periodically
-            check subscription status with our servers.
+            <strong>License key</strong>: stored locally on your machine. The apps verifies it cryptographically offline,
+            then we also periodically check on our servers whether it has expired or got extended.
         </li>
         <li>
-            <strong>Organization name</strong> — for commercial licenses, we store the organization name you provide at checkout.
-            This is displayed in the app's About window.
+            <strong>Organization name</strong>: for commercial licenses, we store the organization name you provide at
+            checkout, to display it in the app's About window.
+        </li>
+        <li>
+            <strong>Analytics</strong>: aggregate usage statistics, _without_ any PII or user content. Think: "How many
+            people used the network features last month?" (but never "Who used network features")
         </li>
     </ul>
 
     <h3>What we don't collect</h3>
     <ul>
-        <li>File names, contents, or any data from your file system</li>
-        <li>Keystrokes, screenshots, or usage patterns within the app</li>
-        <li>Personal files or documents</li>
+        <li>Your file names, contents, or any data from your file system, ever. We don't want to know your files.</li>
+        <li>Your prompts, the AI's answers, tool calls, etc. The communication is all private between you and your AI,
+            unless you use a provider (OpenAI, Anthropic, etc.) that have different terms. But with Cmdr, you always
+            have the option to keep ALL communications private with a local model.</li>
+        <li>Your keystrokes, screenshots, clicks from the app.</li>
+        <li>Your PII, personal files and documents.</li>
+        <li>And we never train models on your data!</li>
     </ul>
 
     <h2>3. Why we collect this data (legal basis)</h2>
-    <p>Under GDPR, we need a legal basis for processing your data:</p>
+    <p>Under GDPR (EU law to protect your rights over your data), we need a legal basis for processing your data, which
+        is pretty nice and fair and we apply it to all our users globally, not just EU citizens. Here is a list:</p>
     <ul>
         <li>
-            <strong>Contract performance</strong> — license validation and subscription status checks (you need it to use
-            the software you purchased)
+            <strong>License validation and subscription status checks</strong>: As a business baseline, we need to know
+            who has a valid license and who doesn't.
         </li>
         <li>
-            <strong>Legitimate interest</strong> — analytics to improve our website and product, fraud prevention
+            <strong>Legitimate interest</strong>: Analytics to understand how people use our app and website, what
+            features they use, what new features might help them (this affects the roadmap!), and generally improve the
+            website and product. It is very strictly _not_ about tracking any particular user (which we actually _avoid_
+            at all costs), but only aggregate data that can't even be traced back to a single user.
         </li>
         <li>
-            <strong>Consent</strong> — newsletter emails (you can unsubscribe anytime)
+            <strong>Consent</strong>: Email addresses to send you news that hopefully interest you. (You can unsubscribe
+            anytime from all communications we send, except for stuff we _need_ to send like updates to this very policy.)
         </li>
     </ul>
 
     <h2>4. How we use your data</h2>
     <ul>
-        <li>To deliver and improve Cmdr</li>
         <li>To process your license purchase</li>
+        <li>To maintain and improve Cmdr</li>
         <li>To send you product updates (if you subscribed)</li>
         <li>To respond to your support requests</li>
-        <li>To analyze website traffic and improve our marketing</li>
+        <li>To analyze website traffic and improve our communication</li>
     </ul>
 
     <h2>5. Who we share data with</h2>
     <p>We only share data with service providers who help us operate Cmdr:</p>
     <ul>
         <li>
-            <strong>Paddle</strong> (payments) — processes purchases, handles taxes and invoicing. Based in the UK with GDPR-compliant
-            processing.
+            <strong>Paddle</strong> (payments) — processes purchases, handles taxes and invoicing. Based in the UK with
+            GDPR-compliant processing.
             <a href="https://www.paddle.com/legal/privacy" target="_blank" rel="noopener noreferrer"
                 >Paddle's privacy policy</a
             >
@@ -109,18 +117,19 @@ import LegalLayout from '../layouts/LegalLayout.astro'
             <a href="https://posthog.com/privacy" target="_blank" rel="noopener noreferrer">PostHog's privacy policy</a>
         </li>
         <li>
-            <strong>Cloudflare</strong> (hosting) — hosts our license validation server in the European Union. <!-- TODO: Specify exact Cloudflare region once configured -->
+            <strong>Cloudflare</strong> (hosting) — hosts our license validation server on its global CDN.
             <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener noreferrer"
                 >Cloudflare's privacy policy</a
             >
         </li>
     </ul>
-    <p>We don't sell your data. We don't share it with advertisers.</p>
+    <p>We don't sell your data. We don't share it with advertisers or anyone not listed above.</p>
 
     <h2>6. Where we store your data</h2>
     <p>
-        Your data is processed and stored in the European Union. Our license server runs on Cloudflare Workers in EU
-        regions. PostHog and Paddle are GDPR-compliant and have appropriate data processing agreements in place.
+        Your data is processed and stored in the cloud without any specific geographical boundaries. Our license server
+        runs on Cloudflare Workers on a global CDN. PostHog and Paddle are GDPR-compliant and have appropriate data
+        processing agreements in place.
     </p>
 
     <h2>7. How long we keep your data</h2>
@@ -129,10 +138,10 @@ import LegalLayout from '../layouts/LegalLayout.astro'
             <strong>Purchase records</strong> — kept for 7 years (Swedish accounting law requirement)
         </li>
         <li>
-            <strong>Email subscriptions</strong> — until you unsubscribe
+            <strong>Email subscriptions</strong> — until you unsubscribe, then we have no use for it.
         </li>
         <li>
-            <strong>Analytics data</strong> — typically 2 years, then aggregated or deleted
+            <strong>Analytics data</strong> — typically 2 years, then aggregated further, or deleted. Old data is less helpful.
         </li>
     </ul>
 
@@ -147,11 +156,11 @@ import LegalLayout from '../layouts/LegalLayout.astro'
     <p>We don't use third-party advertising cookies or cross-site tracking.</p>
     <p>
         You can disable cookies in your browser settings. The website will still work, but we won't be able to improve
-        it based on usage data.
+        our service based on your usage data.
     </p>
 
     <h2>9. Your rights (GDPR)</h2>
-    <p>As an EU resident, you have the right to:</p>
+    <p>EU residents have the right to:</p>
     <ul>
         <li>
             <strong>Access</strong> — request a copy of your personal data
@@ -179,6 +188,9 @@ import LegalLayout from '../layouts/LegalLayout.astro'
     <p>
         You also have the right to lodge a complaint with the Swedish Authority for Privacy Protection (IMY) or your
         local data protection authority.
+    </p>
+    <p>
+        That said, we try to be nice to everyone, not just EU citizens.
     </p>
 
     <h2>10. Children's privacy</h2>
