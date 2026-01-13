@@ -24,9 +24,10 @@ fn get_port() -> u16 {
     for i in 0..args.len() {
         if args[i] == "--port"
             && let Some(port_str) = args.get(i + 1)
-                && let Ok(port) = port_str.parse() {
-                    return port;
-                }
+            && let Ok(port) = port_str.parse()
+        {
+            return port;
+        }
     }
 
     // Fall back to environment variable

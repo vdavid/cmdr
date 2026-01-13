@@ -57,7 +57,7 @@ docker run -p 8080:80 getcmdr-static
 
 The website is automatically deployed when changes are pushed to `main` and CI passes.
 
-For server setup and troubleshooting, see [Deploying the website](../../docs/workflows/deploy-website.md).
+For server setup and troubleshooting, see [Deploying the website](../../docs/guides/deploy-website.md).
 
 ```yaml
 # Caddyfile on server

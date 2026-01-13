@@ -76,7 +76,7 @@ Removing these reduces count to **11 containers (~600-800 MB)**.
 
 ## Usage
 
-**Implementation**: `test/smb-servers/` — See [SMB servers docs](../../testing/smb-servers.md) for full details.
+**Implementation**: `test/smb-servers/` — See [SMB servers docs](../../guides/testing/smb-servers.md) for full details.
 
 ```bash
 # Quick start with helper scripts

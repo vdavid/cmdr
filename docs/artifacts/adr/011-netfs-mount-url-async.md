@@ -42,4 +42,4 @@ Use `NetFSMountURLAsync` from macOS's NetFS.framework.
 
 - The `core-foundation` crate (already a dependency) provides `CFURLRef`, `CFStringRef` types needed for the API
 - Completion callback will be bridged to Rust async via channels or similar mechanism
-- See [mounting.md](../features/network-smb/mounting.md) for implementation details
+- See [mounting.md](../../features/network-smb/mounting.md) for implementation details

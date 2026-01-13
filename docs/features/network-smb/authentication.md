@@ -2,7 +2,7 @@
 
 How Cmdr handles SMB authentication and Keychain integration.
 
-**Related ADR**: [ADR 012: Custom auth UI with Keychain integration](../../adr/012-custom-auth-ui-keychain.md)
+**Related ADR**: [ADR 012: Custom auth UI with Keychain integration](../../artifacts/adr/012-custom-auth-ui-keychain.md)
 
 ## Overview
 

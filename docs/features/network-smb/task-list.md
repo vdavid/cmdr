@@ -41,7 +41,7 @@ See [host-discovery.md](./host-discovery.md) for details.
 
 ## 2. Share listing
 
-See [share-listing.md](./share-listing.md) for details. Decision: [ADR 013](../../adr/013-smb-rs-share-listing.md).
+See [share-listing.md](./share-listing.md) for details. Decision: [ADR 013](../../artifacts/adr/013-smb-rs-share-listing.md).
 
 ### Validation spike
 
@@ -216,7 +216,7 @@ All unit tests use mocks—no network or Docker needed. These run on every save/
 
 For high-fidelity testing, we spin up a farm of Docker SMB test servers. See
 [test-docker-server-list.md](./test-docker-server-list.md) for the container list and rationale, and
-[SMB servers docs](../../testing/smb-servers.md) for setup and usage.
+[SMB servers docs](../../guides/testing/smb-servers.md) for setup and usage.
 
 **Two deployment modes:**
 
@@ -225,7 +225,7 @@ For high-fidelity testing, we spin up a farm of Docker SMB test servers. See
 
 2. **Raspberry Pi (recommended)**: Macvlan networking with real LAN IPs. Containers advertise via mDNS/Bonjour and
    appear automatically in the app. See
-   [Setting up SMB test containers on Linux](../../testing/setting-up-smb-test-containers-on-linux.md).
+   [Setting up SMB test containers on Linux](../../guides/testing/setting-up-smb-test-containers-on-linux.md).
 
 **Implementation**: `test/smb-servers/`
 

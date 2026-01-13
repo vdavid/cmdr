@@ -53,9 +53,9 @@ feature integrates network drives as first-class volumes in the volume selector.
 
 ## Related ADRs
 
-- [ADR 011: Use NetFSMountURLAsync for SMB mounting](../../adr/011-netfs-mount-url-async.md)
-- [ADR 012: Custom auth UI with Keychain integration](../../adr/012-custom-auth-ui-keychain.md)
-- [ADR 013: Use smb-rs for SMB share enumeration](../../adr/013-smb-rs-share-listing.md)
+- [ADR 011: Use NetFSMountURLAsync for SMB mounting](../../artifacts/adr/011-netfs-mount-url-async.md)
+- [ADR 012: Custom auth UI with Keychain integration](../../artifacts/adr/012-custom-auth-ui-keychain.md)
+- [ADR 013: Use smb-rs for SMB share enumeration](../../artifacts/adr/013-smb-rs-share-listing.md)
 
 ## Future work
 

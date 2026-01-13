@@ -1,4 +1,4 @@
-// See docs/security.md#withglobaltauri for more info on why this script exists.
+// See docs/security.md#withglobaltauri for more info on why this script exists. Hint: for the Tauri MCP Server.
 
 import { spawn } from 'child_process'
 

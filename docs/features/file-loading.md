@@ -72,7 +72,7 @@ The [tauri-commands](../../src/lib/tauri-commands.ts) module provides typed wrap
 - `listDirectoryNextChunk(sessionId, chunkSize)` → `ChunkNextResult`
 - `listDirectoryEndSession(sessionId)` → void
 
-For serialization format rationale, see [ADR 007: Use JSON for Tauri IPC](../adr/007-json-for-ipc.md).
+For serialization format rationale, see [ADR 007: Use JSON for Tauri IPC](../artifacts/adr/007-json-for-ipc.md).
 
 ### 3. Rust commands: commands/file_system.rs
 
@@ -125,7 +125,7 @@ This balances:
 
 ## Key design decisions
 
-1. **JSON over MessagePack**: Native JSON is faster through Tauri's IPC. See [ADR 007](../adr/007-json-for-ipc.md)
+1. **JSON over MessagePack**: Native JSON is faster through Tauri's IPC. See [ADR 007](../artifacts/adr/007-json-for-ipc.md)
 
 2. **Session-based caching**: Directory is read once, chunks served from memory. Avoids O(n²) re-reading.
 

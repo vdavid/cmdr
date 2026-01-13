@@ -39,8 +39,8 @@ The source code is open under AGPL-3.0. Users can compile it themselves and use 
 
 ## Related documentation
 
-- [ADR 014: Payment provider choice](../adr/014-payment-provider-paddle.md) — Why we chose Paddle
-- [ADR 015: License model](../adr/015-license-model-agpl-trial.md) — Why AGPL + trial
+- [ADR 014: Payment provider choice](../artifacts/adr/014-payment-provider-paddle.md) — Why we chose Paddle
+- [ADR 015: License model](../artifacts/adr/015-license-model-agpl-trial.md) — Why AGPL + trial
 - [License server README](../../apps/license-server/README.md) — Setup and deployment
 
 ## User flow

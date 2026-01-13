@@ -2,7 +2,7 @@
 
 How Cmdr mounts SMB shares to the local filesystem.
 
-**Related ADR**: [ADR 011: Use NetFSMountURLAsync for SMB mounting](../../adr/011-netfs-mount-url-async.md)
+**Related ADR**: [ADR 011: Use NetFSMountURLAsync for SMB mounting](../../artifacts/adr/011-netfs-mount-url-async.md)
 
 ## Overview
 

@@ -281,6 +281,6 @@ This doesn't affect production use with real network devices, only Docker-based 
 
 ## Related
 
-- [SMB feature documentation](../features/network-smb/index.md)
-- [Test docker server list](../features/network-smb/test-docker-server-list.md) (original planning doc)
-- [Manual test checklist](./manual-checklist.md)
+- [SMB feature documentation](../../features/network-smb/index.md)
+- [Test docker server list](../../features/network-smb/test-docker-server-list.md) (original planning doc)
+- [Manual test checklist](manual-checklist.md)
