@@ -34,6 +34,18 @@ jobs:
             - name: Install x86_64 target for universal binary
               run: rustup target add x86_64-apple-darwin
 
+            - name: Build sidecar binary for both architectures
+              working-directory: ./apps/desktop/src-tauri
+              run: |
+                  cargo build --release --bin cmdr-mcp-stdio --target aarch64-apple-darwin
+                  cargo build --release --bin cmdr-mcp-stdio --target x86_64-apple-darwin
+                  # Create universal binary
+                  mkdir -p target/universal-apple-darwin/release
+                  lipo -create \
+                      target/aarch64-apple-darwin/release/cmdr-mcp-stdio \
+                      target/x86_64-apple-darwin/release/cmdr-mcp-stdio \
+                      -output target/universal-apple-darwin/release/cmdr-mcp-stdio
+
             - name: Build and release
               uses: tauri-apps/tauri-action@v0
               env:
@@ -47,7 +59,7 @@ jobs:
                   releaseBody: 'See CHANGELOG.md for details.'
                   releaseDraft: false
                   prerelease: false
-                  args: --target universal-apple-darwin --bin cmdr
+                  args: --target universal-apple-darwin
 
             - name: Extract changelog for this version
               id: changelog
