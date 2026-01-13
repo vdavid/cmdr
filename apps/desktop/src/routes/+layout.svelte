@@ -16,4 +16,15 @@
 </script>
 
 <UpdateNotification />
-<slot />
+<div class="page-wrapper">
+    <slot />
+</div>
+
+<style>
+    .page-wrapper {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+    }
+</style>

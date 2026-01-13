@@ -336,7 +336,7 @@
         cursor: default;
         font-weight: 500;
         color: var(--color-text-primary);
-        padding: 1px 4px;
+        padding: 2px 4px;
         border-radius: 4px;
         display: inline-flex;
         align-items: center;

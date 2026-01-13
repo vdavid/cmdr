@@ -17,6 +17,7 @@
         getInfo,
         toggleHiddenFiles,
         setViewMode,
+        getWindowTitle,
     } from '$lib/tauri-commands'
     import { loadSettings, saveSettings } from '$lib/settings-store'
     import { hideExpirationModal, loadLicenseStatus, triggerValidationIfNeeded } from '$lib/licensing-store.svelte'
@@ -48,6 +49,7 @@
     let showAboutWindow = $state(false)
     let showCommandPalette = $state(false)
     let explorerRef: ExplorerAPI | undefined = $state()
+    let windowTitle = $state('Cmdr')
 
     // Event handlers stored for cleanup
     let handleKeyDown: ((e: KeyboardEvent) => void) | undefined
@@ -55,6 +57,19 @@
     let unlistenShowAbout: UnlistenFn | undefined
     let unlistenCommandPalette: UnlistenFn | undefined
     let unlistenSwitchPane: UnlistenFn | undefined
+
+    /** Start window drag when title bar is clicked */
+    async function handleTitleBarMouseDown(e: MouseEvent) {
+        if (e.buttons === 1) {
+            // Left mouse button
+            try {
+                const { getCurrentWindow } = await import('@tauri-apps/api/window')
+                await getCurrentWindow().startDragging()
+            } catch {
+                // Not in Tauri environment
+            }
+        }
+    }
 
     onMount(async () => {
         // Hide loading screen
@@ -79,6 +94,9 @@
                 expiredOrgName = licenseStatus.organizationName
                 expiredAt = licenseStatus.expiredAt
             }
+
+            // Load window title based on license status
+            windowTitle = await getWindowTitle()
         } catch {
             // License check failed (expected in E2E tests without Tauri backend)
             // App continues without license features
@@ -476,20 +494,62 @@
     }
 </script>
 
-{#if showAboutWindow}
-    <AboutWindow onClose={handleAboutClose} />
-{/if}
+<div class="page-container">
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="title-bar" onmousedown={handleTitleBarMouseDown}>
+        <span class="title-text">{windowTitle}</span>
+    </div>
 
-{#if showCommandPalette}
-    <CommandPalette onExecute={handleCommandExecute} onClose={handleCommandPaletteClose} />
-{/if}
+    <div class="main-content">
+        {#if showAboutWindow}
+            <AboutWindow onClose={handleAboutClose} />
+        {/if}
 
-{#if showExpiredModal}
-    <ExpirationModal organizationName={expiredOrgName} {expiredAt} onClose={handleExpirationModalClose} />
-{/if}
+        {#if showCommandPalette}
+            <CommandPalette onExecute={handleCommandExecute} onClose={handleCommandPaletteClose} />
+        {/if}
 
-{#if showFdaPrompt}
-    <FullDiskAccessPrompt onComplete={handleFdaComplete} wasRevoked={fdaWasRevoked} />
-{:else if showApp}
-    <DualPaneExplorer bind:this={explorerRef} />
-{/if}
+        {#if showExpiredModal}
+            <ExpirationModal organizationName={expiredOrgName} {expiredAt} onClose={handleExpirationModalClose} />
+        {/if}
+
+        {#if showFdaPrompt}
+            <FullDiskAccessPrompt onComplete={handleFdaComplete} wasRevoked={fdaWasRevoked} />
+        {:else if showApp}
+            <DualPaneExplorer bind:this={explorerRef} />
+        {/if}
+    </div>
+</div>
+
+<style>
+    .page-container {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+    }
+
+    .title-bar {
+        height: 27px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding-top: 2px;
+        background-color: var(--color-bg-secondary);
+        flex-shrink: 0;
+    }
+
+    .title-text {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
+        font-weight: 500;
+    }
+
+    .main-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        min-height: 0;
+    }
+</style>
