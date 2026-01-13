@@ -27,6 +27,13 @@ jobs:
               run: pnpm install --frozen-lockfile
               working-directory: ./apps/desktop
 
+            - name: Generate SvelteKit types
+              run: pnpm exec svelte-kit sync
+              working-directory: ./apps/desktop
+
+            - name: Install x86_64 target for universal binary
+              run: rustup target add x86_64-apple-darwin
+
             - name: Build and release
               uses: tauri-apps/tauri-action@v0
               env:

@@ -42,8 +42,9 @@ jq ".version = \"$VERSION\"" tauri.conf.json > tauri.conf.json.tmp
 mv tauri.conf.json.tmp tauri.conf.json
 cd ../../..
 
-# Update version in Cargo.toml (using sed for simplicity)
+# Update version in Cargo.toml and refresh Cargo.lock
 sed -i '' "s/^version = \".*\"/version = \"$VERSION\"/" apps/desktop/src-tauri/Cargo.toml
+(cd apps/desktop/src-tauri && cargo update -p cmdr --quiet)
 
 # Update CHANGELOG.md: rename [Unreleased] to [version] and add new [Unreleased]
 TODAY=$(date +%Y-%m-%d)

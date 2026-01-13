@@ -19,7 +19,7 @@
         setViewMode,
     } from '$lib/tauri-commands'
     import { loadSettings, saveSettings } from '$lib/settings-store'
-    import { hideExpirationModal } from '$lib/licensing-store.svelte'
+    import { hideExpirationModal, loadLicenseStatus, triggerValidationIfNeeded } from '$lib/licensing-store.svelte'
     import type { ViewMode } from '$lib/app-status-store'
 
     // Interface for DualPaneExplorer's exported methods
@@ -65,7 +65,6 @@
 
         // Load license status first (non-blocking - don't prevent app load on failure)
         try {
-            const { loadLicenseStatus, triggerValidationIfNeeded } = await import('$lib/licensing-store.svelte')
             let licenseStatus = await loadLicenseStatus()
 
             // Trigger background validation if needed

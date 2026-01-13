@@ -25,3 +25,21 @@ How to release a new version of Cmdr.
 - App checks `https://getcmdr.com/latest.json` on start and every 60 min
 - If newer version found → downloads silently → shows "Restart to update" toast
 - Signatures verified with public key embedded in app
+
+## Troubleshooting
+
+### Release build failed, need to retry same version
+
+Delete tag, fix the issue, commit, recreate tag, push:
+
+```bash
+git tag -d v0.3.0                      # delete local tag
+git push origin :refs/tags/v0.3.0      # delete remote tag
+# ... fix and commit ...
+git tag v0.3.0                         # recreate tag
+git push origin main --tags            # push again
+```
+
+### Draft release left on GitHub after failed build
+
+Go to GitHub → Releases → delete the draft manually before retrying.

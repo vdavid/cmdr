@@ -5,9 +5,22 @@
 import adapter from '@sveltejs/adapter-static'
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte'
 
+// A11y warnings to suppress (same as in package.json check script)
+const suppressedWarnings = [
+    'a11y_no_noninteractive_element_interactions',
+    'a11y_click_events_have_key_events',
+    'a11y_no_noninteractive_tabindex',
+    'a11y_interactive_supports_focus',
+    'state_referenced_locally',
+    'non_reactive_update',
+]
+
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
     preprocess: vitePreprocess(),
+    compilerOptions: {
+        warningFilter: (warning) => !suppressedWarnings.includes(warning.code),
+    },
     kit: {
         adapter: adapter({
             fallback: 'index.html',
