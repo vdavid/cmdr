@@ -4,13 +4,13 @@ import { dmgUrl } from '../lib/release'
 const navLinks = [
     { href: '/#features', label: 'Features' },
     { href: '/pricing', label: 'Pricing' },
-    { href: '/#download', label: 'Download' },
     { href: 'https://github.com/vdavid/cmdr', label: 'GitHub', external: true },
 ]
 ---
 
 <header
     class="fixed top-0 left-0 right-0 z-50 border-b border-[var(--color-border-subtle)] bg-[var(--color-background)]/80 backdrop-blur-xl"
+    transition:persist
 >
     <nav class="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <!-- Logo -->
@@ -19,7 +19,7 @@ const navLinks = [
             class="flex items-center gap-2 text-xl font-semibold transition-opacity hover:opacity-80"
             aria-label="Cmdr home"
         >
-            <img src="/logo-32.png" alt="" width="24" height="24" class="h-6 w-6" />
+            <img src="/logo-32.png" alt="" width="32" height="32" class="h-6 w-6" />
             <span>Cmdr</span>
         </a>
 

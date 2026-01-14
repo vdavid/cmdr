@@ -2,7 +2,7 @@
 import { dmgUrl } from '../lib/release'
 ---
 
-<section class="relative flex min-h-screen items-center justify-center overflow-hidden px-6 pt-16">
+<section class="hero-section relative overflow-hidden px-6 pt-16 md:px-12 lg:px-20">
     <!-- Background gradient -->
     <div
         class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(255,194,6,0.15),transparent)]"
@@ -15,37 +15,32 @@ import { dmgUrl } from '../lib/release'
     >
     </div>
 
-    <div class="relative z-10 mx-auto max-w-4xl text-center">
-        <!-- Badge -->
+    <div class="hero-content relative z-10 pt-16 text-left md:pt-24">
+        <!-- Badge - Step 1 -->
         <div
-            class="animate-fade-in-up mb-8 inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-1.5 opacity-0"
+            class="animate-blur-in stagger-1 mb-8 inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-1.5"
         >
             <span class="h-2 w-2 animate-pulse rounded-full bg-[var(--color-accent)]"></span>
             <span class="text-sm text-[var(--color-text-secondary)]">AI-powered file management</span>
         </div>
 
-        <!-- Headline -->
-        <h1
-            class="animate-fade-in-up delay-100 mb-6 text-5xl font-bold leading-tight tracking-tight opacity-0 md:text-7xl"
-        >
-            Talk to your files.
-            <br />
-            <span class="gradient-text">They'll listen.</span>
+        <!-- Headline - Steps 2 & 3 -->
+        <h1 class="mb-6 text-4xl font-bold leading-tight tracking-tight md:text-6xl">
+            <span class="animate-blur-in stagger-2 inline-block">Talk to your files.</span>
+            <span class="animate-blur-in stagger-3 inline-block gradient-text">They'll listen.</span>
         </h1>
 
-        <!-- Subheadline -->
-        <p
-            class="animate-fade-in-up delay-200 mx-auto mb-10 max-w-2xl text-lg text-[var(--color-text-secondary)] opacity-0 md:text-xl"
-        >
+        <!-- Subheadline - Step 4 -->
+        <p class="animate-blur-in stagger-4 mb-10 max-w-xl text-lg text-[var(--color-text-secondary)] md:text-xl">
             Rename files with natural language. Search by describing what you're looking for. The AI-native file manager
             for power users who want superpowers.
         </p>
 
-        <!-- CTA Buttons -->
-        <div class="animate-fade-in-up delay-300 flex flex-col items-center justify-center gap-4 opacity-0 sm:flex-row">
+        <!-- CTA Buttons - Steps 5 & 6 -->
+        <div class="flex flex-col items-start gap-4 sm:flex-row">
             <a
                 href={dmgUrl}
-                class="glow inline-flex items-center gap-2 rounded-xl bg-[var(--color-accent)] px-8 py-4 text-lg font-semibold text-[var(--color-background)] transition-all duration-300 hover:scale-105 hover:bg-[var(--color-accent-hover)]"
+                class="animate-blur-in stagger-5 glow inline-flex items-center gap-2 rounded-xl bg-[var(--color-accent)] px-8 py-4 text-lg font-semibold text-[var(--color-background)] transition-all duration-300 hover:scale-105 hover:bg-[var(--color-accent-hover)]"
             >
                 <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path
@@ -58,7 +53,7 @@ import { dmgUrl } from '../lib/release'
                 href="https://github.com/vdavid/cmdr"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="inline-flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-8 py-4 text-lg font-semibold transition-all duration-300 hover:border-[var(--color-text-tertiary)] hover:bg-[var(--color-surface-elevated)]"
+                class="animate-blur-in stagger-6 inline-flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-8 py-4 text-lg font-semibold transition-all duration-300 hover:border-[var(--color-text-tertiary)] hover:bg-[var(--color-surface-elevated)]"
             >
                 <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path
@@ -69,9 +64,177 @@ import { dmgUrl } from '../lib/release'
             </a>
         </div>
 
-        <!-- Pricing hint -->
-        <p class="animate-fade-in-up delay-400 mt-8 text-sm text-[var(--color-text-tertiary)] opacity-0">
+        <!-- Pricing hint - Step 7 -->
+        <p class="animate-blur-in stagger-7 mt-8 text-sm text-[var(--color-text-tertiary)]">
             Source-available · Free forever for personal use · Commercial from $59/year
         </p>
     </div>
+
+    <!-- Hero illustration with 3D perspective -->
+    <div class="hero-illustration" aria-hidden="true">
+        <div class="hero-perspective">
+            <div class="hero-base">
+                <!-- Frame (always visible) -->
+                <img src="/hero/cmdr-hero-frame.png" alt="" class="hero-layer hero-frame" />
+                <!-- Right pane (animates in first) -->
+                <img src="/hero/cmdr-hero-right-pane.png" alt="" class="hero-layer hero-right-pane" />
+                <!-- Left pane (animates in second) -->
+                <img src="/hero/cmdr-hero-left-pane.png" alt="" class="hero-layer hero-left-pane" />
+            </div>
+        </div>
+    </div>
 </section>
+
+<style>
+    /* Text blur-in animation - global so it applies to classes */
+    :global(.animate-blur-in) {
+        animation: blur-in 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    /* Stagger delays for 7-step animation (100ms apart, overlapping) */
+    :global(.stagger-1) {
+        animation-delay: 0ms;
+    }
+    :global(.stagger-2) {
+        animation-delay: 100ms;
+    }
+    :global(.stagger-3) {
+        animation-delay: 200ms;
+    }
+    :global(.stagger-4) {
+        animation-delay: 300ms;
+    }
+    :global(.stagger-5) {
+        animation-delay: 400ms;
+    }
+    :global(.stagger-6) {
+        animation-delay: 500ms;
+    }
+    :global(.stagger-7) {
+        animation-delay: 600ms;
+    }
+
+    @keyframes blur-in {
+        from {
+            opacity: 0;
+            filter: blur(10px);
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            filter: blur(0);
+            transform: translateY(0);
+        }
+    }
+
+    .hero-section {
+        min-height: 100vh;
+        position: relative;
+    }
+
+    /* Gradient overlay at bottom - covers full width including padding */
+    .hero-section::after {
+        content: '';
+        pointer-events: none;
+        z-index: 5;
+        background: linear-gradient(to bottom, transparent 50%, var(--color-background) 100%);
+        position: absolute;
+        inset: 0;
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 10;
+    }
+
+    .hero-illustration {
+        pointer-events: none;
+        user-select: none;
+        width: 100%;
+        position: relative;
+        margin-top: -200px;
+        margin-left: -100px;
+    }
+
+    @media (max-width: 640px) {
+        .hero-illustration {
+            height: 600px;
+            margin-top: 0;
+            margin-left: -40px;
+        }
+    }
+
+    .hero-perspective {
+        perspective: 4000px;
+        perspective-origin: 100% 0;
+    }
+
+    .hero-base {
+        transform-origin: 0 0;
+        backface-visibility: hidden;
+        width: 1600px;
+        height: 900px;
+        margin: 280px auto auto;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: -100px;
+        right: 0;
+        transform: translate(2%) scale(1.2) rotateX(47deg) rotateY(31deg) rotate(324deg);
+    }
+
+    @media (max-width: 640px) {
+        .hero-base {
+            margin-top: 100px;
+            margin-left: 1%;
+            transform: scale(0.7) rotateX(47deg) rotateY(21deg) rotate(330deg);
+        }
+    }
+
+    .hero-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    /* Gradient fade on right edge - more aggressive to avoid cutoff */
+    .hero-frame,
+    .hero-left-pane,
+    .hero-right-pane {
+        mask-image: linear-gradient(to right, black 0%, black 50%, transparent 80%);
+    }
+
+    /* Frame - visible immediately with subtle blur-in */
+    .hero-frame {
+        opacity: 0;
+        animation: hero-image-in 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Right pane - animates in first (blur + translate) */
+    .hero-right-pane {
+        opacity: 0;
+        animation: hero-image-in 2s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+    }
+
+    /* Left pane - animates in second */
+    .hero-left-pane {
+        opacity: 0;
+        animation: hero-image-in 2s cubic-bezier(0.16, 1, 0.3, 1) 1s forwards;
+    }
+
+    @keyframes hero-image-in {
+        0% {
+            opacity: 0;
+            filter: blur(10px);
+            transform: translate(5%, 10%);
+        }
+        100% {
+            opacity: 1;
+            filter: none;
+            transform: none;
+        }
+    }
+</style>
