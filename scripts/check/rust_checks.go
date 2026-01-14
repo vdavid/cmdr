@@ -189,12 +189,14 @@ func (c *RustTestsLinuxCheck) Run(ctx *CheckContext) error {
 		return nil
 	}
 
-	// Run tests in a Rust container
+	// Run tests in a Rust container with GTK dependencies for Tauri
+	// Use a separate target directory to avoid conflicts with macOS-compiled artifacts
 	cmd := exec.Command("docker", "run", "--rm",
 		"-v", rustDir+":/app",
 		"-w", "/app",
+		"-e", "CARGO_TARGET_DIR=/tmp/cargo-target",
 		"rust:latest",
-		"sh", "-c", "cargo test --no-fail-fast")
+		"sh", "-c", "apt-get update && apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev && cargo test --no-fail-fast")
 	output, err := runCommand(cmd, true)
 	if err != nil {
 		fmt.Println()
