@@ -7,11 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix auto-updater to download updates and restart the app after updating ([c0bff9a](https://github.com/vdavid/cmdr/commit/c0bff9a))
+
+### Non-app
+
+- Website: redesign with mustard yellow theme, view transitions, hero animation, and reduced motion support ([0296379](https://github.com/vdavid/cmdr/commit/0296379), [18b729f](https://github.com/vdavid/cmdr/commit/18b729f), [689a151](https://github.com/vdavid/cmdr/commit/689a151))
+- Website: avoid aggressive caching, rearrange T&C ([8ca0539](https://github.com/vdavid/cmdr/commit/8ca0539), [c92dff8](https://github.com/vdavid/cmdr/commit/c92dff8))
+- Tooling: turn off MCP stdio sidecar, fix Rust-Linux check, reduce CI frequency, fix latest.json formatting ([5dda608](https://github.com/vdavid/cmdr/commit/5dda608), [2ec3f7e](https://github.com/vdavid/cmdr/commit/2ec3f7e), [42d81ab](https://github.com/vdavid/cmdr/commit/42d81ab), [52980ae](https://github.com/vdavid/cmdr/commit/52980ae))
+- Docs: release process and auto-updater documentation ([c7c36f6](https://github.com/vdavid/cmdr/commit/c7c36f6), [765f5ad](https://github.com/vdavid/cmdr/commit/765f5ad), [f3785da](https://github.com/vdavid/cmdr/commit/f3785da), [10e43de](https://github.com/vdavid/cmdr/commit/10e43de))
+
 ## [0.3.1] - 2026-01-14
 
 ### Added
 
-- Add custom title bar, 4px narrower for more content space ([33e90c8](https://github.com/vdavid/cmdr/commit/33e90c8))
+- Add custom title bar, 4 px narrower for more content space ([33e90c8](https://github.com/vdavid/cmdr/commit/33e90c8))
 
 ### Changed
 
@@ -46,7 +57,7 @@ Initial public release. Free forever for personal use (BSL license).
 - Dual-pane file explorer with keyboard and mouse navigation ([c945f18](https://github.com/vdavid/cmdr/commit/c945f18))
 - Full mode (vertical scroll with size/date columns) and Brief mode (horizontal multi-column), switchable via ⌘1/⌘2 ([c779a6d](https://github.com/vdavid/cmdr/commit/c779a6d))
 - Virtual scrolling for 100k+ files ([cf6c35d](https://github.com/vdavid/cmdr/commit/cf6c35d))
-- Chunked directory loading (50k files: 350ms to first files) ([869cdfb](https://github.com/vdavid/cmdr/commit/869cdfb))
+- Chunked directory loading (50k files: 350 ms to first files) ([869cdfb](https://github.com/vdavid/cmdr/commit/869cdfb))
 - File icons from OS with caching ([b8c588e](https://github.com/vdavid/cmdr/commit/b8c588e))
 - File metadata panel with size color coding and date tooltips ([bc3dc85](https://github.com/vdavid/cmdr/commit/bc3dc85))
 - Native context menu (Open, Show in Finder, Copy path, Quick Look) ([7d977a1](https://github.com/vdavid/cmdr/commit/7d977a1))
@@ -151,7 +162,7 @@ Initial public release. Free forever for personal use (BSL license).
 
 #### 2025-12-28 - Performance and file operations
 
-- Add chunked directory loading (50k files: 350ms to first files) ([869cdfb](https://github.com/vdavid/cmdr/commit/869cdfb))
+- Add chunked directory loading (50k files: 350 ms to first files) ([869cdfb](https://github.com/vdavid/cmdr/commit/869cdfb))
 - Add file metadata panel with size color coding and date tooltips ([bc3dc85](https://github.com/vdavid/cmdr/commit/bc3dc85))
 - Add native context menu (Open, Show in Finder, Copy path, Quick Look) ([7d977a1](https://github.com/vdavid/cmdr/commit/7d977a1))
 - Add live file watching with incremental diffs ([cf12372](https://github.com/vdavid/cmdr/commit/cf12372))
