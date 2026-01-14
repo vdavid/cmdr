@@ -1,13 +1,16 @@
 <script lang="ts">
     import type { FileEntry, SortColumn, SortOrder, SyncStatus } from './types'
-    import { getCachedIcon, iconCacheVersion, prefetchIcons } from '$lib/icon-cache'
     import { calculateVirtualWindow, getScrollToPosition } from './virtual-scroll'
-    import { getFileRange } from '$lib/tauri-commands'
     import { startDragTracking } from '$lib/drag-drop'
     import SortableHeader from './SortableHeader.svelte'
-
-    /** Prefetch buffer - load this many items around visible range */
-    const PREFETCH_BUFFER = 200
+    import FileIcon from './FileIcon.svelte'
+    import {
+        getSyncIconPath,
+        createParentEntry,
+        getEntryAt as getEntryAtUtil,
+        fetchVisibleRange as fetchVisibleRangeUtil,
+        shouldResetCache,
+    } from './file-list-utils'
 
     interface Props {
         listingId: string
@@ -52,19 +55,6 @@
     let cachedRange = $state({ start: 0, end: 0 })
     let isFetching = $state(false)
 
-    // Sync status icon paths - returns undefined if no icon should be shown
-    function getSyncIconPath(status: SyncStatus | undefined): string | undefined {
-        if (!status) return undefined
-        const iconMap: Record<SyncStatus, string | undefined> = {
-            synced: '/icons/sync-synced.svg',
-            online_only: '/icons/sync-online-only.svg',
-            uploading: '/icons/sync-uploading.svg',
-            downloading: '/icons/sync-downloading.svg',
-            unknown: undefined,
-        }
-        return iconMap[status]
-    }
-
     // ==== Virtual scrolling constants ====
     const ROW_HEIGHT = 20
     const BUFFER_SIZE = 20
@@ -89,74 +79,31 @@
         }),
     )
 
-    // Create parent entry
-    function createParentEntry(): FileEntry {
-        return {
-            name: '..',
-            path: parentPath,
-            isDirectory: true,
-            isSymlink: false,
-            permissions: 0o755,
-            owner: '',
-            group: '',
-            iconId: 'dir',
-            extendedMetadataLoaded: true,
-        }
-    }
-
     // Get entry at global index (handling ".." entry)
     export function getEntryAt(globalIndex: number): FileEntry | undefined {
-        if (hasParent && globalIndex === 0) {
-            return createParentEntry()
-        }
-
-        // Backend index (without ".." entry)
-        const backendIndex = hasParent ? globalIndex - 1 : globalIndex
-
-        // Find in cached entries
-        if (backendIndex >= cachedRange.start && backendIndex < cachedRange.end) {
-            return cachedEntries[backendIndex - cachedRange.start]
-        }
-
-        return undefined
+        return getEntryAtUtil(globalIndex, hasParent, parentPath, cachedEntries, cachedRange)
     }
 
     // Fetch entries for the visible range
     async function fetchVisibleRange() {
         if (!listingId || isFetching) return
 
-        // Calculate which backend indices we need
-        let startItem = virtualWindow.startIndex
-        let endItem = virtualWindow.endIndex
-
-        // Account for ".." entry
-        if (hasParent) {
-            startItem = Math.max(0, startItem - 1)
-            endItem = Math.max(0, endItem - 1)
-        }
-
-        // Add prefetch buffer
-        const fetchStart = Math.max(0, startItem - PREFETCH_BUFFER / 2)
-        const fetchEnd = Math.min(hasParent ? totalCount - 1 : totalCount, endItem + PREFETCH_BUFFER / 2)
-
-        // Only fetch if needed range isn't cached
-        if (fetchStart >= cachedRange.start && fetchEnd <= cachedRange.end) {
-            return // Already cached
-        }
-
         isFetching = true
         try {
-            const entries = await getFileRange(listingId, fetchStart, fetchEnd - fetchStart, includeHidden)
-            cachedEntries = entries
-            cachedRange = { start: fetchStart, end: fetchStart + entries.length }
-
-            // Prefetch icons for visible entries
-            const iconIds = entries.map((e) => e.iconId).filter((id) => id)
-            void prefetchIcons(iconIds)
-
-            // Request sync status for visible paths
-            const paths = entries.map((e) => e.path)
-            onSyncStatusRequest?.(paths)
+            const result = await fetchVisibleRangeUtil({
+                listingId,
+                startItem: virtualWindow.startIndex,
+                endItem: virtualWindow.endIndex,
+                hasParent,
+                totalCount,
+                includeHidden,
+                cachedRange,
+                onSyncStatusRequest,
+            })
+            if (result) {
+                cachedEntries = result.entries
+                cachedRange = result.range
+            }
         } catch {
             // Silently ignore fetch errors
         } finally {
@@ -178,7 +125,7 @@
             // Inline getEntryAt logic to use local variables
             let entry: FileEntry | undefined
             if (hasParent && i === 0) {
-                entry = createParentEntry()
+                entry = createParentEntry(parentPath)
             } else {
                 const backendIndex = hasParent ? i - 1 : i
                 if (backendIndex >= rangeStart && backendIndex < rangeEnd) {
@@ -196,20 +143,6 @@
         const target = e.target as HTMLDivElement
         scrollTop = target.scrollTop
         void fetchVisibleRange()
-    }
-
-    // Subscribe to cache version - this makes getIconUrl reactive
-    const _cacheVersion = $derived($iconCacheVersion)
-
-    function getIconUrl(file: FileEntry): string | undefined {
-        void _cacheVersion // Track cache version for reactivity
-        return getCachedIcon(file.iconId)
-    }
-
-    function getFallbackEmoji(file: FileEntry): string {
-        if (file.isSymlink) return '🔗'
-        if (file.isDirectory) return '📁'
-        return '📄'
     }
 
     /** Formats a number into digit triads with CSS classes for coloring */
@@ -292,36 +225,18 @@
     }
 
     // Track previous values to detect actual changes
-    let prevListingId = ''
-    let prevIncludeHidden = false
-    let prevTotalCount = 0
-    let prevCacheGeneration = 0
+    let prevCacheProps = { listingId: '', includeHidden: false, totalCount: 0, cacheGeneration: 0 }
 
     // Single effect: fetch when ready, reset cache when listingId/includeHidden/totalCount/cacheGeneration changes
     $effect(() => {
-        // Read reactive dependencies
-        const currentListingId = listingId
-        const currentIncludeHidden = includeHidden
-        const currentTotalCount = totalCount
-        const currentCacheGeneration = cacheGeneration
-        if (!currentListingId || containerHeight <= 0) return
+        const currentProps = { listingId, includeHidden, totalCount, cacheGeneration }
+        if (!listingId || containerHeight <= 0) return
 
-        // Check if any tracked prop changed
-        // totalCount changes when files are added/removed by the file watcher
-        // cacheGeneration changes when sorting is changed (forces re-fetch)
-        if (
-            currentListingId !== prevListingId ||
-            currentIncludeHidden !== prevIncludeHidden ||
-            currentTotalCount !== prevTotalCount ||
-            currentCacheGeneration !== prevCacheGeneration
-        ) {
-            // Reset cache for new listing, filter change, file count change, or cache invalidation
+        // Check if any tracked prop changed (totalCount changes on file add/remove, cacheGeneration on sort)
+        if (shouldResetCache(currentProps, prevCacheProps)) {
             cachedEntries = []
             cachedRange = { start: 0, end: 0 }
-            prevListingId = currentListingId
-            prevIncludeHidden = currentIncludeHidden
-            prevTotalCount = currentTotalCount
-            prevCacheGeneration = currentCacheGeneration
+            prevCacheProps = currentProps
         }
 
         void fetchVisibleRange()
@@ -395,25 +310,7 @@
                     role="option"
                     aria-selected={globalIndex === selectedIndex}
                 >
-                    <span class="icon-wrapper">
-                        {#if getIconUrl(file)}
-                            <img class="icon" src={getIconUrl(file)} alt="" width="16" height="16" />
-                        {:else}
-                            <span class="icon-emoji">{getFallbackEmoji(file)}</span>
-                        {/if}
-                        {#if file.isSymlink}
-                            <span class="symlink-badge" class:has-sync={!!syncIcon}>🔗</span>
-                        {/if}
-                        {#if syncIcon}
-                            <img
-                                class="sync-badge"
-                                src={syncIcon}
-                                alt={syncStatusMap[file.path] ?? ''}
-                                width="10"
-                                height="10"
-                            />
-                        {/if}
-                    </span>
+                    <FileIcon {file} {syncIcon} />
                     <span class="col-name">{file.name}</span>
                     <span class="col-size" title={file.size !== undefined ? formatHumanReadable(file.size) : ''}>
                         {#if file.isDirectory}
@@ -482,49 +379,6 @@
 
     .full-list.is-focused .file-entry.is-selected {
         background-color: var(--color-selection-bg);
-    }
-
-    .icon-wrapper {
-        position: relative;
-        width: 16px;
-        height: 16px;
-        flex-shrink: 0;
-    }
-
-    .icon {
-        width: 16px;
-        height: 16px;
-        object-fit: contain;
-    }
-
-    .icon-emoji {
-        font-size: var(--font-size-sm);
-        width: 16px;
-        text-align: center;
-        display: block;
-    }
-
-    .symlink-badge {
-        position: absolute;
-        bottom: -2px;
-        right: -2px;
-        font-size: 8px;
-        line-height: 1;
-    }
-
-    .symlink-badge.has-sync {
-        bottom: auto;
-        right: auto;
-        top: -2px;
-        left: -2px;
-    }
-
-    .sync-badge {
-        position: absolute;
-        bottom: -2px;
-        right: -2px;
-        width: 10px;
-        height: 10px;
     }
 
     .col-name {
