@@ -9,8 +9,11 @@ How to release a new version of Cmdr.
 ## Release steps
 
 1. Ask an agent to update the changelog with this prompt:
-   `Read @AGENTS.md and @docs/style-guide.md, then update CHANGELOG.md based on git commits since last release.
-   Read the whole changelog to match its style. Note: commits have title + body, read both.`
+   ```
+   Read @AGENTS.md and @docs/style-guide.md, then update CHANGELOG.md based on git commits since last release.
+   Read the existing changelog to match its style. Note: commits have title + body – read all!
+   You can link multiple commits for changelog items if needed. List major but non-app changes in a "Non-app" section.
+   ```
 2. Commit the changelog update and anything else. You need a clean working tree. (script auto-fails if not satisfied)
 3. Run `./scripts/release.sh 1.2.1` – version bump guidelines:
    - Patch (1.2.0 → 1.2.1): bug fixes, minor tweaks
