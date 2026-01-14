@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add custom title bar, 4px narrower for more content space ([33e90c8](https://github.com/vdavid/cmdr/commit/33e90c8))
+
+### Changed
+
+- Replace rusty icon with yellow one ([79777e3](https://github.com/vdavid/cmdr/commit/79777e3))
+
+### Fixed
+
+- Fix app name in task switcher: shows "Cmdr" instead of "cmdr" ([8117300](https://github.com/vdavid/cmdr/commit/8117300))
+
 ## [0.3.0] - 2026-01-13
 
 ### Added
