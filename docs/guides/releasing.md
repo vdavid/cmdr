@@ -15,12 +15,12 @@ How to release a new version of Cmdr.
    You can link multiple commits for changelog items if needed. List major but non-app changes in a "Non-app" section.
    ```
 2. Commit the changelog update and anything else. You need a clean working tree. (script auto-fails if not satisfied)
-3. Run `./scripts/release.sh 1.2.1` – version bump guidelines:
+3. Run `./scripts/release.sh 0.x.x` – version bump guidelines:
    - Patch (1.2.0 → 1.2.1): bug fixes, minor tweaks
    - Minor (1.2.1 → 1.3.0): new features
    - Major (1.3.0 → 2.0.0): major launches
    - (Script bumps version in `package.json`, `tauri.conf.json`, `Cargo.toml`)
-   - (Script moves `[Unreleased]` → `[1.2.1]` in changelog, commits, and tags)
+   - (Script moves `[Unreleased]` → `[0.x.x]` in changelog, commits, and tags)
 4. Push: `git push origin main --tags`
    - (CI builds universal macOS binary, creates GitHub release, updates `latest.json`)
    - (Website auto-deploys, users get update notification on next check)
@@ -39,10 +39,10 @@ How to release a new version of Cmdr.
 Delete tag, fix the issue, commit, recreate tag, push:
 
 ```bash
-git tag -d v0.3.0                      # delete local tag
-git push origin :refs/tags/v0.3.0      # delete remote tag
+git tag -d v0.x.x                      # delete local tag
+git push origin :refs/tags/v0.x.x      # delete remote tag
 # ... fix and commit ...
-git tag v0.3.0                         # recreate tag
+git tag v0.x.x                         # recreate tag
 git push origin main --tags            # push again
 ```
 
