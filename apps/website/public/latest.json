@@ -1,11 +1,11 @@
 {
-  "version": "0.3.1",
-  "notes": "\n### Added\n\n- Add custom title bar, 4px narrower for more content space ([33e90c8](https://github.com/vdavid/cmdr/commit/33e90c8))\n\n### Changed\n\n- Replace rusty icon with yellow one ([79777e3](https://github.com/vdavid/cmdr/commit/79777e3))\n\n### Fixed\n\n- Fix app name in task switcher: shows \"Cmdr\" instead of \"cmdr\" ([8117300](https://github.com/vdavid/cmdr/commit/8117300))\n",
-  "pub_date": "2026-01-14T00:54:48Z",
-  "platforms": {
-    "darwin-universal": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRS2pCYTdOaDlnb3Y3ZHZteXQvK2ZITlVFbGY1SVdkQW9weVNsL2R3QWNTNW1zcmpvY2o5eUFQR2E0SE1NZm1Sd0NxSlRMR2RCeXFCUllJemlQejBaY01KcURiRzltMXdNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY4MzUyMDc5CWZpbGU6Q21kci5hcHAudGFyLmd6Ck0rbW9NVit0RjlPcWo3dnhhaTZTYVlwNVBrcXd1bnhZWmFiTTRYNDhWTUpzZXl0ejgxYUxSVSt6YmM4MDBTVW54NHptSjZkZGhLbnFwMDRBSUNmL0N3PT0K",
-      "url": "https://github.com/vdavid/cmdr/releases/download/v0.3.1/Cmdr.app.tar.gz"
+    "version": "0.3.1",
+    "notes": "\n### Added\n\n- Add custom title bar, 4px narrower for more content space ([33e90c8](https://github.com/vdavid/cmdr/commit/33e90c8))\n\n### Changed\n\n- Replace rusty icon with yellow one ([79777e3](https://github.com/vdavid/cmdr/commit/79777e3))\n\n### Fixed\n\n- Fix app name in task switcher: shows \"Cmdr\" instead of \"cmdr\" ([8117300](https://github.com/vdavid/cmdr/commit/8117300))\n",
+    "pub_date": "2026-01-14T00:54:48Z",
+    "platforms": {
+        "darwin-universal": {
+            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRS2pCYTdOaDlnb3Y3ZHZteXQvK2ZITlVFbGY1SVdkQW9weVNsL2R3QWNTNW1zcmpvY2o5eUFQR2E0SE1NZm1Sd0NxSlRMR2RCeXFCUllJemlQejBaY01KcURiRzltMXdNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY4MzUyMDc5CWZpbGU6Q21kci5hcHAudGFyLmd6Ck0rbW9NVit0RjlPcWo3dnhhaTZTYVlwNVBrcXd1bnhZWmFiTTRYNDhWTUpzZXl0ejgxYUxSVSt6YmM4MDBTVW54NHptSjZkZGhLbnFwMDRBSUNmL0N3PT0K",
+            "url": "https://github.com/vdavid/cmdr/releases/download/v0.3.1/Cmdr.app.tar.gz"
+        }
     }
-  }
 }

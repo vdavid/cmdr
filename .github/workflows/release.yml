@@ -109,15 +109,15 @@ jobs:
                   # Write to /tmp first (will copy to main branch later)
                   cat > /tmp/latest.json << EOF
                   {
-                    "version": "$VERSION",
-                    "notes": $NOTES,
-                    "pub_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-                    "platforms": {
-                      "darwin-universal": {
-                        "signature": "${{ steps.artifacts.outputs.signature }}",
-                        "url": "https://github.com/vdavid/cmdr/releases/download/${{ github.ref_name }}/${{ steps.artifacts.outputs.filename }}"
+                      "version": "$VERSION",
+                      "notes": $NOTES,
+                      "pub_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+                      "platforms": {
+                          "darwin-universal": {
+                              "signature": "${{ steps.artifacts.outputs.signature }}",
+                              "url": "https://github.com/vdavid/cmdr/releases/download/${{ github.ref_name }}/${{ steps.artifacts.outputs.filename }}"
+                          }
                       }
-                    }
                   }
                   EOF
 
