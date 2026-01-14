@@ -132,6 +132,9 @@ GET  /mcp/health          # Health check
 
 #### STDIO (bridge)
 
+> The bridge is disabled by default in [Cargo.toml](../../../apps/desktop/src-tauri/Cargo.toml). Search for `[[bin]]` and
+> uncomment it. Just don't commit it.
+
 For clients that spawn subprocesses, the `cmdr-mcp-stdio` binary bridges STDIO to the HTTP server:
 
 - **Binary**: `cmdr-mcp-stdio`

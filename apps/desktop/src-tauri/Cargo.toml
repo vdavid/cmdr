@@ -85,6 +85,7 @@ rand_core = { version = "0.6", features = ["getrandom"] }
 name = "icon_benchmarks"
 harness = false
 
-[[bin]]
-name = "cmdr-mcp-stdio"
-path = "src/bin/cmdr-mcp-stdio.rs"
+# Turned this off for now because it caused issues with building. Enable it when using in dev mode.
+# [[bin]]
+# name = "cmdr-mcp-stdio"
+# path = "src/bin/cmdr-mcp-stdio.rs"
