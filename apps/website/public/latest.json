@@ -1,19 +1,19 @@
 {
-    "version": "0.3.1",
-    "notes": "\n### Added\n\n- Add custom title bar, 4px narrower for more content space ([33e90c8](https://github.com/vdavid/cmdr/commit/33e90c8))\n\n### Changed\n\n- Replace rusty icon with yellow one ([79777e3](https://github.com/vdavid/cmdr/commit/79777e3))\n\n### Fixed\n\n- Fix app name in task switcher: shows \"Cmdr\" instead of \"cmdr\" ([8117300](https://github.com/vdavid/cmdr/commit/8117300))\n",
-    "pub_date": "2026-01-14T00:54:48Z",
+    "version": "0.3.2",
+    "notes": "\n### Fixed\n\n- Fix auto-updater to download updates and restart the app after updating ([c0bff9a](https://github.com/vdavid/cmdr/commit/c0bff9a))\n\n### Non-app\n\n- Website: redesign with mustard yellow theme, view transitions, hero animation, and reduced motion support ([0296379](https://github.com/vdavid/cmdr/commit/0296379), [18b729f](https://github.com/vdavid/cmdr/commit/18b729f), [689a151](https://github.com/vdavid/cmdr/commit/689a151))\n- Website: avoid aggressive caching, rearrange T&C ([8ca0539](https://github.com/vdavid/cmdr/commit/8ca0539), [c92dff8](https://github.com/vdavid/cmdr/commit/c92dff8))\n- Tooling: turn off MCP stdio sidecar, fix Rust-Linux check, reduce CI frequency, fix latest.json formatting ([5dda608](https://github.com/vdavid/cmdr/commit/5dda608), [2ec3f7e](https://github.com/vdavid/cmdr/commit/2ec3f7e), [42d81ab](https://github.com/vdavid/cmdr/commit/42d81ab), [52980ae](https://github.com/vdavid/cmdr/commit/52980ae))\n- Docs: release process and auto-updater documentation ([c7c36f6](https://github.com/vdavid/cmdr/commit/c7c36f6), [765f5ad](https://github.com/vdavid/cmdr/commit/765f5ad), [f3785da](https://github.com/vdavid/cmdr/commit/f3785da), [10e43de](https://github.com/vdavid/cmdr/commit/10e43de))\n",
+    "pub_date": "2026-01-14T15:40:11Z",
     "platforms": {
         "darwin-universal": {
-            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRS2pCYTdOaDlnb3Y3ZHZteXQvK2ZITlVFbGY1SVdkQW9weVNsL2R3QWNTNW1zcmpvY2o5eUFQR2E0SE1NZm1Sd0NxSlRMR2RCeXFCUllJemlQejBaY01KcURiRzltMXdNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY4MzUyMDc5CWZpbGU6Q21kci5hcHAudGFyLmd6Ck0rbW9NVit0RjlPcWo3dnhhaTZTYVlwNVBrcXd1bnhZWmFiTTRYNDhWTUpzZXl0ejgxYUxSVSt6YmM4MDBTVW54NHptSjZkZGhLbnFwMDRBSUNmL0N3PT0K",
-            "url": "https://github.com/vdavid/cmdr/releases/download/v0.3.1/Cmdr_universal.app.tar.gz"
+            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRS2pCYTdOaDlnb2xTamltbzVzbnIySkdXd2FiNTBLWGVncHpMcW1pY2x5cE5pd3VsaExManpnNmVJMFVhM3dHa0FsUWkrZnFaTmdHNTErMjlXbnZMT0N6VGd1Q2YzOVE4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY4NDA1MjA0CWZpbGU6Q21kci5hcHAudGFyLmd6CmQrVTNQTTYrdDB6YWljWGVMa2FMYWxhRGZsSFlTanUzTzdQUWcySFNBK2E5WUJHTDBmSVQzc3YzQWhTU3ZlWnZqdTFnYTdHM1d2bDBVNXJLRHpXSUJ3PT0K",
+            "url": "https://github.com/vdavid/cmdr/releases/download/v0.3.2/Cmdr.app.tar.gz"
         },
         "darwin-aarch64": {
-            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRS2pCYTdOaDlnb3Y3ZHZteXQvK2ZITlVFbGY1SVdkQW9weVNsL2R3QWNTNW1zcmpvY2o5eUFQR2E0SE1NZm1Sd0NxSlRMR2RCeXFCUllJemlQejBaY01KcURiRzltMXdNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY4MzUyMDc5CWZpbGU6Q21kci5hcHAudGFyLmd6Ck0rbW9NVit0RjlPcWo3dnhhaTZTYVlwNVBrcXd1bnhZWmFiTTRYNDhWTUpzZXl0ejgxYUxSVSt6YmM4MDBTVW54NHptSjZkZGhLbnFwMDRBSUNmL0N3PT0K",
-            "url": "https://github.com/vdavid/cmdr/releases/download/v0.3.1/Cmdr_universal.app.tar.gz"
+            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRS2pCYTdOaDlnb2xTamltbzVzbnIySkdXd2FiNTBLWGVncHpMcW1pY2x5cE5pd3VsaExManpnNmVJMFVhM3dHa0FsUWkrZnFaTmdHNTErMjlXbnZMT0N6VGd1Q2YzOVE4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY4NDA1MjA0CWZpbGU6Q21kci5hcHAudGFyLmd6CmQrVTNQTTYrdDB6YWljWGVMa2FMYWxhRGZsSFlTanUzTzdQUWcySFNBK2E5WUJHTDBmSVQzc3YzQWhTU3ZlWnZqdTFnYTdHM1d2bDBVNXJLRHpXSUJ3PT0K",
+            "url": "https://github.com/vdavid/cmdr/releases/download/v0.3.2/Cmdr.app.tar.gz"
         },
         "darwin-x86_64": {
-            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRS2pCYTdOaDlnb3Y3ZHZteXQvK2ZITlVFbGY1SVdkQW9weVNsL2R3QWNTNW1zcmpvY2o5eUFQR2E0SE1NZm1Sd0NxSlRMR2RCeXFCUllJemlQejBaY01KcURiRzltMXdNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY4MzUyMDc5CWZpbGU6Q21kci5hcHAudGFyLmd6Ck0rbW9NVit0RjlPcWo3dnhhaTZTYVlwNVBrcXd1bnhZWmFiTTRYNDhWTUpzZXl0ejgxYUxSVSt6YmM4MDBTVW54NHptSjZkZGhLbnFwMDRBSUNmL0N3PT0K",
-            "url": "https://github.com/vdavid/cmdr/releases/download/v0.3.1/Cmdr_universal.app.tar.gz"
+            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRS2pCYTdOaDlnb2xTamltbzVzbnIySkdXd2FiNTBLWGVncHpMcW1pY2x5cE5pd3VsaExManpnNmVJMFVhM3dHa0FsUWkrZnFaTmdHNTErMjlXbnZMT0N6VGd1Q2YzOVE4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY4NDA1MjA0CWZpbGU6Q21kci5hcHAudGFyLmd6CmQrVTNQTTYrdDB6YWljWGVMa2FMYWxhRGZsSFlTanUzTzdQUWcySFNBK2E5WUJHTDBmSVQzc3YzQWhTU3ZlWnZqdTFnYTdHM1d2bDBVNXJLRHpXSUJ3PT0K",
+            "url": "https://github.com/vdavid/cmdr/releases/download/v0.3.2/Cmdr.app.tar.gz"
         }
     }
 }
