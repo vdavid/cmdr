@@ -10,7 +10,7 @@ A static landing page for [getcmdr.com](https://getcmdr.com) featuring:
 - 14-day free trial CTA
 - Feature highlights
 - Download section
-- Linear.app-inspired dark design
+- Dark design for everyone
 
 ## Tech stack
 

@@ -14,7 +14,7 @@
 
 /* CSS-first Tailwind v4 configuration */
 @theme {
-    /* Colors - Linear-inspired dark palette */
+    /* Colors - Dark palette for hero image */
     --color-background: #0a0a0b;
     --color-surface: #111113;
     --color-surface-elevated: #18181b;
