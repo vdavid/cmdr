@@ -4,7 +4,7 @@ use super::write_operations::*;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
 /// Creates a temporary test directory with a unique name.
@@ -29,6 +29,9 @@ fn test_cancel_sets_flag() {
     let state = Arc::new(WriteOperationState {
         cancelled: AtomicBool::new(false),
         progress_interval: Duration::from_millis(200),
+        pending_resolution: RwLock::new(None),
+        conflict_condvar: std::sync::Condvar::new(),
+        conflict_mutex: std::sync::Mutex::new(false),
     });
 
     assert!(!state.cancelled.load(Ordering::Relaxed));
@@ -52,6 +55,7 @@ fn test_config_serialization() {
     let config = WriteOperationConfig {
         progress_interval_ms: 500,
         overwrite: true,
+        conflict_resolution: ConflictResolution::Skip,
     };
 
     let json = serde_json::to_string(&config).unwrap();
@@ -59,6 +63,7 @@ fn test_config_serialization() {
     assert!(json.contains("500"));
     assert!(json.contains("overwrite"));
     assert!(json.contains("true"));
+    assert!(json.contains("conflictResolution"));
 }
 
 #[test]
@@ -140,12 +145,14 @@ fn test_error_serialization_insufficient_space() {
     let error = WriteOperationError::InsufficientSpace {
         required: 1024,
         available: 512,
+        volume_name: Some("Macintosh HD".to_string()),
     };
 
     let json = serde_json::to_string(&error).unwrap();
     assert!(json.contains("\"type\":\"insufficient_space\""));
     assert!(json.contains("\"required\":1024"));
     assert!(json.contains("\"available\":512"));
+    assert!(json.contains("Macintosh HD"));
 }
 
 #[test]

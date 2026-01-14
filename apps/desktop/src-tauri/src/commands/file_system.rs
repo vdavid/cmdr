@@ -11,6 +11,9 @@ use crate::file_system::{
     list_directory_start_with_volume as ops_list_directory_start_with_volume,
     move_files_start as ops_move_files_start, resort_listing as ops_resort_listing,
 };
+use crate::file_system::write_operations::{
+    resolve_write_conflict as ops_resolve_write_conflict, ConflictResolution,
+};
 use std::path::PathBuf;
 
 /// Checks if a path exists.
@@ -309,6 +312,21 @@ pub async fn delete_files(
 #[tauri::command]
 pub fn cancel_write_operation(operation_id: String) {
     ops_cancel_write_operation(&operation_id);
+}
+
+/// Resolves a pending conflict for an in-progress write operation.
+///
+/// When an operation encounters a conflict in Stop mode, it emits a `write-conflict`
+/// event and waits for this function to be called. The operation will then proceed
+/// with the chosen resolution.
+///
+/// # Arguments
+/// * `operation_id` - The operation ID that has a pending conflict.
+/// * `resolution` - How to resolve the conflict (skip, overwrite, or rename).
+/// * `apply_to_all` - If true, apply this resolution to all future conflicts in this operation.
+#[tauri::command]
+pub fn resolve_write_conflict(operation_id: String, resolution: ConflictResolution, apply_to_all: bool) {
+    ops_resolve_write_conflict(&operation_id, resolution, apply_to_all);
 }
 
 /// Expands tilde (~) to the user's home directory.

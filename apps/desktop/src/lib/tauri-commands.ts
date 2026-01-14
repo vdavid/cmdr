@@ -6,6 +6,7 @@ import { type Event, listen, type UnlistenFn } from '@tauri-apps/api/event'
 import type {
     AuthMode,
     AuthOptions,
+    ConflictResolution,
     ConnectionMode,
     DiscoveryState,
     FileEntry,
@@ -27,6 +28,14 @@ import type {
     StreamingListingStartResult,
     SyncStatus,
     VolumeInfo,
+    WriteCancelledEvent,
+    WriteCompleteEvent,
+    WriteConflictEvent,
+    WriteErrorEvent,
+    WriteOperationConfig,
+    WriteOperationError,
+    WriteOperationStartResult,
+    WriteProgressEvent,
 } from './file-explorer/types'
 
 export type {
@@ -35,6 +44,14 @@ export type {
     ListingErrorEvent,
     ListingCancelledEvent,
     StreamingListingStartResult,
+    WriteCancelledEvent,
+    WriteCompleteEvent,
+    WriteConflictEvent,
+    WriteErrorEvent,
+    WriteOperationConfig,
+    WriteOperationError,
+    WriteOperationStartResult,
+    WriteProgressEvent,
 }
 
 export type { Event, UnlistenFn }
@@ -904,4 +921,136 @@ export async function needsLicenseValidation(): Promise<boolean> {
  */
 export async function validateLicenseWithServer(): Promise<LicenseStatus> {
     return invoke<LicenseStatus>('validate_license_with_server')
+}
+
+// ============================================================================
+// Write operations (copy, move, delete)
+// ============================================================================
+
+/**
+ * Starts a copy operation in the background.
+ * Progress events are emitted via write-progress, write-complete, write-error, write-cancelled.
+ * @param sources - List of source file/directory paths (absolute)
+ * @param destination - Destination directory path (absolute)
+ * @param config - Operation configuration (optional)
+ */
+export async function copyFiles(
+    sources: string[],
+    destination: string,
+    config?: WriteOperationConfig,
+): Promise<WriteOperationStartResult> {
+    return invoke<WriteOperationStartResult>('copy_files', { sources, destination, config: config ?? {} })
+}
+
+/**
+ * Starts a move operation in the background.
+ * Uses instant rename for same-filesystem moves, copy+delete for cross-filesystem.
+ * @param sources - List of source file/directory paths (absolute)
+ * @param destination - Destination directory path (absolute)
+ * @param config - Operation configuration (optional)
+ */
+export async function moveFiles(
+    sources: string[],
+    destination: string,
+    config?: WriteOperationConfig,
+): Promise<WriteOperationStartResult> {
+    return invoke<WriteOperationStartResult>('move_files', { sources, destination, config: config ?? {} })
+}
+
+/**
+ * Starts a delete operation in the background.
+ * Recursively deletes files and directories.
+ * @param sources - List of source file/directory paths (absolute)
+ * @param config - Operation configuration (optional)
+ */
+export async function deleteFiles(sources: string[], config?: WriteOperationConfig): Promise<WriteOperationStartResult> {
+    return invoke<WriteOperationStartResult>('delete_files', { sources, config: config ?? {} })
+}
+
+/**
+ * Cancels an in-progress write operation.
+ * The operation will emit a write-cancelled event when it stops.
+ * @param operationId - The operation ID to cancel
+ */
+export async function cancelWriteOperation(operationId: string): Promise<void> {
+    await invoke('cancel_write_operation', { operationId })
+}
+
+/**
+ * Resolves a pending conflict for an in-progress write operation.
+ * When an operation encounters a conflict in Stop mode, it emits a write-conflict
+ * event and waits for this function to be called. The operation will then proceed
+ * with the chosen resolution.
+ * @param operationId - The operation ID that has a pending conflict
+ * @param resolution - How to resolve the conflict (skip, overwrite, or rename)
+ * @param applyToAll - If true, apply this resolution to all future conflicts in this operation
+ */
+export async function resolveWriteConflict(
+    operationId: string,
+    resolution: ConflictResolution,
+    applyToAll: boolean,
+): Promise<void> {
+    await invoke('resolve_write_conflict', { operationId, resolution, applyToAll })
+}
+
+/**
+ * Type guard for WriteOperationError.
+ */
+export function isWriteOperationError(error: unknown): error is WriteOperationError {
+    return (
+        typeof error === 'object' &&
+        error !== null &&
+        'type' in error &&
+        typeof (error as { type: unknown }).type === 'string'
+    )
+}
+
+// ============================================================================
+// Write operation event helpers
+// ============================================================================
+
+/**
+ * Subscribes to write operation progress events.
+ * @param callback - Function to call when progress is reported
+ * @returns Unsubscribe function
+ */
+export async function onWriteProgress(callback: (event: WriteProgressEvent) => void): Promise<UnlistenFn> {
+    return listen<WriteProgressEvent>('write-progress', (event) => callback(event.payload))
+}
+
+/**
+ * Subscribes to write operation completion events.
+ * @param callback - Function to call when an operation completes successfully
+ * @returns Unsubscribe function
+ */
+export async function onWriteComplete(callback: (event: WriteCompleteEvent) => void): Promise<UnlistenFn> {
+    return listen<WriteCompleteEvent>('write-complete', (event) => callback(event.payload))
+}
+
+/**
+ * Subscribes to write operation error events.
+ * @param callback - Function to call when an operation fails
+ * @returns Unsubscribe function
+ */
+export async function onWriteError(callback: (event: WriteErrorEvent) => void): Promise<UnlistenFn> {
+    return listen<WriteErrorEvent>('write-error', (event) => callback(event.payload))
+}
+
+/**
+ * Subscribes to write operation cancelled events.
+ * @param callback - Function to call when an operation is cancelled
+ * @returns Unsubscribe function
+ */
+export async function onWriteCancelled(callback: (event: WriteCancelledEvent) => void): Promise<UnlistenFn> {
+    return listen<WriteCancelledEvent>('write-cancelled', (event) => callback(event.payload))
+}
+
+/**
+ * Subscribes to write operation conflict events.
+ * Only emitted when using Stop conflict resolution mode.
+ * @param callback - Function to call when a conflict is detected
+ * @returns Unsubscribe function
+ */
+export async function onWriteConflict(callback: (event: WriteConflictEvent) => void): Promise<UnlistenFn> {
+    return listen<WriteConflictEvent>('write-conflict', (event) => callback(event.payload))
 }

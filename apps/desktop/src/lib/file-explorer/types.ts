@@ -290,3 +290,97 @@ export type MountError =
     | { type: 'cancelled'; message: string }
     | { type: 'protocol_error'; message: string }
     | { type: 'mount_path_conflict'; message: string }
+
+// ============================================================================
+// Write operation types
+// ============================================================================
+
+/** Type of write operation. */
+export type WriteOperationType = 'copy' | 'move' | 'delete'
+
+/** Phase of a write operation. */
+export type WriteOperationPhase = 'scanning' | 'copying' | 'deleting'
+
+/** How to handle conflicts when destination files already exist. */
+export type ConflictResolution = 'stop' | 'skip' | 'overwrite' | 'rename'
+
+/** Configuration for write operations. */
+export interface WriteOperationConfig {
+    /** Progress update interval in milliseconds (default: 200) */
+    progressIntervalMs?: number
+    /** Whether to overwrite existing files (deprecated, use conflictResolution) */
+    overwrite?: boolean
+    /** How to handle conflicts */
+    conflictResolution?: ConflictResolution
+}
+
+/** Result of starting a write operation. */
+export interface WriteOperationStartResult {
+    /** Unique operation ID for tracking and cancellation */
+    operationId: string
+    /** Type of operation started */
+    operationType: WriteOperationType
+}
+
+/** Progress event payload for write operations. */
+export interface WriteProgressEvent {
+    operationId: string
+    operationType: WriteOperationType
+    phase: WriteOperationPhase
+    /** Current file being processed (filename only, not full path) */
+    currentFile: string | null
+    /** Number of files processed */
+    filesDone: number
+    /** Total number of files */
+    filesTotal: number
+    /** Bytes processed so far */
+    bytesDone: number
+    /** Total bytes to process */
+    bytesTotal: number
+}
+
+/** Completion event payload for write operations. */
+export interface WriteCompleteEvent {
+    operationId: string
+    operationType: WriteOperationType
+    filesProcessed: number
+    bytesProcessed: number
+}
+
+/** Error event payload for write operations. */
+export interface WriteErrorEvent {
+    operationId: string
+    operationType: WriteOperationType
+    error: WriteOperationError
+}
+
+/** Cancelled event payload for write operations. */
+export interface WriteCancelledEvent {
+    operationId: string
+    operationType: WriteOperationType
+    /** Number of files processed before cancellation */
+    filesProcessed: number
+}
+
+/** Conflict event payload (emitted when stop mode encounters a conflict). */
+export interface WriteConflictEvent {
+    operationId: string
+    sourcePath: string
+    destinationPath: string
+    /** Whether destination is newer than source */
+    destinationIsNewer: boolean
+    /** Size difference (positive = destination is larger) */
+    sizeDifference: number
+}
+
+/** Error types for write operations (discriminated union). */
+export type WriteOperationError =
+    | { type: 'source_not_found'; path: string }
+    | { type: 'destination_exists'; path: string }
+    | { type: 'permission_denied'; path: string; message: string }
+    | { type: 'insufficient_space'; required: number; available: number; volumeName: string | null }
+    | { type: 'same_location'; path: string }
+    | { type: 'destination_inside_source'; source: string; destination: string }
+    | { type: 'symlink_loop'; path: string }
+    | { type: 'cancelled'; message: string }
+    | { type: 'io_error'; path: string; message: string }

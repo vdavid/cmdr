@@ -1,6 +1,8 @@
 //! File system module - operations, watchers, volumes, and providers.
 
 #[cfg(target_os = "macos")]
+pub(crate) mod macos_copy;
+#[cfg(target_os = "macos")]
 mod macos_metadata;
 #[cfg(test)]
 mod mock_provider;
@@ -81,3 +83,6 @@ mod sorting_test;
 
 #[cfg(test)]
 mod write_operations_test;
+
+#[cfg(test)]
+mod write_operations_integration_test;
