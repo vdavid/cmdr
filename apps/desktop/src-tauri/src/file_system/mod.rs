@@ -14,6 +14,7 @@ pub mod sync_status;
 pub mod volume;
 mod volume_manager;
 mod watcher;
+pub(crate) mod write_operations;
 
 use std::sync::{Arc, LazyLock};
 
@@ -35,6 +36,11 @@ pub use volume::{InMemoryVolume, LocalPosixVolume, Volume, VolumeError};
 pub use volume_manager::VolumeManager;
 // Watcher management - init_watcher_manager must be called from lib.rs
 pub use watcher::init_watcher_manager;
+// Re-export write operation types
+pub use write_operations::{
+    WriteOperationConfig, WriteOperationError, WriteOperationStartResult, cancel_write_operation,
+    copy_files_start, delete_files_start, move_files_start,
+};
 
 /// Global volume manager instance
 static VOLUME_MANAGER: LazyLock<VolumeManager> = LazyLock::new(VolumeManager::new);
@@ -72,3 +78,6 @@ mod hidden_files_test;
 
 #[cfg(test)]
 mod sorting_test;
+
+#[cfg(test)]
+mod write_operations_test;

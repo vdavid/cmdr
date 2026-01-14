@@ -2,11 +2,14 @@
 
 use crate::file_system::{
     FileEntry, ListingStartResult, ResortResult, SortColumn, SortOrder, StreamingListingStartResult,
-    cancel_listing as ops_cancel_listing, find_file_index as ops_find_file_index, get_file_at as ops_get_file_at,
-    get_file_range as ops_get_file_range, get_max_filename_width as ops_get_max_filename_width,
-    get_total_count as ops_get_total_count, list_directory_end as ops_list_directory_end,
-    list_directory_start_streaming as ops_list_directory_start_streaming,
-    list_directory_start_with_volume as ops_list_directory_start_with_volume, resort_listing as ops_resort_listing,
+    WriteOperationConfig, WriteOperationError, WriteOperationStartResult, cancel_listing as ops_cancel_listing,
+    cancel_write_operation as ops_cancel_write_operation, copy_files_start as ops_copy_files_start,
+    delete_files_start as ops_delete_files_start, find_file_index as ops_find_file_index,
+    get_file_at as ops_get_file_at, get_file_range as ops_get_file_range,
+    get_max_filename_width as ops_get_max_filename_width, get_total_count as ops_get_total_count,
+    list_directory_end as ops_list_directory_end, list_directory_start_streaming as ops_list_directory_start_streaming,
+    list_directory_start_with_volume as ops_list_directory_start_with_volume,
+    move_files_start as ops_move_files_start, resort_listing as ops_resort_listing,
 };
 use std::path::PathBuf;
 
@@ -207,6 +210,105 @@ pub fn benchmark_log(message: String) {
     if crate::benchmark::is_enabled() {
         eprintln!("{}", message);
     }
+}
+
+// ============================================================================
+// Write operations (copy, move, delete)
+// ============================================================================
+
+/// Starts a copy operation in the background.
+///
+/// # Events emitted
+/// * `write-progress` - Every 200ms (configurable) with progress
+/// * `write-complete` - On success
+/// * `write-error` - On error
+/// * `write-cancelled` - If cancelled
+///
+/// # Arguments
+/// * `app` - Tauri app handle (injected by Tauri).
+/// * `sources` - List of source file/directory paths. Supports tilde expansion (~).
+/// * `destination` - Destination directory path. Supports tilde expansion (~).
+/// * `config` - Optional configuration (progress interval, overwrite).
+#[tauri::command]
+pub async fn copy_files(
+    app: tauri::AppHandle,
+    sources: Vec<String>,
+    destination: String,
+    config: Option<WriteOperationConfig>,
+) -> Result<WriteOperationStartResult, WriteOperationError> {
+    let sources: Vec<PathBuf> = sources.iter().map(|s| PathBuf::from(expand_tilde(s))).collect();
+    let destination = PathBuf::from(expand_tilde(&destination));
+    let config = config.unwrap_or_default();
+
+    ops_copy_files_start(app, sources, destination, config).await
+}
+
+/// Starts a move operation in the background.
+///
+/// Uses rename() for same-filesystem moves (instant).
+/// Falls back to copy+delete for cross-filesystem moves.
+///
+/// # Events emitted
+/// * `write-progress` - Every 200ms (configurable) with progress
+/// * `write-complete` - On success
+/// * `write-error` - On error
+/// * `write-cancelled` - If cancelled
+///
+/// # Arguments
+/// * `app` - Tauri app handle (injected by Tauri).
+/// * `sources` - List of source file/directory paths. Supports tilde expansion (~).
+/// * `destination` - Destination directory path. Supports tilde expansion (~).
+/// * `config` - Optional configuration (progress interval, overwrite).
+#[tauri::command]
+pub async fn move_files(
+    app: tauri::AppHandle,
+    sources: Vec<String>,
+    destination: String,
+    config: Option<WriteOperationConfig>,
+) -> Result<WriteOperationStartResult, WriteOperationError> {
+    let sources: Vec<PathBuf> = sources.iter().map(|s| PathBuf::from(expand_tilde(s))).collect();
+    let destination = PathBuf::from(expand_tilde(&destination));
+    let config = config.unwrap_or_default();
+
+    ops_move_files_start(app, sources, destination, config).await
+}
+
+/// Starts a delete operation in the background.
+///
+/// Recursively deletes files and directories.
+///
+/// # Events emitted
+/// * `write-progress` - Every 200ms (configurable) with progress
+/// * `write-complete` - On success
+/// * `write-error` - On error
+/// * `write-cancelled` - If cancelled
+///
+/// # Arguments
+/// * `app` - Tauri app handle (injected by Tauri).
+/// * `sources` - List of file/directory paths to delete. Supports tilde expansion (~).
+/// * `config` - Optional configuration (progress interval).
+#[tauri::command]
+pub async fn delete_files(
+    app: tauri::AppHandle,
+    sources: Vec<String>,
+    config: Option<WriteOperationConfig>,
+) -> Result<WriteOperationStartResult, WriteOperationError> {
+    let sources: Vec<PathBuf> = sources.iter().map(|s| PathBuf::from(expand_tilde(s))).collect();
+    let config = config.unwrap_or_default();
+
+    ops_delete_files_start(app, sources, config).await
+}
+
+/// Cancels an in-progress write operation.
+///
+/// Sets the cancellation flag, which will be checked by the background task.
+/// The task will emit a `write-cancelled` event when it stops.
+///
+/// # Arguments
+/// * `operation_id` - The operation ID to cancel.
+#[tauri::command]
+pub fn cancel_write_operation(operation_id: String) {
+    ops_cancel_write_operation(&operation_id);
 }
 
 /// Expands tilde (~) to the user's home directory.
