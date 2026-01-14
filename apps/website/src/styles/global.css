@@ -25,10 +25,10 @@
     --color-text-secondary: #a1a1aa;
     --color-text-tertiary: #9e9ea8;
 
-    /* Accent - indigo with WCAG AA contrast (4.6:1 with white) */
-    --color-accent: #4f46e5;
-    --color-accent-hover: #6366f1;
-    --color-accent-glow: rgba(79, 70, 229, 0.4);
+    /* Accent - mustard yellow (use dark text on buttons for accessibility) */
+    --color-accent: #ffc206;
+    --color-accent-hover: #ffd23f;
+    --color-accent-glow: rgba(255, 194, 6, 0.4);
 
     /* Fonts - Inter is self-hosted, monospace falls back to system */
     --font-sans: 'Inter', system-ui, -apple-system, sans-serif;

@@ -1,39 +1,39 @@
 ---
 const features = [
     {
-        icon: '🧠',
+        icon: '/icons/brain.svg',
         title: 'Natural language rename',
         description:
             'Type "make these lowercase and add date prefix" and watch it happen. No regex, no scripts, just words.',
         highlight: true,
     },
     {
-        icon: '🔍',
+        icon: '/icons/search.svg',
         title: 'Smart search',
         description:
             'Find files by describing them: "that PDF contract from last month" or "screenshots with error messages."',
         highlight: true,
     },
     {
-        icon: '⚡',
+        icon: '/icons/zap.svg',
         title: 'AI batch operations',
         description: 'Organize hundreds of files with a single command. "Sort these into folders by project name."',
         highlight: true,
     },
     {
-        icon: '⌨️',
+        icon: '/icons/keyboard.svg',
         title: 'Keyboard-first',
         description: 'Navigate, select, copy, move — all without touching your mouse. Just like the old days.',
         highlight: false,
     },
     {
-        icon: '🚀',
+        icon: '/icons/rocket.svg',
         title: 'Blazing fast',
         description: 'Built with Rust for native performance. Handles folders with 50,000+ files effortlessly.',
         highlight: false,
     },
     {
-        icon: '📂',
+        icon: '/icons/folder.svg',
         title: 'Two-pane layout',
         description: 'See source and destination side by side. The classic layout that just works.',
         highlight: false,
@@ -65,7 +65,7 @@ const features = [
                                 : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-accent)]/30 hover:bg-[var(--color-surface-elevated)]',
                         ]}
                     >
-                        <div class="mb-4 text-4xl">{feature.icon}</div>
+                        <img src={feature.icon} alt="" class="mb-4 size-10" />
                         <h3 class="mb-2 text-xl font-semibold">
                             {feature.title}
                             {feature.highlight && (
