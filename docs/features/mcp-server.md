@@ -17,10 +17,10 @@ The MCP server exposes 43 tools that mirror user capabilities exactly. AI agents
 
 The MCP server is controlled by environment variables:
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `CMDR_MCP_ENABLED` | `true` in dev, `false` in prod | Enable the MCP server |
-| `CMDR_MCP_PORT` | `9224` | Port for the HTTP server |
+| Variable           | Default                        | Description              |
+|--------------------|--------------------------------|--------------------------|
+| `CMDR_MCP_ENABLED` | `true` in dev, `false` in prod | Enable the MCP server    |
+| `CMDR_MCP_PORT`    | `9224`                         | Port for the HTTP server |
 
 ### Enabling in development
 
@@ -47,86 +47,86 @@ CMDR_MCP_ENABLED=true open /Applications/cmdr.app
 
 ### App commands (3)
 
-| Tool | Description |
-|------|-------------|
-| `app.quit` | Quit the application |
-| `app.hide` | Hide the application window |
-| `app.about` | Show the about window |
+| Tool        | Description                 |
+|-------------|-----------------------------|
+| `app.quit`  | Quit the application        |
+| `app.hide`  | Hide the application window |
+| `app.about` | Show the about window       |
 
 ### View commands (3)
 
-| Tool | Description |
-|------|-------------|
+| Tool              | Description                    |
+|-------------------|--------------------------------|
 | `view.showHidden` | Toggle hidden files visibility |
-| `view.briefMode` | Switch to Brief view mode |
-| `view.fullMode` | Switch to Full view mode |
+| `view.briefMode`  | Switch to Brief view mode      |
+| `view.fullMode`   | Switch to Full view mode       |
 
 ### Pane commands (3)
 
-| Tool | Description |
-|------|-------------|
-| `pane.switch` | Switch focus to the other pane |
-| `pane.leftVolumeChooser` | Open volume chooser for left pane |
+| Tool                      | Description                        |
+|---------------------------|------------------------------------|
+| `pane.switch`             | Switch focus to the other pane     |
+| `pane.leftVolumeChooser`  | Open volume chooser for left pane  |
 | `pane.rightVolumeChooser` | Open volume chooser for right pane |
 
 ### Navigation commands (12)
 
-| Tool | Description |
-|------|-------------|
-| `nav.open` | Open/enter selected item |
-| `nav.parent` | Navigate to parent folder |
-| `nav.back` | Navigate back in history |
-| `nav.forward` | Navigate forward in history |
-| `nav.up` | Select previous file |
-| `nav.down` | Select next file |
-| `nav.home` | Go to first file |
-| `nav.end` | Go to last file |
-| `nav.pageUp` | Page up |
-| `nav.pageDown` | Page down |
-| `nav.left` | Previous column (Brief mode) |
-| `nav.right` | Next column (Brief mode) |
+| Tool           | Description                  |
+|----------------|------------------------------|
+| `nav.open`     | Open/enter selected item     |
+| `nav.parent`   | Navigate to parent folder    |
+| `nav.back`     | Navigate back in history     |
+| `nav.forward`  | Navigate forward in history  |
+| `nav.up`       | Select previous file         |
+| `nav.down`     | Select next file             |
+| `nav.home`     | Go to first file             |
+| `nav.end`      | Go to last file              |
+| `nav.pageUp`   | Page up                      |
+| `nav.pageDown` | Page down                    |
+| `nav.left`     | Previous column (Brief mode) |
+| `nav.right`    | Next column (Brief mode)     |
 
 ### Sort commands (8)
 
-| Tool | Description |
-|------|-------------|
-| `sort.byName` | Sort by filename |
-| `sort.byExtension` | Sort by file extension |
-| `sort.bySize` | Sort by file size |
-| `sort.byModified` | Sort by modification date |
-| `sort.byCreated` | Sort by creation date |
-| `sort.ascending` | Set ascending order |
-| `sort.descending` | Set descending order |
-| `sort.toggleOrder` | Toggle sort order |
+| Tool               | Description               |
+|--------------------|---------------------------|
+| `sort.byName`      | Sort by filename          |
+| `sort.byExtension` | Sort by file extension    |
+| `sort.bySize`      | Sort by file size         |
+| `sort.byModified`  | Sort by modification date |
+| `sort.byCreated`   | Sort by creation date     |
+| `sort.ascending`   | Set ascending order       |
+| `sort.descending`  | Set descending order      |
+| `sort.toggleOrder` | Toggle sort order         |
 
 ### File commands (5)
 
-| Tool | Description |
-|------|-------------|
+| Tool                | Description                  |
+|---------------------|------------------------------|
 | `file.showInFinder` | Show selected file in Finder |
-| `file.copyPath` | Copy file path to clipboard |
-| `file.copyFilename` | Copy filename to clipboard |
-| `file.quickLook` | Preview with Quick Look |
-| `file.getInfo` | Open Get Info window |
+| `file.copyPath`     | Copy file path to clipboard  |
+| `file.copyFilename` | Copy filename to clipboard   |
+| `file.quickLook`    | Preview with Quick Look      |
+| `file.getInfo`      | Open Get Info window         |
 
 ### Volume commands (3)
 
-| Tool | Description | Parameters |
-|------|-------------|------------|
-| `volume.list` | List available volumes | None |
-| `volume.selectLeft` | Select volume for left pane | `index: integer` |
+| Tool                 | Description                  | Parameters       |
+|----------------------|------------------------------|------------------|
+| `volume.list`        | List available volumes       | None             |
+| `volume.selectLeft`  | Select volume for left pane  | `index: integer` |
 | `volume.selectRight` | Select volume for right pane | `index: integer` |
 
 ### Context commands (6)
 
-| Tool | Description |
-|------|-------------|
-| `context.getFocusedPane` | Get focused pane (left/right) |
-| `context.getLeftPanePath` | Get left pane path and volume |
-| `context.getRightPanePath` | Get right pane path and volume |
-| `context.getLeftPaneContent` | Get left pane file listing |
-| `context.getRightPaneContent` | Get right pane file listing |
-| `context.getSelectedFileInfo` | Get selected file details |
+| Tool                          | Description                    |
+|-------------------------------|--------------------------------|
+| `context.getFocusedPane`      | Get focused pane (left/right)  |
+| `context.getLeftPanePath`     | Get left pane path and volume  |
+| `context.getRightPanePath`    | Get right pane path and volume |
+| `context.getLeftPaneContent`  | Get left pane file listing     |
+| `context.getRightPaneContent` | Get right pane file listing    |
+| `context.getSelectedFileInfo` | Get selected file details      |
 
 ## Protocol
 
@@ -134,11 +134,11 @@ The MCP server uses JSON-RPC 2.0 over HTTP:
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/mcp` | JSON-RPC endpoint |
-| GET | `/mcp/sse` | Server-sent events stream |
-| GET | `/mcp/health` | Health check |
+| Method | Path          | Description               |
+|--------|---------------|---------------------------|
+| POST   | `/mcp`        | JSON-RPC endpoint         |
+| GET    | `/mcp/sse`    | Server-sent events stream |
+| GET    | `/mcp/health` | Health check              |
 
 ### Example request
 
