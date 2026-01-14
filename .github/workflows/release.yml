@@ -76,9 +76,21 @@ jobs:
             - name: Get artifact paths and signatures
               id: artifacts
               run: |
+                  # Debug: list all bundle files
+                  echo "=== Bundle directory contents ==="
+                  find apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle -type f | head -20
+
                   # Find the .app.tar.gz and its signature
                   BUNDLE=$(find apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle -name "*.app.tar.gz" | head -1)
                   SIG_FILE="${BUNDLE}.sig"
+
+                  echo "Bundle: $BUNDLE"
+                  echo "Sig file: $SIG_FILE"
+
+                  if [ ! -f "$SIG_FILE" ]; then
+                      echo "ERROR: Signature file not found!"
+                      exit 1
+                  fi
 
                   SIGNATURE=$(cat "$SIG_FILE")
                   FILENAME=$(basename "$BUNDLE")
