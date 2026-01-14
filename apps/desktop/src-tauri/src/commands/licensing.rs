@@ -33,6 +33,12 @@ pub fn mark_expiration_modal_shown(app: tauri::AppHandle) {
     licensing::mark_expiration_modal_shown(&app);
 }
 
+/// Mark the commercial reminder as dismissed (resets the 30-day timer).
+#[tauri::command]
+pub fn mark_commercial_reminder_dismissed(app: tauri::AppHandle) {
+    licensing::mark_commercial_reminder_dismissed(&app);
+}
+
 /// Reset license data (debug builds only).
 #[tauri::command]
 pub fn reset_license(app: tauri::AppHandle) {

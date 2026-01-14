@@ -312,6 +312,7 @@ pub fn run() {
             commands::licensing::activate_license,
             commands::licensing::get_license_info,
             commands::licensing::mark_expiration_modal_shown,
+            commands::licensing::mark_commercial_reminder_dismissed,
             commands::licensing::reset_license,
             commands::licensing::needs_license_validation,
             commands::licensing::validate_license_with_server

@@ -14,6 +14,7 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => {
         activateLicense: vi.fn(),
         getLicenseInfo: vi.fn(),
         markExpirationModalShown: vi.fn(),
+        markCommercialReminderDismissed: vi.fn(),
         resetLicense: vi.fn(),
         needsLicenseValidation: vi.fn(),
         validateLicenseWithServer: vi.fn(),
@@ -27,6 +28,7 @@ import {
     activateLicense,
     getLicenseInfo,
     markExpirationModalShown,
+    markCommercialReminderDismissed,
     needsLicenseValidation,
     validateLicenseWithServer,
 } from '$lib/tauri-commands'
@@ -37,19 +39,41 @@ describe('License status types', () => {
     })
 
     it('handles personal license status', async () => {
-        const mockStatus: LicenseStatus = { type: 'personal' }
+        const mockStatus: LicenseStatus = { type: 'personal', showCommercialReminder: false }
         vi.mocked(getLicenseStatus).mockResolvedValue(mockStatus)
 
         const status = await getLicenseStatus()
         expect(status.type).toBe('personal')
     })
 
+    it('handles personal license with commercial reminder', async () => {
+        const mockStatus: LicenseStatus = { type: 'personal', showCommercialReminder: true }
+        vi.mocked(getLicenseStatus).mockResolvedValue(mockStatus)
+
+        const status = await getLicenseStatus()
+        expect(status.type).toBe('personal')
+        if (status.type === 'personal') {
+            expect(status.showCommercialReminder).toBe(true)
+        }
+    })
+
     it('handles supporter license status', async () => {
-        const mockStatus: LicenseStatus = { type: 'supporter' }
+        const mockStatus: LicenseStatus = { type: 'supporter', showCommercialReminder: false }
         vi.mocked(getLicenseStatus).mockResolvedValue(mockStatus)
 
         const status = await getLicenseStatus()
         expect(status.type).toBe('supporter')
+    })
+
+    it('handles supporter license with commercial reminder', async () => {
+        const mockStatus: LicenseStatus = { type: 'supporter', showCommercialReminder: true }
+        vi.mocked(getLicenseStatus).mockResolvedValue(mockStatus)
+
+        const status = await getLicenseStatus()
+        expect(status.type).toBe('supporter')
+        if (status.type === 'supporter') {
+            expect(status.showCommercialReminder).toBe(true)
+        }
     })
 
     it('handles commercial license status with organization', async () => {
@@ -212,6 +236,41 @@ describe('Expiration modal', () => {
 
         await markExpirationModalShown()
         expect(markExpirationModalShown).toHaveBeenCalled()
+    })
+})
+
+describe('Commercial reminder modal', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    it('calls mark commercial reminder dismissed', async () => {
+        vi.mocked(markCommercialReminderDismissed).mockResolvedValue()
+
+        await markCommercialReminderDismissed()
+        expect(markCommercialReminderDismissed).toHaveBeenCalled()
+    })
+
+    it('personal license includes showCommercialReminder field', async () => {
+        const mockStatus: LicenseStatus = { type: 'personal', showCommercialReminder: true }
+        vi.mocked(getLicenseStatus).mockResolvedValue(mockStatus)
+
+        const status = await getLicenseStatus()
+        if (status.type === 'personal') {
+            expect('showCommercialReminder' in status).toBe(true)
+            expect(status.showCommercialReminder).toBe(true)
+        }
+    })
+
+    it('supporter license includes showCommercialReminder field', async () => {
+        const mockStatus: LicenseStatus = { type: 'supporter', showCommercialReminder: false }
+        vi.mocked(getLicenseStatus).mockResolvedValue(mockStatus)
+
+        const status = await getLicenseStatus()
+        if (status.type === 'supporter') {
+            expect('showCommercialReminder' in status).toBe(true)
+            expect(status.showCommercialReminder).toBe(false)
+        }
     })
 })
 

@@ -3,6 +3,7 @@
     import DualPaneExplorer from '$lib/file-explorer/DualPaneExplorer.svelte'
     import FullDiskAccessPrompt from '$lib/onboarding/FullDiskAccessPrompt.svelte'
     import ExpirationModal from '$lib/licensing/ExpirationModal.svelte'
+    import CommercialReminderModal from '$lib/licensing/CommercialReminderModal.svelte'
     import AboutWindow from '$lib/licensing/AboutWindow.svelte'
     import CommandPalette from '$lib/command-palette/CommandPalette.svelte'
     import {
@@ -46,6 +47,7 @@
     let showExpiredModal = $state(false)
     let expiredOrgName = $state<string | null>(null)
     let expiredAt = $state<string>('')
+    let showCommercialReminder = $state(false)
     let showAboutWindow = $state(false)
     let showCommandPalette = $state(false)
     let explorerRef: ExplorerAPI | undefined = $state()
@@ -93,6 +95,14 @@
                 showExpiredModal = true
                 expiredOrgName = licenseStatus.organizationName
                 expiredAt = licenseStatus.expiredAt
+            }
+
+            // Check if we need to show commercial reminder for personal/supporter users
+            if (
+                (licenseStatus.type === 'personal' || licenseStatus.type === 'supporter') &&
+                licenseStatus.showCommercialReminder
+            ) {
+                showCommercialReminder = true
             }
 
             // Load window title based on license status
@@ -266,6 +276,11 @@
     function handleExpirationModalClose() {
         showExpiredModal = false
         hideExpirationModal()
+        explorerRef?.refocus()
+    }
+
+    function handleCommercialReminderClose() {
+        showCommercialReminder = false
         explorerRef?.refocus()
     }
 
@@ -511,6 +526,10 @@
 
         {#if showExpiredModal}
             <ExpirationModal organizationName={expiredOrgName} {expiredAt} onClose={handleExpirationModalClose} />
+        {/if}
+
+        {#if showCommercialReminder}
+            <CommercialReminderModal onClose={handleCommercialReminderClose} />
         {/if}
 
         {#if showFdaPrompt}

@@ -152,8 +152,10 @@ CMDR_MOCK_LICENSE=expired pnpm tauri dev
 
 | Value | Description | Window title |
 |-------|-------------|--------------|
-| `personal` | No license - personal use only | "Cmdr – Personal use only" |
-| `supporter` | Supporter license (personal badge) | "Cmdr – Personal" |
+| `personal` | No license - personal use only (no reminder) | "Cmdr – Personal use only" |
+| `personal_reminder` | Personal license (shows commercial reminder) | "Cmdr – Personal use only" |
+| `supporter` | Supporter license (no reminder) | "Cmdr – Personal" |
+| `supporter_reminder` | Supporter license (shows commercial reminder) | "Cmdr – Personal" |
 | `commercial` | Commercial subscription license | "Cmdr" |
 | `perpetual` | Commercial perpetual license | "Cmdr" |
 | `expired` | Expired commercial license (shows modal) | "Cmdr – Personal use only" |
@@ -164,6 +166,21 @@ CMDR_MOCK_LICENSE=expired pnpm tauri dev
 - Commercial/perpetual org: "Test Corporation" / "Perpetual Inc."
 - Expiration date (commercial): 2027-01-10
 - Expired at (expired): 2026-01-01
+
+### Commercial reminder for personal users
+
+Personal and Supporter license holders see a friendly reminder modal every 30 days encouraging them to get a commercial license if using Cmdr at work. The modal:
+
+- Appears once every 30 days (not on every launch)
+- Has two actions: "Get commercial license" and "Remind me in 30 days"
+- Clicking "Remind me in 30 days" resets the 30-day timer
+- State is stored in `license.json` and resets on app reinstall
+
+To test:
+
+```bash
+CMDR_MOCK_LICENSE=personal_reminder pnpm tauri dev
+```
 
 **Notes:**
 

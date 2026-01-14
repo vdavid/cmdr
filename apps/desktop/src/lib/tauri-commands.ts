@@ -821,8 +821,8 @@ export type LicenseType = 'supporter' | 'commercial_subscription' | 'commercial_
 
 /** Application license status */
 export type LicenseStatus =
-    | { type: 'personal' }
-    | { type: 'supporter' }
+    | { type: 'personal'; showCommercialReminder: boolean }
+    | { type: 'supporter'; showCommercialReminder: boolean }
     | { type: 'commercial'; licenseType: LicenseType; organizationName: string | null; expiresAt: string | null }
     | { type: 'expired'; organizationName: string | null; expiredAt: string; showModal: boolean }
 
@@ -872,6 +872,13 @@ export async function getLicenseInfo(): Promise<LicenseInfo | null> {
  */
 export async function markExpirationModalShown(): Promise<void> {
     await invoke('mark_expiration_modal_shown')
+}
+
+/**
+ * Marks the commercial reminder as dismissed (resets the 30-day timer).
+ */
+export async function markCommercialReminderDismissed(): Promise<void> {
+    await invoke('mark_commercial_reminder_dismissed')
 }
 
 /**

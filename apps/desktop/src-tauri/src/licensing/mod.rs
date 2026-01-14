@@ -8,8 +8,8 @@ mod validation_client;
 mod verification;
 
 pub use app_status::{
-    AppStatus, LicenseType, get_app_status, get_window_title, mark_expiration_modal_shown, needs_validation,
-    reset_license, update_cached_status, validate_license_async,
+    AppStatus, LicenseType, get_app_status, get_window_title, mark_commercial_reminder_dismissed,
+    mark_expiration_modal_shown, needs_validation, reset_license, update_cached_status, validate_license_async,
 };
 pub use verification::{LicenseInfo, activate_license, get_license_info};
 
