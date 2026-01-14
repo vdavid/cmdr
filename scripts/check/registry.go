@@ -23,6 +23,8 @@ func getCheckByName(name string) Check {
 		return &RustTestsCheck{}
 	case "rust-tests-linux":
 		return &RustTestsLinuxCheck{}
+	case "jscpd-rust":
+		return &JscpdRustCheck{}
 	// Desktop/Svelte checks
 	case "prettier":
 		return &PrettierCheck{}
@@ -89,6 +91,7 @@ func getRustChecks() []Check {
 		&CargoAuditCheck{},
 		&CargoDenyCheck{},
 		&CargoUdepsCheck{},
+		&JscpdRustCheck{},
 		&RustTestsCheck{},
 		&RustTestsLinuxCheck{},
 	}

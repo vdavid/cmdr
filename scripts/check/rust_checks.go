@@ -250,3 +250,53 @@ func (c *CargoUdepsCheck) Run(ctx *CheckContext) error {
 	}
 	return nil
 }
+
+// JscpdRustCheck detects code duplication in Rust files.
+type JscpdRustCheck struct{}
+
+func (c *JscpdRustCheck) Name() string {
+	return "jscpd-rust"
+}
+
+func (c *JscpdRustCheck) Run(ctx *CheckContext) error {
+	rustSrcDir := filepath.Join(ctx.RootDir, "apps", "desktop", "src-tauri", "src")
+
+	// Check if jscpd is available via npx
+	cmd := exec.Command("npx", "jscpd", "--version")
+	if _, err := runCommand(cmd, true); err != nil {
+		fmt.Printf("%sInstalling jscpd...%s ", colorYellow, colorReset)
+		installCmd := exec.Command("npm", "install", "-g", "jscpd")
+		if _, err := runCommand(installCmd, true); err != nil {
+			return fmt.Errorf("failed to install jscpd: %w", err)
+		}
+	}
+
+	// Run jscpd on Rust source files
+	// --min-lines 5: minimum 5 lines to consider as duplicate
+	// --min-tokens 100: minimum 100 tokens (filters out small trait impls and test data)
+	// --threshold 2: fail if >2% duplication
+	// --ignore-pattern: ignore trait implementations (impl X for Y) which often have
+	//   similar accessor methods that can't be deduplicated
+	cmd = exec.Command("npx", "jscpd",
+		rustSrcDir,
+		"--format", "rust",
+		"--min-lines", "5",
+		"--min-tokens", "100",
+		"--threshold", "2",
+		"--ignore", "**/test*.rs,**/*_test.rs",
+		"--reporters", "console",
+	)
+	output, err := runCommand(cmd, true)
+	if err != nil {
+		// jscpd returns non-zero when threshold exceeded
+		if strings.Contains(output, "duplicated lines") || strings.Contains(output, "threshold") {
+			fmt.Println()
+			fmt.Print(indentOutput(output, "      "))
+			return fmt.Errorf("code duplication exceeds threshold (2%%)")
+		}
+		fmt.Println()
+		fmt.Print(indentOutput(output, "      "))
+		return fmt.Errorf("jscpd failed")
+	}
+	return nil
+}
