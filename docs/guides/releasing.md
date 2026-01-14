@@ -24,6 +24,7 @@ How to release a new version of Cmdr.
 4. Push: `git push origin main --tags`
    - (CI builds universal macOS binary, creates GitHub release, updates `latest.json`)
    - (Website auto-deploys, users get update notification on next check)
+5. Track the build at https://github.com/vdavid/cmdr/actions
 
 ## How updates work
 
