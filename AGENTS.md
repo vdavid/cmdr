@@ -74,6 +74,7 @@ There are two MCP servers available to you:
 - ALWAYS read the [full style guide](docs/style-guide.md) before touching the repo!
 - When writing CSS, ALWAYS use variables defined in `apps/desktop/src/app.css`. Stylelint catches
   undefined/hallucinated CSS variables.
+- Always cover your code with tests until you're confident in your implementation!
 - When adding new code that loads remote content (like `fetch` from external URLs or `iframe`), always add a condition
   to **disable** that functionality in dev mode, and use static/mock data instead. See
   [security docs](docs/security.md#withglobaltauri) for more reasoning.
