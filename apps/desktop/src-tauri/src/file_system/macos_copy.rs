@@ -4,10 +4,10 @@
 //! which preserves extended attributes, ACLs, resource forks, and Finder metadata.
 //! It also supports APFS clonefile for instant copies on the same volume.
 
-use std::ffi::{c_int, c_void, CString};
+use std::ffi::{CString, c_int, c_void};
 use std::path::Path;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::file_system::write_operations::WriteOperationError;
 
@@ -124,7 +124,11 @@ extern "C" fn copy_progress_callback(
                 // Get source filename from state
                 let mut src_ptr: *const i8 = std::ptr::null();
                 unsafe {
-                    copyfile_state_get(state, COPYFILE_STATE_SRC_FILENAME, &mut src_ptr as *mut _ as *mut c_void);
+                    copyfile_state_get(
+                        state,
+                        COPYFILE_STATE_SRC_FILENAME,
+                        &mut src_ptr as *mut _ as *mut c_void,
+                    );
                 }
                 if !src_ptr.is_null() {
                     let src_cstr = unsafe { std::ffi::CStr::from_ptr(src_ptr) };
@@ -153,7 +157,11 @@ extern "C" fn copy_progress_callback(
                 let mut dst_ptr: *const i8 = std::ptr::null();
                 let mut bytes_copied: i64 = 0;
                 unsafe {
-                    copyfile_state_get(state, COPYFILE_STATE_DST_FILENAME, &mut dst_ptr as *mut _ as *mut c_void);
+                    copyfile_state_get(
+                        state,
+                        COPYFILE_STATE_DST_FILENAME,
+                        &mut dst_ptr as *mut _ as *mut c_void,
+                    );
                     copyfile_state_get(state, COPYFILE_STATE_COPIED, &mut bytes_copied as *mut _ as *mut c_void);
                 }
                 if !dst_ptr.is_null() {
@@ -289,11 +297,12 @@ pub fn copy_file_native(
     } else {
         // Check if cancelled
         if let Some(ctx) = context
-            && ctx.cancelled.load(Ordering::Relaxed) {
-                return Err(WriteOperationError::Cancelled {
-                    message: "Operation cancelled by user".to_string(),
-                });
-            }
+            && ctx.cancelled.load(Ordering::Relaxed)
+        {
+            return Err(WriteOperationError::Cancelled {
+                message: "Operation cancelled by user".to_string(),
+            });
+        }
 
         // Get the actual error
         let err = std::io::Error::last_os_error();
@@ -374,14 +383,15 @@ fn map_io_error_with_path(err: std::io::Error, source: &Path, destination: &Path
         _ => {
             // Check for disk full (ENOSPC = 28 on macOS)
             if let Some(os_err) = err.raw_os_error()
-                && os_err == 28 {
-                    // ENOSPC - we don't have exact space info here, so use 0
-                    return WriteOperationError::InsufficientSpace {
-                        required: 0,
-                        available: 0,
-                        volume_name: None,
-                    };
-                }
+                && os_err == 28
+            {
+                // ENOSPC - we don't have exact space info here, so use 0
+                return WriteOperationError::InsufficientSpace {
+                    required: 0,
+                    available: 0,
+                    volume_name: None,
+                };
+            }
             WriteOperationError::IoError {
                 path: source.display().to_string(),
                 message: err.to_string(),

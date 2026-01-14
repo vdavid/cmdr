@@ -77,7 +77,7 @@ fn test_copy_directory_recursive() {
 
     #[cfg(target_os = "macos")]
     {
-        use super::macos_copy::{copy_file_native, CopyOptions};
+        use super::macos_copy::{CopyOptions, copy_file_native};
 
         let result = copy_file_native(&src_dir, &dst_dir.join("src"), CopyOptions::default(), None);
         assert!(result.is_ok());
@@ -314,7 +314,7 @@ fn test_empty_directory() {
 
     #[cfg(target_os = "macos")]
     {
-        use super::macos_copy::{copy_file_native, CopyOptions};
+        use super::macos_copy::{CopyOptions, copy_file_native};
 
         let result = copy_file_native(&empty_subdir, &dst_dir.join("empty"), CopyOptions::default(), None);
         assert!(result.is_ok());
@@ -384,6 +384,7 @@ fn test_conflict_resolution_serialization() {
         progress_interval_ms: 200,
         overwrite: false,
         conflict_resolution: ConflictResolution::Rename,
+        dry_run: false,
     };
 
     let json = serde_json::to_string(&config).unwrap();
@@ -524,6 +525,7 @@ fn test_conflict_skip_mode_config() {
         progress_interval_ms: 200,
         overwrite: false,
         conflict_resolution: ConflictResolution::Skip,
+        dry_run: false,
     };
     assert_eq!(config.conflict_resolution, ConflictResolution::Skip);
 }
@@ -534,6 +536,7 @@ fn test_conflict_overwrite_mode_config() {
         progress_interval_ms: 200,
         overwrite: false,
         conflict_resolution: ConflictResolution::Overwrite,
+        dry_run: false,
     };
     assert_eq!(config.conflict_resolution, ConflictResolution::Overwrite);
 }
@@ -679,7 +682,10 @@ fn test_copy_preserves_xattrs() {
 
 fn find_unique_name(path: &std::path::Path) -> PathBuf {
     let parent = path.parent().unwrap_or(std::path::Path::new(""));
-    let stem = path.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
+    let stem = path
+        .file_stem()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_default();
     let extension = path.extension().map(|s| s.to_string_lossy().to_string());
 
     let mut counter = 1;
@@ -694,4 +700,578 @@ fn find_unique_name(path: &std::path::Path) -> PathBuf {
         }
         counter += 1;
     }
+}
+
+// ============================================================================
+// Dry-run serialization tests
+// ============================================================================
+
+#[test]
+fn test_scan_progress_event_serialization() {
+    let event = ScanProgressEvent {
+        operation_id: "test-id".to_string(),
+        operation_type: WriteOperationType::Copy,
+        files_found: 100,
+        bytes_found: 1024000,
+        conflicts_found: 5,
+        current_path: Some("file.txt".to_string()),
+    };
+
+    let json = serde_json::to_string(&event).unwrap();
+    assert!(json.contains("\"operationId\":\"test-id\""));
+    assert!(json.contains("\"operationType\":\"copy\""));
+    assert!(json.contains("\"filesFound\":100"));
+    assert!(json.contains("\"bytesFound\":1024000"));
+    assert!(json.contains("\"conflictsFound\":5"));
+    assert!(json.contains("\"currentPath\":\"file.txt\""));
+}
+
+#[test]
+fn test_scan_progress_event_with_null_current_path() {
+    let event = ScanProgressEvent {
+        operation_id: "test-id".to_string(),
+        operation_type: WriteOperationType::Move,
+        files_found: 50,
+        bytes_found: 512000,
+        conflicts_found: 0,
+        current_path: None,
+    };
+
+    let json = serde_json::to_string(&event).unwrap();
+    assert!(json.contains("\"currentPath\":null"));
+}
+
+#[test]
+fn test_conflict_info_serialization() {
+    let info = ConflictInfo {
+        source_path: "/src/file.txt".to_string(),
+        destination_path: "/dst/file.txt".to_string(),
+        source_size: 1024,
+        destination_size: 2048,
+        source_modified: Some(1700000000),
+        destination_modified: Some(1700001000),
+        destination_is_newer: true,
+        is_directory: false,
+    };
+
+    let json = serde_json::to_string(&info).unwrap();
+    assert!(json.contains("\"sourcePath\":\"/src/file.txt\""));
+    assert!(json.contains("\"destinationPath\":\"/dst/file.txt\""));
+    assert!(json.contains("\"sourceSize\":1024"));
+    assert!(json.contains("\"destinationSize\":2048"));
+    assert!(json.contains("\"sourceModified\":1700000000"));
+    assert!(json.contains("\"destinationModified\":1700001000"));
+    assert!(json.contains("\"destinationIsNewer\":true"));
+    assert!(json.contains("\"isDirectory\":false"));
+}
+
+#[test]
+fn test_conflict_info_with_null_timestamps() {
+    let info = ConflictInfo {
+        source_path: "/src/file.txt".to_string(),
+        destination_path: "/dst/file.txt".to_string(),
+        source_size: 1024,
+        destination_size: 2048,
+        source_modified: None,
+        destination_modified: None,
+        destination_is_newer: false,
+        is_directory: false,
+    };
+
+    let json = serde_json::to_string(&info).unwrap();
+    assert!(json.contains("\"sourceModified\":null"));
+    assert!(json.contains("\"destinationModified\":null"));
+    assert!(json.contains("\"destinationIsNewer\":false"));
+}
+
+#[test]
+fn test_conflict_info_for_directory() {
+    let info = ConflictInfo {
+        source_path: "/src/folder".to_string(),
+        destination_path: "/dst/folder".to_string(),
+        source_size: 0,
+        destination_size: 0,
+        source_modified: Some(1700000000),
+        destination_modified: Some(1700000000),
+        destination_is_newer: false,
+        is_directory: true,
+    };
+
+    let json = serde_json::to_string(&info).unwrap();
+    assert!(json.contains("\"isDirectory\":true"));
+}
+
+#[test]
+fn test_dry_run_result_serialization() {
+    let result = DryRunResult {
+        operation_id: "test-id".to_string(),
+        operation_type: WriteOperationType::Copy,
+        files_total: 100,
+        bytes_total: 1048576,
+        conflicts_total: 10,
+        conflicts: vec![ConflictInfo {
+            source_path: "/src/a.txt".to_string(),
+            destination_path: "/dst/a.txt".to_string(),
+            source_size: 100,
+            destination_size: 200,
+            source_modified: Some(1700000000),
+            destination_modified: Some(1700001000),
+            destination_is_newer: true,
+            is_directory: false,
+        }],
+        conflicts_sampled: false,
+    };
+
+    let json = serde_json::to_string(&result).unwrap();
+    assert!(json.contains("\"operationId\":\"test-id\""));
+    assert!(json.contains("\"operationType\":\"copy\""));
+    assert!(json.contains("\"filesTotal\":100"));
+    assert!(json.contains("\"bytesTotal\":1048576"));
+    assert!(json.contains("\"conflictsTotal\":10"));
+    assert!(json.contains("\"conflictsSampled\":false"));
+    assert!(json.contains("\"conflicts\":["));
+}
+
+#[test]
+fn test_dry_run_result_with_sampled_conflicts() {
+    let result = DryRunResult {
+        operation_id: "test-id".to_string(),
+        operation_type: WriteOperationType::Move,
+        files_total: 10000,
+        bytes_total: 10737418240, // 10 GB
+        conflicts_total: 500,
+        conflicts: vec![], // Would be sampled 200 in practice
+        conflicts_sampled: true,
+    };
+
+    let json = serde_json::to_string(&result).unwrap();
+    assert!(json.contains("\"conflictsTotal\":500"));
+    assert!(json.contains("\"conflictsSampled\":true"));
+}
+
+#[test]
+fn test_dry_run_result_for_delete() {
+    let result = DryRunResult {
+        operation_id: "test-id".to_string(),
+        operation_type: WriteOperationType::Delete,
+        files_total: 50,
+        bytes_total: 5000000,
+        conflicts_total: 0,
+        conflicts: vec![],
+        conflicts_sampled: false,
+    };
+
+    let json = serde_json::to_string(&result).unwrap();
+    assert!(json.contains("\"operationType\":\"delete\""));
+    assert!(json.contains("\"conflictsTotal\":0"));
+}
+
+// ============================================================================
+// Dry-run config tests
+// ============================================================================
+
+#[test]
+fn test_config_dry_run_default_is_false() {
+    let config = WriteOperationConfig::default();
+    assert!(!config.dry_run);
+}
+
+#[test]
+fn test_config_dry_run_serialization() {
+    let config = WriteOperationConfig {
+        progress_interval_ms: 200,
+        overwrite: false,
+        conflict_resolution: ConflictResolution::Stop,
+        dry_run: true,
+    };
+
+    let json = serde_json::to_string(&config).unwrap();
+    assert!(json.contains("\"dryRun\":true"));
+}
+
+#[test]
+fn test_config_dry_run_deserialization() {
+    let json = r#"{"dryRun": true}"#;
+    let config: WriteOperationConfig = serde_json::from_str(json).unwrap();
+    assert!(config.dry_run);
+}
+
+#[test]
+fn test_config_dry_run_deserialization_default() {
+    // When dry_run is not specified, it defaults to false
+    let json = r#"{"progressIntervalMs": 100}"#;
+    let config: WriteOperationConfig = serde_json::from_str(json).unwrap();
+    assert!(!config.dry_run);
+}
+
+// ============================================================================
+// CopyTransaction rollback tests
+// ============================================================================
+
+#[test]
+fn test_copy_transaction_records_files() {
+    use super::write_operations::CopyTransaction;
+
+    let temp_dir = create_temp_dir("transaction_record");
+
+    let mut tx = CopyTransaction::new();
+    let file1 = temp_dir.join("file1.txt");
+    let file2 = temp_dir.join("file2.txt");
+
+    tx.record_file(file1.clone());
+    tx.record_file(file2.clone());
+
+    assert_eq!(tx.created_files.len(), 2);
+    assert!(tx.created_files.contains(&file1));
+    assert!(tx.created_files.contains(&file2));
+
+    cleanup_temp_dir(&temp_dir);
+}
+
+#[test]
+fn test_copy_transaction_records_dirs() {
+    use super::write_operations::CopyTransaction;
+
+    let temp_dir = create_temp_dir("transaction_record_dirs");
+
+    let mut tx = CopyTransaction::new();
+    let dir1 = temp_dir.join("dir1");
+    let dir2 = temp_dir.join("dir2");
+
+    tx.record_dir(dir1.clone());
+    tx.record_dir(dir2.clone());
+
+    assert_eq!(tx.created_dirs.len(), 2);
+    assert!(tx.created_dirs.contains(&dir1));
+    assert!(tx.created_dirs.contains(&dir2));
+
+    cleanup_temp_dir(&temp_dir);
+}
+
+#[test]
+fn test_copy_transaction_rollback_removes_files() {
+    use super::write_operations::CopyTransaction;
+
+    let temp_dir = create_temp_dir("transaction_rollback_files");
+
+    // Create actual files
+    let file1 = temp_dir.join("file1.txt");
+    let file2 = temp_dir.join("file2.txt");
+    fs::write(&file1, "content1").unwrap();
+    fs::write(&file2, "content2").unwrap();
+
+    // Record them in transaction
+    let mut tx = CopyTransaction::new();
+    tx.record_file(file1.clone());
+    tx.record_file(file2.clone());
+
+    // Verify files exist
+    assert!(file1.exists());
+    assert!(file2.exists());
+
+    // Rollback
+    tx.rollback();
+
+    // Verify files deleted
+    assert!(!file1.exists());
+    assert!(!file2.exists());
+
+    cleanup_temp_dir(&temp_dir);
+}
+
+#[test]
+fn test_copy_transaction_rollback_removes_dirs() {
+    use super::write_operations::CopyTransaction;
+
+    let temp_dir = create_temp_dir("transaction_rollback_dirs");
+
+    // Create nested directories
+    let dir1 = temp_dir.join("dir1");
+    let dir2 = dir1.join("dir2");
+    fs::create_dir_all(&dir2).unwrap();
+
+    // Record them in creation order (parent first)
+    let mut tx = CopyTransaction::new();
+    tx.record_dir(dir1.clone());
+    tx.record_dir(dir2.clone());
+
+    // Verify dirs exist
+    assert!(dir1.exists());
+    assert!(dir2.exists());
+
+    // Rollback (should remove in reverse order)
+    tx.rollback();
+
+    // Verify dirs deleted
+    assert!(!dir2.exists());
+    assert!(!dir1.exists());
+
+    cleanup_temp_dir(&temp_dir);
+}
+
+#[test]
+fn test_copy_transaction_rollback_mixed() {
+    use super::write_operations::CopyTransaction;
+
+    let temp_dir = create_temp_dir("transaction_rollback_mixed");
+
+    // Create a directory with files
+    let dir1 = temp_dir.join("dir1");
+    fs::create_dir_all(&dir1).unwrap();
+    let file1 = dir1.join("file1.txt");
+    fs::write(&file1, "content").unwrap();
+
+    // Record them in creation order
+    let mut tx = CopyTransaction::new();
+    tx.record_dir(dir1.clone());
+    tx.record_file(file1.clone());
+
+    // Verify everything exists
+    assert!(dir1.exists());
+    assert!(file1.exists());
+
+    // Rollback
+    tx.rollback();
+
+    // Files should be deleted first, then directories
+    assert!(!file1.exists());
+    assert!(!dir1.exists());
+
+    cleanup_temp_dir(&temp_dir);
+}
+
+#[test]
+fn test_copy_transaction_commit_preserves_files() {
+    use super::write_operations::CopyTransaction;
+
+    let temp_dir = create_temp_dir("transaction_commit");
+
+    // Create actual files
+    let file1 = temp_dir.join("file1.txt");
+    fs::write(&file1, "content").unwrap();
+
+    // Record in transaction
+    let mut tx = CopyTransaction::new();
+    tx.record_file(file1.clone());
+
+    // Commit (should NOT delete)
+    tx.commit();
+
+    // File should still exist
+    assert!(file1.exists());
+
+    cleanup_temp_dir(&temp_dir);
+}
+
+// ============================================================================
+// Validation function tests
+// ============================================================================
+
+#[test]
+fn test_validate_sources_with_existing_files() {
+    use super::write_operations::validate_sources;
+
+    let temp_dir = create_temp_dir("validate_sources_exist");
+    let file1 = temp_dir.join("file1.txt");
+    let file2 = temp_dir.join("file2.txt");
+    fs::write(&file1, "content1").unwrap();
+    fs::write(&file2, "content2").unwrap();
+
+    let result = validate_sources(&[file1, file2]);
+    assert!(result.is_ok());
+
+    cleanup_temp_dir(&temp_dir);
+}
+
+#[test]
+fn test_validate_sources_with_missing_file() {
+    use super::write_operations::validate_sources;
+
+    let temp_dir = create_temp_dir("validate_sources_missing");
+    let file1 = temp_dir.join("exists.txt");
+    let file2 = temp_dir.join("missing.txt");
+    fs::write(&file1, "content").unwrap();
+
+    let result = validate_sources(&[file1, file2]);
+    assert!(matches!(result, Err(WriteOperationError::SourceNotFound { .. })));
+
+    cleanup_temp_dir(&temp_dir);
+}
+
+#[test]
+fn test_validate_sources_with_symlink() {
+    use super::write_operations::validate_sources;
+
+    let temp_dir = create_temp_dir("validate_sources_symlink");
+    let target = temp_dir.join("target.txt");
+    let link = temp_dir.join("link");
+    fs::write(&target, "content").unwrap();
+    std::os::unix::fs::symlink(&target, &link).unwrap();
+
+    // Should accept symlinks
+    let result = validate_sources(&[link]);
+    assert!(result.is_ok());
+
+    cleanup_temp_dir(&temp_dir);
+}
+
+#[test]
+fn test_validate_sources_with_broken_symlink() {
+    use super::write_operations::validate_sources;
+
+    let temp_dir = create_temp_dir("validate_sources_broken_symlink");
+    let link = temp_dir.join("broken_link");
+    std::os::unix::fs::symlink("/nonexistent/path", &link).unwrap();
+
+    // Should accept broken symlinks (symlink_metadata succeeds)
+    let result = validate_sources(&[link]);
+    assert!(result.is_ok());
+
+    cleanup_temp_dir(&temp_dir);
+}
+
+#[test]
+fn test_validate_destination_with_existing_dir() {
+    use super::write_operations::validate_destination;
+
+    let temp_dir = create_temp_dir("validate_dest_dir");
+    let dest = temp_dir.join("dest");
+    fs::create_dir_all(&dest).unwrap();
+
+    let result = validate_destination(&dest);
+    assert!(result.is_ok());
+
+    cleanup_temp_dir(&temp_dir);
+}
+
+#[test]
+fn test_validate_destination_with_missing_dir() {
+    use super::write_operations::validate_destination;
+
+    let temp_dir = create_temp_dir("validate_dest_missing");
+    let dest = temp_dir.join("missing");
+
+    let result = validate_destination(&dest);
+    assert!(matches!(result, Err(WriteOperationError::SourceNotFound { .. })));
+
+    cleanup_temp_dir(&temp_dir);
+}
+
+#[test]
+fn test_validate_destination_with_file() {
+    use super::write_operations::validate_destination;
+
+    let temp_dir = create_temp_dir("validate_dest_file");
+    let dest = temp_dir.join("file.txt");
+    fs::write(&dest, "content").unwrap();
+
+    let result = validate_destination(&dest);
+    assert!(matches!(result, Err(WriteOperationError::IoError { .. })));
+
+    cleanup_temp_dir(&temp_dir);
+}
+
+#[test]
+fn test_validate_not_same_location_different() {
+    use super::write_operations::validate_not_same_location;
+
+    let temp_dir = create_temp_dir("validate_same_loc_diff");
+    let src_dir = temp_dir.join("src");
+    let dst_dir = temp_dir.join("dst");
+    fs::create_dir_all(&src_dir).unwrap();
+    fs::create_dir_all(&dst_dir).unwrap();
+
+    let file = src_dir.join("file.txt");
+    fs::write(&file, "content").unwrap();
+
+    let result = validate_not_same_location(&[file], &dst_dir);
+    assert!(result.is_ok());
+
+    cleanup_temp_dir(&temp_dir);
+}
+
+#[test]
+fn test_validate_not_same_location_same() {
+    use super::write_operations::validate_not_same_location;
+
+    let temp_dir = create_temp_dir("validate_same_loc_same");
+    let file = temp_dir.join("file.txt");
+    fs::write(&file, "content").unwrap();
+
+    // Copying file to same directory
+    let result = validate_not_same_location(&[file], &temp_dir);
+    assert!(matches!(result, Err(WriteOperationError::SameLocation { .. })));
+
+    cleanup_temp_dir(&temp_dir);
+}
+
+#[test]
+fn test_validate_destination_not_inside_source_ok() {
+    use super::write_operations::validate_destination_not_inside_source;
+
+    let temp_dir = create_temp_dir("validate_inside_ok");
+    let src_dir = temp_dir.join("src");
+    let dst_dir = temp_dir.join("dst");
+    fs::create_dir_all(&src_dir).unwrap();
+    fs::create_dir_all(&dst_dir).unwrap();
+
+    let result = validate_destination_not_inside_source(&[src_dir], &dst_dir);
+    assert!(result.is_ok());
+
+    cleanup_temp_dir(&temp_dir);
+}
+
+#[test]
+fn test_validate_destination_not_inside_source_nested() {
+    use super::write_operations::validate_destination_not_inside_source;
+
+    let temp_dir = create_temp_dir("validate_inside_nested");
+    let src_dir = temp_dir.join("src");
+    let dst_dir = src_dir.join("nested/dest");
+    fs::create_dir_all(&src_dir).unwrap();
+    fs::create_dir_all(&dst_dir).unwrap();
+
+    // Copying src to src/nested/dest - destination is inside source
+    let result = validate_destination_not_inside_source(&[src_dir.clone()], &dst_dir);
+    assert!(matches!(
+        result,
+        Err(WriteOperationError::DestinationInsideSource { .. })
+    ));
+
+    cleanup_temp_dir(&temp_dir);
+}
+
+// ============================================================================
+// Filesystem detection tests
+// ============================================================================
+
+#[test]
+fn test_is_same_filesystem_same_volume() {
+    use super::write_operations::is_same_filesystem;
+
+    let temp_dir = create_temp_dir("same_fs");
+    let dir1 = temp_dir.join("dir1");
+    let dir2 = temp_dir.join("dir2");
+    fs::create_dir_all(&dir1).unwrap();
+    fs::create_dir_all(&dir2).unwrap();
+
+    let result = is_same_filesystem(&dir1, &dir2);
+    assert!(result.is_ok());
+    assert!(result.unwrap()); // Should be same filesystem
+
+    cleanup_temp_dir(&temp_dir);
+}
+
+#[test]
+fn test_is_same_filesystem_with_root() {
+    use super::write_operations::is_same_filesystem;
+
+    let temp_dir = create_temp_dir("same_fs_root");
+
+    // Compare temp dir with root (/) - should be same on most systems
+    let result = is_same_filesystem(&temp_dir, std::path::Path::new("/"));
+    assert!(result.is_ok());
+    // Note: Result depends on whether temp is on the same volume as root
+
+    cleanup_temp_dir(&temp_dir);
 }

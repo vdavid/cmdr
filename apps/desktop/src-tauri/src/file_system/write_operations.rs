@@ -20,7 +20,7 @@ use std::time::{Duration, Instant};
 use uuid::Uuid;
 
 #[cfg(target_os = "macos")]
-use super::macos_copy::{copy_single_file_native, copy_symlink, CopyProgressContext};
+use super::macos_copy::{CopyProgressContext, copy_single_file_native, copy_symlink};
 
 // ============================================================================
 // Operation types
@@ -131,6 +131,109 @@ pub struct WriteConflictEvent {
     pub size_difference: i64,
 }
 
+/// Progress event during scanning phase (emitted in dry-run mode).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScanProgressEvent {
+    pub operation_id: String,
+    pub operation_type: WriteOperationType,
+    /// Number of files found so far
+    pub files_found: usize,
+    /// Total bytes found so far
+    pub bytes_found: u64,
+    /// Number of conflicts detected so far
+    pub conflicts_found: usize,
+    /// Current path being scanned (for activity indication)
+    pub current_path: Option<String>,
+}
+
+/// Detailed information about a single conflict.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ConflictInfo {
+    pub source_path: String,
+    pub destination_path: String,
+    /// Source file size in bytes
+    pub source_size: u64,
+    /// Destination file size in bytes
+    pub destination_size: u64,
+    /// Source modification time (Unix timestamp in seconds)
+    pub source_modified: Option<u64>,
+    /// Destination modification time (Unix timestamp in seconds)
+    pub destination_modified: Option<u64>,
+    /// Whether destination is newer than source
+    pub destination_is_newer: bool,
+    /// Whether source is a directory
+    pub is_directory: bool,
+}
+
+/// Result of a dry-run operation.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DryRunResult {
+    pub operation_id: String,
+    pub operation_type: WriteOperationType,
+    /// Total number of files that would be processed
+    pub files_total: usize,
+    /// Total bytes that would be processed
+    pub bytes_total: u64,
+    /// Total number of conflicts detected
+    pub conflicts_total: usize,
+    /// Sampled conflicts (max 200 for large sets)
+    pub conflicts: Vec<ConflictInfo>,
+    /// Whether the conflicts list is a sample (true if conflicts_total > conflicts.len())
+    pub conflicts_sampled: bool,
+}
+
+/// Maximum number of conflicts to include in DryRunResult
+const MAX_CONFLICTS_IN_RESULT: usize = 200;
+
+// ============================================================================
+// Operation status (for query APIs)
+// ============================================================================
+
+/// Current status of an operation for query APIs.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OperationStatus {
+    /// The operation ID
+    pub operation_id: String,
+    /// Type of operation
+    pub operation_type: WriteOperationType,
+    /// Current phase of the operation
+    pub phase: WriteOperationPhase,
+    /// Whether the operation is still running
+    pub is_running: bool,
+    /// Current file being processed (filename only)
+    pub current_file: Option<String>,
+    /// Number of files processed
+    pub files_done: usize,
+    /// Total number of files (0 if unknown/scanning)
+    pub files_total: usize,
+    /// Bytes processed so far
+    pub bytes_done: u64,
+    /// Total bytes to process (0 if unknown/scanning)
+    pub bytes_total: u64,
+    /// Operation start time (Unix timestamp in milliseconds)
+    pub started_at: u64,
+}
+
+/// Summary of an active operation for list view.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OperationSummary {
+    /// The operation ID
+    pub operation_id: String,
+    /// Type of operation
+    pub operation_type: WriteOperationType,
+    /// Current phase of the operation
+    pub phase: WriteOperationPhase,
+    /// Percentage complete (0-100)
+    pub percent_complete: u8,
+    /// Operation start time (Unix timestamp in milliseconds)
+    pub started_at: u64,
+}
+
 // ============================================================================
 // Error enum (following MountError pattern)
 // ============================================================================
@@ -172,7 +275,10 @@ impl WriteOperationError {
                 format!("Cannot find \"{}\". It may have been moved or deleted.", path)
             }
             WriteOperationError::DestinationExists { path } => {
-                let filename = Path::new(path).file_name().map(|n| n.to_string_lossy()).unwrap_or_default();
+                let filename = Path::new(path)
+                    .file_name()
+                    .map(|n| n.to_string_lossy())
+                    .unwrap_or_default();
                 format!("\"{}\" already exists at the destination.", filename)
             }
             WriteOperationError::PermissionDenied { path, .. } => {
@@ -236,16 +342,12 @@ fn format_bytes(bytes: u64) -> String {
 impl From<std::io::Error> for WriteOperationError {
     fn from(err: std::io::Error) -> Self {
         match err.kind() {
-            std::io::ErrorKind::NotFound => WriteOperationError::SourceNotFound {
-                path: err.to_string(),
-            },
+            std::io::ErrorKind::NotFound => WriteOperationError::SourceNotFound { path: err.to_string() },
             std::io::ErrorKind::PermissionDenied => WriteOperationError::PermissionDenied {
                 path: String::new(),
                 message: err.to_string(),
             },
-            std::io::ErrorKind::AlreadyExists => WriteOperationError::DestinationExists {
-                path: err.to_string(),
-            },
+            std::io::ErrorKind::AlreadyExists => WriteOperationError::DestinationExists { path: err.to_string() },
             _ => WriteOperationError::IoError {
                 path: String::new(),
                 message: err.to_string(),
@@ -285,6 +387,10 @@ pub struct WriteOperationConfig {
     /// How to handle conflicts
     #[serde(default)]
     pub conflict_resolution: ConflictResolution,
+    /// If true, only scan and detect conflicts without executing the operation.
+    /// Returns a DryRunResult with totals and conflicts.
+    #[serde(default)]
+    pub dry_run: bool,
 }
 
 impl Default for WriteOperationConfig {
@@ -293,6 +399,7 @@ impl Default for WriteOperationConfig {
             progress_interval_ms: default_progress_interval(),
             overwrite: false,
             conflict_resolution: ConflictResolution::Stop,
+            dry_run: false,
         }
     }
 }
@@ -332,36 +439,107 @@ pub struct ConflictResolutionResponse {
 static WRITE_OPERATION_STATE: LazyLock<RwLock<HashMap<String, Arc<WriteOperationState>>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
+/// Global cache for operation status (for query APIs).
+static OPERATION_STATUS_CACHE: LazyLock<RwLock<HashMap<String, OperationStatusInternal>>> =
+    LazyLock::new(|| RwLock::new(HashMap::new()));
+
+/// Internal status tracking for operations.
+#[derive(Debug, Clone)]
+struct OperationStatusInternal {
+    operation_type: WriteOperationType,
+    phase: WriteOperationPhase,
+    current_file: Option<String>,
+    files_done: usize,
+    files_total: usize,
+    bytes_done: u64,
+    bytes_total: u64,
+    started_at: u64,
+}
+
+/// Updates the internal status for an operation.
+fn update_operation_status(
+    operation_id: &str,
+    phase: WriteOperationPhase,
+    current_file: Option<String>,
+    files_done: usize,
+    files_total: usize,
+    bytes_done: u64,
+    bytes_total: u64,
+) {
+    if let Ok(mut cache) = OPERATION_STATUS_CACHE.write()
+        && let Some(status) = cache.get_mut(operation_id)
+    {
+        status.phase = phase;
+        status.current_file = current_file;
+        status.files_done = files_done;
+        status.files_total = files_total;
+        status.bytes_done = bytes_done;
+        status.bytes_total = bytes_total;
+    }
+}
+
+/// Registers a new operation in the status cache.
+fn register_operation_status(operation_id: &str, operation_type: WriteOperationType) {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0);
+
+    if let Ok(mut cache) = OPERATION_STATUS_CACHE.write() {
+        cache.insert(
+            operation_id.to_string(),
+            OperationStatusInternal {
+                operation_type,
+                phase: WriteOperationPhase::Scanning,
+                current_file: None,
+                files_done: 0,
+                files_total: 0,
+                bytes_done: 0,
+                bytes_total: 0,
+                started_at: now,
+            },
+        );
+    }
+}
+
+/// Removes an operation from the status cache.
+fn unregister_operation_status(operation_id: &str) {
+    if let Ok(mut cache) = OPERATION_STATUS_CACHE.write() {
+        cache.remove(operation_id);
+    }
+}
+
 // ============================================================================
 // Copy transaction for rollback
 // ============================================================================
 
 /// Tracks created files/directories for rollback on failure.
-struct CopyTransaction {
+#[cfg_attr(test, derive(Debug))]
+pub(crate) struct CopyTransaction {
     /// Files created during the operation (in creation order)
-    created_files: Vec<PathBuf>,
+    pub(crate) created_files: Vec<PathBuf>,
     /// Directories created during the operation (in creation order)
-    created_dirs: Vec<PathBuf>,
+    pub(crate) created_dirs: Vec<PathBuf>,
 }
 
 impl CopyTransaction {
-    fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             created_files: Vec::new(),
             created_dirs: Vec::new(),
         }
     }
 
-    fn record_file(&mut self, path: PathBuf) {
+    pub(crate) fn record_file(&mut self, path: PathBuf) {
         self.created_files.push(path);
     }
 
-    fn record_dir(&mut self, path: PathBuf) {
+    pub(crate) fn record_dir(&mut self, path: PathBuf) {
         self.created_dirs.push(path);
     }
 
     /// Rolls back all created files and directories.
-    fn rollback(&self) {
+    pub(crate) fn rollback(&self) {
         // Delete files first (in reverse order)
         for file in self.created_files.iter().rev() {
             let _ = fs::remove_file(file);
@@ -373,7 +551,7 @@ impl CopyTransaction {
     }
 
     /// Clears the transaction (call on success to prevent rollback).
-    fn commit(self) {
+    pub(crate) fn commit(self) {
         // Just drop without calling rollback
         drop(self.created_files);
         drop(self.created_dirs);
@@ -424,6 +602,9 @@ pub async fn copy_files_start(
         cache.insert(operation_id.clone(), Arc::clone(&state));
     }
 
+    // Register operation status for query APIs
+    register_operation_status(&operation_id, WriteOperationType::Copy);
+
     let operation_id_for_spawn = operation_id.clone();
 
     // Spawn background task
@@ -440,6 +621,7 @@ pub async fn copy_files_start(
         if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
             cache.remove(&operation_id_for_cleanup);
         }
+        unregister_operation_status(&operation_id_for_cleanup);
 
         // Handle task panic
         if let Err(e) = result {
@@ -494,6 +676,9 @@ pub async fn move_files_start(
         cache.insert(operation_id.clone(), Arc::clone(&state));
     }
 
+    // Register operation status for query APIs
+    register_operation_status(&operation_id, WriteOperationType::Move);
+
     let operation_id_for_spawn = operation_id.clone();
 
     // Spawn background task
@@ -510,6 +695,7 @@ pub async fn move_files_start(
         if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
             cache.remove(&operation_id_for_cleanup);
         }
+        unregister_operation_status(&operation_id_for_cleanup);
 
         // Handle task panic
         if let Err(e) = result {
@@ -559,6 +745,9 @@ pub async fn delete_files_start(
         cache.insert(operation_id.clone(), Arc::clone(&state));
     }
 
+    // Register operation status for query APIs
+    register_operation_status(&operation_id, WriteOperationType::Delete);
+
     let operation_id_for_spawn = operation_id.clone();
 
     // Spawn background task
@@ -575,6 +764,7 @@ pub async fn delete_files_start(
         if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
             cache.remove(&operation_id_for_cleanup);
         }
+        unregister_operation_status(&operation_id_for_cleanup);
 
         // Handle task panic
         if let Err(e) = result {
@@ -627,7 +817,10 @@ pub fn resolve_write_conflict(operation_id: &str, resolution: ConflictResolution
     {
         // Set the pending resolution
         if let Ok(mut pending) = state.pending_resolution.write() {
-            *pending = Some(ConflictResolutionResponse { resolution, apply_to_all });
+            *pending = Some(ConflictResolutionResponse {
+                resolution,
+                apply_to_all,
+            });
         }
         // Wake up the waiting operation
         let _guard = state.conflict_mutex.lock();
@@ -635,11 +828,88 @@ pub fn resolve_write_conflict(operation_id: &str, resolution: ConflictResolution
     }
 }
 
+/// Lists all active write operations.
+///
+/// Returns a list of operation summaries for all currently running operations.
+/// This is useful for showing a global progress view or managing multiple concurrent operations.
+pub fn list_active_operations() -> Vec<OperationSummary> {
+    let cache = match OPERATION_STATUS_CACHE.read() {
+        Ok(c) => c,
+        Err(_) => return Vec::new(),
+    };
+
+    cache
+        .iter()
+        .map(|(id, status)| {
+            let percent_complete = if status.bytes_total > 0 {
+                ((status.bytes_done as f64 / status.bytes_total as f64) * 100.0).min(100.0) as u8
+            } else if status.files_total > 0 {
+                ((status.files_done as f64 / status.files_total as f64) * 100.0).min(100.0) as u8
+            } else {
+                0
+            };
+
+            OperationSummary {
+                operation_id: id.clone(),
+                operation_type: status.operation_type,
+                phase: status.phase,
+                percent_complete,
+                started_at: status.started_at,
+            }
+        })
+        .collect()
+}
+
+/// Gets the detailed status of a specific operation.
+///
+/// Returns `None` if the operation is not found (either never existed or already completed).
+pub fn get_operation_status(operation_id: &str) -> Option<OperationStatus> {
+    let cache = OPERATION_STATUS_CACHE.read().ok()?;
+    let status = cache.get(operation_id)?;
+
+    // Check if the operation is still running
+    let is_running = WRITE_OPERATION_STATE
+        .read()
+        .ok()
+        .map(|c| c.contains_key(operation_id))
+        .unwrap_or(false);
+
+    Some(OperationStatus {
+        operation_id: operation_id.to_string(),
+        operation_type: status.operation_type,
+        phase: status.phase,
+        is_running,
+        current_file: status.current_file.clone(),
+        files_done: status.files_done,
+        files_total: status.files_total,
+        bytes_done: status.bytes_done,
+        bytes_total: status.bytes_total,
+        started_at: status.started_at,
+    })
+}
+
+// ============================================================================
+// Async sync for durability
+// ============================================================================
+
+/// Spawns a background thread to call sync() for durability.
+/// This ensures writes are flushed to disk without blocking the completion event.
+fn spawn_async_sync() {
+    std::thread::spawn(|| {
+        // On Unix, call sync() to flush all filesystem buffers
+        #[cfg(unix)]
+        unsafe {
+            libc::sync();
+        }
+        // On other platforms, this is a no-op (sync is not easily available)
+    });
+}
+
 // ============================================================================
 // Validation helpers
 // ============================================================================
 
-fn validate_sources(sources: &[PathBuf]) -> Result<(), WriteOperationError> {
+pub(crate) fn validate_sources(sources: &[PathBuf]) -> Result<(), WriteOperationError> {
     for source in sources {
         // Use symlink_metadata to check existence without following symlinks
         if fs::symlink_metadata(source).is_err() {
@@ -651,7 +921,7 @@ fn validate_sources(sources: &[PathBuf]) -> Result<(), WriteOperationError> {
     Ok(())
 }
 
-fn validate_destination(destination: &Path) -> Result<(), WriteOperationError> {
+pub(crate) fn validate_destination(destination: &Path) -> Result<(), WriteOperationError> {
     // Destination must exist and be a directory
     if !destination.exists() {
         return Err(WriteOperationError::SourceNotFound {
@@ -667,7 +937,7 @@ fn validate_destination(destination: &Path) -> Result<(), WriteOperationError> {
     Ok(())
 }
 
-fn validate_not_same_location(sources: &[PathBuf], destination: &Path) -> Result<(), WriteOperationError> {
+pub(crate) fn validate_not_same_location(sources: &[PathBuf], destination: &Path) -> Result<(), WriteOperationError> {
     for source in sources {
         if let Some(parent) = source.parent()
             && parent == destination
@@ -680,7 +950,10 @@ fn validate_not_same_location(sources: &[PathBuf], destination: &Path) -> Result
     Ok(())
 }
 
-fn validate_destination_not_inside_source(sources: &[PathBuf], destination: &Path) -> Result<(), WriteOperationError> {
+pub(crate) fn validate_destination_not_inside_source(
+    sources: &[PathBuf],
+    destination: &Path,
+) -> Result<(), WriteOperationError> {
     for source in sources {
         if source.is_dir() && destination.starts_with(source) {
             return Err(WriteOperationError::DestinationInsideSource {
@@ -711,7 +984,7 @@ fn is_symlink_loop(path: &Path, visited: &HashSet<PathBuf>) -> bool {
 
 /// Checks if two paths are on the same filesystem using device IDs.
 #[cfg(unix)]
-fn is_same_filesystem(source: &Path, destination: &Path) -> std::io::Result<bool> {
+pub(crate) fn is_same_filesystem(source: &Path, destination: &Path) -> std::io::Result<bool> {
     use std::os::unix::fs::MetadataExt;
 
     let source_meta = fs::metadata(source)?;
@@ -721,7 +994,7 @@ fn is_same_filesystem(source: &Path, destination: &Path) -> std::io::Result<bool
 }
 
 #[cfg(not(unix))]
-fn is_same_filesystem(_source: &Path, _destination: &Path) -> std::io::Result<bool> {
+pub(crate) fn is_same_filesystem(_source: &Path, _destination: &Path) -> std::io::Result<bool> {
     // On non-Unix, assume different filesystem to be safe (will use copy+delete)
     Ok(false)
 }
@@ -874,18 +1147,28 @@ fn scan_path_recursive(
 
     // Emit progress periodically
     if last_progress_time.elapsed() >= *progress_interval {
+        let current_file = path.file_name().map(|n| n.to_string_lossy().to_string());
         let _ = app.emit(
             "write-progress",
             WriteProgressEvent {
                 operation_id: operation_id.to_string(),
                 operation_type,
                 phase: WriteOperationPhase::Scanning,
-                current_file: path.file_name().map(|n| n.to_string_lossy().to_string()),
+                current_file: current_file.clone(),
                 files_done: files.len(),
                 files_total: 0, // Unknown during scanning
                 bytes_done: *total_bytes,
                 bytes_total: 0, // Unknown during scanning
             },
+        );
+        update_operation_status(
+            operation_id,
+            WriteOperationPhase::Scanning,
+            current_file,
+            files.len(),
+            0,
+            *total_bytes,
+            0,
         );
         *last_progress_time = Instant::now();
     }
@@ -894,11 +1177,287 @@ fn scan_path_recursive(
 }
 
 // ============================================================================
+// Dry-run scanning (with conflict detection)
+// ============================================================================
+
+/// Result of a dry-run scan including conflicts.
+struct DryRunScanResult {
+    /// Total number of files
+    file_count: usize,
+    /// Total bytes
+    total_bytes: u64,
+    /// All detected conflicts
+    conflicts: Vec<ConflictInfo>,
+}
+
+/// Performs a dry-run scan: scans sources, detects conflicts at destination.
+/// Emits ScanProgressEvent during scanning with conflict counts.
+#[allow(clippy::too_many_arguments)]
+fn dry_run_scan(
+    sources: &[PathBuf],
+    destination: &Path,
+    state: &Arc<WriteOperationState>,
+    app: &tauri::AppHandle,
+    operation_id: &str,
+    operation_type: WriteOperationType,
+    progress_interval: Duration,
+) -> Result<DryRunScanResult, WriteOperationError> {
+    use tauri::Emitter;
+
+    let mut files_found = 0usize;
+    let mut bytes_found = 0u64;
+    let mut conflicts = Vec::new();
+    let mut last_progress_time = Instant::now();
+    let mut visited = HashSet::new();
+
+    for source in sources {
+        dry_run_scan_recursive(
+            source,
+            source,
+            destination,
+            &mut files_found,
+            &mut bytes_found,
+            &mut conflicts,
+            state,
+            app,
+            operation_id,
+            operation_type,
+            &progress_interval,
+            &mut last_progress_time,
+            &mut visited,
+        )?;
+    }
+
+    // Emit final scan progress
+    let _ = app.emit(
+        "scan-progress",
+        ScanProgressEvent {
+            operation_id: operation_id.to_string(),
+            operation_type,
+            files_found,
+            bytes_found,
+            conflicts_found: conflicts.len(),
+            current_path: None,
+        },
+    );
+
+    Ok(DryRunScanResult {
+        file_count: files_found,
+        total_bytes: bytes_found,
+        conflicts,
+    })
+}
+
+/// Recursively scans a path for dry-run, detecting conflicts.
+#[allow(clippy::too_many_arguments)]
+fn dry_run_scan_recursive(
+    path: &Path,
+    source_root: &Path,
+    dest_root: &Path,
+    files_found: &mut usize,
+    bytes_found: &mut u64,
+    conflicts: &mut Vec<ConflictInfo>,
+    state: &Arc<WriteOperationState>,
+    app: &tauri::AppHandle,
+    operation_id: &str,
+    operation_type: WriteOperationType,
+    progress_interval: &Duration,
+    last_progress_time: &mut Instant,
+    visited: &mut HashSet<PathBuf>,
+) -> Result<(), WriteOperationError> {
+    use tauri::Emitter;
+
+    // Check cancellation
+    if state.cancelled.load(Ordering::Relaxed) {
+        return Err(WriteOperationError::Cancelled {
+            message: "Operation cancelled by user".to_string(),
+        });
+    }
+
+    // Use symlink_metadata to not follow symlinks
+    let metadata = fs::symlink_metadata(path).map_err(|e| WriteOperationError::IoError {
+        path: path.display().to_string(),
+        message: e.to_string(),
+    })?;
+
+    // Calculate destination path
+    let dest_path = calculate_dest_path(path, source_root, dest_root)?;
+
+    if metadata.is_symlink() || metadata.is_file() {
+        *bytes_found += metadata.len();
+        *files_found += 1;
+
+        // Check for conflict
+        if (dest_path.exists() || fs::symlink_metadata(&dest_path).is_ok())
+            && let Some(conflict) = create_conflict_info(path, &dest_path, &metadata)?
+        {
+            // Emit conflict event for streaming
+            let _ = app.emit("scan-conflict", conflict.clone());
+            conflicts.push(conflict);
+        }
+    } else if metadata.is_dir() {
+        // Check for symlink loop before recursing
+        if is_symlink_loop(path, visited) {
+            return Err(WriteOperationError::SymlinkLoop {
+                path: path.display().to_string(),
+            });
+        }
+
+        // Track this directory
+        if let Ok(canonical) = path.canonicalize() {
+            visited.insert(canonical);
+        }
+
+        // Check if destination exists and is not a directory (type conflict)
+        if dest_path.exists()
+            && !dest_path.is_dir()
+            && let Some(conflict) = create_conflict_info(path, &dest_path, &metadata)?
+        {
+            let _ = app.emit("scan-conflict", conflict.clone());
+            conflicts.push(conflict);
+        }
+
+        // Scan contents
+        let entries = fs::read_dir(path).map_err(|e| WriteOperationError::IoError {
+            path: path.display().to_string(),
+            message: e.to_string(),
+        })?;
+
+        for entry in entries.flatten() {
+            dry_run_scan_recursive(
+                &entry.path(),
+                source_root,
+                dest_root,
+                files_found,
+                bytes_found,
+                conflicts,
+                state,
+                app,
+                operation_id,
+                operation_type,
+                progress_interval,
+                last_progress_time,
+                visited,
+            )?;
+        }
+    }
+
+    // Emit progress periodically
+    if last_progress_time.elapsed() >= *progress_interval {
+        let _ = app.emit(
+            "scan-progress",
+            ScanProgressEvent {
+                operation_id: operation_id.to_string(),
+                operation_type,
+                files_found: *files_found,
+                bytes_found: *bytes_found,
+                conflicts_found: conflicts.len(),
+                current_path: path.file_name().map(|n| n.to_string_lossy().to_string()),
+            },
+        );
+        *last_progress_time = Instant::now();
+    }
+
+    Ok(())
+}
+
+/// Calculates destination path for a source file relative to source root.
+fn calculate_dest_path(path: &Path, source_root: &Path, dest_root: &Path) -> Result<PathBuf, WriteOperationError> {
+    // If path is the source root itself, use the file name in dest_root
+    if path == source_root {
+        let file_name = path.file_name().ok_or_else(|| WriteOperationError::IoError {
+            path: path.display().to_string(),
+            message: "Invalid source path".to_string(),
+        })?;
+        return Ok(dest_root.join(file_name));
+    }
+
+    // Otherwise, strip the source root's parent and join with dest_root
+    let source_parent = source_root.parent().unwrap_or(source_root);
+    let relative = path
+        .strip_prefix(source_parent)
+        .map_err(|_| WriteOperationError::IoError {
+            path: path.display().to_string(),
+            message: "Failed to calculate relative path".to_string(),
+        })?;
+
+    Ok(dest_root.join(relative))
+}
+
+/// Creates ConflictInfo for a source/destination pair.
+fn create_conflict_info(
+    source: &Path,
+    dest: &Path,
+    source_metadata: &fs::Metadata,
+) -> Result<Option<ConflictInfo>, WriteOperationError> {
+    let dest_metadata = match fs::symlink_metadata(dest) {
+        Ok(m) => m,
+        Err(_) => return Ok(None), // No conflict if dest doesn't exist
+    };
+
+    let source_modified = source_metadata
+        .modified()
+        .ok()
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_secs());
+
+    let dest_modified = dest_metadata
+        .modified()
+        .ok()
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_secs());
+
+    let destination_is_newer = match (source_modified, dest_modified) {
+        (Some(s), Some(d)) => d > s,
+        _ => false,
+    };
+
+    Ok(Some(ConflictInfo {
+        source_path: source.display().to_string(),
+        destination_path: dest.display().to_string(),
+        source_size: source_metadata.len(),
+        destination_size: dest_metadata.len(),
+        source_modified,
+        destination_modified: dest_modified,
+        destination_is_newer,
+        is_directory: source_metadata.is_dir(),
+    }))
+}
+
+/// Samples conflicts if there are too many, using reservoir sampling.
+fn sample_conflicts(conflicts: Vec<ConflictInfo>, max_count: usize) -> (Vec<ConflictInfo>, bool) {
+    if conflicts.len() <= max_count {
+        return (conflicts, false);
+    }
+
+    // Use reservoir sampling for uniform random selection
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+
+    let mut sampled: Vec<ConflictInfo> = conflicts.iter().take(max_count).cloned().collect();
+
+    for (i, conflict) in conflicts.iter().enumerate().skip(max_count) {
+        // Deterministic "random" based on path hash for reproducibility
+        let mut hasher = DefaultHasher::new();
+        conflict.source_path.hash(&mut hasher);
+        i.hash(&mut hasher);
+        let hash = hasher.finish();
+        let j = (hash as usize) % (i + 1);
+
+        if j < max_count {
+            sampled[j] = conflict.clone();
+        }
+    }
+
+    (sampled, true)
+}
+
+// ============================================================================
 // Conflict handling helpers
 // ============================================================================
 
 /// Resolves a file conflict based on the configured resolution mode.
-/// Returns the actual destination path to use, or None if the file should be skipped.
+/// Returns the resolved destination info, or None if the file should be skipped.
 /// Also returns whether the resolution should be applied to all future conflicts.
 #[allow(clippy::too_many_arguments)]
 fn resolve_conflict(
@@ -909,7 +1468,7 @@ fn resolve_conflict(
     operation_id: &str,
     state: &Arc<WriteOperationState>,
     apply_to_all_resolution: &mut Option<ConflictResolution>,
-) -> Result<Option<PathBuf>, WriteOperationError> {
+) -> Result<Option<ResolvedDestination>, WriteOperationError> {
     use tauri::Emitter;
 
     // Determine effective conflict resolution
@@ -998,8 +1557,21 @@ fn resolve_conflict(
     }
 }
 
+/// Result of applying a conflict resolution.
+#[derive(Debug)]
+struct ResolvedDestination {
+    /// The path to write to
+    path: PathBuf,
+    /// Whether this is an overwrite that needs safe handling
+    needs_safe_overwrite: bool,
+}
+
 /// Applies a specific conflict resolution to a destination path.
-fn apply_resolution(resolution: ConflictResolution, dest_path: &Path) -> Result<Option<PathBuf>, WriteOperationError> {
+/// Returns None for Skip, or ResolvedDestination with path and overwrite flag.
+fn apply_resolution(
+    resolution: ConflictResolution,
+    dest_path: &Path,
+) -> Result<Option<ResolvedDestination>, WriteOperationError> {
     match resolution {
         ConflictResolution::Stop => {
             // Should not happen - Stop waits for user input
@@ -1009,32 +1581,112 @@ fn apply_resolution(resolution: ConflictResolution, dest_path: &Path) -> Result<
         }
         ConflictResolution::Skip => Ok(None),
         ConflictResolution::Overwrite => {
-            // Remove existing file/dir first
-            if dest_path.is_dir() {
-                fs::remove_dir_all(dest_path).map_err(|e| WriteOperationError::IoError {
-                    path: dest_path.display().to_string(),
-                    message: e.to_string(),
-                })?;
-            } else {
-                fs::remove_file(dest_path).map_err(|e| WriteOperationError::IoError {
-                    path: dest_path.display().to_string(),
-                    message: e.to_string(),
-                })?;
-            }
-            Ok(Some(dest_path.to_path_buf()))
+            // Don't delete here - the copy function will use safe overwrite pattern
+            Ok(Some(ResolvedDestination {
+                path: dest_path.to_path_buf(),
+                needs_safe_overwrite: true,
+            }))
         }
         ConflictResolution::Rename => {
             // Find a unique name by appending " (1)", " (2)", etc.
             let unique_path = find_unique_name(dest_path);
-            Ok(Some(unique_path))
+            Ok(Some(ResolvedDestination {
+                path: unique_path,
+                needs_safe_overwrite: false,
+            }))
         }
     }
+}
+
+/// Performs a safe overwrite using temp+rename pattern.
+/// This ensures the original file is preserved if the copy fails.
+///
+/// Steps:
+/// 1. Copy source to `dest.cmdr-tmp-{uuid}` (temp file in same directory)
+/// 2. Rename original dest to `dest.cmdr-backup-{uuid}`
+/// 3. Rename temp to final dest path
+/// 4. Delete backup
+///
+/// If any step fails before step 3 completes, the original dest is intact.
+fn safe_overwrite_file(
+    source: &Path,
+    dest: &Path,
+    #[cfg(target_os = "macos")] context: Option<&CopyProgressContext>,
+) -> Result<u64, WriteOperationError> {
+    let uuid = Uuid::new_v4();
+    let parent = dest.parent().unwrap_or(Path::new("."));
+    let file_name = dest
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_default();
+
+    let temp_path = parent.join(format!("{}.cmdr-tmp-{}", file_name, uuid));
+    let backup_path = parent.join(format!("{}.cmdr-backup-{}", file_name, uuid));
+
+    // Step 1: Copy source to temp
+    #[cfg(target_os = "macos")]
+    let bytes = copy_single_file_native(source, &temp_path, false, context)?;
+    #[cfg(not(target_os = "macos"))]
+    let bytes = fs::copy(source, &temp_path).map_err(|e| WriteOperationError::IoError {
+        path: source.display().to_string(),
+        message: e.to_string(),
+    })?;
+
+    // Step 2: Rename original dest to backup
+    if let Err(e) = fs::rename(dest, &backup_path) {
+        // Failed to backup - clean up temp and return error
+        let _ = fs::remove_file(&temp_path);
+        return Err(WriteOperationError::IoError {
+            path: dest.display().to_string(),
+            message: format!("Failed to backup existing file: {}", e),
+        });
+    }
+
+    // Step 3: Rename temp to final dest
+    if let Err(e) = fs::rename(&temp_path, dest) {
+        // Failed to rename - restore backup and clean up
+        let _ = fs::rename(&backup_path, dest);
+        let _ = fs::remove_file(&temp_path);
+        return Err(WriteOperationError::IoError {
+            path: dest.display().to_string(),
+            message: format!("Failed to finalize overwrite: {}", e),
+        });
+    }
+
+    // Step 4: Delete backup (non-critical, ignore errors)
+    let _ = fs::remove_file(&backup_path);
+
+    Ok(bytes)
+}
+
+/// Performs a safe overwrite for directories using temp+rename pattern.
+fn safe_overwrite_dir(dest: &Path) -> Result<PathBuf, WriteOperationError> {
+    let uuid = Uuid::new_v4();
+    let parent = dest.parent().unwrap_or(Path::new("."));
+    let file_name = dest
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_default();
+
+    let backup_path = parent.join(format!("{}.cmdr-backup-{}", file_name, uuid));
+
+    // Rename original dest to backup
+    fs::rename(dest, &backup_path).map_err(|e| WriteOperationError::IoError {
+        path: dest.display().to_string(),
+        message: format!("Failed to backup existing directory: {}", e),
+    })?;
+
+    // Return the backup path so caller can delete it after successful copy
+    Ok(backup_path)
 }
 
 /// Finds a unique filename by appending " (1)", " (2)", etc.
 fn find_unique_name(path: &Path) -> PathBuf {
     let parent = path.parent().unwrap_or(Path::new(""));
-    let stem = path.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
+    let stem = path
+        .file_stem()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_default();
     let extension = path.extension().map(|s| s.to_string_lossy().to_string());
 
     let mut counter = 1;
@@ -1064,6 +1716,35 @@ fn copy_files_with_progress(
     config: &WriteOperationConfig,
 ) -> Result<(), WriteOperationError> {
     use tauri::Emitter;
+
+    // Handle dry-run mode
+    if config.dry_run {
+        let scan_result = dry_run_scan(
+            sources,
+            destination,
+            state,
+            app,
+            operation_id,
+            WriteOperationType::Copy,
+            state.progress_interval,
+        )?;
+
+        let conflicts_count = scan_result.conflicts.len();
+        let (sampled_conflicts, conflicts_sampled) = sample_conflicts(scan_result.conflicts, MAX_CONFLICTS_IN_RESULT);
+
+        let result = DryRunResult {
+            operation_id: operation_id.to_string(),
+            operation_type: WriteOperationType::Copy,
+            files_total: scan_result.file_count,
+            bytes_total: scan_result.total_bytes,
+            conflicts_total: conflicts_count,
+            conflicts: sampled_conflicts,
+            conflicts_sampled,
+        };
+
+        let _ = app.emit("dry-run-complete", result);
+        return Ok(());
+    }
 
     // Phase 1: Scan
     let scan_result = scan_sources(sources, state, app, operation_id, WriteOperationType::Copy)?;
@@ -1101,6 +1782,9 @@ fn copy_files_with_progress(
         Ok(()) => {
             // Success - commit transaction (don't rollback)
             transaction.commit();
+
+            // Spawn async sync for durability (non-blocking)
+            spawn_async_sync();
 
             // Emit completion
             let _ = app.emit(
@@ -1180,17 +1864,40 @@ fn copy_path_recursive(
 
     if metadata.is_symlink() {
         // Handle symlink - copy as symlink, not target
-        let actual_dest = if dest_path.exists() || fs::symlink_metadata(&dest_path).is_ok() {
-            match resolve_conflict(source, &dest_path, config, app, operation_id, state, apply_to_all_resolution)? {
-                Some(path) => path,
+        let (actual_dest, needs_safe_overwrite) = if dest_path.exists() || fs::symlink_metadata(&dest_path).is_ok() {
+            match resolve_conflict(
+                source,
+                &dest_path,
+                config,
+                app,
+                operation_id,
+                state,
+                apply_to_all_resolution,
+            )? {
+                Some(resolved) => (resolved.path, resolved.needs_safe_overwrite),
                 None => {
                     // Skip this file
                     return Ok(());
                 }
             }
         } else {
-            dest_path.clone()
+            (dest_path.clone(), false)
         };
+
+        // For symlink overwrite, remove the existing symlink/file first (safe since we can recreate)
+        if needs_safe_overwrite {
+            if actual_dest.is_dir() {
+                fs::remove_dir_all(&actual_dest).map_err(|e| WriteOperationError::IoError {
+                    path: actual_dest.display().to_string(),
+                    message: e.to_string(),
+                })?;
+            } else {
+                fs::remove_file(&actual_dest).map_err(|e| WriteOperationError::IoError {
+                    path: actual_dest.display().to_string(),
+                    message: e.to_string(),
+                })?;
+            }
+        }
 
         #[cfg(target_os = "macos")]
         {
@@ -1213,58 +1920,95 @@ fn copy_path_recursive(
         *bytes_done += metadata.len();
     } else if metadata.is_file() {
         // Handle regular file
-        let actual_dest = if dest_path.exists() {
-            match resolve_conflict(source, &dest_path, config, app, operation_id, state, apply_to_all_resolution)? {
-                Some(path) => path,
+        let (actual_dest, needs_safe_overwrite) = if dest_path.exists() {
+            match resolve_conflict(
+                source,
+                &dest_path,
+                config,
+                app,
+                operation_id,
+                state,
+                apply_to_all_resolution,
+            )? {
+                Some(resolved) => (resolved.path, resolved.needs_safe_overwrite),
                 None => {
                     // Skip this file
                     return Ok(());
                 }
             }
         } else {
-            dest_path.clone()
+            (dest_path.clone(), false)
         };
+
+        // Check cancellation before copy
+        if state.cancelled.load(Ordering::Relaxed) {
+            return Err(WriteOperationError::Cancelled {
+                message: "Operation cancelled by user".to_string(),
+            });
+        }
 
         // Copy file using platform-specific method
-        #[cfg(target_os = "macos")]
-        let bytes = {
-            let context = CopyProgressContext {
-                cancelled: Arc::new(AtomicBool::new(false)),
-                ..Default::default()
-            };
-            // Check cancellation before copy
-            if state.cancelled.load(Ordering::Relaxed) {
-                return Err(WriteOperationError::Cancelled {
-                    message: "Operation cancelled by user".to_string(),
-                });
+        let bytes = if needs_safe_overwrite {
+            // Use safe overwrite pattern (temp + rename)
+            #[cfg(target_os = "macos")]
+            {
+                let context = CopyProgressContext {
+                    cancelled: Arc::new(AtomicBool::new(false)),
+                    ..Default::default()
+                };
+                safe_overwrite_file(source, &actual_dest, Some(&context))?
             }
-            copy_single_file_native(source, &actual_dest, actual_dest != dest_path, Some(&context))?
+            #[cfg(not(target_os = "macos"))]
+            {
+                safe_overwrite_file(source, &actual_dest)?
+            }
+        } else {
+            // Normal copy to new location
+            #[cfg(target_os = "macos")]
+            {
+                let context = CopyProgressContext {
+                    cancelled: Arc::new(AtomicBool::new(false)),
+                    ..Default::default()
+                };
+                copy_single_file_native(source, &actual_dest, false, Some(&context))?
+            }
+            #[cfg(not(target_os = "macos"))]
+            {
+                fs::copy(source, &actual_dest).map_err(|e| WriteOperationError::IoError {
+                    path: source.display().to_string(),
+                    message: e.to_string(),
+                })?
+            }
         };
 
-        #[cfg(not(target_os = "macos"))]
-        let bytes = fs::copy(source, &actual_dest).map_err(|e| WriteOperationError::IoError {
-            path: source.display().to_string(),
-            message: e.to_string(),
-        })?;
-
-        transaction.record_file(actual_dest);
+        transaction.record_file(actual_dest.clone());
         *files_done += 1;
         *bytes_done += bytes;
 
         // Emit progress
         if last_progress_time.elapsed() >= *progress_interval {
+            let current_file_name = file_name.to_string_lossy().to_string();
             let _ = app.emit(
                 "write-progress",
                 WriteProgressEvent {
                     operation_id: operation_id.to_string(),
                     operation_type: WriteOperationType::Copy,
                     phase: WriteOperationPhase::Copying,
-                    current_file: Some(file_name.to_string_lossy().to_string()),
+                    current_file: Some(current_file_name.clone()),
                     files_done: *files_done,
                     files_total,
                     bytes_done: *bytes_done,
                     bytes_total,
                 },
+            );
+            update_operation_status(
+                operation_id,
+                WriteOperationPhase::Copying,
+                Some(current_file_name),
+                *files_done,
+                files_total,
+                *bytes_done,
+                bytes_total,
             );
             *last_progress_time = Instant::now();
         }
@@ -1325,8 +2069,41 @@ fn move_files_with_progress(
     destination: &Path,
     config: &WriteOperationConfig,
 ) -> Result<(), WriteOperationError> {
+    use tauri::Emitter;
+
+    // Handle dry-run mode
+    if config.dry_run {
+        let scan_result = dry_run_scan(
+            sources,
+            destination,
+            state,
+            app,
+            operation_id,
+            WriteOperationType::Move,
+            state.progress_interval,
+        )?;
+
+        let conflicts_count = scan_result.conflicts.len();
+        let (sampled_conflicts, conflicts_sampled) = sample_conflicts(scan_result.conflicts, MAX_CONFLICTS_IN_RESULT);
+
+        let result = DryRunResult {
+            operation_id: operation_id.to_string(),
+            operation_type: WriteOperationType::Move,
+            files_total: scan_result.file_count,
+            bytes_total: scan_result.total_bytes,
+            conflicts_total: conflicts_count,
+            conflicts: sampled_conflicts,
+            conflicts_sampled,
+        };
+
+        let _ = app.emit("dry-run-complete", result);
+        return Ok(());
+    }
+
     // Check if all sources are on the same filesystem as destination
-    let same_fs = sources.iter().all(|s| is_same_filesystem(s, destination).unwrap_or(false));
+    let same_fs = sources
+        .iter()
+        .all(|s| is_same_filesystem(s, destination).unwrap_or(false));
 
     if same_fs {
         // Use instant rename for each source
@@ -1373,26 +2150,55 @@ fn move_with_rename(
         let dest_path = destination.join(file_name);
 
         // Handle conflicts
-        let actual_dest = if dest_path.exists() {
-            match resolve_conflict(source, &dest_path, config, app, operation_id, state, &mut apply_to_all_resolution)? {
-                Some(path) => path,
+        let (actual_dest, needs_safe_overwrite) = if dest_path.exists() {
+            match resolve_conflict(
+                source,
+                &dest_path,
+                config,
+                app,
+                operation_id,
+                state,
+                &mut apply_to_all_resolution,
+            )? {
+                Some(resolved) => (resolved.path, resolved.needs_safe_overwrite),
                 None => {
                     // Skip this file
                     continue;
                 }
             }
         } else {
-            dest_path
+            (dest_path, false)
         };
 
-        // Use rename (instant on same filesystem)
-        fs::rename(source, &actual_dest).map_err(|e| WriteOperationError::IoError {
-            path: source.display().to_string(),
-            message: e.to_string(),
-        })?;
+        // For same-FS move with overwrite:
+        // - For files: rename() atomically replaces the destination
+        // - For directories: need to remove dest first (rename fails on non-empty dirs)
+        if needs_safe_overwrite && actual_dest.is_dir() {
+            // Safe directory overwrite: backup, then rename
+            let backup_path = safe_overwrite_dir(&actual_dest)?;
+            if let Err(e) = fs::rename(source, &actual_dest) {
+                // Restore backup on failure
+                let _ = fs::rename(&backup_path, &actual_dest);
+                return Err(WriteOperationError::IoError {
+                    path: source.display().to_string(),
+                    message: e.to_string(),
+                });
+            }
+            // Remove backup
+            let _ = fs::remove_dir_all(&backup_path);
+        } else {
+            // For files or non-overwrite: rename() handles it (atomic for files)
+            fs::rename(source, &actual_dest).map_err(|e| WriteOperationError::IoError {
+                path: source.display().to_string(),
+                message: e.to_string(),
+            })?;
+        }
 
         files_done += 1;
     }
+
+    // Spawn async sync for durability (non-blocking)
+    spawn_async_sync();
 
     // Emit completion (instant, no progress needed)
     let _ = app.emit(
@@ -1485,9 +2291,17 @@ fn move_with_staging(
             let final_path = destination.join(file_name);
 
             // Handle conflicts at final destination
-            let actual_dest = if final_path.exists() {
-                match resolve_conflict(source, &final_path, config, app, operation_id, state, &mut apply_to_all_resolution)? {
-                    Some(path) => path,
+            let (actual_dest, needs_safe_overwrite) = if final_path.exists() {
+                match resolve_conflict(
+                    source,
+                    &final_path,
+                    config,
+                    app,
+                    operation_id,
+                    state,
+                    &mut apply_to_all_resolution,
+                )? {
+                    Some(resolved) => (resolved.path, resolved.needs_safe_overwrite),
                     None => {
                         // Skip - remove from staging
                         if staged_path.is_dir() {
@@ -1499,14 +2313,29 @@ fn move_with_staging(
                     }
                 }
             } else {
-                final_path
+                (final_path, false)
             };
 
             // Rename from staging to final (atomic on same filesystem)
-            fs::rename(&staged_path, &actual_dest).map_err(|e| WriteOperationError::IoError {
-                path: staged_path.display().to_string(),
-                message: format!("Failed to move from staging: {}", e),
-            })?;
+            // For overwrite of directories, need to backup first
+            if needs_safe_overwrite && actual_dest.is_dir() {
+                let backup_path = safe_overwrite_dir(&actual_dest)?;
+                if let Err(e) = fs::rename(&staged_path, &actual_dest) {
+                    // Restore backup on failure
+                    let _ = fs::rename(&backup_path, &actual_dest);
+                    return Err(WriteOperationError::IoError {
+                        path: staged_path.display().to_string(),
+                        message: format!("Failed to move from staging: {}", e),
+                    });
+                }
+                let _ = fs::remove_dir_all(&backup_path);
+            } else {
+                // For files: rename atomically replaces
+                fs::rename(&staged_path, &actual_dest).map_err(|e| WriteOperationError::IoError {
+                    path: staged_path.display().to_string(),
+                    message: format!("Failed to move from staging: {}", e),
+                })?;
+            }
         }
         Ok(())
     })();
@@ -1530,6 +2359,9 @@ fn move_with_staging(
 
     // Phase 5: Remove empty staging directory
     let _ = fs::remove_dir(&staging_dir);
+
+    // Spawn async sync for durability (non-blocking)
+    spawn_async_sync();
 
     // Emit completion
     let _ = app.emit(
@@ -1598,12 +2430,28 @@ fn delete_files_with_progress(
     operation_id: &str,
     state: &Arc<WriteOperationState>,
     sources: &[PathBuf],
-    _config: &WriteOperationConfig,
+    config: &WriteOperationConfig,
 ) -> Result<(), WriteOperationError> {
     use tauri::Emitter;
 
     // Phase 1: Scan to get file count
     let scan_result = scan_sources(sources, state, app, operation_id, WriteOperationType::Delete)?;
+
+    // Handle dry-run mode (delete has no conflicts)
+    if config.dry_run {
+        let result = DryRunResult {
+            operation_id: operation_id.to_string(),
+            operation_type: WriteOperationType::Delete,
+            files_total: scan_result.file_count,
+            bytes_total: scan_result.total_bytes,
+            conflicts_total: 0,
+            conflicts: Vec::new(),
+            conflicts_sampled: false,
+        };
+
+        let _ = app.emit("dry-run-complete", result);
+        return Ok(());
+    }
 
     // Phase 2: Delete files first (deepest first)
     let mut files_done = 0;
@@ -1640,18 +2488,28 @@ fn delete_files_with_progress(
 
         // Emit progress
         if last_progress_time.elapsed() >= state.progress_interval {
+            let current_file = file.file_name().map(|n| n.to_string_lossy().to_string());
             let _ = app.emit(
                 "write-progress",
                 WriteProgressEvent {
                     operation_id: operation_id.to_string(),
                     operation_type: WriteOperationType::Delete,
                     phase: WriteOperationPhase::Deleting,
-                    current_file: file.file_name().map(|n| n.to_string_lossy().to_string()),
+                    current_file: current_file.clone(),
                     files_done,
                     files_total: scan_result.file_count,
                     bytes_done,
                     bytes_total: scan_result.total_bytes,
                 },
+            );
+            update_operation_status(
+                operation_id,
+                WriteOperationPhase::Deleting,
+                current_file,
+                files_done,
+                scan_result.file_count,
+                bytes_done,
+                scan_result.total_bytes,
             );
             last_progress_time = Instant::now();
         }
@@ -1677,6 +2535,9 @@ fn delete_files_with_progress(
         // Only remove if empty (files should already be deleted)
         let _ = fs::remove_dir(dir);
     }
+
+    // Spawn async sync for durability (non-blocking)
+    spawn_async_sync();
 
     // Emit completion
     let _ = app.emit(

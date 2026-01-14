@@ -162,11 +162,70 @@ Create `apps/desktop/src-tauri/src/file_system/write_operations_integration_test
 - [x] `./scripts/check.sh --check clippy` passes
 - [x] `./scripts/check.sh --check rustfmt` passes
 
-## Phase 5: Performance (optional)
+## Phase 5: Architectural improvements
+
+Critical fixes and enhancements based on post-implementation review.
+
+### 5.1 Safe overwrite (temp+rename pattern)
+
+- [x] Refactor `apply_resolution()` for Overwrite mode:
+  - [x] Copy source to `dest.cmdr-tmp-{uuid}` in same directory
+  - [x] Rename original dest to `dest.cmdr-backup-{uuid}`
+  - [x] Rename temp to final dest path
+  - [x] Delete backup file
+  - [x] Handle errors at each step with appropriate recovery
+- [ ] Test: overwrite file, verify original preserved if copy fails
+- [ ] Test: overwrite file, verify both files intact if rename fails
+
+### 5.2 Async sync at end of operation
+
+- [x] Add `sync()` call after all writes complete
+- [x] Make it async so user sees "complete" immediately
+- [ ] Test: verify sync is called (mock or observe syscall)
+
+### 5.3 Dry-run mode with streaming conflicts
+
+- [x] Add `dryRun: boolean` to `WriteOperationConfig`
+- [x] Add `ScanProgressEvent` type:
+  - [x] `operationId`, `filesFound`, `bytesFound`, `conflictsFound`, `currentPath`
+- [x] Emit `ScanProgressEvent` every ~300ms during scan
+- [x] Stream conflicts as they're found via `scan-conflict` events
+- [x] When dry-run completes, emit `dry-run-complete` event with `DryRunResult`:
+  - [x] `filesTotal`, `bytesTotal`, `conflicts` (list, max 200 sampled)
+  - [x] `conflictsTotal` (exact count, may differ from list length)
+- [x] Same-FS moves: still do conflict scan (fast `exists()` checks)
+- [x] Test: serialization tests for all new types (12 tests added)
+- [ ] Test: dry-run integration with actual files
+
+### 5.4 Operation status query APIs
+
+- [x] Add `listActiveOperations()` command
+- [x] Add `getOperationStatus(operationId)` command
+- [x] Store operation state in memory (operation_id → status)
+- [x] Test: serialization tests for OperationStatus and OperationSummary (4 tests added)
+- [ ] Test: list operations shows running operation (integration test)
+- [ ] Test: get status returns current progress (integration test)
+
+### 5.5 TypeScript types for new features
+
+- [x] Add `ScanProgressEvent` interface
+- [x] Add `DryRunResult` interface
+- [x] Add `ConflictInfo` interface
+- [x] Add `OperationStatus` interface
+- [x] Add `OperationSummary` interface
+- [x] Add `dryRun` to `WriteOperationConfig`
+- [x] Add `listActiveOperations()` wrapper
+- [x] Add `getOperationStatus()` wrapper
+- [x] Add `onScanProgress()` event helper
+- [x] Add `onScanConflict()` event helper
+- [x] Add `onDryRunComplete()` event helper
+- [x] Run `pnpm svelte-check` - must pass
+
+## Phase 6: Performance (optional)
 
 Only after all above is complete and measured.
 
-### 5.1 Benchmarking
+### 6.1 Benchmarking
 
 - [ ] Create benchmark comparing current vs Finder for:
   - [ ] 1000 small files copy
@@ -174,7 +233,7 @@ Only after all above is complete and measured.
   - [ ] Same-FS move of 10,000 files
 - [ ] Document results in `docs/artifacts/notes/write-operations-benchmarks.md`
 
-### 5.2 Parallel delete (spec R8.1)
+### 6.2 Parallel delete (spec R8.1)
 
 Only if benchmarks show it's beneficial:
 

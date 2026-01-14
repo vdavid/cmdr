@@ -312,6 +312,8 @@ export interface WriteOperationConfig {
     overwrite?: boolean
     /** How to handle conflicts */
     conflictResolution?: ConflictResolution
+    /** If true, only scan and detect conflicts without executing the operation */
+    dryRun?: boolean
 }
 
 /** Result of starting a write operation. */
@@ -384,3 +386,83 @@ export type WriteOperationError =
     | { type: 'symlink_loop'; path: string }
     | { type: 'cancelled'; message: string }
     | { type: 'io_error'; path: string; message: string }
+
+/** Progress event during scanning phase (emitted in dry-run mode). */
+export interface ScanProgressEvent {
+    operationId: string
+    operationType: WriteOperationType
+    /** Number of files found so far */
+    filesFound: number
+    /** Total bytes found so far */
+    bytesFound: number
+    /** Number of conflicts detected so far */
+    conflictsFound: number
+    /** Current path being scanned (for activity indication) */
+    currentPath: string | null
+}
+
+/** Detailed information about a single conflict. */
+export interface ConflictInfo {
+    sourcePath: string
+    destinationPath: string
+    /** Source file size in bytes */
+    sourceSize: number
+    /** Destination file size in bytes */
+    destinationSize: number
+    /** Source modification time (Unix timestamp in seconds) */
+    sourceModified: number | null
+    /** Destination modification time (Unix timestamp in seconds) */
+    destinationModified: number | null
+    /** Whether destination is newer than source */
+    destinationIsNewer: boolean
+    /** Whether source is a directory */
+    isDirectory: boolean
+}
+
+/** Result of a dry-run operation. */
+export interface DryRunResult {
+    operationId: string
+    operationType: WriteOperationType
+    /** Total number of files that would be processed */
+    filesTotal: number
+    /** Total bytes that would be processed */
+    bytesTotal: number
+    /** Total number of conflicts detected */
+    conflictsTotal: number
+    /** Sampled conflicts (max 200 for large sets) */
+    conflicts: ConflictInfo[]
+    /** Whether the conflicts list is a sample (true if conflictsTotal > conflicts.length) */
+    conflictsSampled: boolean
+}
+
+/** Current status of an operation for query APIs. */
+export interface OperationStatus {
+    operationId: string
+    operationType: WriteOperationType
+    phase: WriteOperationPhase
+    /** Whether the operation is still running */
+    isRunning: boolean
+    /** Current file being processed (filename only) */
+    currentFile: string | null
+    /** Number of files processed */
+    filesDone: number
+    /** Total number of files (0 if unknown/scanning) */
+    filesTotal: number
+    /** Bytes processed so far */
+    bytesDone: number
+    /** Total bytes to process (0 if unknown/scanning) */
+    bytesTotal: number
+    /** Operation start time (Unix timestamp in milliseconds) */
+    startedAt: number
+}
+
+/** Summary of an active operation for list view. */
+export interface OperationSummary {
+    operationId: string
+    operationType: WriteOperationType
+    phase: WriteOperationPhase
+    /** Percentage complete (0-100) */
+    percentComplete: number
+    /** Operation start time (Unix timestamp in milliseconds) */
+    startedAt: number
+}

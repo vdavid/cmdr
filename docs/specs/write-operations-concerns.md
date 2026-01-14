@@ -53,8 +53,11 @@ The conflict resolution requires frontend to coordinate `onWriteConflict` listen
 - Or change to a polling model where frontend queries for pending conflicts
 - Or use a callback-based API where conflict handler is passed upfront
 
-##### Recommendation
-Defer until frontend integration reveals actual pain points.
+##### Decision
+**Addressed by dry-run mode.** With the new upfront-decision model, conflicts are detected and presented during dry-run. User makes all decisions before the actual operation starts. The existing `Stop` mode with `resolveWriteConflict()` remains available as a fallback but the recommended flow is:
+1. Run with `dryRun: true` to get conflicts
+2. Show conflicts to user, collect decisions
+3. Run actual operation with conflict resolutions pre-configured
 
 #### No operation status query
 
@@ -78,8 +81,20 @@ Users can't preview what will happen (especially conflicts) before committing to
 - Add `dryRun: boolean` option to config that scans and returns conflicts without executing
 - Return a "plan" object showing what would happen
 
-##### Recommendation
-Consider adding for v2, not critical for initial release.
+##### Decision
+**Implement dry-run mode with streaming progress and conflicts.**
+
+Add `dryRun: boolean` to `WriteOperationConfig`. When true:
+1. Perform full directory scan (same as normal operation)
+2. Emit `ScanProgressEvent` every ~300ms with: filesFound, bytesFound, conflictsFound, currentPath
+3. Stream conflicts as they're found (so UI can show them immediately)
+4. Return totals and conflict list without executing any file operations
+
+This enables upfront conflict resolution - user makes all decisions before operation starts, which is simpler than the current pause/resume event-based flow.
+
+**Same-FS moves still get conflict scan** - even though rename() is O(1), we need to detect conflicts. The scan is just `exists()` checks, extremely fast (~100ms for 10k files).
+
+**Conflict sampling for large sets** - if >200 conflicts, return a random sample of ~200 to avoid JSON overhead. Include exact count so UI knows how many total.
 
 #### No batch/queue support
 
@@ -129,8 +144,8 @@ User doesn't know how many conflicts exist until they hit them one by one (in St
 - Return conflict list before starting actual copy
 - Add dry-run mode (see above)
 
-##### Recommendation
-Consider for v2 alongside dry-run mode.
+##### Decision
+**Addressed by dry-run mode** (see "No dry-run mode" section above). Conflicts are streamed during scan so UI can show them in real-time. User makes all conflict decisions upfront before operation starts.
 
 #### Technical phase names
 
@@ -202,8 +217,16 @@ If copy fails after delete, user loses both files. This is **worse than Finder**
 2. Rename destination to `.backup`, copy, then delete backup
 3. Use macOS `exchangedata()` or `renamex_np()` with `RENAME_EXCHANGE`
 
-##### Recommendation
-**Fix immediately before shipping.** Use temp+rename pattern.
+##### Decision
+**Use temp+rename pattern:**
+1. Copy source to `dest.cmdr-tmp-{uuid}` (temp file in same directory)
+2. Rename original dest to `dest.cmdr-backup-{uuid}`
+3. Rename temp to final dest path
+4. Delete backup
+
+This requires ~2x disk space temporarily. We accept this cost for safety. No special handling for low-disk situations - users with near-full disks will understand if operations fail.
+
+If copy fails at step 1, original dest is untouched. If rename fails at step 2-3, we can recover. Only step 4 (delete backup) is non-critical.
 
 #### No fsync after writes
 
@@ -215,8 +238,10 @@ After copying, data may be in OS write cache. Power loss could lose data.
 - Or call `sync()` after entire operation
 - Research: does copyfile(3) handle this?
 
-##### Recommendation
-Research needed - check if copyfile(3) provides durability guarantees.
+##### Decision
+**One async `sync()` call at end of entire operation.**
+
+Calling fsync after every file would be slow and most apps (including Finder) trust the OS cache. A single sync() at the end provides reasonable durability without performance impact. The async nature means the user sees "complete" immediately while the OS flushes buffers in the background.
 
 #### No checksum verification
 

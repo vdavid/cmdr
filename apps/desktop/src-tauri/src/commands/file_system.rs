@@ -1,18 +1,17 @@
 //! Tauri commands for file system operations.
 
+use crate::file_system::write_operations::{ConflictResolution, resolve_write_conflict as ops_resolve_write_conflict};
 use crate::file_system::{
-    FileEntry, ListingStartResult, ResortResult, SortColumn, SortOrder, StreamingListingStartResult,
-    WriteOperationConfig, WriteOperationError, WriteOperationStartResult, cancel_listing as ops_cancel_listing,
-    cancel_write_operation as ops_cancel_write_operation, copy_files_start as ops_copy_files_start,
-    delete_files_start as ops_delete_files_start, find_file_index as ops_find_file_index,
-    get_file_at as ops_get_file_at, get_file_range as ops_get_file_range,
-    get_max_filename_width as ops_get_max_filename_width, get_total_count as ops_get_total_count,
+    FileEntry, ListingStartResult, OperationStatus, OperationSummary, ResortResult, SortColumn, SortOrder,
+    StreamingListingStartResult, WriteOperationConfig, WriteOperationError, WriteOperationStartResult,
+    cancel_listing as ops_cancel_listing, cancel_write_operation as ops_cancel_write_operation,
+    copy_files_start as ops_copy_files_start, delete_files_start as ops_delete_files_start,
+    find_file_index as ops_find_file_index, get_file_at as ops_get_file_at, get_file_range as ops_get_file_range,
+    get_max_filename_width as ops_get_max_filename_width, get_operation_status as ops_get_operation_status,
+    get_total_count as ops_get_total_count, list_active_operations as ops_list_active_operations,
     list_directory_end as ops_list_directory_end, list_directory_start_streaming as ops_list_directory_start_streaming,
-    list_directory_start_with_volume as ops_list_directory_start_with_volume,
-    move_files_start as ops_move_files_start, resort_listing as ops_resort_listing,
-};
-use crate::file_system::write_operations::{
-    resolve_write_conflict as ops_resolve_write_conflict, ConflictResolution,
+    list_directory_start_with_volume as ops_list_directory_start_with_volume, move_files_start as ops_move_files_start,
+    resort_listing as ops_resort_listing,
 };
 use std::path::PathBuf;
 
@@ -327,6 +326,27 @@ pub fn cancel_write_operation(operation_id: String) {
 #[tauri::command]
 pub fn resolve_write_conflict(operation_id: String, resolution: ConflictResolution, apply_to_all: bool) {
     ops_resolve_write_conflict(&operation_id, resolution, apply_to_all);
+}
+
+/// Lists all active write operations.
+///
+/// Returns a list of operation summaries for all currently running operations.
+/// This is useful for showing a global progress view or managing multiple concurrent operations.
+#[tauri::command]
+pub fn list_active_operations() -> Vec<OperationSummary> {
+    ops_list_active_operations()
+}
+
+/// Gets the detailed status of a specific write operation.
+///
+/// Returns the current status including phase, progress, and file information.
+/// Returns None if the operation is not found (either never existed or already completed).
+///
+/// # Arguments
+/// * `operation_id` - The operation ID to query.
+#[tauri::command]
+pub fn get_operation_status(operation_id: String) -> Option<OperationStatus> {
+    ops_get_operation_status(&operation_id)
 }
 
 /// Expands tilde (~) to the user's home directory.

@@ -36,6 +36,11 @@ import type {
     WriteOperationError,
     WriteOperationStartResult,
     WriteProgressEvent,
+    ConflictInfo,
+    DryRunResult,
+    OperationStatus,
+    OperationSummary,
+    ScanProgressEvent,
 } from './file-explorer/types'
 
 export type {
@@ -52,6 +57,11 @@ export type {
     WriteOperationError,
     WriteOperationStartResult,
     WriteProgressEvent,
+    ConflictInfo,
+    DryRunResult,
+    OperationStatus,
+    OperationSummary,
+    ScanProgressEvent,
 }
 
 export type { Event, UnlistenFn }
@@ -994,6 +1004,25 @@ export async function resolveWriteConflict(
 }
 
 /**
+ * Lists all active write operations.
+ * Returns a list of operation summaries for all currently running operations.
+ * Useful for showing a global progress view or managing multiple concurrent operations.
+ * @returns List of operation summaries
+ */
+export async function listActiveOperations(): Promise<OperationSummary[]> {
+    return invoke<OperationSummary[]>('list_active_operations')
+}
+
+/**
+ * Gets the detailed status of a specific write operation.
+ * @param operationId - The operation ID to query
+ * @returns Current status, or null if the operation is not found
+ */
+export async function getOperationStatus(operationId: string): Promise<OperationStatus | null> {
+    return invoke<OperationStatus | null>('get_operation_status', { operationId })
+}
+
+/**
  * Type guard for WriteOperationError.
  */
 export function isWriteOperationError(error: unknown): error is WriteOperationError {
@@ -1053,4 +1082,33 @@ export async function onWriteCancelled(callback: (event: WriteCancelledEvent) =>
  */
 export async function onWriteConflict(callback: (event: WriteConflictEvent) => void): Promise<UnlistenFn> {
     return listen<WriteConflictEvent>('write-conflict', (event) => callback(event.payload))
+}
+
+/**
+ * Subscribes to scan progress events during dry-run operations.
+ * @param callback - Function to call when scan progress is reported
+ * @returns Unsubscribe function
+ */
+export async function onScanProgress(callback: (event: ScanProgressEvent) => void): Promise<UnlistenFn> {
+    return listen<ScanProgressEvent>('scan-progress', (event) => callback(event.payload))
+}
+
+/**
+ * Subscribes to scan conflict events during dry-run operations.
+ * Conflicts are streamed as they are detected.
+ * @param callback - Function to call when a conflict is detected during scan
+ * @returns Unsubscribe function
+ */
+export async function onScanConflict(callback: (event: ConflictInfo) => void): Promise<UnlistenFn> {
+    return listen<ConflictInfo>('scan-conflict', (event) => callback(event.payload))
+}
+
+/**
+ * Subscribes to dry-run completion events.
+ * Emitted when a dry-run operation finishes scanning.
+ * @param callback - Function to call with the dry-run result
+ * @returns Unsubscribe function
+ */
+export async function onDryRunComplete(callback: (event: DryRunResult) => void): Promise<UnlistenFn> {
+    return listen<DryRunResult>('dry-run-complete', (event) => callback(event.payload))
 }

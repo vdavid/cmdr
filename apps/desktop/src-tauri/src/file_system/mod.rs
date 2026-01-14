@@ -40,8 +40,9 @@ pub use volume_manager::VolumeManager;
 pub use watcher::init_watcher_manager;
 // Re-export write operation types
 pub use write_operations::{
-    WriteOperationConfig, WriteOperationError, WriteOperationStartResult, cancel_write_operation,
-    copy_files_start, delete_files_start, move_files_start,
+    OperationStatus, OperationSummary, WriteOperationConfig, WriteOperationError, WriteOperationStartResult,
+    cancel_write_operation, copy_files_start, delete_files_start, get_operation_status, list_active_operations,
+    move_files_start,
 };
 
 /// Global volume manager instance

@@ -56,6 +56,7 @@ fn test_config_serialization() {
         progress_interval_ms: 500,
         overwrite: true,
         conflict_resolution: ConflictResolution::Skip,
+        dry_run: false,
     };
 
     let json = serde_json::to_string(&config).unwrap();
@@ -302,14 +303,8 @@ fn test_operation_type_equality() {
 
 #[test]
 fn test_operation_type_serialization() {
-    assert_eq!(
-        serde_json::to_string(&WriteOperationType::Copy).unwrap(),
-        "\"copy\""
-    );
-    assert_eq!(
-        serde_json::to_string(&WriteOperationType::Move).unwrap(),
-        "\"move\""
-    );
+    assert_eq!(serde_json::to_string(&WriteOperationType::Copy).unwrap(), "\"copy\"");
+    assert_eq!(serde_json::to_string(&WriteOperationType::Move).unwrap(), "\"move\"");
     assert_eq!(
         serde_json::to_string(&WriteOperationType::Delete).unwrap(),
         "\"delete\""
@@ -373,6 +368,95 @@ fn test_io_error_other_conversion() {
     let write_err: WriteOperationError = io_err.into();
 
     assert!(matches!(write_err, WriteOperationError::IoError { .. }));
+}
+
+// ============================================================================
+// Operation status serialization tests
+// ============================================================================
+
+#[test]
+fn test_operation_status_serialization() {
+    let status = super::write_operations::OperationStatus {
+        operation_id: "test-123".to_string(),
+        operation_type: WriteOperationType::Copy,
+        phase: WriteOperationPhase::Copying,
+        is_running: true,
+        current_file: Some("file.txt".to_string()),
+        files_done: 50,
+        files_total: 100,
+        bytes_done: 1024,
+        bytes_total: 2048,
+        started_at: 1700000000000,
+    };
+
+    let json = serde_json::to_string(&status).unwrap();
+    assert!(json.contains("\"operationId\":\"test-123\""));
+    assert!(json.contains("\"operationType\":\"copy\""));
+    assert!(json.contains("\"phase\":\"copying\""));
+    assert!(json.contains("\"isRunning\":true"));
+    assert!(json.contains("\"currentFile\":\"file.txt\""));
+    assert!(json.contains("\"filesDone\":50"));
+    assert!(json.contains("\"filesTotal\":100"));
+    assert!(json.contains("\"bytesDone\":1024"));
+    assert!(json.contains("\"bytesTotal\":2048"));
+    assert!(json.contains("\"startedAt\":1700000000000"));
+}
+
+#[test]
+fn test_operation_status_with_null_current_file() {
+    let status = super::write_operations::OperationStatus {
+        operation_id: "test-456".to_string(),
+        operation_type: WriteOperationType::Delete,
+        phase: WriteOperationPhase::Scanning,
+        is_running: false,
+        current_file: None,
+        files_done: 0,
+        files_total: 0,
+        bytes_done: 0,
+        bytes_total: 0,
+        started_at: 1700000000000,
+    };
+
+    let json = serde_json::to_string(&status).unwrap();
+    assert!(json.contains("\"currentFile\":null"));
+    assert!(json.contains("\"isRunning\":false"));
+}
+
+#[test]
+fn test_operation_summary_serialization() {
+    let summary = super::write_operations::OperationSummary {
+        operation_id: "op-789".to_string(),
+        operation_type: WriteOperationType::Move,
+        phase: WriteOperationPhase::Deleting,
+        percent_complete: 75,
+        started_at: 1700000000000,
+    };
+
+    let json = serde_json::to_string(&summary).unwrap();
+    assert!(json.contains("\"operationId\":\"op-789\""));
+    assert!(json.contains("\"operationType\":\"move\""));
+    assert!(json.contains("\"phase\":\"deleting\""));
+    assert!(json.contains("\"percentComplete\":75"));
+    assert!(json.contains("\"startedAt\":1700000000000"));
+}
+
+#[test]
+fn test_operation_summary_all_operation_types() {
+    for op_type in [
+        WriteOperationType::Copy,
+        WriteOperationType::Move,
+        WriteOperationType::Delete,
+    ] {
+        let summary = super::write_operations::OperationSummary {
+            operation_id: "test".to_string(),
+            operation_type: op_type,
+            phase: WriteOperationPhase::Scanning,
+            percent_complete: 0,
+            started_at: 0,
+        };
+        let json = serde_json::to_string(&summary).unwrap();
+        assert!(json.contains("operationType"));
+    }
 }
 
 // ============================================================================
