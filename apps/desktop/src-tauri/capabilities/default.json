@@ -25,6 +25,8 @@
         "mcp-bridge:default",
         "drag:default",
         "fs:allow-temp-write",
-        "fs:allow-remove"
+        "fs:allow-remove",
+        "updater:default",
+        "process:allow-restart"
     ]
 }

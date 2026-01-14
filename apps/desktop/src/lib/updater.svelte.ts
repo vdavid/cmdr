@@ -20,6 +20,9 @@ export function getUpdateState(): UpdateState {
 }
 
 export async function checkForUpdates(): Promise<void> {
+    // eslint-disable-next-line no-console
+    console.log('[updater] checkForUpdates called, current status:', updateState.status)
+
     if (updateState.status === 'downloading' || updateState.status === 'ready') {
         return // Don't interrupt ongoing download or ready state
     }
@@ -28,7 +31,11 @@ export async function checkForUpdates(): Promise<void> {
     updateState.error = null
 
     try {
+        // eslint-disable-next-line no-console
+        console.log('[updater] Checking for updates...')
         const update = await check()
+        // eslint-disable-next-line no-console
+        console.log('[updater] Check result:', update)
 
         if (update !== null) {
             updateState.status = 'downloading'
@@ -51,8 +58,13 @@ export async function restartToUpdate(): Promise<void> {
 }
 
 export function startUpdateChecker(): () => void {
+    // eslint-disable-next-line no-console
+    console.log('[updater] startUpdateChecker called, DEV mode:', import.meta.env.DEV)
+
     // Skip update checks in dev mode to avoid hitting real endpoint
     if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.log('[updater] Skipping update check in dev mode')
         return () => {}
     }
 
