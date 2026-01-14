@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-01-14
+
 ### Fixed
 
 - Fix auto-updater to download updates and restart the app after updating ([c0bff9a](https://github.com/vdavid/cmdr/commit/c0bff9a))
