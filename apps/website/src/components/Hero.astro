@@ -237,4 +237,23 @@ import { dmgUrl } from '../lib/release'
             transform: none;
         }
     }
+
+    /* Respect user preference for reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+        :global(.animate-blur-in) {
+            animation: none;
+            opacity: 1;
+            filter: none;
+            transform: none;
+        }
+
+        .hero-frame,
+        .hero-right-pane,
+        .hero-left-pane {
+            animation: none;
+            opacity: 1;
+            filter: none;
+            transform: none;
+        }
+    }
 </style>
