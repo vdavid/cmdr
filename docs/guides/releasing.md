@@ -16,11 +16,11 @@ How to release a new version of Cmdr.
    - Patch (1.2.0 → 1.2.1): bug fixes, minor tweaks
    - Minor (1.2.1 → 1.3.0): new features
    - Major (1.3.0 → 2.0.0): major launches
-4. Script bumps version in `package.json`, `tauri.conf.json`, `Cargo.toml`
-5. Script moves `[Unreleased]` → `[1.2.1]` in changelog, commits, and tags
-6. Push: `git push origin main --tags`
-7. CI builds universal macOS binary, creates GitHub release, updates `latest.json`
-8. Website auto-deploys (~8 min), users get update notification on next check
+   - (Script bumps version in `package.json`, `tauri.conf.json`, `Cargo.toml`)
+   - (Script moves `[Unreleased]` → `[1.2.1]` in changelog, commits, and tags)
+4. Push: `git push origin main --tags`
+   - (CI builds universal macOS binary, creates GitHub release, updates `latest.json`)
+   - (Website auto-deploys, users get update notification on next check)
 
 ## How updates work
 
