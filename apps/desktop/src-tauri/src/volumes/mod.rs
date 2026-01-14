@@ -351,24 +351,12 @@ fn get_icon_for_path(path: &str) -> Option<String> {
     crate::icons::get_icon_for_path(path)
 }
 
-/// Get a boolean resource value from an NSURL.
-fn get_bool_resource(url: &objc2_foundation::NSURL, key: &str) -> Option<bool> {
-    use objc2::rc::Retained;
-    use objc2_foundation::{NSNumber, NSString};
-
-    let key = NSString::from_str(key);
-    let mut value: Option<Retained<objc2::runtime::AnyObject>> = None;
-    let success = unsafe { url.getResourceValue_forKey_error(&mut value, &key) };
-
-    if success.is_ok() {
-        value.and_then(|obj| obj.downcast::<NSNumber>().ok().map(|n| n.boolValue()))
-    } else {
-        None
-    }
-}
-
-/// Get a string resource value from an NSURL.
-fn get_string_resource(url: &objc2_foundation::NSURL, key: &str) -> Option<String> {
+/// Get a resource value from an NSURL and convert it using the provided extractor.
+fn get_nsurl_resource<T>(
+    url: &objc2_foundation::NSURL,
+    key: &str,
+    extractor: impl FnOnce(objc2::rc::Retained<objc2::runtime::AnyObject>) -> Option<T>,
+) -> Option<T> {
     use objc2::rc::Retained;
     use objc2_foundation::NSString;
 
@@ -377,10 +365,22 @@ fn get_string_resource(url: &objc2_foundation::NSURL, key: &str) -> Option<Strin
     let success = unsafe { url.getResourceValue_forKey_error(&mut value, &key) };
 
     if success.is_ok() {
-        value.and_then(|obj| obj.downcast::<NSString>().ok().map(|s| s.to_string()))
+        value.and_then(extractor)
     } else {
         None
     }
+}
+
+/// Get a boolean resource value from an NSURL.
+fn get_bool_resource(url: &objc2_foundation::NSURL, key: &str) -> Option<bool> {
+    use objc2_foundation::NSNumber;
+    get_nsurl_resource(url, key, |obj| obj.downcast::<NSNumber>().ok().map(|n| n.boolValue()))
+}
+
+/// Get a string resource value from an NSURL.
+fn get_string_resource(url: &objc2_foundation::NSURL, key: &str) -> Option<String> {
+    use objc2_foundation::NSString;
+    get_nsurl_resource(url, key, |obj| obj.downcast::<NSString>().ok().map(|s| s.to_string()))
 }
 
 // Legacy compatibility - maintain VolumeInfo type for backwards compatibility

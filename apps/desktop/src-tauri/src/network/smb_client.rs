@@ -338,48 +338,10 @@ async fn list_shares_smbutil(
     ip_address: Option<&str>,
     port: u16,
 ) -> Result<ShareListResult, ShareListError> {
-    use std::process::Command;
-
-    // Build the SMB URL: //host:port or //ip:port
-    let host = ip_address.unwrap_or(hostname);
-    let url = if port == 445 {
-        format!("//{}", host)
-    } else {
-        format!("//{}:{}", host, port)
-    };
-
+    let (url, _) = build_smbutil_url(hostname, ip_address, port, None);
     debug!("Running smbutil view -G -N {}", url);
 
-    // Run smbutil with guest access (-G) and no password prompt (-N)
-    let output = tokio::task::spawn_blocking(move || Command::new("smbutil").args(["view", "-G", "-N", &url]).output())
-        .await
-        .map_err(|e| ShareListError::ProtocolError(format!("Failed to spawn smbutil: {}", e)))?
-        .map_err(|e| ShareListError::ProtocolError(format!("Failed to run smbutil: {}", e)))?;
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        debug!(
-            "smbutil failed: exit={:?}, stderr={}, stdout={}",
-            output.status.code(),
-            stderr,
-            stdout
-        );
-
-        if stderr.contains("Authentication error") || stderr.contains("rejected the authentication") {
-            return Err(ShareListError::AuthRequired(
-                "smbutil: Authentication required".to_string(),
-            ));
-        }
-        return Err(ShareListError::ProtocolError(format!(
-            "smbutil failed: {}",
-            stderr.trim()
-        )));
-    }
-
-    // Parse smbutil output
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let shares = parse_smbutil_output(&stdout);
+    let shares = run_smbutil_view(&url, true).await?;
 
     Ok(ShareListResult {
         shares,
@@ -398,49 +360,21 @@ async fn list_shares_smbutil_authenticated_from_keychain(
     ip_address: Option<&str>,
     port: u16,
 ) -> Result<ShareListResult, ShareListError> {
-    use std::process::Command;
-
-    // Build the SMB URL: //host:port or //ip:port
-    let host = ip_address.unwrap_or(hostname);
-    let url = if port == 445 {
-        format!("//{}", host)
-    } else {
-        format!("//{}:{}", host, port)
-    };
-
+    let (url, _) = build_smbutil_url(hostname, ip_address, port, None);
     info!("Running smbutil view -N {} (using Keychain)", url);
 
-    // Run smbutil without -G (guest) flag, but with -N (no prompt)
-    // This allows smbutil to use stored Keychain credentials
-    let output = tokio::task::spawn_blocking(move || Command::new("smbutil").args(["view", "-N", &url]).output())
-        .await
-        .map_err(|e| ShareListError::ProtocolError(format!("Failed to spawn smbutil: {}", e)))?
-        .map_err(|e| ShareListError::ProtocolError(format!("Failed to run smbutil: {}", e)))?;
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        debug!(
-            "smbutil with Keychain failed: exit={:?}, stderr={}, stdout={}",
-            output.status.code(),
-            stderr,
-            stdout
-        );
-
-        if stderr.contains("Authentication error") || stderr.contains("rejected the authentication") {
-            return Err(ShareListError::AuthRequired(
-                "Keychain credentials invalid or missing".to_string(),
-            ));
+    let shares = run_smbutil_view(&url, false).await.map_err(|e| {
+        // Convert generic auth errors to Keychain-specific messages
+        match e {
+            ShareListError::AuthRequired(_) => {
+                ShareListError::AuthRequired("Keychain credentials invalid or missing".to_string())
+            }
+            ShareListError::ProtocolError(msg) => {
+                ShareListError::AuthRequired(format!("No valid Keychain credentials: {}", msg))
+            }
+            other => other,
         }
-        return Err(ShareListError::AuthRequired(format!(
-            "No valid Keychain credentials: {}",
-            stderr.trim()
-        )));
-    }
-
-    // Parse smbutil output
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let shares = parse_smbutil_output(&stdout);
+    })?;
 
     if shares.is_empty() {
         return Err(ShareListError::AuthRequired(
@@ -479,57 +413,16 @@ async fn list_shares_smbutil_with_auth(
     username: &str,
     password: &str,
 ) -> Result<ShareListResult, ShareListError> {
-    use std::process::Command;
-
-    // Build the SMB URL with credentials: //user:pass@host:port
-    let host = ip_address.unwrap_or(hostname);
-
-    // URL-encode special characters in password
-    let encoded_password = urlencoding::encode(password);
-
-    let url = if port == 445 {
-        format!("//{}:{}@{}", username, encoded_password, host)
-    } else {
-        format!("//{}:{}@{}:{}", username, encoded_password, host, port)
-    };
-
-    // For logging, hide password
-    let safe_url = if port == 445 {
-        format!("//{}:***@{}", username, host)
-    } else {
-        format!("//{}:***@{}:{}", username, host, port)
-    };
+    let (url, safe_url) = build_smbutil_url(hostname, ip_address, port, Some((username, password)));
     info!("Running smbutil view -N {}", safe_url);
 
-    // Run smbutil with credentials in URL
-    // -N: Don't prompt for password or use Keychain - only use credentials in URL
-    let output = tokio::task::spawn_blocking(move || Command::new("smbutil").args(["view", "-N", &url]).output())
-        .await
-        .map_err(|e| ShareListError::ProtocolError(format!("Failed to spawn smbutil: {}", e)))?
-        .map_err(|e| ShareListError::ProtocolError(format!("Failed to run smbutil: {}", e)))?;
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        debug!(
-            "smbutil with auth failed: exit={:?}, stderr={}, stdout={}",
-            output.status.code(),
-            stderr,
-            stdout
-        );
-
-        if stderr.contains("Authentication error") || stderr.contains("rejected the authentication") {
-            return Err(ShareListError::AuthFailed("Invalid username or password".to_string()));
+    let shares = run_smbutil_view(&url, false).await.map_err(|e| {
+        // Convert auth errors to AuthFailed for explicit credential attempts
+        match e {
+            ShareListError::AuthRequired(_) => ShareListError::AuthFailed("Invalid username or password".to_string()),
+            other => other,
         }
-        return Err(ShareListError::ProtocolError(format!(
-            "smbutil failed: {}",
-            stderr.trim()
-        )));
-    }
-
-    // Parse smbutil output
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let shares = parse_smbutil_output(&stdout);
+    })?;
 
     debug!("smbutil with auth succeeded, got {} shares", shares.len());
 
@@ -564,6 +457,86 @@ async fn list_shares_smbutil_with_auth(
     Err(ShareListError::ProtocolError(
         "smbutil fallback not available on this platform".to_string(),
     ))
+}
+
+/// Builds an SMB URL for smbutil commands.
+/// Returns (url_for_command, safe_url_for_logging).
+fn build_smbutil_url(
+    hostname: &str,
+    ip_address: Option<&str>,
+    port: u16,
+    credentials: Option<(&str, &str)>,
+) -> (String, String) {
+    let host = ip_address.unwrap_or(hostname);
+
+    match credentials {
+        Some((username, password)) => {
+            let encoded_password = urlencoding::encode(password);
+            let url = if port == 445 {
+                format!("//{}:{}@{}", username, encoded_password, host)
+            } else {
+                format!("//{}:{}@{}:{}", username, encoded_password, host, port)
+            };
+            let safe_url = if port == 445 {
+                format!("//{}:***@{}", username, host)
+            } else {
+                format!("//{}:***@{}:{}", username, host, port)
+            };
+            (url, safe_url)
+        }
+        None => {
+            let url = if port == 445 {
+                format!("//{}", host)
+            } else {
+                format!("//{}:{}", host, port)
+            };
+            (url.clone(), url)
+        }
+    }
+}
+
+/// Runs smbutil view command and returns parsed shares.
+/// `use_guest` controls whether to use -G flag (guest access).
+#[cfg(target_os = "macos")]
+async fn run_smbutil_view(url: &str, use_guest: bool) -> Result<Vec<ShareInfo>, ShareListError> {
+    use std::process::Command;
+
+    let url_owned = url.to_string();
+    let output = tokio::task::spawn_blocking(move || {
+        let mut cmd = Command::new("smbutil");
+        cmd.arg("view").arg("-N");
+        if use_guest {
+            cmd.arg("-G");
+        }
+        cmd.arg(&url_owned).output()
+    })
+    .await
+    .map_err(|e| ShareListError::ProtocolError(format!("Failed to spawn smbutil: {}", e)))?
+    .map_err(|e| ShareListError::ProtocolError(format!("Failed to run smbutil: {}", e)))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        debug!(
+            "smbutil failed: exit={:?}, stderr={}, stdout={}",
+            output.status.code(),
+            stderr,
+            stdout
+        );
+
+        if stderr.contains("Authentication error") || stderr.contains("rejected the authentication") {
+            return Err(ShareListError::AuthRequired(
+                "smbutil: Authentication required".to_string(),
+            ));
+        }
+        return Err(ShareListError::ProtocolError(format!(
+            "smbutil failed: {}",
+            stderr.trim()
+        )));
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    Ok(parse_smbutil_output(&stdout))
 }
 
 /// Parses smbutil view output to extract share information.
@@ -635,6 +608,45 @@ fn parse_smbutil_output(output: &str) -> Vec<ShareInfo> {
     shares
 }
 
+/// Establishes SMB connection and returns the name to use for IPC operations.
+/// Connects via IP address when available (preferred), falling back to hostname resolution.
+async fn establish_smb_connection<'a>(
+    client: &Client,
+    server_name: &'a str,
+    hostname: &'a str,
+    ip_address: Option<&str>,
+    port: u16,
+) -> Result<&'a str, String> {
+    if let Some(ip) = ip_address {
+        // Use IP address for connection to bypass mDNS resolution issues
+        let socket_addr: SocketAddr = format!("{}:{}", ip, port)
+            .parse()
+            .map_err(|e| format!("Invalid IP {}: {}", ip, e))?;
+
+        debug!(
+            "Connecting to server_name='{}' at socket_addr='{}'",
+            server_name, socket_addr
+        );
+
+        client
+            .connect_to_address(server_name, socket_addr)
+            .await
+            .map_err(|e| format!("Connect to {} failed: {}", ip, e))?;
+
+        debug!(
+            "connect_to_address succeeded, now calling ipc_connect with server_name='{}'",
+            server_name
+        );
+
+        // After connect_to_address, use server_name for IPC (without .local)
+        Ok(server_name)
+    } else {
+        // No IP - try hostname resolution (may fail for .local)
+        debug!("No IP address provided, using hostname='{}' for ipc_connect", hostname);
+        Ok(hostname)
+    }
+}
+
 /// Attempts to list shares as guest (anonymous).
 /// Connects via IP address when available (preferred), falling back to hostname resolution.
 async fn try_list_shares_as_guest(
@@ -645,35 +657,7 @@ async fn try_list_shares_as_guest(
     port: u16,
 ) -> Result<Vec<ShareInfo1>, String> {
     timeout(LIST_SHARES_TIMEOUT, async {
-        // Determine how to connect: by IP (preferred) or by hostname
-        let connect_name = if let Some(ip) = ip_address {
-            // Use IP address for connection to bypass mDNS resolution issues
-            let socket_addr: SocketAddr = format!("{}:{}", ip, port)
-                .parse()
-                .map_err(|e| format!("Invalid IP {}: {}", ip, e))?;
-
-            debug!(
-                "Connecting to server_name='{}' at socket_addr='{}'",
-                server_name, socket_addr
-            );
-
-            client
-                .connect_to_address(server_name, socket_addr)
-                .await
-                .map_err(|e| format!("Connect to {} failed: {}", ip, e))?;
-
-            debug!(
-                "connect_to_address succeeded, now calling ipc_connect with server_name='{}'",
-                server_name
-            );
-
-            // After connect_to_address, use server_name for IPC (without .local)
-            server_name
-        } else {
-            // No IP - try hostname resolution (may fail for .local)
-            debug!("No IP address provided, using hostname='{}' for ipc_connect", hostname);
-            hostname
-        };
+        let connect_name = establish_smb_connection(client, server_name, hostname, ip_address, port).await?;
 
         // Connect to IPC$ with "Guest" user
         debug!("Calling ipc_connect with connect_name='{}'", connect_name);
@@ -704,24 +688,7 @@ async fn try_list_shares_authenticated(
     password: &str,
 ) -> Result<Vec<ShareInfo1>, String> {
     timeout(LIST_SHARES_TIMEOUT, async {
-        // Determine how to connect: by IP (preferred) or by hostname
-        let connect_name = if let Some(ip) = ip_address {
-            // Use IP address for connection to bypass mDNS resolution issues
-            let socket_addr: SocketAddr = format!("{}:{}", ip, port)
-                .parse()
-                .map_err(|e| format!("Invalid IP {}: {}", ip, e))?;
-
-            client
-                .connect_to_address(server_name, socket_addr)
-                .await
-                .map_err(|e| format!("Connect to {} failed: {}", ip, e))?;
-
-            // After connect_to_address, use server_name for IPC (without .local)
-            server_name
-        } else {
-            // No IP - try hostname resolution (may fail for .local)
-            hostname
-        };
+        let connect_name = establish_smb_connection(client, server_name, hostname, ip_address, port).await?;
 
         // Connect to IPC$ with credentials
         client
