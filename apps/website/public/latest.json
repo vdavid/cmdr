@@ -5,7 +5,15 @@
     "platforms": {
         "darwin-universal": {
             "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRS2pCYTdOaDlnb3Y3ZHZteXQvK2ZITlVFbGY1SVdkQW9weVNsL2R3QWNTNW1zcmpvY2o5eUFQR2E0SE1NZm1Sd0NxSlRMR2RCeXFCUllJemlQejBaY01KcURiRzltMXdNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY4MzUyMDc5CWZpbGU6Q21kci5hcHAudGFyLmd6Ck0rbW9NVit0RjlPcWo3dnhhaTZTYVlwNVBrcXd1bnhZWmFiTTRYNDhWTUpzZXl0ejgxYUxSVSt6YmM4MDBTVW54NHptSjZkZGhLbnFwMDRBSUNmL0N3PT0K",
-            "url": "https://github.com/vdavid/cmdr/releases/download/v0.3.1/Cmdr.app.tar.gz"
+            "url": "https://github.com/vdavid/cmdr/releases/download/v0.3.1/Cmdr_universal.app.tar.gz"
+        },
+        "darwin-aarch64": {
+            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRS2pCYTdOaDlnb3Y3ZHZteXQvK2ZITlVFbGY1SVdkQW9weVNsL2R3QWNTNW1zcmpvY2o5eUFQR2E0SE1NZm1Sd0NxSlRMR2RCeXFCUllJemlQejBaY01KcURiRzltMXdNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY4MzUyMDc5CWZpbGU6Q21kci5hcHAudGFyLmd6Ck0rbW9NVit0RjlPcWo3dnhhaTZTYVlwNVBrcXd1bnhZWmFiTTRYNDhWTUpzZXl0ejgxYUxSVSt6YmM4MDBTVW54NHptSjZkZGhLbnFwMDRBSUNmL0N3PT0K",
+            "url": "https://github.com/vdavid/cmdr/releases/download/v0.3.1/Cmdr_universal.app.tar.gz"
+        },
+        "darwin-x86_64": {
+            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRS2pCYTdOaDlnb3Y3ZHZteXQvK2ZITlVFbGY1SVdkQW9weVNsL2R3QWNTNW1zcmpvY2o5eUFQR2E0SE1NZm1Sd0NxSlRMR2RCeXFCUllJemlQejBaY01KcURiRzltMXdNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY4MzUyMDc5CWZpbGU6Q21kci5hcHAudGFyLmd6Ck0rbW9NVit0RjlPcWo3dnhhaTZTYVlwNVBrcXd1bnhZWmFiTTRYNDhWTUpzZXl0ejgxYUxSVSt6YmM4MDBTVW54NHptSjZkZGhLbnFwMDRBSUNmL0N3PT0K",
+            "url": "https://github.com/vdavid/cmdr/releases/download/v0.3.1/Cmdr_universal.app.tar.gz"
         }
     }
 }

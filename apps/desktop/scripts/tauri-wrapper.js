@@ -5,8 +5,9 @@ import { spawn } from 'child_process'
 // Get arguments passed to the script
 const args = process.argv.slice(2)
 
-// Check if the command is 'dev'
+// Check if the command is 'dev' or 'build'
 const isDev = args.includes('dev')
+const isBuild = args.includes('build')
 
 // If dev, inject the dev configuration
 if (isDev) {
@@ -14,8 +15,13 @@ if (isDev) {
     args.push('-c', 'src-tauri/tauri.dev.json')
 }
 
-// Spawn the tauri process via npx (avoids shell: true deprecation warning)
-const tauriProcess = spawn('npx', ['tauri', ...args], {
+// If build and no target specified, default to universal binary
+if (isBuild && !args.includes('--target') && !args.includes('-t')) {
+    args.push('--target', 'universal-apple-darwin')
+}
+
+// Spawn the tauri process via pnpm exec
+const tauriProcess = spawn('pnpm', ['exec', 'tauri', ...args], {
     stdio: 'inherit',
 })
 

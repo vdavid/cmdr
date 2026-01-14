@@ -2,5 +2,10 @@
     "$schema": "https://schema.tauri.app/config/2",
     "app": {
         "withGlobalTauri": true
+    },
+    "plugins": {
+        "updater": {
+            "endpoints": ["http://localhost:4321/latest.json"]
+        }
     }
 }
