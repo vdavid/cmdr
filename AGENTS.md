@@ -77,6 +77,7 @@ There are two MCP servers available to you:
 - When adding new code that loads remote content (like `fetch` from external URLs or `iframe`), always add a condition
   to **disable** that functionality in dev mode, and use static/mock data instead. See
   [security docs](docs/security.md#withglobaltauri) for more reasoning.
+- When testing the Tauri app, DO NOT USE THE BROWSER, it won't work. Use the MCP servers. If they fail, ask for help.
 
 ## Things to avoid
 
