@@ -82,7 +82,7 @@ apps/website/
 │   └── styles/
 │       └── global.css       # Tailwind theme
 ├── public/
-│   └── favicon.svg
+│   └── favicon.png
 ├── Dockerfile
 ├── docker-compose.yml
 ├── nginx.conf
