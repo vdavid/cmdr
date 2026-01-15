@@ -15,7 +15,6 @@ vi.mock('$lib/tauri-commands', () => {
                 typeof error === 'object' &&
                 error !== null &&
                 'type' in error &&
-                typeof (error as { type: string }).type === 'string' &&
                 [
                     'host_unreachable',
                     'share_not_found',

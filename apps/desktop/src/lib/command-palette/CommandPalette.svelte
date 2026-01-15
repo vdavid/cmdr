@@ -152,7 +152,6 @@
             id="palette-title"
             spellcheck="false"
             autocomplete="off"
-            autocorrect="off"
             autocapitalize="off"
         />
 
