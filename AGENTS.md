@@ -2,7 +2,7 @@
 
 Cmdr is an extremely fast AI-native file manager written in Rust, free forever for personal use on macOS (BSL license).
 Cmdr is for folks who love a rock-solid, keyboard-driven, two-pane file manager with a modern UI in 2026.
-Downloadable at [the website](https://getcmdr.com) or by `brew install --cask cmdr`.
+Downloadable at [the website](https://getcmdr.com).
 
 Running:
 - Dev server: `pnpm dev` at repo root
