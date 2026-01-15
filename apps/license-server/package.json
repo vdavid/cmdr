@@ -4,6 +4,7 @@
     "private": true,
     "type": "module",
     "scripts": {
+        "preinstall": "npx only-allow pnpm",
         "dev": "wrangler dev",
         "deploy": "wrangler deploy",
         "generate-keys": "node scripts/generate-keys.js",
