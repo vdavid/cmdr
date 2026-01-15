@@ -63,7 +63,7 @@
     /** Start window drag when title bar is clicked */
     async function handleTitleBarMouseDown(e: MouseEvent) {
         if (e.buttons === 1) {
-            // Left mouse button
+            e.preventDefault() // Prevent focus shift away from explorer
             try {
                 const { getCurrentWindow } = await import('@tauri-apps/api/window')
                 await getCurrentWindow().startDragging()
