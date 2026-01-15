@@ -221,7 +221,7 @@ describe('NavigationHistory', () => {
     describe('network volume navigation', () => {
         const networkHost = { id: 'server1', name: 'server1', hostname: 'server1.local', port: 445 }
 
-        it('tracks network host selection in history', () => {
+        it('tracks active network host in history', () => {
             let h = createHistory('network', 'smb://')
             h = push(h, { volumeId: 'network', path: 'smb://', networkHost })
 

@@ -19,7 +19,7 @@ export interface HistoryEntry {
     volumeId: string
     /** The path within the volume (or 'smb://' for network root) */
     path: string
-    /** For network volume: the selected host (if browsing shares) */
+    /** For network volume: the network host (if browsing shares) */
     networkHost?: NetworkHost
 }
 

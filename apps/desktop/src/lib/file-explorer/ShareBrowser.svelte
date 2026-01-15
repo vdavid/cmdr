@@ -38,7 +38,7 @@
     let authMode = $state<AuthMode>('unknown')
     let loading = $state(true)
     let error = $state<ShareListError | null>(null)
-    let selectedIndex = $state(0)
+    let cursorIndex = $state(0)
 
     // Sorted shares for display (case-insensitive alphabetical)
     const sortedShares = $derived(
@@ -207,7 +207,7 @@
     }
 
     function handleShareClick(index: number) {
-        selectedIndex = index
+        cursorIndex = index
     }
 
     function handleShareDoubleClick(index: number) {
@@ -229,24 +229,24 @@
         switch (e.key) {
             case 'ArrowDown':
                 e.preventDefault()
-                selectedIndex = Math.min(selectedIndex + 1, sortedShares.length - 1)
+                cursorIndex = Math.min(cursorIndex + 1, sortedShares.length - 1)
                 return true
             case 'ArrowUp':
                 e.preventDefault()
-                selectedIndex = Math.max(selectedIndex - 1, 0)
+                cursorIndex = Math.max(cursorIndex - 1, 0)
                 return true
             case 'Home':
                 e.preventDefault()
-                selectedIndex = 0
+                cursorIndex = 0
                 return true
             case 'End':
                 e.preventDefault()
-                selectedIndex = sortedShares.length - 1
+                cursorIndex = sortedShares.length - 1
                 return true
             case 'Enter':
                 e.preventDefault()
-                if (selectedIndex >= 0 && selectedIndex < sortedShares.length) {
-                    onShareSelect?.(sortedShares[selectedIndex], authenticatedCredentials)
+                if (cursorIndex >= 0 && cursorIndex < sortedShares.length) {
+                    onShareSelect?.(sortedShares[cursorIndex], authenticatedCredentials)
                 }
                 return true
             case 'Escape':
@@ -309,8 +309,8 @@
                 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
                 <div
                     class="share-row"
-                    class:is-selected={index === selectedIndex}
-                    class:is-highlighted={isFocused && index === selectedIndex}
+                    class:is-under-cursor={index === cursorIndex}
+                    class:is-focused-and-under-cursor={isFocused && index === cursorIndex}
                     role="listitem"
                     onclick={() => {
                         handleShareClick(index)
@@ -405,7 +405,7 @@
     }
 
     .btn:hover {
-        background-color: var(--color-bg-hover);
+        background-color: var(--color-button-hover);
     }
 
     .header-row {
@@ -428,7 +428,7 @@
     }
 
     .back-button:hover {
-        background-color: var(--color-bg-hover);
+        background-color: var(--color-button-hover);
     }
 
     .host-name {
@@ -459,13 +459,13 @@
         background-color: var(--color-bg-hover);
     }
 
-    .share-row.is-selected {
-        background-color: var(--color-bg-selected-unfocused);
+    .share-row.is-under-cursor {
+        background-color: var(--color-cursor-unfocused-bg);
     }
 
-    .share-row.is-highlighted {
-        background-color: var(--color-bg-selected);
-        color: var(--color-text-selected);
+    .share-row.is-focused-and-under-cursor {
+        background-color: var(--color-cursor-focused-bg);
+        color: var(--color-cursor-focused-fg);
     }
 
     .share-icon {
@@ -482,8 +482,8 @@
         font-size: var(--font-size-xs);
     }
 
-    .share-row.is-highlighted .share-comment {
-        color: var(--color-text-selected);
+    .share-row.is-focused-and-under-cursor .share-comment {
+        color: var(--color-cursor-focused-fg);
         opacity: 0.8;
     }
 </style>

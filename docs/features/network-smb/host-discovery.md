@@ -79,7 +79,7 @@ Bonjour proactively notifies when hosts stop advertising (via `netServiceBrowser
 
 **UI behavior when a host disappears:**
 
-- **In Network browser**: Remove host from list, adjust selection
+- **In Network browser**: Remove host from list, adjust cursor position
 - **During connection**: Show appropriate error if mid-operation
 
 ## UX behavior

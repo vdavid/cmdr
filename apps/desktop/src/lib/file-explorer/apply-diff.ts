@@ -6,16 +6,16 @@ import type { FileEntry, DiffChange } from './types'
 /**
  * Apply a diff from the file watcher to the file list.
  * Maintains sort order (directories first, then alphabetically).
- * Preserves cursor position: cursor stays on selected file by path, or resets to 0 if deleted.
+ * Preserves cursor position: cursor stays on the same file by path, or resets to 0 if deleted.
  *
  * @param files - Current file list (will be mutated)
- * @param selectedIndex - Current cursor position
+ * @param cursorIndex - Current cursor position
  * @param changes - Diff changes to apply
- * @returns New selectedIndex after applying changes
+ * @returns New cursorIndex after applying changes
  */
-export function applyDiff(files: FileEntry[], selectedIndex: number, changes: DiffChange[]): number {
-    // Capture the currently selected file's path before any changes
-    const selectedPath = files[selectedIndex]?.path
+export function applyDiff(files: FileEntry[], cursorIndex: number, changes: DiffChange[]): number {
+    // Capture the path of the file currently under the cursor before any changes
+    const pathUnderCursor = files[cursorIndex]?.path
 
     // Apply all changes
     for (const change of changes) {
@@ -48,14 +48,14 @@ export function applyDiff(files: FileEntry[], selectedIndex: number, changes: Di
         }
     }
 
-    // Restore cursor position: find the originally selected file by path
-    if (selectedPath) {
-        const newIndex = files.findIndex((f) => f.path === selectedPath)
+    // Restore cursor position: find the file originally under the cursor by path
+    if (pathUnderCursor) {
+        const newIndex = files.findIndex((f) => f.path === pathUnderCursor)
         if (newIndex >= 0) {
             // File still exists - keep cursor on it
             return newIndex
         } else {
-            // Selected file was deleted - reset cursor to first entry
+            // The file under the cursor was deleted - reset cursor to first entry
             return 0
         }
     } else if (files.length > 0) {

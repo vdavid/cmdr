@@ -98,7 +98,7 @@
         containerElement?.focus()
     }
 
-    // Handle network host selection changes (for history tracking)
+    // Handle network host changes (for history tracking)
     function handleLeftNetworkHostChange(host: NetworkHost | null) {
         // Push to history with network host state
         leftHistory = push(leftHistory, {
@@ -139,7 +139,7 @@
 
         // Get current cursor filename to track position
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const cursorFilename = leftPaneRef?.getSelectedFilename?.() as string | undefined
+        const cursorFilename = leftPaneRef?.getFilenameUnderCursor?.() as string | undefined
 
         // Re-sort the backend listing
         const result = await resortListing(listingId, newColumn, newOrder, cursorFilename, showHiddenFiles)
@@ -155,7 +155,7 @@
         // Update cursor position after re-sort
         if (result.newCursorIndex !== undefined) {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            leftPaneRef?.setSelectedIndex?.(result.newCursorIndex)
+            leftPaneRef?.setCursorIndex?.(result.newCursorIndex)
         }
 
         // Refresh the view
@@ -182,7 +182,7 @@
 
         // Get current cursor filename to track position
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const cursorFilename = rightPaneRef?.getSelectedFilename?.() as string | undefined
+        const cursorFilename = rightPaneRef?.getFilenameUnderCursor?.() as string | undefined
 
         // Re-sort the backend listing
         const result = await resortListing(listingId, newColumn, newOrder, cursorFilename, showHiddenFiles)
@@ -198,7 +198,7 @@
         // Update cursor position after re-sort
         if (result.newCursorIndex !== undefined) {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            rightPaneRef?.setSelectedIndex?.(result.newCursorIndex)
+            rightPaneRef?.setCursorIndex?.(result.newCursorIndex)
         }
 
         // Refresh the view
@@ -228,7 +228,7 @@
         // Push volume change to history (this enables back/forward across volumes)
         leftHistory = push(leftHistory, { volumeId, path: pathToNavigate })
 
-        // Focus the left pane after successful volume selection
+        // Focus the left pane after successful volume change
         focusedPane = 'left'
         void saveAppStatus({ leftVolumeId: volumeId, leftPath: pathToNavigate, focusedPane: 'left' })
     }
@@ -254,7 +254,7 @@
         // Push volume change to history (this enables back/forward across volumes)
         rightHistory = push(rightHistory, { volumeId, path: pathToNavigate })
 
-        // Focus the right pane after successful volume selection
+        // Focus the right pane after successful volume change
         focusedPane = 'right'
         void saveAppStatus({ rightVolumeId: volumeId, rightPath: pathToNavigate, focusedPane: 'right' })
     }
@@ -278,7 +278,7 @@
         targetPath: string,
         otherPane: OtherPaneState,
     ): Promise<string> {
-        // User selected a favorite - go to the favorite's path directly
+        // User navigated to a favorite - go to the favorite's path directly
         if (targetPath !== volumePath) {
             return targetPath
         }
@@ -750,13 +750,13 @@
     }
 
     /**
-     * Get the current selected file path and filename in the focused pane.
+     * Get the path and filename of the file under the cursor in the focused pane.
      */
-    export function getCurrentSelection(): { path: string; filename: string } | null {
+    export function getFileAndPathUnderCursor(): { path: string; filename: string } | null {
         const paneRef = focusedPane === 'left' ? leftPaneRef : rightPaneRef
         const currentPath = focusedPane === 'left' ? leftPath : rightPath
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const filename = paneRef?.getSelectedFilename?.() as string | undefined
+        const filename = paneRef?.getFilenameUnderCursor?.() as string | undefined
         if (!filename || filename === '..') return null
         const path = currentPath === '~' ? `${currentPath}/${filename}` : `${currentPath}/${filename}`
         return { path, filename }

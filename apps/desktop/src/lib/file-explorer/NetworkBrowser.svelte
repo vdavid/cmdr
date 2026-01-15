@@ -35,8 +35,8 @@
     const discoveryState = $derived(getDiscoveryState())
     const isSearching = $derived(discoveryState === 'searching')
 
-    // Local selection state
-    let selectedIndex = $state(0)
+    // Local cursor state
+    let cursorIndex = $state(0)
 
     // Refresh stale shares when component mounts (entering network view)
     onMount(() => {
@@ -74,7 +74,7 @@
                 path: 'network://',
                 volumeId: 'network',
                 files,
-                selectedIndex,
+                cursorIndex,
                 viewMode: 'full',
             }
 
@@ -95,33 +95,33 @@
         switch (e.key) {
             case 'ArrowDown':
                 e.preventDefault()
-                selectedIndex = Math.min(selectedIndex + 1, hosts.length - 1)
+                cursorIndex = Math.min(cursorIndex + 1, hosts.length - 1)
                 return true
             case 'ArrowUp':
                 e.preventDefault()
-                selectedIndex = Math.max(selectedIndex - 1, 0)
+                cursorIndex = Math.max(cursorIndex - 1, 0)
                 return true
             case 'Home':
                 e.preventDefault()
-                selectedIndex = 0
+                cursorIndex = 0
                 return true
             case 'End':
                 e.preventDefault()
-                selectedIndex = hosts.length - 1
+                cursorIndex = hosts.length - 1
                 return true
             case 'Enter':
                 e.preventDefault()
-                if (selectedIndex >= 0 && selectedIndex < hosts.length) {
-                    onHostSelect?.(hosts[selectedIndex])
+                if (cursorIndex >= 0 && cursorIndex < hosts.length) {
+                    onHostSelect?.(hosts[cursorIndex])
                 }
                 return true
         }
         return false
     }
 
-    // Handle host selection via click
+    // Handle host clicks
     function handleHostClick(index: number) {
-        selectedIndex = index
+        cursorIndex = index
     }
 
     function handleHostDoubleClick(index: number) {
@@ -283,8 +283,8 @@
             <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
             <div
                 class="host-row"
-                class:is-selected={index === selectedIndex}
-                class:is-highlighted={isFocused && index === selectedIndex}
+                class:is-under-cursor={index === cursorIndex}
+                class:is-focused-and-under-cursor={isFocused && index === cursorIndex}
                 role="listitem"
                 onclick={() => {
                     handleHostClick(index)
@@ -367,13 +367,13 @@
         background-color: var(--color-bg-hover);
     }
 
-    .host-row.is-selected {
-        background-color: var(--color-bg-selected-unfocused);
+    .host-row.is-under-cursor {
+        background-color: var(--color-cursor-unfocused-bg);
     }
 
-    .host-row.is-highlighted {
-        background-color: var(--color-bg-selected);
-        color: var(--color-text-selected);
+    .host-row.is-focused-and-under-cursor {
+        background-color: var(--color-cursor-focused-bg);
+        color: var(--color-cursor-focused-fg);
     }
 
     .col-name {
@@ -491,7 +491,7 @@
     }
 
     .refresh-button:hover {
-        background-color: var(--color-bg-hover);
+        background-color: var(--color-button-hover);
     }
 
     .refresh-button:active {

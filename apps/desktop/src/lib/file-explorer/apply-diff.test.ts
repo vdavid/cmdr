@@ -99,7 +99,7 @@ describe('applyDiff', () => {
             expect(newIndex).toBe(0) // a.txt still at index 0
         })
 
-        it('resets cursor to 0 when selected file is removed', () => {
+        it('resets cursor to 0 when the file under the cursor is removed', () => {
             const files = [file('a.txt'), file('b.txt'), file('c.txt')]
             const changes: DiffChange[] = [{ type: 'remove', entry: file('b.txt') }]
 
@@ -143,11 +143,11 @@ describe('applyDiff', () => {
             expect(newIndex).toBe(4) // keep2.txt is now at index 4
         })
 
-        it('resets cursor to 0 when selected file is one of many removed', () => {
+        it('resets cursor to 0 when the file under the cursor is one of many removed', () => {
             const files = [file('a.txt'), file('b.txt'), file('c.txt')]
             const changes: DiffChange[] = [
                 { type: 'add', entry: file('d.txt') },
-                { type: 'remove', entry: file('b.txt') }, // this is the selected one
+                { type: 'remove', entry: file('b.txt') }, // this is the one under the cursor
                 { type: 'remove', entry: file('c.txt') },
             ]
 
@@ -225,11 +225,11 @@ describe('applyDiff', () => {
             expect(newIndex).toBe(0)
         })
 
-        it('handles selectedIndex beyond array bounds', () => {
+        it('handles cursorIndex beyond array bounds', () => {
             const files = [file('a.txt')]
             const changes: DiffChange[] = [{ type: 'add', entry: file('b.txt') }]
 
-            // Invalid index should return 0 since selectedPath is undefined
+            // Invalid index should return 0 since pathUnderCursor is undefined
             const newIndex = applyDiff(files, 999, changes)
 
             expect(newIndex).toBe(0)

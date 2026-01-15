@@ -174,7 +174,7 @@ fn test_resources_exist() {
         "cmdr://pane/right/path",
         "cmdr://pane/left/content",
         "cmdr://pane/right/content",
-        "cmdr://pane/selected",
+        "cmdr://pane/cursor",
     ];
     for uri in expected_uris {
         assert!(resources.iter().any(|r| r.uri == uri), "Missing resource: {}", uri);
@@ -540,7 +540,7 @@ fn test_pane_state_store_update_left() {
             size: Some(1024),
             modified: Some("2024-01-01T00:00:00Z".to_string()),
         }],
-        selected_index: 0,
+        cursor_index: 0,
         view_mode: "brief".to_string(),
     };
 
@@ -579,7 +579,7 @@ fn test_pane_state_store_accepts_any_focus_value() {
 }
 
 #[test]
-fn test_pane_state_selected_index_bounds() {
+fn test_pane_state_cursor_index_bounds() {
     let store = PaneStateStore::new();
     let state = PaneState {
         path: "/test".to_string(),
@@ -591,7 +591,7 @@ fn test_pane_state_selected_index_bounds() {
             size: None,
             modified: None,
         }],
-        selected_index: 999, // Out of bounds
+        cursor_index: 999, // Out of bounds
         view_mode: "brief".to_string(),
     };
 
@@ -599,11 +599,11 @@ fn test_pane_state_selected_index_bounds() {
     let left = store.get_left();
 
     // Should store as-is (bounds checking is done at query time)
-    assert_eq!(left.selected_index, 999);
+    assert_eq!(left.cursor_index, 999);
 
     // But accessing the file should handle bounds
-    let selected = left.files.get(left.selected_index);
-    assert!(selected.is_none());
+    let file_under_cursor = left.files.get(left.cursor_index);
+    assert!(file_under_cursor.is_none());
 }
 
 #[test]
@@ -709,7 +709,7 @@ fn test_empty_file_list() {
         path: "/empty".to_string(),
         volume_id: None,
         files: vec![],
-        selected_index: 0,
+        cursor_index: 0,
         view_mode: "brief".to_string(),
     };
 
@@ -734,7 +734,7 @@ fn test_large_file_count() {
         path: "/test".to_string(),
         volume_id: None,
         files,
-        selected_index: 500,
+        cursor_index: 500,
         view_mode: "full".to_string(),
     };
 

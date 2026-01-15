@@ -114,7 +114,7 @@ describe('CommandPalette', () => {
         expect(mockOnClose).toHaveBeenCalled()
     })
 
-    it('calls onExecute when Enter is pressed with selected item', async () => {
+    it('calls onExecute when Enter is pressed with an item under the cursor', async () => {
         const target = document.createElement('div')
         mount(CommandPalette, {
             target,
@@ -134,7 +134,7 @@ describe('CommandPalette', () => {
         expect(mockOnExecute).toHaveBeenCalled()
     })
 
-    it('navigates selection with ArrowDown', async () => {
+    it('navigates cursor with ArrowDown', async () => {
         const target = document.createElement('div')
         mount(CommandPalette, {
             target,
@@ -146,13 +146,13 @@ describe('CommandPalette', () => {
         const input = target.querySelector('input')
         if (input) {
             input.focus()
-            // Initial selection is index 0, arrow down should move to index 1
+            // Initial cursor position is index 0, arrow down should move to index 1
             input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
         }
 
         await tick()
 
-        // Check that selection moved - verify the command that is executed is the second one
+        // Check that cursor moved - verify the command that is executed is the second one
         // We do this by pressing Enter and checking which command is executed
         if (input) {
             input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
@@ -164,7 +164,7 @@ describe('CommandPalette', () => {
         expect(mockOnExecute).toHaveBeenCalledWith('app.about')
     })
 
-    it('navigates selection with ArrowUp', async () => {
+    it('navigates cursor with ArrowUp', async () => {
         const target = document.createElement('div')
         mount(CommandPalette, {
             target,

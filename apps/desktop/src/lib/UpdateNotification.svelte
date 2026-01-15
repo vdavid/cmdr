@@ -79,6 +79,6 @@
     }
 
     .update-button.later:hover {
-        background: var(--color-bg-hover);
+        background: var(--color-button-hover);
     }
 </style>

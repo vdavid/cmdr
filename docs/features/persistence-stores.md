@@ -14,7 +14,7 @@ Cmdr uses three persistent storage mechanisms, each for a distinct purpose. All 
 - `leftPath`, `rightPath` - Current directory paths for each pane
 - `focusedPane` - Which pane (`left` or `right`) has focus
 - `leftViewMode`, `rightViewMode` - View mode (`full` or `brief`) for each pane
-- `leftVolumeId`, `rightVolumeId` - Currently selected volume for each pane
+- `leftVolumeId`, `rightVolumeId` - Currently active volume for each pane
 - `lastUsedPaths` - Map of `volumeId` -> last-used path; used to restore position when switching volumes
 
 **Restored**: On app startup. Paths are validated and gracefully fall back to parent dirs or home if they no longer

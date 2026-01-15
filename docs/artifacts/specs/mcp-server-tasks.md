@@ -146,7 +146,7 @@ Execute app commands in `executor.rs`.
 
 **Context:** Implemented in Phase 6.5
 
-- [x] Get selection from app state via PaneStateStore
+- [x] Get cursor position from app state via PaneStateStore
 - [x] Return current pane paths from stored state
 
 ## Phase 4: Integration and polish
@@ -279,7 +279,7 @@ Goal: Agent can do exactly what user can do, nothing more.
 - [x] Define `context.getFocusedPane` tool
 - [x] Define `context.getLeftPanePath`, `context.getRightPanePath` tools
 - [x] Define `context.getLeftPaneContent`, `context.getRightPaneContent` tools
-- [x] Define `context.getSelectedFileInfo` tool
+- [x] Define `context.getInfoForFileUnderCursor` tool
 - [x] Implement pane state sync from frontend to Rust
 - [x] Implement executor to return pane state from store
 
@@ -288,7 +288,7 @@ Goal: Agent can do exactly what user can do, nothing more.
 - [x] In FilePane.svelte, sync pane state when files loaded
 - [x] In DualPaneExplorer.svelte, sync focused pane
 - [x] In NetworkBrowser.svelte, sync network hosts as file entries
-- Note: Sort/selection changes work correctly because they go through Rust's listing backend
+- Note: Sort and cursor position changes work correctly because they go through Rust's listing backend
 
 ### 6.7 Test and verify parity
 

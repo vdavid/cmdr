@@ -65,7 +65,7 @@ Initial public release. Free forever for personal use (BSL license).
 - Native context menu (Open, Show in Finder, Copy path, Quick Look) ([7d977a1](https://github.com/vdavid/cmdr/commit/7d977a1))
 - Live file watching with incremental diffs ([cf12372](https://github.com/vdavid/cmdr/commit/cf12372))
 - Dropbox and iCloud sync status icons ([46f1770](https://github.com/vdavid/cmdr/commit/46f1770))
-- Volume selection with keyboard navigation ([ba3e770](https://github.com/vdavid/cmdr/commit/ba3e770))
+- Volume switching with keyboard navigation ([ba3e770](https://github.com/vdavid/cmdr/commit/ba3e770))
 - Network drives (SMB): host discovery via Bonjour, share listing, authentication, and mounting ([54ee04f](https://github.com/vdavid/cmdr/commit/54ee04f))
 - Sorting by name, size, date, extension with alphanumeric sort ([e7b7206](https://github.com/vdavid/cmdr/commit/e7b7206))
 - Back/Forward navigation ([56a5bf6](https://github.com/vdavid/cmdr/commit/56a5bf6))
@@ -140,7 +140,7 @@ Initial public release. Free forever for personal use (BSL license).
 #### 2026-01-01 - Drag and drop, volumes
 
 - Add drag and drop FROM the app ([8e1d53b](https://github.com/vdavid/cmdr/commit/8e1d53b))
-- Add volume selection feature ([ba3e770](https://github.com/vdavid/cmdr/commit/ba3e770))
+- Add volume switching feature ([ba3e770](https://github.com/vdavid/cmdr/commit/ba3e770))
 - Remove Tailwind (was slowing down app startup) ([5354a48](https://github.com/vdavid/cmdr/commit/5354a48))
 
 #### 2025-12-31 - Polish

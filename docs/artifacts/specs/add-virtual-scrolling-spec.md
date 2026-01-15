@@ -35,10 +35,10 @@ are rendered as DOM elements which becomes slow with large directories.
 FilePane.svelte
 ├── allFilesRaw: FileEntry[]  (plain JS array, NOT reactive)
 ├── filesVersion: number      (incremented to trigger re-renders)
-├── selectedIndex: number     (cursor position)
+├── cursorIndex: number     (cursor position)
 └── FileList.svelte
     ├── files: FileEntry[]    (filtered view, prop)
-    ├── selectedIndex: number (prop)
+    ├── cursorIndex: number (prop)
     └── scrollToIndex(index)  (exported method for keyboard nav)
 ```
 
@@ -54,7 +54,7 @@ virtual scroller must handle:
 2. **Removed files** - May be in visible area, before visible area, or after
 3. **Modified files** - Same position, just data change
 4. **Cursor preservation** - Already handled by [applyDiff()](../../../apps/desktop/src/lib/file-explorer/apply-diff.ts) which finds
-   selected file by path
+   file under the cursor by path
 
 ### Race condition: Diff arrives during scroll
 
@@ -182,7 +182,7 @@ export function scrollToIndex(index: number) {
 
 2. **File watching interaction:**
     - Add file at top of list while scrolled to bottom - list should update, cursor stay
-    - Delete visible file - adjacent file should become selected
+    - Delete visible file - adjacent file should be under the cursor
     - Bulk changes (simulate git pull) - cursor should stay on same file or reset
 
 3. **Edge cases:**

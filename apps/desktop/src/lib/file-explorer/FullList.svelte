@@ -19,7 +19,7 @@
         totalCount: number
         includeHidden: boolean
         cacheGeneration?: number
-        selectedIndex: number
+        cursorIndex: number
         isFocused?: boolean
         syncStatusMap?: Record<string, SyncStatus>
         hasParent: boolean
@@ -38,7 +38,7 @@
         totalCount,
         includeHidden,
         cacheGeneration = 0,
-        selectedIndex,
+        cursorIndex,
         isFocused = true,
         syncStatusMap = {},
         hasParent,
@@ -227,7 +227,7 @@
         if (entry) onNavigate(entry)
     }
 
-    // Exported for parent to call when arrow keys change selection
+    // Exported for parent to call when arrow keys change cursor position
     export function scrollToIndex(index: number) {
         if (!scrollContainer) return
         const newScrollTop = getScrollToPosition(index, ROW_HEIGHT, scrollTop, containerHeight)
@@ -268,7 +268,7 @@
     onscroll={handleScroll}
     tabindex="-1"
     role="listbox"
-    aria-activedescendant={selectedIndex >= 0 ? `file-${String(selectedIndex)}` : undefined}
+    aria-activedescendant={cursorIndex >= 0 ? `file-${String(cursorIndex)}` : undefined}
 >
     <!-- Header row with sortable columns -->
     <div class="header-row">
@@ -307,7 +307,7 @@
                     id={`file-${String(globalIndex)}`}
                     class="file-entry"
                     class:is-directory={file.isDirectory}
-                    class:is-selected={globalIndex === selectedIndex}
+                    class:is-under-cursor={globalIndex === cursorIndex}
                     onmousedown={(e: MouseEvent) => {
                         handleMouseDown(e, globalIndex)
                     }}
@@ -320,7 +320,7 @@
                         onContextMenu?.(file)
                     }}
                     role="option"
-                    aria-selected={globalIndex === selectedIndex}
+                    aria-selected={globalIndex === cursorIndex}
                 >
                     <FileIcon {file} {syncIcon} />
                     <span class="col-name">{file.name}</span>
@@ -385,12 +385,12 @@
         grid-template-columns: 16px 1fr 85px 120px;
     }
 
-    .file-entry.is-selected {
+    .file-entry.is-under-cursor {
         background-color: rgba(204, 228, 247, 0.1);
     }
 
-    .full-list.is-focused .file-entry.is-selected {
-        background-color: var(--color-selection-bg);
+    .full-list.is-focused .file-entry.is-under-cursor {
+        background-color: var(--color-cursor-focused-bg);
     }
 
     .col-name {
@@ -439,7 +439,7 @@
     }
 
     @media (prefers-color-scheme: dark) {
-        .file-entry.is-selected {
+        .file-entry.is-under-cursor {
             background-color: rgba(10, 80, 208, 0.1);
         }
     }

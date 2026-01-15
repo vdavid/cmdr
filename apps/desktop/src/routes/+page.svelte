@@ -32,7 +32,7 @@
         toggleHiddenFiles: () => void
         setViewMode: (mode: ViewMode) => void
         navigate: (action: 'back' | 'forward' | 'parent') => void
-        getCurrentSelection: () => { path: string; filename: string } | null
+        getFileAndPathUnderCursor: () => { path: string; filename: string } | null
         sendKeyToFocusedPane: (key: string) => void
         setSortColumn: (column: 'name' | 'extension' | 'size' | 'modified' | 'created') => void
         setSortOrder: (order: 'asc' | 'desc' | 'toggle') => void
@@ -442,45 +442,45 @@
 
             // === File action commands ===
             case 'file.showInFinder': {
-                const selection = explorerRef?.getCurrentSelection()
-                if (selection) {
-                    await showInFinder(selection.path)
+                const entryUnderCursor = explorerRef?.getFileAndPathUnderCursor()
+                if (entryUnderCursor) {
+                    await showInFinder(entryUnderCursor.path)
                 }
                 explorerRef?.refocus()
                 return
             }
 
             case 'file.copyPath': {
-                const selection = explorerRef?.getCurrentSelection()
-                if (selection) {
-                    await copyToClipboard(selection.path)
+                const entryUnderCursor = explorerRef?.getFileAndPathUnderCursor()
+                if (entryUnderCursor) {
+                    await copyToClipboard(entryUnderCursor.path)
                 }
                 explorerRef?.refocus()
                 return
             }
 
             case 'file.copyFilename': {
-                const selection = explorerRef?.getCurrentSelection()
-                if (selection) {
-                    await copyToClipboard(selection.filename)
+                const entryUnderCursor = explorerRef?.getFileAndPathUnderCursor()
+                if (entryUnderCursor) {
+                    await copyToClipboard(entryUnderCursor.filename)
                 }
                 explorerRef?.refocus()
                 return
             }
 
             case 'file.quickLook': {
-                const selection = explorerRef?.getCurrentSelection()
-                if (selection) {
-                    await quickLook(selection.path)
+                const entryUnderCursor = explorerRef?.getFileAndPathUnderCursor()
+                if (entryUnderCursor) {
+                    await quickLook(entryUnderCursor.path)
                 }
                 explorerRef?.refocus()
                 return
             }
 
             case 'file.getInfo': {
-                const selection = explorerRef?.getCurrentSelection()
-                if (selection) {
-                    await getInfo(selection.path)
+                const entryUnderCursor = explorerRef?.getFileAndPathUnderCursor()
+                if (entryUnderCursor) {
+                    await getInfo(entryUnderCursor.path)
                 }
                 explorerRef?.refocus()
                 return

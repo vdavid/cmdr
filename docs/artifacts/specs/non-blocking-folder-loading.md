@@ -499,7 +499,7 @@ async function loadDirectory(path: string, selectName?: string) {
     loadingCount = undefined
     error = null
     totalCount = 0
-    selectedEntry = null
+    entryUnderCursor = null
     
     try {
         // Start streaming listing - returns immediately!
@@ -530,9 +530,9 @@ async function loadDirectory(path: string, selectName?: string) {
                 if (selectName) {
                     const foundIndex = await findFileIndex(listingId, selectName, includeHidden)
                     const adjustedIndex = hasParent ? (foundIndex ?? -1) + 1 : (foundIndex ?? 0)
-                    selectedIndex = adjustedIndex >= 0 ? adjustedIndex : 0
+                    cursorIndex = adjustedIndex >= 0 ? adjustedIndex : 0
                 } else {
-                    selectedIndex = 0
+                    cursorIndex = 0
                 }
                 
                 loading = false
@@ -541,12 +541,12 @@ async function loadDirectory(path: string, selectName?: string) {
                 // NOW push to history (only on successful completion)
                 onPathChange?.(path)
                 
-                // Fetch selected entry, sync to MCP, scroll
-                void fetchSelectedEntry()
+                // Fetch entry under the cursor, sync to MCP, scroll
+                void fetchEntryUnderCursor()
                 void syncPaneStateToMcp()
                 void tick().then(() => {
                     const listRef = viewMode === 'brief' ? briefListRef : fullListRef
-                    listRef?.scrollToIndex(selectedIndex)
+                    listRef?.scrollToIndex(cursorIndex)
                 })
             }
         })

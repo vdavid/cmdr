@@ -198,7 +198,7 @@ pub fn sort_entries(entries: &mut [FileEntry], sort_by: SortColumn, sort_order: 
             _ => {}
         }
 
-        // Compare by the selected column
+        // Compare by the active sorting column
         let primary = match sort_by {
             SortColumn::Name => alphanumeric_sort::compare_str(a.name.to_lowercase(), b.name.to_lowercase()),
             SortColumn::Extension => {

@@ -16,7 +16,7 @@ pub fn get_default_volume_id() -> String {
 
 /// Finds the actual volume (not a favorite) that contains a given path.
 /// Returns the volume info for the best matching volume, excluding favorites.
-/// This is used to determine which volume to highlight when a favorite is selected.
+/// This is used to determine which volume to set as active when a favorite is chosen.
 #[tauri::command]
 pub fn find_containing_volume(path: String) -> Option<VolumeInfo> {
     let locations = volumes::list_locations();

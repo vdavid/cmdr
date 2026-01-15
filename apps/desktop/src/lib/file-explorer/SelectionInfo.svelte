@@ -156,8 +156,7 @@
 
         while (low <= high) {
             const mid = Math.floor((low + high) / 2)
-            const testName = baseName.slice(0, mid) + ellipsis + extension
-            measureSpan.textContent = testName
+            measureSpan.textContent = baseName.slice(0, mid) + ellipsis + extension
 
             if (measureSpan.offsetWidth <= availableWidth) {
                 bestFit = mid

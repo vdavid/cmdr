@@ -167,7 +167,7 @@
     }
 
     .close-button:hover {
-        background: var(--color-bg-hover, rgba(255, 255, 255, 0.1));
+        background: var(--color-button-hover, rgba(255, 255, 255, 0.1));
         color: var(--color-text-primary, #fff);
     }
 
@@ -232,7 +232,7 @@
     }
 
     .links a {
-        color: var(--color-accent, #4a9eff);
+        color: var(--color-accent);
         text-decoration: none;
         font-size: 13px;
     }

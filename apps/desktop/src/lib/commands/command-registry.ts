@@ -225,7 +225,7 @@ export const commands: Command[] = [
         scope: 'Main window/File list',
         showInPalette: true,
         shortcuts: [],
-        description: 'Opens the context menu for the currently selected file',
+        description: 'Opens the context menu for the file under the cursor',
     },
 
     // ============================================================================

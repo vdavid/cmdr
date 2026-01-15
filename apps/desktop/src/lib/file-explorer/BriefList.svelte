@@ -20,7 +20,7 @@
         totalCount: number
         includeHidden: boolean
         cacheGeneration?: number
-        selectedIndex: number
+        cursorIndex: number
         isFocused?: boolean
         syncStatusMap?: Record<string, SyncStatus>
         hasParent: boolean
@@ -40,7 +40,7 @@
         totalCount,
         includeHidden,
         cacheGeneration = 0,
-        selectedIndex,
+        cursorIndex,
         isFocused = true,
         syncStatusMap = {},
         hasParent,
@@ -244,7 +244,7 @@
             // Calculate number of visible columns for PageUp/PageDown
             const visibleColumns = Math.ceil(containerWidth / maxFilenameWidth)
             const result = handleNavigationShortcut(event, {
-                currentIndex: selectedIndex,
+                currentIndex: cursorIndex,
                 totalCount,
                 itemsPerColumn,
                 visibleColumns,
@@ -256,17 +256,17 @@
 
         // Handle arrow keys
         if (key === 'ArrowUp') {
-            return Math.max(0, selectedIndex - 1)
+            return Math.max(0, cursorIndex - 1)
         }
         if (key === 'ArrowDown') {
-            return Math.min(totalCount - 1, selectedIndex + 1)
+            return Math.min(totalCount - 1, cursorIndex + 1)
         }
         if (key === 'ArrowLeft') {
-            const newIndex = selectedIndex - itemsPerColumn
+            const newIndex = cursorIndex - itemsPerColumn
             return newIndex >= 0 ? newIndex : 0
         }
         if (key === 'ArrowRight') {
-            const newIndex = selectedIndex + itemsPerColumn
+            const newIndex = cursorIndex + itemsPerColumn
             return newIndex < totalCount ? newIndex : totalCount - 1
         }
         return undefined
@@ -293,13 +293,13 @@
     // Track previous container height to detect resizes
     let prevContainerHeight = 0
 
-    // Scroll to selected index when container height changes (e.g., window resize)
+    // Scroll to cursor index when container height changes (e.g., window resize)
     $effect(() => {
         const height = containerHeight
         // Only react to meaningful height changes (not initial 0)
         if (height > 0 && prevContainerHeight > 0 && height !== prevContainerHeight) {
-            // Container height changed - scroll to keep selection visible
-            scrollToIndex(selectedIndex)
+            // Container height changed - scroll to keep cursor visible
+            scrollToIndex(cursorIndex)
         }
         prevContainerHeight = height
     })
@@ -354,7 +354,7 @@
         onscroll={handleScroll}
         tabindex="-1"
         role="listbox"
-        aria-activedescendant={selectedIndex >= 0 ? `file-${String(selectedIndex)}` : undefined}
+        aria-activedescendant={cursorIndex >= 0 ? `file-${String(cursorIndex)}` : undefined}
     >
         <!-- Spacer div provides accurate scrollbar for full list width -->
         <div class="virtual-spacer" style="width: {virtualWindow.totalSize}px; height: 100%;">
@@ -369,7 +369,7 @@
                                 id={`file-${String(globalIndex)}`}
                                 class="file-entry"
                                 class:is-directory={file.isDirectory}
-                                class:is-selected={globalIndex === selectedIndex}
+                                class:is-under-cursor={globalIndex === cursorIndex}
                                 onmousedown={(e: MouseEvent) => {
                                     handleMouseDown(e, globalIndex)
                                 }}
@@ -385,7 +385,7 @@
                                     onContextMenu?.(file)
                                 }}
                                 role="option"
-                                aria-selected={globalIndex === selectedIndex}
+                                aria-selected={globalIndex === cursorIndex}
                             >
                                 <FileIcon {file} {syncIcon} />
                                 <span class="name">{file.name}</span>
@@ -460,12 +460,12 @@
         overflow: hidden;
     }
 
-    .file-entry.is-selected {
+    .file-entry.is-under-cursor {
         background-color: rgba(204, 228, 247, 0.1);
     }
 
-    .brief-list-container.is-focused .file-entry.is-selected {
-        background-color: var(--color-selection-bg);
+    .brief-list-container.is-focused .file-entry.is-under-cursor {
+        background-color: var(--color-cursor-focused-bg);
     }
 
     .name {
@@ -475,7 +475,7 @@
     }
 
     @media (prefers-color-scheme: dark) {
-        .file-entry.is-selected {
+        .file-entry.is-under-cursor {
             background-color: rgba(10, 80, 208, 0.1);
         }
     }

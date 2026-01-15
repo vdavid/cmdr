@@ -7,7 +7,7 @@ The command palette provides quick keyboard access to all application commands, 
 1. Press **⌘⇧P** (Command + Shift + P) to open the command palette
 2. Start typing to filter commands by name (fuzzy search)
 3. Use **↑↓** arrow keys to navigate the list
-4. Press **Enter** to execute the selected command
+4. Press **Enter** to execute the command under the cursor
 5. Press **Escape** to close without executing
 
 ## Features
@@ -66,6 +66,6 @@ To add a new command:
 - [x] Unit tests for fuzzy search
 - [x] Wire up remaining command handlers
 - [x] Component tests for CommandPalette
-- [ ] Command context (pass selected file info to commands)
+- [ ] Command context (pass info for the file under the cursor to commands)
 - [ ] Recently used commands section
 - [ ] Custom keyboard shortcut configuration

@@ -35,38 +35,38 @@ pub fn get_all_resources() -> Vec<Resource> {
     vec![
         Resource {
             uri: "cmdr://pane/focused".to_string(),
-            name: "Focused Pane".to_string(),
+            name: "Focused pane".to_string(),
             description: "Which pane is currently focused (left or right)".to_string(),
             mime_type: "application/json".to_string(),
         },
         Resource {
             uri: "cmdr://pane/left/path".to_string(),
-            name: "Left Pane Path".to_string(),
+            name: "Left pane path".to_string(),
             description: "Current volume and path of the left pane".to_string(),
             mime_type: "application/json".to_string(),
         },
         Resource {
             uri: "cmdr://pane/right/path".to_string(),
-            name: "Right Pane Path".to_string(),
+            name: "Right pane path".to_string(),
             description: "Current volume and path of the right pane".to_string(),
             mime_type: "application/json".to_string(),
         },
         Resource {
             uri: "cmdr://pane/left/content".to_string(),
-            name: "Left Pane Content".to_string(),
+            name: "Left pane content".to_string(),
             description: "Visible files in the left pane".to_string(),
             mime_type: "application/json".to_string(),
         },
         Resource {
             uri: "cmdr://pane/right/content".to_string(),
-            name: "Right Pane Content".to_string(),
+            name: "Right pane content".to_string(),
             description: "Visible files in the right pane".to_string(),
             mime_type: "application/json".to_string(),
         },
         Resource {
-            uri: "cmdr://pane/selected".to_string(),
-            name: "Selected File".to_string(),
-            description: "Info for the currently selected file (name, size, modified date)".to_string(),
+            uri: "cmdr://pane/cursor".to_string(),
+            name: "File under the cursor".to_string(),
+            description: "Info for the file currently under the cursor (name, size, modified date)".to_string(),
             mime_type: "application/json".to_string(),
         },
         Resource {
@@ -128,7 +128,7 @@ pub fn read_resource<R: Runtime>(app: &tauri::AppHandle<R>, uri: &str) -> Result
                 "application/json",
             )
         }
-        "cmdr://pane/selected" => {
+        "cmdr://pane/cursor" => {
             let focused = store.get_focused_pane();
             let state = if focused == "left" {
                 store.get_left()
@@ -136,7 +136,7 @@ pub fn read_resource<R: Runtime>(app: &tauri::AppHandle<R>, uri: &str) -> Result
                 store.get_right()
             };
 
-            let selected = state.files.get(state.selected_index).map(|f| {
+            let file_under_cursor = state.files.get(state.cursor_index).map(|f| {
                 json!({
                     "name": f.name,
                     "path": f.path,
@@ -146,7 +146,7 @@ pub fn read_resource<R: Runtime>(app: &tauri::AppHandle<R>, uri: &str) -> Result
                 })
             });
 
-            (json!({ "selected": selected }), "application/json")
+            (json!({ "cursor": file_under_cursor }), "application/json")
         }
         "cmdr://status" => (json!({ "status": "ok", "app": "cmdr" }), "application/json"),
         #[cfg(target_os = "macos")]

@@ -63,7 +63,7 @@
         onVolumeChange?: (volumeId: string, volumePath: string, targetPath: string) => void
         onSortChange?: (column: SortColumn) => void
         onRequestFocus?: () => void
-        /** Called when network host selection changes (for history tracking) */
+        /** Called when active network host changes (for history tracking) */
         onNetworkHostChange?: (host: NetworkHost | null) => void
         /** Called when user cancels loading (ESC key) - parent should navigate back */
         onCancelLoading?: () => void
@@ -95,10 +95,10 @@
     let maxFilenameWidth = $state<number | undefined>(undefined)
     let loading = $state(true)
     let error = $state<string | null>(null)
-    let selectedIndex = $state(0)
+    let cursorIndex = $state(0)
 
-    // Selected entry fetched separately for SelectionInfo
-    let selectedEntry = $state<FileEntry | null>(null)
+    // File under the cursor fetched separately for SelectionInfo
+    let entryUnderCursor = $state<FileEntry | null>(null)
 
     // Component refs for keyboard navigation
     let fullListRef: FullList | undefined = $state()
@@ -110,8 +110,8 @@
     // Check if we're viewing the network (special virtual volume)
     const isNetworkView = $derived(volumeId === 'network')
 
-    // Network browsing state - which host is selected (if any)
-    let selectedNetworkHost = $state<NetworkHost | null>(null)
+    // Network browsing state - which host is currently active (if any)
+    let currentNetworkHost = $state<NetworkHost | null>(null)
 
     // Export method for keyboard shortcut
     export function toggleVolumeChooser() {
@@ -141,15 +141,15 @@
         return loading
     }
 
-    // Get selected filename for cursor tracking during re-sort
-    export function getSelectedFilename(): string | undefined {
-        return selectedEntry?.name
+    // Get the filename of the file under the cursor for cursor tracking during re-sort
+    export function getFilenameUnderCursor(): string | undefined {
+        return entryUnderCursor?.name
     }
 
-    // Set selected index directly (for cursor tracking after re-sort)
-    export function setSelectedIndex(index: number): void {
-        selectedIndex = index
-        void fetchSelectedEntry()
+    // Set cursor index directly (for cursor tracking after re-sort)
+    export function setCursorIndex(index: number): void {
+        cursorIndex = index
+        void fetchEntryUnderCursor()
     }
 
     // Cache generation counter - incremented to force list components to re-fetch
@@ -162,14 +162,9 @@
 
     // Set network host state (for history navigation)
     export function setNetworkHost(host: NetworkHost | null): void {
-        selectedNetworkHost = host
+        currentNetworkHost = host
         mountError = null
         lastMountAttempt = null
-    }
-
-    // Get current network host (for history tracking)
-    export function getNetworkHost(): NetworkHost | null {
-        return selectedNetworkHost
     }
 
     // Navigate to parent directory, selecting the folder we came from
@@ -215,7 +210,7 @@
 
     /**
      * Sync pane state to Rust for MCP context tools.
-     * Called when files load, selection changes, or view mode changes.
+     * Called when files load, cursor position changes, or view mode changes.
      */
     async function syncPaneStateToMcp() {
         if (!paneId) return // No pane ID, can't sync
@@ -247,7 +242,7 @@
                 path: currentPath,
                 volumeId,
                 files,
-                selectedIndex,
+                cursorIndex,
                 viewMode,
             }
 
@@ -320,7 +315,7 @@
         error = null
         syncStatusMap = {}
         totalCount = 0 // Reset to show empty list immediately
-        selectedEntry = null // Clear old selection
+        entryUnderCursor = null // Clear old under-the-cursor entry info
 
         // Store path and selectName for use in event handlers
         const loadPath = path
@@ -420,13 +415,13 @@
         totalCount = payload.totalCount
         maxFilenameWidth = payload.maxFilenameWidth
 
-        // Determine initial selection
+        // Determine initial cursor position
         if (loadSelectName) {
             const foundIndex = await findFileIndex(listingId, loadSelectName, includeHidden)
             const adjustedIndex = hasParent ? (foundIndex ?? -1) + 1 : (foundIndex ?? 0)
-            selectedIndex = adjustedIndex >= 0 ? adjustedIndex : 0
+            cursorIndex = adjustedIndex >= 0 ? adjustedIndex : 0
         } else {
-            selectedIndex = 0
+            cursorIndex = 0
         }
 
         loading = false
@@ -437,17 +432,17 @@
         // NOW push to history (only on successful completion)
         onPathChange?.(loadPath)
 
-        // Fetch selected entry for SelectionInfo
-        void fetchSelectedEntry()
+        // Fetch entry under the cursor for SelectionInfo
+        void fetchEntryUnderCursor()
 
         // Sync state to MCP for context tools
         void syncPaneStateToMcp()
 
-        // Scroll to selection after DOM updates
+        // Scroll to cursor after DOM updates
         void tick().then(() => {
             const listRef = viewMode === 'brief' ? briefListRef : fullListRef
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            listRef?.scrollToIndex(selectedIndex)
+            listRef?.scrollToIndex(cursorIndex)
         })
     }
 
@@ -462,26 +457,26 @@
         onCancelLoading?.()
     }
 
-    // Fetch the currently selected entry for SelectionInfo
-    async function fetchSelectedEntry() {
+    // Fetch the entry currently under the cursor for SelectionInfo
+    async function fetchEntryUnderCursor() {
         if (!listingId) {
-            selectedEntry = null
+            entryUnderCursor = null
             return
         }
 
         // Handle ".." entry specially
-        if (hasParent && selectedIndex === 0) {
-            selectedEntry = createParentEntry(currentPath)
+        if (hasParent && cursorIndex === 0) {
+            entryUnderCursor = createParentEntry(currentPath)
             return
         }
 
         // Adjust index for ".." entry
-        const backendIndex = hasParent ? selectedIndex - 1 : selectedIndex
+        const backendIndex = hasParent ? cursorIndex - 1 : cursorIndex
 
         try {
-            selectedEntry = await getFileAt(listingId, backendIndex, includeHidden)
+            entryUnderCursor = await getFileAt(listingId, backendIndex, includeHidden)
         } catch {
-            selectedEntry = null
+            entryUnderCursor = null
         }
     }
 
@@ -498,9 +493,9 @@
     }
 
     function handleSelect(index: number) {
-        selectedIndex = index
+        cursorIndex = index
         onRequestFocus?.()
-        void fetchSelectedEntry()
+        void fetchEntryUnderCursor()
     }
 
     async function handleContextMenu(entry: FileEntry) {
@@ -545,15 +540,15 @@
         }
     }
 
-    // Handle network host selection - show the ShareBrowser
+    // Handle network host switching - show the ShareBrowser
     function handleNetworkHostSelect(host: NetworkHost) {
-        selectedNetworkHost = host
+        currentNetworkHost = host
         onNetworkHostChange?.(host)
     }
 
     // Handle going back from ShareBrowser to network host list
     function handleNetworkBack() {
-        selectedNetworkHost = null
+        currentNetworkHost = null
         mountError = null
         lastMountAttempt = null
         onNetworkHostChange?.(null)
@@ -562,7 +557,7 @@
     // Handle going back from mount error to share list
     function handleMountErrorBack() {
         mountError = null
-        // Stay on the share list (selectedNetworkHost remains set)
+        // Stay on the share list (currentNetworkHost remains set)
     }
 
     // Mounting state
@@ -577,7 +572,7 @@
 
     // Handle share selection from ShareBrowser - mount and navigate
     async function handleShareSelect(share: ShareInfo, credentials: { username: string; password: string } | null) {
-        if (!selectedNetworkHost) return
+        if (!currentNetworkHost) return
 
         // Store for retry
         lastMountAttempt = { share, credentials }
@@ -587,7 +582,7 @@
 
         try {
             // Get server address - prefer IP, fall back to hostname
-            const server = selectedNetworkHost.ipAddress ?? selectedNetworkHost.hostname ?? selectedNetworkHost.name
+            const server = currentNetworkHost.ipAddress ?? currentNetworkHost.hostname ?? currentNetworkHost.name
 
             // Use provided credentials if available
             const result = await mountNetworkShare(
@@ -598,8 +593,8 @@
             )
 
             // Navigate to the mounted share
-            // Clear network host selection first
-            selectedNetworkHost = null
+            // Clear current network host first
+            currentNetworkHost = null
             lastMountAttempt = null
 
             // The mount path is typically /Volumes/<ShareName>
@@ -635,11 +630,11 @@
             void handleShareSelect(lastMountAttempt.share, lastMountAttempt.credentials)
         }
     }
-    // Helper: Handle navigation result by updating selection and scrolling
+    // Helper: Handle navigation result by updating cursor index and scrolling
     function applyNavigation(newIndex: number, listRef: { scrollToIndex: (index: number) => void } | undefined) {
-        selectedIndex = newIndex
+        cursorIndex = newIndex
         listRef?.scrollToIndex(newIndex)
-        void fetchSelectedEntry()
+        void fetchEntryUnderCursor()
     }
 
     // Helper: Handle brief mode key navigation
@@ -659,7 +654,7 @@
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
         const visibleItems: number = fullListRef?.getVisibleItemsCount() ?? 20
         const shortcutResult = handleNavigationShortcut(e, {
-            currentIndex: selectedIndex,
+            currentIndex: cursorIndex,
             totalCount: effectiveTotalCount,
             visibleItems,
         })
@@ -672,12 +667,12 @@
         // Handle arrow navigation
         if (e.key === 'ArrowDown') {
             e.preventDefault()
-            applyNavigation(Math.min(selectedIndex + 1, effectiveTotalCount - 1), fullListRef)
+            applyNavigation(Math.min(cursorIndex + 1, effectiveTotalCount - 1), fullListRef)
             return true
         }
         if (e.key === 'ArrowUp') {
             e.preventDefault()
-            applyNavigation(Math.max(selectedIndex - 1, 0), fullListRef)
+            applyNavigation(Math.max(cursorIndex - 1, 0), fullListRef)
             return true
         }
         // Left/Right arrows jump to first/last (same as Brief mode at boundaries)
@@ -698,7 +693,7 @@
     export function handleKeyDown(e: KeyboardEvent) {
         // Delegate to network components when in network view
         if (isNetworkView) {
-            if (selectedNetworkHost) {
+            if (currentNetworkHost) {
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-call
                 shareBrowserRef?.handleKeyDown(e)
             } else {
@@ -708,13 +703,13 @@
             return
         }
 
-        // Handle Enter key - navigate into selected item
-        // Use the list component's cached entry instead of selectedEntry to avoid race conditions
-        // (selectedEntry is fetched asynchronously and may not be ready yet)
+        // Handle Enter key - navigate into the entry under the cursor
+        // Use the list component's cached entry instead of entryUnderCursor to avoid race conditions
+        // (entryUnderCursor is fetched asynchronously and may not be ready yet)
         if (e.key === 'Enter') {
             const listRef = viewMode === 'brief' ? briefListRef : fullListRef
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
-            const entry: FileEntry | undefined = listRef?.getEntryAt(selectedIndex)
+            const entry: FileEntry | undefined = listRef?.getEntryAt(cursorIndex)
             if (entry) {
                 e.preventDefault()
                 void handleNavigate(entry)
@@ -742,10 +737,10 @@
         if (listingId && !loading) {
             void getTotalCount(listingId, includeHidden).then((count) => {
                 totalCount = count
-                // Reset selection if out of bounds
-                if (selectedIndex >= effectiveTotalCount) {
-                    selectedIndex = 0
-                    void fetchSelectedEntry()
+                // Reset cursor index if out of bounds
+                if (cursorIndex >= effectiveTotalCount) {
+                    cursorIndex = 0
+                    void fetchEntryUnderCursor()
                 }
             })
         }
@@ -764,29 +759,29 @@
         }
     })
 
-    // Update global menu context when selection or focus changes
+    // Update global menu context when cursor position or focus changes
     $effect(() => {
         if (!isFocused) return
-        if (selectedEntry && selectedEntry.name !== '..') {
-            void updateMenuContext(selectedEntry.path, selectedEntry.name)
+        if (entryUnderCursor && entryUnderCursor.name !== '..') {
+            void updateMenuContext(entryUnderCursor.path, entryUnderCursor.name)
         }
     })
 
-    // Re-fetch selected entry when selectedIndex changes
+    // Re-fetch entry under the cursor when cursorIndex changes
     $effect(() => {
-        void selectedIndex // Track
+        void cursorIndex // Track
         if (listingId && !loading) {
-            void fetchSelectedEntry()
+            void fetchEntryUnderCursor()
         }
     })
 
-    // Scroll selected item into view when view mode changes
+    // Scroll the entry under the cursor into view when view mode changes
     $effect(() => {
         void viewMode
         void tick().then(() => {
             const listRef = viewMode === 'brief' ? briefListRef : fullListRef
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            listRef?.scrollToIndex(selectedIndex)
+            listRef?.scrollToIndex(cursorIndex)
         })
     })
 
@@ -809,8 +804,8 @@
             ]).then(([count, newMaxWidth]) => {
                 totalCount = count
                 maxFilenameWidth = newMaxWidth
-                // Re-fetch selected entry as it may have changed
-                void fetchSelectedEntry()
+                // Re-fetch entry under the cursor as it may have changed
+                void fetchEntryUnderCursor()
             })
         })
             .then((unsub) => {
@@ -833,7 +828,7 @@
                 // Use the list component's cached entry for consistency
                 const listRef = viewMode === 'brief' ? briefListRef : fullListRef
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
-                const entry: FileEntry | undefined = listRef?.getEntryAt(selectedIndex)
+                const entry: FileEntry | undefined = listRef?.getEntryAt(cursorIndex)
                 if (entry) {
                     void handleNavigate(entry)
                 }
@@ -905,7 +900,7 @@
             {#if isMounting}
                 <div class="mounting-state">
                     <span class="spinner"></span>
-                    <span class="mounting-text">Mounting {selectedNetworkHost?.name ?? 'share'}...</span>
+                    <span class="mounting-text">Mounting {currentNetworkHost?.name ?? 'share'}...</span>
                 </div>
             {:else if mountError}
                 <div class="mount-error-state">
@@ -917,10 +912,10 @@
                         <button type="button" class="btn" onclick={handleMountErrorBack}>Back</button>
                     </div>
                 </div>
-            {:else if selectedNetworkHost}
+            {:else if currentNetworkHost}
                 <ShareBrowser
                     bind:this={shareBrowserRef}
-                    host={selectedNetworkHost}
+                    host={currentNetworkHost}
                     {isFocused}
                     onShareSelect={handleShareSelect}
                     onBack={handleNetworkBack}
@@ -946,7 +941,7 @@
                 totalCount={effectiveTotalCount}
                 {includeHidden}
                 {cacheGeneration}
-                {selectedIndex}
+                {cursorIndex}
                 {isFocused}
                 {syncStatusMap}
                 {hasParent}
@@ -971,7 +966,7 @@
                 totalCount={effectiveTotalCount}
                 {includeHidden}
                 {cacheGeneration}
-                {selectedIndex}
+                {cursorIndex}
                 {isFocused}
                 {syncStatusMap}
                 {hasParent}
@@ -992,7 +987,7 @@
     </div>
     <!-- SelectionInfo shown in brief mode (not in network view) -->
     {#if viewMode === 'brief' && !isNetworkView}
-        <SelectionInfo entry={selectedEntry} currentDirModifiedAt={undefined} />
+        <SelectionInfo entry={entryUnderCursor} currentDirModifiedAt={undefined} />
     {/if}
 </div>
 

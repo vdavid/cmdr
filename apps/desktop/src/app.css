@@ -32,13 +32,11 @@
     --color-text-muted: #999999;
 
     /* === Interactive States === */
-    --color-hover-bg: rgba(0, 120, 215, 0.1);
+    --color-button-hover: rgba(0, 120, 215, 0.08);
     --color-bg-hover: rgba(0, 120, 215, 0.08);
-    --color-selection-bg: #cce4f7;
-    --color-bg-selected: #0078d4;
-    --color-bg-selected-unfocused: #e0e0e0;
-    --color-text-selected: #ffffff;
-    --color-focus-border: #0078d4;
+    --color-cursor-focused-bg: #0078d4;
+    --color-cursor-focused-fg: #ffffff;
+    --color-cursor-unfocused-bg: #e0e0e0;
     --color-accent: #0078d4;
 
     /* === Semantic Colors === */
@@ -86,13 +84,11 @@
         --color-text-muted: #808080;
 
         /* === Interactive States === */
-        --color-hover-bg: rgba(100, 180, 255, 0.15);
+        --color-button-hover: rgba(100, 180, 255, 0.12);
         --color-bg-hover: rgba(100, 180, 255, 0.12);
-        --color-selection-bg: #0a50d0;
-        --color-bg-selected: #0a50d0;
-        --color-bg-selected-unfocused: #3a3a3a;
-        --color-text-selected: #ffffff;
-        --color-focus-border: #4da3ff;
+        --color-cursor-focused-bg: #0a50d0;
+        --color-cursor-focused-fg: #ffffff;
+        --color-cursor-unfocused-bg: #3a3a3a;
         --color-accent: #4da3ff;
 
         /* === Semantic Colors === */

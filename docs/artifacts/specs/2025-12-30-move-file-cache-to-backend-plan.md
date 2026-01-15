@@ -34,7 +34,7 @@ When opening a 50k-file directory, we currently serialize all 50k FileEntry obje
 │  FilePane.svelte:                                               │
 │    - listingId: string                                          │
 │    - totalCount: number                                         │
-│    - selectedIndex: number                                      │
+│    - cursorIndex: number                                      │
 │                                                                 │
 │  BriefList/FullList.svelte:                                     │
 │    - Prefetch buffer: ~500 items around current position        │
@@ -72,7 +72,7 @@ fn get_file_range(
 #[tauri::command]
 fn get_total_count(listing_id: String, include_hidden: bool) -> Result<usize, String>
 
-/// Find index of a file by name (for parent folder selection)
+/// Find index of a file by name (for putting cursor on the child folder we left last)
 #[tauri::command]
 fn find_file_index(
     listing_id: String,
@@ -148,7 +148,7 @@ async function loadDirectory(path: string, selectName?: string) {
 
     if (selectName) {
         const idx = await findFileIndex(listingId, selectName, includeHidden)
-        selectedIndex = idx ?? 0
+        cursorIndex = idx ?? 0
     }
 }
 ```
@@ -161,7 +161,7 @@ async function loadDirectory(path: string, selectName?: string) {
 interface Props {
     listingId: string
     totalCount: number
-    selectedIndex: number
+    cursorIndex: number
     includeHidden: boolean
     // ... existing callbacks
 }
@@ -242,7 +242,7 @@ interface ListingDiffEvent {
 
 // On receiving:
 totalCount = event.newTotalCount
-selectedIndex = Math.max(0, selectedIndex + event.cursorShift)
+cursorIndex = Math.max(0, cursorIndex + event.cursorShift)
 if (event.affectedVisibleRange) {
     void refetchVisibleRange()
 }
@@ -285,14 +285,14 @@ TODO: Consider char-width lookup table in Rust, or estimate based on extension +
 
 ## Added complexity
 
-| Added                       | Purpose                    |
-| --------------------------- | -------------------------- |
-| `get_file_range`            | Core virtual scroll API    |
-| `get_file_at`               | Selected file info         |
-| `find_file_index`           | Navigation selection       |
-| Prefetch buffer (500 items) | Smooth scrolling           |
-| Throttled scroll (100ms)    | Avoid IPC spam             |
-| Cursor shift logic          | File watcher index updates |
+| Added                       | Purpose                                     |
+| --------------------------- |---------------------------------------------|
+| `get_file_range`            | Core virtual scroll API                     |
+| `get_file_at`               | Info for the file under the cursor          |
+| `find_file_index`           | Selecting the child folder after leaving it |
+| Prefetch buffer (500 items) | Smooth scrolling                            |
+| Throttled scroll (100ms)    | Avoid IPC spam                              |
+| Cursor shift logic          | File watcher index updates                  |
 
 ---
 
@@ -318,7 +318,7 @@ TODO: Consider char-width lookup table in Rust, or estimate based on extension +
 - Scroll: smooth, no blank areas
 - Toggle hidden: filters correctly
 - File watcher: updates + cursor shift work
-- Go to parent: previous folder selected
+- Go to parent: go to previous folder
 
 ---
 

@@ -22,7 +22,7 @@
     const { onExecute, onClose }: Props = $props()
 
     let query = $state('')
-    let selectedIndex = $state(0)
+    let cursorIndex = $state(0)
     let hoveredIndex = $state<number | null>(null)
     let inputElement: HTMLInputElement | undefined = $state()
     let resultsContainer: HTMLDivElement | undefined = $state()
@@ -30,10 +30,10 @@
     // Derived: filtered and ranked results
     const results = $derived(searchCommands(query))
 
-    // Reset selection when query changes
+    // Reset cursor position when query changes
     $effect(() => {
         void query // Track
-        selectedIndex = 0
+        cursorIndex = 0
         hoveredIndex = null
     })
 
@@ -60,30 +60,30 @@
                 break
             case 'ArrowDown':
                 e.preventDefault()
-                selectedIndex = Math.min(selectedIndex + 1, results.length - 1)
+                cursorIndex = Math.min(cursorIndex + 1, results.length - 1)
                 hoveredIndex = null
-                scrollSelectedIntoView()
+                scrollCursorIntoView()
                 break
             case 'ArrowUp':
                 e.preventDefault()
-                selectedIndex = Math.max(selectedIndex - 1, 0)
+                cursorIndex = Math.max(cursorIndex - 1, 0)
                 hoveredIndex = null
-                scrollSelectedIntoView()
+                scrollCursorIntoView()
                 break
             case 'Enter':
                 e.preventDefault()
-                if (results[selectedIndex]) {
+                if (results[cursorIndex]) {
                     void savePaletteQuery(query)
-                    onExecute(results[selectedIndex].command.id)
+                    onExecute(results[cursorIndex].command.id)
                 }
                 break
         }
     }
 
-    function scrollSelectedIntoView() {
+    function scrollCursorIntoView() {
         void tick().then(() => {
-            const selected = resultsContainer?.querySelector('.result-item.is-selected')
-            selected?.scrollIntoView({ block: 'nearest' })
+            const cursor = resultsContainer?.querySelector('.result-item.is-under-cursor')
+            cursor?.scrollIntoView({ block: 'nearest' })
         })
     }
 
@@ -163,8 +163,8 @@
                 {#each results as match, index (match.command.id)}
                     <div
                         class="result-item"
-                        class:is-selected={index === selectedIndex}
-                        class:is-hovered={hoveredIndex === index && index !== selectedIndex}
+                        class:is-under-cursor={index === cursorIndex}
+                        class:is-hovered={hoveredIndex === index && index !== cursorIndex}
                         onclick={() => {
                             handleResultClick(index)
                         }}
@@ -176,7 +176,7 @@
                         }}
                         role="option"
                         tabindex="-1"
-                        aria-selected={index === selectedIndex}
+                        aria-selected={index === cursorIndex}
                     >
                         <span class="command-name">
                             {#each highlightMatches(match) as segment, segIdx (segIdx)}
@@ -258,19 +258,19 @@
         color: var(--color-text-primary);
     }
 
-    /* Hover state - subtle overlay, NOT full selection */
+    /* Hover state - just a subtle overlay */
     .result-item.is-hovered {
         background: rgba(255, 255, 255, 0.06);
     }
 
-    /* Selection state - full selection highlight */
-    .result-item.is-selected {
-        background: var(--color-bg-selected);
-        color: var(--color-text-selected);
+    /* Cursor state - a full-on highlight */
+    .result-item.is-under-cursor {
+        background: var(--color-cursor-focused-bg);
+        color: var(--color-cursor-focused-fg);
     }
 
-    .result-item.is-selected .shortcuts {
-        color: var(--color-text-selected);
+    .result-item.is-under-cursor .shortcuts {
+        color: var(--color-cursor-focused-fg);
         opacity: 0.8;
     }
 
@@ -290,8 +290,8 @@
         margin: 0 -2px;
     }
 
-    /* When selected, make highlight even more visible */
-    .result-item.is-selected .match-highlight {
+    /* When item is under cursor, make the match highlight even more visible */
+    .result-item.is-under-cursor .match-highlight {
         background: rgba(255, 255, 255, 0.35);
     }
 
@@ -312,7 +312,7 @@
             background: rgba(0, 0, 0, 0.15);
         }
 
-        .result-item.is-selected .match-highlight {
+        .result-item.is-under-cursor .match-highlight {
             background: rgba(255, 255, 255, 0.4);
         }
     }

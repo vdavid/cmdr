@@ -312,7 +312,7 @@ export interface PaneState {
     path: string
     volumeId?: string
     files: PaneFileEntry[]
-    selectedIndex: number
+    cursorIndex: number
     viewMode: string
 }
 
@@ -450,7 +450,7 @@ export async function getDefaultVolumeId(): Promise<string> {
 
 /**
  * Finds the actual volume (not a favorite) that contains a given path.
- * This is used to determine which volume to highlight when a favorite is selected.
+ * This is used to determine which volume to set as active when the user navigates to a "favorite folder".
  * @param path - Path to find the containing volume for
  * @returns The VolumeInfo for the containing volume, or null if not found
  */

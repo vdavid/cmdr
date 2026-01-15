@@ -139,7 +139,7 @@ describe('Mount types', () => {
 // =============================================================================
 
 describe('Mount flow logic', () => {
-    describe('Server address selection', () => {
+    describe('Setting server address', () => {
         it('should prefer IP address over hostname', () => {
             const host: NetworkHost = {
                 id: 'test-host',

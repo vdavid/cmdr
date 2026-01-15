@@ -14,7 +14,7 @@ import type { FileEntry, VolumeInfo } from './types'
 // ============================================================================
 
 // Track navigation calls
-let mockSelectedEntry: FileEntry | null = null
+let mockEntry: FileEntry | null = null
 
 vi.mock('$lib/tauri-commands', () => ({
     listDirectoryStart: vi.fn().mockResolvedValue({
@@ -26,7 +26,7 @@ vi.mock('$lib/tauri-commands', () => ({
     getFileRange: vi.fn().mockResolvedValue([]),
     getFileAt: vi.fn().mockImplementation((_listingId: string, index: number) => {
         if (index === 0) {
-            mockSelectedEntry = {
+            mockEntry = {
                 name: 'test-folder',
                 path: '/test/test-folder',
                 isDirectory: true,
@@ -38,7 +38,7 @@ vi.mock('$lib/tauri-commands', () => ({
                 extendedMetadataLoaded: true,
             }
         } else {
-            mockSelectedEntry = {
+            mockEntry = {
                 name: 'test-file.txt',
                 path: '/test/test-file.txt',
                 isDirectory: false,
@@ -50,7 +50,7 @@ vi.mock('$lib/tauri-commands', () => ({
                 extendedMetadataLoaded: true,
             }
         }
-        return Promise.resolve(mockSelectedEntry)
+        return Promise.resolve(mockEntry)
     }),
     findFileIndex: vi.fn().mockResolvedValue(0),
     getTotalCount: vi.fn().mockResolvedValue(10),
@@ -114,7 +114,7 @@ describe('FilePane keyboard handling', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        mockSelectedEntry = null
+        mockEntry = null
         target = document.createElement('div')
         document.body.appendChild(target)
     })
@@ -244,7 +244,7 @@ describe('FilePane keyboard handling', () => {
     })
 
     describe('Enter key', () => {
-        it('Enter key calls handleNavigate with selected entry', async () => {
+        it('Enter key calls handleNavigate with entry under cursor', async () => {
             const pathChangeFn = vi.fn()
 
             const component = mount(FilePane, {
@@ -269,9 +269,9 @@ describe('FilePane keyboard handling', () => {
 
             await waitForUpdates(100)
 
-            // If a folder was selected, onPathChange should be called
+            // If a folder was under the cursor, onPathChange should be called
             // (the mock returns a directory for index 0)
-            // The exact behavior depends on what's selected
+            // The exact behavior depends on what's under the cursor
             expect(handleKeyDown).toBeDefined()
         })
     })
@@ -520,8 +520,8 @@ describe('VolumeBreadcrumb', () => {
 
             await tick()
 
-            // Find a non-selected volume item and click it
-            const volumeItems = target.querySelectorAll('.volume-item:not(.is-selected)')
+            // Find another volume item and click it
+            const volumeItems = target.querySelectorAll('.volume-item:not(.is-under-cursor)')
             if (volumeItems.length > 0) {
                 volumeItems[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
 
@@ -685,7 +685,7 @@ describe('VolumeBreadcrumb', () => {
             // Verify dropdown is open and first item is highlighted
             const items = target.querySelectorAll('.volume-item')
             expect(items.length).toBeGreaterThan(1)
-            expect(items[0].classList.contains('is-highlighted')).toBe(true)
+            expect(items[0].classList.contains('is-focused-and-under-cursor')).toBe(true)
 
             // Press ArrowDown
             const handleKeyDown = (component as unknown as { handleKeyDown: (e: KeyboardEvent) => boolean })
@@ -696,8 +696,8 @@ describe('VolumeBreadcrumb', () => {
             await tick()
 
             expect(handled).toBe(true)
-            expect(items[0].classList.contains('is-highlighted')).toBe(false)
-            expect(items[1].classList.contains('is-highlighted')).toBe(true)
+            expect(items[0].classList.contains('is-focused-and-under-cursor')).toBe(false)
+            expect(items[1].classList.contains('is-focused-and-under-cursor')).toBe(true)
         })
 
         it('ArrowUp moves highlight up', async () => {
@@ -732,7 +732,7 @@ describe('VolumeBreadcrumb', () => {
 
             expect(handled).toBe(true)
             const items = target.querySelectorAll('.volume-item')
-            expect(items[0].classList.contains('is-highlighted')).toBe(true)
+            expect(items[0].classList.contains('is-focused-and-under-cursor')).toBe(true)
         })
 
         it('ArrowUp at first item stays at first', async () => {
@@ -761,7 +761,7 @@ describe('VolumeBreadcrumb', () => {
             await tick()
 
             const items = target.querySelectorAll('.volume-item')
-            expect(items[0].classList.contains('is-highlighted')).toBe(true)
+            expect(items[0].classList.contains('is-focused-and-under-cursor')).toBe(true)
         })
 
         it('Enter selects highlighted volume and closes dropdown', async () => {
@@ -784,7 +784,7 @@ describe('VolumeBreadcrumb', () => {
 
             await tick()
 
-            // Move to second item (first non-selected volume)
+            // Move to second item (first volume that's not under the cursor)
             const handleKeyDown = (component as unknown as { handleKeyDown: (e: KeyboardEvent) => boolean })
                 .handleKeyDown
             handleKeyDown(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
@@ -862,7 +862,7 @@ describe('VolumeBreadcrumb', () => {
 
             expect(handled).toBe(true)
             const items = target.querySelectorAll('.volume-item')
-            expect(items[0].classList.contains('is-highlighted')).toBe(true)
+            expect(items[0].classList.contains('is-focused-and-under-cursor')).toBe(true)
         })
 
         it('End jumps to last item', async () => {
@@ -891,7 +891,7 @@ describe('VolumeBreadcrumb', () => {
             expect(handled).toBe(true)
             const items = target.querySelectorAll('.volume-item')
             const lastItem = items[items.length - 1]
-            expect(lastItem.classList.contains('is-highlighted')).toBe(true)
+            expect(lastItem.classList.contains('is-focused-and-under-cursor')).toBe(true)
         })
 
         it('unhandled keys return false', async () => {

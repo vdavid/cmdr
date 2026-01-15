@@ -404,7 +404,7 @@
     }
 
     .btn-secondary:hover:not(:disabled) {
-        background-color: var(--color-bg-hover);
+        background-color: var(--color-button-hover);
     }
 
     .btn-primary {

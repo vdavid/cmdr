@@ -6,14 +6,14 @@ This document lists all keyboard shortcuts available in Cmdr.
 
 ### Basic navigation
 
-| Shortcut           | Action                          | Mode       |
-| ------------------ | ------------------------------- | ---------- |
-| `↑`                | Move selection up one item      | Both       |
-| `↓`                | Move selection down one item    | Both       |
-| `←`                | Move selection left one column  | Brief only |
-| `→`                | Move selection right one column | Brief only |
-| `Enter`            | Open selected file/folder       | Both       |
-| `Backspace` / `⌘↑` | Navigate to parent directory    | Both       |
+| Shortcut           | Action                            | Mode       |
+| ------------------ |-----------------------------------| ---------- |
+| `↑`                | Move cursor up one item           | Both       |
+| `↓`                | Move cursor down one item         | Both       |
+| `←`                | Move cursor left one column       | Brief only |
+| `→`                | Move cursor right one column      | Brief only |
+| `Enter`            | Open file/folder under the cursor | Both       |
+| `Backspace` / `⌘↑` | Navigate to parent directory      | Both       |
 
 ### Jump shortcuts
 

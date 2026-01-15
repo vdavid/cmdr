@@ -34,7 +34,7 @@ async function determineNavigationPath(
     defaultVolumeId: string,
     otherPane: OtherPaneState,
 ): Promise<string> {
-    // User selected a favorite - go to the favorite's path directly
+    // User chose a favorite - go to the favorite's path directly
     if (targetPath !== volumePath) {
         return targetPath
     }
@@ -71,7 +71,7 @@ async function handleLeftVolumeChange(
     const savedPath = state.leftPath
     state.lastUsedPaths[savedVolumeId] = savedPath
 
-    // Determine where to navigate (passing right pane state)
+    // Determine where to navigate (passing correct pane state)
     const pathToNavigate = await determineNavigationPath(
         volumeId,
         volumePath,

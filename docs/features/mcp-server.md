@@ -9,7 +9,6 @@ The MCP server exposes 43 tools that mirror user capabilities exactly. AI agents
 - Navigate directories (up, down, open, back, forward)
 - Change sort order and view modes
 - Switch between volumes
-- Query pane contents and selected files
 
 **Security principle**: Agents can only do what users can do through the UI. There are no elevated privileges like direct file system access or shell execution.
 
@@ -71,20 +70,20 @@ CMDR_MCP_ENABLED=true open /Applications/cmdr.app
 
 ### Navigation commands (12)
 
-| Tool           | Description                  |
-|----------------|------------------------------|
-| `nav.open`     | Open/enter selected item     |
-| `nav.parent`   | Navigate to parent folder    |
-| `nav.back`     | Navigate back in history     |
-| `nav.forward`  | Navigate forward in history  |
-| `nav.up`       | Select previous file         |
-| `nav.down`     | Select next file             |
-| `nav.home`     | Go to first file             |
-| `nav.end`      | Go to last file              |
-| `nav.pageUp`   | Page up                      |
-| `nav.pageDown` | Page down                    |
-| `nav.left`     | Previous column (Brief mode) |
-| `nav.right`    | Next column (Brief mode)     |
+| Tool           | Description                      |
+|----------------|----------------------------------|
+| `nav.open`     | Open/enter item under the cursor |
+| `nav.parent`   | Navigate to parent folder        |
+| `nav.back`     | Navigate back in history         |
+| `nav.forward`  | Navigate forward in history      |
+| `nav.up`       | Select previous file             |
+| `nav.down`     | Select next file                 |
+| `nav.home`     | Go to first file                 |
+| `nav.end`      | Go to last file                  |
+| `nav.pageUp`   | Page up                          |
+| `nav.pageDown` | Page down                        |
+| `nav.left`     | Previous column (Brief mode)     |
+| `nav.right`    | Next column (Brief mode)         |
 
 ### Sort commands (8)
 
@@ -101,13 +100,13 @@ CMDR_MCP_ENABLED=true open /Applications/cmdr.app
 
 ### File commands (5)
 
-| Tool                | Description                  |
-|---------------------|------------------------------|
-| `file.showInFinder` | Show selected file in Finder |
-| `file.copyPath`     | Copy file path to clipboard  |
-| `file.copyFilename` | Copy filename to clipboard   |
-| `file.quickLook`    | Preview with Quick Look      |
-| `file.getInfo`      | Open Get Info window         |
+| Tool                | Description                          |
+|---------------------|--------------------------------------|
+| `file.showInFinder` | Show file under the cursor in Finder |
+| `file.copyPath`     | Copy file path to clipboard          |
+| `file.copyFilename` | Copy filename to clipboard           |
+| `file.quickLook`    | Preview with Quick Look              |
+| `file.getInfo`      | Open Get Info window                 |
 
 ### Volume commands (3)
 
@@ -119,14 +118,14 @@ CMDR_MCP_ENABLED=true open /Applications/cmdr.app
 
 ### Context commands (6)
 
-| Tool                          | Description                    |
-|-------------------------------|--------------------------------|
-| `context.getFocusedPane`      | Get focused pane (left/right)  |
-| `context.getLeftPanePath`     | Get left pane path and volume  |
-| `context.getRightPanePath`    | Get right pane path and volume |
-| `context.getLeftPaneContent`  | Get left pane file listing     |
-| `context.getRightPaneContent` | Get right pane file listing    |
-| `context.getSelectedFileInfo` | Get selected file details      |
+| Tool                                | Description                              |
+|-------------------------------------|------------------------------------------|
+| `context.getFocusedPane`            | Get focused pane (left/right)            |
+| `context.getLeftPanePath`           | Get left pane path and volume            |
+| `context.getRightPanePath`          | Get right pane path and volume           |
+| `context.getLeftPaneContent`        | Get left pane file listing               |
+| `context.getRightPaneContent`       | Get right pane file listing              |
+| `context.getInfoForFileUnderCursor` | Get details of the file under the cursor |
 
 ## Protocol
 
@@ -185,7 +184,7 @@ The MCP server is designed with security in mind:
 
 - Navigate directories using the same UI actions as users
 - Change view settings (sort, hidden files, view mode)
-- Query current state (paths, file listings, selection)
+- Query current state (paths, file listings, file under cursor)
 - Trigger macOS integrations (Finder, Quick Look, Get Info)
 
 ### What agents CANNOT do

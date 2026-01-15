@@ -55,26 +55,26 @@ This document specifies the MCP (Model Context Protocol) server for cmdr, enabli
 
 These map directly to the command palette commands.
 
-| Tool ID                   | Description                            | Parameters |
-|---------------------------|----------------------------------------|------------|
-| `app.quit`                | Quit the application                   | none       |
-| `app.hide`                | Hide the application                   | none       |
-| `app.about`               | Show about window                      | none       |
-| `view.showHidden`         | Toggle hidden files visibility         | none       |
-| `view.briefMode`          | Switch to brief view mode              | none       |
-| `view.fullMode`           | Switch to full view mode               | none       |
-| `pane.switch`             | Switch focus to other pane             | none       |
-| `pane.leftVolumeChooser`  | Open left pane volume chooser          | none       |
-| `pane.rightVolumeChooser` | Open right pane volume chooser         | none       |
-| `nav.open`                | Open selected item                     | none       |
-| `nav.parent`              | Navigate to parent folder              | none       |
-| `nav.back`                | Navigate back in history               | none       |
-| `nav.forward`             | Navigate forward in history            | none       |
-| `file.showInFinder`       | Show selected file in Finder           | none       |
-| `file.copyPath`           | Copy selected file path to clipboard   | none       |
-| `file.copyFilename`       | Copy selected filename to clipboard    | none       |
-| `file.quickLook`          | Preview selected file with Quick Look  | none       |
-| `file.getInfo`            | Open Get Info window for selected file | none       |
+| Tool ID                   | Description                                             | Parameters |
+|---------------------------|---------------------------------------------------------|------------|
+| `app.quit`                | Quit the application                                    | none       |
+| `app.hide`                | Hide the application                                    | none       |
+| `app.about`               | Show about window                                       | none       |
+| `view.showHidden`         | Toggle hidden files visibility                          | none       |
+| `view.briefMode`          | Switch to brief view mode                               | none       |
+| `view.fullMode`           | Switch to full view mode                                | none       |
+| `pane.switch`             | Switch focus to other pane                              | none       |
+| `pane.leftVolumeChooser`  | Open left pane volume chooser                           | none       |
+| `pane.rightVolumeChooser` | Open right pane volume chooser                          | none       |
+| `nav.open`                | Open item under the cursor                              | none       |
+| `nav.parent`              | Navigate to parent folder                               | none       |
+| `nav.back`                | Navigate back in history                                | none       |
+| `nav.forward`             | Navigate forward in history                             | none       |
+| `file.showInFinder`       | Show file under the cursor in Finder                    | none       |
+| `file.copyPath`           | Copy path of the file under the cursor to clipboard     | none       |
+| `file.copyFilename`       | Copy filename of the file under the cursor to clipboard | none       |
+| `file.quickLook`          | Preview the file under the cursor with Quick Look       | none       |
+| `file.getInfo`            | Open Get Info window for file under the cursor          | none       |
 
 ### 2. File system operations
 
@@ -106,8 +106,6 @@ Get current app state for context-aware operations.
 
 | Tool ID                   | Description                    | Parameters |
 |---------------------------|--------------------------------|------------|
-| `context.getSelection`    | Get currently selected file(s) | none       |
-| `context.getCurrentPaths` | Get paths of both panes        | none       |
 | `context.getFocusedPane`  | Get which pane is focused      | none       |
 
 ## MCP protocol implementation

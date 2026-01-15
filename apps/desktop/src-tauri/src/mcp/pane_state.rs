@@ -30,8 +30,8 @@ pub struct PaneState {
     pub volume_id: Option<String>,
     /// Currently visible files
     pub files: Vec<FileEntry>,
-    /// Index of the selected file (0-based)
-    pub selected_index: usize,
+    /// Index of the file under the cursor (0-based)
+    pub cursor_index: usize,
     /// View mode (brief or full)
     pub view_mode: String,
 }
@@ -120,7 +120,7 @@ mod tests {
                 size: Some(100),
                 modified: None,
             }],
-            selected_index: 0,
+            cursor_index: 0,
             view_mode: "brief".to_string(),
         };
 

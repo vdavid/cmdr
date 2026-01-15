@@ -43,8 +43,8 @@ all files as DOM elements, goal is to only render ~50 visible items + buffer.
 
 - [x] **2.1** Ensure keyboard navigation works with virtual scrolling
     - Arrow up/down should scroll when cursor moves out of view
-    - Enter should work on the current selection
-    - Verify `selectedIndex` still maps correctly to files array
+    - Enter should work on the current file under the cursor
+    - Verify `cursorIndex` still maps correctly to files array
 
 - [x] **2.2** Verify file watching diffs work correctly
     - Test add/remove/modify operations during scroll

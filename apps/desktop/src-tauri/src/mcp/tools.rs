@@ -78,7 +78,7 @@ fn get_nav_tools() -> Vec<Tool> {
         // Basic navigation
         Tool::no_params(
             "nav_open",
-            "Open/enter the selected item (directory, file, network host, share)",
+            "Open/enter the item (directory, file, network host, share) under the cursor",
         ),
         Tool::no_params("nav_parent", "Navigate to parent folder"),
         Tool::no_params("nav_back", "Navigate back in history"),
@@ -115,11 +115,14 @@ fn get_sort_tools() -> Vec<Tool> {
 /// Get file action tools.
 fn get_file_tools() -> Vec<Tool> {
     vec![
-        Tool::no_params("file_showInFinder", "Show selected file in Finder"),
-        Tool::no_params("file_copyPath", "Copy selected file path to clipboard"),
-        Tool::no_params("file_copyFilename", "Copy selected filename to clipboard"),
-        Tool::no_params("file_quickLook", "Preview selected file with Quick Look"),
-        Tool::no_params("file_getInfo", "Open Get Info window for selected file"),
+        Tool::no_params("file_showInFinder", "Show file under the cursor in Finder"),
+        Tool::no_params("file_copyPath", "Copy path of the file under the cursor to clipboard"),
+        Tool::no_params(
+            "file_copyFilename",
+            "Copy filename of the file under the cursor to clipboard",
+        ),
+        Tool::no_params("file_quickLook", "Preview file under the cursor with Quick Look"),
+        Tool::no_params("file_getInfo", "Open Get Info window for the file under the cursor"),
     ]
 }
 

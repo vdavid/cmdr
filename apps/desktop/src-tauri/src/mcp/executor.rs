@@ -165,9 +165,9 @@ fn execute_sort_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolResul
 }
 
 /// Execute a file command.
-/// Gets the selected file from PaneStateStore and operates on it directly.
+/// Gets the file under the cursor from PaneStateStore and operates on it directly.
 fn execute_file_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolResult {
-    // Get the selected file from pane state
+    // Get the file under the cursor from pane state
     let store = app
         .try_state::<PaneStateStore>()
         .ok_or_else(|| ToolError::internal("Pane state not initialized"))?;
@@ -179,31 +179,31 @@ fn execute_file_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolResul
         store.get_left()
     };
 
-    let selected = pane
+    let file_under_cursor = pane
         .files
-        .get(pane.selected_index)
-        .ok_or_else(|| ToolError::internal("No file selected"))?;
+        .get(pane.cursor_index)
+        .ok_or_else(|| ToolError::internal("No file under cursor"))?;
 
     match name {
         "file_showInFinder" => {
-            show_in_finder(selected.path.clone()).map_err(ToolError::internal)?;
-            Ok(json!({"success": true, "path": selected.path}))
+            show_in_finder(file_under_cursor.path.clone()).map_err(ToolError::internal)?;
+            Ok(json!({"success": true, "path": file_under_cursor.path}))
         }
         "file_copyPath" => {
-            copy_to_clipboard(app.clone(), selected.path.clone()).map_err(ToolError::internal)?;
-            Ok(json!({"success": true, "copied": selected.path}))
+            copy_to_clipboard(app.clone(), file_under_cursor.path.clone()).map_err(ToolError::internal)?;
+            Ok(json!({"success": true, "copied": file_under_cursor.path}))
         }
         "file_copyFilename" => {
-            copy_to_clipboard(app.clone(), selected.name.clone()).map_err(ToolError::internal)?;
-            Ok(json!({"success": true, "copied": selected.name}))
+            copy_to_clipboard(app.clone(), file_under_cursor.name.clone()).map_err(ToolError::internal)?;
+            Ok(json!({"success": true, "copied": file_under_cursor.name}))
         }
         "file_quickLook" => {
-            quick_look(selected.path.clone()).map_err(ToolError::internal)?;
-            Ok(json!({"success": true, "path": selected.path}))
+            quick_look(file_under_cursor.path.clone()).map_err(ToolError::internal)?;
+            Ok(json!({"success": true, "path": file_under_cursor.path}))
         }
         "file_getInfo" => {
-            get_info(selected.path.clone()).map_err(ToolError::internal)?;
-            Ok(json!({"success": true, "path": selected.path}))
+            get_info(file_under_cursor.path.clone()).map_err(ToolError::internal)?;
+            Ok(json!({"success": true, "path": file_under_cursor.path}))
         }
         _ => Err(ToolError::invalid_params(format!("Unknown file command: {name}"))),
     }
@@ -262,7 +262,7 @@ fn execute_context_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolRe
             Ok(json!({
                 "path": left.path,
                 "files": left.files,
-                "selectedIndex": left.selected_index,
+                "cursorIndex": left.cursor_index,
                 "viewMode": left.view_mode,
                 "totalCount": left.files.len(),
             }))
@@ -273,13 +273,13 @@ fn execute_context_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolRe
             Ok(json!({
                 "path": right.path,
                 "files": right.files,
-                "selectedIndex": right.selected_index,
+                "cursorIndex": right.cursor_index,
                 "viewMode": right.view_mode,
                 "totalCount": right.files.len(),
             }))
         }
 
-        "context_getSelectedFileInfo" => {
+        "context_getInfoForFileUnderCursor" => {
             let focused = store.get_focused_pane();
             let pane = if focused == "right" {
                 store.get_right()
@@ -287,8 +287,8 @@ fn execute_context_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolRe
                 store.get_left()
             };
 
-            let selected = pane.files.get(pane.selected_index).cloned();
-            match selected {
+            let file_under_cursor = pane.files.get(pane.cursor_index).cloned();
+            match file_under_cursor {
                 Some(file) => Ok(json!({
                     "name": file.name,
                     "path": file.path,
@@ -296,7 +296,7 @@ fn execute_context_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolRe
                     "size": file.size,
                     "modified": file.modified,
                 })),
-                None => Ok(json!({"error": "No file selected"})),
+                None => Ok(json!({"error": "No file under cursor"})),
             }
         }
 

@@ -293,8 +293,8 @@
                     <!-- svelte-ignore a11y_mouse_events_have_key_events -->
                     <div
                         class="volume-item"
-                        class:is-selected={shouldShowCheckmark(volume)}
-                        class:is-highlighted={allVolumes.indexOf(volume) === highlightedIndex}
+                        class:is-under-cursor={shouldShowCheckmark(volume)}
+                        class:is-focused-and-under-cursor={allVolumes.indexOf(volume) === highlightedIndex}
                         onclick={() => {
                             void handleVolumeSelect(volume)
                         }}
@@ -414,8 +414,8 @@
     }
 
     .volume-item:hover,
-    .volume-item.is-highlighted {
-        background-color: var(--color-selection-bg);
+    .volume-item.is-focused-and-under-cursor {
+        background-color: var(--color-cursor-focused-bg);
     }
 
     .volume-icon {
