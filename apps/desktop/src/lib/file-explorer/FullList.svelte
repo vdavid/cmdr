@@ -9,6 +9,8 @@
         createParentEntry,
         getEntryAt as getEntryAtUtil,
         fetchVisibleRange as fetchVisibleRangeUtil,
+        calculateFetchRange,
+        isRangeCached,
         shouldResetCache,
     } from './file-list-utils'
 
@@ -88,12 +90,22 @@
     async function fetchVisibleRange() {
         if (!listingId || isFetching) return
 
+        const startItem = virtualWindow.startIndex
+        const endItem = virtualWindow.endIndex
+
+        // Check if range is already cached BEFORE setting isFetching
+        // This prevents blocking subsequent fetches when data is already available
+        const { fetchStart, fetchEnd } = calculateFetchRange({ startItem, endItem, hasParent, totalCount })
+        if (isRangeCached(fetchStart, fetchEnd, cachedRange)) {
+            return // Already cached
+        }
+
         isFetching = true
         try {
             const result = await fetchVisibleRangeUtil({
                 listingId,
-                startItem: virtualWindow.startIndex,
-                endItem: virtualWindow.endIndex,
+                startItem,
+                endItem,
                 hasParent,
                 totalCount,
                 includeHidden,

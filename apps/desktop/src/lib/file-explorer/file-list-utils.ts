@@ -85,10 +85,14 @@ export interface FetchRangeResult {
     range: { start: number; end: number }
 }
 
-/** Fetches entries for a visible range with prefetch buffer */
-export async function fetchVisibleRange(params: FetchRangeParams): Promise<FetchRangeResult | null> {
-    const { listingId, startItem, endItem, hasParent, totalCount, includeHidden, cachedRange, onSyncStatusRequest } =
-        params
+/** Calculates the fetch range for visible items with prefetch buffer */
+export function calculateFetchRange(params: {
+    startItem: number
+    endItem: number
+    hasParent: boolean
+    totalCount: number
+}): { fetchStart: number; fetchEnd: number } {
+    const { startItem, endItem, hasParent, totalCount } = params
 
     // Account for ".." entry
     let adjustedStart = startItem
@@ -102,8 +106,27 @@ export async function fetchVisibleRange(params: FetchRangeParams): Promise<Fetch
     const fetchStart = Math.max(0, adjustedStart - PREFETCH_BUFFER / 2)
     const fetchEnd = Math.min(hasParent ? totalCount - 1 : totalCount, adjustedEnd + PREFETCH_BUFFER / 2)
 
+    return { fetchStart, fetchEnd }
+}
+
+/** Checks if the needed range is already cached */
+export function isRangeCached(
+    fetchStart: number,
+    fetchEnd: number,
+    cachedRange: { start: number; end: number },
+): boolean {
+    return fetchStart >= cachedRange.start && fetchEnd <= cachedRange.end
+}
+
+/** Fetches entries for a visible range with prefetch buffer */
+export async function fetchVisibleRange(params: FetchRangeParams): Promise<FetchRangeResult | null> {
+    const { listingId, startItem, endItem, hasParent, totalCount, includeHidden, cachedRange, onSyncStatusRequest } =
+        params
+
+    const { fetchStart, fetchEnd } = calculateFetchRange({ startItem, endItem, hasParent, totalCount })
+
     // Only fetch if needed range isn't cached
-    if (fetchStart >= cachedRange.start && fetchEnd <= cachedRange.end) {
+    if (isRangeCached(fetchStart, fetchEnd, cachedRange)) {
         return null // Already cached
     }
 

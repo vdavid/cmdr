@@ -10,6 +10,8 @@
         createParentEntry,
         getEntryAt as getEntryAtUtil,
         fetchVisibleRange as fetchVisibleRangeUtil,
+        calculateFetchRange,
+        isRangeCached,
         shouldResetCache,
     } from './file-list-utils'
 
@@ -87,18 +89,6 @@
         containerWidth > 0 ? Math.min(calculatedColumnWidth, containerWidth) : calculatedColumnWidth,
     )
 
-    // Debug logging
-    $effect(() => {
-        // eslint-disable-next-line no-console
-        console.log('[BRIEF] maxFilenameWidth:', {
-            backendMaxWidth,
-            containerWidth,
-            calculatedColumnWidth,
-            maxFilenameWidth,
-            COLUMN_PADDING,
-        })
-    })
-
     // Total number of columns needed
     const totalColumns = $derived(Math.ceil(totalCount / itemsPerColumn))
 
@@ -128,6 +118,13 @@
         const endCol = virtualWindow.endIndex
         const startItem = startCol * itemsPerColumn
         const endItem = Math.min(endCol * itemsPerColumn, totalCount)
+
+        // Check if range is already cached BEFORE setting isFetching
+        // This prevents blocking subsequent fetches when data is already available
+        const { fetchStart, fetchEnd } = calculateFetchRange({ startItem, endItem, hasParent, totalCount })
+        if (isRangeCached(fetchStart, fetchEnd, cachedRange)) {
+            return // Already cached
+        }
 
         isFetching = true
         try {
