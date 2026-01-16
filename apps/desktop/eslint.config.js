@@ -20,6 +20,7 @@ import tseslint from 'typescript-eslint'
 import svelte from 'eslint-plugin-svelte'
 import svelteParser from 'svelte-eslint-parser'
 import globals from 'globals'
+import noIsolatedTests from './eslint-plugins/no-isolated-tests.js'
 
 export default tseslint.config(
     {
@@ -175,6 +176,21 @@ export default tseslint.config(
                     max: 15,
                 },
             ],
+        },
+    },
+    {
+        // Test files - ensure they actually test source code
+        // Excludes e2e tests (Playwright) which test through the browser, not via imports
+        files: ['src/**/*.test.ts'],
+        plugins: {
+            custom: {
+                rules: {
+                    'no-isolated-tests': noIsolatedTests,
+                },
+            },
+        },
+        rules: {
+            'custom/no-isolated-tests': 'error',
         },
     },
 )

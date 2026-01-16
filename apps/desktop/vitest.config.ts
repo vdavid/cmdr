@@ -9,6 +9,13 @@ export default defineConfig({
         environment: 'jsdom',
         globals: true,
         setupFiles: ['./src/test-setup.ts'],
+        coverage: {
+            provider: 'v8',
+            reporter: ['text', 'json-summary'],
+            reportsDirectory: './coverage',
+            include: ['src/lib/**/*.ts', 'src/lib/**/*.svelte'],
+            exclude: ['**/*.test.ts', '**/test-*.ts', '**/*.d.ts', '**/types.ts', '**/index.ts'],
+        },
     },
     resolve: {
         conditions: ['browser'],

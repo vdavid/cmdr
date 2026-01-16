@@ -277,6 +277,162 @@ describe('BriefList component', () => {
 
             expect(typeof (component as unknown as Record<string, unknown>).scrollToIndex).toBe('function')
         })
+
+        it('handleKeyNavigation returns correct index for ArrowLeft', async () => {
+            const component = mount(BriefList, {
+                target,
+                props: {
+                    listingId: 'test-arrow-left',
+                    totalCount: 100,
+                    includeHidden: true,
+                    cursorIndex: 25, // In column 1 (assuming 20 items per column)
+                    isFocused: true,
+                    hasParent: false,
+                    sortBy: 'name',
+                    sortOrder: 'ascending',
+                    parentPath: '/',
+                    onSelect: vi.fn(),
+                    onNavigate: vi.fn(),
+                },
+            })
+
+            // Set container dimensions to establish itemsPerColumn
+            const briefList = target.querySelector('.brief-list') as HTMLElement
+            Object.defineProperty(briefList, 'clientHeight', { value: 400, configurable: true })
+            Object.defineProperty(briefList, 'clientWidth', { value: 600, configurable: true })
+
+            await waitForUpdates()
+
+            const newIndex = (
+                component as unknown as { handleKeyNavigation: (key: string) => number | undefined }
+            ).handleKeyNavigation('ArrowLeft')
+            // With 400px height and 20px row height, itemsPerColumn = 20
+            // From index 25, ArrowLeft should go to 25 - 20 = 5
+            expect(newIndex).toBe(5)
+        })
+
+        it('handleKeyNavigation returns correct index for ArrowRight', async () => {
+            const component = mount(BriefList, {
+                target,
+                props: {
+                    listingId: 'test-arrow-right',
+                    totalCount: 100,
+                    includeHidden: true,
+                    cursorIndex: 5,
+                    isFocused: true,
+                    hasParent: false,
+                    sortBy: 'name',
+                    sortOrder: 'ascending',
+                    parentPath: '/',
+                    onSelect: vi.fn(),
+                    onNavigate: vi.fn(),
+                },
+            })
+
+            // Set container dimensions
+            const briefList = target.querySelector('.brief-list') as HTMLElement
+            Object.defineProperty(briefList, 'clientHeight', { value: 400, configurable: true })
+            Object.defineProperty(briefList, 'clientWidth', { value: 600, configurable: true })
+
+            await waitForUpdates()
+
+            const newIndex = (
+                component as unknown as { handleKeyNavigation: (key: string) => number | undefined }
+            ).handleKeyNavigation('ArrowRight')
+            // With 400px height and 20px row height, itemsPerColumn = 20
+            // From index 5, ArrowRight should go to 5 + 20 = 25
+            expect(newIndex).toBe(25)
+        })
+
+        it('handleKeyNavigation clamps ArrowLeft at column 0', async () => {
+            const component = mount(BriefList, {
+                target,
+                props: {
+                    listingId: 'test-arrow-left-clamp',
+                    totalCount: 100,
+                    includeHidden: true,
+                    cursorIndex: 5, // In column 0
+                    isFocused: true,
+                    hasParent: false,
+                    sortBy: 'name',
+                    sortOrder: 'ascending',
+                    parentPath: '/',
+                    onSelect: vi.fn(),
+                    onNavigate: vi.fn(),
+                },
+            })
+
+            // Set container dimensions
+            const briefList = target.querySelector('.brief-list') as HTMLElement
+            Object.defineProperty(briefList, 'clientHeight', { value: 400, configurable: true })
+            Object.defineProperty(briefList, 'clientWidth', { value: 600, configurable: true })
+
+            await waitForUpdates()
+
+            const newIndex = (
+                component as unknown as { handleKeyNavigation: (key: string) => number | undefined }
+            ).handleKeyNavigation('ArrowLeft')
+            // From index 5 in column 0, ArrowLeft would give -15, but clamps to 0
+            expect(newIndex).toBe(0)
+        })
+
+        it('handleKeyNavigation clamps ArrowRight at last column', async () => {
+            const component = mount(BriefList, {
+                target,
+                props: {
+                    listingId: 'test-arrow-right-clamp',
+                    totalCount: 30, // Just 2 columns with itemsPerColumn=20
+                    includeHidden: true,
+                    cursorIndex: 25, // In last column
+                    isFocused: true,
+                    hasParent: false,
+                    sortBy: 'name',
+                    sortOrder: 'ascending',
+                    parentPath: '/',
+                    onSelect: vi.fn(),
+                    onNavigate: vi.fn(),
+                },
+            })
+
+            // Set container dimensions
+            const briefList = target.querySelector('.brief-list') as HTMLElement
+            Object.defineProperty(briefList, 'clientHeight', { value: 400, configurable: true })
+            Object.defineProperty(briefList, 'clientWidth', { value: 600, configurable: true })
+
+            await waitForUpdates()
+
+            const newIndex = (
+                component as unknown as { handleKeyNavigation: (key: string) => number | undefined }
+            ).handleKeyNavigation('ArrowRight')
+            // From index 25, ArrowRight would give 45 but totalCount is 30, clamps to 29
+            expect(newIndex).toBe(29)
+        })
+
+        it('handleKeyNavigation returns undefined for unhandled keys', async () => {
+            const component = mount(BriefList, {
+                target,
+                props: {
+                    listingId: 'test-unhandled-key',
+                    totalCount: 10,
+                    includeHidden: true,
+                    cursorIndex: 5,
+                    isFocused: true,
+                    hasParent: false,
+                    sortBy: 'name',
+                    sortOrder: 'ascending',
+                    parentPath: '/',
+                    onSelect: vi.fn(),
+                    onNavigate: vi.fn(),
+                },
+            })
+
+            await tick()
+
+            const newIndex = (
+                component as unknown as { handleKeyNavigation: (key: string) => number | undefined }
+            ).handleKeyNavigation('Enter')
+            expect(newIndex).toBeUndefined()
+        })
     })
 
     describe('Props validation', () => {
@@ -607,103 +763,4 @@ describe('Mock data helpers', () => {
     })
 })
 
-// ============================================================================
-// Keyboard shortcuts logic tests
-// ============================================================================
-
-describe('Keyboard shortcuts logic', () => {
-    it('handleNavigationShortcut returns correct index for Home', async () => {
-        const { handleNavigationShortcut } = await import('./keyboard-shortcuts')
-
-        const event = new KeyboardEvent('keydown', { key: 'Home' })
-        const result = handleNavigationShortcut(event, {
-            currentIndex: 50,
-            totalCount: 100,
-            visibleItems: 20,
-        })
-
-        expect(result?.newIndex).toBe(0)
-    })
-
-    it('handleNavigationShortcut returns correct index for End', async () => {
-        const { handleNavigationShortcut } = await import('./keyboard-shortcuts')
-
-        const event = new KeyboardEvent('keydown', { key: 'End' })
-        const result = handleNavigationShortcut(event, {
-            currentIndex: 50,
-            totalCount: 100,
-            visibleItems: 20,
-        })
-
-        expect(result?.newIndex).toBe(99)
-    })
-
-    it('handleNavigationShortcut returns correct index for PageDown', async () => {
-        const { handleNavigationShortcut } = await import('./keyboard-shortcuts')
-
-        const event = new KeyboardEvent('keydown', { key: 'PageDown' })
-        const result = handleNavigationShortcut(event, {
-            currentIndex: 10,
-            totalCount: 100,
-            visibleItems: 20,
-        })
-
-        // Should jump by visibleItems - 1
-        expect(result?.newIndex).toBe(29) // 10 + 19
-    })
-
-    it('handleNavigationShortcut returns correct index for PageUp', async () => {
-        const { handleNavigationShortcut } = await import('./keyboard-shortcuts')
-
-        const event = new KeyboardEvent('keydown', { key: 'PageUp' })
-        const result = handleNavigationShortcut(event, {
-            currentIndex: 50,
-            totalCount: 100,
-            visibleItems: 20,
-        })
-
-        // Should jump by visibleItems - 1
-        expect(result?.newIndex).toBe(31) // 50 - 19
-    })
-
-    it('handleNavigationShortcut clamps PageDown at end', async () => {
-        const { handleNavigationShortcut } = await import('./keyboard-shortcuts')
-
-        const event = new KeyboardEvent('keydown', { key: 'PageDown' })
-        const result = handleNavigationShortcut(event, {
-            currentIndex: 90,
-            totalCount: 100,
-            visibleItems: 20,
-        })
-
-        // Should clamp to totalCount - 1
-        expect(result?.newIndex).toBe(99)
-    })
-
-    it('handleNavigationShortcut clamps PageUp at start', async () => {
-        const { handleNavigationShortcut } = await import('./keyboard-shortcuts')
-
-        const event = new KeyboardEvent('keydown', { key: 'PageUp' })
-        const result = handleNavigationShortcut(event, {
-            currentIndex: 5,
-            totalCount: 100,
-            visibleItems: 20,
-        })
-
-        // Should clamp to 0
-        expect(result?.newIndex).toBe(0)
-    })
-
-    it('handleNavigationShortcut returns undefined for non-navigation keys', async () => {
-        const { handleNavigationShortcut } = await import('./keyboard-shortcuts')
-
-        const event = new KeyboardEvent('keydown', { key: 'a' })
-        const result = handleNavigationShortcut(event, {
-            currentIndex: 50,
-            totalCount: 100,
-            visibleItems: 20,
-        })
-
-        expect(result).toBeNull()
-    })
-})
+// Note: Keyboard shortcuts logic tests are in keyboard-shortcuts.test.ts

@@ -1,9 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -133,22 +136,114 @@ func (c *KnipCheck) Run(ctx *CheckContext) error {
 	return nil
 }
 
-// SvelteTestsCheck runs Svelte unit tests with Vitest.
+// SvelteTestsCheck runs Svelte unit tests with Vitest and checks coverage.
 type SvelteTestsCheck struct{}
 
 func (c *SvelteTestsCheck) Name() string {
 	return "tests"
 }
 
+// CoverageThreshold is the minimum line coverage percentage required.
+const CoverageThreshold = 70.0
+
+// CoverageMetric represents coverage data for a single metric.
+type CoverageMetric struct {
+	Total   int     `json:"total"`
+	Covered int     `json:"covered"`
+	Skipped int     `json:"skipped"`
+	Pct     float64 `json:"pct"`
+}
+
+// FileCoverage represents coverage data for a single file.
+type FileCoverage struct {
+	Lines      CoverageMetric `json:"lines"`
+	Statements CoverageMetric `json:"statements"`
+	Functions  CoverageMetric `json:"functions"`
+	Branches   CoverageMetric `json:"branches"`
+}
+
+// CoverageAllowlist represents the allowlist configuration.
+type CoverageAllowlist struct {
+	Comment string                    `json:"$comment"`
+	Files   map[string]AllowlistEntry `json:"files"`
+}
+
+// AllowlistEntry represents a single allowlisted file entry.
+type AllowlistEntry struct {
+	Reason string `json:"reason"`
+}
+
 func (c *SvelteTestsCheck) Run(ctx *CheckContext) error {
-	cmd := exec.Command("pnpm", "test")
-	cmd.Dir = filepath.Join(ctx.RootDir, "apps", "desktop")
+	desktopDir := filepath.Join(ctx.RootDir, "apps", "desktop")
+
+	// Run tests with coverage
+	cmd := exec.Command("pnpm", "test:coverage")
+	cmd.Dir = desktopDir
 	output, err := runCommand(cmd, true)
 	if err != nil {
 		fmt.Println()
 		fmt.Print(indentOutput(output, "      "))
 		return fmt.Errorf("svelte tests failed")
 	}
+
+	// Parse coverage summary
+	coverageFile := filepath.Join(desktopDir, "coverage", "coverage-summary.json")
+	coverageData, err := os.ReadFile(coverageFile)
+	if err != nil {
+		return fmt.Errorf("failed to read coverage summary: %w", err)
+	}
+
+	var coverage map[string]FileCoverage
+	if err := json.Unmarshal(coverageData, &coverage); err != nil {
+		return fmt.Errorf("failed to parse coverage summary: %w", err)
+	}
+
+	// Load allowlist
+	allowlistFile := filepath.Join(desktopDir, "coverage-allowlist.json")
+	allowlist := CoverageAllowlist{Files: make(map[string]AllowlistEntry)}
+	if allowlistData, err := os.ReadFile(allowlistFile); err == nil {
+		if err := json.Unmarshal(allowlistData, &allowlist); err != nil {
+			return fmt.Errorf("failed to parse coverage allowlist: %w", err)
+		}
+	}
+
+	// Check coverage for each file
+	var lowCoverageFiles []string
+	srcPrefix := filepath.Join(desktopDir, "src", "lib") + "/"
+
+	for filePath, fileCov := range coverage {
+		// Skip the "total" entry
+		if filePath == "total" {
+			continue
+		}
+
+		// Get relative path for display and allowlist lookup
+		relPath, _ := strings.CutPrefix(filePath, srcPrefix)
+
+		// Check if allowlisted
+		if _, ok := allowlist.Files[relPath]; ok {
+			continue
+		}
+
+		// Check coverage threshold
+		if fileCov.Lines.Pct < CoverageThreshold {
+			lowCoverageFiles = append(lowCoverageFiles,
+				fmt.Sprintf("  %s: %.1f%% (threshold: %.0f%%)", relPath, fileCov.Lines.Pct, CoverageThreshold))
+		}
+	}
+
+	if len(lowCoverageFiles) > 0 {
+		sort.Strings(lowCoverageFiles)
+		fmt.Println()
+		fmt.Println("      Files below coverage threshold:")
+		for _, f := range lowCoverageFiles {
+			fmt.Println("      " + f)
+		}
+		fmt.Println()
+		fmt.Println("      To allowlist a file, add it to coverage-allowlist.json with a reason.")
+		return fmt.Errorf("coverage below threshold for %d files", len(lowCoverageFiles))
+	}
+
 	return nil
 }
 

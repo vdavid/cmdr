@@ -1,0 +1,30 @@
+{
+    "$comment": "Files listed here are exempt from coverage thresholds. Each entry should include a reason. Remove entries as you add tests.",
+    "files": {
+        "UpdateNotification.svelte": { "reason": "UI component, needs component testing" },
+        "app-status-store.ts": { "reason": "Depends on Tauri APIs" },
+        "benchmark.ts": { "reason": "Dev tooling, not critical path" },
+        "drag-drop.ts": { "reason": "Needs integration testing with Tauri" },
+        "file-explorer/BriefList.svelte": { "reason": "Close to threshold, needs more tests" },
+        "file-explorer/DualPaneExplorer.svelte": { "reason": "Large component, needs more tests" },
+        "file-explorer/FilePane.svelte": { "reason": "Large component, needs more tests" },
+        "file-explorer/FullList.svelte": { "reason": "Component, needs more tests" },
+        "file-explorer/NetworkBrowser.svelte": { "reason": "Network component, needs integration tests" },
+        "file-explorer/NetworkLoginForm.svelte": { "reason": "Network component, needs integration tests" },
+        "file-explorer/PermissionDeniedPane.svelte": { "reason": "Simple UI component" },
+        "file-explorer/SelectionInfo.svelte": { "reason": "UI component, needs more tests" },
+        "file-explorer/ShareBrowser.svelte": { "reason": "Network component, needs integration tests" },
+        "font-metrics/measure.ts": { "reason": "Depends on DOM APIs" },
+        "icon-cache.ts": { "reason": "Depends on Tauri APIs" },
+        "licensing-store.svelte.ts": { "reason": "Depends on Tauri store APIs" },
+        "licensing/AboutWindow.svelte": { "reason": "UI component" },
+        "licensing/CommercialReminderModal.svelte": { "reason": "UI component" },
+        "licensing/ExpirationModal.svelte": { "reason": "UI component" },
+        "network-store.svelte.ts": { "reason": "Depends on Tauri APIs" },
+        "onboarding/FullDiskAccessPrompt.svelte": { "reason": "UI component" },
+        "settings-store.ts": { "reason": "Depends on Tauri store APIs" },
+        "tauri-commands.ts": { "reason": "Tauri command wrappers, tested via integration" },
+        "updater.svelte.ts": { "reason": "Depends on Tauri updater APIs" },
+        "window-state.ts": { "reason": "Depends on Tauri window APIs" }
+    }
+}
