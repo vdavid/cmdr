@@ -265,3 +265,22 @@ func (c *E2ETestsCheck) Run(ctx *CheckContext) error {
 	}
 	return nil
 }
+
+// TypeDriftCheck detects drift between Rust and TypeScript type definitions.
+type TypeDriftCheck struct{}
+
+func (c *TypeDriftCheck) Name() string {
+	return "type-drift"
+}
+
+func (c *TypeDriftCheck) Run(ctx *CheckContext) error {
+	cmd := exec.Command("pnpm", "check:type-drift")
+	cmd.Dir = filepath.Join(ctx.RootDir, "apps", "desktop")
+	output, err := runCommand(cmd, true)
+	if err != nil {
+		fmt.Println()
+		fmt.Print(indentOutput(output, "      "))
+		return fmt.Errorf("type drift detected between Rust and TypeScript")
+	}
+	return nil
+}

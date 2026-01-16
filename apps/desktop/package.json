@@ -21,7 +21,8 @@
         "test:coverage": "vitest run --coverage",
         "test:watch": "vitest",
         "test:e2e": "playwright test",
-        "knip": "knip"
+        "knip": "knip",
+        "check:type-drift": "tsx scripts/check-type-drift.ts"
     },
     "license": "SEE LICENSE IN LICENSE",
     "dependencies": {
@@ -62,6 +63,7 @@
         "svelte": "^5.46.1",
         "svelte-check": "^4.3.5",
         "svelte-eslint-parser": "^1.4.1",
+        "tsx": "^4.20.3",
         "typescript": "~5.9.3",
         "typescript-eslint": "^8.50.1",
         "vite": "^7.3.0",

@@ -40,6 +40,8 @@ func getCheckByName(name string) Check {
 		return &SvelteTestsCheck{}
 	case "e2e-tests":
 		return &E2ETestsCheck{}
+	case "type-drift":
+		return &TypeDriftCheck{}
 	// Website checks
 	case "website-prettier":
 		return &WebsitePrettierCheck{}
@@ -105,6 +107,7 @@ func getSvelteChecks() []Check {
 		&StylelintCheck{},
 		&SvelteCheck{},
 		&KnipCheck{},
+		&TypeDriftCheck{},
 		&SvelteTestsCheck{},
 		&E2ETestsCheck{},
 	}
