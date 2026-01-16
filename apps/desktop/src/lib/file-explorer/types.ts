@@ -161,6 +161,8 @@ export const DEFAULT_SORT_BY: SortColumn = 'name'
 export interface ResortResult {
     /** New index of the cursor file after re-sorting, if found. */
     newCursorIndex?: number
+    /** New indices of previously selected files after re-sorting. */
+    newSelectedIndices?: number[]
 }
 
 // ============================================================================

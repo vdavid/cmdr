@@ -29,11 +29,12 @@
         cursorIndex: number
         isFocused?: boolean
         syncStatusMap?: Record<string, SyncStatus>
+        selectedIndices?: Set<number>
         hasParent: boolean
         parentPath: string
         sortBy: SortColumn
         sortOrder: SortOrder
-        onSelect: (index: number) => void
+        onSelect: (index: number, shiftKey?: boolean) => void
         onNavigate: (entry: FileEntry) => void
         onContextMenu?: (entry: FileEntry) => void
         onSyncStatusRequest?: (paths: string[]) => void
@@ -48,6 +49,7 @@
         cursorIndex,
         isFocused = true,
         syncStatusMap = {},
+        selectedIndices = new Set<number>(),
         hasParent,
         parentPath,
         sortBy,
@@ -163,8 +165,8 @@
 
     // Handle file mousedown - selects and initiates drag tracking
     function handleMouseDown(event: MouseEvent, index: number) {
-        // Always select on mousedown
-        onSelect(index)
+        // Always select on mousedown (pass shiftKey for range selection)
+        onSelect(index, event.shiftKey)
 
         // Only start drag tracking for left mouse button and non-parent entries
         if (event.button !== 0) return
@@ -261,6 +263,7 @@
                     class="file-entry"
                     class:is-directory={file.isDirectory}
                     class:is-under-cursor={globalIndex === cursorIndex}
+                    class:is-selected={selectedIndices.has(globalIndex)}
                     onmousedown={(e: MouseEvent) => {
                         handleMouseDown(e, globalIndex)
                     }}
@@ -389,6 +392,15 @@
     .col-date {
         font-size: var(--font-size-xs);
         color: var(--color-text-secondary);
+    }
+
+    .file-entry.is-selected .col-name {
+        color: var(--color-selection-fg);
+    }
+
+    /* Selection color is preserved even under cursor */
+    .full-list.is-focused .file-entry.is-under-cursor.is-selected .col-name {
+        color: var(--color-selection-fg);
     }
 
     @media (prefers-color-scheme: dark) {

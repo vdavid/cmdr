@@ -773,6 +773,9 @@ pub struct ResortResult {
     /// New index of the file that was at the cursor position before re-sorting.
     /// None if the filename wasn't provided or wasn't found.
     pub new_cursor_index: Option<usize>,
+    /// New indices of previously selected files after re-sorting.
+    /// None if no selected_indices were provided.
+    pub new_selected_indices: Option<Vec<usize>>,
 }
 
 /// Re-sorts an existing cached listing in-place.
@@ -785,21 +788,43 @@ pub struct ResortResult {
 /// * `sort_order` - Ascending or descending
 /// * `cursor_filename` - Optional filename to track; returns its new index after sorting
 /// * `include_hidden` - Whether to include hidden files when calculating cursor index
+/// * `selected_indices` - Optional indices of selected files to track through re-sort
+/// * `all_selected` - If true, all files are selected (optimization to avoid passing huge arrays)
 ///
 /// # Returns
-/// A `ResortResult` with the new cursor index (if filename was provided and found).
+/// A `ResortResult` with the new cursor index and new selected indices.
 pub fn resort_listing(
     listing_id: &str,
     sort_by: SortColumn,
     sort_order: SortOrder,
     cursor_filename: Option<&str>,
     include_hidden: bool,
+    selected_indices: Option<&[usize]>,
+    all_selected: bool,
 ) -> Result<ResortResult, String> {
     let mut cache = LISTING_CACHE.write().map_err(|_| "Failed to acquire cache lock")?;
 
     let listing = cache
         .get_mut(listing_id)
         .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
+
+    // Collect filenames of selected files before re-sorting
+    let selected_filenames: Option<Vec<String>> = if all_selected {
+        // All files selected - we'll rebuild the full set after sort
+        None
+    } else {
+        selected_indices.map(|indices| {
+            let entries_for_index = if include_hidden {
+                listing.entries.iter().collect::<Vec<_>>()
+            } else {
+                listing.entries.iter().filter(|e| !e.name.starts_with('.')).collect()
+            };
+            indices
+                .iter()
+                .filter_map(|&idx| entries_for_index.get(idx).map(|e| e.name.clone()))
+                .collect()
+        })
+    };
 
     // Re-sort the entries
     sort_entries(&mut listing.entries, sort_by, sort_order);
@@ -819,7 +844,33 @@ pub fn resort_listing(
         }
     });
 
-    Ok(ResortResult { new_cursor_index })
+    // Find new indices of selected files
+    let new_selected_indices = if all_selected {
+        // All files are still selected after re-sort
+        let count = if include_hidden {
+            listing.entries.len()
+        } else {
+            listing.entries.iter().filter(|e| !e.name.starts_with('.')).count()
+        };
+        Some((0..count).collect())
+    } else {
+        selected_filenames.map(|filenames| {
+            let entries_for_lookup: Vec<_> = if include_hidden {
+                listing.entries.iter().collect()
+            } else {
+                listing.entries.iter().filter(|e| !e.name.starts_with('.')).collect()
+            };
+            filenames
+                .iter()
+                .filter_map(|name| entries_for_lookup.iter().position(|e| e.name == *name))
+                .collect()
+        })
+    };
+
+    Ok(ResortResult {
+        new_cursor_index,
+        new_selected_indices,
+    })
 }
 
 // ============================================================================

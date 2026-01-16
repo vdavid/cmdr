@@ -105,12 +105,12 @@ fn test_tool_input_schemas_are_valid() {
 #[test]
 fn test_total_tool_count() {
     let tools = get_all_tools();
-    // 3 app + 3 view + 1 pane + 12 nav + 8 sort + 5 file + 2 volume = 34
+    // 3 app + 3 view + 1 pane + 12 nav + 8 sort + 5 file + 2 volume + 5 selection = 39
     // (context tools and volume_list moved to resources)
     assert_eq!(
         tools.len(),
-        34,
-        "Expected 34 tools, got {}. Did you add/remove tools?",
+        39,
+        "Expected 39 tools, got {}. Did you add/remove tools?",
         tools.len()
     );
 }
@@ -133,9 +133,9 @@ fn test_no_duplicate_tool_names() {
 fn test_resource_count() {
     let resources = get_all_resources();
     #[cfg(target_os = "macos")]
-    assert_eq!(resources.len(), 8, "Expected 8 resources");
+    assert_eq!(resources.len(), 9, "Expected 9 resources");
     #[cfg(not(target_os = "macos"))]
-    assert_eq!(resources.len(), 7, "Expected 7 resources");
+    assert_eq!(resources.len(), 8, "Expected 8 resources");
 }
 
 #[test]
@@ -542,6 +542,7 @@ fn test_pane_state_store_update_left() {
         }],
         cursor_index: 0,
         view_mode: "brief".to_string(),
+        selected_indices: vec![],
     };
 
     store.set_left(state.clone());
@@ -593,6 +594,7 @@ fn test_pane_state_cursor_index_bounds() {
         }],
         cursor_index: 999, // Out of bounds
         view_mode: "brief".to_string(),
+        selected_indices: vec![],
     };
 
     store.set_left(state);
@@ -711,6 +713,7 @@ fn test_empty_file_list() {
         files: vec![],
         cursor_index: 0,
         view_mode: "brief".to_string(),
+        selected_indices: vec![],
     };
 
     let json = serde_json::to_value(&state).unwrap();
@@ -736,6 +739,7 @@ fn test_large_file_count() {
         files,
         cursor_index: 500,
         view_mode: "full".to_string(),
+        selected_indices: vec![1, 5, 10], // Some selected files
     };
 
     // Should serialize reasonably fast

@@ -34,6 +34,16 @@ This document lists all keyboard shortcuts available in Cmdr.
 | -------- | ----------------------------------- |
 | `Tab`    | Switch between left and right panes |
 
+### Selection
+
+| Shortcut       | Action                               | Mode |
+| -------------- | ------------------------------------ | ---- |
+| `Space`        | Toggle selection at cursor           | Both |
+| `⌘A`           | Select all files                     | Both |
+| `⌘⇧A`          | Deselect all files                   | Both |
+| `Shift+arrows` | Extend selection in arrow direction  | Both |
+| `Shift+click`  | Select range from cursor to click    | Both |
+
 ## Notes
 
 - **Brief mode**: The file list is displayed in multiple columns. Arrow keys navigate within and between columns.
@@ -60,6 +70,13 @@ This document lists all keyboard shortcuts available in Cmdr.
 
 - Open file/folder: `Enter`
 - Go up one directory: `Backspace` or `⌘↑`
+
+### Selection
+
+- Toggle selection: `Space`
+- Select all: `⌘A`
+- Deselect all: `⌘⇧A`
+- Range select: `Shift` + any navigation key
 
 ### Interface
 

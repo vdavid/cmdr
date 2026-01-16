@@ -135,6 +135,37 @@ fn get_volume_tools() -> Vec<Tool> {
     ]
 }
 
+/// Get selection tools.
+fn get_selection_tools() -> Vec<Tool> {
+    vec![
+        Tool::no_params("selection_clear", "Clear all selected files in the focused pane"),
+        Tool::no_params("selection_selectAll", "Select all files in the focused pane"),
+        Tool::no_params("selection_deselectAll", "Deselect all files in the focused pane"),
+        Tool::no_params(
+            "selection_toggleAtCursor",
+            "Toggle selection of the file under the cursor",
+        ),
+        Tool {
+            name: "selection_selectRange".to_string(),
+            description: "Select a range of files by index".to_string(),
+            input_schema: json!({
+                "type": "object",
+                "properties": {
+                    "startIndex": {
+                        "type": "integer",
+                        "description": "Start index (inclusive)"
+                    },
+                    "endIndex": {
+                        "type": "integer",
+                        "description": "End index (inclusive)"
+                    }
+                },
+                "required": ["startIndex", "endIndex"]
+            }),
+        },
+    ]
+}
+
 /// Get all available tools.
 pub fn get_all_tools() -> Vec<Tool> {
     let mut tools = Vec::new();
@@ -145,6 +176,7 @@ pub fn get_all_tools() -> Vec<Tool> {
     tools.extend(get_sort_tools());
     tools.extend(get_file_tools());
     tools.extend(get_volume_tools());
+    tools.extend(get_selection_tools());
     tools
 }
 
@@ -173,9 +205,15 @@ mod tests {
     #[test]
     fn test_all_tools_count() {
         let tools = get_all_tools();
-        // 3 app + 3 view + 1 pane + 12 nav + 8 sort + 5 file + 2 volume = 34
+        // 3 app + 3 view + 1 pane + 12 nav + 8 sort + 5 file + 2 volume + 5 selection = 39
         // (context tools and volume_list moved to resources)
-        assert_eq!(tools.len(), 34);
+        assert_eq!(tools.len(), 39);
+    }
+
+    #[test]
+    fn test_selection_tools_count() {
+        let tools = get_selection_tools();
+        assert_eq!(tools.len(), 5);
     }
 
     #[test]

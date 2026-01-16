@@ -82,6 +82,12 @@ pub fn get_all_resources() -> Vec<Resource> {
             description: "List of available volumes (favorites, main volume, attached volumes, cloud drives). Each volume has an index for use with volume_selectLeft/volume_selectRight tools.".to_string(),
             mime_type: "application/json".to_string(),
         },
+        Resource {
+            uri: "cmdr://selection".to_string(),
+            name: "Selected files".to_string(),
+            description: "List of selected file indices in the focused pane".to_string(),
+            mime_type: "application/json".to_string(),
+        },
     ]
 }
 
@@ -149,6 +155,22 @@ pub fn read_resource<R: Runtime>(app: &tauri::AppHandle<R>, uri: &str) -> Result
             (json!({ "cursor": file_under_cursor }), "application/json")
         }
         "cmdr://status" => (json!({ "status": "ok", "app": "cmdr" }), "application/json"),
+        "cmdr://selection" => {
+            let focused = store.get_focused_pane();
+            let state = if focused == "left" {
+                store.get_left()
+            } else {
+                store.get_right()
+            };
+            (
+                json!({
+                    "pane": focused,
+                    "selectedIndices": state.selected_indices,
+                    "count": state.selected_indices.len()
+                }),
+                "application/json",
+            )
+        }
         #[cfg(target_os = "macos")]
         "cmdr://volumes" => {
             let locations = volumes::list_locations();
@@ -186,9 +208,9 @@ mod tests {
     fn test_resource_count() {
         let resources = get_all_resources();
         #[cfg(target_os = "macos")]
-        assert_eq!(resources.len(), 8);
+        assert_eq!(resources.len(), 9); // 8 base + 1 selection
         #[cfg(not(target_os = "macos"))]
-        assert_eq!(resources.len(), 7);
+        assert_eq!(resources.len(), 8); // 7 base + 1 selection
     }
 
     #[test]

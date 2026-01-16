@@ -55,6 +55,8 @@ pub fn execute_tool<R: Runtime>(app: &AppHandle<R>, name: &str, params: &Value) 
         n if n.starts_with("file_") => execute_file_command(app, n),
         // Volume commands
         n if n.starts_with("volume_") => execute_volume_command(app, n, params),
+        // Selection commands
+        n if n.starts_with("selection_") => execute_selection_command(app, n, params),
         // Context commands
         n if n.starts_with("context_") => execute_context_command(app, n),
         _ => Err(ToolError::invalid_params(format!("Unknown tool: {name}"))),
@@ -226,6 +228,51 @@ fn execute_volume_command<R: Runtime>(app: &AppHandle<R>, name: &str, params: &V
             Ok(json!({"success": true, "pane": pane, "index": index}))
         }
         _ => Err(ToolError::invalid_params(format!("Unknown volume command: {name}"))),
+    }
+}
+
+/// Execute a selection command.
+/// These emit events to the frontend to manipulate file selection.
+fn execute_selection_command<R: Runtime>(app: &AppHandle<R>, name: &str, params: &Value) -> ToolResult {
+    match name {
+        "selection_clear" => {
+            app.emit("mcp-selection", json!({"action": "clear"}))
+                .map_err(|e| ToolError::internal(e.to_string()))?;
+            Ok(json!({"success": true, "action": "clear"}))
+        }
+        "selection_selectAll" => {
+            app.emit("mcp-selection", json!({"action": "selectAll"}))
+                .map_err(|e| ToolError::internal(e.to_string()))?;
+            Ok(json!({"success": true, "action": "selectAll"}))
+        }
+        "selection_deselectAll" => {
+            app.emit("mcp-selection", json!({"action": "deselectAll"}))
+                .map_err(|e| ToolError::internal(e.to_string()))?;
+            Ok(json!({"success": true, "action": "deselectAll"}))
+        }
+        "selection_toggleAtCursor" => {
+            app.emit("mcp-selection", json!({"action": "toggleAtCursor"}))
+                .map_err(|e| ToolError::internal(e.to_string()))?;
+            Ok(json!({"success": true, "action": "toggleAtCursor"}))
+        }
+        "selection_selectRange" => {
+            let start_index = params
+                .get("startIndex")
+                .and_then(|v| v.as_i64())
+                .ok_or_else(|| ToolError::invalid_params("Missing 'startIndex' parameter"))?;
+            let end_index = params
+                .get("endIndex")
+                .and_then(|v| v.as_i64())
+                .ok_or_else(|| ToolError::invalid_params("Missing 'endIndex' parameter"))?;
+
+            app.emit(
+                "mcp-selection",
+                json!({"action": "selectRange", "startIndex": start_index, "endIndex": end_index}),
+            )
+            .map_err(|e| ToolError::internal(e.to_string()))?;
+            Ok(json!({"success": true, "action": "selectRange", "startIndex": start_index, "endIndex": end_index}))
+        }
+        _ => Err(ToolError::invalid_params(format!("Unknown selection command: {name}"))),
     }
 }
 

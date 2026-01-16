@@ -119,6 +119,31 @@
         containerElement?.focus()
     }
 
+    // Helper to apply sort results to a pane
+    function applySortResult(
+        paneRef: FilePane | undefined,
+        result: { newCursorIndex?: number; newSelectedIndices?: number[] },
+    ) {
+        if (result.newCursorIndex !== undefined) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            paneRef?.setCursorIndex?.(result.newCursorIndex)
+        }
+        if (result.newSelectedIndices !== undefined) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            paneRef?.setSelectedIndices?.(result.newSelectedIndices)
+        }
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        paneRef?.refreshView?.()
+    }
+
+    // Helper to determine new sort order
+    function getNewSortOrder(newColumn: SortColumn, currentColumn: SortColumn, currentOrder: SortOrder): SortOrder {
+        if (newColumn === currentColumn) {
+            return currentOrder === 'ascending' ? 'descending' : 'ascending'
+        }
+        return defaultSortOrders[newColumn]
+    }
+
     /**
      * Handles sorting column click for left pane.
      * If clicking the same column, toggles order. Otherwise, switches to new column with its default order.
@@ -128,39 +153,33 @@
         const listingId = leftPaneRef?.getListingId?.() as string | undefined
         if (!listingId) return
 
-        let newOrder: SortOrder
-        if (newColumn === leftSortBy) {
-            // Toggle order
-            newOrder = leftSortOrder === 'ascending' ? 'descending' : 'ascending'
-        } else {
-            // New column - use remembered or default order
-            newOrder = await getColumnSortOrder(newColumn)
-        }
+        const newOrder =
+            newColumn === leftSortBy
+                ? getNewSortOrder(newColumn, leftSortBy, leftSortOrder)
+                : await getColumnSortOrder(newColumn)
 
-        // Get current cursor filename to track position
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         const cursorFilename = leftPaneRef?.getFilenameUnderCursor?.() as string | undefined
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const selectedIndices = leftPaneRef?.getSelectedIndices?.() as number[] | undefined
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const allSelected = leftPaneRef?.isAllSelected?.() as boolean | undefined
 
-        // Re-sort the backend listing
-        const result = await resortListing(listingId, newColumn, newOrder, cursorFilename, showHiddenFiles)
+        const result = await resortListing(
+            listingId,
+            newColumn,
+            newOrder,
+            cursorFilename,
+            showHiddenFiles,
+            selectedIndices,
+            allSelected,
+        )
 
-        // Update state
         leftSortBy = newColumn
         leftSortOrder = newOrder
-
-        // Persist
         void saveAppStatus({ leftSortBy: newColumn })
         void saveColumnSortOrder(newColumn, newOrder)
-
-        // Update cursor position after re-sort
-        if (result.newCursorIndex !== undefined) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            leftPaneRef?.setCursorIndex?.(result.newCursorIndex)
-        }
-
-        // Refresh the view
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        leftPaneRef?.refreshView?.()
+        applySortResult(leftPaneRef, result)
     }
 
     /**
@@ -171,39 +190,33 @@
         const listingId = rightPaneRef?.getListingId?.() as string | undefined
         if (!listingId) return
 
-        let newOrder: SortOrder
-        if (newColumn === rightSortBy) {
-            // Toggle order
-            newOrder = rightSortOrder === 'ascending' ? 'descending' : 'ascending'
-        } else {
-            // New column - use remembered or default order
-            newOrder = await getColumnSortOrder(newColumn)
-        }
+        const newOrder =
+            newColumn === rightSortBy
+                ? getNewSortOrder(newColumn, rightSortBy, rightSortOrder)
+                : await getColumnSortOrder(newColumn)
 
-        // Get current cursor filename to track position
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         const cursorFilename = rightPaneRef?.getFilenameUnderCursor?.() as string | undefined
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const selectedIndices = rightPaneRef?.getSelectedIndices?.() as number[] | undefined
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const allSelected = rightPaneRef?.isAllSelected?.() as boolean | undefined
 
-        // Re-sort the backend listing
-        const result = await resortListing(listingId, newColumn, newOrder, cursorFilename, showHiddenFiles)
+        const result = await resortListing(
+            listingId,
+            newColumn,
+            newOrder,
+            cursorFilename,
+            showHiddenFiles,
+            selectedIndices,
+            allSelected,
+        )
 
-        // Update state
         rightSortBy = newColumn
         rightSortOrder = newOrder
-
-        // Persist
         void saveAppStatus({ rightSortBy: newColumn })
         void saveColumnSortOrder(newColumn, newOrder)
-
-        // Update cursor position after re-sort
-        if (result.newCursorIndex !== undefined) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            rightPaneRef?.setCursorIndex?.(result.newCursorIndex)
-        }
-
-        // Refresh the view
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        rightPaneRef?.refreshView?.()
+        applySortResult(rightPaneRef, result)
     }
 
     async function handleLeftVolumeChange(volumeId: string, volumePath: string, targetPath: string) {
@@ -447,6 +460,14 @@
         const activePaneRef = (focusedPane === 'left' ? leftPaneRef : rightPaneRef) as FilePane | undefined
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         activePaneRef?.handleKeyDown(e)
+    }
+
+    function handleKeyUp(e: KeyboardEvent) {
+        // Forward to the focused pane for range selection finalization
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- TypeScript thinks FilePane methods are unused without this
+        const activePaneRef = (focusedPane === 'left' ? leftPaneRef : rightPaneRef) as FilePane | undefined
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        activePaneRef?.handleKeyUp(e)
     }
 
     onMount(async () => {
@@ -862,6 +883,39 @@
 
         return true
     }
+
+    /**
+     * Handle selection action from MCP.
+     * @param action - The selection action (clear, selectAll, deselectAll, toggleAtCursor, selectRange)
+     * @param startIndex - Start index for range selection
+     * @param endIndex - End index for range selection
+     */
+    export function handleSelectionAction(action: string, startIndex?: number, endIndex?: number) {
+        const paneRef = focusedPane === 'left' ? leftPaneRef : rightPaneRef
+        if (!paneRef) return
+
+        switch (action) {
+            case 'clear':
+            case 'deselectAll':
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+                paneRef.clearSelection?.()
+                break
+            case 'selectAll':
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+                paneRef.selectAll?.()
+                break
+            case 'toggleAtCursor':
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+                paneRef.toggleSelectionAtCursor?.()
+                break
+            case 'selectRange':
+                if (startIndex !== undefined && endIndex !== undefined) {
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+                    paneRef.selectRange?.(startIndex, endIndex)
+                }
+                break
+        }
+    }
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex,a11y_no_noninteractive_element_interactions -->
@@ -869,6 +923,7 @@
     class="dual-pane-explorer"
     bind:this={containerElement}
     onkeydown={handleKeyDown}
+    onkeyup={handleKeyUp}
     tabindex="0"
     role="application"
     aria-label="File explorer"

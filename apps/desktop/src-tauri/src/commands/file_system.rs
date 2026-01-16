@@ -113,6 +113,8 @@ pub fn cancel_listing(listing_id: String) {
 /// * `sort_order` - Ascending or descending.
 /// * `cursor_filename` - Optional filename to track; returns its new index after sorting.
 /// * `include_hidden` - Whether to include hidden files when calculating cursor index.
+/// * `selected_indices` - Optional indices of selected files to track through re-sort.
+/// * `all_selected` - If true, all files are selected (optimization).
 #[tauri::command]
 pub fn resort_listing(
     listing_id: String,
@@ -120,6 +122,8 @@ pub fn resort_listing(
     sort_order: SortOrder,
     cursor_filename: Option<String>,
     include_hidden: bool,
+    selected_indices: Option<Vec<usize>>,
+    all_selected: Option<bool>,
 ) -> Result<ResortResult, String> {
     ops_resort_listing(
         &listing_id,
@@ -127,6 +131,8 @@ pub fn resort_listing(
         sort_order,
         cursor_filename.as_deref(),
         include_hidden,
+        selected_indices.as_deref(),
+        all_selected.unwrap_or(false),
     )
 }
 

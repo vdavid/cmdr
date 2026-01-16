@@ -134,6 +134,8 @@ export async function cancelListing(listingId: string): Promise<void> {
  * @param sortOrder - Ascending or descending.
  * @param cursorFilename - Optional filename to track; returns its new index after sorting.
  * @param includeHidden - Whether to include hidden files when calculating cursor index.
+ * @param selectedIndices - Optional indices of selected files to track through re-sort.
+ * @param allSelected - If true, all files are selected (optimization).
  * @public
  */
 export async function resortListing(
@@ -142,8 +144,18 @@ export async function resortListing(
     sortOrder: SortOrder,
     cursorFilename: string | undefined,
     includeHidden: boolean,
+    selectedIndices?: number[],
+    allSelected?: boolean,
 ): Promise<ResortResult> {
-    return invoke<ResortResult>('resort_listing', { listingId, sortBy, sortOrder, cursorFilename, includeHidden })
+    return invoke<ResortResult>('resort_listing', {
+        listingId,
+        sortBy,
+        sortOrder,
+        cursorFilename,
+        includeHidden,
+        selectedIndices,
+        allSelected,
+    })
 }
 
 /**
@@ -314,6 +326,7 @@ export interface PaneState {
     files: PaneFileEntry[]
     cursorIndex: number
     viewMode: string
+    selectedIndices: number[]
 }
 
 /**

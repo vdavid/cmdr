@@ -76,6 +76,7 @@
                 files,
                 cursorIndex,
                 viewMode: 'full',
+                selectedIndices: [], // Network view doesn't support selection
             }
 
             if (paneId === 'left') {

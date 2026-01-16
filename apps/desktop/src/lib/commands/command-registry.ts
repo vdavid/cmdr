@@ -229,6 +229,31 @@ export const commands: Command[] = [
     },
 
     // ============================================================================
+    // File list - Selection commands
+    // ============================================================================
+    {
+        id: 'selection.toggle',
+        name: 'Toggle selection',
+        scope: 'Main window/File list',
+        showInPalette: true,
+        shortcuts: ['Space'],
+    },
+    {
+        id: 'selection.selectAll',
+        name: 'Select all files',
+        scope: 'Main window/File list',
+        showInPalette: true,
+        shortcuts: ['⌘A'],
+    },
+    {
+        id: 'selection.deselectAll',
+        name: 'Deselect all files',
+        scope: 'Main window/File list',
+        showInPalette: true,
+        shortcuts: ['⌘⇧A'],
+    },
+
+    // ============================================================================
     // Network browser
     // ============================================================================
     {

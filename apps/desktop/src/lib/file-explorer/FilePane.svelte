@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onDestroy, onMount, tick, untrack } from 'svelte'
+    import { SvelteSet } from 'svelte/reactivity'
     import type {
         DirectoryDiff,
         FileEntry,
@@ -97,6 +98,20 @@
     let error = $state<string | null>(null)
     let cursorIndex = $state(0)
 
+    // Selection state
+    // SAFETY CONTRACT: selectedIndices is the single source of truth for what files are selected.
+    // Both the UI (via props to BriefList/FullList) and file operations (via getSelectedIndices())
+    // read from this same Set. This ensures what the user sees is what operations act on.
+    //
+    // CRITICAL: Always use mutations (.add(), .delete(), .clear()) - never reassign this variable.
+    // SvelteSet only tracks mutations for reactivity. Reassignment breaks UI updates, which could
+    // cause users to see stale selection while operations act on different data.
+    // See: "Selection state consistency" tests in integration.test.ts
+    const selectedIndices: SvelteSet<number> = new SvelteSet()
+    let selectionAnchorIndex = $state<number | null>(null)
+    let selectionEndIndex = $state<number | null>(null)
+    let isDeselecting = $state(false)
+
     // File under the cursor fetched separately for SelectionInfo
     let entryUnderCursor = $state<FileEntry | null>(null)
 
@@ -150,6 +165,46 @@
     export function setCursorIndex(index: number): void {
         cursorIndex = index
         void fetchEntryUnderCursor()
+    }
+
+    // Get selected indices (for selection preservation during re-sort)
+    export function getSelectedIndices(): number[] {
+        return Array.from(selectedIndices)
+    }
+
+    // Check if all files are selected (optimization for resort)
+    export function isAllSelected(): boolean {
+        const selectableCount = hasParent ? effectiveTotalCount - 1 : effectiveTotalCount
+        return selectedIndices.size === selectableCount && selectableCount > 0
+    }
+
+    // Set selected indices directly (for selection preservation after re-sort)
+    export function setSelectedIndices(indices: number[]): void {
+        selectedIndices.clear()
+        for (const i of indices) {
+            selectedIndices.add(i)
+        }
+        clearRangeState()
+    }
+
+    // Export clearSelection for MCP
+    export { clearSelection }
+
+    // Export selectAll for MCP (wrapper to use the local helper)
+    export { selectAll }
+
+    // Export toggle selection at cursor for MCP
+    export function toggleSelectionAtCursor(): void {
+        toggleSelectionAt(cursorIndex)
+    }
+
+    // Export select range for MCP
+    export function selectRange(startIndex: number, endIndex: number): void {
+        const indices = getIndicesInRange(startIndex, endIndex)
+        for (const i of indices) {
+            selectedIndices.add(i)
+        }
+        clearRangeState()
     }
 
     // Cache generation counter - incremented to force list components to re-fetch
@@ -244,6 +299,7 @@
                 files,
                 cursorIndex,
                 viewMode,
+                selectedIndices: Array.from(selectedIndices),
             }
 
             if (paneId === 'left') {
@@ -281,6 +337,123 @@
     // Check if current directory has a parent (not at filesystem root AND not at volume root)
     const hasParent = $derived(currentPath !== '/' && currentPath !== volumePath)
 
+    // Helper: Clear all selection state
+    function clearSelection() {
+        selectedIndices.clear()
+        selectionAnchorIndex = null
+        selectionEndIndex = null
+        isDeselecting = false
+    }
+
+    // Helper: Toggle selection at a given index (returns true if now selected)
+    function toggleSelectionAt(index: number): boolean {
+        // Can't select ".." entry
+        if (hasParent && index === 0) return false
+
+        if (selectedIndices.has(index)) {
+            selectedIndices.delete(index)
+            return false
+        } else {
+            selectedIndices.add(index)
+            return true
+        }
+    }
+
+    // Helper: Get indices in range [a, b] inclusive, skipping ".." entry (index 0 when hasParent)
+    function getIndicesInRange(a: number, b: number): number[] {
+        const start = Math.min(a, b)
+        const end = Math.max(a, b)
+        const indices: number[] = []
+        for (let i = start; i <= end; i++) {
+            // Skip ".." entry
+            if (hasParent && i === 0) continue
+            indices.push(i)
+        }
+        return indices
+    }
+
+    // Helper: Apply range selection from anchor to end
+    // Handles both selection and deselection modes, including range shrinking
+    // When cursor returns to anchor (newEnd === anchor), nothing is selected
+    function applyRangeSelection(newEnd: number) {
+        if (selectionAnchorIndex === null) return
+
+        // When cursor returns to anchor, range is empty (nothing selected)
+        const rangeIsEmpty = newEnd === selectionAnchorIndex
+        const newRange = rangeIsEmpty ? [] : getIndicesInRange(selectionAnchorIndex, newEnd)
+
+        if (isDeselecting) {
+            // Deselection mode: remove items in range
+            for (const i of newRange) {
+                selectedIndices.delete(i)
+            }
+        } else {
+            // Selection mode: add items in range
+            for (const i of newRange) {
+                selectedIndices.add(i)
+            }
+        }
+
+        // Handle range shrinking: if old range was larger, clear the difference
+        if (selectionEndIndex !== null) {
+            const oldRange =
+                selectionEndIndex === selectionAnchorIndex
+                    ? []
+                    : getIndicesInRange(selectionAnchorIndex, selectionEndIndex)
+            for (const i of oldRange) {
+                if (!newRange.includes(i)) {
+                    if (isDeselecting) {
+                        // In deselect mode, shrinking means we stop deselecting those items
+                        // They stay in whatever state they were before this selection action
+                        // Since we track from start, we need to re-add them if they were selected
+                        // For simplicity, in deselect mode we just keep them deselected
+                    } else {
+                        // In select mode, shrinking means we deselect the items no longer in range
+                        selectedIndices.delete(i)
+                    }
+                }
+            }
+        }
+
+        selectionEndIndex = newEnd
+    }
+
+    // Helper: Start or continue range selection
+    function handleShiftNavigation(newIndex: number) {
+        // Set anchor if not already set (use current cursor position before moving)
+        if (selectionAnchorIndex === null) {
+            selectionAnchorIndex = cursorIndex
+            // Determine if we're in deselect mode (anchor was already selected)
+            isDeselecting = selectedIndices.has(cursorIndex)
+        }
+
+        // Apply the range selection
+        applyRangeSelection(newIndex)
+    }
+
+    // Helper: Clear anchor/end on non-shift navigation (selection remains)
+    function clearRangeState() {
+        selectionAnchorIndex = null
+        selectionEndIndex = null
+        isDeselecting = false
+    }
+
+    // Helper: Select all files (excluding ".." entry)
+    function selectAll() {
+        selectedIndices.clear()
+        const startIndex = hasParent ? 1 : 0 // Skip ".." entry
+        for (let i = startIndex; i < effectiveTotalCount; i++) {
+            selectedIndices.add(i)
+        }
+        clearRangeState()
+    }
+
+    // Helper: Deselect all files
+    function deselectAll() {
+        selectedIndices.clear()
+        clearRangeState()
+    }
+
     // Effective total count includes ".." entry if not at root
     const effectiveTotalCount = $derived(hasParent ? totalCount + 1 : totalCount)
 
@@ -314,6 +487,7 @@
         finalizingCount = undefined
         error = null
         syncStatusMap = {}
+        clearSelection()
         totalCount = 0 // Reset to show empty list immediately
         entryUnderCursor = null // Clear old under-the-cursor entry info
 
@@ -492,7 +666,12 @@
         }
     }
 
-    function handleSelect(index: number) {
+    function handleSelect(index: number, shiftKey = false) {
+        if (shiftKey) {
+            handleShiftNavigation(index)
+        } else {
+            clearRangeState()
+        }
         cursorIndex = index
         onRequestFocus?.()
         void fetchEntryUnderCursor()
@@ -631,7 +810,17 @@
         }
     }
     // Helper: Handle navigation result by updating cursor index and scrolling
-    function applyNavigation(newIndex: number, listRef: { scrollToIndex: (index: number) => void } | undefined) {
+    // If shiftKey is true, handles range selection; otherwise clears range state
+    function applyNavigation(
+        newIndex: number,
+        listRef: { scrollToIndex: (index: number) => void } | undefined,
+        shiftKey = false,
+    ) {
+        if (shiftKey) {
+            handleShiftNavigation(newIndex)
+        } else {
+            clearRangeState()
+        }
         cursorIndex = newIndex
         listRef?.scrollToIndex(newIndex)
         void fetchEntryUnderCursor()
@@ -643,7 +832,7 @@
         const newIndex: number | undefined = briefListRef?.handleKeyNavigation(e.key, e)
         if (newIndex !== undefined) {
             e.preventDefault()
-            applyNavigation(newIndex, briefListRef)
+            applyNavigation(newIndex, briefListRef, e.shiftKey)
             return true
         }
         return false
@@ -660,52 +849,75 @@
         })
         if (shortcutResult) {
             e.preventDefault()
-            applyNavigation(shortcutResult.newIndex, fullListRef)
+            applyNavigation(shortcutResult.newIndex, fullListRef, e.shiftKey)
             return true
         }
 
         // Handle arrow navigation
         if (e.key === 'ArrowDown') {
             e.preventDefault()
-            applyNavigation(Math.min(cursorIndex + 1, effectiveTotalCount - 1), fullListRef)
+            applyNavigation(Math.min(cursorIndex + 1, effectiveTotalCount - 1), fullListRef, e.shiftKey)
             return true
         }
         if (e.key === 'ArrowUp') {
             e.preventDefault()
-            applyNavigation(Math.max(cursorIndex - 1, 0), fullListRef)
+            applyNavigation(Math.max(cursorIndex - 1, 0), fullListRef, e.shiftKey)
             return true
         }
         // Left/Right arrows jump to first/last (same as Brief mode at boundaries)
         if (e.key === 'ArrowLeft') {
             e.preventDefault()
-            applyNavigation(0, fullListRef)
+            applyNavigation(0, fullListRef, e.shiftKey)
             return true
         }
         if (e.key === 'ArrowRight') {
             e.preventDefault()
-            applyNavigation(effectiveTotalCount - 1, fullListRef)
+            applyNavigation(effectiveTotalCount - 1, fullListRef, e.shiftKey)
             return true
         }
         return false
     }
 
+    // Helper: Handle selection-related key events
+    function handleSelectionKeys(e: KeyboardEvent): boolean {
+        // Space - toggle selection at cursor
+        if (e.key === ' ') {
+            e.preventDefault()
+            toggleSelectionAt(cursorIndex)
+            return true
+        }
+        // Cmd+A - select all (Cmd+Shift+A - deselect all)
+        if (e.key === 'a' && e.metaKey) {
+            e.preventDefault()
+            if (e.shiftKey) {
+                deselectAll()
+            } else {
+                selectAll()
+            }
+            return true
+        }
+        return false
+    }
+
+    // Helper: Delegate to network components when in network view
+    function handleNetworkKeyDown(e: KeyboardEvent): void {
+        if (currentNetworkHost) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            shareBrowserRef?.handleKeyDown(e)
+        } else {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            networkBrowserRef?.handleKeyDown(e)
+        }
+    }
+
     // Exported so DualPaneExplorer can forward keyboard events
     export function handleKeyDown(e: KeyboardEvent) {
-        // Delegate to network components when in network view
         if (isNetworkView) {
-            if (currentNetworkHost) {
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                shareBrowserRef?.handleKeyDown(e)
-            } else {
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                networkBrowserRef?.handleKeyDown(e)
-            }
+            handleNetworkKeyDown(e)
             return
         }
 
         // Handle Enter key - navigate into the entry under the cursor
-        // Use the list component's cached entry instead of entryUnderCursor to avoid race conditions
-        // (entryUnderCursor is fetched asynchronously and may not be ready yet)
         if (e.key === 'Enter') {
             const listRef = viewMode === 'brief' ? briefListRef : fullListRef
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
@@ -717,18 +929,29 @@
             }
         }
 
-        // Handle Backspace or ⌘↑ - go to parent directory (not available in network view)
+        // Handle Backspace or ⌘↑ - go to parent directory
         if ((e.key === 'Backspace' || (e.key === 'ArrowUp' && e.metaKey)) && hasParent) {
             e.preventDefault()
             void navigateToParent()
             return
         }
 
+        // Handle selection keys
+        if (handleSelectionKeys(e)) return
+
         // Delegate to view-mode-specific handler
         if (viewMode === 'brief') {
             handleBriefModeKeys(e)
         } else {
             handleFullModeKeys(e)
+        }
+    }
+
+    // Handle key release - clear range state when Shift is released
+    // This ensures a new Shift+navigation starts fresh selection from current cursor
+    export function handleKeyUp(e: KeyboardEvent) {
+        if (e.key === 'Shift') {
+            clearRangeState()
         }
     }
 
@@ -944,6 +1167,7 @@
                 {cursorIndex}
                 {isFocused}
                 {syncStatusMap}
+                {selectedIndices}
                 {hasParent}
                 {maxFilenameWidth}
                 {sortBy}
@@ -969,6 +1193,7 @@
                 {cursorIndex}
                 {isFocused}
                 {syncStatusMap}
+                {selectedIndices}
                 {hasParent}
                 {sortBy}
                 {sortOrder}

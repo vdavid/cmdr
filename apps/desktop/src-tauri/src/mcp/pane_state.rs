@@ -34,6 +34,9 @@ pub struct PaneState {
     pub cursor_index: usize,
     /// View mode (brief or full)
     pub view_mode: String,
+    /// Indices of selected files
+    #[serde(default)]
+    pub selected_indices: Vec<usize>,
 }
 
 /// Shared state for both panes.
@@ -122,6 +125,7 @@ mod tests {
             }],
             cursor_index: 0,
             view_mode: "brief".to_string(),
+            selected_indices: vec![],
         };
 
         store.set_left(state.clone());

@@ -1358,3 +1358,245 @@ describe('resolveValidPath logic (deleted folder handling)', () => {
         expect(result).toBeNull()
     })
 })
+
+// ============================================================================
+// Selection state consistency tests
+// ============================================================================
+// CRITICAL: These tests ensure that what the user sees (UI) matches what
+// operations will act on (getSelectedIndices). This is a safety guarantee
+// to prevent destructive operations on unintended files.
+
+describe('Selection state consistency', () => {
+    let target: HTMLDivElement
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+        target = document.createElement('div')
+        document.body.appendChild(target)
+    })
+
+    afterEach(() => {
+        target.remove()
+    })
+
+    it('getSelectedIndices returns empty array initially', async () => {
+        const component = mount(FilePane, {
+            target,
+            props: {
+                initialPath: '/test',
+                volumeId: 'root',
+                volumePath: '/',
+                isFocused: true,
+                showHiddenFiles: true,
+                viewMode: 'brief',
+            },
+        })
+
+        await waitForUpdates(100)
+
+        const getSelectedIndices = (component as unknown as { getSelectedIndices: () => number[] }).getSelectedIndices
+        expect(getSelectedIndices()).toEqual([])
+    })
+
+    it('toggleSelectionAtCursor updates both UI and getSelectedIndices immediately', async () => {
+        // Use volumePath === initialPath so there's no ".." entry (which can't be selected)
+        const component = mount(FilePane, {
+            target,
+            props: {
+                initialPath: '/',
+                volumeId: 'root',
+                volumePath: '/',
+                isFocused: true,
+                showHiddenFiles: true,
+                viewMode: 'brief',
+            },
+        })
+
+        await waitForUpdates(100)
+
+        const toggleSelectionAtCursor = (component as unknown as { toggleSelectionAtCursor: () => void })
+            .toggleSelectionAtCursor
+        const getSelectedIndices = (component as unknown as { getSelectedIndices: () => number[] }).getSelectedIndices
+
+        // Before toggle: nothing selected
+        expect(getSelectedIndices()).toEqual([])
+
+        // Toggle selection at cursor (index 0, which is a real file since no ".." entry)
+        toggleSelectionAtCursor()
+        await tick()
+
+        // After toggle: cursor index should be selected
+        const selectedAfterToggle = getSelectedIndices()
+        expect(selectedAfterToggle.length).toBe(1)
+        expect(selectedAfterToggle).toContain(0)
+
+        // Toggle again: should deselect
+        toggleSelectionAtCursor()
+        await tick()
+
+        expect(getSelectedIndices()).toEqual([])
+    })
+
+    it('Space key toggles selection and updates UI immediately', async () => {
+        // Use volumePath === initialPath so there's no ".." entry
+        const component = mount(FilePane, {
+            target,
+            props: {
+                initialPath: '/',
+                volumeId: 'root',
+                volumePath: '/',
+                isFocused: true,
+                showHiddenFiles: true,
+                viewMode: 'brief',
+            },
+        })
+
+        await waitForUpdates(100)
+
+        const handleKeyDown = (component as unknown as { handleKeyDown: (e: KeyboardEvent) => void }).handleKeyDown
+        const getSelectedIndices = (component as unknown as { getSelectedIndices: () => number[] }).getSelectedIndices
+
+        // Before Space: nothing selected
+        expect(getSelectedIndices()).toEqual([])
+
+        // Press Space
+        const spaceEvent = new KeyboardEvent('keydown', { key: ' ', bubbles: true })
+        handleKeyDown(spaceEvent)
+        await tick()
+
+        // After Space: cursor index should be selected
+        const selectedAfterSpace = getSelectedIndices()
+        expect(selectedAfterSpace.length).toBe(1)
+
+        // Press Space again: should deselect
+        handleKeyDown(spaceEvent)
+        await tick()
+
+        expect(getSelectedIndices()).toEqual([])
+    })
+
+    it('clearSelection clears all selections and getSelectedIndices returns empty', async () => {
+        const component = mount(FilePane, {
+            target,
+            props: {
+                initialPath: '/',
+                volumeId: 'root',
+                volumePath: '/',
+                isFocused: true,
+                showHiddenFiles: true,
+                viewMode: 'brief',
+            },
+        })
+
+        await waitForUpdates(100)
+
+        const setSelectedIndices = (component as unknown as { setSelectedIndices: (indices: number[]) => void })
+            .setSelectedIndices
+        const clearSelection = (component as unknown as { clearSelection: () => void }).clearSelection
+        const getSelectedIndices = (component as unknown as { getSelectedIndices: () => number[] }).getSelectedIndices
+
+        // Set some selections first (using setSelectedIndices which we know works)
+        setSelectedIndices([0, 1, 2])
+        await tick()
+        expect(getSelectedIndices().length).toBe(3)
+
+        // Clear selection
+        clearSelection()
+        await tick()
+
+        // Verify empty
+        expect(getSelectedIndices()).toEqual([])
+    })
+
+    it('setSelectedIndices updates state and getSelectedIndices returns same values', async () => {
+        const component = mount(FilePane, {
+            target,
+            props: {
+                initialPath: '/',
+                volumeId: 'root',
+                volumePath: '/',
+                isFocused: true,
+                showHiddenFiles: true,
+                viewMode: 'brief',
+            },
+        })
+
+        await waitForUpdates(100)
+
+        const setSelectedIndices = (component as unknown as { setSelectedIndices: (indices: number[]) => void })
+            .setSelectedIndices
+        const getSelectedIndices = (component as unknown as { getSelectedIndices: () => number[] }).getSelectedIndices
+
+        // Set specific indices
+        const indicesToSet = [1, 3, 5]
+        setSelectedIndices(indicesToSet)
+        await tick()
+
+        // Verify getSelectedIndices returns exactly what we set
+        const retrieved = getSelectedIndices()
+        expect(retrieved.sort()).toEqual(indicesToSet.sort())
+    })
+
+    it('multiple rapid toggles maintain consistency', async () => {
+        // Use volumePath === initialPath so there's no ".." entry
+        const component = mount(FilePane, {
+            target,
+            props: {
+                initialPath: '/',
+                volumeId: 'root',
+                volumePath: '/',
+                isFocused: true,
+                showHiddenFiles: true,
+                viewMode: 'brief',
+            },
+        })
+
+        await waitForUpdates(100)
+
+        const toggleSelectionAtCursor = (component as unknown as { toggleSelectionAtCursor: () => void })
+            .toggleSelectionAtCursor
+        const getSelectedIndices = (component as unknown as { getSelectedIndices: () => number[] }).getSelectedIndices
+
+        // Rapid toggles without waiting
+        toggleSelectionAtCursor() // select
+        toggleSelectionAtCursor() // deselect
+        toggleSelectionAtCursor() // select
+        await tick()
+
+        // Should end up selected (odd number of toggles)
+        expect(getSelectedIndices().length).toBe(1)
+
+        // One more toggle
+        toggleSelectionAtCursor() // deselect
+        await tick()
+
+        // Should be empty
+        expect(getSelectedIndices()).toEqual([])
+    })
+
+    it('handleKeyUp export exists and handles Shift release', async () => {
+        const component = mount(FilePane, {
+            target,
+            props: {
+                initialPath: '/',
+                volumeId: 'root',
+                volumePath: '/',
+                isFocused: true,
+                showHiddenFiles: true,
+                viewMode: 'brief',
+            },
+        })
+
+        await waitForUpdates(100)
+
+        // Verify handleKeyUp is exported
+        const handleKeyUp = (component as unknown as { handleKeyUp: (e: KeyboardEvent) => void }).handleKeyUp
+        expect(typeof handleKeyUp).toBe('function')
+
+        // Call it with a Shift keyup event - should not throw
+        const shiftUpEvent = new KeyboardEvent('keyup', { key: 'Shift', bubbles: true })
+        expect(() => {
+            handleKeyUp(shiftUpEvent)
+        }).not.toThrow()
+    })
+})

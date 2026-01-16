@@ -545,7 +545,10 @@ function typesAreCompatible(expected: string, actual: string): boolean {
 function rustVariantToTsValue(variantName: string, renameAll?: string): string {
     if (renameAll === 'snake_case') {
         // PascalCase to snake_case
-        return variantName.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '')
+        return variantName
+            .replace(/([A-Z])/g, '_$1')
+            .toLowerCase()
+            .replace(/^_/, '')
     }
     if (renameAll === 'camelCase') {
         // PascalCase to camelCase

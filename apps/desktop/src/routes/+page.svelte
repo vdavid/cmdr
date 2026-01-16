@@ -39,6 +39,7 @@
         getFocusedPane: () => 'left' | 'right'
         getVolumes: () => { id: string; name: string; path: string }[]
         selectVolumeByIndex: (pane: 'left' | 'right', index: number) => Promise<boolean>
+        handleSelectionAction: (action: string, startIndex?: number, endIndex?: number) => void
     }
 
     let showFdaPrompt = $state(false)
@@ -244,6 +245,16 @@
             await listen<{ pane: 'left' | 'right'; index: number }>('mcp-volume-select', (event) => {
                 const { pane, index } = event.payload
                 void explorerRef?.selectVolumeByIndex(pane, index)
+            })
+        } catch {
+            // Not in Tauri environment
+        }
+
+        // Listen for MCP selection events
+        try {
+            await listen<{ action: string; startIndex?: number; endIndex?: number }>('mcp-selection', (event) => {
+                const { action, startIndex, endIndex } = event.payload
+                explorerRef?.handleSelectionAction(action, startIndex, endIndex)
             })
         } catch {
             // Not in Tauri environment

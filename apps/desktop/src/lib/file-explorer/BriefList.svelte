@@ -23,12 +23,13 @@
         cursorIndex: number
         isFocused?: boolean
         syncStatusMap?: Record<string, SyncStatus>
+        selectedIndices?: Set<number>
         hasParent: boolean
         parentPath: string
         maxFilenameWidth?: number // From backend font metrics, if available
         sortBy: SortColumn
         sortOrder: SortOrder
-        onSelect: (index: number) => void
+        onSelect: (index: number, shiftKey?: boolean) => void
         onNavigate: (entry: FileEntry) => void
         onContextMenu?: (entry: FileEntry) => void
         onSyncStatusRequest?: (paths: string[]) => void
@@ -43,6 +44,7 @@
         cursorIndex,
         isFocused = true,
         syncStatusMap = {},
+        selectedIndices = new Set<number>(),
         hasParent,
         parentPath,
         maxFilenameWidth: backendMaxWidth,
@@ -194,8 +196,8 @@
 
     // Handle file mousedown - selects and initiates drag tracking
     function handleMouseDown(event: MouseEvent, index: number) {
-        // Always select on mousedown
-        onSelect(index)
+        // Always select on mousedown (pass shiftKey for range selection)
+        onSelect(index, event.shiftKey)
 
         // Only start drag tracking for left mouse button and non-parent entries
         if (event.button !== 0) return
@@ -370,6 +372,7 @@
                                 class="file-entry"
                                 class:is-directory={file.isDirectory}
                                 class:is-under-cursor={globalIndex === cursorIndex}
+                                class:is-selected={selectedIndices.has(globalIndex)}
                                 onmousedown={(e: MouseEvent) => {
                                     handleMouseDown(e, globalIndex)
                                 }}
@@ -472,6 +475,15 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+
+    .file-entry.is-selected .name {
+        color: var(--color-selection-fg);
+    }
+
+    /* Selection color is preserved even under cursor */
+    .brief-list-container.is-focused .file-entry.is-under-cursor.is-selected .name {
+        color: var(--color-selection-fg);
     }
 
     @media (prefers-color-scheme: dark) {
