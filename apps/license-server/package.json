@@ -19,7 +19,7 @@
     },
     "dependencies": {
         "@noble/ed25519": "^3.0.0",
-        "hono": "^4.11.3",
+        "hono": "^4.11.4",
         "resend": "^6.6.0"
     },
     "devDependencies": {
