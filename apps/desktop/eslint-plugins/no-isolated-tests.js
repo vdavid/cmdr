@@ -36,18 +36,14 @@ export default {
                 const source = node.source.value
 
                 // Check if this is a source import (not node_modules, not vitest, etc.)
-                const isSourceImport =
-                    source.startsWith('$lib/') ||
-                    source.startsWith('./') ||
-                    source.startsWith('../')
+                const isSourceImport = source.startsWith('$lib/') || source.startsWith('./') || source.startsWith('../')
 
                 // Skip if it's a type-only import
                 const isTypeOnlyImport = node.importKind === 'type'
 
                 // Check if all specifiers are type imports
                 const allSpecifiersAreTypes =
-                    node.specifiers.length > 0 &&
-                    node.specifiers.every((spec) => spec.importKind === 'type')
+                    node.specifiers.length > 0 && node.specifiers.every((spec) => spec.importKind === 'type')
 
                 if (isSourceImport && !isTypeOnlyImport && !allSpecifiersAreTypes) {
                     hasSourceImport = true

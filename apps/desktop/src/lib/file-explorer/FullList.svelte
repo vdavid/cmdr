@@ -13,6 +13,13 @@
         isRangeCached,
         shouldResetCache,
     } from './file-list-utils'
+    import { formatSizeTriads, formatHumanReadable } from './selection-info-utils'
+    import {
+        formatDateShort,
+        getVisibleItemsCount as getVisibleItemsCountUtil,
+        FULL_LIST_ROW_HEIGHT,
+        FULL_LIST_BUFFER_SIZE,
+    } from './full-list-utils'
 
     interface Props {
         listingId: string
@@ -58,11 +65,8 @@
     let isFetching = $state(false)
 
     // ==== Virtual scrolling constants ====
-    const ROW_HEIGHT = 20
-    const BUFFER_SIZE = 20
-
-    // Size tier colors for digit triads
-    const sizeTierClasses = ['size-bytes', 'size-kb', 'size-mb', 'size-gb', 'size-tb']
+    const ROW_HEIGHT = FULL_LIST_ROW_HEIGHT
+    const BUFFER_SIZE = FULL_LIST_BUFFER_SIZE
 
     // ==== Virtual scrolling state ====
     let scrollContainer: HTMLDivElement | undefined = $state()
@@ -157,57 +161,6 @@
         void fetchVisibleRange()
     }
 
-    /** Formats a number into digit triads with CSS classes for coloring */
-    function formatSizeTriads(bytes: number): { value: string; tierClass: string }[] {
-        const str = String(bytes)
-        const triads: { value: string; tierClass: string }[] = []
-
-        let remaining = str
-        let tierIndex = 0
-        while (remaining.length > 0) {
-            const start = Math.max(0, remaining.length - 3)
-            const triad = remaining.slice(start)
-            remaining = remaining.slice(0, start)
-
-            triads.unshift({
-                value: triad,
-                tierClass: sizeTierClasses[Math.min(tierIndex, sizeTierClasses.length - 1)],
-            })
-            tierIndex++
-        }
-
-        return triads.map((t, i) => ({
-            ...t,
-            value: i < triads.length - 1 ? t.value + '\u2009' : t.value,
-        }))
-    }
-
-    /** Formats bytes as human-readable (for tooltip) */
-    function formatHumanReadable(bytes: number): string {
-        const units = ['bytes', 'KB', 'MB', 'GB', 'TB']
-        let value = bytes
-        let unitIndex = 0
-        while (value >= 1024 && unitIndex < units.length - 1) {
-            value /= 1024
-            unitIndex++
-        }
-        const valueStr = unitIndex === 0 ? String(value) : value.toFixed(2)
-        return `${valueStr} ${units[unitIndex]}`
-    }
-
-    /** Formats timestamp as YYYY-MM-DD hh:mm */
-    function formatDate(timestamp: number | undefined): string {
-        if (timestamp === undefined) return ''
-        const date = new Date(timestamp * 1000)
-        const pad = (n: number) => String(n).padStart(2, '0')
-        const year = date.getFullYear()
-        const month = pad(date.getMonth() + 1)
-        const day = pad(date.getDate())
-        const hours = pad(date.getHours())
-        const mins = pad(date.getMinutes())
-        return `${String(year)}-${month}-${day} ${hours}:${mins}`
-    }
-
     // Handle file mousedown - selects and initiates drag tracking
     function handleMouseDown(event: MouseEvent, index: number) {
         // Always select on mousedown
@@ -256,7 +209,7 @@
 
     // Returns the number of visible items (for Page Up/Down navigation)
     export function getVisibleItemsCount(): number {
-        return Math.ceil(containerHeight / ROW_HEIGHT)
+        return getVisibleItemsCountUtil(containerHeight, ROW_HEIGHT)
     }
 </script>
 
@@ -333,7 +286,7 @@
                             {/each}
                         {/if}
                     </span>
-                    <span class="col-date">{formatDate(file.modifiedAt)}</span>
+                    <span class="col-date">{formatDateShort(file.modifiedAt)}</span>
                 </div>
             {/each}
         </div>
