@@ -8,6 +8,24 @@ import (
 	"time"
 )
 
+// stringSlice implements flag.Value for accumulating multiple flag values
+type stringSlice []string
+
+func (s *stringSlice) String() string {
+	return strings.Join(*s, ",")
+}
+
+func (s *stringSlice) Set(value string) error {
+	// Support comma-separated values
+	for _, v := range strings.Split(value, ",") {
+		v = strings.TrimSpace(v)
+		if v != "" {
+			*s = append(*s, v)
+		}
+	}
+	return nil
+}
+
 func main() {
 	var (
 		rustOnly    = flag.Bool("rust", false, "Run only Rust checks")
@@ -15,12 +33,13 @@ func main() {
 		svelteOnly  = flag.Bool("svelte", false, "Run only Svelte/desktop checks")
 		svelteOnly2 = flag.Bool("svelte-only", false, "Run only Svelte/desktop checks")
 		appName     = flag.String("app", "", "Run checks for a specific app (desktop, website, license-server)")
-		checkName   = flag.String("check", "", "Run a single check by name")
+		checkNames  stringSlice
 		ciMode      = flag.Bool("ci", false, "Disable auto-fixing (for CI)")
 		verbose     = flag.Bool("verbose", false, "Show detailed output")
 		help        = flag.Bool("help", false, "Show help message")
 		h           = flag.Bool("h", false, "Show help message")
 	)
+	flag.Var(&checkNames, "check", "Run specific checks by name (can be repeated or comma-separated)")
 	flag.Parse()
 
 	if *help || *h {
@@ -40,27 +59,44 @@ func main() {
 		RootDir: rootDir,
 	}
 
-	// If running a single check
-	if *checkName != "" {
+	// If running specific checks
+	if len(checkNames) > 0 {
 		startTime := time.Now()
-		check := getCheckByName(*checkName)
-		if check == nil {
-			printError("Error: Unknown check name: %s", *checkName)
-			_, err := fmt.Fprintf(os.Stderr, "Run with --help to see available checks\n")
+		var failed bool
+		var failedChecks []string
+
+		for _, name := range checkNames {
+			check := getCheckByName(name)
+			if check == nil {
+				printError("Error: Unknown check name: %s", name)
+				_, err := fmt.Fprintf(os.Stderr, "Run with --help to see available checks\n")
+				if err != nil {
+					fmt.Println("Error writing to stderr")
+					return
+				}
+				os.Exit(1)
+			}
+			err := runCheck(check, ctx)
 			if err != nil {
-				fmt.Println("Error writing to stderr")
-				return
+				failed = true
+				failedChecks = append(failedChecks, name)
+			}
+		}
+
+		totalDuration := time.Since(startTime)
+		fmt.Println()
+		fmt.Printf("%s⏱️  Total runtime: %s%s\n", colorYellow, formatDuration(totalDuration), colorReset)
+		if failed {
+			fmt.Printf("%s❌ Some checks failed.%s\n", colorRed, colorReset)
+			if len(failedChecks) > 0 {
+				fmt.Println()
+				fmt.Println("Failed checks:")
+				for _, name := range failedChecks {
+					fmt.Printf("  - %s\n", name)
+				}
 			}
 			os.Exit(1)
 		}
-		err := runCheck(check, ctx)
-		totalDuration := time.Since(startTime)
-		fmt.Println()
-		if err != nil {
-			fmt.Printf("%s⏱️  Total runtime: %s%s\n", colorYellow, formatDuration(totalDuration), colorReset)
-			os.Exit(1)
-		}
-		fmt.Printf("%s⏱️  Total runtime: %s%s\n", colorYellow, formatDuration(totalDuration), colorReset)
 		os.Exit(0)
 	}
 
