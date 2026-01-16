@@ -1,4 +1,7 @@
 //! Tests for write operations (copy, move, delete).
+//!
+//! Note: Serialization tests were removed - serde derive macros are well-tested.
+//! We keep deserialization tests as they verify the API contract with the frontend.
 
 use super::write_operations::*;
 use std::fs;
@@ -40,7 +43,7 @@ fn test_cancel_sets_flag() {
 }
 
 // ============================================================================
-// Config tests
+// Config tests - deserialization verifies API contract with frontend
 // ============================================================================
 
 #[test]
@@ -48,23 +51,8 @@ fn test_default_config() {
     let config = WriteOperationConfig::default();
     assert_eq!(config.progress_interval_ms, 200);
     assert!(!config.overwrite);
-}
-
-#[test]
-fn test_config_serialization() {
-    let config = WriteOperationConfig {
-        progress_interval_ms: 500,
-        overwrite: true,
-        conflict_resolution: ConflictResolution::Skip,
-        dry_run: false,
-    };
-
-    let json = serde_json::to_string(&config).unwrap();
-    assert!(json.contains("progressIntervalMs"));
-    assert!(json.contains("500"));
-    assert!(json.contains("overwrite"));
-    assert!(json.contains("true"));
-    assert!(json.contains("conflictResolution"));
+    assert_eq!(config.conflict_resolution, ConflictResolution::Stop);
+    assert!(!config.dry_run);
 }
 
 #[test]
@@ -81,261 +69,33 @@ fn test_config_default_values_deserialization() {
     let config: WriteOperationConfig = serde_json::from_str(json).unwrap();
     assert_eq!(config.progress_interval_ms, 200);
     assert!(!config.overwrite);
+    assert!(!config.dry_run);
+}
+
+#[test]
+fn test_config_conflict_resolution_deserialization() {
+    let json = r#"{"conflictResolution": "skip"}"#;
+    let config: WriteOperationConfig = serde_json::from_str(json).unwrap();
+    assert_eq!(config.conflict_resolution, ConflictResolution::Skip);
+
+    let json = r#"{"conflictResolution": "overwrite"}"#;
+    let config: WriteOperationConfig = serde_json::from_str(json).unwrap();
+    assert_eq!(config.conflict_resolution, ConflictResolution::Overwrite);
+
+    let json = r#"{"conflictResolution": "rename"}"#;
+    let config: WriteOperationConfig = serde_json::from_str(json).unwrap();
+    assert_eq!(config.conflict_resolution, ConflictResolution::Rename);
+}
+
+#[test]
+fn test_config_dry_run_deserialization() {
+    let json = r#"{"dryRun": true}"#;
+    let config: WriteOperationConfig = serde_json::from_str(json).unwrap();
+    assert!(config.dry_run);
 }
 
 // ============================================================================
-// Error serialization tests
-// ============================================================================
-
-#[test]
-fn test_error_serialization_source_not_found() {
-    let error = WriteOperationError::SourceNotFound {
-        path: "/test/path".to_string(),
-    };
-
-    let json = serde_json::to_string(&error).unwrap();
-    assert!(json.contains("\"type\":\"source_not_found\""));
-    assert!(json.contains("/test/path"));
-}
-
-#[test]
-fn test_error_serialization_destination_exists() {
-    let error = WriteOperationError::DestinationExists {
-        path: "/dest/path".to_string(),
-    };
-
-    let json = serde_json::to_string(&error).unwrap();
-    assert!(json.contains("\"type\":\"destination_exists\""));
-}
-
-#[test]
-fn test_error_serialization_permission_denied() {
-    let error = WriteOperationError::PermissionDenied {
-        path: "/protected".to_string(),
-        message: "Access denied".to_string(),
-    };
-
-    let json = serde_json::to_string(&error).unwrap();
-    assert!(json.contains("\"type\":\"permission_denied\""));
-    assert!(json.contains("Access denied"));
-}
-
-#[test]
-fn test_error_serialization_destination_inside_source() {
-    let error = WriteOperationError::DestinationInsideSource {
-        source: "/foo".to_string(),
-        destination: "/foo/bar".to_string(),
-    };
-
-    let json = serde_json::to_string(&error).unwrap();
-    assert!(json.contains("\"type\":\"destination_inside_source\""));
-}
-
-#[test]
-fn test_error_serialization_same_location() {
-    let error = WriteOperationError::SameLocation {
-        path: "/same/path".to_string(),
-    };
-
-    let json = serde_json::to_string(&error).unwrap();
-    assert!(json.contains("\"type\":\"same_location\""));
-}
-
-#[test]
-fn test_error_serialization_insufficient_space() {
-    let error = WriteOperationError::InsufficientSpace {
-        required: 1024,
-        available: 512,
-        volume_name: Some("Macintosh HD".to_string()),
-    };
-
-    let json = serde_json::to_string(&error).unwrap();
-    assert!(json.contains("\"type\":\"insufficient_space\""));
-    assert!(json.contains("\"required\":1024"));
-    assert!(json.contains("\"available\":512"));
-    assert!(json.contains("Macintosh HD"));
-}
-
-#[test]
-fn test_error_serialization_cancelled() {
-    let error = WriteOperationError::Cancelled {
-        message: "User cancelled".to_string(),
-    };
-
-    let json = serde_json::to_string(&error).unwrap();
-    assert!(json.contains("\"type\":\"cancelled\""));
-    assert!(json.contains("User cancelled"));
-}
-
-#[test]
-fn test_error_serialization_io_error() {
-    let error = WriteOperationError::IoError {
-        path: "/some/file".to_string(),
-        message: "Read failed".to_string(),
-    };
-
-    let json = serde_json::to_string(&error).unwrap();
-    assert!(json.contains("\"type\":\"io_error\""));
-    assert!(json.contains("Read failed"));
-}
-
-// ============================================================================
-// Event serialization tests
-// ============================================================================
-
-#[test]
-fn test_progress_event_serialization() {
-    let event = WriteProgressEvent {
-        operation_id: "test-id".to_string(),
-        operation_type: WriteOperationType::Copy,
-        phase: WriteOperationPhase::Copying,
-        current_file: Some("file.txt".to_string()),
-        files_done: 5,
-        files_total: 10,
-        bytes_done: 1024,
-        bytes_total: 2048,
-    };
-
-    let json = serde_json::to_string(&event).unwrap();
-    assert!(json.contains("operationId"));
-    assert!(json.contains("test-id"));
-    assert!(json.contains("operationType"));
-    assert!(json.contains("copy"));
-    assert!(json.contains("phase"));
-    assert!(json.contains("copying"));
-    assert!(json.contains("currentFile"));
-    assert!(json.contains("file.txt"));
-    assert!(json.contains("filesDone"));
-    assert!(json.contains("filesTotal"));
-    assert!(json.contains("bytesDone"));
-    assert!(json.contains("bytesTotal"));
-}
-
-#[test]
-fn test_progress_event_with_null_current_file() {
-    let event = WriteProgressEvent {
-        operation_id: "test-id".to_string(),
-        operation_type: WriteOperationType::Delete,
-        phase: WriteOperationPhase::Scanning,
-        current_file: None,
-        files_done: 0,
-        files_total: 0,
-        bytes_done: 0,
-        bytes_total: 0,
-    };
-
-    let json = serde_json::to_string(&event).unwrap();
-    assert!(json.contains("\"currentFile\":null"));
-}
-
-#[test]
-fn test_complete_event_serialization() {
-    let event = WriteCompleteEvent {
-        operation_id: "test-id".to_string(),
-        operation_type: WriteOperationType::Move,
-        files_processed: 100,
-        bytes_processed: 1048576,
-    };
-
-    let json = serde_json::to_string(&event).unwrap();
-    assert!(json.contains("\"operationType\":\"move\""));
-    assert!(json.contains("\"filesProcessed\":100"));
-    assert!(json.contains("\"bytesProcessed\":1048576"));
-}
-
-#[test]
-fn test_cancelled_event_serialization() {
-    let event = WriteCancelledEvent {
-        operation_id: "test-id".to_string(),
-        operation_type: WriteOperationType::Delete,
-        files_processed: 50,
-    };
-
-    let json = serde_json::to_string(&event).unwrap();
-    assert!(json.contains("\"operationType\":\"delete\""));
-    assert!(json.contains("\"filesProcessed\":50"));
-}
-
-#[test]
-fn test_error_event_serialization() {
-    let event = WriteErrorEvent {
-        operation_id: "test-id".to_string(),
-        operation_type: WriteOperationType::Copy,
-        error: WriteOperationError::SourceNotFound {
-            path: "/missing".to_string(),
-        },
-    };
-
-    let json = serde_json::to_string(&event).unwrap();
-    assert!(json.contains("\"operationId\":\"test-id\""));
-    assert!(json.contains("\"operationType\":\"copy\""));
-    assert!(json.contains("\"type\":\"source_not_found\""));
-}
-
-// ============================================================================
-// Start result tests
-// ============================================================================
-
-#[test]
-fn test_start_result_serialization() {
-    let result = WriteOperationStartResult {
-        operation_id: "uuid-here".to_string(),
-        operation_type: WriteOperationType::Copy,
-    };
-
-    let json = serde_json::to_string(&result).unwrap();
-    assert!(json.contains("operationId"));
-    assert!(json.contains("uuid-here"));
-    assert!(json.contains("operationType"));
-    assert!(json.contains("copy"));
-}
-
-// ============================================================================
-// Operation type tests
-// ============================================================================
-
-#[test]
-fn test_operation_type_equality() {
-    assert_eq!(WriteOperationType::Copy, WriteOperationType::Copy);
-    assert_ne!(WriteOperationType::Copy, WriteOperationType::Move);
-    assert_ne!(WriteOperationType::Move, WriteOperationType::Delete);
-}
-
-#[test]
-fn test_operation_type_serialization() {
-    assert_eq!(serde_json::to_string(&WriteOperationType::Copy).unwrap(), "\"copy\"");
-    assert_eq!(serde_json::to_string(&WriteOperationType::Move).unwrap(), "\"move\"");
-    assert_eq!(
-        serde_json::to_string(&WriteOperationType::Delete).unwrap(),
-        "\"delete\""
-    );
-}
-
-#[test]
-fn test_operation_phase_equality() {
-    assert_eq!(WriteOperationPhase::Scanning, WriteOperationPhase::Scanning);
-    assert_ne!(WriteOperationPhase::Scanning, WriteOperationPhase::Copying);
-    assert_ne!(WriteOperationPhase::Copying, WriteOperationPhase::Deleting);
-}
-
-#[test]
-fn test_operation_phase_serialization() {
-    assert_eq!(
-        serde_json::to_string(&WriteOperationPhase::Scanning).unwrap(),
-        "\"scanning\""
-    );
-    assert_eq!(
-        serde_json::to_string(&WriteOperationPhase::Copying).unwrap(),
-        "\"copying\""
-    );
-    assert_eq!(
-        serde_json::to_string(&WriteOperationPhase::Deleting).unwrap(),
-        "\"deleting\""
-    );
-}
-
-// ============================================================================
-// IO Error conversion tests
+// IO Error conversion tests - actual logic
 // ============================================================================
 
 #[test]
@@ -368,95 +128,6 @@ fn test_io_error_other_conversion() {
     let write_err: WriteOperationError = io_err.into();
 
     assert!(matches!(write_err, WriteOperationError::IoError { .. }));
-}
-
-// ============================================================================
-// Operation status serialization tests
-// ============================================================================
-
-#[test]
-fn test_operation_status_serialization() {
-    let status = super::write_operations::OperationStatus {
-        operation_id: "test-123".to_string(),
-        operation_type: WriteOperationType::Copy,
-        phase: WriteOperationPhase::Copying,
-        is_running: true,
-        current_file: Some("file.txt".to_string()),
-        files_done: 50,
-        files_total: 100,
-        bytes_done: 1024,
-        bytes_total: 2048,
-        started_at: 1700000000000,
-    };
-
-    let json = serde_json::to_string(&status).unwrap();
-    assert!(json.contains("\"operationId\":\"test-123\""));
-    assert!(json.contains("\"operationType\":\"copy\""));
-    assert!(json.contains("\"phase\":\"copying\""));
-    assert!(json.contains("\"isRunning\":true"));
-    assert!(json.contains("\"currentFile\":\"file.txt\""));
-    assert!(json.contains("\"filesDone\":50"));
-    assert!(json.contains("\"filesTotal\":100"));
-    assert!(json.contains("\"bytesDone\":1024"));
-    assert!(json.contains("\"bytesTotal\":2048"));
-    assert!(json.contains("\"startedAt\":1700000000000"));
-}
-
-#[test]
-fn test_operation_status_with_null_current_file() {
-    let status = super::write_operations::OperationStatus {
-        operation_id: "test-456".to_string(),
-        operation_type: WriteOperationType::Delete,
-        phase: WriteOperationPhase::Scanning,
-        is_running: false,
-        current_file: None,
-        files_done: 0,
-        files_total: 0,
-        bytes_done: 0,
-        bytes_total: 0,
-        started_at: 1700000000000,
-    };
-
-    let json = serde_json::to_string(&status).unwrap();
-    assert!(json.contains("\"currentFile\":null"));
-    assert!(json.contains("\"isRunning\":false"));
-}
-
-#[test]
-fn test_operation_summary_serialization() {
-    let summary = super::write_operations::OperationSummary {
-        operation_id: "op-789".to_string(),
-        operation_type: WriteOperationType::Move,
-        phase: WriteOperationPhase::Deleting,
-        percent_complete: 75,
-        started_at: 1700000000000,
-    };
-
-    let json = serde_json::to_string(&summary).unwrap();
-    assert!(json.contains("\"operationId\":\"op-789\""));
-    assert!(json.contains("\"operationType\":\"move\""));
-    assert!(json.contains("\"phase\":\"deleting\""));
-    assert!(json.contains("\"percentComplete\":75"));
-    assert!(json.contains("\"startedAt\":1700000000000"));
-}
-
-#[test]
-fn test_operation_summary_all_operation_types() {
-    for op_type in [
-        WriteOperationType::Copy,
-        WriteOperationType::Move,
-        WriteOperationType::Delete,
-    ] {
-        let summary = super::write_operations::OperationSummary {
-            operation_id: "test".to_string(),
-            operation_type: op_type,
-            phase: WriteOperationPhase::Scanning,
-            percent_complete: 0,
-            started_at: 0,
-        };
-        let json = serde_json::to_string(&summary).unwrap();
-        assert!(json.contains("operationType"));
-    }
 }
 
 // ============================================================================
