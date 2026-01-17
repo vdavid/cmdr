@@ -34,7 +34,9 @@ func main() {
 		rustOnly2   = flag.Bool("rust-only", false, "Run only Rust checks")
 		svelteOnly  = flag.Bool("svelte", false, "Run only Svelte/desktop checks")
 		svelteOnly2 = flag.Bool("svelte-only", false, "Run only Svelte/desktop checks")
-		appName     = flag.String("app", "", "Run checks for a specific app (desktop, website, license-server)")
+		goOnly      = flag.Bool("go", false, "Run only Go checks (scripts)")
+		goOnly2     = flag.Bool("go-only", false, "Run only Go checks (scripts)")
+		appName     = flag.String("app", "", "Run checks for a specific app (desktop, website, license-server, scripts)")
 		checkNames  stringSlice
 		ciMode      = flag.Bool("ci", false, "Disable auto-fixing (for CI)")
 		verbose     = flag.Bool("verbose", false, "Show detailed output")
@@ -88,15 +90,19 @@ func main() {
 			checksToRun = getChecksByApp(checks.AppWebsite)
 		case "license-server":
 			checksToRun = getChecksByApp(checks.AppLicenseServer)
+		case "scripts":
+			checksToRun = getChecksByApp(checks.AppScripts)
 		default:
 			printError("Error: Unknown app: %s", *appName)
-			fmt.Fprintf(os.Stderr, "Available apps: desktop, website, license-server\n")
+			fmt.Fprintf(os.Stderr, "Available apps: desktop, website, license-server, scripts\n")
 			os.Exit(1)
 		}
 	} else if *rustOnly || *rustOnly2 {
 		checksToRun = getChecksByTech(checks.AppDesktop, "🦀 Rust")
 	} else if *svelteOnly || *svelteOnly2 {
 		checksToRun = getChecksByTech(checks.AppDesktop, "🎨 Svelte")
+	} else if *goOnly || *goOnly2 {
+		checksToRun = getChecksByTech(checks.AppScripts, "🐹 Go")
 	} else {
 		checksToRun = getAllChecks()
 	}
@@ -143,9 +149,10 @@ func showUsage() {
 	fmt.Println("Run code quality checks for the Cmdr project.")
 	fmt.Println()
 	fmt.Println("OPTIONS:")
-	fmt.Println("    --app NAME               Run checks for a specific app (desktop, website, license-server)")
+	fmt.Println("    --app NAME               Run checks for a specific app (desktop, website, license-server, scripts)")
 	fmt.Println("    --rust, --rust-only      Run only Rust checks (desktop)")
 	fmt.Println("    --svelte, --svelte-only  Run only Svelte checks (desktop)")
+	fmt.Println("    --go, --go-only          Run only Go checks (scripts)")
 	fmt.Println("    --check ID               Run specific checks by ID (can be repeated or comma-separated)")
 	fmt.Println("    --ci                     Disable auto-fixing (for CI)")
 	fmt.Println("    --verbose                Show detailed output")

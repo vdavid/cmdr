@@ -55,6 +55,8 @@ func appDisplayName(app checks.App) string {
 		return "🌐 Website"
 	case checks.AppLicenseServer:
 		return "🔑 License server"
+	case checks.AppScripts:
+		return "📜 Scripts"
 	default:
 		return string(app)
 	}

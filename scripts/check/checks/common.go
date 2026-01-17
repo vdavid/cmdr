@@ -14,6 +14,7 @@ const (
 	AppDesktop       App = "desktop"
 	AppWebsite       App = "website"
 	AppLicenseServer App = "license-server"
+	AppScripts       App = "scripts"
 	AppOther         App = "other"
 )
 
@@ -115,4 +116,29 @@ func Pluralize(count int, singular, plural string) string {
 		return singular
 	}
 	return plural
+}
+
+// FindGoModules finds all go.mod files in the given directory and returns
+// the directories containing them.
+func FindGoModules(rootDir string) ([]string, error) {
+	findCmd := exec.Command("find", ".", "-name", "go.mod", "-type", "f")
+	findCmd.Dir = rootDir
+	output, err := RunCommand(findCmd, true)
+	if err != nil {
+		return nil, err
+	}
+
+	var modules []string
+	for _, line := range strings.Split(strings.TrimSpace(output), "\n") {
+		if line != "" {
+			// Get directory containing go.mod
+			dir := strings.TrimSuffix(line, "/go.mod")
+			dir = strings.TrimPrefix(dir, "./")
+			if dir == "go.mod" {
+				dir = "."
+			}
+			modules = append(modules, dir)
+		}
+	}
+	return modules, nil
 }
