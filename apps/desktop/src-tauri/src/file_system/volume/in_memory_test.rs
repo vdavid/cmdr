@@ -363,9 +363,9 @@ fn test_concurrent_reads() {
         let vol = Arc::clone(&volume);
         handles.push(thread::spawn(move || {
             for _ in 0..100 {
-                let _ = vol.list_directory(std::path::Path::new(""));
-                let _ = vol.exists(std::path::Path::new("/file_000001.txt"));
-                let _ = vol.get_metadata(std::path::Path::new("/file_000010.txt"));
+                let _ = vol.list_directory(Path::new(""));
+                let _ = vol.exists(Path::new("/file_000001.txt"));
+                let _ = vol.get_metadata(Path::new("/file_000010.txt"));
             }
         }));
     }
@@ -375,7 +375,7 @@ fn test_concurrent_reads() {
     }
 
     // Volume should still be intact
-    assert_eq!(volume.list_directory(std::path::Path::new("")).unwrap().len(), 1000);
+    assert_eq!(volume.list_directory(Path::new("")).unwrap().len(), 1000);
 }
 
 #[test]
@@ -392,7 +392,7 @@ fn test_concurrent_writes() {
         handles.push(thread::spawn(move || {
             for j in 0..10 {
                 let path = format!("/file_{}_{}.txt", i, j);
-                vol.create_file(std::path::Path::new(&path), b"content").unwrap();
+                vol.create_file(Path::new(&path), b"content").unwrap();
             }
         }));
     }
@@ -402,7 +402,7 @@ fn test_concurrent_writes() {
     }
 
     // Should have all 100 files
-    let entries = volume.list_directory(std::path::Path::new("")).unwrap();
+    let entries = volume.list_directory(Path::new("")).unwrap();
     assert_eq!(entries.len(), 100);
 }
 
@@ -414,7 +414,7 @@ fn test_concurrent_create_delete() {
     let volume = Arc::new(InMemoryVolume::new("Test"));
     // Create a permanent file
     volume
-        .create_file(std::path::Path::new("/permanent.txt"), b"keep")
+        .create_file(Path::new("/permanent.txt"), b"keep")
         .unwrap();
 
     let mut handles = vec![];
@@ -424,8 +424,8 @@ fn test_concurrent_create_delete() {
         let vol = Arc::clone(&volume);
         handles.push(thread::spawn(move || {
             for _ in 0..50 {
-                let _ = vol.list_directory(std::path::Path::new(""));
-                let _ = vol.exists(std::path::Path::new("/permanent.txt"));
+                let _ = vol.list_directory(Path::new(""));
+                let _ = vol.exists(Path::new("/permanent.txt"));
                 thread::yield_now();
             }
         }));
@@ -437,7 +437,7 @@ fn test_concurrent_create_delete() {
         handles.push(thread::spawn(move || {
             for j in 0..10 {
                 let path = format!("/temp_{}_{}.txt", i, j);
-                let p = std::path::Path::new(&path);
+                let p = Path::new(&path);
                 vol.create_file(p, b"temp").unwrap();
                 thread::yield_now();
                 let _ = vol.delete(p); // May fail if another thread already deleted
@@ -450,5 +450,5 @@ fn test_concurrent_create_delete() {
     }
 
     // Permanent file should still exist
-    assert!(volume.exists(std::path::Path::new("/permanent.txt")));
+    assert!(volume.exists(Path::new("/permanent.txt")));
 }

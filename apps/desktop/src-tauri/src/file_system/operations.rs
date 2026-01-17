@@ -58,7 +58,7 @@ struct CachedListing {
     /// Volume ID this listing belongs to (e.g., "root", "dropbox")
     volume_id: String,
     /// Path within the volume (absolute path for now)
-    path: std::path::PathBuf,
+    path: PathBuf,
     /// Cached file entries
     entries: Vec<FileEntry>,
     /// Current sort column
@@ -73,7 +73,7 @@ pub(super) struct CachedListing {
     /// Volume ID this listing belongs to (e.g., "root", "dropbox")
     pub volume_id: String,
     /// Path within the volume (absolute path for now)
-    pub path: std::path::PathBuf,
+    pub path: PathBuf,
     /// Cached file entries
     pub entries: Vec<FileEntry>,
     /// Current sort column
@@ -879,7 +879,7 @@ pub fn resort_listing(
 
 /// Gets entries and path from the listing cache (for watcher diff computation).
 /// Returns None if listing not found.
-pub(super) fn get_listing_entries(listing_id: &str) -> Option<(std::path::PathBuf, Vec<FileEntry>)> {
+pub(super) fn get_listing_entries(listing_id: &str) -> Option<(PathBuf, Vec<FileEntry>)> {
     let cache = LISTING_CACHE.read().ok()?;
     let listing = cache.get(listing_id)?;
     Some((listing.path.clone(), listing.entries.clone()))

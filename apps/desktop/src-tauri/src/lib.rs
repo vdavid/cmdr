@@ -2,6 +2,8 @@
 #![deny(unused)]
 // Warn on unused dependencies to catch platform-specific cfg mismatches
 #![warn(unused_crate_dependencies)]
+// Warn on redundant path prefixes (e.g., std::path::Path when Path is imported)
+#![warn(unused_qualifications)]
 // Use log::* macros instead of println!/eprintln! for proper log level control
 #![deny(clippy::print_stdout, clippy::print_stderr)]
 

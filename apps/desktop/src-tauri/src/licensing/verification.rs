@@ -183,7 +183,7 @@ mod tests {
         let public_key_hex: String = verifying_key.as_bytes().iter().map(|b| format!("{:02x}", b)).collect();
 
         // Create license data (same structure as server)
-        let license_data = crate::licensing::LicenseData {
+        let license_data = LicenseData {
             email: "test@example.com".to_string(),
             transaction_id: "txn_test_123".to_string(),
             issued_at: "2026-01-08T12:00:00Z".to_string(),
@@ -223,7 +223,7 @@ mod tests {
         let public_key_hex: String = verifying_key.as_bytes().iter().map(|b| format!("{:02x}", b)).collect();
 
         // Create and sign original license
-        let original_data = crate::licensing::LicenseData {
+        let original_data = LicenseData {
             email: "original@example.com".to_string(),
             transaction_id: "txn_original".to_string(),
             issued_at: "2026-01-08T12:00:00Z".to_string(),
@@ -234,7 +234,7 @@ mod tests {
         let signature_base64 = BASE64.encode(signature.to_bytes());
 
         // Create tampered payload (different email)
-        let tampered_data = crate::licensing::LicenseData {
+        let tampered_data = LicenseData {
             email: "hacker@evil.com".to_string(),
             transaction_id: "txn_original".to_string(),
             issued_at: "2026-01-08T12:00:00Z".to_string(),
@@ -268,7 +268,7 @@ mod tests {
             .collect();
 
         // Create license signed with first key
-        let license_data = crate::licensing::LicenseData {
+        let license_data = LicenseData {
             email: "test@example.com".to_string(),
             transaction_id: "txn_test".to_string(),
             issued_at: "2026-01-08T12:00:00Z".to_string(),

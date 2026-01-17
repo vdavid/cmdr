@@ -22,7 +22,7 @@ pub use smb_client::{AuthMode, ShareListError, ShareListResult};
 /// Call this after `start_discovery()` in dev mode.
 /// Enable with: `RUSTY_INJECT_TEST_SMB=1 pnpm tauri dev`
 #[cfg(debug_assertions)]
-pub fn inject_test_hosts_if_enabled(app_handle: &tauri::AppHandle) {
+pub fn inject_test_hosts_if_enabled(app_handle: &AppHandle) {
     if std::env::var("RUSTY_INJECT_TEST_SMB").is_ok() {
         inject_test_hosts(app_handle);
     }
@@ -332,7 +332,7 @@ const TEST_HOSTS: &[(&str, &str, u16)] = &[
 /// Injects Docker SMB test hosts for QA testing.
 /// These hosts point to localhost with the Docker container ports.
 #[cfg(debug_assertions)]
-fn inject_test_hosts(app_handle: &tauri::AppHandle) {
+fn inject_test_hosts(app_handle: &AppHandle) {
     info!(
         "Injecting {} Docker SMB test hosts (RUSTY_INJECT_TEST_SMB=1)",
         TEST_HOSTS.len()
