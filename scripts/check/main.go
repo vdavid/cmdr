@@ -28,7 +28,55 @@ func (s *stringSlice) Set(value string) error {
 	return nil
 }
 
+// cliFlags holds the parsed command-line flags.
+type cliFlags struct {
+	rustOnly    bool
+	svelteOnly  bool
+	goOnly      bool
+	appName     string
+	checkNames  []string
+	ciMode      bool
+	verbose     bool
+	includeSlow bool
+	failFast    bool
+}
+
 func main() {
+	flags := parseFlags()
+	if flags == nil {
+		return // Help was shown
+	}
+
+	rootDir, err := findRootDir()
+	if err != nil {
+		printError("Error: %v", err)
+		os.Exit(1)
+	}
+
+	ctx := &checks.CheckContext{
+		CI:      flags.ciMode,
+		Verbose: flags.verbose,
+		RootDir: rootDir,
+	}
+
+	checksToRun, err := selectChecks(flags)
+	if err != nil {
+		printError("Error: %v", err)
+		os.Exit(1)
+	}
+
+	checksToRun = filterSlowChecks(checksToRun, flags.includeSlow)
+
+	if len(checksToRun) == 0 {
+		fmt.Println("No checks to run.")
+		os.Exit(0)
+	}
+
+	runChecks(ctx, checksToRun, flags.failFast)
+}
+
+// parseFlags parses command-line flags and returns nil if help was shown.
+func parseFlags() *cliFlags {
 	var (
 		rustOnly    = flag.Bool("rust", false, "Run only Rust checks")
 		rustOnly2   = flag.Bool("rust-only", false, "Run only Rust checks")
@@ -50,75 +98,77 @@ func main() {
 
 	if *help || *h {
 		showUsage()
-		os.Exit(0)
+		return nil
 	}
 
-	rootDir, err := findRootDir()
-	if err != nil {
-		printError("Error: %v", err)
-		os.Exit(1)
+	return &cliFlags{
+		rustOnly:    *rustOnly || *rustOnly2,
+		svelteOnly:  *svelteOnly || *svelteOnly2,
+		goOnly:      *goOnly || *goOnly2,
+		appName:     *appName,
+		checkNames:  checkNames,
+		ciMode:      *ciMode,
+		verbose:     *verbose,
+		includeSlow: *includeSlow || len(checkNames) > 0,
+		failFast:    *failFast,
 	}
+}
 
-	ctx := &checks.CheckContext{
-		CI:      *ciMode,
-		Verbose: *verbose,
-		RootDir: rootDir,
+// selectChecks determines which checks to run based on flags.
+func selectChecks(flags *cliFlags) ([]checks.CheckDefinition, error) {
+	if len(flags.checkNames) > 0 {
+		return selectChecksByID(flags.checkNames)
 	}
+	if flags.appName != "" {
+		return selectChecksByApp(flags.appName)
+	}
+	if flags.rustOnly {
+		return getChecksByTech(checks.AppDesktop, "🦀 Rust"), nil
+	}
+	if flags.svelteOnly {
+		return getChecksByTech(checks.AppDesktop, "🎨 Svelte"), nil
+	}
+	if flags.goOnly {
+		return getChecksByTech(checks.AppScripts, "🐹 Go"), nil
+	}
+	return getAllChecks(), nil
+}
 
-	// Determine which checks to run
-	var checksToRun []checks.CheckDefinition
-
-	if len(checkNames) > 0 {
-		// Run specific checks by ID
-		for _, name := range checkNames {
-			check := getCheckByID(name)
-			if check == nil {
-				printError("Error: Unknown check ID: %s", name)
-				fmt.Fprintf(os.Stderr, "Run with --help to see available checks\n")
-				os.Exit(1)
-			}
-			checksToRun = append(checksToRun, *check)
+// selectChecksByID returns checks matching the given IDs.
+func selectChecksByID(names []string) ([]checks.CheckDefinition, error) {
+	var result []checks.CheckDefinition
+	for _, name := range names {
+		check := getCheckByID(name)
+		if check == nil {
+			return nil, fmt.Errorf("unknown check ID: %s\nRun with --help to see available checks", name)
 		}
-		// When running specific checks, include slow ones
-		*includeSlow = true
-	} else if *appName != "" {
-		app := strings.ToLower(*appName)
-		switch app {
-		case "desktop":
-			checksToRun = getChecksByApp(checks.AppDesktop)
-		case "website":
-			checksToRun = getChecksByApp(checks.AppWebsite)
-		case "license-server":
-			checksToRun = getChecksByApp(checks.AppLicenseServer)
-		case "scripts":
-			checksToRun = getChecksByApp(checks.AppScripts)
-		default:
-			printError("Error: Unknown app: %s", *appName)
-			fmt.Fprintf(os.Stderr, "Available apps: desktop, website, license-server, scripts\n")
-			os.Exit(1)
-		}
-	} else if *rustOnly || *rustOnly2 {
-		checksToRun = getChecksByTech(checks.AppDesktop, "🦀 Rust")
-	} else if *svelteOnly || *svelteOnly2 {
-		checksToRun = getChecksByTech(checks.AppDesktop, "🎨 Svelte")
-	} else if *goOnly || *goOnly2 {
-		checksToRun = getChecksByTech(checks.AppScripts, "🐹 Go")
-	} else {
-		checksToRun = getAllChecks()
+		result = append(result, *check)
 	}
+	return result, nil
+}
 
-	// Filter slow checks unless included
-	checksToRun = filterSlowChecks(checksToRun, *includeSlow)
-
-	if len(checksToRun) == 0 {
-		fmt.Println("No checks to run.")
-		os.Exit(0)
+// selectChecksByApp returns checks for the given app name.
+func selectChecksByApp(appName string) ([]checks.CheckDefinition, error) {
+	switch strings.ToLower(appName) {
+	case "desktop":
+		return getChecksByApp(checks.AppDesktop), nil
+	case "website":
+		return getChecksByApp(checks.AppWebsite), nil
+	case "license-server":
+		return getChecksByApp(checks.AppLicenseServer), nil
+	case "scripts":
+		return getChecksByApp(checks.AppScripts), nil
+	default:
+		return nil, fmt.Errorf("unknown app: %s\nAvailable apps: desktop, website, license-server, scripts", appName)
 	}
+}
 
+// runChecks executes the checks and prints results.
+func runChecks(ctx *checks.CheckContext, checksToRun []checks.CheckDefinition, failFast bool) {
 	fmt.Printf("🔍 Running %d checks...\n\n", len(checksToRun))
 
 	startTime := time.Now()
-	runner := NewRunner(ctx, checksToRun, *failFast)
+	runner := NewRunner(ctx, checksToRun, failFast)
 	failed, failedChecks := runner.Run()
 
 	totalDuration := time.Since(startTime)
@@ -126,20 +176,24 @@ func main() {
 	fmt.Printf("%s⏱️  Total runtime: %s%s\n", colorYellow, formatDuration(totalDuration), colorReset)
 
 	if failed {
-		fmt.Printf("%s❌ Some checks failed.%s\n", colorRed, colorReset)
-		if len(failedChecks) > 0 {
-			fmt.Println()
-			checkWord := "check"
-			if len(failedChecks) > 1 {
-				checkWord = "checks"
-			}
-			fmt.Printf("To rerun the failed %s: ./scripts/check.sh --check %s\n", checkWord, strings.Join(failedChecks, ","))
-		}
+		printFailure(failedChecks)
 		os.Exit(1)
 	}
 
 	fmt.Printf("%s✅ All checks passed!%s\n", colorGreen, colorReset)
-	os.Exit(0)
+}
+
+// printFailure prints the failure message with rerun instructions.
+func printFailure(failedChecks []string) {
+	fmt.Printf("%s❌ Some checks failed.%s\n", colorRed, colorReset)
+	if len(failedChecks) > 0 {
+		fmt.Println()
+		checkWord := "check"
+		if len(failedChecks) > 1 {
+			checkWord = "checks"
+		}
+		fmt.Printf("To rerun the failed %s: ./scripts/check.sh --check %s\n", checkWord, strings.Join(failedChecks, ","))
+	}
 }
 
 // showUsage displays the help message with dynamically generated check list.
@@ -208,7 +262,10 @@ func showUsage() {
 	})
 
 	for _, key := range groupOrder {
-		g := groupMap[key]
+		g, ok := groupMap[key]
+		if !ok {
+			continue
+		}
 		fmt.Printf("  %s: %s\n", appDisplayName(g.app), g.tech)
 		for _, id := range g.ids {
 			fmt.Printf("    - %s\n", id)

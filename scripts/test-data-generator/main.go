@@ -4,6 +4,7 @@
 package main
 
 import (
+	cryptoRand "crypto/rand"
 	"fmt"
 	"math/rand"
 	"os"
@@ -120,14 +121,64 @@ func generateTimestamp() time.Time {
 	return start.Add(randomDuration)
 }
 
+// deleteFilesToTarget deletes random files from a folder to reach the target count.
+func deleteFilesToTarget(folderPath string, existingFiles []string, deleteCount int) error {
+	fmt.Printf("  Deleting %d files", deleteCount)
+
+	// Shuffle and pick first N to delete
+	rand.Shuffle(len(existingFiles), func(i, j int) {
+		existingFiles[i], existingFiles[j] = existingFiles[j], existingFiles[i]
+	})
+
+	for i := range deleteCount {
+		filePath := filepath.Join(folderPath, existingFiles[i])
+		if err := os.Remove(filePath); err != nil {
+			return fmt.Errorf("failed to delete %s: %w", filePath, err)
+		}
+		if (i+1)%5000 == 0 {
+			fmt.Print(".")
+		}
+	}
+	fmt.Println(" done")
+	return nil
+}
+
+// createFilesToTarget creates files with random timestamps to reach the target count.
+func createFilesToTarget(folderPath string, usedTimestamps map[string]bool, createCount int) error {
+	fmt.Printf("  Creating %d files", createCount)
+
+	created := 0
+	for created < createCount {
+		ts := generateTimestamp()
+		filename := ts.Format("2006-01-02 15-04-05") + ".md"
+
+		if usedTimestamps[filename] {
+			continue // Try another timestamp
+		}
+		usedTimestamps[filename] = true
+
+		filePath := filepath.Join(folderPath, filename)
+		content := generateSentence()
+
+		if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
+			return fmt.Errorf("failed to write %s: %w", filePath, err)
+		}
+
+		created++
+		if created%5000 == 0 {
+			fmt.Print(".")
+		}
+	}
+	fmt.Println(" done")
+	return nil
+}
+
 // syncFolder ensures a folder has exactly targetCount files, creating or deleting as needed.
 func syncFolder(folderPath string, targetCount int) error {
-	// Ensure folder exists
 	if err := os.MkdirAll(folderPath, 0755); err != nil {
 		return fmt.Errorf("failed to create folder %s: %w", folderPath, err)
 	}
 
-	// List existing files
 	entries, err := os.ReadDir(folderPath)
 	if err != nil {
 		return fmt.Errorf("failed to read folder %s: %w", folderPath, err)
@@ -143,67 +194,19 @@ func syncFolder(folderPath string, targetCount int) error {
 	currentCount := len(existingFiles)
 	fmt.Printf("  %s: %d files exist, target is %d\n", filepath.Base(folderPath), currentCount, targetCount)
 
-	if currentCount > targetCount {
-		// Delete random files to reach target
-		deleteCount := currentCount - targetCount
-		fmt.Printf("  Deleting %d files", deleteCount)
-
-		// Shuffle and pick first N to delete
-		rand.Shuffle(len(existingFiles), func(i, j int) {
-			existingFiles[i], existingFiles[j] = existingFiles[j], existingFiles[i]
-		})
-
-		for i := 0; i < deleteCount; i++ {
-			filePath := filepath.Join(folderPath, existingFiles[i])
-			if err := os.Remove(filePath); err != nil {
-				return fmt.Errorf("failed to delete %s: %w", filePath, err)
-			}
-			if (i+1)%5000 == 0 {
-				fmt.Print(".")
-			}
-		}
-		fmt.Println(" done")
-
-	} else if currentCount < targetCount {
-		// Create files to reach target
-		createCount := targetCount - currentCount
-		fmt.Printf("  Creating %d files", createCount)
-
-		// Track used timestamps to avoid collisions
+	switch {
+	case currentCount > targetCount:
+		return deleteFilesToTarget(folderPath, existingFiles, currentCount-targetCount)
+	case currentCount < targetCount:
 		usedTimestamps := make(map[string]bool)
 		for _, name := range existingFiles {
 			usedTimestamps[name] = true
 		}
-
-		created := 0
-		for created < createCount {
-			ts := generateTimestamp()
-			filename := ts.Format("2006-01-02 15-04-05") + ".md"
-
-			if usedTimestamps[filename] {
-				continue // Try another timestamp
-			}
-			usedTimestamps[filename] = true
-
-			filePath := filepath.Join(folderPath, filename)
-			content := generateSentence()
-
-			if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
-				return fmt.Errorf("failed to write %s: %w", filePath, err)
-			}
-
-			created++
-			if created%5000 == 0 {
-				fmt.Print(".")
-			}
-		}
-		fmt.Println(" done")
-
-	} else {
+		return createFilesToTarget(folderPath, usedTimestamps, targetCount-currentCount)
+	default:
 		fmt.Println("  Already at target, no changes needed")
+		return nil
 	}
-
-	return nil
 }
 
 // createIconTestData creates a folder with various file types for testing icons.
@@ -366,7 +369,7 @@ func createBigFile(path string, size int64) error {
 		}
 
 		// Fill chunk with random data
-		_, _ = rand.Read(chunk[:toWrite])
+		_, _ = cryptoRand.Read(chunk[:toWrite])
 
 		n, err := f.Write(chunk[:toWrite])
 		if err != nil {
@@ -378,34 +381,103 @@ func createBigFile(path string, size int64) error {
 	return nil
 }
 
+// bigFilesFolderNeedsRecreation checks if the folder needs to be recreated.
+// Returns true if the folder doesn't exist or has incorrect size.
+func bigFilesFolderNeedsRecreation(folderPath string, scenario bigFilesScenario) bool {
+	info, err := os.Stat(folderPath)
+	if err != nil || !info.IsDir() {
+		return true
+	}
+
+	var currentSize int64
+	var fileCount int
+	err = filepath.Walk(folderPath, func(_ string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			currentSize += info.Size()
+			fileCount++
+		}
+		return nil
+	})
+
+	if err != nil {
+		return true
+	}
+
+	withinRange := currentSize >= scenario.totalSize*95/100 && currentSize <= scenario.totalSize*105/100
+	if withinRange {
+		fmt.Printf("    Already exists with ~%d files, %.2f GB - skipping\n",
+			fileCount, float64(currentSize)/(1024*1024*1024))
+		return false
+	}
+	return true
+}
+
+// createHierarchicalBigFiles creates files organized in directories.
+func createHierarchicalBigFiles(folderPath string, scenario bigFilesScenario) error {
+	filesPerDir := scenario.fileCount / scenario.dirCount
+	fileSize := scenario.totalSize / int64(scenario.fileCount)
+
+	fmt.Printf("    Creating %d directories with ~%d files each (~%d KB per file)...\n",
+		scenario.dirCount, filesPerDir, fileSize/1024)
+
+	fileIndex := 0
+	for d := range scenario.dirCount {
+		dirPath := filepath.Join(folderPath, fmt.Sprintf("dir-%05d", d))
+		if err := os.MkdirAll(dirPath, 0755); err != nil {
+			return fmt.Errorf("failed to create directory %d: %w", d, err)
+		}
+
+		for f := 0; f < filesPerDir && fileIndex < scenario.fileCount; f++ {
+			filePath := filepath.Join(dirPath, fmt.Sprintf("file-%06d.dat", fileIndex))
+			if err := createBigFile(filePath, fileSize); err != nil {
+				return fmt.Errorf("failed to create file %d: %w", fileIndex, err)
+			}
+			fileIndex++
+			if fileIndex%10000 == 0 {
+				fmt.Printf("    Created %d files...\n", fileIndex)
+			}
+		}
+
+		if (d+1)%100 == 0 {
+			fmt.Printf("    Created %d directories...\n", d+1)
+		}
+	}
+	fmt.Printf("    Created %d files in %d directories\n", fileIndex, scenario.dirCount)
+	return nil
+}
+
+// createFlatBigFiles creates files in a single directory.
+func createFlatBigFiles(folderPath string, scenario bigFilesScenario) error {
+	fileSize := scenario.totalSize / int64(scenario.fileCount)
+	fmt.Printf("    Creating %d files (~%.2f MB each)...\n",
+		scenario.fileCount, float64(fileSize)/(1024*1024))
+
+	for i := range scenario.fileCount {
+		filePath := filepath.Join(folderPath, fmt.Sprintf("file-%06d.dat", i))
+		if err := createBigFile(filePath, fileSize); err != nil {
+			return fmt.Errorf("failed to create file %d: %w", i, err)
+		}
+
+		if (i+1)%10 == 0 || i == scenario.fileCount-1 {
+			pct := float64(i+1) / float64(scenario.fileCount) * 100
+			fmt.Printf("    Progress: %.0f%% (%d/%d files)\n", pct, i+1, scenario.fileCount)
+		}
+	}
+	return nil
+}
+
 // syncBigFilesScenario ensures the big-files scenario folder is in the desired state.
 func syncBigFilesScenario(baseDir string, scenario bigFilesScenario) error {
 	folderPath := filepath.Join(baseDir, scenario.name)
 	fmt.Printf("  %s: %s\n", scenario.name, scenario.description)
 
-	// Check if folder exists and has the expected total size
-	if info, err := os.Stat(folderPath); err == nil && info.IsDir() {
-		// Calculate current total size
-		var currentSize int64
-		var fileCount int
-		err := filepath.Walk(folderPath, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			if !info.IsDir() {
-				currentSize += info.Size()
-				fileCount++
-			}
-			return nil
-		})
-		if err == nil && currentSize >= scenario.totalSize*95/100 && currentSize <= scenario.totalSize*105/100 {
-			fmt.Printf("    Already exists with ~%d files, %.2f GB - skipping\n",
-				fileCount, float64(currentSize)/(1024*1024*1024))
-			return nil
-		}
+	if !bigFilesFolderNeedsRecreation(folderPath, scenario) {
+		return nil
 	}
 
-	// Remove existing folder and recreate
 	fmt.Printf("    Creating fresh folder...\n")
 	if err := os.RemoveAll(folderPath); err != nil {
 		return fmt.Errorf("failed to remove existing folder: %w", err)
@@ -414,55 +486,14 @@ func syncBigFilesScenario(baseDir string, scenario bigFilesScenario) error {
 		return fmt.Errorf("failed to create folder: %w", err)
 	}
 
+	var err error
 	if scenario.dirCount > 0 {
-		// Create hierarchical structure with many directories
-		filesPerDir := scenario.fileCount / scenario.dirCount
-		fileSize := scenario.totalSize / int64(scenario.fileCount)
-
-		fmt.Printf("    Creating %d directories with ~%d files each (~%d KB per file)...\n",
-			scenario.dirCount, filesPerDir, fileSize/1024)
-
-		fileIndex := 0
-		for d := 0; d < scenario.dirCount; d++ {
-			dirPath := filepath.Join(folderPath, fmt.Sprintf("dir-%05d", d))
-			if err := os.MkdirAll(dirPath, 0755); err != nil {
-				return fmt.Errorf("failed to create directory %d: %w", d, err)
-			}
-
-			for f := 0; f < filesPerDir && fileIndex < scenario.fileCount; f++ {
-				filePath := filepath.Join(dirPath, fmt.Sprintf("file-%06d.dat", fileIndex))
-				if err := createBigFile(filePath, fileSize); err != nil {
-					return fmt.Errorf("failed to create file %d: %w", fileIndex, err)
-				}
-				fileIndex++
-
-				if fileIndex%10000 == 0 {
-					fmt.Printf("    Created %d files...\n", fileIndex)
-				}
-			}
-
-			if (d+1)%100 == 0 {
-				fmt.Printf("    Created %d directories...\n", d+1)
-			}
-		}
-		fmt.Printf("    Created %d files in %d directories\n", fileIndex, scenario.dirCount)
+		err = createHierarchicalBigFiles(folderPath, scenario)
 	} else {
-		// Flat structure
-		fileSize := scenario.totalSize / int64(scenario.fileCount)
-		fmt.Printf("    Creating %d files (~%.2f MB each)...\n",
-			scenario.fileCount, float64(fileSize)/(1024*1024))
-
-		for i := 0; i < scenario.fileCount; i++ {
-			filePath := filepath.Join(folderPath, fmt.Sprintf("file-%06d.dat", i))
-			if err := createBigFile(filePath, fileSize); err != nil {
-				return fmt.Errorf("failed to create file %d: %w", i, err)
-			}
-
-			if (i+1)%10 == 0 || i == scenario.fileCount-1 {
-				pct := float64(i+1) / float64(scenario.fileCount) * 100
-				fmt.Printf("    Progress: %.0f%% (%d/%d files)\n", pct, i+1, scenario.fileCount)
-			}
-		}
+		err = createFlatBigFiles(folderPath, scenario)
+	}
+	if err != nil {
+		return err
 	}
 
 	fmt.Printf("    Done!\n")
