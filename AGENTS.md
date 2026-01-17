@@ -80,6 +80,18 @@ There are two MCP servers available to you:
   [security docs](docs/security.md#withglobaltauri) for more reasoning.
 - When testing the Tauri app, DO NOT USE THE BROWSER, it won't work. Use the MCP servers. If they fail, ask for help.
 
+## Design guidelines
+
+- Always make features extremely user-friendly.
+- Always apply radical transparency: make the internals of what's happening available. Hide the details from the surface
+  so the main UI is not cluttered.
+- For longer processes: 1. show a progress indicator (an anim), 2. a progress bar and counter if we know the end state
+  (for example, how many files we're loading), and 3. a time estimate if we have a guess how long it'll take.
+- Always keep accessibility in mind. Features should be available to people with impaired vision, hearing, and cognitive
+  disabilities.
+- When shortcuts are available for a feature, always display the shortcut in a tooltip or somewhere, less prominent than
+  the main UI.
+
 ## Things to avoid
 
 - ❌ Don't touch git, user handles commits manually

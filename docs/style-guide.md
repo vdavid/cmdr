@@ -27,6 +27,8 @@ Writing and code styles.
     - **Use sentence case in labels**: Applies to buttons, labels, and similar. But omit periods on short microcopy.
     - **Capitalize names correctly**: For example, there is GitHub but mailcow.
     - **Use the Oxford comma**: Use "1, 2, and 3" rather than "1, 2 and 3".
+    - **Use en dashes and em dashes**: en dash for ranges, em dash for combining thoughts.
+    - **Use colon for lists**: Use the format I used in this list you're reading right now.
     - **Spell out numbers one through nine.** Use numerals for 10+.
     - **Use ISO dates**: Use YYYY-MM-DD wherever it makes sense.
 - UI
@@ -35,6 +37,7 @@ Writing and code styles.
       user".
     - **Give examples in placeholder text**: Use "Example: 2025-01-01" or "name@example.com" rather than an instruction
       like "Enter your email".
+    - **Never write "something(s)"**: Always pluralize dynamically: "1 user" instead of "1 user(s)".
 - Specific terms
     - **Folder vs directory**: We know these mean the same. We allow both. Use whichever feels better in each situation.
       Like, on the backend, listing "folders" with `readdir` feels wrong, but also, "folder" comes more natural on the
