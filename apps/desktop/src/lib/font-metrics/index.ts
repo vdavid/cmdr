@@ -2,6 +2,9 @@
 
 import { storeFontMetrics, hasFontMetrics } from '$lib/tauri-commands'
 import { measureCharWidths } from './measure'
+import { getAppLogger } from '$lib/logger'
+
+const log = getAppLogger('fontMetrics')
 
 /**
  * Gets the current font configuration ID.
@@ -26,13 +29,11 @@ export async function ensureFontMetricsLoaded(): Promise<void> {
     // Check if metrics are already available
     const hasMetrics = await hasFontMetrics(fontId)
     if (hasMetrics) {
-        // eslint-disable-next-line no-console -- Logging for transparency
-        console.log(`[FONT_METRICS] Metrics already loaded for ${fontId}`)
+        log.debug('Metrics already loaded for {fontId}', { fontId })
         return
     }
 
-    // eslint-disable-next-line no-console -- Logging for transparency
-    console.log(`[FONT_METRICS] Metrics not found for ${fontId}, starting measurement...`)
+    log.debug('Metrics not found for {fontId}, starting measurement...', { fontId })
     const startTime = performance.now()
 
     // Run measurement asynchronously using requestIdleCallback for non-blocking behavior
@@ -72,13 +73,12 @@ export async function ensureFontMetricsLoaded(): Promise<void> {
 
             const elapsed = performance.now() - startTime
             const widthCount = Object.keys(widths).length
-            // eslint-disable-next-line no-console -- Logging for transparency and benchmarking
-            console.log(
-                `[FONT_METRICS] Measurement complete in ${elapsed.toFixed(0)}ms, stored ${widthCount.toString()} character widths`,
-            )
+            log.info('Measurement complete in {elapsed}ms, stored {widthCount} character widths', {
+                elapsed: elapsed.toFixed(0),
+                widthCount,
+            })
         } catch (error) {
-            // eslint-disable-next-line no-console -- Error logging
-            console.error('[FONT_METRICS] Failed to measure or store font metrics:', error)
+            log.error('Failed to measure or store font metrics: {error}', { error })
         }
     })
 }

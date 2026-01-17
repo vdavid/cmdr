@@ -19,6 +19,7 @@
         "font-metrics/measure.ts": { "reason": "Depends on DOM APIs" },
         "icon-cache.ts": { "reason": "Depends on Tauri APIs" },
         "licensing-store.svelte.ts": { "reason": "Depends on Tauri store APIs" },
+        "logger.ts": { "reason": "LogTape config, initialization code only" },
         "licensing/AboutWindow.svelte": { "reason": "UI component" },
         "licensing/CommercialReminderModal.svelte": { "reason": "UI component" },
         "licensing/ExpirationModal.svelte": { "reason": "UI component" },

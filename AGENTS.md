@@ -55,7 +55,9 @@ Run the smallest set of checks possible for efficiency while maintaining confide
 
 ## Debugging
 
-- Use temporary logging when needed. TODO: What loggers to use in Svelte, Rust, etc.?
+- **Svelte/TypeScript**: Use LogTape via `getAppLogger('feature')` from `$lib/logger`. Levels: debug, info, warn, error.
+  Dev mode shows info+, prod shows error+ only. Enable debug for a feature by adding to `debugCategories` in logger.ts.
+- **Rust**: Uses `env_logger` with `RUST_LOG` env var. Default: info. Example: `RUST_LOG=cmdr::network=debug pnpm dev`
 
 ## MCP
 

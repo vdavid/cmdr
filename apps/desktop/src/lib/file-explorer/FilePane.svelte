@@ -48,6 +48,9 @@
     import LoadingIcon from '../LoadingIcon.svelte'
     import VolumeBreadcrumb from './VolumeBreadcrumb.svelte'
     import PermissionDeniedPane from './PermissionDeniedPane.svelte'
+    import { getAppLogger } from '$lib/logger'
+
+    const log = getAppLogger('fileExplorer')
     import NetworkBrowser from './NetworkBrowser.svelte'
     import ShareBrowser from './ShareBrowser.svelte'
     import * as benchmark from '$lib/benchmark'
@@ -839,8 +842,7 @@
             }
         } catch (e) {
             mountError = e as MountError
-            // eslint-disable-next-line no-console
-            console.error('Mount failed:', mountError)
+            log.error('Mount failed: {error}', { error: mountError })
         } finally {
             isMounting = false
         }

@@ -38,6 +38,9 @@
         type NavigationHistory,
     } from './navigation-history'
     import { initNetworkDiscovery, cleanupNetworkDiscovery } from '$lib/network-store.svelte'
+    import { getAppLogger } from '$lib/logger'
+
+    const log = getAppLogger('fileExplorer')
 
     let leftPath = $state('~')
     let rightPath = $state('~')
@@ -857,8 +860,7 @@
      */
     export async function selectVolumeByIndex(pane: 'left' | 'right', index: number): Promise<boolean> {
         if (index < 0 || index >= volumes.length) {
-            // eslint-disable-next-line no-console
-            console.warn(`Invalid volume index: ${String(index)} (valid range: 0-${String(volumes.length - 1)})`)
+            log.warn('Invalid volume index: {index} (valid range: 0-{max})', { index, max: volumes.length - 1 })
             return false
         }
 

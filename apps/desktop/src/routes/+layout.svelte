@@ -4,8 +4,11 @@
     import { initWindowStateListener } from '$lib/window-state'
     import { startUpdateChecker } from '$lib/updater.svelte'
     import UpdateNotification from '$lib/UpdateNotification.svelte'
+    import { initLogger } from '$lib/logger'
 
     onMount(() => {
+        // Initialize logging first
+        void initLogger()
         // Initialize window state persistence on resize
         // This ensures window size/position survives hot reloads
         void initWindowStateListener()

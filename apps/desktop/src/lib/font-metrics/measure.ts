@@ -1,5 +1,9 @@
 // Character measurement using Canvas API
 
+import { getAppLogger } from '$lib/logger'
+
+const log = getAppLogger('fontMetrics')
+
 /**
  * Measures character widths for a given font configuration.
  * Covers BMP (Basic Multilingual Plane) + common emoji ranges.
@@ -152,9 +156,11 @@ export function measureCharWidths(fontFamily: string, fontSize: number, fontWeig
         }
     }
 
-    // eslint-disable-next-line no-console -- Logging for transparency
-    console.log(
-        `[FONT_METRICS] Measured ${totalChars.toString()} characters for ${fontFamily} ${fontWeight.toString()} ${fontSize.toString()}px`,
-    )
+    log.debug('Measured {totalChars} characters for {fontFamily} {fontWeight} {fontSize}px', {
+        totalChars,
+        fontFamily,
+        fontWeight,
+        fontSize,
+    })
     return widths
 }

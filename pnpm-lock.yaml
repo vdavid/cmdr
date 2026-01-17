@@ -16,6 +16,9 @@ importers:
       '@leeoniya/ufuzzy':
         specifier: ^1.0.19
         version: 1.0.19
+      '@logtape/logtape':
+        specifier: ^2.0.0
+        version: 2.0.0
       '@lottiefiles/dotlottie-svelte':
         specifier: ^0.8.12
         version: 0.8.12(svelte@5.46.1)
@@ -1277,6 +1280,9 @@ packages:
 
   '@lhci/utils@0.14.0':
     resolution: {integrity: sha512-LyP1RbvYQ9xNl7uLnl5AO8fDRata9MG/KYfVFKFkYenlsVS6QJsNjLzWNEoMIaE4jOPdQQlSp4tO7dtnyDxzbQ==}
+
+  '@logtape/logtape@2.0.0':
+    resolution: {integrity: sha512-z9Hp44mIRXAzgxSyQfFQiRuJ78EMnZa6g43UCxyGOO3RgHjn/7q+5OhdbhypkeHjiJRPxv6RmRsyF0S+OOYWnA==}
 
   '@lottiefiles/dotlottie-svelte@0.8.12':
     resolution: {integrity: sha512-SOripnlaEdkf8/uq99t/rR3x6EYSvcubmJjGoL4XU+S1Yvm6LgEZ/s5ZXEeBELVXLH2vH8FjFu+GP24LZc7b8g==}
@@ -6327,6 +6333,8 @@ snapshots:
       - react-native-b4a
       - supports-color
       - utf-8-validate
+
+  '@logtape/logtape@2.0.0': {}
 
   '@lottiefiles/dotlottie-svelte@0.8.12(svelte@5.46.1)':
     dependencies:
