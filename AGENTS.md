@@ -47,9 +47,12 @@ Run the smallest set of checks possible for efficiency while maintaining confide
 - Running a Rust test: `cd apps/desktop/src-tauri && cargo nextest run <test_name>`.
 - Running a Svelte test: `cd apps/desktop && pnpm vitest run -t "<test_name>"`
 - Running all Rust/Svelte tests: `./scripts/check.sh --rust` or `--svelte`
-- Running specific checks `/scripts/check.sh --check {rustfmt|clippy|cargo-audit|cargo-deny|rust-tests|prettier|eslint
-  |stylelint|svelte-check|knip|svelte-tests|e2e-tests|website-{prettier|eslint|typecheck|build}|license-server-
-  {prettier|eslint|typecheck|tests}` (can use multiple `--check` flags)
+- Running specific checks `/scripts/check.sh --check {desktop-svelte-prettier|desktop-svelte-eslint|stylelint|css-unused
+  |svelte-check|knip|type-drift|svelte-tests|desktop-e2e|rustfmt|clippy|cargo-audit|cargo-deny|cargo-udeps|jscpd-rust
+  |rust-tests|rust-tests-linux (slow|license-server-prettier|license-server-eslint|license-server-typecheck
+  |license-server-tests|gofmt|go-vet|staticcheck|ineffassign|misspell|gocyclo|nilaway|govulncheck|go-tests
+  |website-prettier|website-eslint|website-typecheck|website-build|website-e2e}` (can use multiple `--check` flags or
+  even a comma-separated list)
 - Run all: `./scripts/check.sh`. CI runs this. Runs all tests, linters, and formatters (with auto fixing) for all apps.
 - See also `./scripts/check.sh --help`
 

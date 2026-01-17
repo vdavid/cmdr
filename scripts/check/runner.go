@@ -151,7 +151,7 @@ func (r *Runner) Run() (failed bool, failedChecks []string) {
 	for _, state := range r.checks {
 		if state.Status == StatusFailed {
 			failed = true
-			failedChecks = append(failedChecks, state.Definition.ID)
+			failedChecks = append(failedChecks, state.Definition.CLIName())
 		} else if state.Status == StatusBlocked {
 			failed = true
 		}
@@ -308,7 +308,7 @@ func (r *Runner) printStatusLine() {
 	for _, state := range r.checks {
 		state.mu.Lock()
 		if state.Status == StatusRunning {
-			running = append(running, state.Definition.ID)
+			running = append(running, state.Definition.CLIName())
 		}
 		state.mu.Unlock()
 	}

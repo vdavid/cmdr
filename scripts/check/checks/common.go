@@ -83,6 +83,7 @@ type CheckFunc func(ctx *CheckContext) (CheckResult, error)
 // CheckDefinition defines a check's metadata and implementation.
 type CheckDefinition struct {
 	ID          string
+	Nickname    string // Short alias shown in --help and accepted by --check (if empty, ID is used)
 	DisplayName string
 	App         App
 	Tech        string

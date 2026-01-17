@@ -1,11 +1,14 @@
 package checks
 
+import "fmt"
+
 // AllChecks contains all check definitions with their metadata.
 // Dependencies define which checks must complete before this one runs.
 var AllChecks = []CheckDefinition{
 	// Desktop - Rust checks
 	{
 		ID:          "desktop-rust-rustfmt",
+		Nickname:    "rustfmt",
 		DisplayName: "rustfmt",
 		App:         AppDesktop,
 		Tech:        "🦀 Rust",
@@ -14,6 +17,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "desktop-rust-clippy",
+		Nickname:    "clippy",
 		DisplayName: "clippy",
 		App:         AppDesktop,
 		Tech:        "🦀 Rust",
@@ -22,6 +26,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "desktop-rust-cargo-audit",
+		Nickname:    "cargo-audit",
 		DisplayName: "cargo-audit",
 		App:         AppDesktop,
 		Tech:        "🦀 Rust",
@@ -30,6 +35,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "desktop-rust-cargo-deny",
+		Nickname:    "cargo-deny",
 		DisplayName: "cargo-deny",
 		App:         AppDesktop,
 		Tech:        "🦀 Rust",
@@ -38,6 +44,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "desktop-rust-cargo-udeps",
+		Nickname:    "cargo-udeps",
 		DisplayName: "cargo-udeps",
 		App:         AppDesktop,
 		Tech:        "🦀 Rust",
@@ -46,6 +53,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "desktop-rust-jscpd",
+		Nickname:    "jscpd-rust",
 		DisplayName: "jscpd",
 		App:         AppDesktop,
 		Tech:        "🦀 Rust",
@@ -54,6 +62,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "desktop-rust-tests",
+		Nickname:    "rust-tests",
 		DisplayName: "tests",
 		App:         AppDesktop,
 		Tech:        "🦀 Rust",
@@ -62,6 +71,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "desktop-rust-tests-linux",
+		Nickname:    "rust-tests-linux",
 		DisplayName: "tests (Linux)",
 		App:         AppDesktop,
 		Tech:        "🦀 Rust",
@@ -89,6 +99,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "desktop-svelte-stylelint",
+		Nickname:    "stylelint",
 		DisplayName: "stylelint",
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
@@ -97,6 +108,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "desktop-svelte-css-unused",
+		Nickname:    "css-unused",
 		DisplayName: "css-unused",
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
@@ -105,6 +117,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "desktop-svelte-check",
+		Nickname:    "svelte-check",
 		DisplayName: "svelte-check",
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
@@ -113,6 +126,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "desktop-svelte-knip",
+		Nickname:    "knip",
 		DisplayName: "knip",
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
@@ -121,6 +135,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "desktop-svelte-type-drift",
+		Nickname:    "type-drift",
 		DisplayName: "type-drift",
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
@@ -129,6 +144,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "desktop-svelte-tests",
+		Nickname:    "svelte-tests",
 		DisplayName: "tests",
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
@@ -137,6 +153,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "desktop-svelte-e2e",
+		Nickname:    "desktop-e2e",
 		DisplayName: "e2e",
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
@@ -223,6 +240,7 @@ var AllChecks = []CheckDefinition{
 	// Scripts - Go checks
 	{
 		ID:          "scripts-go-gofmt",
+		Nickname:    "gofmt",
 		DisplayName: "gofmt",
 		App:         AppScripts,
 		Tech:        "🐹 Go",
@@ -231,6 +249,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "scripts-go-vet",
+		Nickname:    "go-vet",
 		DisplayName: "go vet",
 		App:         AppScripts,
 		Tech:        "🐹 Go",
@@ -239,6 +258,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "scripts-go-staticcheck",
+		Nickname:    "staticcheck",
 		DisplayName: "staticcheck",
 		App:         AppScripts,
 		Tech:        "🐹 Go",
@@ -247,6 +267,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "scripts-go-ineffassign",
+		Nickname:    "ineffassign",
 		DisplayName: "ineffassign",
 		App:         AppScripts,
 		Tech:        "🐹 Go",
@@ -255,6 +276,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "scripts-go-misspell",
+		Nickname:    "misspell",
 		DisplayName: "misspell",
 		App:         AppScripts,
 		Tech:        "🐹 Go",
@@ -263,6 +285,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "scripts-go-gocyclo",
+		Nickname:    "gocyclo",
 		DisplayName: "gocyclo",
 		App:         AppScripts,
 		Tech:        "🐹 Go",
@@ -271,6 +294,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "scripts-go-nilaway",
+		Nickname:    "nilaway",
 		DisplayName: "nilaway",
 		App:         AppScripts,
 		Tech:        "🐹 Go",
@@ -279,6 +303,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "scripts-go-govulncheck",
+		Nickname:    "govulncheck",
 		DisplayName: "govulncheck",
 		App:         AppScripts,
 		Tech:        "🐹 Go",
@@ -287,6 +312,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "scripts-go-tests",
+		Nickname:    "go-tests",
 		DisplayName: "tests",
 		App:         AppScripts,
 		Tech:        "🐹 Go",
@@ -295,11 +321,42 @@ var AllChecks = []CheckDefinition{
 	},
 }
 
-// GetCheckByID returns a check definition by its ID.
+// GetCheckByID returns a check definition by its ID or nickname.
 func GetCheckByID(id string) *CheckDefinition {
 	for i := range AllChecks {
-		if AllChecks[i].ID == id {
+		if AllChecks[i].ID == id || AllChecks[i].Nickname == id {
 			return &AllChecks[i]
+		}
+	}
+	return nil
+}
+
+// CLIName returns the name to display/accept in CLI (nickname if set, else ID).
+func (c *CheckDefinition) CLIName() string {
+	if c.Nickname != "" {
+		return c.Nickname
+	}
+	return c.ID
+}
+
+// ValidateCheckNames checks for duplicate IDs/nicknames and returns an error if any are found.
+// This should be called at startup to catch configuration mistakes early.
+func ValidateCheckNames() error {
+	seen := make(map[string]string) // maps name -> check ID that owns it
+
+	for _, check := range AllChecks {
+		// Check the ID
+		if ownerID, exists := seen[check.ID]; exists {
+			return fmt.Errorf("duplicate check name '%s': used by both '%s' and '%s'", check.ID, ownerID, check.ID)
+		}
+		seen[check.ID] = check.ID
+
+		// Check the nickname if set
+		if check.Nickname != "" {
+			if ownerID, exists := seen[check.Nickname]; exists {
+				return fmt.Errorf("duplicate check name '%s': nickname for '%s' conflicts with '%s'", check.Nickname, check.ID, ownerID)
+			}
+			seen[check.Nickname] = check.ID
 		}
 	}
 	return nil

@@ -42,6 +42,12 @@ type cliFlags struct {
 }
 
 func main() {
+	// Validate check configuration at startup to catch nickname collisions early
+	if err := checks.ValidateCheckNames(); err != nil {
+		printError("Bad check configuration: %v", err)
+		os.Exit(1)
+	}
+
 	flags := parseFlags()
 	if flags == nil {
 		return // Help was shown
@@ -245,11 +251,11 @@ func showUsage() {
 			}
 			groupOrder = append(groupOrder, key)
 		}
-		id := check.ID
+		name := check.CLIName()
 		if check.IsSlow {
-			id += " (slow)"
+			name += " (slow)"
 		}
-		groupMap[key].ids = append(groupMap[key].ids, id)
+		groupMap[key].ids = append(groupMap[key].ids, name)
 	}
 
 	// Sort groups
