@@ -96,6 +96,14 @@ var AllChecks = []CheckDefinition{
 		Run:         RunStylelint,
 	},
 	{
+		ID:          "desktop-svelte-css-unused",
+		DisplayName: "css-unused",
+		App:         AppDesktop,
+		Tech:        "🎨 Svelte",
+		DependsOn:   []string{"desktop-svelte-stylelint"},
+		Run:         RunCSSUnused,
+	},
+	{
 		ID:          "desktop-svelte-check",
 		DisplayName: "svelte-check",
 		App:         AppDesktop,
