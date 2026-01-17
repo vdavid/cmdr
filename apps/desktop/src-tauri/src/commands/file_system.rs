@@ -233,6 +233,7 @@ pub fn get_listing_stats(
 /// Logs a frontend benchmark event to stderr (unified timeline with Rust events).
 /// Only logs if RUSTY_COMMANDER_BENCHMARK=1 is set.
 #[tauri::command]
+#[allow(clippy::print_stderr)] // Benchmark output intentionally bypasses log framework
 pub fn benchmark_log(message: String) {
     if crate::benchmark::is_enabled() {
         eprintln!("{}", message);

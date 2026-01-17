@@ -3,6 +3,9 @@
 //! Enable with RUSTY_COMMANDER_BENCHMARK=1 environment variable.
 //! All events are logged to stderr with microsecond timestamps.
 
+// Benchmarks intentionally use eprintln! for raw stderr output (not log framework)
+#![allow(clippy::print_stderr)]
+
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
 /// Global start time for relative timestamps

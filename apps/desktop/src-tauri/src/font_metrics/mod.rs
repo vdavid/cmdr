@@ -138,6 +138,7 @@ pub fn init_font_metrics<R: tauri::Runtime>(app: &tauri::AppHandle<R>, font_id: 
 }
 
 #[cfg(test)]
+#[allow(clippy::print_stdout)] // Test output is fine
 mod tests {
     use super::*;
 

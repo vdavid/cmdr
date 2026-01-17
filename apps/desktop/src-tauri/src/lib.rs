@@ -2,6 +2,8 @@
 #![deny(unused)]
 // Warn on unused dependencies to catch platform-specific cfg mismatches
 #![warn(unused_crate_dependencies)]
+// Use log::* macros instead of println!/eprintln! for proper log level control
+#![deny(clippy::print_stdout, clippy::print_stderr)]
 
 //noinspection RsUnusedImport
 // Silence false positives for dev dependencies (used only in benches/, not lib)

@@ -189,6 +189,7 @@ pub fn fetch_fresh_icon_for_extension(ext: &str) -> Option<DynamicImage> {
 }
 
 #[cfg(test)]
+#[allow(clippy::print_stdout)] // Test output is fine
 mod tests {
     use super::*;
 
