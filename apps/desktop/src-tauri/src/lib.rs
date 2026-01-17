@@ -251,6 +251,7 @@ pub fn run() {
             commands::file_system::resolve_write_conflict,
             commands::file_system::list_active_operations,
             commands::file_system::get_operation_status,
+            commands::file_system::get_listing_stats,
             commands::font_metrics::store_font_metrics,
             commands::font_metrics::has_font_metrics,
             commands::icons::get_icons,

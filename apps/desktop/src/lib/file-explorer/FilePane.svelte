@@ -9,6 +9,7 @@
         ListingErrorEvent,
         ListingProgressEvent,
         ListingReadCompleteEvent,
+        ListingStats,
         MountError,
         NetworkHost,
         ShareInfo,
@@ -21,6 +22,7 @@
         findContainingVolume,
         findFileIndex,
         getFileAt,
+        getListingStats,
         getMaxFilenameWidth,
         getSyncStatus,
         getTotalCount,
@@ -114,6 +116,9 @@
 
     // File under the cursor fetched separately for SelectionInfo
     let entryUnderCursor = $state<FileEntry | null>(null)
+
+    // Listing stats for SelectionInfo (selection summary in Full mode, totals display)
+    let listingStats = $state<ListingStats | null>(null)
 
     // Component refs for keyboard navigation
     let fullListRef: FullList | undefined = $state()
@@ -609,6 +614,9 @@
         // Fetch entry under the cursor for SelectionInfo
         void fetchEntryUnderCursor()
 
+        // Fetch listing stats for SelectionInfo
+        void fetchListingStats()
+
         // Sync state to MCP for context tools
         void syncPaneStateToMcp()
 
@@ -651,6 +659,24 @@
             entryUnderCursor = await getFileAt(listingId, backendIndex, includeHidden)
         } catch {
             entryUnderCursor = null
+        }
+    }
+
+    // Fetch listing stats for SelectionInfo (totals and selection stats)
+    async function fetchListingStats() {
+        if (!listingId) {
+            listingStats = null
+            return
+        }
+
+        try {
+            // Convert selected indices to backend indices (adjust for ".." entry)
+            const backendIndices =
+                selectedIndices.size > 0 ? Array.from(selectedIndices).map((i) => (hasParent ? i - 1 : i)) : undefined
+
+            listingStats = await getListingStats(listingId, includeHidden, backendIndices)
+        } catch {
+            listingStats = null
         }
     }
 
@@ -998,6 +1024,14 @@
         }
     })
 
+    // Re-fetch listing stats when selection changes
+    $effect(() => {
+        void selectedIndices.size // Track selection changes
+        if (listingId && !loading) {
+            void fetchListingStats()
+        }
+    })
+
     // Scroll the entry under the cursor into view when view mode changes
     $effect(() => {
         void viewMode
@@ -1210,9 +1244,15 @@
             />
         {/if}
     </div>
-    <!-- SelectionInfo shown in brief mode (not in network view) -->
-    {#if viewMode === 'brief' && !isNetworkView}
-        <SelectionInfo entry={entryUnderCursor} currentDirModifiedAt={undefined} />
+    <!-- SelectionInfo shown in both modes (not in network view) -->
+    {#if !isNetworkView}
+        <SelectionInfo
+            {viewMode}
+            entry={entryUnderCursor}
+            currentDirModifiedAt={undefined}
+            stats={listingStats}
+            selectedCount={selectedIndices.size}
+        />
     {/if}
 </div>
 

@@ -108,3 +108,23 @@ export function isBrokenSymlink(entry: FileEntry | null): boolean {
 export function isPermissionDenied(entry: FileEntry | null): boolean {
     return entry !== null && !entry.isSymlink && entry.permissions === 0 && entry.size === undefined
 }
+
+// ============================================================================
+// Selection summary utilities
+// ============================================================================
+
+/** Formats a count with proper singular/plural form */
+export function pluralize(count: number, singular: string, plural: string): string {
+    return count === 1 ? singular : plural
+}
+
+/** Formats a number with thousands separators using en-US locale */
+export function formatNumber(n: number): string {
+    return n.toLocaleString('en-US')
+}
+
+/** Calculates percentage, rounded to nearest integer */
+export function calculatePercentage(part: number, total: number): number {
+    if (total === 0) return 0
+    return Math.round((part / total) * 100)
+}

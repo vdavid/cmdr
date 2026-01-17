@@ -17,6 +17,7 @@ import type {
     ListingErrorEvent,
     ListingProgressEvent,
     ListingStartResult,
+    ListingStats,
     MountError,
     MountResult,
     NetworkHost,
@@ -219,6 +220,22 @@ export async function getFileAt(listingId: string, index: number, includeHidden:
  */
 export async function listDirectoryEnd(listingId: string): Promise<void> {
     await invoke('list_directory_end', { listingId })
+}
+
+/**
+ * Gets statistics about a cached listing.
+ * Returns total file/dir counts and sizes. If selectedIndices is provided,
+ * also returns statistics for the selected items.
+ * @param listingId - The listing ID from listDirectoryStart.
+ * @param includeHidden - Whether to include hidden files in calculations.
+ * @param selectedIndices - Optional indices of selected files to calculate selection stats.
+ */
+export async function getListingStats(
+    listingId: string,
+    includeHidden: boolean,
+    selectedIndices?: number[],
+): Promise<ListingStats> {
+    return invoke<ListingStats>('get_listing_stats', { listingId, includeHidden, selectedIndices })
 }
 
 /**

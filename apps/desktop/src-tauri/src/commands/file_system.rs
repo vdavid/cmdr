@@ -2,14 +2,15 @@
 
 use crate::file_system::write_operations::{ConflictResolution, resolve_write_conflict as ops_resolve_write_conflict};
 use crate::file_system::{
-    FileEntry, ListingStartResult, OperationStatus, OperationSummary, ResortResult, SortColumn, SortOrder,
-    StreamingListingStartResult, WriteOperationConfig, WriteOperationError, WriteOperationStartResult,
+    FileEntry, ListingStartResult, ListingStats, OperationStatus, OperationSummary, ResortResult, SortColumn,
+    SortOrder, StreamingListingStartResult, WriteOperationConfig, WriteOperationError, WriteOperationStartResult,
     cancel_listing as ops_cancel_listing, cancel_write_operation as ops_cancel_write_operation,
     copy_files_start as ops_copy_files_start, delete_files_start as ops_delete_files_start,
     find_file_index as ops_find_file_index, get_file_at as ops_get_file_at, get_file_range as ops_get_file_range,
-    get_max_filename_width as ops_get_max_filename_width, get_operation_status as ops_get_operation_status,
-    get_total_count as ops_get_total_count, list_active_operations as ops_list_active_operations,
-    list_directory_end as ops_list_directory_end, list_directory_start_streaming as ops_list_directory_start_streaming,
+    get_listing_stats as ops_get_listing_stats, get_max_filename_width as ops_get_max_filename_width,
+    get_operation_status as ops_get_operation_status, get_total_count as ops_get_total_count,
+    list_active_operations as ops_list_active_operations, list_directory_end as ops_list_directory_end,
+    list_directory_start_streaming as ops_list_directory_start_streaming,
     list_directory_start_with_volume as ops_list_directory_start_with_volume, move_files_start as ops_move_files_start,
     resort_listing as ops_resort_listing,
 };
@@ -205,6 +206,24 @@ pub fn get_file_at(listing_id: String, index: usize, include_hidden: bool) -> Re
 #[tauri::command]
 pub fn list_directory_end(listing_id: String) {
     ops_list_directory_end(&listing_id);
+}
+
+/// Gets statistics about a cached listing.
+///
+/// Returns total file/dir counts and sizes. If `selected_indices` is provided,
+/// also returns statistics for the selected items.
+///
+/// # Arguments
+/// * `listing_id` - The listing ID from `list_directory_start`.
+/// * `include_hidden` - Whether to include hidden files in calculations.
+/// * `selected_indices` - Optional indices of selected files to calculate selection stats.
+#[tauri::command]
+pub fn get_listing_stats(
+    listing_id: String,
+    include_hidden: bool,
+    selected_indices: Option<Vec<usize>>,
+) -> Result<ListingStats, String> {
+    ops_get_listing_stats(&listing_id, include_hidden, selected_indices.as_deref())
 }
 
 // ============================================================================

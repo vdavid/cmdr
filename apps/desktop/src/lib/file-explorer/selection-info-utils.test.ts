@@ -12,6 +12,9 @@ import {
     isBrokenSymlink,
     isPermissionDenied,
     sizeTierClasses,
+    pluralize,
+    formatNumber,
+    calculatePercentage,
 } from './selection-info-utils'
 import type { FileEntry } from './types'
 
@@ -340,5 +343,81 @@ describe('isPermissionDenied', () => {
 describe('sizeTierClasses', () => {
     it('has correct classes in order', () => {
         expect(sizeTierClasses).toEqual(['size-bytes', 'size-kb', 'size-mb', 'size-gb', 'size-tb'])
+    })
+})
+
+// ============================================================================
+// Selection summary utility tests
+// ============================================================================
+
+describe('pluralize', () => {
+    it('returns singular for count of 1', () => {
+        expect(pluralize(1, 'file', 'files')).toBe('file')
+        expect(pluralize(1, 'dir', 'dirs')).toBe('dir')
+    })
+
+    it('returns plural for count of 0', () => {
+        expect(pluralize(0, 'file', 'files')).toBe('files')
+        expect(pluralize(0, 'dir', 'dirs')).toBe('dirs')
+    })
+
+    it('returns plural for count greater than 1', () => {
+        expect(pluralize(2, 'file', 'files')).toBe('files')
+        expect(pluralize(100, 'dir', 'dirs')).toBe('dirs')
+        expect(pluralize(1000000, 'byte', 'bytes')).toBe('bytes')
+    })
+})
+
+describe('formatNumber', () => {
+    it('formats small numbers without separators', () => {
+        expect(formatNumber(0)).toBe('0')
+        expect(formatNumber(1)).toBe('1')
+        expect(formatNumber(999)).toBe('999')
+    })
+
+    it('formats thousands with comma separator', () => {
+        expect(formatNumber(1000)).toBe('1,000')
+        expect(formatNumber(1234)).toBe('1,234')
+        expect(formatNumber(9999)).toBe('9,999')
+    })
+
+    it('formats millions with multiple comma separators', () => {
+        expect(formatNumber(1000000)).toBe('1,000,000')
+        expect(formatNumber(1234567)).toBe('1,234,567')
+    })
+
+    it('formats large numbers correctly', () => {
+        expect(formatNumber(1234567890)).toBe('1,234,567,890')
+    })
+})
+
+describe('calculatePercentage', () => {
+    it('returns 0 when total is 0', () => {
+        expect(calculatePercentage(0, 0)).toBe(0)
+        expect(calculatePercentage(100, 0)).toBe(0)
+    })
+
+    it('returns 0 for 0 of n', () => {
+        expect(calculatePercentage(0, 100)).toBe(0)
+        expect(calculatePercentage(0, 1000)).toBe(0)
+    })
+
+    it('returns 100 for n of n', () => {
+        expect(calculatePercentage(100, 100)).toBe(100)
+        expect(calculatePercentage(1, 1)).toBe(100)
+    })
+
+    it('calculates correct percentage', () => {
+        expect(calculatePercentage(50, 100)).toBe(50)
+        expect(calculatePercentage(25, 100)).toBe(25)
+        expect(calculatePercentage(1, 4)).toBe(25)
+        expect(calculatePercentage(1, 3)).toBe(33) // rounds down
+        expect(calculatePercentage(2, 3)).toBe(67) // rounds up
+    })
+
+    it('rounds to nearest integer', () => {
+        expect(calculatePercentage(1, 6)).toBe(17) // 16.67 -> 17
+        expect(calculatePercentage(1, 7)).toBe(14) // 14.29 -> 14
+        expect(calculatePercentage(5, 6)).toBe(83) // 83.33 -> 83
     })
 })

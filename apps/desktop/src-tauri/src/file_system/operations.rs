@@ -1468,3 +1468,105 @@ pub fn cancel_listing(listing_id: &str) {
         benchmark::log_event_value("cancel_listing", listing_id);
     }
 }
+
+// ============================================================================
+// Listing statistics for selection info display
+// ============================================================================
+
+/// Statistics about a directory listing.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListingStats {
+    /// Total number of files (not directories)
+    pub total_files: usize,
+    /// Total number of directories
+    pub total_dirs: usize,
+    /// Total size of all files in bytes
+    pub total_file_size: u64,
+    /// Number of selected files (if selected_indices provided)
+    pub selected_files: Option<usize>,
+    /// Number of selected directories (if selected_indices provided)
+    pub selected_dirs: Option<usize>,
+    /// Total size of selected files in bytes (if selected_indices provided)
+    pub selected_file_size: Option<u64>,
+}
+
+/// Gets statistics about a cached listing.
+///
+/// Returns total file/dir counts and sizes. If `selected_indices` is provided,
+/// also returns statistics for the selected items.
+///
+/// # Arguments
+/// * `listing_id` - The listing ID from `list_directory_start`
+/// * `include_hidden` - Whether to include hidden files in calculations
+/// * `selected_indices` - Optional indices of selected files to calculate selection stats
+///
+/// # Returns
+/// Statistics about the listing (totals and optionally selection stats).
+pub fn get_listing_stats(
+    listing_id: &str,
+    include_hidden: bool,
+    selected_indices: Option<&[usize]>,
+) -> Result<ListingStats, String> {
+    let cache = LISTING_CACHE.read().map_err(|_| "Failed to acquire cache lock")?;
+
+    let listing = cache
+        .get(listing_id)
+        .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
+
+    // Get visible entries based on include_hidden setting
+    let visible_entries: Vec<&FileEntry> = if include_hidden {
+        listing.entries.iter().collect()
+    } else {
+        listing.entries.iter().filter(|e| !e.name.starts_with('.')).collect()
+    };
+
+    // Calculate totals
+    let mut total_files: usize = 0;
+    let mut total_dirs: usize = 0;
+    let mut total_file_size: u64 = 0;
+
+    for entry in &visible_entries {
+        if entry.is_directory {
+            total_dirs += 1;
+        } else {
+            total_files += 1;
+            if let Some(size) = entry.size {
+                total_file_size += size;
+            }
+        }
+    }
+
+    // Calculate selection stats if indices provided
+    let (selected_files, selected_dirs, selected_file_size) = if let Some(indices) = selected_indices {
+        let mut sel_files: usize = 0;
+        let mut sel_dirs: usize = 0;
+        let mut sel_size: u64 = 0;
+
+        for &idx in indices {
+            if let Some(entry) = visible_entries.get(idx) {
+                if entry.is_directory {
+                    sel_dirs += 1;
+                } else {
+                    sel_files += 1;
+                    if let Some(size) = entry.size {
+                        sel_size += size;
+                    }
+                }
+            }
+        }
+
+        (Some(sel_files), Some(sel_dirs), Some(sel_size))
+    } else {
+        (None, None, None)
+    };
+
+    Ok(ListingStats {
+        total_files,
+        total_dirs,
+        total_file_size,
+        selected_files,
+        selected_dirs,
+        selected_file_size,
+    })
+}
