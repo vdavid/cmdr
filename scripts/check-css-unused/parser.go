@@ -21,12 +21,12 @@ var (
 	classDynamicRegex = regexp.MustCompile(`class:([a-zA-Z_][a-zA-Z0-9_-]*)`)
 )
 
-// reservedCssNames contains pseudo-classes/elements that look like class names
+// reservedCssNames contains names that should not be treated as class definitions.
+// Note: We don't filter pseudo-class names here because our regex only matches
+// .classname patterns, not :pseudo patterns. The only exception is :global()
+// which Svelte uses for unscoped styles.
 var reservedCssNames = map[string]bool{
-	"root": true, "before": true, "after": true, "hover": true, "focus": true,
-	"active": true, "first": true, "last": true, "nth": true, "not": true,
-	"global": true, "checked": true, "disabled": true, "empty": true,
-	"enabled": true, "visited": true, "link": true, "target": true,
+	"global": true, // Svelte's :global() modifier, not a real class
 }
 
 // extractStyleSection extracts content between <style> and </style> tags.
@@ -172,40 +172,5 @@ func isValidClassName(s string) bool {
 		}
 	}
 
-	// Filter out obvious non-class patterns (event names, test IDs)
-	if looksLikeEventName(s) || looksLikeTestId(s) {
-		return false
-	}
-
 	return true
-}
-
-// looksLikeEventName returns true if the string looks like a Tauri/DOM event name.
-func looksLikeEventName(s string) bool {
-	eventPatterns := []string{
-		"-complete", "-progress", "-error", "-cancelled", "-changed",
-		"-mounted", "-unmounted", "-found", "-lost", "-resolved",
-		"-conflict", "-state-changed",
-	}
-	for _, pattern := range eventPatterns {
-		if strings.HasSuffix(s, pattern) {
-			return true
-		}
-	}
-	return false
-}
-
-// looksLikeTestId returns true if the string looks like a test identifier.
-func looksLikeTestId(s string) bool {
-	testPatterns := []string{"test-", "mock-", "invalid-", "valid-", "tampered-"}
-	for _, pattern := range testPatterns {
-		if strings.HasPrefix(s, pattern) {
-			return true
-		}
-	}
-	// Also filter listing-N patterns used in tests
-	if strings.HasPrefix(s, "listing-") {
-		return true
-	}
-	return false
 }

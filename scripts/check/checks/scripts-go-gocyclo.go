@@ -22,26 +22,51 @@ func RunGocyclo(ctx *CheckContext) (CheckResult, error) {
 		}
 	}
 
-	// Count Go files
-	findCmd := exec.Command("find", ".", "-name", "*.go", "-type", "f")
-	findCmd.Dir = scriptsDir
-	findOutput, _ := RunCommand(findCmd, true)
-	fileCount := 0
-	if strings.TrimSpace(findOutput) != "" {
-		fileCount = len(strings.Split(strings.TrimSpace(findOutput), "\n"))
+	modules, err := FindGoModules(scriptsDir)
+	if err != nil {
+		return CheckResult{}, fmt.Errorf("failed to find Go modules: %w", err)
 	}
 
-	// Run gocyclo with threshold
-	cmd := exec.Command("gocyclo", "-over", fmt.Sprintf("%d", GocycloThreshold), ".")
-	cmd.Dir = scriptsDir
-	output, err := RunCommand(cmd, true)
+	var allIssues []string
+	fileCount := 0
 
-	// gocyclo returns exit code 1 if it finds functions over the threshold
-	if err != nil || strings.TrimSpace(output) != "" {
-		if strings.TrimSpace(output) != "" {
-			return CheckResult{}, fmt.Errorf("functions exceed complexity threshold of %d\n%s", GocycloThreshold, indentOutput(output))
+	for _, mod := range modules {
+		modDir := filepath.Join(scriptsDir, mod)
+
+		// Count Go files in this module
+		findCmd := exec.Command("find", ".", "-name", "*.go", "-type", "f")
+		findCmd.Dir = modDir
+		findOutput, _ := RunCommand(findCmd, true)
+		if strings.TrimSpace(findOutput) != "" {
+			fileCount += len(strings.Split(strings.TrimSpace(findOutput), "\n"))
 		}
-		return CheckResult{}, fmt.Errorf("gocyclo failed\n%s", indentOutput(output))
+
+		// Run gocyclo with threshold
+		cmd := exec.Command("gocyclo", "-over", fmt.Sprintf("%d", GocycloThreshold), ".")
+		cmd.Dir = modDir
+		output, err := RunCommand(cmd, true)
+
+		// gocyclo returns exit code 1 if it finds functions over the threshold
+		if err != nil || strings.TrimSpace(output) != "" {
+			if strings.TrimSpace(output) != "" {
+				// Rewrite file paths to be relative to repo root for clarity
+				// gocyclo format: "<complexity> <package> <function> <file>:<line>"
+				lines := strings.Split(strings.TrimSpace(output), "\n")
+				for i, line := range lines {
+					// Find the last space before the file:line part and prefix the file path
+					parts := strings.Fields(line)
+					if len(parts) >= 4 {
+						parts[3] = fmt.Sprintf("scripts/%s/%s", mod, parts[3])
+						lines[i] = strings.Join(parts, " ")
+					}
+				}
+				allIssues = append(allIssues, strings.Join(lines, "\n"))
+			}
+		}
+	}
+
+	if len(allIssues) > 0 {
+		return CheckResult{}, fmt.Errorf("functions exceed complexity threshold of %d\n%s", GocycloThreshold, indentOutput(strings.Join(allIssues, "\n")))
 	}
 
 	if fileCount > 0 {
