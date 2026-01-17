@@ -205,7 +205,7 @@ async fn handle_mcp_get(headers: HeaderMap) -> Response {
         .and_then(|v| v.to_str().ok())
         .unwrap_or("none");
 
-    log::info!(
+    log::debug!(
         "MCP: GET /mcp - SSE connection (user-agent: {}, origin: {})",
         user_agent,
         origin
@@ -282,7 +282,7 @@ async fn handle_mcp_post<R: Runtime>(
     headers: HeaderMap,
     Json(request): Json<McpRequest>,
 ) -> Response {
-    log::info!("MCP: POST /mcp - method: {}", request.method);
+    log::debug!("MCP: POST /mcp - method: {}", request.method);
     log::debug!("MCP: POST headers: {:?}", headers);
 
     // 1. Validate Origin header (security requirement)
