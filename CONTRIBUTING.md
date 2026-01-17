@@ -21,6 +21,26 @@ pnpm dev
 
 This starts both the Svelte frontend and the Rust backend with hot reload.
 
+## Logging
+
+### Rust
+
+Rust uses the standard `RUST_LOG` env var for log level control. The `pnpm dev` command sets a sensible default
+(`smb=warn,sspi=warn,info`) to silence noisy external crate logs. Override with your own `RUST_LOG` as needed:
+
+```bash
+# Only warnings and errors
+RUST_LOG=warn pnpm dev
+
+# Verbose network debugging
+RUST_LOG=cmdr_lib::network=debug,info pnpm dev
+
+# Unsilence MCP logs by running the command directly, without the env vars built-in to `pnpm dev` 
+pnpm --filter @cmdr/desktop tauri dev
+```
+
+Module paths follow the Rust crate structure: `cmdr_lib::mcp`, `cmdr_lib::network`, `cmdr_lib::licensing`, etc.
+
 ## Tooling
 
 Run all checks before committing with `./scripts/check.sh`. And here is a more complete list:
