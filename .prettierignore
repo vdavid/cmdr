@@ -12,11 +12,7 @@ node_modules/
 **/.astro/
 
 # Rust
-**/target/
 **/src-tauri/
 
 # Lock files
 pnpm-lock.yaml
-
-# Generated
-**/*.generated.*

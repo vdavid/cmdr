@@ -184,6 +184,8 @@ func (r *Runner) canStart(state *CheckState) bool {
 			state.Status = StatusBlocked
 			r.printBlocked(state, depID)
 			return false
+		case StatusCompleted:
+		case StatusSkipped:
 		}
 	}
 	return true

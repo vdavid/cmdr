@@ -21,6 +21,7 @@ const isBenchmarkEnabled = (): boolean => {
         return true
     }
     // Also check for runtime flag (useful for testing)
+    // noinspection PointlessBooleanExpressionJS - It can't be simplified.
     return typeof window !== 'undefined' && (window as unknown as { __BENCHMARK__?: boolean }).__BENCHMARK__ === true
 }
 
@@ -71,34 +72,4 @@ export function logEventValue(event: string, value: unknown): void {
     if (!isBenchmarkEnabled()) return
     const ts = nowMicros()
     sendToRust(`[TIMELINE] ${String(ts).padStart(10)}μs | FE   | ${event} = ${String(value)}`)
-}
-
-/**
- * Helper class for timing a block of code
- */
-export class TimedBlock {
-    private name: string
-    private start: number
-
-    constructor(name: string) {
-        this.name = name
-        this.start = nowMicros()
-        if (isBenchmarkEnabled()) {
-            sendToRust(`[TIMELINE] ${String(this.start).padStart(10)}μs | FE   | ${name} START`)
-        }
-    }
-
-    end(): void {
-        if (!isBenchmarkEnabled()) return
-        const endTime = nowMicros()
-        const duration = endTime - this.start
-        sendToRust(`[TIMELINE] ${String(endTime).padStart(10)}μs | FE   | ${this.name} END (${String(duration)}μs)`)
-    }
-}
-
-/**
- * Create a timed block that auto-logs start
- */
-export function timedBlock(name: string): TimedBlock {
-    return new TimedBlock(name)
 }

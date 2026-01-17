@@ -16,7 +16,7 @@ func main() {
 
 	rootDir, err := findRootDir()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%sError: %v%s\n", colorRed, err, colorReset)
+		_, _ = fmt.Fprintf(os.Stderr, "%sError: %v%s\n", colorRed, err, colorReset)
 		os.Exit(1)
 	}
 
@@ -25,7 +25,7 @@ func main() {
 	// Scan the codebase
 	result, err := ScanDesktopApp(srcDir)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%sError scanning files: %v%s\n", colorRed, err, colorReset)
+		_, _ = fmt.Fprintf(os.Stderr, "%sError scanning files: %v%s\n", colorRed, err, colorReset)
 		os.Exit(1)
 	}
 

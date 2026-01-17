@@ -7,14 +7,14 @@
 
 ## Summary
 
-Implement virtual scrolling for FileList.svelte to handle 100k+ files without DOM performance issues. Currently renders
-all files as DOM elements, goal is to only render ~50 visible items + buffer.
+Implement virtual scrolling for `FileList.svelte` to handle 100k+ files without DOM performance issues. Currently,
+renders all files as DOM elements, goal is to only render ~50 visible items + buffer.
 
 ## Tasks
 
 ### Phase 1: Core virtual scrolling implementation
 
-- [x] **1.1** Add scroll container state variables to FileList.svelte
+- [x] **1.1** Add scroll container state variables to `FileList.svelte`
     - `containerHeight` (bind to container clientHeight)
     - `scrollTop` (update on scroll event)
     - `ROW_HEIGHT` constant (20px based on current CSS - verified)

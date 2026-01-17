@@ -1,5 +1,5 @@
 ---
-import { ViewTransitions } from 'astro:transitions'
+import { ClientRouter } from 'astro:transitions'
 
 interface Props {
     title: string
@@ -15,7 +15,7 @@ const {
 <!doctype html>
 <html lang="en">
     <head>
-        <ViewTransitions />
+        <ClientRouter />
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="description" content={description} />

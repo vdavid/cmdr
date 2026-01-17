@@ -77,7 +77,7 @@ fn test_copy_directory_recursive() {
 
     #[cfg(target_os = "macos")]
     {
-        use super::macos_copy::{copy_file_native, CopyOptions};
+        use super::macos_copy::{CopyOptions, copy_file_native};
 
         let result = copy_file_native(&src_dir, &dst_dir.join("src"), CopyOptions::default(), None);
         assert!(result.is_ok());
@@ -314,7 +314,7 @@ fn test_empty_directory() {
 
     #[cfg(target_os = "macos")]
     {
-        use super::macos_copy::{copy_file_native, CopyOptions};
+        use super::macos_copy::{CopyOptions, copy_file_native};
 
         let result = copy_file_native(&empty_subdir, &dst_dir.join("empty"), CopyOptions::default(), None);
         assert!(result.is_ok());

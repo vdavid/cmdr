@@ -279,34 +279,34 @@ async fn list_shares_smb_rs(
                         // smb-rs returned 0 shares or failed - fall back to smbutil with auth
                         // This handles cases where smb-rs internally falls back to guest
                         debug!("smb-rs auth returned empty or failed, trying smbutil with credentials");
-                        match list_shares_smbutil_with_auth(hostname, ip_address, port, user, pass).await {
+                        return match list_shares_smbutil_with_auth(hostname, ip_address, port, user, pass).await {
                             Ok(result) => {
                                 debug!("smbutil with auth succeeded, got {} shares", result.shares.len());
-                                return Ok(result);
+                                Ok(result)
                             }
                             Err(e) => {
                                 debug!("smbutil with auth also failed: {:?}", e);
-                                return Err(e);
+                                Err(e)
                             }
-                        }
+                        };
                     }
                 }
             } else {
                 // No explicit credentials provided - try smbutil which uses macOS Keychain
                 // This allows seamless login when user has previously connected via Finder
                 debug!("No explicit credentials, trying smbutil with Keychain...");
-                match list_shares_smbutil_authenticated_from_keychain(hostname, ip_address, port).await {
+                return match list_shares_smbutil_authenticated_from_keychain(hostname, ip_address, port).await {
                     Ok(result) => {
                         debug!("smbutil with Keychain succeeded, got {} shares", result.shares.len());
-                        return Ok(result);
+                        Ok(result)
                     }
                     Err(e) => {
                         debug!("smbutil with Keychain failed: {:?}, requiring manual login", e);
-                        return Err(ShareListError::AuthRequired(
+                        Err(ShareListError::AuthRequired(
                             "This server requires authentication to list shares".to_string(),
-                        ));
+                        ))
                     }
-                }
+                };
             }
         }
         Err(e) => {
@@ -404,7 +404,7 @@ async fn list_shares_smbutil_authenticated_from_keychain(
 }
 
 /// Lists shares using macOS smbutil command WITH credentials.
-/// This is used when smb-rs authentication fails but we have credentials.
+/// This is used when smb-rs authentication fails, but we have credentials.
 #[cfg(target_os = "macos")]
 async fn list_shares_smbutil_with_auth(
     hostname: &str,

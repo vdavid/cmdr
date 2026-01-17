@@ -4,8 +4,8 @@
 
 - The app takes **~20 seconds** from launch to becoming usable
 - User reports: "5 seconds for the loading indicator to appear, then 15 more seconds to load"
-- Yesterday it was 3-5 seconds total
-- Issue started suddenly - user verified even 5-day-old git commits are now slow
+- Yesterday it was 3–5 seconds total
+- Issue started suddenly—user verified even 5-day-old git commits are now slow
 - Other file managers on the system start fast, so it's not a general system issue
 
 ## Key findings
@@ -31,7 +31,7 @@ The `+page.svelte` script doesn't start executing until **~20 seconds** after pa
 
 This is a **21-second gap** between vite connecting and the script executing!
 
-The delay is happening **inside the WKWebView** - not in Rust, not in network I/O.
+The delay is happening **inside the WKWebView**: not in Rust, not in network I/O.
 
 ## Things we've tried
 
@@ -59,13 +59,13 @@ The delay is happening **inside the WKWebView** - not in Rust, not in network I/
 
 - Deleted `~/Library/Caches/cmdr/WebKit/` (58MB)
 - Restarted app
-- **No improvement** - still 20+ seconds
+- **No improvement**: still 20+ seconds
 
 ### 5. ❌ Verified Dropbox is not the issue
 
 - User quit Dropbox completely
 - Folder is now just a regular folder
-- **No improvement** - still slow
+- **No improvement**: still slow
 
 ### 6. ❌ Tried production build
 
@@ -83,7 +83,7 @@ The delay is happening **inside the WKWebView** - not in Rust, not in network I/
 
 - Commented out `tauri_plugin_mcp_bridge::init()` in `lib.rs`
 - Rebuilt and ran
-- **No improvement** - still slow
+- **No improvement**: still slow
 
 ### 9. ❌ Verified network is fast
 
@@ -126,7 +126,7 @@ Possible causes to investigate:
 
 ### Key findings from `log show`
 
-1. **PlugInKit errors** - Multiple `Connection interrupted` errors:
+1. **PlugInKit errors**: Multiple `Connection interrupted` errors:
 
     ```
     [com.apple.PlugInKit:xpc] XPC error talking to pkd: Connection interrupted
@@ -176,11 +176,11 @@ appears to be extremely slow, possibly due to:
 
 ### Possible solutions
 
-1. **Add explicit source constraints** - Use `@source` directive to limit scanning
-2. **Pre-build Tailwind CSS** - Generate CSS at build time instead of JIT
-3. **Downgrade to Tailwind v3** - May have faster dev mode
-4. **Use production build for dev** - `pnpm tauri dev --release` with pre-built CSS
-5. **Remove Tailwind entirely** - Use vanilla CSS with CSS custom properties (already have design tokens)
+1. **Add explicit source constraints**: Use `@source` directive to limit scanning
+2. **Pre-build Tailwind CSS**: Generate CSS at build time instead of JIT
+3. **Downgrade to Tailwind v3**: May have faster dev mode
+4. **Use production build for dev**: `pnpm tauri dev --release` with pre-built CSS
+5. **Remove Tailwind entirely**: Use vanilla CSS with CSS custom properties (already have design tokens)
 
 ## RESOLUTION (2026-01-01 01:48)
 
@@ -206,14 +206,14 @@ Even old code was slow because the issue is system-level combined with Tailwind'
 
 ## Future optimization ideas
 
-The remaining ~5 second delay before app.html renders is WKWebView initialization, which is harder to optimize.
+The remaining ~5-second delay before app.html renders is WKWebView initialization, which is harder to optimize.
 Potential areas to investigate:
 
-1. **window-state plugin** - May be restoring window position slowly at startup
-2. **WKWebView preloading** - Tauri may support warming up the webview earlier
-3. **Reduce plugins** - Each Tauri plugin adds overhead during initialization
-4. **Production builds** - Use `--release` for faster native code execution
-5. **macOS system state** - The PlugInKit errors suggest a system-level issue that could be resolved by restarting macOS
+1. **window-state plugin**: May be restoring window position slowly at startup
+2. **WKWebView preloading**: Tauri may support warming up the webview earlier
+3. **Reduce plugins**: Each Tauri plugin adds overhead during initialization
+4. **Production builds**: Use `--release` for faster native code execution
+5. **macOS system state**: The PlugInKit errors suggest a system-level issue that could be resolved by restarting macOS
    or clearing system caches
 
 ## Debug code cleanup

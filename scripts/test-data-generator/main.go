@@ -355,7 +355,9 @@ func createBigFile(path string, size int64) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func(f *os.File) {
+		_ = f.Close()
+	}(f)
 
 	// Write random data in chunks for better performance
 	const chunkSize = 64 * 1024 * 1024 // 64MB chunks
