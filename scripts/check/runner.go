@@ -310,10 +310,28 @@ func (r *Runner) printStatusLine() {
 		return
 	}
 
-	line := "Waiting for: " + strings.Join(running, ", ")
-	maxLen := 80
-	if len(line) > maxLen {
-		line = line[:maxLen-3] + "..."
+	const maxLen = 80
+	const prefix = "Waiting for: "
+
+	// Try to fit as many checks as possible with "... and N more" suffix
+	line := prefix + strings.Join(running, ", ")
+	if len(line) <= maxLen {
+		// All checks fit
+	} else {
+		// Find how many checks fit with the suffix
+		for i := len(running) - 1; i >= 1; i-- {
+			remaining := len(running) - i
+			suffix := fmt.Sprintf("... and %d more", remaining)
+			partial := prefix + strings.Join(running[:i], ", ") + " " + suffix
+			if len(partial) <= maxLen {
+				line = partial
+				break
+			}
+		}
+		// If even one check doesn't fit, just show the count
+		if len(line) > maxLen {
+			line = fmt.Sprintf("%s%d checks running", prefix, len(running))
+		}
 	}
 
 	// Clear previous line and print new one
