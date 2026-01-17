@@ -1,11 +1,12 @@
 <script lang="ts">
     interface Props {
+        openingFolder?: boolean
         loadedCount?: number
         finalizingCount?: number
         showCancelHint?: boolean
     }
 
-    const { loadedCount, finalizingCount, showCancelHint = false }: Props = $props()
+    const { openingFolder = false, loadedCount, finalizingCount, showCancelHint = false }: Props = $props()
 
     function formatNumber(n: number): string {
         return n.toLocaleString()
@@ -18,6 +19,8 @@
         <div class="loading-text">All {formatNumber(finalizingCount)} files loaded, just a moment now.</div>
     {:else if loadedCount !== undefined}
         <div class="loading-text">Loaded {formatNumber(loadedCount)} files...</div>
+    {:else if openingFolder}
+        <div class="loading-text">Opening folder...</div>
     {:else}
         <div class="loading-text">Loading...</div>
     {/if}

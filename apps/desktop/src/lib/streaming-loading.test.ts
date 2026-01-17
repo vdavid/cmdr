@@ -8,6 +8,7 @@ import { mount, tick } from 'svelte'
 import LoadingIcon from './LoadingIcon.svelte'
 import type {
     StreamingListingStartResult,
+    ListingOpeningEvent,
     ListingProgressEvent,
     ListingReadCompleteEvent,
     ListingCompleteEvent,
@@ -143,6 +144,40 @@ describe('LoadingIcon component', () => {
         })
     })
 
+    describe('openingFolder prop', () => {
+        it('shows "Opening folder..." when openingFolder is true', async () => {
+            mount(LoadingIcon, { target, props: { openingFolder: true } })
+            await tick()
+
+            const loadingText = target.querySelector('.loading-text')
+            expect(loadingText?.textContent).toBe('Opening folder...')
+        })
+
+        it('loadedCount takes precedence over openingFolder', async () => {
+            mount(LoadingIcon, { target, props: { openingFolder: true, loadedCount: 100 } })
+            await tick()
+
+            const loadingText = target.querySelector('.loading-text')
+            expect(loadingText?.textContent).toBe('Loaded 100 files...')
+        })
+
+        it('finalizingCount takes precedence over openingFolder', async () => {
+            mount(LoadingIcon, { target, props: { openingFolder: true, finalizingCount: 500 } })
+            await tick()
+
+            const loadingText = target.querySelector('.loading-text')
+            expect(loadingText?.textContent).toBe('All 500 files loaded, just a moment now.')
+        })
+
+        it('shows "Loading..." when openingFolder is false and no counts', async () => {
+            mount(LoadingIcon, { target, props: { openingFolder: false } })
+            await tick()
+
+            const loadingText = target.querySelector('.loading-text')
+            expect(loadingText?.textContent).toBe('Loading...')
+        })
+    })
+
     describe('Accessibility', () => {
         it('has loading container element', async () => {
             mount(LoadingIcon, { target, props: {} })
@@ -175,6 +210,14 @@ describe('Streaming types', () => {
 
         expect(result.listingId).toBe('test-123')
         expect(result.status).toBe('loading')
+    })
+
+    it('ListingOpeningEvent has correct shape', () => {
+        const event: ListingOpeningEvent = {
+            listingId: 'test-opening',
+        }
+
+        expect(event.listingId).toBe('test-opening')
     })
 
     it('ListingProgressEvent has correct shape', () => {

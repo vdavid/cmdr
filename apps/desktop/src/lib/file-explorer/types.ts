@@ -91,6 +91,14 @@ export interface ListingCancelledEvent {
 }
 
 /**
+ * Opening event payload emitted just before read_dir starts.
+ * This is the slow part for network folders (SMB connection, directory handle creation).
+ */
+export interface ListingOpeningEvent {
+    listingId: string
+}
+
+/**
  * A single change in a directory diff.
  */
 export interface DiffChange {

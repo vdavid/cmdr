@@ -7,6 +7,7 @@
         ListingCancelledEvent,
         ListingCompleteEvent,
         ListingErrorEvent,
+        ListingOpeningEvent,
         ListingProgressEvent,
         ListingReadCompleteEvent,
         ListingStats,
@@ -249,10 +250,13 @@
     let unlisten: UnlistenFn | undefined
     let unlistenMenuAction: UnlistenFn | undefined
     // Streaming event listeners
+    let unlistenOpening: UnlistenFn | undefined
     let unlistenProgress: UnlistenFn | undefined
     let unlistenComplete: UnlistenFn | undefined
     let unlistenError: UnlistenFn | undefined
     let unlistenCancelled: UnlistenFn | undefined
+    // Opening folder state (before read_dir starts - slow for network folders)
+    let openingFolder = $state(false)
     // Loading progress state for streaming
     let loadingCount = $state<number | undefined>(undefined)
     // Finalizing state (read_dir done, now sorting/caching)
@@ -479,6 +483,7 @@
         }
 
         // Clean up previous event listeners
+        unlistenOpening?.()
         unlistenProgress?.()
         unlistenReadComplete?.()
         unlistenComplete?.()
@@ -488,6 +493,7 @@
         // Set loading state BEFORE starting IPC call
         // This ensures the UI shows the loading spinner immediately
         loading = true
+        openingFolder = false
         loadingCount = undefined
         finalizingCount = undefined
         error = null
@@ -518,6 +524,13 @@
             listingId = newListingId
             lastSequence = 0
 
+            // Subscribe to opening event (emitted before read_dir - slow for network folders)
+            unlistenOpening = await listen<ListingOpeningEvent>('listing-opening', (event) => {
+                if (event.payload.listingId === newListingId && thisGeneration === loadGeneration) {
+                    openingFolder = true
+                }
+            })
+
             // Subscribe to progress events
             unlistenProgress = await listen<ListingProgressEvent>('listing-progress', (event) => {
                 if (event.payload.listingId === newListingId && thisGeneration === loadGeneration) {
@@ -546,6 +559,7 @@
                     listingId = ''
                     totalCount = 0
                     loading = false
+                    openingFolder = false
                     loadingCount = undefined
                     finalizingCount = undefined
                 }
@@ -557,6 +571,7 @@
                     // Cancellation handled by onCancelLoading callback
                     listingId = ''
                     loading = false
+                    openingFolder = false
                     loadingCount = undefined
                     finalizingCount = undefined
                 }
@@ -579,6 +594,7 @@
             listingId = ''
             totalCount = 0
             loading = false
+            openingFolder = false
             loadingCount = undefined
             finalizingCount = undefined
         }
@@ -604,6 +620,7 @@
         }
 
         loading = false
+        openingFolder = false
         loadingCount = undefined
         finalizingCount = undefined
         benchmark.logEvent('loading = false (UI can render)')
@@ -1121,6 +1138,7 @@
         }
         unlisten?.()
         unlistenMenuAction?.()
+        unlistenOpening?.()
         unlistenProgress?.()
         unlistenReadComplete?.()
         unlistenComplete?.()
@@ -1186,7 +1204,7 @@
                 />
             {/if}
         {:else if loading}
-            <LoadingIcon loadedCount={loadingCount} {finalizingCount} showCancelHint={true} />
+            <LoadingIcon {openingFolder} loadedCount={loadingCount} {finalizingCount} showCancelHint={true} />
         {:else if isPermissionDenied}
             <PermissionDeniedPane folderPath={currentPath} />
         {:else if error}

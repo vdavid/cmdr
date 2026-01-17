@@ -150,6 +150,13 @@ pub struct ListingReadCompleteEvent {
     pub total_count: usize,
 }
 
+/// Opening event payload (emitted just before read_dir starts - the slow part for network folders)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListingOpeningEvent {
+    pub listing_id: String,
+}
+
 /// State for an in-progress streaming listing
 pub struct StreamingListingState {
     /// Cancellation flag - checked periodically during iteration
@@ -1278,6 +1285,15 @@ fn read_directory_with_progress(
     const PROGRESS_INTERVAL: std::time::Duration = std::time::Duration::from_millis(500);
 
     benchmark::log_event("read_directory_with_progress START");
+
+    // Emit opening event - this is the slow part for network folders
+    // (SMB connection establishment, directory handle creation)
+    let _ = app.emit(
+        "listing-opening",
+        ListingOpeningEvent {
+            listing_id: listing_id.to_string(),
+        },
+    );
 
     // Read directory entries one by one
     let read_start = std::time::Instant::now();
