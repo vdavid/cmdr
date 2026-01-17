@@ -354,53 +354,72 @@
         return false
     }
 
-    // Handle cancel loading for left pane - navigate back in history or to home
-    function handleLeftCancelLoading() {
-        if (canGoBack(leftHistory)) {
-            void handleNavigationAction('back')
+    // Handle cancel loading for left pane - reload current history entry (the folder we were in before the slow load)
+    // The slow-loading folder was never added to history, so current entry is already correct.
+    function handleLeftCancelLoading(selectName?: string) {
+        const entry = getCurrentEntry(leftHistory)
+
+        if (entry.volumeId === 'network') {
+            leftPath = entry.path
+            leftVolumeId = 'network'
+            void saveAppStatus({ leftVolumeId: 'network', leftPath: entry.path })
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            leftPaneRef?.setNetworkHost?.(entry.networkHost ?? null)
         } else {
-            // Navigate to home
-            leftPath = '~'
-            leftVolumeId = DEFAULT_VOLUME_ID
-            void saveAppStatus({ leftPath: '~', leftVolumeId: DEFAULT_VOLUME_ID })
+            void resolveValidPath(entry.path).then((resolvedPath) => {
+                if (resolvedPath !== null) {
+                    leftPath = resolvedPath
+                    if (entry.volumeId !== leftVolumeId) {
+                        leftVolumeId = entry.volumeId
+                        void saveAppStatus({ leftVolumeId: entry.volumeId, leftPath: resolvedPath })
+                    } else {
+                        void saveAppStatus({ leftPath: resolvedPath })
+                    }
+                    // Navigate with selection to restore cursor to the folder we tried to enter
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+                    leftPaneRef?.navigateToPath?.(resolvedPath, selectName)
+                } else {
+                    // Path doesn't exist, fall back to home
+                    leftPath = '~'
+                    leftVolumeId = DEFAULT_VOLUME_ID
+                    void saveAppStatus({ leftPath: '~', leftVolumeId: DEFAULT_VOLUME_ID })
+                }
+            })
         }
+        containerElement?.focus()
     }
 
-    // Handle cancel loading for right pane - navigate back in history or to home
-    function handleRightCancelLoading() {
-        if (canGoBack(rightHistory)) {
-            // Need to handle this specially since handleNavigationAction uses focusedPane
-            const history = rightHistory
-            const newHistory = back(history)
-            const targetEntry = getCurrentEntry(newHistory)
+    // Handle cancel loading for right pane - reload current history entry (the folder we were in before the slow load)
+    // The slow-loading folder was never added to history, so current entry is already correct.
+    function handleRightCancelLoading(selectName?: string) {
+        const entry = getCurrentEntry(rightHistory)
 
-            if (targetEntry.volumeId === 'network') {
-                rightHistory = newHistory
-                rightPath = targetEntry.path
-                rightVolumeId = 'network'
-                void saveAppStatus({ rightVolumeId: 'network', rightPath: targetEntry.path })
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                rightPaneRef?.setNetworkHost?.(targetEntry.networkHost ?? null)
-            } else {
-                void resolveValidPath(targetEntry.path).then((resolvedPath) => {
-                    if (resolvedPath !== null) {
-                        rightHistory = newHistory
-                        rightPath = resolvedPath
-                        if (targetEntry.volumeId !== rightVolumeId) {
-                            rightVolumeId = targetEntry.volumeId
-                            void saveAppStatus({ rightVolumeId: targetEntry.volumeId, rightPath: resolvedPath })
-                        } else {
-                            void saveAppStatus({ rightPath: resolvedPath })
-                        }
-                        void saveLastUsedPathForVolume(targetEntry.volumeId, resolvedPath)
-                    }
-                })
-            }
+        if (entry.volumeId === 'network') {
+            rightPath = entry.path
+            rightVolumeId = 'network'
+            void saveAppStatus({ rightVolumeId: 'network', rightPath: entry.path })
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            rightPaneRef?.setNetworkHost?.(entry.networkHost ?? null)
         } else {
-            // Navigate to home
-            rightPath = '~'
-            rightVolumeId = DEFAULT_VOLUME_ID
-            void saveAppStatus({ rightPath: '~', rightVolumeId: DEFAULT_VOLUME_ID })
+            void resolveValidPath(entry.path).then((resolvedPath) => {
+                if (resolvedPath !== null) {
+                    rightPath = resolvedPath
+                    if (entry.volumeId !== rightVolumeId) {
+                        rightVolumeId = entry.volumeId
+                        void saveAppStatus({ rightVolumeId: entry.volumeId, rightPath: resolvedPath })
+                    } else {
+                        void saveAppStatus({ rightPath: resolvedPath })
+                    }
+                    // Navigate with selection to restore cursor to the folder we tried to enter
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+                    rightPaneRef?.navigateToPath?.(resolvedPath, selectName)
+                } else {
+                    // Path doesn't exist, fall back to home
+                    rightPath = '~'
+                    rightVolumeId = DEFAULT_VOLUME_ID
+                    void saveAppStatus({ rightPath: '~', rightVolumeId: DEFAULT_VOLUME_ID })
+                }
+            })
         }
         containerElement?.focus()
     }

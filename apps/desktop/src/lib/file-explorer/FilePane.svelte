@@ -72,8 +72,8 @@
         onRequestFocus?: () => void
         /** Called when active network host changes (for history tracking) */
         onNetworkHostChange?: (host: NetworkHost | null) => void
-        /** Called when user cancels loading (ESC key) - parent should navigate back */
-        onCancelLoading?: () => void
+        /** Called when user cancels loading (ESC key) - parent should reload previous folder, optionally selecting the folder we tried to enter */
+        onCancelLoading?: (selectName?: string) => void
     }
 
     const {
@@ -655,8 +655,17 @@
         // Cancel the Rust-side operation
         void cancelListing(listingId)
 
-        // Navigate back or to home via callback
-        onCancelLoading?.()
+        // Extract the folder name we were trying to enter, so parent can select it when reloading
+        const folderName = currentPath.split('/').pop()
+
+        // Reload previous folder via callback (parent will set the path, triggering our effect)
+        onCancelLoading?.(folderName)
+    }
+
+    // Navigate to a specific path with optional item selection (used when cancelling navigation)
+    export function navigateToPath(path: string, selectName?: string) {
+        currentPath = path
+        void loadDirectory(path, selectName)
     }
 
     // Fetch the entry currently under the cursor for SelectionInfo
