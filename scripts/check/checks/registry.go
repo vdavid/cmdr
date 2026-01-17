@@ -326,3 +326,17 @@ func GetChecksByTech(app App, tech string) []CheckDefinition {
 	}
 	return result
 }
+
+// FilterSlowChecks removes slow checks unless includeSlow is true.
+func FilterSlowChecks(defs []CheckDefinition, includeSlow bool) []CheckDefinition {
+	if includeSlow {
+		return defs
+	}
+	var result []CheckDefinition
+	for _, def := range defs {
+		if !def.IsSlow {
+			result = append(result, def)
+		}
+	}
+	return result
+}

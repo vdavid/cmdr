@@ -65,7 +65,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	checksToRun = filterSlowChecks(checksToRun, flags.includeSlow)
+	checksToRun = checks.FilterSlowChecks(checksToRun, flags.includeSlow)
 
 	if len(checksToRun) == 0 {
 		fmt.Println("No checks to run.")
@@ -123,22 +123,22 @@ func selectChecks(flags *cliFlags) ([]checks.CheckDefinition, error) {
 		return selectChecksByApp(flags.appName)
 	}
 	if flags.rustOnly {
-		return getChecksByTech(checks.AppDesktop, "🦀 Rust"), nil
+		return checks.GetChecksByTech(checks.AppDesktop, "🦀 Rust"), nil
 	}
 	if flags.svelteOnly {
-		return getChecksByTech(checks.AppDesktop, "🎨 Svelte"), nil
+		return checks.GetChecksByTech(checks.AppDesktop, "🎨 Svelte"), nil
 	}
 	if flags.goOnly {
-		return getChecksByTech(checks.AppScripts, "🐹 Go"), nil
+		return checks.GetChecksByTech(checks.AppScripts, "🐹 Go"), nil
 	}
-	return getAllChecks(), nil
+	return checks.AllChecks, nil
 }
 
 // selectChecksByID returns checks matching the given IDs.
 func selectChecksByID(names []string) ([]checks.CheckDefinition, error) {
 	var result []checks.CheckDefinition
 	for _, name := range names {
-		check := getCheckByID(name)
+		check := checks.GetCheckByID(name)
 		if check == nil {
 			return nil, fmt.Errorf("unknown check ID: %s\nRun with --help to see available checks", name)
 		}
@@ -151,13 +151,13 @@ func selectChecksByID(names []string) ([]checks.CheckDefinition, error) {
 func selectChecksByApp(appName string) ([]checks.CheckDefinition, error) {
 	switch strings.ToLower(appName) {
 	case "desktop":
-		return getChecksByApp(checks.AppDesktop), nil
+		return checks.GetChecksByApp(checks.AppDesktop), nil
 	case "website":
-		return getChecksByApp(checks.AppWebsite), nil
+		return checks.GetChecksByApp(checks.AppWebsite), nil
 	case "license-server":
-		return getChecksByApp(checks.AppLicenseServer), nil
+		return checks.GetChecksByApp(checks.AppLicenseServer), nil
 	case "scripts":
-		return getChecksByApp(checks.AppScripts), nil
+		return checks.GetChecksByApp(checks.AppScripts), nil
 	default:
 		return nil, fmt.Errorf("unknown app: %s\nAvailable apps: desktop, website, license-server, scripts", appName)
 	}
@@ -266,7 +266,7 @@ func showUsage() {
 		if !ok {
 			continue
 		}
-		fmt.Printf("  %s: %s\n", appDisplayName(g.app), g.tech)
+		fmt.Printf("  %s: %s\n", checks.AppDisplayName(g.app), g.tech)
 		for _, id := range g.ids {
 			fmt.Printf("    - %s\n", id)
 		}

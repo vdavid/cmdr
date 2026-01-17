@@ -18,6 +18,22 @@ const (
 	AppOther         App = "other"
 )
 
+// AppDisplayName returns a human-readable name for an app with icon.
+func AppDisplayName(app App) string {
+	switch app {
+	case AppDesktop:
+		return "🖥️  Desktop"
+	case AppWebsite:
+		return "🌐 Website"
+	case AppLicenseServer:
+		return "🔑 License server"
+	case AppScripts:
+		return "📜 Scripts"
+	default:
+		return string(app)
+	}
+}
+
 // ResultCode indicates the outcome of a check.
 type ResultCode int
 
