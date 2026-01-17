@@ -11,7 +11,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/session-start.sh"
+            "command": "bash -c '\"$(git rev-parse --show-toplevel)/.claude/hooks/session-start.sh\"'"
           }
         ]
       }
@@ -22,7 +22,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/post-edit-format.sh"
+            "command": "bash -c '\"$(git rev-parse --show-toplevel)/.claude/hooks/post-edit-format.sh\"'"
           }
         ]
       }
