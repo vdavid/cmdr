@@ -593,7 +593,7 @@ fn test_copy_preserves_xattrs() {
             .expect("Failed to read xattr");
 
         let value = String::from_utf8_lossy(&output.stdout);
-        assert!(value.trim() == "test_value", "xattr not preserved: {}", value);
+        assert_eq!(value.trim(), "test_value", "xattr not preserved: {}", value);
     }
 
     cleanup_temp_dir(&temp_dir);

@@ -964,6 +964,7 @@ fn test_origin_validation_localhost_variants() {
     }
 }
 
+//noinspection HttpUrlsUsage
 #[test]
 fn test_origin_validation_rejects_external() {
     use super::server::validate_origin;
