@@ -88,13 +88,16 @@ jobs:
               working-directory: ./scripts/check
 
             - name: Check rustfmt
-              run: ./scripts/check/check --check rustfmt --ci
+              run: ./scripts/check/check --check desktop-rust-rustfmt --ci
 
             - name: Run clippy
-              run: ./scripts/check/check --check clippy --ci
+              run: ./scripts/check/check --check desktop-rust-clippy --ci
+
+            - name: Run jscpd
+              run: ./scripts/check/check --check desktop-rust-jscpd --ci
 
             - name: Run Rust tests
-              run: ./scripts/check/check --check rust-tests --ci
+              run: ./scripts/check/check --check desktop-rust-tests --ci
 
     # ===========================================
     # Desktop app - Svelte frontend
@@ -136,56 +139,35 @@ jobs:
               working-directory: ./scripts/check
 
             - name: Check Prettier
-              run: ./scripts/check/check --check prettier --ci
+              run: ./scripts/check/check --check desktop-svelte-prettier --ci
 
             - name: Run ESLint
-              run: ./scripts/check/check --check eslint --ci
+              run: ./scripts/check/check --check desktop-svelte-eslint --ci
+
+            - name: Run Stylelint
+              run: ./scripts/check/check --check desktop-svelte-stylelint --ci
+
+            - name: Check unused CSS
+              run: ./scripts/check/check --check desktop-svelte-css-unused --ci
+
+            - name: Run svelte-check
+              run: ./scripts/check/check --check desktop-svelte-check --ci
+
+            - name: Run Knip
+              run: ./scripts/check/check --check desktop-svelte-knip --ci
+
+            - name: Check type drift
+              run: ./scripts/check/check --check desktop-svelte-type-drift --ci
 
             - name: Run Svelte tests
-              run: ./scripts/check/check --check svelte-tests --ci
-
-    # ===========================================
-    # Desktop app - E2E tests
-    # ===========================================
-    desktop-e2e:
-        name: Desktop (E2E)
-        runs-on: ubuntu-latest
-        needs: changes
-        if: needs.changes.outputs.desktop == 'true'
-        timeout-minutes: 30
-
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
-
-            - name: Install mise
-              uses: jdx/mise-action@v2
-
-            - name: Install tools with mise
-              run: mise install
-
-            - name: Cache pnpm
-              uses: actions/cache@v4
-              with:
-                  path: ~/.pnpm-store
-                  key: ${{ runner.os }}-pnpm-desktop-${{ hashFiles('apps/desktop/pnpm-lock.yaml') }}
-                  restore-keys: |
-                      ${{ runner.os }}-pnpm-desktop-
-
-            - name: Install dependencies
-              run: pnpm install --frozen-lockfile
-              working-directory: ./apps/desktop
+              run: ./scripts/check/check --check desktop-svelte-tests --ci
 
             - name: Install Playwright browsers
               run: pnpm exec playwright install --with-deps chromium webkit
               working-directory: ./apps/desktop
 
-            - name: Build check tool
-              run: go build -o check .
-              working-directory: ./scripts/check
-
             - name: Run E2E tests
-              run: ./scripts/check/check --check e2e-tests --ci
+              run: ./scripts/check/check --check desktop-svelte-e2e --ci
 
     # ===========================================
     # Website
@@ -238,8 +220,8 @@ jobs:
               run: pnpm exec playwright install --with-deps chromium
               working-directory: ./apps/website
 
-            - name: Run Playwright tests
-              run: ./scripts/check/check --check website-e2e-tests --ci
+            - name: Run E2E tests
+              run: ./scripts/check/check --check website-e2e --ci
 
             - name: Run Lighthouse CI
               run: pnpm test:lighthouse
@@ -325,8 +307,32 @@ jobs:
               run: go build -o check .
               working-directory: ./scripts/check
 
-            - name: Run Go checks
-              run: ./scripts/check/check --app scripts --ci
+            - name: Check gofmt
+              run: ./scripts/check/check --check scripts-go-gofmt --ci
+
+            - name: Run go vet
+              run: ./scripts/check/check --check scripts-go-vet --ci
+
+            - name: Run staticcheck
+              run: ./scripts/check/check --check scripts-go-staticcheck --ci
+
+            - name: Run ineffassign
+              run: ./scripts/check/check --check scripts-go-ineffassign --ci
+
+            - name: Run misspell
+              run: ./scripts/check/check --check scripts-go-misspell --ci
+
+            - name: Run gocyclo
+              run: ./scripts/check/check --check scripts-go-gocyclo --ci
+
+            - name: Run nilaway
+              run: ./scripts/check/check --check scripts-go-nilaway --ci
+
+            - name: Run govulncheck
+              run: ./scripts/check/check --check scripts-go-govulncheck --ci
+
+            - name: Run Go tests
+              run: ./scripts/check/check --check scripts-go-tests --ci
 
     # ===========================================
     # Website deployment

@@ -41,13 +41,13 @@ jobs:
               working-directory: ./scripts/check
 
             - name: Run cargo-audit
-              run: ./scripts/check/check --check cargo-audit --ci
+              run: ./scripts/check/check --check desktop-rust-cargo-audit --ci
 
             - name: Run cargo-deny
-              run: ./scripts/check/check --check cargo-deny --ci
+              run: ./scripts/check/check --check desktop-rust-cargo-deny --ci
 
             - name: Install nightly toolchain (for cargo-udeps)
               run: rustup toolchain install nightly
 
             - name: Run cargo-udeps
-              run: ./scripts/check/check --check cargo-udeps --ci
+              run: ./scripts/check/check --check desktop-rust-cargo-udeps --ci
