@@ -11,12 +11,21 @@ import (
 // RunClippy runs Clippy linter with auto-fix.
 func RunClippy(ctx *CheckContext) (CheckResult, error) {
 	rustDir := filepath.Join(ctx.RootDir, "apps", "desktop", "src-tauri")
-	var cmd *exec.Cmd
-	if ctx.CI {
-		cmd = exec.Command("cargo", "clippy", "--all-targets", "--", "-D", "warnings")
-	} else {
-		cmd = exec.Command("cargo", "clippy", "--all-targets", "--fix", "--allow-dirty", "--allow-staged", "--", "-D", "warnings")
+
+	// Touch lib.rs to force clippy to re-lint (otherwise cached builds skip linting)
+	libPath := filepath.Join(rustDir, "src", "lib.rs")
+	touchCmd := exec.Command("touch", libPath)
+	_ = touchCmd.Run() // Ignore errors, file might not exist in edge cases
+
+	// In local mode, first run with --fix to auto-fix what we can
+	if !ctx.CI {
+		fixCmd := exec.Command("cargo", "clippy", "--all-targets", "--fix", "--allow-dirty", "--allow-staged")
+		fixCmd.Dir = rustDir
+		_, _ = RunCommand(fixCmd, true) // Ignore errors, we'll catch them in the check run
 	}
+
+	// Run clippy WITHOUT --fix to check for remaining issues (--fix ignores -D warnings)
+	cmd := exec.Command("cargo", "clippy", "--all-targets", "--", "-D", "warnings")
 	cmd.Dir = rustDir
 	output, err := RunCommand(cmd, true)
 	if err != nil {
