@@ -1,5 +1,6 @@
 {
     "$schema": "https://unpkg.com/knip@5/schema.json",
+    "ignoreBinaries": ["only-allow"],
     "ignore": [
         "src/lib/icon-cache.ts",
         "src/routes/+layout.ts",

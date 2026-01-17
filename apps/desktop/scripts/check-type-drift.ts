@@ -7,6 +7,8 @@
  * Run: pnpm tsx scripts/check-type-drift.ts
  */
 
+/* eslint-disable no-console */
+
 import * as fs from 'fs'
 import * as path from 'path'
 
@@ -114,7 +116,7 @@ interface DriftError {
 function rustNameToTs(name: string, renameAll?: string): string {
     if (!renameAll || renameAll === 'camelCase') {
         // snake_case to camelCase
-        return name.replace(/_([a-z])/g, (_, c) => c.toUpperCase())
+        return name.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase())
     }
     if (renameAll === 'snake_case') {
         // Already snake_case, keep as-is
@@ -348,6 +350,7 @@ function parseTsInterfaces(content: string): TsInterface[] {
 /**
  * Parses TypeScript type alias definitions (for union types like enums).
  */
+// eslint-disable-next-line complexity
 function parseTsTypeAliases(content: string): TsTypeAlias[] {
     const aliases: TsTypeAlias[] = []
 
@@ -632,6 +635,7 @@ function compareSimpleEnumToUnion(rust: RustEnum, tsDefinition: string): DriftEr
 /**
  * Main function to run the drift detection.
  */
+// eslint-disable-next-line complexity
 function main(): void {
     // pnpm runs scripts from the package directory (apps/desktop)
     const desktopDir = process.cwd()
@@ -659,7 +663,7 @@ function main(): void {
         rustEnums.push(...parseRustEnums(content))
     }
 
-    console.log(`Found ${rustStructs.length} Rust structs and ${rustEnums.length} enums\n`)
+    console.log(`Found ${String(rustStructs.length)} Rust structs and ${String(rustEnums.length)} enums\n`)
 
     // Read and parse TypeScript file
     const tsPath = path.resolve(desktopDir, TS_TYPES_FILE)
@@ -667,7 +671,9 @@ function main(): void {
     const tsInterfaces = parseTsInterfaces(tsContent)
     const tsTypeAliases = parseTsTypeAliases(tsContent)
 
-    console.log(`Found ${tsInterfaces.length} TypeScript interfaces and ${tsTypeAliases.length} type aliases\n`)
+    console.log(
+        `Found ${String(tsInterfaces.length)} TypeScript interfaces and ${String(tsTypeAliases.length)} type aliases\n`,
+    )
 
     // Create lookup maps
     const tsInterfaceMap = new Map(tsInterfaces.map((i) => [i.name, i]))
@@ -744,7 +750,7 @@ function main(): void {
     }
 
     if (errors.length > 0) {
-        console.log(`Found ${errors.length} type drift error(s):\n`)
+        console.log(`Found ${String(errors.length)} type drift error(s):\n`)
         for (const error of errors) {
             console.log(`  ❌ ${error.message}`)
         }
@@ -752,7 +758,7 @@ function main(): void {
 
     if (warnings.length > 0) {
         if (errors.length > 0) console.log()
-        console.log(`Found ${warnings.length} warning(s) (may be intentional):\n`)
+        console.log(`Found ${String(warnings.length)} warning(s) (may be intentional):\n`)
         for (const warning of warnings) {
             console.log(`  ⚠️  ${warning.message}`)
         }
