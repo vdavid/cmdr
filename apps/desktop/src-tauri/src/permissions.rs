@@ -32,9 +32,8 @@ mod tests {
 
     #[test]
     fn test_has_full_disk_access_returns_bool() {
-        // Just verify it doesn't panic and returns a bool
-        let result = check_full_disk_access();
-        assert!(result || !result);
+        // Just verify it doesn't panic - the return value is a bool by type system
+        let _result: bool = check_full_disk_access();
     }
 
     #[test]

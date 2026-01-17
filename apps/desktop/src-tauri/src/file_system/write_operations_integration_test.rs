@@ -77,7 +77,7 @@ fn test_copy_directory_recursive() {
 
     #[cfg(target_os = "macos")]
     {
-        use super::macos_copy::{CopyOptions, copy_file_native};
+        use super::macos_copy::{copy_file_native, CopyOptions};
 
         let result = copy_file_native(&src_dir, &dst_dir.join("src"), CopyOptions::default(), None);
         assert!(result.is_ok());
@@ -314,7 +314,7 @@ fn test_empty_directory() {
 
     #[cfg(target_os = "macos")]
     {
-        use super::macos_copy::{CopyOptions, copy_file_native};
+        use super::macos_copy::{copy_file_native, CopyOptions};
 
         let result = copy_file_native(&empty_subdir, &dst_dir.join("empty"), CopyOptions::default(), None);
         assert!(result.is_ok());
@@ -953,7 +953,7 @@ fn test_validate_destination_not_inside_source_nested() {
     fs::create_dir_all(&dst_dir).unwrap();
 
     // Copying src to src/nested/dest - destination is inside source
-    let result = validate_destination_not_inside_source(&[src_dir.clone()], &dst_dir);
+    let result = validate_destination_not_inside_source(std::slice::from_ref(&src_dir), &dst_dir);
     assert!(matches!(
         result,
         Err(WriteOperationError::DestinationInsideSource { .. })

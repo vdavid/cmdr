@@ -281,7 +281,7 @@ mod tests {
     #[test]
     fn test_timeout_constant() {
         // Verify timeout is reasonable (10-60 seconds)
-        assert!(MOUNT_TIMEOUT_SECS >= 10);
-        assert!(MOUNT_TIMEOUT_SECS <= 60);
+        const { assert!(MOUNT_TIMEOUT_SECS >= 10) };
+        const { assert!(MOUNT_TIMEOUT_SECS <= 60) };
     }
 }

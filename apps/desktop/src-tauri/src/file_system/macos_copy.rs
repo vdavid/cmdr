@@ -12,6 +12,17 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use crate::file_system::write_operations::WriteOperationError;
 
 // ============================================================================
+// Type aliases for progress callbacks
+// ============================================================================
+
+/// Callback for progress updates (bytes copied for current file).
+type ProgressCallback = Box<dyn Fn(u64) + Send + Sync>;
+/// Callback when starting a new file.
+type FileStartCallback = Box<dyn Fn(&str) + Send + Sync>;
+/// Callback when finishing a file (with byte count).
+type FileFinishCallback = Box<dyn Fn(&str, u64) + Send + Sync>;
+
+// ============================================================================
 // FFI bindings for copyfile(3)
 // ============================================================================
 
@@ -78,11 +89,11 @@ pub struct CopyProgressContext {
     /// Cancellation flag - checked during copy
     pub cancelled: Arc<AtomicBool>,
     /// Callback to report progress (bytes_copied for current file)
-    pub on_progress: Option<Box<dyn Fn(u64) + Send + Sync>>,
+    pub on_progress: Option<ProgressCallback>,
     /// Callback when starting a new file
-    pub on_file_start: Option<Box<dyn Fn(&str) + Send + Sync>>,
+    pub on_file_start: Option<FileStartCallback>,
     /// Callback when finishing a file (with byte count)
-    pub on_file_finish: Option<Box<dyn Fn(&str, u64) + Send + Sync>>,
+    pub on_file_finish: Option<FileFinishCallback>,
 }
 
 impl Default for CopyProgressContext {

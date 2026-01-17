@@ -374,7 +374,7 @@ mod tests {
 
         let hints = get_username_hints();
         assert_eq!(hints.get("server1"), Some(&"alice".to_string()));
-        assert!(hints.get("server2").is_none()); // No username for guest-only
+        assert!(!hints.contains_key("server2")); // No username for guest-only
 
         // Clean up
         if let Ok(mut c) = cache.lock() {
