@@ -20,33 +20,39 @@ func RunRustfmt(ctx *CheckContext) (CheckResult, error) {
 		fileCount = 0
 	}
 
-	var cmd *exec.Cmd
-	if ctx.CI {
-		cmd = exec.Command("cargo", "fmt", "--check")
-	} else {
-		cmd = exec.Command("cargo", "fmt")
-	}
-	cmd.Dir = rustDir
-	output, err := RunCommand(cmd, true)
-	if err != nil {
-		if ctx.CI {
-			return CheckResult{}, fmt.Errorf("code is not formatted, run cargo fmt locally\n%s", indentOutput(output))
+	// Check which files need formatting (--files-with-diff lists them)
+	checkCmd := exec.Command("cargo", "fmt", "--", "--check", "--files-with-diff")
+	checkCmd.Dir = rustDir
+	checkOutput, checkErr := RunCommand(checkCmd, true)
+
+	// Parse files that need formatting
+	var needsFormat []string
+	if strings.TrimSpace(checkOutput) != "" {
+		for _, line := range strings.Split(strings.TrimSpace(checkOutput), "\n") {
+			// Only count lines that look like file paths (end with .rs)
+			if strings.HasSuffix(line, ".rs") {
+				needsFormat = append(needsFormat, line)
+			}
 		}
-		return CheckResult{}, fmt.Errorf("rust formatting failed\n%s", indentOutput(output))
 	}
 
 	if ctx.CI {
+		if checkErr != nil || len(needsFormat) > 0 {
+			return CheckResult{}, fmt.Errorf("code is not formatted, run cargo fmt locally\n%s", indentOutput(checkOutput))
+		}
 		return Success(fmt.Sprintf("%d %s already formatted", fileCount, Pluralize(fileCount, "file", "files"))), nil
 	}
 
-	// In non-CI mode, check if any files were changed
-	gitCmd := exec.Command("git", "diff", "--name-only", "--", "*.rs")
-	gitCmd.Dir = rustDir
-	gitOutput, _ := RunCommand(gitCmd, true)
-	changedFiles := strings.Split(strings.TrimSpace(gitOutput), "\n")
-	if len(changedFiles) == 1 && changedFiles[0] == "" {
-		return Success(fmt.Sprintf("%d %s already formatted", fileCount, Pluralize(fileCount, "file", "files"))), nil
+	// Non-CI mode: format if needed
+	if len(needsFormat) > 0 {
+		fmtCmd := exec.Command("cargo", "fmt")
+		fmtCmd.Dir = rustDir
+		output, err := RunCommand(fmtCmd, true)
+		if err != nil {
+			return CheckResult{}, fmt.Errorf("rust formatting failed\n%s", indentOutput(output))
+		}
+		return SuccessWithChanges(fmt.Sprintf("Formatted %d of %d %s", len(needsFormat), fileCount, Pluralize(fileCount, "file", "files"))), nil
 	}
-	changedCount := len(changedFiles)
-	return Success(fmt.Sprintf("Formatted %d of %d %s", changedCount, fileCount, Pluralize(fileCount, "file", "files"))), nil
+
+	return Success(fmt.Sprintf("%d %s already formatted", fileCount, Pluralize(fileCount, "file", "files"))), nil
 }

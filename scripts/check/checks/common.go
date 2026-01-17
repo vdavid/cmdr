@@ -45,13 +45,19 @@ const (
 
 // CheckResult is returned by checks on success.
 type CheckResult struct {
-	Code    ResultCode
-	Message string
+	Code        ResultCode
+	Message     string
+	MadeChanges bool // true if the check modified files (for example, formatted code)
 }
 
-// Success creates a success result with the given message.
+// Success creates a success result with the given message (no changes made).
 func Success(message string) CheckResult {
-	return CheckResult{Code: ResultSuccess, Message: message}
+	return CheckResult{Code: ResultSuccess, Message: message, MadeChanges: false}
+}
+
+// SuccessWithChanges creates a success result indicating files were modified.
+func SuccessWithChanges(message string) CheckResult {
+	return CheckResult{Code: ResultSuccess, Message: message, MadeChanges: true}
 }
 
 // Warning creates a warning result with the given message.

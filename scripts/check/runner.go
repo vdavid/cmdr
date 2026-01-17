@@ -231,17 +231,22 @@ func (r *Runner) printResult(state *CheckState) {
 	switch state.Status {
 	case StatusCompleted:
 		msg := state.Result.Message
-		color := colorGreen
+		statusColor := colorGreen
 		statusText := "OK"
 		if state.Result.Code == checks.ResultWarning {
-			color = colorYellow
+			statusColor = colorYellow
 			statusText = "warn"
 		}
+		// Message color: green if changes were made, dim/gray otherwise
+		msgColor := colorDim
+		if state.Result.MadeChanges {
+			msgColor = colorGreen
+		}
 		if strings.Contains(msg, "\n") {
-			fmt.Printf("• %s... %s%s%s (%s)\n", paddedPrefix, color, statusText, colorReset, formatDuration(state.Duration))
-			fmt.Printf("  %s%s%s\n", color, indentMultiline(msg, "  "), colorReset)
+			fmt.Printf("• %s... %s%s%s (%s)\n", paddedPrefix, statusColor, statusText, colorReset, formatDuration(state.Duration))
+			fmt.Printf("  %s%s%s\n", msgColor, indentMultiline(msg, "  "), colorReset)
 		} else {
-			fmt.Printf("• %s... %s%s%s (%s) - %s%s%s\n", paddedPrefix, color, statusText, colorReset, formatDuration(state.Duration), color, msg, colorReset)
+			fmt.Printf("• %s... %s%s%s (%s) - %s%s%s\n", paddedPrefix, statusColor, statusText, colorReset, formatDuration(state.Duration), msgColor, msg, colorReset)
 		}
 
 	case StatusSkipped:

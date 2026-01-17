@@ -20,29 +20,37 @@ func RunGoFmt(ctx *CheckContext) (CheckResult, error) {
 		fileCount = len(strings.Split(strings.TrimSpace(findOutput), "\n"))
 	}
 
-	if ctx.CI {
-		// Check mode - list files that need formatting
-		cmd := exec.Command("gofmt", "-s", "-l", ".")
-		cmd.Dir = scriptsDir
-		output, err := RunCommand(cmd, true)
-		if err != nil {
-			return CheckResult{}, fmt.Errorf("gofmt check failed\n%s", indentOutput(output))
-		}
-		if strings.TrimSpace(output) != "" {
-			return CheckResult{}, fmt.Errorf("files need formatting, run gofmt -s -w . locally\n%s", indentOutput(output))
-		}
-	} else {
-		// Fix mode - format files in place
-		cmd := exec.Command("gofmt", "-s", "-w", ".")
-		cmd.Dir = scriptsDir
-		output, err := RunCommand(cmd, true)
-		if err != nil {
-			return CheckResult{}, fmt.Errorf("gofmt failed\n%s", indentOutput(output))
-		}
+	// Check which files need formatting (-l lists them)
+	checkCmd := exec.Command("gofmt", "-s", "-l", ".")
+	checkCmd.Dir = scriptsDir
+	checkOutput, err := RunCommand(checkCmd, true)
+	if err != nil {
+		return CheckResult{}, fmt.Errorf("gofmt check failed\n%s", indentOutput(checkOutput))
 	}
 
-	if fileCount > 0 {
+	// Parse files that need formatting
+	var needsFormat []string
+	if strings.TrimSpace(checkOutput) != "" {
+		needsFormat = strings.Split(strings.TrimSpace(checkOutput), "\n")
+	}
+
+	if ctx.CI {
+		if len(needsFormat) > 0 {
+			return CheckResult{}, fmt.Errorf("files need formatting, run gofmt -s -w . locally\n%s", indentOutput(checkOutput))
+		}
 		return Success(fmt.Sprintf("%d %s already formatted", fileCount, Pluralize(fileCount, "file", "files"))), nil
 	}
-	return Success("All files already formatted"), nil
+
+	// Non-CI mode: format if needed
+	if len(needsFormat) > 0 {
+		fmtCmd := exec.Command("gofmt", "-s", "-w", ".")
+		fmtCmd.Dir = scriptsDir
+		output, fmtErr := RunCommand(fmtCmd, true)
+		if fmtErr != nil {
+			return CheckResult{}, fmt.Errorf("gofmt failed\n%s", indentOutput(output))
+		}
+		return SuccessWithChanges(fmt.Sprintf("Formatted %d of %d %s", len(needsFormat), fileCount, Pluralize(fileCount, "file", "files"))), nil
+	}
+
+	return Success(fmt.Sprintf("%d %s already formatted", fileCount, Pluralize(fileCount, "file", "files"))), nil
 }

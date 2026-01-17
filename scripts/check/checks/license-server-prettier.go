@@ -20,20 +20,36 @@ func RunLicenseServerPrettier(ctx *CheckContext) (CheckResult, error) {
 		fileCount = len(strings.Split(strings.TrimSpace(findOutput), "\n"))
 	}
 
-	var cmd *exec.Cmd
-	if ctx.CI {
-		cmd = exec.Command("pnpm", "format:check")
-	} else {
-		cmd = exec.Command("pnpm", "format")
-	}
-	cmd.Dir = serverDir
-	output, err := RunCommand(cmd, true)
-	if err != nil {
-		return CheckResult{}, fmt.Errorf("prettier failed\n%s", indentOutput(output))
+	// Check which files need formatting (--list-different lists them)
+	// Note: prettier exits with code 1 if files differ, so we ignore the error
+	// Prettier's default behavior respects .gitignore files in current dir and parents
+	checkCmd := exec.Command("pnpm", "exec", "prettier", "--list-different", ".")
+	checkCmd.Dir = serverDir
+	checkOutput, _ := RunCommand(checkCmd, true)
+
+	// Parse files that need formatting
+	var needsFormat []string
+	if strings.TrimSpace(checkOutput) != "" {
+		needsFormat = strings.Split(strings.TrimSpace(checkOutput), "\n")
 	}
 
-	if fileCount > 0 {
+	if ctx.CI {
+		if len(needsFormat) > 0 {
+			return CheckResult{}, fmt.Errorf("code is not formatted, run pnpm format locally\n%s", indentOutput(checkOutput))
+		}
 		return Success(fmt.Sprintf("%d %s already formatted", fileCount, Pluralize(fileCount, "file", "files"))), nil
 	}
-	return Success("All files already formatted"), nil
+
+	// Non-CI mode: format if needed
+	if len(needsFormat) > 0 {
+		fmtCmd := exec.Command("pnpm", "format")
+		fmtCmd.Dir = serverDir
+		output, err := RunCommand(fmtCmd, true)
+		if err != nil {
+			return CheckResult{}, fmt.Errorf("prettier formatting failed\n%s", indentOutput(output))
+		}
+		return SuccessWithChanges(fmt.Sprintf("Formatted %d of %d %s", len(needsFormat), fileCount, Pluralize(fileCount, "file", "files"))), nil
+	}
+
+	return Success(fmt.Sprintf("%d %s already formatted", fileCount, Pluralize(fileCount, "file", "files"))), nil
 }

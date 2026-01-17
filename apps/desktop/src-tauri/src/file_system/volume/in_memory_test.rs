@@ -413,9 +413,7 @@ fn test_concurrent_create_delete() {
 
     let volume = Arc::new(InMemoryVolume::new("Test"));
     // Create a permanent file
-    volume
-        .create_file(Path::new("/permanent.txt"), b"keep")
-        .unwrap();
+    volume.create_file(Path::new("/permanent.txt"), b"keep").unwrap();
 
     let mut handles = vec![];
 
