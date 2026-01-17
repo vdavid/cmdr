@@ -261,7 +261,6 @@
                 <div
                     id={`file-${String(globalIndex)}`}
                     class="file-entry"
-                    class:is-directory={file.isDirectory}
                     class:is-under-cursor={globalIndex === cursorIndex}
                     class:is-selected={selectedIndices.has(globalIndex)}
                     onmousedown={(e: MouseEvent) => {

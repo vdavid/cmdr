@@ -38,11 +38,11 @@
         {/if}
 
         <ul class="pros-cons">
-            <li class="pro">
+            <li>
                 <strong>Pro:</strong> The app will access your entire disk without nagging you for permissions to each folder
                 like Downloads, Documents, and Desktop.
             </li>
-            <li class="con">
+            <li>
                 <strong>Con:</strong> Full disk access is pretty powerful. It lets the app read any file on your Mac. Only
                 grant this to apps you trust.
             </li>

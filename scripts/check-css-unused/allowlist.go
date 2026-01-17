@@ -6,7 +6,12 @@ package main
 // allowedUnusedClasses lists CSS classes that are defined but used dynamically
 // (constructed at runtime, used in third-party libs, or referenced via string interpolation).
 var allowedUnusedClasses = map[string]bool{
-	// Example: "my-dynamic-class": true, // Used in SomeComponent.svelte via `class={dynamicValue}`
+	// Size tier classes - applied dynamically via triad.tierClass in FullList.svelte and SelectionInfo.svelte
+	"size-bytes": true,
+	"size-kb":    true,
+	"size-mb":    true,
+	"size-gb":    true,
+	"size-tb":    true,
 }
 
 // allowedUnusedVariables lists CSS custom properties that are defined but used dynamically,
