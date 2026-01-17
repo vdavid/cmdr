@@ -17,7 +17,7 @@ use crate::network::{
     DiscoveryState, NetworkHost, on_discovery_state_changed, on_host_found, on_host_lost, on_host_resolved,
     service_name_to_id,
 };
-use log::{info, warn};
+use log::{debug, warn};
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
 use objc2::{DefinedClass, MainThreadMarker, MainThreadOnly, define_class, msg_send};
@@ -216,7 +216,7 @@ define_class!(
                 }
             };
 
-            info!(
+            debug!(
                 "Bonjour resolved {}: hostname={:?}, ip={:?}, port={}",
                 host_id, hostname, ip_address, port
             );
@@ -420,7 +420,7 @@ fn get_bonjour_manager() -> &'static Mutex<Option<BonjourManager>> {
 pub fn start_discovery(app_handle: AppHandle) {
     // Get main thread marker - this will panic if not called from main thread
     let Some(mtm) = MainThreadMarker::new() else {
-        eprintln!("[NETWORK] Warning: start_discovery must be called from main thread");
+        warn!("start_discovery must be called from main thread");
         return;
     };
 

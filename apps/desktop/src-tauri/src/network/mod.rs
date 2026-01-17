@@ -9,7 +9,7 @@ pub mod known_shares;
 pub mod mount;
 pub mod smb_client;
 
-use log::{info, warn};
+use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Mutex, OnceLock};
@@ -103,7 +103,7 @@ pub(crate) fn on_host_found(host: NetworkHost, app_handle: &AppHandle) {
     let mut state = get_discovery_state().lock().unwrap();
 
     let is_new = !state.hosts.contains_key(&host.id);
-    info!(
+    debug!(
         "Host {}: id={}, name={}, ip={:?}, hostname={:?}",
         if is_new { "ADDED" } else { "UPDATED" },
         host.id,
@@ -124,7 +124,7 @@ pub(crate) fn on_host_lost(host_id: &str, app_handle: &AppHandle) {
     let mut state = get_discovery_state().lock().unwrap();
 
     if let Some(removed) = state.hosts.remove(host_id) {
-        info!(
+        debug!(
             "Host REMOVED: id={}, name={}, ip={:?}",
             removed.id, removed.name, removed.ip_address
         );
@@ -161,7 +161,7 @@ pub(crate) fn on_host_resolved(
         host.ip_address = ip_address.clone().or(host.ip_address.clone());
         host.port = port;
 
-        info!(
+        debug!(
             "Host RESOLVED: id={}, hostname={:?}, ip={:?}, port={}",
             host_id, host.hostname, host.ip_address, port
         );

@@ -133,7 +133,7 @@ pub fn init_font_metrics<R: tauri::Runtime>(app: &tauri::AppHandle<R>, font_id: 
         && let Ok(mut cache) = METRICS_CACHE.write()
     {
         cache.insert(font_id.to_string(), metrics);
-        eprintln!("[FONT_METRICS] Loaded metrics from disk for font: {}", font_id);
+        log::debug!("Font metrics: Loaded from disk for font: {}", font_id);
     }
 }
 

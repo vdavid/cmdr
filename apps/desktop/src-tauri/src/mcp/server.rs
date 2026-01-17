@@ -74,11 +74,11 @@ pub fn start_mcp_server<R: Runtime + 'static>(app: AppHandle<R>, config: McpConf
             .with_state(state);
 
         let addr = SocketAddr::from(([127, 0, 0, 1], port));
-        log::info!("MCP server attempting to bind on http://{}", addr);
+        log::debug!("MCP server attempting to bind on http://{}", addr);
 
         let listener = match tokio::net::TcpListener::bind(addr).await {
             Ok(l) => {
-                log::info!("MCP server successfully bound to {}", addr);
+                log::debug!("MCP server successfully bound to {}", addr);
                 l
             }
             Err(e) => {

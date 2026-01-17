@@ -21,7 +21,7 @@ pub fn store_font_metrics<R: tauri::Runtime>(
     // Save to disk
     font_metrics::save_to_disk(&app, &font_id, &widths)?;
 
-    eprintln!("[FONT_METRICS] Stored metrics for font: {}", font_id);
+    log::debug!("Font metrics: Stored for font: {}", font_id);
     Ok(())
 }
 

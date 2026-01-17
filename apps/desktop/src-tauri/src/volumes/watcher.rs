@@ -3,7 +3,7 @@
 //! Watches the /Volumes directory for changes using FSEvents, detecting when
 //! volumes are mounted or unmounted, and emits Tauri events to the frontend.
 
-use log::{debug, error, info};
+use log::{debug, error};
 use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use std::collections::HashSet;
 use std::path::Path;
@@ -57,7 +57,7 @@ pub fn start_volume_watcher(app: &AppHandle) {
         debug!("Initial volumes: {:?}", known_guard);
     }
 
-    info!("Starting volume mount/unmount watcher on /Volumes");
+    debug!("Starting volume mount/unmount watcher on /Volumes");
 
     // Create a watcher for /Volumes directory
     let watcher_result = notify::recommended_watcher(move |result: Result<Event, notify::Error>| match result {
@@ -80,7 +80,7 @@ pub fn start_volume_watcher(app: &AppHandle) {
                 *guard = Some(watcher);
             }
 
-            info!("Volume watcher started successfully");
+            debug!("Volume watcher started successfully");
         }
         Err(e) => {
             error!("Failed to create volume watcher: {}", e);
@@ -116,13 +116,13 @@ fn check_for_volume_changes() {
 
     // Find newly mounted volumes
     for path in current_volumes.difference(&known_guard) {
-        info!("Volume mounted: {}", path);
+        debug!("Volume mounted: {}", path);
         emit_volume_mounted(path);
     }
 
     // Find unmounted volumes
     for path in known_guard.difference(&current_volumes) {
-        info!("Volume unmounted: {}", path);
+        debug!("Volume unmounted: {}", path);
         emit_volume_unmounted(path);
     }
 
@@ -139,7 +139,7 @@ pub fn stop_volume_watcher() {
     {
         *guard = None;
     }
-    info!("Volume watcher stopped");
+    debug!("Volume watcher stopped");
 }
 
 /// Emit a volume mounted event to the frontend.

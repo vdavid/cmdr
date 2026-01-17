@@ -470,8 +470,8 @@ pub fn list_directory(path: &Path) -> Result<Vec<FileEntry>, std::io::Error> {
     let sort_time = sort_start.elapsed();
 
     let total_time = overall_start.elapsed();
-    eprintln!(
-        "[RUST TIMING] list_directory: path={}, entries={}, read_dir={}ms, metadata={}ms, owner={}ms, create={}ms, sort={}ms, total={}ms",
+    log::debug!(
+        "list_directory: path={}, entries={}, read_dir={}ms, metadata={}ms, owner={}ms, create={}ms, sort={}ms, total={}ms",
         path.display(),
         entries.len(),
         read_dir_time.as_millis(),
@@ -591,7 +591,7 @@ pub fn list_directory_start_with_volume(
         // For LocalPosixVolume, the path is already absolute or needs to be resolved
         // We use the original path since LocalPosixVolume root is "/"
         if let Err(e) = start_watching(&listing_id, path) {
-            eprintln!("[LISTING] Failed to start watcher: {}", e);
+            log::warn!("Failed to start watcher: {}", e);
             // Continue anyway - watcher is optional enhancement
         }
     }
@@ -1024,8 +1024,8 @@ pub fn list_directory_core(path: &Path) -> Result<Vec<FileEntry>, std::io::Error
     benchmark::log_event("sort END");
 
     let total_time = overall_start.elapsed();
-    eprintln!(
-        "[RUST TIMING] list_directory_core: path={}, entries={}, read_dir={}ms, metadata={}ms, owner={}ms, total={}ms",
+    log::debug!(
+        "list_directory_core: path={}, entries={}, read_dir={}ms, metadata={}ms, owner={}ms, total={}ms",
         path.display(),
         entries.len(),
         read_dir_time.as_millis(),
@@ -1378,7 +1378,7 @@ fn read_directory_with_progress(
         && volume.supports_watching()
         && let Err(e) = start_watching(listing_id, path)
     {
-        eprintln!("[LISTING] Failed to start watcher: {}", e);
+        log::warn!("Failed to start watcher: {}", e);
         // Continue anyway - watcher is optional enhancement
     }
 

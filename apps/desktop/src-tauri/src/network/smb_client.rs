@@ -3,7 +3,7 @@
 //! Uses the `smb` crate (smb-rs) to list shares on network hosts.
 //! Implements connection pooling, caching, and authentication handling.
 
-use log::{debug, info};
+use log::debug;
 use serde::{Deserialize, Serialize};
 use smb::{Client, ClientConfig};
 use smb_rpc::interface::ShareInfo1;
@@ -278,14 +278,14 @@ async fn list_shares_smb_rs(
                     Ok(_) | Err(_) => {
                         // smb-rs returned 0 shares or failed - fall back to smbutil with auth
                         // This handles cases where smb-rs internally falls back to guest
-                        info!("smb-rs auth returned empty or failed, trying smbutil with credentials");
+                        debug!("smb-rs auth returned empty or failed, trying smbutil with credentials");
                         match list_shares_smbutil_with_auth(hostname, ip_address, port, user, pass).await {
                             Ok(result) => {
-                                info!("smbutil with auth succeeded, got {} shares", result.shares.len());
+                                debug!("smbutil with auth succeeded, got {} shares", result.shares.len());
                                 return Ok(result);
                             }
                             Err(e) => {
-                                info!("smbutil with auth also failed: {:?}", e);
+                                debug!("smbutil with auth also failed: {:?}", e);
                                 return Err(e);
                             }
                         }
@@ -294,14 +294,14 @@ async fn list_shares_smb_rs(
             } else {
                 // No explicit credentials provided - try smbutil which uses macOS Keychain
                 // This allows seamless login when user has previously connected via Finder
-                info!("No explicit credentials, trying smbutil with Keychain...");
+                debug!("No explicit credentials, trying smbutil with Keychain...");
                 match list_shares_smbutil_authenticated_from_keychain(hostname, ip_address, port).await {
                     Ok(result) => {
-                        info!("smbutil with Keychain succeeded, got {} shares", result.shares.len());
+                        debug!("smbutil with Keychain succeeded, got {} shares", result.shares.len());
                         return Ok(result);
                     }
                     Err(e) => {
-                        info!("smbutil with Keychain failed: {:?}, requiring manual login", e);
+                        debug!("smbutil with Keychain failed: {:?}, requiring manual login", e);
                         return Err(ShareListError::AuthRequired(
                             "This server requires authentication to list shares".to_string(),
                         ));
@@ -361,7 +361,7 @@ async fn list_shares_smbutil_authenticated_from_keychain(
     port: u16,
 ) -> Result<ShareListResult, ShareListError> {
     let (url, _) = build_smbutil_url(hostname, ip_address, port, None);
-    info!("Running smbutil view -N {} (using Keychain)", url);
+    debug!("Running smbutil view -N {} (using Keychain)", url);
 
     let shares = run_smbutil_view(&url, false).await.map_err(|e| {
         // Convert generic auth errors to Keychain-specific messages
@@ -382,7 +382,7 @@ async fn list_shares_smbutil_authenticated_from_keychain(
         ));
     }
 
-    info!("smbutil with Keychain auth succeeded, got {} shares", shares.len());
+    debug!("smbutil with Keychain auth succeeded, got {} shares", shares.len());
 
     Ok(ShareListResult {
         shares,
@@ -414,7 +414,7 @@ async fn list_shares_smbutil_with_auth(
     password: &str,
 ) -> Result<ShareListResult, ShareListError> {
     let (url, safe_url) = build_smbutil_url(hostname, ip_address, port, Some((username, password)));
-    info!("Running smbutil view -N {}", safe_url);
+    debug!("Running smbutil view -N {}", safe_url);
 
     let shares = run_smbutil_view(&url, false).await.map_err(|e| {
         // Convert auth errors to AuthFailed for explicit credential attempts

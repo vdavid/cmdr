@@ -9,7 +9,7 @@ use crate::network::{
 /// Logs a message from the frontend (for debugging).
 #[tauri::command]
 pub fn fe_log(message: String) {
-    println!("[FE] {}", message);
+    log::debug!("[FE] {}", message);
 }
 
 /// Gets all currently discovered network hosts.

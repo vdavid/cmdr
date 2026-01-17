@@ -146,7 +146,7 @@ fn handle_directory_change(listing_id: &str) {
         Err(e) => {
             // Silently ignore permission denied - user may have revoked access
             if e.kind() != std::io::ErrorKind::PermissionDenied {
-                eprintln!("[WATCHER] Failed to re-read directory: {}", e);
+                log::warn!("Watcher: Failed to re-read directory: {}", e);
             }
             return;
         }
@@ -187,7 +187,7 @@ fn handle_directory_change(listing_id: &str) {
         };
 
         if let Err(e) = app.emit("directory-diff", &diff) {
-            eprintln!("[WATCHER] Failed to emit event: {}", e);
+            log::warn!("Watcher: Failed to emit event: {}", e);
         }
     }
 }
