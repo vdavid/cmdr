@@ -7,10 +7,13 @@ import (
 )
 
 const (
-	colorReset  = "\033[0m"
-	colorRed    = "\033[31m"
-	colorGreen  = "\033[32m"
-	colorYellow = "\033[33m"
+	colorReset     = "\033[0m"
+	colorRed       = "\033[31m"
+	colorGreen     = "\033[32m"
+	colorYellow    = "\033[33m"
+	colorOrange    = "\033[38;5;208m"
+	colorDarkGreen = "\033[38;5;22m"
+	colorDim       = "\033[2m"
 )
 
 // indentOutput indents each non-empty line of output with the given indent string.

@@ -1,41 +1,13 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 )
 
-// runCommand executes a command and optionally captures its output.
-func runCommand(cmd *exec.Cmd, captureOutput bool) (string, error) {
-	var stdout, stderr bytes.Buffer
-	if captureOutput {
-		cmd.Stdout = &stdout
-		cmd.Stderr = &stderr
-	} else {
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-	}
-
-	err := cmd.Run()
-	output := stdout.String()
-	if stderr.Len() > 0 {
-		output += stderr.String()
-	}
-	return output, err
-}
-
-// commandExists checks if a command exists in PATH.
-func commandExists(name string) bool {
-	_, err := exec.LookPath(name)
-	return err == nil
-}
-
 // findRootDir finds the project root directory.
 // For monorepo structure, it looks for apps/desktop/src-tauri/Cargo.toml.
-// Falls back to old structure (src-tauri/Cargo.toml at root) for backward compatibility.
 func findRootDir() (string, error) {
 	dir, err := os.Getwd()
 	if err != nil {
