@@ -11,7 +11,8 @@ import (
 func RunGovulncheck(ctx *CheckContext) (CheckResult, error) {
 	scriptsDir := filepath.Join(ctx.RootDir, "scripts")
 
-	if err := EnsureGoTool("govulncheck", "golang.org/x/vuln/cmd/govulncheck@latest"); err != nil {
+	govulncheckBin, err := EnsureGoTool("govulncheck", "golang.org/x/vuln/cmd/govulncheck@latest")
+	if err != nil {
 		return CheckResult{}, err
 	}
 
@@ -25,7 +26,7 @@ func RunGovulncheck(ctx *CheckContext) (CheckResult, error) {
 	for _, mod := range modules {
 		modDir := filepath.Join(scriptsDir, mod)
 
-		cmd := exec.Command("govulncheck", "./...")
+		cmd := exec.Command(govulncheckBin, "./...")
 		cmd.Dir = modDir
 		output, err := RunCommand(cmd, true)
 		if err != nil {

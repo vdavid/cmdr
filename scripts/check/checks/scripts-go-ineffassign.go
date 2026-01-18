@@ -11,7 +11,8 @@ import (
 func RunIneffassign(ctx *CheckContext) (CheckResult, error) {
 	scriptsDir := filepath.Join(ctx.RootDir, "scripts")
 
-	if err := EnsureGoTool("ineffassign", "github.com/gordonklaus/ineffassign@latest"); err != nil {
+	ineffassignBin, err := EnsureGoTool("ineffassign", "github.com/gordonklaus/ineffassign@latest")
+	if err != nil {
 		return CheckResult{}, err
 	}
 
@@ -34,7 +35,7 @@ func RunIneffassign(ctx *CheckContext) (CheckResult, error) {
 			fileCount += len(strings.Split(strings.TrimSpace(findOutput), "\n"))
 		}
 
-		cmd := exec.Command("ineffassign", "./...")
+		cmd := exec.Command(ineffassignBin, "./...")
 		cmd.Dir = modDir
 		output, err := RunCommand(cmd, true)
 		if err != nil {

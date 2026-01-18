@@ -119,30 +119,28 @@ func CommandExists(name string) bool {
 	return err == nil
 }
 
-// EnsureGoTool ensures a Go tool is installed and in PATH.
-// If the tool isn't in PATH after installation, adds the Go bin directory to PATH.
-func EnsureGoTool(name, installPath string) error {
+// EnsureGoTool ensures a Go tool is installed and returns the path to the binary.
+// If the tool is already in PATH, returns just the name. Otherwise installs it
+// and returns the full path to the installed binary.
+func EnsureGoTool(name, installPath string) (string, error) {
 	if CommandExists(name) {
-		return nil
+		return name, nil
 	}
 
-	// Get Go's bin directory before installation
+	// Get Go's bin directory
 	goBin := getGoBinDir()
-
-	// Add Go bin to PATH before installation so the installed binary is immediately available
-	if goBin != "" {
-		currentPath := os.Getenv("PATH")
-		if !strings.Contains(currentPath, goBin) {
-			os.Setenv("PATH", goBin+string(os.PathListSeparator)+currentPath)
-		}
+	if goBin == "" {
+		return "", fmt.Errorf("could not determine Go bin directory")
 	}
 
+	// Install the tool
 	installCmd := exec.Command("go", "install", installPath)
 	if _, err := RunCommand(installCmd, true); err != nil {
-		return fmt.Errorf("failed to install %s: %w", name, err)
+		return "", fmt.Errorf("failed to install %s: %w", name, err)
 	}
 
-	return nil
+	// Return full path to the binary
+	return filepath.Join(goBin, name), nil
 }
 
 // getGoBinDir returns the directory where go install puts binaries.

@@ -11,7 +11,8 @@ import (
 func RunNilaway(ctx *CheckContext) (CheckResult, error) {
 	scriptsDir := filepath.Join(ctx.RootDir, "scripts")
 
-	if err := EnsureGoTool("nilaway", "go.uber.org/nilaway/cmd/nilaway@latest"); err != nil {
+	nilawayBin, err := EnsureGoTool("nilaway", "go.uber.org/nilaway/cmd/nilaway@latest")
+	if err != nil {
 		return CheckResult{}, err
 	}
 
@@ -34,7 +35,7 @@ func RunNilaway(ctx *CheckContext) (CheckResult, error) {
 			pkgCount += len(strings.Split(strings.TrimSpace(listOutput), "\n"))
 		}
 
-		cmd := exec.Command("nilaway", "./...")
+		cmd := exec.Command(nilawayBin, "./...")
 		cmd.Dir = modDir
 		output, err := RunCommand(cmd, true)
 		if err != nil {

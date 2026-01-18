@@ -11,7 +11,8 @@ import (
 func RunStaticcheck(ctx *CheckContext) (CheckResult, error) {
 	scriptsDir := filepath.Join(ctx.RootDir, "scripts")
 
-	if err := EnsureGoTool("staticcheck", "honnef.co/go/tools/cmd/staticcheck@latest"); err != nil {
+	staticcheckBin, err := EnsureGoTool("staticcheck", "honnef.co/go/tools/cmd/staticcheck@latest")
+	if err != nil {
 		return CheckResult{}, err
 	}
 
@@ -34,7 +35,7 @@ func RunStaticcheck(ctx *CheckContext) (CheckResult, error) {
 			pkgCount += len(strings.Split(strings.TrimSpace(listOutput), "\n"))
 		}
 
-		cmd := exec.Command("staticcheck", "./...")
+		cmd := exec.Command(staticcheckBin, "./...")
 		cmd.Dir = modDir
 		output, err := RunCommand(cmd, true)
 		if err != nil {

@@ -11,7 +11,8 @@ import (
 func RunMisspell(ctx *CheckContext) (CheckResult, error) {
 	scriptsDir := filepath.Join(ctx.RootDir, "scripts")
 
-	if err := EnsureGoTool("misspell", "github.com/client9/misspell/cmd/misspell@latest"); err != nil {
+	misspellBin, err := EnsureGoTool("misspell", "github.com/client9/misspell/cmd/misspell@latest")
+	if err != nil {
 		return CheckResult{}, err
 	}
 
@@ -24,7 +25,7 @@ func RunMisspell(ctx *CheckContext) (CheckResult, error) {
 		fileCount = len(strings.Split(strings.TrimSpace(findOutput), "\n"))
 	}
 
-	cmd := exec.Command("misspell", "-error", ".")
+	cmd := exec.Command(misspellBin, "-error", ".")
 	cmd.Dir = scriptsDir
 	output, err := RunCommand(cmd, true)
 	if err != nil {

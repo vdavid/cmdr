@@ -14,7 +14,8 @@ const GocycloThreshold = 15
 func RunGocyclo(ctx *CheckContext) (CheckResult, error) {
 	scriptsDir := filepath.Join(ctx.RootDir, "scripts")
 
-	if err := EnsureGoTool("gocyclo", "github.com/fzipp/gocyclo/cmd/gocyclo@latest"); err != nil {
+	gocycloBin, err := EnsureGoTool("gocyclo", "github.com/fzipp/gocyclo/cmd/gocyclo@latest")
+	if err != nil {
 		return CheckResult{}, err
 	}
 
@@ -38,7 +39,7 @@ func RunGocyclo(ctx *CheckContext) (CheckResult, error) {
 		}
 
 		// Run gocyclo with threshold
-		cmd := exec.Command("gocyclo", "-over", fmt.Sprintf("%d", GocycloThreshold), ".")
+		cmd := exec.Command(gocycloBin, "-over", fmt.Sprintf("%d", GocycloThreshold), ".")
 		cmd.Dir = modDir
 		output, err := RunCommand(cmd, true)
 
