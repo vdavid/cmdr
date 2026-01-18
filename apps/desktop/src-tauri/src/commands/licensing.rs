@@ -15,10 +15,11 @@ pub fn get_window_title(app: tauri::AppHandle) -> String {
     licensing::get_window_title(&status)
 }
 
-/// Activate a license key.
+/// Activate a license key or short code.
+/// If the input is a short code (CMDR-XXXX-XXXX-XXXX), it first exchanges it for the full key.
 #[tauri::command]
-pub fn activate_license(app: tauri::AppHandle, license_key: String) -> Result<licensing::LicenseInfo, String> {
-    licensing::activate_license(&app, &license_key)
+pub async fn activate_license(app: tauri::AppHandle, license_key: String) -> Result<licensing::LicenseInfo, String> {
+    licensing::activate_license_async(&app, &license_key).await
 }
 
 /// Get information about the current license (if any).

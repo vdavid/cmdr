@@ -7,6 +7,35 @@ export interface LicenseData {
     transactionId: string
     issuedAt: string
     type: LicenseType
+    organizationName?: string // For commercial licenses
+}
+
+/**
+ * Generate a short, readable license code.
+ * Format: CMDR-XXXX-XXXX-XXXX (16 chars + prefix, using unambiguous characters)
+ */
+export function generateShortCode(): string {
+    // Use unambiguous characters (no 0/O, 1/I/L confusion)
+    const chars = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'
+    const segments: string[] = []
+
+    for (let s = 0; s < 3; s++) {
+        let segment = ''
+        for (let i = 0; i < 4; i++) {
+            const randomIndex = Math.floor(Math.random() * chars.length)
+            segment += chars[randomIndex]
+        }
+        segments.push(segment)
+    }
+
+    return `CMDR-${segments.join('-')}`
+}
+
+/**
+ * Validate that a string looks like a short license code.
+ */
+export function isValidShortCode(code: string): boolean {
+    return /^CMDR-[23456789A-HJ-NP-Z]{4}-[23456789A-HJ-NP-Z]{4}-[23456789A-HJ-NP-Z]{4}$/i.test(code)
 }
 
 /**
@@ -29,25 +58,13 @@ export async function generateLicenseKey(data: LicenseData, privateKeyHex: strin
 }
 
 /**
- * Format license key for display (groups of 5 chars).
- * ABCDE-FGHIJ-KLMNO-...
+ * Format license key for display.
+ * Returns the full key as-is since it must contain the `.` separator
+ * for the client-side Ed25519 signature verification to work.
  */
 export function formatLicenseKey(key: string): string {
-    // Remove the dots and create a shorter representation
-    const hash = simpleHash(key)
-    const formatted = hash.match(/.{1,5}/g)?.join('-') ?? hash
-    return formatted.toUpperCase()
-}
-
-/**
- * Create a shorter hash for display purposes.
- * The full key is still valid, this is just for UX.
- * Actually, let's just return the full key and let the app handle it.
- */
-function simpleHash(input: string): string {
-    // For license keys, we want the full cryptographic key
-    // Just format it nicely
-    return input.replace(/[^a-zA-Z0-9]/g, '').slice(0, 25)
+    // Return the full key - clients need the complete payload.signature format
+    return key
 }
 
 // Helper functions

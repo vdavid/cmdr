@@ -5,6 +5,7 @@
     import ExpirationModal from '$lib/licensing/ExpirationModal.svelte'
     import CommercialReminderModal from '$lib/licensing/CommercialReminderModal.svelte'
     import AboutWindow from '$lib/licensing/AboutWindow.svelte'
+    import LicenseKeyDialog from '$lib/licensing/LicenseKeyDialog.svelte'
     import CommandPalette from '$lib/command-palette/CommandPalette.svelte'
     import {
         showMainWindow,
@@ -51,6 +52,7 @@
     let expiredAt = $state<string>('')
     let showCommercialReminder = $state(false)
     let showAboutWindow = $state(false)
+    let showLicenseKeyDialog = $state(false)
     let showCommandPalette = $state(false)
     let explorerRef: ExplorerAPI | undefined = $state()
     let windowTitle = $state('Cmdr')
@@ -59,6 +61,7 @@
     let handleKeyDown: ((e: KeyboardEvent) => void) | undefined
     let handleContextMenu: ((e: MouseEvent) => void) | undefined
     let unlistenShowAbout: UnlistenFn | undefined
+    let unlistenLicenseKeyDialog: UnlistenFn | undefined
     let unlistenCommandPalette: UnlistenFn | undefined
     let unlistenSwitchPane: UnlistenFn | undefined
 
@@ -183,6 +186,15 @@
             // Not in Tauri environment
         }
 
+        // Listen for license key dialog event from menu
+        try {
+            unlistenLicenseKeyDialog = await listen('show-license-key-dialog', () => {
+                showLicenseKeyDialog = true
+            })
+        } catch {
+            // Not in Tauri environment
+        }
+
         // Listen for command palette event from menu
         try {
             unlistenCommandPalette = await listen('show-command-palette', () => {
@@ -272,6 +284,9 @@
         if (unlistenShowAbout) {
             unlistenShowAbout()
         }
+        if (unlistenLicenseKeyDialog) {
+            unlistenLicenseKeyDialog()
+        }
         if (unlistenCommandPalette) {
             unlistenCommandPalette()
         }
@@ -299,6 +314,19 @@
     function handleAboutClose() {
         showAboutWindow = false
         explorerRef?.refocus()
+    }
+
+    function handleLicenseKeyDialogClose() {
+        showLicenseKeyDialog = false
+        explorerRef?.refocus()
+    }
+
+    async function handleLicenseKeySuccess() {
+        showLicenseKeyDialog = false
+        // Refresh the window title to reflect new license status
+        windowTitle = await getWindowTitle()
+        // Show the About window so user can see their license status
+        showAboutWindow = true
     }
 
     function handleCommandPaletteClose() {
@@ -539,6 +567,10 @@
     <div class="main-content">
         {#if showAboutWindow}
             <AboutWindow onClose={handleAboutClose} />
+        {/if}
+
+        {#if showLicenseKeyDialog}
+            <LicenseKeyDialog onClose={handleLicenseKeyDialogClose} onSuccess={handleLicenseKeySuccess} />
         {/if}
 
         {#if showCommandPalette}

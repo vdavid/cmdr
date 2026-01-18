@@ -239,6 +239,24 @@
         }
     }
 
+    function handleArrowKey(key: string): boolean {
+        const lastIndex = sortedShares.length - 1
+        const newIndex =
+            key === 'ArrowDown'
+                ? Math.min(cursorIndex + 1, lastIndex)
+                : key === 'ArrowUp'
+                  ? Math.max(cursorIndex - 1, 0)
+                  : key === 'ArrowLeft'
+                    ? 0
+                    : key === 'ArrowRight'
+                      ? lastIndex
+                      : null
+        if (newIndex === null) return false
+        cursorIndex = newIndex
+        scrollToIndex(cursorIndex)
+        return true
+    }
+
     export function handleKeyDown(e: KeyboardEvent): boolean {
         if (showLoginForm) {
             // Login form handles its own keyboard events
@@ -265,39 +283,27 @@
             return true
         }
 
-        switch (e.key) {
-            case 'ArrowDown':
-                e.preventDefault()
-                cursorIndex = Math.min(cursorIndex + 1, sortedShares.length - 1)
-                scrollToIndex(cursorIndex)
-                return true
-            case 'ArrowUp':
-                e.preventDefault()
-                cursorIndex = Math.max(cursorIndex - 1, 0)
-                scrollToIndex(cursorIndex)
-                return true
-            case 'ArrowLeft':
-                e.preventDefault()
-                cursorIndex = 0
-                scrollToIndex(cursorIndex)
-                return true
-            case 'ArrowRight':
-                e.preventDefault()
-                cursorIndex = sortedShares.length - 1
-                scrollToIndex(cursorIndex)
-                return true
-            case 'Enter':
-                e.preventDefault()
-                if (cursorIndex >= 0 && cursorIndex < sortedShares.length) {
-                    onShareSelect?.(sortedShares[cursorIndex], authenticatedCredentials)
-                }
-                return true
-            case 'Escape':
-            case 'Backspace':
-                e.preventDefault()
-                onBack?.()
-                return true
+        // Handle arrow keys
+        if (['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+            e.preventDefault()
+            return handleArrowKey(e.key)
         }
+
+        // Handle action keys
+        if (e.key === 'Enter') {
+            e.preventDefault()
+            if (cursorIndex >= 0 && cursorIndex < sortedShares.length) {
+                onShareSelect?.(sortedShares[cursorIndex], authenticatedCredentials)
+            }
+            return true
+        }
+
+        if (e.key === 'Escape' || e.key === 'Backspace') {
+            e.preventDefault()
+            onBack?.()
+            return true
+        }
+
         return false
     }
 

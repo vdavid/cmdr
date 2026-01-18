@@ -1,35 +1,54 @@
 import { describe, expect, it } from 'vitest'
-import { formatLicenseKey, generateLicenseKey, type LicenseData } from './license'
+import { generateLicenseKey, generateShortCode, isValidShortCode, type LicenseData } from './license'
 import * as ed from '@noble/ed25519'
 
-describe('formatLicenseKey', () => {
-    it('formats a key into uppercase groups', () => {
-        const key = 'eyJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20ifQ.c2lnbmF0dXJl'
-        const formatted = formatLicenseKey(key)
+describe('generateShortCode', () => {
+    it('generates codes in CMDR-XXXX-XXXX-XXXX format', () => {
+        const code = generateShortCode()
 
-        // Should be uppercase
-        expect(formatted).toBe(formatted.toUpperCase())
-
-        // Should contain dashes separating groups
-        expect(formatted).toContain('-')
+        expect(code).toMatch(/^CMDR-[23456789A-HJ-NP-Z]{4}-[23456789A-HJ-NP-Z]{4}-[23456789A-HJ-NP-Z]{4}$/)
     })
 
-    it('produces consistent output for the same input', () => {
-        const key = 'someTestKey.signature'
-        const result1 = formatLicenseKey(key)
-        const result2 = formatLicenseKey(key)
-
-        expect(result1).toBe(result2)
+    it('generates unique codes', () => {
+        const codes = new Set<string>()
+        for (let i = 0; i < 100; i++) {
+            codes.add(generateShortCode())
+        }
+        // All 100 codes should be unique
+        expect(codes.size).toBe(100)
     })
 
-    it('removes non-alphanumeric characters', () => {
-        const key = 'abc.def/ghi+jkl='
-        const formatted = formatLicenseKey(key)
+    it('uses only unambiguous characters', () => {
+        // Generate many codes and check none contain ambiguous chars
+        for (let i = 0; i < 50; i++) {
+            const code = generateShortCode()
+            // Should not contain: 0, O, 1, I, L
+            expect(code).not.toMatch(/[01OIL]/)
+        }
+    })
+})
 
-        expect(formatted).not.toContain('.')
-        expect(formatted).not.toContain('/')
-        expect(formatted).not.toContain('+')
-        expect(formatted).not.toContain('=')
+describe('isValidShortCode', () => {
+    it('accepts valid codes', () => {
+        expect(isValidShortCode('CMDR-ABCD-EFGH-2345')).toBe(true)
+        expect(isValidShortCode('cmdr-abcd-efgh-2345')).toBe(true) // Case insensitive
+        expect(isValidShortCode('CMDR-2345-6789-ABCD')).toBe(true)
+    })
+
+    it('rejects invalid codes', () => {
+        expect(isValidShortCode('ABCD-EFGH-IJKL-MNOP')).toBe(false) // No CMDR prefix
+        expect(isValidShortCode('CMDR-ABC-EFGH-1234')).toBe(false) // Segment too short
+        expect(isValidShortCode('CMDR-ABCDE-FGHI-1234')).toBe(false) // Segment too long
+        expect(isValidShortCode('CMDR-ABCD-EFGH')).toBe(false) // Missing segment
+        expect(isValidShortCode('something.else')).toBe(false) // Full key format
+        expect(isValidShortCode('')).toBe(false)
+    })
+
+    it('accepts generated codes', () => {
+        for (let i = 0; i < 20; i++) {
+            const code = generateShortCode()
+            expect(isValidShortCode(code)).toBe(true)
+        }
     })
 })
 
@@ -129,6 +148,79 @@ describe('generateLicenseKey', () => {
         const signatureBytes = Uint8Array.from(atob(signatureBase64), (c) => c.charCodeAt(0))
 
         // Signature should NOT verify for tampered payload
+        const isValid = await ed.verifyAsync(signatureBytes, tamperedPayloadBytes, publicKey)
+        expect(isValid).toBe(false)
+    })
+
+    it('includes organizationName in payload when provided', async () => {
+        const privateKey = ed.utils.randomSecretKey()
+        const privateKeyHex = Buffer.from(privateKey).toString('hex')
+
+        const licenseData: LicenseData = {
+            email: 'corp@example.com',
+            transactionId: 'txn_corp123',
+            issuedAt: '2026-01-08T12:00:00Z',
+            type: 'commercial_subscription',
+            organizationName: 'Acme Corporation',
+        }
+
+        const key = await generateLicenseKey(licenseData, privateKeyHex)
+        const [payloadBase64] = key.split('.')
+        const payloadJson = atob(payloadBase64)
+        const decoded = JSON.parse(payloadJson) as LicenseData
+
+        expect(decoded.organizationName).toBe('Acme Corporation')
+        expect(decoded.email).toBe('corp@example.com')
+        expect(decoded.type).toBe('commercial_subscription')
+    })
+
+    it('omits organizationName from payload when not provided', async () => {
+        const privateKey = ed.utils.randomSecretKey()
+        const privateKeyHex = Buffer.from(privateKey).toString('hex')
+
+        const licenseData: LicenseData = {
+            email: 'supporter@example.com',
+            transactionId: 'txn_supporter',
+            issuedAt: '2026-01-08T12:00:00Z',
+            type: 'supporter',
+            // organizationName intentionally omitted
+        }
+
+        const key = await generateLicenseKey(licenseData, privateKeyHex)
+        const [payloadBase64] = key.split('.')
+        const payloadJson = atob(payloadBase64)
+        const decoded = JSON.parse(payloadJson) as LicenseData
+
+        expect(decoded.organizationName).toBeUndefined()
+        expect(decoded.type).toBe('supporter')
+    })
+
+    it('protects organizationName from tampering', async () => {
+        const privateKey = ed.utils.randomSecretKey()
+        const publicKey = await ed.getPublicKeyAsync(privateKey)
+        const privateKeyHex = Buffer.from(privateKey).toString('hex')
+
+        const licenseData: LicenseData = {
+            email: 'corp@example.com',
+            transactionId: 'txn_corp',
+            issuedAt: '2026-01-08T12:00:00Z',
+            type: 'commercial_perpetual',
+            organizationName: 'Small Startup',
+        }
+
+        const key = await generateLicenseKey(licenseData, privateKeyHex)
+        const [, signatureBase64] = key.split('.')
+
+        // Try to change organization name to something else
+        const tamperedData: LicenseData = {
+            ...licenseData,
+            organizationName: 'Giant Enterprise', // Changed!
+        }
+        const tamperedPayload = JSON.stringify(tamperedData)
+        const tamperedPayloadBytes = new TextEncoder().encode(tamperedPayload)
+        const signatureBytes = Uint8Array.from(atob(signatureBase64), (c) => c.charCodeAt(0))
+
+        // Signature should NOT verify for tampered org name
         const isValid = await ed.verifyAsync(signatureBytes, tamperedPayloadBytes, publicKey)
         expect(isValid).toBe(false)
     })

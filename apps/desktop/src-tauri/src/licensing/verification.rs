@@ -1,6 +1,7 @@
 //! License key verification using Ed25519 signatures.
 
 use crate::licensing::LicenseData;
+use crate::licensing::validation_client::{activate_short_code, is_short_code};
 use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
 use ed25519_dalek::{Signature, Verifier, VerifyingKey};
 use serde::{Deserialize, Serialize};
@@ -21,6 +22,7 @@ pub struct LicenseInfo {
     pub email: String,
     pub transaction_id: String,
     pub issued_at: String,
+    pub organization_name: Option<String>,
 }
 
 /// Activate a license key. Returns the license info if valid.
@@ -39,7 +41,23 @@ pub fn activate_license(app: &tauri::AppHandle, license_key: &str) -> Result<Lic
         email: data.email,
         transaction_id: data.transaction_id,
         issued_at: data.issued_at,
+        organization_name: data.organization_name,
     })
+}
+
+/// Activate a license key or short code (async version).
+/// If the input is a short code (CMDR-XXXX-XXXX-XXXX), it first exchanges it for the full key.
+pub async fn activate_license_async(app: &tauri::AppHandle, input: &str) -> Result<LicenseInfo, String> {
+    let full_key = if is_short_code(input) {
+        // Exchange short code for full key via server
+        activate_short_code(input).await?
+    } else {
+        // Already a full key
+        input.to_string()
+    };
+
+    // Now activate with the full key
+    activate_license(app, &full_key)
 }
 
 /// Get stored license info, if any.
@@ -51,6 +69,7 @@ pub fn get_license_info(app: &tauri::AppHandle) -> Option<LicenseInfo> {
         email: data.email,
         transaction_id: data.transaction_id,
         issued_at: data.issued_at,
+        organization_name: data.organization_name,
     })
 }
 
@@ -188,6 +207,7 @@ mod tests {
             transaction_id: "txn_test_123".to_string(),
             issued_at: "2026-01-08T12:00:00Z".to_string(),
             license_type: None,
+            organization_name: Some("Test Corp".to_string()),
         };
 
         // Serialize payload (same as server)
@@ -210,6 +230,7 @@ mod tests {
         assert_eq!(data.email, "test@example.com");
         assert_eq!(data.transaction_id, "txn_test_123");
         assert_eq!(data.issued_at, "2026-01-08T12:00:00Z");
+        assert_eq!(data.organization_name, Some("Test Corp".to_string()));
     }
 
     /// Test that tampering with license key is detected
@@ -228,6 +249,7 @@ mod tests {
             transaction_id: "txn_original".to_string(),
             issued_at: "2026-01-08T12:00:00Z".to_string(),
             license_type: None,
+            organization_name: Some("Original Corp".to_string()),
         };
         let original_json = serde_json::to_string(&original_data).unwrap();
         let signature = signing_key.sign(original_json.as_bytes());
@@ -239,6 +261,7 @@ mod tests {
             transaction_id: "txn_original".to_string(),
             issued_at: "2026-01-08T12:00:00Z".to_string(),
             license_type: None,
+            organization_name: Some("Original Corp".to_string()),
         };
         let tampered_json = serde_json::to_string(&tampered_data).unwrap();
         let tampered_payload_base64 = BASE64.encode(tampered_json.as_bytes());
@@ -273,6 +296,7 @@ mod tests {
             transaction_id: "txn_test".to_string(),
             issued_at: "2026-01-08T12:00:00Z".to_string(),
             license_type: None,
+            organization_name: None,
         };
         let payload_json = serde_json::to_string(&license_data).unwrap();
         let signature = signing_key.sign(payload_json.as_bytes());

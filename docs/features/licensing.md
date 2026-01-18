@@ -6,7 +6,7 @@ This document describes Cmdr's licensing and payment system.
 
 Cmdr uses a **BSL 1.1 license with free personal use**:
 
-1. Personal use is free forever — no trial, no nags
+1. Personal use is free forever — no trial, no nags. Optional $10 sponsor license also available.
 2. Commercial use requires a paid license ($59/year or $199 perpetual)
 3. Licenses are validated using Ed25519 cryptographic signatures
 4. Source code converts to AGPL-3.0 after 3 years
@@ -70,7 +70,7 @@ Cmdr uses a **BSL 1.1 license with free personal use**:
 
 ### Activation
 
-1. User opens Cmdr → Menu → Enter license key
+1. User opens Cmdr → Cmdr menu → Enter license key...
 2. User pastes license key
 3. App validates Ed25519 signature locally (no network needed)
 4. App stores license in local storage

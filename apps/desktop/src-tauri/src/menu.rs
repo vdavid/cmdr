@@ -83,6 +83,9 @@ pub enum ViewMode {
 /// Menu item ID for About window.
 pub const ABOUT_ID: &str = "about";
 
+/// Menu item ID for Enter License Key.
+pub const ENTER_LICENSE_KEY_ID: &str = "enter_license_key";
+
 /// Builds the application menu with default macOS items plus a custom View and File submenu enhancements.
 pub fn build_menu<R: Runtime>(
     app: &AppHandle<R>,
@@ -109,6 +112,16 @@ pub fn build_menu<R: Runtime>(
                         if i == 0 {
                             submenu.remove(pred)?;
                             submenu.insert(&about_item, 0)?;
+
+                            // Add "Enter License Key..." after About
+                            let enter_license_key_item = tauri::menu::MenuItem::with_id(
+                                app,
+                                ENTER_LICENSE_KEY_ID,
+                                "Enter license key...",
+                                true,
+                                None::<&str>,
+                            )?;
+                            submenu.insert(&enter_license_key_item, 1)?;
                             break;
                         }
                     }

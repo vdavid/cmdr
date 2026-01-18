@@ -55,9 +55,10 @@ mod settings;
 mod volumes;
 
 use menu::{
-    ABOUT_ID, COMMAND_PALETTE_ID, GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID, MenuState, SHOW_HIDDEN_FILES_ID,
-    SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID,
-    SORT_DESCENDING_ID, SWITCH_PANE_ID, VIEW_MODE_BRIEF_ID, VIEW_MODE_FULL_ID, ViewMode,
+    ABOUT_ID, COMMAND_PALETTE_ID, ENTER_LICENSE_KEY_ID, GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID, MenuState,
+    SHOW_HIDDEN_FILES_ID, SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID,
+    SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SORT_DESCENDING_ID, SWITCH_PANE_ID, VIEW_MODE_BRIEF_ID, VIEW_MODE_FULL_ID,
+    ViewMode,
 };
 use tauri::{Emitter, Manager};
 
@@ -200,6 +201,9 @@ pub fn run() {
             } else if id == ABOUT_ID {
                 // Emit event to show our custom About window
                 let _ = app.emit("show-about", ());
+            } else if id == ENTER_LICENSE_KEY_ID {
+                // Emit event to show the license key entry dialog
+                let _ = app.emit("show-license-key-dialog", ());
             } else if id == COMMAND_PALETTE_ID {
                 // Emit event to show the command palette
                 let _ = app.emit("show-command-palette", ());

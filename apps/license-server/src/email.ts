@@ -46,7 +46,7 @@ export async function sendLicenseEmail(params: EmailParams): Promise<void> {
               .map(
                   (key, i) => `
             <div class="license-box">
-                <div class="license-number">License ${i + 1} of ${count}</div>
+                <div class="license-number">License ${String(i + 1)} of ${String(count)}</div>
                 ${key}
             </div>`,
               )
@@ -55,11 +55,11 @@ export async function sendLicenseEmail(params: EmailParams): Promise<void> {
 
     // Plain text: render keys with headers if multiple
     const licenseKeysText = isMultiple
-        ? params.licenseKeys.map((key, i) => `License ${i + 1} of ${count}:\n${key}`).join('\n\n')
+        ? params.licenseKeys.map((key, i) => `License ${String(i + 1)} of ${String(count)}:\n${key}`).join('\n\n')
         : params.licenseKeys[0]
 
     const introText = isMultiple
-        ? `Thanks for purchasing ${count} licenses for ${params.productName}! Here are your license keys:`
+        ? `Thanks for purchasing ${String(count)} licenses for ${params.productName}! Here are your license keys:`
         : `Thanks for purchasing ${params.productName}! Here's your license key:`
 
     await resend.emails.send({
@@ -93,7 +93,7 @@ export async function sendLicenseEmail(params: EmailParams): Promise<void> {
     <h3>How to activate:</h3>
     <ol>
         <li>Open ${params.productName}</li>
-        <li>Go to <strong>Menu → Enter license key</strong></li>
+        <li>Go to <strong>Cmdr menu → Enter license key...</strong></li>
         <li>Paste a key and click Activate</li>
     </ol>
 
@@ -122,7 +122,7 @@ ${licenseKeysText}
 ${orgLineText}
 How to activate:
 1. Open ${params.productName}
-2. Go to Menu → Enter license key
+2. Go to Cmdr menu → Enter license key...
 3. Paste a key and click Activate
 
 ${licenseDescription}

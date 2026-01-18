@@ -23,6 +23,7 @@
         "licensing/AboutWindow.svelte": { "reason": "UI component" },
         "licensing/CommercialReminderModal.svelte": { "reason": "UI component" },
         "licensing/ExpirationModal.svelte": { "reason": "UI component" },
+        "licensing/LicenseKeyDialog.svelte": { "reason": "UI modal, depends on Tauri commands" },
         "network-store.svelte.ts": { "reason": "Depends on Tauri APIs" },
         "onboarding/FullDiskAccessPrompt.svelte": { "reason": "UI component" },
         "settings-store.ts": { "reason": "Depends on Tauri store APIs" },

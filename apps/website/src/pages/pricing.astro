@@ -285,26 +285,134 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
     </main>
     <Footer />
 
-    {/* Paddle checkout integration */}
-    {isPaddleConfigured && (
-        <script src="https://cdn.paddle.com/paddle/v2/paddle.js" is:inline></script>
-        <script is:inline define:vars={{ paddleConfig }}>
-            // Initialize Paddle
-            if (paddleConfig.environment === 'sandbox') {
-                Paddle.Environment.set('sandbox')
-            }
-            Paddle.Initialize({ token: paddleConfig.clientToken })
+    {/* Organization name modal for commercial licenses */}
+    <div id="org-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="mx-4 w-full max-w-md rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-xl">
+            <h3 class="mb-2 text-xl font-semibold text-[var(--color-text-primary)]">Organization details</h3>
+            <p class="mb-6 text-sm text-[var(--color-text-secondary)]">
+                Enter your company or organization name. This will appear on your invoice.
+                Paddle will collect your billing address and tax ID during checkout.
+            </p>
+            <form id="org-form">
+                <label class="mb-4 block">
+                    <span class="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">Organization name <span class="text-[var(--color-accent)]">*</span></span>
+                    <input
+                        type="text"
+                        id="org-name-input"
+                        required
+                        placeholder="Acme Corporation"
+                        class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20"
+                    />
+                </label>
+                <div class="flex gap-3">
+                    <button
+                        type="button"
+                        id="org-cancel-btn"
+                        class="flex-1 rounded-lg border border-[var(--color-border)] py-2.5 text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-hover)]"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="submit"
+                        class="flex-1 rounded-lg bg-[var(--color-accent)] py-2.5 text-sm font-medium text-[var(--color-background)] transition-all hover:bg-[var(--color-accent-hover)]"
+                    >
+                        Continue to checkout
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-            // Handle buy button clicks
-            document.querySelectorAll('[data-paddle-price]').forEach((button) => {
-                button.addEventListener('click', () => {
-                    const priceKey = button.dataset.paddlePrice
-                    const priceId = paddleConfig.priceIds[priceKey]
-                    if (priceId) {
-                        Paddle.Checkout.open({ items: [{ priceId }] })
+    {/* Paddle checkout integration - config passed via data attribute */}
+    {
+        isPaddleConfigured && (
+            <div id="paddle-config" data-config={JSON.stringify(paddleConfig)} class="hidden" />
+        )
+    }
+    {isPaddleConfigured && <script src="https://cdn.paddle.com/paddle/v2/paddle.js" is:inline />}
+    {
+        isPaddleConfigured && (
+            <script is:inline>
+                ;(function () {
+                    const configEl = document.getElementById('paddle-config')
+                    if (!configEl) return
+                    const paddleConfig = JSON.parse(configEl.dataset.config)
+
+                    // Initialize Paddle
+                    if (paddleConfig.environment === 'sandbox') {
+                        Paddle.Environment.set('sandbox')
                     }
-                })
-            })
-        </script>
-    )}
+                    Paddle.Initialize({ token: paddleConfig.clientToken })
+
+                    // Modal elements
+                    const modal = document.getElementById('org-modal')
+                    const form = document.getElementById('org-form')
+                    const input = document.getElementById('org-name-input')
+                    const cancelBtn = document.getElementById('org-cancel-btn')
+
+                    // Track which price we're buying
+                    let pendingPriceId = null
+
+                    // Commercial license types that require org name
+                    const commercialPriceKeys = ['commercialSubscription', 'commercialPerpetual']
+
+                    function openModal(priceId) {
+                        pendingPriceId = priceId
+                        input.value = ''
+                        modal.classList.remove('hidden')
+                        modal.classList.add('flex')
+                        input.focus()
+                    }
+
+                    function closeModal() {
+                        modal.classList.add('hidden')
+                        modal.classList.remove('flex')
+                        pendingPriceId = null
+                    }
+
+                    // Handle buy button clicks
+                    document.querySelectorAll('[data-paddle-price]').forEach(function (button) {
+                        button.addEventListener('click', function () {
+                            const priceKey = button.dataset.paddlePrice
+                            const priceId = paddleConfig.priceIds[priceKey]
+                            if (!priceId) return
+
+                            if (commercialPriceKeys.includes(priceKey)) {
+                                openModal(priceId)
+                            } else {
+                                Paddle.Checkout.open({ items: [{ priceId: priceId }] })
+                            }
+                        })
+                    })
+
+                    // Handle form submission
+                    form.addEventListener('submit', function (e) {
+                        e.preventDefault()
+                        const orgName = input.value.trim()
+                        if (!orgName || !pendingPriceId) return
+
+                        closeModal()
+
+                        // Open Paddle checkout with organization info
+                        Paddle.Checkout.open({
+                            items: [{ priceId: pendingPriceId }],
+                            customData: { organization_name: orgName },
+                            customer: { business: { name: orgName } },
+                        })
+                    })
+
+                    // Close modal handlers
+                    cancelBtn.addEventListener('click', closeModal)
+                    modal.addEventListener('click', function (e) {
+                        if (e.target === modal) closeModal()
+                    })
+                    document.addEventListener('keydown', function (e) {
+                        if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                            closeModal()
+                        }
+                    })
+                })()
+            </script>
+        )
+    }
 </Layout>
