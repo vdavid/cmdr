@@ -190,7 +190,7 @@ Run integration tests locally:
 ./test/smb-servers/start.sh
 
 # Run integration tests
-cd src-tauri && cargo nextest run --features integration-tests
+cd src-tauri && cargo nextest run --features integration-tests && cd ..
 
 # Stop servers when done
 ./test/smb-servers/stop.sh

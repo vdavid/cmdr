@@ -4,7 +4,7 @@ description: How to document important technical decisions
 
 When making a significant technical decision (tech choice, architecture pattern, process change):
 
-1. Create an ADR in `docs/adr/NNN-decision-name.md` (use next available number)
+1. Create an ADR in `docs/artifacts/adr/NNN-decision-name.md` (use next available number)
 2. Use this template:
 
 ```markdown

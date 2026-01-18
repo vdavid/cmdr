@@ -11,8 +11,8 @@ security risk in production (untrusted JS could access system APIs, not good), s
 1. **Compile-time exclusion**: The MCP plugin is only registered via `#[cfg(debug_assertions)]` in `lib.rs`
 2. **Config separation**: `"withGlobalTauri": false` in `tauri.conf.json` (production), only overridden via
    `tauri.dev.json` during dev
-3. **Wrapper script**: `scripts/tauri-wrapper.js` injects `-c src-tauri/tauri.dev.json` only for `dev` commands.
-   (`pnpm tauri dev` calls `scripts/tauri-wrapper.js` which adds `-c src-tauri/tauri.dev.json`, then Tauri merges this
+3. **Wrapper script**: `apps/desktop/scripts/tauri-wrapper.js` injects `-c src-tauri/tauri.dev.json` only for `dev` commands.
+   (`pnpm tauri dev` calls the wrapper which adds `-c src-tauri/tauri.dev.json`, then Tauri merges this
    with `tauri.conf.json` via [JSON Merge Patch (RFC 7396)](https://datatracker.ietf.org/doc/html/rfc7396).))
 
 To avoid security issues in dev mode, always add a condition to **disable** that functionality in dev mode. This way,

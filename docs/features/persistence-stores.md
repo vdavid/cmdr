@@ -1,7 +1,7 @@
 # Persistence stores
 
 Cmdr uses three persistent storage mechanisms, each for a distinct purpose. All are stored in the app's data directory
-(on macOS: `~/Library/Application Support/com.cmdr.app/`).
+(on macOS: `~/Library/Application Support/com.veszelovszki.cmdr/`).
 
 ## 1. App status store (`app-status.json`)
 
