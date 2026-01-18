@@ -5,6 +5,7 @@ import { verifyPaddleWebhookMulti } from './paddle'
 import {
     getSubscriptionStatus,
     getLicenseTypeFromPriceId,
+    getCustomerDetails,
     type ValidationResponse,
     type PriceIdMapping,
 } from './paddle-api'
@@ -33,14 +34,12 @@ interface PaddleWebhookPayload {
     event_type: string
     data?: {
         id?: string
-        customer?: {
-            email?: string
-            name?: string
-        }
+        customer_id?: string
         items?: Array<{
             price?: {
                 id?: string
             }
+            quantity?: number
         }>
         custom_data?: {
             organization_name?: string
@@ -128,21 +127,42 @@ app.post('/webhook/paddle', async (c) => {
         c.env.PADDLE_WEBHOOK_SECRET_SANDBOX,
     ])
     if (!isValid) {
+        console.error('Webhook signature verification failed')
         return c.json({ error: 'Invalid signature' }, 401)
     }
 
     const payload = JSON.parse(body) as PaddleWebhookPayload
+    console.log('Received webhook:', payload.event_type)
 
     // Only handle completed purchases
     if (payload.event_type !== 'transaction.completed') {
         return c.json({ status: 'ignored', event: payload.event_type })
     }
 
-    // Extract and validate purchase data
+    // Extract purchase data from webhook
     const purchaseData = extractPurchaseData(payload)
     if (!purchaseData) {
-        return c.json({ error: 'Missing customer email or transaction ID' }, 400)
+        console.error('Missing customer_id or transaction ID in webhook payload')
+        return c.json({ error: 'Missing customer_id or transaction ID' }, 400)
     }
+
+    console.log('Processing transaction:', purchaseData.transactionId, 'for customer:', purchaseData.customerId)
+
+    // Determine Paddle API config (sandbox vs live based on transaction ID)
+    const paddleConfig = getPaddleConfig(purchaseData.transactionId, c.env)
+    if (!paddleConfig) {
+        console.error('No Paddle API key configured')
+        return c.json({ error: 'Server configuration error' }, 500)
+    }
+
+    // Fetch customer details from Paddle API
+    const customer = await getCustomerDetails(purchaseData.customerId, paddleConfig)
+    if (!customer) {
+        console.error('Failed to fetch customer details for:', purchaseData.customerId)
+        return c.json({ error: 'Failed to fetch customer details' }, 500)
+    }
+
+    console.log('Customer email:', customer.email)
 
     // Determine license type from price ID
     const priceIds: PriceIdMapping = {
@@ -154,11 +174,12 @@ app.post('/webhook/paddle', async (c) => {
         ? getLicenseTypeFromPriceId(purchaseData.priceId, priceIds)
         : 'commercial_subscription'
 
-    // Generate and send license
-    const result = await generateAndSendLicense({
-        customerEmail: purchaseData.customerEmail,
-        customerName: purchaseData.customerName,
+    // Generate and send license(s) - one per quantity
+    const result = await generateAndSendLicenses({
+        customerEmail: customer.email,
+        customerName: customer.name ?? 'there',
         transactionId: purchaseData.transactionId,
+        quantity: purchaseData.quantity,
         licenseType: licenseType ?? 'commercial_subscription',
         organizationName: licenseType !== 'supporter' ? purchaseData.organizationName : undefined,
         privateKey: c.env.ED25519_PRIVATE_KEY,
@@ -167,57 +188,64 @@ app.post('/webhook/paddle', async (c) => {
         resendApiKey: c.env.RESEND_API_KEY,
     })
 
-    return c.json({ status: 'ok', email: purchaseData.customerEmail, licenseType: result.licenseType })
+    console.log('Licenses sent to:', customer.email, 'type:', result.licenseType, 'quantity:', result.quantity)
+    return c.json({ status: 'ok', email: customer.email, licenseType: result.licenseType, quantity: result.quantity })
 })
 
-/** Extract and validate purchase data from webhook payload */
+/** Extract purchase data from webhook payload (customer fetched separately via API) */
 function extractPurchaseData(payload: PaddleWebhookPayload): {
-    customerEmail: string
-    customerName: string
+    customerId: string
     transactionId: string
     priceId: string | undefined
+    quantity: number
     organizationName: string | undefined
 } | null {
-    const customerEmail = payload.data?.customer?.email
+    const customerId = payload.data?.customer_id
     const transactionId = payload.data?.id
 
-    if (!customerEmail || !transactionId) return null
+    if (!customerId || !transactionId) return null
 
     return {
-        customerEmail,
-        customerName: payload.data?.customer?.name ?? 'there',
+        customerId,
         transactionId,
         priceId: payload.data?.items?.[0]?.price?.id,
+        quantity: payload.data?.items?.[0]?.quantity ?? 1,
         organizationName: payload.data?.custom_data?.organization_name,
     }
 }
 
-/** Helper to generate license and send email */
-async function generateAndSendLicense(params: {
+/** Helper to generate license(s) and send email */
+async function generateAndSendLicenses(params: {
     customerEmail: string
     customerName: string
     transactionId: string
+    quantity: number
     licenseType: LicenseType
     organizationName: string | undefined
     privateKey: string
     productName: string
     supportEmail: string
     resendApiKey: string
-}): Promise<{ licenseType: LicenseType }> {
-    const licenseData = {
-        email: params.customerEmail,
-        transactionId: params.transactionId,
-        issuedAt: new Date().toISOString(),
-        type: params.licenseType,
-    }
+}): Promise<{ licenseType: LicenseType; quantity: number }> {
+    const licenseKeys: string[] = []
 
-    const licenseKey = await generateLicenseKey(licenseData, params.privateKey)
-    const formattedKey = formatLicenseKey(licenseKey)
+    for (let i = 0; i < params.quantity; i++) {
+        const licenseData = {
+            email: params.customerEmail,
+            // Each license gets a unique transaction ID suffix for quantity > 1
+            transactionId: params.quantity > 1 ? `${params.transactionId}-${i + 1}` : params.transactionId,
+            issuedAt: new Date().toISOString(),
+            type: params.licenseType,
+        }
+
+        const licenseKey = await generateLicenseKey(licenseData, params.privateKey)
+        licenseKeys.push(formatLicenseKey(licenseKey))
+    }
 
     await sendLicenseEmail({
         to: params.customerEmail,
         customerName: params.customerName,
-        licenseKey: formattedKey,
+        licenseKeys,
         productName: params.productName,
         supportEmail: params.supportEmail,
         resendApiKey: params.resendApiKey,
@@ -225,7 +253,7 @@ async function generateAndSendLicense(params: {
         licenseType: params.licenseType,
     })
 
-    return { licenseType: params.licenseType }
+    return { licenseType: params.licenseType, quantity: params.quantity }
 }
 
 // Manual license generation (for testing or customer service)

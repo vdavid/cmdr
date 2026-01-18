@@ -16,4 +16,4 @@ SUPPORT_EMAIL = "veszelovszki@gmail.com"
 # - RESEND_API_KEY                 (from resend.com)
 # - PRICE_ID_SUPPORTER             (Price ID for $10 supporter product)
 # - PRICE_ID_COMMERCIAL_SUBSCRIPTION (Price ID for $59/yr subscription)
-# - PRICE_ID_COMMERCIAL_PERPETUAL  (Price ID for $149 perpetual)
+# - PRICE_ID_COMMERCIAL_PERPETUAL  (Price ID for $199 perpetual)

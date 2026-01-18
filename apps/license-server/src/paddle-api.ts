@@ -185,3 +185,50 @@ export interface PriceIdMapping {
     commercialSubscription?: string
     commercialPerpetual?: string
 }
+
+/** Customer details from Paddle API */
+export interface CustomerDetails {
+    email: string
+    name: string | null
+}
+
+/**
+ * Fetch customer details from Paddle API using customer ID.
+ * Returns null if customer not found or API error.
+ */
+export async function getCustomerDetails(customerId: string, config: PaddleConfig): Promise<CustomerDetails | null> {
+    const baseUrl = config.environment === 'sandbox' ? 'https://sandbox-api.paddle.com' : 'https://api.paddle.com'
+
+    try {
+        const response = await fetch(`${baseUrl}/customers/${customerId}`, {
+            headers: { Authorization: `Bearer ${config.apiKey}` },
+        })
+
+        if (!response.ok) {
+            console.error('Failed to fetch customer:', response.status)
+            return null
+        }
+
+        const json: unknown = await response.json()
+        return extractCustomerData(json)
+    } catch (error) {
+        console.error('Paddle API error fetching customer:', error)
+        return null
+    }
+}
+
+/** Extract customer data from Paddle API response */
+function extractCustomerData(json: unknown): CustomerDetails | null {
+    if (!json || typeof json !== 'object') return null
+    const obj = json as Record<string, unknown>
+
+    if (!obj.data || typeof obj.data !== 'object') return null
+    const data = obj.data as Record<string, unknown>
+
+    const email = typeof data.email === 'string' ? data.email : null
+    if (!email) return null
+
+    const name = typeof data.name === 'string' ? data.name : null
+
+    return { email, name }
+}

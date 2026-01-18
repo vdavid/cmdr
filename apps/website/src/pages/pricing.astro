@@ -3,6 +3,18 @@ import Layout from '../layouts/Layout.astro'
 import Header from '../components/Header.astro'
 import Footer from '../components/Footer.astro'
 import { version, dmgUrl } from '../lib/release'
+
+// Paddle config - passed to client-side script
+const paddleConfig = {
+    clientToken: import.meta.env.PUBLIC_PADDLE_CLIENT_TOKEN ?? '',
+    environment: (import.meta.env.PUBLIC_PADDLE_ENVIRONMENT ?? 'sandbox') as 'sandbox' | 'live',
+    priceIds: {
+        supporter: import.meta.env.PUBLIC_PADDLE_PRICE_ID_SUPPORTER ?? '',
+        commercialSubscription: import.meta.env.PUBLIC_PADDLE_PRICE_ID_COMMERCIAL_SUBSCRIPTION ?? '',
+        commercialPerpetual: import.meta.env.PUBLIC_PADDLE_PRICE_ID_COMMERCIAL_PERPETUAL ?? '',
+    },
+}
+const isPaddleConfigured = paddleConfig.clientToken !== ''
 ---
 
 <Layout title="Pricing — Cmdr" description="Cmdr is free forever for personal use. Commercial licenses from $59/year.">
@@ -98,12 +110,14 @@ import { version, dmgUrl } from '../lib/release'
                         <span class="text-[var(--color-text-tertiary)]">Commercial use</span>
                     </li>
                 </ul>
-                <a
-                    href="#"
-                    class="block w-full rounded-lg border border-[var(--color-border)] py-2 text-center text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-hover)]"
+                <button
+                    type="button"
+                    data-paddle-price="supporter"
+                    disabled={!isPaddleConfigured}
+                    class="block w-full cursor-pointer rounded-lg border border-[var(--color-border)] py-2 text-center text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                     Buy supporter pack
-                </a>
+                </button>
             </div>
 
             <!-- Commercial Subscription -->
@@ -143,12 +157,14 @@ import { version, dmgUrl } from '../lib/release'
                         Auto-renews annually
                     </li>
                 </ul>
-                <a
-                    href="#"
-                    class="block w-full rounded-lg bg-[var(--color-accent)] py-2 text-center text-sm font-medium text-[var(--color-background)] transition-all duration-200 hover:bg-[var(--color-accent-hover)]"
+                <button
+                    type="button"
+                    data-paddle-price="commercialSubscription"
+                    disabled={!isPaddleConfigured}
+                    class="block w-full cursor-pointer rounded-lg bg-[var(--color-accent)] py-2 text-center text-sm font-medium text-[var(--color-background)] transition-all duration-200 hover:bg-[var(--color-accent-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                     Buy commercial license
-                </a>
+                </button>
             </div>
 
             <!-- Commercial Perpetual -->
@@ -179,12 +195,14 @@ import { version, dmgUrl } from '../lib/release'
                         3 years of updates
                     </li>
                 </ul>
-                <a
-                    href="#"
-                    class="block w-full rounded-lg border border-[var(--color-border)] py-2 text-center text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-hover)]"
+                <button
+                    type="button"
+                    data-paddle-price="commercialPerpetual"
+                    disabled={!isPaddleConfigured}
+                    class="block w-full cursor-pointer rounded-lg border border-[var(--color-border)] py-2 text-center text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                     Buy perpetual license
-                </a>
+                </button>
             </div>
         </div>
 
@@ -266,4 +284,27 @@ import { version, dmgUrl } from '../lib/release'
         </section>
     </main>
     <Footer />
+
+    {/* Paddle checkout integration */}
+    {isPaddleConfigured && (
+        <script src="https://cdn.paddle.com/paddle/v2/paddle.js" is:inline></script>
+        <script is:inline define:vars={{ paddleConfig }}>
+            // Initialize Paddle
+            if (paddleConfig.environment === 'sandbox') {
+                Paddle.Environment.set('sandbox')
+            }
+            Paddle.Initialize({ token: paddleConfig.clientToken })
+
+            // Handle buy button clicks
+            document.querySelectorAll('[data-paddle-price]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const priceKey = button.dataset.paddlePrice
+                    const priceId = paddleConfig.priceIds[priceKey]
+                    if (priceId) {
+                        Paddle.Checkout.open({ items: [{ priceId }] })
+                    }
+                })
+            })
+        </script>
+    )}
 </Layout>

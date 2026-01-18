@@ -6,7 +6,7 @@ Accepted (supersedes [ADR-015](015-license-model-agpl-trial.md))
 
 ## Summary
 
-Cmdr moves from AGPL-3.0 with a 14-day trial to BSL 1.1 with free personal use. Commercial users pay $59/year (subscription) or $149 (perpetual). The source converts to AGPL-3.0 after 3 years.
+Cmdr moves from AGPL-3.0 with a 14-day trial to BSL 1.1 with free personal use. Commercial users pay $59/year (subscription) or $199 (perpetual). The source converts to AGPL-3.0 after 3 years.
 
 ## Context
 
@@ -27,7 +27,7 @@ We wanted:
 
 - **Personal use**: Free forever, unlimited machines, no nags
 - **Evaluation**: 14 days to try it at work
-- **Commercial**: Paid license required ($59/year or $149 perpetual)
+- **Commercial**: Paid license required ($59/year or $199 perpetual)
 - **Conversion**: Becomes AGPL-3.0 after 3 years (rolling per release)
 
 ### Pricing tiers
@@ -37,7 +37,7 @@ We wanted:
 | Personal                | Free     | No              |
 | Supporter               | $10      | No (badge only) |
 | Commercial subscription | $59/year | Yes             |
-| Commercial perpetual    | $149     | Yes             |
+| Commercial perpetual    | $199     | Yes             |
 
 ### Enforcement
 
