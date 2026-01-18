@@ -19,6 +19,10 @@
         updateKnownShare,
     } from '$lib/tauri-commands'
     import NetworkLoginForm from './NetworkLoginForm.svelte'
+    import { handleNavigationShortcut } from './keyboard-shortcuts'
+
+    /** Row height for share list (matches Full list) */
+    const SHARE_ROW_HEIGHT = 20
 
     interface Props {
         /** The host we're browsing */
@@ -52,6 +56,10 @@
 
     // Track authenticated credentials for mounting
     let authenticatedCredentials = $state<{ username: string; password: string } | null>(null)
+
+    // Container tracking for PageUp/PageDown
+    let listContainer: HTMLDivElement | undefined = $state()
+    let containerHeight = $state(0)
 
     // Load shares on mount
     onMount(async () => {
@@ -216,6 +224,21 @@
         }
     }
 
+    /** Scrolls to make the cursor visible */
+    function scrollToIndex(index: number) {
+        if (!listContainer) return
+        const targetTop = index * SHARE_ROW_HEIGHT
+        const targetBottom = targetTop + SHARE_ROW_HEIGHT
+        const scrollTop = listContainer.scrollTop
+        const viewportBottom = scrollTop + containerHeight
+
+        if (targetTop < scrollTop) {
+            listContainer.scrollTop = targetTop
+        } else if (targetBottom > viewportBottom) {
+            listContainer.scrollTop = targetBottom - containerHeight
+        }
+    }
+
     export function handleKeyDown(e: KeyboardEvent): boolean {
         if (showLoginForm) {
             // Login form handles its own keyboard events
@@ -226,22 +249,42 @@
             return false
         }
 
+        if (sortedShares.length === 0) return false
+
+        // Try centralized navigation shortcuts first (PageUp, PageDown, Home, End, Option+arrows)
+        const visibleItems = Math.max(1, Math.floor(containerHeight / SHARE_ROW_HEIGHT))
+        const navResult = handleNavigationShortcut(e, {
+            currentIndex: cursorIndex,
+            totalCount: sortedShares.length,
+            visibleItems,
+        })
+        if (navResult?.handled) {
+            e.preventDefault()
+            cursorIndex = navResult.newIndex
+            scrollToIndex(cursorIndex)
+            return true
+        }
+
         switch (e.key) {
             case 'ArrowDown':
                 e.preventDefault()
                 cursorIndex = Math.min(cursorIndex + 1, sortedShares.length - 1)
+                scrollToIndex(cursorIndex)
                 return true
             case 'ArrowUp':
                 e.preventDefault()
                 cursorIndex = Math.max(cursorIndex - 1, 0)
+                scrollToIndex(cursorIndex)
                 return true
-            case 'Home':
+            case 'ArrowLeft':
                 e.preventDefault()
                 cursorIndex = 0
+                scrollToIndex(cursorIndex)
                 return true
-            case 'End':
+            case 'ArrowRight':
                 e.preventDefault()
                 cursorIndex = sortedShares.length - 1
+                scrollToIndex(cursorIndex)
                 return true
             case 'Enter':
                 e.preventDefault()
@@ -304,7 +347,7 @@
             <span class="host-name">{host.name}</span>
             <span class="share-count">{sortedShares.length} {sortedShares.length === 1 ? 'share' : 'shares'}</span>
         </div>
-        <div class="share-list">
+        <div class="share-list" bind:this={listContainer} bind:clientHeight={containerHeight}>
             {#each sortedShares as share, index (share.name)}
                 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
                 <div
@@ -449,14 +492,10 @@
     .share-row {
         display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 8px 12px;
+        gap: var(--spacing-sm);
+        height: 20px;
+        padding: var(--spacing-xxs) var(--spacing-sm);
         cursor: default;
-        border-bottom: 1px solid var(--color-border-secondary);
-    }
-
-    .share-row:hover {
-        background-color: var(--color-bg-hover);
     }
 
     .share-row.is-under-cursor {

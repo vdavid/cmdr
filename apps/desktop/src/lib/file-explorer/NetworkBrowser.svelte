@@ -21,6 +21,10 @@
     } from '$lib/network-store.svelte'
     import type { NetworkHost } from './types'
     import { updateLeftPaneState, updateRightPaneState, type PaneState, type PaneFileEntry } from '$lib/tauri-commands'
+    import { handleNavigationShortcut } from './keyboard-shortcuts'
+
+    /** Row height for host list (matches Full list) */
+    const HOST_ROW_HEIGHT = 20
 
     interface Props {
         paneId?: 'left' | 'right'
@@ -37,6 +41,10 @@
 
     // Local cursor state
     let cursorIndex = $state(0)
+
+    // Container tracking for PageUp/PageDown
+    let listContainer: HTMLDivElement | undefined = $state()
+    let containerHeight = $state(0)
 
     // Refresh stale shares when component mounts (entering network view)
     onMount(() => {
@@ -89,26 +97,59 @@
         }
     }
 
+    /** Scrolls to make the cursor visible */
+    function scrollToIndex(index: number) {
+        if (!listContainer) return
+        const targetTop = index * HOST_ROW_HEIGHT
+        const targetBottom = targetTop + HOST_ROW_HEIGHT
+        const scrollTop = listContainer.scrollTop
+        const viewportBottom = scrollTop + containerHeight
+
+        if (targetTop < scrollTop) {
+            listContainer.scrollTop = targetTop
+        } else if (targetBottom > viewportBottom) {
+            listContainer.scrollTop = targetBottom - containerHeight
+        }
+    }
+
     // Handle keyboard navigation
     export function handleKeyDown(e: KeyboardEvent): boolean {
         if (hosts.length === 0) return false
+
+        // Try centralized navigation shortcuts first (PageUp, PageDown, Home, End, Option+arrows)
+        const visibleItems = Math.max(1, Math.floor(containerHeight / HOST_ROW_HEIGHT))
+        const navResult = handleNavigationShortcut(e, {
+            currentIndex: cursorIndex,
+            totalCount: hosts.length,
+            visibleItems,
+        })
+        if (navResult?.handled) {
+            e.preventDefault()
+            cursorIndex = navResult.newIndex
+            scrollToIndex(cursorIndex)
+            return true
+        }
 
         switch (e.key) {
             case 'ArrowDown':
                 e.preventDefault()
                 cursorIndex = Math.min(cursorIndex + 1, hosts.length - 1)
+                scrollToIndex(cursorIndex)
                 return true
             case 'ArrowUp':
                 e.preventDefault()
                 cursorIndex = Math.max(cursorIndex - 1, 0)
+                scrollToIndex(cursorIndex)
                 return true
-            case 'Home':
+            case 'ArrowLeft':
                 e.preventDefault()
                 cursorIndex = 0
+                scrollToIndex(cursorIndex)
                 return true
-            case 'End':
+            case 'ArrowRight':
                 e.preventDefault()
                 cursorIndex = hosts.length - 1
+                scrollToIndex(cursorIndex)
                 return true
             case 'Enter':
                 e.preventDefault()
@@ -279,7 +320,7 @@
         <span class="col-shares">Shares</span>
         <span class="col-status">Status</span>
     </div>
-    <div class="host-list">
+    <div class="host-list" bind:this={listContainer} bind:clientHeight={containerHeight}>
         {#each hosts as host, index (host.id)}
             <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
             <div
@@ -359,13 +400,9 @@
 
     .host-row {
         display: flex;
-        padding: 4px 8px;
+        height: 20px;
+        padding: var(--spacing-xxs) var(--spacing-sm);
         cursor: default;
-        border-bottom: 1px solid var(--color-border-secondary);
-    }
-
-    .host-row:hover {
-        background-color: var(--color-bg-hover);
     }
 
     .host-row.is-under-cursor {
