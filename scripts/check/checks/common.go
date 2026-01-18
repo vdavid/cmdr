@@ -120,10 +120,21 @@ func CommandExists(name string) bool {
 }
 
 // EnsureGoTool ensures a Go tool is installed and in PATH.
-// If the tool isn't in PATH after installation, adds GOPATH/bin to PATH.
+// If the tool isn't in PATH after installation, adds the Go bin directory to PATH.
 func EnsureGoTool(name, installPath string) error {
 	if CommandExists(name) {
 		return nil
+	}
+
+	// Get Go's bin directory before installation
+	goBin := getGoBinDir()
+
+	// Add Go bin to PATH before installation so the installed binary is immediately available
+	if goBin != "" {
+		currentPath := os.Getenv("PATH")
+		if !strings.Contains(currentPath, goBin) {
+			os.Setenv("PATH", goBin+string(os.PathListSeparator)+currentPath)
+		}
 	}
 
 	installCmd := exec.Command("go", "install", installPath)
@@ -131,19 +142,33 @@ func EnsureGoTool(name, installPath string) error {
 		return fmt.Errorf("failed to install %s: %w", name, err)
 	}
 
-	// After installation, add GOPATH/bin to PATH if tool still not found
-	if !CommandExists(name) {
-		gopath := os.Getenv("GOPATH")
-		if gopath == "" {
-			// Default GOPATH is ~/go
-			home, _ := os.UserHomeDir()
-			gopath = filepath.Join(home, "go")
+	return nil
+}
+
+// getGoBinDir returns the directory where go install puts binaries.
+func getGoBinDir() string {
+	// First check GOBIN
+	cmd := exec.Command("go", "env", "GOBIN")
+	if output, err := RunCommand(cmd, true); err == nil {
+		if bin := strings.TrimSpace(output); bin != "" {
+			return bin
 		}
-		goBin := filepath.Join(gopath, "bin")
-		os.Setenv("PATH", goBin+string(os.PathListSeparator)+os.Getenv("PATH"))
 	}
 
-	return nil
+	// Fall back to GOPATH/bin
+	cmd = exec.Command("go", "env", "GOPATH")
+	if output, err := RunCommand(cmd, true); err == nil {
+		if gopath := strings.TrimSpace(output); gopath != "" {
+			return filepath.Join(gopath, "bin")
+		}
+	}
+
+	// Last resort: ~/go/bin
+	if home, err := os.UserHomeDir(); err == nil {
+		return filepath.Join(home, "go", "bin")
+	}
+
+	return ""
 }
 
 // indentOutput indents each non-empty line of output.
