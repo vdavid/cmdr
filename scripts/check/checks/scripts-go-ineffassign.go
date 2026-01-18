@@ -11,12 +11,8 @@ import (
 func RunIneffassign(ctx *CheckContext) (CheckResult, error) {
 	scriptsDir := filepath.Join(ctx.RootDir, "scripts")
 
-	// Ensure ineffassign is installed
-	if !CommandExists("ineffassign") {
-		installCmd := exec.Command("go", "install", "github.com/gordonklaus/ineffassign@latest")
-		if _, err := RunCommand(installCmd, true); err != nil {
-			return CheckResult{}, fmt.Errorf("failed to install ineffassign: %w", err)
-		}
+	if err := EnsureGoTool("ineffassign", "github.com/gordonklaus/ineffassign@latest"); err != nil {
+		return CheckResult{}, err
 	}
 
 	modules, err := FindGoModules(scriptsDir)
@@ -42,7 +38,11 @@ func RunIneffassign(ctx *CheckContext) (CheckResult, error) {
 		cmd.Dir = modDir
 		output, err := RunCommand(cmd, true)
 		if err != nil {
-			allIssues = append(allIssues, fmt.Sprintf("[%s]\n%s", mod, output))
+			issueText := strings.TrimSpace(output)
+			if issueText == "" {
+				issueText = err.Error()
+			}
+			allIssues = append(allIssues, fmt.Sprintf("[%s]\n%s", mod, issueText))
 		}
 	}
 

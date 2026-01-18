@@ -11,12 +11,8 @@ import (
 func RunMisspell(ctx *CheckContext) (CheckResult, error) {
 	scriptsDir := filepath.Join(ctx.RootDir, "scripts")
 
-	// Ensure misspell is installed
-	if !CommandExists("misspell") {
-		installCmd := exec.Command("go", "install", "github.com/client9/misspell/cmd/misspell@latest")
-		if _, err := RunCommand(installCmd, true); err != nil {
-			return CheckResult{}, fmt.Errorf("failed to install misspell: %w", err)
-		}
+	if err := EnsureGoTool("misspell", "github.com/client9/misspell/cmd/misspell@latest"); err != nil {
+		return CheckResult{}, err
 	}
 
 	// Count Go files
@@ -32,7 +28,11 @@ func RunMisspell(ctx *CheckContext) (CheckResult, error) {
 	cmd.Dir = scriptsDir
 	output, err := RunCommand(cmd, true)
 	if err != nil {
-		return CheckResult{}, fmt.Errorf("spelling mistakes found\n%s", indentOutput(output))
+		issueText := strings.TrimSpace(output)
+		if issueText == "" {
+			issueText = err.Error()
+		}
+		return CheckResult{}, fmt.Errorf("spelling mistakes found\n%s", indentOutput(issueText))
 	}
 
 	if fileCount > 0 {

@@ -14,12 +14,8 @@ const GocycloThreshold = 15
 func RunGocyclo(ctx *CheckContext) (CheckResult, error) {
 	scriptsDir := filepath.Join(ctx.RootDir, "scripts")
 
-	// Ensure gocyclo is installed
-	if !CommandExists("gocyclo") {
-		installCmd := exec.Command("go", "install", "github.com/fzipp/gocyclo/cmd/gocyclo@latest")
-		if _, err := RunCommand(installCmd, true); err != nil {
-			return CheckResult{}, fmt.Errorf("failed to install gocyclo: %w", err)
-		}
+	if err := EnsureGoTool("gocyclo", "github.com/fzipp/gocyclo/cmd/gocyclo@latest"); err != nil {
+		return CheckResult{}, err
 	}
 
 	modules, err := FindGoModules(scriptsDir)
@@ -61,6 +57,8 @@ func RunGocyclo(ctx *CheckContext) (CheckResult, error) {
 					}
 				}
 				allIssues = append(allIssues, strings.Join(lines, "\n"))
+			} else if err != nil {
+				allIssues = append(allIssues, err.Error())
 			}
 		}
 	}

@@ -11,12 +11,8 @@ import (
 func RunNilaway(ctx *CheckContext) (CheckResult, error) {
 	scriptsDir := filepath.Join(ctx.RootDir, "scripts")
 
-	// Ensure nilaway is installed
-	if !CommandExists("nilaway") {
-		installCmd := exec.Command("go", "install", "go.uber.org/nilaway/cmd/nilaway@latest")
-		if _, err := RunCommand(installCmd, true); err != nil {
-			return CheckResult{}, fmt.Errorf("failed to install nilaway: %w", err)
-		}
+	if err := EnsureGoTool("nilaway", "go.uber.org/nilaway/cmd/nilaway@latest"); err != nil {
+		return CheckResult{}, err
 	}
 
 	modules, err := FindGoModules(scriptsDir)
@@ -42,7 +38,11 @@ func RunNilaway(ctx *CheckContext) (CheckResult, error) {
 		cmd.Dir = modDir
 		output, err := RunCommand(cmd, true)
 		if err != nil {
-			allIssues = append(allIssues, fmt.Sprintf("[%s]\n%s", mod, output))
+			issueText := strings.TrimSpace(output)
+			if issueText == "" {
+				issueText = err.Error()
+			}
+			allIssues = append(allIssues, fmt.Sprintf("[%s]\n%s", mod, issueText))
 		}
 	}
 

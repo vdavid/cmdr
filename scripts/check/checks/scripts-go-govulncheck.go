@@ -11,12 +11,8 @@ import (
 func RunGovulncheck(ctx *CheckContext) (CheckResult, error) {
 	scriptsDir := filepath.Join(ctx.RootDir, "scripts")
 
-	// Ensure govulncheck is installed
-	if !CommandExists("govulncheck") {
-		installCmd := exec.Command("go", "install", "golang.org/x/vuln/cmd/govulncheck@latest")
-		if _, err := RunCommand(installCmd, true); err != nil {
-			return CheckResult{}, fmt.Errorf("failed to install govulncheck: %w", err)
-		}
+	if err := EnsureGoTool("govulncheck", "golang.org/x/vuln/cmd/govulncheck@latest"); err != nil {
+		return CheckResult{}, err
 	}
 
 	modules, err := FindGoModules(scriptsDir)
@@ -33,7 +29,11 @@ func RunGovulncheck(ctx *CheckContext) (CheckResult, error) {
 		cmd.Dir = modDir
 		output, err := RunCommand(cmd, true)
 		if err != nil {
-			allIssues = append(allIssues, fmt.Sprintf("[%s]\n%s", mod, output))
+			issueText := strings.TrimSpace(output)
+			if issueText == "" {
+				issueText = err.Error()
+			}
+			allIssues = append(allIssues, fmt.Sprintf("[%s]\n%s", mod, issueText))
 		}
 	}
 

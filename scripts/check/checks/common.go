@@ -2,8 +2,10 @@ package checks
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -115,6 +117,33 @@ func RunCommand(cmd *exec.Cmd, captureOutput bool) (string, error) {
 func CommandExists(name string) bool {
 	_, err := exec.LookPath(name)
 	return err == nil
+}
+
+// EnsureGoTool ensures a Go tool is installed and in PATH.
+// If the tool isn't in PATH after installation, adds GOPATH/bin to PATH.
+func EnsureGoTool(name, installPath string) error {
+	if CommandExists(name) {
+		return nil
+	}
+
+	installCmd := exec.Command("go", "install", installPath)
+	if _, err := RunCommand(installCmd, true); err != nil {
+		return fmt.Errorf("failed to install %s: %w", name, err)
+	}
+
+	// After installation, add GOPATH/bin to PATH if tool still not found
+	if !CommandExists(name) {
+		gopath := os.Getenv("GOPATH")
+		if gopath == "" {
+			// Default GOPATH is ~/go
+			home, _ := os.UserHomeDir()
+			gopath = filepath.Join(home, "go")
+		}
+		goBin := filepath.Join(gopath, "bin")
+		os.Setenv("PATH", goBin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	}
+
+	return nil
 }
 
 // indentOutput indents each non-empty line of output.

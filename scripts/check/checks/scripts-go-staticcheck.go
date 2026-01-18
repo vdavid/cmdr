@@ -11,12 +11,8 @@ import (
 func RunStaticcheck(ctx *CheckContext) (CheckResult, error) {
 	scriptsDir := filepath.Join(ctx.RootDir, "scripts")
 
-	// Ensure staticcheck is installed
-	if !CommandExists("staticcheck") {
-		installCmd := exec.Command("go", "install", "honnef.co/go/tools/cmd/staticcheck@latest")
-		if _, err := RunCommand(installCmd, true); err != nil {
-			return CheckResult{}, fmt.Errorf("failed to install staticcheck: %w", err)
-		}
+	if err := EnsureGoTool("staticcheck", "honnef.co/go/tools/cmd/staticcheck@latest"); err != nil {
+		return CheckResult{}, err
 	}
 
 	modules, err := FindGoModules(scriptsDir)
@@ -42,7 +38,12 @@ func RunStaticcheck(ctx *CheckContext) (CheckResult, error) {
 		cmd.Dir = modDir
 		output, err := RunCommand(cmd, true)
 		if err != nil {
-			allIssues = append(allIssues, fmt.Sprintf("[%s]\n%s", mod, output))
+			// Include both output and error message for debugging
+			issueText := strings.TrimSpace(output)
+			if issueText == "" {
+				issueText = err.Error()
+			}
+			allIssues = append(allIssues, fmt.Sprintf("[%s]\n%s", mod, issueText))
 		}
 	}
 
