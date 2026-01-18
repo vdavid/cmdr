@@ -33,6 +33,7 @@
         listVolumes,
         mountNetworkShare,
         openFile,
+        openInEditor,
         showFileContextMenu,
         type UnlistenFn,
         updateMenuContext,
@@ -964,6 +965,13 @@
         }
     }
 
+    /** Gets the file entry under the cursor from the current list view */
+    function getEntryUnderCursor(): FileEntry | undefined {
+        const listRef = viewMode === 'brief' ? briefListRef : fullListRef
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return
+        return listRef?.getEntryAt(cursorIndex)
+    }
+
     // Exported so DualPaneExplorer can forward keyboard events
     export function handleKeyDown(e: KeyboardEvent) {
         if (isNetworkView) {
@@ -973,12 +981,20 @@
 
         // Handle Enter key - navigate into the entry under the cursor
         if (e.key === 'Enter') {
-            const listRef = viewMode === 'brief' ? briefListRef : fullListRef
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
-            const entry: FileEntry | undefined = listRef?.getEntryAt(cursorIndex)
+            const entry = getEntryUnderCursor()
             if (entry) {
                 e.preventDefault()
                 void handleNavigate(entry)
+                return
+            }
+        }
+
+        // Handle F4 key - open file in default text editor
+        if (e.key === 'F4') {
+            const entry = getEntryUnderCursor()
+            if (entry && !entry.isDirectory) {
+                e.preventDefault()
+                void openInEditor(entry.path)
                 return
             }
         }

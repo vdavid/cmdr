@@ -16,6 +16,7 @@
         copyToClipboard,
         quickLook,
         getInfo,
+        openInEditor,
         toggleHiddenFiles,
         setViewMode,
         getWindowTitle,
@@ -452,6 +453,15 @@
                 return
 
             // === File action commands ===
+            case 'file.edit': {
+                const entryUnderCursor = explorerRef?.getFileAndPathUnderCursor()
+                if (entryUnderCursor) {
+                    await openInEditor(entryUnderCursor.path)
+                }
+                explorerRef?.refocus()
+                return
+            }
+
             case 'file.showInFinder': {
                 const entryUnderCursor = explorerRef?.getFileAndPathUnderCursor()
                 if (entryUnderCursor) {

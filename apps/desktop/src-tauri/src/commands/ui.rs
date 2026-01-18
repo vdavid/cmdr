@@ -158,6 +158,24 @@ pub fn get_info(_path: String) -> Result<(), String> {
     Err("Get Info is only available on macOS".to_string())
 }
 
+/// Open file in the system's default text editor (macOS only)
+#[tauri::command]
+#[cfg(target_os = "macos")]
+pub fn open_in_editor(path: String) -> Result<(), String> {
+    Command::new("open")
+        .arg("-t")
+        .arg(&path)
+        .spawn()
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+#[cfg(not(target_os = "macos"))]
+pub fn open_in_editor(_path: String) -> Result<(), String> {
+    Err("Open in editor is only available on macOS".to_string())
+}
+
 /// Executes a menu action for the current context.
 pub fn execute_menu_action<R: Runtime>(app: &AppHandle<R>, id: &str) {
     let state = app.state::<MenuState<R>>();
@@ -170,6 +188,12 @@ pub fn execute_menu_action<R: Runtime>(app: &AppHandle<R>, id: &str) {
     match id {
         crate::menu::OPEN_ID => {
             let _ = app.opener().open_path(&context.path, None::<&str>);
+        }
+        crate::menu::EDIT_ID => {
+            #[cfg(target_os = "macos")]
+            {
+                let _ = open_in_editor(context.path);
+            }
         }
         crate::menu::SHOW_IN_FINDER_ID => {
             #[cfg(target_os = "macos")]

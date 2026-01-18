@@ -404,6 +404,15 @@ export async function getInfo(path: string): Promise<void> {
 }
 
 /**
+ * Open file in the system's default text editor (macOS only).
+ * Uses `open -t` which opens the file in the default text editor.
+ * @param path - Absolute path to the file.
+ */
+export async function openInEditor(path: string): Promise<void> {
+    await invoke('open_in_editor', { path })
+}
+
+/**
  * Shows the main window.
  * Should be called when the frontend is ready to avoid white flash.
  */

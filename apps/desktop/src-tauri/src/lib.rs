@@ -269,6 +269,7 @@ pub fn run() {
             commands::ui::copy_to_clipboard,
             commands::ui::quick_look,
             commands::ui::get_info,
+            commands::ui::open_in_editor,
             mcp::pane_state::update_left_pane_state,
             mcp::pane_state::update_right_pane_state,
             mcp::pane_state::update_focused_pane,

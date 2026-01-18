@@ -115,6 +115,10 @@ fn get_sort_tools() -> Vec<Tool> {
 /// Get file action tools.
 fn get_file_tools() -> Vec<Tool> {
     vec![
+        Tool::no_params(
+            "file_openInEditor",
+            "Open file under the cursor in the default text editor",
+        ),
         Tool::no_params("file_showInFinder", "Show file under the cursor in Finder"),
         Tool::no_params("file_copyPath", "Copy path of the file under the cursor to clipboard"),
         Tool::no_params(
@@ -205,9 +209,9 @@ mod tests {
     #[test]
     fn test_all_tools_count() {
         let tools = get_all_tools();
-        // 3 app + 3 view + 1 pane + 12 nav + 8 sort + 5 file + 2 volume + 5 selection = 39
+        // 3 app + 3 view + 1 pane + 12 nav + 8 sort + 6 file + 2 volume + 5 selection = 40
         // (context tools and volume_list moved to resources)
-        assert_eq!(tools.len(), 39);
+        assert_eq!(tools.len(), 40);
     }
 
     #[test]

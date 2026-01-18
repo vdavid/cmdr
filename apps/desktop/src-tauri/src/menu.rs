@@ -11,6 +11,7 @@ pub const SHOW_HIDDEN_FILES_ID: &str = "show_hidden_files";
 pub const VIEW_MODE_FULL_ID: &str = "view_mode_full";
 pub const VIEW_MODE_BRIEF_ID: &str = "view_mode_brief";
 pub const OPEN_ID: &str = "open";
+pub const EDIT_ID: &str = "edit";
 pub const SHOW_IN_FINDER_ID: &str = "show_in_finder";
 pub const COPY_PATH_ID: &str = "copy_path";
 pub const COPY_FILENAME_ID: &str = "copy_filename";
@@ -119,6 +120,7 @@ pub fn build_menu<R: Runtime>(
 
     // Add File menu items
     let open_item = tauri::menu::MenuItem::with_id(app, OPEN_ID, "Open", true, None::<&str>)?;
+    let edit_item = tauri::menu::MenuItem::with_id(app, EDIT_ID, "Edit", true, Some("F4"))?;
     let show_in_finder_item =
         tauri::menu::MenuItem::with_id(app, SHOW_IN_FINDER_ID, "Show in Finder", true, Some("Opt+Cmd+O"))?;
     let copy_path_item =
@@ -139,6 +141,7 @@ pub fn build_menu<R: Runtime>(
             submenu.prepend(&copy_filename_item)?;
             submenu.prepend(&copy_path_item)?;
             submenu.prepend(&show_in_finder_item)?;
+            submenu.prepend(&edit_item)?;
             submenu.prepend(&open_item)?;
             break;
         }
@@ -302,6 +305,7 @@ pub fn build_context_menu<R: Runtime>(
     let menu = Menu::new(app)?;
 
     let open_item = tauri::menu::MenuItem::with_id(app, OPEN_ID, "Open", true, None::<&str>)?;
+    let edit_item = tauri::menu::MenuItem::with_id(app, EDIT_ID, "Edit", true, Some("F4"))?;
     let show_in_finder_item =
         tauri::menu::MenuItem::with_id(app, SHOW_IN_FINDER_ID, "Show in Finder", true, Some("Opt+Cmd+O"))?;
     let copy_path_item =
@@ -319,6 +323,7 @@ pub fn build_context_menu<R: Runtime>(
     // Add items to menu
     if !is_directory {
         menu.append(&open_item)?;
+        menu.append(&edit_item)?;
     }
     menu.append(&show_in_finder_item)?;
     menu.append(&tauri::menu::PredefinedMenuItem::separator(app)?)?;

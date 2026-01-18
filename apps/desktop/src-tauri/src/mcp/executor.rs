@@ -9,7 +9,7 @@ use tauri::{AppHandle, Emitter, Manager, Runtime};
 use super::pane_state::PaneStateStore;
 use super::protocol::{INTERNAL_ERROR, INVALID_PARAMS};
 use crate::commands::ui::{
-    copy_to_clipboard, get_info, quick_look, set_view_mode, show_in_finder, toggle_hidden_files,
+    copy_to_clipboard, get_info, open_in_editor, quick_look, set_view_mode, show_in_finder, toggle_hidden_files,
 };
 
 /// Result of tool execution.
@@ -187,6 +187,10 @@ fn execute_file_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolResul
         .ok_or_else(|| ToolError::internal("No file under cursor"))?;
 
     match name {
+        "file_openInEditor" => {
+            open_in_editor(file_under_cursor.path.clone()).map_err(ToolError::internal)?;
+            Ok(json!({"success": true, "path": file_under_cursor.path}))
+        }
         "file_showInFinder" => {
             show_in_finder(file_under_cursor.path.clone()).map_err(ToolError::internal)?;
             Ok(json!({"success": true, "path": file_under_cursor.path}))

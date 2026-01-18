@@ -185,6 +185,13 @@ export const commands: Command[] = [
     // File list - File action commands
     // ============================================================================
     {
+        id: 'file.edit',
+        name: 'Edit in default editor',
+        scope: 'Main window/File list',
+        showInPalette: true,
+        shortcuts: ['F4'],
+    },
+    {
         id: 'file.showInFinder',
         name: 'Show in Finder',
         scope: 'Main window/File list',
