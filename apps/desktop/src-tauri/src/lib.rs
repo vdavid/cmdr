@@ -126,9 +126,17 @@ pub fn run() {
             // Load persisted settings to initialize menu with correct state
             let saved_settings = settings::load_settings(app.handle());
 
+            // Check if there's an existing license (for menu text)
+            let has_existing_license = licensing::get_license_info(app.handle()).is_some();
+
             // Build and set the application menu with persisted showHiddenFiles
             // Note: view mode is per-pane and managed by frontend, so we default to Brief here
-            let menu_items = menu::build_menu(app.handle(), saved_settings.show_hidden_files, ViewMode::Brief)?;
+            let menu_items = menu::build_menu(
+                app.handle(),
+                saved_settings.show_hidden_files,
+                ViewMode::Brief,
+                has_existing_license,
+            )?;
             app.set_menu(menu_items.menu)?;
 
             // Store the CheckMenuItem references in app state

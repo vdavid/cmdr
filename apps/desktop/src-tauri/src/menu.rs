@@ -91,6 +91,7 @@ pub fn build_menu<R: Runtime>(
     app: &AppHandle<R>,
     show_hidden_files: bool,
     view_mode: ViewMode,
+    has_existing_license: bool,
 ) -> tauri::Result<MenuItems<R>> {
     // Start with the default menu (includes app menu with Quit, Hide, etc.)
     let menu = Menu::default(app)?;
@@ -113,11 +114,16 @@ pub fn build_menu<R: Runtime>(
                             submenu.remove(pred)?;
                             submenu.insert(&about_item, 0)?;
 
-                            // Add "Enter License Key..." after About
+                            // Add license menu item after About - text depends on license status
+                            let license_menu_text = if has_existing_license {
+                                "See license details..."
+                            } else {
+                                "Enter license key..."
+                            };
                             let enter_license_key_item = tauri::menu::MenuItem::with_id(
                                 app,
                                 ENTER_LICENSE_KEY_ID,
-                                "Enter license key...",
+                                license_menu_text,
                                 true,
                                 None::<&str>,
                             )?;

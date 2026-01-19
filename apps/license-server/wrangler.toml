@@ -7,7 +7,7 @@ compatibility_date = "2025-01-01"
 # Production: Run ./scripts/setup-cf-infra.sh to create namespace and update this ID
 [[kv_namespaces]]
 binding = "LICENSE_CODES"
-id = "c182f923118c49708a6b79fdfb5b4720"
+id = "64418f5cb33e4c629fe0ccf51be76399"
 
 [vars]
 # Non-secret config

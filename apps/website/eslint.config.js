@@ -12,7 +12,7 @@ import globals from 'globals'
 
 export default tseslint.config(
     {
-        ignores: ['dist', 'node_modules', '.astro'],
+        ignores: ['dist', 'node_modules', '.astro', 'test-results'],
     },
     js.configs.recommended,
     prettierConfig,

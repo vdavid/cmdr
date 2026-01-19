@@ -45,7 +45,8 @@ interface PaddleWebhookPayload {
             quantity?: number
         }>
         custom_data?: {
-            organization_name?: string
+            // Paddle preserves the key casing from checkout - we use camelCase
+            organizationName?: string
         }
     }
 }
@@ -198,7 +199,7 @@ app.post('/webhook/paddle', async (c) => {
         return c.json({ error: 'Failed to fetch customer details' }, 500)
     }
 
-    console.log('Customer email:', customer.email)
+    console.log('Customer email:', customer.email, 'business:', customer.businessName)
 
     // Determine license type from price ID
     const priceIds: PriceIdMapping = {
@@ -210,6 +211,10 @@ app.post('/webhook/paddle', async (c) => {
         ? getLicenseTypeFromPriceId(purchaseData.priceId, priceIds)
         : 'commercial_subscription'
 
+    // Get organization name: prefer customer's business name, fall back to custom_data
+    const organizationName =
+        licenseType !== 'supporter' ? (customer.businessName ?? purchaseData.organizationName) : undefined
+
     // Generate and send license(s) - one per quantity
     const result = await generateAndSendLicenses({
         customerEmail: customer.email,
@@ -217,7 +222,7 @@ app.post('/webhook/paddle', async (c) => {
         transactionId: purchaseData.transactionId,
         quantity: purchaseData.quantity,
         licenseType: licenseType ?? 'commercial_subscription',
-        organizationName: licenseType !== 'supporter' ? purchaseData.organizationName : undefined,
+        organizationName,
         privateKey: c.env.ED25519_PRIVATE_KEY,
         productName: c.env.PRODUCT_NAME,
         supportEmail: c.env.SUPPORT_EMAIL,
@@ -247,7 +252,7 @@ function extractPurchaseData(payload: PaddleWebhookPayload): {
         transactionId,
         priceId: payload.data?.items?.[0]?.price?.id,
         quantity: payload.data?.items?.[0]?.quantity ?? 1,
-        organizationName: payload.data?.custom_data?.organization_name,
+        organizationName: payload.data?.custom_data?.organizationName,
     }
 }
 

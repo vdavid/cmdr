@@ -190,6 +190,7 @@ export interface PriceIdMapping {
 export interface CustomerDetails {
     email: string
     name: string | null
+    businessName: string | null
 }
 
 /**
@@ -230,5 +231,12 @@ function extractCustomerData(json: unknown): CustomerDetails | null {
 
     const name = typeof data.name === 'string' ? data.name : null
 
-    return { email, name }
+    // Extract business name from the business object (when customer adds business details)
+    let businessName: string | null = null
+    if (data.business && typeof data.business === 'object') {
+        const business = data.business as Record<string, unknown>
+        businessName = typeof business.name === 'string' ? business.name : null
+    }
+
+    return { email, name, businessName }
 }

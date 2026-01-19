@@ -30,6 +30,9 @@
     --color-accent-hover: #ffd23f;
     --color-accent-glow: rgba(255, 194, 6, 0.4);
 
+    /* Semantic colors */
+    --color-warning: #ff4d6d;
+
     /* Fonts - Inter is self-hosted, monospace falls back to system */
     --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
     --font-mono: ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;

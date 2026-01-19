@@ -14,6 +14,7 @@ use tauri_plugin_store::StoreExt;
 const PUBLIC_KEY_HEX: &str = "c3b18e765fc5c74f9fb7f3a9869d14c6bdeda1f28ec85aa6182de78113930d26";
 
 const STORE_KEY_LICENSE: &str = "license_key";
+const STORE_KEY_SHORT_CODE: &str = "license_short_code";
 
 /// Information about the current license.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -23,53 +24,74 @@ pub struct LicenseInfo {
     pub transaction_id: String,
     pub issued_at: String,
     pub organization_name: Option<String>,
+    /// The short code used to activate (if available)
+    pub short_code: Option<String>,
 }
 
 /// Activate a license key. Returns the license info if valid.
-pub fn activate_license(app: &tauri::AppHandle, license_key: &str) -> Result<LicenseInfo, String> {
+/// The `short_code` parameter is the original short code if this was activated via short code exchange.
+fn activate_license_internal(
+    app: &tauri::AppHandle,
+    license_key: &str,
+    short_code: Option<&str>,
+) -> Result<LicenseInfo, String> {
     // Validate the license key
     let data = validate_license_key(license_key)?;
 
-    // Store the license key
+    // Store the license key and optionally the short code
     let store = app
         .store("license.json")
         .map_err(|e| format!("Failed to open store: {}", e))?;
 
     store.set(STORE_KEY_LICENSE, serde_json::json!(license_key));
+    if let Some(code) = short_code {
+        store.set(STORE_KEY_SHORT_CODE, serde_json::json!(code));
+    }
 
     Ok(LicenseInfo {
         email: data.email,
         transaction_id: data.transaction_id,
         issued_at: data.issued_at,
         organization_name: data.organization_name,
+        short_code: short_code.map(|s| s.to_string()),
     })
+}
+
+/// Activate a license key (full key, not short code). Returns the license info if valid.
+pub fn activate_license(app: &tauri::AppHandle, license_key: &str) -> Result<LicenseInfo, String> {
+    activate_license_internal(app, license_key, None)
 }
 
 /// Activate a license key or short code (async version).
 /// If the input is a short code (CMDR-XXXX-XXXX-XXXX), it first exchanges it for the full key.
 pub async fn activate_license_async(app: &tauri::AppHandle, input: &str) -> Result<LicenseInfo, String> {
-    let full_key = if is_short_code(input) {
+    let (full_key, short_code) = if is_short_code(input) {
         // Exchange short code for full key via server
-        activate_short_code(input).await?
+        let key = activate_short_code(input).await?;
+        (key, Some(input))
     } else {
         // Already a full key
-        input.to_string()
+        (input.to_string(), None)
     };
 
-    // Now activate with the full key
-    activate_license(app, &full_key)
+    // Now activate with the full key (and store the short code if we have one)
+    activate_license_internal(app, &full_key, short_code)
 }
 
 /// Get stored license info, if any.
 pub fn get_license_info(app: &tauri::AppHandle) -> Option<LicenseInfo> {
     let store = app.store("license.json").ok()?;
     let license_key = store.get(STORE_KEY_LICENSE)?.as_str()?.to_string();
+    let short_code = store
+        .get(STORE_KEY_SHORT_CODE)
+        .and_then(|v| v.as_str().map(|s| s.to_string()));
 
     validate_license_key(&license_key).ok().map(|data| LicenseInfo {
         email: data.email,
         transaction_id: data.transaction_id,
         issued_at: data.issued_at,
         organization_name: data.organization_name,
+        short_code,
     })
 }
 
@@ -114,8 +136,16 @@ fn validate_license_key_with_public_key(license_key: &str, public_key_hex: &str)
         .map_err(|_| "Invalid license key: signature verification failed")?;
 
     // Parse payload
-    let data: LicenseData =
-        serde_json::from_slice(&payload_bytes).map_err(|_| "Invalid license key: bad payload data")?;
+    let data: LicenseData = serde_json::from_slice(&payload_bytes).map_err(|e| {
+        log::info!(
+            "License payload parse error: {}. Raw payload: {}",
+            e,
+            String::from_utf8_lossy(&payload_bytes)
+        );
+        "Invalid license key: bad payload data"
+    })?;
+
+    log::info!("License validated successfully for: {}", data.email);
 
     Ok(data)
 }

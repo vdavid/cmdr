@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount, tick } from 'svelte'
-    import { activateLicense, validateLicenseWithServer } from '$lib/tauri-commands'
-    import { loadLicenseStatus } from '$lib/licensing-store.svelte'
+    import { activateLicense, validateLicenseWithServer, getLicenseInfo, type LicenseInfo } from '$lib/tauri-commands'
+    import { loadLicenseStatus, getCachedStatus } from '$lib/licensing-store.svelte'
 
     interface Props {
         onClose: () => void
@@ -13,26 +13,88 @@
     let licenseKey = $state('')
     let error = $state('')
     let isActivating = $state(false)
+    let hasError = $state(false)
     let inputElement: HTMLInputElement | undefined = $state()
     let overlayElement: HTMLDivElement | undefined = $state()
 
+    // Existing license info (if any)
+    let existingLicense = $state<LicenseInfo | null>(null)
+    let isLoading = $state(true)
+
+    const SUPPORT_EMAIL = 'hello@getcmdr.com'
+
+    // Get the cached status to check license type
+    const status = getCachedStatus()
+
+    // Determine if this is an existing license view
+    const hasExistingLicense = $derived(existingLicense !== null)
+
+    // Get the organization name for display
+    const organizationName = $derived(existingLicense?.organizationName || 'your organization')
+
+    // Format expiration date
+    function formatDate(dateStr: string | null | undefined): string {
+        if (!dateStr) return ''
+        try {
+            return new Date(dateStr).toLocaleDateString(undefined, {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+            })
+        } catch {
+            return dateStr
+        }
+    }
+
+    // Get the expiration date from status
+    const expiresAt = $derived(status?.type === 'commercial' ? formatDate(status.expiresAt) : null)
+
+    // Determine if this is a perpetual license
+    const isPerpetual = $derived(status?.type === 'commercial' && status.licenseType === 'commercial_perpetual')
+
+    function getErrorHelpText(errorMessage: string): string {
+        // Check if this is a "not found" error from the license server
+        if (errorMessage.includes('not found') || errorMessage.includes('expired')) {
+            return '\n\nPlease verify that you pasted the correct license key from your purchase email.'
+        }
+        // For other errors (network issues, server errors, etc.)
+        return '\n\nPlease check your internet connection and try activating your license again.'
+    }
+
     onMount(async () => {
+        // Check if there's an existing license
+        try {
+            existingLicense = await getLicenseInfo()
+            if (existingLicense?.shortCode) {
+                licenseKey = existingLicense.shortCode
+            }
+        } catch {
+            // No existing license
+        } finally {
+            isLoading = false
+        }
+
         // Focus overlay so keyboard events work immediately
         await tick()
         overlayElement?.focus()
-        // Then focus the input
-        await tick()
-        inputElement?.focus()
+
+        // Only focus input if entering a new license
+        if (!existingLicense) {
+            await tick()
+            inputElement?.focus()
+        }
     })
 
     async function handleActivate() {
         if (!licenseKey.trim()) {
             error = 'Please enter a license key'
+            hasError = true
             return
         }
 
         isActivating = true
         error = ''
+        hasError = false
 
         try {
             // First validate the license key locally (signature verification)
@@ -47,7 +109,9 @@
             // Success - close this dialog and show About
             onSuccess()
         } catch (e) {
-            error = String(e)
+            const errorMessage = String(e)
+            error = errorMessage + getErrorHelpText(errorMessage)
+            hasError = true
         } finally {
             isActivating = false
         }
@@ -58,14 +122,14 @@
         event.stopPropagation()
         if (event.key === 'Escape') {
             onClose()
-        } else if (event.key === 'Enter' && !isActivating) {
+        } else if (event.key === 'Enter' && !isActivating && !hasExistingLicense) {
             void handleActivate()
         }
     }
 
     function handleInputKeydown(event: KeyboardEvent) {
-        // Allow Enter to submit
-        if (event.key === 'Enter' && !isActivating) {
+        // Allow Enter to submit (only for new license entry)
+        if (event.key === 'Enter' && !isActivating && !hasExistingLicense) {
             event.preventDefault()
             void handleActivate()
         }
@@ -86,37 +150,79 @@
     <div class="modal-content">
         <button class="close-button" onclick={onClose} aria-label="Close">×</button>
 
-        <h2 id="dialog-title">Enter license key</h2>
+        {#if isLoading}
+            <h2 id="dialog-title">Loading...</h2>
+        {:else if hasExistingLicense}
+            <h2 id="dialog-title">License details</h2>
 
-        <p class="description">Paste your license key from the email you received after purchase.</p>
+            <p class="description">Your software is registered to {organizationName} with the license key:</p>
 
-        <div class="input-group">
-            <input
-                bind:this={inputElement}
-                bind:value={licenseKey}
-                type="text"
-                class="license-input"
-                class:has-error={error}
-                placeholder="Example: CMDR-ABCD-EFGH-1234"
-                spellcheck="false"
-                autocomplete="off"
-                autocorrect="off"
-                autocapitalize="off"
-                disabled={isActivating}
-                onkeydown={handleInputKeydown}
-            />
-        </div>
+            <div class="input-group">
+                <input
+                    bind:value={licenseKey}
+                    type="text"
+                    class="license-input"
+                    spellcheck="false"
+                    autocomplete="off"
+                    disabled={true}
+                    onkeydown={handleInputKeydown}
+                />
+            </div>
 
-        {#if error}
-            <p class="error-message">{error}</p>
+            <p class="license-validity">
+                {#if isPerpetual}
+                    You can use this software forever for work.
+                    {#if expiresAt}
+                        <br />You're also entitled to all upgrades until {expiresAt}.
+                    {/if}
+                {:else if expiresAt}
+                    Your license is valid until {expiresAt}. We'll email you in time to let you extend it conveniently.
+                {:else}
+                    Your license is active.
+                {/if}
+            </p>
+
+            <div class="actions">
+                <button class="primary" onclick={onClose}>Close</button>
+            </div>
+        {:else}
+            <h2 id="dialog-title">Enter license key</h2>
+
+            <p class="description">Paste your license key from the email you received after purchase.</p>
+
+            <div class="input-group">
+                <input
+                    bind:this={inputElement}
+                    bind:value={licenseKey}
+                    type="text"
+                    class="license-input"
+                    class:has-error={error}
+                    placeholder="Example: CMDR-ABCD-EFGH-1234"
+                    spellcheck="false"
+                    autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    disabled={isActivating}
+                    onkeydown={handleInputKeydown}
+                />
+            </div>
+
+            {#if error}
+                <p class="error-message">
+                    {error}
+                    <br /><br />
+                    If you need help, contact us at
+                    <a href="mailto:{SUPPORT_EMAIL}" class="support-link">{SUPPORT_EMAIL}</a>.
+                </p>
+            {/if}
+
+            <div class="actions">
+                <button class="secondary" onclick={onClose} disabled={isActivating}>Cancel</button>
+                <button class="primary" onclick={handleActivate} disabled={isActivating || !licenseKey.trim()}>
+                    {isActivating ? 'Activating...' : hasError ? 'Try again' : 'Activate'}
+                </button>
+            </div>
         {/if}
-
-        <div class="actions">
-            <button class="secondary" onclick={onClose} disabled={isActivating}>Cancel</button>
-            <button class="primary" onclick={handleActivate} disabled={isActivating || !licenseKey.trim()}>
-                {isActivating ? 'Activating...' : 'Activate'}
-            </button>
-        </div>
     </div>
 </div>
 
@@ -215,7 +321,24 @@
         margin: 0 0 16px;
         font-size: 13px;
         color: var(--color-error, #f44336);
-        line-height: 1.4;
+        line-height: 1.5;
+        white-space: pre-wrap;
+    }
+
+    .support-link {
+        color: var(--color-accent, #4da3ff);
+        text-decoration: underline;
+    }
+
+    .support-link:hover {
+        color: var(--color-accent-hover, #6eb5ff);
+    }
+
+    .license-validity {
+        margin: 0 0 16px;
+        font-size: 14px;
+        color: var(--color-text-secondary, #aaa);
+        line-height: 1.6;
     }
 
     .actions {

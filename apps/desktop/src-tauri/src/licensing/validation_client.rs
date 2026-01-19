@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 /// License server URL (configured at compile time).
 #[cfg(debug_assertions)]
-const LICENSE_SERVER_URL: &str = "https://license.getcmdr.com"; // Use same URL in debug
+const LICENSE_SERVER_URL: &str = "http://localhost:8787";
 
 #[cfg(not(debug_assertions))]
 const LICENSE_SERVER_URL: &str = "https://license.getcmdr.com";

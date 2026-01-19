@@ -179,6 +179,8 @@ describe('License activation', () => {
             email: 'test@example.com',
             transactionId: 'txn_123',
             issuedAt: '2026-01-10',
+            organizationName: null,
+            shortCode: 'CMDR-ABCD-EFGH-1234',
         }
         vi.mocked(activateLicense).mockResolvedValue(mockInfo)
 
@@ -210,6 +212,8 @@ describe('License info retrieval', () => {
             email: 'user@company.com',
             transactionId: 'txn_456',
             issuedAt: '2025-06-15',
+            organizationName: 'Acme Corp',
+            shortCode: 'CMDR-WXYZ-1234-5678',
         }
         vi.mocked(getLicenseInfo).mockResolvedValue(mockInfo)
 

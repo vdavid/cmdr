@@ -285,41 +285,65 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
     </main>
     <Footer />
 
-    {/* Organization name modal for commercial licenses */}
-    <div id="org-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm">
-        <div class="mx-4 w-full max-w-md rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-xl">
-            <h3 class="mb-2 text-xl font-semibold text-[var(--color-text-primary)]">Organization details</h3>
+    {/* Organization name modal for commercial checkouts */}
+    <div id="org-name-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="relative mx-4 w-full max-w-md rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-2xl">
+            <button
+                type="button"
+                id="org-modal-close"
+                class="absolute right-4 top-4 text-[var(--color-text-tertiary)] transition-colors hover:text-[var(--color-text-primary)]"
+                aria-label="Close"
+            >
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+
+            <div class="mb-1 text-xs font-medium uppercase tracking-wide text-[var(--color-accent)]">
+                Step 1 of 2
+            </div>
+            <h2 class="mb-2 text-xl font-semibold text-[var(--color-text-primary)]">
+                Company details
+            </h2>
             <p class="mb-6 text-sm text-[var(--color-text-secondary)]">
-                Enter your company or organization name. This will appear on your invoice.
-                Paddle will collect your billing address and tax ID during checkout.
+                Enter your company name as you'd like it to appear on your invoice.
             </p>
-            <form id="org-form">
-                <label class="mb-4 block">
-                    <span class="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">Organization name <span class="text-[var(--color-accent)]">*</span></span>
-                    <input
-                        type="text"
-                        id="org-name-input"
-                        required
-                        placeholder="Acme Corporation"
-                        class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20"
-                    />
+
+            <div class="mb-4">
+                <label for="org-name-input" class="mb-2 block text-sm font-medium text-[var(--color-text-primary)]">
+                    Company name
                 </label>
-                <div class="flex gap-3">
-                    <button
-                        type="button"
-                        id="org-cancel-btn"
-                        class="flex-1 rounded-lg border border-[var(--color-border)] py-2.5 text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-hover)]"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        type="submit"
-                        class="flex-1 rounded-lg bg-[var(--color-accent)] py-2.5 text-sm font-medium text-[var(--color-background)] transition-all hover:bg-[var(--color-accent-hover)]"
-                    >
-                        Continue to checkout
-                    </button>
-                </div>
-            </form>
+                <input
+                    type="text"
+                    id="org-name-input"
+                    placeholder="Example: Acme Inc."
+                    class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] transition-colors focus:border-[var(--color-accent)] focus:outline-none"
+                />
+            </div>
+
+            <div class="mb-6">
+                <label for="org-email-input" class="mb-2 block text-sm font-medium text-[var(--color-text-primary)]">
+                    Email
+                </label>
+                <input
+                    type="email"
+                    id="org-email-input"
+                    placeholder="Example: you@acme.com"
+                    class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] transition-colors focus:border-[var(--color-accent)] focus:outline-none"
+                />
+            </div>
+
+            <button
+                type="button"
+                id="org-modal-continue"
+                class="w-full cursor-pointer rounded-lg bg-[var(--color-accent)] py-3 text-center font-medium text-[var(--color-background)] transition-all duration-200 hover:bg-[var(--color-accent-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+                Continue to payment
+            </button>
+
+            <p class="mt-4 text-center text-xs text-[var(--color-warning)]">
+                <strong>Need your company address on the invoice?<br /> Click "Add VAT number" before entering your card details.</strong>
+            </p>
         </div>
     </div>
 
@@ -345,29 +369,59 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
                     Paddle.Initialize({ token: paddleConfig.clientToken })
 
                     // Modal elements
-                    const modal = document.getElementById('org-modal')
-                    const form = document.getElementById('org-form')
-                    const input = document.getElementById('org-name-input')
-                    const cancelBtn = document.getElementById('org-cancel-btn')
+                    const modal = document.getElementById('org-name-modal')
+                    const modalNameInput = document.getElementById('org-name-input')
+                    const modalEmailInput = document.getElementById('org-email-input')
+                    const modalClose = document.getElementById('org-modal-close')
+                    const modalContinue = document.getElementById('org-modal-continue')
 
-                    // Track which price we're buying
+                    // Track which price is being purchased
                     let pendingPriceId = null
 
-                    // Commercial license types that require org name
+                    // Commercial price keys that require org name
                     const commercialPriceKeys = ['commercialSubscription', 'commercialPerpetual']
 
-                    function openModal(priceId) {
-                        pendingPriceId = priceId
-                        input.value = ''
+                    function showModal() {
                         modal.classList.remove('hidden')
                         modal.classList.add('flex')
-                        input.focus()
+                        modalNameInput.value = ''
+                        modalEmailInput.value = ''
+                        modalNameInput.focus()
+                        updateContinueButton()
                     }
 
-                    function closeModal() {
+                    function updateContinueButton() {
+                        const hasName = modalNameInput.value.trim().length > 0
+                        const hasEmail = modalEmailInput.value.trim().length > 0
+                        modalContinue.disabled = !hasName || !hasEmail
+                    }
+
+                    function hideModal() {
                         modal.classList.add('hidden')
                         modal.classList.remove('flex')
                         pendingPriceId = null
+                    }
+
+                    function openPaddleCheckout(priceId, businessName, email) {
+                        const checkoutOptions = {
+                            items: [{ priceId: priceId }],
+                        }
+
+                        // Add customer info for commercial purchases
+                        if (email) {
+                            checkoutOptions.customer = {
+                                email: email,
+                            }
+                        }
+
+                        // Pass org name via customData - will be included in webhook
+                        if (businessName) {
+                            checkoutOptions.customData = {
+                                organizationName: businessName,
+                            }
+                        }
+
+                        Paddle.Checkout.open(checkoutOptions)
                     }
 
                     // Handle buy button clicks
@@ -377,40 +431,61 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
                             const priceId = paddleConfig.priceIds[priceKey]
                             if (!priceId) return
 
+                            // Commercial plans need org name first
                             if (commercialPriceKeys.includes(priceKey)) {
-                                openModal(priceId)
+                                pendingPriceId = priceId
+                                showModal()
                             } else {
-                                Paddle.Checkout.open({ items: [{ priceId: priceId }] })
+                                // Personal/supporter plans open Paddle directly
+                                openPaddleCheckout(priceId, null, null)
                             }
                         })
                     })
 
-                    // Handle form submission
-                    form.addEventListener('submit', function (e) {
-                        e.preventDefault()
-                        const orgName = input.value.trim()
-                        if (!orgName || !pendingPriceId) return
+                    // Modal close button
+                    modalClose.addEventListener('click', hideModal)
 
-                        closeModal()
-
-                        // Open Paddle checkout with organization info
-                        Paddle.Checkout.open({
-                            items: [{ priceId: pendingPriceId }],
-                            customData: { organization_name: orgName },
-                            customer: { business: { name: orgName } },
-                        })
-                    })
-
-                    // Close modal handlers
-                    cancelBtn.addEventListener('click', closeModal)
+                    // Click outside modal to close
                     modal.addEventListener('click', function (e) {
-                        if (e.target === modal) closeModal()
-                    })
-                    document.addEventListener('keydown', function (e) {
-                        if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
-                            closeModal()
+                        if (e.target === modal) {
+                            hideModal()
                         }
                     })
+
+                    // Escape key to close modal
+                    document.addEventListener('keydown', function (e) {
+                        if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                            hideModal()
+                        }
+                    })
+
+                    // Continue button - open Paddle with business name and email
+                    modalContinue.addEventListener('click', function () {
+                        const orgName = modalNameInput.value.trim()
+                        const email = modalEmailInput.value.trim()
+                        if (!orgName || !email || !pendingPriceId) return
+
+                        const priceIdToUse = pendingPriceId
+                        hideModal()
+                        openPaddleCheckout(priceIdToUse, orgName, email)
+                    })
+
+                    // Enter key in inputs to continue
+                    modalNameInput.addEventListener('keydown', function (e) {
+                        if (e.key === 'Enter') {
+                            modalEmailInput.focus()
+                        }
+                    })
+                    modalEmailInput.addEventListener('keydown', function (e) {
+                        if (e.key === 'Enter' && !modalContinue.disabled) {
+                            modalContinue.click()
+                        }
+                    })
+
+                    // Update continue button state when inputs change
+                    modalNameInput.addEventListener('input', updateContinueButton)
+                    modalEmailInput.addEventListener('input', updateContinueButton)
+                    modalContinue.disabled = true
                 })()
             </script>
         )

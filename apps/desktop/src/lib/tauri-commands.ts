@@ -897,6 +897,8 @@ export interface LicenseInfo {
     email: string
     transactionId: string
     issuedAt: string
+    organizationName: string | null
+    shortCode: string | null
 }
 
 /**

@@ -19,7 +19,9 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LicenseData {
     pub email: String,
+    #[serde(rename = "transactionId")]
     pub transaction_id: String,
+    #[serde(rename = "issuedAt")]
     pub issued_at: String,
     #[serde(rename = "type")]
     pub license_type: Option<String>,

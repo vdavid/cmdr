@@ -6,7 +6,7 @@
     "scripts": {
         "preinstall": "npx only-allow pnpm",
         "dev": "wrangler dev",
-        "deploy": "wrangler deploy",
+        "cf:deploy": "wrangler deploy",
         "setup-infra": "./scripts/setup-cf-infra.sh",
         "generate-keys": "node scripts/generate-keys.js",
         "test:checkout": "node test/server.js",

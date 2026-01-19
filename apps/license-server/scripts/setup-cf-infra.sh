@@ -42,8 +42,8 @@ echo "Checking for existing KV namespace..."
 EXISTING_NAMESPACES=$(npx wrangler kv namespace list 2>/dev/null || echo "[]")
 
 # Parse the JSON to find our namespace
-# The namespace title for our project will be "cmdr-license-server-LICENSE_CODES"
-NAMESPACE_TITLE="cmdr-license-server-LICENSE_CODES"
+# Note: wrangler creates with just the binding name as title, not prefixed with worker name
+NAMESPACE_TITLE="$KV_NAMESPACE_NAME"
 
 # Use node to parse JSON since jq might not be available
 NAMESPACE_ID=$(echo "$EXISTING_NAMESPACES" | node -e "
@@ -117,4 +117,4 @@ echo "   npx wrangler secret put RESEND_API_KEY"
 echo "   npx wrangler secret put PRICE_ID_SUPPORTER"
 echo "   npx wrangler secret put PRICE_ID_COMMERCIAL_SUBSCRIPTION"
 echo "   npx wrangler secret put PRICE_ID_COMMERCIAL_PERPETUAL"
-echo "3. Deploy: pnpm deploy"
+echo "3. Deploy: pnpm cf:deploy"

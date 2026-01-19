@@ -67,6 +67,20 @@
         }
     }
 
+    // Determine if we should show the Upgrade link
+    function shouldShowUpgradeLink(): boolean {
+        if (!status) return true // No license - show upgrade
+        if (status.type === 'personal') return true
+        if (status.type === 'expired') return true
+        // Supporter and commercial don't show the generic upgrade link
+        return false
+    }
+
+    // Determine if we should show the commercial upgrade prompt (for supporters)
+    function shouldShowCommercialPrompt(): boolean {
+        return status?.type === 'supporter'
+    }
+
     function handleKeydown(event: KeyboardEvent) {
         // Stop propagation to prevent file explorer from handling keys while modal is open
         event.stopPropagation()
@@ -110,14 +124,24 @@
 
             <div class="license-info">
                 <p class="license-description">{getLicenseDescription()}</p>
+                {#if shouldShowCommercialPrompt()}
+                    <p class="commercial-prompt">
+                        Also using Cmdr for work? You must <a
+                            href="https://getcmdr.com/pricing"
+                            onclick={handleLinkClick('https://getcmdr.com/pricing')}>upgrade to a commercial license</a
+                        >.
+                    </p>
+                {/if}
             </div>
 
             <div class="links">
                 <a href="https://getcmdr.com" onclick={handleLinkClick('https://getcmdr.com')}>Website</a>
-                <span class="separator">•</span>
-                <a href="https://getcmdr.com/pricing" onclick={handleLinkClick('https://getcmdr.com/pricing')}
-                    >Upgrade</a
-                >
+                {#if shouldShowUpgradeLink()}
+                    <span class="separator">•</span>
+                    <a href="https://getcmdr.com/pricing" onclick={handleLinkClick('https://getcmdr.com/pricing')}
+                        >Upgrade</a
+                    >
+                {/if}
                 <span class="separator">•</span>
                 <a href="https://github.com/vdavid/cmdr" onclick={handleLinkClick('https://github.com/vdavid/cmdr')}
                     >GitHub</a
@@ -225,6 +249,22 @@
         font-size: 14px;
         line-height: 1.5;
         margin: 0;
+    }
+
+    .commercial-prompt {
+        color: var(--color-text-secondary, #aaa);
+        font-size: 13px;
+        line-height: 1.5;
+        margin: 12px 0 0;
+    }
+
+    .commercial-prompt a {
+        color: var(--color-accent);
+        text-decoration: underline;
+    }
+
+    .commercial-prompt a:hover {
+        color: var(--color-accent-hover, #6eb5ff);
     }
 
     .links {
