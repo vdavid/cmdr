@@ -57,27 +57,31 @@ test.describe('Pricing page', () => {
         await expect(perpetualButton).toHaveAttribute('data-paddle-price', 'commercialPerpetual')
     })
 
-    test('clicking buy button triggers Paddle checkout', async ({ page }) => {
-        // Block Paddle from loading - we just want to test the button interaction
-        await page.route('**/paddle.com/**', (route) => {
-            route.abort()
-        })
-
+    test('clicking buy button opens org name modal (when Paddle configured)', async ({ page }) => {
         await page.goto('/pricing')
 
         // Wait for page to be ready
         await page.waitForLoadState('domcontentloaded')
 
-        // The buy buttons should be present even if Paddle hasn't loaded
+        // The buy buttons should be present
         const commercialButton = page.getByRole('button', { name: /buy commercial/i })
         await expect(commercialButton).toBeVisible()
 
-        // Click should not throw (even if Paddle isn't loaded, the button handler should exist)
-        // In production, this would open the Paddle checkout overlay
-        await commercialButton.click()
+        // Check if Paddle is configured (button will be enabled)
+        const isEnabled = await commercialButton.isEnabled()
 
-        // We can't fully test Paddle checkout without real credentials,
-        // but we verified the button exists and is clickable
+        if (isEnabled) {
+            // With Paddle configured, clicking commercial opens our org name modal
+            await commercialButton.click()
+
+            // The org name modal should appear for commercial plans
+            await expect(page.getByText(/company name/i)).toBeVisible()
+            await expect(page.getByPlaceholder(/acme/i)).toBeVisible()
+        } else {
+            // In CI without Paddle credentials, buttons are disabled - that's expected
+            // Just verify the button structure is correct
+            await expect(commercialButton).toHaveAttribute('data-paddle-price', 'commercialSubscription')
+        }
     })
 
     test('FAQ section is present', async ({ page }) => {
