@@ -215,17 +215,8 @@
     }
 </script>
 
-<div
-    class="full-list"
-    class:is-focused={isFocused}
-    bind:this={scrollContainer}
-    bind:clientHeight={containerHeight}
-    onscroll={handleScroll}
-    tabindex="-1"
-    role="listbox"
-    aria-activedescendant={cursorIndex >= 0 ? `file-${String(cursorIndex)}` : undefined}
->
-    <!-- Header row with sortable columns -->
+<div class="full-list-container" class:is-focused={isFocused}>
+    <!-- Header row with sortable columns (outside scroll container for correct height calculation) -->
     <div class="header-row">
         <span class="header-icon"></span>
         <SortableHeader
@@ -251,51 +242,69 @@
             onClick={onSortChange ?? (() => {})}
         />
     </div>
-    <!-- Spacer div provides accurate scrollbar for full list size -->
-    <div class="virtual-spacer" style="height: {virtualWindow.totalSize}px;">
-        <!-- Visible window positioned with translateY -->
-        <div class="virtual-window" style="transform: translateY({virtualWindow.offset}px);">
-            {#each visibleFiles as { file, globalIndex } (file.path)}
-                {@const syncIcon = getSyncIconPath(syncStatusMap[file.path])}
-                <!-- svelte-ignore a11y_interactive_supports_focus -->
-                <div
-                    id={`file-${String(globalIndex)}`}
-                    class="file-entry"
-                    class:is-under-cursor={globalIndex === cursorIndex}
-                    class:is-selected={selectedIndices.has(globalIndex)}
-                    onmousedown={(e: MouseEvent) => {
-                        handleMouseDown(e, globalIndex)
-                    }}
-                    ondblclick={() => {
-                        handleDoubleClick(globalIndex)
-                    }}
-                    oncontextmenu={(e: MouseEvent) => {
-                        e.preventDefault()
-                        onSelect(globalIndex)
-                        onContextMenu?.(file)
-                    }}
-                    role="option"
-                    aria-selected={globalIndex === cursorIndex}
-                >
-                    <FileIcon {file} {syncIcon} />
-                    <span class="col-name">{file.name}</span>
-                    <span class="col-size" title={file.size !== undefined ? formatHumanReadable(file.size) : ''}>
-                        {#if file.isDirectory}
-                            <span class="size-dir">&lt;dir&gt;</span>
-                        {:else if file.size !== undefined}
-                            {#each formatSizeTriads(file.size) as triad, i (i)}
-                                <span class={triad.tierClass}>{triad.value}</span>
-                            {/each}
-                        {/if}
-                    </span>
-                    <span class="col-date">{formatDateShort(file.modifiedAt)}</span>
-                </div>
-            {/each}
+    <!-- Scrollable file list -->
+    <div
+        class="full-list"
+        bind:this={scrollContainer}
+        bind:clientHeight={containerHeight}
+        onscroll={handleScroll}
+        tabindex="-1"
+        role="listbox"
+        aria-activedescendant={cursorIndex >= 0 ? `file-${String(cursorIndex)}` : undefined}
+    >
+        <!-- Spacer div provides accurate scrollbar for full list size -->
+        <div class="virtual-spacer" style="height: {virtualWindow.totalSize}px;">
+            <!-- Visible window positioned with translateY -->
+            <div class="virtual-window" style="transform: translateY({virtualWindow.offset}px);">
+                {#each visibleFiles as { file, globalIndex } (file.path)}
+                    {@const syncIcon = getSyncIconPath(syncStatusMap[file.path])}
+                    <!-- svelte-ignore a11y_interactive_supports_focus -->
+                    <div
+                        id={`file-${String(globalIndex)}`}
+                        class="file-entry"
+                        class:is-under-cursor={globalIndex === cursorIndex}
+                        class:is-selected={selectedIndices.has(globalIndex)}
+                        onmousedown={(e: MouseEvent) => {
+                            handleMouseDown(e, globalIndex)
+                        }}
+                        ondblclick={() => {
+                            handleDoubleClick(globalIndex)
+                        }}
+                        oncontextmenu={(e: MouseEvent) => {
+                            e.preventDefault()
+                            onSelect(globalIndex)
+                            onContextMenu?.(file)
+                        }}
+                        role="option"
+                        aria-selected={globalIndex === cursorIndex}
+                    >
+                        <FileIcon {file} {syncIcon} />
+                        <span class="col-name">{file.name}</span>
+                        <span class="col-size" title={file.size !== undefined ? formatHumanReadable(file.size) : ''}>
+                            {#if file.isDirectory}
+                                <span class="size-dir">&lt;dir&gt;</span>
+                            {:else if file.size !== undefined}
+                                {#each formatSizeTriads(file.size) as triad, i (i)}
+                                    <span class={triad.tierClass}>{triad.value}</span>
+                                {/each}
+                            {/if}
+                        </span>
+                        <span class="col-date">{formatDateShort(file.modifiedAt)}</span>
+                    </div>
+                {/each}
+            </div>
         </div>
     </div>
 </div>
 
 <style>
+    .full-list-container {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        width: 100%;
+    }
+
     .full-list {
         overflow-y: auto;
         overflow-x: hidden;
@@ -304,8 +313,6 @@
         line-height: 1;
         flex: 1;
         outline: none;
-        display: flex;
-        flex-direction: column;
     }
 
     .header-row {
@@ -344,7 +351,7 @@
         background-color: rgba(204, 228, 247, 0.1);
     }
 
-    .full-list.is-focused .file-entry.is-under-cursor {
+    .full-list-container.is-focused .file-entry.is-under-cursor {
         background-color: var(--color-cursor-focused-bg);
     }
 
@@ -398,7 +405,7 @@
     }
 
     /* Selection color is preserved even under cursor */
-    .full-list.is-focused .file-entry.is-under-cursor.is-selected .col-name {
+    .full-list-container.is-focused .file-entry.is-under-cursor.is-selected .col-name {
         color: var(--color-selection-fg);
     }
 
