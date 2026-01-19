@@ -463,7 +463,7 @@
     }
 
     .file-entry.is-under-cursor {
-        background-color: rgba(204, 228, 247, 0.1);
+        background-color: rgba(104, 128, 147, 0.1);
     }
 
     .brief-list-container.is-focused .file-entry.is-under-cursor {

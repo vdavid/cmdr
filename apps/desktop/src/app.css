@@ -34,7 +34,7 @@
     /* === Interactive States === */
     --color-button-hover: rgba(0, 120, 215, 0.08);
     --color-bg-hover: rgba(0, 120, 215, 0.08);
-    --color-cursor-focused-bg: #0078d4;
+    --color-cursor-focused-bg: #88cbff;
     --color-cursor-focused-fg: #ffffff;
     --color-cursor-unfocused-bg: #e0e0e0;
     --color-accent: #0078d4;
