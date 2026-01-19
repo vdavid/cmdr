@@ -11,6 +11,7 @@
         "file-explorer/FilePane.svelte": { "reason": "Tested in integration.test.ts, complex component" },
         "file-explorer/FullList.svelte": { "reason": "Logic tested in full-list-utils.ts, component mounting heavy" },
         "file-explorer/NetworkBrowser.svelte": { "reason": "Network component, needs Tauri integration" },
+        "file-explorer/PaneResizer.svelte": { "reason": "Mouse drag UI component, difficult to unit test" },
         "file-explorer/NetworkLoginForm.svelte": { "reason": "Network component, needs Tauri integration" },
         "file-explorer/PermissionDeniedPane.svelte": { "reason": "Simple UI component" },
         "file-explorer/SelectionInfo.svelte": { "reason": "Logic tested in selection-info-utils.ts, DOM-dependent" },

@@ -15,6 +15,7 @@ vi.mock('$lib/app-status-store', () => ({
         rightSortBy: 'name',
         leftViewMode: 'brief',
         rightViewMode: 'brief',
+        leftPaneWidthPercent: 50,
     }),
     saveAppStatus: vi.fn().mockResolvedValue(undefined),
     getLastUsedPathForVolume: vi.fn().mockResolvedValue(undefined),

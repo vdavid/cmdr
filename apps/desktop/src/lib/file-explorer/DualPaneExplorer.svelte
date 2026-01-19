@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte'
     import FilePane from './FilePane.svelte'
+    import PaneResizer from './PaneResizer.svelte'
     import LoadingIcon from '../LoadingIcon.svelte'
     import {
         loadAppStatus,
@@ -52,6 +53,7 @@
     let rightVolumeId = $state(DEFAULT_VOLUME_ID)
     let volumes = $state<VolumeInfo[]>([])
     let initialized = $state(false)
+    let leftPaneWidthPercent = $state(50)
 
     // Sorting state - per-pane
     let leftSortBy = $state<SortColumn>(DEFAULT_SORT_BY)
@@ -511,6 +513,7 @@
         showHiddenFiles = settings.showHiddenFiles
         leftViewMode = status.leftViewMode
         rightViewMode = status.rightViewMode
+        leftPaneWidthPercent = status.leftPaneWidthPercent
 
         // Load sort state
         leftSortBy = status.leftSortBy
@@ -725,6 +728,19 @@
         unlistenNavigation?.()
         cleanupNetworkDiscovery()
     })
+
+    function handlePaneResize(widthPercent: number) {
+        leftPaneWidthPercent = widthPercent
+    }
+
+    function handlePaneResizeEnd() {
+        void saveAppStatus({ leftPaneWidthPercent })
+    }
+
+    function handlePaneResizeReset() {
+        leftPaneWidthPercent = 50
+        void saveAppStatus({ leftPaneWidthPercent: 50 })
+    }
 
     // Focus the container after initialization so keyboard events work
     $effect(() => {
@@ -950,42 +966,47 @@
     aria-label="File explorer"
 >
     {#if initialized}
-        <FilePane
-            bind:this={leftPaneRef}
-            paneId="left"
-            initialPath={leftPath}
-            volumeId={leftVolumeId}
-            volumePath={leftVolumePath}
-            isFocused={focusedPane === 'left'}
-            {showHiddenFiles}
-            viewMode={leftViewMode}
-            sortBy={leftSortBy}
-            sortOrder={leftSortOrder}
-            onPathChange={handleLeftPathChange}
-            onVolumeChange={handleLeftVolumeChange}
-            onRequestFocus={handleLeftFocus}
-            onSortChange={handleLeftSortChange}
-            onNetworkHostChange={handleLeftNetworkHostChange}
-            onCancelLoading={handleLeftCancelLoading}
-        />
-        <FilePane
-            bind:this={rightPaneRef}
-            paneId="right"
-            initialPath={rightPath}
-            volumeId={rightVolumeId}
-            volumePath={rightVolumePath}
-            isFocused={focusedPane === 'right'}
-            {showHiddenFiles}
-            viewMode={rightViewMode}
-            sortBy={rightSortBy}
-            sortOrder={rightSortOrder}
-            onPathChange={handleRightPathChange}
-            onVolumeChange={handleRightVolumeChange}
-            onRequestFocus={handleRightFocus}
-            onSortChange={handleRightSortChange}
-            onNetworkHostChange={handleRightNetworkHostChange}
-            onCancelLoading={handleRightCancelLoading}
-        />
+        <div class="pane-wrapper" style="width: {leftPaneWidthPercent}%">
+            <FilePane
+                bind:this={leftPaneRef}
+                paneId="left"
+                initialPath={leftPath}
+                volumeId={leftVolumeId}
+                volumePath={leftVolumePath}
+                isFocused={focusedPane === 'left'}
+                {showHiddenFiles}
+                viewMode={leftViewMode}
+                sortBy={leftSortBy}
+                sortOrder={leftSortOrder}
+                onPathChange={handleLeftPathChange}
+                onVolumeChange={handleLeftVolumeChange}
+                onRequestFocus={handleLeftFocus}
+                onSortChange={handleLeftSortChange}
+                onNetworkHostChange={handleLeftNetworkHostChange}
+                onCancelLoading={handleLeftCancelLoading}
+            />
+        </div>
+        <PaneResizer onResize={handlePaneResize} onResizeEnd={handlePaneResizeEnd} onReset={handlePaneResizeReset} />
+        <div class="pane-wrapper" style="width: {100 - leftPaneWidthPercent}%">
+            <FilePane
+                bind:this={rightPaneRef}
+                paneId="right"
+                initialPath={rightPath}
+                volumeId={rightVolumeId}
+                volumePath={rightVolumePath}
+                isFocused={focusedPane === 'right'}
+                {showHiddenFiles}
+                viewMode={rightViewMode}
+                sortBy={rightSortBy}
+                sortOrder={rightSortOrder}
+                onPathChange={handleRightPathChange}
+                onVolumeChange={handleRightVolumeChange}
+                onRequestFocus={handleRightFocus}
+                onSortChange={handleRightSortChange}
+                onNetworkHostChange={handleRightNetworkHostChange}
+                onCancelLoading={handleRightCancelLoading}
+            />
+        </div>
     {:else}
         <LoadingIcon />
     {/if}
@@ -998,5 +1019,12 @@
         height: 100%;
         gap: 0;
         outline: none;
+    }
+
+    .pane-wrapper {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-width: 0;
     }
 </style>

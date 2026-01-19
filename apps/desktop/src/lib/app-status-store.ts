@@ -23,7 +23,11 @@ export interface AppStatus {
     rightVolumeId: string
     leftSortBy: SortColumn
     rightSortBy: SortColumn
+    /** Left pane width as percentage (25-75). Default: 50 */
+    leftPaneWidthPercent: number
 }
+
+const DEFAULT_LEFT_PANE_WIDTH_PERCENT = 50
 
 const DEFAULT_STATUS: AppStatus = {
     leftPath: DEFAULT_PATH,
@@ -35,6 +39,7 @@ const DEFAULT_STATUS: AppStatus = {
     rightVolumeId: DEFAULT_VOLUME_ID,
     leftSortBy: DEFAULT_SORT_BY,
     rightSortBy: DEFAULT_SORT_BY,
+    leftPaneWidthPercent: DEFAULT_LEFT_PANE_WIDTH_PERCENT,
 }
 
 let storeInstance: Store | null = null
@@ -86,6 +91,13 @@ function parseSortColumn(raw: unknown): SortColumn {
     return DEFAULT_SORT_BY
 }
 
+function parsePaneWidthPercent(raw: unknown): number {
+    if (typeof raw === 'number' && raw >= 25 && raw <= 75) {
+        return raw
+    }
+    return DEFAULT_LEFT_PANE_WIDTH_PERCENT
+}
+
 export async function loadAppStatus(pathExists: (p: string) => Promise<boolean>): Promise<AppStatus> {
     try {
         const store = await getStore()
@@ -99,6 +111,7 @@ export async function loadAppStatus(pathExists: (p: string) => Promise<boolean>)
         const rightVolumeId = ((await store.get('rightVolumeId')) as string) || DEFAULT_VOLUME_ID
         const leftSortBy = parseSortColumn(await store.get('leftSortBy'))
         const rightSortBy = parseSortColumn(await store.get('rightSortBy'))
+        const leftPaneWidthPercent = parsePaneWidthPercent(await store.get('leftPaneWidthPercent'))
 
         // Resolve paths with fallback - skip for virtual 'network' volume
         const resolvedLeftPath =
@@ -116,6 +129,7 @@ export async function loadAppStatus(pathExists: (p: string) => Promise<boolean>)
             rightVolumeId,
             leftSortBy,
             rightSortBy,
+            leftPaneWidthPercent,
         }
     } catch {
         // If store fails, return defaults
@@ -152,6 +166,9 @@ export async function saveAppStatus(status: Partial<AppStatus>): Promise<void> {
         }
         if (status.rightSortBy !== undefined) {
             await store.set('rightSortBy', status.rightSortBy)
+        }
+        if (status.leftPaneWidthPercent !== undefined) {
+            await store.set('leftPaneWidthPercent', status.leftPaneWidthPercent)
         }
         await store.save()
     } catch {
