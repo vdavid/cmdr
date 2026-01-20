@@ -57,8 +57,8 @@
     }
 
     .modal-content {
-        background: var(--color-surface, #1e1e2e);
-        border: 1px solid var(--color-border, #363646);
+        background: var(--color-bg-primary);
+        border: 1px solid var(--color-border);
         border-radius: 12px;
         padding: 24px 32px;
         max-width: 420px;
@@ -69,20 +69,20 @@
         margin: 0 0 16px;
         font-size: 18px;
         font-weight: 600;
-        color: var(--color-text-primary, #fff);
+        color: var(--color-text-primary);
     }
 
     .message {
         margin: 0 0 8px;
         font-size: 14px;
-        color: var(--color-text-secondary, #a0a0b0);
+        color: var(--color-text-secondary);
         line-height: 1.5;
     }
 
     .info {
         margin: 0 0 20px;
         font-size: 13px;
-        color: var(--color-text-tertiary, #707080);
+        color: var(--color-text-tertiary);
         line-height: 1.5;
     }
 
@@ -102,23 +102,23 @@
     }
 
     .primary {
-        background: var(--color-accent, #6366f1);
+        background: var(--color-accent);
         color: white;
         border: none;
     }
 
     .primary:hover {
-        background: var(--color-accent-hover, #5558e8);
+        background: var(--color-accent-hover);
     }
 
     .secondary {
         background: transparent;
-        color: var(--color-text-secondary, #a0a0b0);
-        border: 1px solid var(--color-border, #363646);
+        color: var(--color-text-secondary);
+        border: 1px solid var(--color-border);
     }
 
     .secondary:hover {
-        background: var(--color-surface-hover, #262636);
-        color: var(--color-text-primary, #fff);
+        background: var(--color-bg-secondary);
+        color: var(--color-text-primary);
     }
 </style>

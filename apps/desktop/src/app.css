@@ -36,12 +36,14 @@
     --color-bg-hover: rgba(0, 120, 215, 0.08);
     --color-cursor-focused-bg: #88cbff;
     --color-cursor-focused-fg: #ffffff;
-    --color-cursor-unfocused-bg: #e0e0e0;
+    --color-cursor-unfocused-bg: rgba(104, 128, 147, 0.1);
     --color-accent: #0078d4;
+    --color-accent-hover: #005a9e;
 
     /* === Semantic Colors === */
     --color-allow: #2e7d32;
     --color-error: #d32f2f;
+    --color-warning: #e65100;
 
     /* === Selection === */
     --color-selection-fg: #c9a227;
@@ -90,11 +92,13 @@
         --color-bg-hover: rgba(100, 180, 255, 0.12);
         --color-cursor-focused-bg: #0a50d0;
         --color-cursor-focused-fg: #ffffff;
-        --color-cursor-unfocused-bg: #3a3a3a;
+        --color-cursor-unfocused-bg: rgba(104, 128, 147, 0.1);
         --color-accent: #4da3ff;
+        --color-accent-hover: #6eb5ff;
 
         /* === Semantic Colors === */
         --color-error: #f44336;
+        --color-warning: #f5a623;
 
         /* === Selection === */
         --color-selection-fg: #d4a82a;

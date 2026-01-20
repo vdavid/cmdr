@@ -16,6 +16,10 @@ export default {
                 importFrom: [join(__dirname, 'src/app.css')],
             },
         ],
+        // Forbid var() with fallback values - all colors should be in app.css
+        'declaration-property-value-disallowed-list': {
+            '/.*/': ['/var\\(--[\\w-]+\\s*,/'],
+        },
         'custom-property-pattern': '^(color|spacing|font)-.+',
         'declaration-block-no-duplicate-custom-properties': true,
         'selector-class-pattern': null,

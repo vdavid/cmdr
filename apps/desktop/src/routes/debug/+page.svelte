@@ -183,9 +183,9 @@
         display: flex;
         flex-direction: column;
         height: 100vh;
-        background: var(--color-bg-primary, #1e1e1e);
-        color: var(--color-text-primary, #fff);
-        font-family: var(--font-family, system-ui, -apple-system, sans-serif);
+        background: var(--color-bg-primary);
+        color: var(--color-text-primary);
+        font-family: var(--font-system), sans-serif;
         outline: none;
     }
 
@@ -194,8 +194,8 @@
         align-items: center;
         justify-content: space-between;
         padding: 12px 16px;
-        background: var(--color-bg-secondary, #2a2a2a);
-        border-bottom: 1px solid var(--color-border-primary, #333);
+        background: var(--color-bg-secondary);
+        border-bottom: 1px solid var(--color-border-primary);
         /* Allow dragging the window from header */
         -webkit-app-region: drag;
     }
@@ -204,14 +204,14 @@
         margin: 0;
         font-size: 14px;
         font-weight: 600;
-        color: var(--color-text-primary, #fff);
+        color: var(--color-text-primary);
     }
 
     .close-button {
         -webkit-app-region: no-drag;
         background: none;
         border: none;
-        color: var(--color-text-secondary, #888);
+        color: var(--color-text-secondary);
         font-size: 20px;
         cursor: pointer;
         padding: 2px 8px;
@@ -220,8 +220,8 @@
     }
 
     .close-button:hover {
-        background: var(--color-button-hover, rgba(255, 255, 255, 0.1));
-        color: var(--color-text-primary, #fff);
+        background: var(--color-button-hover);
+        color: var(--color-text-primary);
     }
 
     .debug-content {
@@ -240,7 +240,7 @@
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        color: var(--color-text-secondary, #888);
+        color: var(--color-text-secondary);
     }
 
     .toggle-row {
@@ -248,25 +248,25 @@
         align-items: center;
         justify-content: space-between;
         padding: 8px 12px;
-        background: var(--color-bg-secondary, #2a2a2a);
+        background: var(--color-bg-secondary);
         border-radius: 6px;
         cursor: pointer;
     }
 
     .toggle-row:hover {
-        background: var(--color-bg-tertiary, #333);
+        background: var(--color-bg-tertiary);
     }
 
     .toggle-row span {
         font-size: 13px;
-        color: var(--color-text-primary, #fff);
+        color: var(--color-text-primary);
     }
 
     .toggle-checkbox {
         width: 18px;
         height: 18px;
         cursor: pointer;
-        accent-color: var(--color-accent, #4a9eff);
+        accent-color: var(--color-accent);
     }
 
     /* History styles */
@@ -277,21 +277,21 @@
 
     .history-pane {
         flex: 1;
-        background: var(--color-bg-secondary, #2a2a2a);
+        background: var(--color-bg-secondary);
         border-radius: 6px;
         padding: 8px;
         min-width: 0;
     }
 
     .history-pane.focused {
-        outline: 2px solid var(--color-accent, #4a9eff);
+        outline: 2px solid var(--color-accent);
     }
 
     .history-pane h3 {
         margin: 0 0 8px;
         font-size: 11px;
         font-weight: 600;
-        color: var(--color-text-secondary, #888);
+        color: var(--color-text-secondary);
         text-transform: uppercase;
     }
 
@@ -309,12 +309,12 @@
         gap: 6px;
         padding: 3px 4px;
         border-radius: 3px;
-        color: var(--color-text-secondary, #888);
+        color: var(--color-text-secondary);
     }
 
     .history-list li.current {
-        background: var(--color-bg-tertiary, #333);
-        color: var(--color-text-primary, #fff);
+        background: var(--color-bg-tertiary);
+        color: var(--color-text-primary);
         font-weight: 600;
     }
 
@@ -337,7 +337,7 @@
     .no-history {
         margin: 0;
         font-size: 11px;
-        color: var(--color-text-muted, #666);
+        color: var(--color-text-muted);
         font-style: italic;
     }
 </style>

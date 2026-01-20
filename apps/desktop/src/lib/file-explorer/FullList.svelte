@@ -348,7 +348,7 @@
     }
 
     .file-entry.is-under-cursor {
-        background-color: rgba(104, 128, 147, 0.1);
+        background-color: var(--color-cursor-unfocused-bg);
     }
 
     .full-list-container.is-focused .file-entry.is-under-cursor {

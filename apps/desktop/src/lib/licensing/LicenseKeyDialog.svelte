@@ -239,8 +239,8 @@
     }
 
     .modal-content {
-        background: var(--color-bg-secondary, #2a2a2a);
-        border: 1px solid var(--color-border-primary, #444);
+        background: var(--color-bg-secondary);
+        border: 1px solid var(--color-border-primary);
         border-radius: 12px;
         padding: 24px 32px;
         min-width: 400px;
@@ -255,7 +255,7 @@
         right: 12px;
         background: none;
         border: none;
-        color: var(--color-text-secondary, #888);
+        color: var(--color-text-secondary);
         font-size: 24px;
         cursor: pointer;
         padding: 4px 8px;
@@ -264,21 +264,21 @@
     }
 
     .close-button:hover {
-        background: var(--color-button-hover, rgba(255, 255, 255, 0.1));
-        color: var(--color-text-primary, #fff);
+        background: var(--color-button-hover);
+        color: var(--color-text-primary);
     }
 
     h2 {
         margin: 0 0 12px;
         font-size: 18px;
         font-weight: 600;
-        color: var(--color-text-primary, #fff);
+        color: var(--color-text-primary);
     }
 
     .description {
         margin: 0 0 16px;
         font-size: 14px;
-        color: var(--color-text-secondary, #aaa);
+        color: var(--color-text-secondary);
         line-height: 1.5;
     }
 
@@ -291,25 +291,25 @@
         padding: 12px 14px;
         font-size: 14px;
         font-family: var(--font-system);
-        background: var(--color-bg-primary, #1e1e1e);
-        border: 1px solid var(--color-border-primary, #444);
+        background: var(--color-bg-primary);
+        border: 1px solid var(--color-border-primary);
         border-radius: 8px;
-        color: var(--color-text-primary, #fff);
+        color: var(--color-text-primary);
         box-sizing: border-box;
     }
 
     .license-input::placeholder {
-        color: var(--color-text-muted, #666);
+        color: var(--color-text-muted);
     }
 
     .license-input:focus {
         outline: none;
-        border-color: var(--color-accent, #4da3ff);
+        border-color: var(--color-accent);
         box-shadow: 0 0 0 2px rgba(77, 163, 255, 0.2);
     }
 
     .license-input.has-error {
-        border-color: var(--color-error, #f44336);
+        border-color: var(--color-error);
     }
 
     .license-input:disabled {
@@ -320,24 +320,24 @@
     .error-message {
         margin: 0 0 16px;
         font-size: 13px;
-        color: var(--color-error, #f44336);
+        color: var(--color-error);
         line-height: 1.5;
         white-space: pre-wrap;
     }
 
     .support-link {
-        color: var(--color-accent, #4da3ff);
+        color: var(--color-accent);
         text-decoration: underline;
     }
 
     .support-link:hover {
-        color: var(--color-accent-hover, #6eb5ff);
+        color: var(--color-accent-hover);
     }
 
     .license-validity {
         margin: 0 0 16px;
         font-size: 14px;
-        color: var(--color-text-secondary, #aaa);
+        color: var(--color-text-secondary);
         line-height: 1.6;
     }
 
@@ -362,7 +362,7 @@
     }
 
     .primary {
-        background: var(--color-accent, #4da3ff);
+        background: var(--color-accent);
         color: white;
         border: none;
     }
@@ -373,12 +373,12 @@
 
     .secondary {
         background: transparent;
-        color: var(--color-text-secondary, #aaa);
-        border: 1px solid var(--color-border-primary, #444);
+        color: var(--color-text-secondary);
+        border: 1px solid var(--color-border-primary);
     }
 
     .secondary:hover:not(:disabled) {
-        background: var(--color-bg-tertiary, #333);
-        color: var(--color-text-primary, #fff);
+        background: var(--color-bg-tertiary);
+        color: var(--color-text-primary);
     }
 </style>

@@ -166,8 +166,8 @@
     }
 
     .about-window {
-        background: var(--color-bg-secondary, #1e1e1e);
-        border: 1px solid var(--color-border-primary, #333);
+        background: var(--color-bg-secondary);
+        border: 1px solid var(--color-border-primary);
         border-radius: 12px;
         padding: 32px;
         min-width: 380px;
@@ -182,7 +182,7 @@
         right: 12px;
         background: none;
         border: none;
-        color: var(--color-text-secondary, #888);
+        color: var(--color-text-secondary);
         font-size: 24px;
         cursor: pointer;
         padding: 4px 8px;
@@ -191,8 +191,8 @@
     }
 
     .close-button:hover {
-        background: var(--color-button-hover, rgba(255, 255, 255, 0.1));
-        color: var(--color-text-primary, #fff);
+        background: var(--color-button-hover);
+        color: var(--color-text-primary);
     }
 
     .about-content {
@@ -219,11 +219,11 @@
         font-size: 28px;
         font-weight: 600;
         margin: 0 0 4px;
-        color: var(--color-text-primary, #fff);
+        color: var(--color-text-primary);
     }
 
     .app-tagline {
-        color: var(--color-text-secondary, #888);
+        color: var(--color-text-secondary);
         margin: 0 0 16px;
         font-size: 14px;
     }
@@ -233,26 +233,26 @@
     }
 
     .version {
-        color: var(--color-text-secondary, #888);
+        color: var(--color-text-secondary);
         font-size: 13px;
     }
 
     .license-info {
-        background: var(--color-bg-tertiary, rgba(255, 255, 255, 0.05));
+        background: var(--color-bg-tertiary);
         border-radius: 8px;
         padding: 16px 20px;
         margin-bottom: 20px;
     }
 
     .license-description {
-        color: var(--color-text-primary, #fff);
+        color: var(--color-text-primary);
         font-size: 14px;
         line-height: 1.5;
         margin: 0;
     }
 
     .commercial-prompt {
-        color: var(--color-text-secondary, #aaa);
+        color: var(--color-text-secondary);
         font-size: 13px;
         line-height: 1.5;
         margin: 12px 0 0;
@@ -264,7 +264,7 @@
     }
 
     .commercial-prompt a:hover {
-        color: var(--color-accent-hover, #6eb5ff);
+        color: var(--color-accent-hover);
     }
 
     .links {
@@ -282,12 +282,12 @@
     }
 
     .separator {
-        color: var(--color-text-secondary, #888);
+        color: var(--color-text-secondary);
         margin: 0 8px;
     }
 
     .copyright {
-        color: var(--color-text-muted, #666);
+        color: var(--color-text-muted);
         font-size: 12px;
         margin: 0;
     }

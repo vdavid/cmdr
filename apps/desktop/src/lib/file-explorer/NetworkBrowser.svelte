@@ -503,7 +503,7 @@
     }
 
     .col-status.needs-login {
-        color: var(--color-warning, #f5a623);
+        color: var(--color-warning);
         cursor: help;
     }
 
