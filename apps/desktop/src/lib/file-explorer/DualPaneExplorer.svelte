@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount, onDestroy } from 'svelte'
+    import { onMount, onDestroy, untrack } from 'svelte'
     import FilePane from './FilePane.svelte'
     import PaneResizer from './PaneResizer.svelte'
     import LoadingIcon from '../LoadingIcon.svelte'
@@ -74,6 +74,21 @@
     // Initialize with default volume - will be updated on mount with actual state
     let leftHistory = $state<NavigationHistory>(createHistory(DEFAULT_VOLUME_ID, '~'))
     let rightHistory = $state<NavigationHistory>(createHistory(DEFAULT_VOLUME_ID, '~'))
+
+    // Emit history state to debug window (dev mode only)
+    $effect(() => {
+        if (!import.meta.env.DEV) return
+        // Read the reactive values
+        const left = leftHistory
+        const right = rightHistory
+        const focused = focusedPane
+        // Emit without tracking to avoid infinite loops
+        untrack(() => {
+            void import('@tauri-apps/api/event').then(({ emit }) => {
+                void emit('debug-history', { left, right, focusedPane: focused })
+            })
+        })
+    })
 
     // Derived volume paths - handle 'network' virtual volume specially
     const leftVolumePath = $derived(

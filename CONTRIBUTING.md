@@ -21,6 +21,16 @@ pnpm dev
 
 This starts both the Svelte frontend and the Rust backend with hot reload.
 
+## Debug window
+
+In dev mode, press **Cmd+D** to open a debug window. This window is only available in dev builds and provides:
+
+- **Dark mode toggle**: Switch between light and dark themes without changing your system settings
+- **Navigation history**: Real-time view of back/forward history for both panes, showing current position and
+  available history entries
+
+The debug window is a separate, movable window that updates in real-time as you navigate.
+
 ## Logging
 
 ### Rust

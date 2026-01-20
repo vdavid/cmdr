@@ -3,11 +3,18 @@
     "identifier": "default",
     "description": "Capability for the main window",
     "windows": [
-        "main"
+        "main",
+        "debug"
     ],
     "permissions": [
         "core:default",
         "core:window:allow-start-dragging",
+        "core:window:allow-close",
+        "core:window:allow-theme",
+        "core:webview:allow-webview-close",
+        "core:webview:allow-create-webview-window",
+        "core:app:allow-set-app-theme",
+        "core:event:default",
         "opener:default",
         {
             "identifier": "opener:allow-open-path",

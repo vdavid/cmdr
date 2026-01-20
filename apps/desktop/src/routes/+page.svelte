@@ -65,6 +65,34 @@
     let unlistenCommandPalette: UnlistenFn | undefined
     let unlistenSwitchPane: UnlistenFn | undefined
 
+    /** Opens the debug window (dev mode only) */
+    async function openDebugWindow() {
+        try {
+            const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow')
+            // Check if debug window already exists
+            const existing = await WebviewWindow.getByLabel('debug')
+            if (existing) {
+                await existing.setFocus()
+                return
+            }
+            // Create new debug window
+            new WebviewWindow('debug', {
+                url: '/debug',
+                title: 'Debug',
+                width: 480,
+                height: 500,
+                resizable: true,
+                minimizable: false,
+                maximizable: false,
+                closable: true,
+                focus: true,
+            })
+        } catch (error) {
+            // eslint-disable-next-line no-console -- Debug window is dev-only
+            console.error('Failed to open debug window:', error)
+        }
+    }
+
     /** Start window drag when title bar is clicked */
     async function handleTitleBarMouseDown(e: MouseEvent) {
         if (e.buttons === 1) {
@@ -151,6 +179,13 @@
             if (e.metaKey && e.shiftKey && e.key.toLowerCase() === 'p') {
                 e.preventDefault()
                 showCommandPalette = true
+                return
+            }
+
+            // Debug window: ⌘D (dev mode only)
+            if (import.meta.env.DEV && e.metaKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'd') {
+                e.preventDefault()
+                void openDebugWindow()
                 return
             }
 
