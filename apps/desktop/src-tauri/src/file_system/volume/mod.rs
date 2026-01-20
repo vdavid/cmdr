@@ -4,7 +4,7 @@
 //! enabling different storage backends (local filesystem, in-memory for testing, etc.).
 
 // TODO: Remove this once Volume is integrated into operations.rs (Phase 2)
-#![allow(dead_code)]
+#![allow(dead_code, reason = "Volume abstraction not yet integrated into operations.rs")]
 
 use super::FileEntry;
 use std::path::Path;

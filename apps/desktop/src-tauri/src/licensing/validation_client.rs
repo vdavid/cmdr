@@ -36,7 +36,7 @@ struct ValidationRequest {
 pub struct ActivateResponse {
     pub license_key: Option<String>,
     /// Organization name from KV store (also embedded in license_key payload).
-    #[allow(dead_code)]
+    #[allow(dead_code, reason = "Deserialized from API response, not yet displayed in UI")]
     pub organization_name: Option<String>,
     pub error: Option<String>,
 }

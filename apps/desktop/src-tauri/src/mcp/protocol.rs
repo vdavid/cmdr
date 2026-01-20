@@ -9,7 +9,7 @@ use serde_json::Value;
 /// MCP JSON-RPC request format.
 #[derive(Debug, Clone, Deserialize)]
 pub struct McpRequest {
-    #[allow(dead_code)] // Required by JSON-RPC spec, validated implicitly
+    #[allow(dead_code, reason = "Required by JSON-RPC spec, validated implicitly")]
     pub jsonrpc: String,
     pub id: Option<Value>,
     pub method: String,
@@ -39,7 +39,7 @@ pub struct McpError {
 }
 
 // JSON-RPC 2.0 standard error codes
-#[allow(dead_code)]
+#[allow(dead_code, reason = "Standard JSON-RPC error code, kept for completeness")]
 pub const PARSE_ERROR: i32 = -32700;
 pub const INVALID_REQUEST: i32 = -32600;
 pub const METHOD_NOT_FOUND: i32 = -32601;
@@ -72,7 +72,7 @@ impl McpResponse {
     }
 
     /// Create an error response with additional data.
-    #[allow(dead_code)] // Reserved for future use
+    #[allow(dead_code, reason = "Reserved for future use")]
     pub fn error_with_data(id: Option<Value>, code: i32, message: impl Into<String>, data: Value) -> Self {
         Self {
             jsonrpc: "2.0".to_string(),

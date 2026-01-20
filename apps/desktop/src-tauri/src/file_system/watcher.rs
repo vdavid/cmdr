@@ -4,8 +4,9 @@
 //! Uses the unified LISTING_CACHE from operations.rs (no duplicate cache).
 
 use notify_debouncer_full::{
-    DebounceEventResult, Debouncer, RecommendedCache, new_debouncer,
+    new_debouncer,
     notify::{RecommendedWatcher, RecursiveMode},
+    DebounceEventResult, Debouncer, RecommendedCache,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -14,7 +15,7 @@ use std::sync::{LazyLock, RwLock};
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
 
-use super::operations::{FileEntry, get_listing_entries, list_directory_core, update_listing_entries};
+use super::operations::{get_listing_entries, list_directory_core, update_listing_entries, FileEntry};
 
 /// Debounce duration in milliseconds
 const DEBOUNCE_MS: u64 = 200;
@@ -49,7 +50,7 @@ pub struct DirectoryDiff {
 /// NOTE: No `entries` field - we use the unified LISTING_CACHE instead.
 struct WatchedDirectory {
     sequence: u64,
-    #[allow(dead_code)] // Debouncer must be held to keep watching
+    #[allow(dead_code, reason = "Debouncer must be held to keep watching")]
     debouncer: Debouncer<RecommendedWatcher, RecommendedCache>,
 }
 

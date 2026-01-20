@@ -6,6 +6,8 @@
 #![warn(unused_qualifications)]
 // Use log::* macros instead of println!/eprintln! for proper log level control
 #![deny(clippy::print_stdout, clippy::print_stderr)]
+// Require justification for all #[allow] attributes
+#![warn(clippy::allow_attributes_without_reason)]
 
 //noinspection RsUnusedImport
 // Silence false positives for dev dependencies (used only in benches/, not lib)

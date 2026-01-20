@@ -115,7 +115,7 @@ pub fn get_sync_statuses(paths: Vec<String>) -> HashMap<String, SyncStatus> {
 /// Gets sync status for multiple paths with configurable parallelism.
 ///
 /// Uses a Rayon thread pool with the specified number of threads.
-#[allow(dead_code)] // Used for benchmarking
+#[allow(dead_code, reason = "Used for benchmarking")]
 pub fn get_sync_statuses_with_threads(paths: Vec<String>, num_threads: usize) -> HashMap<String, SyncStatus> {
     let pool = rayon::ThreadPoolBuilder::new()
         .num_threads(num_threads)

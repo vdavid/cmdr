@@ -267,7 +267,7 @@ pub fn update_host_resolution(host_id: &str, hostname: String, ip_address: Optio
 
 /// Resolves a network host by its ID (synchronous version for testing).
 /// For async resolution, use the async command in commands/network.rs.
-#[allow(dead_code)]
+#[allow(dead_code, reason = "Sync version kept for testing and potential future use")]
 pub fn resolve_network_host_sync(host_id: &str) -> Option<NetworkHost> {
     // Get host info (brief mutex hold)
     let info = get_host_for_resolution(host_id)?;

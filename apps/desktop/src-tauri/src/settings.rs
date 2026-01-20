@@ -27,7 +27,7 @@ pub enum FullDiskAccessChoice {
 pub struct Settings {
     pub show_hidden_files: bool,
     #[serde(default)]
-    #[allow(dead_code)] // Only used by frontend, backend just persists it
+    #[allow(dead_code, reason = "Only used by frontend, backend just persists it")]
     pub full_disk_access_choice: FullDiskAccessChoice,
 }
 

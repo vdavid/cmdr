@@ -132,7 +132,7 @@ fn check_for_volume_changes() {
 
 /// Stop watching for volume events.
 /// Call this on app shutdown.
-#[allow(dead_code)]
+#[allow(dead_code, reason = "Will be used for explicit cleanup on app shutdown")]
 pub fn stop_volume_watcher() {
     if let Some(watcher_storage) = WATCHER.get()
         && let Ok(mut guard) = watcher_storage.lock()

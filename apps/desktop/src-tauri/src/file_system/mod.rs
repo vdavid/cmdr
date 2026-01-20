@@ -33,9 +33,9 @@ pub use operations::{
 #[cfg(test)]
 pub use provider::FileSystemProvider;
 // Re-export volume types (some not used externally yet)
-#[allow(unused_imports)]
+#[allow(unused_imports, reason = "Public API re-exports for future use")]
 pub use volume::{InMemoryVolume, LocalPosixVolume, Volume, VolumeError};
-#[allow(unused_imports)]
+#[allow(unused_imports, reason = "Public API re-exports for future use")]
 pub use volume_manager::VolumeManager;
 // Watcher management - init_watcher_manager must be called from lib.rs
 pub use watcher::init_watcher_manager;
@@ -60,7 +60,7 @@ pub fn init_volume_manager() {
 }
 
 /// Returns a reference to the global volume manager.
-#[allow(dead_code)] // Will be used in Phase 4.2 when commands use it
+#[allow(dead_code, reason = "Will be used in Phase 4.2 when commands use it")]
 pub fn get_volume_manager() -> &'static VolumeManager {
     &VOLUME_MANAGER
 }

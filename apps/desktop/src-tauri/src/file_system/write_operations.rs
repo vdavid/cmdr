@@ -268,7 +268,7 @@ pub enum WriteOperationError {
 
 impl WriteOperationError {
     /// Returns a user-friendly error message.
-    #[allow(dead_code)]
+    #[allow(dead_code, reason = "Public API for future error display UI")]
     pub fn user_message(&self) -> String {
         match self {
             WriteOperationError::SourceNotFound { path } => {
@@ -322,7 +322,7 @@ impl WriteOperationError {
 }
 
 /// Formats bytes in human-readable form.
-#[allow(dead_code)]
+#[allow(dead_code, reason = "Utility kept for future progress display formatting")]
 fn format_bytes(bytes: u64) -> String {
     const KB: u64 = 1024;
     const MB: u64 = KB * 1024;
@@ -1070,7 +1070,7 @@ fn scan_sources(
     })
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, reason = "Recursive fn requires passing state through multiple levels")]
 fn scan_path_recursive(
     path: &Path,
     files: &mut Vec<PathBuf>,
@@ -1192,7 +1192,7 @@ struct DryRunScanResult {
 
 /// Performs a dry-run scan: scans sources, detects conflicts at destination.
 /// Emits ScanProgressEvent during scanning with conflict counts.
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, reason = "Recursive fn requires passing state through multiple levels")]
 fn dry_run_scan(
     sources: &[PathBuf],
     destination: &Path,
@@ -1249,7 +1249,7 @@ fn dry_run_scan(
 }
 
 /// Recursively scans a path for dry-run, detecting conflicts.
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, reason = "Recursive fn requires passing state through multiple levels")]
 fn dry_run_scan_recursive(
     path: &Path,
     source_root: &Path,
@@ -1459,7 +1459,7 @@ fn sample_conflicts(conflicts: Vec<ConflictInfo>, max_count: usize) -> (Vec<Conf
 /// Resolves a file conflict based on the configured resolution mode.
 /// Returns the resolved destination info, or None if the file should be skipped.
 /// Also returns whether the resolution should be applied to all future conflicts.
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, reason = "Recursive fn requires passing state through multiple levels")]
 fn resolve_conflict(
     source: &Path,
     dest_path: &Path,
@@ -1816,7 +1816,7 @@ fn copy_files_with_progress(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, reason = "Recursive fn requires passing state through multiple levels")]
 fn copy_path_recursive(
     source: &Path,
     dest_dir: &Path,

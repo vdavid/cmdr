@@ -75,7 +75,7 @@ pub fn has_metrics(font_id: &str) -> bool {
 }
 
 /// Calculates the width of a text string using cached metrics
-#[allow(dead_code)] // Public API for future use
+#[allow(dead_code, reason = "Public API for future use")]
 pub fn calculate_text_width(text: &str, font_id: &str) -> Option<f32> {
     let cache = METRICS_CACHE.read().ok()?;
     let metrics = cache.get(font_id)?;
@@ -138,7 +138,7 @@ pub fn init_font_metrics<R: tauri::Runtime>(app: &tauri::AppHandle<R>, font_id: 
 }
 
 #[cfg(test)]
-#[allow(clippy::print_stdout)] // Test output is fine
+#[allow(clippy::print_stdout, reason = "Test output is fine")]
 mod tests {
     use super::*;
 

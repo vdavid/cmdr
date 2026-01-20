@@ -4,7 +4,7 @@
 //! It tracks both the available volumes and which one is the current default.
 
 // TODO: Remove this once VolumeManager is used in lib.rs (Phase 4)
-#![allow(dead_code)]
+#![allow(dead_code, reason = "VolumeManager not yet integrated into lib.rs")]
 
 use super::volume::Volume;
 use std::collections::HashMap;

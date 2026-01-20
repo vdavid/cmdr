@@ -137,7 +137,7 @@ pub fn get_known_share(server_name: &str, share_name: &str) -> Option<KnownNetwo
 }
 
 /// Gets all known shares for a specific server.
-#[allow(dead_code)] // Will be used when implementing quick reconnect UI
+#[allow(dead_code, reason = "Will be used when implementing quick reconnect UI")]
 pub fn get_known_shares_for_server(server_name: &str) -> Vec<KnownNetworkShare> {
     let server_lower = server_name.to_lowercase();
     get_known_shares_mutex()
@@ -175,7 +175,7 @@ pub fn update_known_share<R: tauri::Runtime>(app: &tauri::AppHandle<R>, share: K
 }
 
 /// Removes a known network share.
-#[allow(dead_code)] // Will be used when implementing share removal UI
+#[allow(dead_code, reason = "Will be used when implementing share removal UI")]
 pub fn remove_known_share<R: tauri::Runtime>(app: &tauri::AppHandle<R>, server_name: &str, share_name: &str) {
     let key = share_key(server_name, share_name);
 

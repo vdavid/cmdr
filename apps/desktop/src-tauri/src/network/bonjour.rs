@@ -11,16 +11,17 @@
 
 // Suppress deprecation warnings for NSNetService* APIs - they're deprecated but still work
 // Suppress snake_case warnings for ObjC delegate methods that must use camelCase
-#![allow(deprecated, non_snake_case)]
+#![allow(deprecated, reason = "NSNetService* APIs are deprecated but still functional")]
+#![allow(non_snake_case, reason = "ObjC delegate methods require camelCase naming")]
 
 use crate::network::{
-    DiscoveryState, NetworkHost, on_discovery_state_changed, on_host_found, on_host_lost, on_host_resolved,
-    service_name_to_id,
+    on_discovery_state_changed, on_host_found, on_host_lost, on_host_resolved, service_name_to_id, DiscoveryState,
+    NetworkHost,
 };
 use log::{debug, warn};
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
-use objc2::{DefinedClass, MainThreadMarker, MainThreadOnly, define_class, msg_send};
+use objc2::{define_class, msg_send, DefinedClass, MainThreadMarker, MainThreadOnly};
 use objc2_foundation::{
     NSArray, NSData, NSDefaultRunLoopMode, NSNetService, NSNetServiceBrowser, NSNetServiceBrowserDelegate,
     NSNetServiceDelegate, NSObject, NSObjectProtocol, NSRunLoop, NSString,
@@ -463,7 +464,7 @@ pub fn start_discovery(app_handle: AppHandle) {
 }
 
 /// Stops Bonjour discovery.
-#[allow(dead_code)]
+#[allow(dead_code, reason = "Will be used for explicit cleanup on app shutdown")]
 pub fn stop_discovery() {
     let mut manager_guard = get_bonjour_manager().lock().unwrap();
 

@@ -4,7 +4,10 @@
 //! All events are logged to stderr with microsecond timestamps.
 
 // Benchmarks intentionally use eprintln! for raw stderr output (not log framework)
-#![allow(clippy::print_stderr)]
+#![allow(
+    clippy::print_stderr,
+    reason = "Benchmarks bypass log framework for raw stderr output"
+)]
 
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 

@@ -13,7 +13,7 @@ use std::sync::RwLock;
 /// Entry in the in-memory file system.
 struct InMemoryEntry {
     metadata: FileEntry,
-    #[allow(dead_code)] // Will be used for future read_file support
+    #[allow(dead_code, reason = "Will be used for future read_file support")]
     content: Option<Vec<u8>>,
 }
 

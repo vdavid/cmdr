@@ -21,7 +21,7 @@ pub fn open_privacy_settings() -> Result<(), String> {
 }
 
 /// Checks if an I/O error is a permission denied error.
-#[allow(dead_code)] // Utility for future use
+#[allow(dead_code, reason = "Utility for future use")]
 pub fn is_permission_denied_error(error: &std::io::Error) -> bool {
     error.kind() == std::io::ErrorKind::PermissionDenied
 }

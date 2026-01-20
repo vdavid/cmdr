@@ -295,7 +295,7 @@ fn parse_cloud_provider_name(dir_name: &str) -> (String, String) {
 }
 
 /// Get network locations.
-#[allow(dead_code)]
+#[allow(dead_code, reason = "Will be used when network locations sidebar is implemented")]
 fn get_network_locations() -> Vec<LocationInfo> {
     let mut locations = Vec::new();
 
@@ -391,7 +391,7 @@ pub fn list_mounted_volumes() -> Vec<LocationInfo> {
     list_locations()
 }
 
-#[allow(dead_code)]
+#[allow(dead_code, reason = "Utility kept for future path-to-volume resolution")]
 pub fn find_volume_for_path(path: &str) -> Option<String> {
     let locations = list_locations();
     let mut best_match: Option<&LocationInfo> = None;
@@ -407,12 +407,12 @@ pub fn find_volume_for_path(path: &str) -> Option<String> {
     best_match.map(|v| v.id.clone())
 }
 
-#[allow(dead_code)]
+#[allow(dead_code, reason = "Utility kept for future volume status checks")]
 pub fn is_volume_mounted(volume_id: &str) -> bool {
     list_locations().iter().any(|v| v.id == volume_id)
 }
 
-#[allow(dead_code)]
+#[allow(dead_code, reason = "Utility kept for future volume lookup operations")]
 pub fn get_volume_by_id(volume_id: &str) -> Option<LocationInfo> {
     list_locations().into_iter().find(|v| v.id == volume_id)
 }

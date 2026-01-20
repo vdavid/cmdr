@@ -1,8 +1,8 @@
 //! Local POSIX file system volume implementation.
 
 use super::{Volume, VolumeError};
-use crate::file_system::FileEntry;
 use crate::file_system::operations::{get_single_entry, list_directory_core};
+use crate::file_system::FileEntry;
 use std::path::{Path, PathBuf};
 
 /// A volume backed by the local POSIX file system.

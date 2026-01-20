@@ -1,6 +1,6 @@
 //! File system operations: read, list, copy, move, delete.
 
-#![allow(dead_code)] // Boilerplate for future use
+#![allow(dead_code, reason = "Boilerplate for future use")]
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -1267,7 +1267,7 @@ pub async fn list_directory_start_streaming(
 /// Reads a directory with progress reporting.
 ///
 /// This function runs on a blocking thread pool and emits progress events.
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, reason = "Streaming operation requires many state parameters")]
 fn read_directory_with_progress(
     app: &tauri::AppHandle,
     listing_id: &str,
