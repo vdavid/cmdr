@@ -383,6 +383,42 @@ fn get_string_resource(url: &objc2_foundation::NSURL, key: &str) -> Option<Strin
     get_nsurl_resource(url, key, |obj| obj.downcast::<NSString>().ok().map(|s| s.to_string()))
 }
 
+/// Get a u64 resource value from an NSURL (for capacity values).
+fn get_u64_resource(url: &objc2_foundation::NSURL, key: &str) -> Option<u64> {
+    use objc2_foundation::NSNumber;
+    get_nsurl_resource(url, key, |obj| {
+        obj.downcast::<NSNumber>()
+            .ok()
+            .map(|n| n.unsignedLongLongValue())
+    })
+}
+
+/// Information about volume space.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VolumeSpaceInfo {
+    /// Total capacity in bytes.
+    pub total_bytes: u64,
+    /// Available capacity in bytes (free space for user).
+    pub available_bytes: u64,
+}
+
+/// Get space information for a volume containing the given path.
+pub fn get_volume_space(path: &str) -> Option<VolumeSpaceInfo> {
+    use objc2_foundation::NSURL;
+
+    let url = NSURL::fileURLWithPath(&objc2_foundation::NSString::from_str(path));
+
+    let total = get_u64_resource(&url, "NSURLVolumeTotalCapacityKey")?;
+    let available = get_u64_resource(&url, "NSURLVolumeAvailableCapacityForImportantUsageKey")
+        .or_else(|| get_u64_resource(&url, "NSURLVolumeAvailableCapacityKey"))?;
+
+    Some(VolumeSpaceInfo {
+        total_bytes: total,
+        available_bytes: available,
+    })
+}
+
 // Legacy compatibility - maintain VolumeInfo type for backwards compatibility
 pub use LocationInfo as VolumeInfo;
 
@@ -461,5 +497,33 @@ mod tests {
     fn test_path_to_id() {
         assert_eq!(path_to_id("/"), "root");
         assert_eq!(path_to_id("/Volumes/External"), "volumesexternal");
+    }
+
+    #[test]
+    fn test_get_volume_space_root() {
+        let space = get_volume_space("/");
+        assert!(space.is_some(), "Should get space info for root volume");
+
+        let space = space.unwrap();
+        assert!(space.total_bytes > 0, "Total bytes should be positive");
+        assert!(space.available_bytes > 0, "Available bytes should be positive");
+        assert!(
+            space.available_bytes <= space.total_bytes,
+            "Available should be <= total"
+        );
+    }
+
+    #[test]
+    fn test_get_volume_space_home() {
+        let home = dirs::home_dir().expect("Should have home dir");
+        let space = get_volume_space(home.to_str().unwrap());
+        assert!(space.is_some(), "Should get space info for home directory");
+    }
+
+    #[test]
+    fn test_get_volume_space_nonexistent() {
+        // Nonexistent paths return None - the NSURL resource API doesn't resolve to ancestor volumes
+        let space = get_volume_space("/nonexistent/path/that/does/not/exist");
+        assert!(space.is_none(), "Nonexistent paths should return None");
     }
 }

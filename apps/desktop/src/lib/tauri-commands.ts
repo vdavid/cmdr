@@ -523,6 +523,26 @@ export async function findContainingVolume(path: string): Promise<VolumeInfo | n
     }
 }
 
+/** Space information for a volume. */
+export interface VolumeSpaceInfo {
+    totalBytes: number
+    availableBytes: number
+}
+
+/**
+ * Gets space information (total and available bytes) for a volume at the given path.
+ * @param path - Any path on the volume to get space info for
+ * @returns Space info or null if unavailable
+ */
+export async function getVolumeSpace(path: string): Promise<VolumeSpaceInfo | null> {
+    try {
+        return await invoke<VolumeSpaceInfo | null>('get_volume_space', { path })
+    } catch {
+        // Command not available (non-macOS) - return null
+        return null
+    }
+}
+
 // ============================================================================
 // Permission checking (macOS only)
 // ============================================================================

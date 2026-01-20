@@ -1,6 +1,6 @@
 //! Tauri commands for volume operations.
 
-use crate::volumes::{self, DEFAULT_VOLUME_ID, LocationCategory, VolumeInfo};
+use crate::volumes::{self, LocationCategory, VolumeInfo, VolumeSpaceInfo, DEFAULT_VOLUME_ID};
 
 /// Lists all mounted volumes.
 #[tauri::command]
@@ -40,4 +40,11 @@ pub fn find_containing_volume(path: String) -> Option<VolumeInfo> {
     }
 
     best_match
+}
+
+/// Gets space information for a volume at the given path.
+/// Returns total and available bytes for the volume.
+#[tauri::command]
+pub fn get_volume_space(path: String) -> Option<VolumeSpaceInfo> {
+    volumes::get_volume_space(&path)
 }

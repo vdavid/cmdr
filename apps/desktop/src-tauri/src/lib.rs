@@ -292,6 +292,8 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             commands::volumes::find_containing_volume,
             #[cfg(target_os = "macos")]
+            commands::volumes::get_volume_space,
+            #[cfg(target_os = "macos")]
             commands::network::list_network_hosts,
             #[cfg(target_os = "macos")]
             commands::network::get_network_discovery_state,

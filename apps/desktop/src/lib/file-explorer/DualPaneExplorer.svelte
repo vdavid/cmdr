@@ -3,6 +3,7 @@
     import FilePane from './FilePane.svelte'
     import PaneResizer from './PaneResizer.svelte'
     import LoadingIcon from '../LoadingIcon.svelte'
+    import CopyDialog from '../write-operations/CopyDialog.svelte'
     import {
         loadAppStatus,
         saveAppStatus,
@@ -23,6 +24,8 @@
         DEFAULT_VOLUME_ID,
         type UnlistenFn,
         updateFocusedPane,
+        getFileAt,
+        getListingStats,
     } from '$lib/tauri-commands'
     import type { VolumeInfo, SortColumn, SortOrder, NetworkHost } from './types'
     import { defaultSortOrders, DEFAULT_SORT_BY } from './types'
@@ -69,6 +72,18 @@
     let unlistenVolumeMount: UnlistenFn | undefined
     let unlistenVolumeUnmount: UnlistenFn | undefined
     let unlistenNavigation: UnlistenFn | undefined
+
+    // Copy dialog state
+    let showCopyDialog = $state(false)
+    let copyDialogProps = $state<{
+        sourcePaths: string[]
+        destinationPath: string
+        direction: 'left' | 'right'
+        currentVolumeId: string
+        fileCount: number
+        folderCount: number
+        sourceFolderPath: string
+    } | null>(null)
 
     // Navigation history for each pane (per-pane, session-only)
     // Initialize with default volume - will be updated on mount with actual state
@@ -495,6 +510,13 @@
             return
         }
 
+        // F5 - Copy dialog
+        if (e.key === 'F5') {
+            e.preventDefault()
+            void openCopyDialog()
+            return
+        }
+
         // Route to volume chooser if one is open
         if (routeToVolumeChooser(e)) {
             return
@@ -761,6 +783,111 @@
     function handlePaneResizeReset() {
         leftPaneWidthPercent = 50
         void saveAppStatus({ leftPaneWidthPercent: 50 })
+    }
+
+    /** Gets file paths for the given indices from a listing. */
+    async function getSelectedFilePaths(listingId: string, indices: number[]): Promise<string[]> {
+        const paths: string[] = []
+        for (const index of indices) {
+            const file = await getFileAt(listingId, index, showHiddenFiles)
+            if (file && file.name !== '..') {
+                paths.push(file.path)
+            }
+        }
+        return paths
+    }
+
+    /** Opens the copy dialog with the current selection info. */
+    async function openCopyDialog() {
+        const isLeft = focusedPane === 'left'
+        const sourcePaneRef = isLeft ? leftPaneRef : rightPaneRef
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const listingId = sourcePaneRef?.getListingId?.() as string | undefined
+        if (!listingId) return
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const selectedIndices = sourcePaneRef?.getSelectedIndices?.() as number[] | undefined
+        const hasSelection = selectedIndices && selectedIndices.length > 0
+
+        const props = hasSelection
+            ? await buildCopyPropsFromSelection(listingId, selectedIndices, isLeft)
+            : await buildCopyPropsFromCursor(listingId, sourcePaneRef, isLeft)
+
+        if (props) {
+            copyDialogProps = props
+            showCopyDialog = true
+        }
+    }
+
+    type CopyDialogPropsData = {
+        sourcePaths: string[]
+        destinationPath: string
+        direction: 'left' | 'right'
+        currentVolumeId: string
+        fileCount: number
+        folderCount: number
+        sourceFolderPath: string
+    }
+
+    /** Builds copy dialog props from selected files. */
+    async function buildCopyPropsFromSelection(
+        listingId: string,
+        selectedIndices: number[],
+        isLeft: boolean,
+    ): Promise<CopyDialogPropsData | null> {
+        const stats = await getListingStats(listingId, showHiddenFiles, selectedIndices)
+        const sourcePaths = await getSelectedFilePaths(listingId, selectedIndices)
+        if (sourcePaths.length === 0) return null
+
+        return {
+            sourcePaths,
+            destinationPath: isLeft ? rightPath : leftPath,
+            direction: isLeft ? 'right' : 'left',
+            currentVolumeId: isLeft ? rightVolumeId : leftVolumeId,
+            fileCount: stats.selectedFiles ?? 0,
+            folderCount: stats.selectedDirs ?? 0,
+            sourceFolderPath: isLeft ? leftPath : rightPath,
+        }
+    }
+
+    /** Builds copy dialog props from the file under cursor. */
+    async function buildCopyPropsFromCursor(
+        listingId: string,
+        paneRef: FilePane | undefined,
+        isLeft: boolean,
+    ): Promise<CopyDialogPropsData | null> {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const cursorIndex = paneRef?.getCursorIndex?.() as number | undefined
+        if (cursorIndex === undefined || cursorIndex < 0) return null
+
+        const file = await getFileAt(listingId, cursorIndex, showHiddenFiles)
+        if (!file || file.name === '..') return null
+
+        return {
+            sourcePaths: [file.path],
+            destinationPath: isLeft ? rightPath : leftPath,
+            direction: isLeft ? 'right' : 'left',
+            currentVolumeId: isLeft ? rightVolumeId : leftVolumeId,
+            fileCount: file.isDirectory ? 0 : 1,
+            folderCount: file.isDirectory ? 1 : 0,
+            sourceFolderPath: isLeft ? leftPath : rightPath,
+        }
+    }
+
+    function handleCopyConfirm(destination: string, volumeId: string) {
+        // TODO: Implement actual copy operation using copyFiles() from tauri-commands
+        const itemCount = copyDialogProps?.sourcePaths.length ?? 0
+        log.info(`Copy confirmed: ${String(itemCount)} items to ${destination} (volume: ${volumeId})`)
+        showCopyDialog = false
+        copyDialogProps = null
+        containerElement?.focus()
+    }
+
+    function handleCopyCancel() {
+        showCopyDialog = false
+        copyDialogProps = null
+        containerElement?.focus()
     }
 
     // Focus the container after initialization so keyboard events work
@@ -1037,6 +1164,21 @@
         <LoadingIcon />
     {/if}
 </div>
+
+{#if showCopyDialog && copyDialogProps}
+    <CopyDialog
+        sourcePaths={copyDialogProps.sourcePaths}
+        destinationPath={copyDialogProps.destinationPath}
+        direction={copyDialogProps.direction}
+        {volumes}
+        currentVolumeId={copyDialogProps.currentVolumeId}
+        fileCount={copyDialogProps.fileCount}
+        folderCount={copyDialogProps.folderCount}
+        sourceFolderPath={copyDialogProps.sourceFolderPath}
+        onConfirm={handleCopyConfirm}
+        onCancel={handleCopyCancel}
+    />
+{/if}
 
 <style>
     .dual-pane-explorer {

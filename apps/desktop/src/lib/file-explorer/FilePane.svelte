@@ -183,6 +183,11 @@
         void fetchEntryUnderCursor()
     }
 
+    // Get current cursor index
+    export function getCursorIndex(): number {
+        return cursorIndex
+    }
+
     // Get selected indices (for selection preservation during re-sort)
     export function getSelectedIndices(): number[] {
         return Array.from(selectedIndices)

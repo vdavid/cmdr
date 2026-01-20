@@ -143,6 +143,14 @@ export interface VolumeInfo {
     isEjectable: boolean
 }
 
+/** Space information for a volume. */
+export interface VolumeSpaceInfo {
+    /** Total capacity in bytes */
+    totalBytes: number
+    /** Available capacity in bytes (free space for user) */
+    availableBytes: number
+}
+
 // ============================================================================
 // Sorting types
 // ============================================================================
