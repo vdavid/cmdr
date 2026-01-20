@@ -8,13 +8,15 @@ use crate::file_system::{
     copy_files_start as ops_copy_files_start, delete_files_start as ops_delete_files_start,
     find_file_index as ops_find_file_index, get_file_at as ops_get_file_at, get_file_range as ops_get_file_range,
     get_listing_stats as ops_get_listing_stats, get_max_filename_width as ops_get_max_filename_width,
-    get_operation_status as ops_get_operation_status, get_total_count as ops_get_total_count,
-    list_active_operations as ops_list_active_operations, list_directory_end as ops_list_directory_end,
-    list_directory_start_streaming as ops_list_directory_start_streaming,
+    get_operation_status as ops_get_operation_status, get_paths_at_indices as ops_get_paths_at_indices,
+    get_total_count as ops_get_total_count, list_active_operations as ops_list_active_operations,
+    list_directory_end as ops_list_directory_end, list_directory_start_streaming as ops_list_directory_start_streaming,
     list_directory_start_with_volume as ops_list_directory_start_with_volume, move_files_start as ops_move_files_start,
     resort_listing as ops_resort_listing,
 };
 use std::path::PathBuf;
+use std::sync::mpsc::channel;
+use tauri::Manager;
 
 /// Checks if a path exists.
 ///
@@ -376,6 +378,90 @@ pub fn list_active_operations() -> Vec<OperationSummary> {
 #[tauri::command]
 pub fn get_operation_status(operation_id: String) -> Option<OperationStatus> {
     ops_get_operation_status(&operation_id)
+}
+
+// ============================================================================
+// Drag operations
+// ============================================================================
+
+/// Starts a native drag operation for selected files from a cached listing.
+///
+/// This initiates the drag from Rust directly, avoiding IPC transfer of file paths.
+/// The paths are looked up from LISTING_CACHE using the provided indices.
+///
+/// # Arguments
+/// * `app` - Tauri app handle for accessing the window
+/// * `listing_id` - The listing ID from `list_directory_start`
+/// * `selected_indices` - Frontend indices of selected files
+/// * `include_hidden` - Whether hidden files are shown (affects index mapping)
+/// * `has_parent` - Whether the ".." entry is shown at index 0
+/// * `mode` - Drag mode: "copy" or "move"
+/// * `icon_path` - Path to the drag preview icon (temp file)
+#[tauri::command]
+pub fn start_selection_drag(
+    app: tauri::AppHandle,
+    listing_id: String,
+    selected_indices: Vec<usize>,
+    include_hidden: bool,
+    has_parent: bool,
+    mode: String,
+    icon_path: String,
+) -> Result<(), String> {
+    // Get file paths from the cached listing
+    let paths = ops_get_paths_at_indices(&listing_id, &selected_indices, include_hidden, has_parent)?;
+
+    if paths.is_empty() {
+        return Err("No valid files to drag".to_string());
+    }
+
+    // Get the main window
+    let window = app.get_webview_window("main").ok_or("Main window not found")?;
+
+    // Determine drag mode (Send-safe)
+    let is_copy_mode = mode == "copy";
+
+    // Store icon path for use in closure (PathBuf is Send)
+    let icon_path_buf = PathBuf::from(icon_path);
+
+    // Use a channel to get the result from the main thread
+    let (tx, rx) = channel();
+
+    // Run on main thread (required by macOS for drag operations)
+    // Create DragItem inside the closure since it's not Send
+    app.run_on_main_thread(move || {
+        // Build DragItem inside the closure (not Send due to Data variant)
+        let item = drag::DragItem::Files(paths);
+
+        // Load icon from file path
+        let icon = drag::Image::File(icon_path_buf);
+
+        // Create options with the drag mode
+        let options = drag::Options {
+            skip_animatation_on_cancel_or_failure: false,
+            mode: if is_copy_mode {
+                drag::DragMode::Copy
+            } else {
+                drag::DragMode::Move
+            },
+        };
+
+        let result = drag::start_drag(
+            &window,
+            item,
+            icon,
+            |_result, _cursor_pos| {
+                // Callback when drag completes - we don't need to do anything here
+            },
+            options,
+        );
+        let _ = tx.send(result);
+    })
+    .map_err(|e| format!("Failed to run on main thread: {}", e))?;
+
+    // Wait for the result
+    rx.recv()
+        .map_err(|_| "Failed to receive drag result")?
+        .map_err(|e| format!("Drag operation failed: {}", e))
 }
 
 /// Expands tilde (~) to the user's home directory.

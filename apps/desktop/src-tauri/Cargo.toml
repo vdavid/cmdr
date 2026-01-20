@@ -42,6 +42,7 @@ tauri-plugin-clipboard-manager = "2"
 notify-debouncer-full = "0.6.0"
 bincode2 = "2"
 tauri-plugin-drag = "2.1.0"
+drag = "2.1.0"
 tauri-plugin-fs = "2.4.4"
 alphanumeric-sort = "1.5"
 ed25519-dalek = { version = "2.1", features = ["rand_core"] }

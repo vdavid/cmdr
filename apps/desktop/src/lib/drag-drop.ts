@@ -1,22 +1,50 @@
 // Drag and drop utilities for file items
-// Handles the temp icon file and calling the native startDrag API
+// Handles both single-file drag and selection-based multi-file drag
 
 import { startDrag } from '@crabnebula/tauri-plugin-drag'
 import { tempDir, join } from '@tauri-apps/api/path'
 import { getCachedIcon } from './icon-cache'
+import { startSelectionDrag } from './tauri-commands'
 
 /** Minimum distance (in pixels) to trigger drag */
-const DRAG_THRESHOLD = 5
+export const DRAG_THRESHOLD = 5
 
 /** Name of the temp icon file */
 const TEMP_ICON_FILENAME = 'drag-icon.png'
+
+/** Context for a single file drag (no prior selection) */
+interface SingleFileDragContext {
+    type: 'single'
+    path: string
+    iconId: string
+    index: number
+}
+
+/** Context for a selection-based drag */
+interface SelectionDragContext {
+    type: 'selection'
+    listingId: string
+    indices: number[]
+    includeHidden: boolean
+    hasParent: boolean
+    /** Icon ID to use for the drag preview (first selected file) */
+    iconId: string
+}
+
+/** Callbacks for drag lifecycle events */
+interface DragCallbacks {
+    /** Called when drag threshold is crossed (for single-file case, to trigger selection) */
+    onDragStart?: () => void
+    /** Called when drag is cancelled (ESC key or mouseup before threshold) */
+    onDragCancel?: () => void
+}
 
 /** Global state for active drag operation */
 let activeDrag: {
     startX: number
     startY: number
-    filePath: string
-    iconId: string
+    context: SingleFileDragContext | SelectionDragContext
+    callbacks: DragCallbacks
     cleanup: () => void
 } | null = null
 
@@ -60,10 +88,20 @@ async function cleanupTempIcon(): Promise<void> {
 }
 
 /**
- * Starts tracking a potential drag operation.
- * Call on mousedown for a file entry.
+ * Starts tracking a potential drag operation with selection awareness.
+ *
+ * For single-file drags (no prior selection), the file is selected only when the
+ * drag threshold is crossed. For selection drags, all selected files are dragged.
+ *
+ * @param event - The mousedown event
+ * @param context - Either a single file or a selection to drag
+ * @param callbacks - Optional callbacks for drag lifecycle events
  */
-export function startDragTracking(event: MouseEvent, filePath: string, iconId: string): void {
+export function startSelectionDragTracking(
+    event: MouseEvent,
+    context: SingleFileDragContext | SelectionDragContext,
+    callbacks: DragCallbacks = {},
+): void {
     // Cancel any existing drag
     cancelDragTracking()
 
@@ -75,33 +113,59 @@ export function startDragTracking(event: MouseEvent, filePath: string, iconId: s
         const distance = Math.sqrt(dx * dx + dy * dy)
 
         if (distance >= DRAG_THRESHOLD) {
-            // Trigger the actual drag
+            // Threshold crossed - trigger the drag
+            const ctx = activeDrag.context
+            const cbs = activeDrag.callbacks
+
+            // For single-file drag, call onDragStart to select the file first
+            if (ctx.type === 'single') {
+                cbs.onDragStart?.()
+            }
+
             // Alt/Option key = copy mode, otherwise move mode (matches Finder behavior)
             const mode = moveEvent.altKey ? 'copy' : 'move'
-            void performDrag(activeDrag.filePath, activeDrag.iconId, mode)
+
+            if (ctx.type === 'single') {
+                void performSingleFileDrag(ctx.path, ctx.iconId, mode)
+            } else {
+                void performSelectionDrag(ctx, mode)
+            }
+
             cancelDragTracking()
         }
     }
 
     const handleMouseUp = () => {
+        // Mouse released before threshold - cancel
+        activeDrag?.callbacks.onDragCancel?.()
         cancelDragTracking()
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+            // ESC pressed - cancel drag
+            activeDrag?.callbacks.onDragCancel?.()
+            cancelDragTracking()
+        }
     }
 
     const cleanup = () => {
         document.removeEventListener('mousemove', handleMouseMove)
         document.removeEventListener('mouseup', handleMouseUp)
+        document.removeEventListener('keydown', handleKeyDown)
     }
 
     activeDrag = {
         startX: event.clientX,
         startY: event.clientY,
-        filePath,
-        iconId,
+        context,
+        callbacks,
         cleanup,
     }
 
     document.addEventListener('mousemove', handleMouseMove)
     document.addEventListener('mouseup', handleMouseUp)
+    document.addEventListener('keydown', handleKeyDown)
 }
 
 /**
@@ -115,14 +179,9 @@ export function cancelDragTracking(): void {
 }
 
 /**
- * Performs the actual native drag operation.
- * @param filePath - Absolute filesystem path (e.g., "/Users/foo/bar.txt"). Currently, always
- *                   a local path; will need adjustment when we add remote volume support.
- * @param iconId - Icon cache key: extension for files (e.g., "png"), or full path for
- *                 directories (e.g., "/Users/foo/MyFolder"), or "dir" for generic folders.
- * @param mode - 'move' (default, like Finder) or 'copy' (when Alt/Option held)
+ * Performs a single-file native drag operation.
  */
-async function performDrag(filePath: string, iconId: string, mode: 'copy' | 'move'): Promise<void> {
+async function performSingleFileDrag(filePath: string, iconId: string, mode: 'copy' | 'move'): Promise<void> {
     // Get the icon from cache
     const iconDataUrl = getCachedIcon(iconId)
 
@@ -146,6 +205,43 @@ async function performDrag(filePath: string, iconId: string, mode: 'copy' | 'mov
             icon: iconPath,
             mode,
         })
+    } finally {
+        // Clean up temp icon after drag completes
+        void cleanupTempIcon()
+    }
+}
+
+/**
+ * Performs a selection-based drag operation via the backend.
+ * This avoids transferring file paths over IPC for large selections.
+ */
+async function performSelectionDrag(context: SelectionDragContext, mode: 'copy' | 'move'): Promise<void> {
+    // Get the icon from cache for the drag preview
+    const iconDataUrl = getCachedIcon(context.iconId)
+
+    // If no icon is available, skip the drag
+    if (!iconDataUrl) {
+        return
+    }
+
+    let iconPath: string
+    try {
+        iconPath = await writeIconToTemp(iconDataUrl)
+    } catch {
+        // Can't write temp icon, skip drag
+        return
+    }
+
+    try {
+        // Start the drag via backend (paths are looked up from cache)
+        await startSelectionDrag(
+            context.listingId,
+            context.indices,
+            context.includeHidden,
+            context.hasParent,
+            mode,
+            iconPath,
+        )
     } finally {
         // Clean up temp icon after drag completes
         void cleanupTempIcon()

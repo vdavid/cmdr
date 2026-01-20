@@ -239,6 +239,27 @@ export async function getListingStats(
 }
 
 /**
+ * Starts a native drag operation for selected files from a cached listing.
+ * This initiates the drag from Rust directly, avoiding IPC transfer of file paths.
+ * @param listingId - The listing ID from listDirectoryStart.
+ * @param selectedIndices - Frontend indices of selected files.
+ * @param includeHidden - Whether hidden files are shown (affects index mapping).
+ * @param hasParent - Whether the ".." entry is shown at index 0.
+ * @param mode - Drag mode: "copy" or "move".
+ * @param iconPath - Path to the drag preview icon (temp file).
+ */
+export async function startSelectionDrag(
+    listingId: string,
+    selectedIndices: number[],
+    includeHidden: boolean,
+    hasParent: boolean,
+    mode: 'copy' | 'move',
+    iconPath: string,
+): Promise<void> {
+    await invoke('start_selection_drag', { listingId, selectedIndices, includeHidden, hasParent, mode, iconPath })
+}
+
+/**
  * Checks if a path exists.
  * @param path - Path to check.
  * @returns True if the path exists.

@@ -759,6 +759,55 @@ pub fn get_file_at(listing_id: &str, index: usize, include_hidden: bool) -> Resu
     }
 }
 
+/// Gets file paths at specific indices from a cached listing.
+///
+/// This is optimized for drag operations where we only need paths, not full FileEntry objects.
+///
+/// # Arguments
+/// * `listing_id` - The listing ID from `list_directory_start`
+/// * `selected_indices` - Frontend indices of selected files
+/// * `include_hidden` - Whether hidden files are visible (affects index mapping)
+/// * `has_parent` - Whether the ".." entry is shown (index 0 in frontend)
+///
+/// # Returns
+/// Vector of absolute file paths for the selected files.
+pub fn get_paths_at_indices(
+    listing_id: &str,
+    selected_indices: &[usize],
+    include_hidden: bool,
+    has_parent: bool,
+) -> Result<Vec<PathBuf>, String> {
+    let cache = LISTING_CACHE.read().map_err(|_| "Failed to acquire cache lock")?;
+
+    let listing = cache
+        .get(listing_id)
+        .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
+
+    // Build visible entries view (with or without hidden files)
+    let visible: Vec<&FileEntry> = if include_hidden {
+        listing.entries.iter().collect()
+    } else {
+        listing.entries.iter().filter(|e| !e.name.starts_with('.')).collect()
+    };
+
+    let mut paths = Vec::with_capacity(selected_indices.len());
+    for &frontend_idx in selected_indices {
+        // Skip ".." entry (frontend index 0 when has_parent is true)
+        if has_parent && frontend_idx == 0 {
+            continue;
+        }
+
+        // Convert frontend index to backend index
+        let backend_idx = if has_parent { frontend_idx - 1 } else { frontend_idx };
+
+        if let Some(entry) = visible.get(backend_idx) {
+            paths.push(PathBuf::from(&entry.path));
+        }
+    }
+
+    Ok(paths)
+}
+
 /// Ends a directory listing and cleans up the cache.
 ///
 /// # Arguments

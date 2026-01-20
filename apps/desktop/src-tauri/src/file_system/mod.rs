@@ -26,8 +26,8 @@ pub use mock_provider::MockFileSystemProvider;
 pub use operations::{
     FileEntry, ListingStartResult, ListingStats, ResortResult, SortColumn, SortOrder, StreamingListingStartResult,
     cancel_listing, find_file_index, get_file_at, get_file_range, get_listing_stats, get_max_filename_width,
-    get_total_count, list_directory_end, list_directory_start_streaming, list_directory_start_with_volume,
-    resort_listing,
+    get_paths_at_indices, get_total_count, list_directory_end, list_directory_start_streaming,
+    list_directory_start_with_volume, resort_listing,
 };
 // FileEntry also re-exported for internal test modules
 #[cfg(test)]

@@ -2,7 +2,7 @@
     import type { FileEntry, SortColumn, SortOrder, SyncStatus } from './types'
     import { calculateVirtualWindow, getScrollToPosition } from './virtual-scroll'
     import { handleNavigationShortcut } from './keyboard-shortcuts'
-    import { startDragTracking } from '$lib/drag-drop'
+    import { startSelectionDragTracking } from '$lib/drag-drop'
     import SortableHeader from './SortableHeader.svelte'
     import FileIcon from './FileIcon.svelte'
     import {
@@ -196,16 +196,56 @@
 
     // Handle file mousedown - selects and initiates drag tracking
     function handleMouseDown(event: MouseEvent, index: number) {
-        // Always select on mousedown (pass shiftKey for range selection)
-        onSelect(index, event.shiftKey)
-
-        // Only start drag tracking for left mouse button and non-parent entries
         if (event.button !== 0) return
         const entry = getEntryAt(index)
-        if (!entry || entry.name === '..') return
+        if (!entry) return
 
-        // Start tracking for potential drag
-        startDragTracking(event, entry.path, entry.iconId)
+        // ".." entry: just move cursor, no drag tracking
+        if (entry.name === '..') {
+            onSelect(index, event.shiftKey)
+            return
+        }
+
+        const hasSelection = selectedIndices.size > 0
+
+        if (!hasSelection) {
+            // No selection: defer selection until drag threshold is crossed
+            startSelectionDragTracking(
+                event,
+                { type: 'single', path: entry.path, iconId: entry.iconId, index },
+                {
+                    onDragStart: () => {
+                        onSelect(index, event.shiftKey)
+                    },
+                    onDragCancel: () => {
+                        // Just do a normal select on cancel (mouseup without drag)
+                        onSelect(index, event.shiftKey)
+                    },
+                },
+            )
+        } else {
+            // Has selection: move cursor immediately (Shift+click still does range selection)
+            onSelect(index, event.shiftKey)
+
+            // Always drag the selection (regardless of which file clicked)
+            // Find the first selected file's icon for the drag preview
+            const firstSelectedIndex = Math.min(...selectedIndices)
+            const firstSelectedEntry = getEntryAt(firstSelectedIndex)
+            const iconId = firstSelectedEntry?.iconId ?? entry.iconId
+
+            startSelectionDragTracking(
+                event,
+                {
+                    type: 'selection',
+                    listingId,
+                    indices: [...selectedIndices],
+                    includeHidden,
+                    hasParent,
+                    iconId,
+                },
+                {},
+            )
+        }
     }
 
     // Handle file click - for double-click detection
