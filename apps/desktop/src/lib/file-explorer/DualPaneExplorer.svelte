@@ -75,9 +75,9 @@
     let leftHistory = $state<NavigationHistory>(createHistory(DEFAULT_VOLUME_ID, '~'))
     let rightHistory = $state<NavigationHistory>(createHistory(DEFAULT_VOLUME_ID, '~'))
 
-    // Emit history state to debug window (dev mode only)
+    // Emit history state to debug window (dev mode only, skip in tests)
     $effect(() => {
-        if (!import.meta.env.DEV) return
+        if (!import.meta.env.DEV || import.meta.env.MODE === 'test') return
         // Read the reactive values
         const left = leftHistory
         const right = rightHistory

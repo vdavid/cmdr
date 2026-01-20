@@ -24,9 +24,7 @@ vi.mock('$lib/app-status-store', () => ({
     saveColumnSortOrder: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('@tauri-apps/api/event', () => ({
-    listen: vi.fn(() => Promise.resolve(() => {})),
-}))
+// @tauri-apps/api/event is mocked globally in test-setup.ts
 
 vi.mock('@tauri-apps/api/core', () => ({
     invoke: vi.fn(),

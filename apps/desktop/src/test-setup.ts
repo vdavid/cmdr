@@ -28,3 +28,9 @@ class ResizeObserverMock {
 }
 
 vi.stubGlobal('ResizeObserver', ResizeObserverMock)
+
+// Mock Tauri event API to handle both static and dynamic imports
+vi.mock('@tauri-apps/api/event', () => ({
+    listen: vi.fn(() => Promise.resolve(() => {})),
+    emit: vi.fn(() => Promise.resolve()),
+}))

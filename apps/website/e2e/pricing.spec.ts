@@ -75,8 +75,8 @@ test.describe('Pricing page', () => {
             await commercialButton.click()
 
             // The org name modal should appear for commercial plans
-            await expect(page.getByText(/company name/i)).toBeVisible()
-            await expect(page.getByPlaceholder(/acme/i)).toBeVisible()
+            await expect(page.getByLabel(/company name/i)).toBeVisible()
+            await expect(page.getByRole('textbox', { name: /company name/i })).toBeVisible()
         } else {
             // In CI without Paddle credentials, buttons are disabled - that's expected
             // Just verify the button structure is correct
