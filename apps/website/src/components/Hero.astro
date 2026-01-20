@@ -156,7 +156,7 @@ import { dmgUrl } from '../lib/release'
         margin-left: -100px;
     }
 
-    @media (max-width: 640px) {
+    @media (max-width: 767px) {
         .hero-illustration {
             height: 600px;
             margin-top: 0;
@@ -183,11 +183,19 @@ import { dmgUrl } from '../lib/release'
         transform: translate(2%) scale(1.2) rotateX(47deg) rotateY(31deg) rotate(324deg);
     }
 
-    @media (max-width: 640px) {
+    @media (max-width: 767px) {
         .hero-base {
             margin-top: 100px;
             margin-left: 1%;
             transform: scale(0.7) rotateX(47deg) rotateY(21deg) rotate(330deg);
+        }
+    }
+
+    /* Scale hero image on large screens */
+    @media (min-width: 1700px) {
+        .hero-base {
+            width: 94vw;
+            height: calc(94vw * 9 / 16);
         }
     }
 
