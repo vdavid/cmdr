@@ -154,6 +154,11 @@
         return isOpen
     }
 
+    // Export to explicitly close the dropdown
+    export function close() {
+        isOpen = false
+    }
+
     // Export keyboard handler for parent components to call
     export function handleKeyDown(e: KeyboardEvent): boolean {
         if (!isOpen) return false

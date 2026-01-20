@@ -476,6 +476,9 @@
         // F1 or ⌥F1 - Open left pane volume chooser
         if (e.key === 'F1') {
             e.preventDefault()
+            // Close right pane's volume chooser before toggling left (only one can be open)
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            rightPaneRef?.closeVolumeChooser()
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call
             leftPaneRef?.toggleVolumeChooser()
             return
@@ -484,6 +487,9 @@
         // F2 or ⌥F2 - Open right pane volume chooser
         if (e.key === 'F2') {
             e.preventDefault()
+            // Close left pane's volume chooser before toggling right (only one can be open)
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            leftPaneRef?.closeVolumeChooser()
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call
             rightPaneRef?.toggleVolumeChooser()
             return
@@ -784,12 +790,17 @@
 
     /**
      * Open/toggle volume chooser for the specified pane.
+     * Closes the other pane's volume chooser to ensure only one is open at a time.
      */
     export function toggleVolumeChooser(pane: 'left' | 'right') {
         if (pane === 'left') {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            rightPaneRef?.closeVolumeChooser()
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
             leftPaneRef?.toggleVolumeChooser()
         } else {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            leftPaneRef?.closeVolumeChooser()
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call
             rightPaneRef?.toggleVolumeChooser()
         }
