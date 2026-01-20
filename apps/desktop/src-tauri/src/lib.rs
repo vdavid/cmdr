@@ -111,11 +111,6 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             volumes::watcher::start_volume_watcher(app.handle());
 
-            // Inject Docker SMB test hosts if enabled (dev mode only)
-            // Enable with: RUSTY_INJECT_TEST_SMB=1 pnpm tauri dev
-            #[cfg(target_os = "macos")]
-            network::inject_test_hosts_if_enabled(app.handle());
-
             // Load known network shares from disk
             #[cfg(target_os = "macos")]
             network::known_shares::load_known_shares(app.handle());

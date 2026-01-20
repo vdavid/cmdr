@@ -221,7 +221,7 @@ For high-fidelity testing, we spin up a farm of Docker SMB test servers. See
 **Two deployment modes:**
 
 1. **Local (macOS)**: Port-mapped containers at `localhost:PORT`. Limited due to Docker networking issues. Use
-   `RUSTY_INJECT_TEST_SMB=1` to inject hosts into the app.
+   `smbclient` CLI or mount manually for testing.
 
 2. **Raspberry Pi (recommended)**: Macvlan networking with real LAN IPs. Containers advertise via mDNS/Bonjour and
    appear automatically in the app. See

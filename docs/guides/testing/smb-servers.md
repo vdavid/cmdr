@@ -9,7 +9,7 @@ reproducible test environments covering authentication modes, edge cases, and se
 
 **Two deployment modes are supported:**
 
-1. **Local (macOS)**: Port-mapped networking (`localhost:PORT`). Requires test host injection to appear in the app.
+1. **Local (macOS)**: Port-mapped networking (`localhost:PORT`). Use `smbclient` CLI or mount manually to test.
    Limited by macOS Docker networking issues with SMB (see [Known limitations](#known-limitations)).
 
 2. **Raspberry Pi**: Macvlan networking with real LAN IPs. Containers advertise via mDNS/Bonjour and appear
@@ -64,24 +64,6 @@ The containers will appear in the app's Network browser via Bonjour as:
 - `smb-auth-test.local` (192.168.1.201)
 - `smb-both-test.local` (192.168.1.202)
 - `smb-readonly-test.local` (192.168.1.203)
-
-## Using test hosts in the app (local mode)
-
-To see Docker SMB hosts in the app's Network section (alongside real Bonjour-discovered hosts), enable test host
-injection:
-
-```bash
-# Start Docker containers first
-./test/smb-servers/start.sh
-
-# Then run the app with injection enabled
-RUSTY_INJECT_TEST_SMB=1 pnpm tauri dev
-```
-
-This injects all 16 Docker hosts into the network discovery list with names like "SMB Guest (Docker)". They're
-pre-resolved to `127.0.0.1` with the correct port, so they work immediately for browsing shares.
-
-> **Note**: This only works in dev builds (`debug_assertions`). Production builds ignore this env var.
 
 ## Container list
 
