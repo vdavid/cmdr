@@ -133,7 +133,10 @@ fn cache_shares(host_id: &str, result: &ShareListResult) {
 }
 
 /// Invalidates cache for a host.
-#[allow(dead_code, reason = "Will be used when implementing cache invalidation on host disconnect")]
+#[allow(
+    dead_code,
+    reason = "Will be used when implementing cache invalidation on host disconnect"
+)]
 pub fn invalidate_cache(host_id: &str) {
     if let Ok(mut cache) = get_share_cache().lock() {
         cache.remove(host_id);

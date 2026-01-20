@@ -15,13 +15,13 @@
 #![allow(non_snake_case, reason = "ObjC delegate methods require camelCase naming")]
 
 use crate::network::{
-    on_discovery_state_changed, on_host_found, on_host_lost, on_host_resolved, service_name_to_id, DiscoveryState,
-    NetworkHost,
+    DiscoveryState, NetworkHost, on_discovery_state_changed, on_host_found, on_host_lost, on_host_resolved,
+    service_name_to_id,
 };
 use log::{debug, warn};
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
-use objc2::{define_class, msg_send, DefinedClass, MainThreadMarker, MainThreadOnly};
+use objc2::{DefinedClass, MainThreadMarker, MainThreadOnly, define_class, msg_send};
 use objc2_foundation::{
     NSArray, NSData, NSDefaultRunLoopMode, NSNetService, NSNetServiceBrowser, NSNetServiceBrowserDelegate,
     NSNetServiceDelegate, NSObject, NSObjectProtocol, NSRunLoop, NSString,

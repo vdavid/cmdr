@@ -4,9 +4,8 @@
 //! Uses the unified LISTING_CACHE from operations.rs (no duplicate cache).
 
 use notify_debouncer_full::{
-    new_debouncer,
+    DebounceEventResult, Debouncer, RecommendedCache, new_debouncer,
     notify::{RecommendedWatcher, RecursiveMode},
-    DebounceEventResult, Debouncer, RecommendedCache,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -15,7 +14,7 @@ use std::sync::{LazyLock, RwLock};
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
 
-use super::operations::{get_listing_entries, list_directory_core, update_listing_entries, FileEntry};
+use super::operations::{FileEntry, get_listing_entries, list_directory_core, update_listing_entries};
 
 /// Debounce duration in milliseconds
 const DEBOUNCE_MS: u64 = 200;
