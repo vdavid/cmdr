@@ -170,6 +170,83 @@ jobs:
               run: ./scripts/check/check --check desktop-svelte-e2e --ci
 
     # ===========================================
+    # Desktop app - Tauri E2E (Linux)
+    # ===========================================
+    desktop-e2e-linux:
+        name: Desktop E2E (Linux)
+        runs-on: ubuntu-latest
+        needs: [changes, desktop-rust, desktop-svelte]
+        if: needs.changes.outputs.desktop == 'true'
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Install mise
+              uses: jdx/mise-action@v2
+
+            - name: Install tools with mise
+              run: mise install
+
+            - name: Cache Cargo
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      ~/.cargo/registry/cache
+                      apps/desktop/src-tauri/target
+                  key: ${{ runner.os }}-cargo-e2e-${{ hashFiles('apps/desktop/src-tauri/Cargo.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-cargo-e2e-
+                      ${{ runner.os }}-cargo-
+
+            - name: Cache pnpm
+              uses: actions/cache@v4
+              with:
+                  path: ~/.pnpm-store
+                  key: ${{ runner.os }}-pnpm-desktop-${{ hashFiles('apps/desktop/pnpm-lock.yaml') }}
+                  restore-keys: |
+                      ${{ runner.os }}-pnpm-desktop-
+
+            - name: Install Tauri dependencies
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y \
+                      libwebkit2gtk-4.1-dev \
+                      libayatana-appindicator3-dev \
+                      librsvg2-dev \
+                      patchelf \
+                      webkit2gtk-driver \
+                      xvfb
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+              working-directory: ./apps/desktop
+
+            - name: Install tauri-driver
+              run: cargo install tauri-driver --locked
+
+            - name: Build Tauri app
+              run: pnpm tauri build --ci
+              working-directory: ./apps/desktop
+              env:
+                  # Skip code signing for CI builds
+                  TAURI_SIGNING_PRIVATE_KEY: ""
+
+            - name: Run Tauri E2E tests
+              run: xvfb-run --auto-servernum pnpm test:e2e:tauri
+              working-directory: ./apps/desktop
+              env:
+                  TAURI_BINARY: ./src-tauri/target/release/cmdr
+
+            - name: Upload E2E screenshots on failure
+              uses: actions/upload-artifact@v4
+              if: failure()
+              with:
+                  name: e2e-screenshots
+                  path: apps/desktop/test-results/
+                  retention-days: 7
+
+    # ===========================================
     # Website
     # ===========================================
     website:

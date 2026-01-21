@@ -24,7 +24,17 @@ import noIsolatedTests from './eslint-plugins/no-isolated-tests.js'
 
 export default tseslint.config(
     {
-        ignores: ['dist', 'build', '.svelte-kit', 'node_modules', 'src-tauri/target', '_ignored'],
+        ignores: [
+            'dist',
+            'build',
+            '.svelte-kit',
+            'node_modules',
+            'src-tauri/target',
+            '_ignored',
+            // E2E tests use different frameworks (WebDriverIO, Playwright) with their own typing
+            'test/e2e-linux',
+            'test/e2e-smoke',
+        ],
     },
     js.configs.recommended,
     prettierConfig,

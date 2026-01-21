@@ -20,7 +20,8 @@ Core structure:
 - `/.github/workflows/` - GitHub Actions workflows
 - `/apps/`
     - `desktop/` - The Tauri desktop app
-        - `e2e/` - Playwright, smoke only. Unfortunately, no WebDriver on macOS, se we cover with FE and BE tests only.
+        - `test/e2e-smoke/` - Playwright smoke tests (browser-based, works on macOS)
+        - `test/e2e-linux/` - WebDriverIO + tauri-driver tests (Docker, tests real Tauri app)
         - `src/` - Svelte frontend. Uses SvelteKit with static adapter. TypeScript strict mode. Tailwind v4.
             - `lib/` - Components
             - `routes/` - Routes
@@ -48,11 +49,11 @@ Run the smallest set of checks possible for efficiency while maintaining confide
 - Running a Svelte test: `cd apps/desktop && pnpm vitest run -t "<test_name>"`
 - Running all Rust/Svelte tests: `./scripts/check.sh --rust` or `--svelte`
 - Running specific checks `/scripts/check.sh --check {desktop-svelte-prettier|desktop-svelte-eslint|stylelint|css-unused
-  |svelte-check|knip|type-drift|svelte-tests|desktop-e2e|rustfmt|clippy|cargo-audit|cargo-deny|cargo-udeps|jscpd-rust
-  |rust-tests|rust-tests-linux (slow|license-server-prettier|license-server-eslint|license-server-typecheck
-  |license-server-tests|gofmt|go-vet|staticcheck|ineffassign|misspell|gocyclo|nilaway|govulncheck|go-tests
-  |website-prettier|website-eslint|website-typecheck|website-build|website-e2e}` (can use multiple `--check` flags or
-  even a comma-separated list)
+  |svelte-check|knip|type-drift|svelte-tests|desktop-e2e|desktop-e2e-linux|rustfmt|clippy|cargo-audit|cargo-deny
+  |cargo-udeps|jscpd-rust|rust-tests|rust-tests-linux (slow)|license-server-prettier|license-server-eslint
+  |license-server-typecheck|license-server-tests|gofmt|go-vet|staticcheck|ineffassign|misspell|gocyclo|nilaway
+  |govulncheck|go-tests|website-prettier|website-eslint|website-typecheck|website-build|website-e2e}` (can use multiple
+  `--check` flags or even a comma-separated list)
 - Run all: `./scripts/check.sh`. CI runs this. Runs all tests, linters, and formatters (with auto fixing) for all apps.
 - See also `./scripts/check.sh --help`
 

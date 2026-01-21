@@ -12,7 +12,11 @@
         "@tauri-apps/cli",
         "@testing-library/svelte",
         "@sveltejs/adapter-static",
-        "prettier-plugin-svelte"
+        "prettier-plugin-svelte",
+        "@wdio/local-runner",
+        "@wdio/mocha-framework",
+        "@wdio/spec-reporter",
+        "@wdio/types"
     ],
     "ignoreExportsUsedInFile": true,
     "project": ["src/**/*.{ts,svelte}"],

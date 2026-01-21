@@ -59,6 +59,10 @@ mod settings;
 #[cfg(target_os = "macos")]
 mod volumes;
 
+// Linux/non-macOS stubs for E2E testing
+#[cfg(not(target_os = "macos"))]
+mod stubs;
+
 use menu::{
     ABOUT_ID, COMMAND_PALETTE_ID, ENTER_LICENSE_KEY_ID, GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID, MenuState,
     SHOW_HIDDEN_FILES_ID, SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID,
@@ -288,8 +292,9 @@ pub fn run() {
             mcp::pane_state::update_left_pane_state,
             mcp::pane_state::update_right_pane_state,
             mcp::pane_state::update_focused_pane,
-            #[cfg(target_os = "macos")]
+            // Sync status (macOS uses real implementation, others use stub in commands)
             commands::sync_status::get_sync_status,
+            // Volume commands (platform-specific)
             #[cfg(target_os = "macos")]
             commands::volumes::list_volumes,
             #[cfg(target_os = "macos")]
@@ -298,6 +303,15 @@ pub fn run() {
             commands::volumes::find_containing_volume,
             #[cfg(target_os = "macos")]
             commands::volumes::get_volume_space,
+            #[cfg(not(target_os = "macos"))]
+            stubs::volumes::list_volumes,
+            #[cfg(not(target_os = "macos"))]
+            stubs::volumes::get_default_volume_id,
+            #[cfg(not(target_os = "macos"))]
+            stubs::volumes::find_containing_volume,
+            #[cfg(not(target_os = "macos"))]
+            stubs::volumes::get_volume_space,
+            // Network commands (platform-specific)
             #[cfg(target_os = "macos")]
             commands::network::list_network_hosts,
             #[cfg(target_os = "macos")]
@@ -332,10 +346,47 @@ pub fn run() {
             commands::network::list_shares_with_credentials,
             #[cfg(target_os = "macos")]
             commands::network::mount_network_share,
+            #[cfg(not(target_os = "macos"))]
+            stubs::network::list_network_hosts,
+            #[cfg(not(target_os = "macos"))]
+            stubs::network::get_network_discovery_state,
+            #[cfg(not(target_os = "macos"))]
+            stubs::network::resolve_host,
+            #[cfg(not(target_os = "macos"))]
+            stubs::network::list_shares_on_host,
+            #[cfg(not(target_os = "macos"))]
+            stubs::network::prefetch_shares,
+            #[cfg(not(target_os = "macos"))]
+            stubs::network::get_host_auth_mode,
+            #[cfg(not(target_os = "macos"))]
+            stubs::network::get_known_shares,
+            #[cfg(not(target_os = "macos"))]
+            stubs::network::get_known_share_by_name,
+            #[cfg(not(target_os = "macos"))]
+            stubs::network::update_known_share,
+            #[cfg(not(target_os = "macos"))]
+            stubs::network::get_username_hints,
+            #[cfg(not(target_os = "macos"))]
+            stubs::network::save_smb_credentials,
+            #[cfg(not(target_os = "macos"))]
+            stubs::network::get_smb_credentials,
+            #[cfg(not(target_os = "macos"))]
+            stubs::network::has_smb_credentials,
+            #[cfg(not(target_os = "macos"))]
+            stubs::network::delete_smb_credentials,
+            #[cfg(not(target_os = "macos"))]
+            stubs::network::list_shares_with_credentials,
+            #[cfg(not(target_os = "macos"))]
+            stubs::network::mount_network_share,
+            // Permission commands (platform-specific)
             #[cfg(target_os = "macos")]
             permissions::check_full_disk_access,
             #[cfg(target_os = "macos")]
             permissions::open_privacy_settings,
+            #[cfg(not(target_os = "macos"))]
+            stubs::permissions::check_full_disk_access,
+            #[cfg(not(target_os = "macos"))]
+            stubs::permissions::open_privacy_settings,
             // Licensing commands
             commands::licensing::get_license_status,
             commands::licensing::get_window_title,

@@ -18,6 +18,7 @@ _ignored/
 
 # Node modules (monorepo-wide)
 node_modules/
+.pnpm-store/
 
 # SvelteKit build files
 .svelte-kit/
@@ -35,3 +36,5 @@ coverage/
 
 # Rust build artifacts
 target/
+
+.cargo-docker/

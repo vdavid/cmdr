@@ -1,11 +1,15 @@
 import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
-    testDir: './e2e',
+    testDir: './test/e2e-smoke',
+    testMatch: '**/*.test.ts',
     fullyParallel: true,
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 2 : 0,
-    workers: process.env.CI ? 1 : undefined,
+    // Limit workers to avoid resource contention with single dev server
+    workers: process.env.CI ? 1 : 2,
+    // Increase timeout since file loading can take time
+    timeout: 60000,
     reporter: 'html',
     use: {
         baseURL: 'http://localhost:1420',

@@ -8,9 +8,9 @@ import (
 	"strconv"
 )
 
-// RunDesktopE2E runs end-to-end tests with Playwright.
+// RunDesktopE2E runs smoke tests with Playwright (browser-based, no Tauri backend).
 func RunDesktopE2E(ctx *CheckContext) (CheckResult, error) {
-	cmd := exec.Command("pnpm", "test:e2e")
+	cmd := exec.Command("pnpm", "test:e2e:smoke")
 	cmd.Dir = filepath.Join(ctx.RootDir, "apps", "desktop")
 	output, err := RunCommand(cmd, true)
 	if err != nil {

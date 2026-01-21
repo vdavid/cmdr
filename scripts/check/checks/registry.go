@@ -160,6 +160,15 @@ var AllChecks = []CheckDefinition{
 		DependsOn:   []string{"desktop-svelte-check"},
 		Run:         RunDesktopE2E,
 	},
+	{
+		ID:          "desktop-svelte-e2e-linux",
+		Nickname:    "desktop-e2e-linux",
+		DisplayName: "e2e (Linux)",
+		App:         AppDesktop,
+		Tech:        "🎨 Svelte",
+		DependsOn:   nil, // Runs against pre-built binary in Docker, no deps needed
+		Run:         RunDesktopE2ELinux,
+	},
 
 	// Website checks
 	{

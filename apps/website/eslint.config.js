@@ -67,4 +67,14 @@ export default tseslint.config(
             'prettier/prettier': 'error',
         },
     },
+    {
+        // Scripts extracted from .astro files by eslint-plugin-astro
+        files: ['**/*.astro/*.js', '**/*.astro/*.ts'],
+        languageOptions: {
+            globals: {
+                ...globals.browser,
+                Paddle: 'readonly', // Paddle payment SDK loaded via script tag
+            },
+        },
+    },
 )
