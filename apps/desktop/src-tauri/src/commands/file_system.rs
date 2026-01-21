@@ -385,7 +385,7 @@ pub fn get_operation_status(operation_id: String) -> Option<OperationStatus> {
 // Drag operations
 // ============================================================================
 
-/// Starts a native drag operation for selected files from a cached listing.
+/// Starts a native drag operation for selected files from a cached listing (macOS only).
 ///
 /// This initiates the drag from Rust directly, avoiding IPC transfer of file paths.
 /// The paths are looked up from LISTING_CACHE using the provided indices.
@@ -398,6 +398,7 @@ pub fn get_operation_status(operation_id: String) -> Option<OperationStatus> {
 /// * `has_parent` - Whether the ".." entry is shown at index 0
 /// * `mode` - Drag mode: "copy" or "move"
 /// * `icon_path` - Path to the drag preview icon (temp file)
+#[cfg(target_os = "macos")]
 #[tauri::command]
 pub fn start_selection_drag(
     app: tauri::AppHandle,
@@ -463,6 +464,21 @@ pub fn start_selection_drag(
     rx.recv()
         .map_err(|_| "Failed to receive drag result")?
         .map_err(|e| format!("Drag operation failed: {}", e))
+}
+
+/// Stub for non-macOS platforms. Returns an error since drag is not yet implemented.
+#[cfg(not(target_os = "macos"))]
+#[tauri::command]
+pub fn start_selection_drag(
+    _app: tauri::AppHandle,
+    _listing_id: String,
+    _selected_indices: Vec<usize>,
+    _include_hidden: bool,
+    _has_parent: bool,
+    _mode: String,
+    _icon_path: String,
+) -> Result<(), String> {
+    Err("Drag operation is not yet supported on this platform".to_string())
 }
 
 /// Expands tilde (~) to the user's home directory.
