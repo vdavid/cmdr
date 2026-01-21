@@ -30,6 +30,8 @@
         sortColumn: SortColumn
         /** Current sort order on source pane */
         sortOrder: SortOrder
+        /** Preview scan ID from CopyDialog (for reusing scan results, optional) */
+        previewId: string | null
         onComplete: (filesProcessed: number, bytesProcessed: number) => void
         onCancelled: (filesProcessed: number) => void
         onError: (error: string) => void
@@ -42,6 +44,7 @@
         direction,
         sortColumn,
         sortOrder,
+        previewId,
         onComplete,
         onCancelled,
         onError,
@@ -96,7 +99,14 @@
 
     function handleProgress(event: WriteProgressEvent) {
         // Filter by operationId (events are global)
-        if (event.operationId !== operationId) return
+        // If operationId is null, accept the event and capture the ID (handles race condition
+        // where events arrive before copyFiles() returns the operationId to the frontend)
+        if (operationId === null) {
+            operationId = event.operationId
+            log.debug('Captured operationId from event: {operationId}', { operationId })
+        } else if (event.operationId !== operationId) {
+            return
+        }
 
         log.debug('Progress event: {phase} {filesDone}/{filesTotal} files, {bytesDone}/{bytesTotal} bytes', {
             phase: event.phase,
@@ -116,7 +126,12 @@
 
     function handleComplete(event: WriteCompleteEvent) {
         // Filter by operationId (events are global)
-        if (event.operationId !== operationId) return
+        // Accept if operationId is null (race condition) or matches
+        if (operationId === null) {
+            operationId = event.operationId
+        } else if (event.operationId !== operationId) {
+            return
+        }
 
         log.info('Copy complete: {filesProcessed} files, {bytesProcessed} bytes', {
             filesProcessed: event.filesProcessed,
@@ -155,7 +170,12 @@
 
     function handleError(event: WriteErrorEvent) {
         // Filter by operationId (events are global)
-        if (event.operationId !== operationId) return
+        // Accept if operationId is null (race condition) or matches
+        if (operationId === null) {
+            operationId = event.operationId
+        } else if (event.operationId !== operationId) {
+            return
+        }
 
         log.error('Copy error: {errorType}', { errorType: event.error.type, error: event.error })
 
@@ -165,7 +185,12 @@
 
     function handleCancelled(event: WriteCancelledEvent) {
         // Filter by operationId (events are global)
-        if (event.operationId !== operationId) return
+        // Accept if operationId is null (race condition) or matches
+        if (operationId === null) {
+            operationId = event.operationId
+        } else if (event.operationId !== operationId) {
+            return
+        }
 
         log.info('Copy cancelled after {filesProcessed} files, rolledBack={rolledBack}', {
             filesProcessed: event.filesProcessed,
@@ -213,6 +238,7 @@
                 progressIntervalMs: 100,
                 sortColumn,
                 sortOrder,
+                previewId,
             })
 
             operationId = result.operationId

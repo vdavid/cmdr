@@ -1,6 +1,9 @@
 //! Tauri commands for file system operations.
 
-use crate::file_system::write_operations::{ConflictResolution, resolve_write_conflict as ops_resolve_write_conflict};
+use crate::file_system::write_operations::{
+    ConflictResolution, ScanPreviewStartResult, cancel_scan_preview as ops_cancel_scan_preview,
+    resolve_write_conflict as ops_resolve_write_conflict, start_scan_preview as ops_start_scan_preview,
+};
 use crate::file_system::{
     FileEntry, ListingStartResult, ListingStats, OperationStatus, OperationSummary, ResortResult, SortColumn,
     SortOrder, StreamingListingStartResult, WriteOperationConfig, WriteOperationError, WriteOperationStartResult,
@@ -343,6 +346,50 @@ pub async fn delete_files(
 #[tauri::command]
 pub fn cancel_write_operation(operation_id: String, rollback: bool) {
     ops_cancel_write_operation(&operation_id, rollback);
+}
+
+// ============================================================================
+// Scan preview (for Copy dialog live stats)
+// ============================================================================
+
+/// Starts a scan preview for the Copy dialog.
+///
+/// This immediately starts scanning the source files in the background and emits
+/// progress events. The scan results are cached and can be reused when starting
+/// the actual copy operation.
+///
+/// # Events emitted
+/// * `scan-preview-progress` - Every 100ms with current counts
+/// * `scan-preview-complete` - When scanning finishes
+/// * `scan-preview-error` - On error
+/// * `scan-preview-cancelled` - If cancelled
+///
+/// # Arguments
+/// * `app` - Tauri app handle (injected by Tauri).
+/// * `sources` - List of source file/directory paths. Supports tilde expansion (~).
+/// * `sort_column` - Column to sort files by.
+/// * `sort_order` - Sort order (ascending/descending).
+#[tauri::command]
+pub fn start_scan_preview(
+    app: tauri::AppHandle,
+    sources: Vec<String>,
+    sort_column: SortColumn,
+    sort_order: SortOrder,
+) -> ScanPreviewStartResult {
+    let sources: Vec<PathBuf> = sources.iter().map(|s| PathBuf::from(expand_tilde(s))).collect();
+    ops_start_scan_preview(app, sources, sort_column, sort_order)
+}
+
+/// Cancels a running scan preview.
+///
+/// Sets the cancellation flag, which will stop the scan. A `scan-preview-cancelled`
+/// event will be emitted when the scan stops.
+///
+/// # Arguments
+/// * `preview_id` - The preview ID to cancel.
+#[tauri::command]
+pub fn cancel_scan_preview(preview_id: String) {
+    ops_cancel_scan_preview(&preview_id);
 }
 
 /// Resolves a pending conflict for an in-progress write operation.

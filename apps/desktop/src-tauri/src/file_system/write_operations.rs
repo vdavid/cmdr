@@ -376,26 +376,8 @@ pub struct WriteOperationStartResult {
 // Configuration
 // ============================================================================
 
-/// Sort column for ordering files during copy.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
-#[serde(rename_all = "snake_case")]
-pub enum SortColumn {
-    #[default]
-    Name,
-    Extension,
-    Size,
-    Modified,
-    Created,
-}
-
-/// Sort order (ascending or descending).
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
-#[serde(rename_all = "snake_case")]
-pub enum SortOrder {
-    #[default]
-    Ascending,
-    Descending,
-}
+// Import sort types from operations module
+pub use super::operations::{SortColumn, SortOrder};
 
 /// Configuration for write operations.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -420,6 +402,9 @@ pub struct WriteOperationConfig {
     /// Sort order (default: ascending)
     #[serde(default)]
     pub sort_order: SortOrder,
+    /// Preview scan ID to reuse cached scan results (from start_scan_preview)
+    #[serde(default)]
+    pub preview_id: Option<String>,
 }
 
 impl Default for WriteOperationConfig {
@@ -431,6 +416,7 @@ impl Default for WriteOperationConfig {
             dry_run: false,
             sort_column: SortColumn::default(),
             sort_order: SortOrder::default(),
+            preview_id: None,
         }
     }
 }
@@ -539,6 +525,298 @@ fn register_operation_status(operation_id: &str, operation_type: WriteOperationT
 fn unregister_operation_status(operation_id: &str) {
     if let Ok(mut cache) = OPERATION_STATUS_CACHE.write() {
         cache.remove(operation_id);
+    }
+}
+
+// ============================================================================
+// Scan preview (for Copy dialog live stats)
+// ============================================================================
+
+/// Progress event for scan preview (shown in Copy dialog).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScanPreviewProgressEvent {
+    pub preview_id: String,
+    /// Number of files found so far
+    pub files_found: usize,
+    /// Number of directories found so far
+    pub dirs_found: usize,
+    /// Total bytes found so far
+    pub bytes_found: u64,
+    /// Current path being scanned (for activity indication)
+    pub current_path: Option<String>,
+}
+
+/// Completion event for scan preview.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScanPreviewCompleteEvent {
+    pub preview_id: String,
+    pub files_total: usize,
+    pub dirs_total: usize,
+    pub bytes_total: u64,
+}
+
+/// Error event for scan preview.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScanPreviewErrorEvent {
+    pub preview_id: String,
+    pub message: String,
+}
+
+/// Cancelled event for scan preview.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScanPreviewCancelledEvent {
+    pub preview_id: String,
+}
+
+/// Result of starting a scan preview.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScanPreviewStartResult {
+    pub preview_id: String,
+}
+
+/// State for a scan preview operation.
+struct ScanPreviewState {
+    /// Cancellation flag
+    cancelled: AtomicBool,
+    /// Progress reporting interval
+    progress_interval: Duration,
+}
+
+/// Cached result from a completed scan preview.
+#[allow(dead_code, reason = "Fields read via take_cached_scan_result")]
+struct CachedScanResult {
+    files: Vec<FileInfo>,
+    dirs: Vec<PathBuf>,
+    file_count: usize,
+    total_bytes: u64,
+}
+
+/// Global cache for scan preview states.
+static SCAN_PREVIEW_STATE: LazyLock<RwLock<HashMap<String, Arc<ScanPreviewState>>>> =
+    LazyLock::new(|| RwLock::new(HashMap::new()));
+
+/// Global cache for completed scan preview results.
+static SCAN_PREVIEW_RESULTS: LazyLock<RwLock<HashMap<String, CachedScanResult>>> =
+    LazyLock::new(|| RwLock::new(HashMap::new()));
+
+/// Starts a scan preview for the Copy dialog.
+/// Returns a preview_id that can be used to cancel or to pass to copy_files.
+pub fn start_scan_preview(
+    app: tauri::AppHandle,
+    sources: Vec<PathBuf>,
+    sort_column: SortColumn,
+    sort_order: SortOrder,
+) -> ScanPreviewStartResult {
+    let preview_id = Uuid::new_v4().to_string();
+    let preview_id_clone = preview_id.clone();
+
+    let state = Arc::new(ScanPreviewState {
+        cancelled: AtomicBool::new(false),
+        progress_interval: Duration::from_millis(100),
+    });
+
+    // Register state
+    if let Ok(mut cache) = SCAN_PREVIEW_STATE.write() {
+        cache.insert(preview_id.clone(), Arc::clone(&state));
+    }
+
+    // Spawn background task
+    std::thread::spawn(move || {
+        run_scan_preview(app, preview_id_clone, sources, sort_column, sort_order, state);
+    });
+
+    ScanPreviewStartResult { preview_id }
+}
+
+/// Cancels a running scan preview.
+pub fn cancel_scan_preview(preview_id: &str) {
+    if let Ok(cache) = SCAN_PREVIEW_STATE.read() {
+        if let Some(state) = cache.get(preview_id) {
+            state.cancelled.store(true, Ordering::Relaxed);
+        }
+    }
+}
+
+/// Internal function that runs the scan preview in a background thread.
+fn run_scan_preview(
+    app: tauri::AppHandle,
+    preview_id: String,
+    sources: Vec<PathBuf>,
+    sort_column: SortColumn,
+    sort_order: SortOrder,
+    state: Arc<ScanPreviewState>,
+) {
+    use tauri::Emitter;
+
+    let mut files: Vec<FileInfo> = Vec::new();
+    let mut dirs: Vec<PathBuf> = Vec::new();
+    let mut total_bytes = 0u64;
+    let mut last_progress_time = Instant::now();
+    let mut visited = HashSet::new();
+
+    let result: Result<(), String> = (|| {
+        for source in &sources {
+            let source_root = source.parent().unwrap_or(source);
+            scan_preview_recursive(
+                source,
+                source_root,
+                &mut files,
+                &mut dirs,
+                &mut total_bytes,
+                &state,
+                &app,
+                &preview_id,
+                &mut last_progress_time,
+                &mut visited,
+            )?;
+        }
+        Ok(())
+    })();
+
+    // Clean up state
+    if let Ok(mut cache) = SCAN_PREVIEW_STATE.write() {
+        cache.remove(&preview_id);
+    }
+
+    match result {
+        Ok(()) => {
+            if state.cancelled.load(Ordering::Relaxed) {
+                // Cancelled
+                let _ = app.emit(
+                    "scan-preview-cancelled",
+                    ScanPreviewCancelledEvent {
+                        preview_id: preview_id.clone(),
+                    },
+                );
+            } else {
+                // Sort files
+                sort_files(&mut files, sort_column, sort_order);
+
+                // Cache the results
+                let file_count = files.len();
+                let dirs_count = dirs.len();
+                if let Ok(mut cache) = SCAN_PREVIEW_RESULTS.write() {
+                    cache.insert(
+                        preview_id.clone(),
+                        CachedScanResult {
+                            files,
+                            dirs,
+                            file_count,
+                            total_bytes,
+                        },
+                    );
+                }
+
+                // Emit completion
+                let _ = app.emit(
+                    "scan-preview-complete",
+                    ScanPreviewCompleteEvent {
+                        preview_id,
+                        files_total: file_count,
+                        dirs_total: dirs_count,
+                        bytes_total: total_bytes,
+                    },
+                );
+            }
+        }
+        Err(message) => {
+            let _ = app.emit(
+                "scan-preview-error",
+                ScanPreviewErrorEvent { preview_id, message },
+            );
+        }
+    }
+}
+
+/// Recursive helper for scan preview. Returns Err if cancelled.
+#[allow(clippy::too_many_arguments)]
+fn scan_preview_recursive(
+    path: &Path,
+    source_root: &Path,
+    files: &mut Vec<FileInfo>,
+    dirs: &mut Vec<PathBuf>,
+    total_bytes: &mut u64,
+    state: &Arc<ScanPreviewState>,
+    app: &tauri::AppHandle,
+    preview_id: &str,
+    last_progress_time: &mut Instant,
+    visited: &mut HashSet<PathBuf>,
+) -> Result<(), String> {
+    use tauri::Emitter;
+
+    // Check cancellation
+    if state.cancelled.load(Ordering::Relaxed) {
+        return Err("Cancelled".to_string());
+    }
+
+    let metadata = fs::symlink_metadata(path).map_err(|e| e.to_string())?;
+
+    if metadata.is_symlink() || metadata.is_file() {
+        *total_bytes += metadata.len();
+        files.push(FileInfo::new(path.to_path_buf(), source_root.to_path_buf(), &metadata));
+    } else if metadata.is_dir() {
+        // Check for symlink loop
+        if is_symlink_loop(path, visited) {
+            return Err(format!("Symlink loop detected: {}", path.display()));
+        }
+
+        if let Ok(canonical) = path.canonicalize() {
+            visited.insert(canonical);
+        }
+
+        dirs.push(path.to_path_buf());
+
+        let entries = fs::read_dir(path).map_err(|e| e.to_string())?;
+        for entry in entries.flatten() {
+            scan_preview_recursive(
+                &entry.path(),
+                source_root,
+                files,
+                dirs,
+                total_bytes,
+                state,
+                app,
+                preview_id,
+                last_progress_time,
+                visited,
+            )?;
+        }
+    }
+
+    // Emit progress periodically
+    if last_progress_time.elapsed() >= state.progress_interval {
+        let _ = app.emit(
+            "scan-preview-progress",
+            ScanPreviewProgressEvent {
+                preview_id: preview_id.to_string(),
+                files_found: files.len(),
+                dirs_found: dirs.len(),
+                bytes_found: *total_bytes,
+                current_path: path.file_name().map(|n| n.to_string_lossy().to_string()),
+            },
+        );
+        *last_progress_time = Instant::now();
+    }
+
+    Ok(())
+}
+
+/// Tries to get cached scan results for a preview, removing them from cache.
+pub(crate) fn take_cached_scan_result(preview_id: &str) -> Option<ScanResult> {
+    if let Ok(mut cache) = SCAN_PREVIEW_RESULTS.write() {
+        cache.remove(preview_id).map(|cached| ScanResult {
+            files: cached.files,
+            dirs: cached.dirs,
+            file_count: cached.file_count,
+            total_bytes: cached.total_bytes,
+        })
+    } else {
+        None
     }
 }
 
@@ -1115,7 +1393,7 @@ impl FileInfo {
 }
 
 /// Information about files to be processed.
-struct ScanResult {
+pub(crate) struct ScanResult {
     /// All files to process with metadata for sorting
     files: Vec<FileInfo>,
     /// Directories to process (for deletion, in reverse order - deepest first)
@@ -1919,20 +2197,51 @@ fn copy_files_with_progress(
         return Ok(());
     }
 
-    // Phase 1: Scan
-    log::debug!(
-        "copy_files_with_progress: starting scan phase for operation_id={}",
-        operation_id
-    );
-    let scan_result = scan_sources(
-        sources,
-        state,
-        app,
-        operation_id,
-        WriteOperationType::Copy,
-        config.sort_column,
-        config.sort_order,
-    )?;
+    // Phase 1: Scan (or reuse cached preview results)
+    let scan_result = if let Some(preview_id) = &config.preview_id {
+        // Try to reuse cached scan results from preview
+        if let Some(cached) = take_cached_scan_result(preview_id) {
+            log::info!(
+                "copy_files_with_progress: reusing cached scan for operation_id={}, preview_id={}, files={}, bytes={}",
+                operation_id,
+                preview_id,
+                cached.file_count,
+                cached.total_bytes
+            );
+            cached
+        } else {
+            // Cache miss or expired, do normal scan
+            log::debug!(
+                "copy_files_with_progress: preview_id={} cache miss, starting fresh scan for operation_id={}",
+                preview_id,
+                operation_id
+            );
+            scan_sources(
+                sources,
+                state,
+                app,
+                operation_id,
+                WriteOperationType::Copy,
+                config.sort_column,
+                config.sort_order,
+            )?
+        }
+    } else {
+        // No preview ID, do normal scan
+        log::debug!(
+            "copy_files_with_progress: starting scan phase for operation_id={}",
+            operation_id
+        );
+        scan_sources(
+            sources,
+            state,
+            app,
+            operation_id,
+            WriteOperationType::Copy,
+            config.sort_column,
+            config.sort_order,
+        )?
+    };
     log::info!(
         "copy_files_with_progress: scan complete for operation_id={}, files={}, bytes={}",
         operation_id,
@@ -1947,6 +2256,30 @@ fn copy_files_with_progress(
     let mut last_progress_time = Instant::now();
     let mut apply_to_all_resolution: Option<ConflictResolution> = None;
     let mut created_dirs: HashSet<PathBuf> = HashSet::new();
+
+    // Emit initial copying phase event (important when reusing cached scan - no scanning events were emitted)
+    let _ = app.emit(
+        "write-progress",
+        WriteProgressEvent {
+            operation_id: operation_id.to_string(),
+            operation_type: WriteOperationType::Copy,
+            phase: WriteOperationPhase::Copying,
+            current_file: None,
+            files_done: 0,
+            files_total: scan_result.file_count,
+            bytes_done: 0,
+            bytes_total: scan_result.total_bytes,
+        },
+    );
+    update_operation_status(
+        operation_id,
+        WriteOperationPhase::Copying,
+        None,
+        0,
+        scan_result.file_count,
+        0,
+        scan_result.total_bytes,
+    );
 
     let result: Result<(), WriteOperationError> = (|| {
         for file_info in &scan_result.files {

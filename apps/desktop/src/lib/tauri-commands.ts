@@ -42,6 +42,11 @@ import type {
     OperationStatus,
     OperationSummary,
     ScanProgressEvent,
+    ScanPreviewStartResult,
+    ScanPreviewProgressEvent,
+    ScanPreviewCompleteEvent,
+    ScanPreviewErrorEvent,
+    ScanPreviewCancelledEvent,
 } from './file-explorer/types'
 
 export type {
@@ -63,6 +68,11 @@ export type {
     OperationStatus,
     OperationSummary,
     ScanProgressEvent,
+    ScanPreviewStartResult,
+    ScanPreviewProgressEvent,
+    ScanPreviewCompleteEvent,
+    ScanPreviewErrorEvent,
+    ScanPreviewCancelledEvent,
 }
 
 export type { Event, UnlistenFn }
@@ -1013,6 +1023,59 @@ export async function needsLicenseValidation(): Promise<boolean> {
  */
 export async function validateLicenseWithServer(): Promise<LicenseStatus> {
     return invoke<LicenseStatus>('validate_license_with_server')
+}
+
+// ============================================================================
+// Scan preview (for Copy dialog live stats)
+// ============================================================================
+
+/**
+ * Starts a scan preview for the Copy dialog.
+ * Immediately starts scanning source files and emits progress events.
+ * @param sources - List of source file/directory paths
+ * @param sortColumn - Column to sort by
+ * @param sortOrder - Sort order
+ */
+export async function startScanPreview(
+    sources: string[],
+    sortColumn: SortColumn,
+    sortOrder: SortOrder,
+): Promise<ScanPreviewStartResult> {
+    return invoke<ScanPreviewStartResult>('start_scan_preview', { sources, sortColumn, sortOrder })
+}
+
+/**
+ * Cancels a running scan preview.
+ * @param previewId - The preview ID to cancel
+ */
+export async function cancelScanPreview(previewId: string): Promise<void> {
+    return invoke<void>('cancel_scan_preview', { previewId })
+}
+
+/** Subscribe to scan preview progress events */
+export async function onScanPreviewProgress(
+    callback: (event: ScanPreviewProgressEvent) => void,
+): Promise<UnlistenFn> {
+    return listen<ScanPreviewProgressEvent>('scan-preview-progress', (event) => callback(event.payload))
+}
+
+/** Subscribe to scan preview complete events */
+export async function onScanPreviewComplete(
+    callback: (event: ScanPreviewCompleteEvent) => void,
+): Promise<UnlistenFn> {
+    return listen<ScanPreviewCompleteEvent>('scan-preview-complete', (event) => callback(event.payload))
+}
+
+/** Subscribe to scan preview error events */
+export async function onScanPreviewError(callback: (event: ScanPreviewErrorEvent) => void): Promise<UnlistenFn> {
+    return listen<ScanPreviewErrorEvent>('scan-preview-error', (event) => callback(event.payload))
+}
+
+/** Subscribe to scan preview cancelled events */
+export async function onScanPreviewCancelled(
+    callback: (event: ScanPreviewCancelledEvent) => void,
+): Promise<UnlistenFn> {
+    return listen<ScanPreviewCancelledEvent>('scan-preview-cancelled', (event) => callback(event.payload))
 }
 
 // ============================================================================

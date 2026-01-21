@@ -86,6 +86,8 @@
         fileCount: number
         folderCount: number
         sourceFolderPath: string
+        sortColumn: SortColumn
+        sortOrder: SortOrder
     } | null>(null)
 
     // Copy progress dialog state
@@ -97,6 +99,7 @@
         direction: 'left' | 'right'
         sortColumn: SortColumn
         sortOrder: SortOrder
+        previewId: string | null
     } | null>(null)
 
     // Navigation history for each pane (per-pane, session-only)
@@ -844,6 +847,8 @@
         fileCount: number
         folderCount: number
         sourceFolderPath: string
+        sortColumn: SortColumn
+        sortOrder: SortOrder
     }
 
     /** Builds copy dialog props from selected files. */
@@ -869,6 +874,8 @@
             fileCount: stats.selectedFiles ?? 0,
             folderCount: stats.selectedDirs ?? 0,
             sourceFolderPath: isLeft ? leftPath : rightPath,
+            sortColumn: isLeft ? leftSortBy : rightSortBy,
+            sortOrder: isLeft ? leftSortOrder : rightSortOrder,
         }
     }
 
@@ -895,26 +902,24 @@
             fileCount: file.isDirectory ? 0 : 1,
             folderCount: file.isDirectory ? 1 : 0,
             sourceFolderPath: isLeft ? leftPath : rightPath,
+            sortColumn: isLeft ? leftSortBy : rightSortBy,
+            sortOrder: isLeft ? leftSortOrder : rightSortOrder,
         }
     }
 
-    function handleCopyConfirm(destination: string) {
+    function handleCopyConfirm(destination: string, _volumeId: string, previewId: string | null) {
         if (!copyDialogProps) return
 
-        // Get sort settings from the source pane
-        // direction 'right' means source is left pane, direction 'left' means source is right pane
-        const isSourceLeft = copyDialogProps.direction === 'right'
-        const sortColumn = isSourceLeft ? leftSortBy : rightSortBy
-        const sortOrder = isSourceLeft ? leftSortOrder : rightSortOrder
-
         // Store the props needed for the progress dialog
+        // Sort settings now come from copyDialogProps (captured at dialog open time)
         copyProgressProps = {
             sourcePaths: copyDialogProps.sourcePaths,
             sourceFolderPath: copyDialogProps.sourceFolderPath,
             destinationPath: destination,
             direction: copyDialogProps.direction,
-            sortColumn,
-            sortOrder,
+            sortColumn: copyDialogProps.sortColumn,
+            sortOrder: copyDialogProps.sortOrder,
+            previewId,
         }
 
         // Close copy dialog and open progress dialog
@@ -1248,6 +1253,8 @@
         fileCount={copyDialogProps.fileCount}
         folderCount={copyDialogProps.folderCount}
         sourceFolderPath={copyDialogProps.sourceFolderPath}
+        sortColumn={copyDialogProps.sortColumn}
+        sortOrder={copyDialogProps.sortOrder}
         onConfirm={handleCopyConfirm}
         onCancel={handleCopyCancel}
     />
@@ -1261,6 +1268,7 @@
         direction={copyProgressProps.direction}
         sortColumn={copyProgressProps.sortColumn}
         sortOrder={copyProgressProps.sortOrder}
+        previewId={copyProgressProps.previewId}
         onComplete={handleCopyComplete}
         onCancelled={handleCopyCancelled}
         onError={handleCopyError}

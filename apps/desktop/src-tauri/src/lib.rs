@@ -261,6 +261,8 @@ pub fn run() {
             commands::file_system::move_files,
             commands::file_system::delete_files,
             commands::file_system::cancel_write_operation,
+            commands::file_system::start_scan_preview,
+            commands::file_system::cancel_scan_preview,
             commands::file_system::resolve_write_conflict,
             commands::file_system::list_active_operations,
             commands::file_system::get_operation_status,

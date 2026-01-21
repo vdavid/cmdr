@@ -1,7 +1,18 @@
 <script lang="ts">
-    import { onMount, tick } from 'svelte'
-    import { getVolumeSpace, formatBytes, type VolumeSpaceInfo } from '$lib/tauri-commands'
-    import type { VolumeInfo } from '$lib/file-explorer/types'
+    import { onMount, onDestroy, tick } from 'svelte'
+    import {
+        getVolumeSpace,
+        formatBytes,
+        startScanPreview,
+        cancelScanPreview,
+        onScanPreviewProgress,
+        onScanPreviewComplete,
+        onScanPreviewError,
+        onScanPreviewCancelled,
+        type VolumeSpaceInfo,
+        type UnlistenFn,
+    } from '$lib/tauri-commands'
+    import type { VolumeInfo, SortColumn, SortOrder } from '$lib/file-explorer/types'
     import DirectionIndicator from './DirectionIndicator.svelte'
     import { generateTitle } from './copy-dialog-utils'
 
@@ -14,12 +25,16 @@
         fileCount: number
         folderCount: number
         sourceFolderPath: string
-        onConfirm: (destination: string, volumeId: string) => void
+        /** Current sort column on source pane (for scan preview ordering) */
+        sortColumn: SortColumn
+        /** Current sort order on source pane */
+        sortOrder: SortOrder
+        onConfirm: (destination: string, volumeId: string, previewId: string | null) => void
         onCancel: () => void
     }
 
     const {
-        sourcePaths: _sourcePaths, // Will be used when implementing actual copy operation
+        sourcePaths,
         destinationPath,
         direction,
         volumes,
@@ -27,10 +42,11 @@
         fileCount,
         folderCount,
         sourceFolderPath,
+        sortColumn,
+        sortOrder,
         onConfirm,
         onCancel,
     }: Props = $props()
-    void _sourcePaths // TODO: Remove when implementing actual copy
 
     let editedPath = $state(destinationPath)
     let selectedVolumeId = $state(currentVolumeId)
@@ -43,6 +59,15 @@
 
     // Volume space info
     let volumeSpace = $state<VolumeSpaceInfo | null>(null)
+
+    // Scan preview state
+    let previewId = $state<string | null>(null)
+    let filesFound = $state(0)
+    let dirsFound = $state(0)
+    let bytesFound = $state(0)
+    let isScanning = $state(false)
+    let scanComplete = $state(false)
+    let unlisteners: UnlistenFn[] = []
 
     // Filter to only actual volumes (not favorites)
     const actualVolumes = $derived(volumes.filter((v) => v.category !== 'favorite' && v.category !== 'network'))
@@ -83,6 +108,55 @@
         handleVolumeChange()
     })
 
+    /** Cleans up event listeners for scan preview. */
+    function cleanup() {
+        for (const unlisten of unlisteners) {
+            unlisten()
+        }
+        unlisteners = []
+    }
+
+    /** Starts the scan preview to count files/dirs/bytes. */
+    async function startScan() {
+        // Subscribe to events BEFORE starting scan (avoid race condition)
+        unlisteners.push(
+            await onScanPreviewProgress((event) => {
+                if (event.previewId !== previewId) return
+                filesFound = event.filesFound
+                dirsFound = event.dirsFound
+                bytesFound = event.bytesFound
+            }),
+        )
+        unlisteners.push(
+            await onScanPreviewComplete((event) => {
+                if (event.previewId !== previewId) return
+                filesFound = event.filesTotal
+                dirsFound = event.dirsTotal
+                bytesFound = event.bytesTotal
+                isScanning = false
+                scanComplete = true
+            }),
+        )
+        unlisteners.push(
+            await onScanPreviewError((event) => {
+                if (event.previewId !== previewId) return
+                isScanning = false
+                // Keep showing whatever stats we have
+            }),
+        )
+        unlisteners.push(
+            await onScanPreviewCancelled((event) => {
+                if (event.previewId !== previewId) return
+                isScanning = false
+            }),
+        )
+
+        // Start the scan
+        isScanning = true
+        const result = await startScanPreview(sourcePaths, sortColumn, sortOrder)
+        previewId = result.previewId
+    }
+
     onMount(async () => {
         // Focus overlay for keyboard events
         await tick()
@@ -95,18 +169,37 @@
 
         // Load initial volume space
         await loadVolumeSpace()
+
+        // Start scanning files immediately
+        void startScan()
+    })
+
+    onDestroy(() => {
+        // Cancel scan preview if still running
+        if (previewId && isScanning) {
+            void cancelScanPreview(previewId)
+        }
+        cleanup()
     })
 
     function handleConfirm() {
-        // TODO: Implement actual copy operation using copyFiles() from tauri-commands
-        // For now, just close the dialog to test the UI
-        onConfirm(editedPath, selectedVolumeId)
+        // Pass the previewId so copy operation can reuse scan results
+        onConfirm(editedPath, selectedVolumeId, previewId)
+    }
+
+    function handleCancel() {
+        // Cancel scan preview if still running
+        if (previewId && isScanning) {
+            void cancelScanPreview(previewId)
+        }
+        cleanup()
+        onCancel()
     }
 
     function handleKeydown(event: KeyboardEvent) {
         event.stopPropagation()
         if (event.key === 'Escape') {
-            onCancel()
+            handleCancel()
         } else if (event.key === 'Enter') {
             handleConfirm()
         }
@@ -115,7 +208,7 @@
     function handleInputKeydown(event: KeyboardEvent) {
         event.stopPropagation()
         if (event.key === 'Escape') {
-            onCancel()
+            handleCancel()
         } else if (event.key === 'Enter') {
             event.preventDefault()
             handleConfirm()
@@ -201,9 +294,31 @@
             />
         </div>
 
+        <!-- Scan stats (live counting) -->
+        <div class="scan-stats">
+            <div class="scan-stat">
+                <span class="scan-value">{formatBytes(bytesFound)}</span>
+            </div>
+            <span class="scan-divider">/</span>
+            <div class="scan-stat">
+                <span class="scan-value">{filesFound}</span>
+                <span class="scan-label">{filesFound === 1 ? 'file' : 'files'}</span>
+            </div>
+            <span class="scan-divider">/</span>
+            <div class="scan-stat">
+                <span class="scan-value">{dirsFound}</span>
+                <span class="scan-label">{dirsFound === 1 ? 'dir' : 'dirs'}</span>
+            </div>
+            {#if isScanning}
+                <span class="scan-spinner"></span>
+            {:else if scanComplete}
+                <span class="scan-checkmark">✓</span>
+            {/if}
+        </div>
+
         <!-- Buttons (centered) -->
         <div class="button-row">
-            <button class="secondary" onclick={onCancel}>Cancel</button>
+            <button class="secondary" onclick={handleCancel}>Cancel</button>
             <button class="primary" onclick={handleConfirm}>Copy</button>
         </div>
     </div>
@@ -346,5 +461,58 @@
     .secondary:hover:not(:disabled) {
         background: var(--color-bg-tertiary);
         color: var(--color-text-primary);
+    }
+
+    /* Scan stats */
+    .scan-stats {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 0 24px 16px;
+        font-size: 12px;
+    }
+
+    .scan-stat {
+        display: flex;
+        align-items: baseline;
+        gap: 4px;
+    }
+
+    .scan-value {
+        color: var(--color-text-primary);
+        font-variant-numeric: tabular-nums;
+        font-weight: 500;
+    }
+
+    .scan-label {
+        color: var(--color-text-muted);
+    }
+
+    .scan-divider {
+        color: var(--color-text-muted);
+    }
+
+    .scan-spinner {
+        width: 12px;
+        height: 12px;
+        border: 2px solid var(--color-accent);
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin-left: 4px;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .scan-checkmark {
+        color: var(--color-allow);
+        font-size: 14px;
+        font-weight: bold;
+        margin-left: 4px;
     }
 </style>

@@ -344,6 +344,8 @@ export interface WriteOperationConfig {
     sortColumn?: SortColumn
     /** Sort order for copy operation (default: ascending) */
     sortOrder?: SortOrder
+    /** Preview scan ID to reuse cached scan results (from start_scan_preview) */
+    previewId?: string | null
 }
 
 /** Result of starting a write operation. */
@@ -497,4 +499,41 @@ export interface OperationSummary {
     percentComplete: number
     /** Operation start time (Unix timestamp in milliseconds) */
     startedAt: number
+}
+
+// ============================================================================
+// Scan preview types (for Copy dialog live stats)
+// ============================================================================
+
+/** Result of starting a scan preview. */
+export interface ScanPreviewStartResult {
+    previewId: string
+}
+
+/** Progress event for scan preview. */
+export interface ScanPreviewProgressEvent {
+    previewId: string
+    filesFound: number
+    dirsFound: number
+    bytesFound: number
+    currentPath: string | null
+}
+
+/** Completion event for scan preview. */
+export interface ScanPreviewCompleteEvent {
+    previewId: string
+    filesTotal: number
+    dirsTotal: number
+    bytesTotal: number
+}
+
+/** Error event for scan preview. */
+export interface ScanPreviewErrorEvent {
+    previewId: string
+    message: string
+}
+
+/** Cancelled event for scan preview. */
+export interface ScanPreviewCancelledEvent {
+    previewId: string
 }
