@@ -16,6 +16,9 @@
 use criterion as _;
 //noinspection RsUnusedImport
 use notify as _;
+//noinspection RsUnusedImport
+// drag is used by tauri-plugin-drag for drag-and-drop support
+use drag as _;
 //noinspection ALL
 // smb crates are used in network/smb_client module (macOS only)
 #[cfg(target_os = "macos")]

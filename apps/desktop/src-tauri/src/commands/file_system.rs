@@ -1,5 +1,7 @@
 //! Tauri commands for file system operations.
 
+#[cfg(target_os = "macos")]
+use crate::file_system::get_paths_at_indices as ops_get_paths_at_indices;
 use crate::file_system::write_operations::{
     ConflictResolution, ScanPreviewStartResult, cancel_scan_preview as ops_cancel_scan_preview,
     resolve_write_conflict as ops_resolve_write_conflict, start_scan_preview as ops_start_scan_preview,
@@ -11,14 +13,16 @@ use crate::file_system::{
     copy_files_start as ops_copy_files_start, delete_files_start as ops_delete_files_start,
     find_file_index as ops_find_file_index, get_file_at as ops_get_file_at, get_file_range as ops_get_file_range,
     get_listing_stats as ops_get_listing_stats, get_max_filename_width as ops_get_max_filename_width,
-    get_operation_status as ops_get_operation_status, get_paths_at_indices as ops_get_paths_at_indices,
-    get_total_count as ops_get_total_count, list_active_operations as ops_list_active_operations,
-    list_directory_end as ops_list_directory_end, list_directory_start_streaming as ops_list_directory_start_streaming,
+    get_operation_status as ops_get_operation_status, get_total_count as ops_get_total_count,
+    list_active_operations as ops_list_active_operations, list_directory_end as ops_list_directory_end,
+    list_directory_start_streaming as ops_list_directory_start_streaming,
     list_directory_start_with_volume as ops_list_directory_start_with_volume, move_files_start as ops_move_files_start,
     resort_listing as ops_resort_listing,
 };
 use std::path::PathBuf;
+#[cfg(target_os = "macos")]
 use std::sync::mpsc::channel;
+#[cfg(target_os = "macos")]
 use tauri::Manager;
 
 /// Checks if a path exists.
