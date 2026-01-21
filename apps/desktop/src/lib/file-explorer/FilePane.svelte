@@ -193,6 +193,11 @@
         return Array.from(selectedIndices)
     }
 
+    // Check if the ".." entry is shown (needed for index adjustment in copy/move operations)
+    export function hasParentEntry(): boolean {
+        return hasParent
+    }
+
     // Check if all files are selected (optimization for resort)
     export function isAllSelected(): boolean {
         const selectableCount = hasParent ? effectiveTotalCount - 1 : effectiveTotalCount

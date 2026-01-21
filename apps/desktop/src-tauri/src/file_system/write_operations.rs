@@ -589,6 +589,13 @@ pub async fn copy_files_start(
     validate_destination_not_inside_source(&sources, &destination)?;
 
     let operation_id = Uuid::new_v4().to_string();
+    log::info!(
+        "copy_files_start: operation_id={}, sources={:?}, destination={:?}, dry_run={}",
+        operation_id,
+        sources,
+        destination,
+        config.dry_run
+    );
     let state = Arc::new(WriteOperationState {
         cancelled: AtomicBool::new(false),
         progress_interval: Duration::from_millis(config.progress_interval_ms),
@@ -1048,6 +1055,12 @@ fn scan_sources(
     }
 
     // Emit final scanning progress
+    log::debug!(
+        "scan: emitting final write-progress op={} phase=scanning files={} bytes={}",
+        operation_id,
+        files.len(),
+        total_bytes
+    );
     let _ = app.emit(
         "write-progress",
         WriteProgressEvent {
@@ -1151,6 +1164,12 @@ fn scan_path_recursive(
     // Emit progress periodically
     if last_progress_time.elapsed() >= *progress_interval {
         let current_file = path.file_name().map(|n| n.to_string_lossy().to_string());
+        log::debug!(
+            "scan: emitting write-progress op={} phase=scanning files_found={} bytes_found={}",
+            operation_id,
+            files.len(),
+            *total_bytes
+        );
         let _ = app.emit(
             "write-progress",
             WriteProgressEvent {
@@ -1729,6 +1748,12 @@ fn copy_files_with_progress(
 ) -> Result<(), WriteOperationError> {
     use tauri::Emitter;
 
+    log::debug!(
+        "copy_files_with_progress: starting operation_id={}, {} sources",
+        operation_id,
+        sources.len()
+    );
+
     // Handle dry-run mode
     if config.dry_run {
         let scan_result = dry_run_scan(
@@ -1759,7 +1784,14 @@ fn copy_files_with_progress(
     }
 
     // Phase 1: Scan
+    log::debug!("copy_files_with_progress: starting scan phase for operation_id={}", operation_id);
     let scan_result = scan_sources(sources, state, app, operation_id, WriteOperationType::Copy)?;
+    log::info!(
+        "copy_files_with_progress: scan complete for operation_id={}, files={}, bytes={}",
+        operation_id,
+        scan_result.file_count,
+        scan_result.total_bytes
+    );
 
     // Phase 2: Copy files with rollback support
     let mut transaction = CopyTransaction::new();
@@ -1798,6 +1830,13 @@ fn copy_files_with_progress(
             // Spawn async sync for durability (non-blocking)
             spawn_async_sync();
 
+            log::info!(
+                "copy_files_with_progress: completed op={} files={} bytes={}",
+                operation_id,
+                files_done,
+                bytes_done
+            );
+
             // Emit completion
             let _ = app.emit(
                 "write-complete",
@@ -1812,17 +1851,24 @@ fn copy_files_with_progress(
         }
         Err(e) => {
             // Failure - rollback created files
+            log::error!(
+                "copy_files_with_progress: failed op={} error={:?}, rolling back",
+                operation_id,
+                e
+            );
             transaction.rollback();
 
-            // Emit error
-            let _ = app.emit(
-                "write-error",
-                WriteErrorEvent {
-                    operation_id: operation_id.to_string(),
-                    operation_type: WriteOperationType::Copy,
-                    error: e.clone(),
-                },
-            );
+            // Don't emit write-error for cancellation - write-cancelled was already emitted
+            if !matches!(e, WriteOperationError::Cancelled { .. }) {
+                let _ = app.emit(
+                    "write-error",
+                    WriteErrorEvent {
+                        operation_id: operation_id.to_string(),
+                        operation_type: WriteOperationType::Copy,
+                        error: e.clone(),
+                    },
+                );
+            }
             Err(e)
         }
     }
@@ -1852,6 +1898,11 @@ fn copy_path_recursive(
 
     // Check cancellation
     if state.cancelled.load(Ordering::Relaxed) {
+        log::info!(
+            "copy: cancelled by user op={} files_processed={}",
+            operation_id,
+            *files_done
+        );
         let _ = app.emit(
             "write-cancelled",
             WriteCancelledEvent {
@@ -2003,6 +2054,14 @@ fn copy_path_recursive(
         // Emit progress
         if last_progress_time.elapsed() >= *progress_interval {
             let current_file_name = file_name.to_string_lossy().to_string();
+            log::debug!(
+                "copy: emitting write-progress op={} phase=copying files={}/{} bytes={}/{}",
+                operation_id,
+                *files_done,
+                files_total,
+                *bytes_done,
+                bytes_total
+            );
             let _ = app.emit(
                 "write-progress",
                 WriteProgressEvent {

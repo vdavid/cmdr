@@ -33,3 +33,42 @@ export function getFolderName(path: string): string {
     const parts = normalized.split('/')
     return parts[parts.length - 1] || '/'
 }
+
+/**
+ * Converts frontend indices to backend indices.
+ *
+ * When a directory listing has a parent entry ("..") shown at index 0,
+ * the frontend indices are offset by 1 from the backend indices.
+ * This function adjusts for that offset and filters out invalid indices.
+ *
+ * @example
+ * // With hasParent=true, frontend [1,2,3] becomes backend [0,1,2]
+ * toBackendIndices([1, 2, 3], true) // => [0, 1, 2]
+ *
+ * // With hasParent=false, indices pass through unchanged
+ * toBackendIndices([0, 1, 2], false) // => [0, 1, 2]
+ *
+ * // Index 0 with hasParent=true is filtered (it's the ".." entry)
+ * toBackendIndices([0, 1, 2], true) // => [0, 1]
+ */
+export function toBackendIndices(frontendIndices: number[], hasParent: boolean): number[] {
+    return frontendIndices.map((i) => (hasParent ? i - 1 : i)).filter((i) => i >= 0)
+}
+
+/**
+ * Converts a frontend cursor index to a backend index.
+ *
+ * Returns null if the cursor is on the ".." entry (index 0 when hasParent=true)
+ * or if the index is invalid.
+ *
+ * @example
+ * toBackendCursorIndex(5, true)  // => 4 (adjusted for ".." entry)
+ * toBackendCursorIndex(5, false) // => 5 (no adjustment needed)
+ * toBackendCursorIndex(0, true)  // => null (cursor on ".." entry)
+ * toBackendCursorIndex(-1, false) // => null (invalid index)
+ */
+export function toBackendCursorIndex(frontendIndex: number, hasParent: boolean): number | null {
+    if (frontendIndex < 0) return null
+    if (hasParent && frontendIndex === 0) return null // ".." entry
+    return hasParent ? frontendIndex - 1 : frontendIndex
+}

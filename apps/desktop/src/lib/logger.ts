@@ -39,6 +39,7 @@ const debugCategories: string[] = [
     // 'fileExplorer',
     // 'dragDrop',
     // 'licensing',
+    'copyProgress', // Enable to debug copy operation progress events
 ]
 
 /**

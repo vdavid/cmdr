@@ -752,10 +752,26 @@ pub fn get_file_at(listing_id: &str, index: usize, include_hidden: bool) -> Resu
         .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
 
     if include_hidden {
-        Ok(listing.entries.get(index).cloned())
+        let result = listing.entries.get(index).cloned();
+        if result.is_none() {
+            log::error!(
+                "get_file_at: index {} out of bounds (listing has {} entries) - frontend/backend index mismatch!",
+                index,
+                listing.entries.len()
+            );
+        }
+        Ok(result)
     } else {
         let visible: Vec<&FileEntry> = listing.entries.iter().filter(|e| !e.name.starts_with('.')).collect();
-        Ok(visible.get(index).cloned().cloned())
+        let result = visible.get(index).cloned().cloned();
+        if result.is_none() {
+            log::error!(
+                "get_file_at: index {} out of bounds (listing has {} visible entries) - frontend/backend index mismatch!",
+                index,
+                visible.len()
+            );
+        }
+        Ok(result)
     }
 }
 

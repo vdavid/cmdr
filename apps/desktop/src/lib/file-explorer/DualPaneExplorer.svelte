@@ -4,6 +4,9 @@
     import PaneResizer from './PaneResizer.svelte'
     import LoadingIcon from '../LoadingIcon.svelte'
     import CopyDialog from '../write-operations/CopyDialog.svelte'
+    import CopyProgressDialog from '../write-operations/CopyProgressDialog.svelte'
+    import { toBackendIndices, toBackendCursorIndex } from '../write-operations/copy-dialog-utils'
+    import { formatBytes } from '$lib/tauri-commands'
     import {
         loadAppStatus,
         saveAppStatus,
@@ -83,6 +86,15 @@
         fileCount: number
         folderCount: number
         sourceFolderPath: string
+    } | null>(null)
+
+    // Copy progress dialog state
+    let showCopyProgressDialog = $state(false)
+    let copyProgressProps = $state<{
+        sourcePaths: string[]
+        sourceFolderPath: string
+        destinationPath: string
+        direction: 'left' | 'right'
     } | null>(null)
 
     // Navigation history for each pane (per-pane, session-only)
@@ -786,9 +798,9 @@
     }
 
     /** Gets file paths for the given indices from a listing. */
-    async function getSelectedFilePaths(listingId: string, indices: number[]): Promise<string[]> {
+    async function getSelectedFilePaths(listingId: string, backendIndices: number[]): Promise<string[]> {
         const paths: string[] = []
-        for (const index of indices) {
+        for (const index of backendIndices) {
             const file = await getFileAt(listingId, index, showHiddenFiles)
             if (file && file.name !== '..') {
                 paths.push(file.path)
@@ -807,12 +819,14 @@
         if (!listingId) return
 
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const hasParent = sourcePaneRef?.hasParentEntry?.() as boolean | undefined
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         const selectedIndices = sourcePaneRef?.getSelectedIndices?.() as number[] | undefined
         const hasSelection = selectedIndices && selectedIndices.length > 0
 
         const props = hasSelection
-            ? await buildCopyPropsFromSelection(listingId, selectedIndices, isLeft)
-            : await buildCopyPropsFromCursor(listingId, sourcePaneRef, isLeft)
+            ? await buildCopyPropsFromSelection(listingId, selectedIndices, hasParent ?? false, isLeft)
+            : await buildCopyPropsFromCursor(listingId, sourcePaneRef, hasParent ?? false, isLeft)
 
         if (props) {
             copyDialogProps = props
@@ -834,10 +848,15 @@
     async function buildCopyPropsFromSelection(
         listingId: string,
         selectedIndices: number[],
+        hasParent: boolean,
         isLeft: boolean,
     ): Promise<CopyDialogPropsData | null> {
-        const stats = await getListingStats(listingId, showHiddenFiles, selectedIndices)
-        const sourcePaths = await getSelectedFilePaths(listingId, selectedIndices)
+        // Convert frontend indices to backend indices (adjust for ".." entry)
+        const backendIndices = toBackendIndices(selectedIndices, hasParent)
+        if (backendIndices.length === 0) return null
+
+        const stats = await getListingStats(listingId, showHiddenFiles, backendIndices)
+        const sourcePaths = await getSelectedFilePaths(listingId, backendIndices)
         if (sourcePaths.length === 0) return null
 
         return {
@@ -855,13 +874,15 @@
     async function buildCopyPropsFromCursor(
         listingId: string,
         paneRef: FilePane | undefined,
+        hasParent: boolean,
         isLeft: boolean,
     ): Promise<CopyDialogPropsData | null> {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         const cursorIndex = paneRef?.getCursorIndex?.() as number | undefined
-        if (cursorIndex === undefined || cursorIndex < 0) return null
+        const backendIndex = toBackendCursorIndex(cursorIndex ?? -1, hasParent)
+        if (backendIndex === null) return null
 
-        const file = await getFileAt(listingId, cursorIndex, showHiddenFiles)
+        const file = await getFileAt(listingId, backendIndex, showHiddenFiles)
         if (!file || file.name === '..') return null
 
         return {
@@ -875,18 +896,60 @@
         }
     }
 
-    function handleCopyConfirm(destination: string, volumeId: string) {
-        // TODO: Implement actual copy operation using copyFiles() from tauri-commands
-        const itemCount = copyDialogProps?.sourcePaths.length ?? 0
-        log.info(`Copy confirmed: ${String(itemCount)} items to ${destination} (volume: ${volumeId})`)
+    function handleCopyConfirm(destination: string) {
+        if (!copyDialogProps) return
+
+        // Store the props needed for the progress dialog
+        copyProgressProps = {
+            sourcePaths: copyDialogProps.sourcePaths,
+            sourceFolderPath: copyDialogProps.sourceFolderPath,
+            destinationPath: destination,
+            direction: copyDialogProps.direction,
+        }
+
+        // Close copy dialog and open progress dialog
         showCopyDialog = false
         copyDialogProps = null
-        containerElement?.focus()
+        showCopyProgressDialog = true
     }
 
     function handleCopyCancel() {
         showCopyDialog = false
         copyDialogProps = null
+        containerElement?.focus()
+    }
+
+    function handleCopyComplete(filesProcessed: number, bytesProcessed: number) {
+        log.info(`Copy complete: ${String(filesProcessed)} files (${formatBytes(bytesProcessed)})`)
+
+        // Refresh the destination pane to show the new files
+        const destPaneRef = copyProgressProps?.direction === 'right' ? rightPaneRef : leftPaneRef
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        destPaneRef?.refreshView?.()
+
+        showCopyProgressDialog = false
+        copyProgressProps = null
+        containerElement?.focus()
+    }
+
+    function handleCopyCancelled(filesProcessed: number) {
+        log.info(`Copy cancelled after ${String(filesProcessed)} files`)
+
+        // Refresh the destination pane to show any files that were copied
+        const destPaneRef = copyProgressProps?.direction === 'right' ? rightPaneRef : leftPaneRef
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        destPaneRef?.refreshView?.()
+
+        showCopyProgressDialog = false
+        copyProgressProps = null
+        containerElement?.focus()
+    }
+
+    function handleCopyError(error: string) {
+        log.error(`Copy failed: ${error}`)
+        showCopyProgressDialog = false
+        copyProgressProps = null
+        // TODO: Show error notification/toast
         containerElement?.focus()
     }
 
@@ -1177,6 +1240,18 @@
         sourceFolderPath={copyDialogProps.sourceFolderPath}
         onConfirm={handleCopyConfirm}
         onCancel={handleCopyCancel}
+    />
+{/if}
+
+{#if showCopyProgressDialog && copyProgressProps}
+    <CopyProgressDialog
+        sourcePaths={copyProgressProps.sourcePaths}
+        sourceFolderPath={copyProgressProps.sourceFolderPath}
+        destinationPath={copyProgressProps.destinationPath}
+        direction={copyProgressProps.direction}
+        onComplete={handleCopyComplete}
+        onCancelled={handleCopyCancelled}
+        onError={handleCopyError}
     />
 {/if}
 
