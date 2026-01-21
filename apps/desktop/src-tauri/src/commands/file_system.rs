@@ -339,9 +339,10 @@ pub async fn delete_files(
 ///
 /// # Arguments
 /// * `operation_id` - The operation ID to cancel.
+/// * `rollback` - If true, delete any partial files created. If false, keep them.
 #[tauri::command]
-pub fn cancel_write_operation(operation_id: String) {
-    ops_cancel_write_operation(&operation_id);
+pub fn cancel_write_operation(operation_id: String, rollback: bool) {
+    ops_cancel_write_operation(&operation_id, rollback);
 }
 
 /// Resolves a pending conflict for an in-progress write operation.

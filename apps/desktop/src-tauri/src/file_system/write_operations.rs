@@ -116,6 +116,8 @@ pub struct WriteCancelledEvent {
     pub operation_type: WriteOperationType,
     /// Number of files processed before cancellation
     pub files_processed: usize,
+    /// Whether partial files were rolled back (deleted)
+    pub rolled_back: bool,
 }
 
 /// Conflict event payload (emitted when Stop mode encounters a conflict).
@@ -374,6 +376,27 @@ pub struct WriteOperationStartResult {
 // Configuration
 // ============================================================================
 
+/// Sort column for ordering files during copy.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum SortColumn {
+    #[default]
+    Name,
+    Extension,
+    Size,
+    Modified,
+    Created,
+}
+
+/// Sort order (ascending or descending).
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum SortOrder {
+    #[default]
+    Ascending,
+    Descending,
+}
+
 /// Configuration for write operations.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -391,6 +414,12 @@ pub struct WriteOperationConfig {
     /// Returns a DryRunResult with totals and conflicts.
     #[serde(default)]
     pub dry_run: bool,
+    /// Column to sort files by during copy (default: name)
+    #[serde(default)]
+    pub sort_column: SortColumn,
+    /// Sort order (default: ascending)
+    #[serde(default)]
+    pub sort_order: SortOrder,
 }
 
 impl Default for WriteOperationConfig {
@@ -400,6 +429,8 @@ impl Default for WriteOperationConfig {
             overwrite: false,
             conflict_resolution: ConflictResolution::Stop,
             dry_run: false,
+            sort_column: SortColumn::default(),
+            sort_order: SortOrder::default(),
         }
     }
 }
@@ -416,6 +447,8 @@ fn default_progress_interval() -> u64 {
 pub struct WriteOperationState {
     /// Cancellation flag
     pub cancelled: AtomicBool,
+    /// Skip rollback flag (when true, keep partial files on cancellation)
+    pub skip_rollback: AtomicBool,
     /// Progress reporting interval
     pub progress_interval: Duration,
     /// Pending conflict resolution (set by resolve_write_conflict)
@@ -598,6 +631,7 @@ pub async fn copy_files_start(
     );
     let state = Arc::new(WriteOperationState {
         cancelled: AtomicBool::new(false),
+        skip_rollback: AtomicBool::new(false),
         progress_interval: Duration::from_millis(config.progress_interval_ms),
         pending_resolution: RwLock::new(None),
         conflict_condvar: std::sync::Condvar::new(),
@@ -672,6 +706,7 @@ pub async fn move_files_start(
     let operation_id = Uuid::new_v4().to_string();
     let state = Arc::new(WriteOperationState {
         cancelled: AtomicBool::new(false),
+        skip_rollback: AtomicBool::new(false),
         progress_interval: Duration::from_millis(config.progress_interval_ms),
         pending_resolution: RwLock::new(None),
         conflict_condvar: std::sync::Condvar::new(),
@@ -741,6 +776,7 @@ pub async fn delete_files_start(
     let operation_id = Uuid::new_v4().to_string();
     let state = Arc::new(WriteOperationState {
         cancelled: AtomicBool::new(false),
+        skip_rollback: AtomicBool::new(false),
         progress_interval: Duration::from_millis(config.progress_interval_ms),
         pending_resolution: RwLock::new(None),
         conflict_condvar: std::sync::Condvar::new(),
@@ -797,11 +833,16 @@ pub async fn delete_files_start(
 }
 
 /// Cancels an in-progress write operation.
-pub fn cancel_write_operation(operation_id: &str) {
+///
+/// # Arguments
+/// * `operation_id` - The operation ID to cancel
+/// * `rollback` - If true, delete any partial files created. If false, keep them.
+pub fn cancel_write_operation(operation_id: &str, rollback: bool) {
     if let Ok(cache) = WRITE_OPERATION_STATE.read()
         && let Some(state) = cache.get(operation_id)
     {
         state.cancelled.store(true, Ordering::Relaxed);
+        state.skip_rollback.store(!rollback, Ordering::Relaxed);
         // Wake up any waiting conflict resolution
         let _guard = state.conflict_mutex.lock();
         state.conflict_condvar.notify_all();
@@ -1010,10 +1051,73 @@ pub(crate) fn is_same_filesystem(_source: &Path, _destination: &Path) -> std::io
 // Scanning helpers
 // ============================================================================
 
+/// File info collected during scan (used for sorting).
+#[derive(Debug, Clone)]
+struct FileInfo {
+    path: PathBuf,
+    /// Parent of the original source (used to compute relative path for destination)
+    source_root: PathBuf,
+    size: u64,
+    modified: u64, // Unix timestamp in seconds
+    created: u64,  // Unix timestamp in seconds
+    is_symlink: bool,
+}
+
+impl FileInfo {
+    fn new(path: PathBuf, source_root: PathBuf, metadata: &fs::Metadata) -> Self {
+        use std::time::UNIX_EPOCH;
+        Self {
+            path,
+            source_root,
+            size: metadata.len(),
+            modified: metadata
+                .modified()
+                .ok()
+                .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+                .map(|d| d.as_secs())
+                .unwrap_or(0),
+            created: metadata
+                .created()
+                .ok()
+                .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+                .map(|d| d.as_secs())
+                .unwrap_or(0),
+            is_symlink: metadata.is_symlink(),
+        }
+    }
+
+    /// Get extension for sorting (lowercase, empty string if none).
+    fn extension(&self) -> String {
+        self.path
+            .extension()
+            .map(|e| e.to_string_lossy().to_lowercase())
+            .unwrap_or_default()
+    }
+
+    /// Get filename for sorting (lowercase).
+    fn name_lower(&self) -> String {
+        self.path
+            .file_name()
+            .map(|n| n.to_string_lossy().to_lowercase())
+            .unwrap_or_default()
+    }
+
+    /// Compute the destination path for this file given the destination root.
+    fn dest_path(&self, destination: &Path) -> PathBuf {
+        // Strip source_root from path to get relative path, then join with destination
+        if let Ok(relative) = self.path.strip_prefix(&self.source_root) {
+            destination.join(relative)
+        } else {
+            // Fallback: just use the filename
+            destination.join(self.path.file_name().unwrap_or_default())
+        }
+    }
+}
+
 /// Information about files to be processed.
 struct ScanResult {
-    /// All files to process (in order: files first for copying, then dirs for deletion)
-    files: Vec<PathBuf>,
+    /// All files to process with metadata for sorting
+    files: Vec<FileInfo>,
     /// Directories to process (for deletion, in reverse order - deepest first)
     dirs: Vec<PathBuf>,
     /// Total file count (not including directories)
@@ -1022,13 +1126,36 @@ struct ScanResult {
     total_bytes: u64,
 }
 
+/// Sorts files according to the specified column and order.
+fn sort_files(files: &mut [FileInfo], column: SortColumn, order: SortOrder) {
+    files.sort_by(|a, b| {
+        let cmp = match column {
+            SortColumn::Name => a.name_lower().cmp(&b.name_lower()),
+            SortColumn::Extension => a
+                .extension()
+                .cmp(&b.extension())
+                .then_with(|| a.name_lower().cmp(&b.name_lower())),
+            SortColumn::Size => a.size.cmp(&b.size),
+            SortColumn::Modified => a.modified.cmp(&b.modified),
+            SortColumn::Created => a.created.cmp(&b.created),
+        };
+        match order {
+            SortOrder::Ascending => cmp,
+            SortOrder::Descending => cmp.reverse(),
+        }
+    });
+}
+
 /// Scans source paths recursively, returns file list and totals.
+/// Files are sorted according to the specified column and order.
 fn scan_sources(
     sources: &[PathBuf],
     state: &Arc<WriteOperationState>,
     app: &tauri::AppHandle,
     operation_id: &str,
     operation_type: WriteOperationType,
+    sort_column: SortColumn,
+    sort_order: SortOrder,
 ) -> Result<ScanResult, WriteOperationError> {
     use tauri::Emitter;
 
@@ -1039,8 +1166,12 @@ fn scan_sources(
     let mut visited = HashSet::new();
 
     for source in sources {
+        // source_root is the parent directory of the source file/folder
+        // This is used to compute relative paths for the destination
+        let source_root = source.parent().unwrap_or(source);
         scan_path_recursive(
             source,
+            source_root,
             &mut files,
             &mut dirs,
             &mut total_bytes,
@@ -1053,6 +1184,9 @@ fn scan_sources(
             &mut visited,
         )?;
     }
+
+    // Sort files according to configuration
+    sort_files(&mut files, sort_column, sort_order);
 
     // Emit final scanning progress
     log::debug!(
@@ -1089,7 +1223,8 @@ fn scan_sources(
 )]
 fn scan_path_recursive(
     path: &Path,
-    files: &mut Vec<PathBuf>,
+    source_root: &Path,
+    files: &mut Vec<FileInfo>,
     dirs: &mut Vec<PathBuf>,
     total_bytes: &mut u64,
     state: &Arc<WriteOperationState>,
@@ -1118,10 +1253,10 @@ fn scan_path_recursive(
     if metadata.is_symlink() {
         // For symlinks, just add the size and the file itself
         *total_bytes += metadata.len();
-        files.push(path.to_path_buf());
+        files.push(FileInfo::new(path.to_path_buf(), source_root.to_path_buf(), &metadata));
     } else if metadata.is_file() {
         *total_bytes += metadata.len();
-        files.push(path.to_path_buf());
+        files.push(FileInfo::new(path.to_path_buf(), source_root.to_path_buf(), &metadata));
     } else if metadata.is_dir() {
         // Check for symlink loop before recursing
         if is_symlink_loop(path, visited) {
@@ -1147,6 +1282,7 @@ fn scan_path_recursive(
         for entry in entries.flatten() {
             scan_path_recursive(
                 &entry.path(),
+                source_root,
                 files,
                 dirs,
                 total_bytes,
@@ -1784,8 +1920,19 @@ fn copy_files_with_progress(
     }
 
     // Phase 1: Scan
-    log::debug!("copy_files_with_progress: starting scan phase for operation_id={}", operation_id);
-    let scan_result = scan_sources(sources, state, app, operation_id, WriteOperationType::Copy)?;
+    log::debug!(
+        "copy_files_with_progress: starting scan phase for operation_id={}",
+        operation_id
+    );
+    let scan_result = scan_sources(
+        sources,
+        state,
+        app,
+        operation_id,
+        WriteOperationType::Copy,
+        config.sort_column,
+        config.sort_order,
+    )?;
     log::info!(
         "copy_files_with_progress: scan complete for operation_id={}, files={}, bytes={}",
         operation_id,
@@ -1793,18 +1940,20 @@ fn copy_files_with_progress(
         scan_result.total_bytes
     );
 
-    // Phase 2: Copy files with rollback support
+    // Phase 2: Copy files in sorted order with rollback support
     let mut transaction = CopyTransaction::new();
     let mut files_done = 0;
     let mut bytes_done = 0u64;
     let mut last_progress_time = Instant::now();
     let mut apply_to_all_resolution: Option<ConflictResolution> = None;
+    let mut created_dirs: HashSet<PathBuf> = HashSet::new();
 
     let result: Result<(), WriteOperationError> = (|| {
-        for source in sources {
-            copy_path_recursive(
-                source,
-                destination,
+        for file_info in &scan_result.files {
+            copy_single_file_sorted(
+                &file_info.path,
+                file_info.dest_path(destination),
+                file_info.is_symlink,
                 &mut files_done,
                 &mut bytes_done,
                 scan_result.file_count,
@@ -1817,6 +1966,7 @@ fn copy_files_with_progress(
                 config,
                 &mut transaction,
                 &mut apply_to_all_resolution,
+                &mut created_dirs,
             )?;
         }
         Ok(())
@@ -1850,16 +2000,45 @@ fn copy_files_with_progress(
             Ok(())
         }
         Err(e) => {
-            // Failure - rollback created files
-            log::error!(
-                "copy_files_with_progress: failed op={} error={:?}, rolling back",
-                operation_id,
-                e
-            );
-            transaction.rollback();
+            if matches!(e, WriteOperationError::Cancelled { .. }) {
+                // Cancellation - check if user wants to keep partial files
+                let skip_rollback = state.skip_rollback.load(Ordering::Relaxed);
+                let rolled_back = !skip_rollback;
 
-            // Don't emit write-error for cancellation - write-cancelled was already emitted
-            if !matches!(e, WriteOperationError::Cancelled { .. }) {
+                if skip_rollback {
+                    log::info!(
+                        "copy_files_with_progress: cancelled op={}, keeping {} partial files",
+                        operation_id,
+                        transaction.created_files.len()
+                    );
+                    transaction.commit();
+                } else {
+                    log::info!(
+                        "copy_files_with_progress: cancelled op={}, rolling back {} files",
+                        operation_id,
+                        transaction.created_files.len()
+                    );
+                    transaction.rollback();
+                }
+
+                let _ = app.emit(
+                    "write-cancelled",
+                    WriteCancelledEvent {
+                        operation_id: operation_id.to_string(),
+                        operation_type: WriteOperationType::Copy,
+                        files_processed: files_done,
+                        rolled_back,
+                    },
+                );
+            } else {
+                // Non-cancellation error - always rollback
+                log::error!(
+                    "copy_files_with_progress: failed op={} error={:?}, rolling back",
+                    operation_id,
+                    e
+                );
+                transaction.rollback();
+
                 let _ = app.emit(
                     "write-error",
                     WriteErrorEvent {
@@ -1872,6 +2051,227 @@ fn copy_files_with_progress(
             Err(e)
         }
     }
+}
+
+/// Copies a single file from the sorted file list to its destination.
+/// Ensures parent directories exist before copying.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "File copy requires passing state through multiple levels"
+)]
+fn copy_single_file_sorted(
+    source: &Path,
+    dest_path: PathBuf,
+    is_symlink: bool,
+    files_done: &mut usize,
+    bytes_done: &mut u64,
+    files_total: usize,
+    bytes_total: u64,
+    state: &Arc<WriteOperationState>,
+    app: &tauri::AppHandle,
+    operation_id: &str,
+    progress_interval: &Duration,
+    last_progress_time: &mut Instant,
+    config: &WriteOperationConfig,
+    transaction: &mut CopyTransaction,
+    apply_to_all_resolution: &mut Option<ConflictResolution>,
+    created_dirs: &mut HashSet<PathBuf>,
+) -> Result<(), WriteOperationError> {
+    use tauri::Emitter;
+
+    // Check cancellation
+    if state.cancelled.load(Ordering::Relaxed) {
+        log::debug!(
+            "copy: cancellation detected op={} files_done={}",
+            operation_id,
+            *files_done
+        );
+        return Err(WriteOperationError::Cancelled {
+            message: "Operation cancelled by user".to_string(),
+        });
+    }
+
+    // Ensure parent directories exist
+    if let Some(parent) = dest_path.parent()
+        && !created_dirs.contains(parent) && !parent.exists() {
+            fs::create_dir_all(parent).map_err(|e| WriteOperationError::IoError {
+                path: parent.display().to_string(),
+                message: format!("Failed to create directory: {}", e),
+            })?;
+            // Record all created directories for transaction rollback
+            let mut dir = parent.to_path_buf();
+            while !created_dirs.contains(&dir) {
+                if dir.exists() {
+                    transaction.record_dir(dir.clone());
+                    created_dirs.insert(dir.clone());
+                }
+                match dir.parent() {
+                    Some(p) if !created_dirs.contains(p) => dir = p.to_path_buf(),
+                    _ => break,
+                }
+            }
+        }
+
+    // Get metadata for size tracking
+    let metadata = fs::symlink_metadata(source).map_err(|e| WriteOperationError::IoError {
+        path: source.display().to_string(),
+        message: e.to_string(),
+    })?;
+
+    let file_name = source.file_name().unwrap_or_default();
+
+    if is_symlink {
+        // Handle symlink
+        let (actual_dest, needs_safe_overwrite) = if dest_path.exists() || fs::symlink_metadata(&dest_path).is_ok() {
+            match resolve_conflict(
+                source,
+                &dest_path,
+                config,
+                app,
+                operation_id,
+                state,
+                apply_to_all_resolution,
+            )? {
+                Some(resolved) => (resolved.path, resolved.needs_safe_overwrite),
+                None => return Ok(()), // Skip this file
+            }
+        } else {
+            (dest_path.clone(), false)
+        };
+
+        if needs_safe_overwrite {
+            if actual_dest.is_dir() {
+                fs::remove_dir_all(&actual_dest).map_err(|e| WriteOperationError::IoError {
+                    path: actual_dest.display().to_string(),
+                    message: e.to_string(),
+                })?;
+            } else {
+                fs::remove_file(&actual_dest).map_err(|e| WriteOperationError::IoError {
+                    path: actual_dest.display().to_string(),
+                    message: e.to_string(),
+                })?;
+            }
+        }
+
+        #[cfg(target_os = "macos")]
+        {
+            copy_symlink(source, &actual_dest)?;
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            let target = fs::read_link(source).map_err(|e| WriteOperationError::IoError {
+                path: source.display().to_string(),
+                message: format!("Failed to read symlink: {}", e),
+            })?;
+            std::os::unix::fs::symlink(&target, &actual_dest).map_err(|e| WriteOperationError::IoError {
+                path: actual_dest.display().to_string(),
+                message: format!("Failed to create symlink: {}", e),
+            })?;
+        }
+
+        transaction.record_file(actual_dest);
+        *files_done += 1;
+        *bytes_done += metadata.len();
+    } else {
+        // Handle regular file
+        let (actual_dest, needs_safe_overwrite) = if dest_path.exists() {
+            match resolve_conflict(
+                source,
+                &dest_path,
+                config,
+                app,
+                operation_id,
+                state,
+                apply_to_all_resolution,
+            )? {
+                Some(resolved) => (resolved.path, resolved.needs_safe_overwrite),
+                None => return Ok(()), // Skip this file
+            }
+        } else {
+            (dest_path.clone(), false)
+        };
+
+        // Check cancellation before copy
+        if state.cancelled.load(Ordering::Relaxed) {
+            return Err(WriteOperationError::Cancelled {
+                message: "Operation cancelled by user".to_string(),
+            });
+        }
+
+        // Copy file using platform-specific method
+        let bytes = if needs_safe_overwrite {
+            #[cfg(target_os = "macos")]
+            {
+                let context = CopyProgressContext {
+                    cancelled: Arc::new(AtomicBool::new(false)),
+                    ..Default::default()
+                };
+                safe_overwrite_file(source, &actual_dest, Some(&context))?
+            }
+            #[cfg(not(target_os = "macos"))]
+            {
+                safe_overwrite_file(source, &actual_dest)?
+            }
+        } else {
+            #[cfg(target_os = "macos")]
+            {
+                let context = CopyProgressContext {
+                    cancelled: Arc::new(AtomicBool::new(false)),
+                    ..Default::default()
+                };
+                copy_single_file_native(source, &actual_dest, false, Some(&context))?
+            }
+            #[cfg(not(target_os = "macos"))]
+            {
+                fs::copy(source, &actual_dest).map_err(|e| WriteOperationError::IoError {
+                    path: source.display().to_string(),
+                    message: e.to_string(),
+                })?
+            }
+        };
+
+        transaction.record_file(actual_dest.clone());
+        *files_done += 1;
+        *bytes_done += bytes;
+
+        // Emit progress
+        if last_progress_time.elapsed() >= *progress_interval {
+            let current_file_name = file_name.to_string_lossy().to_string();
+            log::debug!(
+                "copy: emitting write-progress op={} phase=copying files={}/{} bytes={}/{}",
+                operation_id,
+                *files_done,
+                files_total,
+                *bytes_done,
+                bytes_total
+            );
+            let _ = app.emit(
+                "write-progress",
+                WriteProgressEvent {
+                    operation_id: operation_id.to_string(),
+                    operation_type: WriteOperationType::Copy,
+                    phase: WriteOperationPhase::Copying,
+                    current_file: Some(current_file_name.clone()),
+                    files_done: *files_done,
+                    files_total,
+                    bytes_done: *bytes_done,
+                    bytes_total,
+                },
+            );
+            update_operation_status(
+                operation_id,
+                WriteOperationPhase::Copying,
+                Some(current_file_name),
+                *files_done,
+                files_total,
+                *bytes_done,
+                bytes_total,
+            );
+            *last_progress_time = Instant::now();
+        }
+    }
+
+    Ok(())
 }
 
 #[allow(
@@ -1896,20 +2296,12 @@ fn copy_path_recursive(
 ) -> Result<(), WriteOperationError> {
     use tauri::Emitter;
 
-    // Check cancellation
+    // Check cancellation (event will be emitted from error handler after rollback decision)
     if state.cancelled.load(Ordering::Relaxed) {
-        log::info!(
-            "copy: cancelled by user op={} files_processed={}",
+        log::debug!(
+            "copy: cancellation detected op={} files_done={}",
             operation_id,
             *files_done
-        );
-        let _ = app.emit(
-            "write-cancelled",
-            WriteCancelledEvent {
-                operation_id: operation_id.to_string(),
-                operation_type: WriteOperationType::Copy,
-                files_processed: *files_done,
-            },
         );
         return Err(WriteOperationError::Cancelled {
             message: "Operation cancelled by user".to_string(),
@@ -2210,6 +2602,7 @@ fn move_with_rename(
                     operation_id: operation_id.to_string(),
                     operation_type: WriteOperationType::Move,
                     files_processed: files_done,
+                    rolled_back: false, // Same-filesystem moves are atomic, nothing to rollback
                 },
             );
             return Err(WriteOperationError::Cancelled {
@@ -2300,8 +2693,16 @@ fn move_with_staging(
 ) -> Result<(), WriteOperationError> {
     use tauri::Emitter;
 
-    // Phase 1: Scan
-    let scan_result = scan_sources(sources, state, app, operation_id, WriteOperationType::Move)?;
+    // Phase 1: Scan (move uses default sorting - order doesn't matter much for move)
+    let scan_result = scan_sources(
+        sources,
+        state,
+        app,
+        operation_id,
+        WriteOperationType::Move,
+        config.sort_column,
+        config.sort_order,
+    )?;
 
     // Create staging directory
     let staging_dir = destination.join(format!(".cmdr-staging-{}", operation_id));
@@ -2469,6 +2870,7 @@ fn delete_sources_after_move(
                     operation_id: operation_id.to_string(),
                     operation_type: WriteOperationType::Move,
                     files_processed: files_done,
+                    rolled_back: false, // Source deletion phase - nothing to rollback
                 },
             );
             return Err(WriteOperationError::Cancelled {
@@ -2508,8 +2910,16 @@ fn delete_files_with_progress(
 ) -> Result<(), WriteOperationError> {
     use tauri::Emitter;
 
-    // Phase 1: Scan to get file count
-    let scan_result = scan_sources(sources, state, app, operation_id, WriteOperationType::Delete)?;
+    // Phase 1: Scan to get file count (delete uses default sorting)
+    let scan_result = scan_sources(
+        sources,
+        state,
+        app,
+        operation_id,
+        WriteOperationType::Delete,
+        config.sort_column,
+        config.sort_order,
+    )?;
 
     // Handle dry-run mode (delete has no conflicts)
     if config.dry_run {
@@ -2533,7 +2943,7 @@ fn delete_files_with_progress(
     let mut last_progress_time = Instant::now();
 
     // Delete files
-    for file in &scan_result.files {
+    for file_info in &scan_result.files {
         // Check cancellation
         if state.cancelled.load(Ordering::Relaxed) {
             let _ = app.emit(
@@ -2542,6 +2952,7 @@ fn delete_files_with_progress(
                     operation_id: operation_id.to_string(),
                     operation_type: WriteOperationType::Delete,
                     files_processed: files_done,
+                    rolled_back: false, // Delete operations can't be rolled back
                 },
             );
             return Err(WriteOperationError::Cancelled {
@@ -2549,11 +2960,11 @@ fn delete_files_with_progress(
             });
         }
 
-        // Use symlink_metadata for accurate size (don't follow symlinks)
-        let file_size = fs::symlink_metadata(file).map(|m| m.len()).unwrap_or(0);
+        // Use the size from FileInfo (already captured during scan)
+        let file_size = file_info.size;
 
-        fs::remove_file(file).map_err(|e| WriteOperationError::IoError {
-            path: file.display().to_string(),
+        fs::remove_file(&file_info.path).map_err(|e| WriteOperationError::IoError {
+            path: file_info.path.display().to_string(),
             message: e.to_string(),
         })?;
 
@@ -2562,7 +2973,7 @@ fn delete_files_with_progress(
 
         // Emit progress
         if last_progress_time.elapsed() >= state.progress_interval {
-            let current_file = file.file_name().map(|n| n.to_string_lossy().to_string());
+            let current_file = file_info.path.file_name().map(|n| n.to_string_lossy().to_string());
             let _ = app.emit(
                 "write-progress",
                 WriteProgressEvent {
@@ -2599,6 +3010,7 @@ fn delete_files_with_progress(
                     operation_id: operation_id.to_string(),
                     operation_type: WriteOperationType::Delete,
                     files_processed: files_done,
+                    rolled_back: false, // Delete operations can't be rolled back
                 },
             );
             return Err(WriteOperationError::Cancelled {

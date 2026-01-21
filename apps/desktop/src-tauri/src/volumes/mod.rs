@@ -387,9 +387,7 @@ fn get_string_resource(url: &objc2_foundation::NSURL, key: &str) -> Option<Strin
 fn get_u64_resource(url: &objc2_foundation::NSURL, key: &str) -> Option<u64> {
     use objc2_foundation::NSNumber;
     get_nsurl_resource(url, key, |obj| {
-        obj.downcast::<NSNumber>()
-            .ok()
-            .map(|n| n.unsignedLongLongValue())
+        obj.downcast::<NSNumber>().ok().map(|n| n.unsignedLongLongValue())
     })
 }
 

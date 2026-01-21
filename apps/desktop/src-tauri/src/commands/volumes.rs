@@ -1,6 +1,6 @@
 //! Tauri commands for volume operations.
 
-use crate::volumes::{self, LocationCategory, VolumeInfo, VolumeSpaceInfo, DEFAULT_VOLUME_ID};
+use crate::volumes::{self, DEFAULT_VOLUME_ID, LocationCategory, VolumeInfo, VolumeSpaceInfo};
 
 /// Lists all mounted volumes.
 #[tauri::command]

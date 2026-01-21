@@ -143,14 +143,6 @@ export interface VolumeInfo {
     isEjectable: boolean
 }
 
-/** Space information for a volume. */
-export interface VolumeSpaceInfo {
-    /** Total capacity in bytes */
-    totalBytes: number
-    /** Available capacity in bytes (free space for user) */
-    availableBytes: number
-}
-
 // ============================================================================
 // Sorting types
 // ============================================================================
@@ -348,6 +340,10 @@ export interface WriteOperationConfig {
     conflictResolution?: ConflictResolution
     /** If true, only scan and detect conflicts without executing the operation */
     dryRun?: boolean
+    /** Column to sort files by during copy (default: name) */
+    sortColumn?: SortColumn
+    /** Sort order for copy operation (default: ascending) */
+    sortOrder?: SortOrder
 }
 
 /** Result of starting a write operation. */
@@ -396,6 +392,8 @@ export interface WriteCancelledEvent {
     operationType: WriteOperationType
     /** Number of files processed before cancellation */
     filesProcessed: number
+    /** Whether partial files were rolled back (deleted) */
+    rolledBack: boolean
 }
 
 /** Conflict event payload (emitted when stop mode encounters a conflict). */

@@ -95,6 +95,8 @@
         sourceFolderPath: string
         destinationPath: string
         direction: 'left' | 'right'
+        sortColumn: SortColumn
+        sortOrder: SortOrder
     } | null>(null)
 
     // Navigation history for each pane (per-pane, session-only)
@@ -899,12 +901,20 @@
     function handleCopyConfirm(destination: string) {
         if (!copyDialogProps) return
 
+        // Get sort settings from the source pane
+        // direction 'right' means source is left pane, direction 'left' means source is right pane
+        const isSourceLeft = copyDialogProps.direction === 'right'
+        const sortColumn = isSourceLeft ? leftSortBy : rightSortBy
+        const sortOrder = isSourceLeft ? leftSortOrder : rightSortOrder
+
         // Store the props needed for the progress dialog
         copyProgressProps = {
             sourcePaths: copyDialogProps.sourcePaths,
             sourceFolderPath: copyDialogProps.sourceFolderPath,
             destinationPath: destination,
             direction: copyDialogProps.direction,
+            sortColumn,
+            sortOrder,
         }
 
         // Close copy dialog and open progress dialog
@@ -1249,6 +1259,8 @@
         sourceFolderPath={copyProgressProps.sourceFolderPath}
         destinationPath={copyProgressProps.destinationPath}
         direction={copyProgressProps.direction}
+        sortColumn={copyProgressProps.sortColumn}
+        sortOrder={copyProgressProps.sortOrder}
         onComplete={handleCopyComplete}
         onCancelled={handleCopyCancelled}
         onError={handleCopyError}

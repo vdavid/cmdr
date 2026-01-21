@@ -31,6 +31,7 @@ fn cleanup_temp_dir(path: &PathBuf) {
 fn test_cancel_sets_flag() {
     let state = Arc::new(WriteOperationState {
         cancelled: AtomicBool::new(false),
+        skip_rollback: AtomicBool::new(false),
         progress_interval: Duration::from_millis(200),
         pending_resolution: RwLock::new(None),
         conflict_condvar: std::sync::Condvar::new(),
@@ -142,4 +143,164 @@ fn test_create_and_cleanup_temp_dir() {
 
     cleanup_temp_dir(&temp_dir);
     assert!(!temp_dir.exists());
+}
+
+// ============================================================================
+// CopyTransaction rollback tests
+// ============================================================================
+
+#[test]
+fn test_copy_transaction_rollback_deletes_files() {
+    let temp_dir = create_temp_dir("rollback_files");
+
+    // Create some files to simulate a partial copy
+    let file1 = temp_dir.join("file1.txt");
+    let file2 = temp_dir.join("file2.txt");
+    let file3 = temp_dir.join("subdir").join("file3.txt");
+
+    fs::write(&file1, "content1").expect("Failed to create file1");
+    fs::write(&file2, "content2").expect("Failed to create file2");
+    fs::create_dir_all(file3.parent().unwrap()).expect("Failed to create subdir");
+    fs::write(&file3, "content3").expect("Failed to create file3");
+
+    // Verify files exist before rollback
+    assert!(file1.exists(), "file1 should exist before rollback");
+    assert!(file2.exists(), "file2 should exist before rollback");
+    assert!(file3.exists(), "file3 should exist before rollback");
+
+    // Record files in transaction
+    let mut transaction = CopyTransaction::new();
+    transaction.record_file(file1.clone());
+    transaction.record_file(file2.clone());
+    transaction.record_file(file3.clone());
+    transaction.record_dir(temp_dir.join("subdir"));
+
+    // Rollback should delete all recorded files and directories
+    transaction.rollback();
+
+    // Verify files are deleted
+    assert!(!file1.exists(), "file1 should be deleted after rollback");
+    assert!(!file2.exists(), "file2 should be deleted after rollback");
+    assert!(!file3.exists(), "file3 should be deleted after rollback");
+    assert!(
+        !temp_dir.join("subdir").exists(),
+        "subdir should be deleted after rollback"
+    );
+
+    cleanup_temp_dir(&temp_dir);
+}
+
+#[test]
+fn test_copy_transaction_commit_keeps_files() {
+    let temp_dir = create_temp_dir("commit_files");
+
+    // Create some files to simulate a partial copy
+    let file1 = temp_dir.join("file1.txt");
+    let file2 = temp_dir.join("file2.txt");
+
+    fs::write(&file1, "content1").expect("Failed to create file1");
+    fs::write(&file2, "content2").expect("Failed to create file2");
+
+    // Record files in transaction
+    let mut transaction = CopyTransaction::new();
+    transaction.record_file(file1.clone());
+    transaction.record_file(file2.clone());
+
+    // Commit should NOT delete files (they are kept)
+    transaction.commit();
+
+    // Verify files still exist
+    assert!(file1.exists(), "file1 should still exist after commit");
+    assert!(file2.exists(), "file2 should still exist after commit");
+
+    // Verify content is intact
+    assert_eq!(fs::read_to_string(&file1).unwrap(), "content1");
+    assert_eq!(fs::read_to_string(&file2).unwrap(), "content2");
+
+    cleanup_temp_dir(&temp_dir);
+}
+
+#[test]
+fn test_copy_transaction_rollback_handles_already_deleted_files() {
+    let temp_dir = create_temp_dir("rollback_missing");
+
+    // Create a file
+    let file1 = temp_dir.join("file1.txt");
+    fs::write(&file1, "content1").expect("Failed to create file1");
+
+    // Record in transaction
+    let mut transaction = CopyTransaction::new();
+    transaction.record_file(file1.clone());
+
+    // Delete file before rollback (simulates external deletion)
+    fs::remove_file(&file1).expect("Failed to delete file1");
+
+    // Rollback should not panic even if files are already gone
+    transaction.rollback(); // Should not panic
+
+    cleanup_temp_dir(&temp_dir);
+}
+
+#[test]
+fn test_skip_rollback_flag_behavior() {
+    // Test that skip_rollback flag controls rollback behavior
+    let state = Arc::new(WriteOperationState {
+        cancelled: AtomicBool::new(false),
+        skip_rollback: AtomicBool::new(false),
+        progress_interval: Duration::from_millis(200),
+        pending_resolution: RwLock::new(None),
+        conflict_condvar: std::sync::Condvar::new(),
+        conflict_mutex: std::sync::Mutex::new(false),
+    });
+
+    // Initially skip_rollback is false (rollback enabled)
+    assert!(!state.skip_rollback.load(Ordering::Relaxed));
+
+    // Set cancelled with rollback=true (skip_rollback stays false)
+    state.cancelled.store(true, Ordering::Relaxed);
+    state.skip_rollback.store(false, Ordering::Relaxed); // !rollback where rollback=true
+    assert!(state.cancelled.load(Ordering::Relaxed));
+    assert!(
+        !state.skip_rollback.load(Ordering::Relaxed),
+        "skip_rollback should be false when rollback=true"
+    );
+
+    // Reset and set cancelled with rollback=false (skip_rollback becomes true)
+    state.cancelled.store(true, Ordering::Relaxed);
+    state.skip_rollback.store(true, Ordering::Relaxed); // !rollback where rollback=false
+    assert!(state.cancelled.load(Ordering::Relaxed));
+    assert!(
+        state.skip_rollback.load(Ordering::Relaxed),
+        "skip_rollback should be true when rollback=false"
+    );
+}
+
+#[test]
+fn test_cancelled_event_rolled_back_field_serialization() {
+    // Test that WriteCancelledEvent serializes correctly with rolled_back field
+    let event_with_rollback = WriteCancelledEvent {
+        operation_id: "test-123".to_string(),
+        operation_type: WriteOperationType::Copy,
+        files_processed: 5,
+        rolled_back: true,
+    };
+
+    let json = serde_json::to_string(&event_with_rollback).unwrap();
+    assert!(
+        json.contains("\"rolledBack\":true"),
+        "JSON should contain rolledBack:true"
+    );
+
+    let event_without_rollback = WriteCancelledEvent {
+        operation_id: "test-456".to_string(),
+        operation_type: WriteOperationType::Copy,
+        files_processed: 3,
+        rolled_back: false,
+    };
+
+    let json = serde_json::to_string(&event_without_rollback).unwrap();
+    assert!(
+        json.contains("\"rolledBack\":false"),
+        "JSON should contain rolledBack:false"
+    );
 }

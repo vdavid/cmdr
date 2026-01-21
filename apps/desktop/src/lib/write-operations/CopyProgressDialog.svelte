@@ -15,7 +15,7 @@
         type WriteCancelledEvent,
         type UnlistenFn,
     } from '$lib/tauri-commands'
-    import type { WriteOperationPhase, WriteOperationError } from '$lib/file-explorer/types'
+    import type { WriteOperationPhase, WriteOperationError, SortColumn, SortOrder } from '$lib/file-explorer/types'
     import DirectionIndicator from './DirectionIndicator.svelte'
     import { getAppLogger } from '$lib/logger'
 
@@ -26,13 +26,26 @@
         sourceFolderPath: string
         destinationPath: string
         direction: 'left' | 'right'
+        /** Current sort column on source pane (files will be copied in this order) */
+        sortColumn: SortColumn
+        /** Current sort order on source pane */
+        sortOrder: SortOrder
         onComplete: (filesProcessed: number, bytesProcessed: number) => void
         onCancelled: (filesProcessed: number) => void
         onError: (error: string) => void
     }
 
-    const { sourcePaths, sourceFolderPath, destinationPath, direction, onComplete, onCancelled, onError }: Props =
-        $props()
+    const {
+        sourcePaths,
+        sourceFolderPath,
+        destinationPath,
+        direction,
+        sortColumn,
+        sortOrder,
+        onComplete,
+        onCancelled,
+        onError,
+    }: Props = $props()
 
     // Operation state
     let operationId = $state<string | null>(null)
@@ -44,6 +57,7 @@
     let bytesTotal = $state(0)
     let startTime = $state(0)
     let isCancelling = $state(false)
+    let isRollingBack = $state(false)
 
     // Calculated stats
     const percentComplete = $derived(bytesTotal > 0 ? (bytesDone / bytesTotal) * 100 : 0)
@@ -153,7 +167,10 @@
         // Filter by operationId (events are global)
         if (event.operationId !== operationId) return
 
-        log.info('Copy cancelled after {filesProcessed} files', { filesProcessed: event.filesProcessed })
+        log.info('Copy cancelled after {filesProcessed} files, rolledBack={rolledBack}', {
+            filesProcessed: event.filesProcessed,
+            rolledBack: event.rolledBack,
+        })
 
         cleanup()
         onCancelled(event.filesProcessed)
@@ -194,6 +211,8 @@
             const result = await copyFiles(sourcePaths, destinationPath, {
                 conflictResolution: 'stop',
                 progressIntervalMs: 100,
+                sortColumn,
+                sortOrder,
             })
 
             operationId = result.operationId
@@ -205,29 +224,52 @@
         }
     }
 
-    async function handleCancel() {
+    async function handleCancel(rollback: boolean) {
         if (!operationId) {
             log.warn('Cancel requested but no operationId yet')
             return
         }
-        if (isCancelling) {
-            log.debug('Cancel already in progress')
+        if (isCancelling || isRollingBack) {
+            log.debug('Cancel/rollback already in progress')
             return
         }
-        log.info('Cancelling operation: {operationId}', { operationId })
-        isCancelling = true
-        try {
-            await cancelWriteOperation(operationId)
-            log.debug('Cancel request sent successfully')
-        } catch (err) {
-            log.error('Failed to cancel operation: {error}', { error: err })
+
+        if (rollback) {
+            // Rollback: keep dialog open, show "Rolling back...", wait for event
+            log.info('Rolling back operation: {operationId}', { operationId })
+            isRollingBack = true
+            isCancelling = true
+            try {
+                await cancelWriteOperation(operationId, true)
+                log.debug('Rollback request sent successfully')
+                // Dialog will close when write-cancelled event is received
+            } catch (err) {
+                log.error('Failed to rollback operation: {error}', { error: err })
+                isRollingBack = false
+                isCancelling = false
+            }
+        } else {
+            // Cancel: close immediately, keep partial files
+            log.info('Cancelling operation (keeping partial files): {operationId}', { operationId })
+            isCancelling = true
+            try {
+                await cancelWriteOperation(operationId, false)
+                log.debug('Cancel request sent successfully')
+                // Close immediately without waiting for backend confirmation
+                cleanup()
+                onCancelled(filesDone)
+            } catch (err) {
+                log.error('Failed to cancel operation: {error}', { error: err })
+                isCancelling = false
+            }
         }
     }
 
     function handleKeydown(event: KeyboardEvent) {
         event.stopPropagation()
         if (event.key === 'Escape') {
-            void handleCancel()
+            // Escape key cancels without rollback (keeps partial files)
+            void handleCancel(false)
         }
     }
 
@@ -287,78 +329,107 @@
     >
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div class="dialog-title-bar" onmousedown={handleTitleMouseDown}>
-            <h2 id="progress-dialog-title">Copying...</h2>
+            <h2 id="progress-dialog-title">
+                {#if isRollingBack}
+                    Rolling back...
+                {:else}
+                    Copying...
+                {/if}
+            </h2>
         </div>
 
-        <!-- Direction indicator -->
-        <DirectionIndicator sourcePath={sourceFolderPath} {destinationPath} {direction} />
-
-        <!-- Progress stages -->
-        <div class="progress-stages">
-            {#each stages as stage (stage.id)}
-                {@const status = getStageStatus(stage.id)}
-                <div class="stage" class:done={status === 'done'} class:active={status === 'active'}>
-                    <div class="stage-indicator">
-                        {#if status === 'done'}
-                            <span class="checkmark">✓</span>
-                        {:else if status === 'active'}
-                            <span class="spinner"></span>
-                        {:else}
-                            <span class="dot"></span>
-                        {/if}
-                    </div>
-                    <span class="stage-label">{stage.label}</span>
+        {#if isRollingBack}
+            <!-- Rollback in progress -->
+            <div class="rollback-section">
+                <div class="rollback-indicator">
+                    <span class="spinner"></span>
                 </div>
-                {#if stage.id !== stages[stages.length - 1].id}
-                    <div class="stage-connector" class:done={status === 'done'}></div>
-                {/if}
-            {/each}
-        </div>
+                <p class="rollback-message">Deleting {filesDone} copied files...</p>
+            </div>
+        {:else}
+            <!-- Direction indicator -->
+            <DirectionIndicator sourcePath={sourceFolderPath} {destinationPath} {direction} />
 
-        <!-- Progress bar -->
-        <div class="progress-section">
-            <div class="progress-bar-container">
-                <div class="progress-bar" style="width: {percentComplete}%"></div>
+            <!-- Progress stages -->
+            <div class="progress-stages">
+                {#each stages as stage (stage.id)}
+                    {@const status = getStageStatus(stage.id)}
+                    <div class="stage" class:done={status === 'done'} class:active={status === 'active'}>
+                        <div class="stage-indicator">
+                            {#if status === 'done'}
+                                <span class="checkmark">✓</span>
+                            {:else if status === 'active'}
+                                <span class="spinner"></span>
+                            {:else}
+                                <span class="dot"></span>
+                            {/if}
+                        </div>
+                        <span class="stage-label">{stage.label}</span>
+                    </div>
+                    {#if stage.id !== stages[stages.length - 1].id}
+                        <div class="stage-connector" class:done={status === 'done'}></div>
+                    {/if}
+                {/each}
             </div>
-            <div class="progress-info">
-                <span class="progress-percent">{Math.round(percentComplete)}%</span>
-                {#if stats.estimatedSecondsRemaining !== null}
-                    <span class="eta">~{formatDuration(stats.estimatedSecondsRemaining)} remaining</span>
-                {/if}
-            </div>
-        </div>
 
-        <!-- Stats -->
-        <div class="stats-section">
-            <div class="stat-row">
-                <span class="stat-label">Files:</span>
-                <span class="stat-value">{filesDone} / {filesTotal}</span>
+            <!-- Progress bar -->
+            <div class="progress-section">
+                <div class="progress-bar-container">
+                    <div class="progress-bar" style="width: {percentComplete}%"></div>
+                </div>
+                <div class="progress-info">
+                    <span class="progress-percent">{Math.round(percentComplete)}%</span>
+                    {#if stats.estimatedSecondsRemaining !== null}
+                        <span class="eta">~{formatDuration(stats.estimatedSecondsRemaining)} remaining</span>
+                    {/if}
+                </div>
             </div>
-            <div class="stat-row">
-                <span class="stat-label">Size:</span>
-                <span class="stat-value">{formatBytes(bytesDone)} / {formatBytes(bytesTotal)}</span>
-            </div>
-            {#if stats.bytesPerSecond > 0}
+
+            <!-- Stats -->
+            <div class="stats-section">
                 <div class="stat-row">
-                    <span class="stat-label">Speed:</span>
-                    <span class="stat-value">{formatBytes(stats.bytesPerSecond)}/s</span>
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">{filesDone} / {filesTotal}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Size:</span>
+                    <span class="stat-value">{formatBytes(bytesDone)} / {formatBytes(bytesTotal)}</span>
+                </div>
+                {#if stats.bytesPerSecond > 0}
+                    <div class="stat-row">
+                        <span class="stat-label">Speed:</span>
+                        <span class="stat-value">{formatBytes(stats.bytesPerSecond)}/s</span>
+                    </div>
+                {/if}
+            </div>
+
+            <!-- Current file -->
+            {#if currentFile}
+                <div class="current-file" title={currentFile}>
+                    {currentFile}
                 </div>
             {/if}
-        </div>
 
-        <!-- Current file -->
-        {#if currentFile}
-            <div class="current-file" title={currentFile}>
-                {currentFile}
+            <!-- Action buttons -->
+            <div class="button-row">
+                <button
+                    class="secondary"
+                    onclick={() => handleCancel(false)}
+                    disabled={isCancelling}
+                    title="Cancel and keep progress"
+                >
+                    Cancel
+                </button>
+                <button
+                    class="danger"
+                    onclick={() => handleCancel(true)}
+                    disabled={isCancelling}
+                    title="Cancel and delete any partial target files created"
+                >
+                    Rollback
+                </button>
             </div>
         {/if}
-
-        <!-- Cancel button -->
-        <div class="button-row">
-            <button class="secondary" onclick={handleCancel} disabled={isCancelling}>
-                {isCancelling ? 'Cancelling...' : 'Cancel'}
-            </button>
-        </div>
     </div>
 </div>
 
@@ -577,5 +648,50 @@
     .secondary:hover:not(:disabled) {
         background: var(--color-bg-tertiary);
         color: var(--color-text-primary);
+    }
+
+    .danger {
+        background: transparent;
+        color: var(--color-error);
+        border: 1px solid var(--color-error);
+    }
+
+    .danger:hover:not(:disabled) {
+        background: var(--color-error);
+        color: var(--color-text-primary);
+    }
+
+    /* Rollback section */
+    .rollback-section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 32px 24px;
+        gap: 16px;
+    }
+
+    .rollback-indicator {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .rollback-indicator .spinner {
+        width: 24px;
+        height: 24px;
+        border: 3px solid var(--color-error);
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    .rollback-message {
+        margin: 0;
+        font-size: 13px;
+        color: var(--color-text-secondary);
+        text-align: center;
     }
 </style>

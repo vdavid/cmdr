@@ -32,7 +32,9 @@
         "updater.svelte.ts": { "reason": "Depends on Tauri updater APIs" },
         "window-state.ts": { "reason": "Depends on Tauri window APIs" },
         "write-operations/CopyDialog.svelte": { "reason": "UI modal, logic tested in copy-dialog-utils.test.ts" },
-        "write-operations/DirectionIndicator.svelte": { "reason": "Simple UI component, logic tested in copy-dialog-utils.test.ts" },
+        "write-operations/DirectionIndicator.svelte": {
+            "reason": "Simple UI component, logic tested in copy-dialog-utils.test.ts"
+        },
         "write-operations/CopyProgressDialog.svelte": { "reason": "UI dialog, depends on Tauri events" }
     }
 }

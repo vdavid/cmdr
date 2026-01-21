@@ -1066,9 +1066,10 @@ export async function deleteFiles(
  * Cancels an in-progress write operation.
  * The operation will emit a write-cancelled event when it stops.
  * @param operationId - The operation ID to cancel
+ * @param rollback - If true, delete any partial files created. If false, keep them.
  */
-export async function cancelWriteOperation(operationId: string): Promise<void> {
-    await invoke('cancel_write_operation', { operationId })
+export async function cancelWriteOperation(operationId: string, rollback: boolean): Promise<void> {
+    await invoke('cancel_write_operation', { operationId, rollback })
 }
 
 /**
