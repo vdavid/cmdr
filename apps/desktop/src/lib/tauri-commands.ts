@@ -1049,33 +1049,37 @@ export async function startScanPreview(
  * @param previewId - The preview ID to cancel
  */
 export async function cancelScanPreview(previewId: string): Promise<void> {
-    return invoke<void>('cancel_scan_preview', { previewId })
+    await invoke('cancel_scan_preview', { previewId })
 }
 
 /** Subscribe to scan preview progress events */
-export async function onScanPreviewProgress(
-    callback: (event: ScanPreviewProgressEvent) => void,
-): Promise<UnlistenFn> {
-    return listen<ScanPreviewProgressEvent>('scan-preview-progress', (event) => callback(event.payload))
+export async function onScanPreviewProgress(callback: (event: ScanPreviewProgressEvent) => void): Promise<UnlistenFn> {
+    return listen<ScanPreviewProgressEvent>('scan-preview-progress', (event) => {
+        callback(event.payload)
+    })
 }
 
 /** Subscribe to scan preview complete events */
-export async function onScanPreviewComplete(
-    callback: (event: ScanPreviewCompleteEvent) => void,
-): Promise<UnlistenFn> {
-    return listen<ScanPreviewCompleteEvent>('scan-preview-complete', (event) => callback(event.payload))
+export async function onScanPreviewComplete(callback: (event: ScanPreviewCompleteEvent) => void): Promise<UnlistenFn> {
+    return listen<ScanPreviewCompleteEvent>('scan-preview-complete', (event) => {
+        callback(event.payload)
+    })
 }
 
 /** Subscribe to scan preview error events */
 export async function onScanPreviewError(callback: (event: ScanPreviewErrorEvent) => void): Promise<UnlistenFn> {
-    return listen<ScanPreviewErrorEvent>('scan-preview-error', (event) => callback(event.payload))
+    return listen<ScanPreviewErrorEvent>('scan-preview-error', (event) => {
+        callback(event.payload)
+    })
 }
 
 /** Subscribe to scan preview cancelled events */
 export async function onScanPreviewCancelled(
     callback: (event: ScanPreviewCancelledEvent) => void,
 ): Promise<UnlistenFn> {
-    return listen<ScanPreviewCancelledEvent>('scan-preview-cancelled', (event) => callback(event.payload))
+    return listen<ScanPreviewCancelledEvent>('scan-preview-cancelled', (event) => {
+        callback(event.payload)
+    })
 }
 
 // ============================================================================

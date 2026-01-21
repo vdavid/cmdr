@@ -403,6 +403,14 @@ export interface WriteConflictEvent {
     operationId: string
     sourcePath: string
     destinationPath: string
+    /** Source file size in bytes */
+    sourceSize: number
+    /** Destination file size in bytes */
+    destinationSize: number
+    /** Source modification time (Unix timestamp in seconds), if available */
+    sourceModified: number | null
+    /** Destination modification time (Unix timestamp in seconds), if available */
+    destinationModified: number | null
     /** Whether destination is newer than source */
     destinationIsNewer: boolean
     /** Size difference (positive = destination is larger) */

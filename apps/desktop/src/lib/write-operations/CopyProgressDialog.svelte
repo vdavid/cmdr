@@ -25,8 +25,18 @@
         SortOrder,
         ConflictResolution,
     } from '$lib/file-explorer/types'
+    import { formatHumanReadable, formatDate } from '$lib/file-explorer/selection-info-utils'
     import DirectionIndicator from './DirectionIndicator.svelte'
     import { getAppLogger } from '$lib/logger'
+
+    /** Returns CSS class for size coloring based on bytes (kb/mb/gb/tb) */
+    function getSizeColorClass(bytes: number): string {
+        if (bytes < 1024) return 'size-bytes'
+        if (bytes < 1024 * 1024) return 'size-kb'
+        if (bytes < 1024 * 1024 * 1024) return 'size-mb'
+        if (bytes < 1024 * 1024 * 1024 * 1024) return 'size-gb'
+        return 'size-tb'
+    }
 
     const log = getAppLogger('copyProgress')
 
@@ -343,6 +353,29 @@
         if (event.key === 'Escape') {
             // Escape key cancels without rollback (keeps partial files)
             void handleCancel(false)
+        } else if (event.key === 'Tab') {
+            // Trap focus within the dialog
+            const focusableElements = overlayElement?.querySelectorAll<HTMLElement>(
+                'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+            )
+            if (!focusableElements || focusableElements.length === 0) return
+
+            const firstElement = focusableElements[0]
+            const lastElement = focusableElements[focusableElements.length - 1]
+
+            if (event.shiftKey) {
+                // Shift+Tab: if on first element, go to last
+                if (document.activeElement === firstElement) {
+                    event.preventDefault()
+                    lastElement.focus()
+                }
+            } else {
+                // Tab: if on last element, go to first
+                if (document.activeElement === lastElement) {
+                    event.preventDefault()
+                    firstElement.focus()
+                }
+            }
         }
     }
 
@@ -415,60 +448,90 @@
 
         {#if conflictEvent}
             <!-- Conflict resolution -->
+            {@const fileName = conflictEvent.destinationPath.split('/').pop() ?? ''}
+            {@const existingIsNewer = conflictEvent.destinationIsNewer}
+            {@const newIsNewer = !existingIsNewer && conflictEvent.sourceModified !== conflictEvent.destinationModified}
+            {@const existingIsLarger = conflictEvent.sizeDifference > 0}
+            {@const newIsLarger = conflictEvent.sizeDifference < 0}
             <div class="conflict-section">
-                <p class="conflict-message">
-                    <strong>{conflictEvent.destinationPath.split('/').pop()}</strong> already exists at destination.
-                </p>
-                <div class="conflict-details">
-                    {#if conflictEvent.destinationIsNewer}
-                        <span class="conflict-info">Destination is newer</span>
-                    {:else}
-                        <span class="conflict-info">Source is newer</span>
-                    {/if}
-                    {#if conflictEvent.sizeDifference !== 0}
-                        <span class="conflict-info">
-                            {conflictEvent.sizeDifference > 0 ? 'Destination is larger' : 'Source is larger'}
-                            ({formatBytes(Math.abs(conflictEvent.sizeDifference))})
-                        </span>
-                    {/if}
+                <!-- Filename -->
+                <p class="conflict-filename" title={conflictEvent.destinationPath}>{fileName}</p>
+
+                <!-- File comparison -->
+                <div class="conflict-comparison">
+                    <div class="conflict-file">
+                        <span class="conflict-file-label">Existing:</span>
+                        <span class="conflict-file-size {getSizeColorClass(conflictEvent.destinationSize)}"
+                            >{formatHumanReadable(conflictEvent.destinationSize)}</span
+                        >
+                        {#if existingIsLarger}<span class="conflict-annotation larger">(larger)</span>{/if}
+                        <span class="conflict-file-date"
+                            >{conflictEvent.destinationModified
+                                ? formatDate(conflictEvent.destinationModified)
+                                : ''}</span
+                        >
+                        {#if existingIsNewer}<span class="conflict-annotation newer">(newer)</span>{/if}
+                    </div>
+                    <div class="conflict-file">
+                        <span class="conflict-file-label">New:</span>
+                        <span class="conflict-file-size {getSizeColorClass(conflictEvent.sourceSize)}"
+                            >{formatHumanReadable(conflictEvent.sourceSize)}</span
+                        >
+                        {#if newIsLarger}<span class="conflict-annotation larger">(larger)</span>{/if}
+                        <span class="conflict-file-date"
+                            >{conflictEvent.sourceModified ? formatDate(conflictEvent.sourceModified) : ''}</span
+                        >
+                        {#if newIsNewer}<span class="conflict-annotation newer">(newer)</span>{/if}
+                    </div>
                 </div>
+
+                <!-- Question -->
+                <p class="conflict-question">Do you want to keep the existing file or overwrite it?</p>
+
+                <!-- Buttons in two rows -->
                 <div class="conflict-buttons">
-                    <button
-                        class="secondary"
-                        onclick={() => handleConflictResolution('skip', false)}
-                        disabled={isResolvingConflict}
-                    >
-                        Skip
-                    </button>
-                    <button
-                        class="secondary"
-                        onclick={() => handleConflictResolution('skip', true)}
-                        disabled={isResolvingConflict}
-                    >
-                        Skip all
-                    </button>
-                    <button
-                        class="primary"
-                        onclick={() => handleConflictResolution('overwrite', false)}
-                        disabled={isResolvingConflict}
-                    >
-                        Overwrite
-                    </button>
-                    <button
-                        class="primary"
-                        onclick={() => handleConflictResolution('overwrite', true)}
-                        disabled={isResolvingConflict}
-                    >
-                        Overwrite all
-                    </button>
+                    <div class="conflict-buttons-row">
+                        <button
+                            class="secondary"
+                            onclick={() => handleConflictResolution('skip', false)}
+                            disabled={isResolvingConflict}
+                        >
+                            Skip
+                        </button>
+                        <button
+                            class="secondary"
+                            onclick={() => handleConflictResolution('overwrite', false)}
+                            disabled={isResolvingConflict}
+                        >
+                            Overwrite
+                        </button>
+                    </div>
+                    <div class="conflict-buttons-row">
+                        <button
+                            class="secondary"
+                            onclick={() => handleConflictResolution('skip', true)}
+                            disabled={isResolvingConflict}
+                        >
+                            Skip all
+                        </button>
+                        <button
+                            class="secondary"
+                            onclick={() => handleConflictResolution('overwrite', true)}
+                            disabled={isResolvingConflict}
+                        >
+                            Overwrite all
+                        </button>
+                    </div>
                 </div>
+
+                <!-- Cancel at bottom -->
                 <div class="conflict-cancel">
                     <button
-                        class="danger"
+                        class="danger-text"
                         onclick={() => handleCancel(true)}
                         disabled={isCancelling || isResolvingConflict}
                     >
-                        Cancel operation
+                        Rollback
                     </button>
                 </div>
             </div>
@@ -498,7 +561,7 @@
                                 <span class="dot"></span>
                             {/if}
                         </div>
-                        <span class="stage-label">{stage.label}</span>
+                        <span>{stage.label}</span>
                     </div>
                     {#if stage.id !== stages[stages.length - 1].id}
                         <div class="stage-connector" class:done={status === 'done'}></div>
@@ -831,52 +894,128 @@
 
     /* Conflict section */
     .conflict-section {
-        padding: 16px 24px 20px;
+        padding: 12px 24px 20px;
     }
 
-    .conflict-message {
+    .conflict-filename {
         margin: 0 0 12px;
-        font-size: 13px;
+        font-size: 14px;
+        font-weight: 600;
         color: var(--color-text-primary);
         text-align: center;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
-    .conflict-details {
+    .conflict-comparison {
         display: flex;
         flex-direction: column;
-        align-items: center;
-        gap: 4px;
+        gap: 6px;
         margin-bottom: 16px;
+        font-size: 12px;
     }
 
-    .conflict-info {
+    .conflict-file {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .conflict-file-label {
+        color: var(--color-text-muted);
+        min-width: 55px;
+        text-align: right;
+    }
+
+    .conflict-file-size {
+        font-weight: 500;
+        min-width: 70px;
+    }
+
+    .conflict-file-date {
+        color: var(--color-text-secondary);
+        font-size: 11px;
+    }
+
+    .conflict-annotation {
+        font-size: 11px;
+        font-weight: 500;
+    }
+
+    .conflict-annotation.newer {
+        color: var(--color-accent);
+    }
+
+    .conflict-annotation.larger {
+        color: var(--color-size-mb);
+    }
+
+    .conflict-question {
+        margin: 0 0 16px;
         font-size: 12px;
         color: var(--color-text-muted);
+        text-align: center;
     }
 
     .conflict-buttons {
         display: flex;
-        flex-wrap: wrap;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    .conflict-buttons-row {
+        display: flex;
         gap: 8px;
         justify-content: center;
-        margin-bottom: 12px;
     }
 
     .conflict-buttons button {
-        min-width: auto;
-        padding: 6px 12px;
-        font-size: 12px;
+        flex: 1;
+        max-width: 120px;
     }
 
     .conflict-cancel {
         display: flex;
         justify-content: center;
-        padding-top: 8px;
+        padding-top: 12px;
         border-top: 1px solid var(--color-border-primary);
     }
 
-    .conflict-cancel button {
+    /* Size colors (matching file list) */
+    .size-bytes {
+        color: var(--color-text-secondary);
+    }
+
+    .size-kb {
+        color: var(--color-size-kb);
+    }
+
+    .size-mb {
+        color: var(--color-size-mb);
+    }
+
+    .size-gb {
+        color: var(--color-size-gb);
+    }
+
+    .size-tb {
+        color: var(--color-size-tb);
+    }
+
+    /* Text-only danger button (for less prominent cancel) */
+    .danger-text {
+        background: transparent;
+        color: var(--color-error);
+        border: none;
         font-size: 12px;
         padding: 6px 16px;
+    }
+
+    .danger-text:hover:not(:disabled) {
+        text-decoration: underline;
     }
 </style>

@@ -127,6 +127,14 @@ pub struct WriteConflictEvent {
     pub operation_id: String,
     pub source_path: String,
     pub destination_path: String,
+    /// Source file size in bytes
+    pub source_size: u64,
+    /// Destination file size in bytes
+    pub destination_size: u64,
+    /// Source modification time (Unix timestamp in seconds), if available
+    pub source_modified: Option<i64>,
+    /// Destination modification time (Unix timestamp in seconds), if available
+    pub destination_modified: Option<i64>,
     /// Whether destination is newer than source
     pub destination_is_newer: bool,
     /// Size difference (positive = destination is larger)
@@ -635,10 +643,10 @@ pub fn start_scan_preview(
 
 /// Cancels a running scan preview.
 pub fn cancel_scan_preview(preview_id: &str) {
-    if let Ok(cache) = SCAN_PREVIEW_STATE.read() {
-        if let Some(state) = cache.get(preview_id) {
-            state.cancelled.store(true, Ordering::Relaxed);
-        }
+    if let Ok(cache) = SCAN_PREVIEW_STATE.read()
+        && let Some(state) = cache.get(preview_id)
+    {
+        state.cancelled.store(true, Ordering::Relaxed);
     }
 }
 
@@ -725,16 +733,16 @@ fn run_scan_preview(
             }
         }
         Err(message) => {
-            let _ = app.emit(
-                "scan-preview-error",
-                ScanPreviewErrorEvent { preview_id, message },
-            );
+            let _ = app.emit("scan-preview-error", ScanPreviewErrorEvent { preview_id, message });
         }
     }
 }
 
 /// Recursive helper for scan preview. Returns Err if cancelled.
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "Recursive fn requires passing state through multiple levels"
+)]
 fn scan_preview_recursive(
     path: &Path,
     source_root: &Path,
@@ -1941,10 +1949,21 @@ fn resolve_conflict(
                 _ => false,
             };
 
-            let size_difference = match (&source_meta, &dest_meta) {
-                (Some(s), Some(d)) => d.len() as i64 - s.len() as i64,
-                _ => 0,
-            };
+            let source_size = source_meta.as_ref().map(|m| m.len()).unwrap_or(0);
+            let destination_size = dest_meta.as_ref().map(|m| m.len()).unwrap_or(0);
+            let size_difference = destination_size as i64 - source_size as i64;
+
+            let source_modified = source_meta
+                .as_ref()
+                .and_then(|m| m.modified().ok())
+                .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                .map(|d| d.as_secs() as i64);
+
+            let destination_modified = dest_meta
+                .as_ref()
+                .and_then(|m| m.modified().ok())
+                .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                .map(|d| d.as_secs() as i64);
 
             let _ = app.emit(
                 "write-conflict",
@@ -1952,6 +1971,10 @@ fn resolve_conflict(
                     operation_id: operation_id.to_string(),
                     source_path: source.display().to_string(),
                     destination_path: dest_path.display().to_string(),
+                    source_size,
+                    destination_size,
+                    source_modified,
+                    destination_modified,
                     destination_is_newer,
                     size_difference,
                 },
@@ -2426,24 +2449,34 @@ fn copy_single_file_sorted(
 
     // Ensure parent directories exist
     if let Some(parent) = dest_path.parent()
-        && !created_dirs.contains(parent) && !parent.exists() {
-            fs::create_dir_all(parent).map_err(|e| WriteOperationError::IoError {
-                path: parent.display().to_string(),
-                message: format!("Failed to create directory: {}", e),
-            })?;
-            // Record all created directories for transaction rollback
-            let mut dir = parent.to_path_buf();
-            while !created_dirs.contains(&dir) {
-                if dir.exists() {
-                    transaction.record_dir(dir.clone());
-                    created_dirs.insert(dir.clone());
-                }
-                match dir.parent() {
-                    Some(p) if !created_dirs.contains(p) => dir = p.to_path_buf(),
-                    _ => break,
-                }
+        && !created_dirs.contains(parent)
+        && !parent.exists()
+    {
+        // Collect directories that don't exist BEFORE creating them
+        // (so we know exactly which ones we're creating for rollback)
+        let mut dirs_to_create: Vec<PathBuf> = Vec::new();
+        let mut dir = parent.to_path_buf();
+        while !dir.exists() && !created_dirs.contains(&dir) {
+            dirs_to_create.push(dir.clone());
+            match dir.parent() {
+                Some(p) => dir = p.to_path_buf(),
+                None => break,
             }
         }
+
+        // Create all directories
+        fs::create_dir_all(parent).map_err(|e| WriteOperationError::IoError {
+            path: parent.display().to_string(),
+            message: format!("Failed to create directory: {}", e),
+        })?;
+
+        // Record only the directories we actually created (in creation order: deepest last)
+        // dirs_to_create is in reverse order (deepest first), so iterate in reverse
+        for created_dir in dirs_to_create.into_iter().rev() {
+            transaction.record_dir(created_dir.clone());
+            created_dirs.insert(created_dir);
+        }
+    }
 
     // Get metadata for size tracking
     let metadata = fs::symlink_metadata(source).map_err(|e| WriteOperationError::IoError {
@@ -2466,7 +2499,12 @@ fn copy_single_file_sorted(
                 apply_to_all_resolution,
             )? {
                 Some(resolved) => (resolved.path, resolved.needs_safe_overwrite),
-                None => return Ok(()), // Skip this file
+                None => {
+                    // Skip this file but still count it toward progress
+                    *files_done += 1;
+                    *bytes_done += metadata.len();
+                    return Ok(());
+                }
             }
         } else {
             (dest_path.clone(), false)
@@ -2518,7 +2556,12 @@ fn copy_single_file_sorted(
                 apply_to_all_resolution,
             )? {
                 Some(resolved) => (resolved.path, resolved.needs_safe_overwrite),
-                None => return Ok(()), // Skip this file
+                None => {
+                    // Skip this file but still count it toward progress
+                    *files_done += 1;
+                    *bytes_done += metadata.len();
+                    return Ok(());
+                }
             }
         } else {
             (dest_path.clone(), false)
