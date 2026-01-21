@@ -6,6 +6,8 @@
         onWriteComplete,
         onWriteError,
         onWriteCancelled,
+        onWriteConflict,
+        resolveWriteConflict,
         cancelWriteOperation,
         formatBytes,
         formatDuration,
@@ -13,9 +15,16 @@
         type WriteCompleteEvent,
         type WriteErrorEvent,
         type WriteCancelledEvent,
+        type WriteConflictEvent,
         type UnlistenFn,
     } from '$lib/tauri-commands'
-    import type { WriteOperationPhase, WriteOperationError, SortColumn, SortOrder } from '$lib/file-explorer/types'
+    import type {
+        WriteOperationPhase,
+        WriteOperationError,
+        SortColumn,
+        SortOrder,
+        ConflictResolution,
+    } from '$lib/file-explorer/types'
     import DirectionIndicator from './DirectionIndicator.svelte'
     import { getAppLogger } from '$lib/logger'
 
@@ -61,6 +70,10 @@
     let startTime = $state(0)
     let isCancelling = $state(false)
     let isRollingBack = $state(false)
+
+    // Conflict state
+    let conflictEvent = $state<WriteConflictEvent | null>(null)
+    let isResolvingConflict = $state(false)
 
     // Calculated stats
     const percentComplete = $derived(bytesTotal > 0 ? (bytesDone / bytesTotal) * 100 : 0)
@@ -201,6 +214,39 @@
         onCancelled(event.filesProcessed)
     }
 
+    function handleConflict(event: WriteConflictEvent) {
+        // Filter by operationId (events are global)
+        // Accept if operationId is null (race condition) or matches
+        if (operationId === null) {
+            operationId = event.operationId
+        } else if (event.operationId !== operationId) {
+            return
+        }
+
+        log.info('Conflict detected: {sourcePath} -> {destinationPath}', {
+            sourcePath: event.sourcePath,
+            destinationPath: event.destinationPath,
+        })
+
+        conflictEvent = event
+    }
+
+    async function handleConflictResolution(resolution: ConflictResolution, applyToAll: boolean) {
+        if (!operationId || !conflictEvent) return
+
+        log.info('Resolving conflict with {resolution}, applyToAll={applyToAll}', { resolution, applyToAll })
+
+        isResolvingConflict = true
+        try {
+            await resolveWriteConflict(operationId, resolution, applyToAll)
+            conflictEvent = null
+        } catch (err) {
+            log.error('Failed to resolve conflict: {error}', { error: err })
+        } finally {
+            isResolvingConflict = false
+        }
+    }
+
     // Store multiple unlisteners
     let unlisteners: UnlistenFn[] = []
 
@@ -229,6 +275,7 @@
         unlisteners.push(await onWriteComplete(handleComplete))
         unlisteners.push(await onWriteError(handleError))
         unlisteners.push(await onWriteCancelled(handleCancelled))
+        unlisteners.push(await onWriteConflict(handleConflict))
 
         log.debug('Event subscriptions ready, starting copyFiles')
 
@@ -358,13 +405,74 @@
             <h2 id="progress-dialog-title">
                 {#if isRollingBack}
                     Rolling back...
+                {:else if conflictEvent}
+                    File already exists
                 {:else}
                     Copying...
                 {/if}
             </h2>
         </div>
 
-        {#if isRollingBack}
+        {#if conflictEvent}
+            <!-- Conflict resolution -->
+            <div class="conflict-section">
+                <p class="conflict-message">
+                    <strong>{conflictEvent.destinationPath.split('/').pop()}</strong> already exists at destination.
+                </p>
+                <div class="conflict-details">
+                    {#if conflictEvent.destinationIsNewer}
+                        <span class="conflict-info">Destination is newer</span>
+                    {:else}
+                        <span class="conflict-info">Source is newer</span>
+                    {/if}
+                    {#if conflictEvent.sizeDifference !== 0}
+                        <span class="conflict-info">
+                            {conflictEvent.sizeDifference > 0 ? 'Destination is larger' : 'Source is larger'}
+                            ({formatBytes(Math.abs(conflictEvent.sizeDifference))})
+                        </span>
+                    {/if}
+                </div>
+                <div class="conflict-buttons">
+                    <button
+                        class="secondary"
+                        onclick={() => handleConflictResolution('skip', false)}
+                        disabled={isResolvingConflict}
+                    >
+                        Skip
+                    </button>
+                    <button
+                        class="secondary"
+                        onclick={() => handleConflictResolution('skip', true)}
+                        disabled={isResolvingConflict}
+                    >
+                        Skip all
+                    </button>
+                    <button
+                        class="primary"
+                        onclick={() => handleConflictResolution('overwrite', false)}
+                        disabled={isResolvingConflict}
+                    >
+                        Overwrite
+                    </button>
+                    <button
+                        class="primary"
+                        onclick={() => handleConflictResolution('overwrite', true)}
+                        disabled={isResolvingConflict}
+                    >
+                        Overwrite all
+                    </button>
+                </div>
+                <div class="conflict-cancel">
+                    <button
+                        class="danger"
+                        onclick={() => handleCancel(true)}
+                        disabled={isCancelling || isResolvingConflict}
+                    >
+                        Cancel operation
+                    </button>
+                </div>
+            </div>
+        {:else if isRollingBack}
             <!-- Rollback in progress -->
             <div class="rollback-section">
                 <div class="rollback-indicator">
@@ -719,5 +827,56 @@
         font-size: 13px;
         color: var(--color-text-secondary);
         text-align: center;
+    }
+
+    /* Conflict section */
+    .conflict-section {
+        padding: 16px 24px 20px;
+    }
+
+    .conflict-message {
+        margin: 0 0 12px;
+        font-size: 13px;
+        color: var(--color-text-primary);
+        text-align: center;
+    }
+
+    .conflict-details {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        margin-bottom: 16px;
+    }
+
+    .conflict-info {
+        font-size: 12px;
+        color: var(--color-text-muted);
+    }
+
+    .conflict-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center;
+        margin-bottom: 12px;
+    }
+
+    .conflict-buttons button {
+        min-width: auto;
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+
+    .conflict-cancel {
+        display: flex;
+        justify-content: center;
+        padding-top: 8px;
+        border-top: 1px solid var(--color-border-primary);
+    }
+
+    .conflict-cancel button {
+        font-size: 12px;
+        padding: 6px 16px;
     }
 </style>
