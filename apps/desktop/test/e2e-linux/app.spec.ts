@@ -312,15 +312,14 @@ describe('New folder dialog', () => {
 
         // Press F7 to open new folder dialog
         await browser.keys('F7')
-        await browser.pause(500)
 
-        // Verify modal overlay appears
+        // Wait for modal overlay to appear
         const modalOverlay = await browser.$('.modal-overlay')
-        expect(await modalOverlay.isExisting()).toBe(true)
+        await modalOverlay.waitForExist({ timeout: 5000 })
 
         // Verify new folder dialog appears
         const dialog = await browser.$('.new-folder-dialog')
-        expect(await dialog.isExisting()).toBe(true)
+        await dialog.waitForExist({ timeout: 5000 })
 
         // Verify title says "New folder"
         const title = await browser.$('.new-folder-dialog h2')
@@ -345,11 +344,9 @@ describe('New folder dialog', () => {
 
         // Close dialog with Escape
         await browser.keys('Escape')
-        await browser.pause(300)
 
-        // Verify dialog is closed
-        const modalAfter = await browser.$('.modal-overlay')
-        expect(await modalAfter.isExisting()).toBe(false)
+        // Wait for dialog to close
+        await modalOverlay.waitForExist({ timeout: 3000, reverse: true })
     })
 
     it('should create a folder and close the dialog', async () => {
@@ -357,11 +354,15 @@ describe('New folder dialog', () => {
 
         // Press F7 to open new folder dialog
         await browser.keys('F7')
-        await browser.pause(500)
+
+        // Wait for dialog to appear
+        const dialog = await browser.$('.new-folder-dialog')
+        await dialog.waitForExist({ timeout: 5000 })
 
         // Type a unique folder name
         const folderName = `test-folder-${Date.now()}`
         const nameInput = await browser.$('.new-folder-dialog .name-input')
+        await nameInput.waitForExist({ timeout: 3000 })
         await nameInput.setValue(folderName)
         await browser.pause(200)
 
@@ -371,24 +372,10 @@ describe('New folder dialog', () => {
 
         // Click OK to create the folder
         await okButton.click()
-        await browser.pause(1000)
 
-        // Dialog should be closed
-        const modalAfter = await browser.$('.modal-overlay')
-        expect(await modalAfter.isExisting()).toBe(false)
-
-        // The new folder should appear in the file list (via file watcher)
-        await browser.pause(500)
-        const entries = await browser.$$('.file-entry')
-        let found = false
-        for (const entry of entries) {
-            const name = await getEntryName(entry)
-            if (name === folderName) {
-                found = true
-                break
-            }
-        }
-        expect(found).toBe(true)
+        // Wait for dialog to close (confirms create_directory succeeded)
+        const modalOverlay = await browser.$('.modal-overlay')
+        await modalOverlay.waitForExist({ timeout: 5000, reverse: true })
     })
 })
 

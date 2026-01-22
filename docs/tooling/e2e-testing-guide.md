@@ -67,6 +67,11 @@ pnpm test:e2e:linux:shell
 ./scripts/e2e-linux.sh --clean
 ```
 
+### Troubleshooting
+
+When adding a new feature (+tests) and the new tests start oddly failing, clean the build cache!
+`./scripts/e2e-linux.sh --clean` is your friend!
+
 ### Run Linux E2E tests (native Linux)
 
 If you're on Linux with Tauri prerequisites installed:

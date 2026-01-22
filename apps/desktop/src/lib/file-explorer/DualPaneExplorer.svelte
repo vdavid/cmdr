@@ -835,16 +835,20 @@
 
     /** Gets the initial name for the new folder dialog (dir name as-is, file name without extension). */
     async function getInitialFolderName(paneRef: FilePane | undefined, paneListingId: string): Promise<string> {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const cursorIndex = paneRef?.getCursorIndex?.() as number | undefined
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const hasParent = paneRef?.hasParentEntry?.() as boolean | undefined
-        if (cursorIndex === undefined || cursorIndex < 0) return ''
-        const backendIndex = hasParent ? cursorIndex - 1 : cursorIndex
-        if (backendIndex < 0) return ''
-        const entry = await getFileAt(paneListingId, backendIndex, showHiddenFiles)
-        if (!entry) return ''
-        return entry.isDirectory ? entry.name : removeExtension(entry.name)
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            const cursorIndex = paneRef?.getCursorIndex?.() as number | undefined
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            const hasParent = paneRef?.hasParentEntry?.() as boolean | undefined
+            if (cursorIndex === undefined || cursorIndex < 0) return ''
+            const backendIndex = hasParent ? cursorIndex - 1 : cursorIndex
+            if (backendIndex < 0) return ''
+            const entry = await getFileAt(paneListingId, backendIndex, showHiddenFiles)
+            if (!entry) return ''
+            return entry.isDirectory ? entry.name : removeExtension(entry.name)
+        } catch {
+            return ''
+        }
     }
 
     /** Opens the new folder dialog. Pre-fills with the entry name under cursor. */
