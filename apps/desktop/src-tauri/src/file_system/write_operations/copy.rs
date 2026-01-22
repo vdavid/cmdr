@@ -4,7 +4,9 @@ use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+#[cfg(target_os = "macos")]
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 
 #[cfg(target_os = "macos")]

@@ -284,13 +284,13 @@ pub async fn mount_network_share(
 // ============================================================================
 
 /// Starts network discovery (stub: no-op).
-#[allow(dead_code)]
+#[allow(dead_code, reason = "API compatibility with macOS implementation")]
 pub fn start_discovery<R: tauri::Runtime>(_app: tauri::AppHandle<R>) {
     // No-op on Linux
 }
 
 /// Loads known shares from disk (stub: no-op).
-#[allow(dead_code)]
+#[allow(dead_code, reason = "API compatibility with macOS implementation")]
 pub fn load_known_shares<R: tauri::Runtime>(_app: &tauri::AppHandle<R>) {
     // No-op on Linux
 }

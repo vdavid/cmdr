@@ -118,7 +118,7 @@ pub fn get_volume_space(path: String) -> Option<VolumeSpaceInfo> {
     unsafe {
         let mut stat: libc::statvfs = std::mem::zeroed();
         if libc::statvfs(c_path.as_ptr(), &mut stat) == 0 {
-            let block_size = stat.f_frsize as u64;
+            let block_size = stat.f_frsize;
             Some(VolumeSpaceInfo {
                 total_bytes: stat.f_blocks * block_size,
                 available_bytes: stat.f_bavail * block_size,
@@ -131,7 +131,7 @@ pub fn get_volume_space(path: String) -> Option<VolumeSpaceInfo> {
 
 /// Stub for volume watcher - does nothing on Linux.
 /// Kept for API compatibility but not called on Linux.
-#[allow(dead_code)]
+#[allow(dead_code, reason = "API compatibility with macOS implementation")]
 pub fn start_volume_watcher<R: tauri::Runtime>(_app: &tauri::AppHandle<R>) {
     // No-op on Linux - we don't watch for volume changes
 }
