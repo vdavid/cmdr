@@ -1113,15 +1113,16 @@
             if (diff.sequence <= lastSequence) return
             lastSequence = diff.sequence
 
-            // Refetch total count and max filename width - the List components
-            // will refetch their visible range on the next render
+            // Refetch total count and max filename width, then force the List
+            // components to re-fetch their visible range. We always bump
+            // cacheGeneration because renames don't change totalCount.
             void Promise.all([
                 getTotalCount(listingId, includeHidden),
                 getMaxFilenameWidth(listingId, includeHidden),
             ]).then(([count, newMaxWidth]) => {
                 totalCount = count
                 maxFilenameWidth = newMaxWidth
-                // Re-fetch entry under the cursor as it may have changed
+                cacheGeneration++
                 void fetchEntryUnderCursor()
             })
         })
