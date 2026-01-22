@@ -364,9 +364,9 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
 
                     // Initialize Paddle
                     if (paddleConfig.environment === 'sandbox') {
-                        Paddle.Environment.set('sandbox')
+                        window.Paddle.Environment.set('sandbox')
                     }
-                    Paddle.Initialize({ token: paddleConfig.clientToken })
+                    window.Paddle.Initialize({ token: paddleConfig.clientToken })
 
                     // Modal elements
                     const modal = document.getElementById('org-name-modal')
@@ -421,7 +421,7 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
                             }
                         }
 
-                        Paddle.Checkout.open(checkoutOptions)
+                        window.Paddle.Checkout.open(checkoutOptions)
                     }
 
                     // Handle buy button clicks
