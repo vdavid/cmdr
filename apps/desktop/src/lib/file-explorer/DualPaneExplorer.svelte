@@ -847,8 +847,8 @@
         return entry.isDirectory ? entry.name : removeExtension(entry.name)
     }
 
-    async function openNewFolderDialog() {
     /** Opens the new folder dialog. Pre-fills with the entry name under cursor. */
+    export async function openNewFolderDialog() {
         const isLeft = focusedPane === 'left'
         const paneRef = isLeft ? leftPaneRef : rightPaneRef
         const path = isLeft ? leftPath : rightPath
@@ -918,7 +918,7 @@
     }
 
     /** Opens the copy dialog with the current selection info. */
-    async function openCopyDialog() {
+    export async function openCopyDialog() {
         const isLeft = focusedPane === 'left'
         const sourcePaneRef = isLeft ? leftPaneRef : rightPaneRef
 

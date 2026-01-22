@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte'
     import DualPaneExplorer from '$lib/file-explorer/DualPaneExplorer.svelte'
+    import FunctionKeyBar from '$lib/file-explorer/FunctionKeyBar.svelte'
     import FullDiskAccessPrompt from '$lib/onboarding/FullDiskAccessPrompt.svelte'
     import ExpirationModal from '$lib/licensing/ExpirationModal.svelte'
     import CommercialReminderModal from '$lib/licensing/CommercialReminderModal.svelte'
@@ -42,6 +43,8 @@
         getVolumes: () => { id: string; name: string; path: string }[]
         selectVolumeByIndex: (pane: 'left' | 'right', index: number) => Promise<boolean>
         handleSelectionAction: (action: string, startIndex?: number, endIndex?: number) => void
+        openCopyDialog: () => Promise<void>
+        openNewFolderDialog: () => Promise<void>
     }
 
     let showFdaPrompt = $state(false)
@@ -56,6 +59,7 @@
     let showCommandPalette = $state(false)
     let explorerRef: ExplorerAPI | undefined = $state()
     let windowTitle = $state('Cmdr')
+    const showFunctionKeyBar = $state(true)
 
     // Event handlers stored for cleanup
     let handleKeyDown: ((e: KeyboardEvent) => void) | undefined
@@ -369,6 +373,24 @@
         explorerRef?.refocus()
     }
 
+    async function handleFnEdit() {
+        const entry = explorerRef?.getFileAndPathUnderCursor()
+        if (entry) {
+            await openInEditor(entry.path)
+        }
+        explorerRef?.refocus()
+    }
+
+    function handleFnCopy() {
+        void explorerRef?.openCopyDialog()
+        explorerRef?.refocus()
+    }
+
+    function handleFnNewFolder() {
+        void explorerRef?.openNewFolderDialog()
+        explorerRef?.refocus()
+    }
+
     // eslint-disable-next-line complexity -- Command dispatcher handles many cases; switch is the clearest pattern
     async function handleCommandExecute(commandId: string) {
         showCommandPalette = false
@@ -626,6 +648,15 @@
             <DualPaneExplorer bind:this={explorerRef} />
         {/if}
     </div>
+
+    {#if showApp}
+        <FunctionKeyBar
+            visible={showFunctionKeyBar}
+            onEdit={() => void handleFnEdit()}
+            onCopy={handleFnCopy}
+            onNewFolder={handleFnNewFolder}
+        />
+    {/if}
 </div>
 
 <style>
