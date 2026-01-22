@@ -39,6 +39,35 @@ pub fn path_exists(path: String) -> bool {
     path_buf.exists()
 }
 
+/// Creates a new directory.
+///
+/// # Arguments
+/// * `parent_path` - The parent directory path. Supports tilde expansion (~).
+/// * `name` - The folder name to create.
+///
+/// # Returns
+/// The full path of the created directory, or an error message.
+#[tauri::command]
+pub fn create_directory(parent_path: String, name: String) -> Result<String, String> {
+    if name.is_empty() {
+        return Err("Folder name cannot be empty".to_string());
+    }
+    if name.contains('/') || name.contains('\0') {
+        return Err("Folder name contains invalid characters".to_string());
+    }
+    let expanded_path = expand_tilde(&parent_path);
+    let mut new_path = PathBuf::from(&expanded_path);
+    new_path.push(&name);
+    std::fs::create_dir(&new_path).map_err(|e| match e.kind() {
+        std::io::ErrorKind::AlreadyExists => format!("'{}' already exists", name),
+        std::io::ErrorKind::PermissionDenied => {
+            format!("Permission denied: cannot create '{}' in '{}'", name, parent_path)
+        }
+        _ => format!("Failed to create folder: {}", e),
+    })?;
+    Ok(new_path.to_string_lossy().to_string())
+}
+
 // ============================================================================
 // On-demand virtual scrolling API
 // ============================================================================
@@ -545,6 +574,18 @@ fn expand_tilde(path: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
+
+    fn create_test_dir(name: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("cmdr_fs_cmd_test_{}", name));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).expect("Failed to create test directory");
+        dir
+    }
+
+    fn cleanup_test_dir(path: &PathBuf) {
+        let _ = fs::remove_dir_all(path);
+    }
 
     #[test]
     fn test_expand_tilde() {
@@ -565,5 +606,58 @@ mod tests {
     fn test_no_tilde() {
         let path = "/usr/local/bin";
         assert_eq!(expand_tilde(path), path);
+    }
+
+    #[test]
+    fn test_create_directory_success() {
+        let tmp = create_test_dir("create_success");
+        let parent = tmp.to_string_lossy().to_string();
+        let result = create_directory(parent, "new-folder".to_string());
+        assert!(result.is_ok());
+        let created_path = result.unwrap();
+        assert!(PathBuf::from(&created_path).is_dir());
+        assert!(created_path.ends_with("new-folder"));
+        cleanup_test_dir(&tmp);
+    }
+
+    #[test]
+    fn test_create_directory_already_exists() {
+        let tmp = create_test_dir("create_exists");
+        let parent = tmp.to_string_lossy().to_string();
+        fs::create_dir(tmp.join("existing")).unwrap();
+        let result = create_directory(parent, "existing".to_string());
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("already exists"));
+        cleanup_test_dir(&tmp);
+    }
+
+    #[test]
+    fn test_create_directory_empty_name() {
+        let tmp = create_test_dir("create_empty");
+        let parent = tmp.to_string_lossy().to_string();
+        let result = create_directory(parent, "".to_string());
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("cannot be empty"));
+        cleanup_test_dir(&tmp);
+    }
+
+    #[test]
+    fn test_create_directory_invalid_chars() {
+        let tmp = create_test_dir("create_invalid");
+        let parent = tmp.to_string_lossy().to_string();
+        let result = create_directory(parent.clone(), "foo/bar".to_string());
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("invalid characters"));
+
+        let result = create_directory(parent, "foo\0bar".to_string());
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("invalid characters"));
+        cleanup_test_dir(&tmp);
+    }
+
+    #[test]
+    fn test_create_directory_nonexistent_parent() {
+        let result = create_directory("/nonexistent_path_12345".to_string(), "test".to_string());
+        assert!(result.is_err());
     }
 }

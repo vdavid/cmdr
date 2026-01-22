@@ -263,6 +263,7 @@ pub fn run() {
             commands::file_system::find_file_index,
             commands::file_system::resort_listing,
             commands::file_system::path_exists,
+            commands::file_system::create_directory,
             commands::file_system::benchmark_log,
             commands::file_system::copy_files,
             commands::file_system::move_files,

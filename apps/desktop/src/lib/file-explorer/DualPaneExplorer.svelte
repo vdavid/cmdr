@@ -3,6 +3,7 @@
     import FilePane from './FilePane.svelte'
     import PaneResizer from './PaneResizer.svelte'
     import LoadingIcon from '../LoadingIcon.svelte'
+    import NewFolderDialog from './NewFolderDialog.svelte'
     import CopyDialog from '../write-operations/CopyDialog.svelte'
     import CopyProgressDialog from '../write-operations/CopyProgressDialog.svelte'
     import { toBackendIndices, toBackendCursorIndex } from '../write-operations/copy-dialog-utils'
@@ -29,10 +30,12 @@
         updateFocusedPane,
         getFileAt,
         getListingStats,
+        findFileIndex,
     } from '$lib/tauri-commands'
-    import type { VolumeInfo, SortColumn, SortOrder, NetworkHost } from './types'
+    import type { VolumeInfo, SortColumn, SortOrder, NetworkHost, DirectoryDiff } from './types'
     import { defaultSortOrders, DEFAULT_SORT_BY } from './types'
     import { ensureFontMetricsLoaded } from '$lib/font-metrics'
+    import { removeExtension } from './new-folder-utils'
     import {
         createHistory,
         push,
@@ -100,6 +103,15 @@
         sortColumn: SortColumn
         sortOrder: SortOrder
         previewId: string | null
+    } | null>(null)
+
+    // New folder dialog state
+    let showNewFolderDialog = $state(false)
+    let newFolderDialogProps = $state<{
+        currentPath: string
+        listingId: string
+        showHiddenFiles: boolean
+        initialName: string
     } | null>(null)
 
     // Navigation history for each pane (per-pane, session-only)
@@ -534,6 +546,13 @@
             return
         }
 
+        // F7 - New folder dialog
+        if (e.key === 'F7') {
+            e.preventDefault()
+            void openNewFolderDialog()
+            return
+        }
+
         // Route to volume chooser if one is open
         if (routeToVolumeChooser(e)) {
             return
@@ -812,6 +831,90 @@
             }
         }
         return paths
+    }
+
+    /** Gets the initial name for the new folder dialog (dir name as-is, file name without extension). */
+    async function getInitialFolderName(paneRef: FilePane | undefined, paneListingId: string): Promise<string> {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const cursorIndex = paneRef?.getCursorIndex?.() as number | undefined
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const hasParent = paneRef?.hasParentEntry?.() as boolean | undefined
+        if (cursorIndex === undefined || cursorIndex < 0) return ''
+        const backendIndex = hasParent ? cursorIndex - 1 : cursorIndex
+        if (backendIndex < 0) return ''
+        const entry = await getFileAt(paneListingId, backendIndex, showHiddenFiles)
+        if (!entry) return ''
+        return entry.isDirectory ? entry.name : removeExtension(entry.name)
+    }
+
+    async function openNewFolderDialog() {
+    /** Opens the new folder dialog. Pre-fills with the entry name under cursor. */
+        const isLeft = focusedPane === 'left'
+        const paneRef = isLeft ? leftPaneRef : rightPaneRef
+        const path = isLeft ? leftPath : rightPath
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const paneListingId = paneRef?.getListingId?.() as string | undefined
+        if (!paneListingId) return
+
+        const initialName = await getInitialFolderName(paneRef, paneListingId)
+
+        newFolderDialogProps = {
+            currentPath: path,
+            listingId: paneListingId,
+            showHiddenFiles,
+            initialName,
+        }
+        showNewFolderDialog = true
+    }
+
+    function handleNewFolderCreated(folderName: string) {
+        const paneRef = focusedPane === 'left' ? leftPaneRef : rightPaneRef
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const paneListingId = paneRef?.getListingId?.() as string | undefined
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const hasParent = paneRef?.hasParentEntry?.() as boolean | undefined
+
+        showNewFolderDialog = false
+        newFolderDialogProps = null
+        containerElement?.focus()
+
+        // Wait for file watcher to pick up the new folder, then move cursor to it
+        if (!paneListingId) return
+        void moveCursorToNewFolder(paneListingId, folderName, paneRef, hasParent ?? false)
+    }
+
+    /** Waits for the file watcher diff, then moves cursor to the newly created folder. */
+    async function moveCursorToNewFolder(
+        paneListingId: string,
+        folderName: string,
+        paneRef: FilePane | undefined,
+        hasParent: boolean,
+    ) {
+        const unlisten = await listen<DirectoryDiff>('directory-diff', (event) => {
+            if (event.payload.listingId !== paneListingId) return
+            // Small delay to ensure listing cache is fully updated before querying
+            setTimeout(() => {
+                void findFileIndex(paneListingId, folderName, showHiddenFiles).then((index) => {
+                    if (index !== null) {
+                        const frontendIndex = hasParent ? index + 1 : index
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+                        paneRef?.setCursorIndex?.(frontendIndex)
+                        unlisten()
+                    }
+                })
+            }, 50)
+        })
+        // Clean up listener after 3 seconds if folder never appears
+        setTimeout(() => {
+            unlisten()
+        }, 3000)
+    }
+
+    function handleNewFolderCancel() {
+        showNewFolderDialog = false
+        newFolderDialogProps = null
+        containerElement?.focus()
     }
 
     /** Opens the copy dialog with the current selection info. */
@@ -1272,6 +1375,17 @@
         onComplete={handleCopyComplete}
         onCancelled={handleCopyCancelled}
         onError={handleCopyError}
+    />
+{/if}
+
+{#if showNewFolderDialog && newFolderDialogProps}
+    <NewFolderDialog
+        currentPath={newFolderDialogProps.currentPath}
+        listingId={newFolderDialogProps.listingId}
+        showHiddenFiles={newFolderDialogProps.showHiddenFiles}
+        initialName={newFolderDialogProps.initialName}
+        onCreated={handleNewFolderCreated}
+        onCancel={handleNewFolderCancel}
     />
 {/if}
 

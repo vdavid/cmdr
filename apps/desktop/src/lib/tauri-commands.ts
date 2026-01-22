@@ -278,6 +278,11 @@ export async function pathExists(path: string): Promise<boolean> {
     return invoke<boolean>('path_exists', { path })
 }
 
+/** Creates a new directory. Returns the full path of the created folder. */
+export async function createDirectory(parentPath: string, name: string): Promise<string> {
+    return invoke<string>('create_directory', { parentPath, name })
+}
+
 /**
  * Opens a file with the system's default application.
  * @param path - Path to the file to open.

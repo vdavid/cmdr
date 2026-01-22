@@ -306,6 +306,92 @@ describe('Navigation', () => {
     })
 })
 
+describe('New folder dialog', () => {
+    it('should open new folder dialog with F7', async () => {
+        await ensureAppReady()
+
+        // Press F7 to open new folder dialog
+        await browser.keys('F7')
+        await browser.pause(500)
+
+        // Verify modal overlay appears
+        const modalOverlay = await browser.$('.modal-overlay')
+        expect(await modalOverlay.isExisting()).toBe(true)
+
+        // Verify new folder dialog appears
+        const dialog = await browser.$('.new-folder-dialog')
+        expect(await dialog.isExisting()).toBe(true)
+
+        // Verify title says "New folder"
+        const title = await browser.$('.new-folder-dialog h2')
+        expect(await title.getText()).toBe('New folder')
+
+        // Verify subtitle contains "Create folder in"
+        const subtitle = await browser.$('.new-folder-dialog .subtitle')
+        const subtitleText = await subtitle.getText()
+        expect(subtitleText).toContain('Create folder in')
+
+        // Verify dialog has a name input
+        const nameInput = await browser.$('.new-folder-dialog .name-input')
+        expect(await nameInput.isExisting()).toBe(true)
+
+        // Verify OK and Cancel buttons exist
+        const okButton = await browser.$('.new-folder-dialog button.primary')
+        const cancelButton = await browser.$('.new-folder-dialog button.secondary')
+        expect(await okButton.isExisting()).toBe(true)
+        expect(await cancelButton.isExisting()).toBe(true)
+        expect(await okButton.getText()).toBe('OK')
+        expect(await cancelButton.getText()).toBe('Cancel')
+
+        // Close dialog with Escape
+        await browser.keys('Escape')
+        await browser.pause(300)
+
+        // Verify dialog is closed
+        const modalAfter = await browser.$('.modal-overlay')
+        expect(await modalAfter.isExisting()).toBe(false)
+    })
+
+    it('should create a folder and close the dialog', async () => {
+        await ensureAppReady()
+
+        // Press F7 to open new folder dialog
+        await browser.keys('F7')
+        await browser.pause(500)
+
+        // Type a unique folder name
+        const folderName = `test-folder-${Date.now()}`
+        const nameInput = await browser.$('.new-folder-dialog .name-input')
+        await nameInput.setValue(folderName)
+        await browser.pause(200)
+
+        // Verify OK button is enabled
+        const okButton = await browser.$('.new-folder-dialog button.primary')
+        expect(await okButton.isEnabled()).toBe(true)
+
+        // Click OK to create the folder
+        await okButton.click()
+        await browser.pause(1000)
+
+        // Dialog should be closed
+        const modalAfter = await browser.$('.modal-overlay')
+        expect(await modalAfter.isExisting()).toBe(false)
+
+        // The new folder should appear in the file list (via file watcher)
+        await browser.pause(500)
+        const entries = await browser.$$('.file-entry')
+        let found = false
+        for (const entry of entries) {
+            const name = await getEntryName(entry)
+            if (name === folderName) {
+                found = true
+                break
+            }
+        }
+        expect(found).toBe(true)
+    })
+})
+
 describe('Copy dialog', () => {
     it('should open copy dialog with F5', async () => {
         await ensureAppReady()
