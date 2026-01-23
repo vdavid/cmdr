@@ -1,6 +1,14 @@
 <script lang="ts">
-    import { onMount, onDestroy, tick } from 'svelte'
-    import { createDirectory, findFileIndex, getFileAt, listen, type UnlistenFn } from '$lib/tauri-commands'
+    import { onDestroy, onMount, tick } from 'svelte'
+    import {
+        createDirectory,
+        findFileIndex,
+        getAiStatus,
+        getFileAt,
+        getFolderSuggestions,
+        listen,
+        type UnlistenFn,
+    } from '$lib/tauri-commands'
     import type { DirectoryDiff } from './types'
 
     interface Props {
@@ -24,6 +32,10 @@
     let overlayElement: HTMLDivElement | undefined = $state()
     let nameInputRef: HTMLInputElement | undefined = $state()
     let unlistenDiff: UnlistenFn | undefined
+
+    // AI suggestions
+    let aiSuggestions = $state<string[]>([])
+    let aiLoading = $state(false)
 
     // Debounce timer for validation
     let validateTimer: ReturnType<typeof setTimeout> | undefined
@@ -82,6 +94,9 @@
             void validateName(folderName)
         }
 
+        // Fetch AI suggestions if AI is available
+        void fetchAiSuggestions()
+
         // Listen for directory changes to re-validate.
         // Small delay ensures the listing cache is fully consistent after the diff is applied.
         unlistenDiff = await listen<DirectoryDiff>('directory-diff', (event) => {
@@ -94,6 +109,27 @@
         if (validateTimer) clearTimeout(validateTimer)
         unlistenDiff?.()
     })
+
+    async function fetchAiSuggestions() {
+        try {
+            const status = await getAiStatus()
+            if (status !== 'available') return
+
+            aiLoading = true
+            aiSuggestions = await getFolderSuggestions(listingId, currentPath, showHiddenFiles)
+        } catch {
+            // Graceful degradation — hide suggestions on error
+            aiSuggestions = []
+        } finally {
+            aiLoading = false
+        }
+    }
+
+    function selectSuggestion(name: string) {
+        folderName = name
+        scheduleValidation()
+        nameInputRef?.focus()
+    }
 
     async function handleConfirm() {
         const trimmed = folderName.trim()
@@ -163,6 +199,31 @@
                 <p id="new-folder-error" class="error-message" role="alert">{errorMessage}</p>
             {/if}
         </div>
+
+        {#if aiLoading || aiSuggestions.length > 0}
+            <div class="ai-suggestions" aria-label="AI suggestions">
+                <span class="ai-suggestions-header">AI suggestions:</span>
+                {#if aiLoading}
+                    <span class="ai-suggestions-loading">Loading...</span>
+                {:else}
+                    <ul role="list">
+                        {#each aiSuggestions as suggestion (suggestion)}
+                            <li role="listitem">
+                                <button
+                                    type="button"
+                                    class="suggestion-item"
+                                    onclick={() => {
+                                        selectSuggestion(suggestion)
+                                    }}
+                                >
+                                    {suggestion}
+                                </button>
+                            </li>
+                        {/each}
+                    </ul>
+                {/if}
+            </div>
+        {/if}
 
         <div class="button-row">
             <button class="secondary" onclick={onCancel}>Cancel</button>
@@ -291,5 +352,54 @@
     .secondary:hover:not(:disabled) {
         background: var(--color-bg-tertiary);
         color: var(--color-text-primary);
+    }
+
+    .ai-suggestions {
+        margin-bottom: 16px;
+    }
+
+    .ai-suggestions-header {
+        display: block;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--color-text-secondary);
+        margin-bottom: 6px;
+    }
+
+    .ai-suggestions-loading {
+        font-size: 12px;
+        color: var(--color-text-muted);
+        font-style: italic;
+    }
+
+    .ai-suggestions ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .suggestion-item {
+        padding: 4px 10px;
+        font-size: 12px;
+        color: var(--color-text-secondary);
+        background: var(--color-bg-tertiary);
+        border: 1px solid var(--color-border-primary);
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.1s ease;
+    }
+
+    .suggestion-item:hover {
+        color: var(--color-text-primary);
+        background: var(--color-bg-primary);
+        border-color: var(--color-accent);
+    }
+
+    .suggestion-item:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 1px;
     }
 </style>

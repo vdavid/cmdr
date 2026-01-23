@@ -39,7 +39,14 @@ use tauri_plugin_mcp_bridge as _;
 // security_framework is used in network/keychain.rs for Keychain integration
 #[cfg(target_os = "macos")]
 use security_framework as _;
+//noinspection ALL
+// tar and flate2 are used in ai/manager.rs for extracting llama-server (release only)
+#[cfg(debug_assertions)]
+use flate2 as _;
+#[cfg(debug_assertions)]
+use tar as _;
 
+mod ai;
 pub mod benchmark;
 mod commands;
 pub mod config;
@@ -163,6 +170,9 @@ pub fn run() {
             // Start MCP server for AI agent integration
             let mcp_config = mcp::McpConfig::from_env();
             mcp::start_mcp_server(app.handle().clone(), mcp_config);
+
+            // Initialize AI manager (starts llama-server if model is installed)
+            ai::manager::init(app.handle());
 
             Ok(())
         })
@@ -397,8 +407,20 @@ pub fn run() {
             commands::licensing::mark_commercial_reminder_dismissed,
             commands::licensing::reset_license,
             commands::licensing::needs_license_validation,
-            commands::licensing::validate_license_with_server
+            commands::licensing::validate_license_with_server,
+            // AI commands
+            ai::manager::get_ai_status,
+            ai::manager::start_ai_download,
+            ai::manager::cancel_ai_download,
+            ai::manager::dismiss_ai_offer,
+            ai::manager::uninstall_ai,
+            ai::suggestions::get_folder_suggestions,
         ])
+        .on_window_event(|_window, event| {
+            if let tauri::WindowEvent::Destroyed = event {
+                ai::manager::shutdown();
+            }
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

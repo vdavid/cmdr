@@ -3,6 +3,7 @@
     import '../app.css'
     import { initWindowStateListener } from '$lib/window-state'
     import { startUpdateChecker } from '$lib/updater.svelte'
+    import AiNotification from '$lib/AiNotification.svelte'
     import UpdateNotification from '$lib/UpdateNotification.svelte'
     import { initLogger } from '$lib/logger'
 
@@ -19,6 +20,7 @@
 </script>
 
 <UpdateNotification />
+<AiNotification />
 <div class="page-wrapper">
     <slot />
 </div>
