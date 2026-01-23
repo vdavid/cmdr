@@ -134,6 +134,8 @@
                 {/if}
             </div>
 
+            <p class="ai-attribution">AI powered by Falcon-H1R-7B by Technology Innovation Institute (TII)</p>
+
             <div class="links">
                 <a href="https://getcmdr.com" onclick={handleLinkClick('https://getcmdr.com')}>Website</a>
                 {#if shouldShowUpgradeLink()}
@@ -265,6 +267,12 @@
 
     .commercial-prompt a:hover {
         color: var(--color-accent-hover);
+    }
+
+    .ai-attribution {
+        color: var(--color-text-muted);
+        font-size: 11px;
+        margin: 0 0 16px;
     }
 
     .links {
