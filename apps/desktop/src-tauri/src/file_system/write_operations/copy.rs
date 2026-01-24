@@ -12,7 +12,9 @@ use std::time::{Duration, Instant};
 #[cfg(target_os = "macos")]
 use crate::file_system::macos_copy::{CopyProgressContext, copy_single_file_native, copy_symlink};
 
-use super::helpers::{resolve_conflict, safe_overwrite_file, spawn_async_sync};
+use super::helpers::{
+    is_same_file, resolve_conflict, safe_overwrite_file, spawn_async_sync, validate_disk_space, validate_path_length,
+};
 use super::scan::{handle_dry_run, scan_sources, take_cached_scan_result};
 use super::state::{CopyTransaction, WriteOperationState, update_operation_status};
 use super::types::{
@@ -105,6 +107,9 @@ pub(super) fn copy_files_with_progress(
         scan_result.file_count,
         scan_result.total_bytes
     );
+
+    // Pre-flight disk space check: verify destination has enough free space
+    validate_disk_space(destination, scan_result.total_bytes)?;
 
     // Phase 2: Copy files in sorted order with rollback support
     let mut transaction = CopyTransaction::new();
@@ -344,6 +349,9 @@ fn copy_single_file_sorted(
             (dest_path.clone(), false)
         };
 
+        // Validate destination path length limits
+        validate_path_length(&actual_dest)?;
+
         if needs_safe_overwrite {
             if actual_dest.is_dir() {
                 fs::remove_dir_all(&actual_dest).map_err(|e| WriteOperationError::IoError {
@@ -400,6 +408,20 @@ fn copy_single_file_sorted(
         } else {
             (dest_path.clone(), false)
         };
+
+        // Validate destination path length limits
+        validate_path_length(&actual_dest)?;
+
+        // Prevent copying a file over itself via symlinks (same inode + device)
+        if is_same_file(source, &actual_dest) {
+            log::warn!(
+                "copy: skipping {}: source and destination resolve to the same file",
+                source.display()
+            );
+            *files_done += 1;
+            *bytes_done += metadata.len();
+            return Ok(());
+        }
 
         // Check cancellation before copy
         if state.cancelled.load(Ordering::Relaxed) {
@@ -554,6 +576,9 @@ pub(super) fn copy_path_recursive(
             (dest_path.clone(), false)
         };
 
+        // Validate destination path length limits
+        validate_path_length(&actual_dest)?;
+
         // For symlink overwrite, remove the existing symlink/file first (safe since we can recreate)
         if needs_safe_overwrite {
             if actual_dest.is_dir() {
@@ -609,6 +634,20 @@ pub(super) fn copy_path_recursive(
         } else {
             (dest_path.clone(), false)
         };
+
+        // Validate destination path length limits
+        validate_path_length(&actual_dest)?;
+
+        // Prevent copying a file over itself via symlinks (same inode + device)
+        if is_same_file(source, &actual_dest) {
+            log::warn!(
+                "copy: skipping {}: source and destination resolve to the same file",
+                source.display()
+            );
+            *files_done += 1;
+            *bytes_done += metadata.len();
+            return Ok(());
+        }
 
         // Check cancellation before copy
         if state.cancelled.load(Ordering::Relaxed) {
@@ -730,6 +769,9 @@ pub(super) fn copy_path_recursive(
                 apply_to_all_resolution,
             )?;
         }
+    } else {
+        // Skip special files (sockets, FIFOs, char/block devices)
+        log::warn!("copy: skipping special file: {}", source.display());
     }
 
     Ok(())
