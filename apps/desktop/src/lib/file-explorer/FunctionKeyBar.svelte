@@ -1,12 +1,13 @@
 <script lang="ts">
     interface Props {
         visible?: boolean
+        onView?: () => void
         onEdit?: () => void
         onCopy?: () => void
         onNewFolder?: () => void
     }
 
-    const { visible = true, onEdit, onCopy, onNewFolder }: Props = $props()
+    const { visible = true, onView, onEdit, onCopy, onNewFolder }: Props = $props()
 </script>
 
 {#if visible}
@@ -17,7 +18,7 @@
             e.preventDefault()
         }}
     >
-        <button disabled tabindex={-1} aria-label="View (F3) — not yet available">
+        <button onclick={onView} tabindex={-1} aria-label="View file (F3)">
             <kbd>F3</kbd><span>View</span>
         </button>
         <button onclick={onEdit} tabindex={-1} aria-label="Edit file (F4)">

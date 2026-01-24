@@ -48,6 +48,7 @@
         type NavigationHistory,
     } from './navigation-history'
     import { initNetworkDiscovery, cleanupNetworkDiscovery } from '$lib/network-store.svelte'
+    import { openFileViewer } from '$lib/file-viewer/open-viewer'
     import { getAppLogger } from '$lib/logger'
 
     const log = getAppLogger('fileExplorer')
@@ -539,6 +540,13 @@
             return
         }
 
+        // F3 - View file
+        if (e.key === 'F3') {
+            e.preventDefault()
+            void openViewerForCursor()
+            return
+        }
+
         // F5 - Copy dialog
         if (e.key === 'F5') {
             e.preventDefault()
@@ -919,6 +927,25 @@
         showNewFolderDialog = false
         newFolderDialogProps = null
         containerElement?.focus()
+    }
+
+    /** Opens the file viewer for the file under the cursor. */
+    export async function openViewerForCursor() {
+        const paneRef = focusedPane === 'left' ? leftPaneRef : rightPaneRef
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const listingId = paneRef?.getListingId?.() as string | undefined
+        if (!listingId) return
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const cursorIndex = paneRef?.getCursorIndex?.() as number | undefined
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const hasParent = paneRef?.hasParentEntry?.() as boolean | undefined
+        const backendIndex = toBackendCursorIndex(cursorIndex ?? -1, hasParent ?? false)
+        if (backendIndex === null) return
+
+        const file = await getFileAt(listingId, backendIndex, showHiddenFiles)
+        if (!file || file.isDirectory || file.name === '..') return
+
+        void openFileViewer(file.path)
     }
 
     /** Opens the copy dialog with the current selection info. */
