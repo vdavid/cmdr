@@ -1012,6 +1012,7 @@ dependencies = [
  "image",
  "libc",
  "log",
+ "memchr",
  "notify",
  "notify-debouncer-full",
  "objc2 0.6.3",
