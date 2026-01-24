@@ -18,6 +18,7 @@
         "file-explorer/SelectionInfo.svelte": { "reason": "Logic tested in selection-info-utils.ts, DOM-dependent" },
         "file-explorer/ShareBrowser.svelte": { "reason": "Network component, needs integration tests" },
         "file-explorer/SortableHeader.svelte": { "reason": "Simple UI component, display only" },
+        "file-viewer/open-viewer.ts": { "reason": "Depends on Tauri WebviewWindow API" },
         "font-metrics/measure.ts": { "reason": "Depends on DOM APIs" },
         "icon-cache.ts": { "reason": "Depends on Tauri APIs" },
         "licensing-store.svelte.ts": { "reason": "Depends on Tauri store APIs" },
