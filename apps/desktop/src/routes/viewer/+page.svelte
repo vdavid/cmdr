@@ -14,6 +14,7 @@
 
 <script lang="ts">
     import { onMount, onDestroy, tick } from 'svelte'
+    import { SvelteMap } from 'svelte/reactivity'
     import type { ViewerSearchMatch } from '$lib/tauri-commands'
 
     let fileName = $state('')
@@ -25,7 +26,7 @@
     let backendType = $state<'fullLoad' | 'byteSeek' | 'lineIndex'>('fullLoad')
 
     // Line cache: lineNumber -> text
-    let lineCache = $state<Map<number, string>>(new Map())
+    const lineCache = new SvelteMap<number, string>()
     // The range of lines currently in cache
     let cachedFrom = $state(0)
     let cachedTo = $state(0)
@@ -94,11 +95,9 @@
             const chunk = await viewerGetLines(sessionId, 'line', fetchFrom, fetchCount)
 
             // Update cache
-            const newCache = new Map(lineCache)
             for (let i = 0; i < chunk.lines.length; i++) {
-                newCache.set(chunk.firstLineNumber + i, chunk.lines[i])
+                lineCache.set(chunk.firstLineNumber + i, chunk.lines[i])
             }
-            lineCache = newCache
             cachedFrom = Math.min(cachedFrom, chunk.firstLineNumber)
             cachedTo = Math.max(cachedTo, chunk.firstLineNumber + chunk.lines.length)
 
@@ -139,25 +138,29 @@
 
     function pollSearch() {
         stopSearchPoll()
-        searchPollTimer = setInterval(async () => {
-            if (!sessionId) return
-            try {
-                const { viewerSearchPoll } = await import('$lib/tauri-commands')
-                const result = await viewerSearchPoll(sessionId)
-                searchMatches = result.matches
-                searchProgress = totalBytes > 0 ? result.bytesScanned / totalBytes : 0
-                if (currentMatchIndex === -1 && result.matches.length > 0) {
-                    currentMatchIndex = 0
-                }
-                if (result.status !== 'running') {
-                    searchStatus = result.status as 'done' | 'cancelled' | 'idle'
-                    stopSearchPoll()
-                }
-            } catch {
-                stopSearchPoll()
-                searchStatus = 'idle'
-            }
+        searchPollTimer = setInterval(() => {
+            void pollSearchTick()
         }, SEARCH_POLL_INTERVAL)
+    }
+
+    async function pollSearchTick() {
+        if (!sessionId) return
+        try {
+            const { viewerSearchPoll } = await import('$lib/tauri-commands')
+            const result = await viewerSearchPoll(sessionId)
+            searchMatches = result.matches
+            searchProgress = totalBytes > 0 ? result.bytesScanned / totalBytes : 0
+            if (currentMatchIndex === -1 && result.matches.length > 0) {
+                currentMatchIndex = 0
+            }
+            if (result.status !== 'running') {
+                searchStatus = result.status
+                stopSearchPoll()
+            }
+        } catch {
+            stopSearchPoll()
+            searchStatus = 'idle'
+        }
     }
 
     function stopSearchPoll() {
@@ -327,11 +330,10 @@
             backendType = result.backendType
 
             // Populate cache with initial lines
-            const newCache = new Map<number, string>()
+            lineCache.clear()
             for (let i = 0; i < result.initialLines.lines.length; i++) {
-                newCache.set(result.initialLines.firstLineNumber + i, result.initialLines.lines[i])
+                lineCache.set(result.initialLines.firstLineNumber + i, result.initialLines.lines[i])
             }
-            lineCache = newCache
             cachedFrom = result.initialLines.firstLineNumber
             cachedTo = result.initialLines.firstLineNumber + result.initialLines.lines.length
 

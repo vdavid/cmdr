@@ -347,7 +347,7 @@ export async function viewerGetLines(
 
 /** Starts a background search in the viewer session. */
 export async function viewerSearchStart(sessionId: string, query: string): Promise<void> {
-    return invoke<void>('viewer_search_start', { sessionId, query })
+    await invoke('viewer_search_start', { sessionId, query })
 }
 
 /** Polls search progress and matches. */
@@ -357,12 +357,12 @@ export async function viewerSearchPoll(sessionId: string): Promise<SearchPollRes
 
 /** Cancels an ongoing search. */
 export async function viewerSearchCancel(sessionId: string): Promise<void> {
-    return invoke<void>('viewer_search_cancel', { sessionId })
+    await invoke('viewer_search_cancel', { sessionId })
 }
 
 /** Closes a viewer session and frees resources. */
 export async function viewerClose(sessionId: string): Promise<void> {
-    return invoke<void>('viewer_close', { sessionId })
+    await invoke('viewer_close', { sessionId })
 }
 
 /**
