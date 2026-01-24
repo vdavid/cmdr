@@ -45,6 +45,7 @@
         handleSelectionAction: (action: string, startIndex?: number, endIndex?: number) => void
         openCopyDialog: () => Promise<void>
         openNewFolderDialog: () => Promise<void>
+        openViewerForCursor: () => Promise<void>
     }
 
     let showFdaPrompt = $state(false)
@@ -373,6 +374,11 @@
         explorerRef?.refocus()
     }
 
+    function handleFnView() {
+        void explorerRef?.openViewerForCursor()
+        explorerRef?.refocus()
+    }
+
     async function handleFnEdit() {
         const entry = explorerRef?.getFileAndPathUnderCursor()
         if (entry) {
@@ -652,6 +658,7 @@
     {#if showApp}
         <FunctionKeyBar
             visible={showFunctionKeyBar}
+            onView={handleFnView}
             onEdit={() => void handleFnEdit()}
             onCopy={handleFnCopy}
             onNewFolder={handleFnNewFolder}

@@ -283,6 +283,23 @@ export async function createDirectory(parentPath: string, name: string): Promise
     return invoke<string>('create_directory', { parentPath, name })
 }
 
+// ============================================================================
+// File viewer
+// ============================================================================
+
+/** Result of reading a file's content for the viewer. */
+export interface FileContentResult {
+    content: string
+    lineCount: number
+    size: number
+    fileName: string
+}
+
+/** Reads a file's text content for the file viewer. Binary bytes are lossy-decoded. */
+export async function readFileContent(path: string): Promise<FileContentResult> {
+    return invoke<FileContentResult>('read_file_content', { path })
+}
+
 /**
  * Opens a file with the system's default application.
  * @param path - Path to the file to open.

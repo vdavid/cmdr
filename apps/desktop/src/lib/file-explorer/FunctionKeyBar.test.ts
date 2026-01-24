@@ -18,29 +18,39 @@ describe('FunctionKeyBar', () => {
         expect(target.querySelector('.function-key-bar')).toBeNull()
     })
 
-    it('disables F3, F6, and F8 buttons', () => {
+    it('disables F6 and F8 buttons', () => {
         const target = document.createElement('div')
         mount(FunctionKeyBar, { target, props: { visible: true } })
 
         const buttons = target.querySelectorAll('button')
-        // F3 (index 0), F6 (index 3), F8 (index 5)
-        expect(buttons[0].disabled).toBe(true)
+        // F6 (index 3), F8 (index 5)
         expect(buttons[3].disabled).toBe(true)
         expect(buttons[5].disabled).toBe(true)
     })
 
-    it('enables F4, F5, and F7 buttons', () => {
+    it('enables F3, F4, F5, and F7 buttons', () => {
         const target = document.createElement('div')
         mount(FunctionKeyBar, {
             target,
-            props: { visible: true, onEdit: () => {}, onCopy: () => {}, onNewFolder: () => {} },
+            props: { visible: true, onView: () => {}, onEdit: () => {}, onCopy: () => {}, onNewFolder: () => {} },
         })
 
         const buttons = target.querySelectorAll('button')
-        // F4 (index 1), F5 (index 2), F7 (index 4)
+        // F3 (index 0), F4 (index 1), F5 (index 2), F7 (index 4)
+        expect(buttons[0].disabled).toBe(false)
         expect(buttons[1].disabled).toBe(false)
         expect(buttons[2].disabled).toBe(false)
         expect(buttons[4].disabled).toBe(false)
+    })
+
+    it('calls onView when F3 button is clicked', () => {
+        const onView = vi.fn()
+        const target = document.createElement('div')
+        mount(FunctionKeyBar, { target, props: { visible: true, onView } })
+
+        const buttons = target.querySelectorAll('button')
+        buttons[0].click()
+        expect(onView).toHaveBeenCalledOnce()
     })
 
     it('calls onEdit when F4 button is clicked', () => {
