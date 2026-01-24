@@ -4,6 +4,12 @@
 //! Operations support batch processing (multiple source files) and cancellation.
 //!
 //! Safety features:
+//! - Path canonicalization to prevent ".." and symlink bypass of recursion checks
+//! - Destination writability check before starting
+//! - Pre-flight disk space validation after scan
+//! - Inode identity check to prevent copy-over-self via symlinks/hard links
+//! - Path/name length validation (255-byte name, 1024-byte path)
+//! - Special file filtering (skips sockets, FIFOs, devices)
 //! - macOS copyfile(3) for full metadata preservation (xattrs, ACLs, resource forks)
 //! - Symlink preservation (not dereferenced)
 //! - Symlink loop detection to prevent infinite recursion
@@ -28,7 +34,8 @@ use copy::copy_files_with_progress;
 use delete::delete_files_with_progress;
 #[cfg(not(test))]
 use helpers::{
-    validate_destination, validate_destination_not_inside_source, validate_not_same_location, validate_sources,
+    validate_destination, validate_destination_not_inside_source, validate_destination_writable,
+    validate_not_same_location, validate_sources,
 };
 use move_op::move_files_with_progress;
 #[cfg(not(test))]
@@ -51,7 +58,8 @@ pub use types::{
 #[cfg(test)]
 #[allow(unused_imports, reason = "Re-exports for test modules in file_system")]
 pub(crate) use helpers::{
-    is_same_filesystem, validate_destination, validate_destination_not_inside_source, validate_not_same_location,
+    is_same_file, is_same_filesystem, validate_destination, validate_destination_not_inside_source,
+    validate_destination_writable, validate_disk_space, validate_not_same_location, validate_path_length,
     validate_sources,
 };
 #[cfg(test)]
@@ -84,6 +92,7 @@ pub async fn copy_files_start(
     // Validate inputs
     validate_sources(&sources)?;
     validate_destination(&destination)?;
+    validate_destination_writable(&destination)?;
     validate_not_same_location(&sources, &destination)?;
     validate_destination_not_inside_source(&sources, &destination)?;
 
@@ -166,6 +175,7 @@ pub async fn move_files_start(
     // Validate inputs
     validate_sources(&sources)?;
     validate_destination(&destination)?;
+    validate_destination_writable(&destination)?;
     validate_not_same_location(&sources, &destination)?;
     validate_destination_not_inside_source(&sources, &destination)?;
 

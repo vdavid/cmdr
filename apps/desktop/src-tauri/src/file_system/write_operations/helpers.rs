@@ -64,14 +64,157 @@ pub(crate) fn validate_destination_not_inside_source(
     sources: &[PathBuf],
     destination: &Path,
 ) -> Result<(), WriteOperationError> {
+    // Canonicalize destination to resolve symlinks and ".." segments that could
+    // bypass a naive starts_with check (e.g. /foo/bar/../foo/sub → /foo/sub)
+    let canonical_dest = destination.canonicalize().unwrap_or_else(|_| destination.to_path_buf());
+
     for source in sources {
-        if source.is_dir() && destination.starts_with(source) {
-            return Err(WriteOperationError::DestinationInsideSource {
-                source: source.display().to_string(),
-                destination: destination.display().to_string(),
-            });
+        if source.is_dir() {
+            let canonical_source = source.canonicalize().unwrap_or_else(|_| source.to_path_buf());
+            if canonical_dest.starts_with(&canonical_source) {
+                return Err(WriteOperationError::DestinationInsideSource {
+                    source: source.display().to_string(),
+                    destination: destination.display().to_string(),
+                });
+            }
         }
     }
+    Ok(())
+}
+
+/// Checks whether the destination directory is writable using access(W_OK).
+#[cfg(unix)]
+pub(crate) fn validate_destination_writable(destination: &Path) -> Result<(), WriteOperationError> {
+    use std::ffi::CString;
+    use std::os::unix::ffi::OsStrExt;
+
+    let c_path = CString::new(destination.as_os_str().as_bytes()).map_err(|_| WriteOperationError::IoError {
+        path: destination.display().to_string(),
+        message: "Invalid path".to_string(),
+    })?;
+
+    // SAFETY: c_path is a valid null-terminated C string
+    let result = unsafe { libc::access(c_path.as_ptr(), libc::W_OK) };
+    if result != 0 {
+        return Err(WriteOperationError::PermissionDenied {
+            path: destination.display().to_string(),
+            message: "Destination folder is not writable. Check folder permissions in Finder.".to_string(),
+        });
+    }
+    Ok(())
+}
+
+#[cfg(not(unix))]
+pub(crate) fn validate_destination_writable(_destination: &Path) -> Result<(), WriteOperationError> {
+    Ok(())
+}
+
+/// Checks available disk space on the destination volume against required bytes.
+/// Uses statvfs on Unix to query free space.
+#[cfg(unix)]
+pub(crate) fn validate_disk_space(destination: &Path, required_bytes: u64) -> Result<(), WriteOperationError> {
+    use std::ffi::CString;
+    use std::mem::MaybeUninit;
+    use std::os::unix::ffi::OsStrExt;
+
+    let c_path = CString::new(destination.as_os_str().as_bytes()).map_err(|_| WriteOperationError::IoError {
+        path: destination.display().to_string(),
+        message: "Invalid path".to_string(),
+    })?;
+
+    let mut stat = MaybeUninit::<libc::statvfs>::uninit();
+    // SAFETY: c_path is a valid null-terminated C string, stat is a valid pointer
+    let result = unsafe { libc::statvfs(c_path.as_ptr(), stat.as_mut_ptr()) };
+    if result != 0 {
+        // Cannot determine space — continue and let the OS report ENOSPC if it happens
+        return Ok(());
+    }
+
+    // SAFETY: statvfs succeeded, stat is initialized
+    let stat = unsafe { stat.assume_init() };
+    // These casts are needed on macOS where f_bavail/f_frsize may not be u64
+    #[allow(
+        clippy::unnecessary_cast,
+        reason = "Required for macOS where statvfs fields are not u64"
+    )]
+    let available = stat.f_bavail as u64 * stat.f_frsize as u64;
+
+    if required_bytes > available {
+        // Determine volume name from mount point for a friendlier message
+        let volume_name = destination
+            .ancestors()
+            .find(|p| p.parent().is_some_and(|pp| pp == Path::new("/Volumes")))
+            .and_then(|p| p.file_name())
+            .map(|n| n.to_string_lossy().to_string());
+
+        return Err(WriteOperationError::InsufficientSpace {
+            required: required_bytes,
+            available,
+            volume_name,
+        });
+    }
+
+    Ok(())
+}
+
+#[cfg(not(unix))]
+pub(crate) fn validate_disk_space(_destination: &Path, _required_bytes: u64) -> Result<(), WriteOperationError> {
+    Ok(())
+}
+
+/// Checks if source and destination resolve to the same file (same inode + device).
+/// This prevents data loss when copying a file over itself via a symlink.
+#[cfg(unix)]
+pub(crate) fn is_same_file(source: &Path, destination: &Path) -> bool {
+    use std::os::unix::fs::MetadataExt;
+
+    let src_meta = match fs::metadata(source) {
+        Ok(m) => m,
+        Err(_) => return false,
+    };
+    let dst_meta = match fs::metadata(destination) {
+        Ok(m) => m,
+        Err(_) => return false,
+    };
+
+    src_meta.dev() == dst_meta.dev() && src_meta.ino() == dst_meta.ino()
+}
+
+#[cfg(not(unix))]
+pub(crate) fn is_same_file(_source: &Path, _destination: &Path) -> bool {
+    false
+}
+
+// ============================================================================
+// Path length validation
+// ============================================================================
+
+/// Maximum file name length in bytes (APFS/HFS+ limit)
+const MAX_NAME_BYTES: usize = 255;
+/// Maximum path length in bytes (macOS PATH_MAX)
+const MAX_PATH_BYTES: usize = 1024;
+
+/// Validates that a destination path doesn't exceed filesystem name/path length limits.
+pub(crate) fn validate_path_length(dest_path: &Path) -> Result<(), WriteOperationError> {
+    // Check total path length
+    let path_str = dest_path.as_os_str();
+    if path_str.len() > MAX_PATH_BYTES {
+        return Err(WriteOperationError::IoError {
+            path: dest_path.display().to_string(),
+            message: format!("Path exceeds maximum length of {} bytes", MAX_PATH_BYTES),
+        });
+    }
+
+    // Check file name component length
+    if let Some(name) = dest_path.file_name()
+        && name.len() > MAX_NAME_BYTES
+    {
+        return Err(WriteOperationError::IoError {
+            path: dest_path.display().to_string(),
+            message: format!("File name exceeds maximum length of {} bytes", MAX_NAME_BYTES),
+        });
+    }
+
     Ok(())
 }
 

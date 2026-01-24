@@ -158,6 +158,46 @@ Error payloads are tagged unions for easy frontend handling:
 }
 ```
 
+## Safety checks
+
+Pre-flight and runtime validations that prevent data loss, infinite recursion, and wasted time.
+
+### Pre-flight validations (before the operation starts)
+
+These run synchronously before spawning the background task. A failure returns an error immediately.
+
+| Check | What it prevents | Implementation |
+|-------|-----------------|----------------|
+| Source existence | Operating on paths that vanished | `validate_sources` — uses `symlink_metadata` |
+| Destination exists + is directory | Writing into a file or a void | `validate_destination` |
+| Destination writable | Starting a copy that will fail on first write | `validate_destination_writable` — `access(W_OK)` |
+| Same location | Copying a file onto itself | `validate_not_same_location` — parent check |
+| Destination inside source | Infinite recursion (e.g. copying `/a` into `/a/b`) | `validate_destination_not_inside_source` — uses `canonicalize` to resolve symlinks and `..` segments |
+
+### Post-scan validations (after file tree is counted, before copying)
+
+| Check | What it prevents | Implementation |
+|-------|-----------------|----------------|
+| Disk space | Wasting time copying when the volume is too small | `validate_disk_space` — compares `scan_result.total_bytes` against `statvfs` available |
+
+### Per-file runtime checks (during copy)
+
+| Check | What it prevents | Implementation |
+|-------|-----------------|----------------|
+| Inode identity | Destroying a file by copying it over itself through a symlink or hard link | `is_same_file` — compares `dev` + `ino` of source and resolved destination |
+| Path/name length | `ENAMETOOLONG` deep in a recursive copy | `validate_path_length` — file name ≤ 255 bytes, total path ≤ 1024 bytes |
+| Special file skipping | I/O errors from sockets, FIFOs, char/block devices | Scan and copy skip entries that aren't files, dirs, or symlinks (logs a warning) |
+| Symlink loop detection | Infinite recursion through symlinks | `is_symlink_loop` — tracks canonicalized paths in a `HashSet` |
+| Conflict resolution | Overwriting files without user consent | Supports Stop (ask user), Skip, Overwrite (safe temp+rename pattern), and Rename |
+
+### Error recovery
+
+| Mechanism | Scope | Behavior |
+|-----------|-------|----------|
+| CopyTransaction | Whole operation | Tracks created files/dirs. On error: rolls back (deletes all). On cancel: user chooses keep or rollback. |
+| Safe overwrite | Single file | Writes to `.cmdr-tmp-{uuid}`, renames original to `.cmdr-backup-{uuid}`, renames temp to final, deletes backup. Original is intact until the final rename succeeds. |
+| Async sync | Post-completion | Spawns `sync()` in a background thread after commit for durability. |
+
 ## Progress event structure
 
 ```typescript
