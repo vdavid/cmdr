@@ -3,7 +3,7 @@ export async function openFileViewer(filePath: string): Promise<void> {
     const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow')
 
     // Use a unique label per viewer instance (timestamp-based)
-    const label = `viewer-${Date.now()}`
+    const label = `viewer-${String(Date.now())}`
     const encodedPath = encodeURIComponent(filePath)
 
     new WebviewWindow(label, {

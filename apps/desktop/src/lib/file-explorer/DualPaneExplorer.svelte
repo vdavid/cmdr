@@ -505,6 +505,35 @@
         return false
     }
 
+    /** Handles function key shortcuts (F1-F7). Returns true if a function key was handled. */
+    function handleFunctionKey(e: KeyboardEvent): boolean {
+        switch (e.key) {
+            case 'F1':
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+                rightPaneRef?.closeVolumeChooser()
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+                leftPaneRef?.toggleVolumeChooser()
+                return true
+            case 'F2':
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+                leftPaneRef?.closeVolumeChooser()
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+                rightPaneRef?.toggleVolumeChooser()
+                return true
+            case 'F3':
+                void openViewerForCursor()
+                return true
+            case 'F5':
+                void openCopyDialog()
+                return true
+            case 'F7':
+                void openNewFolderDialog()
+                return true
+            default:
+                return false
+        }
+    }
+
     function handleKeyDown(e: KeyboardEvent) {
         if (e.key === 'Tab') {
             e.preventDefault()
@@ -518,46 +547,8 @@
             return
         }
 
-        // F1 or ⌥F1 - Open left pane volume chooser
-        if (e.key === 'F1') {
+        if (handleFunctionKey(e)) {
             e.preventDefault()
-            // Close right pane's volume chooser before toggling left (only one can be open)
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            rightPaneRef?.closeVolumeChooser()
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            leftPaneRef?.toggleVolumeChooser()
-            return
-        }
-
-        // F2 or ⌥F2 - Open right pane volume chooser
-        if (e.key === 'F2') {
-            e.preventDefault()
-            // Close left pane's volume chooser before toggling right (only one can be open)
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            leftPaneRef?.closeVolumeChooser()
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            rightPaneRef?.toggleVolumeChooser()
-            return
-        }
-
-        // F3 - View file
-        if (e.key === 'F3') {
-            e.preventDefault()
-            void openViewerForCursor()
-            return
-        }
-
-        // F5 - Copy dialog
-        if (e.key === 'F5') {
-            e.preventDefault()
-            void openCopyDialog()
-            return
-        }
-
-        // F7 - New folder dialog
-        if (e.key === 'F7') {
-            e.preventDefault()
-            void openNewFolderDialog()
             return
         }
 
