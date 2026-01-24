@@ -45,6 +45,7 @@ pub mod benchmark;
 mod commands;
 pub mod config;
 mod file_system;
+pub(crate) mod file_viewer;
 mod font_metrics;
 pub mod icons;
 pub mod licensing;
@@ -280,7 +281,12 @@ pub fn run() {
             commands::file_system::get_operation_status,
             commands::file_system::get_listing_stats,
             commands::file_system::start_selection_drag,
-            commands::file_system::read_file_content,
+            commands::file_viewer::viewer_open,
+            commands::file_viewer::viewer_get_lines,
+            commands::file_viewer::viewer_search_start,
+            commands::file_viewer::viewer_search_poll,
+            commands::file_viewer::viewer_search_cancel,
+            commands::file_viewer::viewer_close,
             commands::font_metrics::store_font_metrics,
             commands::font_metrics::has_font_metrics,
             commands::icons::get_icons,

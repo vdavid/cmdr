@@ -1,6 +1,7 @@
 //! Tauri commands module.
 
 pub mod file_system;
+pub mod file_viewer;
 pub mod font_metrics;
 pub mod icons;
 pub mod licensing;

@@ -5,57 +5,178 @@
         if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
         return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`
     }
+
+    const LINE_HEIGHT = 18
+    const BUFFER_LINES = 50
+    const FETCH_BATCH = 500
+    const SEARCH_POLL_INTERVAL = 100
 </script>
 
 <script lang="ts">
-    import { onMount, tick } from 'svelte'
-    import { findMatches, nextMatchIndex, prevMatchIndex, type SearchMatch } from '$lib/file-viewer/viewer-search'
+    import { onMount, onDestroy, tick } from 'svelte'
+    import type { ViewerSearchMatch } from '$lib/tauri-commands'
 
-    let content = $state('')
-    let lines = $state<string[]>([])
     let fileName = $state('')
-    let lineCount = $state(0)
-    let fileSize = $state(0)
+    let totalLines = $state<number | null>(null)
+    let totalBytes = $state(0)
     let error = $state('')
     let loading = $state(true)
+    let sessionId = $state('')
+    let backendType = $state<'fullLoad' | 'byteSeek' | 'lineIndex'>('fullLoad')
+
+    // Line cache: lineNumber -> text
+    let lineCache = $state<Map<number, string>>(new Map())
+    // The range of lines currently in cache
+    let cachedFrom = $state(0)
+    let cachedTo = $state(0)
+
+    // Virtual scroll state
+    let scrollTop = $state(0)
+    let viewportHeight = $state(600)
+    let contentRef: HTMLDivElement | undefined = $state()
+
+    // Derived: which lines are visible
+    const visibleFrom = $derived(Math.max(0, Math.floor(scrollTop / LINE_HEIGHT) - BUFFER_LINES))
+    const visibleTo = $derived(
+        Math.min(estimatedTotalLines(), Math.ceil((scrollTop + viewportHeight) / LINE_HEIGHT) + BUFFER_LINES),
+    )
+    const visibleLines = $derived(getVisibleLines())
+    const gutterWidth = $derived(String(estimatedTotalLines()).length)
 
     // Search state
     let searchVisible = $state(false)
     let searchQuery = $state('')
-    let matches = $state<SearchMatch[]>([])
+    let searchMatches = $state<ViewerSearchMatch[]>([])
     let currentMatchIndex = $state(-1)
+    let searchStatus = $state<'idle' | 'running' | 'done' | 'cancelled'>('idle')
+    let searchProgress = $state(0)
     let searchInputRef: HTMLInputElement | undefined = $state()
+    let searchPollTimer: ReturnType<typeof setInterval> | undefined
 
-    // Viewer container ref for scrolling
-    let viewerRef: HTMLDivElement | undefined = $state()
+    // Track pending fetches to avoid duplicate requests
+    let fetchingRange = $state(false)
 
-    // Compute line number gutter width based on total lines
-    const gutterWidth = $derived(String(lineCount).length)
+    function estimatedTotalLines(): number {
+        if (totalLines !== null) return totalLines
+        // Estimate based on average 80 bytes per line
+        return Math.max(1, Math.ceil(totalBytes / 80))
+    }
 
-    // Update matches when query or content changes
+    function getVisibleLines(): Array<{ lineNumber: number; text: string }> {
+        const result: Array<{ lineNumber: number; text: string }> = []
+        const end = Math.min(visibleTo, estimatedTotalLines())
+        for (let i = visibleFrom; i < end; i++) {
+            result.push({ lineNumber: i, text: lineCache.get(i) ?? '' })
+        }
+        return result
+    }
+
+    // Fetch lines when visible range changes
     $effect(() => {
-        if (searchQuery && lines.length > 0) {
-            matches = findMatches(lines, searchQuery)
-            currentMatchIndex = matches.length > 0 ? 0 : -1
-        } else {
-            matches = []
-            currentMatchIndex = -1
+        const from = visibleFrom
+        const to = visibleTo
+        if (sessionId && !fetchingRange) {
+            // Check if we need to fetch
+            if (from < cachedFrom || to > cachedTo) {
+                void fetchLines(from, to)
+            }
         }
     })
 
-    // Scroll to current match when it changes
-    $effect(() => {
-        if (currentMatchIndex >= 0 && matches[currentMatchIndex]) {
-            scrollToMatch(matches[currentMatchIndex])
-        }
-    })
+    async function fetchLines(from: number, to: number) {
+        if (!sessionId || fetchingRange) return
+        fetchingRange = true
+        try {
+            const { viewerGetLines } = await import('$lib/tauri-commands')
+            // Fetch a larger batch to reduce round-trips
+            const fetchFrom = Math.max(0, from - BUFFER_LINES)
+            const fetchCount = Math.min(FETCH_BATCH, to - fetchFrom + BUFFER_LINES * 2)
+            const chunk = await viewerGetLines(sessionId, 'line', fetchFrom, fetchCount)
 
-    function scrollToMatch(match: SearchMatch) {
-        if (!viewerRef) return
-        const lineEl = viewerRef.querySelector(`[data-line="${String(match.line)}"]`)
-        if (lineEl) {
-            lineEl.scrollIntoView({ block: 'center', behavior: 'smooth' })
+            // Update cache
+            const newCache = new Map(lineCache)
+            for (let i = 0; i < chunk.lines.length; i++) {
+                newCache.set(chunk.firstLineNumber + i, chunk.lines[i])
+            }
+            lineCache = newCache
+            cachedFrom = Math.min(cachedFrom, chunk.firstLineNumber)
+            cachedTo = Math.max(cachedTo, chunk.firstLineNumber + chunk.lines.length)
+
+            // Update totalLines if backend now knows it
+            if (chunk.totalLines !== null) {
+                totalLines = chunk.totalLines
+            }
+        } catch {
+            // Fetch failed, will retry on next scroll
+        } finally {
+            fetchingRange = false
         }
+    }
+
+    function handleScroll() {
+        if (contentRef) {
+            scrollTop = contentRef.scrollTop
+            viewportHeight = contentRef.clientHeight
+        }
+    }
+
+    // Search functions
+    async function startSearch(query: string) {
+        if (!sessionId || !query) return
+        searchMatches = []
+        currentMatchIndex = -1
+        searchStatus = 'running'
+        searchProgress = 0
+
+        try {
+            const { viewerSearchStart } = await import('$lib/tauri-commands')
+            await viewerSearchStart(sessionId, query)
+            pollSearch()
+        } catch {
+            searchStatus = 'idle'
+        }
+    }
+
+    function pollSearch() {
+        stopSearchPoll()
+        searchPollTimer = setInterval(async () => {
+            if (!sessionId) return
+            try {
+                const { viewerSearchPoll } = await import('$lib/tauri-commands')
+                const result = await viewerSearchPoll(sessionId)
+                searchMatches = result.matches
+                searchProgress = totalBytes > 0 ? result.bytesScanned / totalBytes : 0
+                if (currentMatchIndex === -1 && result.matches.length > 0) {
+                    currentMatchIndex = 0
+                }
+                if (result.status !== 'running') {
+                    searchStatus = result.status as 'done' | 'cancelled' | 'idle'
+                    stopSearchPoll()
+                }
+            } catch {
+                stopSearchPoll()
+                searchStatus = 'idle'
+            }
+        }, SEARCH_POLL_INTERVAL)
+    }
+
+    function stopSearchPoll() {
+        if (searchPollTimer) {
+            clearInterval(searchPollTimer)
+            searchPollTimer = undefined
+        }
+    }
+
+    async function cancelSearch() {
+        stopSearchPoll()
+        if (!sessionId) return
+        try {
+            const { viewerSearchCancel } = await import('$lib/tauri-commands')
+            await viewerSearchCancel(sessionId)
+        } catch {
+            // Ignore
+        }
+        searchStatus = 'idle'
     }
 
     function openSearch() {
@@ -69,21 +190,55 @@
     function closeSearch() {
         searchVisible = false
         searchQuery = ''
-        matches = []
+        void cancelSearch()
+        searchMatches = []
         currentMatchIndex = -1
+        searchProgress = 0
     }
 
     function findNext() {
-        if (matches.length === 0) return
-        currentMatchIndex = nextMatchIndex(currentMatchIndex, matches.length)
+        if (searchMatches.length === 0) return
+        currentMatchIndex = (currentMatchIndex + 1) % searchMatches.length
+        scrollToMatch(searchMatches[currentMatchIndex])
     }
 
     function findPrev() {
-        if (matches.length === 0) return
-        currentMatchIndex = prevMatchIndex(currentMatchIndex, matches.length)
+        if (searchMatches.length === 0) return
+        currentMatchIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length
+        scrollToMatch(searchMatches[currentMatchIndex])
     }
 
+    function scrollToMatch(match: ViewerSearchMatch) {
+        if (!contentRef) return
+        const targetScroll = match.line * LINE_HEIGHT - viewportHeight / 2
+        contentRef.scrollTop = Math.max(0, targetScroll)
+    }
+
+    // Debounce search input
+    let searchDebounceTimer: ReturnType<typeof setTimeout> | undefined
+    $effect(() => {
+        const query = searchQuery
+        if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
+        if (query && searchVisible) {
+            searchDebounceTimer = setTimeout(() => {
+                void startSearch(query)
+            }, 300)
+        } else {
+            void cancelSearch()
+            searchMatches = []
+            currentMatchIndex = -1
+        }
+    })
+
     async function closeWindow() {
+        if (sessionId) {
+            try {
+                const { viewerClose } = await import('$lib/tauri-commands')
+                await viewerClose(sessionId)
+            } catch {
+                // Ignore
+            }
+        }
         try {
             const { getCurrentWindow } = await import('@tauri-apps/api/window')
             await getCurrentWindow().close()
@@ -93,14 +248,12 @@
     }
 
     function handleKeyDown(e: KeyboardEvent) {
-        // Cmd+F or Ctrl+F: open search
         if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
             e.preventDefault()
             openSearch()
             return
         }
 
-        // Escape: close search first, then close window
         if (e.key === 'Escape') {
             e.preventDefault()
             if (searchVisible) {
@@ -111,7 +264,6 @@
             return
         }
 
-        // Enter in search: find next (Shift+Enter: find previous)
         if (e.key === 'Enter' && searchVisible) {
             e.preventDefault()
             if (e.shiftKey) {
@@ -122,9 +274,9 @@
         }
     }
 
-    /** Renders a line with search highlights. Returns an array of segments. */
-    function getHighlightedSegments(lineIdx: number, lineText: string) {
-        const lineMatches = matches.filter((m) => m.line === lineIdx)
+    /** Highlights search matches within a line. */
+    function getHighlightedSegments(lineNumber: number, lineText: string) {
+        const lineMatches = searchMatches.filter((m) => m.line === lineNumber)
         if (lineMatches.length === 0) {
             return [{ text: lineText, highlight: false, active: false }]
         }
@@ -132,12 +284,16 @@
         const segments: Array<{ text: string; highlight: boolean; active: boolean }> = []
         let pos = 0
         for (const m of lineMatches) {
-            if (m.start > pos) {
-                segments.push({ text: lineText.slice(pos, m.start), highlight: false, active: false })
+            if (m.column > pos) {
+                segments.push({ text: lineText.slice(pos, m.column), highlight: false, active: false })
             }
-            const isActive = matches.indexOf(m) === currentMatchIndex
-            segments.push({ text: lineText.slice(m.start, m.start + m.length), highlight: true, active: isActive })
-            pos = m.start + m.length
+            const isActive = searchMatches.indexOf(m) === currentMatchIndex
+            segments.push({
+                text: lineText.slice(m.column, m.column + m.length),
+                highlight: true,
+                active: isActive,
+            })
+            pos = m.column + m.length
         }
         if (pos < lineText.length) {
             segments.push({ text: lineText.slice(pos), highlight: false, active: false })
@@ -146,13 +302,11 @@
     }
 
     onMount(async () => {
-        // Hide the loading screen
         const loadingScreen = document.getElementById('loading-screen')
         if (loadingScreen) {
             loadingScreen.style.display = 'none'
         }
 
-        // Get file path from URL query parameter
         const params = new URLSearchParams(window.location.search)
         const filePath = params.get('path')
 
@@ -163,13 +317,23 @@
         }
 
         try {
-            const { readFileContent } = await import('$lib/tauri-commands')
-            const result = await readFileContent(filePath)
-            content = result.content
-            lines = content.split('\n')
+            const { viewerOpen } = await import('$lib/tauri-commands')
+            const result = await viewerOpen(filePath)
+
+            sessionId = result.sessionId
             fileName = result.fileName
-            lineCount = result.lineCount
-            fileSize = result.size
+            totalBytes = result.totalBytes
+            totalLines = result.totalLines
+            backendType = result.backendType
+
+            // Populate cache with initial lines
+            const newCache = new Map<number, string>()
+            for (let i = 0; i < result.initialLines.lines.length; i++) {
+                newCache.set(result.initialLines.firstLineNumber + i, result.initialLines.lines[i])
+            }
+            lineCache = newCache
+            cachedFrom = result.initialLines.firstLineNumber
+            cachedTo = result.initialLines.firstLineNumber + result.initialLines.lines.length
 
             // Set window title
             try {
@@ -184,10 +348,15 @@
             loading = false
         }
     })
+
+    onDestroy(() => {
+        stopSearchPoll()
+        if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
+    })
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="viewer-container" onkeydown={handleKeyDown} tabindex={-1} bind:this={viewerRef}>
+<div class="viewer-container" onkeydown={handleKeyDown} tabindex={-1}>
     {#if searchVisible}
         <div class="search-bar" role="search">
             <input
@@ -199,21 +368,23 @@
                 class="search-input"
             />
             <span class="match-count" aria-live="polite">
-                {#if matches.length > 0}
-                    {currentMatchIndex + 1} of {matches.length}
-                {:else if searchQuery}
+                {#if searchMatches.length > 0}
+                    {currentMatchIndex + 1} of {searchMatches.length}
+                {:else if searchStatus === 'running'}
+                    Searching... {Math.round(searchProgress * 100)}%
+                {:else if searchQuery && searchStatus === 'done'}
                     No matches
                 {/if}
             </span>
             <button
                 onclick={findPrev}
-                disabled={matches.length === 0}
+                disabled={searchMatches.length === 0}
                 aria-label="Previous match"
                 title="Previous match (Shift+Enter)">&#x25B2;</button
             >
             <button
                 onclick={findNext}
-                disabled={matches.length === 0}
+                disabled={searchMatches.length === 0}
                 aria-label="Next match"
                 title="Next match (Enter)">&#x25BC;</button
             >
@@ -226,24 +397,41 @@
     {:else if error}
         <div class="status-message error">{error}</div>
     {:else}
-        <div class="file-content" role="document" aria-label="File content: {fileName}">
-            {#each lines as line, idx (idx)}
-                <div class="line" data-line={idx}>
-                    <span class="line-number" style="width: {gutterWidth}ch" aria-hidden="true">{idx + 1}</span>
-                    <span class="line-text"
-                        >{#each getHighlightedSegments(idx, line) as seg, segIdx (segIdx)}{#if seg.highlight}<mark
-                                    class:active={seg.active}>{seg.text}</mark
-                                >{:else}{seg.text}{/if}{/each}</span
-                    >
+        <div
+            class="file-content"
+            role="document"
+            aria-label="File content: {fileName}"
+            bind:this={contentRef}
+            onscroll={handleScroll}
+        >
+            <div class="scroll-spacer" style="height: {estimatedTotalLines() * LINE_HEIGHT}px">
+                <div class="lines-container" style="transform: translateY({visibleFrom * LINE_HEIGHT}px)">
+                    {#each visibleLines as { lineNumber, text } (lineNumber)}
+                        <div class="line" data-line={lineNumber}>
+                            <span class="line-number" style="width: {gutterWidth}ch" aria-hidden="true"
+                                >{lineNumber + 1}</span
+                            >
+                            <span class="line-text"
+                                >{#each getHighlightedSegments(lineNumber, text) as seg, segIdx (segIdx)}{#if seg.highlight}<mark
+                                            class:active={seg.active}>{seg.text}</mark
+                                        >{:else}{seg.text}{/if}{/each}</span
+                            >
+                        </div>
+                    {/each}
                 </div>
-            {/each}
+            </div>
         </div>
     {/if}
 
     <div class="status-bar" aria-label="File information">
         <span>{fileName}</span>
-        <span>{lineCount} {lineCount === 1 ? 'line' : 'lines'}</span>
-        <span>{formatSize(fileSize)}</span>
+        {#if totalLines !== null}
+            <span>{totalLines} {totalLines === 1 ? 'line' : 'lines'}</span>
+        {/if}
+        <span>{formatSize(totalBytes)}</span>
+        {#if backendType !== 'fullLoad'}
+            <span class="backend-badge">{backendType === 'lineIndex' ? 'indexed' : 'streaming'}</span>
+        {/if}
         <span class="shortcut-hint">Ctrl+F search &middot; Esc close</span>
     </div>
 </div>
@@ -315,19 +503,33 @@
     .file-content {
         flex: 1;
         overflow: auto;
-        font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
+        font-family:
+            SF Mono,
+            Menlo,
+            Monaco,
+            Consolas,
+            monospace;
         font-size: 12px;
         line-height: 1.5;
-        padding: var(--spacing-xs) 0;
         user-select: text;
         -webkit-user-select: text;
         cursor: text;
     }
 
+    .scroll-spacer {
+        position: relative;
+    }
+
+    .lines-container {
+        position: absolute;
+        left: 0;
+        right: 0;
+    }
+
     .line {
         display: flex;
         padding: 0 var(--spacing-sm);
-        min-height: 18px;
+        height: 18px;
     }
 
     .line:hover {
@@ -351,6 +553,7 @@
         word-break: break-all;
         flex: 1;
         min-width: 0;
+        overflow: hidden;
     }
 
     mark {
@@ -386,6 +589,14 @@
         font-size: 11px;
         color: var(--color-text-secondary);
         flex-shrink: 0;
+    }
+
+    .backend-badge {
+        padding: 1px 4px;
+        border-radius: 3px;
+        background: var(--color-bg-tertiary);
+        color: var(--color-text-muted);
+        font-size: 10px;
     }
 
     .shortcut-hint {
