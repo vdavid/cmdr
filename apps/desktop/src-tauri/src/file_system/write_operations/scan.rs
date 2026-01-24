@@ -207,6 +207,9 @@ fn scan_preview_recursive(
                 visited,
             )?;
         }
+    } else {
+        // Skip special files (sockets, FIFOs, char/block devices)
+        log::warn!("scan_preview: skipping special file: {}", path.display());
     }
 
     // Emit progress periodically
@@ -414,6 +417,9 @@ fn scan_path_recursive(
                 visited,
             )?;
         }
+    } else {
+        // Skip special files (sockets, FIFOs, char/block devices)
+        log::warn!("scan: skipping special file: {}", path.display());
     }
 
     // Emit progress periodically
@@ -623,6 +629,9 @@ fn dry_run_scan_recursive(
                 visited,
             )?;
         }
+    } else {
+        // Skip special files (sockets, FIFOs, char/block devices)
+        log::warn!("dry_run_scan: skipping special file: {}", path.display());
     }
 
     // Emit progress periodically
