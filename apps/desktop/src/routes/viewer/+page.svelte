@@ -227,13 +227,13 @@
         <div class="status-message error">{error}</div>
     {:else}
         <div class="file-content" role="document" aria-label="File content: {fileName}">
-            {#each lines as line, idx}
+            {#each lines as line, idx (idx)}
                 <div class="line" data-line={idx}>
                     <span class="line-number" style="width: {gutterWidth}ch" aria-hidden="true">{idx + 1}</span>
                     <span class="line-text"
-                        >{#each getHighlightedSegments(idx, line) as seg}{#if seg.highlight}<mark
+                        >{#each getHighlightedSegments(idx, line) as seg, segIdx (segIdx)}{#if seg.highlight}<mark
                                     class:active={seg.active}>{seg.text}</mark
-                                >{:else}{seg.text}{/if}{/each}{#if line === ''}{'\n'}{/if}</span
+                                >{:else}{seg.text}{/if}{/each}</span
                     >
                 </div>
             {/each}
