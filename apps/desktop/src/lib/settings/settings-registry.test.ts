@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import {
     settingsRegistry,
     getSettingDefinition,
@@ -7,7 +7,6 @@ import {
     getAdvancedSettings,
     validateSettingValue,
     buildSectionTree,
-    type SettingsSection,
 } from './settings-registry'
 
 describe('settingsRegistry', () => {
@@ -38,7 +37,6 @@ describe('getSettingDefinition', () => {
     })
 
     it('should return undefined for non-existent setting', () => {
-        // @ts-expect-error - testing invalid input
         const def = getSettingDefinition('nonexistent.setting')
         expect(def).toBeUndefined()
     })
@@ -97,29 +95,47 @@ describe('getAdvancedSettings', () => {
 describe('validateSettingValue', () => {
     it('should validate enum values', () => {
         // Valid
-        expect(() => validateSettingValue('appearance.uiDensity', 'compact')).not.toThrow()
-        expect(() => validateSettingValue('appearance.uiDensity', 'comfortable')).not.toThrow()
-        expect(() => validateSettingValue('appearance.uiDensity', 'spacious')).not.toThrow()
+        expect(() => {
+            validateSettingValue('appearance.uiDensity', 'compact')
+        }).not.toThrow()
+        expect(() => {
+            validateSettingValue('appearance.uiDensity', 'comfortable')
+        }).not.toThrow()
+        expect(() => {
+            validateSettingValue('appearance.uiDensity', 'spacious')
+        }).not.toThrow()
 
         // Invalid
-        expect(() => validateSettingValue('appearance.uiDensity', 'invalid')).toThrow()
+        expect(() => {
+            validateSettingValue('appearance.uiDensity', 'invalid')
+        }).toThrow()
     })
 
     it('should validate boolean values', () => {
         // Valid
-        expect(() => validateSettingValue('fileOperations.confirmBeforeDelete', true)).not.toThrow()
-        expect(() => validateSettingValue('fileOperations.confirmBeforeDelete', false)).not.toThrow()
+        expect(() => {
+            validateSettingValue('fileOperations.confirmBeforeDelete', true)
+        }).not.toThrow()
+        expect(() => {
+            validateSettingValue('fileOperations.confirmBeforeDelete', false)
+        }).not.toThrow()
 
         // Invalid
-        expect(() => validateSettingValue('fileOperations.confirmBeforeDelete', 'yes')).toThrow()
+        expect(() => {
+            validateSettingValue('fileOperations.confirmBeforeDelete', 'yes')
+        }).toThrow()
     })
 
     it('should validate number values with constraints', () => {
         // Valid
-        expect(() => validateSettingValue('fileOperations.progressUpdateInterval', 100)).not.toThrow()
+        expect(() => {
+            validateSettingValue('fileOperations.progressUpdateInterval', 100)
+        }).not.toThrow()
 
         // Invalid - below min
-        expect(() => validateSettingValue('fileOperations.progressUpdateInterval', 0)).toThrow()
+        expect(() => {
+            validateSettingValue('fileOperations.progressUpdateInterval', 0)
+        }).toThrow()
     })
 })
 
