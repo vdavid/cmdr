@@ -63,6 +63,7 @@ export async function initializeSettings(): Promise<void> {
                 settingsCache[def.id] = stored
             } catch {
                 // Invalid stored value, will use default
+                // eslint-disable-next-line no-console
                 console.warn(`Invalid stored value for ${def.id}, using default`)
             }
         }
@@ -95,6 +96,7 @@ async function migrateSettings(store: Store, fromVersion: number): Promise<void>
  */
 export function getSetting<K extends SettingId>(id: K): SettingsValues[K] {
     if (!initialized) {
+        // eslint-disable-next-line no-console
         console.warn('Settings not initialized, returning default for', id)
         return getDefaultValue(id)
     }
@@ -206,12 +208,14 @@ async function saveToStore(): Promise<void> {
         await store.set('_schemaVersion', SCHEMA_VERSION)
         await store.save()
     } catch (error) {
+        // eslint-disable-next-line no-console
         console.error('Failed to save settings:', error)
         // Retry once
         try {
             const store = await getStore()
             await store.save()
         } catch (retryError) {
+            // eslint-disable-next-line no-console
             console.error('Retry failed:', retryError)
             // Could show a toast here in the future
         }
@@ -257,6 +261,7 @@ function notifyListeners<K extends SettingId>(id: K, value: SettingsValues[K]): 
         try {
             listener(id, value)
         } catch (error) {
+            // eslint-disable-next-line no-console
             console.error('Setting change listener error:', error)
         }
     }
@@ -268,6 +273,7 @@ function notifyListeners<K extends SettingId>(id: K, value: SettingsValues[K]): 
             try {
                 listener(id, value)
             } catch (error) {
+                // eslint-disable-next-line no-console
                 console.error('Setting change listener error:', error)
             }
         }
