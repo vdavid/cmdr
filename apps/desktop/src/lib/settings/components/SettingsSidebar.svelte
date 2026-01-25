@@ -186,6 +186,11 @@
         margin-bottom: var(--spacing-xxs);
     }
 
+    .subsections {
+        display: flex;
+        flex-direction: column;
+    }
+
     .section-item {
         display: block;
         width: 100%;
