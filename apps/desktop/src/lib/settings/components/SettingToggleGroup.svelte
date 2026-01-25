@@ -1,0 +1,70 @@
+<script lang="ts">
+    import { ToggleGroup } from '@ark-ui/svelte/toggle-group'
+    import { getSetting, setSetting, getSettingDefinition, type SettingId, type SettingsValues } from '$lib/settings'
+
+    interface Props {
+        id: SettingId
+        disabled?: boolean
+    }
+
+    const { id, disabled = false }: Props = $props()
+
+    const definition = getSettingDefinition(id)
+    const options = definition?.constraints?.options ?? []
+
+    let value = $state([String(getSetting(id))])
+
+    async function handleValueChange(details: { value: string[] }) {
+        if (details.value.length === 0) return // Don't allow deselecting all
+
+        const newValue = details.value[0]
+        value = [newValue]
+        await setSetting(id, newValue as SettingsValues[typeof id])
+    }
+</script>
+
+<ToggleGroup.Root {value} onValueChange={handleValueChange} {disabled}>
+    {#each options as option}
+        <ToggleGroup.Item value={String(option.value)} class="toggle-item" {disabled}>
+            {option.label}
+        </ToggleGroup.Item>
+    {/each}
+</ToggleGroup.Root>
+
+<style>
+    :global([data-scope='toggle-group'][data-part='root']) {
+        display: inline-flex;
+        border: 1px solid var(--color-border);
+        border-radius: 6px;
+        overflow: hidden;
+    }
+
+    :global(.toggle-item) {
+        padding: var(--spacing-xs) var(--spacing-md);
+        border: none;
+        background: var(--color-bg-primary);
+        color: var(--color-text-primary);
+        font-size: var(--font-size-sm);
+        cursor: pointer;
+        transition: all 0.15s;
+        border-right: 1px solid var(--color-border);
+    }
+
+    :global(.toggle-item:last-child) {
+        border-right: none;
+    }
+
+    :global(.toggle-item:hover:not([data-disabled])) {
+        background: var(--color-bg-hover);
+    }
+
+    :global(.toggle-item[data-state='on']) {
+        background: var(--color-accent);
+        color: white;
+    }
+
+    :global(.toggle-item[data-disabled]) {
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+</style>

@@ -24,6 +24,7 @@
         getWindowTitle,
     } from '$lib/tauri-commands'
     import { loadSettings, saveSettings } from '$lib/settings-store'
+    import { openSettingsWindow } from '$lib/settings/settings-window'
     import { hideExpirationModal, loadLicenseStatus, triggerValidationIfNeeded } from '$lib/licensing-store.svelte'
     import type { ViewMode } from '$lib/app-status-store'
 
@@ -183,6 +184,13 @@
             if (e.metaKey && e.shiftKey && e.key.toLowerCase() === 'p') {
                 e.preventDefault()
                 showCommandPalette = true
+                return
+            }
+
+            // Settings: ⌘, (Cmd + comma)
+            if (e.metaKey && !e.shiftKey && !e.altKey && e.key === ',') {
+                e.preventDefault()
+                void openSettingsWindow()
                 return
             }
 

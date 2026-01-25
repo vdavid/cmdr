@@ -1,0 +1,68 @@
+<script lang="ts">
+    import SettingRow from '../components/SettingRow.svelte'
+    import SettingToggleGroup from '../components/SettingToggleGroup.svelte'
+    import { getSettingDefinition } from '$lib/settings'
+
+    interface Props {
+        searchQuery: string
+    }
+
+    const { searchQuery }: Props = $props()
+
+    const themeModeDef = getSettingDefinition('theme.mode')!
+</script>
+
+<div class="section">
+    <h2 class="section-title">Themes</h2>
+
+    <SettingRow id="theme.mode" label={themeModeDef.label} description={themeModeDef.description}>
+        <SettingToggleGroup id="theme.mode" />
+    </SettingRow>
+
+    <!-- Future: Preset themes -->
+    <div class="coming-soon">
+        <h3>Preset themes</h3>
+        <p>Custom color themes are coming in a future update.</p>
+    </div>
+
+    <!-- Future: Custom theme editor -->
+    <div class="coming-soon">
+        <h3>Custom theme editor</h3>
+        <p>Create and customize your own color schemes. Coming soon!</p>
+    </div>
+</div>
+
+<style>
+    .section {
+        margin-bottom: var(--spacing-md);
+    }
+
+    .section-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--color-text-primary);
+        margin: 0 0 var(--spacing-sm);
+        padding-bottom: var(--spacing-xs);
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    .coming-soon {
+        padding: var(--spacing-md);
+        background: var(--color-bg-secondary);
+        border-radius: 6px;
+        margin-top: var(--spacing-md);
+    }
+
+    .coming-soon h3 {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        margin: 0 0 var(--spacing-xs);
+    }
+
+    .coming-soon p {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-muted);
+        margin: 0;
+    }
+</style>
