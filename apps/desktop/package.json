@@ -30,6 +30,7 @@
     },
     "license": "SEE LICENSE IN LICENSE",
     "dependencies": {
+        "@ark-ui/svelte": "^5.15.0",
         "@crabnebula/tauri-plugin-drag": "^2.1.0",
         "@leeoniya/ufuzzy": "^1.0.19",
         "@logtape/logtape": "^2.0.0",

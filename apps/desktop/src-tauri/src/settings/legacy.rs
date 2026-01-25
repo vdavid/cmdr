@@ -1,4 +1,4 @@
-//! User settings persistence.
+//! Legacy settings loading for backward compatibility.
 //!
 //! Reads settings from the tauri-plugin-store JSON file.
 //! Used to initialize the menu with the correct checked state on startup.
