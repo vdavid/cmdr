@@ -42,8 +42,8 @@ mod tests {
     fn test_find_available_port() {
         // Should find some available port in a reasonable range
         let result = find_available_port(49152); // Start in dynamic/private port range
-                                                 // The result depends on the system state, so we just check it doesn't panic
-                                                 // and returns Some if any port is available
+        // The result depends on the system state, so we just check it doesn't panic
+        // and returns Some if any port is available
         if let Some(port) = result {
             assert!(port >= 49152);
             assert!(port < 49152 + 100);
