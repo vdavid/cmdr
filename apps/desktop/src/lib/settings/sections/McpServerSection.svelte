@@ -9,10 +9,12 @@
         searchQuery: string
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { searchQuery }: Props = $props()
 
-    const mcpEnabledDef = getSettingDefinition('developer.mcpEnabled')!
-    const mcpPortDef = getSettingDefinition('developer.mcpPort')!
+    const defaultDef = { label: '', description: '', requiresRestart: false }
+    const mcpEnabledDef = getSettingDefinition('developer.mcpEnabled') ?? defaultDef
+    const mcpPortDef = getSettingDefinition('developer.mcpPort') ?? defaultDef
 
     const mcpEnabled = $derived(getSetting('developer.mcpEnabled'))
     let portStatus = $state<'checking' | 'available' | 'unavailable' | null>(null)
@@ -38,9 +40,9 @@
         }
     }
 
-    async function useSuggestedPort() {
+    function useSuggestedPort() {
         if (suggestedPort) {
-            await setSetting('developer.mcpPort', suggestedPort)
+            setSetting('developer.mcpPort', suggestedPort)
             portStatus = 'available'
             suggestedPort = null
         }

@@ -3,19 +3,18 @@
     import SettingSelect from '../components/SettingSelect.svelte'
     import SettingRadioGroup from '../components/SettingRadioGroup.svelte'
     import SettingNumberInput from '../components/SettingNumberInput.svelte'
-    import { getSettingDefinition, getSetting } from '$lib/settings'
+    import { getSettingDefinition } from '$lib/settings'
 
     interface Props {
         searchQuery: string
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { searchQuery }: Props = $props()
 
-    const cacheDurationDef = getSettingDefinition('network.shareCacheDuration')!
-    const timeoutModeDef = getSettingDefinition('network.timeoutMode')!
-    const customTimeoutDef = getSettingDefinition('network.customTimeout')!
-
-    const timeoutMode = $derived(getSetting('network.timeoutMode'))
+    const defaultDef = { label: '', description: '' }
+    const cacheDurationDef = getSettingDefinition('network.shareCacheDuration') ?? defaultDef
+    const timeoutModeDef = getSettingDefinition('network.timeoutMode') ?? defaultDef
 </script>
 
 <div class="section">

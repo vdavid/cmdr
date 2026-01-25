@@ -4,7 +4,7 @@
  */
 
 import type { SettingDefinition, SettingId, SettingsValues } from './types'
-import { SettingValidationError, toMilliseconds } from './types'
+import { SettingValidationError } from './types'
 
 // ============================================================================
 // Settings Definitions
@@ -530,20 +530,20 @@ function validateNumberConstraints(id: string, value: number, def: SettingDefini
     // For duration type, check minMs/maxMs
     if (def.type === 'duration') {
         if (c.minMs !== undefined && value < c.minMs) {
-            throw new SettingValidationError(id, `Value ${value}ms is below minimum ${c.minMs}ms`)
+            throw new SettingValidationError(id, `Value ${String(value)}ms is below minimum ${String(c.minMs)}ms`)
         }
         if (c.maxMs !== undefined && value > c.maxMs) {
-            throw new SettingValidationError(id, `Value ${value}ms exceeds maximum ${c.maxMs}ms`)
+            throw new SettingValidationError(id, `Value ${String(value)}ms exceeds maximum ${String(c.maxMs)}ms`)
         }
         return
     }
 
     // For number type, check min/max
     if (c.min !== undefined && value < c.min) {
-        throw new SettingValidationError(id, `Value ${value} is below minimum ${c.min}`)
+        throw new SettingValidationError(id, `Value ${String(value)} is below minimum ${String(c.min)}`)
     }
     if (c.max !== undefined && value > c.max) {
-        throw new SettingValidationError(id, `Value ${value} exceeds maximum ${c.max}`)
+        throw new SettingValidationError(id, `Value ${String(value)} exceeds maximum ${String(c.max)}`)
     }
 }
 
@@ -561,15 +561,18 @@ function validateEnumValue(id: string, value: unknown, def: SettingDefinition): 
     // Check if custom values are allowed
     if (c.allowCustom && typeof value === 'number') {
         if (c.customMin !== undefined && value < c.customMin) {
-            throw new SettingValidationError(id, `Custom value ${value} is below minimum ${c.customMin}`)
+            throw new SettingValidationError(
+                id,
+                `Custom value ${String(value)} is below minimum ${String(c.customMin)}`,
+            )
         }
         if (c.customMax !== undefined && value > c.customMax) {
-            throw new SettingValidationError(id, `Custom value ${value} exceeds maximum ${c.customMax}`)
+            throw new SettingValidationError(id, `Custom value ${String(value)} exceeds maximum ${String(c.customMax)}`)
         }
         return
     }
 
-    throw new SettingValidationError(id, `Invalid value '${value}'. Valid options: ${validValues.join(', ')}`)
+    throw new SettingValidationError(id, `Invalid value '${String(value)}'. Valid options: ${validValues.join(', ')}`)
 }
 
 // ============================================================================

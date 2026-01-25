@@ -1,10 +1,10 @@
 <script lang="ts">
-    import { onMount, onDestroy, tick } from 'svelte'
+    import { onMount, tick } from 'svelte'
     import { getCurrentWindow } from '@tauri-apps/api/window'
     import SettingsSidebar from '$lib/settings/components/SettingsSidebar.svelte'
     import SettingsContent from '$lib/settings/components/SettingsContent.svelte'
     import { initializeSettings } from '$lib/settings'
-    import { searchSettings, getMatchingSections } from '$lib/settings/settings-search'
+    import { getMatchingSections } from '$lib/settings/settings-search'
 
     let searchQuery = $state('')
     let matchingSections = $state<Set<string>>(new Set())
@@ -42,7 +42,7 @@
     function handleKeydown(event: KeyboardEvent) {
         if (event.key === 'Escape') {
             event.preventDefault()
-            getCurrentWindow().close()
+            void getCurrentWindow().close()
         }
     }
 

@@ -16,17 +16,17 @@
 
     let value = $state(String(getSetting(id)))
 
-    async function handleValueChange(details: RadioGroupValueChangeDetails) {
+    function handleValueChange(details: RadioGroupValueChangeDetails) {
         if (details.value) {
             value = details.value
-            await setSetting(id, details.value as SettingsValues[typeof id])
+            setSetting(id, details.value as SettingsValues[typeof id])
         }
     }
 </script>
 
 <RadioGroup.Root {value} onValueChange={handleValueChange} {disabled}>
     <div class="radio-group">
-        {#each options as option}
+        {#each options as option (option.value)}
             <RadioGroup.Item value={String(option.value)} class="radio-item" {disabled}>
                 <RadioGroup.ItemControl class="radio-control" />
                 <RadioGroup.ItemText class="radio-text">
@@ -41,7 +41,7 @@
             <!-- Show custom content after the matching option -->
             {#if customContent && option.value === value}
                 <div class="custom-content">
-                    {@render customContent(String(option.value))}
+                    {@render customContent(value)}
                 </div>
             {/if}
         {/each}

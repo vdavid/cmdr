@@ -175,9 +175,9 @@ export function fromMilliseconds(ms: number, unit: DurationUnit): number {
 }
 
 export function formatDuration(ms: number): string {
-    if (ms < 1000) return `${ms}ms`
-    if (ms < 60000) return `${ms / 1000}s`
-    if (ms < 3600000) return `${ms / 60000}min`
-    if (ms < 86400000) return `${ms / 3600000}h`
-    return `${ms / 86400000}d`
+    if (ms < 1000) return ms.toString() + 'ms'
+    if (ms < 60000) return (ms / 1000).toString() + 's'
+    if (ms < 3600000) return (ms / 60000).toString() + 'min'
+    if (ms < 86400000) return (ms / 3600000).toString() + 'h'
+    return (ms / 86400000).toString() + 'd'
 }

@@ -9,12 +9,14 @@
         searchQuery: string
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { searchQuery }: Props = $props()
 
-    const confirmDeleteDef = getSettingDefinition('fileOperations.confirmBeforeDelete')!
-    const deletePermanentlyDef = getSettingDefinition('fileOperations.deletePermanently')!
-    const progressIntervalDef = getSettingDefinition('fileOperations.progressUpdateInterval')!
-    const maxConflictsDef = getSettingDefinition('fileOperations.maxConflictsToShow')!
+    const defaultDef = { label: '', description: '', disabled: false, disabledReason: '' }
+    const confirmDeleteDef = getSettingDefinition('fileOperations.confirmBeforeDelete') ?? defaultDef
+    const deletePermanentlyDef = getSettingDefinition('fileOperations.deletePermanently') ?? defaultDef
+    const progressIntervalDef = getSettingDefinition('fileOperations.progressUpdateInterval') ?? defaultDef
+    const maxConflictsDef = getSettingDefinition('fileOperations.maxConflictsToShow') ?? defaultDef
 </script>
 
 <div class="section">

@@ -17,10 +17,10 @@
 
     let value = $state(getSetting(id) as number)
 
-    async function handleChange(details: NumberInputValueChangeDetails) {
+    function handleChange(details: NumberInputValueChangeDetails) {
         const newValue = Math.min(max, Math.max(min, details.valueAsNumber))
         value = newValue
-        await setSetting(id, newValue as SettingsValues[typeof id])
+        setSetting(id, newValue as SettingsValues[typeof id])
     }
 </script>
 

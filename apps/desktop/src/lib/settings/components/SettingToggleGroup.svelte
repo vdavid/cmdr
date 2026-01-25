@@ -14,17 +14,17 @@
 
     let value = $state([String(getSetting(id))])
 
-    async function handleValueChange(details: { value: string[] }) {
+    function handleValueChange(details: { value: string[] }) {
         if (details.value.length === 0) return // Don't allow deselecting all
 
         const newValue = details.value[0]
         value = [newValue]
-        await setSetting(id, newValue as SettingsValues[typeof id])
+        setSetting(id, newValue as SettingsValues[typeof id])
     }
 </script>
 
 <ToggleGroup.Root {value} onValueChange={handleValueChange} {disabled}>
-    {#each options as option}
+    {#each options as option (option.value)}
         <ToggleGroup.Item value={String(option.value)} class="toggle-item" {disabled}>
             {option.label}
         </ToggleGroup.Item>

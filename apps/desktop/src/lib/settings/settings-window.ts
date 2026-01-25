@@ -36,12 +36,13 @@ export async function openSettingsWindow(): Promise<void> {
     })
 
     // Listen for window close to clean up reference
-    settingsWindow.once('tauri://destroyed', () => {
+    void settingsWindow.once('tauri://destroyed', () => {
         settingsWindow = null
     })
 
     // Handle any creation errors
-    settingsWindow.once('tauri://error', (e) => {
+    void settingsWindow.once('tauri://error', (e) => {
+        // eslint-disable-next-line no-console
         console.error('Failed to create settings window:', e)
         settingsWindow = null
     })

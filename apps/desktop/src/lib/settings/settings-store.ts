@@ -6,7 +6,7 @@
 import { load, type Store } from '@tauri-apps/plugin-store'
 import type { SettingId, SettingsValues } from './types'
 import { SettingValidationError } from './types'
-import { getDefaultValue, getSettingDefinition, settingsRegistry, validateSettingValue } from './settings-registry'
+import { getDefaultValue, settingsRegistry, validateSettingValue } from './settings-registry'
 
 // ============================================================================
 // Store Configuration
@@ -111,7 +111,7 @@ export function getSetting<K extends SettingId>(id: K): SettingsValues[K] {
  * Set a setting value. Validates against constraints before storing.
  * Throws SettingValidationError if invalid.
  */
-export async function setSetting<K extends SettingId>(id: K, value: SettingsValues[K]): Promise<void> {
+export function setSetting<K extends SettingId>(id: K, value: SettingsValues[K]): void {
     // Validate the value
     validateSettingValue(id, value)
 
@@ -128,9 +128,9 @@ export async function setSetting<K extends SettingId>(id: K, value: SettingsValu
 /**
  * Reset a setting to its default value.
  */
-export async function resetSetting<K extends SettingId>(id: K): Promise<void> {
+export function resetSetting(id: SettingId): void {
     const defaultValue = getDefaultValue(id)
-    await setSetting(id, defaultValue)
+    setSetting(id, defaultValue)
 }
 
 /**
@@ -156,7 +156,7 @@ export async function resetAllSettings(): Promise<void> {
 /**
  * Check if a setting has been modified from its default value.
  */
-export function isModified<K extends SettingId>(id: K): boolean {
+export function isModified(id: SettingId): boolean {
     const current = getSetting(id)
     const defaultVal = getDefaultValue(id)
     return current !== defaultVal
@@ -178,9 +178,10 @@ function scheduleSave(): void {
         clearTimeout(saveTimeout)
     }
 
-    saveTimeout = setTimeout(async () => {
-        await saveToStore()
-        saveTimeout = null
+    saveTimeout = setTimeout(() => {
+        void saveToStore().finally(() => {
+            saveTimeout = null
+        })
     }, SAVE_DEBOUNCE_MS)
 }
 
@@ -241,10 +242,11 @@ export function onSpecificSettingChange<K extends SettingId>(
     id: K,
     listener: (id: K, value: SettingsValues[K]) => void,
 ): () => void {
-    if (!specificListeners.has(id)) {
-        specificListeners.set(id, new Set())
+    let set = specificListeners.get(id)
+    if (!set) {
+        set = new Set()
+        specificListeners.set(id, set)
     }
-    const set = specificListeners.get(id)!
     set.add(listener as SettingChangeListener)
     return () => set.delete(listener as SettingChangeListener)
 }

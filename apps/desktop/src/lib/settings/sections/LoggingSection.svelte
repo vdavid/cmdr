@@ -7,27 +7,23 @@
         searchQuery: string
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { searchQuery }: Props = $props()
 
-    const verboseLoggingDef = getSettingDefinition('developer.verboseLogging')!
+    const verboseLoggingDef = getSettingDefinition('developer.verboseLogging') ?? { label: '', description: '' }
 
     let copyFeedback = $state(false)
 
-    async function openLogFile() {
-        try {
-            // Log files are in the app data directory
-            // This would need to be implemented to find the actual log path
-            // For now, we'll show a placeholder
-            alert('Log file location: ~/Library/Application Support/com.veszelovszki.cmdr/logs/')
-        } catch (error) {
-            console.error('Failed to open log file:', error)
-        }
+    function openLogFile() {
+        // Log files are in the app data directory
+        // This would need to be implemented to find the actual log path
+        // For now, we'll show a placeholder
+        alert('Log file location: ~/Library/Application Support/com.veszelovszki.cmdr/logs/')
     }
 
     async function copyDiagnosticInfo() {
         const info = {
             appVersion: '0.3.2', // Could be fetched from package.json
-            platform: navigator.platform,
             userAgent: navigator.userAgent,
             timestamp: new Date().toISOString(),
         }
@@ -35,7 +31,6 @@
         const text = `Cmdr Diagnostic Info
 ====================
 Version: ${info.appVersion}
-Platform: ${info.platform}
 User Agent: ${info.userAgent}
 Timestamp: ${info.timestamp}
 `
@@ -47,6 +42,7 @@ Timestamp: ${info.timestamp}
                 copyFeedback = false
             }, 2000)
         } catch (error) {
+            // eslint-disable-next-line no-console
             console.error('Failed to copy diagnostic info:', error)
         }
     }
