@@ -1661,3 +1661,26 @@ export async function getFolderSuggestions(
         return []
     }
 }
+
+// ============================================================================
+// Settings commands
+// ============================================================================
+
+/**
+ * Checks if a port is available for binding.
+ * @param port - The port number to check
+ * @returns True if the port is available
+ */
+export async function checkPortAvailable(port: number): Promise<boolean> {
+    return invoke<boolean>('check_port_available', { port })
+}
+
+/**
+ * Finds an available port starting from the given port.
+ * Scans up to 100 ports from the start port.
+ * @param startPort - The port to start scanning from
+ * @returns Available port number, or null if none found
+ */
+export async function findAvailablePort(startPort: number): Promise<number | null> {
+    return invoke<number | null>('find_available_port', { startPort })
+}
