@@ -3,6 +3,7 @@
 import { invoke } from '@tauri-apps/api/core'
 import { openPath, openUrl } from '@tauri-apps/plugin-opener'
 import { type Event, listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { homeDir as tauriHomeDir } from '@tauri-apps/api/path'
 import type {
     AuthMode,
     AuthOptions,
@@ -276,6 +277,11 @@ export async function startSelectionDrag(
  */
 export async function pathExists(path: string): Promise<boolean> {
     return invoke<boolean>('path_exists', { path })
+}
+
+/** Returns the user's home directory path. */
+export async function getHomeDir(): Promise<string> {
+    return tauriHomeDir()
 }
 
 /** Creates a new directory. Returns the full path of the created folder. */

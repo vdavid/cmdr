@@ -23,6 +23,7 @@
         findContainingVolume,
         findFileIndex,
         getFileAt,
+        getHomeDir,
         getListingStats,
         getMaxFilenameWidth,
         getSyncStatus,
@@ -48,6 +49,7 @@
     import SelectionInfo from './SelectionInfo.svelte'
     import LoadingIcon from '../LoadingIcon.svelte'
     import VolumeBreadcrumb from './VolumeBreadcrumb.svelte'
+    import PathBar from './PathBar.svelte'
     import PermissionDeniedPane from './PermissionDeniedPane.svelte'
     import { getAppLogger } from '$lib/logger'
 
@@ -96,6 +98,7 @@
     }: Props = $props()
 
     let currentPath = $state(untrack(() => initialPath))
+    let homeDir = $state<string | undefined>(undefined)
 
     // New architecture: store listingId and totalCount, not files
     let listingId = $state('')
@@ -1163,6 +1166,11 @@
     })
 
     onMount(() => {
+        // Load home directory for path bar ~ display
+        void getHomeDir().then((dir) => {
+            homeDir = dir
+        })
+
         // Skip directory loading for network view - NetworkBrowser handles its own data
         if (!isNetworkView) {
             void loadDirectory(currentPath)
@@ -1210,9 +1218,7 @@
             {currentPath}
             onVolumeChange={handleVolumeChangeFromBreadcrumb}
         />
-        <span class="path"
-            >{currentPath.startsWith(volumePath) ? currentPath.slice(volumePath.length) || '/' : currentPath}</span
-        >
+        <PathBar path={currentPath} {volumePath} {homeDir} />
     </div>
     <div class="content">
         {#if isNetworkView}
@@ -1335,15 +1341,6 @@
         white-space: nowrap;
         display: flex;
         align-items: center;
-    }
-
-    .path {
-        font-family: var(--font-system) sans-serif;
-        color: var(--color-text-secondary);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        flex: 1;
-        min-width: 0;
     }
 
     .content {
