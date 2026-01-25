@@ -19,7 +19,7 @@
 
     let value = $state(getSetting(id) as number)
 
-    async function handleSliderChange(details: SliderValueChangeDetails) {
+    function handleSliderChange(details: SliderValueChangeDetails) {
         const newValue = details.value[0]
         // Snap to nearest slider stop if close
         let snappedValue = newValue
@@ -32,13 +32,13 @@
             }
         }
         value = snappedValue
-        await setSetting(id, snappedValue as SettingsValues[typeof id])
+        setSetting(id, snappedValue as SettingsValues[typeof id])
     }
 
-    async function handleInputChange(details: NumberInputValueChangeDetails) {
+    function handleInputChange(details: NumberInputValueChangeDetails) {
         const newValue = Math.min(max, Math.max(min, details.valueAsNumber))
         value = newValue
-        await setSetting(id, newValue as SettingsValues[typeof id])
+        setSetting(id, newValue as SettingsValues[typeof id])
     }
 </script>
 
@@ -53,7 +53,7 @@
         <!-- Show tick marks for slider stops -->
         {#if sliderStops.length > 0}
             <div class="slider-ticks">
-                {#each sliderStops as stop}
+                {#each sliderStops as stop (stop)}
                     <span
                         class="slider-tick"
                         class:active={value === stop}

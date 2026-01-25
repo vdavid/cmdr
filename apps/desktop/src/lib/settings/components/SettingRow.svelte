@@ -1,6 +1,6 @@
 <script lang="ts">
     import type { Snippet } from 'svelte'
-    import { isModified, resetSetting, type SettingId, getDefaultValue } from '$lib/settings'
+    import { isModified, resetSetting, type SettingId } from '$lib/settings'
 
     interface Props {
         id: SettingId
@@ -24,8 +24,8 @@
 
     const modified = $derived(isModified(id))
 
-    async function handleReset() {
-        await resetSetting(id)
+    function handleReset() {
+        resetSetting(id)
     }
 </script>
 

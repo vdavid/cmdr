@@ -10,17 +10,16 @@
         searchQuery: string
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { searchQuery }: Props = $props()
 
-    // Get definitions for rendering
-    const uiDensityDef = getSettingDefinition('appearance.uiDensity')!
-    const appIconsDef = getSettingDefinition('appearance.useAppIconsForDocuments')!
-    const fileSizeDef = getSettingDefinition('appearance.fileSizeFormat')!
-    const dateTimeDef = getSettingDefinition('appearance.dateTimeFormat')!
-    const customDateTimeDef = getSettingDefinition('appearance.customDateTimeFormat')!
+    // Get definitions for rendering (with fallbacks for type safety)
+    const uiDensityDef = getSettingDefinition('appearance.uiDensity') ?? { label: '', description: '' }
+    const appIconsDef = getSettingDefinition('appearance.useAppIconsForDocuments') ?? { label: '', description: '' }
+    const fileSizeDef = getSettingDefinition('appearance.fileSizeFormat') ?? { label: '', description: '' }
+    const dateTimeDef = getSettingDefinition('appearance.dateTimeFormat') ?? { label: '', description: '' }
 
     // Custom date format state
-    const showCustomFormat = $derived(getSetting('appearance.dateTimeFormat') === 'custom')
     let customFormat = $state(getSetting('appearance.customDateTimeFormat'))
     let showFormatHelp = $state(false)
 
@@ -40,10 +39,10 @@
         }
     }
 
-    async function handleCustomFormatChange(event: Event) {
+    function handleCustomFormatChange(event: Event) {
         const target = event.target as HTMLInputElement
         customFormat = target.value
-        await setSetting('appearance.customDateTimeFormat', target.value)
+        setSetting('appearance.customDateTimeFormat', target.value)
     }
 </script>
 

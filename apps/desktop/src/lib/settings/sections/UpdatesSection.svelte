@@ -7,9 +7,10 @@
         searchQuery: string
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { searchQuery }: Props = $props()
 
-    const autoCheckDef = getSettingDefinition('updates.autoCheck')!
+    const autoCheckDef = getSettingDefinition('updates.autoCheck') ?? { label: '', description: '' }
 </script>
 
 <div class="section">
