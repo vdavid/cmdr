@@ -99,6 +99,44 @@
         }
     }
 
+    /** Check if key event matches ⌘⇧P (command palette) */
+    function isCommandPaletteShortcut(e: KeyboardEvent): boolean {
+        return e.metaKey && e.shiftKey && e.key.toLowerCase() === 'p'
+    }
+
+    /** Check if key event matches ⌘, (settings) */
+    function isSettingsShortcut(e: KeyboardEvent): boolean {
+        return e.metaKey && !e.shiftKey && !e.altKey && e.key === ','
+    }
+
+    /** Check if key event matches ⌘D (debug window, dev only) */
+    function isDebugWindowShortcut(e: KeyboardEvent): boolean {
+        return import.meta.env.DEV && e.metaKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'd'
+    }
+
+    /** Check if key event should be suppressed (Cmd+A, Cmd+Opt+I in prod) */
+    function shouldSuppressKey(e: KeyboardEvent): boolean {
+        if (e.metaKey && e.key === 'a') return true
+        if (!import.meta.env.DEV && e.metaKey && e.altKey && e.key === 'i') return true
+        return false
+    }
+
+    /** Global keyboard handler for app-level shortcuts */
+    function handleGlobalKeyDown(e: KeyboardEvent): void {
+        if (isCommandPaletteShortcut(e)) {
+            e.preventDefault()
+            showCommandPalette = true
+        } else if (isSettingsShortcut(e)) {
+            e.preventDefault()
+            void openSettingsWindow()
+        } else if (isDebugWindowShortcut(e)) {
+            e.preventDefault()
+            void openDebugWindow()
+        } else if (shouldSuppressKey(e)) {
+            e.preventDefault()
+        }
+    }
+
     /** Start window drag when title bar is clicked */
     async function handleTitleBarMouseDown(e: MouseEvent) {
         if (e.buttons === 1) {
@@ -180,37 +218,7 @@
         await setupTauriEventListeners()
 
         // Global keyboard shortcuts
-        handleKeyDown = (e: KeyboardEvent) => {
-            // Command palette: ⌘⇧P
-            if (e.metaKey && e.shiftKey && e.key.toLowerCase() === 'p') {
-                e.preventDefault()
-                showCommandPalette = true
-                return
-            }
-
-            // Settings: ⌘, (Cmd + comma)
-            if (e.metaKey && !e.shiftKey && !e.altKey && e.key === ',') {
-                e.preventDefault()
-                void openSettingsWindow()
-                return
-            }
-
-            // Debug window: ⌘D (dev mode only)
-            if (import.meta.env.DEV && e.metaKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'd') {
-                e.preventDefault()
-                void openDebugWindow()
-                return
-            }
-
-            // Suppress Cmd+A (select all) - always
-            if (e.metaKey && e.key === 'a') {
-                e.preventDefault()
-            }
-            // Suppress Cmd+Opt+I (devtools) in production only
-            if (!import.meta.env.DEV && e.metaKey && e.altKey && e.key === 'i') {
-                e.preventDefault()
-            }
-        }
+        handleKeyDown = handleGlobalKeyDown
 
         // Suppress right-click context menu
         handleContextMenu = (e: MouseEvent) => {
