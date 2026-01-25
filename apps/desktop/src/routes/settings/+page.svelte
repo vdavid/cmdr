@@ -27,7 +27,10 @@
         selectedSection = sectionPath
         // Scroll to the section in content area
         if (contentElement) {
-            const sectionId = sectionPath.join('-').toLowerCase().replace(/[^a-z0-9-]/g, '-')
+            const sectionId = sectionPath
+                .join('-')
+                .toLowerCase()
+                .replace(/[^a-z0-9-]/g, '-')
             const element = contentElement.querySelector(`[data-section-id="${sectionId}"]`)
             if (element) {
                 element.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -67,16 +70,11 @@
                 onSectionSelect={handleSectionSelect}
             />
             <div class="settings-content-wrapper" bind:this={contentElement}>
-                <SettingsContent
-                    {searchQuery}
-                    {selectedSection}
-                />
+                <SettingsContent {searchQuery} {selectedSection} />
             </div>
         </div>
     {:else}
-        <div class="settings-loading">
-            Loading settings...
-        </div>
+        <div class="settings-loading">Loading settings...</div>
     {/if}
 </div>
 
