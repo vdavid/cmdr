@@ -44,6 +44,7 @@
     --color-allow: #2e7d32;
     --color-error: #d32f2f;
     --color-warning: #e65100;
+    --color-warning-bg: rgba(230, 81, 0, 0.1);
 
     /* === Selection === */
     --color-selection-fg: #c9a227;
@@ -99,6 +100,7 @@
         /* === Semantic Colors === */
         --color-error: #f44336;
         --color-warning: #f5a623;
+        --color-warning-bg: rgba(245, 166, 35, 0.15);
 
         /* === Selection === */
         --color-selection-fg: #d4a82a;

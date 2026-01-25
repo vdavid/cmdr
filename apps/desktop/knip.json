@@ -6,7 +6,11 @@
         "src/routes/+layout.ts",
         "src/lib/benchmark.ts",
         "src/lib/tauri-commands.ts",
-        "src/lib/licensing-store.svelte.ts"
+        "src/lib/licensing-store.svelte.ts",
+        "src/lib/settings/settings-store.ts",
+        "src/lib/settings/settings-window.ts",
+        "src/lib/settings/types.ts",
+        "src/lib/shortcuts/**"
     ],
     "ignoreDependencies": [
         "@tauri-apps/cli",
