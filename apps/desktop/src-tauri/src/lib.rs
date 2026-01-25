@@ -397,10 +397,7 @@ pub fn run() {
             commands::licensing::mark_commercial_reminder_dismissed,
             commands::licensing::reset_license,
             commands::licensing::needs_license_validation,
-            commands::licensing::validate_license_with_server,
-            // Settings commands
-            settings::check_port_available,
-            settings::find_available_port
+            commands::licensing::validate_license_with_server
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
