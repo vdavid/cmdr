@@ -462,8 +462,8 @@
     }
 
     .conflict-warning {
-        background: var(--color-warning-bg, #fff3cd);
-        border: 1px solid var(--color-warning, #ffc107);
+        background: var(--color-warning-bg);
+        border: 1px solid var(--color-warning);
         border-radius: 4px;
         padding: var(--spacing-sm);
         margin-bottom: var(--spacing-md);
@@ -536,7 +536,7 @@
     }
 
     .command-row.has-conflicts {
-        background: var(--color-warning-bg, rgba(255, 193, 7, 0.1));
+        background: var(--color-warning-bg);
     }
 
     .command-info {
