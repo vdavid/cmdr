@@ -79,12 +79,15 @@ export function searchSettings(query: string): SettingSearchResult[] {
     const haystack = index.map((e) => e.searchableText)
     const results = fuzzy.search(haystack, query.toLowerCase())
 
-    if (!results || !results[0]) {
+    // uFuzzy can return null/undefined in some edge cases
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (!results?.[0]) {
         return []
     }
 
     const [matchedIndices, info, order] = results
 
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!order || !info) {
         return []
     }
@@ -96,6 +99,7 @@ export function searchSettings(query: string): SettingSearchResult[] {
 
         // Convert ranges to individual character indices
         const indices: number[] = []
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         if (ranges) {
             for (let i = 0; i < ranges.length; i += 2) {
                 const start = ranges[i]
@@ -136,12 +140,14 @@ export function searchAdvancedSettings(query: string): SettingSearchResult[] {
     const haystack = entries.map((e) => e.searchableText)
     const results = fuzzy.search(haystack, query.toLowerCase())
 
-    if (!results || !results[0]) {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (!results?.[0]) {
         return []
     }
 
     const [matchedIndices, info, order] = results
 
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!order || !info) {
         return []
     }
@@ -151,6 +157,7 @@ export function searchAdvancedSettings(query: string): SettingSearchResult[] {
         const ranges = info.ranges[idx]
 
         const indices: number[] = []
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         if (ranges) {
             for (let i = 0; i < ranges.length; i += 2) {
                 const start = ranges[i]

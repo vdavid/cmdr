@@ -11,9 +11,9 @@
 
     let checked = $state(getSetting(id) as boolean)
 
-    async function handleChange(details: { checked: boolean }) {
+    function handleChange(details: { checked: boolean }) {
         checked = details.checked
-        await setSetting(id, details.checked as SettingsValues[typeof id])
+        setSetting(id, details.checked as SettingsValues[typeof id])
     }
 </script>
 

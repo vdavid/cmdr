@@ -7,9 +7,10 @@
         searchQuery: string
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { searchQuery }: Props = $props()
 
-    const themeModeDef = getSettingDefinition('theme.mode')!
+    const themeModeDef = getSettingDefinition('theme.mode') ?? { label: '', description: '' }
 </script>
 
 <div class="section">

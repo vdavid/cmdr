@@ -7,6 +7,7 @@
         searchQuery: string
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { searchQuery }: Props = $props()
 
     let nameSearchQuery = $state('')
@@ -31,7 +32,7 @@
 
         // Filter by key search (exact match)
         if (keySearchQuery.trim()) {
-            cmds = cmds.filter((c) => c.shortcuts?.some((s) => s.toLowerCase().includes(keySearchQuery.toLowerCase())))
+            cmds = cmds.filter((c) => c.shortcuts.some((s) => s.toLowerCase().includes(keySearchQuery.toLowerCase())))
         }
 
         // Filter by modified/conflicts (future: when we have shortcut customization)
@@ -70,17 +71,6 @@
             parts.push(key.length === 1 ? key.toUpperCase() : key)
             pendingKey = parts.join('')
         }
-    }
-
-    function cancelEdit() {
-        editingShortcut = null
-        pendingKey = ''
-    }
-
-    function confirmEdit() {
-        // Future: save the new shortcut
-        editingShortcut = null
-        pendingKey = ''
     }
 
     function resetAllToDefaults() {
@@ -137,29 +127,30 @@
     </div>
 
     <div class="commands-list">
-        {#each Object.entries(groupedCommands) as [scope, scopeCommands]}
+        {#each Object.entries(groupedCommands) as [scope, scopeCommands] (scope)}
             <div class="scope-group">
                 <h3 class="scope-title">{scope}</h3>
-                {#each scopeCommands as command}
+                {#each scopeCommands as command (command.id)}
                     <div class="command-row">
                         <div class="command-info">
                             <span class="command-name">{command.name}</span>
                         </div>
                         <div class="command-shortcuts">
-                            {#if command.shortcuts && command.shortcuts.length > 0}
-                                {#each command.shortcuts as shortcut, i}
+                            {#if command.shortcuts.length > 0}
+                                {#each command.shortcuts as shortcut, i (shortcut)}
+                                    {@const isEditing =
+                                        editingShortcut !== null &&
+                                        editingShortcut.commandId === command.id &&
+                                        editingShortcut.index === i}
                                     <button
                                         class="shortcut-pill"
-                                        class:editing={editingShortcut?.commandId === command.id &&
-                                            editingShortcut?.index === i}
+                                        class:editing={isEditing}
                                         onclick={() => {
                                             editingShortcut = { commandId: command.id, index: i }
                                             pendingKey = ''
                                         }}
                                     >
-                                        {editingShortcut?.commandId === command.id && editingShortcut?.index === i
-                                            ? pendingKey || 'Press keys...'
-                                            : shortcut}
+                                        {isEditing ? pendingKey || 'Press keys...' : shortcut}
                                     </button>
                                 {/each}
                             {:else}

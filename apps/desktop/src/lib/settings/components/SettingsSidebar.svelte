@@ -70,7 +70,7 @@
     </div>
 
     <nav class="section-tree">
-        {#each sectionTree as section}
+        {#each sectionTree as section (section.name)}
             {#if shouldShowSection(section)}
                 <div class="section-group">
                     <button
@@ -84,7 +84,7 @@
                     </button>
                     {#if section.subsections.length > 0}
                         <div class="subsections">
-                            {#each section.subsections as subsection}
+                            {#each section.subsections as subsection (subsection.name)}
                                 {#if shouldShowSection(subsection)}
                                     <button
                                         class="section-item subsection"
@@ -104,7 +104,7 @@
         {/each}
 
         <!-- Special sections -->
-        {#each specialSections as special}
+        {#each specialSections as special (special.name)}
             {#if shouldShowSpecialSection(special.path)}
                 <div class="section-group">
                     <button

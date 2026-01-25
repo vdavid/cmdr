@@ -35,7 +35,7 @@
         itemToValue: (item: EnumOption) => String(item.value),
     })
 
-    async function handleValueChange(details: SelectValueChangeDetails<EnumOption>) {
+    function handleValueChange(details: SelectValueChangeDetails<EnumOption>) {
         const newValue = details.value[0]
         if (newValue === '__custom__') {
             showCustomInput = true
@@ -47,14 +47,14 @@
         const option = options.find((o) => String(o.value) === newValue)
         const actualValue = option ? option.value : newValue
         value = actualValue
-        await setSetting(id, actualValue as SettingsValues[typeof id])
+        setSetting(id, actualValue as SettingsValues[typeof id])
     }
 
-    async function handleCustomSubmit() {
+    function handleCustomSubmit() {
         const numValue = Number(customValue)
         if (!isNaN(numValue)) {
             value = numValue
-            await setSetting(id, numValue as SettingsValues[typeof id])
+            setSetting(id, numValue as SettingsValues[typeof id])
         }
     }
 </script>
@@ -67,7 +67,9 @@
                 class="custom-input"
                 bind:value={customValue}
                 onblur={handleCustomSubmit}
-                onkeydown={(e) => e.key === 'Enter' && handleCustomSubmit()}
+                onkeydown={(e) => {
+                    if (e.key === 'Enter') handleCustomSubmit()
+                }}
                 min={definition?.constraints?.customMin}
                 max={definition?.constraints?.customMax}
                 {disabled}
@@ -84,7 +86,7 @@
             </Select.Control>
             <Select.Positioner>
                 <Select.Content class="select-content">
-                    {#each options as option}
+                    {#each options as option (option.value)}
                         <Select.Item item={option} class="select-item">
                             <Select.ItemText>
                                 {option.label}

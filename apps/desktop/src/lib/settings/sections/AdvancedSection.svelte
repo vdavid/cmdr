@@ -30,24 +30,24 @@
         return results.map((r) => r.setting)
     })
 
-    async function handleResetAll() {
+    function handleResetAll() {
         if (confirm('Reset all advanced settings to their defaults? This cannot be undone.')) {
             for (const setting of allAdvancedSettings) {
-                await resetSetting(setting.id as SettingId)
+                resetSetting(setting.id as SettingId)
             }
         }
     }
 
-    async function handleBooleanChange(id: SettingId, checked: boolean) {
-        await setSetting(id, checked as SettingsValues[typeof id])
+    function handleBooleanChange(id: SettingId, checked: boolean) {
+        setSetting(id, checked as SettingsValues[typeof id])
     }
 
-    async function handleNumberChange(id: SettingId, details: NumberInputValueChangeDetails) {
-        await setSetting(id, details.valueAsNumber as SettingsValues[typeof id])
+    function handleNumberChange(id: SettingId, details: NumberInputValueChangeDetails) {
+        setSetting(id, details.valueAsNumber as SettingsValues[typeof id])
     }
 
-    async function handleReset(id: SettingId) {
-        await resetSetting(id)
+    function handleReset(id: SettingId) {
+        resetSetting(id)
     }
 </script>
 
@@ -66,7 +66,7 @@
     </div>
 
     <div class="advanced-settings">
-        {#each filteredSettings as setting}
+        {#each filteredSettings as setting (setting.id)}
             {@const id = setting.id as SettingId}
             {@const modified = isModified(id)}
             <div class="advanced-setting-row">
@@ -83,7 +83,12 @@
                             ? formatDuration(setting.default as number)
                             : String(setting.default)}
                         {#if modified}
-                            <button class="reset-link" onclick={() => handleReset(id)}>Reset to default</button>
+                            <button
+                                class="reset-link"
+                                onclick={() => {
+                                    handleReset(id)
+                                }}>Reset to default</button
+                            >
                         {/if}
                     </div>
                 </div>
@@ -92,7 +97,9 @@
                     {#if setting.type === 'boolean'}
                         <Switch.Root
                             checked={getSetting(id) as boolean}
-                            onCheckedChange={(d) => handleBooleanChange(id, d.checked)}
+                            onCheckedChange={(d) => {
+                                handleBooleanChange(id, d.checked)
+                            }}
                         >
                             <Switch.Control class="switch-control">
                                 <Switch.Thumb class="switch-thumb" />
@@ -102,7 +109,9 @@
                     {:else if setting.type === 'number' || setting.type === 'duration'}
                         <NumberInput.Root
                             value={String(getSetting(id))}
-                            onValueChange={(d) => handleNumberChange(id, d)}
+                            onValueChange={(d) => {
+                                handleNumberChange(id, d)
+                            }}
                             min={setting.constraints?.min ?? setting.constraints?.minMs}
                             max={setting.constraints?.max ?? setting.constraints?.maxMs}
                             step={setting.constraints?.step ?? 1}
