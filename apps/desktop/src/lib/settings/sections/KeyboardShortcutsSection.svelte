@@ -2,6 +2,24 @@
     import { commands } from '$lib/commands/command-registry'
     import type { Command } from '$lib/commands/types'
     import { searchCommands } from '$lib/commands/fuzzy-search'
+    import {
+        getEffectiveShortcuts,
+        isShortcutModified,
+        setShortcut,
+        addShortcut,
+        removeShortcut,
+        resetShortcut,
+        resetAllShortcuts,
+        onShortcutChange,
+    } from '$lib/shortcuts'
+    import {
+        formatKeyCombo,
+        isModifierKey,
+        findConflictsForShortcut,
+        getConflictingCommandIds,
+        getConflictCount,
+        type CommandScope,
+    } from '$lib/shortcuts'
 
     interface Props {
         searchQuery: string
@@ -15,12 +33,42 @@
     let activeFilter = $state<'all' | 'modified' | 'conflicts'>('all')
     let editingShortcut = $state<{ commandId: string; index: number } | null>(null)
     let pendingKey = $state('')
+    let confirmTimeout = $state<ReturnType<typeof setTimeout> | null>(null)
+    let conflictWarning = $state<{ shortcut: string; conflictingCommand: Command } | null>(null)
+
+    // Reactivity trigger for shortcut changes
+    let shortcutChangeCounter = $state(0)
+
+    // Subscribe to shortcut changes
+    $effect(() => {
+        const unsubscribe = onShortcutChange(() => {
+            shortcutChangeCounter++
+        })
+        return unsubscribe
+    })
 
     // Group commands by scope
     const scopes = ['App', 'Main window', 'File list', 'Navigation', 'Selection', 'Edit', 'View', 'Help']
 
+    // Get conflict count for badge
+    const conflictCount = $derived.by(() => {
+        // Trigger on shortcut changes
+        void shortcutChangeCounter
+        return getConflictCount()
+    })
+
+    // Get conflicting command IDs for filtering
+    const conflictingIds = $derived.by(() => {
+        // Trigger on shortcut changes
+        void shortcutChangeCounter
+        return getConflictingCommandIds()
+    })
+
     // Get commands filtered by search and filter
     const filteredCommands = $derived.by(() => {
+        // Trigger on shortcut changes
+        void shortcutChangeCounter
+
         let cmds = [...commands]
 
         // Filter by name search
@@ -30,13 +78,20 @@
             cmds = cmds.filter((c) => matchedIds.has(c.id))
         }
 
-        // Filter by key search (exact match)
+        // Filter by key search (exact match on effective shortcuts)
         if (keySearchQuery.trim()) {
-            cmds = cmds.filter((c) => c.shortcuts.some((s) => s.toLowerCase().includes(keySearchQuery.toLowerCase())))
+            cmds = cmds.filter((c) => {
+                const shortcuts = getEffectiveShortcuts(c.id)
+                return shortcuts.some((s) => s.toLowerCase().includes(keySearchQuery.toLowerCase()))
+            })
         }
 
-        // Filter by modified/conflicts (future: when we have shortcut customization)
-        // For now, all shortcuts are defaults
+        // Filter by modified/conflicts
+        if (activeFilter === 'modified') {
+            cmds = cmds.filter((c) => isShortcutModified(c.id))
+        } else if (activeFilter === 'conflicts') {
+            cmds = cmds.filter((c) => conflictingIds.has(c.id))
+        }
 
         return cmds
     })
@@ -59,28 +114,133 @@
         event.preventDefault()
         event.stopPropagation()
 
-        // Build key string
-        const parts: string[] = []
-        if (event.metaKey) parts.push('⌘')
-        if (event.ctrlKey) parts.push('⌃')
-        if (event.altKey) parts.push('⌥')
-        if (event.shiftKey) parts.push('⇧')
+        // Ignore pure modifier key presses
+        if (isModifierKey(event.key)) return
 
-        const key = event.key
-        if (!['Meta', 'Control', 'Alt', 'Shift'].includes(key)) {
-            parts.push(key.length === 1 ? key.toUpperCase() : key)
-            pendingKey = parts.join('')
+        // Format the key combo
+        const combo = formatKeyCombo(event)
+        pendingKey = combo
+
+        // Clear any existing timeout
+        if (confirmTimeout) {
+            clearTimeout(confirmTimeout)
+        }
+
+        // Check for conflicts (editingShortcut is guaranteed non-null here due to early return)
+        const currentEditCommandId = editingShortcut.commandId
+        const command = commands.find((c) => c.id === currentEditCommandId)
+        if (command) {
+            const conflicts = findConflictsForShortcut(combo, command.scope as CommandScope, command.id)
+            if (conflicts.length > 0) {
+                conflictWarning = { shortcut: combo, conflictingCommand: conflicts[0] }
+                return // Don't auto-save, wait for user decision
+            }
+        }
+
+        // No conflicts - set 500ms confirmation delay
+        confirmTimeout = setTimeout(() => {
+            saveShortcut()
+        }, 500)
+    }
+
+    function saveShortcut() {
+        if (!editingShortcut || !pendingKey) return
+
+        setShortcut(editingShortcut.commandId, editingShortcut.index, pendingKey)
+        cancelEdit()
+    }
+
+    function handleRemoveFromOther() {
+        if (!conflictWarning || !editingShortcut) return
+
+        // Find the index of the shortcut in the conflicting command
+        const conflictShortcuts = getEffectiveShortcuts(conflictWarning.conflictingCommand.id)
+        const conflictIndex = conflictShortcuts.indexOf(conflictWarning.shortcut)
+        if (conflictIndex >= 0) {
+            removeShortcut(conflictWarning.conflictingCommand.id, conflictIndex)
+        }
+
+        // Now save our shortcut
+        saveShortcut()
+    }
+
+    function handleKeepBoth() {
+        // Just save without removing from other
+        saveShortcut()
+    }
+
+    function cancelEdit() {
+        if (confirmTimeout) {
+            clearTimeout(confirmTimeout)
+            confirmTimeout = null
+        }
+        editingShortcut = null
+        pendingKey = ''
+        conflictWarning = null
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+        if (!editingShortcut) return
+
+        // Handle Escape to cancel
+        if (event.key === 'Escape') {
+            event.preventDefault()
+            cancelEdit()
+            return
+        }
+
+        // Handle Backspace/Delete to remove shortcut
+        if (event.key === 'Backspace' || event.key === 'Delete') {
+            if (!pendingKey) {
+                event.preventDefault()
+                removeShortcut(editingShortcut.commandId, editingShortcut.index)
+                cancelEdit()
+                return
+            }
+        }
+
+        handleKeyCapture(event)
+    }
+
+    function handleAddShortcut(commandId: string) {
+        addShortcut(commandId, '')
+        const shortcuts = getEffectiveShortcuts(commandId)
+        editingShortcut = { commandId, index: shortcuts.length - 1 }
+        pendingKey = ''
+    }
+
+    function handleResetShortcut(commandId: string) {
+        if (confirm('Reset this shortcut to default?')) {
+            resetShortcut(commandId)
         }
     }
 
-    function resetAllToDefaults() {
+    async function handleResetAll() {
         if (confirm('Reset all keyboard shortcuts to their defaults?')) {
-            // Future: reset shortcuts
+            await resetAllShortcuts()
         }
+    }
+
+    function getShortcutsForCommand(commandId: string): string[] {
+        // Trigger on shortcut changes
+        void shortcutChangeCounter
+        return getEffectiveShortcuts(commandId)
+    }
+
+    function isCommandModified(commandId: string): boolean {
+        // Trigger on shortcut changes
+        void shortcutChangeCounter
+        return isShortcutModified(commandId)
+    }
+
+    function hasCommandConflicts(commandId: string): boolean {
+        // Trigger on shortcut changes
+        void shortcutChangeCounter
+        return conflictingIds.has(commandId)
     }
 </script>
 
-<svelte:window onkeydown={editingShortcut ? handleKeyCapture : undefined} />
+<svelte:window onkeydown={editingShortcut ? handleKeyDown : undefined} />
 
 <div class="section">
     <h2 class="section-title">Keyboard shortcuts</h2>
@@ -96,12 +256,8 @@
             <input
                 type="text"
                 class="search-input key-search"
-                placeholder="Press keys..."
+                placeholder="Filter by keys..."
                 bind:value={keySearchQuery}
-                readonly
-                onfocus={() => {
-                    /* Future: capture key combo */
-                }}
             />
         </div>
 
@@ -122,22 +278,49 @@
                 onclick={() => (activeFilter = 'conflicts')}
             >
                 Conflicts
+                {#if conflictCount > 0}
+                    <span class="conflict-badge">{conflictCount}</span>
+                {/if}
             </button>
         </div>
     </div>
+
+    {#if conflictWarning}
+        <div class="conflict-warning">
+            <span class="warning-icon">⚠️</span>
+            <span class="warning-text">
+                <strong>{conflictWarning.shortcut}</strong> is already bound to "{conflictWarning.conflictingCommand
+                    .name}"
+            </span>
+            <div class="warning-actions">
+                <button class="warning-btn" onclick={handleRemoveFromOther}>Remove from other</button>
+                <button class="warning-btn" onclick={handleKeepBoth}>Keep both</button>
+                <button class="warning-btn secondary" onclick={cancelEdit}>Cancel</button>
+            </div>
+        </div>
+    {/if}
 
     <div class="commands-list">
         {#each Object.entries(groupedCommands) as [scope, scopeCommands] (scope)}
             <div class="scope-group">
                 <h3 class="scope-title">{scope}</h3>
                 {#each scopeCommands as command (command.id)}
-                    <div class="command-row">
+                    {@const shortcuts = getShortcutsForCommand(command.id)}
+                    {@const isModified = isCommandModified(command.id)}
+                    {@const hasConflicts = hasCommandConflicts(command.id)}
+                    <div class="command-row" class:has-conflicts={hasConflicts}>
                         <div class="command-info">
+                            {#if isModified}
+                                <span class="modified-dot" title="Modified from default"></span>
+                            {/if}
+                            {#if hasConflicts}
+                                <span class="conflict-icon" title="Has conflicting shortcuts">⚠️</span>
+                            {/if}
                             <span class="command-name">{command.name}</span>
                         </div>
                         <div class="command-shortcuts">
-                            {#if command.shortcuts.length > 0}
-                                {#each command.shortcuts as shortcut, i (shortcut)}
+                            {#if shortcuts.length > 0}
+                                {#each shortcuts as shortcut, i (i)}
                                     {@const isEditing =
                                         editingShortcut !== null &&
                                         editingShortcut.commandId === command.id &&
@@ -145,18 +328,45 @@
                                     <button
                                         class="shortcut-pill"
                                         class:editing={isEditing}
+                                        class:empty={!shortcut && !isEditing}
                                         onclick={() => {
                                             editingShortcut = { commandId: command.id, index: i }
                                             pendingKey = ''
+                                            conflictWarning = null
                                         }}
                                     >
-                                        {isEditing ? pendingKey || 'Press keys...' : shortcut}
+                                        {#if isEditing}
+                                            {pendingKey || 'Press keys...'}
+                                        {:else if shortcut}
+                                            {shortcut}
+                                        {:else}
+                                            —
+                                        {/if}
                                     </button>
                                 {/each}
                             {:else}
                                 <span class="no-shortcut">—</span>
                             {/if}
-                            <button class="add-shortcut" title="Add shortcut">+</button>
+                            <button
+                                class="add-shortcut"
+                                title="Add shortcut"
+                                onclick={() => {
+                                    handleAddShortcut(command.id)
+                                }}
+                            >
+                                +
+                            </button>
+                            {#if isModified}
+                                <button
+                                    class="reset-shortcut"
+                                    title="Reset to default"
+                                    onclick={() => {
+                                        handleResetShortcut(command.id)
+                                    }}
+                                >
+                                    ↩
+                                </button>
+                            {/if}
                         </div>
                     </div>
                 {/each}
@@ -165,7 +375,7 @@
     </div>
 
     <div class="shortcuts-footer">
-        <button class="reset-button" onclick={resetAllToDefaults}> Reset all to defaults </button>
+        <button class="reset-button" onclick={handleResetAll}>Reset all to defaults</button>
     </div>
 </div>
 
@@ -227,6 +437,9 @@
         color: var(--color-text-secondary);
         font-size: var(--font-size-xs);
         cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 4px;
     }
 
     .filter-chip:hover {
@@ -237,6 +450,59 @@
         background: var(--color-accent);
         color: white;
         border-color: var(--color-accent);
+    }
+
+    .conflict-badge {
+        background: var(--color-warning);
+        color: white;
+        font-size: 10px;
+        padding: 1px 5px;
+        border-radius: 8px;
+        font-weight: 600;
+    }
+
+    .conflict-warning {
+        background: var(--color-warning-bg, #fff3cd);
+        border: 1px solid var(--color-warning, #ffc107);
+        border-radius: 4px;
+        padding: var(--spacing-sm);
+        margin-bottom: var(--spacing-md);
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--spacing-sm);
+    }
+
+    .warning-icon {
+        font-size: 16px;
+    }
+
+    .warning-text {
+        flex: 1;
+        font-size: var(--font-size-sm);
+    }
+
+    .warning-actions {
+        display: flex;
+        gap: var(--spacing-xs);
+    }
+
+    .warning-btn {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        border: 1px solid var(--color-border);
+        border-radius: 4px;
+        background: var(--color-bg-primary);
+        color: var(--color-text-primary);
+        font-size: var(--font-size-xs);
+        cursor: pointer;
+    }
+
+    .warning-btn:hover {
+        background: var(--color-bg-hover);
+    }
+
+    .warning-btn.secondary {
+        color: var(--color-text-secondary);
     }
 
     .commands-list {
@@ -269,8 +535,26 @@
         border-bottom: none;
     }
 
+    .command-row.has-conflicts {
+        background: var(--color-warning-bg, rgba(255, 193, 7, 0.1));
+    }
+
     .command-info {
         flex: 1;
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+    }
+
+    .modified-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--color-accent);
+    }
+
+    .conflict-icon {
+        font-size: 12px;
     }
 
     .command-name {
@@ -293,6 +577,8 @@
         font-family: var(--font-system);
         color: var(--color-text-primary);
         cursor: pointer;
+        min-width: 40px;
+        text-align: center;
     }
 
     .shortcut-pill:hover {
@@ -305,12 +591,18 @@
         border-color: var(--color-accent);
     }
 
+    .shortcut-pill.empty {
+        color: var(--color-text-muted);
+        border-style: dashed;
+    }
+
     .no-shortcut {
         color: var(--color-text-muted);
         font-size: var(--font-size-sm);
     }
 
-    .add-shortcut {
+    .add-shortcut,
+    .reset-shortcut {
         width: 20px;
         height: 20px;
         padding: 0;
@@ -325,9 +617,14 @@
         justify-content: center;
     }
 
-    .add-shortcut:hover {
+    .add-shortcut:hover,
+    .reset-shortcut:hover {
         border-color: var(--color-accent);
         color: var(--color-accent);
+    }
+
+    .reset-shortcut {
+        font-size: 12px;
     }
 
     .shortcuts-footer {
