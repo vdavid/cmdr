@@ -51,6 +51,7 @@ vi.mock('$lib/tauri-commands', () => ({
     updateMenuContext: vi.fn(() => Promise.resolve()),
     hasFontMetrics: vi.fn().mockResolvedValue(true),
     storeFontMetrics: vi.fn().mockResolvedValue(undefined),
+    getHomeDir: vi.fn().mockResolvedValue('/Users/testuser'),
     listVolumes: vi
         .fn()
         .mockResolvedValue([
