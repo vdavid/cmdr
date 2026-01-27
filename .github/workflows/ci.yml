@@ -427,3 +427,24 @@ jobs:
                     -H "Content-Type: application/json" \
                     -H "X-Hub-Signature-256: sha256=$SIGNATURE" \
                     -d "$PAYLOAD"
+
+    # ===========================================
+    # Summary job for branch protection
+    # ===========================================
+    ci-ok:
+        name: CI OK
+        runs-on: ubuntu-latest
+        needs: [desktop-rust, desktop-svelte, desktop-e2e-linux, website, license-server, scripts]
+        if: always()
+        steps:
+            - name: Check all jobs passed
+              run: |
+                  if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
+                    echo "Some jobs failed"
+                    exit 1
+                  fi
+                  if [[ "${{ contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+                    echo "Some jobs were cancelled"
+                    exit 1
+                  fi
+                  echo "All jobs passed or were skipped"
