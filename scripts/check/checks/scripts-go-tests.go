@@ -38,7 +38,7 @@ func RunGoTests(ctx *CheckContext) (CheckResult, error) {
 			pkgCount += len(matches)
 
 			// Also count "no test files" as passed packages
-			noTestRe := regexp.MustCompile(`(?m)\[no test files\]`)
+			noTestRe := regexp.MustCompile(`(?m)\[no test files]`)
 			noTestMatches := noTestRe.FindAllString(output, -1)
 			pkgCount += len(noTestMatches)
 		}

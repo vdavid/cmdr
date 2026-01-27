@@ -14,7 +14,7 @@ func RunMisspell(ctx *CheckContext) (CheckResult, error) {
 		return CheckResult{}, err
 	}
 
-	goDirs := GetGoDirectories(ctx.RootDir)
+	goDirs := GetGoDirectories()
 	totalFileCount := 0
 	var allIssues []string
 

@@ -7,7 +7,12 @@ let mockState = {
     notificationState: 'hidden' as string,
     downloadProgress: null as { bytesDownloaded: number; totalBytes: number; speed: number; etaSeconds: number } | null,
     progressText: '',
-    modelInfo: { id: 'ministral-3b-instruct-q4km', displayName: 'Ministral 3B', sizeBytes: 2147023008, sizeFormatted: '2.1 GB' },
+    modelInfo: {
+        id: 'ministral-3b-instruct-q4km',
+        displayName: 'Ministral 3B',
+        sizeBytes: 2147023008,
+        sizeFormatted: '2.1 GB',
+    },
 }
 
 vi.mock('./ai-state.svelte', () => ({
@@ -29,7 +34,12 @@ describe('AiNotification', () => {
             notificationState: 'hidden',
             downloadProgress: null,
             progressText: '',
-            modelInfo: { id: 'ministral-3b-instruct-q4km', displayName: 'Ministral 3B', sizeBytes: 2147023008, sizeFormatted: '2.1 GB' },
+            modelInfo: {
+                id: 'ministral-3b-instruct-q4km',
+                displayName: 'Ministral 3B',
+                sizeBytes: 2147023008,
+                sizeFormatted: '2.1 GB',
+            },
         }
     })
 
@@ -51,7 +61,7 @@ describe('AiNotification', () => {
         expect(target.querySelector('.ai-notification')).toBeNull()
     })
 
-    it('renders offer notification with Download, Not now, and I don\'t want AI buttons', () => {
+    it("renders offer notification with Download, Not now, and I don't want AI buttons", () => {
         mockState.notificationState = 'offer'
         const target = document.createElement('div')
         mount(AiNotification, { target })
