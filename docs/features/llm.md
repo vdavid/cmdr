@@ -54,6 +54,37 @@ names that fit the structure.
 
 ## Implementation
 
+### llama-server (inference runtime)
+
+The app uses **llama-server** from [llama.cpp](https://github.com/ggml-org/llama.cpp) to run inference.
+The binary is downloaded at build time (not committed to git) from llama.cpp GitHub releases.
+
+**Current version:** See `Version` constant in `apps/desktop/scripts/download-llama-server.go`
+
+#### Updating llama-server
+
+1. Check for new releases at: https://github.com/ggml-org/llama.cpp/releases
+
+2. Find the macOS ARM64 asset: `llama-<version>-bin-macos-arm64.tar.gz`
+
+3. Compute the SHA256 checksum:
+   ```bash
+   curl -L "https://github.com/ggml-org/llama.cpp/releases/download/<version>/llama-<version>-bin-macos-arm64.tar.gz" | shasum -a 256
+   ```
+
+4. Update the constants in `apps/desktop/scripts/download-llama-server.go`:
+   ```go
+   const Version = "<new-version>"
+   const ExpectedSHA256 = "<new-checksum>"
+   ```
+
+5. Delete the cached file to force re-download:
+   ```bash
+   rm apps/desktop/src-tauri/resources/llama-server.tar.gz
+   ```
+
+6. Test with `CMDR_REAL_AI=1 pnpm dev`
+
 ### Model registry
 
 Models are defined in `apps/desktop/src-tauri/src/ai/mod.rs` in the `AVAILABLE_MODELS` array.
@@ -61,7 +92,7 @@ Each model has an ID, display name, filename, HuggingFace URL, and expected file
 
 Current default model:
 - **Ministral 3B** (Q4_K_M, ~2.0 GB GGUF) — Mistral's efficient edge model
-- Runs via **llama-server** (llama.cpp) — bundled with the app, not downloaded
+- Runs via **llama-server** (llama.cpp) — downloaded at build time
 - Apple Silicon only (M1+), Metal GPU acceleration
 - Fast responses (1-3 seconds for folder suggestions)
 
@@ -103,7 +134,7 @@ To add or switch to a new model:
   - `manager.rs` — Model download, runtime extraction, process lifecycle (start/stop/health)
   - `client.rs` — HTTP client for the local llama-server API
   - `suggestions.rs` — Prompt construction and response parsing
-- **Bundled resource**: `src-tauri/resources/llama-server.tar.gz` — llama-server binary + dylibs
+- **Build-time download**: `src-tauri/resources/llama-server.tar.gz` — llama-server binary + dylibs (downloaded by `scripts/download-llama-server.go`)
 - **Runtime storage**: `~/Library/Application Support/com.cmdr.app/ai/` (extracted binary + model + state)
 - **Commands**:
   - `get_ai_status` — Returns current AI state (unavailable/offer/downloading/installing/available)

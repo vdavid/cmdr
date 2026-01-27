@@ -4,9 +4,9 @@
   "version": "0.4.0",
   "identifier": "com.veszelovszki.cmdr",
   "build": {
-    "beforeDevCommand": "pnpm dev",
+    "beforeDevCommand": "go run scripts/download-llama-server.go && pnpm dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "pnpm build",
+    "beforeBuildCommand": "go run scripts/download-llama-server.go && pnpm build",
     "frontendDist": "../build"
   },
   "app": {

@@ -37,4 +37,7 @@ coverage/
 # Rust build artifacts
 target/
 
+# Downloaded llama-server binary (fetched at build time, not committed)
+apps/desktop/src-tauri/resources/llama-server.tar.gz
+
 .cargo-docker/
