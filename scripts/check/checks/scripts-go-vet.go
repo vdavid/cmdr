@@ -9,9 +9,7 @@ import (
 
 // RunGoVet runs go vet to find likely mistakes.
 func RunGoVet(ctx *CheckContext) (CheckResult, error) {
-	scriptsDir := filepath.Join(ctx.RootDir, "scripts")
-
-	modules, err := FindGoModules(scriptsDir)
+	allModules, err := FindAllGoModules(ctx.RootDir)
 	if err != nil {
 		return CheckResult{}, fmt.Errorf("failed to find Go modules: %w", err)
 	}
@@ -19,22 +17,26 @@ func RunGoVet(ctx *CheckContext) (CheckResult, error) {
 	var allIssues []string
 	pkgCount := 0
 
-	for _, mod := range modules {
-		modDir := filepath.Join(scriptsDir, mod)
+	for goDir, modules := range allModules {
+		baseDir := filepath.Join(ctx.RootDir, goDir)
+		for _, mod := range modules {
+			modDir := filepath.Join(baseDir, mod)
+			modLabel := filepath.Join(goDir, mod)
 
-		// Count packages in this module
-		listCmd := exec.Command("go", "list", "./...")
-		listCmd.Dir = modDir
-		listOutput, _ := RunCommand(listCmd, true)
-		if strings.TrimSpace(listOutput) != "" {
-			pkgCount += len(strings.Split(strings.TrimSpace(listOutput), "\n"))
-		}
+			// Count packages in this module
+			listCmd := exec.Command("go", "list", "./...")
+			listCmd.Dir = modDir
+			listOutput, _ := RunCommand(listCmd, true)
+			if strings.TrimSpace(listOutput) != "" {
+				pkgCount += len(strings.Split(strings.TrimSpace(listOutput), "\n"))
+			}
 
-		vetCmd := exec.Command("go", "vet", "./...")
-		vetCmd.Dir = modDir
-		output, err := RunCommand(vetCmd, true)
-		if err != nil {
-			allIssues = append(allIssues, fmt.Sprintf("[%s]\n%s", mod, output))
+			vetCmd := exec.Command("go", "vet", "./...")
+			vetCmd.Dir = modDir
+			output, err := RunCommand(vetCmd, true)
+			if err != nil {
+				allIssues = append(allIssues, fmt.Sprintf("[%s]\n%s", modLabel, output))
+			}
 		}
 	}
 
