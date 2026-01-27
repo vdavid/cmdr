@@ -66,19 +66,27 @@ pub async fn chat_completion(port: u16, prompt: &str) -> Result<String, AiError>
     let url = format!("http://127.0.0.1:{port}/v1/chat/completions");
 
     let request_body = ChatCompletionRequest {
-        model: String::from("falcon-h1r-7b"),
-        messages: vec![ChatMessage {
-            role: String::from("user"),
-            content: prompt.to_string(),
-        }],
+        model: String::from("local-model"), // llama-server uses whatever model it loaded
+        messages: vec![
+            ChatMessage {
+                role: String::from("system"),
+                content: String::from(
+                    "You are a pattern-matching assistant. Carefully observe the style, language, and formatting of existing items, then generate new items that match exactly. Output only what is requested, no formatting or explanation.",
+                ),
+            },
+            ChatMessage {
+                role: String::from("user"),
+                content: prompt.to_string(),
+            },
+        ],
         temperature: 0.6,
         top_p: 0.95,
-        max_tokens: 100,
+        max_tokens: 150, // Just need 5 folder names
         stream: false,
     };
 
     let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(10))
+        .timeout(Duration::from_secs(15))
         .build()
         .map_err(|e| AiError::ServerError(e.to_string()))?;
 
@@ -98,13 +106,21 @@ pub async fn chat_completion(port: u16, prompt: &str) -> Result<String, AiError>
         return Err(AiError::ServerError(format!("HTTP {status}: {body}")));
     }
 
-    let parsed: ChatCompletionResponse = response.json().await.map_err(|e| AiError::ParseError(e.to_string()))?;
+    // Get raw body for debugging
+    let body = response.text().await.map_err(|e| AiError::ParseError(e.to_string()))?;
+    log::trace!("AI chat_completion: raw response body: {body}");
 
-    parsed
+    let parsed: ChatCompletionResponse =
+        serde_json::from_str(&body).map_err(|e| AiError::ParseError(format!("JSON parse error: {e}")))?;
+
+    let content = parsed
         .choices
         .first()
         .map(|c| c.message.content.clone())
-        .ok_or_else(|| AiError::ParseError(String::from("No choices in response")))
+        .ok_or_else(|| AiError::ParseError(String::from("No choices in response")))?;
+
+    log::trace!("AI chat_completion: extracted content: {content}");
+    Ok(content)
 }
 
 /// Checks if the llama-server is healthy.
@@ -113,12 +129,27 @@ pub async fn health_check(port: u16) -> bool {
 
     let client = match reqwest::Client::builder().timeout(Duration::from_secs(2)).build() {
         Ok(c) => c,
-        Err(_) => return false,
+        Err(e) => {
+            log::debug!("AI health_check: failed to build client: {e}");
+            return false;
+        }
     };
 
     match client.get(&url).send().await {
-        Ok(response) => response.status().is_success(),
-        Err(_) => false,
+        Ok(response) => {
+            let status = response.status();
+            if status.is_success() {
+                true
+            } else {
+                let body = response.text().await.unwrap_or_default();
+                log::debug!("AI health_check: HTTP {status}, body: {body}");
+                false
+            }
+        }
+        Err(e) => {
+            log::trace!("AI health_check: connection error (expected during startup): {e}");
+            false
+        }
     }
 }
 

@@ -3,6 +3,7 @@
 //! Builds a prompt from the current directory listing, calls the LLM,
 //! and parses the response into validated folder name suggestions.
 
+use super::use_real_ai;
 use crate::file_system::get_file_at;
 
 /// Maximum number of file names to include in the prompt context.
@@ -10,38 +11,29 @@ const MAX_CONTEXT_ENTRIES: usize = 100;
 /// Maximum number of suggestions to return.
 const MAX_SUGGESTIONS: usize = 5;
 
-/// Mock suggestions returned in dev mode.
-#[cfg(debug_assertions)]
-const MOCK_SUGGESTIONS: &[&str] = &["docs", "tests", "scripts", "config", "assets"];
-
 /// Generates folder name suggestions for the given directory.
 ///
-/// In dev mode, returns hardcoded mock suggestions.
-/// In release mode, calls the local llama-server.
+/// Returns empty if AI is not available (dev mode without env var, or server not running).
+/// In release mode (or dev with CMDR_REAL_AI=1), calls the local llama-server.
 #[tauri::command]
 pub async fn get_folder_suggestions(
     listing_id: String,
     current_path: String,
     include_hidden: bool,
 ) -> Result<Vec<String>, String> {
-    #[cfg(debug_assertions)]
-    {
-        let _ = &current_path; // Only used in release mode (for the LLM prompt)
-        // In dev mode, return mock suggestions filtered against existing names
-        let existing = get_file_names(&listing_id, include_hidden);
-        let suggestions: Vec<String> = MOCK_SUGGESTIONS
-            .iter()
-            .filter(|name| !existing.contains(&name.to_string()))
-            .take(MAX_SUGGESTIONS)
-            .map(|s| s.to_string())
-            .collect();
-        Ok(suggestions)
+    log::debug!(
+        "AI suggestions: get_folder_suggestions called for listing={}, path={}",
+        listing_id,
+        current_path
+    );
+
+    // If real AI is not enabled, return empty (frontend will hide suggestions)
+    if !use_real_ai() {
+        log::debug!("AI suggestions: real AI not enabled, returning empty");
+        return Ok(Vec::new());
     }
 
-    #[cfg(not(debug_assertions))]
-    {
-        get_suggestions_from_llm(&listing_id, &current_path, include_hidden).await
-    }
+    get_suggestions_from_llm(&listing_id, &current_path, include_hidden).await
 }
 
 /// Gets file names from the listing cache (up to MAX_CONTEXT_ENTRIES).
@@ -57,33 +49,31 @@ fn get_file_names(listing_id: &str, include_hidden: bool) -> Vec<String> {
 }
 
 /// Builds the prompt for folder name suggestions.
-#[cfg(any(not(debug_assertions), test))]
 fn build_prompt(current_path: &str, file_names: &[String]) -> String {
-    let mut contents = String::new();
-    for name in file_names {
-        contents.push_str("- ");
-        contents.push_str(name);
-        contents.push('\n');
-    }
+    let contents = file_names.join("\n");
 
     format!(
-        "You are a file organization assistant. Given the contents of a directory, suggest {MAX_SUGGESTIONS} new folder \
-         names that would make sense to create here. Consider the existing structure, naming conventions, and common \
-         project patterns.\n\
+        "Suggest {MAX_SUGGESTIONS} new folder names that fit naturally with the existing items. \
+         IMPORTANT: Match the naming style exactly - same language, same letter case, same word structure. \
+         If existing names are lowercase single words, suggest lowercase single words. \
+         If existing names are in a specific language, suggest names in that same language. \
+         Output ONLY the folder names, one per line. No numbers, bullets, dashes, markdown, or explanation.\n\
          \n\
-         Current directory: {current_path}\n\
-         Contents:\n\
+         Directory: {current_path}\n\
+         Existing items:\n\
          {contents}\n\
-         Respond with exactly {MAX_SUGGESTIONS} folder names, one per line, no numbering, no explanation."
+         \n\
+         {MAX_SUGGESTIONS} folder names:"
     )
 }
 
 /// Parses the LLM response into validated folder name suggestions.
-#[cfg(any(not(debug_assertions), test))]
 fn parse_suggestions(response: &str, existing_names: &[String]) -> Vec<String> {
     response
         .lines()
         .map(|line| line.trim().to_string())
+        // Remove any accidental bullet points (e.g., "- docs" → "docs")
+        .map(|line| line.trim_start_matches(['-', '*']).trim_start().to_string())
         // Remove any accidental numbering (e.g., "1. docs" → "docs")
         .map(|line| {
             if let Some(rest) = line.strip_prefix(|c: char| c.is_ascii_digit()) {
@@ -91,6 +81,12 @@ fn parse_suggestions(response: &str, existing_names: &[String]) -> Vec<String> {
             } else {
                 line
             }
+        })
+        // Remove markdown formatting (bold, italic, backticks)
+        .map(|line| {
+            line.trim_start_matches(['*', '_', '`'])
+                .trim_end_matches(['*', '_', '`'])
+                .to_string()
         })
         .filter(|name| !name.is_empty())
         .filter(|name| !name.contains('/') && !name.contains('\0'))
@@ -105,19 +101,43 @@ fn parse_suggestions(response: &str, existing_names: &[String]) -> Vec<String> {
 }
 
 /// Calls the LLM and returns parsed suggestions.
-#[cfg(not(debug_assertions))]
 async fn get_suggestions_from_llm(
     listing_id: &str,
     current_path: &str,
     include_hidden: bool,
 ) -> Result<Vec<String>, String> {
-    let port = super::manager::get_port().ok_or("AI server not running")?;
+    let port = match super::manager::get_port() {
+        Some(p) => p,
+        None => {
+            log::debug!("AI suggestions: server not running (no port)");
+            return Ok(Vec::new());
+        }
+    };
+
     let file_names = get_file_names(listing_id, include_hidden);
     let prompt = build_prompt(current_path, &file_names);
 
+    log::debug!(
+        "AI suggestions: calling LLM on port {port} with {} files in context",
+        file_names.len()
+    );
+    log::trace!("AI suggestions: prompt:\n{prompt}");
+
     match super::client::chat_completion(port, &prompt).await {
-        Ok(response) => Ok(parse_suggestions(&response, &file_names)),
-        Err(_) => Ok(Vec::new()), // Graceful degradation: return empty on any error
+        Ok(response) => {
+            log::trace!("AI suggestions: raw response:\n{response}");
+            let suggestions = parse_suggestions(&response, &file_names);
+            log::debug!(
+                "AI suggestions: got {} suggestions: {:?}",
+                suggestions.len(),
+                suggestions
+            );
+            Ok(suggestions)
+        }
+        Err(e) => {
+            log::warn!("AI suggestions: LLM call failed: {e}");
+            Ok(Vec::new()) // Graceful degradation: return empty on any error
+        }
     }
 }
 
@@ -131,9 +151,10 @@ mod tests {
         let prompt = build_prompt("/home/user/project", &names);
 
         assert!(prompt.contains("/home/user/project"));
-        assert!(prompt.contains("- src"));
-        assert!(prompt.contains("- README.md"));
-        assert!(prompt.contains("5 folder names"));
+        assert!(prompt.contains("src\nREADME.md"));
+        assert!(prompt.contains("Match the naming style exactly"));
+        assert!(prompt.contains("same language"));
+        assert!(!prompt.contains("- src")); // No bullet points
     }
 
     #[test]
@@ -141,7 +162,7 @@ mod tests {
         let names: Vec<String> = Vec::new();
         let prompt = build_prompt("/empty", &names);
         assert!(prompt.contains("/empty"));
-        assert!(prompt.contains("Contents:"));
+        assert!(prompt.contains("Existing items:"));
     }
 
     #[test]
@@ -158,6 +179,30 @@ mod tests {
         let existing: Vec<String> = Vec::new();
         let result = parse_suggestions(response, &existing);
         assert_eq!(result, vec!["docs", "tests", "scripts"]);
+    }
+
+    #[test]
+    fn test_parse_suggestions_strips_bullets() {
+        let response = "- docs\n- tests\n* scripts\n";
+        let existing: Vec<String> = Vec::new();
+        let result = parse_suggestions(response, &existing);
+        assert_eq!(result, vec!["docs", "tests", "scripts"]);
+    }
+
+    #[test]
+    fn test_parse_suggestions_strips_markdown() {
+        let response = "**bold-folder**\n*italic-folder*\n`code-folder`\n__underline__\n";
+        let existing: Vec<String> = Vec::new();
+        let result = parse_suggestions(response, &existing);
+        assert_eq!(result, vec!["bold-folder", "italic-folder", "code-folder", "underline"]);
+    }
+
+    #[test]
+    fn test_parse_suggestions_numbered_with_markdown() {
+        let response = "1. **HighDensityStorage**\n2. **CompressedArchive**\n";
+        let existing: Vec<String> = Vec::new();
+        let result = parse_suggestions(response, &existing);
+        assert_eq!(result, vec!["HighDensityStorage", "CompressedArchive"]);
     }
 
     #[test]

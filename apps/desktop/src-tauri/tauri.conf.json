@@ -50,6 +50,9 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "resources": [
+      "resources/llama-server.tar.gz"
+    ],
     "macOS": {
       "bundleName": "Cmdr"
     }
