@@ -7,6 +7,9 @@
 //
 // The script is idempotent — it skips the download if the file already exists
 // and matches the expected checksum.
+//
+// On non-macOS platforms (e.g., Linux CI), creates an empty placeholder file
+// since the AI feature is macOS-only.
 
 package main
 
@@ -18,6 +21,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 )
 
 // Version is the llama.cpp release version.
@@ -43,6 +47,16 @@ func main() {
 	// Resolve destination path relative to current working directory.
 	// This script is expected to be run from apps/desktop/ directory.
 	destPath := DestPath
+
+	// On non-macOS platforms, create a placeholder file for CI builds.
+	// The AI feature is macOS-only, but Tauri requires the resource to exist.
+	if runtime.GOOS != "darwin" {
+		if err := createPlaceholder(destPath); err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "Error creating placeholder: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	}
 
 	// Check if file already exists with correct checksum
 	if fileExistsWithChecksum(destPath, ExpectedSHA256) {
@@ -81,6 +95,31 @@ func main() {
 	}
 
 	fmt.Println("Download complete and verified")
+}
+
+func createPlaceholder(destPath string) error {
+	// Check if file already exists
+	if _, err := os.Stat(destPath); err == nil {
+		fmt.Printf("Placeholder %s already exists, skipping\n", destPath)
+		return nil
+	}
+
+	// Ensure destination directory exists
+	if err := os.MkdirAll(filepath.Dir(destPath), 0o755); err != nil {
+		return fmt.Errorf("create directory: %w", err)
+	}
+
+	// Create empty placeholder file
+	f, err := os.Create(destPath)
+	if err != nil {
+		return fmt.Errorf("create file: %w", err)
+	}
+	if err := f.Close(); err != nil {
+		return fmt.Errorf("close file: %w", err)
+	}
+
+	fmt.Printf("Created placeholder %s (non-macOS build)\n", destPath)
+	return nil
 }
 
 func fileExistsWithChecksum(path, expectedChecksum string) bool {
