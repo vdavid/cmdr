@@ -35,6 +35,7 @@
     let scrollTop = $state(0)
     let viewportHeight = $state(600)
     let contentRef: HTMLDivElement | undefined = $state()
+    let containerRef: HTMLDivElement | undefined = $state()
 
     // Derived: which lines are visible
     const visibleFrom = $derived(Math.max(0, Math.floor(scrollTop / LINE_HEIGHT) - BUFFER_LINES))
@@ -239,7 +240,7 @@
                 const { viewerClose } = await import('$lib/tauri-commands')
                 await viewerClose(sessionId)
             } catch {
-                // Ignore
+                // Ignore - session cleanup is best-effort
             }
         }
         try {
@@ -247,6 +248,57 @@
             await getCurrentWindow().close()
         } catch {
             // Not in Tauri environment
+        }
+    }
+
+    function scrollByLines(lines: number) {
+        if (contentRef) {
+            contentRef.scrollTop = Math.max(0, contentRef.scrollTop + lines * LINE_HEIGHT)
+        }
+    }
+
+    function scrollByPages(pages: number) {
+        if (contentRef) {
+            const pageSize = contentRef.clientHeight - LINE_HEIGHT // Overlap by 1 line
+            contentRef.scrollTop = Math.max(0, contentRef.scrollTop + pages * pageSize)
+        }
+    }
+
+    function scrollToStart() {
+        if (contentRef) {
+            contentRef.scrollTop = 0
+        }
+    }
+
+    function scrollToEnd() {
+        if (contentRef) {
+            contentRef.scrollTop = contentRef.scrollHeight - contentRef.clientHeight
+        }
+    }
+
+    /** Handle navigation keys (arrows, page up/down, home/end). Returns true if handled. */
+    function handleNavigationKey(key: string): boolean {
+        switch (key) {
+            case 'ArrowUp':
+                scrollByLines(-1)
+                return true
+            case 'ArrowDown':
+                scrollByLines(1)
+                return true
+            case 'PageUp':
+                scrollByPages(-1)
+                return true
+            case 'PageDown':
+                scrollByPages(1)
+                return true
+            case 'Home':
+                scrollToStart()
+                return true
+            case 'End':
+                scrollToEnd()
+                return true
+            default:
+                return false
         }
     }
 
@@ -274,6 +326,13 @@
             } else {
                 findNext()
             }
+            return
+        }
+
+        // Navigation keys (only when search input is not focused)
+        const isSearchInputFocused = searchVisible && document.activeElement === searchInputRef
+        if (!isSearchInputFocused && handleNavigationKey(e.key)) {
+            e.preventDefault()
         }
     }
 
@@ -348,6 +407,9 @@
             error = typeof e === 'string' ? e : 'Failed to read file'
         } finally {
             loading = false
+            // Auto-focus the container so keyboard events work immediately
+            await tick()
+            containerRef?.focus()
         }
     })
 
@@ -357,8 +419,9 @@
     })
 </script>
 
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="viewer-container" onkeydown={handleKeyDown} tabindex={-1}>
+<svelte:window on:keydown={handleKeyDown} />
+
+<div class="viewer-container" bind:this={containerRef} tabindex={-1}>
     {#if searchVisible}
         <div class="search-bar" role="search">
             <input
