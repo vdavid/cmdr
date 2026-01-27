@@ -9,7 +9,7 @@ import (
 
 // RunGoFmt formats Go code with gofmt.
 func RunGoFmt(ctx *CheckContext) (CheckResult, error) {
-	goDirs := GetGoDirectories(ctx.RootDir)
+	goDirs := GetGoDirectories()
 
 	totalFileCount := 0
 	var allNeedsFormat []string

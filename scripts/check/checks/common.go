@@ -195,7 +195,7 @@ func Pluralize(count int, singular, plural string) string {
 
 // GetGoDirectories returns all directories in the repo that contain Go code.
 // Each returned path is relative to rootDir.
-func GetGoDirectories(rootDir string) []string {
+func GetGoDirectories() []string {
 	return []string{
 		"scripts",
 		"apps/desktop/scripts",
@@ -231,7 +231,7 @@ func FindGoModules(rootDir string) ([]string, error) {
 // Returns a map of base directory to list of module subdirectories.
 func FindAllGoModules(rootDir string) (map[string][]string, error) {
 	result := make(map[string][]string)
-	for _, goDir := range GetGoDirectories(rootDir) {
+	for _, goDir := range GetGoDirectories() {
 		fullPath := filepath.Join(rootDir, goDir)
 		modules, err := FindGoModules(fullPath)
 		if err != nil {
