@@ -6,7 +6,7 @@
 //! Uses runtime check `use_real_ai()` to enable/disable real AI features.
 //! In dev mode without `CMDR_REAL_AI=1`, all AI features return Unavailable.
 
-use super::{AiState, AiStatus, DownloadProgress, get_default_model, get_model_by_id, use_real_ai, ModelInfo};
+use super::{AiState, AiStatus, DownloadProgress, ModelInfo, get_default_model, get_model_by_id, use_real_ai};
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -62,12 +62,13 @@ pub fn init<R: Runtime>(app: &AppHandle<R>) {
         // Clean up stale PID from a previous crash
         if let Some(ref mut m) = *manager
             && let Some(pid) = m.state.pid
-                && !is_process_alive(pid) {
-                    log::debug!("AI manager: cleaning up stale PID {pid} from previous session");
-                    m.state.pid = None;
-                    m.state.port = None;
-                    save_state(&m.ai_dir, &m.state);
-                }
+            && !is_process_alive(pid)
+        {
+            log::debug!("AI manager: cleaning up stale PID {pid} from previous session");
+            m.state.pid = None;
+            m.state.port = None;
+            save_state(&m.ai_dir, &m.state);
+        }
 
         // Clean up stale partial downloads (older than 24 hours)
         if let Some(ref mut m) = *manager {
@@ -79,36 +80,37 @@ pub fn init<R: Runtime>(app: &AppHandle<R>) {
         log::debug!("AI manager: ready={is_ready}");
 
         // Recovery: if state says installed but files are missing, try to recover
-        if !is_ready {
-            if let Some(ref mut m) = *manager
-                && m.state.installed
-            {
-                let model = get_model_by_id(&m.state.installed_model_id).unwrap_or_else(get_default_model);
-                let model_path = m.ai_dir.join(model.filename);
-                let binary_path = m.ai_dir.join(LLAMA_SERVER_BINARY);
+        if !is_ready
+            && let Some(ref mut m) = *manager
+            && m.state.installed
+        {
+            let model = get_model_by_id(&m.state.installed_model_id).unwrap_or_else(get_default_model);
+            let model_path = m.ai_dir.join(model.filename);
+            let binary_path = m.ai_dir.join(LLAMA_SERVER_BINARY);
 
-                // Check if model is complete but binary is missing (can re-extract)
-                let model_complete = model_path.exists()
-                    && fs::metadata(&model_path).map(|meta| meta.len() >= model.size_bytes).unwrap_or(false);
+            // Check if model is complete but binary is missing (can re-extract)
+            let model_complete = model_path.exists()
+                && fs::metadata(&model_path)
+                    .map(|meta| meta.len() >= model.size_bytes)
+                    .unwrap_or(false);
 
-                if model_complete && !binary_path.exists() {
-                    log::debug!("AI manager: model exists but binary missing, re-extracting...");
-                    match extract_bundled_llama_server(app, &m.ai_dir) {
-                        Ok(()) => {
-                            log::debug!("AI manager: binary re-extracted successfully");
-                            is_ready = true;
-                        }
-                        Err(e) => {
-                            log::error!("AI manager: failed to re-extract binary: {e}");
-                        }
+            if model_complete && !binary_path.exists() {
+                log::debug!("AI manager: model exists but binary missing, re-extracting...");
+                match extract_bundled_llama_server(app, &m.ai_dir) {
+                    Ok(()) => {
+                        log::debug!("AI manager: binary re-extracted successfully");
+                        is_ready = true;
                     }
-                } else if !model_complete {
-                    // Model is missing or incomplete - reset installed state
-                    log::debug!("AI manager: model missing or incomplete, resetting installed state");
-                    m.state.installed = false;
-                    m.state.model_download_complete = false;
-                    save_state(&m.ai_dir, &m.state);
+                    Err(e) => {
+                        log::error!("AI manager: failed to re-extract binary: {e}");
+                    }
                 }
+            } else if !model_complete {
+                // Model is missing or incomplete - reset installed state
+                log::debug!("AI manager: model missing or incomplete, resetting installed state");
+                m.state.installed = false;
+                m.state.model_download_complete = false;
+                save_state(&m.ai_dir, &m.state);
             }
         }
 
@@ -138,9 +140,10 @@ pub fn init<R: Runtime>(app: &AppHandle<R>) {
 pub fn shutdown() {
     let mut manager = MANAGER.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(ref mut m) = *manager
-        && let Some(pid) = m.child_pid.take() {
-            stop_process(pid);
-        }
+        && let Some(pid) = m.child_pid.take()
+    {
+        stop_process(pid);
+    }
 }
 
 /// Returns the current AI status.
@@ -159,9 +162,10 @@ pub fn get_ai_status() -> AiStatus {
         Some(m) => {
             // Check if dismissed
             if let Some(until) = m.state.dismissed_until
-                && is_still_dismissed(until) {
-                    return AiStatus::Unavailable;
-                }
+                && is_still_dismissed(until)
+            {
+                return AiStatus::Unavailable;
+            }
             AiStatus::Offer
         }
         None => AiStatus::Unavailable,
@@ -331,9 +335,10 @@ fn format_bytes_gb(bytes: u64) -> String {
 fn get_current_model() -> &'static ModelInfo {
     let manager = MANAGER.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(ref m) = *manager
-        && let Some(model) = get_model_by_id(&m.state.installed_model_id) {
-            return model;
-        }
+        && let Some(model) = get_model_by_id(&m.state.installed_model_id)
+    {
+        return model;
+    }
     get_default_model()
 }
 
@@ -387,10 +392,11 @@ fn is_fully_installed(m: &ManagerState) -> bool {
     if model_exists && !m.state.model_download_complete {
         // Double-check by file size in case state is stale
         if let Ok(meta) = fs::metadata(&model_path)
-            && meta.len() >= model.size_bytes {
-                log::debug!("AI: model file size matches expected, marking as complete");
-                return true; // Binary, dylibs, and model all present
-            }
+            && meta.len() >= model.size_bytes
+        {
+            log::debug!("AI: model file size matches expected, marking as complete");
+            return true; // Binary, dylibs, and model all present
+        }
         log::debug!("AI: model file exists but download not verified complete");
     }
 
@@ -417,7 +423,10 @@ fn cleanup_stale_partial_download(m: &mut ManagerState) {
         let model = get_model_by_id(&m.state.installed_model_id).unwrap_or_else(get_default_model);
         let model_path = m.ai_dir.join(model.filename);
         if model_path.exists() {
-            log::debug!("AI: cleaning up stale partial download (started {} hours ago)", (now - started) / 3600);
+            log::debug!(
+                "AI: cleaning up stale partial download (started {} hours ago)",
+                (now - started) / 3600
+            );
             let _ = fs::remove_file(&model_path);
             m.state.partial_download_started = None;
             save_state(&m.ai_dir, &m.state);
@@ -664,10 +673,7 @@ async fn download_file<R: Runtime>(app: &AppHandle<R>, url: &str, dest: &Path) -
         request = request.header("Range", format!("bytes={existing_size}-"));
     }
 
-    let response = request
-        .send()
-        .await
-        .map_err(|e| format!("Download failed: {e}"))?;
+    let response = request.send().await.map_err(|e| format!("Download failed: {e}"))?;
 
     if !response.status().is_success() && response.status() != reqwest::StatusCode::PARTIAL_CONTENT {
         return Err(format!("Download failed: HTTP {}", response.status()));
@@ -780,8 +786,7 @@ async fn start_server_inner<R: Runtime>(app: &AppHandle<R>) -> Result<(), String
 
     // Create log file for llama-server output (helps debug startup issues)
     let log_path = ai_dir.join(SERVER_LOG_FILENAME);
-    let log_file = fs::File::create(&log_path)
-        .map_err(|e| format!("Failed to create llama-server log file: {e}"))?;
+    let log_file = fs::File::create(&log_path).map_err(|e| format!("Failed to create llama-server log file: {e}"))?;
     let log_file_stderr = log_file
         .try_clone()
         .map_err(|e| format!("Failed to clone log file handle: {e}"))?;
@@ -824,7 +829,15 @@ async fn start_server_inner<R: Runtime>(app: &AppHandle<R>) -> Result<(), String
     if !is_process_alive(pid) {
         // Process died immediately - read the log to see why
         let log_content = fs::read_to_string(&log_path).unwrap_or_default();
-        let last_lines: String = log_content.lines().rev().take(20).collect::<Vec<_>>().into_iter().rev().collect::<Vec<_>>().join("\n");
+        let last_lines: String = log_content
+            .lines()
+            .rev()
+            .take(20)
+            .collect::<Vec<_>>()
+            .into_iter()
+            .rev()
+            .collect::<Vec<_>>()
+            .join("\n");
         log::error!("AI server: process died immediately. Last log lines:\n{last_lines}");
         return Err(format!("llama-server crashed on startup. Check log at: {log_path:?}"));
     }

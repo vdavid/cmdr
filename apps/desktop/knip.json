@@ -13,10 +13,12 @@
         "@testing-library/svelte",
         "@sveltejs/adapter-static",
         "prettier-plugin-svelte",
+        "@wdio/globals",
         "@wdio/local-runner",
         "@wdio/mocha-framework",
         "@wdio/spec-reporter",
-        "@wdio/types"
+        "@wdio/types",
+        "webdriverio"
     ],
     "ignoreExportsUsedInFile": true,
     "project": ["src/**/*.{ts,svelte}"],
