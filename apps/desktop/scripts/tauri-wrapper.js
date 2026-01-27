@@ -15,8 +15,9 @@ if (isDev) {
     args.push('-c', 'src-tauri/tauri.dev.json')
 }
 
-// If build and no target specified, default to universal binary
-if (isBuild && !args.includes('--target') && !args.includes('-t')) {
+// If build on macOS and no target specified, default to universal binary
+const isMacOS = process.platform === 'darwin'
+if (isBuild && isMacOS && !args.includes('--target') && !args.includes('-t')) {
     args.push('--target', 'universal-apple-darwin')
 }
 
