@@ -18,7 +18,7 @@
  * Note: macOS doesn't have a WebDriver for WKWebView, so these tests only run on Linux.
  */
 
-import type { Options } from '@wdio/types'
+import type { Options, Capabilities } from '@wdio/types'
 import { spawn, ChildProcess } from 'child_process'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -34,7 +34,7 @@ const TAURI_BINARY = process.env.TAURI_BINARY || path.join(__dirname, '../../src
 // tauri-driver process handle
 let tauriDriver: ChildProcess | null = null
 
-export const config: Options.Testrunner = {
+export const config: Options.Testrunner & { capabilities: Capabilities.TestrunnerCapabilities } = {
     // Use WebDriver protocol (not DevTools)
     runner: 'local',
 

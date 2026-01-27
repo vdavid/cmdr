@@ -81,7 +81,8 @@ describe('Keyboard navigation', () => {
         await ensureAppReady()
 
         // Get all file entries and find which one has the cursor
-        const entries = await browser.$$('.file-entry')
+        // Spread to convert ChainablePromiseArray to real array for .length
+        const entries = [...(await browser.$$('.file-entry'))]
         if (entries.length < 2) {
             // Not enough entries to test cursor movement
             console.log('Skipping arrow key test: fewer than 2 entries')
@@ -105,7 +106,7 @@ describe('Keyboard navigation', () => {
         await browser.pause(300)
 
         // Re-query entries and find new cursor position
-        const updatedEntries = await browser.$$('.file-entry')
+        const updatedEntries = [...(await browser.$$('.file-entry'))]
         let newCursorIndex = -1
         for (let i = 0; i < updatedEntries.length; i++) {
             const cls = await updatedEntries[i].getAttribute('class')
@@ -159,15 +160,15 @@ describe('Keyboard navigation', () => {
     it('should toggle selection with Space key', async () => {
         await ensureAppReady()
 
-        // Get cursor entry
-        let cursorEntry = await browser.$('.file-entry.is-under-cursor')
+        // Get cursor entry (cast needed due to WDIO ChainablePromiseElement type quirk)
+        let cursorEntry = (await browser.$('.file-entry.is-under-cursor')) as unknown as WebdriverIO.Element
         const cursorText = await getEntryName(cursorEntry)
 
         // Skip ".." entry if that's where cursor is
         if (cursorText === '..') {
             await browser.keys('ArrowDown')
             await browser.pause(300)
-            cursorEntry = await browser.$('.file-entry.is-under-cursor')
+            cursorEntry = (await browser.$('.file-entry.is-under-cursor')) as unknown as WebdriverIO.Element
         }
 
         // Verify not selected initially
@@ -179,7 +180,7 @@ describe('Keyboard navigation', () => {
         await browser.pause(300)
 
         // Verify now selected - re-query the cursor entry
-        cursorEntry = await browser.$('.file-entry.is-under-cursor')
+        cursorEntry = (await browser.$('.file-entry.is-under-cursor')) as unknown as WebdriverIO.Element
         cursorClass = await cursorEntry.getAttribute('class')
         expect(cursorClass).toContain('is-selected')
 
@@ -188,7 +189,7 @@ describe('Keyboard navigation', () => {
         await browser.pause(300)
 
         // Verify now deselected
-        cursorEntry = await browser.$('.file-entry.is-under-cursor')
+        cursorEntry = (await browser.$('.file-entry.is-under-cursor')) as unknown as WebdriverIO.Element
         cursorClass = await cursorEntry.getAttribute('class')
         expect(cursorClass).not.toContain('is-selected')
     })
@@ -198,7 +199,7 @@ describe('Mouse interactions', () => {
     it('should move cursor when clicking a file entry', async () => {
         await ensureAppReady()
 
-        const entries = await browser.$$('.file-entry')
+        const entries = [...(await browser.$$('.file-entry'))]
         if (entries.length < 2) {
             // Skip if not enough entries
             return
@@ -384,7 +385,7 @@ describe('Copy dialog', () => {
         await ensureAppReady()
 
         // Move cursor to a file (skip ".." entry)
-        const cursorEntry = await browser.$('.file-entry.is-under-cursor')
+        const cursorEntry = (await browser.$('.file-entry.is-under-cursor')) as unknown as WebdriverIO.Element
         const cursorText = await getEntryName(cursorEntry)
 
         if (cursorText === '..') {
