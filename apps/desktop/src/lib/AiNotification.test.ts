@@ -3,7 +3,12 @@ import { mount, flushSync } from 'svelte'
 import AiNotification from './AiNotification.svelte'
 
 // Track the state object so tests can mutate it
-let mockState = { notificationState: 'hidden' as string, downloadProgress: null as unknown, progressText: '' }
+let mockState = {
+    notificationState: 'hidden' as string,
+    downloadProgress: null as { bytesDownloaded: number; totalBytes: number; speed: number; etaSeconds: number } | null,
+    progressText: '',
+    modelInfo: { id: 'ministral-3b-instruct-q4km', displayName: 'Ministral 3B', sizeBytes: 2147023008, sizeFormatted: '2.1 GB' },
+}
 
 vi.mock('./ai-state.svelte', () => ({
     getAiState: () => mockState,
@@ -11,15 +16,33 @@ vi.mock('./ai-state.svelte', () => ({
     handleDownload: vi.fn(() => Promise.resolve()),
     handleCancel: vi.fn(() => Promise.resolve()),
     handleDismiss: vi.fn(() => Promise.resolve()),
+    handleOptOut: vi.fn(() => Promise.resolve()),
     handleGotIt: vi.fn(),
 }))
 
-import { handleDownload, handleCancel, handleDismiss, handleGotIt } from './ai-state.svelte'
+import { handleDownload, handleCancel, handleDismiss, handleOptOut, handleGotIt } from './ai-state.svelte'
 
 describe('AiNotification', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockState = { notificationState: 'hidden', downloadProgress: null, progressText: '' }
+        mockState = {
+            notificationState: 'hidden',
+            downloadProgress: null,
+            progressText: '',
+            modelInfo: { id: 'ministral-3b-instruct-q4km', displayName: 'Ministral 3B', sizeBytes: 2147023008, sizeFormatted: '2.1 GB' },
+        }
+    })
+
+    it('renders offer notification with download size and settings hint', () => {
+        mockState.notificationState = 'offer'
+        const target = document.createElement('div')
+        mount(AiNotification, { target })
+
+        const description = target.querySelector('.ai-description')
+        expect(description?.textContent).toContain('2.1 GB')
+
+        const hint = target.querySelector('.ai-hint')
+        expect(hint?.textContent).toContain('settings')
     })
 
     it('renders nothing when state is hidden', () => {
@@ -28,7 +51,7 @@ describe('AiNotification', () => {
         expect(target.querySelector('.ai-notification')).toBeNull()
     })
 
-    it('renders offer notification with Download and Not now buttons', () => {
+    it('renders offer notification with Download, Not now, and I don\'t want AI buttons', () => {
         mockState.notificationState = 'offer'
         const target = document.createElement('div')
         mount(AiNotification, { target })
@@ -40,9 +63,10 @@ describe('AiNotification', () => {
         expect(title?.textContent).toBe('AI features available')
 
         const buttons = target.querySelectorAll('.ai-button')
-        expect(buttons).toHaveLength(2)
+        expect(buttons).toHaveLength(3)
         expect(buttons[0].textContent).toBe('Download')
         expect(buttons[1].textContent).toBe('Not now')
+        expect(buttons[2].textContent).toBe("I don't want AI")
     })
 
     it('calls handleDownload when Download is clicked', () => {
@@ -67,6 +91,18 @@ describe('AiNotification', () => {
         flushSync()
 
         expect(handleDismiss).toHaveBeenCalledOnce()
+    })
+
+    it("calls handleOptOut when I don't want AI is clicked", () => {
+        mockState.notificationState = 'offer'
+        const target = document.createElement('div')
+        mount(AiNotification, { target })
+
+        const optOutButton = target.querySelector('.ai-button.tertiary') as HTMLButtonElement
+        optOutButton.click()
+        flushSync()
+
+        expect(handleOptOut).toHaveBeenCalledOnce()
     })
 
     it('renders downloading state with progress text', () => {

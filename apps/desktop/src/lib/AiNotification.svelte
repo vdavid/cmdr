@@ -6,6 +6,7 @@
         handleDismiss,
         handleDownload,
         handleGotIt,
+        handleOptOut,
         initAiState,
     } from './ai-state.svelte'
 
@@ -24,11 +25,15 @@
     <div class="ai-notification" role="alert">
         <div class="ai-content">
             <span class="ai-title">AI features available</span>
-            <span class="ai-description">Download the AI model (4.6 GB) to enable smart suggestions.</span>
+            <span class="ai-description"
+                >Download the AI model ({aiState.modelInfo?.sizeFormatted ?? '~4 GB'}) to enable smart suggestions.</span
+            >
+            <span class="ai-hint">You can add or remove AI later in settings.</span>
         </div>
         <div class="ai-actions">
             <button class="ai-button primary" onclick={() => void handleDownload()}>Download</button>
             <button class="ai-button secondary" onclick={() => void handleDismiss()}>Not now</button>
+            <button class="ai-button tertiary" onclick={() => void handleOptOut()}>I don't want AI</button>
         </div>
     </div>
 {:else if aiState.notificationState === 'downloading'}
@@ -72,6 +77,13 @@
             <button class="ai-button primary" onclick={handleGotIt}>Got it</button>
         </div>
     </div>
+{:else if aiState.notificationState === 'starting'}
+    <div class="ai-notification" role="status" aria-live="polite">
+        <div class="ai-content">
+            <span class="ai-title">AI starting...</span>
+            <span class="ai-description">Loading the model, this takes a few seconds</span>
+        </div>
+    </div>
 {/if}
 
 <style>
@@ -113,6 +125,12 @@
         font-size: var(--font-size-xs);
         color: var(--color-text-secondary);
         line-height: 1.4;
+    }
+
+    .ai-hint {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+        margin-top: 4px;
     }
 
     .ai-progress-text {
@@ -167,5 +185,15 @@
 
     .ai-button.secondary:hover {
         background: var(--color-button-hover);
+    }
+
+    .ai-button.tertiary {
+        background: transparent;
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-xs);
+    }
+
+    .ai-button.tertiary:hover {
+        color: var(--color-text-secondary);
     }
 </style>

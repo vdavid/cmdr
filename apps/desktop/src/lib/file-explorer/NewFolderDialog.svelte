@@ -33,7 +33,8 @@
     let nameInputRef: HTMLInputElement | undefined = $state()
     let unlistenDiff: UnlistenFn | undefined
 
-    // AI suggestions
+    // AI suggestions - start with null to indicate "checking", then true/false once known
+    let aiAvailable = $state<boolean | null>(null)
     let aiSuggestions = $state<string[]>([])
     let aiLoading = $state(false)
 
@@ -113,8 +114,12 @@
     async function fetchAiSuggestions() {
         try {
             const status = await getAiStatus()
-            if (status !== 'available') return
+            if (status !== 'available') {
+                aiAvailable = false
+                return
+            }
 
+            aiAvailable = true
             aiLoading = true
             aiSuggestions = await getFolderSuggestions(listingId, currentPath, showHiddenFiles)
         } catch {
@@ -200,12 +205,12 @@
             {/if}
         </div>
 
-        {#if aiLoading || aiSuggestions.length > 0}
+        {#if aiAvailable !== false}
             <div class="ai-suggestions" aria-label="AI suggestions">
                 <span class="ai-suggestions-header">AI suggestions:</span>
-                {#if aiLoading}
+                {#if aiAvailable === null || aiLoading}
                     <span class="ai-suggestions-loading">Loading...</span>
-                {:else}
+                {:else if aiSuggestions.length > 0}
                     <ul role="list">
                         {#each aiSuggestions as suggestion (suggestion)}
                             <li role="listitem">
@@ -221,6 +226,8 @@
                             </li>
                         {/each}
                     </ul>
+                {:else}
+                    <span class="ai-suggestions-empty">No suggestions</span>
                 {/if}
             </div>
         {/if}
@@ -247,8 +254,7 @@
         background: var(--color-bg-secondary);
         border: 1px solid var(--color-border-primary);
         border-radius: 12px;
-        min-width: 360px;
-        max-width: 440px;
+        width: 400px;
         padding: 20px 24px;
         box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
     }
@@ -356,6 +362,8 @@
 
     .ai-suggestions {
         margin-bottom: 16px;
+        min-height: 52px;
+        text-align: center;
     }
 
     .ai-suggestions-header {
@@ -366,7 +374,8 @@
         margin-bottom: 6px;
     }
 
-    .ai-suggestions-loading {
+    .ai-suggestions-loading,
+    .ai-suggestions-empty {
         font-size: 12px;
         color: var(--color-text-muted);
         font-style: italic;
@@ -378,6 +387,7 @@
         padding: 0;
         display: flex;
         flex-wrap: wrap;
+        justify-content: center;
         gap: 6px;
     }
 
@@ -389,7 +399,10 @@
         border: 1px solid var(--color-border-primary);
         border-radius: 4px;
         cursor: pointer;
-        transition: all 0.1s ease;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .suggestion-item:hover {
