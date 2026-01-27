@@ -12,14 +12,12 @@ const GocycloThreshold = 15
 
 // RunGocyclo checks cyclomatic complexity of Go functions.
 func RunGocyclo(ctx *CheckContext) (CheckResult, error) {
-	scriptsDir := filepath.Join(ctx.RootDir, "scripts")
-
 	gocycloBin, err := EnsureGoTool("gocyclo", "github.com/fzipp/gocyclo/cmd/gocyclo@latest")
 	if err != nil {
 		return CheckResult{}, err
 	}
 
-	modules, err := FindGoModules(scriptsDir)
+	allModules, err := FindAllGoModules(ctx.RootDir)
 	if err != nil {
 		return CheckResult{}, fmt.Errorf("failed to find Go modules: %w", err)
 	}
@@ -27,39 +25,43 @@ func RunGocyclo(ctx *CheckContext) (CheckResult, error) {
 	var allIssues []string
 	fileCount := 0
 
-	for _, mod := range modules {
-		modDir := filepath.Join(scriptsDir, mod)
+	for goDir, modules := range allModules {
+		baseDir := filepath.Join(ctx.RootDir, goDir)
+		for _, mod := range modules {
+			modDir := filepath.Join(baseDir, mod)
+			modLabel := filepath.Join(goDir, mod)
 
-		// Count Go files in this module
-		findCmd := exec.Command("find", ".", "-name", "*.go", "-type", "f")
-		findCmd.Dir = modDir
-		findOutput, _ := RunCommand(findCmd, true)
-		if strings.TrimSpace(findOutput) != "" {
-			fileCount += len(strings.Split(strings.TrimSpace(findOutput), "\n"))
-		}
+			// Count Go files in this module
+			findCmd := exec.Command("find", ".", "-name", "*.go", "-type", "f")
+			findCmd.Dir = modDir
+			findOutput, _ := RunCommand(findCmd, true)
+			if strings.TrimSpace(findOutput) != "" {
+				fileCount += len(strings.Split(strings.TrimSpace(findOutput), "\n"))
+			}
 
-		// Run gocyclo with threshold
-		cmd := exec.Command(gocycloBin, "-over", fmt.Sprintf("%d", GocycloThreshold), ".")
-		cmd.Dir = modDir
-		output, err := RunCommand(cmd, true)
+			// Run gocyclo with threshold
+			cmd := exec.Command(gocycloBin, "-over", fmt.Sprintf("%d", GocycloThreshold), ".")
+			cmd.Dir = modDir
+			output, err := RunCommand(cmd, true)
 
-		// gocyclo returns exit code 1 if it finds functions over the threshold
-		if err != nil || strings.TrimSpace(output) != "" {
-			if strings.TrimSpace(output) != "" {
-				// Rewrite file paths to be relative to repo root for clarity
-				// gocyclo format: "<complexity> <package> <function> <file>:<line>"
-				lines := strings.Split(strings.TrimSpace(output), "\n")
-				for i, line := range lines {
-					// Find the last space before the file:line part and prefix the file path
-					parts := strings.Fields(line)
-					if len(parts) >= 4 {
-						parts[3] = fmt.Sprintf("scripts/%s/%s", mod, parts[3])
-						lines[i] = strings.Join(parts, " ")
+			// gocyclo returns exit code 1 if it finds functions over the threshold
+			if err != nil || strings.TrimSpace(output) != "" {
+				if strings.TrimSpace(output) != "" {
+					// Rewrite file paths to be relative to repo root for clarity
+					// gocyclo format: "<complexity> <package> <function> <file>:<line>"
+					lines := strings.Split(strings.TrimSpace(output), "\n")
+					for i, line := range lines {
+						// Find the last space before the file:line part and prefix the file path
+						parts := strings.Fields(line)
+						if len(parts) >= 4 {
+							parts[3] = fmt.Sprintf("%s/%s", modLabel, parts[3])
+							lines[i] = strings.Join(parts, " ")
+						}
 					}
+					allIssues = append(allIssues, strings.Join(lines, "\n"))
+				} else if err != nil {
+					allIssues = append(allIssues, err.Error())
 				}
-				allIssues = append(allIssues, strings.Join(lines, "\n"))
-			} else if err != nil {
-				allIssues = append(allIssues, err.Error())
 			}
 		}
 	}

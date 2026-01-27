@@ -1485,3 +1485,81 @@ export function formatDuration(seconds: number): string {
     const mins = Math.round((seconds % 3600) / 60)
     return mins > 0 ? `${String(hours)}h ${String(mins)}m` : `${String(hours)}h`
 }
+
+// --- AI commands ---
+
+export type AiStatus = 'unavailable' | 'offer' | 'downloading' | 'installing' | 'available'
+
+export interface AiDownloadProgress {
+    bytesDownloaded: number
+    totalBytes: number
+    speed: number
+    etaSeconds: number
+}
+
+/** Information about the current AI model. */
+export interface AiModelInfo {
+    id: string
+    displayName: string
+    sizeBytes: number
+    /** Human-readable size (e.g., "4.3 GB") */
+    sizeFormatted: string
+}
+
+/** Returns the current AI subsystem status. */
+export async function getAiStatus(): Promise<AiStatus> {
+    return invoke<AiStatus>('get_ai_status')
+}
+
+/** Returns information about the current AI model. */
+export async function getAiModelInfo(): Promise<AiModelInfo> {
+    return invoke<AiModelInfo>('get_ai_model_info')
+}
+
+/** Starts downloading the AI model and inference runtime. */
+export async function startAiDownload(): Promise<void> {
+    await invoke('start_ai_download')
+}
+
+/** Cancels an in-progress AI download. */
+export async function cancelAiDownload(): Promise<void> {
+    await invoke('cancel_ai_download')
+}
+
+/** Dismisses the AI offer notification for 7 days. */
+export async function dismissAiOffer(): Promise<void> {
+    await invoke('dismiss_ai_offer')
+}
+
+/** Uninstalls the AI model and binary, resets state. */
+export async function uninstallAi(): Promise<void> {
+    await invoke('uninstall_ai')
+}
+
+/** Permanently opts out of AI features. Can be re-enabled in settings. */
+export async function optOutAi(): Promise<void> {
+    await invoke('opt_out_ai')
+}
+
+/** Re-enables AI features after opting out. */
+export async function optInAi(): Promise<void> {
+    await invoke('opt_in_ai')
+}
+
+/** Returns whether the user has opted out of AI features. */
+export async function isAiOptedOut(): Promise<boolean> {
+    return invoke<boolean>('is_ai_opted_out')
+}
+
+/** Gets AI-generated folder name suggestions for the current directory. */
+export async function getFolderSuggestions(
+    listingId: string,
+    currentPath: string,
+    includeHidden: boolean,
+): Promise<string[]> {
+    try {
+        return await invoke<string[]>('get_folder_suggestions', { listingId, currentPath, includeHidden })
+    } catch {
+        return []
+    }
+}

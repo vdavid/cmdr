@@ -56,7 +56,7 @@
         border-right: 1px solid var(--color-border-secondary);
         background: transparent;
         padding: var(--spacing-xs) 0;
-        font-family: var(--font-system);
+        font-family: var(--font-system) sans-serif;
         font-size: var(--font-size-xs);
         cursor: pointer;
         color: var(--color-text-primary);
@@ -76,7 +76,7 @@
     }
 
     kbd {
-        font-family: var(--font-system);
+        font-family: var(--font-system) sans-serif;
         font-size: 10px;
         background: var(--color-bg-tertiary);
         color: var(--color-text-secondary);

@@ -9,35 +9,44 @@ import (
 
 // RunMisspell checks for spelling mistakes.
 func RunMisspell(ctx *CheckContext) (CheckResult, error) {
-	scriptsDir := filepath.Join(ctx.RootDir, "scripts")
-
 	misspellBin, err := EnsureGoTool("misspell", "github.com/client9/misspell/cmd/misspell@latest")
 	if err != nil {
 		return CheckResult{}, err
 	}
 
-	// Count Go files
-	findCmd := exec.Command("find", ".", "-name", "*.go", "-type", "f")
-	findCmd.Dir = scriptsDir
-	findOutput, _ := RunCommand(findCmd, true)
-	fileCount := 0
-	if strings.TrimSpace(findOutput) != "" {
-		fileCount = len(strings.Split(strings.TrimSpace(findOutput), "\n"))
-	}
+	goDirs := GetGoDirectories()
+	totalFileCount := 0
+	var allIssues []string
 
-	cmd := exec.Command(misspellBin, "-error", ".")
-	cmd.Dir = scriptsDir
-	output, err := RunCommand(cmd, true)
-	if err != nil {
-		issueText := strings.TrimSpace(output)
-		if issueText == "" {
-			issueText = err.Error()
+	for _, goDir := range goDirs {
+		fullPath := filepath.Join(ctx.RootDir, goDir)
+
+		// Count Go files
+		findCmd := exec.Command("find", ".", "-name", "*.go", "-type", "f")
+		findCmd.Dir = fullPath
+		findOutput, _ := RunCommand(findCmd, true)
+		if strings.TrimSpace(findOutput) != "" {
+			totalFileCount += len(strings.Split(strings.TrimSpace(findOutput), "\n"))
 		}
-		return CheckResult{}, fmt.Errorf("spelling mistakes found\n%s", indentOutput(issueText))
+
+		cmd := exec.Command(misspellBin, "-error", ".")
+		cmd.Dir = fullPath
+		output, err := RunCommand(cmd, true)
+		if err != nil {
+			issueText := strings.TrimSpace(output)
+			if issueText == "" {
+				issueText = err.Error()
+			}
+			allIssues = append(allIssues, fmt.Sprintf("[%s]\n%s", goDir, issueText))
+		}
 	}
 
-	if fileCount > 0 {
-		return Success(fmt.Sprintf("%d %s checked, no misspellings", fileCount, Pluralize(fileCount, "file", "files"))), nil
+	if len(allIssues) > 0 {
+		return CheckResult{}, fmt.Errorf("spelling mistakes found\n%s", indentOutput(strings.Join(allIssues, "\n")))
+	}
+
+	if totalFileCount > 0 {
+		return Success(fmt.Sprintf("%d %s checked, no misspellings", totalFileCount, Pluralize(totalFileCount, "file", "files"))), nil
 	}
 	return Success("No misspellings"), nil
 }

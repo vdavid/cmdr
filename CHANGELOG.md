@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-01-27
+
+### Added
+
+- Add file selection: Space toggles, Shift+arrows for range, Cmd+A for select all, selection info in status bar ([4d44cda](https://github.com/vdavid/cmdr/commit/4d44cda), [1cac4b3](https://github.com/vdavid/cmdr/commit/1cac4b3))
+- Add copy feature with F5: copy dialog, destination picker with free space display, conflict handling ([281f45e](https://github.com/vdavid/cmdr/commit/281f45e), [fb5f027](https://github.com/vdavid/cmdr/commit/fb5f027), [a6d148d](https://github.com/vdavid/cmdr/commit/a6d148d), [6c661f2](https://github.com/vdavid/cmdr/commit/6c661f2))
+- Add new folder feature with F7 shortcut and conflict handling ([80ec297](https://github.com/vdavid/cmdr/commit/80ec297))
+- Add "Open in editor" feature with F4 shortcut ([7eb66ac](https://github.com/vdavid/cmdr/commit/7eb66ac))
+- Add function key bar at bottom of UI for mouse-initiated actions ([537e040](https://github.com/vdavid/cmdr/commit/537e040))
+- Add pane resizing: drag to resize between 25–75%, double-click to reset to 50% ([542b491](https://github.com/vdavid/cmdr/commit/542b491))
+- Add multifile external drag and drop ([7426334](https://github.com/vdavid/cmdr/commit/7426334))
+- Add keyboard navigation to network panes: PgUp/PgDn, Home/End, arrow keys ([70aa341](https://github.com/vdavid/cmdr/commit/70aa341))
+- Add "Opening folder..." loading phase for network folders with distinct status messages ([9eb1185](https://github.com/vdavid/cmdr/commit/9eb1185))
+- Add license key entry dialog with organization address and tax ID collection ([52480ce](https://github.com/vdavid/cmdr/commit/52480ce), [29eb6fe](https://github.com/vdavid/cmdr/commit/29eb6fe))
+
+### Fixed
+
+- Fix UI not updating on external file renames ([5de9346](https://github.com/vdavid/cmdr/commit/5de9346))
+- Fix light mode colors ([42888c7](https://github.com/vdavid/cmdr/commit/42888c7))
+- Fix cursor going out of Full view bounds ([7edcac8](https://github.com/vdavid/cmdr/commit/7edcac8))
+- Fix ESC during loading navigating to wrong location ([b8c12e7](https://github.com/vdavid/cmdr/commit/b8c12e7))
+- Fix focus after dragging window ([8488de6](https://github.com/vdavid/cmdr/commit/8488de6))
+- Fix multiple volume selectors opening at once ([f4c4c21](https://github.com/vdavid/cmdr/commit/f4c4c21))
+- Fix frontend race condition from refactor ([646c7af](https://github.com/vdavid/cmdr/commit/646c7af))
+
+### Non-app
+
+- Add E2E tests with tauri-driver on Linux using WebDriverIO in Docker ([1b0cbac](https://github.com/vdavid/cmdr/commit/1b0cbac))
+- Revamp checker script: parallel execution, dependency graph, aligned output, colored durations ([7835b4c](https://github.com/vdavid/cmdr/commit/7835b4c))
+- Add type drift detection between Rust and Svelte types ([b3ae1c3](https://github.com/vdavid/cmdr/commit/b3ae1c3))
+- Add jscpd for Rust code duplication detection, CSS health checks, Go checks ([67e6c15](https://github.com/vdavid/cmdr/commit/67e6c15), [d177eb3](https://github.com/vdavid/cmdr/commit/d177eb3), [254075a](https://github.com/vdavid/cmdr/commit/254075a))
+- Add Claude hooks for pre-session context and post-edit autoformat ([3d59dde](https://github.com/vdavid/cmdr/commit/3d59dde), [122182d](https://github.com/vdavid/cmdr/commit/122182d))
+- Add LogTape logging for Svelte and debug pane for dev mode ([affa548](https://github.com/vdavid/cmdr/commit/affa548), [f494e15](https://github.com/vdavid/cmdr/commit/f494e15))
+- Require reasoning in clippy lint exceptions ([d327cf4](https://github.com/vdavid/cmdr/commit/d327cf4))
+- Website: fix hero image animation and sizing, fix broken Paddle references ([40faeee](https://github.com/vdavid/cmdr/commit/40faeee), [278ad4c](https://github.com/vdavid/cmdr/commit/278ad4c), [5eb5a52](https://github.com/vdavid/cmdr/commit/5eb5a52))
+- License server: wire up Paddle checkout, fix webhook email fetching, support quantity > 1 ([3c40929](https://github.com/vdavid/cmdr/commit/3c40929))
+
 ## [0.3.2] - 2026-01-14
 
 ### Fixed

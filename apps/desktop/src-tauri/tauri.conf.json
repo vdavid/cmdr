@@ -1,12 +1,12 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Cmdr",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "identifier": "com.veszelovszki.cmdr",
   "build": {
-    "beforeDevCommand": "pnpm dev",
+    "beforeDevCommand": "go run scripts/download-llama-server.go && pnpm dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "pnpm build",
+    "beforeBuildCommand": "go run scripts/download-llama-server.go && pnpm build",
     "frontendDist": "../build"
   },
   "app": {
@@ -49,6 +49,9 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
+    ],
+    "resources": [
+      "resources/llama-server.tar.gz"
     ],
     "macOS": {
       "bundleName": "Cmdr"

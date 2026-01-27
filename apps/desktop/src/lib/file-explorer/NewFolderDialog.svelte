@@ -1,6 +1,14 @@
 <script lang="ts">
-    import { onMount, onDestroy, tick } from 'svelte'
-    import { createDirectory, findFileIndex, getFileAt, listen, type UnlistenFn } from '$lib/tauri-commands'
+    import { onDestroy, onMount, tick } from 'svelte'
+    import {
+        createDirectory,
+        findFileIndex,
+        getAiStatus,
+        getFileAt,
+        getFolderSuggestions,
+        listen,
+        type UnlistenFn,
+    } from '$lib/tauri-commands'
     import type { DirectoryDiff } from './types'
 
     interface Props {
@@ -24,6 +32,11 @@
     let overlayElement: HTMLDivElement | undefined = $state()
     let nameInputRef: HTMLInputElement | undefined = $state()
     let unlistenDiff: UnlistenFn | undefined
+
+    // AI suggestions - start with null to indicate "checking", then true/false once known
+    let aiAvailable = $state<boolean | null>(null)
+    let aiSuggestions = $state<string[]>([])
+    let aiLoading = $state(false)
 
     // Debounce timer for validation
     let validateTimer: ReturnType<typeof setTimeout> | undefined
@@ -82,6 +95,9 @@
             void validateName(folderName)
         }
 
+        // Fetch AI suggestions if AI is available
+        void fetchAiSuggestions()
+
         // Listen for directory changes to re-validate.
         // Small delay ensures the listing cache is fully consistent after the diff is applied.
         unlistenDiff = await listen<DirectoryDiff>('directory-diff', (event) => {
@@ -94,6 +110,31 @@
         if (validateTimer) clearTimeout(validateTimer)
         unlistenDiff?.()
     })
+
+    async function fetchAiSuggestions() {
+        try {
+            const status = await getAiStatus()
+            if (status !== 'available') {
+                aiAvailable = false
+                return
+            }
+
+            aiAvailable = true
+            aiLoading = true
+            aiSuggestions = await getFolderSuggestions(listingId, currentPath, showHiddenFiles)
+        } catch {
+            // Graceful degradation — hide suggestions on error
+            aiSuggestions = []
+        } finally {
+            aiLoading = false
+        }
+    }
+
+    function selectSuggestion(name: string) {
+        folderName = name
+        scheduleValidation()
+        nameInputRef?.focus()
+    }
 
     async function handleConfirm() {
         const trimmed = folderName.trim()
@@ -164,6 +205,33 @@
             {/if}
         </div>
 
+        {#if aiAvailable !== false}
+            <div class="ai-suggestions" aria-label="AI suggestions">
+                <span class="ai-suggestions-header">AI suggestions:</span>
+                {#if aiAvailable === null || aiLoading}
+                    <span class="ai-suggestions-loading">Loading...</span>
+                {:else if aiSuggestions.length > 0}
+                    <ul role="list">
+                        {#each aiSuggestions as suggestion (suggestion)}
+                            <li role="listitem">
+                                <button
+                                    type="button"
+                                    class="suggestion-item"
+                                    onclick={() => {
+                                        selectSuggestion(suggestion)
+                                    }}
+                                >
+                                    {suggestion}
+                                </button>
+                            </li>
+                        {/each}
+                    </ul>
+                {:else}
+                    <span class="ai-suggestions-empty">No suggestions</span>
+                {/if}
+            </div>
+        {/if}
+
         <div class="button-row">
             <button class="secondary" onclick={onCancel}>Cancel</button>
             <button class="primary" onclick={() => void handleConfirm()} disabled={!isValid || isChecking}>OK</button>
@@ -186,8 +254,7 @@
         background: var(--color-bg-secondary);
         border: 1px solid var(--color-border-primary);
         border-radius: 12px;
-        min-width: 360px;
-        max-width: 440px;
+        width: 400px;
         padding: 20px 24px;
         box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
     }
@@ -291,5 +358,61 @@
     .secondary:hover:not(:disabled) {
         background: var(--color-bg-tertiary);
         color: var(--color-text-primary);
+    }
+
+    .ai-suggestions {
+        margin-bottom: 16px;
+        min-height: 52px;
+        text-align: center;
+    }
+
+    .ai-suggestions-header {
+        display: block;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--color-text-secondary);
+        margin-bottom: 6px;
+    }
+
+    .ai-suggestions-loading,
+    .ai-suggestions-empty {
+        font-size: 12px;
+        color: var(--color-text-muted);
+        font-style: italic;
+    }
+
+    .ai-suggestions ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    .suggestion-item {
+        padding: 4px 10px;
+        font-size: 12px;
+        color: var(--color-text-secondary);
+        background: var(--color-bg-tertiary);
+        border: 1px solid var(--color-border-primary);
+        border-radius: 4px;
+        cursor: pointer;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .suggestion-item:hover {
+        color: var(--color-text-primary);
+        background: var(--color-bg-primary);
+        border-color: var(--color-accent);
+    }
+
+    .suggestion-item:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 1px;
     }
 </style>

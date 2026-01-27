@@ -1,6 +1,6 @@
 [package]
 name = "cmdr"
-version = "0.3.2"
+version = "0.4.0"
 description = "A blazing fast, keyboard-driven, two-pane file manager built, Rust, Tauri, and ❤️"
 authors = ["David Veszelovszki <veszelovszki@gmail.com>"]
 edition = "2024"
@@ -48,8 +48,11 @@ alphanumeric-sort = "1.5"
 ed25519-dalek = { version = "2.1", features = ["rand_core"] }
 env_logger = "0.11.8"
 log = "0.4"
-# HTTP client for license server validation
-reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+# HTTP client for license server validation and AI downloads
+reqwest = { version = "0.12", features = ["json", "rustls-tls", "stream"], default-features = false }
+# AI model download: extracting llama-server from tar.gz
+tar = "0.4"
+flate2 = "1.1"
 # MCP server
 axum = "0.8"
 tokio = { version = "1", features = ["rt-multi-thread", "net", "time", "sync", "macros"] }

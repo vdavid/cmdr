@@ -161,12 +161,21 @@ var AllChecks = []CheckDefinition{
 		Run:         RunDesktopE2E,
 	},
 	{
+		ID:          "desktop-svelte-e2e-linux-typecheck",
+		Nickname:    "e2e-linux-typecheck",
+		DisplayName: "e2e-linux typecheck",
+		App:         AppDesktop,
+		Tech:        "🎨 Svelte",
+		DependsOn:   nil,
+		Run:         RunDesktopE2ELinuxTypecheck,
+	},
+	{
 		ID:          "desktop-svelte-e2e-linux",
 		Nickname:    "desktop-e2e-linux",
 		DisplayName: "e2e (Linux)",
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
-		DependsOn:   nil, // Runs against pre-built binary in Docker, no deps needed
+		DependsOn:   []string{"desktop-svelte-e2e-linux-typecheck"},
 		Run:         RunDesktopE2ELinux,
 	},
 

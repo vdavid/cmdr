@@ -2,12 +2,9 @@ name: CI
 
 on:
     pull_request:
-        branches:
-            - main
     push:
-        branches:
-            - main
-
+      branches:
+        - main
 jobs:
     # ===========================================
     # Determine which jobs to run based on changed files
@@ -226,14 +223,11 @@ jobs:
               run: cargo install tauri-driver --locked
 
             - name: Build Tauri app
-              run: pnpm tauri build --ci
+              run: pnpm tauri build --no-bundle
               working-directory: ./apps/desktop
-              env:
-                  # Skip code signing for CI builds
-                  TAURI_SIGNING_PRIVATE_KEY: ""
 
             - name: Run Tauri E2E tests
-              run: xvfb-run --auto-servernum pnpm test:e2e:tauri
+              run: xvfb-run --auto-servernum pnpm test:e2e:linux:native
               working-directory: ./apps/desktop
               env:
                   TAURI_BINARY: ./src-tauri/target/release/cmdr
@@ -432,3 +426,24 @@ jobs:
                     -H "Content-Type: application/json" \
                     -H "X-Hub-Signature-256: sha256=$SIGNATURE" \
                     -d "$PAYLOAD"
+
+    # ===========================================
+    # Summary job for branch protection
+    # ===========================================
+    ci-ok:
+        name: CI OK
+        runs-on: ubuntu-latest
+        needs: [desktop-rust, desktop-svelte, desktop-e2e-linux, website, license-server, scripts]
+        if: always()
+        steps:
+            - name: Check all jobs passed
+              run: |
+                  if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
+                    echo "Some jobs failed"
+                    exit 1
+                  fi
+                  if [[ "${{ contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+                    echo "Some jobs were cancelled"
+                    exit 1
+                  fi
+                  echo "All jobs passed or were skipped"
