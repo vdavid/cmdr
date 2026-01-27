@@ -10,7 +10,15 @@ import (
 
 // RunClippy runs Clippy linter with auto-fix.
 func RunClippy(ctx *CheckContext) (CheckResult, error) {
-	rustDir := filepath.Join(ctx.RootDir, "apps", "desktop", "src-tauri")
+	desktopDir := filepath.Join(ctx.RootDir, "apps", "desktop")
+	rustDir := filepath.Join(desktopDir, "src-tauri")
+
+	// Ensure llama-server resource exists (downloads on macOS, creates placeholder on Linux)
+	downloadCmd := exec.Command("go", "run", "scripts/download-llama-server.go")
+	downloadCmd.Dir = desktopDir
+	if output, err := RunCommand(downloadCmd, true); err != nil {
+		return CheckResult{}, fmt.Errorf("failed to prepare llama-server resource\n%s", indentOutput(output))
+	}
 
 	// Touch lib.rs to force clippy to re-lint (otherwise cached builds skip linting)
 	libPath := filepath.Join(rustDir, "src", "lib.rs")
