@@ -1,0 +1,16 @@
+{
+    "$schema": "../gen/schemas/desktop-schema.json",
+    "identifier": "viewer",
+    "description": "Capability for file viewer windows",
+    "windows": [
+        "viewer-*"
+    ],
+    "permissions": [
+        "core:window:allow-close",
+        "core:window:allow-set-title",
+        "core:window:allow-set-focus",
+        "core:window:allow-get-all-windows",
+        "core:event:default",
+        "window-state:default"
+    ]
+}
