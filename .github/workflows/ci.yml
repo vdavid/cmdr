@@ -226,11 +226,8 @@ jobs:
               run: cargo install tauri-driver --locked
 
             - name: Build Tauri app
-              run: pnpm tauri build --ci
+              run: pnpm tauri build --no-bundle
               working-directory: ./apps/desktop
-              env:
-                  # Skip code signing for CI builds
-                  TAURI_SIGNING_PRIVATE_KEY: ""
 
             - name: Run Tauri E2E tests
               run: xvfb-run --auto-servernum pnpm test:e2e:tauri
