@@ -185,8 +185,8 @@ pub fn run() {
                 // We just need to read and emit it, not toggle again
                 let new_state = check_item.is_checked().unwrap_or(true);
 
-                // Emit event to frontend with the new state
-                let _ = app.emit("settings-changed", serde_json::json!({ "showHiddenFiles": new_state }));
+                // Emit event to frontend with the new state (main window only)
+                let _ = app.emit_to("main", "settings-changed", serde_json::json!({ "showHiddenFiles": new_state }));
             } else if id == VIEW_MODE_FULL_ID || id == VIEW_MODE_BRIEF_ID {
                 // Handle view mode toggle (radio button behavior)
                 let menu_state = app.state::<MenuState<tauri::Wry>>();
@@ -202,31 +202,36 @@ pub fn run() {
                     let _ = full_item.set_checked(is_full);
                     let _ = brief_item.set_checked(!is_full);
 
-                    // Emit event to frontend
+                    // Emit event to frontend (main window only)
                     let mode = if is_full { "full" } else { "brief" };
-                    let _ = app.emit("view-mode-changed", serde_json::json!({ "mode": mode }));
+                    let _ = app.emit_to("main", "view-mode-changed", serde_json::json!({ "mode": mode }));
                 }
             } else if id == GO_BACK_ID || id == GO_FORWARD_ID || id == GO_PARENT_ID {
-                // Handle Go menu navigation actions
-                let action = match id {
-                    GO_BACK_ID => "back",
-                    GO_FORWARD_ID => "forward",
-                    GO_PARENT_ID => "parent",
-                    _ => return,
-                };
-                let _ = app.emit("navigation-action", serde_json::json!({ "action": action }));
+                // Handle Go menu navigation actions - only when main window is focused
+                // This prevents shortcuts from affecting main window when viewer is open
+                if let Some(main_window) = app.get_webview_window("main") {
+                    if main_window.is_focused().unwrap_or(false) {
+                        let action = match id {
+                            GO_BACK_ID => "back",
+                            GO_FORWARD_ID => "forward",
+                            GO_PARENT_ID => "parent",
+                            _ => return,
+                        };
+                        let _ = app.emit_to("main", "navigation-action", serde_json::json!({ "action": action }));
+                    }
+                }
             } else if id == ABOUT_ID {
-                // Emit event to show our custom About window
-                let _ = app.emit("show-about", ());
+                // Emit event to show our custom About window (main window only)
+                let _ = app.emit_to("main", "show-about", ());
             } else if id == ENTER_LICENSE_KEY_ID {
-                // Emit event to show the license key entry dialog
-                let _ = app.emit("show-license-key-dialog", ());
+                // Emit event to show the license key entry dialog (main window only)
+                let _ = app.emit_to("main", "show-license-key-dialog", ());
             } else if id == COMMAND_PALETTE_ID {
-                // Emit event to show the command palette
-                let _ = app.emit("show-command-palette", ());
+                // Emit event to show the command palette (main window only)
+                let _ = app.emit_to("main", "show-command-palette", ());
             } else if id == SWITCH_PANE_ID {
-                // Emit event to switch pane
-                let _ = app.emit("switch-pane", ());
+                // Emit event to switch pane (main window only)
+                let _ = app.emit_to("main", "switch-pane", ());
             } else if id == SORT_BY_NAME_ID
                 || id == SORT_BY_EXTENSION_ID
                 || id == SORT_BY_SIZE_ID
@@ -242,11 +247,12 @@ pub fn run() {
                     SORT_BY_CREATED_ID => "created",
                     _ => return,
                 };
-                let _ = app.emit("menu-sort", serde_json::json!({ "action": "sortBy", "value": column }));
+                let _ = app.emit_to("main", "menu-sort", serde_json::json!({ "action": "sortBy", "value": column }));
             } else if id == SORT_ASCENDING_ID || id == SORT_DESCENDING_ID {
-                // Handle sort order
+                // Handle sort order (main window only)
                 let order = if id == SORT_ASCENDING_ID { "asc" } else { "desc" };
-                let _ = app.emit(
+                let _ = app.emit_to(
+                    "main",
                     "menu-sort",
                     serde_json::json!({ "action": "sortOrder", "value": order }),
                 );
