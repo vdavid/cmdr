@@ -228,7 +228,7 @@ jobs:
               working-directory: ./apps/desktop
 
             - name: Run Tauri E2E tests
-              run: xvfb-run --auto-servernum pnpm test:e2e:tauri
+              run: xvfb-run --auto-servernum pnpm test:e2e:linux:native
               working-directory: ./apps/desktop
               env:
                   TAURI_BINARY: ./src-tauri/target/release/cmdr
