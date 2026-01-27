@@ -2,10 +2,9 @@ name: CI
 
 on:
     pull_request:
+    push:
       branches:
         - main
-    push:
-
 jobs:
     # ===========================================
     # Determine which jobs to run based on changed files
