@@ -39,12 +39,6 @@ use tauri_plugin_mcp_bridge as _;
 // security_framework is used in network/keychain.rs for Keychain integration
 #[cfg(target_os = "macos")]
 use security_framework as _;
-//noinspection ALL
-// tar and flate2 are used in ai/manager.rs for extracting llama-server (release only)
-#[cfg(debug_assertions)]
-use flate2 as _;
-#[cfg(debug_assertions)]
-use tar as _;
 
 mod ai;
 pub mod benchmark;
@@ -410,10 +404,14 @@ pub fn run() {
             commands::licensing::validate_license_with_server,
             // AI commands
             ai::manager::get_ai_status,
+            ai::manager::get_ai_model_info,
             ai::manager::start_ai_download,
             ai::manager::cancel_ai_download,
             ai::manager::dismiss_ai_offer,
             ai::manager::uninstall_ai,
+            ai::manager::opt_out_ai,
+            ai::manager::opt_in_ai,
+            ai::manager::is_ai_opted_out,
             ai::suggestions::get_folder_suggestions,
         ])
         .on_window_event(|_window, event| {

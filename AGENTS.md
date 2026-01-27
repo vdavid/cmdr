@@ -49,11 +49,11 @@ Run the smallest set of checks possible for efficiency while maintaining confide
 - Running a Svelte test: `cd apps/desktop && pnpm vitest run -t "<test_name>"`
 - Running all Rust/Svelte tests: `./scripts/check.sh --rust` or `--svelte`
 - Running specific checks `/scripts/check.sh --check {desktop-svelte-prettier|desktop-svelte-eslint|stylelint|css-unused
-  |svelte-check|knip|type-drift|svelte-tests|desktop-e2e|desktop-e2e-linux|rustfmt|clippy|cargo-audit|cargo-deny
-  |cargo-udeps|jscpd-rust|rust-tests|rust-tests-linux (slow)|license-server-prettier|license-server-eslint
-  |license-server-typecheck|license-server-tests|gofmt|go-vet|staticcheck|ineffassign|misspell|gocyclo|nilaway
-  |govulncheck|go-tests|website-prettier|website-eslint|website-typecheck|website-build|website-e2e}` (can use multiple
-  `--check` flags or even a comma-separated list)
+  |svelte-check|knip|type-drift|svelte-tests|desktop-e2e|e2e-linux-typecheck|desktop-e2e-linux|rustfmt|clippy
+  |cargo-audit|cargo-deny|cargo-udeps|jscpd-rust|rust-tests|rust-tests-linux (slow)|license-server-prettier
+  |license-server-eslint|license-server-typecheck|license-server-tests|gofmt|go-vet|staticcheck|ineffassign|misspell
+  |gocyclo|nilaway|govulncheck|go-tests|website-prettier|website-eslint|website-typecheck|website-build|website-e2e}`
+  (can use multiple `--check` flags or even a comma-separated list)
 - Run all: `./scripts/check.sh`. CI runs this. Runs all tests, linters, and formatters (with auto fixing) for all apps.
 - See also `./scripts/check.sh --help`
 
@@ -81,10 +81,10 @@ There are two MCP servers available to you:
 - When writing CSS, ALWAYS use variables defined in `apps/desktop/src/app.css`. Stylelint catches
   undefined/hallucinated CSS variables.
 - Always cover your code with tests until you're confident in your implementation!
-- When adding new code that loads remote content (like `fetch` from external URLs or `iframe`), always add a condition
-  to **disable** that functionality in dev mode, and use static/mock data instead. See
-  [security docs](docs/security.md#withglobaltauri) for more reasoning.
-- When testing the Tauri app, DO NOT USE THE BROWSER, it won't work. Use the MCP servers. If they fail, ask for help.
+- When adding new code that loads remote content (like `fetch` from external URLs or `iframe`), always ask the user
+  whether to **disable** that functionality in dev mode, and use static/mock data instead. It's because we use
+  `withGlobalTauri: true` in dev mode for MCP Server Tauri, which is a security risk.
+- When testing the Tauri app, DO NOT USE THE BROWSER. It won't work. Use the MCP servers. If they fail, ask for help.
 
 ## Design guidelines
 
@@ -95,6 +95,8 @@ There are two MCP servers available to you:
   (for example, how many files we're loading), and 3. a time estimate if we have a guess how long it'll take.
 - Always keep accessibility in mind. Features should be available to people with impaired vision, hearing, and cognitive
   disabilities.
+- All actions longer than, say, 1 second should be immediately cancelable, canceling not just the UI but any background
+  processes as well, to avoid wasting the user's resources.
 - When shortcuts are available for a feature, always display the shortcut in a tooltip or somewhere, less prominent than
   the main UI.
 
