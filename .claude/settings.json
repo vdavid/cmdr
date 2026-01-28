@@ -15,17 +15,6 @@
           }
         ]
       }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash -c '\"$(git rev-parse --show-toplevel)/.claude/hooks/post-edit-format.sh\"'"
-          }
-        ]
-      }
     ]
   }
 }
