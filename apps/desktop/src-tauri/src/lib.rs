@@ -434,10 +434,7 @@ pub fn run() {
             ai::manager::opt_out_ai,
             ai::manager::opt_in_ai,
             ai::manager::is_ai_opted_out,
-            ai::suggestions::get_folder_suggestions,
-            // Settings commands
-            settings::check_port_available,
-            settings::find_available_port
+            ai::suggestions::get_folder_suggestions
         ])
         .on_window_event(|_window, event| {
             if let tauri::WindowEvent::Destroyed = event {
