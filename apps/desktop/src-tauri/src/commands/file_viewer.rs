@@ -1,6 +1,7 @@
 //! Tauri commands for the file viewer.
 
-use crate::file_viewer::{self, LineChunk, SearchPollResult, SeekTarget, ViewerOpenResult};
+use crate::file_viewer::{self, LineChunk, SearchPollResult, SeekTarget, ViewerOpenResult, ViewerSessionStatus};
+use log::debug;
 
 /// Opens a viewer session for the given file.
 /// Returns session metadata + initial lines from the start of the file.
@@ -34,7 +35,23 @@ pub fn viewer_get_lines(
             ));
         }
     };
-    file_viewer::get_lines(&session_id, target, count).map_err(|e| e.to_string())
+
+    debug!(
+        "viewer_get_lines: session={}, target_type={}, target_value={}, count={}",
+        session_id, target_type, target_value, count
+    );
+
+    let result = file_viewer::get_lines(&session_id, target, count).map_err(|e| e.to_string())?;
+
+    debug!(
+        "viewer_get_lines: returned {} lines, first_line_number={}, byte_offset={}, first_line_preview={:?}",
+        result.lines.len(),
+        result.first_line_number,
+        result.byte_offset,
+        result.lines.first().map(|s| s.chars().take(50).collect::<String>())
+    );
+
+    Ok(result)
 }
 
 /// Starts a background search in the viewer session.
@@ -57,6 +74,12 @@ pub fn viewer_search_poll(session_id: String) -> Result<SearchPollResult, String
 #[tauri::command]
 pub fn viewer_search_cancel(session_id: String) -> Result<(), String> {
     file_viewer::search_cancel(&session_id).map_err(|e| e.to_string())
+}
+
+/// Gets the current status of a viewer session (backend type, indexing state).
+#[tauri::command]
+pub fn viewer_get_status(session_id: String) -> Result<ViewerSessionStatus, String> {
+    file_viewer::get_session_status(&session_id).map_err(|e| e.to_string())
 }
 
 /// Closes a viewer session and frees resources.

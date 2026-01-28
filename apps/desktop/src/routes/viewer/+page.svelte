@@ -10,26 +10,40 @@
     const BUFFER_LINES = 50
     const FETCH_BATCH = 500
     const SEARCH_POLL_INTERVAL = 100
+    // Must match INDEXING_TIMEOUT_SECS in src-tauri/src/file_viewer/session.rs
+    const INDEXING_TIMEOUT_SECS = 5
 </script>
 
 <script lang="ts">
     import { onMount, onDestroy, tick } from 'svelte'
     import { SvelteMap } from 'svelte/reactivity'
-    import type { ViewerSearchMatch } from '$lib/tauri-commands'
+    import {
+        viewerOpen,
+        viewerGetLines,
+        viewerGetStatus,
+        viewerClose,
+        viewerSearchStart,
+        viewerSearchPoll,
+        viewerSearchCancel,
+        feLog,
+        type ViewerSearchMatch,
+        type BackendCapabilities,
+    } from '$lib/tauri-commands'
+    import { getCurrentWindow } from '@tauri-apps/api/window'
 
     let fileName = $state('')
     let totalLines = $state<number | null>(null)
+    let estimatedLines = $state(1) // Backend's estimate based on initial sample
     let totalBytes = $state(0)
     let error = $state('')
     let loading = $state(true)
     let sessionId = $state('')
     let backendType = $state<'fullLoad' | 'byteSeek' | 'lineIndex'>('fullLoad')
+    let capabilities = $state<BackendCapabilities | null>(null)
+    let isIndexing = $state(false)
 
-    // Line cache: lineNumber -> text
+    // Line cache: lineNumber -> text (sparse - may have gaps)
     const lineCache = new SvelteMap<number, string>()
-    // The range of lines currently in cache
-    let cachedFrom = $state(0)
-    let cachedTo = $state(0)
 
     // Virtual scroll state
     let scrollTop = $state(0)
@@ -44,6 +58,8 @@
     )
     const visibleLines = $derived(getVisibleLines())
     const gutterWidth = $derived(String(estimatedTotalLines()).length)
+    // Derive current mode: if we started with byteSeek but now have totalLines, we upgraded to lineIndex
+    const currentMode = $derived(backendType === 'byteSeek' && totalLines !== null ? 'lineIndex' : backendType)
 
     // Search state
     let searchVisible = $state(false)
@@ -55,13 +71,24 @@
     let searchInputRef: HTMLInputElement | undefined = $state()
     let searchPollTimer: ReturnType<typeof setInterval> | undefined
 
-    // Track pending fetches to avoid duplicate requests
-    let fetchingRange = $state(false)
+    // Fetch state: debounce timer and request ID for cancellation
+    let fetchDebounceTimer: ReturnType<typeof setTimeout> | undefined
+    let currentFetchId = 0 // Incremented on each fetch, used to ignore stale responses
+    const FETCH_DEBOUNCE_MS = 100
+
+    // Indexing status polling
+    let indexingPollTimer: ReturnType<typeof setInterval> | undefined
+    const INDEXING_POLL_INTERVAL = 500
+
+    // Window lifecycle state: prevents closing before WebKit is fully initialized
+    let windowReady = $state(false)
+    let closeRequested = $state(false)
 
     function estimatedTotalLines(): number {
+        // Use exact count if known (FullLoad or LineIndex backends)
         if (totalLines !== null) return totalLines
-        // Estimate based on average 80 bytes per line
-        return Math.max(1, Math.ceil(totalBytes / 80))
+        // Otherwise use backend's estimate based on initial sample (ByteSeek backend)
+        return estimatedLines
     }
 
     function getVisibleLines(): Array<{ lineNumber: number; text: string }> {
@@ -73,43 +100,114 @@
         return result
     }
 
-    // Fetch lines when visible range changes
+    /** Check if we need to fetch lines - returns true if any visible lines are missing from cache */
+    function needsFetch(from: number, to: number): boolean {
+        // Check a few sample points to avoid iterating the whole range
+        const samplesToCheck = [from, Math.floor((from + to) / 2), to - 1]
+        for (const line of samplesToCheck) {
+            if (line >= 0 && !lineCache.has(line)) {
+                return true
+            }
+        }
+        return false
+    }
+
+    // Fetch lines when visible range changes (debounced)
     $effect(() => {
         const from = visibleFrom
         const to = visibleTo
-        if (sessionId && !fetchingRange) {
-            // Check if we need to fetch
-            if (from < cachedFrom || to > cachedTo) {
-                void fetchLines(from, to)
-            }
+        if (sessionId && needsFetch(from, to)) {
+            scheduleFetch(from, to)
         }
     })
 
+    function scheduleFetch(from: number, to: number) {
+        // Clear any pending fetch
+        if (fetchDebounceTimer) {
+            clearTimeout(fetchDebounceTimer)
+        }
+        // Schedule new fetch after debounce
+        fetchDebounceTimer = setTimeout(() => {
+            void fetchLines(from, to)
+        }, FETCH_DEBOUNCE_MS)
+    }
+
+    /** Update totalLines while preserving scroll fraction to prevent jump when height shrinks */
+    function updateTotalLines(newTotal: number) {
+        const oldEstimate = estimatedTotalLines()
+        if (!contentRef || oldEstimate === 0 || newTotal === oldEstimate) {
+            totalLines = newTotal
+            return
+        }
+        // Calculate current scroll fraction before updating
+        const oldHeight = oldEstimate * LINE_HEIGHT
+        const scrollFraction = contentRef.scrollTop / oldHeight
+        feLog(
+            `[viewer] totalLines changed: ${String(oldEstimate)} -> ${String(newTotal)}, preserving scroll fraction ${scrollFraction.toFixed(3)}`,
+        )
+        totalLines = newTotal
+        // Restore scroll fraction after DOM updates using rAF to run after browser's scroll clamping
+        const newHeight = newTotal * LINE_HEIGHT
+        const newScrollTop = Math.round(scrollFraction * newHeight)
+        const ref = contentRef // Capture reference for rAF callback
+        requestAnimationFrame(() => {
+            ref.scrollTop = newScrollTop
+        })
+    }
+
     async function fetchLines(from: number, to: number) {
-        if (!sessionId || fetchingRange) return
-        fetchingRange = true
+        if (!sessionId) return
+
+        // Increment fetch ID to invalidate any in-flight requests
+        const fetchId = ++currentFetchId
+
         try {
-            const { viewerGetLines } = await import('$lib/tauri-commands')
             // Fetch a larger batch to reduce round-trips
             const fetchFrom = Math.max(0, from - BUFFER_LINES)
             const fetchCount = Math.min(FETCH_BATCH, to - fetchFrom + BUFFER_LINES * 2)
-            const chunk = await viewerGetLines(sessionId, 'line', fetchFrom, fetchCount)
+
+            // Decide seek type based on backend capabilities
+            const supportsLineSeek = capabilities?.supportsLineSeek ?? false
+            const seekType = supportsLineSeek ? 'line' : 'fraction'
+            const seekValue = supportsLineSeek ? fetchFrom : fetchFrom / estimatedTotalLines()
+
+            feLog(
+                `[viewer] fetchLines[${String(fetchId)}]: requesting ${seekType}=${String(seekValue)} count=${String(fetchCount)}`,
+            )
+
+            const chunk = await viewerGetLines(sessionId, seekType, seekValue, fetchCount)
+
+            // Check if this response is still relevant (no newer fetch started)
+            if (fetchId !== currentFetchId) {
+                feLog(
+                    `[viewer] fetchLines[${String(fetchId)}]: discarding stale response (current=${String(currentFetchId)})`,
+                )
+                return
+            }
+
+            // When using fraction seek, cache at the requested position since backend's line number
+            // estimate may differ from frontend's estimate (different avg line length assumptions).
+            // For line seek, use backend's authoritative line numbers.
+            const cacheStartLine = seekType === 'fraction' ? fetchFrom : chunk.firstLineNumber
+
+            feLog(
+                `[viewer] fetchLines[${String(fetchId)}]: received ${String(chunk.lines.length)} lines, backend says firstLine=${String(chunk.firstLineNumber)}, caching at ${String(cacheStartLine)}`,
+            )
 
             // Update cache
             for (let i = 0; i < chunk.lines.length; i++) {
-                lineCache.set(chunk.firstLineNumber + i, chunk.lines[i])
+                lineCache.set(cacheStartLine + i, chunk.lines[i])
             }
-            cachedFrom = Math.min(cachedFrom, chunk.firstLineNumber)
-            cachedTo = Math.max(cachedTo, chunk.firstLineNumber + chunk.lines.length)
 
             // Update totalLines if backend now knows it
-            if (chunk.totalLines !== null) {
-                totalLines = chunk.totalLines
+            if (chunk.totalLines !== null && chunk.totalLines !== totalLines) {
+                updateTotalLines(chunk.totalLines)
             }
-        } catch {
-            // Fetch failed, will retry on next scroll
-        } finally {
-            fetchingRange = false
+        } catch (e) {
+            // Only log if this is still the current request
+            if (fetchId === currentFetchId) {
+                feLog(`[viewer] fetchLines[${String(fetchId)}]: failed with error ${String(e)}`)
+            }
         }
     }
 
@@ -129,7 +227,6 @@
         searchProgress = 0
 
         try {
-            const { viewerSearchStart } = await import('$lib/tauri-commands')
             await viewerSearchStart(sessionId, query)
             pollSearch()
         } catch {
@@ -147,7 +244,6 @@
     async function pollSearchTick() {
         if (!sessionId) return
         try {
-            const { viewerSearchPoll } = await import('$lib/tauri-commands')
             const result = await viewerSearchPoll(sessionId)
             searchMatches = result.matches
             searchProgress = totalBytes > 0 ? result.bytesScanned / totalBytes : 0
@@ -175,12 +271,45 @@
         stopSearchPoll()
         if (!sessionId) return
         try {
-            const { viewerSearchCancel } = await import('$lib/tauri-commands')
             await viewerSearchCancel(sessionId)
         } catch {
             // Ignore
         }
         searchStatus = 'idle'
+    }
+
+    // Indexing status polling functions
+    function startIndexingPoll() {
+        stopIndexingPoll()
+        indexingPollTimer = setInterval(() => {
+            void pollIndexingStatus()
+        }, INDEXING_POLL_INTERVAL)
+    }
+
+    async function pollIndexingStatus() {
+        if (!sessionId) return
+        try {
+            const status = await viewerGetStatus(sessionId)
+            backendType = status.backendType
+            isIndexing = status.isIndexing
+            if (status.totalLines !== null) {
+                totalLines = status.totalLines
+            }
+            // Stop polling when indexing is done
+            if (!status.isIndexing) {
+                feLog(`[viewer] Indexing finished, backendType=${status.backendType}`)
+                stopIndexingPoll()
+            }
+        } catch {
+            stopIndexingPoll()
+        }
+    }
+
+    function stopIndexingPoll() {
+        if (indexingPollTimer) {
+            clearInterval(indexingPollTimer)
+            indexingPollTimer = undefined
+        }
     }
 
     function openSearch() {
@@ -234,21 +363,41 @@
         }
     })
 
-    async function closeWindow() {
+    function closeWindow() {
+        // If window isn't ready yet, queue the close for when it is
+        if (!windowReady) {
+            feLog('[viewer] closeWindow: window not ready, queueing close')
+            closeRequested = true
+            return
+        }
+
+        const start = performance.now()
+        feLog('[viewer] closeWindow: starting')
+
+        // Session cleanup first (fire-and-forget) - do this before closing
         if (sessionId) {
-            try {
-                const { viewerClose } = await import('$lib/tauri-commands')
-                await viewerClose(sessionId)
-            } catch {
+            viewerClose(sessionId).catch(() => {
                 // Ignore - session cleanup is best-effort
-            }
+            })
         }
-        try {
-            const { getCurrentWindow } = await import('@tauri-apps/api/window')
-            await getCurrentWindow().close()
-        } catch {
-            // Not in Tauri environment
-        }
+
+        const currentWindow = getCurrentWindow()
+
+        // Use double requestAnimationFrame to let WebKit finish pending content inset
+        // updates before destroying the WebPageProxy. Single rAF isn't enough - we need
+        // to wait for the current frame to complete AND the next frame to start.
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                feLog(`[viewer] closeWindow: calling close() after ${String(Math.round(performance.now() - start))}ms`)
+                currentWindow.close().catch((e: unknown) => {
+                    feLog(`[viewer] closeWindow: close failed: ${String(e)}`)
+                })
+            })
+        })
+
+        // NOTE: Don't call getAllWindows().setFocus() here - it can trigger WebKit to
+        // recalculate content insets on the dying window, causing a crash. macOS will
+        // automatically focus the main window when this one closes.
     }
 
     function scrollByLines(lines: number) {
@@ -311,10 +460,11 @@
 
         if (e.key === 'Escape') {
             e.preventDefault()
+            feLog(`[viewer] ESC pressed, searchVisible=${String(searchVisible)}, windowReady=${String(windowReady)}`)
             if (searchVisible) {
                 closeSearch()
             } else {
-                void closeWindow()
+                closeWindow()
             }
             return
         }
@@ -379,43 +529,65 @@
         }
 
         try {
-            const { viewerOpen } = await import('$lib/tauri-commands')
             const result = await viewerOpen(filePath)
 
             sessionId = result.sessionId
             fileName = result.fileName
             totalBytes = result.totalBytes
             totalLines = result.totalLines
+            estimatedLines = result.estimatedTotalLines
             backendType = result.backendType
+            capabilities = result.capabilities
+            isIndexing = result.isIndexing
+
+            feLog(
+                `[viewer] Opened file: ${result.fileName}, ${String(result.totalBytes)} bytes, totalLines=${String(result.totalLines)}, estimatedTotalLines=${String(result.estimatedTotalLines)}, backend=${result.backendType}, isIndexing=${String(result.isIndexing)}`,
+            )
+
+            // Start polling for indexing status if indexing is in progress
+            if (result.isIndexing) {
+                startIndexingPoll()
+            }
 
             // Populate cache with initial lines
             lineCache.clear()
             for (let i = 0; i < result.initialLines.lines.length; i++) {
                 lineCache.set(result.initialLines.firstLineNumber + i, result.initialLines.lines[i])
             }
-            cachedFrom = result.initialLines.firstLineNumber
-            cachedTo = result.initialLines.firstLineNumber + result.initialLines.lines.length
 
-            // Set window title
-            try {
-                const { getCurrentWindow } = await import('@tauri-apps/api/window')
-                await getCurrentWindow().setTitle(`${result.fileName} — Viewer`)
-            } catch {
-                // Not in Tauri environment
-            }
+            feLog(`[viewer] Initial cache: ${String(result.initialLines.lines.length)} lines loaded`)
+
+            // Set window title (fire-and-forget, don't block)
+            getCurrentWindow()
+                .setTitle(`${result.fileName} — Viewer`)
+                .catch(() => {
+                    // Not in Tauri environment
+                })
         } catch (e) {
             error = typeof e === 'string' ? e : 'Failed to read file'
+            feLog(`[viewer] Failed to open file: ${String(e)}`)
         } finally {
             loading = false
             // Auto-focus the container so keyboard events work immediately
             await tick()
             containerRef?.focus()
+
+            // Mark window as ready after WebKit has had a frame to settle
+            requestAnimationFrame(() => {
+                windowReady = true
+                feLog(`[viewer] Window ready, closeRequested=${String(closeRequested)}`)
+                if (closeRequested) {
+                    closeWindow()
+                }
+            })
         }
     })
 
     onDestroy(() => {
         stopSearchPoll()
+        stopIndexingPoll()
         if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
+        if (fetchDebounceTimer) clearTimeout(fetchDebounceTimer)
     })
 </script>
 
@@ -494,8 +666,29 @@
             <span>{totalLines} {totalLines === 1 ? 'line' : 'lines'}</span>
         {/if}
         <span>{formatSize(totalBytes)}</span>
-        {#if backendType !== 'fullLoad'}
-            <span class="backend-badge">{backendType === 'lineIndex' ? 'indexed' : 'streaming'}</span>
+        {#if currentMode === 'fullLoad'}
+            <span
+                class="backend-badge"
+                title="You have the file entirely in memory. You can quickly scroll to any line.">in memory</span
+            >
+        {:else if currentMode === 'lineIndex'}
+            <span
+                class="backend-badge"
+                title="You have the file indexed, so the line numbers are accurate, and you can quickly scroll to any point."
+                >indexed</span
+            >
+        {:else if isIndexing}
+            <span
+                class="backend-badge"
+                title="This is a large file in streaming mode. We're building an index in background (max {INDEXING_TIMEOUT_SECS} sec)... Line numbers are currently approximate."
+                >streaming, indexing...</span
+            >
+        {:else}
+            <span
+                class="backend-badge"
+                title="This is a large file in streaming mode. Indexing would've taken longer than {INDEXING_TIMEOUT_SECS} sec, so we didn't do it. The line numbers are estimates."
+                >streaming</span
+            >
         {/if}
         <span class="shortcut-hint">Ctrl+F search &middot; Esc close</span>
     </div>
@@ -506,7 +699,7 @@
         display: flex;
         flex-direction: column;
         height: 100vh;
-        font-family: var(--font-system);
+        font-family: var(--font-system) sans-serif;
         background: var(--color-bg-primary);
         color: var(--color-text-primary);
         outline: none;
@@ -531,7 +724,7 @@
         background: var(--color-bg-primary);
         color: var(--color-text-primary);
         font-size: var(--font-size-sm);
-        font-family: var(--font-system);
+        font-family: var(--font-system) sans-serif;
     }
 
     .search-input:focus {

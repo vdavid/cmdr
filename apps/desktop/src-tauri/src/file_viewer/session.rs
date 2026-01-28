@@ -8,7 +8,9 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, LazyLock, Mutex};
 use std::thread;
+use std::time::Duration;
 
+use log::debug;
 use serde::Serialize;
 
 use super::byte_seek::ByteSeekBackend;
@@ -35,10 +37,24 @@ pub struct ViewerOpenResult {
     pub file_name: String,
     pub total_bytes: u64,
     pub total_lines: Option<usize>,
+    /// Estimated total lines based on initial sample (for ByteSeek where total_lines is unknown).
+    /// Calculated as total_bytes / avg_bytes_per_line from initial lines.
+    pub estimated_total_lines: usize,
     pub backend_type: BackendType,
     pub capabilities: BackendCapabilities,
     /// Initial chunk of lines from the start of the file.
     pub initial_lines: LineChunk,
+    /// Whether background indexing is in progress (for ByteSeek -> LineIndex upgrade).
+    pub is_indexing: bool,
+}
+
+/// Current status of a viewer session.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ViewerSessionStatus {
+    pub backend_type: BackendType,
+    pub is_indexing: bool,
+    pub total_lines: Option<usize>,
 }
 
 /// Status of an ongoing search.
@@ -88,6 +104,11 @@ static SESSIONS: LazyLock<Mutex<HashMap<String, ViewerSession>>> = LazyLock::new
 
 /// Number of initial lines to return on open.
 const INITIAL_LINE_COUNT: usize = 200;
+
+/// Maximum time to spend building the line index before giving up.
+/// If indexing takes longer, the session stays in ByteSeek (streaming) mode.
+/// This prevents hammering slow disks or network drives.
+const INDEXING_TIMEOUT_SECS: u64 = 5;
 
 /// Generates a unique session ID.
 fn generate_session_id() -> String {
@@ -142,28 +163,60 @@ pub fn open_session(path: &str) -> Result<ViewerOpenResult, ViewerError> {
 
     let session_id = generate_session_id();
 
-    // If we're using ByteSeek, start background upgrade to LineIndex
+    // If we're using ByteSeek, start background upgrade to LineIndex with timeout
     let upgrade_cancel = upgrading.clone();
-    if upgrade_cancel.is_some() {
+    let is_indexing = upgrade_cancel.is_some();
+    if let Some(cancel_flag) = upgrade_cancel.clone() {
         let session_id_clone = session_id.clone();
         let path_clone = file_path.clone();
-        let cancel_clone = upgrade_cancel.clone().unwrap();
+        let cancel_for_indexer = cancel_flag.clone();
+        let cancel_for_timeout = cancel_flag.clone();
 
+        // Spawn timeout thread that cancels indexing after INDEXING_TIMEOUT_SECS
+        let session_id_for_timeout = session_id.clone();
         thread::spawn(move || {
-            let cancel_flag = &cancel_clone;
-            match LineIndexBackend::open(&path_clone, cancel_flag) {
+            thread::sleep(Duration::from_secs(INDEXING_TIMEOUT_SECS));
+            // If still indexing (flag not already set), cancel it
+            if !cancel_for_timeout.load(Ordering::Relaxed) {
+                debug!(
+                    "Indexing timeout reached for session {}, cancelling",
+                    session_id_for_timeout
+                );
+                cancel_for_timeout.store(true, Ordering::Relaxed);
+                // Mark session as no longer indexing
+                if let Ok(mut sessions) = SESSIONS.lock()
+                    && let Some(session) = sessions.get_mut(&session_id_for_timeout)
+                {
+                    session.upgrading = None;
+                }
+            }
+        });
+
+        // Spawn indexing thread
+        thread::spawn(move || {
+            match LineIndexBackend::open(&path_clone, &cancel_for_indexer) {
                 Ok(new_backend) => {
-                    if !cancel_flag.load(Ordering::Relaxed) {
+                    if !cancel_for_indexer.load(Ordering::Relaxed) {
                         let mut sessions = SESSIONS.lock().unwrap();
                         if let Some(session) = sessions.get_mut(&session_id_clone) {
+                            debug!(
+                                "Indexing completed for session {}, upgrading to LineIndex",
+                                session_id_clone
+                            );
                             session.backend = Box::new(new_backend);
                             session.backend_type = BackendType::LineIndex;
                             session.upgrading = None;
                         }
                     }
                 }
-                Err(_) => {
-                    // If upgrade fails, keep using ByteSeek — it still works fine
+                Err(e) => {
+                    debug!("Indexing failed for session {}: {}", session_id_clone, e);
+                    // Mark as no longer indexing
+                    if let Ok(mut sessions) = SESSIONS.lock()
+                        && let Some(session) = sessions.get_mut(&session_id_clone)
+                    {
+                        session.upgrading = None;
+                    }
                 }
             }
         });
@@ -177,19 +230,52 @@ pub fn open_session(path: &str) -> Result<ViewerOpenResult, ViewerError> {
         path: file_path,
     };
 
+    // Calculate estimated total lines from the initial sample
+    let estimated_total_lines = if let Some(lines) = total_lines {
+        // If we know the exact count, use it
+        lines
+    } else if !initial_lines.lines.is_empty() {
+        // Estimate from initial sample: total_bytes / avg_bytes_per_line
+        let total_bytes_in_sample: usize = initial_lines.lines.iter().map(|l| l.len() + 1).sum(); // +1 for newline
+        let avg_bytes_per_line = total_bytes_in_sample / initial_lines.lines.len();
+        if avg_bytes_per_line > 0 {
+            (total_bytes as usize) / avg_bytes_per_line
+        } else {
+            (total_bytes as usize) / 80 // fallback
+        }
+    } else {
+        (total_bytes as usize) / 80 // fallback for empty files
+    };
+
     let result = ViewerOpenResult {
         session_id: session_id.clone(),
         file_name,
         total_bytes,
         total_lines,
+        estimated_total_lines,
         backend_type,
         capabilities,
         initial_lines,
+        is_indexing,
     };
 
     SESSIONS.lock().unwrap().insert(session_id, session);
 
     Ok(result)
+}
+
+/// Gets the current status of a session (backend type, indexing state).
+pub fn get_session_status(session_id: &str) -> Result<ViewerSessionStatus, ViewerError> {
+    let sessions = SESSIONS.lock().unwrap();
+    let session = sessions
+        .get(session_id)
+        .ok_or(ViewerError::SessionNotFound(session_id.to_string()))?;
+
+    Ok(ViewerSessionStatus {
+        backend_type: session.backend_type.clone(),
+        is_indexing: session.upgrading.is_some(),
+        total_lines: session.backend.total_lines(),
+    })
 }
 
 /// Gets a range of lines from a session.
@@ -198,6 +284,12 @@ pub fn get_lines(session_id: &str, target: SeekTarget, count: usize) -> Result<L
     let session = sessions
         .get(session_id)
         .ok_or(ViewerError::SessionNotFound(session_id.to_string()))?;
+
+    debug!(
+        "get_lines: session={}, backend_type={:?}, target={:?}, count={}",
+        session_id, session.backend_type, target, count
+    );
+
     session.backend.get_lines(&target, count)
 }
 

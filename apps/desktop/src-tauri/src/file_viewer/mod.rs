@@ -20,8 +20,8 @@ mod line_index_test;
 mod session_test;
 
 pub use session::{
-    SearchPollResult, ViewerOpenResult, close_session, get_lines, open_session, search_cancel, search_poll,
-    search_start,
+    SearchPollResult, ViewerOpenResult, ViewerSessionStatus, close_session, get_lines, get_session_status,
+    open_session, search_cancel, search_poll, search_start,
 };
 
 use serde::Serialize;
