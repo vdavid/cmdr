@@ -40,9 +40,9 @@ async function switchToNewWindow(): Promise<string> {
 }
 
 /**
- * Helper to ensure the main app is ready.
+ * Helper to ensure the main app is ready for settings tests.
  */
-async function ensureAppReady(): Promise<void> {
+async function ensureMainAppReady(): Promise<void> {
     const fileEntry = await browser.$('.file-entry')
     await fileEntry.waitForExist({ timeout: 10000 })
     await browser.pause(300)
@@ -77,7 +77,7 @@ describe('Settings window', () => {
         const handles = await browser.getWindowHandles()
         mainWindowHandle = handles[0]
         await browser.switchToWindow(mainWindowHandle)
-        await ensureAppReady()
+        await ensureMainAppReady()
     })
 
     afterEach(async () => {
@@ -184,7 +184,7 @@ describe('Settings window', () => {
         await sidebar.waitForExist({ timeout: 5000 })
 
         // Find and click on a section
-        const sectionItems = await browser.$$('.section-item')
+        const sectionItems = [...(await browser.$$('.section-item'))]
         if (sectionItems.length >= 2) {
             // Click second section
             await sectionItems[1].click()

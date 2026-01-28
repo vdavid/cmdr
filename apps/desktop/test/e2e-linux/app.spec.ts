@@ -35,7 +35,7 @@ async function getEntryName(entry: WebdriverIO.Element): Promise<string> {
 /**
  * Helper to ensure app is ready and panes have focus initialized.
  */
-async function ensureAppReady(): Promise<void> {
+async function ensureAppReadyWithFocus(): Promise<void> {
     const fileEntry = await browser.$('.file-entry')
     await fileEntry.waitForExist({ timeout: 10000 })
 
@@ -78,7 +78,7 @@ describe('Basic rendering', () => {
 
 describe('Keyboard navigation', () => {
     it('should move cursor with arrow keys', async () => {
-        await ensureAppReady()
+        await ensureAppReadyWithFocus()
 
         // Get all file entries and find which one has the cursor
         // Spread to convert ChainablePromiseArray to real array for .length
@@ -123,7 +123,7 @@ describe('Keyboard navigation', () => {
     })
 
     it('should switch panes with Tab key', async () => {
-        await ensureAppReady()
+        await ensureAppReadyWithFocus()
 
         // Re-query panes after ensureAppReady
         let panes = await browser.$$('.file-pane')
@@ -158,7 +158,7 @@ describe('Keyboard navigation', () => {
     })
 
     it('should toggle selection with Space key', async () => {
-        await ensureAppReady()
+        await ensureAppReadyWithFocus()
 
         // Get cursor entry (cast needed due to WDIO ChainablePromiseElement type quirk)
         let cursorEntry = (await browser.$('.file-entry.is-under-cursor')) as unknown as WebdriverIO.Element
@@ -197,7 +197,7 @@ describe('Keyboard navigation', () => {
 
 describe('Mouse interactions', () => {
     it('should move cursor when clicking a file entry', async () => {
-        await ensureAppReady()
+        await ensureAppReadyWithFocus()
 
         const entries = [...(await browser.$$('.file-entry'))]
         if (entries.length < 2) {
@@ -216,7 +216,7 @@ describe('Mouse interactions', () => {
     })
 
     it('should switch pane focus when clicking other pane', async () => {
-        await ensureAppReady()
+        await ensureAppReadyWithFocus()
 
         let panes = await browser.$$('.file-pane')
         expect(panes.length).toBe(2)
@@ -243,7 +243,7 @@ describe('Mouse interactions', () => {
 
 describe('Navigation', () => {
     it('should navigate into directories with Enter', async () => {
-        await ensureAppReady()
+        await ensureAppReadyWithFocus()
 
         // Get current path from the focused pane's header
         let pathElement = await browser.$('.file-pane.is-focused .header .path')
@@ -276,7 +276,7 @@ describe('Navigation', () => {
     })
 
     it('should navigate to parent with Backspace', async () => {
-        await ensureAppReady()
+        await ensureAppReadyWithFocus()
 
         // First, navigate into a directory so we can go back
         const dirEntry = await browser.$('.file-entry:has(.size-dir)')
@@ -309,7 +309,7 @@ describe('Navigation', () => {
 
 describe('New folder dialog', () => {
     it('should open new folder dialog with F7', async () => {
-        await ensureAppReady()
+        await ensureAppReadyWithFocus()
 
         // Press F7 to open new folder dialog
         await browser.keys('F7')
@@ -351,7 +351,7 @@ describe('New folder dialog', () => {
     })
 
     it('should create a folder and close the dialog', async () => {
-        await ensureAppReady()
+        await ensureAppReadyWithFocus()
 
         // Press F7 to open new folder dialog
         await browser.keys('F7')
@@ -382,7 +382,7 @@ describe('New folder dialog', () => {
 
 describe('Copy dialog', () => {
     it('should open copy dialog with F5', async () => {
-        await ensureAppReady()
+        await ensureAppReadyWithFocus()
 
         // Move cursor to a file (skip ".." entry)
         const cursorEntry = (await browser.$('.file-entry.is-under-cursor')) as unknown as WebdriverIO.Element
