@@ -13,6 +13,7 @@ use std::path::Path;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
 
+use log::debug;
 use memchr::memchr;
 
 use super::{
@@ -140,9 +141,15 @@ impl ByteSeekBackend {
                 let f = f.clamp(0.0, 1.0);
                 (f * self.total_bytes as f64) as u64
             }
-            SeekTarget::Line(_) => {
-                // ByteSeek doesn't support line-based seeking; default to start
-                0
+            SeekTarget::Line(line_num) => {
+                // ByteSeek doesn't have a line index, so estimate using average line length (80 chars)
+                // This is a rough approximation but much better than returning 0
+                let estimated_offset = (*line_num as u64) * 80;
+                debug!(
+                    "ByteSeekBackend: Line({}) requested, estimating byte offset {} (using avg 80 chars/line)",
+                    line_num, estimated_offset
+                );
+                estimated_offset.min(self.total_bytes)
             }
         }
     }
@@ -152,16 +159,47 @@ impl FileViewerBackend for ByteSeekBackend {
     fn get_lines(&self, target: &SeekTarget, count: usize) -> Result<LineChunk, ViewerError> {
         let raw_offset = self.resolve_byte_offset(target);
 
+        debug!(
+            "ByteSeekBackend::get_lines: target={:?}, resolved to byte offset {}",
+            target, raw_offset
+        );
+
         // Find the actual line start by scanning backward
         let mut file = File::open(&self.path)?;
         let line_start = self.find_line_start(&mut file, raw_offset)?;
 
+        debug!(
+            "ByteSeekBackend::get_lines: line_start={} (after backward scan)",
+            line_start
+        );
+
         let (lines, _end_offset) = self.read_lines_from(line_start, count)?;
+
+        // Estimate line number based on byte position and average line length
+        // This is an approximation, but better than always returning 0
+        let estimated_line_number = if line_start == 0 {
+            0
+        } else {
+            // Use the lines we just read to estimate avg line length
+            let avg_line_len = if !lines.is_empty() {
+                let total_bytes_in_chunk: usize = lines.iter().map(|l| l.len() + 1).sum(); // +1 for newline
+                total_bytes_in_chunk / lines.len()
+            } else {
+                80 // fallback assumption
+            };
+            (line_start as usize) / avg_line_len.max(1)
+        };
+
+        debug!(
+            "ByteSeekBackend::get_lines: returning {} lines, estimated first_line_number={} (based on avg line len)",
+            lines.len(),
+            estimated_line_number
+        );
 
         Ok(LineChunk {
             lines,
-            // We don't know the line number in byte-seek mode
-            first_line_number: 0,
+            // Estimate line number based on byte offset
+            first_line_number: estimated_line_number,
             byte_offset: line_start,
             total_lines: None,
             total_bytes: self.total_bytes,

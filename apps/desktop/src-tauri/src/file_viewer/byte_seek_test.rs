@@ -131,15 +131,22 @@ fn get_lines_fraction_end() {
 }
 
 #[test]
-fn get_lines_line_target_defaults_to_start() {
+fn get_lines_line_target_estimates_offset() {
     let dir = create_test_dir("line_target");
     let file = write_test_file(&dir, "test.txt", "a\nb\nc\n");
 
     let backend = ByteSeekBackend::open(&file).unwrap();
-    // ByteSeek doesn't support line seeking — defaults to start
-    let chunk = backend.get_lines(&SeekTarget::Line(5), 2).unwrap();
+    // ByteSeek estimates byte offset using avg 80 chars/line
+    // Line(0) should give offset 0
+    let chunk = backend.get_lines(&SeekTarget::Line(0), 2).unwrap();
     assert_eq!(chunk.byte_offset, 0);
     assert_eq!(chunk.lines[0], "a");
+
+    // Line(5) on a tiny file clamps to file size, giving last line
+    let chunk2 = backend.get_lines(&SeekTarget::Line(5), 2).unwrap();
+    // 5 * 80 = 400, clamped to 6 bytes (file size), backward scan finds last newline
+    assert_eq!(chunk2.byte_offset, 6); // At EOF
+    assert!(chunk2.lines.is_empty()); // No lines after EOF
 
     cleanup(&dir);
 }

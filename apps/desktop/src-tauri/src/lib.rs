@@ -186,7 +186,11 @@ pub fn run() {
                 let new_state = check_item.is_checked().unwrap_or(true);
 
                 // Emit event to frontend with the new state (main window only)
-                let _ = app.emit_to("main", "settings-changed", serde_json::json!({ "showHiddenFiles": new_state }));
+                let _ = app.emit_to(
+                    "main",
+                    "settings-changed",
+                    serde_json::json!({ "showHiddenFiles": new_state }),
+                );
             } else if id == VIEW_MODE_FULL_ID || id == VIEW_MODE_BRIEF_ID {
                 // Handle view mode toggle (radio button behavior)
                 let menu_state = app.state::<MenuState<tauri::Wry>>();
@@ -209,16 +213,16 @@ pub fn run() {
             } else if id == GO_BACK_ID || id == GO_FORWARD_ID || id == GO_PARENT_ID {
                 // Handle Go menu navigation actions - only when main window is focused
                 // This prevents shortcuts from affecting main window when viewer is open
-                if let Some(main_window) = app.get_webview_window("main") {
-                    if main_window.is_focused().unwrap_or(false) {
-                        let action = match id {
-                            GO_BACK_ID => "back",
-                            GO_FORWARD_ID => "forward",
-                            GO_PARENT_ID => "parent",
-                            _ => return,
-                        };
-                        let _ = app.emit_to("main", "navigation-action", serde_json::json!({ "action": action }));
-                    }
+                if let Some(main_window) = app.get_webview_window("main")
+                    && main_window.is_focused().unwrap_or(false)
+                {
+                    let action = match id {
+                        GO_BACK_ID => "back",
+                        GO_FORWARD_ID => "forward",
+                        GO_PARENT_ID => "parent",
+                        _ => return,
+                    };
+                    let _ = app.emit_to("main", "navigation-action", serde_json::json!({ "action": action }));
                 }
             } else if id == ABOUT_ID {
                 // Emit event to show our custom About window (main window only)
@@ -247,7 +251,11 @@ pub fn run() {
                     SORT_BY_CREATED_ID => "created",
                     _ => return,
                 };
-                let _ = app.emit_to("main", "menu-sort", serde_json::json!({ "action": "sortBy", "value": column }));
+                let _ = app.emit_to(
+                    "main",
+                    "menu-sort",
+                    serde_json::json!({ "action": "sortBy", "value": column }),
+                );
             } else if id == SORT_ASCENDING_ID || id == SORT_DESCENDING_ID {
                 // Handle sort order (main window only)
                 let order = if id == SORT_ASCENDING_ID { "asc" } else { "desc" };
@@ -289,6 +297,7 @@ pub fn run() {
             commands::file_system::start_selection_drag,
             commands::file_viewer::viewer_open,
             commands::file_viewer::viewer_get_lines,
+            commands::file_viewer::viewer_get_status,
             commands::file_viewer::viewer_search_start,
             commands::file_viewer::viewer_search_poll,
             commands::file_viewer::viewer_search_cancel,

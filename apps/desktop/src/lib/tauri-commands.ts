@@ -310,9 +310,20 @@ export interface ViewerOpenResult {
     fileName: string
     totalBytes: number
     totalLines: number | null
+    /** Estimated total lines based on initial sample (for ByteSeek where totalLines is unknown) */
+    estimatedTotalLines: number
     backendType: 'fullLoad' | 'byteSeek' | 'lineIndex'
     capabilities: BackendCapabilities
     initialLines: LineChunk
+    /** Whether background indexing is in progress */
+    isIndexing: boolean
+}
+
+/** Current status of a viewer session. */
+export interface ViewerSessionStatus {
+    backendType: 'fullLoad' | 'byteSeek' | 'lineIndex'
+    isIndexing: boolean
+    totalLines: number | null
 }
 
 /** A search match found in the file. */
@@ -358,6 +369,11 @@ export async function viewerSearchPoll(sessionId: string): Promise<SearchPollRes
 /** Cancels an ongoing search. */
 export async function viewerSearchCancel(sessionId: string): Promise<void> {
     await invoke('viewer_search_cancel', { sessionId })
+}
+
+/** Gets the current status of a viewer session (backend type, indexing state). */
+export async function viewerGetStatus(sessionId: string): Promise<ViewerSessionStatus> {
+    return invoke<ViewerSessionStatus>('viewer_get_status', { sessionId })
 }
 
 /** Closes a viewer session and frees resources. */
