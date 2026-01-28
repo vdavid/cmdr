@@ -4,7 +4,7 @@
     "packageManager": "pnpm@10.27.0",
     "scripts": {
         "preinstall": "npx only-allow pnpm",
-        "dev": "CMDR_REAL_AI=1 RUST_LOG=${RUST_LOG:-smb=warn,sspi=warn,info} pnpm --filter @cmdr/desktop tauri dev",
+        "dev": "RUST_LOG=${RUST_LOG:-smb=warn,sspi=warn,info} pnpm --filter @cmdr/desktop tauri dev",
         "dev:ai-debug": "CMDR_REAL_AI=1 RUST_LOG=cmdr_lib::ai=debug,smb=warn,sspi=warn,info pnpm --filter @cmdr/desktop tauri dev",
         "build": "pnpm --filter @cmdr/desktop tauri build",
         "dev:website": "pnpm --filter @cmdr/website dev",
