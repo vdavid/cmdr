@@ -787,6 +787,7 @@ pub fn get_file_at(listing_id: &str, index: usize, include_hidden: bool) -> Resu
 ///
 /// # Returns
 /// Vector of absolute file paths for the selected files.
+#[cfg(target_os = "macos")]
 pub fn get_paths_at_indices(
     listing_id: &str,
     selected_indices: &[usize],
