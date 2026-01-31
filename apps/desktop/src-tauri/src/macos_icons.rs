@@ -80,7 +80,7 @@ fn get_app_url_for_bundle_id(bundle_id: &CFString) -> Option<PathBuf> {
 }
 
 /// Reads the app's Info.plist and finds the document icon for the given UTI.
-fn get_document_icon_name_from_bundle(app_path: &Path, uti: &str) -> Option<String> {
+fn get_document_icon_name_from_bundle(app_path: &Path, uti: &str, use_app_icons_for_documents: bool) -> Option<String> {
     let plist_path = app_path.join("Contents/Info.plist");
     let plist_data = std::fs::read(&plist_path).ok()?;
     let plist: Value = plist::from_bytes(&plist_data).ok()?;
@@ -112,7 +112,7 @@ fn get_document_icon_name_from_bundle(app_path: &Path, uti: &str) -> Option<Stri
 
     // No document-specific icon found.
     // Check if we should fall back to the app's main icon (configurable).
-    if !crate::config::USE_APP_ICONS_AS_DOCUMENT_ICONS {
+    if !use_app_icons_for_documents {
         // Return None to fall back to temp file approach → Finder-style document icons
         return None;
     }
@@ -161,7 +161,11 @@ fn load_icns_icon(icon_path: &Path) -> Option<DynamicImage> {
 
 /// Fetches the icon for a file extension directly from the default app's bundle.
 /// This bypasses the Launch Services icon cache.
-pub fn fetch_fresh_icon_for_extension(ext: &str) -> Option<DynamicImage> {
+///
+/// When `use_app_icons_for_documents` is true, falls back to the app's main icon
+/// if no document-specific icon is found. When false, returns None to use
+/// Finder-style document icons instead.
+pub fn fetch_fresh_icon_for_extension(ext: &str, use_app_icons_for_documents: bool) -> Option<DynamicImage> {
     // 1. Get UTI for extension
     let uti = get_uti_for_extension(ext)?;
     let uti_str = uti.to_string();
@@ -173,7 +177,7 @@ pub fn fetch_fresh_icon_for_extension(ext: &str) -> Option<DynamicImage> {
     let app_path = get_app_url_for_bundle_id(&bundle_id)?;
 
     // 4. Find the document icon name in the app's Info.plist
-    let icon_name = get_document_icon_name_from_bundle(&app_path, &uti_str)?;
+    let icon_name = get_document_icon_name_from_bundle(&app_path, &uti_str, use_app_icons_for_documents)?;
 
     // 5. Build the icon path (in Resources folder)
     // Icon name might or might not have .icns extension
@@ -214,8 +218,8 @@ mod tests {
 
     #[test]
     fn test_fetch_fresh_icon() {
-        // Try a common extension
-        let icon = fetch_fresh_icon_for_extension("pdf");
+        // Try a common extension with app icons enabled
+        let icon = fetch_fresh_icon_for_extension("pdf", true);
         // This might fail if no PDF reader is installed, which is fine
         if let Some(img) = icon {
             println!("Got PDF icon: {}x{}", img.width(), img.height());
@@ -240,7 +244,7 @@ mod tests {
                 println!("App URL for bundle ID: {:?}", app_url);
 
                 if let Some(app_path) = app_url {
-                    let icon_name = get_document_icon_name_from_bundle(&app_path, &uti.to_string());
+                    let icon_name = get_document_icon_name_from_bundle(&app_path, &uti.to_string(), true);
                     println!("Document icon name: {:?}", icon_name);
                 }
             }

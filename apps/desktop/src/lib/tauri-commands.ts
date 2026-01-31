@@ -400,10 +400,11 @@ export async function openExternalUrl(url: string): Promise<void> {
 /**
  * Gets icon data URLs for the requested icon IDs.
  * @param iconIds - Array of icon IDs like "ext:jpg", "dir", "symlink"
+ * @param useAppIconsForDocuments - Whether to use app icons as fallback for documents
  * @returns Map of icon_id → base64 WebP data URL
  */
-export async function getIcons(iconIds: string[]): Promise<Record<string, string>> {
-    return invoke<Record<string, string>>('get_icons', { iconIds })
+export async function getIcons(iconIds: string[], useAppIconsForDocuments: boolean): Promise<Record<string, string>> {
+    return invoke<Record<string, string>>('get_icons', { iconIds, useAppIconsForDocuments })
 }
 
 /**
@@ -411,16 +412,27 @@ export async function getIcons(iconIds: string[]): Promise<Record<string, string
  * Fetches icons in parallel for directories (by path) and extensions.
  * @param directoryPaths - Array of directory paths to fetch icons for
  * @param extensions - Array of file extensions (without dot)
+ * @param useAppIconsForDocuments - Whether to use app icons as fallback for documents
  * @returns Map of icon_id → base64 WebP data URL
  */
 export async function refreshDirectoryIcons(
     directoryPaths: string[],
     extensions: string[],
+    useAppIconsForDocuments: boolean,
 ): Promise<Record<string, string>> {
     return invoke<Record<string, string>>('refresh_directory_icons', {
         directoryPaths,
         extensions,
+        useAppIconsForDocuments,
     })
+}
+
+/**
+ * Clears cached extension icons.
+ * Called when the "use app icons for documents" setting changes.
+ */
+export async function clearExtensionIconCache(): Promise<void> {
+    await invoke('clear_extension_icon_cache')
 }
 /**
  * Shows a native context menu for a file.

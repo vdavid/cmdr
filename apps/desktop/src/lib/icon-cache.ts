@@ -2,7 +2,11 @@
 // Caches icon data URLs by icon ID to avoid redundant Tauri calls
 
 import { writable } from 'svelte/store'
-import { getIcons, refreshDirectoryIcons as refreshIconsCommand } from './tauri-commands'
+import {
+    getIcons,
+    refreshDirectoryIcons as refreshIconsCommand,
+    clearExtensionIconCache as clearExtensionIconCacheCommand,
+} from './tauri-commands'
 
 const STORAGE_KEY = 'cmdr-icon-cache'
 
@@ -52,14 +56,17 @@ if (typeof localStorage !== 'undefined') {
  * Prefetches icons for the given IDs.
  * Fetches only those not already cached.
  * Increments iconCacheVersion when new icons are loaded, triggering re-renders.
+ *
+ * @param iconIds - Array of icon IDs to prefetch
+ * @param useAppIconsForDocuments - Whether to use app icons as fallback for documents
  */
-export async function prefetchIcons(iconIds: string[]): Promise<void> {
+export async function prefetchIcons(iconIds: string[], useAppIconsForDocuments: boolean): Promise<void> {
     const uncached = iconIds.filter((id) => !memoryCache.has(id))
     if (uncached.length === 0) return
 
     // Deduplicate
     const unique = [...new Set(uncached)]
-    const icons = await getIcons(unique)
+    const icons = await getIcons(unique, useAppIconsForDocuments)
 
     let added = false
     for (const [id, url] of Object.entries(icons)) {
@@ -89,12 +96,19 @@ export function getCachedIcon(iconId: string): string | undefined {
  * - All unique extensions (for file association changes)
  *
  * Updates the cache and triggers re-render if any icons changed.
+ * @param directoryPaths - Array of directory paths to fetch icons for
+ * @param extensions - Array of file extensions (without dot)
+ * @param useAppIconsForDocuments - Whether to use app icons as fallback for documents
  * @knipignore Used via dynamic import in FilePane.svelte
  */
-export async function refreshDirectoryIcons(directoryPaths: string[], extensions: string[]): Promise<void> {
+export async function refreshDirectoryIcons(
+    directoryPaths: string[],
+    extensions: string[],
+    useAppIconsForDocuments: boolean,
+): Promise<void> {
     if (directoryPaths.length === 0 && extensions.length === 0) return
 
-    const icons = await refreshIconsCommand(directoryPaths, extensions)
+    const icons = await refreshIconsCommand(directoryPaths, extensions, useAppIconsForDocuments)
 
     let changed = false
     for (const [id, url] of Object.entries(icons)) {
@@ -109,4 +123,27 @@ export async function refreshDirectoryIcons(directoryPaths: string[], extensions
         saveToStorage()
         iconCacheVersion.update((v) => v + 1)
     }
+}
+
+/**
+ * Clears all cached extension icons from both memory and localStorage.
+ * Called when the "use app icons for documents" setting changes.
+ * After calling this, extension icons will be re-fetched with the new setting.
+ */
+export async function clearExtensionIconCache(): Promise<void> {
+    // Clear backend cache
+    await clearExtensionIconCacheCommand()
+
+    // Clear frontend cache (extension icons only)
+    for (const key of memoryCache.keys()) {
+        if (key.startsWith('ext:')) {
+            memoryCache.delete(key)
+        }
+    }
+
+    // Persist the change
+    saveToStorage()
+
+    // Trigger reactive update so components re-fetch icons
+    iconCacheVersion.update((v) => v + 1)
 }

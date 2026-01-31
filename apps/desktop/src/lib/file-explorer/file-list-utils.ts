@@ -5,6 +5,7 @@
 import type { FileEntry, SyncStatus } from './types'
 import { getFileRange } from '$lib/tauri-commands'
 import { prefetchIcons } from '$lib/icon-cache'
+import { getUseAppIconsForDocuments } from '$lib/settings/reactive-settings.svelte'
 
 /** Prefetch buffer - load this many items around visible range */
 export const PREFETCH_BUFFER = 200
@@ -134,7 +135,8 @@ export async function fetchVisibleRange(params: FetchRangeParams): Promise<Fetch
 
     // Prefetch icons for visible entries
     const iconIds = entries.map((e) => e.iconId).filter((id) => id)
-    void prefetchIcons(iconIds)
+    const useAppIcons = getUseAppIconsForDocuments()
+    void prefetchIcons(iconIds, useAppIcons)
 
     // Request sync status for visible paths
     const paths = entries.map((e) => e.path)

@@ -3,7 +3,7 @@
  * These functions are pure and don't need reactive state.
  */
 
-import type { DateTimeFormat } from './types'
+import type { DateTimeFormat, FileSizeFormat } from './types'
 
 /**
  * Format a timestamp according to the given format.
@@ -66,4 +66,34 @@ function formatCustom(date: Date, format: string): string {
         .replace('HH', pad(date.getHours()))
         .replace('mm', pad(date.getMinutes()))
         .replace('ss', pad(date.getSeconds()))
+}
+
+// ============================================================================
+// File Size Formatting
+// ============================================================================
+
+// Binary units (base 1024) - traditional computing units
+const binaryUnits = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB']
+
+// SI units (base 1000) - International System of Units
+const siUnits = ['bytes', 'kB', 'MB', 'GB', 'TB', 'PB']
+
+/**
+ * Format bytes as human-readable string based on the format setting.
+ * @param bytes Number of bytes
+ * @param format 'binary' uses 1024-based (KB/MB/GB), 'si' uses 1000-based (kB/MB/GB)
+ */
+export function formatFileSizeWithFormat(bytes: number, format: FileSizeFormat): string {
+    const base = format === 'binary' ? 1024 : 1000
+    const units = format === 'binary' ? binaryUnits : siUnits
+
+    let value = bytes
+    let unitIndex = 0
+    while (value >= base && unitIndex < units.length - 1) {
+        value /= base
+        unitIndex++
+    }
+
+    const valueStr = unitIndex === 0 ? String(value) : value.toFixed(2)
+    return `${valueStr} ${units[unitIndex]}`
 }

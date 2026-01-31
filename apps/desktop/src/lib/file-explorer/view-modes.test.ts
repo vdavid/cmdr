@@ -20,6 +20,14 @@ vi.mock('$lib/icon-cache', () => ({
     prefetchIcons: vi.fn(),
 }))
 
+// Mock reactive-settings
+vi.mock('$lib/settings/reactive-settings.svelte', () => ({
+    getRowHeight: vi.fn().mockReturnValue(24),
+    formatDateTime: vi.fn().mockReturnValue('2025-01-01 00:00'),
+    formatFileSize: vi.fn().mockReturnValue('1.0 KB'),
+    getUseAppIconsForDocuments: vi.fn().mockReturnValue(true),
+}))
+
 // Mock drag-and-drop
 vi.mock('$lib/drag-and-drop', () => ({
     startDragTracking: vi.fn(),
