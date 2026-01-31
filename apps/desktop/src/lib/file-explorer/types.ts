@@ -123,7 +123,13 @@ export interface DirectoryDiff {
 /**
  * Category of a location item.
  */
-export type LocationCategory = 'favorite' | 'main_volume' | 'attached_volume' | 'cloud_drive' | 'network'
+export type LocationCategory =
+    | 'favorite'
+    | 'main_volume'
+    | 'attached_volume'
+    | 'cloud_drive'
+    | 'network'
+    | 'mobile_device'
 
 /**
  * Information about a location (volume, folder, or cloud drive).

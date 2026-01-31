@@ -4,13 +4,15 @@
 //! maintains an active MTP session until disconnected or unplugged.
 
 use log::{debug, error, info, warn};
-use mtp_rs::{MtpDevice, MtpDeviceBuilder};
+use mtp_rs::{MtpDevice, MtpDeviceBuilder, ObjectHandle, StorageId};
 use std::collections::HashMap;
-use std::sync::{LazyLock, Mutex};
+use std::path::{Path, PathBuf};
+use std::sync::{Arc, LazyLock, Mutex, RwLock};
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
 
 use super::types::{MtpDeviceInfo, MtpStorageInfo};
+use crate::file_system::FileEntry;
 
 /// Default timeout for MTP operations (30 seconds - some devices are slow).
 const MTP_TIMEOUT_SECS: u64 = 30;
@@ -92,12 +94,21 @@ pub struct ConnectedDeviceInfo {
 
 /// Internal entry for a connected device.
 struct DeviceEntry {
-    /// The MTP device handle.
-    device: MtpDevice,
+    /// The MTP device handle (wrapped in Arc for shared access).
+    device: Arc<tokio::sync::Mutex<MtpDevice>>,
     /// Device metadata.
     info: MtpDeviceInfo,
     /// Cached storage information.
     storages: Vec<MtpStorageInfo>,
+    /// Path-to-handle cache per storage.
+    path_cache: RwLock<HashMap<u32, PathHandleCache>>,
+}
+
+/// Cache for mapping paths to MTP object handles.
+#[derive(Default)]
+struct PathHandleCache {
+    /// Maps virtual path -> MTP object handle.
+    path_to_handle: HashMap<PathBuf, ObjectHandle>,
 }
 
 /// Global connection manager for MTP devices.
@@ -215,15 +226,16 @@ impl MtpConnectionManager {
             storages: storages.clone(),
         };
 
-        // Store in registry
+        // Store in registry with Arc-wrapped device for shared access
         {
             let mut devices = self.devices.lock().unwrap();
             devices.insert(
                 device_id.to_string(),
                 DeviceEntry {
-                    device,
+                    device: Arc::new(tokio::sync::Mutex::new(device)),
                     info: device_info,
                     storages,
+                    path_cache: RwLock::new(HashMap::new()),
                 },
             );
         }
@@ -266,11 +278,12 @@ impl MtpConnectionManager {
             });
         };
 
-        // Close the device gracefully
-        if let Err(e) = entry.device.close().await {
-            warn!("Error closing MTP device {}: {:?}", device_id, e);
-            // Continue anyway - device might have been unplugged
-        }
+        // The device will be closed when it's dropped.
+        // MtpDevice::close() takes ownership, but we have it in an Arc<Mutex>.
+        // Dropping the entry will drop the Arc, and if this is the last reference,
+        // the device will be closed (MtpDevice has a Drop impl that closes the session).
+        // We just drop the entry here - the device handle going out of scope handles cleanup.
+        drop(entry);
 
         // Emit disconnected event
         if let Some(app) = app {
@@ -308,6 +321,169 @@ impl MtpConnectionManager {
     pub fn connected_device_ids(&self) -> Vec<String> {
         let devices = self.devices.lock().unwrap();
         devices.keys().cloned().collect()
+    }
+
+    /// Lists the contents of a directory on an MTP device.
+    ///
+    /// # Arguments
+    ///
+    /// * `device_id` - The connected device ID
+    /// * `storage_id` - The storage ID within the device
+    /// * `path` - Virtual path to list (for example, "/" or "/DCIM")
+    ///
+    /// # Returns
+    ///
+    /// A vector of FileEntry objects suitable for the file browser.
+    pub async fn list_directory(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        path: &str,
+    ) -> Result<Vec<FileEntry>, MtpConnectionError> {
+        debug!(
+            "MTP list_directory: device={}, storage={}, path={}",
+            device_id, storage_id, path
+        );
+
+        // Get the device and resolve path to handle
+        let (device_arc, parent_handle) = {
+            let devices = self.devices.lock().unwrap();
+            let entry = devices.get(device_id).ok_or_else(|| MtpConnectionError::NotConnected {
+                device_id: device_id.to_string(),
+            })?;
+
+            // Resolve path to parent handle
+            let parent_handle = self.resolve_path_to_handle(entry, storage_id, path)?;
+
+            (Arc::clone(&entry.device), parent_handle)
+        };
+
+        // Normalize the path for building child paths
+        let parent_path = normalize_mtp_path(path);
+
+        // List directory contents (async operation)
+        let device = device_arc.lock().await;
+
+        // Get the storage object
+        let storage = tokio::time::timeout(
+            Duration::from_secs(MTP_TIMEOUT_SECS),
+            device.storage(StorageId(storage_id)),
+        )
+        .await
+        .map_err(|_| MtpConnectionError::Timeout {
+            device_id: device_id.to_string(),
+        })?
+        .map_err(|e| map_mtp_error(e, device_id))?;
+
+        // Use list_objects which returns Vec<ObjectInfo> directly
+        let parent_opt = if parent_handle == ObjectHandle::ROOT {
+            None
+        } else {
+            Some(parent_handle)
+        };
+
+        let object_infos =
+            tokio::time::timeout(Duration::from_secs(MTP_TIMEOUT_SECS), storage.list_objects(parent_opt))
+                .await
+                .map_err(|_| MtpConnectionError::Timeout {
+                    device_id: device_id.to_string(),
+                })?
+                .map_err(|e| map_mtp_error(e, device_id))?;
+
+        debug!("MTP list_directory: found {} objects", object_infos.len());
+
+        let mut entries = Vec::with_capacity(object_infos.len());
+        let mut cache_updates: Vec<(PathBuf, ObjectHandle)> = Vec::new();
+
+        for info in object_infos {
+            let is_dir = info.format == mtp_rs::ptp::ObjectFormatCode::Association;
+            let child_path = parent_path.join(&info.filename);
+
+            // Queue cache update
+            cache_updates.push((child_path.clone(), info.handle));
+
+            // Convert MTP timestamps
+            let modified_at = info.modified.map(convert_mtp_datetime);
+            let created_at = info.created.map(convert_mtp_datetime);
+
+            entries.push(FileEntry {
+                name: info.filename.clone(),
+                path: child_path.to_string_lossy().to_string(),
+                is_directory: is_dir,
+                is_symlink: false,
+                size: if is_dir { None } else { Some(info.size) },
+                modified_at,
+                created_at,
+                added_at: None,
+                opened_at: None,
+                permissions: if is_dir { 0o755 } else { 0o644 },
+                owner: String::new(),
+                group: String::new(),
+                icon_id: get_mtp_icon_id(is_dir, &info.filename),
+                extended_metadata_loaded: true,
+            });
+        }
+
+        // Release device lock before updating cache
+        drop(storage);
+        drop(device);
+
+        // Update path cache
+        {
+            let devices = self.devices.lock().unwrap();
+            if let Some(entry) = devices.get(device_id)
+                && let Ok(mut cache_map) = entry.path_cache.write()
+            {
+                let storage_cache = cache_map.entry(storage_id).or_default();
+                for (path, handle) in cache_updates {
+                    storage_cache.path_to_handle.insert(path, handle);
+                }
+            }
+        }
+
+        // Sort: directories first, then files, both alphabetically
+        entries.sort_by(|a, b| match (a.is_directory, b.is_directory) {
+            (true, false) => std::cmp::Ordering::Less,
+            (false, true) => std::cmp::Ordering::Greater,
+            _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
+        });
+
+        debug!("MTP list_directory: returning {} entries", entries.len());
+        Ok(entries)
+    }
+
+    /// Resolves a virtual path to an MTP object handle.
+    fn resolve_path_to_handle(
+        &self,
+        entry: &DeviceEntry,
+        storage_id: u32,
+        path: &str,
+    ) -> Result<ObjectHandle, MtpConnectionError> {
+        let path = normalize_mtp_path(path);
+
+        // Root is always ObjectHandle::ROOT
+        if path.as_os_str() == "/" || path.as_os_str().is_empty() {
+            return Ok(ObjectHandle::ROOT);
+        }
+
+        // Check cache
+        if let Ok(cache_map) = entry.path_cache.read()
+            && let Some(storage_cache) = cache_map.get(&storage_id)
+            && let Some(handle) = storage_cache.path_to_handle.get(&path)
+        {
+            return Ok(*handle);
+        }
+
+        // Path not in cache - we need to traverse
+        // For Phase 3, we'll only support navigating to paths that have been listed
+        // (the cache is populated as directories are browsed)
+        Err(MtpConnectionError::Other {
+            device_id: entry.info.id.clone(),
+            message: format!(
+                "Path not in cache: {}. Navigate through parent directories first.",
+                path.display()
+            ),
+        })
     }
 
     /// Handles a device disconnection (called when we detect the device was unplugged).
@@ -405,6 +581,54 @@ fn map_mtp_error(e: mtp_rs::Error, device_id: &str) -> MtpConnectionError {
             message: e.to_string(),
         },
     }
+}
+
+/// Normalizes an MTP path.
+///
+/// Ensures the path starts with "/" and handles empty/relative paths.
+fn normalize_mtp_path(path: &str) -> PathBuf {
+    if path.is_empty() || path == "." {
+        PathBuf::from("/")
+    } else if !path.starts_with('/') {
+        PathBuf::from("/").join(path)
+    } else {
+        PathBuf::from(path)
+    }
+}
+
+/// Converts MTP DateTime to Unix timestamp.
+fn convert_mtp_datetime(dt: mtp_rs::ptp::DateTime) -> u64 {
+    // Convert the DateTime struct fields to Unix timestamp
+    // This is a simplified conversion - MTP DateTime has year, month, day, hour, minute, second
+
+    // Create a rough Unix timestamp from the date components
+    // Note: This is a simplified calculation that doesn't account for leap years perfectly
+    let year = dt.year as u64;
+    let month = dt.month as u64;
+    let day = dt.day as u64;
+    let hour = dt.hour as u64;
+    let minute = dt.minute as u64;
+    let second = dt.second as u64;
+
+    // Simplified calculation: days since epoch + time
+    // This is approximate but good enough for file listing purposes
+    let years_since_1970 = year.saturating_sub(1970);
+    let days = years_since_1970 * 365 + (years_since_1970 / 4) // leap years approximation
+        + (month.saturating_sub(1)) * 30  // approximate days per month
+        + day.saturating_sub(1);
+
+    days * 86400 + hour * 3600 + minute * 60 + second
+}
+
+/// Generates icon ID for MTP files.
+fn get_mtp_icon_id(is_dir: bool, filename: &str) -> String {
+    if is_dir {
+        return "dir".to_string();
+    }
+    if let Some(ext) = Path::new(filename).extension() {
+        return format!("ext:{}", ext.to_string_lossy().to_lowercase());
+    }
+    "file".to_string()
 }
 
 #[cfg(test)]

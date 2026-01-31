@@ -2,6 +2,7 @@
     import { onMount, onDestroy } from 'svelte'
     import { listVolumes, findContainingVolume, listen, type UnlistenFn } from '$lib/tauri-commands'
     import type { VolumeInfo, LocationCategory } from './types'
+    import { getDevices, initialize as initMtpStore, type MtpDeviceState } from '$lib/mtp'
 
     interface Props {
         volumeId: string
@@ -12,6 +13,7 @@
     const { volumeId, currentPath, onVolumeChange }: Props = $props()
 
     let volumes = $state<VolumeInfo[]>([])
+    let mtpDevices = $state<MtpDeviceState[]>([])
     let isOpen = $state(false)
     let highlightedIndex = $state(-1)
     let dropdownRef: HTMLDivElement | undefined = $state()
@@ -24,10 +26,24 @@
 
     // Current volume info derived from volumes list (the actual containing volume)
     // Special case: 'network' is a virtual volume, not from the backend
+    // Special case: MTP devices are handled via mtp:// paths
     const currentVolume = $derived(
         volumeId === 'network'
             ? { id: 'network', name: 'Network', path: 'smb://', category: 'network' as const, isEjectable: false }
-            : volumes.find((v) => v.id === containingVolumeId),
+            : volumeId.startsWith('mtp-')
+              ? (() => {
+                    const mtpDevice = mtpDevices.find((d) => d.device.id === volumeId)
+                    return mtpDevice
+                        ? {
+                              id: mtpDevice.device.id,
+                              name: mtpDevice.displayName,
+                              path: `mtp://${mtpDevice.device.id}`,
+                              category: 'mobile_device' as const,
+                              isEjectable: true,
+                          }
+                        : undefined
+                })()
+              : volumes.find((v) => v.id === containingVolumeId),
     )
     const currentVolumeName = $derived(currentVolume?.name ?? 'Volume')
     const currentVolumeIcon = $derived(getIconForVolume(currentVolume))
@@ -68,13 +84,28 @@
             { category: 'main_volume', label: 'Volumes' },
             { category: 'attached_volume', label: '' }, // No label, continues main volumes
             { category: 'cloud_drive', label: 'Cloud' },
+            { category: 'mobile_device', label: 'Mobile' },
             { category: 'network', label: 'Network' },
         ]
 
         const groups: { category: LocationCategory; label: string; items: VolumeInfo[] }[] = []
 
         for (const { category, label } of categoryOrder) {
-            if (category === 'network') {
+            if (category === 'mobile_device') {
+                // Mobile section: show connected MTP devices
+                const mobileItems: VolumeInfo[] = mtpDevices.map((d) => ({
+                    id: d.device.id,
+                    name: d.displayName,
+                    path: `mtp://${d.device.id}`,
+                    category: 'mobile_device' as const,
+                    icon: undefined, // Will use 📱 placeholder
+                    isEjectable: true,
+                }))
+
+                if (mobileItems.length > 0) {
+                    groups.push({ category, label, items: mobileItems })
+                }
+            } else if (category === 'network') {
                 // Network section: show a single "Network" item that opens NetworkBrowser
                 // Also include any pre-mounted network volumes (mounted shares)
                 const networkVolumes = vols.filter((v) => v.category === 'network')
@@ -234,8 +265,15 @@
         }
     })
 
+    async function loadMtpDevices() {
+        // Initialize the MTP store if needed, then get devices
+        await initMtpStore()
+        mtpDevices = getDevices()
+    }
+
     onMount(async () => {
         await loadVolumes()
+        await loadMtpDevices()
         await updateContainingVolume(currentPath)
 
         // Listen for volume mount/unmount events
@@ -276,6 +314,8 @@
     <span class="volume-name" class:is-open={isOpen} onclick={handleToggle}>
         {#if currentVolumeIcon}
             <img class="icon" src={currentVolumeIcon} alt="" />
+        {:else if volumeId.startsWith('mtp-')}
+            <span class="icon-emoji">📱</span>
         {:else if volumeId === 'network'}
             <span class="icon-emoji">🌐</span>
         {/if}
@@ -314,6 +354,8 @@
                         {/if}
                         {#if volume.category === 'cloud_drive'}
                             <img class="volume-icon" src="/icons/sync-online-only.svg" alt="" />
+                        {:else if volume.category === 'mobile_device'}
+                            <span class="volume-icon-placeholder">📱</span>
                         {:else if volume.category === 'network'}
                             <span class="volume-icon-placeholder">🌐</span>
                         {:else if volume.icon}

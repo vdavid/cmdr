@@ -1,5 +1,6 @@
 //! Tauri commands for MTP (Android device) operations.
 
+use crate::file_system::FileEntry;
 use crate::mtp::{self, ConnectedDeviceInfo, MtpConnectionError, MtpDeviceInfo, MtpStorageInfo};
 use tauri::AppHandle;
 
@@ -84,4 +85,29 @@ pub fn get_mtp_storages(device_id: String) -> Vec<MtpStorageInfo> {
         .get_device_info(&device_id)
         .map(|info| info.storages)
         .unwrap_or_default()
+}
+
+/// Lists the contents of a directory on a connected MTP device.
+///
+/// Returns file entries in the same format as local directory listings,
+/// allowing the frontend to use the same file list components.
+///
+/// # Arguments
+///
+/// * `device_id` - The connected device ID
+/// * `storage_id` - The storage ID within the device
+/// * `path` - Virtual path to list (for example, "/" or "/DCIM")
+///
+/// # Returns
+///
+/// A vector of FileEntry objects, sorted with directories first.
+#[tauri::command]
+pub async fn list_mtp_directory(
+    device_id: String,
+    storage_id: u32,
+    path: String,
+) -> Result<Vec<FileEntry>, MtpConnectionError> {
+    mtp::connection_manager()
+        .list_directory(&device_id, storage_id, &path)
+        .await
 }

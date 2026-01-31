@@ -361,6 +361,8 @@ pub fn run() {
             commands::mtp::get_ptpcamerad_workaround_command,
             #[cfg(target_os = "macos")]
             commands::mtp::get_mtp_storages,
+            #[cfg(target_os = "macos")]
+            commands::mtp::list_mtp_directory,
             #[cfg(not(target_os = "macos"))]
             stubs::mtp::list_mtp_devices,
             #[cfg(not(target_os = "macos"))]
@@ -373,6 +375,8 @@ pub fn run() {
             stubs::mtp::get_ptpcamerad_workaround_command,
             #[cfg(not(target_os = "macos"))]
             stubs::mtp::get_mtp_storages,
+            #[cfg(not(target_os = "macos"))]
+            stubs::mtp::list_mtp_directory,
             // Volume commands (platform-specific)
             #[cfg(target_os = "macos")]
             commands::volumes::list_volumes,

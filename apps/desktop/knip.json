@@ -10,7 +10,8 @@
         "src/lib/settings/settings-store.ts",
         "src/lib/settings/settings-window.ts",
         "src/lib/settings/types.ts",
-        "src/lib/shortcuts/**"
+        "src/lib/shortcuts/**",
+        "src/lib/mtp/mtp-store.svelte.ts"
     ],
     "ignoreDependencies": [
         "@tauri-apps/cli",

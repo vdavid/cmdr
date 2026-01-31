@@ -7,7 +7,7 @@
 //!
 //! - `types`: Type definitions for frontend communication
 //! - `discovery`: Device detection using mtp-rs
-//! - `connection`: Device connection management with global registry
+//! - `connection`: Device connection management with global registry and file browsing
 //! - `macos_workaround`: Handles ptpcamerad interference on macOS
 //!
 //! # Platform Support

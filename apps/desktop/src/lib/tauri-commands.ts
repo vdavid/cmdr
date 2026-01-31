@@ -1935,3 +1935,15 @@ export async function onMtpDeviceDisconnected(
         callback(event.payload)
     })
 }
+
+/**
+ * Lists the contents of a directory on a connected MTP device.
+ * Returns file entries in the same format as local directory listings.
+ * @param deviceId - The connected device ID
+ * @param storageId - The storage ID within the device
+ * @param path - Virtual path to list (for example, "/" or "/DCIM")
+ * @returns Array of FileEntry objects, sorted with directories first
+ */
+export async function listMtpDirectory(deviceId: string, storageId: number, path: string): Promise<FileEntry[]> {
+    return invoke<FileEntry[]>('list_mtp_directory', { deviceId, storageId, path })
+}
