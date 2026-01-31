@@ -14,12 +14,8 @@
         shouldResetCache,
     } from './file-list-utils'
     import { formatSizeTriads, formatHumanReadable } from './selection-info-utils'
-    import {
-        formatDateShort,
-        getVisibleItemsCount as getVisibleItemsCountUtil,
-        FULL_LIST_ROW_HEIGHT,
-        FULL_LIST_BUFFER_SIZE,
-    } from './full-list-utils'
+    import { getVisibleItemsCount as getVisibleItemsCountUtil, FULL_LIST_BUFFER_SIZE } from './full-list-utils'
+    import { getRowHeight, formatDateTime } from '$lib/settings/reactive-settings.svelte'
 
     interface Props {
         listingId: string
@@ -67,7 +63,8 @@
     let isFetching = $state(false)
 
     // ==== Virtual scrolling constants ====
-    const ROW_HEIGHT = FULL_LIST_ROW_HEIGHT
+    // Row height is reactive based on UI density setting
+    const rowHeight = $derived(getRowHeight())
     const BUFFER_SIZE = FULL_LIST_BUFFER_SIZE
 
     // ==== Virtual scrolling state ====
@@ -79,7 +76,7 @@
     const virtualWindow = $derived(
         calculateVirtualWindow({
             direction: 'vertical',
-            itemSize: ROW_HEIGHT,
+            itemSize: rowHeight,
             bufferSize: BUFFER_SIZE,
             containerSize: containerHeight,
             scrollOffset: scrollTop,
@@ -225,7 +222,7 @@
     // Exported for parent to call when arrow keys change cursor position
     export function scrollToIndex(index: number) {
         if (!scrollContainer) return
-        const newScrollTop = getScrollToPosition(index, ROW_HEIGHT, scrollTop, containerHeight)
+        const newScrollTop = getScrollToPosition(index, rowHeight, scrollTop, containerHeight)
         if (newScrollTop !== undefined) {
             scrollContainer.scrollTop = newScrollTop
         }
@@ -251,7 +248,7 @@
 
     // Returns the number of visible items (for Page Up/Down navigation)
     export function getVisibleItemsCount(): number {
-        return getVisibleItemsCountUtil(containerHeight, ROW_HEIGHT)
+        return getVisibleItemsCountUtil(containerHeight, rowHeight)
     }
 </script>
 
@@ -304,6 +301,7 @@
                         class="file-entry"
                         class:is-under-cursor={globalIndex === cursorIndex}
                         class:is-selected={selectedIndices.has(globalIndex)}
+                        style="height: {rowHeight}px;"
                         onmousedown={(e: MouseEvent) => {
                             handleMouseDown(e, globalIndex)
                         }}
@@ -329,7 +327,7 @@
                                 {/each}
                             {/if}
                         </span>
-                        <span class="col-date">{formatDateShort(file.modifiedAt)}</span>
+                        <span class="col-date">{formatDateTime(file.modifiedAt)}</span>
                     </div>
                 {/each}
             </div>
@@ -380,7 +378,7 @@
 
     .file-entry {
         display: grid;
-        height: 20px;
+        /* height is set via inline style for reactivity */
         padding: var(--spacing-xxs) var(--spacing-sm);
         gap: var(--spacing-sm);
         align-items: center;

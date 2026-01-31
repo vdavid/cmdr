@@ -39,20 +39,28 @@ const scopeHierarchy: Record<CommandScope, CommandScope[]> = {
 /**
  * Get all scopes that are active when the given scope is current.
  * Returns scopes in priority order (most specific first).
+ * Returns empty array for unknown/compound scopes (like 'Main window/File list').
  */
-export function getActiveScopes(current: CommandScope): CommandScope[] {
-    return scopeHierarchy[current]
+export function getActiveScopes(current: string): CommandScope[] {
+    if (current in scopeHierarchy) {
+        return scopeHierarchy[current as CommandScope]
+    }
+    return []
 }
 
 /**
  * Check if two scopes overlap in the hierarchy.
  * Used for conflict detection - overlapping scopes can have conflicts.
  */
-export function scopesOverlap(scopeA: CommandScope, scopeB: CommandScope): boolean {
+export function scopesOverlap(scopeA: string, scopeB: string): boolean {
     const activeA = getActiveScopes(scopeA)
     const activeB = getActiveScopes(scopeB)
     // They overlap if either hierarchy includes the other scope
-    return activeA.includes(scopeB) || activeB.includes(scopeA)
+    // If either scope is unknown (empty activeScopes), treat them as non-overlapping
+    if (activeA.length === 0 || activeB.length === 0) {
+        return false
+    }
+    return activeA.includes(scopeB as CommandScope) || activeB.includes(scopeA as CommandScope)
 }
 
 /** Get all available scopes for display/iteration */

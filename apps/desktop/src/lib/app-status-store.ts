@@ -296,3 +296,39 @@ export async function savePaletteQuery(query: string): Promise<void> {
         // Silently fail
     }
 }
+
+// ============================================================================
+// Settings window section persistence
+// ============================================================================
+
+const DEFAULT_SETTINGS_SECTION = ['General', 'Appearance']
+
+/**
+ * Loads the last viewed settings section.
+ * Returns default section if not previously saved.
+ */
+export async function loadLastSettingsSection(): Promise<string[]> {
+    try {
+        const store = await getStore()
+        const section = await store.get('lastSettingsSection')
+        if (Array.isArray(section) && section.every((s): s is string => typeof s === 'string')) {
+            return section
+        }
+        return DEFAULT_SETTINGS_SECTION
+    } catch {
+        return DEFAULT_SETTINGS_SECTION
+    }
+}
+
+/**
+ * Saves the current settings section for next time.
+ */
+export async function saveLastSettingsSection(section: string[]): Promise<void> {
+    try {
+        const store = await getStore()
+        await store.set('lastSettingsSection', section)
+        await store.save()
+    } catch {
+        // Silently fail
+    }
+}

@@ -4,9 +4,21 @@
  */
 
 import { load, type Store } from '@tauri-apps/plugin-store'
+import { emit, listen, type UnlistenFn } from '@tauri-apps/api/event'
 import type { SettingId, SettingsValues } from './types'
 import { SettingValidationError } from './types'
 import { getDefaultValue, settingsRegistry, validateSettingValue } from './settings-registry'
+import { getAppLogger } from '$lib/logger'
+
+const log = getAppLogger('settings')
+
+// Event name for cross-window setting changes
+const SETTING_CHANGED_EVENT = 'settings:changed'
+
+interface SettingChangedPayload {
+    id: string
+    value: unknown
+}
 
 // ============================================================================
 // Store Configuration
@@ -23,6 +35,7 @@ const SAVE_DEBOUNCE_MS = 500
 // Using Record to allow any setting ID assignment
 const settingsCache: Record<string, unknown> = {}
 let initialized = false
+let crossWindowUnlisten: UnlistenFn | null = null
 
 // ============================================================================
 // Initialization
@@ -30,12 +43,15 @@ let initialized = false
 
 async function getStore(): Promise<Store> {
     if (!storeInstance) {
+        log.debug('Creating new store instance for {storeName}', { storeName: STORE_NAME })
         // Build defaults from registry
         const defaults: Record<string, unknown> = {}
         for (const def of settingsRegistry) {
             defaults[def.id] = def.default
         }
+        log.debug('Loading store with {count} default settings', { count: Object.keys(defaults).length })
         storeInstance = await load(STORE_NAME, { defaults, autoSave: false })
+        log.debug('Store instance created successfully')
     }
     return storeInstance
 }
@@ -44,32 +60,91 @@ async function getStore(): Promise<Store> {
  * Initialize the settings store. Must be called before using getSetting/setSetting.
  */
 export async function initializeSettings(): Promise<void> {
-    if (initialized) return
+    log.debug('initializeSettings() called, initialized={initialized}', { initialized })
 
-    const store = await getStore()
-
-    // Check schema version and migrate if needed
-    const version = await store.get<number>('_schemaVersion')
-    if (version !== SCHEMA_VERSION) {
-        await migrateSettings(store, version ?? 0)
+    if (initialized) {
+        log.debug('Settings already initialized, returning early')
+        return
     }
 
-    // Load all settings into cache
-    for (const def of settingsRegistry) {
-        const stored = await store.get<unknown>(def.id)
-        if (stored !== null && stored !== undefined) {
-            try {
-                validateSettingValue(def.id, stored)
-                settingsCache[def.id] = stored
-            } catch {
-                // Invalid stored value, will use default
-                // eslint-disable-next-line no-console
-                console.warn(`Invalid stored value for ${def.id}, using default`)
+    log.info('Starting settings initialization')
+
+    try {
+        const store = await getStore()
+        log.debug('Got store instance')
+
+        // Check schema version and migrate if needed
+        const version = await store.get<number>('_schemaVersion')
+        log.debug('Current schema version: {version}, expected: {expected}', { version, expected: SCHEMA_VERSION })
+
+        if (version !== SCHEMA_VERSION) {
+            log.info('Schema version mismatch, migrating from {from} to {to}', {
+                from: version ?? 0,
+                to: SCHEMA_VERSION,
+            })
+            await migrateSettings(store, version ?? 0)
+        }
+
+        // Load all settings into cache
+        log.debug('Loading {count} settings from store into cache', { count: settingsRegistry.length })
+        let loadedCount = 0
+        let defaultCount = 0
+
+        for (const def of settingsRegistry) {
+            const stored = await store.get<unknown>(def.id)
+            if (stored !== null && stored !== undefined) {
+                try {
+                    validateSettingValue(def.id, stored)
+                    settingsCache[def.id] = stored
+                    loadedCount++
+                } catch {
+                    // Invalid stored value, will use default
+                    log.warn('Invalid stored value for {id}, using default', { id: def.id })
+                    defaultCount++
+                }
+            } else {
+                defaultCount++
             }
         }
+
+        log.info('Settings loaded: {loaded} from store, {defaults} using defaults', {
+            loaded: loadedCount,
+            defaults: defaultCount,
+        })
+
+        // Listen for cross-window setting changes
+        await setupCrossWindowListener()
+
+        initialized = true
+        log.info('Settings initialization complete')
+    } catch (error) {
+        log.error('Failed to initialize settings: {error}', { error })
+        throw error
+    }
+}
+
+/**
+ * Set up listener for setting changes from other windows.
+ */
+async function setupCrossWindowListener(): Promise<void> {
+    if (crossWindowUnlisten) {
+        return // Already listening
     }
 
-    initialized = true
+    log.debug('Setting up cross-window settings listener')
+
+    crossWindowUnlisten = await listen<SettingChangedPayload>(SETTING_CHANGED_EVENT, (event) => {
+        const { id, value } = event.payload
+        log.debug('Received cross-window setting change: {id}', { id })
+
+        // Update our cache without re-emitting (to avoid loops)
+        settingsCache[id] = value
+
+        // Notify local listeners
+        notifyListeners(id as SettingId, value as SettingsValues[SettingId])
+    })
+
+    log.debug('Cross-window settings listener ready')
 }
 
 /**
@@ -114,6 +189,8 @@ export function getSetting<K extends SettingId>(id: K): SettingsValues[K] {
  * Throws SettingValidationError if invalid.
  */
 export function setSetting<K extends SettingId>(id: K, value: SettingsValues[K]): void {
+    log.debug('setSetting({id}, {value})', { id, value })
+
     // Validate the value
     validateSettingValue(id, value)
 
@@ -123,8 +200,12 @@ export function setSetting<K extends SettingId>(id: K, value: SettingsValues[K])
     // Debounced save to disk
     scheduleSave()
 
-    // Notify listeners
+    // Notify local listeners
     notifyListeners(id, value)
+
+    // Emit cross-window event so other windows get the update
+    void emit(SETTING_CHANGED_EVENT, { id, value } satisfies SettingChangedPayload)
+    log.debug('Emitted cross-window setting change event for {id}', { id })
 }
 
 /**
@@ -188,10 +269,15 @@ function scheduleSave(): void {
 }
 
 async function saveToStore(): Promise<void> {
+    log.debug('saveToStore() called')
+
     try {
         const store = await getStore()
 
         // Only save non-default values to keep the file small
+        let savedCount = 0
+        let removedCount = 0
+
         for (const def of settingsRegistry) {
             const id = def.id as SettingId
             const value = settingsCache[id]
@@ -199,24 +285,30 @@ async function saveToStore(): Promise<void> {
 
             if (value !== undefined && value !== defaultValue) {
                 await store.set(id, value)
+                savedCount++
             } else {
                 // Remove from store if it's the default
                 await store.delete(id)
+                removedCount++
             }
         }
 
         await store.set('_schemaVersion', SCHEMA_VERSION)
         await store.save()
+        log.info('Settings saved: {saved} non-default values, {removed} reset to default', {
+            saved: savedCount,
+            removed: removedCount,
+        })
     } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('Failed to save settings:', error)
+        log.error('Failed to save settings: {error}', { error })
         // Retry once
         try {
+            log.debug('Retrying save...')
             const store = await getStore()
             await store.save()
+            log.info('Retry save succeeded')
         } catch (retryError) {
-            // eslint-disable-next-line no-console
-            console.error('Retry failed:', retryError)
+            log.error('Retry save failed: {error}', { error: retryError })
             // Could show a toast here in the future
         }
     }

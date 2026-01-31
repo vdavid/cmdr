@@ -41,6 +41,8 @@ const debugCategories: string[] = [
     // 'licensing',
     // 'copyProgress', // Enable to debug copy operation progress events
     // 'viewer', // Enable to debug file viewer streaming/caching
+    'settings', // Enable to debug settings dialog initialization and persistence
+    'reactive-settings', // Enable to debug reactive settings updates
 ]
 
 /**
