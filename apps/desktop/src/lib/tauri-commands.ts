@@ -1733,3 +1733,51 @@ export async function updateFileWatcherDebounce(debounceMs: number): Promise<voi
 export async function updateServiceResolveTimeout(timeoutMs: number): Promise<void> {
     await invoke('update_service_resolve_timeout', { timeoutMs })
 }
+
+// ============================================================================
+// MTP (Android device) support (macOS only)
+// ============================================================================
+
+/** Information about a connected MTP device. */
+export interface MtpDeviceInfo {
+    /** Unique identifier for the device (based on USB bus/address). */
+    id: string
+    /** USB vendor ID (e.g., 0x18d1 for Google). */
+    vendorId: number
+    /** USB product ID. */
+    productId: number
+    /** Device manufacturer name, if available. */
+    manufacturer?: string
+    /** Device product name, if available. */
+    product?: string
+    /** USB serial number, if available. */
+    serialNumber?: string
+}
+
+/**
+ * Gets a display name for an MTP device.
+ * Prefers product name, falls back to manufacturer, then vendor:product ID.
+ */
+export function getMtpDeviceDisplayName(device: MtpDeviceInfo): string {
+    if (device.product) {
+        return device.product
+    }
+    if (device.manufacturer) {
+        return `${device.manufacturer} device`
+    }
+    return `MTP device (${device.vendorId.toString(16).padStart(4, '0')}:${device.productId.toString(16).padStart(4, '0')})`
+}
+
+/**
+ * Lists all connected MTP devices.
+ * Only available on macOS.
+ * @returns Array of MtpDeviceInfo objects
+ */
+export async function listMtpDevices(): Promise<MtpDeviceInfo[]> {
+    try {
+        return await invoke<MtpDeviceInfo[]>('list_mtp_devices')
+    } catch {
+        // Command not available (non-macOS) - return empty array
+        return []
+    }
+}

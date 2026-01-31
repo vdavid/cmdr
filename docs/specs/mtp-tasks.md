@@ -5,21 +5,21 @@ Task breakdown for adding Android device (MTP) support to Cmdr. See [mtp.md](mtp
 ## Phase 1: Foundation
 
 ### 1.1 Add mtp-rs dependency
-- [ ] Add `mtp-rs = { path = "../../../mtp-rs" }` to Cargo.toml
-- [ ] Verify it compiles on macOS
-- [ ] Add `mtp-rs` to the "silence unused crate" section in lib.rs (temporary, until used)
+- [x] Add `mtp-rs = { path = "../../../mtp-rs" }` to Cargo.toml
+- [x] Verify it compiles on macOS
+- [x] Add `mtp-rs` to the "silence unused crate" section in lib.rs (temporary, until used)
 
 ### 1.2 Create mtp module structure
-- [ ] Create `src-tauri/src/mtp/mod.rs` with submodule declarations
-- [ ] Create `src-tauri/src/mtp/types.rs` with `MtpDeviceInfo`, `MtpStorageInfo` structs
-- [ ] Add `mod mtp;` to lib.rs (behind `#[cfg(target_os = "macos")]`)
+- [x] Create `src-tauri/src/mtp/mod.rs` with submodule declarations
+- [x] Create `src-tauri/src/mtp/types.rs` with `MtpDeviceInfo`, `MtpStorageInfo` structs
+- [x] Add `mod mtp;` to lib.rs (behind `#[cfg(target_os = "macos")]`)
 
 ### 1.3 Device discovery
-- [ ] Create `src-tauri/src/mtp/discovery.rs`
-- [ ] Implement `list_mtp_devices()` using `MtpDevice::list_devices()`
-- [ ] Add basic Tauri command `list_mtp_devices` in `src-tauri/src/commands/mtp.rs`
-- [ ] Register command in lib.rs
-- [ ] Add TypeScript wrapper in `tauri-commands.ts`
+- [x] Create `src-tauri/src/mtp/discovery.rs`
+- [x] Implement `list_mtp_devices()` using `MtpDevice::list_devices()`
+- [x] Add basic Tauri command `list_mtp_devices` in `src-tauri/src/commands/mtp.rs`
+- [x] Register command in lib.rs
+- [x] Add TypeScript wrapper in `tauri-commands.ts`
 
 **Checkpoint**: Can list connected Android devices from the frontend.
 
