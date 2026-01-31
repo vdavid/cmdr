@@ -1,6 +1,14 @@
 <script lang="ts">
     import { ToggleGroup } from '@ark-ui/svelte/toggle-group'
-    import { getSetting, setSetting, getSettingDefinition, type SettingId, type SettingsValues } from '$lib/settings'
+    import {
+        getSetting,
+        setSetting,
+        getSettingDefinition,
+        onSpecificSettingChange,
+        type SettingId,
+        type SettingsValues,
+    } from '$lib/settings'
+    import { onMount } from 'svelte'
 
     interface Props {
         id: SettingId
@@ -13,6 +21,13 @@
     const options = definition?.constraints?.options ?? []
 
     let value = $state([String(getSetting(id))])
+
+    // Subscribe to setting changes (for external resets)
+    onMount(() => {
+        return onSpecificSettingChange(id, (_id, newValue) => {
+            value = [String(newValue)]
+        })
+    })
 
     function handleValueChange(details: { value: string[] }) {
         if (details.value.length === 0) return // Don't allow deselecting all

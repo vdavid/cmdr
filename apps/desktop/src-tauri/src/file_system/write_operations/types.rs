@@ -181,7 +181,9 @@ pub struct DryRunResult {
     pub conflicts_sampled: bool,
 }
 
-/// Maximum number of conflicts to include in DryRunResult
+/// Legacy constant, kept for backward compatibility.
+/// The actual value is now configurable via WriteOperationConfig.max_conflicts_to_show.
+#[allow(dead_code, reason = "Kept for backward compatibility")]
 pub const MAX_CONFLICTS_IN_RESULT: usize = 200;
 
 // ============================================================================
@@ -396,6 +398,9 @@ pub struct WriteOperationConfig {
     /// Preview scan ID to reuse cached scan results (from start_scan_preview)
     #[serde(default)]
     pub preview_id: Option<String>,
+    /// Maximum number of conflicts to include in DryRunResult (default: 100)
+    #[serde(default = "default_max_conflicts_to_show")]
+    pub max_conflicts_to_show: usize,
 }
 
 impl Default for WriteOperationConfig {
@@ -408,12 +413,17 @@ impl Default for WriteOperationConfig {
             sort_column: SortColumn::default(),
             sort_order: SortOrder::default(),
             preview_id: None,
+            max_conflicts_to_show: default_max_conflicts_to_show(),
         }
     }
 }
 
 fn default_progress_interval() -> u64 {
     200
+}
+
+fn default_max_conflicts_to_show() -> usize {
+    100
 }
 
 // ============================================================================

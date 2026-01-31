@@ -1,7 +1,15 @@
 <script lang="ts">
     import { Slider, type SliderValueChangeDetails } from '@ark-ui/svelte/slider'
     import { NumberInput, type NumberInputValueChangeDetails } from '@ark-ui/svelte/number-input'
-    import { getSetting, setSetting, getSettingDefinition, type SettingId, type SettingsValues } from '$lib/settings'
+    import {
+        getSetting,
+        setSetting,
+        getSettingDefinition,
+        onSpecificSettingChange,
+        type SettingId,
+        type SettingsValues,
+    } from '$lib/settings'
+    import { onMount } from 'svelte'
 
     interface Props {
         id: SettingId
@@ -18,6 +26,13 @@
     const sliderStops = definition?.constraints?.sliderStops ?? []
 
     let value = $state(getSetting(id) as number)
+
+    // Subscribe to setting changes (for external resets)
+    onMount(() => {
+        return onSpecificSettingChange(id, (_id, newValue) => {
+            value = newValue as number
+        })
+    })
 
     function handleSliderChange(details: SliderValueChangeDetails) {
         const newValue = details.value[0]

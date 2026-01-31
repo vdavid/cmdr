@@ -25,7 +25,9 @@
         SortOrder,
         ConflictResolution,
     } from '$lib/file-explorer/types'
-    import { formatHumanReadable, formatDate } from '$lib/file-explorer/selection-info-utils'
+    import { formatDate } from '$lib/file-explorer/selection-info-utils'
+    import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
+    import { getSetting } from '$lib/settings'
     import DirectionIndicator from './DirectionIndicator.svelte'
     import { getAppLogger } from '$lib/logger'
 
@@ -290,9 +292,12 @@
         log.debug('Event subscriptions ready, starting copyFiles')
 
         try {
+            const progressIntervalMs = getSetting('fileOperations.progressUpdateInterval')
+            const maxConflictsToShow = getSetting('fileOperations.maxConflictsToShow')
             const result = await copyFiles(sourcePaths, destinationPath, {
                 conflictResolution: 'stop',
-                progressIntervalMs: 100,
+                progressIntervalMs,
+                maxConflictsToShow,
                 sortColumn,
                 sortOrder,
                 previewId,
@@ -462,7 +467,7 @@
                     <div class="conflict-file">
                         <span class="conflict-file-label">Existing:</span>
                         <span class="conflict-file-size {getSizeColorClass(conflictEvent.destinationSize)}"
-                            >{formatHumanReadable(conflictEvent.destinationSize)}</span
+                            >{formatFileSize(conflictEvent.destinationSize)}</span
                         >
                         {#if existingIsLarger}<span class="conflict-annotation larger">(larger)</span>{/if}
                         <span class="conflict-file-date"
@@ -475,7 +480,7 @@
                     <div class="conflict-file">
                         <span class="conflict-file-label">New:</span>
                         <span class="conflict-file-size {getSizeColorClass(conflictEvent.sourceSize)}"
-                            >{formatHumanReadable(conflictEvent.sourceSize)}</span
+                            >{formatFileSize(conflictEvent.sourceSize)}</span
                         >
                         {#if newIsLarger}<span class="conflict-annotation larger">(larger)</span>{/if}
                         <span class="conflict-file-date"

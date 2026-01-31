@@ -1,7 +1,6 @@
 <script lang="ts">
     import type { FileEntry, ListingStats } from './types'
     import {
-        formatHumanReadable,
         buildDateTooltip,
         getSizeDisplay,
         getDateDisplay,
@@ -12,6 +11,7 @@
         formatNumber,
         calculatePercentage,
     } from './selection-info-utils'
+    import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
 
     interface Props {
         /** View mode: 'brief' or 'full' */
@@ -63,9 +63,7 @@
     const isBrokenSymlink = $derived(checkBrokenSymlink(entry))
     const isPermissionDenied = $derived(checkPermissionDenied(entry))
     const sizeDisplay = $derived(getSizeDisplay(entry, isBrokenSymlink, isPermissionDenied))
-    const sizeTooltip = $derived(
-        entry?.size !== undefined && !isDirectory ? formatHumanReadable(entry.size) : undefined,
-    )
+    const sizeTooltip = $derived(entry?.size !== undefined && !isDirectory ? formatFileSize(entry.size) : undefined)
     const dateDisplay = $derived(getDateDisplay(entry, isBrokenSymlink, isPermissionDenied, currentDirModifiedAt))
     const dateTooltip = $derived(entry && !isBrokenSymlink && !isPermissionDenied ? buildDateTooltip(entry) : undefined)
 
@@ -197,7 +195,7 @@
 
     // Tooltip with human-readable sizes
     const selectionSizeTooltip = $derived(
-        hasFiles ? `${formatHumanReadable(selectedFileSize)} of ${formatHumanReadable(totalFileSize)}` : undefined,
+        hasFiles ? `${formatFileSize(selectedFileSize)} of ${formatFileSize(totalFileSize)}` : undefined,
     )
 </script>
 

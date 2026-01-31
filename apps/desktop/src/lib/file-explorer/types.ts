@@ -346,6 +346,8 @@ export interface WriteOperationConfig {
     sortOrder?: SortOrder
     /** Preview scan ID to reuse cached scan results (from start_scan_preview) */
     previewId?: string | null
+    /** Maximum number of conflicts to include in DryRunResult (default: 100) */
+    maxConflictsToShow?: number
 }
 
 /** Result of starting a write operation. */

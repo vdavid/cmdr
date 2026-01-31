@@ -58,3 +58,6 @@ export {
     searchSettings,
     sectionHasMatches,
 } from './settings-search'
+
+// Network settings helpers
+export { getMountTimeoutMs, getNetworkTimeoutMs, getShareCacheTtlMs } from './network-settings'

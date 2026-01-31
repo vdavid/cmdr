@@ -13,8 +13,11 @@
         calculateFetchRange,
         isRangeCached,
         shouldResetCache,
+        refetchIconsForEntries,
     } from './file-list-utils'
     import { getRowHeight } from '$lib/settings/reactive-settings.svelte'
+    import { getSetting } from '$lib/settings/settings-store'
+    import { extensionCacheCleared } from '$lib/icon-cache'
 
     interface Props {
         listingId: string
@@ -66,7 +69,8 @@
     // ==== Layout constants ====
     // Row height is reactive based on UI density setting
     const rowHeight = $derived(getRowHeight())
-    const BUFFER_COLUMNS = 2
+    // Buffer columns is reactive based on settings
+    const bufferColumns = $derived(getSetting('advanced.virtualizationBufferColumns'))
     const MIN_COLUMN_WIDTH = 100
     // const COLUMN_PADDING = 8 // horizontal padding inside each column (unused for now)
 
@@ -101,7 +105,7 @@
         calculateVirtualWindow({
             direction: 'horizontal',
             itemSize: maxFilenameWidth,
-            bufferSize: BUFFER_COLUMNS,
+            bufferSize: bufferColumns,
             containerSize: containerWidth,
             scrollOffset: scrollLeft,
             totalItems: totalColumns,
@@ -346,6 +350,15 @@
             scrollToIndex(cursorIndex)
         }
         prevContainerHeight = height
+    })
+
+    // Re-fetch icons when the extension icon cache is cleared (settings change)
+    $effect(() => {
+        void $extensionCacheCleared // Track the store value
+        // Re-fetch icons for all cached entries
+        if (cachedEntries.length > 0) {
+            refetchIconsForEntries(cachedEntries)
+        }
     })
 </script>
 

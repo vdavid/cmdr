@@ -3,9 +3,15 @@
  * Extracted for testability.
  */
 
+import { getSetting } from '$lib/settings/settings-store'
+
 /** Layout constants for Full mode */
 export const FULL_LIST_ROW_HEIGHT = 20
-export const FULL_LIST_BUFFER_SIZE = 20
+
+/** Gets the virtualization buffer size from settings (rows above/below visible area) */
+export function getVirtualizationBufferRows(): number {
+    return getSetting('advanced.virtualizationBufferRows')
+}
 
 /** Calculates the number of visible items based on container height */
 export function getVisibleItemsCount(containerHeight: number, rowHeight: number = FULL_LIST_ROW_HEIGHT): number {

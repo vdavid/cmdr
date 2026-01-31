@@ -1,6 +1,7 @@
 <script lang="ts">
     import { Switch } from '@ark-ui/svelte/switch'
-    import { getSetting, setSetting, type SettingId, type SettingsValues } from '$lib/settings'
+    import { getSetting, setSetting, onSpecificSettingChange, type SettingId, type SettingsValues } from '$lib/settings'
+    import { onMount } from 'svelte'
 
     interface Props {
         id: SettingId
@@ -10,6 +11,13 @@
     const { id, disabled = false }: Props = $props()
 
     let checked = $state(getSetting(id) as boolean)
+
+    // Subscribe to setting changes (for external resets)
+    onMount(() => {
+        return onSpecificSettingChange(id, (_id, newValue) => {
+            checked = newValue as boolean
+        })
+    })
 
     function handleChange(details: { checked: boolean }) {
         checked = details.checked

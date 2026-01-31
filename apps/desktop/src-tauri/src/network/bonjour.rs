@@ -38,8 +38,24 @@ const SMB_SERVICE_TYPE: &str = "_smb._tcp.";
 const LOCAL_DOMAIN: &str = "local.";
 /// Default SMB port.
 const SMB_DEFAULT_PORT: u16 = 445;
-/// Timeout for service resolution in seconds.
-const RESOLVE_TIMEOUT: f64 = 5.0;
+/// Default timeout for service resolution in seconds.
+const DEFAULT_RESOLVE_TIMEOUT_MS: u64 = 5000;
+
+/// Configured resolve timeout in milliseconds (set by frontend via update_resolve_timeout)
+static RESOLVE_TIMEOUT_MS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(DEFAULT_RESOLVE_TIMEOUT_MS);
+
+/// Updates the Bonjour service resolve timeout.
+/// This affects future service resolutions; ongoing resolutions keep their original timeout.
+pub fn update_resolve_timeout(ms: u64) {
+    RESOLVE_TIMEOUT_MS.store(ms, std::sync::atomic::Ordering::Relaxed);
+    debug!("Bonjour resolve timeout updated to {} ms", ms);
+}
+
+/// Gets the current resolve timeout in seconds (for NSNetService.resolveWithTimeout).
+fn get_resolve_timeout_seconds() -> f64 {
+    let ms = RESOLVE_TIMEOUT_MS.load(std::sync::atomic::Ordering::Relaxed);
+    ms as f64 / 1000.0
+}
 
 /// Global Bonjour discovery manager.
 static BONJOUR_MANAGER: OnceLock<Mutex<Option<BonjourManager>>> = OnceLock::new();
@@ -383,7 +399,7 @@ fn start_resolving_service(service: &NSNetService, host_id: &str) {
     }
 
     // Start resolution with timeout
-    resolve_service.resolveWithTimeout(RESOLVE_TIMEOUT);
+    resolve_service.resolveWithTimeout(get_resolve_timeout_seconds());
 
     // Store to keep alive
     manager

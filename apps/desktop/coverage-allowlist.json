@@ -34,6 +34,7 @@
         "settings/components/SettingRadioGroup.svelte": { "reason": "UI component, logic is simple" },
         "settings/components/SectionSummary.svelte": { "reason": "UI component, simple navigation cards" },
         "settings/format-utils.ts": { "reason": "Simple date formatting, low complexity" },
+        "settings/network-settings.ts": { "reason": "Thin wrapper over getSetting, requires mocking settings store" },
         "settings/reactive-settings.svelte.ts": { "reason": "Svelte reactive state, depends on settings store" },
         "settings/settings-applier.ts": { "reason": "Depends on DOM APIs (document.documentElement.style)" },
         "settings/components/SettingRow.svelte": { "reason": "UI component, layout only" },

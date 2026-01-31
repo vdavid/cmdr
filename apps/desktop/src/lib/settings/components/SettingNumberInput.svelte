@@ -1,6 +1,14 @@
 <script lang="ts">
     import { NumberInput, type NumberInputValueChangeDetails } from '@ark-ui/svelte/number-input'
-    import { getSetting, setSetting, getSettingDefinition, type SettingId, type SettingsValues } from '$lib/settings'
+    import {
+        getSetting,
+        setSetting,
+        getSettingDefinition,
+        onSpecificSettingChange,
+        type SettingId,
+        type SettingsValues,
+    } from '$lib/settings'
+    import { onMount } from 'svelte'
 
     interface Props {
         id: SettingId
@@ -16,6 +24,13 @@
     const step = definition?.constraints?.step ?? 1
 
     let value = $state(getSetting(id) as number)
+
+    // Subscribe to setting changes (for external resets)
+    onMount(() => {
+        return onSpecificSettingChange(id, (_id, newValue) => {
+            value = newValue as number
+        })
+    })
 
     function handleChange(details: NumberInputValueChangeDetails) {
         const newValue = Math.min(max, Math.max(min, details.valueAsNumber))

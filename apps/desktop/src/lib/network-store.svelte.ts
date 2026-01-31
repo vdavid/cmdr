@@ -13,6 +13,7 @@ import {
     prefetchShares as prefetchSharesCmd,
     getSmbCredentials,
 } from '$lib/tauri-commands'
+import { getNetworkTimeoutMs, getShareCacheTtlMs } from '$lib/settings/network-settings'
 import type { UnlistenFn } from '$lib/tauri-commands'
 import type { NetworkHost, DiscoveryState, ShareListResult, ShareListError } from './file-explorer/types'
 
@@ -87,7 +88,14 @@ function startPrefetchShares(host: NetworkHost) {
 
     prefetchingHosts.add(host.id)
 
-    void prefetchSharesCmd(host.id, host.hostname, host.ipAddress, host.port)
+    void prefetchSharesCmd(
+        host.id,
+        host.hostname,
+        host.ipAddress,
+        host.port,
+        getNetworkTimeoutMs(),
+        getShareCacheTtlMs(),
+    )
         .then(() => {
             // Prefetch succeeded - backend has cached it
             if (!shareStates.has(host.id)) {
@@ -110,7 +118,14 @@ async function fetchSharesSilent(host: NetworkHost): Promise<void> {
     if (!host.hostname) return
 
     try {
-        const result = await listSharesOnHost(host.id, host.hostname, host.ipAddress, host.port)
+        const result = await listSharesOnHost(
+            host.id,
+            host.hostname,
+            host.ipAddress,
+            host.port,
+            getNetworkTimeoutMs(),
+            getShareCacheTtlMs(),
+        )
         shareStates.set(host.id, { status: 'loaded', result, fetchedAt: Date.now() })
     } catch (error) {
         const shareError = error as ShareListError
@@ -242,16 +257,13 @@ export function isListingShares(hostId: string): boolean {
     return shareStates.get(hostId)?.status === 'loading'
 }
 
-/** Share data is considered stale after 30 seconds (matches backend cache TTL). */
-const STALE_THRESHOLD_MS = 30_000
-
 /**
- * Check if share data is stale (older than 30 seconds).
+ * Check if share data is stale (older than the configured cache TTL).
  */
 export function isShareDataStale(hostId: string): boolean {
     const state = shareStates.get(hostId)
     if (!state || state.status === 'loading') return false
-    return Date.now() - state.fetchedAt > STALE_THRESHOLD_MS
+    return Date.now() - state.fetchedAt > getShareCacheTtlMs()
 }
 
 /**
@@ -267,7 +279,14 @@ export async function fetchShares(host: NetworkHost): Promise<ShareListResult> {
     shareStates.set(host.id, { status: 'loading' })
 
     try {
-        const result = await listSharesOnHost(host.id, host.hostname, host.ipAddress, host.port)
+        const result = await listSharesOnHost(
+            host.id,
+            host.hostname,
+            host.ipAddress,
+            host.port,
+            getNetworkTimeoutMs(),
+            getShareCacheTtlMs(),
+        )
         shareStates.set(host.id, { status: 'loaded', result, fetchedAt: Date.now() })
         return result
     } catch (error) {

@@ -10,7 +10,7 @@ import {
     calculateFetchRange,
     isRangeCached,
     shouldResetCache,
-    PREFETCH_BUFFER,
+    getPrefetchBufferSize,
     fetchVisibleRange,
 } from './file-list-utils'
 import type { FileEntry } from './types'
@@ -24,6 +24,9 @@ vi.mock('$lib/icon-cache', () => ({
 }))
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
     getUseAppIconsForDocuments: vi.fn().mockReturnValue(true),
+}))
+vi.mock('$lib/settings/settings-store', () => ({
+    getSetting: vi.fn().mockReturnValue(200),
 }))
 
 import { getFileRange } from '$lib/tauri-commands'
@@ -202,6 +205,9 @@ describe('getFallbackEmoji', () => {
 })
 
 describe('calculateFetchRange', () => {
+    // getPrefetchBufferSize() returns 200 (mocked)
+    const prefetchBuffer = getPrefetchBufferSize()
+
     it('calculates range without parent entry', () => {
         const result = calculateFetchRange({
             startItem: 150,
@@ -209,9 +215,9 @@ describe('calculateFetchRange', () => {
             hasParent: false,
             totalCount: 500,
         })
-        // PREFETCH_BUFFER is 200, so buffer is 100 on each side
-        expect(result.fetchStart).toBe(150 - PREFETCH_BUFFER / 2) // 50
-        expect(result.fetchEnd).toBe(160 + PREFETCH_BUFFER / 2) // 260
+        // prefetchBuffer is 200, so buffer is 100 on each side
+        expect(result.fetchStart).toBe(150 - prefetchBuffer / 2) // 50
+        expect(result.fetchEnd).toBe(160 + prefetchBuffer / 2) // 260
     })
 
     it('calculates range with parent entry', () => {
@@ -222,8 +228,8 @@ describe('calculateFetchRange', () => {
             totalCount: 500,
         })
         // With parent, indices are shifted down by 1
-        expect(result.fetchStart).toBe(149 - PREFETCH_BUFFER / 2) // 49
-        expect(result.fetchEnd).toBe(159 + PREFETCH_BUFFER / 2) // 259
+        expect(result.fetchStart).toBe(149 - prefetchBuffer / 2) // 49
+        expect(result.fetchEnd).toBe(159 + prefetchBuffer / 2) // 259
     })
 
     it('clamps fetchStart to 0', () => {

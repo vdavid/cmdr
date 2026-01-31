@@ -52,6 +52,7 @@ pub(super) fn copy_files_with_progress(
         operation_id,
         WriteOperationType::Copy,
         state.progress_interval,
+        config.max_conflicts_to_show,
     )? {
         return Ok(());
     }

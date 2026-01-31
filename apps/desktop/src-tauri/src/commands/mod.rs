@@ -7,6 +7,7 @@ pub mod icons;
 pub mod licensing;
 #[cfg(target_os = "macos")]
 pub mod network;
+pub mod settings;
 pub mod sync_status; // Has both macOS and non-macOS implementations
 pub mod ui;
 #[cfg(target_os = "macos")]

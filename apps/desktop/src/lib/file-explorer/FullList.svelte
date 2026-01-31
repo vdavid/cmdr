@@ -12,10 +12,12 @@
         calculateFetchRange,
         isRangeCached,
         shouldResetCache,
+        refetchIconsForEntries,
     } from './file-list-utils'
     import { formatSizeTriads } from './selection-info-utils'
-    import { getVisibleItemsCount as getVisibleItemsCountUtil, FULL_LIST_BUFFER_SIZE } from './full-list-utils'
+    import { getVisibleItemsCount as getVisibleItemsCountUtil, getVirtualizationBufferRows } from './full-list-utils'
     import { getRowHeight, formatDateTime, formatFileSize } from '$lib/settings/reactive-settings.svelte'
+    import { extensionCacheCleared } from '$lib/icon-cache'
 
     interface Props {
         listingId: string
@@ -65,7 +67,8 @@
     // ==== Virtual scrolling constants ====
     // Row height is reactive based on UI density setting
     const rowHeight = $derived(getRowHeight())
-    const BUFFER_SIZE = FULL_LIST_BUFFER_SIZE
+    // Buffer size is reactive based on settings
+    const bufferSize = $derived(getVirtualizationBufferRows())
 
     // ==== Virtual scrolling state ====
     let scrollContainer: HTMLDivElement | undefined = $state()
@@ -77,7 +80,7 @@
         calculateVirtualWindow({
             direction: 'vertical',
             itemSize: rowHeight,
-            bufferSize: BUFFER_SIZE,
+            bufferSize,
             containerSize: containerHeight,
             scrollOffset: scrollTop,
             totalItems: totalCount,
@@ -250,6 +253,15 @@
     export function getVisibleItemsCount(): number {
         return getVisibleItemsCountUtil(containerHeight, rowHeight)
     }
+
+    // Re-fetch icons when the extension icon cache is cleared (settings change)
+    $effect(() => {
+        void $extensionCacheCleared // Track the store value
+        // Re-fetch icons for all cached entries
+        if (cachedEntries.length > 0) {
+            refetchIconsForEntries(cachedEntries)
+        }
+    })
 </script>
 
 <div class="full-list-container" class:is-focused={isFocused}>

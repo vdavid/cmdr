@@ -41,7 +41,7 @@ pub use volume::{InMemoryVolume, LocalPosixVolume, Volume, VolumeError};
 #[allow(unused_imports, reason = "Public API re-exports for future use")]
 pub use volume_manager::VolumeManager;
 // Watcher management - init_watcher_manager must be called from lib.rs
-pub use watcher::init_watcher_manager;
+pub use watcher::{init_watcher_manager, update_debounce_ms};
 // Re-export write operation types
 pub use write_operations::{
     OperationStatus, OperationSummary, WriteOperationConfig, WriteOperationError, WriteOperationStartResult,

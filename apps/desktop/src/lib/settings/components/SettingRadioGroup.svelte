@@ -1,7 +1,15 @@
 <script lang="ts">
     import { RadioGroup, type RadioGroupValueChangeDetails } from '@ark-ui/svelte/radio-group'
-    import { getSetting, setSetting, getSettingDefinition, type SettingId, type SettingsValues } from '$lib/settings'
+    import {
+        getSetting,
+        setSetting,
+        getSettingDefinition,
+        onSpecificSettingChange,
+        type SettingId,
+        type SettingsValues,
+    } from '$lib/settings'
     import type { Snippet } from 'svelte'
+    import { onMount } from 'svelte'
 
     interface Props {
         id: SettingId
@@ -15,6 +23,13 @@
     const options = definition?.constraints?.options ?? []
 
     let value = $state(String(getSetting(id)))
+
+    // Subscribe to setting changes (for external resets)
+    onMount(() => {
+        return onSpecificSettingChange(id, (_id, newValue) => {
+            value = String(newValue)
+        })
+    })
 
     function handleValueChange(details: RadioGroupValueChangeDetails) {
         if (details.value) {

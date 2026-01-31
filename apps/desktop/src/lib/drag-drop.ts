@@ -5,9 +5,12 @@ import { startDrag } from '@crabnebula/tauri-plugin-drag'
 import { tempDir, join } from '@tauri-apps/api/path'
 import { getCachedIcon } from './icon-cache'
 import { startSelectionDrag } from './tauri-commands'
+import { getSetting } from './settings/settings-store'
 
-/** Minimum distance (in pixels) to trigger drag */
-export const DRAG_THRESHOLD = 5
+/** Gets the drag threshold from settings (minimum distance in pixels to trigger drag) */
+export function getDragThreshold(): number {
+    return getSetting('advanced.dragThreshold')
+}
 
 /** Name of the temp icon file */
 const TEMP_ICON_FILENAME = 'drag-icon.png'
@@ -112,7 +115,7 @@ export function startSelectionDragTracking(
         const dy = moveEvent.clientY - activeDrag.startY
         const distance = Math.sqrt(dx * dx + dy * dy)
 
-        if (distance >= DRAG_THRESHOLD) {
+        if (distance >= getDragThreshold()) {
             // Threshold crossed - trigger the drag
             const ctx = activeDrag.context
             const cbs = activeDrag.callbacks

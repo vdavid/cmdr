@@ -16,9 +16,9 @@ use super::state::{
     WriteOperationState, update_operation_status,
 };
 use super::types::{
-    ConflictInfo, MAX_CONFLICTS_IN_RESULT, ScanPreviewCancelledEvent, ScanPreviewCompleteEvent, ScanPreviewErrorEvent,
-    ScanPreviewProgressEvent, ScanPreviewStartResult, ScanProgressEvent, SortColumn, SortOrder, WriteOperationError,
-    WriteOperationPhase, WriteOperationType, WriteProgressEvent,
+    ConflictInfo, ScanPreviewCancelledEvent, ScanPreviewCompleteEvent, ScanPreviewErrorEvent, ScanPreviewProgressEvent,
+    ScanPreviewStartResult, ScanProgressEvent, SortColumn, SortOrder, WriteOperationError, WriteOperationPhase,
+    WriteOperationType, WriteProgressEvent,
 };
 
 // ============================================================================
@@ -32,13 +32,14 @@ pub fn start_scan_preview(
     sources: Vec<PathBuf>,
     sort_column: SortColumn,
     sort_order: SortOrder,
+    progress_interval_ms: u64,
 ) -> ScanPreviewStartResult {
     let preview_id = Uuid::new_v4().to_string();
     let preview_id_clone = preview_id.clone();
 
     let state = Arc::new(ScanPreviewState {
         cancelled: AtomicBool::new(false),
-        progress_interval: Duration::from_millis(100),
+        progress_interval: Duration::from_millis(progress_interval_ms),
     });
 
     // Register state
@@ -668,6 +669,7 @@ pub(super) fn handle_dry_run(
     operation_id: &str,
     operation_type: WriteOperationType,
     progress_interval: Duration,
+    max_conflicts_to_show: usize,
 ) -> Result<bool, WriteOperationError> {
     use super::types::DryRunResult;
     use tauri::Emitter;
@@ -687,7 +689,7 @@ pub(super) fn handle_dry_run(
     )?;
 
     let conflicts_count = scan_result.conflicts.len();
-    let (sampled_conflicts, conflicts_sampled) = sample_conflicts(scan_result.conflicts, MAX_CONFLICTS_IN_RESULT);
+    let (sampled_conflicts, conflicts_sampled) = sample_conflicts(scan_result.conflicts, max_conflicts_to_show);
 
     let result = DryRunResult {
         operation_id: operation_id.to_string(),

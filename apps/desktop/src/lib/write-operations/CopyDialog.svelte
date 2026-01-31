@@ -13,6 +13,7 @@
         type UnlistenFn,
     } from '$lib/tauri-commands'
     import type { VolumeInfo, SortColumn, SortOrder } from '$lib/file-explorer/types'
+    import { getSetting } from '$lib/settings'
     import DirectionIndicator from './DirectionIndicator.svelte'
     import { generateTitle } from './copy-dialog-utils'
 
@@ -153,7 +154,8 @@
 
         // Start the scan
         isScanning = true
-        const result = await startScanPreview(sourcePaths, sortColumn, sortOrder)
+        const progressIntervalMs = getSetting('fileOperations.progressUpdateInterval')
+        const result = await startScanPreview(sourcePaths, sortColumn, sortOrder, progressIntervalMs)
         previewId = result.previewId
     }
 

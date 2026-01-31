@@ -19,6 +19,12 @@ const memoryCache = new Map<string, string>()
  */
 export const iconCacheVersion = writable(0)
 
+/**
+ * Reactive counter that increments when extension icon cache is cleared.
+ * List components subscribe to this to re-fetch icons for visible files.
+ */
+export const extensionCacheCleared = writable(0)
+
 /** Load persisted cache from localStorage */
 function loadFromStorage(): void {
     try {
@@ -143,6 +149,11 @@ export async function clearExtensionIconCache(): Promise<void> {
 
     // Persist the change
     saveToStorage()
+
+    // Notify list components to re-fetch icons for visible files
+    // This must happen BEFORE incrementing iconCacheVersion so components
+    // can re-fetch before re-rendering with the cleared cache
+    extensionCacheCleared.update((v) => v + 1)
 
     // Trigger reactive update so components re-fetch icons
     iconCacheVersion.update((v) => v + 1)

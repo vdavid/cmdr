@@ -1,10 +1,11 @@
 /**
- * Settings applier - applies settings changes to the UI in real-time.
- * Updates CSS variables and other DOM properties when settings change.
+ * Settings applier - applies settings changes to the UI and Rust backend in real-time.
+ * Updates CSS variables, DOM properties, and syncs backend configurations when settings change.
  */
 
 import { getSetting, onSettingChange, initializeSettings, type UiDensity, densityMappings } from '$lib/settings'
-import { getAppLogger } from '$lib/logger'
+import { getAppLogger, setVerboseLogging } from '$lib/logger'
+import { updateFileWatcherDebounce, updateServiceResolveTimeout } from '$lib/tauri-commands'
 
 const log = getAppLogger('settings-applier')
 
@@ -23,6 +24,24 @@ function applyDensity(density: UiDensity): void {
 }
 
 /**
+ * Applies Rust backend settings that need to be synced on startup.
+ */
+async function applyBackendSettings(): Promise<void> {
+    // File watcher debounce
+    const debounceMs = getSetting('advanced.fileWatcherDebounce')
+    await updateFileWatcherDebounce(debounceMs)
+
+    // Service resolve timeout
+    const resolveTimeoutMs = getSetting('advanced.serviceResolveTimeout')
+    await updateServiceResolveTimeout(resolveTimeoutMs)
+
+    log.debug('Applied backend settings: debounce={debounce}ms, resolveTimeout={timeout}ms', {
+        debounce: debounceMs,
+        timeout: resolveTimeoutMs,
+    })
+}
+
+/**
  * Applies all settings that affect the UI.
  */
 function applyAllSettings(): void {
@@ -30,11 +49,14 @@ function applyAllSettings(): void {
     const density = getSetting('appearance.uiDensity')
     applyDensity(density)
 
+    // Backend settings (async, fire-and-forget for startup)
+    void applyBackendSettings()
+
     log.debug('Applied all settings')
 }
 
 /**
- * Handles setting changes and applies them to the UI.
+ * Handles setting changes and applies them to the UI or backend.
  */
 function handleSettingChange(id: string, value: unknown): void {
     log.debug('Setting changed: {id} = {value}', { id, value })
@@ -42,6 +64,18 @@ function handleSettingChange(id: string, value: unknown): void {
     switch (id) {
         case 'appearance.uiDensity':
             applyDensity(value as UiDensity)
+            break
+        case 'developer.verboseLogging':
+            // Reconfigure logger when verbose logging setting changes
+            void setVerboseLogging(value as boolean)
+            break
+        case 'advanced.fileWatcherDebounce':
+            // Update Rust backend file watcher debounce
+            void updateFileWatcherDebounce(value as number)
+            break
+        case 'advanced.serviceResolveTimeout':
+            // Update Rust backend Bonjour resolve timeout
+            void updateServiceResolveTimeout(value as number)
             break
         // Other settings that need immediate UI updates can be added here
         // Date/time format and file size format are read on-demand when rendering,

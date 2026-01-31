@@ -18,6 +18,7 @@
         getSmbCredentials,
         updateKnownShare,
     } from '$lib/tauri-commands'
+    import { getNetworkTimeoutMs, getShareCacheTtlMs } from '$lib/settings/network-settings'
     import NetworkLoginForm from './NetworkLoginForm.svelte'
     import { handleNavigationShortcut } from './keyboard-shortcuts'
 
@@ -156,6 +157,8 @@
                 host.port,
                 username,
                 password,
+                getNetworkTimeoutMs(),
+                getShareCacheTtlMs(),
             )
 
             shares = result.shares
