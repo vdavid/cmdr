@@ -1,16 +1,26 @@
 /**
  * Tests for full-list-utils.ts
  */
-import { describe, it, expect } from 'vitest'
-import { getVisibleItemsCount, formatDateShort, FULL_LIST_ROW_HEIGHT, FULL_LIST_BUFFER_SIZE } from './full-list-utils'
+import { describe, it, expect, vi } from 'vitest'
+import {
+    getVisibleItemsCount,
+    formatDateShort,
+    FULL_LIST_ROW_HEIGHT,
+    getVirtualizationBufferRows,
+} from './full-list-utils'
+
+// Mock the settings store
+vi.mock('$lib/settings/settings-store', () => ({
+    getSetting: vi.fn().mockReturnValue(20), // Default buffer size
+}))
 
 describe('constants', () => {
     it('has expected row height', () => {
         expect(FULL_LIST_ROW_HEIGHT).toBe(20)
     })
 
-    it('has expected buffer size', () => {
-        expect(FULL_LIST_BUFFER_SIZE).toBe(20)
+    it('has expected buffer size from settings', () => {
+        expect(getVirtualizationBufferRows()).toBe(20)
     })
 })
 

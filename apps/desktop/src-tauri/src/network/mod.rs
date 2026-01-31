@@ -3,7 +3,7 @@
 //! Discovers SMB-capable hosts on the local network using Bonjour (mDNS/DNS-SD)
 //! and enumerates shares using the smb-rs crate.
 
-mod bonjour;
+pub mod bonjour;
 pub mod keychain;
 pub mod known_shares;
 pub mod mount;

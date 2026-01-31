@@ -392,7 +392,7 @@ pub fn cancel_write_operation(operation_id: String, rollback: bool) {
 /// the actual copy operation.
 ///
 /// # Events emitted
-/// * `scan-preview-progress` - Every 100ms with current counts
+/// * `scan-preview-progress` - Based on progress_interval_ms setting
 /// * `scan-preview-complete` - When scanning finishes
 /// * `scan-preview-error` - On error
 /// * `scan-preview-cancelled` - If cancelled
@@ -402,15 +402,18 @@ pub fn cancel_write_operation(operation_id: String, rollback: bool) {
 /// * `sources` - List of source file/directory paths. Supports tilde expansion (~).
 /// * `sort_column` - Column to sort files by.
 /// * `sort_order` - Sort order (ascending/descending).
+/// * `progress_interval_ms` - Progress update interval in milliseconds (default: 500).
 #[tauri::command]
 pub fn start_scan_preview(
     app: tauri::AppHandle,
     sources: Vec<String>,
     sort_column: SortColumn,
     sort_order: SortOrder,
+    progress_interval_ms: Option<u64>,
 ) -> ScanPreviewStartResult {
     let sources: Vec<PathBuf> = sources.iter().map(|s| PathBuf::from(expand_tilde(s))).collect();
-    ops_start_scan_preview(app, sources, sort_column, sort_order)
+    let progress_interval = progress_interval_ms.unwrap_or(500);
+    ops_start_scan_preview(app, sources, sort_column, sort_order, progress_interval)
 }
 
 /// Cancels a running scan preview.

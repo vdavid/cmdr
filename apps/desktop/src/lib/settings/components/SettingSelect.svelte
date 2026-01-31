@@ -1,7 +1,15 @@
 <script lang="ts">
     import { Select, createListCollection, type SelectValueChangeDetails } from '@ark-ui/svelte/select'
-    import { getSetting, setSetting, getSettingDefinition, type SettingId, type SettingsValues } from '$lib/settings'
+    import {
+        getSetting,
+        setSetting,
+        getSettingDefinition,
+        onSpecificSettingChange,
+        type SettingId,
+        type SettingsValues,
+    } from '$lib/settings'
     import type { EnumOption } from '$lib/settings/types'
+    import { onMount } from 'svelte'
 
     interface Props {
         id: SettingId
@@ -17,6 +25,18 @@
     let value = $state(getSetting(id))
     let showCustomInput = $state(false)
     let customValue = $state('')
+
+    // Subscribe to setting changes (for external resets)
+    onMount(() => {
+        return onSpecificSettingChange(id, (_id, newValue) => {
+            value = newValue
+            // Reset custom input state if value is back to a standard option
+            const isStandard = options.some((o) => o.value === newValue)
+            if (isStandard) {
+                showCustomInput = false
+            }
+        })
+    })
 
     // Check if current value is a custom value (not in options)
     $effect(() => {

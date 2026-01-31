@@ -2,8 +2,12 @@ import { check, type Update } from '@tauri-apps/plugin-updater'
 import { relaunch } from '@tauri-apps/plugin-process'
 import { getVersion } from '@tauri-apps/api/app'
 import { feLog } from './tauri-commands'
+import { getSetting, onSpecificSettingChange } from './settings/settings-store'
 
-const checkIntervalMs = 60 * 60 * 1000 // 60 minutes
+/** Gets the update check interval from settings (in milliseconds) */
+function getCheckIntervalMs(): number {
+    return getSetting('advanced.updateCheckInterval')
+}
 
 interface UpdateState {
     status: 'idle' | 'checking' | 'downloading' | 'ready'
@@ -63,13 +67,24 @@ export function startUpdateChecker(): () => void {
     // Check immediately on start
     void checkForUpdates()
 
-    // Check periodically
-    const intervalId = setInterval(() => {
+    // Check periodically using the interval from settings
+    let intervalId = setInterval(() => {
         void checkForUpdates()
-    }, checkIntervalMs)
+    }, getCheckIntervalMs())
+
+    // Re-create interval when setting changes
+    const unsubscribe = onSpecificSettingChange('advanced.updateCheckInterval', () => {
+        clearInterval(intervalId)
+        const newInterval = getCheckIntervalMs()
+        feLog(`[updater] Interval changed to ${String(newInterval / 60000)} minutes`)
+        intervalId = setInterval(() => {
+            void checkForUpdates()
+        }, newInterval)
+    })
 
     // Return cleanup function
     return () => {
         clearInterval(intervalId)
+        unsubscribe()
     }
 }

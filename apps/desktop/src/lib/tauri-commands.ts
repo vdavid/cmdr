@@ -752,12 +752,14 @@ export async function resolveNetworkHost(hostId: string): Promise<NetworkHost | 
 
 /**
  * Lists shares available on a network host.
- * Returns cached results if available (30 second TTL), otherwise queries the host.
+ * Returns cached results if available, otherwise queries the host.
  * Attempts guest access first; returns an error if authentication is required.
  * @param hostId Unique identifier for the host (used for caching)
  * @param hostname Hostname to connect to (for example, "TEST_SERVER.local")
  * @param ipAddress Optional resolved IP address (preferred over hostname for reliability)
  * @param port SMB port (default 445, but Docker containers may use different ports)
+ * @param timeoutMs Optional timeout in milliseconds (default: 15000)
+ * @param cacheTtlMs Optional cache TTL in milliseconds (default: 30000)
  * @returns Result with shares and auth mode, or error
  */
 export async function listSharesOnHost(
@@ -765,10 +767,12 @@ export async function listSharesOnHost(
     hostname: string,
     ipAddress: string | undefined,
     port: number,
+    timeoutMs?: number,
+    cacheTtlMs?: number,
 ): Promise<ShareListResult> {
     // The Rust command returns Result<ShareListResult, ShareListError>
     // Tauri auto-converts Ok to value and Err to thrown error
-    return invoke<ShareListResult>('list_shares_on_host', { hostId, hostname, ipAddress, port })
+    return invoke<ShareListResult>('list_shares_on_host', { hostId, hostname, ipAddress, port, timeoutMs, cacheTtlMs })
 }
 
 /**
@@ -779,15 +783,19 @@ export async function listSharesOnHost(
  * @param hostname Hostname to connect to
  * @param ipAddress Optional resolved IP address
  * @param port SMB port
+ * @param timeoutMs Optional timeout in milliseconds (default: 15000)
+ * @param cacheTtlMs Optional cache TTL in milliseconds (default: 30000)
  */
 export async function prefetchShares(
     hostId: string,
     hostname: string,
     ipAddress: string | undefined,
     port: number,
+    timeoutMs?: number,
+    cacheTtlMs?: number,
 ): Promise<void> {
     try {
-        await invoke('prefetch_shares', { hostId, hostname, ipAddress, port })
+        await invoke('prefetch_shares', { hostId, hostname, ipAddress, port, timeoutMs, cacheTtlMs })
     } catch {
         // Silently ignore prefetch errors
     }
@@ -962,6 +970,8 @@ export async function deleteSmbCredentials(server: string, share: string | null)
  * @param port SMB port
  * @param username Username for authentication (null for guest)
  * @param password Password for authentication (null for guest)
+ * @param timeoutMs Optional timeout in milliseconds (default: 15000)
+ * @param cacheTtlMs Optional cache TTL in milliseconds (default: 30000)
  */
 export async function listSharesWithCredentials(
     hostId: string,
@@ -970,6 +980,8 @@ export async function listSharesWithCredentials(
     port: number,
     username: string | null,
     password: string | null,
+    timeoutMs?: number,
+    cacheTtlMs?: number,
 ): Promise<ShareListResult> {
     return invoke<ShareListResult>('list_shares_with_credentials', {
         hostId,
@@ -978,6 +990,8 @@ export async function listSharesWithCredentials(
         port,
         username,
         password,
+        timeoutMs,
+        cacheTtlMs,
     })
 }
 
@@ -1005,6 +1019,7 @@ export function isKeychainError(error: unknown): error is KeychainError {
  * @param share Name of the share to mount
  * @param username Optional username for authentication
  * @param password Optional password for authentication
+ * @param timeoutMs Optional timeout in milliseconds (default: 20000)
  * @returns MountResult with mount path on success
  * @throws MountError on failure
  */
@@ -1013,12 +1028,14 @@ export async function mountNetworkShare(
     share: string,
     username: string | null,
     password: string | null,
+    timeoutMs?: number,
 ): Promise<MountResult> {
     return invoke<MountResult>('mount_network_share', {
         server,
         share,
         username,
         password,
+        timeoutMs,
     })
 }
 
@@ -1150,13 +1167,15 @@ export async function validateLicenseWithServer(): Promise<LicenseStatus> {
  * @param sources - List of source file/directory paths
  * @param sortColumn - Column to sort by
  * @param sortOrder - Sort order
+ * @param progressIntervalMs - Progress update interval in milliseconds (default: 500)
  */
 export async function startScanPreview(
     sources: string[],
     sortColumn: SortColumn,
     sortOrder: SortOrder,
+    progressIntervalMs?: number,
 ): Promise<ScanPreviewStartResult> {
-    return invoke<ScanPreviewStartResult>('start_scan_preview', { sources, sortColumn, sortOrder })
+    return invoke<ScanPreviewStartResult>('start_scan_preview', { sources, sortColumn, sortOrder, progressIntervalMs })
 }
 
 /**
@@ -1695,4 +1714,22 @@ export async function checkPortAvailable(port: number): Promise<boolean> {
  */
 export async function findAvailablePort(startPort: number): Promise<number | null> {
     return invoke<number | null>('find_available_port', { startPort })
+}
+
+/**
+ * Updates the file watcher debounce duration in the Rust backend.
+ * This affects newly created watchers; existing watchers keep their original duration.
+ * @param debounceMs - Debounce duration in milliseconds
+ */
+export async function updateFileWatcherDebounce(debounceMs: number): Promise<void> {
+    await invoke('update_file_watcher_debounce', { debounceMs })
+}
+
+/**
+ * Updates the Bonjour service resolve timeout in the Rust backend.
+ * This affects future service resolutions; ongoing resolutions keep their original timeout.
+ * @param timeoutMs - Timeout duration in milliseconds
+ */
+export async function updateServiceResolveTimeout(timeoutMs: number): Promise<void> {
+    await invoke('update_service_resolve_timeout', { timeoutMs })
 }

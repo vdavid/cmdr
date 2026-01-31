@@ -163,7 +163,11 @@ pub fn run() {
             app.manage(mcp::PaneStateStore::new());
 
             // Start MCP server for AI agent integration
-            let mcp_config = mcp::McpConfig::from_env();
+            // Use settings from user preferences, with env vars as override for dev
+            let mcp_config = mcp::McpConfig::from_settings_and_env(
+                saved_settings.developer_mcp_enabled,
+                saved_settings.developer_mcp_port,
+            );
             mcp::start_mcp_server(app.handle().clone(), mcp_config);
 
             // Initialize AI manager (starts llama-server if model is installed)
@@ -435,7 +439,12 @@ pub fn run() {
             ai::manager::opt_out_ai,
             ai::manager::opt_in_ai,
             ai::manager::is_ai_opted_out,
-            ai::suggestions::get_folder_suggestions
+            ai::suggestions::get_folder_suggestions,
+            // Settings commands
+            commands::settings::check_port_available,
+            commands::settings::find_available_port,
+            commands::settings::update_file_watcher_debounce,
+            commands::settings::update_service_resolve_timeout
         ])
         .on_window_event(|_window, event| {
             if let tauri::WindowEvent::Destroyed = event {

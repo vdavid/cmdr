@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { Snippet } from 'svelte'
-    import { isModified, resetSetting, type SettingId } from '$lib/settings'
+    import { isModified, resetSetting, onSpecificSettingChange, type SettingId } from '$lib/settings'
+    import { onMount } from 'svelte'
 
     interface Props {
         id: SettingId
@@ -22,7 +23,15 @@
         children,
     }: Props = $props()
 
-    const modified = $derived(isModified(id))
+    // Track modified state reactively by subscribing to changes
+    let modified = $state(isModified(id))
+
+    // Subscribe to setting changes to update modified state
+    onMount(() => {
+        return onSpecificSettingChange(id, () => {
+            modified = isModified(id)
+        })
+    })
 
     function handleReset() {
         resetSetting(id)

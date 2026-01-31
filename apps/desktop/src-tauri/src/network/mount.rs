@@ -213,8 +213,8 @@ pub fn mount_share_sync(
     })
 }
 
-/// Mount timeout in seconds
-const MOUNT_TIMEOUT_SECS: u64 = 20;
+/// Default mount timeout in milliseconds
+const DEFAULT_MOUNT_TIMEOUT_MS: u64 = 20_000;
 
 /// Async wrapper for mount_share_sync that runs in a blocking task with timeout.
 pub async fn mount_share(
@@ -222,15 +222,17 @@ pub async fn mount_share(
     share: String,
     username: Option<String>,
     password: Option<String>,
+    timeout_ms: Option<u64>,
 ) -> Result<MountResult, MountError> {
     let server_clone = server.clone();
+    let timeout_duration = std::time::Duration::from_millis(timeout_ms.unwrap_or(DEFAULT_MOUNT_TIMEOUT_MS));
 
     // Use timeout to prevent hanging indefinitely
     let mount_future = tokio::task::spawn_blocking(move || {
         mount_share_sync(&server, &share, username.as_deref(), password.as_deref())
     });
 
-    match tokio::time::timeout(std::time::Duration::from_secs(MOUNT_TIMEOUT_SECS), mount_future).await {
+    match tokio::time::timeout(timeout_duration, mount_future).await {
         Ok(Ok(result)) => result,
         Ok(Err(join_error)) => Err(MountError::ProtocolError {
             message: format!("Mount task failed: {}", join_error),
@@ -238,7 +240,8 @@ pub async fn mount_share(
         Err(_timeout) => Err(MountError::Timeout {
             message: format!(
                 "Connection to \"{}\" timed out after {} seconds",
-                server_clone, MOUNT_TIMEOUT_SECS
+                server_clone,
+                timeout_duration.as_secs()
             ),
         }),
     }
@@ -280,8 +283,8 @@ mod tests {
 
     #[test]
     fn test_timeout_constant() {
-        // Verify timeout is reasonable (10-60 seconds)
-        const { assert!(MOUNT_TIMEOUT_SECS >= 10) };
-        const { assert!(MOUNT_TIMEOUT_SECS <= 60) };
+        // Verify default timeout is reasonable (10-60 seconds)
+        const { assert!(DEFAULT_MOUNT_TIMEOUT_MS >= 10_000) };
+        const { assert!(DEFAULT_MOUNT_TIMEOUT_MS <= 60_000) };
     }
 }

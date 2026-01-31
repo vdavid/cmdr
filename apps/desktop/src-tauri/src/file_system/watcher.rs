@@ -16,8 +16,23 @@ use tauri::{AppHandle, Emitter};
 
 use super::operations::{FileEntry, get_listing_entries, list_directory_core, update_listing_entries};
 
-/// Debounce duration in milliseconds
-const DEBOUNCE_MS: u64 = 200;
+/// Default debounce duration in milliseconds (used if not configured)
+const DEFAULT_DEBOUNCE_MS: u64 = 200;
+
+/// Configured debounce duration in milliseconds (set by frontend via update_debounce_ms)
+static DEBOUNCE_MS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(DEFAULT_DEBOUNCE_MS);
+
+/// Updates the file watcher debounce duration.
+/// This affects newly started watchers; existing watchers keep their original duration.
+pub fn update_debounce_ms(ms: u64) {
+    DEBOUNCE_MS.store(ms, std::sync::atomic::Ordering::Relaxed);
+    log::debug!("File watcher debounce updated to {} ms", ms);
+}
+
+/// Gets the current debounce duration in milliseconds.
+fn get_debounce_ms() -> u64 {
+    DEBOUNCE_MS.load(std::sync::atomic::Ordering::Relaxed)
+}
 
 /// Global watcher manager
 static WATCHER_MANAGER: LazyLock<RwLock<WatcherManager>> = LazyLock::new(|| RwLock::new(WatcherManager::new()));
@@ -88,8 +103,9 @@ pub fn start_watching(listing_id: &str, path: &Path) -> Result<(), String> {
     let listing_for_closure = listing_id_owned.clone();
 
     // Create the debouncer with a callback that handles changes
+    let debounce_duration = Duration::from_millis(get_debounce_ms());
     let mut debouncer = new_debouncer(
-        Duration::from_millis(DEBOUNCE_MS),
+        debounce_duration,
         None, // No tick rate limit
         move |result: DebounceEventResult| {
             if let Ok(_events) = result {

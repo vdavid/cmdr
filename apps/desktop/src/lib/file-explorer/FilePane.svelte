@@ -43,6 +43,7 @@
         type PaneFileEntry,
     } from '$lib/tauri-commands'
     import type { ViewMode } from '$lib/app-status-store'
+    import { getMountTimeoutMs } from '$lib/settings/network-settings'
     import FullList from './FullList.svelte'
     import BriefList from './BriefList.svelte'
     import SelectionInfo from './SelectionInfo.svelte'
@@ -841,6 +842,7 @@
                 share.name,
                 credentials?.username ?? null,
                 credentials?.password ?? null,
+                getMountTimeoutMs(),
             )
 
             // Navigate to the mounted share

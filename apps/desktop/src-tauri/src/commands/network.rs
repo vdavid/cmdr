@@ -59,7 +59,7 @@ pub async fn resolve_host(host_id: String) -> Option<NetworkHost> {
 
 /// Lists shares available on a network host.
 ///
-/// Returns cached results if available (30 second TTL), otherwise queries the host.
+/// Returns cached results if available, otherwise queries the host.
 /// Attempts guest access first; returns an error if authentication is required.
 ///
 /// # Arguments
@@ -67,23 +67,52 @@ pub async fn resolve_host(host_id: String) -> Option<NetworkHost> {
 /// * `hostname` - Hostname to connect to (for example, "TEST_SERVER.local")
 /// * `ip_address` - Optional resolved IP address (preferred over hostname for reliability)
 /// * `port` - SMB port (default 445, but Docker containers may use different ports)
+/// * `timeout_ms` - Optional timeout in milliseconds (default: 15000)
+/// * `cache_ttl_ms` - Optional cache TTL in milliseconds (default: 30000)
 #[tauri::command]
 pub async fn list_shares_on_host(
     host_id: String,
     hostname: String,
     ip_address: Option<String>,
     port: u16,
+    timeout_ms: Option<u64>,
+    cache_ttl_ms: Option<u64>,
 ) -> Result<ShareListResult, ShareListError> {
-    smb_client::list_shares(&host_id, &hostname, ip_address.as_deref(), port, None).await
+    smb_client::list_shares(
+        &host_id,
+        &hostname,
+        ip_address.as_deref(),
+        port,
+        None,
+        timeout_ms,
+        cache_ttl_ms,
+    )
+    .await
 }
 
 /// Prefetches shares for a host (for example, on hover).
 /// Same as list_shares_on_host but designed for prefetching - errors are silently ignored.
 /// Returns immediately if shares are already cached.
 #[tauri::command]
-pub async fn prefetch_shares(host_id: String, hostname: String, ip_address: Option<String>, port: u16) {
+pub async fn prefetch_shares(
+    host_id: String,
+    hostname: String,
+    ip_address: Option<String>,
+    port: u16,
+    timeout_ms: Option<u64>,
+    cache_ttl_ms: Option<u64>,
+) {
     // Fire and forget - we don't care about the result for prefetching
-    let _ = smb_client::list_shares(&host_id, &hostname, ip_address.as_deref(), port, None).await;
+    let _ = smb_client::list_shares(
+        &host_id,
+        &hostname,
+        ip_address.as_deref(),
+        port,
+        None,
+        timeout_ms,
+        cache_ttl_ms,
+    )
+    .await;
 }
 
 /// Gets auth mode detected for a host (from cached share list if available).
@@ -189,7 +218,13 @@ pub fn delete_smb_credentials(server: String, share: Option<String>) -> Result<(
 /// * `port` - SMB port
 /// * `username` - Username for authentication (or None for guest)
 /// * `password` - Password for authentication (or None for guest)
+/// * `timeout_ms` - Optional timeout in milliseconds (default: 15000)
+/// * `cache_ttl_ms` - Optional cache TTL in milliseconds (default: 30000)
 #[tauri::command]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "Tauri command requires all parameters to be top-level"
+)]
 pub async fn list_shares_with_credentials(
     host_id: String,
     hostname: String,
@@ -197,6 +232,8 @@ pub async fn list_shares_with_credentials(
     port: u16,
     username: Option<String>,
     password: Option<String>,
+    timeout_ms: Option<u64>,
+    cache_ttl_ms: Option<u64>,
 ) -> Result<ShareListResult, ShareListError> {
     let credentials = match (username, password) {
         (Some(u), Some(p)) => Some((u, p)),
@@ -209,6 +246,8 @@ pub async fn list_shares_with_credentials(
         ip_address.as_deref(),
         port,
         credentials.as_ref().map(|(u, p)| (u.as_str(), p.as_str())),
+        timeout_ms,
+        cache_ttl_ms,
     )
     .await
 }
@@ -228,6 +267,7 @@ use crate::network::mount::{self, MountError, MountResult};
 /// * `share` - Name of the share to mount
 /// * `username` - Optional username for authentication
 /// * `password` - Optional password for authentication
+/// * `timeout_ms` - Optional timeout in milliseconds (default: 20000)
 ///
 /// # Returns
 /// * `Ok(MountResult)` - Mount successful, with path to mount point
@@ -238,6 +278,7 @@ pub async fn mount_network_share(
     share: String,
     username: Option<String>,
     password: Option<String>,
+    timeout_ms: Option<u64>,
 ) -> Result<MountResult, MountError> {
-    mount::mount_share(server, share, username, password).await
+    mount::mount_share(server, share, username, password, timeout_ms).await
 }

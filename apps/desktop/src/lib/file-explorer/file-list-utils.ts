@@ -6,9 +6,12 @@ import type { FileEntry, SyncStatus } from './types'
 import { getFileRange } from '$lib/tauri-commands'
 import { prefetchIcons } from '$lib/icon-cache'
 import { getUseAppIconsForDocuments } from '$lib/settings/reactive-settings.svelte'
+import { getSetting } from '$lib/settings/settings-store'
 
-/** Prefetch buffer - load this many items around visible range */
-export const PREFETCH_BUFFER = 200
+/** Gets the prefetch buffer size from settings (items to load around visible range) */
+export function getPrefetchBufferSize(): number {
+    return getSetting('advanced.prefetchBufferSize')
+}
 
 /** Sync status icon paths - returns undefined if no icon should be shown */
 export function getSyncIconPath(status: SyncStatus | undefined): string | undefined {
@@ -104,8 +107,9 @@ export function calculateFetchRange(params: {
     }
 
     // Add prefetch buffer
-    const fetchStart = Math.max(0, adjustedStart - PREFETCH_BUFFER / 2)
-    const fetchEnd = Math.min(hasParent ? totalCount - 1 : totalCount, adjustedEnd + PREFETCH_BUFFER / 2)
+    const prefetchBuffer = getPrefetchBufferSize()
+    const fetchStart = Math.max(0, adjustedStart - prefetchBuffer / 2)
+    const fetchEnd = Math.min(hasParent ? totalCount - 1 : totalCount, adjustedEnd + prefetchBuffer / 2)
 
     return { fetchStart, fetchEnd }
 }
@@ -159,4 +163,15 @@ export function shouldResetCache(
         current.totalCount !== previous.totalCount ||
         current.cacheGeneration !== previous.cacheGeneration
     )
+}
+
+/**
+ * Re-fetches icons for already-cached entries.
+ * Called when the extension icon cache is cleared to refresh icons for visible files.
+ */
+export function refetchIconsForEntries(entries: FileEntry[]): void {
+    if (entries.length === 0) return
+    const iconIds = entries.map((e) => e.iconId).filter((id) => id)
+    const useAppIcons = getUseAppIconsForDocuments()
+    void prefetchIcons(iconIds, useAppIcons)
 }

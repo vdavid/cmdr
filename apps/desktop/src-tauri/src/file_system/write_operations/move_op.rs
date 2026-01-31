@@ -37,6 +37,7 @@ pub(super) fn move_files_with_progress(
         operation_id,
         WriteOperationType::Move,
         state.progress_interval,
+        config.max_conflicts_to_show,
     )? {
         return Ok(());
     }
