@@ -1781,3 +1781,157 @@ export async function listMtpDevices(): Promise<MtpDeviceInfo[]> {
         return []
     }
 }
+
+/** Information about a storage area on an MTP device. */
+export interface MtpStorageInfo {
+    /** Storage ID (MTP storage handle). */
+    id: number
+    /** Display name (e.g., "Internal shared storage"). */
+    name: string
+    /** Total capacity in bytes. */
+    totalBytes: number
+    /** Available space in bytes. */
+    availableBytes: number
+    /** Storage type description (e.g., "FixedROM", "RemovableRAM"). */
+    storageType?: string
+}
+
+/** Information about a connected MTP device including its storages. */
+export interface ConnectedMtpDeviceInfo {
+    /** Device information. */
+    device: MtpDeviceInfo
+    /** Available storages on the device. */
+    storages: MtpStorageInfo[]
+}
+
+/** Error types for MTP connection operations. */
+export type MtpConnectionError =
+    | { type: 'deviceNotFound'; deviceId: string }
+    | { type: 'alreadyConnected'; deviceId: string }
+    | { type: 'notConnected'; deviceId: string }
+    | { type: 'exclusiveAccess'; deviceId: string; blockingProcess?: string }
+    | { type: 'timeout'; deviceId: string }
+    | { type: 'disconnected'; deviceId: string }
+    | { type: 'protocol'; deviceId: string; message: string }
+    | { type: 'other'; deviceId: string; message: string }
+    | { type: 'notSupported'; message: string }
+
+/**
+ * Checks if an error is an MTP connection error.
+ */
+export function isMtpConnectionError(error: unknown): error is MtpConnectionError {
+    return (
+        typeof error === 'object' &&
+        error !== null &&
+        'type' in error &&
+        typeof (error as { type: unknown }).type === 'string'
+    )
+}
+
+/**
+ * Connects to an MTP device by ID.
+ * Opens an MTP session and retrieves storage information.
+ * If another process has exclusive access, an 'mtp-exclusive-access-error' event is emitted.
+ * @param deviceId - The device ID from listMtpDevices
+ * @returns Information about the connected device including storages
+ */
+export async function connectMtpDevice(deviceId: string): Promise<ConnectedMtpDeviceInfo> {
+    return invoke<ConnectedMtpDeviceInfo>('connect_mtp_device', { deviceId })
+}
+
+/**
+ * Disconnects from an MTP device.
+ * Closes the MTP session gracefully.
+ * @param deviceId - The device ID to disconnect from
+ */
+export async function disconnectMtpDevice(deviceId: string): Promise<void> {
+    await invoke('disconnect_mtp_device', { deviceId })
+}
+
+/**
+ * Gets information about a connected MTP device.
+ * Returns null if the device is not connected.
+ * @param deviceId - The device ID to query
+ */
+export async function getMtpDeviceInfo(deviceId: string): Promise<ConnectedMtpDeviceInfo | null> {
+    try {
+        return await invoke<ConnectedMtpDeviceInfo | null>('get_mtp_device_info', { deviceId })
+    } catch {
+        return null
+    }
+}
+
+/**
+ * Gets the ptpcamerad workaround command for macOS.
+ * Returns the Terminal command users can run to work around ptpcamerad blocking MTP.
+ */
+export async function getPtpcameradWorkaroundCommand(): Promise<string> {
+    try {
+        return await invoke<string>('get_ptpcamerad_workaround_command')
+    } catch {
+        return ''
+    }
+}
+
+/**
+ * Gets storage information for all storages on a connected device.
+ * @param deviceId - The connected device ID
+ * @returns Array of storage info, or empty if device is not connected
+ */
+export async function getMtpStorages(deviceId: string): Promise<MtpStorageInfo[]> {
+    try {
+        return await invoke<MtpStorageInfo[]>('get_mtp_storages', { deviceId })
+    } catch {
+        return []
+    }
+}
+
+/** Event payload for mtp-exclusive-access-error. */
+export interface MtpExclusiveAccessErrorEvent {
+    deviceId: string
+    blockingProcess?: string
+}
+
+/** Event payload for mtp-device-connected. */
+export interface MtpDeviceConnectedEvent {
+    deviceId: string
+    storages: MtpStorageInfo[]
+}
+
+/** Event payload for mtp-device-disconnected. */
+export interface MtpDeviceDisconnectedEvent {
+    deviceId: string
+    reason: 'user' | 'disconnected'
+}
+
+/**
+ * Subscribes to MTP exclusive access error events.
+ * Emitted when connecting fails because another process (like ptpcamerad) has the device.
+ */
+export async function onMtpExclusiveAccessError(
+    callback: (event: MtpExclusiveAccessErrorEvent) => void,
+): Promise<UnlistenFn> {
+    return listen<MtpExclusiveAccessErrorEvent>('mtp-exclusive-access-error', (event) => {
+        callback(event.payload)
+    })
+}
+
+/**
+ * Subscribes to MTP device connected events.
+ */
+export async function onMtpDeviceConnected(callback: (event: MtpDeviceConnectedEvent) => void): Promise<UnlistenFn> {
+    return listen<MtpDeviceConnectedEvent>('mtp-device-connected', (event) => {
+        callback(event.payload)
+    })
+}
+
+/**
+ * Subscribes to MTP device disconnected events.
+ */
+export async function onMtpDeviceDisconnected(
+    callback: (event: MtpDeviceDisconnectedEvent) => void,
+): Promise<UnlistenFn> {
+    return listen<MtpDeviceDisconnectedEvent>('mtp-device-disconnected', (event) => {
+        callback(event.payload)
+    })
+}
