@@ -363,6 +363,18 @@ pub fn run() {
             commands::mtp::get_mtp_storages,
             #[cfg(target_os = "macos")]
             commands::mtp::list_mtp_directory,
+            #[cfg(target_os = "macos")]
+            commands::mtp::download_mtp_file,
+            #[cfg(target_os = "macos")]
+            commands::mtp::upload_to_mtp,
+            #[cfg(target_os = "macos")]
+            commands::mtp::delete_mtp_object,
+            #[cfg(target_os = "macos")]
+            commands::mtp::create_mtp_folder,
+            #[cfg(target_os = "macos")]
+            commands::mtp::rename_mtp_object,
+            #[cfg(target_os = "macos")]
+            commands::mtp::move_mtp_object,
             #[cfg(not(target_os = "macos"))]
             stubs::mtp::list_mtp_devices,
             #[cfg(not(target_os = "macos"))]
@@ -377,6 +389,18 @@ pub fn run() {
             stubs::mtp::get_mtp_storages,
             #[cfg(not(target_os = "macos"))]
             stubs::mtp::list_mtp_directory,
+            #[cfg(not(target_os = "macos"))]
+            stubs::mtp::download_mtp_file,
+            #[cfg(not(target_os = "macos"))]
+            stubs::mtp::upload_to_mtp,
+            #[cfg(not(target_os = "macos"))]
+            stubs::mtp::delete_mtp_object,
+            #[cfg(not(target_os = "macos"))]
+            stubs::mtp::create_mtp_folder,
+            #[cfg(not(target_os = "macos"))]
+            stubs::mtp::rename_mtp_object,
+            #[cfg(not(target_os = "macos"))]
+            stubs::mtp::move_mtp_object,
             // Volume commands (platform-specific)
             #[cfg(target_os = "macos")]
             commands::volumes::list_volumes,

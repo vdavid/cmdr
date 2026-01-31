@@ -79,32 +79,32 @@ Task breakdown for adding Android device (MTP) support to Cmdr. See [mtp.md](mtp
 ## Phase 4: File operations
 
 ### 4.1 Download (device → Mac)
-- [ ] Implement `download_mtp_file(device_id, object_path, local_dest)`
-- [ ] Add progress callback support (emit events for progress bar)
-- [ ] Handle large files (streaming, not loading entire file in memory)
+- [x] Implement `download_mtp_file(device_id, object_path, local_dest)`
+- [x] Add progress callback support (emit events for progress bar)
+- [x] Handle large files (streaming via DownloadStream chunks)
 - [ ] Add to copy operation flow when source is MTP
 
 ### 4.2 Upload (Mac → device)
-- [ ] Implement `upload_to_mtp(device_id, local_path, dest_folder)`
-- [ ] Create object info from local file metadata
-- [ ] Add progress callback support
+- [x] Implement `upload_to_mtp(device_id, local_path, dest_folder)`
+- [x] Create object info from local file metadata (via NewObjectInfo::file())
+- [x] Add progress callback support
 - [ ] Add to copy operation flow when destination is MTP
 
 ### 4.3 Delete
-- [ ] Implement `delete_mtp_object(device_id, object_path)`
-- [ ] Handle folder deletion (MTP requires empty folder)
+- [x] Implement `delete_mtp_object(device_id, object_path)`
+- [x] Handle folder deletion (recursive deletion of contents first)
 - [ ] Add confirmation dialog (same as local delete)
 
 ### 4.4 Create folder
-- [ ] Implement `create_mtp_folder(device_id, parent_path, name)`
+- [x] Implement `create_mtp_folder(device_id, parent_path, name)`
 - [ ] Wire up to "New folder" action
 
 ### 4.5 Rename/Move
-- [ ] Implement `rename_mtp_object(device_id, path, new_name)`
-- [ ] Implement `move_mtp_object(device_id, path, new_parent)` if MTP supports it
-- [ ] Fall back to copy+delete if device doesn't support MoveObject
+- [x] Implement `rename_mtp_object(device_id, path, new_name)`
+- [x] Implement `move_mtp_object(device_id, path, new_parent)` using MTP MoveObject
+- [ ] Fall back to copy+delete if device doesn't support MoveObject (returns error instead)
 
-**Checkpoint**: Full CRUD operations on MTP device.
+**Checkpoint**: Backend CRUD operations implemented. UI integration pending.
 
 ---
 

@@ -1947,3 +1947,167 @@ export async function onMtpDeviceDisconnected(
 export async function listMtpDirectory(deviceId: string, storageId: number, path: string): Promise<FileEntry[]> {
     return invoke<FileEntry[]>('list_mtp_directory', { deviceId, storageId, path })
 }
+
+// ============================================================================
+// MTP File Operations (Phase 4)
+// ============================================================================
+
+/** Result of a successful MTP operation. */
+export interface MtpOperationResult {
+    /** Operation ID for tracking. */
+    operationId: string
+    /** Number of files processed. */
+    filesProcessed: number
+    /** Total bytes transferred. */
+    bytesTransferred: number
+}
+
+/** Information about an object on the device. */
+export interface MtpObjectInfo {
+    /** Object handle. */
+    handle: number
+    /** Object name. */
+    name: string
+    /** Virtual path on device. */
+    path: string
+    /** Whether it's a directory. */
+    isDirectory: boolean
+    /** Size in bytes (undefined for directories). */
+    size?: number
+}
+
+/** Progress event for MTP file transfers. */
+export interface MtpTransferProgress {
+    /** Unique operation ID. */
+    operationId: string
+    /** Device ID. */
+    deviceId: string
+    /** Type of transfer. */
+    transferType: 'download' | 'upload'
+    /** Current file being transferred. */
+    currentFile: string
+    /** Bytes transferred so far. */
+    bytesDone: number
+    /** Total bytes to transfer. */
+    bytesTotal: number
+}
+
+/**
+ * Downloads a file from an MTP device to the local filesystem.
+ * Emits `mtp-transfer-progress` events during the transfer.
+ * @param deviceId - The connected device ID
+ * @param storageId - The storage ID within the device
+ * @param objectPath - Virtual path on the device (for example, "/DCIM/photo.jpg")
+ * @param localDest - Local destination path
+ * @param operationId - Unique operation ID for progress tracking
+ */
+export async function downloadMtpFile(
+    deviceId: string,
+    storageId: number,
+    objectPath: string,
+    localDest: string,
+    operationId: string,
+): Promise<MtpOperationResult> {
+    return invoke<MtpOperationResult>('download_mtp_file', {
+        deviceId,
+        storageId,
+        objectPath,
+        localDest,
+        operationId,
+    })
+}
+
+/**
+ * Uploads a file from the local filesystem to an MTP device.
+ * Emits `mtp-transfer-progress` events during the transfer.
+ * @param deviceId - The connected device ID
+ * @param storageId - The storage ID within the device
+ * @param localPath - Local file path to upload
+ * @param destFolder - Destination folder path on device (for example, "/DCIM")
+ * @param operationId - Unique operation ID for progress tracking
+ */
+export async function uploadToMtp(
+    deviceId: string,
+    storageId: number,
+    localPath: string,
+    destFolder: string,
+    operationId: string,
+): Promise<MtpObjectInfo> {
+    return invoke<MtpObjectInfo>('upload_to_mtp', {
+        deviceId,
+        storageId,
+        localPath,
+        destFolder,
+        operationId,
+    })
+}
+
+/**
+ * Deletes an object (file or folder) from an MTP device.
+ * For folders, this recursively deletes all contents first.
+ * @param deviceId - The connected device ID
+ * @param storageId - The storage ID within the device
+ * @param objectPath - Virtual path on the device
+ */
+export async function deleteMtpObject(deviceId: string, storageId: number, objectPath: string): Promise<void> {
+    await invoke('delete_mtp_object', { deviceId, storageId, objectPath })
+}
+
+/**
+ * Creates a new folder on an MTP device.
+ * @param deviceId - The connected device ID
+ * @param storageId - The storage ID within the device
+ * @param parentPath - Parent folder path (for example, "/DCIM")
+ * @param folderName - Name of the new folder
+ */
+export async function createMtpFolder(
+    deviceId: string,
+    storageId: number,
+    parentPath: string,
+    folderName: string,
+): Promise<MtpObjectInfo> {
+    return invoke<MtpObjectInfo>('create_mtp_folder', { deviceId, storageId, parentPath, folderName })
+}
+
+/**
+ * Renames an object on an MTP device.
+ * @param deviceId - The connected device ID
+ * @param storageId - The storage ID within the device
+ * @param objectPath - Current path of the object
+ * @param newName - New name for the object
+ */
+export async function renameMtpObject(
+    deviceId: string,
+    storageId: number,
+    objectPath: string,
+    newName: string,
+): Promise<MtpObjectInfo> {
+    return invoke<MtpObjectInfo>('rename_mtp_object', { deviceId, storageId, objectPath, newName })
+}
+
+/**
+ * Moves an object to a new parent folder on an MTP device.
+ * May fail if the device doesn't support MoveObject operation.
+ * @param deviceId - The connected device ID
+ * @param storageId - The storage ID within the device
+ * @param objectPath - Current path of the object
+ * @param newParentPath - New parent folder path
+ */
+export async function moveMtpObject(
+    deviceId: string,
+    storageId: number,
+    objectPath: string,
+    newParentPath: string,
+): Promise<MtpObjectInfo> {
+    return invoke<MtpObjectInfo>('move_mtp_object', { deviceId, storageId, objectPath, newParentPath })
+}
+
+/**
+ * Subscribes to MTP transfer progress events.
+ * Emitted during download and upload operations.
+ */
+export async function onMtpTransferProgress(callback: (event: MtpTransferProgress) => void): Promise<UnlistenFn> {
+    return listen<MtpTransferProgress>('mtp-transfer-progress', (event) => {
+        callback(event.payload)
+    })
+}

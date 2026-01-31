@@ -3,13 +3,17 @@
 //! Manages device connections with a global registry. Each connected device
 //! maintains an active MTP session until disconnected or unplugged.
 
+use futures_util::StreamExt;
 use log::{debug, error, info, warn};
-use mtp_rs::{MtpDevice, MtpDeviceBuilder, ObjectHandle, StorageId};
+use mtp_rs::{MtpDevice, MtpDeviceBuilder, NewObjectInfo, ObjectHandle, StorageId};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, LazyLock, Mutex, RwLock};
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
+use tokio::io::AsyncWriteExt;
 
 use super::types::{MtpDeviceInfo, MtpStorageInfo};
 use crate::file_system::FileEntry;
@@ -81,6 +85,79 @@ impl std::fmt::Display for MtpConnectionError {
 }
 
 impl std::error::Error for MtpConnectionError {}
+
+// ============================================================================
+// Progress events for MTP file operations
+// ============================================================================
+
+/// Progress event for MTP file transfers (download/upload).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MtpTransferProgress {
+    /// Unique operation ID.
+    pub operation_id: String,
+    /// Device ID.
+    pub device_id: String,
+    /// Type of transfer.
+    pub transfer_type: MtpTransferType,
+    /// Current file being transferred.
+    pub current_file: String,
+    /// Bytes transferred so far.
+    pub bytes_done: u64,
+    /// Total bytes to transfer.
+    pub bytes_total: u64,
+}
+
+/// Type of MTP transfer operation.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum MtpTransferType {
+    Download,
+    Upload,
+}
+
+/// Result of a successful MTP operation.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MtpOperationResult {
+    /// Operation ID (for tracking).
+    pub operation_id: String,
+    /// Number of files processed.
+    pub files_processed: usize,
+    /// Total bytes transferred.
+    pub bytes_transferred: u64,
+}
+
+/// State for tracking cancellation of MTP operations.
+#[allow(dead_code, reason = "Will be used in Phase 5 for operation cancellation")]
+pub struct MtpOperationState {
+    /// Cancellation flag.
+    pub cancelled: AtomicBool,
+}
+
+impl Default for MtpOperationState {
+    fn default() -> Self {
+        Self {
+            cancelled: AtomicBool::new(false),
+        }
+    }
+}
+
+/// Information about an object on the device (returned after creation).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MtpObjectInfo {
+    /// Object handle.
+    pub handle: u32,
+    /// Object name.
+    pub name: String,
+    /// Virtual path on device.
+    pub path: String,
+    /// Whether it's a directory.
+    pub is_directory: bool,
+    /// Size in bytes (None for directories).
+    pub size: Option<u64>,
+}
 
 /// Information about a connected device, including its storages.
 #[derive(Debug, Clone, serde::Serialize)]
@@ -506,6 +583,791 @@ impl MtpConnectionManager {
                     }),
                 );
             }
+        }
+    }
+
+    // ========================================================================
+    // Phase 4: File Operations
+    // ========================================================================
+
+    /// Downloads a file from the MTP device to a local path.
+    ///
+    /// # Arguments
+    ///
+    /// * `device_id` - The connected device ID
+    /// * `storage_id` - The storage ID within the device
+    /// * `object_path` - Virtual path on the device (for example, "/DCIM/photo.jpg")
+    /// * `local_dest` - Local destination path
+    /// * `app` - Optional app handle for emitting progress events
+    /// * `operation_id` - Unique operation ID for progress tracking
+    pub async fn download_file(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        object_path: &str,
+        local_dest: &Path,
+        app: Option<&AppHandle>,
+        operation_id: &str,
+    ) -> Result<MtpOperationResult, MtpConnectionError> {
+        debug!(
+            "MTP download_file: device={}, storage={}, path={}, dest={}",
+            device_id,
+            storage_id,
+            object_path,
+            local_dest.display()
+        );
+
+        // Get the device and resolve path to handle
+        let (device_arc, object_handle) = {
+            let devices = self.devices.lock().unwrap();
+            let entry = devices.get(device_id).ok_or_else(|| MtpConnectionError::NotConnected {
+                device_id: device_id.to_string(),
+            })?;
+
+            // Resolve path to handle
+            let handle = self.resolve_path_to_handle(entry, storage_id, object_path)?;
+            (Arc::clone(&entry.device), handle)
+        };
+
+        let device = device_arc.lock().await;
+
+        // Get the storage
+        let storage = tokio::time::timeout(
+            Duration::from_secs(MTP_TIMEOUT_SECS),
+            device.storage(StorageId(storage_id)),
+        )
+        .await
+        .map_err(|_| MtpConnectionError::Timeout {
+            device_id: device_id.to_string(),
+        })?
+        .map_err(|e| map_mtp_error(e, device_id))?;
+
+        // Get object info to determine size
+        let object_info = tokio::time::timeout(
+            Duration::from_secs(MTP_TIMEOUT_SECS),
+            storage.get_object_info(object_handle),
+        )
+        .await
+        .map_err(|_| MtpConnectionError::Timeout {
+            device_id: device_id.to_string(),
+        })?
+        .map_err(|e| map_mtp_error(e, device_id))?;
+
+        let total_size = object_info.size;
+        let filename = object_info.filename.clone();
+
+        // Emit initial progress
+        if let Some(app) = app {
+            let _ = app.emit(
+                "mtp-transfer-progress",
+                MtpTransferProgress {
+                    operation_id: operation_id.to_string(),
+                    device_id: device_id.to_string(),
+                    transfer_type: MtpTransferType::Download,
+                    current_file: filename.clone(),
+                    bytes_done: 0,
+                    bytes_total: total_size,
+                },
+            );
+        }
+
+        // Download the file as a stream
+        let mut download_stream = tokio::time::timeout(
+            Duration::from_secs(MTP_TIMEOUT_SECS * 10), // Longer timeout for large files
+            storage.download(object_handle),
+        )
+        .await
+        .map_err(|_| MtpConnectionError::Timeout {
+            device_id: device_id.to_string(),
+        })?
+        .map_err(|e| map_mtp_error(e, device_id))?;
+
+        // Release device lock before writing to disk
+        drop(storage);
+        drop(device);
+
+        // Create the local file
+        let mut file = tokio::fs::File::create(local_dest)
+            .await
+            .map_err(|e| MtpConnectionError::Other {
+                device_id: device_id.to_string(),
+                message: format!("Failed to create local file: {}", e),
+            })?;
+
+        // Write chunks to file
+        let mut bytes_written = 0u64;
+        while let Some(chunk_result) = download_stream.next().await {
+            let chunk = chunk_result.map_err(|e| MtpConnectionError::Other {
+                device_id: device_id.to_string(),
+                message: format!("Download error: {}", e),
+            })?;
+
+            file.write_all(&chunk.data)
+                .await
+                .map_err(|e| MtpConnectionError::Other {
+                    device_id: device_id.to_string(),
+                    message: format!("Failed to write local file: {}", e),
+                })?;
+
+            bytes_written += chunk.data.len() as u64;
+        }
+
+        file.flush().await.map_err(|e| MtpConnectionError::Other {
+            device_id: device_id.to_string(),
+            message: format!("Failed to flush local file: {}", e),
+        })?;
+
+        // Emit completion progress
+        if let Some(app) = app {
+            let _ = app.emit(
+                "mtp-transfer-progress",
+                MtpTransferProgress {
+                    operation_id: operation_id.to_string(),
+                    device_id: device_id.to_string(),
+                    transfer_type: MtpTransferType::Download,
+                    current_file: filename,
+                    bytes_done: bytes_written,
+                    bytes_total: total_size,
+                },
+            );
+        }
+
+        info!(
+            "MTP download complete: {} bytes to {}",
+            bytes_written,
+            local_dest.display()
+        );
+
+        Ok(MtpOperationResult {
+            operation_id: operation_id.to_string(),
+            files_processed: 1,
+            bytes_transferred: bytes_written,
+        })
+    }
+
+    /// Uploads a file from the local filesystem to the MTP device.
+    ///
+    /// # Arguments
+    ///
+    /// * `device_id` - The connected device ID
+    /// * `storage_id` - The storage ID within the device
+    /// * `local_path` - Local file path to upload
+    /// * `dest_folder` - Destination folder path on device (for example, "/DCIM")
+    /// * `app` - Optional app handle for emitting progress events
+    /// * `operation_id` - Unique operation ID for progress tracking
+    pub async fn upload_file(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        local_path: &Path,
+        dest_folder: &str,
+        app: Option<&AppHandle>,
+        operation_id: &str,
+    ) -> Result<MtpObjectInfo, MtpConnectionError> {
+        debug!(
+            "MTP upload_file: device={}, storage={}, local={}, dest={}",
+            device_id,
+            storage_id,
+            local_path.display(),
+            dest_folder
+        );
+
+        // Get file metadata
+        let metadata = tokio::fs::metadata(local_path)
+            .await
+            .map_err(|e| MtpConnectionError::Other {
+                device_id: device_id.to_string(),
+                message: format!("Failed to read local file metadata: {}", e),
+            })?;
+
+        if metadata.is_dir() {
+            return Err(MtpConnectionError::Other {
+                device_id: device_id.to_string(),
+                message: "Cannot upload directories with upload_file. Use create_folder instead.".to_string(),
+            });
+        }
+
+        let file_size = metadata.len();
+        let filename = local_path
+            .file_name()
+            .ok_or_else(|| MtpConnectionError::Other {
+                device_id: device_id.to_string(),
+                message: "Invalid file path".to_string(),
+            })?
+            .to_string_lossy()
+            .to_string();
+
+        // Read the file data
+        let data = tokio::fs::read(local_path)
+            .await
+            .map_err(|e| MtpConnectionError::Other {
+                device_id: device_id.to_string(),
+                message: format!("Failed to read local file: {}", e),
+            })?;
+
+        // Get device and resolve parent folder
+        let (device_arc, parent_handle) = {
+            let devices = self.devices.lock().unwrap();
+            let entry = devices.get(device_id).ok_or_else(|| MtpConnectionError::NotConnected {
+                device_id: device_id.to_string(),
+            })?;
+
+            let parent = self.resolve_path_to_handle(entry, storage_id, dest_folder)?;
+            (Arc::clone(&entry.device), parent)
+        };
+
+        // Emit initial progress
+        if let Some(app) = app {
+            let _ = app.emit(
+                "mtp-transfer-progress",
+                MtpTransferProgress {
+                    operation_id: operation_id.to_string(),
+                    device_id: device_id.to_string(),
+                    transfer_type: MtpTransferType::Upload,
+                    current_file: filename.clone(),
+                    bytes_done: 0,
+                    bytes_total: file_size,
+                },
+            );
+        }
+
+        let device = device_arc.lock().await;
+
+        // Get the storage
+        let storage = tokio::time::timeout(
+            Duration::from_secs(MTP_TIMEOUT_SECS),
+            device.storage(StorageId(storage_id)),
+        )
+        .await
+        .map_err(|_| MtpConnectionError::Timeout {
+            device_id: device_id.to_string(),
+        })?
+        .map_err(|e| map_mtp_error(e, device_id))?;
+
+        // Create object info for the upload (format is auto-detected from filename)
+        let object_info = NewObjectInfo::file(&filename, file_size);
+
+        // Upload the file - create a stream from the data
+        let parent_opt = if parent_handle == ObjectHandle::ROOT {
+            None
+        } else {
+            Some(parent_handle)
+        };
+
+        // Create a single-chunk stream from the data
+        // Using iter instead of once because iter's items are ready, making it Unpin
+        let data_stream = futures_util::stream::iter(vec![Ok::<_, std::io::Error>(bytes::Bytes::from(data))]);
+
+        let new_handle = tokio::time::timeout(
+            Duration::from_secs(MTP_TIMEOUT_SECS * 10), // Longer timeout for large files
+            storage.upload(parent_opt, object_info, data_stream),
+        )
+        .await
+        .map_err(|_| MtpConnectionError::Timeout {
+            device_id: device_id.to_string(),
+        })?
+        .map_err(|e| map_mtp_error(e, device_id))?;
+
+        // Release device lock
+        drop(storage);
+        drop(device);
+
+        // Build the new object path
+        let new_path = normalize_mtp_path(dest_folder).join(&filename);
+        let new_path_str = new_path.to_string_lossy().to_string();
+
+        // Update path cache
+        {
+            let devices = self.devices.lock().unwrap();
+            if let Some(entry) = devices.get(device_id)
+                && let Ok(mut cache_map) = entry.path_cache.write()
+            {
+                let storage_cache = cache_map.entry(storage_id).or_default();
+                storage_cache.path_to_handle.insert(new_path.clone(), new_handle);
+            }
+        }
+
+        // Emit completion progress
+        if let Some(app) = app {
+            let _ = app.emit(
+                "mtp-transfer-progress",
+                MtpTransferProgress {
+                    operation_id: operation_id.to_string(),
+                    device_id: device_id.to_string(),
+                    transfer_type: MtpTransferType::Upload,
+                    current_file: filename.clone(),
+                    bytes_done: file_size,
+                    bytes_total: file_size,
+                },
+            );
+        }
+
+        info!("MTP upload complete: {} -> {}", local_path.display(), new_path_str);
+
+        Ok(MtpObjectInfo {
+            handle: new_handle.0,
+            name: filename,
+            path: new_path_str,
+            is_directory: false,
+            size: Some(file_size),
+        })
+    }
+
+    /// Deletes an object (file or folder) from the MTP device.
+    ///
+    /// For folders, this recursively deletes all contents first since MTP
+    /// requires folders to be empty before deletion.
+    ///
+    /// # Arguments
+    ///
+    /// * `device_id` - The connected device ID
+    /// * `storage_id` - The storage ID within the device
+    /// * `object_path` - Virtual path on the device
+    pub async fn delete_object(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        object_path: &str,
+    ) -> Result<(), MtpConnectionError> {
+        debug!(
+            "MTP delete_object: device={}, storage={}, path={}",
+            device_id, storage_id, object_path
+        );
+
+        // Get the device and resolve path to handle
+        let (device_arc, object_handle) = {
+            let devices = self.devices.lock().unwrap();
+            let entry = devices.get(device_id).ok_or_else(|| MtpConnectionError::NotConnected {
+                device_id: device_id.to_string(),
+            })?;
+
+            let handle = self.resolve_path_to_handle(entry, storage_id, object_path)?;
+            (Arc::clone(&entry.device), handle)
+        };
+
+        let device = device_arc.lock().await;
+
+        // Get the storage
+        let storage = tokio::time::timeout(
+            Duration::from_secs(MTP_TIMEOUT_SECS),
+            device.storage(StorageId(storage_id)),
+        )
+        .await
+        .map_err(|_| MtpConnectionError::Timeout {
+            device_id: device_id.to_string(),
+        })?
+        .map_err(|e| map_mtp_error(e, device_id))?;
+
+        // Get object info to check if it's a directory
+        let object_info = tokio::time::timeout(
+            Duration::from_secs(MTP_TIMEOUT_SECS),
+            storage.get_object_info(object_handle),
+        )
+        .await
+        .map_err(|_| MtpConnectionError::Timeout {
+            device_id: device_id.to_string(),
+        })?
+        .map_err(|e| map_mtp_error(e, device_id))?;
+
+        let is_dir = object_info.format == mtp_rs::ptp::ObjectFormatCode::Association;
+
+        if is_dir {
+            // For directories, we need to recursively delete contents first
+            let children = tokio::time::timeout(
+                Duration::from_secs(MTP_TIMEOUT_SECS),
+                storage.list_objects(Some(object_handle)),
+            )
+            .await
+            .map_err(|_| MtpConnectionError::Timeout {
+                device_id: device_id.to_string(),
+            })?
+            .map_err(|e| map_mtp_error(e, device_id))?;
+
+            drop(storage);
+            drop(device);
+
+            // Recursively delete children
+            let parent_path = normalize_mtp_path(object_path);
+            for child_info in children {
+                let child_path = parent_path.join(&child_info.filename);
+                let child_path_str = child_path.to_string_lossy().to_string();
+
+                // Cache the child handle for the recursive call
+                {
+                    let devices = self.devices.lock().unwrap();
+                    if let Some(entry) = devices.get(device_id)
+                        && let Ok(mut cache_map) = entry.path_cache.write()
+                    {
+                        let storage_cache = cache_map.entry(storage_id).or_default();
+                        storage_cache
+                            .path_to_handle
+                            .insert(child_path.clone(), child_info.handle);
+                    }
+                }
+
+                // Use Box::pin for recursive async call
+                Box::pin(self.delete_object(device_id, storage_id, &child_path_str)).await?;
+            }
+
+            // Re-acquire device and storage lock to delete the now-empty folder
+            let device = device_arc.lock().await;
+            let storage = tokio::time::timeout(
+                Duration::from_secs(MTP_TIMEOUT_SECS),
+                device.storage(StorageId(storage_id)),
+            )
+            .await
+            .map_err(|_| MtpConnectionError::Timeout {
+                device_id: device_id.to_string(),
+            })?
+            .map_err(|e| map_mtp_error(e, device_id))?;
+
+            tokio::time::timeout(Duration::from_secs(MTP_TIMEOUT_SECS), storage.delete(object_handle))
+                .await
+                .map_err(|_| MtpConnectionError::Timeout {
+                    device_id: device_id.to_string(),
+                })?
+                .map_err(|e| map_mtp_error(e, device_id))?;
+        } else {
+            // For files, just delete directly
+            tokio::time::timeout(Duration::from_secs(MTP_TIMEOUT_SECS), storage.delete(object_handle))
+                .await
+                .map_err(|_| MtpConnectionError::Timeout {
+                    device_id: device_id.to_string(),
+                })?
+                .map_err(|e| map_mtp_error(e, device_id))?;
+        }
+
+        // Remove from path cache
+        {
+            let path = normalize_mtp_path(object_path);
+            let devices = self.devices.lock().unwrap();
+            if let Some(entry) = devices.get(device_id)
+                && let Ok(mut cache_map) = entry.path_cache.write()
+                && let Some(storage_cache) = cache_map.get_mut(&storage_id)
+            {
+                storage_cache.path_to_handle.remove(&path);
+            }
+        }
+
+        info!("MTP delete complete: {}", object_path);
+        Ok(())
+    }
+
+    /// Creates a new folder on the MTP device.
+    ///
+    /// # Arguments
+    ///
+    /// * `device_id` - The connected device ID
+    /// * `storage_id` - The storage ID within the device
+    /// * `parent_path` - Parent folder path (for example, "/DCIM")
+    /// * `folder_name` - Name of the new folder
+    pub async fn create_folder(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        parent_path: &str,
+        folder_name: &str,
+    ) -> Result<MtpObjectInfo, MtpConnectionError> {
+        debug!(
+            "MTP create_folder: device={}, storage={}, parent={}, name={}",
+            device_id, storage_id, parent_path, folder_name
+        );
+
+        // Get device and resolve parent folder
+        let (device_arc, parent_handle) = {
+            let devices = self.devices.lock().unwrap();
+            let entry = devices.get(device_id).ok_or_else(|| MtpConnectionError::NotConnected {
+                device_id: device_id.to_string(),
+            })?;
+
+            let parent = self.resolve_path_to_handle(entry, storage_id, parent_path)?;
+            (Arc::clone(&entry.device), parent)
+        };
+
+        let device = device_arc.lock().await;
+
+        // Get the storage
+        let storage = tokio::time::timeout(
+            Duration::from_secs(MTP_TIMEOUT_SECS),
+            device.storage(StorageId(storage_id)),
+        )
+        .await
+        .map_err(|_| MtpConnectionError::Timeout {
+            device_id: device_id.to_string(),
+        })?
+        .map_err(|e| map_mtp_error(e, device_id))?;
+
+        // Create the folder
+        let parent_opt = if parent_handle == ObjectHandle::ROOT {
+            None
+        } else {
+            Some(parent_handle)
+        };
+
+        let new_handle = tokio::time::timeout(
+            Duration::from_secs(MTP_TIMEOUT_SECS),
+            storage.create_folder(parent_opt, folder_name),
+        )
+        .await
+        .map_err(|_| MtpConnectionError::Timeout {
+            device_id: device_id.to_string(),
+        })?
+        .map_err(|e| map_mtp_error(e, device_id))?;
+
+        // Release device lock
+        drop(storage);
+        drop(device);
+
+        // Build the new folder path
+        let new_path = normalize_mtp_path(parent_path).join(folder_name);
+        let new_path_str = new_path.to_string_lossy().to_string();
+
+        // Update path cache
+        {
+            let devices = self.devices.lock().unwrap();
+            if let Some(entry) = devices.get(device_id)
+                && let Ok(mut cache_map) = entry.path_cache.write()
+            {
+                let storage_cache = cache_map.entry(storage_id).or_default();
+                storage_cache.path_to_handle.insert(new_path.clone(), new_handle);
+            }
+        }
+
+        info!("MTP folder created: {}", new_path_str);
+
+        Ok(MtpObjectInfo {
+            handle: new_handle.0,
+            name: folder_name.to_string(),
+            path: new_path_str,
+            is_directory: true,
+            size: None,
+        })
+    }
+
+    /// Renames an object on the MTP device.
+    ///
+    /// # Arguments
+    ///
+    /// * `device_id` - The connected device ID
+    /// * `storage_id` - The storage ID within the device
+    /// * `object_path` - Current path of the object
+    /// * `new_name` - New name for the object
+    pub async fn rename_object(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        object_path: &str,
+        new_name: &str,
+    ) -> Result<MtpObjectInfo, MtpConnectionError> {
+        debug!(
+            "MTP rename_object: device={}, storage={}, path={}, new_name={}",
+            device_id, storage_id, object_path, new_name
+        );
+
+        // Get device and resolve object handle
+        let (device_arc, object_handle) = {
+            let devices = self.devices.lock().unwrap();
+            let entry = devices.get(device_id).ok_or_else(|| MtpConnectionError::NotConnected {
+                device_id: device_id.to_string(),
+            })?;
+
+            let handle = self.resolve_path_to_handle(entry, storage_id, object_path)?;
+            (Arc::clone(&entry.device), handle)
+        };
+
+        let device = device_arc.lock().await;
+
+        // Get the storage
+        let storage = tokio::time::timeout(
+            Duration::from_secs(MTP_TIMEOUT_SECS),
+            device.storage(StorageId(storage_id)),
+        )
+        .await
+        .map_err(|_| MtpConnectionError::Timeout {
+            device_id: device_id.to_string(),
+        })?
+        .map_err(|e| map_mtp_error(e, device_id))?;
+
+        // Get object info to determine if it's a directory
+        let object_info = tokio::time::timeout(
+            Duration::from_secs(MTP_TIMEOUT_SECS),
+            storage.get_object_info(object_handle),
+        )
+        .await
+        .map_err(|_| MtpConnectionError::Timeout {
+            device_id: device_id.to_string(),
+        })?
+        .map_err(|e| map_mtp_error(e, device_id))?;
+
+        let is_dir = object_info.format == mtp_rs::ptp::ObjectFormatCode::Association;
+        let old_size = object_info.size;
+
+        // Set the new filename using storage.rename()
+        tokio::time::timeout(
+            Duration::from_secs(MTP_TIMEOUT_SECS),
+            storage.rename(object_handle, new_name),
+        )
+        .await
+        .map_err(|_| MtpConnectionError::Timeout {
+            device_id: device_id.to_string(),
+        })?
+        .map_err(|e| map_mtp_error(e, device_id))?;
+
+        // Release device and storage lock
+        drop(storage);
+        drop(device);
+
+        // Update path cache
+        let old_path = normalize_mtp_path(object_path);
+        let parent = old_path.parent().unwrap_or(Path::new("/"));
+        let new_path = parent.join(new_name);
+        let new_path_str = new_path.to_string_lossy().to_string();
+
+        {
+            let devices = self.devices.lock().unwrap();
+            if let Some(entry) = devices.get(device_id)
+                && let Ok(mut cache_map) = entry.path_cache.write()
+                && let Some(storage_cache) = cache_map.get_mut(&storage_id)
+            {
+                storage_cache.path_to_handle.remove(&old_path);
+                storage_cache.path_to_handle.insert(new_path.clone(), object_handle);
+            }
+        }
+
+        info!("MTP rename complete: {} -> {}", object_path, new_path_str);
+
+        Ok(MtpObjectInfo {
+            handle: object_handle.0,
+            name: new_name.to_string(),
+            path: new_path_str,
+            is_directory: is_dir,
+            size: if is_dir { None } else { Some(old_size) },
+        })
+    }
+
+    /// Moves an object to a new parent folder on the MTP device.
+    ///
+    /// Falls back to copy+delete if the device doesn't support MoveObject.
+    ///
+    /// # Arguments
+    ///
+    /// * `device_id` - The connected device ID
+    /// * `storage_id` - The storage ID within the device
+    /// * `object_path` - Current path of the object
+    /// * `new_parent_path` - New parent folder path
+    pub async fn move_object(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        object_path: &str,
+        new_parent_path: &str,
+    ) -> Result<MtpObjectInfo, MtpConnectionError> {
+        debug!(
+            "MTP move_object: device={}, storage={}, path={}, new_parent={}",
+            device_id, storage_id, object_path, new_parent_path
+        );
+
+        // Get device and resolve both handles
+        let (device_arc, object_handle, new_parent_handle) = {
+            let devices = self.devices.lock().unwrap();
+            let entry = devices.get(device_id).ok_or_else(|| MtpConnectionError::NotConnected {
+                device_id: device_id.to_string(),
+            })?;
+
+            let obj_handle = self.resolve_path_to_handle(entry, storage_id, object_path)?;
+            let parent_handle = self.resolve_path_to_handle(entry, storage_id, new_parent_path)?;
+            (Arc::clone(&entry.device), obj_handle, parent_handle)
+        };
+
+        let device = device_arc.lock().await;
+
+        // Get the storage
+        let storage = tokio::time::timeout(
+            Duration::from_secs(MTP_TIMEOUT_SECS),
+            device.storage(StorageId(storage_id)),
+        )
+        .await
+        .map_err(|_| MtpConnectionError::Timeout {
+            device_id: device_id.to_string(),
+        })?
+        .map_err(|e| map_mtp_error(e, device_id))?;
+
+        // Get object info
+        let object_info = tokio::time::timeout(
+            Duration::from_secs(MTP_TIMEOUT_SECS),
+            storage.get_object_info(object_handle),
+        )
+        .await
+        .map_err(|_| MtpConnectionError::Timeout {
+            device_id: device_id.to_string(),
+        })?
+        .map_err(|e| map_mtp_error(e, device_id))?;
+
+        let is_dir = object_info.format == mtp_rs::ptp::ObjectFormatCode::Association;
+        let object_size = object_info.size;
+        let object_name = object_info.filename.clone();
+
+        // Try to use MoveObject operation
+        // storage.move_object expects the new parent handle directly, not Option
+        let new_parent_for_move = if new_parent_handle == ObjectHandle::ROOT {
+            ObjectHandle::ROOT
+        } else {
+            new_parent_handle
+        };
+
+        let move_result = tokio::time::timeout(
+            Duration::from_secs(MTP_TIMEOUT_SECS),
+            storage.move_object(object_handle, new_parent_for_move, None),
+        )
+        .await;
+
+        // Release device and storage lock
+        drop(storage);
+        drop(device);
+
+        match move_result {
+            Ok(Ok(())) => {
+                // Move succeeded
+                let old_path = normalize_mtp_path(object_path);
+                let new_path = normalize_mtp_path(new_parent_path).join(&object_name);
+                let new_path_str = new_path.to_string_lossy().to_string();
+
+                // Update path cache
+                {
+                    let devices = self.devices.lock().unwrap();
+                    if let Some(entry) = devices.get(device_id)
+                        && let Ok(mut cache_map) = entry.path_cache.write()
+                        && let Some(storage_cache) = cache_map.get_mut(&storage_id)
+                    {
+                        storage_cache.path_to_handle.remove(&old_path);
+                        storage_cache.path_to_handle.insert(new_path.clone(), object_handle);
+                    }
+                }
+
+                info!("MTP move complete: {} -> {}", object_path, new_path_str);
+
+                Ok(MtpObjectInfo {
+                    handle: object_handle.0,
+                    name: object_name,
+                    path: new_path_str,
+                    is_directory: is_dir,
+                    size: if is_dir { None } else { Some(object_size) },
+                })
+            }
+            Ok(Err(e)) => {
+                // Move operation returned an error - might not be supported
+                warn!(
+                    "MTP MoveObject failed for {}: {:?}. Device may not support this operation.",
+                    object_path, e
+                );
+                Err(MtpConnectionError::Other {
+                    device_id: device_id.to_string(),
+                    message: format!("Move operation not supported by device: {}", e),
+                })
+            }
+            Err(_) => Err(MtpConnectionError::Timeout {
+                device_id: device_id.to_string(),
+            }),
         }
     }
 }
