@@ -53,24 +53,24 @@ Task breakdown for adding Android device (MTP) support to Cmdr. See [mtp.md](mtp
 ## Phase 3: File browsing
 
 ### 3.1 MtpVolume implementation
-- [ ] Create `src-tauri/src/mtp/mtp_volume.rs`
-- [ ] Implement `Volume` trait for `MtpVolume`
-- [ ] Implement `list_directory()` — translate path to object handles
-- [ ] Implement `get_metadata()` — get object info
-- [ ] Implement `exists()` — check if object handle exists
-- [ ] Handle path-to-handle mapping (cache object handles by path)
+- [x] ~~Create `src-tauri/src/mtp/mtp_volume.rs`~~ (Option B approach: MTP-specific commands instead)
+- [x] ~~Implement `Volume` trait for `MtpVolume`~~ (Deferred to later refactor)
+- [x] Implement `list_directory()` — translate path to object handles (in connection.rs)
+- [x] ~~Implement `get_metadata()` — get object info~~ (Handled in list_directory)
+- [x] ~~Implement `exists()` — check if object handle exists~~ (Not needed for MVP)
+- [x] Handle path-to-handle mapping (cache object handles by path)
 
 ### 3.2 Directory listing commands
-- [ ] Add `list_mtp_directory` command (returns `Vec<FileEntry>`)
-- [ ] Convert MTP object info to `FileEntry` format
-- [ ] Handle MTP-specific fields (no permissions, different timestamps)
-- [ ] Add TypeScript wrapper
+- [x] Add `list_mtp_directory` command (returns `Vec<FileEntry>`)
+- [x] Convert MTP object info to `FileEntry` format
+- [x] Handle MTP-specific fields (no permissions, different timestamps)
+- [x] Add TypeScript wrapper
 
 ### 3.3 Frontend integration
-- [ ] Add `LocationCategory.MobileDevice` to TypeScript types
-- [ ] Update `VolumeBreadcrumb.svelte` to show "Mobile" section
-- [ ] Create `src/lib/mtp/mtp-store.ts` for device state
-- [ ] Wire up device list in sidebar/breadcrumb
+- [x] Add `LocationCategory.MobileDevice` to TypeScript types
+- [x] Update `VolumeBreadcrumb.svelte` to show "Mobile" section
+- [x] Create `src/lib/mtp/mtp-store.svelte.ts` for device state
+- [x] Wire up device list in sidebar/breadcrumb
 
 **Checkpoint**: Can browse folders on Android device, see files in file list.
 

@@ -83,6 +83,11 @@ vi.mock('$lib/tauri-commands', () => ({
     listNetworkHosts: vi.fn().mockResolvedValue([]),
     getNetworkDiscoveryState: vi.fn().mockResolvedValue('idle'),
     resolveNetworkHost: vi.fn().mockResolvedValue(null),
+    // MTP device mocks
+    listMtpDevices: vi.fn().mockResolvedValue([]),
+    onMtpDeviceConnected: vi.fn().mockResolvedValue(() => {}),
+    onMtpDeviceDisconnected: vi.fn().mockResolvedValue(() => {}),
+    onMtpExclusiveAccessError: vi.fn().mockResolvedValue(() => {}),
 }))
 
 vi.mock('$lib/icon-cache', async () => {

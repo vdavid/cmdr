@@ -97,3 +97,35 @@ pub fn get_ptpcamerad_workaround_command() -> String {
 pub fn get_mtp_storages(_device_id: String) -> Vec<MtpStorageInfo> {
     Vec::new()
 }
+
+/// File entry stub matching the real FileEntry type.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FileEntry {
+    pub name: String,
+    pub path: String,
+    pub is_directory: bool,
+    pub is_symlink: bool,
+    pub size: Option<u64>,
+    pub modified_at: Option<u64>,
+    pub created_at: Option<u64>,
+    pub added_at: Option<u64>,
+    pub opened_at: Option<u64>,
+    pub permissions: u32,
+    pub owner: String,
+    pub group: String,
+    pub icon_id: String,
+    pub extended_metadata_loaded: bool,
+}
+
+/// Lists MTP directory contents (stub - returns error).
+#[tauri::command]
+pub async fn list_mtp_directory(
+    _device_id: String,
+    _storage_id: u32,
+    _path: String,
+) -> Result<Vec<FileEntry>, MtpConnectionError> {
+    Err(MtpConnectionError::NotSupported {
+        message: "MTP is not supported on this platform".to_string(),
+    })
+}
