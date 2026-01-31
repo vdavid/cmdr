@@ -46,7 +46,8 @@ fn bench_icon_fetching(c: &mut Criterion) {
             BenchmarkId::new("refresh_directory", count),
             &(paths.clone(), extensions.clone()),
             |b, (dir_paths, exts)| {
-                b.iter(|| cmdr_lib::icons::refresh_icons_for_directory(dir_paths.clone(), exts.clone()))
+                // Benchmark with app icons enabled (the more expensive path)
+                b.iter(|| cmdr_lib::icons::refresh_icons_for_directory(dir_paths.clone(), exts.clone(), true))
             },
         );
     }

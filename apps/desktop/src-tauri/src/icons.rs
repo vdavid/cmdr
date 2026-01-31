@@ -46,6 +46,17 @@ fn cache_icon(icon_id: String, data_url: String) {
     }
 }
 
+/// Clears all cached icons for extension-based entries.
+/// Called when the "use app icons for documents" setting changes.
+pub fn clear_extension_icon_cache() {
+    ensure_cache();
+    let mut cache = ICON_CACHE.write().unwrap();
+    if let Some(ref mut map) = *cache {
+        // Only remove extension-based icons (ext:xxx), keep directory icons
+        map.retain(|key, _| !key.starts_with("ext:"));
+    }
+}
+
 /// Converts an image to a base64 WebP data URL.
 fn image_to_data_url(img: &DynamicImage) -> Option<String> {
     // Resize to configured size
@@ -103,8 +114,13 @@ fn get_sample_path_for_icon_id(icon_id: &str) -> Option<PathBuf> {
 }
 
 /// Fetches icons for the given icon IDs that are not already cached.
+///
+/// When `use_app_icons_for_documents` is true and on macOS, extension-based icons
+/// are fetched from app bundles (showing the app's icon as fallback). When false,
+/// the system's default document icons are used (Finder-style with app badge).
+///
 /// Returns a map of icon_id -> data URL.
-pub fn get_icons(icon_ids: Vec<String>) -> HashMap<String, String> {
+pub fn get_icons(icon_ids: Vec<String>, use_app_icons_for_documents: bool) -> HashMap<String, String> {
     let mut result = HashMap::new();
 
     for icon_id in icon_ids {
@@ -115,6 +131,22 @@ pub fn get_icons(icon_ids: Vec<String>) -> HashMap<String, String> {
         }
 
         // Not cached, fetch it
+        // For extension-based icons on macOS, use fresh fetch if app icons are enabled
+        #[cfg(target_os = "macos")]
+        if use_app_icons_for_documents
+            && let Some(ext) = icon_id.strip_prefix("ext:")
+            && let Some(data_url) = fetch_fresh_extension_icon(ext, true)
+        {
+            cache_icon(icon_id.clone(), data_url.clone());
+            result.insert(icon_id, data_url);
+            continue;
+        }
+
+        // Silence unused variable warning when not on macOS
+        #[cfg(not(target_os = "macos"))]
+        let _ = use_app_icons_for_documents;
+
+        // Default path: use sample file approach
         if let Some(sample_path) = get_sample_path_for_icon_id(&icon_id)
             && let Some(data_url) = fetch_icon_for_path(&sample_path)
         {
@@ -128,15 +160,22 @@ pub fn get_icons(icon_ids: Vec<String>) -> HashMap<String, String> {
 
 /// Fetches a fresh icon for an extension, bypassing any OS cache.
 /// On macOS, this goes directly to the app bundle. On other platforms, falls back to temp files.
-fn fetch_fresh_extension_icon(ext: &str) -> Option<String> {
+///
+/// When `use_app_icons_for_documents` is true, falls back to app icons for files without
+/// document-specific icons. When false, uses Finder-style document icons.
+fn fetch_fresh_extension_icon(ext: &str, use_app_icons_for_documents: bool) -> Option<String> {
     // On macOS, try to get the icon directly from the default app's bundle
     // This bypasses the Launch Services icon cache
     #[cfg(target_os = "macos")]
     {
-        if let Some(img) = crate::macos_icons::fetch_fresh_icon_for_extension(ext) {
+        if let Some(img) = crate::macos_icons::fetch_fresh_icon_for_extension(ext, use_app_icons_for_documents) {
             return image_to_data_url(&img);
         }
     }
+
+    // Silence unused variable warning on non-macOS platforms
+    #[cfg(not(target_os = "macos"))]
+    let _ = use_app_icons_for_documents;
 
     // Fallback: use temp file approach (works on all platforms, but may use cached icons)
     let sample_path = std::env::temp_dir().join(format!("cmdr_icon_sample.{}", ext));
@@ -154,9 +193,16 @@ fn fetch_fresh_extension_icon(ext: &str) -> Option<String> {
 /// On macOS, extension icons are fetched directly from app bundles to bypass
 /// the Launch Services icon cache, ensuring we always show the current association.
 ///
+/// When `use_app_icons_for_documents` is true, falls back to app icons for files without
+/// document-specific icons. When false, uses Finder-style document icons.
+///
 /// Returns only the icons that were successfully fetched, regardless of cache state.
 /// This allows the frontend to detect changes by comparing with its cached icons.
-pub fn refresh_icons_for_directory(directory_paths: Vec<String>, extensions: Vec<String>) -> HashMap<String, String> {
+pub fn refresh_icons_for_directory(
+    directory_paths: Vec<String>,
+    extensions: Vec<String>,
+    use_app_icons_for_documents: bool,
+) -> HashMap<String, String> {
     let mut result = HashMap::new();
 
     // Fetch extension icons in parallel (uses rayon's global pool)
@@ -165,7 +211,7 @@ pub fn refresh_icons_for_directory(directory_paths: Vec<String>, extensions: Vec
             .par_iter()
             .map(|ext| {
                 let icon_id = format!("ext:{}", ext.to_lowercase());
-                let data_url = fetch_fresh_extension_icon(ext);
+                let data_url = fetch_fresh_extension_icon(ext, use_app_icons_for_documents);
                 (icon_id, data_url)
             })
             .collect();

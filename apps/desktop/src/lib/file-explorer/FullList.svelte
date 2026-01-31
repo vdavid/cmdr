@@ -13,9 +13,9 @@
         isRangeCached,
         shouldResetCache,
     } from './file-list-utils'
-    import { formatSizeTriads, formatHumanReadable } from './selection-info-utils'
+    import { formatSizeTriads } from './selection-info-utils'
     import { getVisibleItemsCount as getVisibleItemsCountUtil, FULL_LIST_BUFFER_SIZE } from './full-list-utils'
-    import { getRowHeight, formatDateTime } from '$lib/settings/reactive-settings.svelte'
+    import { getRowHeight, formatDateTime, formatFileSize } from '$lib/settings/reactive-settings.svelte'
 
     interface Props {
         listingId: string
@@ -318,7 +318,7 @@
                     >
                         <FileIcon {file} {syncIcon} />
                         <span class="col-name">{file.name}</span>
-                        <span class="col-size" title={file.size !== undefined ? formatHumanReadable(file.size) : ''}>
+                        <span class="col-size" title={file.size !== undefined ? formatFileSize(file.size) : ''}>
                             {#if file.isDirectory}
                                 <span class="size-dir">&lt;dir&gt;</span>
                             {:else if file.size !== undefined}

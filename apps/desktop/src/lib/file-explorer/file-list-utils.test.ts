@@ -22,6 +22,9 @@ vi.mock('$lib/tauri-commands', () => ({
 vi.mock('$lib/icon-cache', () => ({
     prefetchIcons: vi.fn(),
 }))
+vi.mock('$lib/settings/reactive-settings.svelte', () => ({
+    getUseAppIconsForDocuments: vi.fn().mockReturnValue(true),
+}))
 
 import { getFileRange } from '$lib/tauri-commands'
 
