@@ -28,23 +28,23 @@ Task breakdown for adding Android device (MTP) support to Cmdr. See [mtp.md](mtp
 ## Phase 2: Device connection
 
 ### 2.1 Connection management
-- [ ] Create `src-tauri/src/mtp/connection.rs`
-- [ ] Implement `MtpConnectionManager` with device registry (HashMap<device_id, MtpDevice>)
-- [ ] Implement `connect_device(device_id)` → opens MTP session
-- [ ] Implement `disconnect_device(device_id)` → closes session gracefully
-- [ ] Handle `Error::Disconnected` when device is unplugged
+- [x] Create `src-tauri/src/mtp/connection.rs`
+- [x] Implement `MtpConnectionManager` with device registry (HashMap<device_id, MtpDevice>)
+- [x] Implement `connect_device(device_id)` → opens MTP session
+- [x] Implement `disconnect_device(device_id)` → closes session gracefully
+- [x] Handle `Error::Disconnected` when device is unplugged
 
 ### 2.2 Tauri commands for connection
-- [ ] Add `connect_mtp_device` command
-- [ ] Add `disconnect_mtp_device` command
-- [ ] Add `get_mtp_device_info` command (returns storages, device name, etc.)
-- [ ] Add TypeScript wrappers
+- [x] Add `connect_mtp_device` command
+- [x] Add `disconnect_mtp_device` command
+- [x] Add `get_mtp_device_info` command (returns storages, device name, etc.)
+- [x] Add TypeScript wrappers
 
 ### 2.3 macOS ptpcamerad handling
-- [ ] Create `src-tauri/src/mtp/macos_workaround.rs`
-- [ ] Implement `get_usb_exclusive_owner()` using ioreg or IOKit
-- [ ] When `is_exclusive_access()` error, emit `mtp-exclusive-access-error` event
-- [ ] Create `src/lib/mtp/PtpcameradDialog.svelte` with Terminal command + copy button
+- [x] Create `src-tauri/src/mtp/macos_workaround.rs`
+- [x] Implement `get_usb_exclusive_owner()` using ioreg or IOKit
+- [x] When `is_exclusive_access()` error, emit `mtp-exclusive-access-error` event
+- [x] Create `src/lib/mtp/PtpcameradDialog.svelte` with Terminal command + copy button
 
 **Checkpoint**: Can connect to a device, see its storages, handle ptpcamerad error gracefully.
 

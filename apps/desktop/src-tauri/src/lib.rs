@@ -351,8 +351,28 @@ pub fn run() {
             // MTP commands (macOS only - Android device support)
             #[cfg(target_os = "macos")]
             commands::mtp::list_mtp_devices,
+            #[cfg(target_os = "macos")]
+            commands::mtp::connect_mtp_device,
+            #[cfg(target_os = "macos")]
+            commands::mtp::disconnect_mtp_device,
+            #[cfg(target_os = "macos")]
+            commands::mtp::get_mtp_device_info,
+            #[cfg(target_os = "macos")]
+            commands::mtp::get_ptpcamerad_workaround_command,
+            #[cfg(target_os = "macos")]
+            commands::mtp::get_mtp_storages,
             #[cfg(not(target_os = "macos"))]
             stubs::mtp::list_mtp_devices,
+            #[cfg(not(target_os = "macos"))]
+            stubs::mtp::connect_mtp_device,
+            #[cfg(not(target_os = "macos"))]
+            stubs::mtp::disconnect_mtp_device,
+            #[cfg(not(target_os = "macos"))]
+            stubs::mtp::get_mtp_device_info,
+            #[cfg(not(target_os = "macos"))]
+            stubs::mtp::get_ptpcamerad_workaround_command,
+            #[cfg(not(target_os = "macos"))]
+            stubs::mtp::get_mtp_storages,
             // Volume commands (platform-specific)
             #[cfg(target_os = "macos")]
             commands::volumes::list_volumes,

@@ -9,10 +9,46 @@
     import { initSettingsApplier, cleanupSettingsApplier } from '$lib/settings/settings-applier'
     import { initReactiveSettings, cleanupReactiveSettings } from '$lib/settings/reactive-settings.svelte'
     import { initializeShortcuts, setupMcpShortcutsListener, cleanupMcpShortcutsListener } from '$lib/shortcuts'
+    import { onMtpExclusiveAccessError, connectMtpDevice, type MtpExclusiveAccessErrorEvent } from '$lib/tauri-commands'
     import AiNotification from '$lib/AiNotification.svelte'
     import UpdateNotification from '$lib/UpdateNotification.svelte'
+    import { PtpcameradDialog } from '$lib/mtp'
+    import type { Snippet } from 'svelte'
 
-    let cleanupUpdater: (() => void) | undefined
+    interface Props {
+        children?: Snippet
+    }
+
+    const { children }: Props = $props()
+
+    // State for ptpcamerad dialog
+    let showPtpcameradDialog = $state(false)
+    let ptpcameradBlockingProcess = $state<string | undefined>(undefined)
+    let pendingDeviceId = $state<string | undefined>(undefined)
+
+    function handleMtpExclusiveAccessError(event: MtpExclusiveAccessErrorEvent) {
+        ptpcameradBlockingProcess = event.blockingProcess
+        pendingDeviceId = event.deviceId
+        showPtpcameradDialog = true
+    }
+
+    function closePtpcameradDialog() {
+        showPtpcameradDialog = false
+        ptpcameradBlockingProcess = undefined
+        pendingDeviceId = undefined
+    }
+
+    async function retryMtpConnection() {
+        if (pendingDeviceId) {
+            const deviceId = pendingDeviceId
+            closePtpcameradDialog()
+            try {
+                await connectMtpDevice(deviceId)
+            } catch {
+                // Error will trigger another event if it's still exclusive access
+            }
+        }
+    }
 
     onMount(async () => {
         // Initialize reactive settings for UI components
@@ -31,22 +67,38 @@
         // This ensures window size/position survives hot reloads
         void initWindowStateListener()
 
+        // Listen for MTP exclusive access errors
+        const mtpUnlisten = onMtpExclusiveAccessError(handleMtpExclusiveAccessError)
+
         // Start checking for updates (skips in dev mode)
-        cleanupUpdater = startUpdateChecker()
+        const updateCleanup = startUpdateChecker()
+
+        return () => {
+            void mtpUnlisten.then((unlisten) => {
+                unlisten()
+            })
+            updateCleanup()
+        }
     })
 
     onDestroy(() => {
         cleanupReactiveSettings()
         cleanupSettingsApplier()
         cleanupMcpShortcutsListener()
-        cleanupUpdater?.()
     })
 </script>
 
 <UpdateNotification />
 <AiNotification />
+{#if showPtpcameradDialog}
+    <PtpcameradDialog
+        blockingProcess={ptpcameradBlockingProcess}
+        onClose={closePtpcameradDialog}
+        onRetry={retryMtpConnection}
+    />
+{/if}
 <div class="page-wrapper">
-    <slot />
+    {@render children?.()}
 </div>
 
 <style>
