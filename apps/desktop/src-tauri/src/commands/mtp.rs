@@ -1,7 +1,11 @@
 //! Tauri commands for MTP (Android device) operations.
 
+use std::path::PathBuf;
+
 use crate::file_system::FileEntry;
-use crate::mtp::{self, ConnectedDeviceInfo, MtpConnectionError, MtpDeviceInfo, MtpStorageInfo};
+use crate::mtp::{
+    self, ConnectedDeviceInfo, MtpConnectionError, MtpDeviceInfo, MtpObjectInfo, MtpOperationResult, MtpStorageInfo,
+};
 use tauri::AppHandle;
 
 /// Lists all connected MTP devices.
@@ -109,5 +113,151 @@ pub async fn list_mtp_directory(
 ) -> Result<Vec<FileEntry>, MtpConnectionError> {
     mtp::connection_manager()
         .list_directory(&device_id, storage_id, &path)
+        .await
+}
+
+// ============================================================================
+// Phase 4: File Operations
+// ============================================================================
+
+/// Downloads a file from an MTP device to the local filesystem.
+///
+/// Emits `mtp-transfer-progress` events during the transfer.
+///
+/// # Arguments
+///
+/// * `device_id` - The connected device ID
+/// * `storage_id` - The storage ID within the device
+/// * `object_path` - Virtual path on the device (for example, "/DCIM/photo.jpg")
+/// * `local_dest` - Local destination path
+/// * `operation_id` - Unique operation ID for progress tracking
+#[tauri::command]
+pub async fn download_mtp_file(
+    app: AppHandle,
+    device_id: String,
+    storage_id: u32,
+    object_path: String,
+    local_dest: String,
+    operation_id: String,
+) -> Result<MtpOperationResult, MtpConnectionError> {
+    let local_path = PathBuf::from(&local_dest);
+    mtp::connection_manager()
+        .download_file(
+            &device_id,
+            storage_id,
+            &object_path,
+            &local_path,
+            Some(&app),
+            &operation_id,
+        )
+        .await
+}
+
+/// Uploads a file from the local filesystem to an MTP device.
+///
+/// Emits `mtp-transfer-progress` events during the transfer.
+///
+/// # Arguments
+///
+/// * `device_id` - The connected device ID
+/// * `storage_id` - The storage ID within the device
+/// * `local_path` - Local file path to upload
+/// * `dest_folder` - Destination folder path on device (for example, "/DCIM")
+/// * `operation_id` - Unique operation ID for progress tracking
+#[tauri::command]
+pub async fn upload_to_mtp(
+    app: AppHandle,
+    device_id: String,
+    storage_id: u32,
+    local_path: String,
+    dest_folder: String,
+    operation_id: String,
+) -> Result<MtpObjectInfo, MtpConnectionError> {
+    let local = PathBuf::from(&local_path);
+    mtp::connection_manager()
+        .upload_file(&device_id, storage_id, &local, &dest_folder, Some(&app), &operation_id)
+        .await
+}
+
+/// Deletes an object (file or folder) from an MTP device.
+///
+/// For folders, this recursively deletes all contents first since MTP
+/// requires folders to be empty before deletion.
+///
+/// # Arguments
+///
+/// * `device_id` - The connected device ID
+/// * `storage_id` - The storage ID within the device
+/// * `object_path` - Virtual path on the device
+#[tauri::command]
+pub async fn delete_mtp_object(
+    device_id: String,
+    storage_id: u32,
+    object_path: String,
+) -> Result<(), MtpConnectionError> {
+    mtp::connection_manager()
+        .delete_object(&device_id, storage_id, &object_path)
+        .await
+}
+
+/// Creates a new folder on an MTP device.
+///
+/// # Arguments
+///
+/// * `device_id` - The connected device ID
+/// * `storage_id` - The storage ID within the device
+/// * `parent_path` - Parent folder path (for example, "/DCIM")
+/// * `folder_name` - Name of the new folder
+#[tauri::command]
+pub async fn create_mtp_folder(
+    device_id: String,
+    storage_id: u32,
+    parent_path: String,
+    folder_name: String,
+) -> Result<MtpObjectInfo, MtpConnectionError> {
+    mtp::connection_manager()
+        .create_folder(&device_id, storage_id, &parent_path, &folder_name)
+        .await
+}
+
+/// Renames an object on an MTP device.
+///
+/// # Arguments
+///
+/// * `device_id` - The connected device ID
+/// * `storage_id` - The storage ID within the device
+/// * `object_path` - Current path of the object
+/// * `new_name` - New name for the object
+#[tauri::command]
+pub async fn rename_mtp_object(
+    device_id: String,
+    storage_id: u32,
+    object_path: String,
+    new_name: String,
+) -> Result<MtpObjectInfo, MtpConnectionError> {
+    mtp::connection_manager()
+        .rename_object(&device_id, storage_id, &object_path, &new_name)
+        .await
+}
+
+/// Moves an object to a new parent folder on an MTP device.
+///
+/// May fail if the device doesn't support MoveObject operation.
+///
+/// # Arguments
+///
+/// * `device_id` - The connected device ID
+/// * `storage_id` - The storage ID within the device
+/// * `object_path` - Current path of the object
+/// * `new_parent_path` - New parent folder path
+#[tauri::command]
+pub async fn move_mtp_object(
+    device_id: String,
+    storage_id: u32,
+    object_path: String,
+    new_parent_path: String,
+) -> Result<MtpObjectInfo, MtpConnectionError> {
+    mtp::connection_manager()
+        .move_object(&device_id, storage_id, &object_path, &new_parent_path)
         .await
 }

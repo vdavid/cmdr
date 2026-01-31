@@ -21,7 +21,7 @@ mod discovery;
 pub mod macos_workaround;
 pub mod types;
 
-pub use connection::{ConnectedDeviceInfo, MtpConnectionError, connection_manager};
+pub use connection::{ConnectedDeviceInfo, MtpConnectionError, MtpObjectInfo, MtpOperationResult, connection_manager};
 pub use discovery::list_mtp_devices;
 pub use macos_workaround::PTPCAMERAD_WORKAROUND_COMMAND;
 pub use types::{MtpDeviceInfo, MtpStorageInfo};

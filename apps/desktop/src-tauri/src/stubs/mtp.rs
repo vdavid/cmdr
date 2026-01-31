@@ -129,3 +129,106 @@ pub async fn list_mtp_directory(
         message: "MTP is not supported on this platform".to_string(),
     })
 }
+
+// ============================================================================
+// Phase 4: File Operation stubs
+// ============================================================================
+
+/// Result of a successful MTP operation (stub version).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MtpOperationResult {
+    pub operation_id: String,
+    pub files_processed: usize,
+    pub bytes_transferred: u64,
+}
+
+/// Information about an object on the device (stub version).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MtpObjectInfo {
+    pub handle: u32,
+    pub name: String,
+    pub path: String,
+    pub is_directory: bool,
+    pub size: Option<u64>,
+}
+
+/// Downloads a file from an MTP device (stub - returns error).
+#[tauri::command]
+pub async fn download_mtp_file(
+    _device_id: String,
+    _storage_id: u32,
+    _object_path: String,
+    _local_dest: String,
+    _operation_id: String,
+) -> Result<MtpOperationResult, MtpConnectionError> {
+    Err(MtpConnectionError::NotSupported {
+        message: "MTP is not supported on this platform".to_string(),
+    })
+}
+
+/// Uploads a file to an MTP device (stub - returns error).
+#[tauri::command]
+pub async fn upload_to_mtp(
+    _device_id: String,
+    _storage_id: u32,
+    _local_path: String,
+    _dest_folder: String,
+    _operation_id: String,
+) -> Result<MtpObjectInfo, MtpConnectionError> {
+    Err(MtpConnectionError::NotSupported {
+        message: "MTP is not supported on this platform".to_string(),
+    })
+}
+
+/// Deletes an object from an MTP device (stub - returns error).
+#[tauri::command]
+pub async fn delete_mtp_object(
+    _device_id: String,
+    _storage_id: u32,
+    _object_path: String,
+) -> Result<(), MtpConnectionError> {
+    Err(MtpConnectionError::NotSupported {
+        message: "MTP is not supported on this platform".to_string(),
+    })
+}
+
+/// Creates a folder on an MTP device (stub - returns error).
+#[tauri::command]
+pub async fn create_mtp_folder(
+    _device_id: String,
+    _storage_id: u32,
+    _parent_path: String,
+    _folder_name: String,
+) -> Result<MtpObjectInfo, MtpConnectionError> {
+    Err(MtpConnectionError::NotSupported {
+        message: "MTP is not supported on this platform".to_string(),
+    })
+}
+
+/// Renames an object on an MTP device (stub - returns error).
+#[tauri::command]
+pub async fn rename_mtp_object(
+    _device_id: String,
+    _storage_id: u32,
+    _object_path: String,
+    _new_name: String,
+) -> Result<MtpObjectInfo, MtpConnectionError> {
+    Err(MtpConnectionError::NotSupported {
+        message: "MTP is not supported on this platform".to_string(),
+    })
+}
+
+/// Moves an object on an MTP device (stub - returns error).
+#[tauri::command]
+pub async fn move_mtp_object(
+    _device_id: String,
+    _storage_id: u32,
+    _object_path: String,
+    _new_parent_path: String,
+) -> Result<MtpObjectInfo, MtpConnectionError> {
+    Err(MtpConnectionError::NotSupported {
+        message: "MTP is not supported on this platform".to_string(),
+    })
+}
