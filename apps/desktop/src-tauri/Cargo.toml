@@ -6,6 +6,7 @@ authors = ["David Veszelovszki <veszelovszki@gmail.com>"]
 edition = "2024"
 license = "LicenseRef-BSL-1.1"
 default-run = "Cmdr"
+publish = false  # Private application, not for crates.io
 
 [[bin]]
 name = "Cmdr"
@@ -85,6 +86,8 @@ smb = "0.11.1"
 smb-rpc = "=0.11.1"
 chrono = "0.4"
 security-framework = "3.2"
+# MTP (Android device) support via pure Rust implementation
+mtp-rs = { path = "../../../../mtp-rs" }
 
 [dev-dependencies]
 criterion = { version = "0.8.1", features = ["html_reports"] }

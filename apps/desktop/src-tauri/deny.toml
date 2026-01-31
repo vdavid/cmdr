@@ -33,6 +33,8 @@ allow = [
 multiple-versions = "allow"
 wildcards = "deny"
 highlight = "all"
+# Allow mtp-rs local path dependency during development (will use git/crates.io later)
+allow-wildcard-paths = true
 
 [sources]
 unknown-registry = "deny"

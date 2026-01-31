@@ -39,6 +39,10 @@ use tauri_plugin_mcp_bridge as _;
 // security_framework is used in network/keychain.rs for Keychain integration
 #[cfg(target_os = "macos")]
 use security_framework as _;
+//noinspection ALL
+// mtp-rs is used in mtp/ module for Android device support (macOS only, Phase 1 foundation)
+#[cfg(target_os = "macos")]
+use mtp_rs as _;
 
 mod ai;
 pub mod benchmark;
@@ -53,6 +57,8 @@ pub mod licensing;
 mod macos_icons;
 mod mcp;
 mod menu;
+#[cfg(target_os = "macos")]
+mod mtp;
 #[cfg(target_os = "macos")]
 mod network;
 #[cfg(target_os = "macos")]
@@ -342,6 +348,11 @@ pub fn run() {
             mcp::settings_state::mcp_update_shortcuts,
             // Sync status (macOS uses real implementation, others use stub in commands)
             commands::sync_status::get_sync_status,
+            // MTP commands (macOS only - Android device support)
+            #[cfg(target_os = "macos")]
+            commands::mtp::list_mtp_devices,
+            #[cfg(not(target_os = "macos"))]
+            stubs::mtp::list_mtp_devices,
             // Volume commands (platform-specific)
             #[cfg(target_os = "macos")]
             commands::volumes::list_volumes,
