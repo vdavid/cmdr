@@ -14,6 +14,7 @@
         isRangeCached,
         shouldResetCache,
     } from './file-list-utils'
+    import { getRowHeight } from '$lib/settings/reactive-settings.svelte'
 
     interface Props {
         listingId: string
@@ -63,7 +64,8 @@
     let isFetching = $state(false)
 
     // ==== Layout constants ====
-    const ROW_HEIGHT = 20
+    // Row height is reactive based on UI density setting
+    const rowHeight = $derived(getRowHeight())
     const BUFFER_COLUMNS = 2
     const MIN_COLUMN_WIDTH = 100
     // const COLUMN_PADDING = 8 // horizontal padding inside each column (unused for now)
@@ -76,7 +78,7 @@
 
     // ==== Column layout calculations ====
     // Number of items that fit in one column
-    const itemsPerColumn = $derived(Math.max(1, Math.floor(containerHeight / ROW_HEIGHT)))
+    const itemsPerColumn = $derived(Math.max(1, Math.floor(containerHeight / rowHeight)))
 
     // For column width: use backend-calculated width if available, otherwise estimate
     // Backend calculation is based on actual font metrics and considers all filenames
@@ -412,6 +414,7 @@
                                 class="file-entry"
                                 class:is-under-cursor={globalIndex === cursorIndex}
                                 class:is-selected={selectedIndices.has(globalIndex)}
+                                style="height: {rowHeight}px;"
                                 onmousedown={(e: MouseEvent) => {
                                     handleMouseDown(e, globalIndex)
                                 }}
@@ -494,7 +497,7 @@
 
     .file-entry {
         display: flex;
-        height: 20px;
+        /* height is set via inline style for reactivity */
         padding: var(--spacing-xxs) var(--spacing-sm);
         gap: var(--spacing-sm);
         align-items: center;

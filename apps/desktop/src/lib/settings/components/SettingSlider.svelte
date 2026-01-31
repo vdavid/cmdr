@@ -43,25 +43,25 @@
 </script>
 
 <div class="slider-wrapper">
-    <Slider.Root value={[value]} onValueChange={handleSliderChange} {min} {max} {step} {disabled}>
+    <Slider.Root value={[value]} onValueChange={handleSliderChange} {min} {max} {step} {disabled} class="slider-root">
         <Slider.Control class="slider-control">
             <Slider.Track class="slider-track">
                 <Slider.Range class="slider-range" />
             </Slider.Track>
             <Slider.Thumb index={0} class="slider-thumb" />
+            <!-- Show tick marks for slider stops - inside Control for proper positioning -->
+            {#if sliderStops.length > 0}
+                <div class="slider-ticks">
+                    {#each sliderStops as stop (stop)}
+                        <span
+                            class="slider-tick"
+                            class:active={value === stop}
+                            style="left: {((stop - min) / (max - min)) * 100}%"
+                        ></span>
+                    {/each}
+                </div>
+            {/if}
         </Slider.Control>
-        <!-- Show tick marks for slider stops -->
-        {#if sliderStops.length > 0}
-            <div class="slider-ticks">
-                {#each sliderStops as stop (stop)}
-                    <span
-                        class="slider-tick"
-                        class:active={value === stop}
-                        style="left: {((stop - min) / (max - min)) * 100}%"
-                    ></span>
-                {/each}
-            </div>
-        {/if}
     </Slider.Root>
 
     <NumberInput.Root value={String(value)} onValueChange={handleInputChange} {min} {max} {step} {disabled}>
@@ -124,10 +124,11 @@
 
     .slider-ticks {
         position: absolute;
-        width: 100%;
-        height: 4px;
+        left: 0;
+        right: 0;
         top: 50%;
         transform: translateY(-50%);
+        height: 4px;
         pointer-events: none;
     }
 
@@ -135,9 +136,9 @@
         position: absolute;
         width: 2px;
         height: 8px;
-        background: var(--color-border-primary);
-        transform: translateX(-50%);
-        top: -2px;
+        background: var(--color-border);
+        transform: translate(-50%, -50%);
+        top: 50%;
     }
 
     .slider-tick.active {

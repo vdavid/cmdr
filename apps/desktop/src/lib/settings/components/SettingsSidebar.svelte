@@ -15,10 +15,10 @@
     let searchInput: HTMLInputElement | null = $state(null)
     const sectionTree = buildSectionTree()
 
-    // Special sections that have dedicated UI
+    // Special sections that have dedicated UI (not from registry)
+    // Note: Themes is in the registry, so we don't add it here
     const specialSections = [
         { name: 'Keyboard shortcuts', path: ['Keyboard shortcuts'] },
-        { name: 'Themes', path: ['Themes'] },
         { name: 'Advanced', path: ['Advanced'] },
     ]
 

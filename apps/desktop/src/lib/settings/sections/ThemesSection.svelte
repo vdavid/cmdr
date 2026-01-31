@@ -1,7 +1,11 @@
 <script lang="ts">
+    import { onMount, onDestroy } from 'svelte'
     import SettingRow from '../components/SettingRow.svelte'
     import SettingToggleGroup from '../components/SettingToggleGroup.svelte'
-    import { getSettingDefinition } from '$lib/settings'
+    import { getSettingDefinition, onSpecificSettingChange, getSetting } from '$lib/settings'
+    import { getAppLogger } from '$lib/logger'
+
+    const log = getAppLogger('settings')
 
     interface Props {
         searchQuery: string
@@ -11,6 +15,39 @@
     const { searchQuery }: Props = $props()
 
     const themeModeDef = getSettingDefinition('theme.mode') ?? { label: '', description: '' }
+
+    let unsubscribe: (() => void) | undefined
+
+    async function applyTheme(mode: string) {
+        log.debug('Applying theme: {mode}', { mode })
+        try {
+            const { setTheme } = await import('@tauri-apps/api/app')
+            if (mode === 'system') {
+                // Setting null lets Tauri follow system preference
+                await setTheme(null)
+            } else {
+                await setTheme(mode as 'light' | 'dark')
+            }
+            log.info('Theme applied: {mode}', { mode })
+        } catch (error) {
+            log.error('Failed to apply theme: {error}', { error })
+        }
+    }
+
+    onMount(() => {
+        // Apply current theme on mount (in case it changed while settings were closed)
+        const currentTheme = getSetting('theme.mode')
+        void applyTheme(currentTheme)
+
+        // Listen for theme changes
+        unsubscribe = onSpecificSettingChange('theme.mode', (_id, value) => {
+            void applyTheme(value)
+        })
+    })
+
+    onDestroy(() => {
+        unsubscribe?.()
+    })
 </script>
 
 <div class="section">
