@@ -141,9 +141,10 @@ pub fn start_mtp_watcher(app: &AppHandle) {
         initial_devices.len()
     );
 
-    // Spawn the async hotplug watcher
+    // Spawn the async hotplug watcher using Tauri's async runtime
+    // (tokio::spawn doesn't work here as we're in a synchronous setup hook)
     let app_handle = app.clone();
-    tokio::spawn(async move {
+    tauri::async_runtime::spawn(async move {
         run_hotplug_watcher(app_handle).await;
     });
 }
