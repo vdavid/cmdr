@@ -55,6 +55,7 @@
     const log = getAppLogger('fileExplorer')
     import NetworkBrowser from './NetworkBrowser.svelte'
     import ShareBrowser from './ShareBrowser.svelte'
+    import { MtpBrowser, isMtpVolumeId, parseMtpVolumeId, getMtpDisplayPath } from '$lib/mtp'
     import * as benchmark from '$lib/benchmark'
     import { handleNavigationShortcut } from './keyboard-shortcuts'
 
@@ -135,6 +136,13 @@
 
     // Check if we're viewing the network (special virtual volume)
     const isNetworkView = $derived(volumeId === 'network')
+
+    // Check if we're viewing an MTP device
+    const isMtpView = $derived(isMtpVolumeId(volumeId))
+    const mtpVolumeInfo = $derived(isMtpView ? parseMtpVolumeId(volumeId) : null)
+
+    // MTP browser ref
+    let mtpBrowserRef: MtpBrowser | undefined = $state()
 
     // Network browsing state - which host is currently active (if any)
     let currentNetworkHost = $state<NetworkHost | null>(null)
@@ -786,10 +794,23 @@
         currentPath = targetPath
         onVolumeChange?.(newVolumeId, newVolumePath, targetPath)
 
-        // Don't load directory for network virtual volume - NetworkBrowser handles its own data
-        if (newVolumeId !== 'network') {
+        // Don't load directory for network/MTP volumes - they handle their own data
+        if (newVolumeId !== 'network' && !isMtpVolumeId(newVolumeId)) {
             void loadDirectory(targetPath)
         }
+    }
+
+    // Handle MTP navigation (selectName is for future use when we implement cursor restoration)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    function handleMtpNavigate(newPath: string, selectName?: string) {
+        currentPath = newPath
+        onPathChange?.(newPath)
+    }
+
+    // Handle MTP errors
+    function handleMtpError(errorMessage: string) {
+        log.error('MTP error: {error}', { error: errorMessage })
+        error = errorMessage
     }
 
     // Handle network host switching - show the ShareBrowser
@@ -997,6 +1018,13 @@
             return
         }
 
+        // Delegate to MtpBrowser for MTP views
+        if (isMtpView) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            mtpBrowserRef?.handleKeyDown(e)
+            return
+        }
+
         // Handle Enter key - navigate into the entry under the cursor
         if (e.key === 'Enter') {
             const entry = getEntryUnderCursor()
@@ -1038,6 +1066,11 @@
     // Handle key release - clear range state when Shift is released
     // This ensures a new Shift+navigation starts fresh selection from current cursor
     export function handleKeyUp(e: KeyboardEvent) {
+        if (isMtpView) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            mtpBrowserRef?.handleKeyUp(e)
+            return
+        }
         if (e.key === 'Shift') {
             clearRangeState()
         }
@@ -1058,15 +1091,19 @@
     })
 
     // Update path when initialPath prop changes (for persistence loading)
-    // Skip for network view - NetworkBrowser handles its own data
+    // Skip for network/MTP views - they handle their own data
     // Use untrack for currentPath so this effect only fires when initialPath changes,
     // not when the user navigates (which changes currentPath before onPathChange is called)
     $effect(() => {
         const newPath = initialPath // Track this
         const curPath = untrack(() => currentPath) // Don't track this
-        if (!isNetworkView && newPath !== curPath) {
+        if (!isNetworkView && !isMtpView && newPath !== curPath) {
             currentPath = newPath
             void loadDirectory(newPath)
+        }
+        // For MTP views, just update the path (MtpBrowser handles loading via its own effect)
+        if (isMtpView && newPath !== curPath) {
+            currentPath = newPath
         }
     })
 
@@ -1165,8 +1202,8 @@
     })
 
     onMount(() => {
-        // Skip directory loading for network view - NetworkBrowser handles its own data
-        if (!isNetworkView) {
+        // Skip directory loading for network/MTP views - they handle their own data
+        if (!isNetworkView && !isMtpView) {
             void loadDirectory(currentPath)
         }
 
@@ -1213,7 +1250,11 @@
             onVolumeChange={handleVolumeChangeFromBreadcrumb}
         />
         <span class="path"
-            >{currentPath.startsWith(volumePath) ? currentPath.slice(volumePath.length) || '/' : currentPath}</span
+            >{isMtpView
+                ? getMtpDisplayPath(currentPath)
+                : currentPath.startsWith(volumePath)
+                  ? currentPath.slice(volumePath.length) || '/'
+                  : currentPath}</span
         >
     </div>
     <div class="content">
@@ -1249,6 +1290,16 @@
                     onHostSelect={handleNetworkHostSelect}
                 />
             {/if}
+        {:else if isMtpView && mtpVolumeInfo}
+            <MtpBrowser
+                bind:this={mtpBrowserRef}
+                path={currentPath}
+                deviceId={mtpVolumeInfo.deviceId}
+                storageId={mtpVolumeInfo.storageId}
+                {isFocused}
+                onNavigate={handleMtpNavigate}
+                onError={handleMtpError}
+            />
         {:else if loading}
             <LoadingIcon {openingFolder} loadedCount={loadingCount} {finalizingCount} showCancelHint={true} />
         {:else if isPermissionDenied}
@@ -1308,8 +1359,8 @@
             />
         {/if}
     </div>
-    <!-- SelectionInfo shown in both modes (not in network view) -->
-    {#if !isNetworkView}
+    <!-- SelectionInfo shown in both modes (not in network/MTP views) -->
+    {#if !isNetworkView && !isMtpView}
         <SelectionInfo
             {viewMode}
             entry={entryUnderCursor}

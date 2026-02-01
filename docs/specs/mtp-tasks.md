@@ -71,6 +71,10 @@ Task breakdown for adding Android device (MTP) support to Cmdr. See [mtp.md](mtp
 - [x] Update `VolumeBreadcrumb.svelte` to show "Mobile" section
 - [x] Create `src/lib/mtp/mtp-store.svelte.ts` for device state
 - [x] Wire up device list in sidebar/breadcrumb
+- [x] Create `src/lib/mtp/mtp-path-utils.ts` for MTP path parsing/construction
+- [x] Create `src/lib/mtp/MtpBrowser.svelte` for file list display
+- [x] Wire MtpBrowser into FilePane.svelte (detect mtp:// paths, render MtpBrowser)
+- [x] Handle keyboard navigation, selection, and folder browsing in MtpBrowser
 
 **Checkpoint**: Can browse folders on Android device, see files in file list.
 
