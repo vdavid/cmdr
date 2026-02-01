@@ -1,6 +1,7 @@
 {
     "$comment": "Files listed here are exempt from coverage thresholds. Each entry should include a reason. Remove entries as you add tests.",
     "files": {
+        "AlertDialog.svelte": { "reason": "Simple UI modal for informational messages" },
         "UpdateNotification.svelte": { "reason": "UI component, needs component testing" },
         "app-status-store.ts": { "reason": "Depends on Tauri APIs" },
         "benchmark.ts": { "reason": "Dev tooling, not critical path" },

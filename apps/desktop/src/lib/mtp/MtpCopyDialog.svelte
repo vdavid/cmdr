@@ -55,8 +55,8 @@
     let bytesTotal = $state(0)
     let itemsDone = $state(0)
     let isRunning = $state(true)
+    let isCancelling = $state(false)
     let unlistenProgress: UnlistenFn | undefined
-    let abortController: AbortController | undefined
 
     const totalItems = $derived(sourceFiles.length)
     const progress = $derived(bytesTotal > 0 ? (bytesDone / bytesTotal) * 100 : 0)
@@ -83,14 +83,12 @@
     }
 
     function handleCancel() {
+        // Note: We can't stop in-flight MTP transfers, so we just stop after the current file
+        isCancelling = true
         isRunning = false
-        abortController?.abort()
-        onCancel()
     }
 
     async function startTransfer() {
-        abortController = new AbortController()
-
         try {
             // Set up progress listener
             unlistenProgress = await onMtpTransferProgress((progress: MtpTransferProgress) => {
@@ -134,12 +132,18 @@
 
             if (isRunning) {
                 onComplete(itemsDone, totalBytesTransferred)
+            } else {
+                // Cancelled - notify parent
+                onCancel()
             }
         } catch (e) {
             if (isRunning) {
                 const errorMessage = e instanceof Error ? e.message : String(e)
                 log.error('Transfer failed: {error}', { error: errorMessage })
                 onError(errorMessage)
+            } else {
+                // Error occurred during cancellation - still notify parent
+                onCancel()
             }
         }
     }
@@ -179,7 +183,13 @@
         </div>
 
         <div class="button-row">
-            <button class="secondary" onclick={handleCancel}>Cancel</button>
+            {#if isCancelling}
+                <span class="cancelling-text">Stopping after current file...</span>
+            {:else}
+                <button class="secondary" onclick={handleCancel} title="Stop after current file completes">
+                    Stop
+                </button>
+            {/if}
         </div>
     </div>
 </div>
@@ -272,5 +282,11 @@
     .secondary:hover {
         background: var(--color-bg-tertiary);
         color: var(--color-text-primary);
+    }
+
+    .cancelling-text {
+        font-size: 13px;
+        color: var(--color-text-tertiary);
+        font-style: italic;
     }
 </style>
