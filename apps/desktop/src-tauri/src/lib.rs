@@ -43,6 +43,10 @@ use security_framework as _;
 // mtp-rs is used in mtp/ module for Android device support (macOS only, Phase 1 foundation)
 #[cfg(target_os = "macos")]
 use mtp_rs as _;
+//noinspection ALL
+// nusb is used in mtp/watcher.rs for USB hotplug detection
+#[cfg(target_os = "macos")]
+use nusb as _;
 
 mod ai;
 pub mod benchmark;
@@ -128,6 +132,10 @@ pub fn run() {
             // Start volume mount/unmount watcher
             #[cfg(target_os = "macos")]
             volumes::watcher::start_volume_watcher(app.handle());
+
+            // Start MTP device hotplug watcher (Android device support)
+            #[cfg(target_os = "macos")]
+            mtp::start_mtp_watcher(app.handle());
 
             // Load known network shares from disk
             #[cfg(target_os = "macos")]

@@ -74,6 +74,8 @@ vi.mock('$lib/tauri-commands', () => ({
     onMtpDeviceConnected: vi.fn().mockResolvedValue(() => {}),
     onMtpDeviceDisconnected: vi.fn().mockResolvedValue(() => {}),
     onMtpExclusiveAccessError: vi.fn().mockResolvedValue(() => {}),
+    onMtpDeviceDetected: vi.fn().mockResolvedValue(() => {}),
+    onMtpDeviceRemoved: vi.fn().mockResolvedValue(() => {}),
 }))
 
 // Mock settings-store to avoid Tauri event API dependency in tests

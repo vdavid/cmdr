@@ -88,6 +88,8 @@ vi.mock('$lib/tauri-commands', () => ({
     onMtpDeviceConnected: vi.fn().mockResolvedValue(() => {}),
     onMtpDeviceDisconnected: vi.fn().mockResolvedValue(() => {}),
     onMtpExclusiveAccessError: vi.fn().mockResolvedValue(() => {}),
+    onMtpDeviceDetected: vi.fn().mockResolvedValue(() => {}),
+    onMtpDeviceRemoved: vi.fn().mockResolvedValue(() => {}),
 }))
 
 vi.mock('$lib/icon-cache', async () => {

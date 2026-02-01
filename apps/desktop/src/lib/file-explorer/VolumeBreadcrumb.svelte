@@ -2,7 +2,7 @@
     import { onMount, onDestroy } from 'svelte'
     import { listVolumes, findContainingVolume, listen, type UnlistenFn } from '$lib/tauri-commands'
     import type { VolumeInfo, LocationCategory } from './types'
-    import { getDevices, initialize as initMtpStore, type MtpDeviceState } from '$lib/mtp'
+    import { getMtpVolumes, initialize as initMtpStore, type MtpVolume } from '$lib/mtp'
 
     interface Props {
         volumeId: string
@@ -13,7 +13,7 @@
     const { volumeId, currentPath, onVolumeChange }: Props = $props()
 
     let volumes = $state<VolumeInfo[]>([])
-    let mtpDevices = $state<MtpDeviceState[]>([])
+    let mtpVolumes = $state<MtpVolume[]>([])
     let isOpen = $state(false)
     let highlightedIndex = $state(-1)
     let dropdownRef: HTMLDivElement | undefined = $state()
@@ -26,18 +26,19 @@
 
     // Current volume info derived from volumes list (the actual containing volume)
     // Special case: 'network' is a virtual volume, not from the backend
-    // Special case: MTP devices are handled via mtp:// paths
+    // Special case: MTP volumes are handled via mtp:// paths
     const currentVolume = $derived(
         volumeId === 'network'
             ? { id: 'network', name: 'Network', path: 'smb://', category: 'network' as const, isEjectable: false }
             : volumeId.startsWith('mtp-')
               ? (() => {
-                    const mtpDevice = mtpDevices.find((d) => d.device.id === volumeId)
-                    return mtpDevice
+                    // Try to find the exact MTP volume (device:storage format)
+                    const mtpVolume = mtpVolumes.find((v) => v.id === volumeId || v.deviceId === volumeId)
+                    return mtpVolume
                         ? {
-                              id: mtpDevice.device.id,
-                              name: mtpDevice.displayName,
-                              path: `mtp://${mtpDevice.device.id}`,
+                              id: mtpVolume.id,
+                              name: mtpVolume.name,
+                              path: mtpVolume.path,
                               category: 'mobile_device' as const,
                               isEjectable: true,
                           }
@@ -64,12 +65,16 @@
         }
     })
 
-    // Get appropriate icon for a volume (use cloud icon for cloud drives)
+    // Get appropriate icon for a volume (use cloud icon for cloud drives, mobile icon for devices)
     function getIconForVolume(volume: VolumeInfo | undefined): string | undefined {
         if (!volume) return undefined
         // Cloud drives use the cloud icon
         if (volume.category === 'cloud_drive') {
             return '/icons/sync-online-only.svg'
+        }
+        // Mobile devices use the mobile device icon
+        if (volume.category === 'mobile_device') {
+            return '/icons/mobile-device.svg'
         }
         // Network uses globe/network emoji as fallback
         if (volume.category === 'network' && !volume.icon) {
@@ -92,11 +97,11 @@
 
         for (const { category, label } of categoryOrder) {
             if (category === 'mobile_device') {
-                // Mobile section: show connected MTP devices
-                const mobileItems: VolumeInfo[] = mtpDevices.map((d) => ({
-                    id: d.device.id,
-                    name: d.displayName,
-                    path: `mtp://${d.device.id}`,
+                // Mobile section: show MTP volumes (one per storage on connected devices)
+                const mobileItems: VolumeInfo[] = mtpVolumes.map((v) => ({
+                    id: v.id,
+                    name: v.name,
+                    path: v.path,
                     category: 'mobile_device' as const,
                     icon: undefined, // Will use 📱 placeholder
                     isEjectable: true,
@@ -265,15 +270,15 @@
         }
     })
 
-    async function loadMtpDevices() {
-        // Initialize the MTP store if needed, then get devices
+    async function loadMtpVolumes() {
+        // Initialize the MTP store if needed, then get volumes
         await initMtpStore()
-        mtpDevices = getDevices()
+        mtpVolumes = getMtpVolumes()
     }
 
     onMount(async () => {
         await loadVolumes()
-        await loadMtpDevices()
+        await loadMtpVolumes()
         await updateContainingVolume(currentPath)
 
         // Listen for volume mount/unmount events
@@ -314,8 +319,6 @@
     <span class="volume-name" class:is-open={isOpen} onclick={handleToggle}>
         {#if currentVolumeIcon}
             <img class="icon" src={currentVolumeIcon} alt="" />
-        {:else if volumeId.startsWith('mtp-')}
-            <span class="icon-emoji">📱</span>
         {:else if volumeId === 'network'}
             <span class="icon-emoji">🌐</span>
         {/if}
@@ -355,7 +358,7 @@
                         {#if volume.category === 'cloud_drive'}
                             <img class="volume-icon" src="/icons/sync-online-only.svg" alt="" />
                         {:else if volume.category === 'mobile_device'}
-                            <span class="volume-icon-placeholder">📱</span>
+                            <img class="volume-icon" src="/icons/mobile-device.svg" alt="" />
                         {:else if volume.category === 'network'}
                             <span class="volume-icon-placeholder">🌐</span>
                         {:else if volume.icon}

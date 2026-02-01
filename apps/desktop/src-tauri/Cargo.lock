@@ -1017,6 +1017,7 @@ dependencies = [
  "mtp-rs",
  "notify",
  "notify-debouncer-full",
+ "nusb",
  "objc2 0.6.3",
  "objc2-app-kit 0.3.2",
  "objc2-foundation 0.3.2",
