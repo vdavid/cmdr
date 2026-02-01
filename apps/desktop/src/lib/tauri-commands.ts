@@ -1886,6 +1886,19 @@ export async function getMtpStorages(deviceId: string): Promise<MtpStorageInfo[]
     }
 }
 
+/** Event payload for mtp-device-detected (USB hotplug). */
+export interface MtpDeviceDetectedEvent {
+    deviceId: string
+    name?: string
+    vendorId: number
+    productId: number
+}
+
+/** Event payload for mtp-device-removed (USB hotplug). */
+export interface MtpDeviceRemovedEvent {
+    deviceId: string
+}
+
 /** Event payload for mtp-exclusive-access-error. */
 export interface MtpExclusiveAccessErrorEvent {
     deviceId: string
@@ -1902,6 +1915,26 @@ export interface MtpDeviceConnectedEvent {
 export interface MtpDeviceDisconnectedEvent {
     deviceId: string
     reason: 'user' | 'disconnected'
+}
+
+/**
+ * Subscribes to MTP device detected events (USB hotplug).
+ * Emitted when an MTP device is connected to the system.
+ */
+export async function onMtpDeviceDetected(callback: (event: MtpDeviceDetectedEvent) => void): Promise<UnlistenFn> {
+    return listen<MtpDeviceDetectedEvent>('mtp-device-detected', (event) => {
+        callback(event.payload)
+    })
+}
+
+/**
+ * Subscribes to MTP device removed events (USB hotplug).
+ * Emitted when an MTP device is disconnected from the system.
+ */
+export async function onMtpDeviceRemoved(callback: (event: MtpDeviceRemovedEvent) => void): Promise<UnlistenFn> {
+    return listen<MtpDeviceRemovedEvent>('mtp-device-removed', (event) => {
+        callback(event.payload)
+    })
 }
 
 /**

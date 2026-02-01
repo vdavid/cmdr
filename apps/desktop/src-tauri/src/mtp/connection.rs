@@ -42,8 +42,57 @@ pub enum MtpConnectionError {
     Disconnected { device_id: String },
     /// Protocol error from device.
     Protocol { device_id: String, message: String },
+    /// Device is busy (retryable).
+    DeviceBusy { device_id: String },
+    /// Storage is full.
+    StorageFull { device_id: String },
+    /// Object not found on device.
+    ObjectNotFound { device_id: String, path: String },
     /// Other connection error.
     Other { device_id: String, message: String },
+}
+
+impl MtpConnectionError {
+    /// Returns true if the operation may succeed if retried.
+    #[allow(dead_code, reason = "Will be used by frontend for retry logic")]
+    pub fn is_retryable(&self) -> bool {
+        matches!(self, Self::Timeout { .. } | Self::DeviceBusy { .. })
+    }
+
+    /// Returns a user-friendly message for this error.
+    #[allow(dead_code, reason = "Will be exposed via Tauri commands for UI error display")]
+    pub fn user_message(&self) -> String {
+        match self {
+            Self::DeviceNotFound { .. } => "Device not found. It may have been unplugged.".to_string(),
+            Self::AlreadyConnected { .. } => "Device is already connected.".to_string(),
+            Self::NotConnected { .. } => {
+                "Device is not connected. Select it from the volume picker to connect.".to_string()
+            }
+            Self::ExclusiveAccess { blocking_process, .. } => {
+                if let Some(proc) = blocking_process {
+                    format!(
+                        "Another app ({}) is using this device. Close it or use the Terminal workaround.",
+                        proc
+                    )
+                } else {
+                    "Another app is using this device. Close other apps that might be accessing it.".to_string()
+                }
+            }
+            Self::Timeout { .. } => {
+                "The operation timed out. The device may be slow or unresponsive. Try again.".to_string()
+            }
+            Self::Disconnected { .. } => "Device was disconnected. Reconnect it to continue.".to_string(),
+            Self::Protocol { message, .. } => {
+                format!("Device reported an error: {}. Try reconnecting.", message)
+            }
+            Self::DeviceBusy { .. } => "Device is busy. Wait a moment and try again.".to_string(),
+            Self::StorageFull { .. } => "Device storage is full. Free up some space.".to_string(),
+            Self::ObjectNotFound { path, .. } => {
+                format!("File or folder not found: {}. It may have been deleted.", path)
+            }
+            Self::Other { message, .. } => message.clone(),
+        }
+    }
 }
 
 impl std::fmt::Display for MtpConnectionError {
@@ -76,6 +125,15 @@ impl std::fmt::Display for MtpConnectionError {
             }
             Self::Protocol { device_id, message } => {
                 write!(f, "Protocol error for {device_id}: {message}")
+            }
+            Self::DeviceBusy { device_id } => {
+                write!(f, "Device busy: {device_id}")
+            }
+            Self::StorageFull { device_id } => {
+                write!(f, "Storage full on device: {device_id}")
+            }
+            Self::ObjectNotFound { device_id, path } => {
+                write!(f, "Object not found on {device_id}: {path}")
             }
             Self::Other { device_id, message } => {
                 write!(f, "Error for {device_id}: {message}")
@@ -179,6 +237,8 @@ struct DeviceEntry {
     storages: Vec<MtpStorageInfo>,
     /// Path-to-handle cache per storage.
     path_cache: RwLock<HashMap<u32, PathHandleCache>>,
+    /// Directory listing cache per storage.
+    listing_cache: RwLock<HashMap<u32, ListingCache>>,
 }
 
 /// Cache for mapping paths to MTP object handles.
@@ -187,6 +247,24 @@ struct PathHandleCache {
     /// Maps virtual path -> MTP object handle.
     path_to_handle: HashMap<PathBuf, ObjectHandle>,
 }
+
+/// Cache for directory listings.
+#[derive(Default)]
+struct ListingCache {
+    /// Maps directory path -> cached file entries.
+    listings: HashMap<PathBuf, CachedListing>,
+}
+
+/// A cached directory listing with timestamp for invalidation.
+struct CachedListing {
+    /// The cached file entries.
+    entries: Vec<FileEntry>,
+    /// When this listing was cached (for TTL checks).
+    cached_at: std::time::Instant,
+}
+
+/// How long to keep cached listings (5 seconds).
+const LISTING_CACHE_TTL_SECS: u64 = 5;
 
 /// Global connection manager for MTP devices.
 pub struct MtpConnectionManager {
@@ -313,6 +391,7 @@ impl MtpConnectionManager {
                     info: device_info,
                     storages,
                     path_cache: RwLock::new(HashMap::new()),
+                    listing_cache: RwLock::new(HashMap::new()),
                 },
             );
         }
@@ -422,6 +501,29 @@ impl MtpConnectionManager {
             device_id, storage_id, path
         );
 
+        // Normalize the path for building child paths
+        let parent_path = normalize_mtp_path(path);
+
+        // Check listing cache first
+        {
+            let devices = self.devices.lock().unwrap();
+            if let Some(entry) = devices.get(device_id)
+                && let Ok(cache_map) = entry.listing_cache.read()
+                && let Some(storage_cache) = cache_map.get(&storage_id)
+                && let Some(cached) = storage_cache.listings.get(&parent_path)
+            {
+                // Check if cache is still valid (within TTL)
+                if cached.cached_at.elapsed().as_secs() < LISTING_CACHE_TTL_SECS {
+                    debug!(
+                        "MTP list_directory: returning {} cached entries for {}",
+                        cached.entries.len(),
+                        path
+                    );
+                    return Ok(cached.entries.clone());
+                }
+            }
+        }
+
         // Get the device and resolve path to handle
         let (device_arc, parent_handle) = {
             let devices = self.devices.lock().unwrap();
@@ -434,9 +536,6 @@ impl MtpConnectionManager {
 
             (Arc::clone(&entry.device), parent_handle)
         };
-
-        // Normalize the path for building child paths
-        let parent_path = normalize_mtp_path(path);
 
         // List directory contents (async operation)
         let device = device_arc.lock().await;
@@ -525,8 +624,42 @@ impl MtpConnectionManager {
             _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
         });
 
+        // Store in listing cache
+        {
+            let devices = self.devices.lock().unwrap();
+            if let Some(entry) = devices.get(device_id)
+                && let Ok(mut cache_map) = entry.listing_cache.write()
+            {
+                let storage_cache = cache_map.entry(storage_id).or_default();
+                storage_cache.listings.insert(
+                    parent_path,
+                    CachedListing {
+                        entries: entries.clone(),
+                        cached_at: std::time::Instant::now(),
+                    },
+                );
+            }
+        }
+
         debug!("MTP list_directory: returning {} entries", entries.len());
         Ok(entries)
+    }
+
+    /// Invalidates the listing cache for a specific directory.
+    /// Call this after any operation that modifies the directory contents.
+    fn invalidate_listing_cache(&self, device_id: &str, storage_id: u32, dir_path: &Path) {
+        let devices = self.devices.lock().unwrap();
+        if let Some(entry) = devices.get(device_id)
+            && let Ok(mut cache_map) = entry.listing_cache.write()
+            && let Some(storage_cache) = cache_map.get_mut(&storage_id)
+            && storage_cache.listings.remove(dir_path).is_some()
+        {
+            debug!(
+                "Invalidated listing cache for {} on device {}",
+                dir_path.display(),
+                device_id
+            );
+        }
     }
 
     /// Resolves a virtual path to an MTP object handle.
@@ -904,6 +1037,10 @@ impl MtpConnectionManager {
 
         info!("MTP upload complete: {} -> {}", local_path.display(), new_path_str);
 
+        // Invalidate the parent directory's listing cache
+        let dest_folder_path = normalize_mtp_path(dest_folder);
+        self.invalidate_listing_cache(device_id, storage_id, &dest_folder_path);
+
         Ok(MtpObjectInfo {
             handle: new_handle.0,
             name: filename,
@@ -1038,15 +1175,20 @@ impl MtpConnectionManager {
         }
 
         // Remove from path cache
+        let object_path_normalized = normalize_mtp_path(object_path);
         {
-            let path = normalize_mtp_path(object_path);
             let devices = self.devices.lock().unwrap();
             if let Some(entry) = devices.get(device_id)
                 && let Ok(mut cache_map) = entry.path_cache.write()
                 && let Some(storage_cache) = cache_map.get_mut(&storage_id)
             {
-                storage_cache.path_to_handle.remove(&path);
+                storage_cache.path_to_handle.remove(&object_path_normalized);
             }
+        }
+
+        // Invalidate the parent directory's listing cache
+        if let Some(parent) = object_path_normalized.parent() {
+            self.invalidate_listing_cache(device_id, storage_id, parent);
         }
 
         info!("MTP delete complete: {}", object_path);
@@ -1132,6 +1274,10 @@ impl MtpConnectionManager {
                 storage_cache.path_to_handle.insert(new_path.clone(), new_handle);
             }
         }
+
+        // Invalidate the parent directory's listing cache
+        let parent_path_normalized = normalize_mtp_path(parent_path);
+        self.invalidate_listing_cache(device_id, storage_id, &parent_path_normalized);
 
         info!("MTP folder created: {}", new_path_str);
 
@@ -1233,6 +1379,9 @@ impl MtpConnectionManager {
                 storage_cache.path_to_handle.insert(new_path.clone(), object_handle);
             }
         }
+
+        // Invalidate the parent directory's listing cache (rename affects the parent listing)
+        self.invalidate_listing_cache(device_id, storage_id, parent);
 
         info!("MTP rename complete: {} -> {}", object_path, new_path_str);
 
@@ -1344,6 +1493,12 @@ impl MtpConnectionManager {
                     }
                 }
 
+                // Invalidate listing cache for both old and new parent directories
+                let old_parent = old_path.parent().unwrap_or(Path::new("/"));
+                self.invalidate_listing_cache(device_id, storage_id, old_parent);
+                let new_parent = normalize_mtp_path(new_parent_path);
+                self.invalidate_listing_cache(device_id, storage_id, &new_parent);
+
                 info!("MTP move complete: {} -> {}", object_path, new_path_str);
 
                 Ok(MtpObjectInfo {
@@ -1424,6 +1579,8 @@ async fn get_storages(device: &MtpDevice) -> Result<Vec<MtpStorageInfo>, mtp_rs:
 
 /// Maps mtp_rs errors to our error types.
 fn map_mtp_error(e: mtp_rs::Error, device_id: &str) -> MtpConnectionError {
+    use mtp_rs::ptp::ResponseCode;
+
     match e {
         mtp_rs::Error::NoDevice => MtpConnectionError::DeviceNotFound {
             device_id: device_id.to_string(),
@@ -1434,14 +1591,61 @@ fn map_mtp_error(e: mtp_rs::Error, device_id: &str) -> MtpConnectionError {
         mtp_rs::Error::Timeout => MtpConnectionError::Timeout {
             device_id: device_id.to_string(),
         },
-        mtp_rs::Error::Protocol { code, operation } => MtpConnectionError::Protocol {
+        mtp_rs::Error::Cancelled => MtpConnectionError::Other {
             device_id: device_id.to_string(),
-            message: format!("Operation {:?} failed with code {:?}", operation, code),
+            message: "Operation cancelled".to_string(),
         },
-        _ => MtpConnectionError::Other {
+        mtp_rs::Error::SessionNotOpen => MtpConnectionError::NotConnected {
             device_id: device_id.to_string(),
-            message: e.to_string(),
         },
+        mtp_rs::Error::Protocol { code, operation } => {
+            // Map specific response codes to user-friendly errors
+            match code {
+                ResponseCode::DeviceBusy => MtpConnectionError::DeviceBusy {
+                    device_id: device_id.to_string(),
+                },
+                ResponseCode::StoreFull => MtpConnectionError::StorageFull {
+                    device_id: device_id.to_string(),
+                },
+                ResponseCode::InvalidObjectHandle | ResponseCode::InvalidParentObject => {
+                    MtpConnectionError::ObjectNotFound {
+                        device_id: device_id.to_string(),
+                        path: format!("(operation: {:?})", operation),
+                    }
+                }
+                ResponseCode::AccessDenied => MtpConnectionError::Other {
+                    device_id: device_id.to_string(),
+                    message: "Access denied. The device rejected the operation.".to_string(),
+                },
+                _ => MtpConnectionError::Protocol {
+                    device_id: device_id.to_string(),
+                    message: format!("{:?}", code),
+                },
+            }
+        }
+        mtp_rs::Error::InvalidData { message } => MtpConnectionError::Other {
+            device_id: device_id.to_string(),
+            message: format!("Invalid data from device: {}", message),
+        },
+        mtp_rs::Error::Io(io_err) => MtpConnectionError::Other {
+            device_id: device_id.to_string(),
+            message: format!("I/O error: {}", io_err),
+        },
+        mtp_rs::Error::Usb(usb_err) => {
+            // Check for exclusive access errors
+            let msg = usb_err.to_string().to_lowercase();
+            if msg.contains("exclusive access") || msg.contains("device or resource busy") {
+                MtpConnectionError::ExclusiveAccess {
+                    device_id: device_id.to_string(),
+                    blocking_process: None,
+                }
+            } else {
+                MtpConnectionError::Other {
+                    device_id: device_id.to_string(),
+                    message: format!("USB error: {}", usb_err),
+                }
+            }
+        }
     }
 }
 
@@ -1523,5 +1727,82 @@ mod tests {
             blocking_process: Some("ptpcamerad".to_string()),
         };
         assert_eq!(err.to_string(), "Device mtp-1-5 is in use by ptpcamerad");
+    }
+
+    #[test]
+    fn test_connection_error_is_retryable() {
+        // Retryable errors
+        assert!(
+            MtpConnectionError::Timeout {
+                device_id: "mtp-1-5".to_string()
+            }
+            .is_retryable()
+        );
+        assert!(
+            MtpConnectionError::DeviceBusy {
+                device_id: "mtp-1-5".to_string()
+            }
+            .is_retryable()
+        );
+
+        // Non-retryable errors
+        assert!(
+            !MtpConnectionError::DeviceNotFound {
+                device_id: "mtp-1-5".to_string()
+            }
+            .is_retryable()
+        );
+        assert!(
+            !MtpConnectionError::Disconnected {
+                device_id: "mtp-1-5".to_string()
+            }
+            .is_retryable()
+        );
+        assert!(
+            !MtpConnectionError::StorageFull {
+                device_id: "mtp-1-5".to_string()
+            }
+            .is_retryable()
+        );
+    }
+
+    #[test]
+    fn test_connection_error_user_message() {
+        let err = MtpConnectionError::DeviceNotFound {
+            device_id: "mtp-1-5".to_string(),
+        };
+        assert!(err.user_message().contains("not found"));
+        assert!(err.user_message().contains("unplugged"));
+
+        let err = MtpConnectionError::StorageFull {
+            device_id: "mtp-1-5".to_string(),
+        };
+        assert!(err.user_message().contains("full"));
+
+        let err = MtpConnectionError::DeviceBusy {
+            device_id: "mtp-1-5".to_string(),
+        };
+        assert!(err.user_message().contains("busy"));
+        assert!(err.user_message().contains("try again"));
+    }
+
+    #[test]
+    fn test_new_error_types_display() {
+        let err = MtpConnectionError::DeviceBusy {
+            device_id: "mtp-1-5".to_string(),
+        };
+        assert_eq!(err.to_string(), "Device busy: mtp-1-5");
+
+        let err = MtpConnectionError::StorageFull {
+            device_id: "mtp-1-5".to_string(),
+        };
+        assert_eq!(err.to_string(), "Storage full on device: mtp-1-5");
+
+        let err = MtpConnectionError::ObjectNotFound {
+            device_id: "mtp-1-5".to_string(),
+            path: "/DCIM/photo.jpg".to_string(),
+        };
+        assert!(err.to_string().contains("Object not found"));
+        assert!(err.to_string().contains("/DCIM/photo.jpg"));
     }
 }

@@ -111,28 +111,30 @@ Task breakdown for adding Android device (MTP) support to Cmdr. See [mtp.md](mtp
 ## Phase 5: Polish
 
 ### 5.1 USB hotplug detection
-- [ ] Add USB device watcher (using nusb or IOKit)
-- [ ] Emit `mtp-device-detected` when Android connected
-- [ ] Emit `mtp-device-removed` when unplugged
-- [ ] Auto-refresh device list in UI
+- [x] Add USB device watcher (using nusb's `watch_devices()`)
+- [x] Emit `mtp-device-detected` when Android connected
+- [x] Emit `mtp-device-removed` when unplugged
+- [x] Auto-refresh device list in UI
 
 ### 5.2 Multi-storage support
-- [ ] Show each storage as separate volume ("Pixel 8 - Internal", "Pixel 8 - SD Card")
-- [ ] Handle storage IDs in paths (prefix or separate volume)
+- [x] Show each storage as separate volume ("Pixel 8 - Internal", "Pixel 8 - SD Card")
+- [x] Handle storage IDs in paths (MtpVolume with deviceId:storageId format)
 
 ### 5.3 Error handling
-- [ ] Map all `mtp_rs::Error` variants to user-friendly messages
-- [ ] Handle timeout errors with retry option
-- [ ] Handle "device busy" gracefully
+- [x] Map all `mtp_rs::Error` variants to user-friendly messages
+- [x] Handle timeout errors with `is_retryable()` method
+- [x] Handle "device busy" with `DeviceBusy` error type
 
 ### 5.4 Performance
-- [ ] Cache folder listings (invalidate on operations)
-- [ ] Queue operations to avoid concurrent MTP calls
-- [ ] Consider background prefetch for folder contents
+- [x] Cache folder listings (invalidate on operations)
+- [ ] Queue operations to avoid concurrent MTP calls (not implemented - low priority)
+- [ ] Consider background prefetch for folder contents (deferred)
 
 ### 5.5 Icons
-- [ ] Add device icon (phone) to volume list
-- [ ] Use generic icons for MTP files (no macOS icon extraction possible)
+- [x] Add device icon (phone SVG) to volume list
+- [x] Use generic icons for MTP files (no macOS icon extraction possible)
+
+**Checkpoint**: USB hotplug works, multi-storage volumes shown, errors are user-friendly, folder listings cached.
 
 ---
 

@@ -89,6 +89,8 @@ chrono = "0.4"
 security-framework = "3.2"
 # MTP (Android device) support via pure Rust implementation
 mtp-rs = { path = "../../../../mtp-rs" }
+# USB hotplug detection for MTP device watcher
+nusb = "0.1"
 
 [dev-dependencies]
 criterion = { version = "0.8.1", features = ["html_reports"] }

@@ -14,7 +14,9 @@ import {
     getMtpDeviceDisplayName,
     listMtpDevices,
     onMtpDeviceConnected,
+    onMtpDeviceDetected,
     onMtpDeviceDisconnected,
+    onMtpDeviceRemoved,
     onMtpExclusiveAccessError,
 } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logger'
@@ -56,6 +58,8 @@ let state = $state<MtpStoreState>({
 let unlistenConnected: UnlistenFn | undefined
 let unlistenDisconnected: UnlistenFn | undefined
 let unlistenExclusiveAccess: UnlistenFn | undefined
+let unlistenDeviceDetected: UnlistenFn | undefined
+let unlistenDeviceRemoved: UnlistenFn | undefined
 
 /**
  * Gets all devices as an array (for iteration in components).
@@ -282,6 +286,26 @@ export async function initialize(): Promise<void> {
         }
     })
 
+    // USB hotplug: device detected
+    unlistenDeviceDetected = await onMtpDeviceDetected((event) => {
+        logger.info('MTP device detected via hotplug: {deviceId}', { deviceId: event.deviceId })
+        // Rescan devices to pick up the new device
+        void scanDevices()
+    })
+
+    // USB hotplug: device removed
+    unlistenDeviceRemoved = await onMtpDeviceRemoved((event) => {
+        logger.info('MTP device removed via hotplug: {deviceId}', { deviceId: event.deviceId })
+        // Remove from store immediately, then rescan to confirm
+        const deviceState = state.devices.get(event.deviceId)
+        if (deviceState) {
+            state.devices.delete(event.deviceId)
+            logger.info('Removed {displayName} from store', { displayName: deviceState.displayName })
+        }
+        // Rescan to ensure store is in sync
+        void scanDevices()
+    })
+
     // Initial scan
     await scanDevices()
 
@@ -297,6 +321,8 @@ export function cleanup(): void {
     unlistenConnected?.()
     unlistenDisconnected?.()
     unlistenExclusiveAccess?.()
+    unlistenDeviceDetected?.()
+    unlistenDeviceRemoved?.()
 
     state = {
         devices: new SvelteMap(),
@@ -311,4 +337,65 @@ export function cleanup(): void {
  */
 export function getMtpState(): MtpStoreState {
     return state
+}
+
+/**
+ * Represents a single MTP volume (one storage on a device).
+ * This is used to show each storage as a separate entry in the volume picker.
+ */
+export interface MtpVolume {
+    /** Unique ID for this volume: "mtp-{deviceId}-{storageId}" */
+    id: string
+    /** Device ID */
+    deviceId: string
+    /** Storage ID */
+    storageId: number
+    /** Display name: "{DeviceName} - {StorageName}" or just storage name if device has one storage */
+    name: string
+    /** Virtual path: "mtp://{deviceId}/{storageId}" */
+    path: string
+    /** Whether the device is connected */
+    isConnected: boolean
+}
+
+/**
+ * Gets all MTP volumes (one per storage on each connected device).
+ * For connected devices with multiple storages, each storage is a separate volume.
+ * For disconnected devices, returns a single volume representing the device.
+ */
+export function getMtpVolumes(): MtpVolume[] {
+    const volumes: MtpVolume[] = []
+
+    for (const deviceState of state.devices.values()) {
+        if (deviceState.connectionState === 'connected' && deviceState.storages.length > 0) {
+            // Connected device with storages: create one volume per storage
+            const showDeviceName = deviceState.storages.length > 1
+            for (const storage of deviceState.storages) {
+                const volumeName = showDeviceName
+                    ? `${deviceState.displayName} - ${storage.name}`
+                    : storage.name || deviceState.displayName
+
+                volumes.push({
+                    id: `${deviceState.device.id}:${String(storage.id)}`,
+                    deviceId: deviceState.device.id,
+                    storageId: storage.id,
+                    name: volumeName,
+                    path: `mtp://${deviceState.device.id}/${String(storage.id)}`,
+                    isConnected: true,
+                })
+            }
+        } else {
+            // Disconnected or connecting device: show as single entry
+            volumes.push({
+                id: deviceState.device.id,
+                deviceId: deviceState.device.id,
+                storageId: 0,
+                name: deviceState.displayName,
+                path: `mtp://${deviceState.device.id}`,
+                isConnected: deviceState.connectionState === 'connected',
+            })
+        }
+    }
+
+    return volumes
 }
