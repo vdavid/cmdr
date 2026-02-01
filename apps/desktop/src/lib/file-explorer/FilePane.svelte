@@ -250,6 +250,40 @@
         cacheGeneration++
     }
 
+    // Check if this pane is showing an MTP volume
+    export function isMtp(): boolean {
+        return isMtpView
+    }
+
+    // Get the current volume ID
+    export function getVolumeId(): string {
+        return volumeId
+    }
+
+    // Get the current path
+    export function getCurrentPath(): string {
+        return currentPath
+    }
+
+    // Get MTP browser reference for operations
+    export function getMtpBrowser(): MtpBrowser | undefined {
+        return mtpBrowserRef
+    }
+
+    // Get selected files from MTP browser
+    export function getMtpSelectedFiles(): FileEntry[] {
+        if (!isMtpView || !mtpBrowserRef) return []
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return
+        return mtpBrowserRef.getSelectedFiles()
+    }
+
+    // Get file under cursor from MTP browser
+    export function getMtpEntryUnderCursor(): FileEntry | null {
+        if (!isMtpView || !mtpBrowserRef) return null
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return
+        return mtpBrowserRef.getEntryUnderCursor()
+    }
+
     // Set network host state (for history navigation)
     export function setNetworkHost(host: NetworkHost | null): void {
         currentNetworkHost = host
