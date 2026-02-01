@@ -150,6 +150,9 @@ pub fn run() {
             *menu_state.show_hidden_files.lock().unwrap() = Some(menu_items.show_hidden_files);
             *menu_state.view_mode_full.lock().unwrap() = Some(menu_items.view_mode_full);
             *menu_state.view_mode_brief.lock().unwrap() = Some(menu_items.view_mode_brief);
+            *menu_state.view_submenu.lock().unwrap() = Some(menu_items.view_submenu);
+            *menu_state.view_mode_full_position.lock().unwrap() = menu_items.view_mode_full_position;
+            *menu_state.view_mode_brief_position.lock().unwrap() = menu_items.view_mode_brief_position;
             app.manage(menu_state);
 
             // Set window title based on license status
@@ -161,6 +164,9 @@ pub fn run() {
 
             // Initialize pane state store for MCP context tools
             app.manage(mcp::PaneStateStore::new());
+
+            // Initialize settings state store for MCP settings tools
+            app.manage(mcp::SettingsStateStore::new());
 
             // Start MCP server for AI agent integration
             // Use settings from user preferences, with env vars as override for dev
@@ -327,6 +333,12 @@ pub fn run() {
             mcp::pane_state::update_left_pane_state,
             mcp::pane_state::update_right_pane_state,
             mcp::pane_state::update_focused_pane,
+            mcp::settings_state::mcp_update_settings_state,
+            mcp::settings_state::mcp_update_settings_open,
+            mcp::settings_state::mcp_update_settings_section,
+            mcp::settings_state::mcp_update_settings_sections,
+            mcp::settings_state::mcp_update_current_settings,
+            mcp::settings_state::mcp_update_shortcuts,
             // Sync status (macOS uses real implementation, others use stub in commands)
             commands::sync_status::get_sync_status,
             // Volume commands (platform-specific)
@@ -447,7 +459,8 @@ pub fn run() {
             commands::settings::check_port_available,
             commands::settings::find_available_port,
             commands::settings::update_file_watcher_debounce,
-            commands::settings::update_service_resolve_timeout
+            commands::settings::update_service_resolve_timeout,
+            commands::settings::update_menu_accelerator
         ])
         .on_window_event(|window, event| {
             // When the main window is closed, quit the entire app (including settings/debug/viewer windows)

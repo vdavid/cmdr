@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { onMount } from 'svelte'
     import { commands } from '$lib/commands/command-registry'
     import type { Command } from '$lib/commands/types'
     import { searchCommands } from '$lib/commands/fuzzy-search'
@@ -26,10 +27,11 @@
         searchQuery: string
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { searchQuery }: Props = $props()
 
-    let nameSearchQuery = $state('')
+    // Use global search query if provided, otherwise use local search
+    let localNameSearchQuery = $state('')
+    const nameSearchQuery = $derived(searchQuery.trim() ? searchQuery : localNameSearchQuery)
     let keySearchQuery = $state('')
     let keyFilterInput: HTMLInputElement | null = $state(null)
     let activeFilter = $state<'all' | 'modified' | 'conflicts'>('all')
@@ -207,10 +209,11 @@
     function handleKeyDown(event: KeyboardEvent) {
         if (!editingShortcut) return
 
-        // Handle Escape to cancel - MUST stop propagation to prevent closing settings window
+        // Handle Escape to cancel - MUST stop immediate propagation to prevent closing settings window
+        // (stopPropagation alone doesn't work because both listeners are on the same window element)
         if (event.key === 'Escape') {
             event.preventDefault()
-            event.stopPropagation()
+            event.stopImmediatePropagation()
             // If we're adding a new shortcut and canceling, remove the empty entry
             if (isAddingNewShortcut) {
                 removeShortcut(editingShortcut.commandId, editingShortcut.index)
@@ -252,24 +255,6 @@
         if (confirm('Reset all keyboard shortcuts to their defaults?')) {
             await resetAllShortcuts()
         }
-    }
-
-    function getShortcutsForCommand(commandId: string): string[] {
-        // Trigger on shortcut changes
-        void shortcutChangeCounter
-        return getEffectiveShortcuts(commandId)
-    }
-
-    function isCommandModified(commandId: string): boolean {
-        // Trigger on shortcut changes
-        void shortcutChangeCounter
-        return isShortcutModified(commandId)
-    }
-
-    function hasCommandConflicts(commandId: string): boolean {
-        // Trigger on shortcut changes
-        void shortcutChangeCounter
-        return conflictingIds.has(commandId)
     }
 
     // Key filter field: track modifiers and build combo string
@@ -327,9 +312,23 @@
             }
         }
     }
-</script>
 
-<svelte:window onkeydown={editingShortcut ? handleKeyDown : undefined} />
+    // Use capture phase listener to intercept key events before they reach +page.svelte's window listener
+    // This allows us to stop ESC from closing the settings window when editing shortcuts
+    onMount(() => {
+        function captureKeyDown(event: KeyboardEvent) {
+            if (!editingShortcut) return
+
+            // Handle all key events during editing
+            handleKeyDown(event)
+        }
+
+        document.addEventListener('keydown', captureKeyDown, true) // true = capture phase
+        return () => {
+            document.removeEventListener('keydown', captureKeyDown, true)
+        }
+    })
+</script>
 
 <div class="section">
     <h2 class="section-title">Keyboard shortcuts</h2>
@@ -340,7 +339,12 @@
                 type="text"
                 class="search-input"
                 placeholder="Search by action name..."
-                bind:value={nameSearchQuery}
+                value={searchQuery.trim() ? searchQuery : localNameSearchQuery}
+                oninput={(e) => (localNameSearchQuery = (e.target as HTMLInputElement).value)}
+                disabled={!!searchQuery.trim()}
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
             />
             <input
                 type="text"
@@ -350,6 +354,9 @@
                 bind:this={keyFilterInput}
                 onkeydown={handleKeyFilterKeyDown}
                 onkeyup={handleKeyFilterKeyUp}
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
             />
         </div>
 
@@ -396,10 +403,10 @@
         {#each Object.entries(groupedCommands) as [scope, scopeCommands] (scope)}
             <div class="scope-group">
                 <h3 class="scope-title">{scope}</h3>
-                {#each scopeCommands as command (command.id)}
-                    {@const shortcuts = getShortcutsForCommand(command.id)}
-                    {@const isModified = isCommandModified(command.id)}
-                    {@const hasConflicts = hasCommandConflicts(command.id)}
+                {#each scopeCommands as command (`${command.id}-${String(shortcutChangeCounter)}`)}
+                    {@const shortcuts = getEffectiveShortcuts(command.id)}
+                    {@const isModified = isShortcutModified(command.id)}
+                    {@const hasConflicts = conflictingIds.has(command.id)}
                     <div class="command-row" class:has-conflicts={hasConflicts}>
                         <div class="command-info">
                             {#if isModified}
@@ -417,38 +424,40 @@
                                         editingShortcut !== null &&
                                         editingShortcut.commandId === command.id &&
                                         editingShortcut.index === i}
-                                    <div class="shortcut-pill-wrapper">
-                                        <button
-                                            class="shortcut-pill"
-                                            class:editing={isEditing}
-                                            class:empty={!shortcut && !isEditing}
-                                            onclick={() => {
-                                                editingShortcut = { commandId: command.id, index: i }
-                                                pendingKey = ''
-                                                conflictWarning = null
-                                            }}
-                                        >
-                                            {#if isEditing}
-                                                {pendingKey || 'Press keys...'}
-                                            {:else if shortcut}
-                                                {shortcut}
-                                            {:else}
-                                                —
-                                            {/if}
-                                        </button>
-                                        {#if shortcut && !isEditing}
-                                            <button
+                                    <button
+                                        class="shortcut-pill"
+                                        class:editing={isEditing}
+                                        class:empty={!shortcut && !isEditing}
+                                        onclick={() => {
+                                            editingShortcut = { commandId: command.id, index: i }
+                                            pendingKey = ''
+                                            conflictWarning = null
+                                        }}
+                                    >
+                                        {#if isEditing}
+                                            {pendingKey || 'Press keys...'}
+                                        {:else if shortcut}
+                                            {shortcut}
+                                            <span
                                                 class="remove-shortcut"
                                                 title="Remove shortcut"
+                                                role="button"
+                                                tabindex="-1"
                                                 onclick={(e) => {
                                                     e.stopPropagation()
                                                     handleRemoveShortcutAtIndex(command.id, i)
                                                 }}
+                                                onkeydown={(e) => {
+                                                    if (e.key === 'Enter' || e.key === ' ') {
+                                                        e.stopPropagation()
+                                                        handleRemoveShortcutAtIndex(command.id, i)
+                                                    }
+                                                }}>×</span
                                             >
-                                                <span class="remove-icon">×</span>
-                                            </button>
+                                        {:else}
+                                            —
                                         {/if}
-                                    </div>
+                                    </button>
                                 {/each}
                             {:else}
                                 <span class="no-shortcut">—</span>
@@ -667,19 +676,16 @@
         gap: var(--spacing-xs);
     }
 
-    .shortcut-pill-wrapper {
-        position: relative;
+    .shortcut-pill {
         display: inline-flex;
         align-items: center;
-    }
-
-    .shortcut-pill {
+        gap: 4px;
         padding: 2px 8px;
         background: var(--color-bg-tertiary);
         border: 1px solid var(--color-border);
         border-radius: 4px;
         font-size: var(--font-size-xs);
-        font-family: var(--font-system);
+        font-family: var(--font-system) sans-serif;
         color: var(--color-text-primary);
         cursor: default;
         min-width: 40px;
@@ -698,35 +704,23 @@
     }
 
     .remove-shortcut {
-        width: 14px;
-        height: 14px;
-        padding: 0;
-        border: none;
+        width: 12px;
+        height: 12px;
         border-radius: 50%;
         background: var(--color-text-muted);
         color: var(--color-bg-primary);
-        font-size: 12px;
+        font-size: 10px;
         font-weight: bold;
         cursor: default;
-        display: flex;
+        display: none;
         align-items: center;
         justify-content: center;
-        margin-left: 2px;
-        opacity: 0;
-        transition: opacity 0.15s ease;
-    }
-
-    .shortcut-pill-wrapper:hover .remove-shortcut {
-        opacity: 1;
-    }
-
-    .remove-shortcut:hover {
-        background: var(--color-error);
-    }
-
-    .remove-icon {
         line-height: 1;
-        margin-top: -1px;
+        flex-shrink: 0;
+    }
+
+    .shortcut-pill:hover .remove-shortcut {
+        display: flex;
     }
 
     .no-shortcut {

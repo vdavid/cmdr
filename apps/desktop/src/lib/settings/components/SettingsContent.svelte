@@ -10,6 +10,7 @@
     import AdvancedSection from '$lib/settings/sections/AdvancedSection.svelte'
     import SectionSummary from './SectionSummary.svelte'
     import { getMatchingSettingIdsInSection } from '$lib/settings/settings-search'
+    import { searchCommands } from '$lib/commands/fuzzy-search'
 
     interface Props {
         searchQuery: string
@@ -40,10 +41,21 @@
         return matchingIds.size > 0
     }
 
+    // Check if keyboard shortcuts section has matching commands
+    function keyboardShortcutsHasMatches(): boolean {
+        if (!searchQuery.trim()) return false
+        const results = searchCommands(searchQuery)
+        return results.length > 0
+    }
+
     // Determine which sections to show based on selection and search
     function shouldShowSection(sectionPath: string[]): boolean {
         // If searching, only show sections that have matching settings
         if (searchQuery.trim()) {
+            // Special handling for keyboard shortcuts which has commands, not settings
+            if (sectionPath.length === 1 && sectionPath[0] === 'Keyboard shortcuts') {
+                return keyboardShortcutsHasMatches()
+            }
             return sectionHasMatchingSettings(sectionPath)
         }
         // If showing summary, don't show any section content

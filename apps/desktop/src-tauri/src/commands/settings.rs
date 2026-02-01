@@ -2,7 +2,10 @@
 
 use std::net::TcpListener;
 
+use tauri::{AppHandle, Manager};
+
 use crate::file_system::update_debounce_ms;
+use crate::menu::{MenuState, frontend_shortcut_to_accelerator, update_view_mode_accelerator};
 #[cfg(target_os = "macos")]
 use crate::network::bonjour::update_resolve_timeout;
 
@@ -45,6 +48,59 @@ pub fn update_service_resolve_timeout(timeout_ms: u64) {
 #[tauri::command]
 pub fn update_service_resolve_timeout(_timeout_ms: u64) {
     // No-op on non-macOS platforms
+}
+
+/// Update menu accelerator for a command.
+/// Called from frontend when keyboard shortcuts are changed.
+/// Currently supports: view.fullMode, view.briefMode
+#[tauri::command]
+pub fn update_menu_accelerator(app: AppHandle, command_id: &str, shortcut: &str) -> Result<(), String> {
+    let menu_state = app.state::<MenuState<tauri::Wry>>();
+
+    // Convert frontend shortcut format to Tauri accelerator format
+    let accelerator = frontend_shortcut_to_accelerator(shortcut);
+
+    match command_id {
+        "view.fullMode" => {
+            // Get current checked state before updating
+            let is_checked = menu_state
+                .view_mode_full
+                .lock()
+                .unwrap()
+                .as_ref()
+                .and_then(|item| item.is_checked().ok())
+                .unwrap_or(false);
+
+            let new_item = update_view_mode_accelerator(&app, &menu_state, true, accelerator.as_deref(), is_checked)
+                .map_err(|e| format!("Failed to update Full view accelerator: {e}"))?;
+
+            // Update the reference in MenuState
+            *menu_state.view_mode_full.lock().unwrap() = Some(new_item);
+            Ok(())
+        }
+        "view.briefMode" => {
+            // Get current checked state before updating
+            let is_checked = menu_state
+                .view_mode_brief
+                .lock()
+                .unwrap()
+                .as_ref()
+                .and_then(|item| item.is_checked().ok())
+                .unwrap_or(true);
+
+            let new_item = update_view_mode_accelerator(&app, &menu_state, false, accelerator.as_deref(), is_checked)
+                .map_err(|e| format!("Failed to update Brief view accelerator: {e}"))?;
+
+            // Update the reference in MenuState
+            *menu_state.view_mode_brief.lock().unwrap() = Some(new_item);
+            Ok(())
+        }
+        _ => {
+            // Silently succeed for commands that don't have menu items
+            // This allows the frontend to call this for all shortcuts without errors
+            Ok(())
+        }
+    }
 }
 
 #[cfg(test)]

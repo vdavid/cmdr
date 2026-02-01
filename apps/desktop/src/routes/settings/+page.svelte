@@ -1,12 +1,18 @@
 <script lang="ts">
-    import { onMount, tick } from 'svelte'
+    import { onMount, onDestroy, tick } from 'svelte'
     import { getCurrentWindow } from '@tauri-apps/api/window'
     import SettingsSidebar from '$lib/settings/components/SettingsSidebar.svelte'
     import SettingsContent from '$lib/settings/components/SettingsContent.svelte'
-    import { initializeSettings } from '$lib/settings'
-    import { initializeShortcuts } from '$lib/shortcuts'
+    import { initializeSettings, forceSave as forceSettingsSave } from '$lib/settings'
+    import { initializeShortcuts, flushPendingSave as flushShortcutsSave } from '$lib/shortcuts'
     import { getMatchingSections } from '$lib/settings/settings-search'
     import { loadLastSettingsSection, saveLastSettingsSection } from '$lib/app-status-store'
+    import {
+        syncSettingsState,
+        notifySettingsWindowOpen,
+        setupMcpEventListeners,
+        cleanupMcpEventListeners,
+    } from '$lib/settings/mcp-settings-bridge'
     import { getAppLogger } from '$lib/logger'
 
     const log = getAppLogger('settings')
@@ -37,6 +43,8 @@
         selectedSection = sectionPath
         // Save last section to app status store
         void saveLastSettingsSection(sectionPath)
+        // Sync state to MCP backend
+        void syncSettingsState(sectionPath)
         // Scroll to the section in content area
         if (contentElement) {
             const sectionId = sectionPath
@@ -55,10 +63,14 @@
         }
     }
 
+    // Handle setting value changed (for MCP sync)
+    function handleSettingChanged() {
+        void syncSettingsState(selectedSection)
+    }
+
     // Handle keyboard events
     function handleKeydown(event: KeyboardEvent) {
         if (event.key === 'Escape') {
-            log.debug('Escape pressed, closing settings window')
             event.preventDefault()
             void getCurrentWindow().close()
         }
@@ -70,52 +82,6 @@
         ) {
             event.preventDefault()
         }
-        // Debug: On Tab, log the active element after a small delay
-        if (event.key === 'Tab') {
-            setTimeout(() => {
-                debugActiveElement()
-            }, 50)
-        }
-    }
-
-    // Debug: Log focus changes to find mysterious tab stop
-    function handleFocusIn(event: FocusEvent) {
-        const target = event.target as HTMLElement
-        const tagName = target.tagName
-        const className = target.className
-        const id = target.id
-        const text = target.textContent.slice(0, 30)
-        const tabIndex = target.tabIndex
-        const parent = target.parentElement
-        const parentTag = parent ? parent.tagName : ''
-        const parentClass = parent ? parent.className : ''
-        log.debug(
-            'Focus: {tagName} class="{className}" id="{id}" tabIndex={tabIndex} parent={parentTag}.{parentClass} text="{text}"',
-            {
-                tagName,
-                className,
-                id,
-                tabIndex,
-                parentTag,
-                parentClass,
-                text,
-            },
-        )
-    }
-
-    // Also try to catch focus on document.activeElement periodically
-    function debugActiveElement() {
-        const el = document.activeElement as HTMLElement | null
-        if (el) {
-            log.debug('activeElement: {tagName} class="{className}" id="{id}" tabIndex={tabIndex}', {
-                tagName: el.tagName,
-                className: el.className,
-                id: el.id,
-                tabIndex: el.tabIndex,
-            })
-        } else {
-            log.debug('activeElement: null')
-        }
     }
 
     // Prevent body from being focused - redirect focus to search input
@@ -123,7 +89,6 @@
         // Check if focus is going to body (or null)
         setTimeout(() => {
             if (document.activeElement === document.body || !document.activeElement) {
-                log.debug('Focus went to body, redirecting to search')
                 const searchInput = document.querySelector('.search-input')
                 if (searchInput instanceof HTMLElement) {
                     searchInput.focus()
@@ -157,14 +122,37 @@
 
             // Focus will be handled naturally by the browser's tab order
             await tick()
+
+            // Set up MCP event listeners and sync initial state
+            await setupMcpEventListeners(handleSectionSelect, handleSettingChanged)
+            await notifySettingsWindowOpen(true)
+            await syncSettingsState(selectedSection)
+
             log.debug('Settings page ready')
         } catch (error) {
             log.error('Failed to initialize settings: {error}', { error })
         }
     })
+
+    // Flush any pending saves when the Settings window is closing
+    onDestroy(() => {
+        log.debug('Settings page destroying, flushing pending saves')
+        // Fire and forget - we can't await in onDestroy
+        void Promise.all([forceSettingsSave(), flushShortcutsSave()])
+        // Clean up MCP event listeners and notify backend
+        cleanupMcpEventListeners()
+        void notifySettingsWindowOpen(false)
+    })
+
+    // Also handle beforeunload for when window is closed directly
+    function handleBeforeUnload() {
+        log.debug('Window unloading, flushing pending saves')
+        // Use sync approach since beforeunload doesn't wait for promises
+        void Promise.all([forceSettingsSave(), flushShortcutsSave()])
+    }
 </script>
 
-<svelte:window on:keydown={handleKeydown} on:focusin={handleFocusIn} on:focusout={handleFocusOut} />
+<svelte:window on:keydown={handleKeydown} on:focusout={handleFocusOut} on:beforeunload={handleBeforeUnload} />
 
 <!-- Prevent body from being a tab stop by keeping focus within the settings window -->
 <div class="settings-window" tabindex="-1">
@@ -193,7 +181,7 @@
         height: 100vh;
         background: var(--color-bg-primary);
         color: var(--color-text-primary);
-        font-family: var(--font-system);
+        font-family: var(--font-system) sans-serif;
         font-size: var(--font-size-sm);
         overflow: hidden;
         display: flex;

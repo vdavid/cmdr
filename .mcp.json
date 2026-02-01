@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "cmdr": {
+      "type": "http",
+      "url": "http://127.0.0.1:9224/mcp"
+    },
+    "tauri": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@hypothesi/tauri-mcp-server"
+      ],
+      "env": {}
+    }
+  }
+}

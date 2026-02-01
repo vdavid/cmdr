@@ -6,6 +6,7 @@
 import uFuzzy from '@leeoniya/ufuzzy'
 import type { SettingDefinition, SettingSearchResult } from './types'
 import { settingsRegistry } from './settings-registry'
+import { searchCommands } from '$lib/commands/fuzzy-search'
 
 // ============================================================================
 // Search Configuration (same as command palette)
@@ -188,6 +189,14 @@ export function getMatchingSections(query: string): Set<string> {
         // Add all parent sections
         for (let i = 1; i <= result.setting.section.length; i++) {
             sections.add(result.setting.section.slice(0, i).join('/'))
+        }
+    }
+
+    // Also check if any commands match for Keyboard shortcuts section
+    if (query.trim()) {
+        const commandMatches = searchCommands(query)
+        if (commandMatches.length > 0) {
+            sections.add('Keyboard shortcuts')
         }
     }
 

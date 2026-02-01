@@ -8,6 +8,7 @@ use tauri::{AppHandle, Emitter, Manager, Runtime};
 
 use super::pane_state::PaneStateStore;
 use super::protocol::{INTERNAL_ERROR, INVALID_PARAMS};
+use super::settings_state::SettingsStateStore;
 use crate::commands::ui::{
     copy_to_clipboard, get_info, open_in_editor, quick_look, set_view_mode, show_in_finder, toggle_hidden_files,
 };
@@ -59,6 +60,10 @@ pub fn execute_tool<R: Runtime>(app: &AppHandle<R>, name: &str, params: &Value) 
         n if n.starts_with("selection_") => execute_selection_command(app, n, params),
         // Context commands
         n if n.starts_with("context_") => execute_context_command(app, n),
+        // Settings commands
+        n if n.starts_with("settings_") => execute_settings_command(app, n, params),
+        // Shortcuts commands
+        n if n.starts_with("shortcuts_") => execute_shortcuts_command(app, n, params),
         _ => Err(ToolError::invalid_params(format!("Unknown tool: {name}"))),
     }
 }
@@ -352,6 +357,196 @@ fn execute_context_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolRe
         }
 
         _ => Err(ToolError::invalid_params(format!("Unknown context command: {name}"))),
+    }
+}
+
+/// Execute a settings command.
+/// These manage the Settings window and its values.
+fn execute_settings_command<R: Runtime>(app: &AppHandle<R>, name: &str, params: &Value) -> ToolResult {
+    match name {
+        "settings_open" => {
+            // Emit event to main window to open settings
+            app.emit_to("main", "open-settings", ())
+                .map_err(|e| ToolError::internal(e.to_string()))?;
+            Ok(json!({"success": true, "message": "Settings window opening"}))
+        }
+        "settings_close" => {
+            // Emit event to settings window to close
+            app.emit_to("settings", "mcp-settings-close", ())
+                .map_err(|e| ToolError::internal(e.to_string()))?;
+            Ok(json!({"success": true, "message": "Settings window closing"}))
+        }
+        "settings_listSections" => {
+            let store = app
+                .try_state::<SettingsStateStore>()
+                .ok_or_else(|| ToolError::internal("Settings state not initialized"))?;
+
+            let state = store.get_state();
+            Ok(json!({
+                "sections": state.sections,
+                "selectedSection": state.selected_section
+            }))
+        }
+        "settings_selectSection" => {
+            let section_path = params
+                .get("sectionPath")
+                .and_then(|v| v.as_array())
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|v| v.as_str().map(String::from))
+                        .collect::<Vec<_>>()
+                })
+                .ok_or_else(|| ToolError::invalid_params("Missing 'sectionPath' parameter"))?;
+
+            // Emit event to settings window to select section
+            app.emit_to(
+                "settings",
+                "mcp-settings-select-section",
+                json!({"sectionPath": section_path}),
+            )
+            .map_err(|e| ToolError::internal(e.to_string()))?;
+            Ok(json!({"success": true, "selectedSection": section_path}))
+        }
+        "settings_listItems" => {
+            let store = app
+                .try_state::<SettingsStateStore>()
+                .ok_or_else(|| ToolError::internal("Settings state not initialized"))?;
+
+            let state = store.get_state();
+            Ok(json!({
+                "selectedSection": state.selected_section,
+                "settings": state.current_settings
+            }))
+        }
+        "settings_getValue" => {
+            let setting_id = params
+                .get("settingId")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| ToolError::invalid_params("Missing 'settingId' parameter"))?;
+
+            let store = app
+                .try_state::<SettingsStateStore>()
+                .ok_or_else(|| ToolError::internal("Settings state not initialized"))?;
+
+            let state = store.get_state();
+            let setting = state.current_settings.iter().find(|s| s.id == setting_id).cloned();
+
+            match setting {
+                Some(s) => Ok(json!({
+                    "settingId": s.id,
+                    "value": s.value,
+                    "isModified": s.is_modified,
+                    "defaultValue": s.default_value
+                })),
+                None => Err(ToolError::invalid_params(format!("Setting not found: {setting_id}"))),
+            }
+        }
+        "settings_setValue" => {
+            let setting_id = params
+                .get("settingId")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| ToolError::invalid_params("Missing 'settingId' parameter"))?;
+
+            let value = params
+                .get("value")
+                .ok_or_else(|| ToolError::invalid_params("Missing 'value' parameter"))?;
+
+            // Emit event to settings window to set the value
+            app.emit_to(
+                "settings",
+                "mcp-settings-set-value",
+                json!({"settingId": setting_id, "value": value}),
+            )
+            .map_err(|e| ToolError::internal(e.to_string()))?;
+
+            Ok(json!({"success": true, "settingId": setting_id, "value": value}))
+        }
+        _ => Err(ToolError::invalid_params(format!("Unknown settings command: {name}"))),
+    }
+}
+
+/// Execute a shortcuts command.
+/// These manage keyboard shortcuts configuration.
+fn execute_shortcuts_command<R: Runtime>(app: &AppHandle<R>, name: &str, params: &Value) -> ToolResult {
+    match name {
+        "shortcuts_list" => {
+            let store = app
+                .try_state::<SettingsStateStore>()
+                .ok_or_else(|| ToolError::internal("Settings state not initialized"))?;
+
+            let state = store.get_state();
+            Ok(json!({
+                "commands": state.shortcuts
+            }))
+        }
+        "shortcuts_set" => {
+            let command_id = params
+                .get("commandId")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| ToolError::invalid_params("Missing 'commandId' parameter"))?;
+
+            let index = params
+                .get("index")
+                .and_then(|v| v.as_i64())
+                .ok_or_else(|| ToolError::invalid_params("Missing 'index' parameter"))?;
+
+            let shortcut = params
+                .get("shortcut")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| ToolError::invalid_params("Missing 'shortcut' parameter"))?;
+
+            // Emit event to settings window (or main window if settings is closed)
+            // to set the shortcut
+            app.emit(
+                "mcp-shortcuts-set",
+                json!({"commandId": command_id, "index": index, "shortcut": shortcut}),
+            )
+            .map_err(|e| ToolError::internal(e.to_string()))?;
+
+            Ok(json!({
+                "success": true,
+                "commandId": command_id,
+                "index": index,
+                "shortcut": shortcut
+            }))
+        }
+        "shortcuts_remove" => {
+            let command_id = params
+                .get("commandId")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| ToolError::invalid_params("Missing 'commandId' parameter"))?;
+
+            let index = params
+                .get("index")
+                .and_then(|v| v.as_i64())
+                .ok_or_else(|| ToolError::invalid_params("Missing 'index' parameter"))?;
+
+            // Emit event to remove the shortcut
+            app.emit("mcp-shortcuts-remove", json!({"commandId": command_id, "index": index}))
+                .map_err(|e| ToolError::internal(e.to_string()))?;
+
+            Ok(json!({
+                "success": true,
+                "commandId": command_id,
+                "index": index
+            }))
+        }
+        "shortcuts_reset" => {
+            let command_id = params
+                .get("commandId")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| ToolError::invalid_params("Missing 'commandId' parameter"))?;
+
+            // Emit event to reset the shortcut
+            app.emit("mcp-shortcuts-reset", json!({"commandId": command_id}))
+                .map_err(|e| ToolError::internal(e.to_string()))?;
+
+            Ok(json!({
+                "success": true,
+                "commandId": command_id
+            }))
+        }
+        _ => Err(ToolError::invalid_params(format!("Unknown shortcuts command: {name}"))),
     }
 }
 

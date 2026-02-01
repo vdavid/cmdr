@@ -200,7 +200,6 @@
                     placeholder="Example: CMDR-ABCD-EFGH-1234"
                     spellcheck="false"
                     autocomplete="off"
-                    autocorrect="off"
                     autocapitalize="off"
                     disabled={isActivating}
                     onkeydown={handleInputKeydown}
@@ -290,7 +289,7 @@
         width: 100%;
         padding: 12px 14px;
         font-size: 14px;
-        font-family: var(--font-system);
+        font-family: var(--font-system) sans-serif;
         background: var(--color-bg-primary);
         border: 1px solid var(--color-border-primary);
         border-radius: 8px;
