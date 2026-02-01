@@ -3,6 +3,7 @@
     import SettingRow from '../components/SettingRow.svelte'
     import SettingToggleGroup from '../components/SettingToggleGroup.svelte'
     import { getSettingDefinition, onSpecificSettingChange, getSetting } from '$lib/settings'
+    import { getMatchingSettingIds } from '$lib/settings/settings-search'
     import { getAppLogger } from '$lib/logger'
 
     const log = getAppLogger('settings')
@@ -11,8 +12,16 @@
         searchQuery: string
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { searchQuery }: Props = $props()
+
+    // Get matching setting IDs for filtering
+    const matchingIds = $derived(searchQuery.trim() ? getMatchingSettingIds(searchQuery) : null)
+
+    // Check if a setting should be shown
+    function shouldShow(id: string): boolean {
+        if (!matchingIds) return true
+        return matchingIds.has(id)
+    }
 
     const themeModeDef = getSettingDefinition('theme.mode') ?? { label: '', description: '' }
 
@@ -53,21 +62,25 @@
 <div class="section">
     <h2 class="section-title">Themes</h2>
 
-    <SettingRow id="theme.mode" label={themeModeDef.label} description={themeModeDef.description}>
-        <SettingToggleGroup id="theme.mode" />
-    </SettingRow>
+    {#if shouldShow('theme.mode')}
+        <SettingRow id="theme.mode" label={themeModeDef.label} description={themeModeDef.description} {searchQuery}>
+            <SettingToggleGroup id="theme.mode" />
+        </SettingRow>
+    {/if}
 
-    <!-- Future: Preset themes -->
-    <div class="coming-soon">
-        <h3>Preset themes</h3>
-        <p>Custom color themes are coming in a future update.</p>
-    </div>
+    {#if !searchQuery.trim()}
+        <!-- Future: Preset themes -->
+        <div class="coming-soon">
+            <h3>Preset themes</h3>
+            <p>Custom color themes are coming in a future update.</p>
+        </div>
 
-    <!-- Future: Custom theme editor -->
-    <div class="coming-soon">
-        <h3>Custom theme editor</h3>
-        <p>Create and customize your own color schemes. Coming soon!</p>
-    </div>
+        <!-- Future: Custom theme editor -->
+        <div class="coming-soon">
+            <h3>Custom theme editor</h3>
+            <p>Create and customize your own color schemes. Coming soon!</p>
+        </div>
+    {/if}
 </div>
 
 <style>

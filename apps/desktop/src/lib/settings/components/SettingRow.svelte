@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { Snippet } from 'svelte'
     import { isModified, resetSetting, onSpecificSettingChange, type SettingId } from '$lib/settings'
+    import { getMatchIndicesForLabel, highlightMatches } from '$lib/settings/settings-search'
     import { onMount } from 'svelte'
 
     interface Props {
@@ -10,6 +11,7 @@
         disabled?: boolean
         disabledReason?: string
         requiresRestart?: boolean
+        searchQuery?: string
         children: Snippet
     }
 
@@ -20,8 +22,18 @@
         disabled = false,
         disabledReason,
         requiresRestart = false,
+        searchQuery = '',
         children,
     }: Props = $props()
+
+    // Get highlighted label segments based on search query
+    const labelSegments = $derived.by(() => {
+        if (!searchQuery.trim()) {
+            return [{ text: label, matched: false }]
+        }
+        const matchIndices = getMatchIndicesForLabel(searchQuery, id)
+        return highlightMatches(label, matchIndices)
+    })
 
     // Track modified state reactively by subscribing to changes
     let modified = $state(isModified(id))
@@ -44,7 +56,11 @@
             {#if modified}
                 <span class="modified-indicator" title="Modified from default">●</span>
             {/if}
-            <label class="setting-label" for={id}>{label}</label>
+            <label class="setting-label" for={id}
+                >{#each labelSegments as segment, i (i)}{#if segment.matched}<mark class="search-highlight"
+                            >{segment.text}</mark
+                        >{:else}{segment.text}{/if}{/each}</label
+            >
             {#if disabled && disabledReason}
                 <span class="disabled-badge">{disabledReason}</span>
             {/if}
@@ -141,5 +157,12 @@
 
     .reset-link.hidden {
         visibility: hidden;
+    }
+
+    .search-highlight {
+        background-color: var(--color-highlight);
+        color: inherit;
+        padding: 0 2px;
+        border-radius: 2px;
     }
 </style>

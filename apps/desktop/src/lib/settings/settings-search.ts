@@ -242,3 +242,53 @@ export function highlightMatches(text: string, matchedIndices: number[]): Array<
 export function clearSearchIndex(): void {
     searchIndex = null
 }
+
+/**
+ * Get the set of setting IDs that match the query.
+ * Used to filter which settings to display in section components.
+ */
+export function getMatchingSettingIds(query: string): Set<string> {
+    const results = searchSettings(query)
+    return new Set(results.map((r) => r.setting.id))
+}
+
+/**
+ * Get matching setting IDs within a specific section.
+ */
+export function getMatchingSettingIdsInSection(query: string, sectionPath: string[]): Set<string> {
+    const results = searchSettings(query)
+    const sectionPrefix = sectionPath.join('/')
+
+    return new Set(
+        results
+            .filter((r) => {
+                const settingSectionPath = r.setting.section.join('/')
+                return settingSectionPath === sectionPrefix || settingSectionPath.startsWith(sectionPrefix + '/')
+            })
+            .map((r) => r.setting.id),
+    )
+}
+
+/**
+ * Get match indices for a specific setting's label.
+ * Returns indices relative to the label text for highlighting.
+ */
+export function getMatchIndicesForLabel(query: string, settingId: string): number[] {
+    if (!query.trim()) return []
+
+    const results = searchSettings(query)
+    const result = results.find((r) => r.setting.id === settingId)
+    if (!result) return []
+
+    // The matchedIndices are relative to searchableText which includes section path
+    // We need to find where the label starts in searchableText and adjust indices
+    const setting = result.setting
+    // Match the format used in buildSearchableText: section.join(' › ') + ' ' + label
+    const sectionText = setting.section.join(' › ') + ' '
+    // searchableText is lowercased, so we need to work with the lowercased label length
+    const labelStart = sectionText.toLowerCase().length
+    const labelEnd = labelStart + setting.label.toLowerCase().length
+
+    // Filter indices that fall within the label range and adjust them
+    return result.matchedIndices.filter((idx) => idx >= labelStart && idx < labelEnd).map((idx) => idx - labelStart)
+}

@@ -13,6 +13,7 @@
     const { searchQuery, matchingSections, selectedSection, onSearch, onSectionSelect }: Props = $props()
 
     let searchInput: HTMLInputElement | null = $state(null)
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null
     const sectionTree = buildSectionTree()
 
     // Special sections that have dedicated UI (not from registry)
@@ -54,7 +55,18 @@
 
     function handleSearchInput(event: Event) {
         const target = event.target as HTMLInputElement
-        onSearch(target.value)
+        const value = target.value
+
+        // Clear any pending debounce timer
+        if (debounceTimer) {
+            clearTimeout(debounceTimer)
+        }
+
+        // Debounce search by 200ms
+        debounceTimer = setTimeout(() => {
+            onSearch(value)
+            debounceTimer = null
+        }, 200)
     }
 
     function clearSearch() {

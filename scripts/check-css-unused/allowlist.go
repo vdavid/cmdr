@@ -12,6 +12,9 @@ var allowedUnusedClasses = map[string]bool{
 	"size-mb":    true,
 	"size-gb":    true,
 	"size-tb":    true,
+	// SettingSelect.svelte - classes used with :global() for Ark UI Select component styling
+	"custom-highlighted": true,
+	"select-content":     true,
 }
 
 // allowedUnusedVariables lists CSS custom properties that are defined but used dynamically,

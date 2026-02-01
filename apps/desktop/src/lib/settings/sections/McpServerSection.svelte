@@ -4,13 +4,22 @@
     import SettingNumberInput from '../components/SettingNumberInput.svelte'
     import { getSettingDefinition, getSetting, setSetting } from '$lib/settings'
     import { checkPortAvailable, findAvailablePort } from '$lib/tauri-commands'
+    import { getMatchingSettingIds } from '$lib/settings/settings-search'
 
     interface Props {
         searchQuery: string
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { searchQuery }: Props = $props()
+
+    // Get matching setting IDs for filtering
+    const matchingIds = $derived(searchQuery.trim() ? getMatchingSettingIds(searchQuery) : null)
+
+    // Check if a setting should be shown
+    function shouldShow(id: string): boolean {
+        if (!matchingIds) return true
+        return matchingIds.has(id)
+    }
 
     const defaultDef = { label: '', description: '', requiresRestart: false }
     const mcpEnabledDef = getSettingDefinition('developer.mcpEnabled') ?? defaultDef
@@ -52,41 +61,47 @@
 <div class="section">
     <h2 class="section-title">MCP server</h2>
 
-    <SettingRow
-        id="developer.mcpEnabled"
-        label={mcpEnabledDef.label}
-        description={mcpEnabledDef.description}
-        requiresRestart={mcpEnabledDef.requiresRestart}
-    >
-        <SettingSwitch id="developer.mcpEnabled" />
-    </SettingRow>
+    {#if shouldShow('developer.mcpEnabled')}
+        <SettingRow
+            id="developer.mcpEnabled"
+            label={mcpEnabledDef.label}
+            description={mcpEnabledDef.description}
+            requiresRestart={mcpEnabledDef.requiresRestart}
+            {searchQuery}
+        >
+            <SettingSwitch id="developer.mcpEnabled" />
+        </SettingRow>
+    {/if}
 
-    <SettingRow
-        id="developer.mcpPort"
-        label={mcpPortDef.label}
-        description={mcpPortDef.description}
-        disabled={!mcpEnabled}
-        requiresRestart={mcpPortDef.requiresRestart}
-    >
-        <div class="port-setting">
-            <SettingNumberInput id="developer.mcpPort" disabled={!mcpEnabled} />
-            <button class="check-port-btn" onclick={checkPort} disabled={!mcpEnabled}> Check port </button>
-        </div>
-    </SettingRow>
+    {#if shouldShow('developer.mcpPort')}
+        <SettingRow
+            id="developer.mcpPort"
+            label={mcpPortDef.label}
+            description={mcpPortDef.description}
+            disabled={!mcpEnabled}
+            requiresRestart={mcpPortDef.requiresRestart}
+            {searchQuery}
+        >
+            <div class="port-setting">
+                <SettingNumberInput id="developer.mcpPort" disabled={!mcpEnabled} />
+                <button class="check-port-btn" onclick={checkPort} disabled={!mcpEnabled}> Check port </button>
+            </div>
+        </SettingRow>
 
-    {#if portStatus === 'checking'}
-        <div class="port-status checking">Checking port availability...</div>
-    {:else if portStatus === 'available'}
-        <div class="port-status available">✓ Port is available</div>
-    {:else if portStatus === 'unavailable'}
-        <div class="port-status unavailable">
-            ✗ Port is in use
-            {#if suggestedPort}
-                <button class="use-suggested" onclick={useSuggestedPort}>
-                    Use port {suggestedPort} instead
-                </button>
-            {/if}
-        </div>
+        {#if portStatus === 'checking'}
+            <div class="port-status checking">Checking port availability...</div>
+        {:else if portStatus === 'available'}
+            <div class="port-status available">Port is available</div>
+        {:else if portStatus === 'unavailable'}
+            <div class="port-status unavailable">
+                Port is in use
+                {#if suggestedPort}
+                    <button class="use-suggested" onclick={useSuggestedPort}>
+                        Use port {suggestedPort} instead
+                    </button>
+                {/if}
+            </div>
+        {/if}
     {/if}
 </div>
 
