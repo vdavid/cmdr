@@ -57,9 +57,9 @@
         </div>
     </div>
     <p class="setting-description">{description}</p>
-    {#if modified}
-        <button class="reset-link" onclick={handleReset}> Reset to default </button>
-    {/if}
+    <button class="reset-link" class:hidden={!modified} onclick={handleReset} aria-hidden={!modified}>
+        Reset to default
+    </button>
 </div>
 
 <style>
@@ -135,11 +135,11 @@
         border: none;
         color: var(--color-accent);
         font-size: var(--font-size-xs);
-        cursor: pointer;
+        cursor: default;
         text-decoration: underline;
     }
 
-    .reset-link:hover {
-        color: var(--color-accent-hover);
+    .reset-link.hidden {
+        visibility: hidden;
     }
 </style>

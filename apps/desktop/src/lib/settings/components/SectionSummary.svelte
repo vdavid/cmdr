@@ -78,16 +78,16 @@
         background: var(--color-bg-secondary);
         border: 1px solid var(--color-border);
         border-radius: 8px;
-        cursor: pointer;
+        cursor: default;
         text-align: left;
         transition:
             background-color 0.15s,
             border-color 0.15s;
     }
 
-    .subsection-card:hover {
-        background: var(--color-bg-hover);
-        border-color: var(--color-accent);
+    .subsection-card:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
     }
 
     .subsection-name {

@@ -101,6 +101,11 @@ export function getRowHeight(): number {
     return densityMappings[uiDensity].rowHeight
 }
 
+/** Get whether the current density is compact */
+export function getIsCompactDensity(): boolean {
+    return uiDensity === 'compact'
+}
+
 /** Get current "use app icons for documents" setting */
 export function getUseAppIconsForDocuments(): boolean {
     return useAppIconsForDocuments

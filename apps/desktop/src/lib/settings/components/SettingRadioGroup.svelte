@@ -52,14 +52,13 @@
                 </RadioGroup.ItemText>
                 <RadioGroup.ItemHiddenInput />
             </RadioGroup.Item>
-
-            <!-- Show custom content after the matching option -->
-            {#if customContent && option.value === value}
-                <div class="custom-content">
-                    {@render customContent(value)}
-                </div>
-            {/if}
         {/each}
+        <!-- Custom content rendered at end, visible only when 'custom' is selected -->
+        {#if customContent}
+            <div class="custom-content" class:hidden={value !== 'custom'}>
+                {@render customContent(value)}
+            </div>
+        {/if}
     </div>
 </RadioGroup.Root>
 
@@ -75,7 +74,7 @@
         align-items: flex-start;
         gap: var(--spacing-sm);
         padding: var(--spacing-xs) 0;
-        cursor: pointer;
+        cursor: default;
     }
 
     :global(.radio-item[data-disabled]) {
@@ -86,6 +85,8 @@
     :global(.radio-control) {
         width: 16px;
         height: 16px;
+        min-width: 16px;
+        min-height: 16px;
         border: 2px solid var(--color-border-primary);
         border-radius: 50%;
         background: var(--color-bg-primary);
@@ -100,8 +101,12 @@
         box-shadow: inset 0 0 0 3px var(--color-bg-primary);
     }
 
-    :global(.radio-item:hover:not([data-disabled]) .radio-control) {
-        border-color: var(--color-accent);
+    /* Ark UI uses data-focus attribute when the hidden input is focused */
+    :global(.radio-item[data-focus]) {
+        outline: 2px solid color-mix(in srgb, var(--color-accent) 70%, black);
+        outline-offset: 2px;
+        border-radius: 4px;
+        box-shadow: 0 0 0 4px rgba(77, 163, 255, 0.3);
     }
 
     :global(.radio-text) {
@@ -124,5 +129,12 @@
         margin-left: 24px;
         margin-top: var(--spacing-xs);
         margin-bottom: var(--spacing-sm);
+    }
+
+    .custom-content.hidden {
+        visibility: hidden;
+        height: 0;
+        margin: 0;
+        overflow: hidden;
     }
 </style>

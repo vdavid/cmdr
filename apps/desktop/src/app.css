@@ -274,6 +274,18 @@
 }
 
 /* =============================================================================
+   Global Focus Styles
+   ============================================================================= */
+
+/* Consistent focus-visible outline for all interactive elements */
+button:focus-visible,
+a:focus-visible,
+[role='button']:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+/* =============================================================================
    Global Styles
    ============================================================================= */
 

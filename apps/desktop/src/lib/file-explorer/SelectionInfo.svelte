@@ -3,7 +3,6 @@
     import {
         buildDateTooltip,
         getSizeDisplay,
-        getDateDisplay,
         isBrokenSymlink as checkBrokenSymlink,
         isPermissionDenied as checkPermissionDenied,
         formatSizeTriads,
@@ -11,7 +10,8 @@
         formatNumber,
         calculatePercentage,
     } from './selection-info-utils'
-    import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
+    import { measureDateColumnWidth } from './full-list-utils'
+    import { formatFileSize, formatDateTime } from '$lib/settings/reactive-settings.svelte'
 
     interface Props {
         /** View mode: 'brief' or 'full' */
@@ -64,8 +64,18 @@
     const isPermissionDenied = $derived(checkPermissionDenied(entry))
     const sizeDisplay = $derived(getSizeDisplay(entry, isBrokenSymlink, isPermissionDenied))
     const sizeTooltip = $derived(entry?.size !== undefined && !isDirectory ? formatFileSize(entry.size) : undefined)
-    const dateDisplay = $derived(getDateDisplay(entry, isBrokenSymlink, isPermissionDenied, currentDirModifiedAt))
+    // Use formatDateTime from reactive-settings for consistent date formatting with Full mode
+    const dateDisplay = $derived.by(() => {
+        if (!entry) return ''
+        if (isBrokenSymlink) return '(broken symlink)'
+        if (isPermissionDenied) return '(permission denied)'
+        // For ".." entry, use the current directory's modified time
+        const timestamp = entry.name === '..' ? currentDirModifiedAt : entry.modifiedAt
+        return formatDateTime(timestamp)
+    })
     const dateTooltip = $derived(entry && !isBrokenSymlink && !isPermissionDenied ? buildDateTooltip(entry) : undefined)
+    // Calculate date column width using measured text width (same utility as FullList)
+    const dateColumnWidth = $derived(measureDateColumnWidth(formatDateTime))
 
     // Middle-truncate long filenames
     let nameElement: HTMLSpanElement | undefined = $state()
@@ -214,7 +224,7 @@
                 {/each}
             {/if}
         </span>
-        <span class="date" title={dateTooltip}>{dateDisplay}</span>
+        <span class="date" style="width: {dateColumnWidth}px;" title={dateTooltip}>{dateDisplay}</span>
     {:else if displayMode === 'no-selection'}
         <!-- Full mode without selection: show totals -->
         <span class="summary-text">{noSelectionText}</span>
@@ -269,7 +279,7 @@
 
     .date {
         flex-shrink: 0;
-        width: 140px;
+        /* width is set via inline style based on formatted date length */
         text-align: right;
         font-size: calc(var(--font-size-sm) * 0.9);
     }

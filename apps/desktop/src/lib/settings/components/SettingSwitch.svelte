@@ -41,7 +41,7 @@
         background: var(--color-bg-tertiary);
         border-radius: 10px;
         padding: 2px;
-        cursor: pointer;
+        cursor: default;
         transition: background-color 0.15s;
     }
 
@@ -65,5 +65,12 @@
 
     :global(.switch-control[data-state='checked'] .switch-thumb) {
         transform: translateX(16px);
+    }
+
+    /* Ark UI uses data-focus attribute when the hidden input is focused */
+    :global(.switch-control[data-focus]) {
+        outline: 2px solid color-mix(in srgb, var(--color-accent) 70%, black);
+        outline-offset: 2px;
+        box-shadow: 0 0 0 4px rgba(77, 163, 255, 0.3);
     }
 </style>

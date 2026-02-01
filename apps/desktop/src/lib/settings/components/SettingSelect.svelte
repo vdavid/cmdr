@@ -25,6 +25,19 @@
     let value = $state(getSetting(id))
     let showCustomInput = $state(false)
     let customValue = $state('')
+    let customInputRef: HTMLInputElement | null = $state(null)
+
+    // Auto-focus custom input when it becomes visible
+    $effect(() => {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Svelte $state is reactive
+        if (showCustomInput) {
+            // customInputRef will be populated when the input element is mounted
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Svelte bind:this updates this reactively
+            customInputRef?.focus()
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Svelte bind:this updates this reactively
+            customInputRef?.select()
+        }
+    })
 
     // Subscribe to setting changes (for external resets)
     onMount(() => {
@@ -39,20 +52,29 @@
     })
 
     // Check if current value is a custom value (not in options)
+    const isCustomValue = $derived(!options.some((o) => o.value === value))
+
     $effect(() => {
-        const isCustom = !options.some((o) => o.value === value)
-        if (isCustom && allowCustom) {
-            showCustomInput = true
+        if (isCustomValue && allowCustom) {
             customValue = String(value)
         }
     })
 
-    // Create the collection for the select
-    const allItems = allowCustom ? [...options, { value: '__custom__', label: 'Custom...' }] : options
-    const collection = createListCollection({
-        items: allItems,
-        itemToString: (item: EnumOption) => item.label,
-        itemToValue: (item: EnumOption) => String(item.value),
+    // Create the collection for the select - include current custom value if set
+    const collection = $derived.by(() => {
+        const items: EnumOption[] = [...options]
+        // If we have a custom value that's not in options, add it to the list
+        if (allowCustom && isCustomValue) {
+            items.push({ value: value as string | number, label: `Custom: ${String(value)}` })
+        }
+        if (allowCustom) {
+            items.push({ value: '__custom__', label: 'Custom...' })
+        }
+        return createListCollection({
+            items,
+            itemToString: (item: EnumOption) => item.label,
+            itemToValue: (item: EnumOption) => String(item.value),
+        })
     })
 
     function handleValueChange(details: SelectValueChangeDetails<EnumOption>) {
@@ -70,19 +92,50 @@
         setSetting(id, actualValue as SettingsValues[typeof id])
     }
 
+    // Track if "Custom..." is highlighted to hide selection from other items
+    let customHighlighted = $state(false)
+
+    // Handle highlight change (keyboard navigation) - immediately apply selection
+    function handleHighlightChange(details: { highlightedValue: string | null }) {
+        // Track if Custom... is highlighted
+        customHighlighted = details.highlightedValue === '__custom__'
+
+        if (details.highlightedValue && details.highlightedValue !== '__custom__') {
+            const option = options.find((o) => String(o.value) === details.highlightedValue)
+            if (option) {
+                // Check if it's not the current custom value marker
+                const actualValue = option.value
+                value = actualValue
+                setSetting(id, actualValue as SettingsValues[typeof id])
+            } else if (allowCustom && isCustomValue && String(value) === details.highlightedValue) {
+                // Re-selecting current custom value - do nothing
+            }
+        }
+    }
+
+    let wrapperRef: HTMLElement | null = $state(null)
+
     function handleCustomSubmit() {
         const numValue = Number(customValue)
         if (!isNaN(numValue)) {
             value = numValue
             setSetting(id, numValue as SettingsValues[typeof id])
+            // Close custom input and return to dropdown
+            showCustomInput = false
+            // Focus the dropdown trigger after it renders
+            requestAnimationFrame(() => {
+                const trigger = wrapperRef?.querySelector('.select-trigger') as HTMLElement | null
+                trigger?.focus()
+            })
         }
     }
 </script>
 
-<div class="select-wrapper">
+<div class="select-wrapper" bind:this={wrapperRef}>
     {#if showCustomInput}
         <div class="custom-input-wrapper">
             <input
+                bind:this={customInputRef}
                 type="number"
                 class="custom-input"
                 bind:value={customValue}
@@ -90,6 +143,7 @@
                 onkeydown={(e) => {
                     if (e.key === 'Enter') handleCustomSubmit()
                 }}
+                placeholder="Enter custom value"
                 min={definition?.constraints?.customMin}
                 max={definition?.constraints?.customMax}
                 {disabled}
@@ -97,7 +151,13 @@
             <button class="back-to-select" onclick={() => (showCustomInput = false)} type="button"> ↩ </button>
         </div>
     {:else}
-        <Select.Root {collection} value={[String(value)]} onValueChange={handleValueChange} {disabled}>
+        <Select.Root
+            {collection}
+            value={[String(value)]}
+            onValueChange={handleValueChange}
+            onHighlightChange={handleHighlightChange}
+            {disabled}
+        >
             <Select.Control>
                 <Select.Trigger class="select-trigger">
                     <Select.ValueText placeholder="Select..." />
@@ -105,7 +165,14 @@
                 </Select.Trigger>
             </Select.Control>
             <Select.Positioner>
-                <Select.Content class="select-content">
+                <Select.Content
+                    class={`select-content${customHighlighted ? ' custom-highlighted' : ''}`}
+                    onkeydown={(e: KeyboardEvent) => {
+                        if (e.key === 'Escape') {
+                            e.stopPropagation()
+                        }
+                    }}
+                >
                     {#each options as option (option.value)}
                         <Select.Item item={option} class="select-item">
                             <Select.ItemText>
@@ -117,6 +184,15 @@
                             <Select.ItemIndicator class="item-indicator">✓</Select.ItemIndicator>
                         </Select.Item>
                     {/each}
+                    {#if allowCustom && isCustomValue}
+                        <Select.Item
+                            item={{ value: value as string | number, label: `Custom: ${String(value)}` }}
+                            class="select-item"
+                        >
+                            <Select.ItemText>Custom: {String(value)}</Select.ItemText>
+                            <Select.ItemIndicator class="item-indicator">✓</Select.ItemIndicator>
+                        </Select.Item>
+                    {/if}
                     {#if allowCustom}
                         <Select.Item item={{ value: '__custom__', label: 'Custom...' }} class="select-item">
                             <Select.ItemText>Custom...</Select.ItemText>
@@ -149,6 +225,18 @@
         font-size: var(--font-size-sm);
     }
 
+    /* Hide native spinners - users can use keyboard up/down arrows */
+    .custom-input::-webkit-inner-spin-button,
+    .custom-input::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    .custom-input[type='number'] {
+        appearance: textfield;
+        -moz-appearance: textfield;
+    }
+
     .custom-input:focus {
         outline: none;
         border-color: var(--color-accent);
@@ -160,11 +248,7 @@
         border-radius: 4px;
         background: var(--color-bg-secondary);
         color: var(--color-text-secondary);
-        cursor: pointer;
-    }
-
-    .back-to-select:hover {
-        background: var(--color-bg-tertiary);
+        cursor: default;
     }
 
     :global(.select-trigger) {
@@ -179,16 +263,17 @@
         background: var(--color-bg-primary);
         color: var(--color-text-primary);
         font-size: var(--font-size-sm);
-        cursor: pointer;
-    }
-
-    :global(.select-trigger:hover) {
-        border-color: var(--color-border-primary);
+        cursor: default;
     }
 
     :global(.select-trigger[data-disabled]) {
         cursor: not-allowed;
         opacity: 0.5;
+    }
+
+    :global(.select-trigger:focus-visible) {
+        outline: 2px solid var(--color-accent);
+        outline-offset: -2px;
     }
 
     :global(.select-indicator) {
@@ -205,20 +290,39 @@
         z-index: 100;
         max-height: 300px;
         overflow-y: auto;
+        /* Ensure consistent width regardless of content */
+        min-width: 180px;
+        width: max-content;
+        /* No outline on dropdown content */
+        outline: none;
+    }
+
+    :global(.select-content:focus),
+    :global(.select-content:focus-visible) {
+        outline: none;
     }
 
     :global(.select-item) {
         display: flex;
         align-items: center;
         justify-content: space-between;
+        gap: var(--spacing-sm);
         padding: var(--spacing-xs) var(--spacing-sm);
-        cursor: pointer;
+        cursor: default;
         font-size: var(--font-size-sm);
+        /* No outline on items */
+        outline: none;
     }
 
-    :global(.select-item:hover),
+    /* No hover visual indication - only checked state matters */
+    :global(.select-item:hover) {
+        background: transparent;
+    }
+
+    /* Highlighted item (keyboard navigation) - same as checked for immediate feedback */
     :global(.select-item[data-highlighted]) {
-        background: var(--color-bg-hover);
+        background: var(--color-accent);
+        color: white;
     }
 
     :global(.select-item[data-state='checked']) {
@@ -226,12 +330,34 @@
         color: white;
     }
 
-    :global(.item-indicator) {
-        color: var(--color-accent);
+    /* Remove any focus outline from items */
+    :global(.select-item:focus),
+    :global(.select-item:focus-visible) {
+        outline: none;
     }
 
-    :global(.select-item[data-state='checked'] .item-indicator) {
+    :global(.item-indicator) {
+        /* Always reserve space for the checkmark to prevent layout shift */
+        min-width: 1em;
+        text-align: center;
+        color: var(--color-accent);
+        visibility: hidden;
+    }
+
+    :global(.select-item[data-state='checked'] .item-indicator),
+    :global(.select-item[data-highlighted] .item-indicator) {
+        visibility: visible;
         color: white;
+    }
+
+    /* When Custom... is highlighted, hide the checked state from other items */
+    :global(.custom-highlighted .select-item[data-state='checked']:not([data-highlighted])) {
+        background: transparent;
+        color: var(--color-text-primary);
+    }
+
+    :global(.custom-highlighted .select-item[data-state='checked']:not([data-highlighted]) .item-indicator) {
+        visibility: hidden;
     }
 
     .option-description {

@@ -22,6 +22,36 @@
         { name: 'Advanced', path: ['Advanced'] },
     ]
 
+    // Build flat list of all navigable sections for keyboard navigation
+    const allSections = $derived.by(() => {
+        const sections: { name: string; path: string[]; isSubsection: boolean }[] = []
+
+        // Add sections from tree (including subsections)
+        for (const section of sectionTree) {
+            if (!shouldShowSection(section)) continue
+            sections.push({ name: section.name, path: section.path, isSubsection: false })
+            for (const subsection of section.subsections) {
+                if (!shouldShowSection(subsection)) continue
+                sections.push({ name: subsection.name, path: subsection.path, isSubsection: true })
+            }
+        }
+
+        // Add special sections
+        for (const special of specialSections) {
+            if (!shouldShowSpecialSection(special.path)) continue
+            sections.push({ name: special.name, path: special.path, isSubsection: false })
+        }
+
+        return sections
+    })
+
+    // Find the index of the currently selected section
+    function findSelectedIndex(): number {
+        return allSections.findIndex(
+            (s) => s.path.length === selectedSection.length && s.path.every((part, i) => part === selectedSection[i]),
+        )
+    }
+
     function handleSearchInput(event: Event) {
         const target = event.target as HTMLInputElement
         onSearch(target.value)
@@ -52,6 +82,44 @@
         // Keyboard shortcuts and Themes are always visible (they have their own search)
         return true
     }
+
+    // Shared navigation logic for Up/Down arrows
+    function navigateSections(direction: 'up' | 'down') {
+        const totalSections = allSections.length
+        if (totalSections === 0) return
+
+        const currentIndex = findSelectedIndex()
+
+        if (direction === 'down') {
+            const nextIndex = currentIndex < 0 ? 0 : Math.min(totalSections - 1, currentIndex + 1)
+            onSectionSelect(allSections[nextIndex].path)
+        } else {
+            const prevIndex = currentIndex < 0 ? 0 : Math.max(0, currentIndex - 1)
+            onSectionSelect(allSections[prevIndex].path)
+        }
+    }
+
+    // Keyboard navigation directly changes selection (no separate focus state)
+    function handleNavKeydown(event: KeyboardEvent) {
+        if (event.key === 'ArrowDown') {
+            event.preventDefault()
+            navigateSections('down')
+        } else if (event.key === 'ArrowUp') {
+            event.preventDefault()
+            navigateSections('up')
+        }
+    }
+
+    // Handle keyboard in search box - Up/Down move section selector
+    function handleSearchKeydown(event: KeyboardEvent) {
+        if (event.key === 'ArrowDown') {
+            event.preventDefault()
+            navigateSections('down')
+        } else if (event.key === 'ArrowUp') {
+            event.preventDefault()
+            navigateSections('up')
+        }
+    }
 </script>
 
 <aside class="settings-sidebar">
@@ -63,13 +131,14 @@
             placeholder="Search settings..."
             value={searchQuery}
             oninput={handleSearchInput}
+            onkeydown={handleSearchKeydown}
         />
         {#if searchQuery}
             <button class="search-clear" onclick={clearSearch} aria-label="Clear search"> × </button>
         {/if}
     </div>
 
-    <nav class="section-tree">
+    <div class="section-tree" tabindex="0" onkeydown={handleNavKeydown} role="listbox" aria-label="Settings sections">
         {#each sectionTree as section (section.name)}
             {#if shouldShowSection(section)}
                 <div class="section-group">
@@ -79,6 +148,9 @@
                         onclick={() => {
                             onSectionSelect(section.path)
                         }}
+                        role="option"
+                        aria-selected={isSelected(section.path)}
+                        tabindex="-1"
                     >
                         {section.name}
                     </button>
@@ -92,6 +164,9 @@
                                         onclick={() => {
                                             onSectionSelect(subsection.path)
                                         }}
+                                        role="option"
+                                        aria-selected={isSelected(subsection.path)}
+                                        tabindex="-1"
                                     >
                                         {subsection.name}
                                     </button>
@@ -113,13 +188,16 @@
                         onclick={() => {
                             onSectionSelect(special.path)
                         }}
+                        role="option"
+                        aria-selected={isSelected(special.path)}
+                        tabindex="-1"
                     >
                         {special.name}
                     </button>
                 </div>
             {/if}
         {/each}
-    </nav>
+    </div>
 </aside>
 
 <style>
@@ -166,20 +244,24 @@
         background: none;
         border: none;
         color: var(--color-text-muted);
-        cursor: pointer;
+        cursor: default;
         font-size: 16px;
         padding: 2px 6px;
         line-height: 1;
-    }
-
-    .search-clear:hover {
-        color: var(--color-text-primary);
     }
 
     .section-tree {
         flex: 1;
         overflow-y: auto;
         padding: var(--spacing-xs) 0;
+        outline: none;
+        border-radius: 4px;
+        margin: 0 var(--spacing-xs);
+    }
+
+    .section-tree:focus {
+        outline: 2px solid var(--color-accent);
+        outline-offset: -2px;
     }
 
     .section-group {
@@ -200,13 +282,9 @@
         text-align: left;
         color: var(--color-text-primary);
         font-size: var(--font-size-sm);
-        cursor: pointer;
+        cursor: default;
         border-radius: 0;
         transition: background-color 0.1s;
-    }
-
-    .section-item:hover {
-        background: var(--color-bg-hover);
     }
 
     .section-item.selected {

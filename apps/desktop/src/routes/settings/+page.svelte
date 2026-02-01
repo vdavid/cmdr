@@ -61,6 +61,74 @@
             event.preventDefault()
             void getCurrentWindow().close()
         }
+        // Prevent Space from triggering Quick Look (bound to Space in main window menu)
+        // Space should only activate focused buttons/controls, not bubble up
+        if (
+            event.key === ' ' &&
+            !(event.target instanceof HTMLButtonElement || event.target instanceof HTMLInputElement)
+        ) {
+            event.preventDefault()
+        }
+        // Debug: On Tab, log the active element after a small delay
+        if (event.key === 'Tab') {
+            setTimeout(() => {
+                debugActiveElement()
+            }, 50)
+        }
+    }
+
+    // Debug: Log focus changes to find mysterious tab stop
+    function handleFocusIn(event: FocusEvent) {
+        const target = event.target as HTMLElement
+        const tagName = target.tagName
+        const className = target.className
+        const id = target.id
+        const text = target.textContent.slice(0, 30)
+        const tabIndex = target.tabIndex
+        const parent = target.parentElement
+        const parentTag = parent ? parent.tagName : ''
+        const parentClass = parent ? parent.className : ''
+        log.debug(
+            'Focus: {tagName} class="{className}" id="{id}" tabIndex={tabIndex} parent={parentTag}.{parentClass} text="{text}"',
+            {
+                tagName,
+                className,
+                id,
+                tabIndex,
+                parentTag,
+                parentClass,
+                text,
+            },
+        )
+    }
+
+    // Also try to catch focus on document.activeElement periodically
+    function debugActiveElement() {
+        const el = document.activeElement as HTMLElement | null
+        if (el) {
+            log.debug('activeElement: {tagName} class="{className}" id="{id}" tabIndex={tabIndex}', {
+                tagName: el.tagName,
+                className: el.className,
+                id: el.id,
+                tabIndex: el.tabIndex,
+            })
+        } else {
+            log.debug('activeElement: null')
+        }
+    }
+
+    // Prevent body from being focused - redirect focus to search input
+    function handleFocusOut() {
+        // Check if focus is going to body (or null)
+        setTimeout(() => {
+            if (document.activeElement === document.body || !document.activeElement) {
+                log.debug('Focus went to body, redirecting to search')
+                const searchInput = document.querySelector('.search-input')
+                if (searchInput instanceof HTMLElement) {
+                    searchInput.focus()
+                }
+            }
+        }, 0)
     }
 
     onMount(async () => {
@@ -86,19 +154,19 @@
 
             initialized = true
 
-            // Focus the window
+            // Focus will be handled naturally by the browser's tab order
             await tick()
-            document.body.focus()
-            log.debug('Settings page ready and focused')
+            log.debug('Settings page ready')
         } catch (error) {
             log.error('Failed to initialize settings: {error}', { error })
         }
     })
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
+<svelte:window on:keydown={handleKeydown} on:focusin={handleFocusIn} on:focusout={handleFocusOut} />
 
-<div class="settings-window">
+<!-- Prevent body from being a tab stop by keeping focus within the settings window -->
+<div class="settings-window" tabindex="-1">
     {#if initialized}
         <div class="settings-layout">
             <SettingsSidebar
@@ -108,7 +176,8 @@
                 onSearch={handleSearch}
                 onSectionSelect={handleSectionSelect}
             />
-            <div class="settings-content-wrapper" bind:this={contentElement}>
+            <!-- tabindex="-1" prevents this from being a tab stop while still allowing programmatic scrolling -->
+            <div class="settings-content-wrapper" bind:this={contentElement} tabindex="-1">
                 <SettingsContent {searchQuery} {selectedSection} onNavigate={handleSectionSelect} />
             </div>
         </div>
@@ -140,6 +209,7 @@
         flex: 1;
         overflow-y: auto;
         padding: var(--spacing-md);
+        outline: none;
     }
 
     .settings-loading {

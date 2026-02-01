@@ -60,17 +60,13 @@
         background: var(--color-bg-primary);
         color: var(--color-text-primary);
         font-size: var(--font-size-sm);
-        cursor: pointer;
+        cursor: default;
         transition: all 0.15s;
         border-right: 1px solid var(--color-border);
     }
 
     :global(.toggle-item:last-child) {
         border-right: none;
-    }
-
-    :global(.toggle-item:hover:not([data-disabled])) {
-        background: var(--color-bg-hover);
     }
 
     :global(.toggle-item[data-state='on']) {
@@ -81,5 +77,11 @@
     :global(.toggle-item[data-disabled]) {
         cursor: not-allowed;
         opacity: 0.5;
+    }
+
+    :global(.toggle-item:focus-visible) {
+        outline: 2px solid var(--color-accent);
+        outline-offset: -2px;
+        z-index: 1;
     }
 </style>

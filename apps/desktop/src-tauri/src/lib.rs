@@ -67,9 +67,9 @@ mod stubs;
 
 use menu::{
     ABOUT_ID, COMMAND_PALETTE_ID, ENTER_LICENSE_KEY_ID, GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID, MenuState,
-    SHOW_HIDDEN_FILES_ID, SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID,
-    SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SORT_DESCENDING_ID, SWITCH_PANE_ID, VIEW_MODE_BRIEF_ID, VIEW_MODE_FULL_ID,
-    ViewMode,
+    SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID,
+    SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SORT_DESCENDING_ID, SWITCH_PANE_ID, VIEW_MODE_BRIEF_ID,
+    VIEW_MODE_FULL_ID, ViewMode,
 };
 use tauri::{Emitter, Manager};
 
@@ -234,6 +234,9 @@ pub fn run() {
             } else if id == ENTER_LICENSE_KEY_ID {
                 // Emit event to show the license key entry dialog (main window only)
                 let _ = app.emit_to("main", "show-license-key-dialog", ());
+            } else if id == SETTINGS_ID {
+                // Open settings window (emits to main window to handle)
+                let _ = app.emit_to("main", "open-settings", ());
             } else if id == COMMAND_PALETTE_ID {
                 // Emit event to show the command palette (main window only)
                 let _ = app.emit_to("main", "show-command-palette", ());
@@ -446,7 +449,15 @@ pub fn run() {
             commands::settings::update_file_watcher_debounce,
             commands::settings::update_service_resolve_timeout
         ])
-        .on_window_event(|_window, event| {
+        .on_window_event(|window, event| {
+            // When the main window is closed, quit the entire app (including settings/debug/viewer windows)
+            if let tauri::WindowEvent::CloseRequested { .. } = event
+                && window.label() == "main"
+            {
+                ai::manager::shutdown();
+                window.app_handle().exit(0);
+            }
+            // Also handle window destruction for cleanup
             if let tauri::WindowEvent::Destroyed = event {
                 ai::manager::shutdown();
             }
