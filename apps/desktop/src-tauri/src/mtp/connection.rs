@@ -1805,4 +1805,409 @@ mod tests {
         assert!(err.to_string().contains("Object not found"));
         assert!(err.to_string().contains("/DCIM/photo.jpg"));
     }
+
+    // ========================================================================
+    // Path normalization tests
+    // ========================================================================
+
+    #[test]
+    fn test_normalize_mtp_path_empty() {
+        assert_eq!(normalize_mtp_path(""), PathBuf::from("/"));
+    }
+
+    #[test]
+    fn test_normalize_mtp_path_dot() {
+        assert_eq!(normalize_mtp_path("."), PathBuf::from("/"));
+    }
+
+    #[test]
+    fn test_normalize_mtp_path_root() {
+        assert_eq!(normalize_mtp_path("/"), PathBuf::from("/"));
+    }
+
+    #[test]
+    fn test_normalize_mtp_path_absolute() {
+        assert_eq!(normalize_mtp_path("/DCIM"), PathBuf::from("/DCIM"));
+        assert_eq!(normalize_mtp_path("/DCIM/Camera"), PathBuf::from("/DCIM/Camera"));
+    }
+
+    #[test]
+    fn test_normalize_mtp_path_relative() {
+        assert_eq!(normalize_mtp_path("DCIM"), PathBuf::from("/DCIM"));
+        assert_eq!(normalize_mtp_path("DCIM/Camera"), PathBuf::from("/DCIM/Camera"));
+    }
+
+    #[test]
+    fn test_normalize_mtp_path_special_characters() {
+        // Test paths with spaces and special characters
+        assert_eq!(normalize_mtp_path("/My Files"), PathBuf::from("/My Files"));
+        assert_eq!(normalize_mtp_path("Photos & Videos"), PathBuf::from("/Photos & Videos"));
+    }
+
+    // ========================================================================
+    // Icon ID generation tests
+    // ========================================================================
+
+    #[test]
+    fn test_get_mtp_icon_id_directory() {
+        assert_eq!(get_mtp_icon_id(true, "DCIM"), "dir");
+        assert_eq!(get_mtp_icon_id(true, "Camera"), "dir");
+        assert_eq!(get_mtp_icon_id(true, ""), "dir");
+    }
+
+    #[test]
+    fn test_get_mtp_icon_id_file_with_extension() {
+        assert_eq!(get_mtp_icon_id(false, "photo.jpg"), "ext:jpg");
+        assert_eq!(get_mtp_icon_id(false, "document.PDF"), "ext:pdf");
+        assert_eq!(get_mtp_icon_id(false, "video.MP4"), "ext:mp4");
+        assert_eq!(get_mtp_icon_id(false, "archive.tar.gz"), "ext:gz");
+    }
+
+    #[test]
+    fn test_get_mtp_icon_id_file_without_extension() {
+        assert_eq!(get_mtp_icon_id(false, "README"), "file");
+        assert_eq!(get_mtp_icon_id(false, "Makefile"), "file");
+        // Hidden files starting with . have no "real" extension, Path::extension returns None
+        assert_eq!(get_mtp_icon_id(false, ".hidden"), "file");
+    }
+
+    // ========================================================================
+    // Error serialization tests
+    // ========================================================================
+
+    #[test]
+    fn test_connection_error_serialization() {
+        let err = MtpConnectionError::DeviceNotFound {
+            device_id: "mtp-1-5".to_string(),
+        };
+        let json = serde_json::to_string(&err).unwrap();
+        // Note: With tag = "type" and rename_all = "camelCase", device_id becomes deviceId
+        assert!(json.contains("\"type\":\"deviceNotFound\""), "JSON: {}", json);
+        assert!(json.contains("\"device_id\":\"mtp-1-5\""), "JSON: {}", json);
+    }
+
+    #[test]
+    fn test_connection_error_exclusive_access_serialization() {
+        let err = MtpConnectionError::ExclusiveAccess {
+            device_id: "mtp-1-5".to_string(),
+            blocking_process: Some("ptpcamerad".to_string()),
+        };
+        let json = serde_json::to_string(&err).unwrap();
+        // Note: tag type is camelCase, but inner field names stay snake_case
+        assert!(json.contains("\"type\":\"exclusiveAccess\""), "JSON: {}", json);
+        assert!(json.contains("\"blocking_process\":\"ptpcamerad\""), "JSON: {}", json);
+    }
+
+    #[test]
+    fn test_connection_error_exclusive_access_no_process() {
+        let err = MtpConnectionError::ExclusiveAccess {
+            device_id: "mtp-1-5".to_string(),
+            blocking_process: None,
+        };
+        let json = serde_json::to_string(&err).unwrap();
+        assert!(json.contains("\"blocking_process\":null"), "JSON: {}", json);
+
+        // Test user message for this case
+        assert!(err.user_message().contains("Another app"));
+        assert!(!err.user_message().contains("ptpcamerad"));
+    }
+
+    #[test]
+    fn test_connection_error_protocol_serialization() {
+        let err = MtpConnectionError::Protocol {
+            device_id: "mtp-1-5".to_string(),
+            message: "InvalidObjectHandle".to_string(),
+        };
+        let json = serde_json::to_string(&err).unwrap();
+        assert!(json.contains("\"type\":\"protocol\""), "JSON: {}", json);
+        assert!(json.contains("\"message\":\"InvalidObjectHandle\""), "JSON: {}", json);
+    }
+
+    // ========================================================================
+    // All error display and user_message coverage
+    // ========================================================================
+
+    #[test]
+    fn test_all_error_variants_display() {
+        // Test all variants have Display impl
+        let errors = vec![
+            MtpConnectionError::DeviceNotFound {
+                device_id: "test".to_string(),
+            },
+            MtpConnectionError::AlreadyConnected {
+                device_id: "test".to_string(),
+            },
+            MtpConnectionError::NotConnected {
+                device_id: "test".to_string(),
+            },
+            MtpConnectionError::ExclusiveAccess {
+                device_id: "test".to_string(),
+                blocking_process: None,
+            },
+            MtpConnectionError::Timeout {
+                device_id: "test".to_string(),
+            },
+            MtpConnectionError::Disconnected {
+                device_id: "test".to_string(),
+            },
+            MtpConnectionError::Protocol {
+                device_id: "test".to_string(),
+                message: "error".to_string(),
+            },
+            MtpConnectionError::DeviceBusy {
+                device_id: "test".to_string(),
+            },
+            MtpConnectionError::StorageFull {
+                device_id: "test".to_string(),
+            },
+            MtpConnectionError::ObjectNotFound {
+                device_id: "test".to_string(),
+                path: "/path".to_string(),
+            },
+            MtpConnectionError::Other {
+                device_id: "test".to_string(),
+                message: "other".to_string(),
+            },
+        ];
+
+        for err in errors {
+            // Each should have non-empty display
+            assert!(!err.to_string().is_empty());
+            // Each should have non-empty user message
+            assert!(!err.user_message().is_empty());
+        }
+    }
+
+    #[test]
+    fn test_already_connected_error() {
+        let err = MtpConnectionError::AlreadyConnected {
+            device_id: "mtp-1-5".to_string(),
+        };
+        assert_eq!(err.to_string(), "Device already connected: mtp-1-5");
+        assert!(err.user_message().contains("already connected"));
+        assert!(!err.is_retryable());
+    }
+
+    #[test]
+    fn test_not_connected_error() {
+        let err = MtpConnectionError::NotConnected {
+            device_id: "mtp-1-5".to_string(),
+        };
+        assert_eq!(err.to_string(), "Device not connected: mtp-1-5");
+        assert!(err.user_message().contains("not connected"));
+        assert!(!err.is_retryable());
+    }
+
+    #[test]
+    fn test_timeout_error() {
+        let err = MtpConnectionError::Timeout {
+            device_id: "mtp-1-5".to_string(),
+        };
+        assert!(err.to_string().contains("timed out"));
+        assert!(err.user_message().contains("timed out"));
+        assert!(err.is_retryable());
+    }
+
+    #[test]
+    fn test_disconnected_error() {
+        let err = MtpConnectionError::Disconnected {
+            device_id: "mtp-1-5".to_string(),
+        };
+        assert!(err.to_string().contains("disconnected"));
+        assert!(err.user_message().contains("disconnected"));
+        assert!(!err.is_retryable());
+    }
+
+    #[test]
+    fn test_protocol_error_user_message() {
+        let err = MtpConnectionError::Protocol {
+            device_id: "mtp-1-5".to_string(),
+            message: "InvalidObjectHandle".to_string(),
+        };
+        assert!(err.user_message().contains("InvalidObjectHandle"));
+        assert!(err.user_message().contains("reconnecting"));
+        assert!(!err.is_retryable());
+    }
+
+    #[test]
+    fn test_object_not_found_user_message() {
+        let err = MtpConnectionError::ObjectNotFound {
+            device_id: "mtp-1-5".to_string(),
+            path: "/DCIM/photo.jpg".to_string(),
+        };
+        assert!(err.user_message().contains("/DCIM/photo.jpg"));
+        assert!(err.user_message().contains("deleted"));
+        assert!(!err.is_retryable());
+    }
+
+    #[test]
+    fn test_other_error() {
+        let err = MtpConnectionError::Other {
+            device_id: "mtp-1-5".to_string(),
+            message: "Custom error message".to_string(),
+        };
+        assert!(err.to_string().contains("Custom error message"));
+        assert_eq!(err.user_message(), "Custom error message");
+        assert!(!err.is_retryable());
+    }
+
+    // ========================================================================
+    // Transfer types and result tests
+    // ========================================================================
+
+    #[test]
+    fn test_transfer_type_serialization() {
+        let download = MtpTransferType::Download;
+        let upload = MtpTransferType::Upload;
+
+        let download_json = serde_json::to_string(&download).unwrap();
+        let upload_json = serde_json::to_string(&upload).unwrap();
+
+        assert_eq!(download_json, "\"download\"");
+        assert_eq!(upload_json, "\"upload\"");
+    }
+
+    #[test]
+    fn test_transfer_progress_serialization() {
+        let progress = MtpTransferProgress {
+            operation_id: "op-123".to_string(),
+            device_id: "mtp-1-5".to_string(),
+            transfer_type: MtpTransferType::Download,
+            current_file: "photo.jpg".to_string(),
+            bytes_done: 1024,
+            bytes_total: 4096,
+        };
+
+        let json = serde_json::to_string(&progress).unwrap();
+        assert!(json.contains("\"operationId\":\"op-123\""));
+        assert!(json.contains("\"deviceId\":\"mtp-1-5\""));
+        assert!(json.contains("\"transferType\":\"download\""));
+        assert!(json.contains("\"currentFile\":\"photo.jpg\""));
+        assert!(json.contains("\"bytesDone\":1024"));
+        assert!(json.contains("\"bytesTotal\":4096"));
+    }
+
+    #[test]
+    fn test_operation_result_serialization() {
+        let result = MtpOperationResult {
+            operation_id: "op-456".to_string(),
+            files_processed: 5,
+            bytes_transferred: 1_000_000,
+        };
+
+        let json = serde_json::to_string(&result).unwrap();
+        assert!(json.contains("\"operationId\":\"op-456\""));
+        assert!(json.contains("\"filesProcessed\":5"));
+        assert!(json.contains("\"bytesTransferred\":1000000"));
+    }
+
+    #[test]
+    fn test_object_info_serialization() {
+        let info = MtpObjectInfo {
+            handle: 12345,
+            name: "test.jpg".to_string(),
+            path: "/DCIM/test.jpg".to_string(),
+            is_directory: false,
+            size: Some(1024),
+        };
+
+        let json = serde_json::to_string(&info).unwrap();
+        assert!(json.contains("\"handle\":12345"));
+        assert!(json.contains("\"name\":\"test.jpg\""));
+        assert!(json.contains("\"path\":\"/DCIM/test.jpg\""));
+        assert!(json.contains("\"isDirectory\":false"));
+        assert!(json.contains("\"size\":1024"));
+    }
+
+    #[test]
+    fn test_object_info_directory() {
+        let info = MtpObjectInfo {
+            handle: 100,
+            name: "Photos".to_string(),
+            path: "/Photos".to_string(),
+            is_directory: true,
+            size: None,
+        };
+
+        let json = serde_json::to_string(&info).unwrap();
+        assert!(json.contains("\"isDirectory\":true"));
+        assert!(json.contains("\"size\":null"));
+    }
+
+    // ========================================================================
+    // Connected device info tests
+    // ========================================================================
+
+    #[test]
+    fn test_connected_device_info_serialization() {
+        use super::super::types::{MtpDeviceInfo, MtpStorageInfo};
+
+        let info = ConnectedDeviceInfo {
+            device: MtpDeviceInfo {
+                id: "mtp-1-5".to_string(),
+                vendor_id: 0x18d1,
+                product_id: 0x4ee1,
+                manufacturer: Some("Google".to_string()),
+                product: Some("Pixel 8".to_string()),
+                serial_number: None,
+            },
+            storages: vec![MtpStorageInfo {
+                id: 65537,
+                name: "Internal shared storage".to_string(),
+                total_bytes: 128_000_000_000,
+                available_bytes: 64_000_000_000,
+                storage_type: Some("FixedRAM".to_string()),
+            }],
+        };
+
+        let json = serde_json::to_string(&info).unwrap();
+        assert!(json.contains("\"id\":\"mtp-1-5\""));
+        assert!(json.contains("\"manufacturer\":\"Google\""));
+        assert!(json.contains("\"product\":\"Pixel 8\""));
+        assert!(json.contains("\"Internal shared storage\""));
+    }
+
+    // ========================================================================
+    // Edge cases for parse_device_id
+    // ========================================================================
+
+    #[test]
+    fn test_parse_device_id_edge_cases() {
+        // Maximum u8 values
+        assert_eq!(parse_device_id("mtp-255-255"), Some((255, 255)));
+
+        // Zero values
+        assert_eq!(parse_device_id("mtp-0-0"), Some((0, 0)));
+
+        // Overflow values (should fail because u8 max is 255)
+        assert_eq!(parse_device_id("mtp-256-1"), None);
+        assert_eq!(parse_device_id("mtp-1-256"), None);
+
+        // Extra dashes
+        assert_eq!(parse_device_id("mtp-1-5-extra"), None);
+
+        // Wrong prefix
+        assert_eq!(parse_device_id("MTP-1-5"), None);
+
+        // Whitespace
+        assert_eq!(parse_device_id(" mtp-1-5"), None);
+        assert_eq!(parse_device_id("mtp-1-5 "), None);
+    }
+
+    // ========================================================================
+    // MtpOperationState tests
+    // ========================================================================
+
+    #[test]
+    fn test_operation_state_default() {
+        let state = MtpOperationState::default();
+        assert!(!state.cancelled.load(std::sync::atomic::Ordering::Relaxed));
+    }
+
+    #[test]
+    fn test_operation_state_cancel() {
+        let state = MtpOperationState::default();
+        state.cancelled.store(true, std::sync::atomic::Ordering::Relaxed);
+        assert!(state.cancelled.load(std::sync::atomic::Ordering::Relaxed));
+    }
 }
