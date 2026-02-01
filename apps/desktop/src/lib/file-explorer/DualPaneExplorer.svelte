@@ -52,6 +52,7 @@
     import { getAppLogger } from '$lib/logger'
     import { isMtpVolumeId, parseMtpVolumeId, MtpBrowser } from '$lib/mtp'
     import MtpCopyDialog from '$lib/mtp/MtpCopyDialog.svelte'
+    import AlertDialog from '$lib/AlertDialog.svelte'
     import type { FileEntry } from './types'
 
     const log = getAppLogger('fileExplorer')
@@ -127,6 +128,13 @@
         deviceId: string
         storageId: number
         mtpBasePath: string
+    } | null>(null)
+
+    // Alert dialog state
+    let showAlertDialog = $state(false)
+    let alertDialogProps = $state<{
+        title: string
+        message: string
     } | null>(null)
 
     // Navigation history for each pane (per-pane, session-only)
@@ -1080,6 +1088,12 @@
         // MTP to MTP copy is not supported
         if (sourceIsMtp && destIsMtp) {
             log.warn('MTP to MTP copy is not supported')
+            alertDialogProps = {
+                title: 'Not supported',
+                message:
+                    "Copying between two mobile devices isn't supported yet. Copy to your Mac first, then to the other device.",
+            }
+            showAlertDialog = true
             return
         }
 
@@ -1609,6 +1623,18 @@
         onComplete={handleMtpCopyComplete}
         onCancel={handleMtpCopyCancel}
         onError={handleMtpCopyError}
+    />
+{/if}
+
+{#if showAlertDialog && alertDialogProps}
+    <AlertDialog
+        title={alertDialogProps.title}
+        message={alertDialogProps.message}
+        onClose={() => {
+            showAlertDialog = false
+            alertDialogProps = null
+            containerElement?.focus()
+        }}
     />
 {/if}
 

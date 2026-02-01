@@ -108,9 +108,19 @@
 
     // Operation in progress state
     let operationInProgress = $state(false)
-    // Note: operationError is tracked for future use (e.g., error toast notifications)
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     let operationError = $state<string | null>(null)
+
+    // Auto-dismiss operation errors after 5 seconds
+    $effect(() => {
+        if (operationError) {
+            const timer = setTimeout(() => {
+                operationError = null
+            }, 5000)
+            return () => {
+                clearTimeout(timer)
+            }
+        }
+    })
 
     // Get device state from store
     const deviceState = $derived(getDevice(deviceId))
@@ -952,6 +962,20 @@
         />
     {/if}
 
+    {#if operationError}
+        <div class="error-toast" role="alert">
+            <span class="error-toast-message">{operationError}</span>
+            <button
+                type="button"
+                class="error-toast-dismiss"
+                aria-label="Dismiss"
+                onclick={() => {
+                    operationError = null
+                }}>×</button
+            >
+        </div>
+    {/if}
+
     {#if operationInProgress}
         <div class="operation-overlay">
             <span class="spinner"></span>
@@ -1000,7 +1024,21 @@
                     onkeydown={() => {}}
                 >
                     <span class="col-name">
-                        <span class="file-icon">📁</span>
+                        <span class="file-icon">
+                            <svg
+                                width="16"
+                                height="16"
+                                viewBox="0 0 16 16"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path
+                                    d="M1 3.5C1 2.67 1.67 2 2.5 2H6L7.5 4H13.5C14.33 4 15 4.67 15 5.5V12.5C15 13.33 14.33 14 13.5 14H2.5C1.67 14 1 13.33 1 12.5V3.5Z"
+                                    fill="currentColor"
+                                    opacity="0.7"
+                                />
+                            </svg>
+                        </span>
                         ..
                     </span>
                     <span class="col-size"></span>
@@ -1027,7 +1065,38 @@
                     onkeydown={() => {}}
                 >
                     <span class="col-name">
-                        <span class="file-icon">{file.isDirectory ? '📁' : '📄'}</span>
+                        <span class="file-icon">
+                            {#if file.isDirectory}
+                                <svg
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 16 16"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                >
+                                    <path
+                                        d="M1 3.5C1 2.67 1.67 2 2.5 2H6L7.5 4H13.5C14.33 4 15 4.67 15 5.5V12.5C15 13.33 14.33 14 13.5 14H2.5C1.67 14 1 13.33 1 12.5V3.5Z"
+                                        fill="currentColor"
+                                        opacity="0.7"
+                                    />
+                                </svg>
+                            {:else}
+                                <svg
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 16 16"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                >
+                                    <path
+                                        d="M3 1.5C3 0.67 3.67 0 4.5 0H9L13 4V14.5C13 15.33 12.33 16 11.5 16H4.5C3.67 16 3 15.33 3 14.5V1.5Z"
+                                        fill="currentColor"
+                                        opacity="0.5"
+                                    />
+                                    <path d="M9 0L13 4H10C9.45 4 9 3.55 9 3V0Z" fill="currentColor" opacity="0.3" />
+                                </svg>
+                            {/if}
+                        </span>
                         {file.name}
                     </span>
                     <span class="col-size">
@@ -1194,7 +1263,18 @@
     }
 
     .file-icon {
-        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        flex-shrink: 0;
+        color: var(--color-text-secondary);
+    }
+
+    .file-icon svg {
+        width: 16px;
+        height: 16px;
     }
 
     .empty-state {
@@ -1216,5 +1296,58 @@
         justify-content: center;
         gap: 12px;
         z-index: 100;
+    }
+
+    .error-toast {
+        position: absolute;
+        top: var(--spacing-sm);
+        left: var(--spacing-sm);
+        right: var(--spacing-sm);
+        background: var(--color-error-bg, #fef2f2);
+        border: 1px solid var(--color-error-border, #fecaca);
+        border-radius: 6px;
+        padding: var(--spacing-xs) var(--spacing-sm);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--spacing-sm);
+        z-index: 200;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .error-toast {
+            background: var(--color-error-bg, #450a0a);
+            border-color: var(--color-error-border, #7f1d1d);
+        }
+    }
+
+    .error-toast-message {
+        font-size: var(--font-size-sm);
+        color: var(--color-error-text, #b91c1c);
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .error-toast-message {
+            color: var(--color-error-text, #fca5a5);
+        }
+    }
+
+    .error-toast-dismiss {
+        background: none;
+        border: none;
+        font-size: 18px;
+        cursor: pointer;
+        color: var(--color-text-tertiary);
+        padding: 0 4px;
+        line-height: 1;
+    }
+
+    .error-toast-dismiss:hover {
+        color: var(--color-text-primary);
     }
 </style>
