@@ -8,6 +8,7 @@
     import { startUpdateChecker } from '$lib/updater.svelte'
     import { initSettingsApplier, cleanupSettingsApplier } from '$lib/settings/settings-applier'
     import { initReactiveSettings, cleanupReactiveSettings } from '$lib/settings/reactive-settings.svelte'
+    import { initializeShortcuts } from '$lib/shortcuts'
     import AiNotification from '$lib/AiNotification.svelte'
     import UpdateNotification from '$lib/UpdateNotification.svelte'
 
@@ -19,6 +20,9 @@
 
         // Initialize settings and apply them to CSS variables
         await initSettingsApplier()
+
+        // Initialize keyboard shortcuts store (loads custom shortcuts from disk)
+        await initializeShortcuts()
 
         // Initialize window state persistence on resize
         // This ensures window size/position survives hot reloads

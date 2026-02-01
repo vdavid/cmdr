@@ -15,6 +15,7 @@
     import {
         formatKeyCombo,
         isModifierKey,
+        isMacOS,
         findConflictsForShortcut,
         getConflictingCommandIds,
         getConflictCount,
@@ -30,11 +31,19 @@
 
     let nameSearchQuery = $state('')
     let keySearchQuery = $state('')
+    let keyFilterInput: HTMLInputElement | null = $state(null)
     let activeFilter = $state<'all' | 'modified' | 'conflicts'>('all')
     let editingShortcut = $state<{ commandId: string; index: number } | null>(null)
     let pendingKey = $state('')
     let confirmTimeout = $state<ReturnType<typeof setTimeout> | null>(null)
     let conflictWarning = $state<{ shortcut: string; conflictingCommand: Command } | null>(null)
+
+    // Track if we're in "add shortcut" mode (new shortcut with empty value)
+    const isAddingNewShortcut = $derived.by(() => {
+        if (!editingShortcut) return false
+        const shortcuts = getEffectiveShortcuts(editingShortcut.commandId)
+        return editingShortcut.index === shortcuts.length - 1 && shortcuts[editingShortcut.index] === ''
+    })
 
     // Reactivity trigger for shortcut changes
     let shortcutChangeCounter = $state(0)
@@ -146,7 +155,23 @@
     function saveShortcut() {
         if (!editingShortcut || !pendingKey) return
 
-        setShortcut(editingShortcut.commandId, editingShortcut.index, pendingKey)
+        // Capture values before calling any functions that might change state
+        const currentCommandId = editingShortcut.commandId
+        const currentIndex = editingShortcut.index
+
+        // Check for duplicates on the same action
+        const currentShortcuts = getEffectiveShortcuts(currentCommandId)
+        const isDuplicate = currentShortcuts.some((s, i) => s === pendingKey && i !== currentIndex)
+        if (isDuplicate) {
+            // Shortcut already exists on this action - just cancel
+            if (isAddingNewShortcut) {
+                removeShortcut(currentCommandId, currentIndex)
+            }
+            cancelEdit()
+            return
+        }
+
+        setShortcut(currentCommandId, currentIndex, pendingKey)
         cancelEdit()
     }
 
@@ -182,9 +207,14 @@
     function handleKeyDown(event: KeyboardEvent) {
         if (!editingShortcut) return
 
-        // Handle Escape to cancel
+        // Handle Escape to cancel - MUST stop propagation to prevent closing settings window
         if (event.key === 'Escape') {
             event.preventDefault()
+            event.stopPropagation()
+            // If we're adding a new shortcut and canceling, remove the empty entry
+            if (isAddingNewShortcut) {
+                removeShortcut(editingShortcut.commandId, editingShortcut.index)
+            }
             cancelEdit()
             return
         }
@@ -193,6 +223,7 @@
         if (event.key === 'Backspace' || event.key === 'Delete') {
             if (!pendingKey) {
                 event.preventDefault()
+                event.stopPropagation()
                 removeShortcut(editingShortcut.commandId, editingShortcut.index)
                 cancelEdit()
                 return
@@ -209,10 +240,12 @@
         pendingKey = ''
     }
 
+    function handleRemoveShortcutAtIndex(commandId: string, index: number) {
+        removeShortcut(commandId, index)
+    }
+
     function handleResetShortcut(commandId: string) {
-        if (confirm('Reset this shortcut to default?')) {
-            resetShortcut(commandId)
-        }
+        resetShortcut(commandId)
     }
 
     async function handleResetAll() {
@@ -238,6 +271,62 @@
         void shortcutChangeCounter
         return conflictingIds.has(commandId)
     }
+
+    // Key filter field: track modifiers and build combo string
+    function formatModifiers(event: KeyboardEvent): string {
+        const parts: string[] = []
+        if (isMacOS()) {
+            if (event.metaKey) parts.push('\u2318')
+            if (event.ctrlKey) parts.push('\u2303')
+            if (event.altKey) parts.push('\u2325')
+            if (event.shiftKey) parts.push('\u21E7')
+        } else {
+            if (event.ctrlKey) parts.push('Ctrl')
+            if (event.altKey) parts.push('Alt')
+            if (event.shiftKey) parts.push('Shift')
+            if (event.metaKey) parts.push('Win')
+        }
+        return isMacOS() ? parts.join('') : parts.join('+')
+    }
+
+    function handleKeyFilterKeyDown(event: KeyboardEvent) {
+        // Let Tab through for focus navigation
+        if (event.key === 'Tab') return
+
+        event.preventDefault()
+        event.stopPropagation()
+
+        // If it's only a modifier key, show it temporarily
+        if (isModifierKey(event.key)) {
+            keySearchQuery = formatModifiers(event)
+            return
+        }
+
+        // It's a complete combo - format and keep it
+        keySearchQuery = formatKeyCombo(event)
+    }
+
+    function handleKeyFilterKeyUp(event: KeyboardEvent) {
+        // If we only have modifiers showing (no complete combo), check if all modifiers released
+        if (isModifierKey(event.key)) {
+            // Check if any modifier is still held
+            const stillHasModifier = event.metaKey || event.ctrlKey || event.altKey || event.shiftKey
+            if (!stillHasModifier) {
+                // All modifiers released - check if current value looks like only modifiers
+                const currentValue = keySearchQuery
+                // If the value is only modifiers (no regular key), clear it
+                const isOnlyModifiers = isMacOS()
+                    ? /^[\u2318\u2303\u2325\u21E7]*$/.test(currentValue)
+                    : /^(Ctrl\+?|Alt\+?|Shift\+?|Win\+?)*$/.test(currentValue)
+                if (isOnlyModifiers) {
+                    keySearchQuery = ''
+                }
+            } else {
+                // Still have some modifiers held - update the display
+                keySearchQuery = formatModifiers(event)
+            }
+        }
+    }
 </script>
 
 <svelte:window onkeydown={editingShortcut ? handleKeyDown : undefined} />
@@ -258,6 +347,9 @@
                 class="search-input key-search"
                 placeholder="Filter by keys..."
                 bind:value={keySearchQuery}
+                bind:this={keyFilterInput}
+                onkeydown={handleKeyFilterKeyDown}
+                onkeyup={handleKeyFilterKeyUp}
             />
         </div>
 
@@ -325,24 +417,38 @@
                                         editingShortcut !== null &&
                                         editingShortcut.commandId === command.id &&
                                         editingShortcut.index === i}
-                                    <button
-                                        class="shortcut-pill"
-                                        class:editing={isEditing}
-                                        class:empty={!shortcut && !isEditing}
-                                        onclick={() => {
-                                            editingShortcut = { commandId: command.id, index: i }
-                                            pendingKey = ''
-                                            conflictWarning = null
-                                        }}
-                                    >
-                                        {#if isEditing}
-                                            {pendingKey || 'Press keys...'}
-                                        {:else if shortcut}
-                                            {shortcut}
-                                        {:else}
-                                            —
+                                    <div class="shortcut-pill-wrapper">
+                                        <button
+                                            class="shortcut-pill"
+                                            class:editing={isEditing}
+                                            class:empty={!shortcut && !isEditing}
+                                            onclick={() => {
+                                                editingShortcut = { commandId: command.id, index: i }
+                                                pendingKey = ''
+                                                conflictWarning = null
+                                            }}
+                                        >
+                                            {#if isEditing}
+                                                {pendingKey || 'Press keys...'}
+                                            {:else if shortcut}
+                                                {shortcut}
+                                            {:else}
+                                                —
+                                            {/if}
+                                        </button>
+                                        {#if shortcut && !isEditing}
+                                            <button
+                                                class="remove-shortcut"
+                                                title="Remove shortcut"
+                                                onclick={(e) => {
+                                                    e.stopPropagation()
+                                                    handleRemoveShortcutAtIndex(command.id, i)
+                                                }}
+                                            >
+                                                <span class="remove-icon">×</span>
+                                            </button>
                                         {/if}
-                                    </button>
+                                    </div>
                                 {/each}
                             {:else}
                                 <span class="no-shortcut">—</span>
@@ -360,7 +466,8 @@
                                 <button
                                     class="reset-shortcut"
                                     title="Reset to default"
-                                    onclick={() => {
+                                    onclick={(e) => {
+                                        e.stopPropagation()
                                         handleResetShortcut(command.id)
                                     }}
                                 >
@@ -560,6 +667,12 @@
         gap: var(--spacing-xs);
     }
 
+    .shortcut-pill-wrapper {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+    }
+
     .shortcut-pill {
         padding: 2px 8px;
         background: var(--color-bg-tertiary);
@@ -582,6 +695,38 @@
     .shortcut-pill.empty {
         color: var(--color-text-muted);
         border-style: dashed;
+    }
+
+    .remove-shortcut {
+        width: 14px;
+        height: 14px;
+        padding: 0;
+        border: none;
+        border-radius: 50%;
+        background: var(--color-text-muted);
+        color: var(--color-bg-primary);
+        font-size: 12px;
+        font-weight: bold;
+        cursor: default;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 2px;
+        opacity: 0;
+        transition: opacity 0.15s ease;
+    }
+
+    .shortcut-pill-wrapper:hover .remove-shortcut {
+        opacity: 1;
+    }
+
+    .remove-shortcut:hover {
+        background: var(--color-error);
+    }
+
+    .remove-icon {
+        line-height: 1;
+        margin-top: -1px;
     }
 
     .no-shortcut {
@@ -607,6 +752,11 @@
 
     .reset-shortcut {
         font-size: 12px;
+    }
+
+    .reset-shortcut:hover {
+        color: var(--color-accent);
+        border-color: var(--color-accent);
     }
 
     .shortcuts-footer {
