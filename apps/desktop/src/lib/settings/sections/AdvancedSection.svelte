@@ -11,7 +11,7 @@
     } from '$lib/settings'
     import { Switch } from '@ark-ui/svelte/switch'
     import { NumberInput, type NumberInputValueChangeDetails } from '@ark-ui/svelte/number-input'
-    import { searchAdvancedSettings } from '$lib/settings/settings-search'
+    import { searchAdvancedSettings, getMatchIndicesForLabel, highlightMatches } from '$lib/settings/settings-search'
 
     interface Props {
         searchQuery: string
@@ -49,6 +49,15 @@
     function handleReset(id: SettingId) {
         resetSetting(id)
     }
+
+    // Get highlighted label segments for a setting
+    function getLabelSegments(label: string, settingId: string) {
+        if (!searchQuery.trim()) {
+            return [{ text: label, matched: false }]
+        }
+        const matchIndices = getMatchIndicesForLabel(searchQuery, settingId)
+        return highlightMatches(label, matchIndices)
+    }
 </script>
 
 <div class="section">
@@ -75,7 +84,9 @@
                         {#if modified}
                             <span class="modified-dot">●</span>
                         {/if}
-                        {setting.label}
+                        {#each getLabelSegments(setting.label, setting.id) as segment, i (i)}{#if segment.matched}<mark
+                                    class="search-highlight">{segment.text}</mark
+                                >{:else}{segment.text}{/if}{/each}
                     </div>
                     <div class="setting-description">{setting.description}</div>
                     <div class="setting-default">
@@ -218,6 +229,13 @@
     .modified-dot {
         color: var(--color-accent);
         font-size: 10px;
+    }
+
+    .search-highlight {
+        background-color: var(--color-highlight);
+        color: inherit;
+        padding: 0 2px;
+        border-radius: 2px;
     }
 
     .setting-description {

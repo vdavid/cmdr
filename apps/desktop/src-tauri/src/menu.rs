@@ -135,13 +135,8 @@ pub fn build_menu<R: Runtime>(
                             // Add separator and Settings after license key
                             let separator = tauri::menu::PredefinedMenuItem::separator(app)?;
                             submenu.insert(&separator, 2)?;
-                            let settings_item = tauri::menu::MenuItem::with_id(
-                                app,
-                                SETTINGS_ID,
-                                "Settings...",
-                                true,
-                                Some("Cmd+,"),
-                            )?;
+                            let settings_item =
+                                tauri::menu::MenuItem::with_id(app, SETTINGS_ID, "Settings...", true, Some("Cmd+,"))?;
                             submenu.insert(&settings_item, 3)?;
                             break;
                         }

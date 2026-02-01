@@ -25,17 +25,18 @@
     let value = $state(getSetting(id))
     let showCustomInput = $state(false)
     let customValue = $state('')
-    let customInputRef: HTMLInputElement | null = $state(null)
+    let customInputRef: HTMLInputElement | undefined = $state()
 
-    // Auto-focus custom input when it becomes visible
+    // Focus custom input when it becomes visible (next microtask after render)
     $effect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Svelte $state is reactive
         if (showCustomInput) {
-            // customInputRef will be populated when the input element is mounted
-            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Svelte bind:this updates this reactively
-            customInputRef?.focus()
-            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Svelte bind:this updates this reactively
-            customInputRef?.select()
+            // Use setTimeout to wait for DOM to update after reactive state change
+            setTimeout(() => {
+                if (customInputRef) {
+                    customInputRef.focus()
+                    customInputRef.select()
+                }
+            }, 0)
         }
     })
 

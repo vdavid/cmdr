@@ -2,13 +2,22 @@
     import SettingRow from '../components/SettingRow.svelte'
     import SettingSwitch from '../components/SettingSwitch.svelte'
     import { getSettingDefinition } from '$lib/settings'
+    import { getMatchingSettingIds } from '$lib/settings/settings-search'
 
     interface Props {
         searchQuery: string
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { searchQuery }: Props = $props()
+
+    // Get matching setting IDs for filtering
+    const matchingIds = $derived(searchQuery.trim() ? getMatchingSettingIds(searchQuery) : null)
+
+    // Check if a setting should be shown
+    function shouldShow(id: string): boolean {
+        if (!matchingIds) return true
+        return matchingIds.has(id)
+    }
 
     const verboseLoggingDef = getSettingDefinition('developer.verboseLogging') ?? { label: '', description: '' }
 
@@ -51,18 +60,21 @@ Timestamp: ${info.timestamp}
 <div class="section">
     <h2 class="section-title">Logging</h2>
 
-    <SettingRow
-        id="developer.verboseLogging"
-        label={verboseLoggingDef.label}
-        description={verboseLoggingDef.description}
-    >
-        <SettingSwitch id="developer.verboseLogging" />
-    </SettingRow>
+    {#if shouldShow('developer.verboseLogging')}
+        <SettingRow
+            id="developer.verboseLogging"
+            label={verboseLoggingDef.label}
+            description={verboseLoggingDef.description}
+            {searchQuery}
+        >
+            <SettingSwitch id="developer.verboseLogging" />
+        </SettingRow>
+    {/if}
 
     <div class="logging-actions">
         <button class="action-btn" onclick={openLogFile}>Open log file</button>
         <button class="action-btn" onclick={copyDiagnosticInfo}>
-            {copyFeedback ? '✓ Copied!' : 'Copy diagnostic info'}
+            {copyFeedback ? 'Copied!' : 'Copy diagnostic info'}
         </button>
     </div>
 </div>

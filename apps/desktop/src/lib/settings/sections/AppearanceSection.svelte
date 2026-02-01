@@ -5,13 +5,22 @@
     import SettingToggleGroup from '../components/SettingToggleGroup.svelte'
     import SettingRadioGroup from '../components/SettingRadioGroup.svelte'
     import { getSettingDefinition, getSetting, setSetting } from '$lib/settings'
+    import { getMatchingSettingIds } from '$lib/settings/settings-search'
 
     interface Props {
         searchQuery: string
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { searchQuery }: Props = $props()
+
+    // Get matching setting IDs for filtering
+    const matchingIds = $derived(searchQuery.trim() ? getMatchingSettingIds(searchQuery) : null)
+
+    // Check if a setting should be shown
+    function shouldShow(id: string): boolean {
+        if (!matchingIds) return true
+        return matchingIds.has(id)
+    }
 
     // Get definitions for rendering (with fallbacks for type safety)
     const uiDensityDef = getSettingDefinition('appearance.uiDensity') ?? { label: '', description: '' }
@@ -49,60 +58,88 @@
 <div class="section">
     <h2 class="section-title">Appearance</h2>
 
-    <SettingRow id="appearance.uiDensity" label={uiDensityDef.label} description={uiDensityDef.description}>
-        <SettingToggleGroup id="appearance.uiDensity" />
-    </SettingRow>
+    {#if shouldShow('appearance.uiDensity')}
+        <SettingRow
+            id="appearance.uiDensity"
+            label={uiDensityDef.label}
+            description={uiDensityDef.description}
+            {searchQuery}
+        >
+            <SettingToggleGroup id="appearance.uiDensity" />
+        </SettingRow>
+    {/if}
 
-    <SettingRow id="appearance.useAppIconsForDocuments" label={appIconsDef.label} description={appIconsDef.description}>
-        <SettingSwitch id="appearance.useAppIconsForDocuments" />
-    </SettingRow>
+    {#if shouldShow('appearance.useAppIconsForDocuments')}
+        <SettingRow
+            id="appearance.useAppIconsForDocuments"
+            label={appIconsDef.label}
+            description={appIconsDef.description}
+            {searchQuery}
+        >
+            <SettingSwitch id="appearance.useAppIconsForDocuments" />
+        </SettingRow>
+    {/if}
 
-    <SettingRow id="appearance.fileSizeFormat" label={fileSizeDef.label} description={fileSizeDef.description}>
-        <SettingSelect id="appearance.fileSizeFormat" />
-    </SettingRow>
+    {#if shouldShow('appearance.fileSizeFormat')}
+        <SettingRow
+            id="appearance.fileSizeFormat"
+            label={fileSizeDef.label}
+            description={fileSizeDef.description}
+            {searchQuery}
+        >
+            <SettingSelect id="appearance.fileSizeFormat" />
+        </SettingRow>
+    {/if}
 
-    <SettingRow id="appearance.dateTimeFormat" label={dateTimeDef.label} description={dateTimeDef.description}>
-        <div class="date-time-setting">
-            <SettingRadioGroup id="appearance.dateTimeFormat">
-                {#snippet customContent(value)}
-                    {#if value === 'custom'}
-                        <div class="custom-format">
-                            <input
-                                type="text"
-                                class="format-input"
-                                value={customFormat}
-                                oninput={handleCustomFormatChange}
-                                placeholder="YYYY-MM-DD HH:mm"
-                            />
-                            <div class="format-preview">
-                                Preview: <strong>{formatPreview(customFormat)}</strong>
-                            </div>
-                            <button
-                                type="button"
-                                class="help-toggle"
-                                onclick={() => (showFormatHelp = !showFormatHelp)}
-                            >
-                                {showFormatHelp ? 'Hide format help' : 'Show format help'}
-                            </button>
-                            {#if showFormatHelp}
-                                <div class="format-help">
-                                    <h4>Format placeholders</h4>
-                                    <ul>
-                                        <li><code>YYYY</code> — 4-digit year (2025)</li>
-                                        <li><code>MM</code> — 2-digit month (01-12)</li>
-                                        <li><code>DD</code> — 2-digit day (01-31)</li>
-                                        <li><code>HH</code> — 2-digit hour (00-23)</li>
-                                        <li><code>mm</code> — 2-digit minute (00-59)</li>
-                                        <li><code>ss</code> — 2-digit second (00-59)</li>
-                                    </ul>
+    {#if shouldShow('appearance.dateTimeFormat')}
+        <SettingRow
+            id="appearance.dateTimeFormat"
+            label={dateTimeDef.label}
+            description={dateTimeDef.description}
+            {searchQuery}
+        >
+            <div class="date-time-setting">
+                <SettingRadioGroup id="appearance.dateTimeFormat">
+                    {#snippet customContent(value)}
+                        {#if value === 'custom'}
+                            <div class="custom-format">
+                                <input
+                                    type="text"
+                                    class="format-input"
+                                    value={customFormat}
+                                    oninput={handleCustomFormatChange}
+                                    placeholder="YYYY-MM-DD HH:mm"
+                                />
+                                <div class="format-preview">
+                                    Preview: <strong>{formatPreview(customFormat)}</strong>
                                 </div>
-                            {/if}
-                        </div>
-                    {/if}
-                {/snippet}
-            </SettingRadioGroup>
-        </div>
-    </SettingRow>
+                                <button
+                                    type="button"
+                                    class="help-toggle"
+                                    onclick={() => (showFormatHelp = !showFormatHelp)}
+                                >
+                                    {showFormatHelp ? 'Hide format help' : 'Show format help'}
+                                </button>
+                                {#if showFormatHelp}
+                                    <div class="format-help">
+                                        <h4>Format placeholders</h4>
+                                        <ul>
+                                            <li><code>YYYY</code> — 4-digit year (2025)</li>
+                                            <li><code>MM</code> — 2-digit month (01-12)</li>
+                                            <li><code>DD</code> — 2-digit day (01-31)</li>
+                                            <li><code>HH</code> — 2-digit hour (00-23)</li>
+                                            <li><code>mm</code> — 2-digit minute (00-59)</li>
+                                            <li><code>ss</code> — 2-digit second (00-59)</li>
+                                        </ul>
+                                    </div>
+                                {/if}
+                            </div>
+                        {/if}
+                    {/snippet}
+                </SettingRadioGroup>
+            </div>
+        </SettingRow>
+    {/if}
 </div>
 
 <style>

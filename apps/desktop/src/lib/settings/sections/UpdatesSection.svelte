@@ -2,13 +2,22 @@
     import SettingRow from '../components/SettingRow.svelte'
     import SettingSwitch from '../components/SettingSwitch.svelte'
     import { getSettingDefinition } from '$lib/settings'
+    import { getMatchingSettingIds } from '$lib/settings/settings-search'
 
     interface Props {
         searchQuery: string
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { searchQuery }: Props = $props()
+
+    // Get matching setting IDs for filtering
+    const matchingIds = $derived(searchQuery.trim() ? getMatchingSettingIds(searchQuery) : null)
+
+    // Check if a setting should be shown
+    function shouldShow(id: string): boolean {
+        if (!matchingIds) return true
+        return matchingIds.has(id)
+    }
 
     const autoCheckDef = getSettingDefinition('updates.autoCheck') ?? { label: '', description: '' }
 </script>
@@ -16,9 +25,16 @@
 <div class="section">
     <h2 class="section-title">Updates</h2>
 
-    <SettingRow id="updates.autoCheck" label={autoCheckDef.label} description={autoCheckDef.description}>
-        <SettingSwitch id="updates.autoCheck" />
-    </SettingRow>
+    {#if shouldShow('updates.autoCheck')}
+        <SettingRow
+            id="updates.autoCheck"
+            label={autoCheckDef.label}
+            description={autoCheckDef.description}
+            {searchQuery}
+        >
+            <SettingSwitch id="updates.autoCheck" />
+        </SettingRow>
+    {/if}
 </div>
 
 <style>

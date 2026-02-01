@@ -49,6 +49,9 @@
     /* === Selection === */
     --color-selection-fg: #c9a227;
 
+    /* === Search Highlight === */
+    --color-highlight: rgba(255, 213, 0, 0.4);
+
     /* === Size tier colors (20% offset toward target color) === */
     --color-size-kb: color-mix(in srgb, var(--color-text-secondary) 70%, #f0c000);
     --color-size-mb: color-mix(in srgb, var(--color-text-secondary) 70%, #ff8c00);
@@ -104,6 +107,9 @@
 
         /* === Selection === */
         --color-selection-fg: #d4a82a;
+
+        /* === Search Highlight === */
+        --color-highlight: rgba(255, 213, 0, 0.35);
     }
 }
 

@@ -9,6 +9,7 @@
     import LoggingSection from '$lib/settings/sections/LoggingSection.svelte'
     import AdvancedSection from '$lib/settings/sections/AdvancedSection.svelte'
     import SectionSummary from './SectionSummary.svelte'
+    import { getMatchingSettingIdsInSection } from '$lib/settings/settings-search'
 
     interface Props {
         searchQuery: string
@@ -32,11 +33,18 @@
         onNavigate?.(path)
     }
 
+    // Check if a section has any matching settings during search
+    function sectionHasMatchingSettings(sectionPath: string[]): boolean {
+        if (!searchQuery.trim()) return true
+        const matchingIds = getMatchingSettingIdsInSection(searchQuery, sectionPath)
+        return matchingIds.size > 0
+    }
+
     // Determine which sections to show based on selection and search
     function shouldShowSection(sectionPath: string[]): boolean {
-        // If searching, show all sections that have matches (handled by components)
+        // If searching, only show sections that have matching settings
         if (searchQuery.trim()) {
-            return true
+            return sectionHasMatchingSettings(sectionPath)
         }
         // If showing summary, don't show any section content
         if (showSummary) {
