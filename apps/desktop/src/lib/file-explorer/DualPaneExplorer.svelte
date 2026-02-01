@@ -50,6 +50,9 @@
     import { initNetworkDiscovery, cleanupNetworkDiscovery } from '$lib/network-store.svelte'
     import { openFileViewer } from '$lib/file-viewer/open-viewer'
     import { getAppLogger } from '$lib/logger'
+    import { isMtpVolumeId, parseMtpVolumeId, MtpBrowser } from '$lib/mtp'
+    import MtpCopyDialog from '$lib/mtp/MtpCopyDialog.svelte'
+    import type { FileEntry } from './types'
 
     const log = getAppLogger('fileExplorer')
 
@@ -113,6 +116,17 @@
         listingId: string
         showHiddenFiles: boolean
         initialName: string
+    } | null>(null)
+
+    // MTP copy dialog state
+    let showMtpCopyDialog = $state(false)
+    let mtpCopyDialogProps = $state<{
+        operationType: 'download' | 'upload'
+        sourceFiles: FileEntry[] | string[]
+        destinationPath: string
+        deviceId: string
+        storageId: number
+        mtpBasePath: string
     } | null>(null)
 
     // Navigation history for each pane (per-pane, session-only)
@@ -939,11 +953,152 @@
         void openFileViewer(file.path)
     }
 
+    /** Handles MTP download operation (MTP source -> local destination). */
+    function openMtpDownloadDialog(
+        sourcePaneRef: FilePane | undefined,
+        sourceVolumeId: string,
+        destPath: string,
+    ): boolean {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const mtpBrowser = sourcePaneRef?.getMtpBrowser?.() as MtpBrowser | undefined
+        if (!mtpBrowser) return false
+
+        const mtpInfo = parseMtpVolumeId(sourceVolumeId)
+        if (!mtpInfo) return false
+
+        // Get selected files or file under cursor
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const selectedFiles = sourcePaneRef?.getMtpSelectedFiles?.() as FileEntry[] | undefined
+        const sourceFiles =
+            selectedFiles && selectedFiles.length > 0 ? selectedFiles : getMtpEntryUnderCursorAsArray(sourcePaneRef)
+        if (sourceFiles.length === 0) return false
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+        const mtpBrowserInfo = mtpBrowser.getMtpInfo()
+
+        mtpCopyDialogProps = {
+            operationType: 'download',
+            sourceFiles,
+            destinationPath: destPath,
+            deviceId: mtpInfo.deviceId,
+            storageId: mtpInfo.storageId,
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+            mtpBasePath: mtpBrowserInfo.currentPath,
+        }
+        showMtpCopyDialog = true
+        return true
+    }
+
+    /** Gets the MTP entry under cursor as an array, or empty array if not valid. */
+    function getMtpEntryUnderCursorAsArray(paneRef: FilePane | undefined): FileEntry[] {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const entry = paneRef?.getMtpEntryUnderCursor?.() as FileEntry | null
+        if (!entry || entry.name === '..') return []
+        return [entry]
+    }
+
+    /** Handles MTP upload operation (local source -> MTP destination). */
+    async function openMtpUploadDialog(
+        sourcePaneRef: FilePane | undefined,
+        destPaneRef: FilePane | undefined,
+        destVolumeId: string,
+        destPath: string,
+    ): Promise<boolean> {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const mtpBrowser = destPaneRef?.getMtpBrowser?.() as MtpBrowser | undefined
+        if (!mtpBrowser) return false
+
+        const mtpInfo = parseMtpVolumeId(destVolumeId)
+        if (!mtpInfo) return false
+
+        const sourcePaths = await getLocalSourcePaths(sourcePaneRef)
+        if (sourcePaths.length === 0) return false
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+        const mtpBrowserInfo = mtpBrowser.getMtpInfo()
+
+        mtpCopyDialogProps = {
+            operationType: 'upload',
+            sourceFiles: sourcePaths,
+            destinationPath: destPath,
+            deviceId: mtpInfo.deviceId,
+            storageId: mtpInfo.storageId,
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+            mtpBasePath: mtpBrowserInfo.currentPath,
+        }
+        showMtpCopyDialog = true
+        return true
+    }
+
+    /** Gets path of file under cursor. */
+    async function getPathUnderCursor(
+        listingId: string,
+        sourcePaneRef: FilePane | undefined,
+        hasParent: boolean,
+    ): Promise<string[]> {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const cursorIndex = sourcePaneRef?.getCursorIndex?.() as number | undefined
+        const backendIndex = toBackendCursorIndex(cursorIndex ?? -1, hasParent)
+        if (backendIndex === null) return []
+
+        const file = await getFileAt(listingId, backendIndex, showHiddenFiles)
+        if (!file || file.name === '..') return []
+        return [file.path]
+    }
+
+    /** Gets local source paths from selection or cursor. */
+    async function getLocalSourcePaths(sourcePaneRef: FilePane | undefined): Promise<string[]> {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const listingId = sourcePaneRef?.getListingId?.() as string | undefined
+        if (!listingId) return []
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const hasParent = sourcePaneRef?.hasParentEntry?.() as boolean | undefined
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const selectedIndices = sourcePaneRef?.getSelectedIndices?.() as number[] | undefined
+
+        if (selectedIndices && selectedIndices.length > 0) {
+            const backendIndices = toBackendIndices(selectedIndices, hasParent ?? false)
+            return getSelectedFilePaths(listingId, backendIndices)
+        }
+
+        return getPathUnderCursor(listingId, sourcePaneRef, hasParent ?? false)
+    }
+
     /** Opens the copy dialog with the current selection info. */
     export async function openCopyDialog() {
         const isLeft = focusedPane === 'left'
         const sourcePaneRef = isLeft ? leftPaneRef : rightPaneRef
+        const destPaneRef = isLeft ? rightPaneRef : leftPaneRef
+        const sourceVolumeId = isLeft ? leftVolumeId : rightVolumeId
+        const destVolumeId = isLeft ? rightVolumeId : leftVolumeId
+        const destPath = isLeft ? rightPath : leftPath
 
+        const sourceIsMtp = isMtpVolumeId(sourceVolumeId)
+        const destIsMtp = isMtpVolumeId(destVolumeId)
+
+        // MTP to MTP copy is not supported
+        if (sourceIsMtp && destIsMtp) {
+            log.warn('MTP to MTP copy is not supported')
+            return
+        }
+
+        // Handle MTP operations
+        if (sourceIsMtp) {
+            openMtpDownloadDialog(sourcePaneRef, sourceVolumeId, destPath)
+            return
+        }
+        if (destIsMtp) {
+            await openMtpUploadDialog(sourcePaneRef, destPaneRef, destVolumeId, destPath)
+            return
+        }
+
+        // Standard local-to-local copy
+        await openLocalCopyDialog(sourcePaneRef, isLeft)
+    }
+
+    /** Opens the standard local-to-local copy dialog. */
+    async function openLocalCopyDialog(sourcePaneRef: FilePane | undefined, isLeft: boolean) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         const listingId = sourcePaneRef?.getListingId?.() as string | undefined
         if (!listingId) return
@@ -1089,6 +1244,38 @@
         log.error(`Copy failed: ${error}`)
         showCopyProgressDialog = false
         copyProgressProps = null
+        // TODO: Show error notification/toast
+        containerElement?.focus()
+    }
+
+    // MTP copy dialog handlers
+    function handleMtpCopyComplete(filesProcessed: number, bytesTransferred: number) {
+        log.info(`MTP copy complete: ${String(filesProcessed)} files (${formatBytes(bytesTransferred)})`)
+
+        // Refresh the destination pane
+        // For download: refresh local pane; for upload: MTP browser refreshes itself
+        if (mtpCopyDialogProps?.operationType === 'download') {
+            const localPaneRef = focusedPane === 'left' ? rightPaneRef : leftPaneRef
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            localPaneRef?.refreshView?.()
+        }
+
+        showMtpCopyDialog = false
+        mtpCopyDialogProps = null
+        containerElement?.focus()
+    }
+
+    function handleMtpCopyCancel() {
+        log.info('MTP copy cancelled')
+        showMtpCopyDialog = false
+        mtpCopyDialogProps = null
+        containerElement?.focus()
+    }
+
+    function handleMtpCopyError(error: string) {
+        log.error(`MTP copy failed: ${error}`)
+        showMtpCopyDialog = false
+        mtpCopyDialogProps = null
         // TODO: Show error notification/toast
         containerElement?.focus()
     }
@@ -1408,6 +1595,20 @@
         initialName={newFolderDialogProps.initialName}
         onCreated={handleNewFolderCreated}
         onCancel={handleNewFolderCancel}
+    />
+{/if}
+
+{#if showMtpCopyDialog && mtpCopyDialogProps}
+    <MtpCopyDialog
+        operationType={mtpCopyDialogProps.operationType}
+        sourceFiles={mtpCopyDialogProps.sourceFiles}
+        destinationPath={mtpCopyDialogProps.destinationPath}
+        deviceId={mtpCopyDialogProps.deviceId}
+        storageId={mtpCopyDialogProps.storageId}
+        mtpBasePath={mtpCopyDialogProps.mtpBasePath}
+        onComplete={handleMtpCopyComplete}
+        onCancel={handleMtpCopyCancel}
+        onError={handleMtpCopyError}
     />
 {/if}
 

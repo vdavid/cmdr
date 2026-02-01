@@ -21,13 +21,27 @@
      * MtpBrowser - displays files and folders from an MTP device.
      * Rendered when user selects an MTP volume in the volume selector.
      * Auto-connects to the device if not yet connected.
+     * Supports file operations: delete, new folder, rename.
      */
     import { onMount, onDestroy } from 'svelte'
     import { SvelteSet } from 'svelte/reactivity'
     import { connect, getDevice } from './mtp-store.svelte'
     import { parseMtpPath, joinMtpPath, getMtpParentPath } from './mtp-path-utils'
     import PtpcameradDialog from './PtpcameradDialog.svelte'
-    import { listMtpDirectory, onMtpTransferProgress, type UnlistenFn } from '$lib/tauri-commands'
+    import MtpDeleteDialog from './MtpDeleteDialog.svelte'
+    import MtpNewFolderDialog from './MtpNewFolderDialog.svelte'
+    import MtpRenameDialog from './MtpRenameDialog.svelte'
+    import {
+        listMtpDirectory,
+        onMtpTransferProgress,
+        deleteMtpObject,
+        createMtpFolder,
+        renameMtpObject,
+        downloadMtpFile,
+        uploadToMtp,
+        type UnlistenFn,
+        type MtpTransferProgress,
+    } from '$lib/tauri-commands'
     import type { FileEntry } from '$lib/file-explorer/types'
     import { handleNavigationShortcut } from '$lib/file-explorer/keyboard-shortcuts'
     import { getAppLogger } from '$lib/logger'
@@ -75,6 +89,28 @@
 
     // Transfer progress listener
     let unlistenProgress: UnlistenFn | undefined
+
+    // Operation dialog states
+    let showDeleteDialog = $state(false)
+    let deleteDialogProps = $state<{
+        itemNames: string[]
+        fileCount: number
+        folderCount: number
+        entries: FileEntry[]
+    } | null>(null)
+
+    let showNewFolderDialog = $state(false)
+
+    let showRenameDialog = $state(false)
+    let renameDialogProps = $state<{
+        entry: FileEntry
+    } | null>(null)
+
+    // Operation in progress state
+    let operationInProgress = $state(false)
+    // Note: operationError is tracked for future use (e.g., error toast notifications)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    let operationError = $state<string | null>(null)
 
     // Get device state from store
     const deviceState = $derived(getDevice(deviceId))
@@ -354,25 +390,68 @@
         return false
     }
 
-    // Keyboard handler
-    export function handleKeyDown(e: KeyboardEvent): boolean {
-        // Handle Enter key - navigate into entry
-        if (e.key === 'Enter') {
+    // Helper: Handle Enter key (navigate or rename)
+    function handleEnterKey(e: KeyboardEvent): boolean {
+        const entry = getEntryAtIndex(cursorIndex)
+        if (!entry) return false
+
+        if (entry.isDirectory) {
+            e.preventDefault()
+            handleItemNavigate(entry)
+            return true
+        }
+        if (entry.name !== '..') {
+            // For files, Enter opens rename dialog (like Finder)
+            e.preventDefault()
+            openRenameDialog()
+            return true
+        }
+        return false
+    }
+
+    // Helper: Handle action keys (F2, F7, Delete, Backspace)
+    function handleActionKeys(e: KeyboardEvent): boolean {
+        // F2 - rename
+        if (e.key === 'F2') {
             const entry = getEntryAtIndex(cursorIndex)
-            if (entry) {
+            if (entry && entry.name !== '..') {
                 e.preventDefault()
-                handleItemNavigate(entry)
+                openRenameDialog()
                 return true
             }
         }
-
-        // Handle Backspace - go to parent
-        if (e.key === 'Backspace' && !isAtRoot) {
+        // Delete or Cmd+Backspace - delete
+        if (e.key === 'Delete' || (e.key === 'Backspace' && e.metaKey)) {
+            e.preventDefault()
+            openDeleteDialog()
+            return true
+        }
+        // Backspace (without Cmd) - go to parent
+        if (e.key === 'Backspace' && !e.metaKey && !isAtRoot) {
             e.preventDefault()
             const entry = getEntryAtIndex(0) // ".." entry
             if (entry) handleItemNavigate(entry)
             return true
         }
+        // F7 - new folder
+        if (e.key === 'F7') {
+            e.preventDefault()
+            openNewFolderDialog()
+            return true
+        }
+        return false
+    }
+
+    // Keyboard handler
+    export function handleKeyDown(e: KeyboardEvent): boolean {
+        // Don't handle keys while operation in progress
+        if (operationInProgress) return false
+
+        // Handle Enter key
+        if (e.key === 'Enter' && handleEnterKey(e)) return true
+
+        // Handle action keys (F2, F7, Delete, Backspace)
+        if (handleActionKeys(e)) return true
 
         // Handle selection keys
         if (handleSelectionKeys(e)) return true
@@ -426,6 +505,358 @@
 
     export function isLoading(): boolean {
         return loading || connecting
+    }
+
+    /**
+     * Gets the MTP object path for a given display index.
+     * Returns the path within the storage (for example, "/DCIM/photo.jpg").
+     */
+    function getObjectPath(entry: FileEntry): string {
+        // Extract the path from the full MTP path
+        // Entry paths from listing are already inner paths like "/DCIM/photo.jpg"
+        // But we need to handle the case where they might be prefixed differently
+        const entryName = entry.name
+        const innerPath = parsed?.path ?? ''
+        return innerPath ? `${innerPath}/${entryName}` : entryName
+    }
+
+    // ============================================================================
+    // Delete operation
+    // ============================================================================
+
+    /**
+     * Opens the delete confirmation dialog for selected files or file under cursor.
+     */
+    export function openDeleteDialog() {
+        const entriesToDelete = getFilesToOperate()
+        if (entriesToDelete.length === 0) return
+
+        const fileCount = entriesToDelete.filter((e) => !e.isDirectory).length
+        const folderCount = entriesToDelete.filter((e) => e.isDirectory).length
+
+        deleteDialogProps = {
+            itemNames: entriesToDelete.map((e) => e.name),
+            fileCount,
+            folderCount,
+            entries: entriesToDelete,
+        }
+        showDeleteDialog = true
+    }
+
+    /**
+     * Performs the delete operation on the selected items.
+     */
+    async function performDelete() {
+        if (!deleteDialogProps) return
+        const entries = deleteDialogProps.entries
+
+        showDeleteDialog = false
+        operationInProgress = true
+        operationError = null
+
+        try {
+            for (const entry of entries) {
+                const objPath = getObjectPath(entry)
+                await deleteMtpObject(deviceId, storageId, objPath)
+                log.info('Deleted MTP object: {path}', { path: objPath })
+            }
+            // Refresh the directory listing
+            await loadDirectory()
+            clearSelection()
+        } catch (e) {
+            const errorMessage = e instanceof Error ? e.message : String(e)
+            log.error('Delete failed: {error}', { error: errorMessage })
+            operationError = errorMessage
+            onError?.(errorMessage)
+        } finally {
+            operationInProgress = false
+            deleteDialogProps = null
+        }
+    }
+
+    function handleDeleteCancel() {
+        showDeleteDialog = false
+        deleteDialogProps = null
+    }
+
+    // ============================================================================
+    // New folder operation
+    // ============================================================================
+
+    /**
+     * Opens the new folder dialog.
+     */
+    export function openNewFolderDialog() {
+        showNewFolderDialog = true
+    }
+
+    /**
+     * Creates a new folder on the MTP device.
+     */
+    async function performCreateFolder(folderName: string) {
+        showNewFolderDialog = false
+        operationInProgress = true
+        operationError = null
+
+        try {
+            const parentPath = parsed?.path ?? ''
+            await createMtpFolder(deviceId, storageId, parentPath, folderName)
+            log.info('Created MTP folder: {name} in {path}', { name: folderName, path: parentPath || '/' })
+
+            // Refresh and select the new folder
+            await loadDirectory()
+            clearSelection()
+
+            // Find and select the new folder
+            const newFolderIndex = files.findIndex((f) => f.name === folderName)
+            if (newFolderIndex >= 0) {
+                const displayIndex = isAtRoot ? newFolderIndex : newFolderIndex + 1
+                cursorIndex = displayIndex
+                scrollToIndex(displayIndex)
+            }
+        } catch (e) {
+            const errorMessage = e instanceof Error ? e.message : String(e)
+            log.error('Create folder failed: {error}', { error: errorMessage })
+            operationError = errorMessage
+            onError?.(errorMessage)
+        } finally {
+            operationInProgress = false
+        }
+    }
+
+    function handleNewFolderCancel() {
+        showNewFolderDialog = false
+    }
+
+    // ============================================================================
+    // Rename operation
+    // ============================================================================
+
+    /**
+     * Opens the rename dialog for the file under cursor.
+     */
+    export function openRenameDialog() {
+        const entry = getEntryAtIndex(cursorIndex)
+        if (!entry || entry.name === '..') return
+
+        renameDialogProps = { entry }
+        showRenameDialog = true
+    }
+
+    /**
+     * Renames a file or folder on the MTP device.
+     */
+    async function performRename(newName: string) {
+        if (!renameDialogProps) return
+        const entry = renameDialogProps.entry
+
+        showRenameDialog = false
+        operationInProgress = true
+        operationError = null
+
+        try {
+            const objPath = getObjectPath(entry)
+            await renameMtpObject(deviceId, storageId, objPath, newName)
+            log.info('Renamed MTP object: {oldName} -> {newName}', { oldName: entry.name, newName })
+
+            // Refresh and select the renamed item
+            await loadDirectory()
+            clearSelection()
+
+            // Find and select the renamed item
+            const renamedIndex = files.findIndex((f) => f.name === newName)
+            if (renamedIndex >= 0) {
+                const displayIndex = isAtRoot ? renamedIndex : renamedIndex + 1
+                cursorIndex = displayIndex
+                scrollToIndex(displayIndex)
+            }
+        } catch (e) {
+            const errorMessage = e instanceof Error ? e.message : String(e)
+            log.error('Rename failed: {error}', { error: errorMessage })
+            operationError = errorMessage
+            onError?.(errorMessage)
+        } finally {
+            operationInProgress = false
+            renameDialogProps = null
+        }
+    }
+
+    function handleRenameCancel() {
+        showRenameDialog = false
+        renameDialogProps = null
+    }
+
+    // ============================================================================
+    // Helpers for operations
+    // ============================================================================
+
+    /**
+     * Gets the files to operate on: selected files, or file under cursor if no selection.
+     * Excludes the ".." entry.
+     */
+    function getFilesToOperate(): FileEntry[] {
+        if (selectedIndices.size > 0) {
+            return getSelectedFiles()
+        }
+        const entry = getEntryAtIndex(cursorIndex)
+        if (entry && entry.name !== '..') {
+            return [entry]
+        }
+        return []
+    }
+
+    /**
+     * Gets existing file names in the current folder (for conflict checking).
+     */
+    function getExistingNames(): string[] {
+        return files.map((f) => f.name)
+    }
+
+    /**
+     * Gets the current folder name for display in dialogs.
+     */
+    function getCurrentFolderName(): string {
+        if (!parsed?.path) return 'Root'
+        return parsed.path.split('/').pop() || 'Root'
+    }
+
+    // ============================================================================
+    // Copy operations (download from MTP / upload to MTP)
+    // ============================================================================
+
+    /** Transfer progress callback type */
+    export type TransferProgressCallback = (progress: MtpTransferProgress) => void
+
+    /** Result from a download/upload operation */
+    export interface TransferResult {
+        success: boolean
+        filesProcessed: number
+        bytesTransferred: number
+        error?: string
+    }
+
+    /**
+     * Downloads files from MTP device to a local folder.
+     * @param entries - The file entries to download
+     * @param localDestination - The local folder path to download to
+     * @param onProgress - Optional callback for progress updates
+     */
+    export async function downloadFiles(
+        entries: FileEntry[],
+        localDestination: string,
+        onProgress?: TransferProgressCallback,
+    ): Promise<TransferResult> {
+        operationInProgress = true
+        operationError = null
+
+        let filesProcessed = 0
+        let bytesTransferred = 0
+        let progressUnlisten: UnlistenFn | undefined
+
+        try {
+            // Set up progress listener if callback provided
+            if (onProgress) {
+                progressUnlisten = await onMtpTransferProgress(onProgress)
+            }
+
+            for (const entry of entries) {
+                const objPath = getObjectPath(entry)
+                const operationId = crypto.randomUUID()
+                const localPath = `${localDestination}/${entry.name}`
+
+                const result = await downloadMtpFile(deviceId, storageId, objPath, localPath, operationId)
+                filesProcessed += result.filesProcessed
+                bytesTransferred += result.bytesTransferred
+                log.info('Downloaded MTP file: {path} -> {local}', { path: objPath, local: localPath })
+            }
+
+            return {
+                success: true,
+                filesProcessed,
+                bytesTransferred,
+            }
+        } catch (e) {
+            const errorMessage = e instanceof Error ? e.message : String(e)
+            log.error('Download failed: {error}', { error: errorMessage })
+            operationError = errorMessage
+            onError?.(errorMessage)
+            return {
+                success: false,
+                filesProcessed,
+                bytesTransferred,
+                error: errorMessage,
+            }
+        } finally {
+            progressUnlisten?.()
+            operationInProgress = false
+        }
+    }
+
+    /**
+     * Uploads files from local filesystem to the current MTP folder.
+     * @param localPaths - Array of local file paths to upload
+     * @param onProgress - Optional callback for progress updates
+     */
+    export async function uploadFiles(
+        localPaths: string[],
+        onProgress?: TransferProgressCallback,
+    ): Promise<TransferResult> {
+        operationInProgress = true
+        operationError = null
+
+        let filesProcessed = 0
+        const bytesTransferred = 0
+        let progressUnlisten: UnlistenFn | undefined
+
+        try {
+            // Set up progress listener if callback provided
+            if (onProgress) {
+                progressUnlisten = await onMtpTransferProgress(onProgress)
+            }
+
+            const destFolder = parsed?.path ?? ''
+
+            for (const localPath of localPaths) {
+                const operationId = crypto.randomUUID()
+                await uploadToMtp(deviceId, storageId, localPath, destFolder, operationId)
+                filesProcessed++
+                log.info('Uploaded file to MTP: {local} -> {dest}', { local: localPath, dest: destFolder })
+            }
+
+            // Refresh the directory listing to show new files
+            await loadDirectory()
+
+            return {
+                success: true,
+                filesProcessed,
+                bytesTransferred,
+            }
+        } catch (e) {
+            const errorMessage = e instanceof Error ? e.message : String(e)
+            log.error('Upload failed: {error}', { error: errorMessage })
+            operationError = errorMessage
+            onError?.(errorMessage)
+            return {
+                success: false,
+                filesProcessed,
+                bytesTransferred,
+                error: errorMessage,
+            }
+        } finally {
+            progressUnlisten?.()
+            operationInProgress = false
+        }
+    }
+
+    /**
+     * Gets the MTP volume info for external use.
+     */
+    export function getMtpInfo(): { deviceId: string; storageId: number; currentPath: string } {
+        return {
+            deviceId,
+            storageId,
+            currentPath: parsed?.path ?? '',
+        }
     }
 
     // Handlers for ptpcamerad dialog
@@ -490,6 +921,42 @@
 <div class="mtp-browser" class:is-focused={isFocused}>
     {#if showPtpcameradDialog}
         <PtpcameradDialog {blockingProcess} onClose={handleDialogClose} onRetry={handleDialogRetry} />
+    {/if}
+
+    {#if showDeleteDialog && deleteDialogProps}
+        <MtpDeleteDialog
+            itemNames={deleteDialogProps.itemNames}
+            fileCount={deleteDialogProps.fileCount}
+            folderCount={deleteDialogProps.folderCount}
+            onConfirm={() => void performDelete()}
+            onCancel={handleDeleteCancel}
+        />
+    {/if}
+
+    {#if showNewFolderDialog}
+        <MtpNewFolderDialog
+            currentFolderName={getCurrentFolderName()}
+            existingNames={getExistingNames()}
+            onConfirm={(name: string) => void performCreateFolder(name)}
+            onCancel={handleNewFolderCancel}
+        />
+    {/if}
+
+    {#if showRenameDialog && renameDialogProps}
+        <MtpRenameDialog
+            originalName={renameDialogProps.entry.name}
+            isDirectory={renameDialogProps.entry.isDirectory}
+            existingNames={getExistingNames()}
+            onConfirm={(newName: string) => void performRename(newName)}
+            onCancel={handleRenameCancel}
+        />
+    {/if}
+
+    {#if operationInProgress}
+        <div class="operation-overlay">
+            <span class="spinner"></span>
+            <span class="status-text">Working...</span>
+        </div>
     {/if}
 
     {#if connecting || isConnecting}
@@ -590,6 +1057,7 @@
         height: 100%;
         font-size: var(--font-size-sm);
         font-family: var(--font-system), sans-serif;
+        position: relative;
     }
 
     .connecting-state,
@@ -736,5 +1204,17 @@
         padding: 48px 16px;
         color: var(--color-text-tertiary);
         font-style: italic;
+    }
+
+    .operation-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        z-index: 100;
     }
 </style>
