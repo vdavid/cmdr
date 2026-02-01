@@ -23,5 +23,6 @@ var allowedUnusedVariables = map[string]bool{
 // allowedUndefinedClasses lists classes used in templates that don't need CSS definitions
 // (used for JS selection, third-party libs, or semantic purposes).
 var allowedUndefinedClasses = map[string]bool{
-	// Example: "js-dropdown-trigger": true, // Used for JS event binding, no styling needed
+	// Ark UI component class passed for API purposes but not styled
+	"slider-root": true,
 }

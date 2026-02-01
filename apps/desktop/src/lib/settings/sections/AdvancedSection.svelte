@@ -180,11 +180,7 @@
         background: var(--color-bg-secondary);
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
-        cursor: pointer;
-    }
-
-    .reset-all-btn:hover {
-        background: var(--color-bg-tertiary);
+        cursor: default;
     }
 
     .advanced-settings {
@@ -245,12 +241,8 @@
         border: none;
         color: var(--color-accent);
         font-size: var(--font-size-xs);
-        cursor: pointer;
+        cursor: default;
         text-decoration: underline;
-    }
-
-    .reset-link:hover {
-        color: var(--color-accent-hover);
     }
 
     .setting-control {
@@ -275,7 +267,7 @@
         background: var(--color-bg-tertiary);
         border-radius: 10px;
         padding: 2px;
-        cursor: pointer;
+        cursor: default;
         transition: background-color 0.15s;
     }
 
@@ -313,12 +305,8 @@
         background: var(--color-bg-primary);
         border: none;
         color: var(--color-text-primary);
-        cursor: pointer;
+        cursor: default;
         font-size: 12px;
-    }
-
-    :global(.number-btn:hover) {
-        background: var(--color-bg-tertiary);
     }
 
     :global(.number-input) {

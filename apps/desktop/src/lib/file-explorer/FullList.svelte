@@ -15,8 +15,17 @@
         refetchIconsForEntries,
     } from './file-list-utils'
     import { formatSizeTriads } from './selection-info-utils'
-    import { getVisibleItemsCount as getVisibleItemsCountUtil, getVirtualizationBufferRows } from './full-list-utils'
-    import { getRowHeight, formatDateTime, formatFileSize } from '$lib/settings/reactive-settings.svelte'
+    import {
+        getVisibleItemsCount as getVisibleItemsCountUtil,
+        getVirtualizationBufferRows,
+        measureDateColumnWidth,
+    } from './full-list-utils'
+    import {
+        getRowHeight,
+        getIsCompactDensity,
+        formatDateTime,
+        formatFileSize,
+    } from '$lib/settings/reactive-settings.svelte'
     import { extensionCacheCleared } from '$lib/icon-cache'
 
     interface Props {
@@ -69,6 +78,12 @@
     const rowHeight = $derived(getRowHeight())
     // Buffer size is reactive based on settings
     const bufferSize = $derived(getVirtualizationBufferRows())
+    // UI density for compact mode detection (uses reactive state from reactive-settings)
+    const isCompact = $derived(getIsCompactDensity())
+
+    // Dynamic date column width based on measured text width using the actual font.
+    // Measures multiple sample dates to find the maximum width needed.
+    const dateColumnWidth = $derived(measureDateColumnWidth(formatDateTime))
 
     // ==== Virtual scrolling state ====
     let scrollContainer: HTMLDivElement | undefined = $state()
@@ -264,9 +279,9 @@
     })
 </script>
 
-<div class="full-list-container" class:is-focused={isFocused}>
+<div class="full-list-container" class:is-focused={isFocused} class:is-compact={isCompact}>
     <!-- Header row with sortable columns (outside scroll container for correct height calculation) -->
-    <div class="header-row">
+    <div class="header-row" style="grid-template-columns: 16px 1fr 85px {dateColumnWidth}px;">
         <span class="header-icon"></span>
         <SortableHeader
             column="name"
@@ -313,7 +328,7 @@
                         class="file-entry"
                         class:is-under-cursor={globalIndex === cursorIndex}
                         class:is-selected={selectedIndices.has(globalIndex)}
-                        style="height: {rowHeight}px;"
+                        style="height: {rowHeight}px; grid-template-columns: 16px 1fr 85px {dateColumnWidth}px;"
                         onmousedown={(e: MouseEvent) => {
                             handleMouseDown(e, globalIndex)
                         }}
@@ -367,7 +382,7 @@
 
     .header-row {
         display: grid;
-        grid-template-columns: 16px 1fr 85px 120px;
+        /* grid-template-columns set via inline style for dynamic date column width */
         gap: var(--spacing-sm);
         padding: var(--spacing-xxs) var(--spacing-sm);
         background: var(--color-bg-header);
@@ -390,11 +405,16 @@
 
     .file-entry {
         display: grid;
-        /* height is set via inline style for reactivity */
+        /* height and grid-template-columns set via inline style for reactivity */
         padding: var(--spacing-xxs) var(--spacing-sm);
         gap: var(--spacing-sm);
         align-items: center;
-        grid-template-columns: 16px 1fr 85px 120px;
+    }
+
+    /* In compact mode, use symmetric padding to match BriefList alignment */
+    .full-list-container.is-compact .file-entry {
+        padding-top: 0;
+        padding-bottom: 4px;
     }
 
     .file-entry.is-under-cursor {

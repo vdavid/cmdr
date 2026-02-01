@@ -120,7 +120,8 @@
     }
 
     .date-time-setting {
-        width: 100%;
+        /* Fixed width to prevent layout shift when custom content appears */
+        width: 250px;
     }
 
     .custom-format {
@@ -130,6 +131,7 @@
     }
 
     .format-input {
+        width: 180px;
         padding: var(--spacing-xs) var(--spacing-sm);
         border: 1px solid var(--color-border);
         border-radius: 4px;

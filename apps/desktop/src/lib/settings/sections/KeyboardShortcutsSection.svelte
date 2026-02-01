@@ -436,14 +436,10 @@
         background: var(--color-bg-primary);
         color: var(--color-text-secondary);
         font-size: var(--font-size-xs);
-        cursor: pointer;
+        cursor: default;
         display: flex;
         align-items: center;
         gap: 4px;
-    }
-
-    .filter-chip:hover {
-        background: var(--color-bg-hover);
     }
 
     .filter-chip.active {
@@ -494,11 +490,7 @@
         background: var(--color-bg-primary);
         color: var(--color-text-primary);
         font-size: var(--font-size-xs);
-        cursor: pointer;
-    }
-
-    .warning-btn:hover {
-        background: var(--color-bg-hover);
+        cursor: default;
     }
 
     .warning-btn.secondary {
@@ -576,13 +568,9 @@
         font-size: var(--font-size-xs);
         font-family: var(--font-system);
         color: var(--color-text-primary);
-        cursor: pointer;
+        cursor: default;
         min-width: 40px;
         text-align: center;
-    }
-
-    .shortcut-pill:hover {
-        background: var(--color-bg-hover);
     }
 
     .shortcut-pill.editing {
@@ -611,16 +599,10 @@
         background: transparent;
         color: var(--color-text-muted);
         font-size: 14px;
-        cursor: pointer;
+        cursor: default;
         display: flex;
         align-items: center;
         justify-content: center;
-    }
-
-    .add-shortcut:hover,
-    .reset-shortcut:hover {
-        border-color: var(--color-accent);
-        color: var(--color-accent);
     }
 
     .reset-shortcut {
@@ -640,10 +622,6 @@
         background: var(--color-bg-secondary);
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
-        cursor: pointer;
-    }
-
-    .reset-button:hover {
-        background: var(--color-bg-tertiary);
+        cursor: default;
     }
 </style>

@@ -86,6 +86,9 @@ pub const ABOUT_ID: &str = "about";
 /// Menu item ID for Enter License Key.
 pub const ENTER_LICENSE_KEY_ID: &str = "enter_license_key";
 
+/// Menu item ID for Settings.
+pub const SETTINGS_ID: &str = "settings";
+
 /// Builds the application menu with default macOS items plus a custom View and File submenu enhancements.
 pub fn build_menu<R: Runtime>(
     app: &AppHandle<R>,
@@ -128,6 +131,18 @@ pub fn build_menu<R: Runtime>(
                                 None::<&str>,
                             )?;
                             submenu.insert(&enter_license_key_item, 1)?;
+
+                            // Add separator and Settings after license key
+                            let separator = tauri::menu::PredefinedMenuItem::separator(app)?;
+                            submenu.insert(&separator, 2)?;
+                            let settings_item = tauri::menu::MenuItem::with_id(
+                                app,
+                                SETTINGS_ID,
+                                "Settings...",
+                                true,
+                                Some("Cmd+,"),
+                            )?;
+                            submenu.insert(&settings_item, 3)?;
                             break;
                         }
                     }

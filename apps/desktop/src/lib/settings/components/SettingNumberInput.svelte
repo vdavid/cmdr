@@ -77,13 +77,9 @@
         background: var(--color-bg-secondary);
         border: none;
         color: var(--color-text-primary);
-        cursor: pointer;
+        cursor: default;
         font-size: 14px;
         font-weight: 500;
-    }
-
-    :global(.number-btn:hover:not([data-disabled])) {
-        background: var(--color-bg-tertiary);
     }
 
     :global(.number-btn[data-disabled]) {
@@ -105,6 +101,17 @@
 
     :global(.number-input:focus) {
         outline: none;
+    }
+
+    :global(.number-control:focus-within) {
+        outline: 2px solid var(--color-accent);
+        outline-offset: -2px;
+    }
+
+    :global(.number-btn:focus-visible) {
+        outline: 2px solid var(--color-accent);
+        outline-offset: -2px;
+        z-index: 1;
     }
 
     :global(.number-input[data-disabled]) {

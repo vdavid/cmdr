@@ -10,6 +10,9 @@
         "file-explorer/FileIcon.svelte": { "reason": "Simple UI component, display only" },
         "file-explorer/FilePane.svelte": { "reason": "Tested in integration.test.ts, complex component" },
         "file-explorer/FullList.svelte": { "reason": "Logic tested in full-list-utils.ts, component mounting heavy" },
+        "file-explorer/full-list-utils.ts": {
+            "reason": "measureDateColumnWidth depends on Canvas API for text measurement"
+        },
         "file-explorer/NewFolderDialog.svelte": { "reason": "UI modal, logic tested in new-folder-utils.test.ts" },
         "file-explorer/NetworkBrowser.svelte": { "reason": "Network component, needs Tauri integration" },
         "file-explorer/PaneResizer.svelte": { "reason": "Mouse drag UI component, difficult to unit test" },

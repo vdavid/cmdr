@@ -117,12 +117,8 @@
         background: var(--color-bg-secondary);
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
-        cursor: pointer;
+        cursor: default;
         white-space: nowrap;
-    }
-
-    .check-port-btn:hover:not(:disabled) {
-        background: var(--color-bg-tertiary);
     }
 
     .check-port-btn:disabled {
@@ -162,10 +158,6 @@
         background: var(--color-accent);
         color: white;
         font-size: var(--font-size-xs);
-        cursor: pointer;
-    }
-
-    .use-suggested:hover {
-        background: var(--color-accent-hover);
+        cursor: default;
     }
 </style>

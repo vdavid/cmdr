@@ -94,10 +94,6 @@ Timestamp: ${info.timestamp}
         background: var(--color-bg-secondary);
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
-        cursor: pointer;
-    }
-
-    .action-btn:hover {
-        background: var(--color-bg-tertiary);
+        cursor: default;
     }
 </style>

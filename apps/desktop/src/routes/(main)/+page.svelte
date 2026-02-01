@@ -260,6 +260,15 @@
             // Not in Tauri environment
         }
 
+        // Listen for open-settings event from menu
+        try {
+            await listen('open-settings', () => {
+                void openSettingsWindow()
+            })
+        } catch {
+            // Not in Tauri environment
+        }
+
         // Listen for switch pane event from menu
         try {
             unlistenSwitchPane = await listen('switch-pane', () => {
