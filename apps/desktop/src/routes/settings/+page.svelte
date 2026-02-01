@@ -4,6 +4,7 @@
     import SettingsSidebar from '$lib/settings/components/SettingsSidebar.svelte'
     import SettingsContent from '$lib/settings/components/SettingsContent.svelte'
     import { initializeSettings } from '$lib/settings'
+    import { initializeShortcuts } from '$lib/shortcuts'
     import { getMatchingSections } from '$lib/settings/settings-search'
     import { loadLastSettingsSection, saveLastSettingsSection } from '$lib/app-status-store'
     import { getAppLogger } from '$lib/logger'
@@ -142,10 +143,10 @@
         }
 
         try {
-            // Initialize settings store
-            log.debug('Calling initializeSettings()')
-            await initializeSettings()
-            log.info('Settings initialization complete')
+            // Initialize settings and shortcuts stores
+            log.debug('Calling initializeSettings() and initializeShortcuts()')
+            await Promise.all([initializeSettings(), initializeShortcuts()])
+            log.info('Settings and shortcuts initialization complete')
 
             // Load last viewed section
             const lastSection = await loadLastSettingsSection()
