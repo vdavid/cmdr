@@ -140,19 +140,90 @@ Task breakdown for adding Android device (MTP) support to Cmdr. See [mtp.md](mtp
 
 ## Phase 6: Testing
 
-### 6.1 Unit tests
-- [ ] Test `MtpVolume` with mocked device
-- [ ] Test path-to-handle mapping
-- [ ] Test error handling (disconnected, timeout, etc.)
+### 6.1 Unit tests (Rust)
+- [x] Test `MtpConnectionManager` helper functions (normalize_mtp_path, get_mtp_icon_id)
+- [x] Test path-to-handle parsing (parse_device_id edge cases)
+- [x] Test error handling (MtpConnectionError variants, is_retryable, user_message)
+- [x] Test directory listing cache behavior
+- [x] Test error message formatting and serialization
+- [x] Test transfer types and operation result serialization
 
-### 6.2 Integration tests
-- [ ] Document manual test procedure with real device
-- [ ] Test with multiple device models (Samsung, Pixel, etc.)
-- [ ] Test with devices that have multiple storages
+### 6.2 Unit tests (TypeScript/Svelte)
+- [x] Test mtp-store.svelte.ts reactive behavior
+- [x] Test device state management (getDevices, connect, disconnect)
+- [x] Test MTP volume generation (getMtpVolumes)
+- [x] Test event handling (connected, disconnected, exclusive access, hotplug)
+- [x] Mock Tauri commands appropriately
 
-### 6.3 E2E tests
-- [ ] Mock MTP commands at Tauri level
-- [ ] Test UI flows (connect, browse, copy file, disconnect)
+### 6.3 Integration test documentation
+See [Manual testing procedure](#manual-testing-procedure) below.
+
+### 6.4 E2E test considerations
+- [x] MTP commands gracefully return empty arrays when no device is connected
+- [x] Existing E2E tests continue to pass with MTP code present
+- [ ] Add E2E test mocks when UI integration is complete (Phase 4 pending items)
+
+---
+
+## Manual testing procedure
+
+This section documents how to manually test MTP functionality with a real Android device.
+
+### Prerequisites
+
+1. An Android device with USB debugging enabled or in "File transfer" mode
+2. A USB cable to connect the device to your Mac
+3. Cmdr running in dev mode (`pnpm dev`)
+
+### Test scenarios
+
+#### 1. Device discovery
+1. Connect Android device via USB
+2. Set device to "File transfer / Android Auto" mode
+3. In Cmdr, check the volume picker - device should appear under "Mobile" section
+4. Device name should show (for example, "Pixel 8" or "Samsung Galaxy")
+
+#### 2. Connection
+1. Click on the device in the volume picker
+2. **If ptpcamerad blocks**: a dialog should appear with Terminal command
+   - Copy the command and run in Terminal
+   - Click "Retry connection"
+3. After successful connection, storages should appear (for example, "Internal shared storage")
+
+#### 3. Browse files
+1. Navigate into a storage
+2. Browse folders (DCIM, Download, etc.)
+3. Verify file names, sizes, and dates display correctly
+4. Navigate up with ".." entry
+
+#### 4. File operations (when UI integration complete)
+1. **Download**: Select a file, copy to local folder
+2. **Upload**: Copy a local file to device folder
+3. **Delete**: Delete a file on device
+4. **Create folder**: Create new folder on device
+5. **Rename**: Rename a file on device
+
+#### 5. USB hotplug
+1. Disconnect device while browsing
+2. Verify graceful error handling (no crash)
+3. Reconnect device
+4. Verify device reappears in volume picker
+
+#### 6. Multi-storage devices
+1. If device has SD card, verify both storages appear
+2. Verify each storage is independently navigable
+
+### Tested devices
+
+| Device | Android version | Notes |
+|--------|-----------------|-------|
+| (Add tested devices here) | | |
+
+### Known issues
+
+- ptpcamerad on macOS requires workaround command
+- Some devices may be slow to respond (30s timeout)
+- MTP protocol only allows one operation at a time
 
 ---
 
