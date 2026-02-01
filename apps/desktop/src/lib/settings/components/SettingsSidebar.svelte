@@ -87,12 +87,14 @@
     function shouldShowSpecialSection(path: string[]): boolean {
         if (!searchQuery.trim()) return true
         // For special sections, show if any Advanced setting matches (for Advanced section)
-        // or always show them since they have their own search
         if (path[0] === 'Advanced') {
             return sectionHasMatches(path, matchingSections)
         }
-        // Keyboard shortcuts and Themes are always visible (they have their own search)
-        return true
+        // Keyboard shortcuts: show if any command name matches the search query
+        if (path[0] === 'Keyboard shortcuts') {
+            return matchingSections.has('Keyboard shortcuts')
+        }
+        return false
     }
 
     // Shared navigation logic for Up/Down arrows
@@ -144,6 +146,9 @@
             value={searchQuery}
             oninput={handleSearchInput}
             onkeydown={handleSearchKeydown}
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
         />
         {#if searchQuery}
             <button class="search-clear" onclick={clearSearch} aria-label="Clear search"> × </button>

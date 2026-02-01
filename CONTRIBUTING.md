@@ -126,6 +126,8 @@ This snippet will likely come handy:
 }
 ```
 
+Or add it via CLI like:
+
 Since the agent shares the context with your IDE/client, enabling the MCP server makes the tools available to the agent
 automatically.
 

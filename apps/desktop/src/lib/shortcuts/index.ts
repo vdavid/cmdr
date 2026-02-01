@@ -34,6 +34,7 @@ export {
     resetAllShortcuts,
     onShortcutChange,
     forceSave,
+    flushPendingSave,
 } from './shortcuts-store'
 
 // Conflict detection
@@ -47,3 +48,6 @@ export {
 
 // Keyboard handler
 export { handleKeyDown, findCommandsWithShortcut } from './keyboard-handler'
+
+// MCP shortcuts listener
+export { setupMcpShortcutsListener, cleanupMcpShortcutsListener } from './mcp-shortcuts-listener'

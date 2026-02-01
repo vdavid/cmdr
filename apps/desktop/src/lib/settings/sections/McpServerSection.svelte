@@ -2,7 +2,7 @@
     import SettingRow from '../components/SettingRow.svelte'
     import SettingSwitch from '../components/SettingSwitch.svelte'
     import SettingNumberInput from '../components/SettingNumberInput.svelte'
-    import { getSettingDefinition, getSetting, setSetting } from '$lib/settings'
+    import { getSetting, getSettingDefinition, setSetting } from '$lib/settings'
     import { checkPortAvailable, findAvailablePort } from '$lib/tauri-commands'
     import { getMatchingSettingIds } from '$lib/settings/settings-search'
 
@@ -39,8 +39,7 @@
 
             if (!available) {
                 // Find an available port
-                const found = await findAvailablePort(port)
-                suggestedPort = found
+                suggestedPort = await findAvailablePort(port)
             } else {
                 suggestedPort = null
             }

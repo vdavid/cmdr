@@ -14,12 +14,15 @@ import { getEffectiveShortcuts } from './shortcuts-store'
  * Two commands conflict if they share a shortcut and their scopes overlap.
  */
 export function findConflictsForShortcut(shortcut: string, scope: CommandScope, excludeCommandId?: string): Command[] {
+    // Empty shortcuts can't conflict
+    if (!shortcut) return []
+
     return commands.filter((cmd) => {
         // Don't conflict with self
         if (cmd.id === excludeCommandId) return false
 
-        // Check if this command uses the shortcut
-        const cmdShortcuts = getEffectiveShortcuts(cmd.id)
+        // Check if this command uses the shortcut (ignore empty shortcuts)
+        const cmdShortcuts = getEffectiveShortcuts(cmd.id).filter((s) => s)
         if (!cmdShortcuts.includes(shortcut)) return false
 
         // Check if scopes overlap
@@ -54,7 +57,8 @@ export function getAllConflicts(): ShortcutConflict[] {
     const processed = new Set<string>()
 
     for (const cmd of commands) {
-        const shortcuts = getEffectiveShortcuts(cmd.id)
+        // Filter out empty shortcuts (used during editing)
+        const shortcuts = getEffectiveShortcuts(cmd.id).filter((s) => s)
         const scope = cmd.scope as CommandScope
 
         for (const shortcut of shortcuts) {

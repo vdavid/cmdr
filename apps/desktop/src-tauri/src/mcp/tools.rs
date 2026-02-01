@@ -170,6 +170,132 @@ fn get_selection_tools() -> Vec<Tool> {
     ]
 }
 
+/// Get settings window tools.
+fn get_settings_tools() -> Vec<Tool> {
+    vec![
+        Tool::no_params("settings_open", "Open the Settings window"),
+        Tool::no_params("settings_close", "Close the Settings window"),
+        Tool::no_params(
+            "settings_listSections",
+            "List all available sections in the Settings sidebar",
+        ),
+        Tool {
+            name: "settings_selectSection".to_string(),
+            description: "Navigate to a settings section by path (e.g., ['General', 'Appearance'])".to_string(),
+            input_schema: json!({
+                "type": "object",
+                "properties": {
+                    "sectionPath": {
+                        "type": "array",
+                        "items": { "type": "string" },
+                        "description": "Section path as array of strings (e.g., ['General', 'Appearance'])"
+                    }
+                },
+                "required": ["sectionPath"]
+            }),
+        },
+        Tool::no_params(
+            "settings_listItems",
+            "List all setting items in the current section with their IDs and current values",
+        ),
+        Tool {
+            name: "settings_getValue".to_string(),
+            description: "Get the current value of a specific setting by ID".to_string(),
+            input_schema: json!({
+                "type": "object",
+                "properties": {
+                    "settingId": {
+                        "type": "string",
+                        "description": "The setting ID (e.g., 'appearance.uiDensity')"
+                    }
+                },
+                "required": ["settingId"]
+            }),
+        },
+        Tool {
+            name: "settings_setValue".to_string(),
+            description: "Set a value for a specific setting".to_string(),
+            input_schema: json!({
+                "type": "object",
+                "properties": {
+                    "settingId": {
+                        "type": "string",
+                        "description": "The setting ID (e.g., 'appearance.uiDensity')"
+                    },
+                    "value": {
+                        "description": "The value to set (type depends on the setting)"
+                    }
+                },
+                "required": ["settingId", "value"]
+            }),
+        },
+    ]
+}
+
+/// Get keyboard shortcuts tools.
+fn get_shortcuts_tools() -> Vec<Tool> {
+    vec![
+        Tool::no_params(
+            "shortcuts_list",
+            "List all commands with their current shortcuts and modification status",
+        ),
+        Tool {
+            name: "shortcuts_set".to_string(),
+            description: "Set a shortcut for a command at a specific index".to_string(),
+            input_schema: json!({
+                "type": "object",
+                "properties": {
+                    "commandId": {
+                        "type": "string",
+                        "description": "The command ID (e.g., 'nav.open')"
+                    },
+                    "index": {
+                        "type": "integer",
+                        "description": "Index of the shortcut to set (0-based)"
+                    },
+                    "shortcut": {
+                        "type": "string",
+                        "description": "The shortcut string (e.g., '⌘O' or 'Ctrl+O')"
+                    }
+                },
+                "required": ["commandId", "index", "shortcut"]
+            }),
+        },
+        Tool {
+            name: "shortcuts_remove".to_string(),
+            description: "Remove a shortcut from a command at a specific index".to_string(),
+            input_schema: json!({
+                "type": "object",
+                "properties": {
+                    "commandId": {
+                        "type": "string",
+                        "description": "The command ID (e.g., 'nav.open')"
+                    },
+                    "index": {
+                        "type": "integer",
+                        "description": "Index of the shortcut to remove (0-based)"
+                    }
+                },
+                "required": ["commandId", "index"]
+            }),
+        },
+        Tool {
+            name: "shortcuts_reset".to_string(),
+            description: "Reset a command's shortcuts to their default values".to_string(),
+            input_schema: json!({
+                "type": "object",
+                "properties": {
+                    "commandId": {
+                        "type": "string",
+                        "description": "The command ID to reset (e.g., 'nav.open')"
+                    }
+                },
+                "required": ["commandId"]
+            }),
+        },
+    ]
+}
+
 /// Get all available tools.
 pub fn get_all_tools() -> Vec<Tool> {
     let mut tools = Vec::new();
@@ -181,6 +307,8 @@ pub fn get_all_tools() -> Vec<Tool> {
     tools.extend(get_file_tools());
     tools.extend(get_volume_tools());
     tools.extend(get_selection_tools());
+    tools.extend(get_settings_tools());
+    tools.extend(get_shortcuts_tools());
     tools
 }
 
@@ -209,9 +337,21 @@ mod tests {
     #[test]
     fn test_all_tools_count() {
         let tools = get_all_tools();
-        // 3 app + 3 view + 1 pane + 12 nav + 8 sort + 6 file + 2 volume + 5 selection = 40
+        // 3 app + 3 view + 1 pane + 12 nav + 8 sort + 6 file + 2 volume + 5 selection + 7 settings + 4 shortcuts = 51
         // (context tools and volume_list moved to resources)
-        assert_eq!(tools.len(), 40);
+        assert_eq!(tools.len(), 51);
+    }
+
+    #[test]
+    fn test_settings_tools_count() {
+        let tools = get_settings_tools();
+        assert_eq!(tools.len(), 7);
+    }
+
+    #[test]
+    fn test_shortcuts_tools_count() {
+        let tools = get_shortcuts_tools();
+        assert_eq!(tools.len(), 4);
     }
 
     #[test]

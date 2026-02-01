@@ -8,7 +8,7 @@
     import { startUpdateChecker } from '$lib/updater.svelte'
     import { initSettingsApplier, cleanupSettingsApplier } from '$lib/settings/settings-applier'
     import { initReactiveSettings, cleanupReactiveSettings } from '$lib/settings/reactive-settings.svelte'
-    import { initializeShortcuts } from '$lib/shortcuts'
+    import { initializeShortcuts, setupMcpShortcutsListener, cleanupMcpShortcutsListener } from '$lib/shortcuts'
     import AiNotification from '$lib/AiNotification.svelte'
     import UpdateNotification from '$lib/UpdateNotification.svelte'
 
@@ -24,6 +24,9 @@
         // Initialize keyboard shortcuts store (loads custom shortcuts from disk)
         await initializeShortcuts()
 
+        // Set up MCP shortcuts listener (allows MCP tools to modify shortcuts)
+        await setupMcpShortcutsListener()
+
         // Initialize window state persistence on resize
         // This ensures window size/position survives hot reloads
         void initWindowStateListener()
@@ -35,6 +38,7 @@
     onDestroy(() => {
         cleanupReactiveSettings()
         cleanupSettingsApplier()
+        cleanupMcpShortcutsListener()
         cleanupUpdater?.()
     })
 </script>
