@@ -10,6 +10,7 @@
         "core:event:default",
         "core:app:allow-set-app-theme",
         "core:webview:allow-internal-toggle-devtools",
-        "store:default"
+        "store:default",
+        "dialog:allow-ask"
     ]
 }

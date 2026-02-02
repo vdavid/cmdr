@@ -106,11 +106,12 @@ fn test_tool_input_schemas_are_valid() {
 fn test_total_tool_count() {
     let tools = get_all_tools();
     // 3 app + 3 view + 1 pane + 12 nav + 8 sort + 6 file + 2 volume + 5 selection = 40
+    // + 7 settings + 4 shortcuts = 51
     // (context tools and volume_list moved to resources)
     assert_eq!(
         tools.len(),
-        40,
-        "Expected 40 tools, got {}. Did you add/remove tools?",
+        51,
+        "Expected 51 tools, got {}. Did you add/remove tools?",
         tools.len()
     );
 }
