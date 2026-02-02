@@ -63,7 +63,6 @@ pub fn init_volume_manager() {
 }
 
 /// Returns a reference to the global volume manager.
-#[allow(dead_code, reason = "Will be used in Phase 4.2 when commands use it")]
 pub fn get_volume_manager() -> &'static VolumeManager {
     &VOLUME_MANAGER
 }

@@ -112,7 +112,7 @@ impl Volume for MtpVolume {
                     .list_directory(&device_id, storage_id, &mtp_path)
                     .await
             })
-            .map_err(|e| map_mtp_error(e))
+            .map_err(map_mtp_error)
     }
 
     fn get_metadata(&self, path: &Path) -> Result<FileEntry, VolumeError> {
@@ -167,7 +167,7 @@ impl Volume for MtpVolume {
                     .await
             })
             .map(|_| ())
-            .map_err(|e| map_mtp_error(e))
+            .map_err(map_mtp_error)
     }
 
     fn delete(&self, path: &Path) -> Result<(), VolumeError> {
@@ -183,7 +183,31 @@ impl Volume for MtpVolume {
                     .delete_object(&device_id, storage_id, &mtp_path)
                     .await
             })
-            .map_err(|e| map_mtp_error(e))
+            .map_err(map_mtp_error)
+    }
+
+    fn rename(&self, from: &Path, to: &Path) -> Result<(), VolumeError> {
+        let mtp_path = self.to_mtp_path(from);
+        // Extract the new name from the destination path
+        let new_name = to
+            .file_name()
+            .and_then(|n| n.to_str())
+            .ok_or_else(|| VolumeError::IoError("Invalid destination path".into()))?
+            .to_string();
+
+        let device_id = self.device_id.clone();
+        let storage_id = self.storage_id;
+
+        let handle = tokio::runtime::Handle::current();
+
+        handle
+            .block_on(async move {
+                connection_manager()
+                    .rename_object(&device_id, storage_id, &mtp_path, &new_name)
+                    .await
+            })
+            .map(|_| ())
+            .map_err(map_mtp_error)
     }
 }
 

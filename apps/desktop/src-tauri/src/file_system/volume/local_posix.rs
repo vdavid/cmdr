@@ -86,4 +86,34 @@ impl Volume for LocalPosixVolume {
     fn supports_watching(&self) -> bool {
         true
     }
+
+    fn create_file(&self, path: &Path, content: &[u8]) -> Result<(), VolumeError> {
+        let abs_path = self.resolve(path);
+        std::fs::write(&abs_path, content)?;
+        Ok(())
+    }
+
+    fn create_directory(&self, path: &Path) -> Result<(), VolumeError> {
+        let abs_path = self.resolve(path);
+        std::fs::create_dir(&abs_path)?;
+        Ok(())
+    }
+
+    fn delete(&self, path: &Path) -> Result<(), VolumeError> {
+        let abs_path = self.resolve(path);
+        let metadata = std::fs::symlink_metadata(&abs_path)?;
+        if metadata.is_dir() {
+            std::fs::remove_dir(&abs_path)?;
+        } else {
+            std::fs::remove_file(&abs_path)?;
+        }
+        Ok(())
+    }
+
+    fn rename(&self, from: &Path, to: &Path) -> Result<(), VolumeError> {
+        let from_abs = self.resolve(from);
+        let to_abs = self.resolve(to);
+        std::fs::rename(&from_abs, &to_abs)?;
+        Ok(())
+    }
 }
