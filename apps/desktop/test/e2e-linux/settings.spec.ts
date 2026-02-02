@@ -14,19 +14,28 @@
 /**
  * Helper to wait for a new window to appear and switch to it.
  * Returns the original window handle so we can switch back.
+ *
+ * @param handlesBefore - Optional window handles captured before the action that opens a new window.
+ *                        If provided, skips waiting and directly switches to the new window.
  */
-async function switchToNewWindow(): Promise<string> {
+async function switchToNewWindow(handlesBefore?: string[]): Promise<string> {
     const originalWindow = await browser.getWindowHandle()
-    const startHandles = await browser.getWindowHandles()
 
-    // Wait for a new window to appear
-    await browser.waitUntil(
-        async () => {
-            const handles = await browser.getWindowHandles()
-            return handles.length > startHandles.length
-        },
-        { timeout: 5000, timeoutMsg: 'New window did not appear' },
-    )
+    let startHandles: string[]
+    if (handlesBefore) {
+        // Use pre-captured handles (window may already be open)
+        startHandles = handlesBefore
+    } else {
+        // Capture current handles and wait for a new one
+        startHandles = await browser.getWindowHandles()
+        await browser.waitUntil(
+            async () => {
+                const handles = await browser.getWindowHandles()
+                return handles.length > startHandles.length
+            },
+            { timeout: 5000, timeoutMsg: 'New window did not appear' },
+        )
+    }
 
     // Get the new window handle
     const newHandles = await browser.getWindowHandles()
@@ -95,14 +104,17 @@ describe('Settings window', () => {
     })
 
     it('should open settings window with keyboard shortcut', async () => {
+        // Capture handles before opening settings
+        const handlesBefore = await browser.getWindowHandles()
+
         await openSettingsViaShortcut()
 
         // Check if a new window appeared
         const handles = await browser.getWindowHandles()
 
-        if (handles.length > 1) {
-            // Multi-window mode works
-            await switchToNewWindow()
+        if (handles.length > handlesBefore.length) {
+            // Multi-window mode works - pass pre-captured handles
+            await switchToNewWindow(handlesBefore)
 
             // Verify settings window content
             const settingsWindow = await browser.$('.settings-window')
@@ -115,15 +127,17 @@ describe('Settings window', () => {
     })
 
     it('should display settings sidebar with sections', async () => {
+        const handlesBefore = await browser.getWindowHandles()
+
         await openSettingsViaShortcut()
 
         const handles = await browser.getWindowHandles()
-        if (handles.length <= 1) {
+        if (handles.length <= handlesBefore.length) {
             console.log('Skipping: Multi-window not supported')
             return
         }
 
-        await switchToNewWindow()
+        await switchToNewWindow(handlesBefore)
 
         // Wait for settings to load
         const sidebar = await browser.$('.settings-sidebar')
@@ -145,15 +159,17 @@ describe('Settings window', () => {
     })
 
     it('should have a working search input', async () => {
+        const handlesBefore = await browser.getWindowHandles()
+
         await openSettingsViaShortcut()
 
         const handles = await browser.getWindowHandles()
-        if (handles.length <= 1) {
+        if (handles.length <= handlesBefore.length) {
             console.log('Skipping: Multi-window not supported')
             return
         }
 
-        await switchToNewWindow()
+        await switchToNewWindow(handlesBefore)
 
         // Find and interact with search input
         const searchInput = await browser.$('.search-input')
@@ -169,15 +185,17 @@ describe('Settings window', () => {
     })
 
     it('should navigate between sections when clicking', async () => {
+        const handlesBefore = await browser.getWindowHandles()
+
         await openSettingsViaShortcut()
 
         const handles = await browser.getWindowHandles()
-        if (handles.length <= 1) {
+        if (handles.length <= handlesBefore.length) {
             console.log('Skipping: Multi-window not supported')
             return
         }
 
-        await switchToNewWindow()
+        await switchToNewWindow(handlesBefore)
 
         // Wait for sidebar
         const sidebar = await browser.$('.settings-sidebar')
@@ -197,15 +215,17 @@ describe('Settings window', () => {
     })
 
     it('should close settings window with Escape key', async () => {
+        const handlesBefore = await browser.getWindowHandles()
+
         await openSettingsViaShortcut()
 
         const handles = await browser.getWindowHandles()
-        if (handles.length <= 1) {
+        if (handles.length <= handlesBefore.length) {
             console.log('Skipping: Multi-window not supported')
             return
         }
 
-        const originalWindow = await switchToNewWindow()
+        const originalWindow = await switchToNewWindow(handlesBefore)
 
         // Verify settings window is open
         const settingsWindow = await browser.$('.settings-window')
