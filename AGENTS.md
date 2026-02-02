@@ -52,10 +52,12 @@ Run the smallest set of checks possible for efficiency while maintaining confide
   |svelte-check|knip|type-drift|svelte-tests|desktop-e2e|e2e-linux-typecheck|desktop-e2e-linux|rustfmt|clippy
   |cargo-audit|cargo-deny|cargo-udeps|jscpd-rust|rust-tests|rust-tests-linux (slow)|license-server-prettier
   |license-server-eslint|license-server-typecheck|license-server-tests|gofmt|go-vet|staticcheck|ineffassign|misspell
-  |gocyclo|nilaway|govulncheck|go-tests|website-prettier|website-eslint|website-typecheck|website-build|website-e2e}`
-  (can use multiple `--check` flags or even a comma-separated list)
-- Run all: `./scripts/check.sh`. CI runs this. Runs all tests, linters, and formatters (with auto fixing) for all apps.
+  |gocyclo|nilaway|govulncheck|deadcode|go-tests|website-prettier|website-eslint|website-typecheck|website-build
+  |website-e2e|pnpm-audit}` (can use multiple `--check` flags or even a comma-separated list)
+- Run all: `./scripts/check.sh`. Runs all tests, linters, and formatters (with auto fixing) for all apps.
 - See also `./scripts/check.sh --help`
+- **CI**: Runs automatically on PRs and pushes to main, but only for changed files. To run all checks regardless of
+  changes: Actions → CI → "Run workflow" → select branch → Run workflow.
 
 ## Debugging
 
