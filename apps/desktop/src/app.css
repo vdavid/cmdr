@@ -43,6 +43,9 @@
     /* === Semantic Colors === */
     --color-allow: #2e7d32;
     --color-error: #d32f2f;
+    --color-error-bg: #fef2f2;
+    --color-error-border: #fecaca;
+    --color-error-text: #b91c1c;
     --color-warning: #e65100;
     --color-warning-bg: rgba(230, 81, 0, 0.1);
 
@@ -102,6 +105,9 @@
 
         /* === Semantic Colors === */
         --color-error: #f44336;
+        --color-error-bg: #450a0a;
+        --color-error-border: #7f1d1d;
+        --color-error-text: #fca5a5;
         --color-warning: #f5a623;
         --color-warning-bg: rgba(245, 166, 35, 0.15);
 

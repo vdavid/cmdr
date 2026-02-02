@@ -23,6 +23,7 @@ mod move_op;
 mod scan;
 mod state;
 mod types;
+mod volume_copy;
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -64,6 +65,9 @@ pub(crate) use helpers::{
 };
 #[cfg(test)]
 pub(crate) use state::{CopyTransaction, WriteOperationState};
+
+// Re-export volume copy types and functions
+pub use volume_copy::{VolumeCopyConfig, VolumeCopyScanResult, copy_between_volumes, scan_for_volume_copy};
 
 // ============================================================================
 // Public API functions

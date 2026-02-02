@@ -14,8 +14,10 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MtpDeviceInfo {
-    /// Unique identifier for the device (based on USB bus/address).
+    /// Unique identifier for the device (format: "mtp-{location_id}").
     pub id: String,
+    /// Physical USB location identifier. Stable for a given port.
+    pub location_id: u64,
     /// USB vendor ID (e.g., 0x18d1 for Google).
     pub vendor_id: u16,
     /// USB product ID.
@@ -72,7 +74,8 @@ mod tests {
     #[test]
     fn test_device_display_name_with_product() {
         let device = MtpDeviceInfo {
-            id: "usb-1-2".to_string(),
+            id: "mtp-336592896".to_string(),
+            location_id: 336592896,
             vendor_id: 0x18d1,
             product_id: 0x4ee1,
             manufacturer: Some("Google".to_string()),
@@ -85,7 +88,8 @@ mod tests {
     #[test]
     fn test_device_display_name_with_manufacturer() {
         let device = MtpDeviceInfo {
-            id: "usb-1-3".to_string(),
+            id: "mtp-336592897".to_string(),
+            location_id: 336592897,
             vendor_id: 0x04e8,
             product_id: 0x6860,
             manufacturer: Some("Samsung".to_string()),
@@ -98,7 +102,8 @@ mod tests {
     #[test]
     fn test_device_display_name_fallback() {
         let device = MtpDeviceInfo {
-            id: "usb-1-4".to_string(),
+            id: "mtp-336592898".to_string(),
+            location_id: 336592898,
             vendor_id: 0x1234,
             product_id: 0x5678,
             manufacturer: None,
@@ -111,7 +116,8 @@ mod tests {
     #[test]
     fn test_device_serialization() {
         let device = MtpDeviceInfo {
-            id: "test".to_string(),
+            id: "mtp-336592896".to_string(),
+            location_id: 336592896,
             vendor_id: 0x18d1,
             product_id: 0x4ee1,
             manufacturer: Some("Google".to_string()),
@@ -121,6 +127,7 @@ mod tests {
         let json = serde_json::to_string(&device).unwrap();
         assert!(json.contains("\"vendorId\":"));
         assert!(json.contains("\"productId\":"));
+        assert!(json.contains("\"locationId\":"));
         // serialNumber should be omitted when None
         assert!(!json.contains("serialNumber"));
     }

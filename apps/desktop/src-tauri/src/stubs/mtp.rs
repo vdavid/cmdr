@@ -232,3 +232,28 @@ pub async fn move_mtp_object(
         message: "MTP is not supported on this platform".to_string(),
     })
 }
+
+// ============================================================================
+// Phase 5: Copy/Export Operation stubs
+// ============================================================================
+
+/// Result of scanning an MTP path for copy operation (stub version).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MtpScanResult {
+    pub file_count: usize,
+    pub dir_count: usize,
+    pub total_bytes: u64,
+}
+
+/// Scans an MTP path for copy statistics (stub - returns error).
+#[tauri::command]
+pub async fn scan_mtp_for_copy(
+    _device_id: String,
+    _storage_id: u32,
+    _path: String,
+) -> Result<MtpScanResult, MtpConnectionError> {
+    Err(MtpConnectionError::NotSupported {
+        message: "MTP is not supported on this platform".to_string(),
+    })
+}

@@ -7,7 +7,60 @@
 #![allow(dead_code, reason = "Volume abstraction not yet integrated into operations.rs")]
 
 use super::FileEntry;
+use serde::{Deserialize, Serialize};
 use std::path::Path;
+
+/// Result of scanning a path for copy operation.
+#[derive(Debug, Clone)]
+pub struct CopyScanResult {
+    /// Number of files found.
+    pub file_count: usize,
+    /// Number of directories found.
+    pub dir_count: usize,
+    /// Total bytes of all files.
+    pub total_bytes: u64,
+}
+
+/// Information about a potential conflict when copying.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ConflictInfo {
+    /// Source path (relative to volume root).
+    pub source_path: String,
+    /// Destination path (relative to volume root).
+    pub dest_path: String,
+    /// Size of source file in bytes.
+    pub source_size: u64,
+    /// Size of existing destination file in bytes.
+    pub dest_size: u64,
+    /// Source file modification time (Unix timestamp in seconds).
+    pub source_modified: Option<i64>,
+    /// Destination file modification time (Unix timestamp in seconds).
+    pub dest_modified: Option<i64>,
+}
+
+/// Space information for a volume.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SpaceInfo {
+    /// Total capacity in bytes.
+    pub total_bytes: u64,
+    /// Available (free) space in bytes.
+    pub available_bytes: u64,
+    /// Used space in bytes.
+    pub used_bytes: u64,
+}
+
+/// Information about a source item for conflict scanning.
+#[derive(Debug, Clone)]
+pub struct SourceItemInfo {
+    /// File/directory name.
+    pub name: String,
+    /// Size in bytes.
+    pub size: u64,
+    /// Modification time (Unix timestamp in seconds).
+    pub modified: Option<i64>,
+}
 
 /// Error type for volume operations.
 #[derive(Debug, Clone)]
@@ -117,6 +170,54 @@ pub trait Volume: Send + Sync {
     fn supports_watching(&self) -> bool {
         false
     }
+
+    // ========================================
+    // Copy/Export: Optional, default no-op
+    // ========================================
+
+    /// Returns whether this volume supports copy/export operations.
+    fn supports_export(&self) -> bool {
+        false
+    }
+
+    /// Scans a path recursively to get statistics for a copy operation.
+    /// Returns file count, directory count, and total bytes.
+    fn scan_for_copy(&self, path: &Path) -> Result<CopyScanResult, VolumeError> {
+        let _ = path;
+        Err(VolumeError::NotSupported)
+    }
+
+    /// Downloads/exports a file or directory from this volume to a local path.
+    /// For local volumes, this is a file copy. For MTP, this downloads.
+    /// Returns bytes transferred.
+    fn export_to_local(&self, source: &Path, local_dest: &Path) -> Result<u64, VolumeError> {
+        let _ = (source, local_dest);
+        Err(VolumeError::NotSupported)
+    }
+
+    /// Imports/uploads a file or directory from a local path to this volume.
+    /// For local volumes, this is a file copy. For MTP, this uploads.
+    /// Returns bytes transferred.
+    fn import_from_local(&self, local_source: &Path, dest: &Path) -> Result<u64, VolumeError> {
+        let _ = (local_source, dest);
+        Err(VolumeError::NotSupported)
+    }
+
+    /// Checks destination for conflicts with source items.
+    /// Returns list of files that already exist at destination.
+    fn scan_for_conflicts(
+        &self,
+        source_items: &[SourceItemInfo],
+        dest_path: &Path,
+    ) -> Result<Vec<ConflictInfo>, VolumeError> {
+        let _ = (source_items, dest_path);
+        Err(VolumeError::NotSupported)
+    }
+
+    /// Gets space information for this volume.
+    fn get_space_info(&self) -> Result<SpaceInfo, VolumeError> {
+        Err(VolumeError::NotSupported)
+    }
 }
 
 // Implementations
@@ -127,6 +228,9 @@ mod mtp;
 pub use in_memory::InMemoryVolume;
 pub use local_posix::LocalPosixVolume;
 pub use mtp::MtpVolume;
+
+// Re-export types defined in this module for convenience
+// (they're already public since defined in mod.rs)
 
 #[cfg(test)]
 mod in_memory_test;

@@ -37,7 +37,10 @@ pub use operations::get_paths_at_indices;
 pub use provider::FileSystemProvider;
 // Re-export volume types (some not used externally yet)
 #[allow(unused_imports, reason = "Public API re-exports for future use")]
-pub use volume::{InMemoryVolume, LocalPosixVolume, MtpVolume, Volume, VolumeError};
+pub use volume::{
+    ConflictInfo, CopyScanResult, InMemoryVolume, LocalPosixVolume, MtpVolume, SourceItemInfo, SpaceInfo, Volume,
+    VolumeError,
+};
 #[allow(unused_imports, reason = "Public API re-exports for future use")]
 pub use volume_manager::VolumeManager;
 // Watcher management - init_watcher_manager must be called from lib.rs
@@ -48,6 +51,10 @@ pub use write_operations::{
     cancel_write_operation, copy_files_start, delete_files_start, get_operation_status, list_active_operations,
     move_files_start,
 };
+// Re-export volume copy types and functions
+// TODO: Remove this allow once volume_copy is integrated into Tauri commands (Phase 5)
+#[allow(unused_imports, reason = "Volume copy not yet integrated into Tauri commands")]
+pub use write_operations::{VolumeCopyConfig, VolumeCopyScanResult, copy_between_volumes, scan_for_volume_copy};
 
 /// Global volume manager instance
 static VOLUME_MANAGER: LazyLock<VolumeManager> = LazyLock::new(VolumeManager::new);

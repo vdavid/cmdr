@@ -33,7 +33,8 @@ import {
 } from '$lib/tauri-commands'
 
 const mockDevice: MtpDeviceInfo = {
-    id: 'mtp-1-5',
+    id: 'mtp-336592896',
+    locationId: 336592896,
     vendorId: 0x18d1,
     productId: 0x4ee1,
     manufacturer: 'Google',
@@ -93,11 +94,11 @@ describe('mtp-store', () => {
 
             const devices = getDevices()
             expect(devices).toHaveLength(1)
-            expect(devices[0].device.id).toBe('mtp-1-5')
+            expect(devices[0].device.id).toBe('mtp-336592896')
             expect(devices[0].connectionState).toBe('disconnected')
             expect(devices[0].displayName).toBe('Pixel 8')
 
-            const device = getDevice('mtp-1-5')
+            const device = getDevice('mtp-336592896')
             expect(device).toBeDefined()
             expect(device?.device.product).toBe('Pixel 8')
         })
@@ -108,12 +109,12 @@ describe('mtp-store', () => {
             const { scanDevices, connect, getDevice } = await loadModule()
 
             await scanDevices()
-            await connect('mtp-1-5')
+            await connect('mtp-336592896')
 
             // Scan again
             await scanDevices()
 
-            const device = getDevice('mtp-1-5')
+            const device = getDevice('mtp-336592896')
             expect(device?.connectionState).toBe('connected')
             expect(device?.storages).toHaveLength(1)
         })
@@ -171,13 +172,13 @@ describe('mtp-store', () => {
             const { scanDevices, connect, getDevice, getConnectedDevices, hasConnectedDevices } = await loadModule()
 
             await scanDevices()
-            const result = await connect('mtp-1-5')
+            const result = await connect('mtp-336592896')
 
             expect(result).toBeDefined()
-            expect(result?.device.id).toBe('mtp-1-5')
+            expect(result?.device.id).toBe('mtp-336592896')
             expect(result?.storages).toHaveLength(1)
 
-            const device = getDevice('mtp-1-5')
+            const device = getDevice('mtp-336592896')
             expect(device?.connectionState).toBe('connected')
             expect(device?.storages).toEqual([mockStorage])
 
@@ -199,10 +200,10 @@ describe('mtp-store', () => {
             const { scanDevices, connect } = await loadModule()
 
             await scanDevices()
-            await connect('mtp-1-5')
+            await connect('mtp-336592896')
 
             // Try to connect again
-            const result = await connect('mtp-1-5')
+            const result = await connect('mtp-336592896')
 
             expect(result).toBeDefined()
             expect(connectMtpDevice).toHaveBeenCalledTimes(1) // Should not call again
@@ -215,9 +216,9 @@ describe('mtp-store', () => {
 
             await scanDevices()
 
-            await expect(connect('mtp-1-5')).rejects.toThrow('Exclusive access error')
+            await expect(connect('mtp-336592896')).rejects.toThrow('Exclusive access error')
 
-            const device = getDevice('mtp-1-5')
+            const device = getDevice('mtp-336592896')
             expect(device?.connectionState).toBe('error')
             expect(device?.error).toBe('Exclusive access error')
         })
@@ -231,12 +232,12 @@ describe('mtp-store', () => {
             const { scanDevices, connect, disconnect, getDevice, hasConnectedDevices } = await loadModule()
 
             await scanDevices()
-            await connect('mtp-1-5')
+            await connect('mtp-336592896')
             expect(hasConnectedDevices()).toBe(true)
 
-            await disconnect('mtp-1-5')
+            await disconnect('mtp-336592896')
 
-            const device = getDevice('mtp-1-5')
+            const device = getDevice('mtp-336592896')
             expect(device?.connectionState).toBe('disconnected')
             expect(device?.storages).toEqual([])
             expect(hasConnectedDevices()).toBe(false)
@@ -256,7 +257,7 @@ describe('mtp-store', () => {
             await scanDevices()
 
             // Should not throw or call backend
-            await disconnect('mtp-1-5')
+            await disconnect('mtp-336592896')
             expect(disconnectMtpDevice).not.toHaveBeenCalled()
         })
     })
@@ -336,8 +337,8 @@ describe('mtp-store', () => {
 
             const volumes = getMtpVolumes()
             expect(volumes).toHaveLength(1)
-            expect(volumes[0].id).toBe('mtp-1-5')
-            expect(volumes[0].deviceId).toBe('mtp-1-5')
+            expect(volumes[0].id).toBe('mtp-336592896')
+            expect(volumes[0].deviceId).toBe('mtp-336592896')
             expect(volumes[0].storageId).toBe(0)
             expect(volumes[0].name).toBe('Pixel 8')
             expect(volumes[0].isConnected).toBe(false)
@@ -362,15 +363,15 @@ describe('mtp-store', () => {
             const { scanDevices, connect, getMtpVolumes } = await loadModule()
 
             await scanDevices()
-            await connect('mtp-1-5')
+            await connect('mtp-336592896')
 
             const volumes = getMtpVolumes()
             expect(volumes).toHaveLength(2)
-            expect(volumes[0].id).toBe('mtp-1-5:65537')
+            expect(volumes[0].id).toBe('mtp-336592896:65537')
             expect(volumes[0].name).toBe('Pixel 8 - Internal shared storage')
             expect(volumes[0].storageId).toBe(65537)
             expect(volumes[0].isConnected).toBe(true)
-            expect(volumes[1].id).toBe('mtp-1-5:65538')
+            expect(volumes[1].id).toBe('mtp-336592896:65538')
             expect(volumes[1].name).toBe('Pixel 8 - SD Card')
             expect(volumes[1].storageId).toBe(65538)
         })
@@ -381,7 +382,7 @@ describe('mtp-store', () => {
             const { scanDevices, connect, getMtpVolumes } = await loadModule()
 
             await scanDevices()
-            await connect('mtp-1-5')
+            await connect('mtp-336592896')
 
             const volumes = getMtpVolumes()
             expect(volumes).toHaveLength(1)
@@ -403,9 +404,9 @@ describe('mtp-store', () => {
             await initialize()
 
             // Simulate event from backend
-            connectedCallback?.({ deviceId: 'mtp-1-5', storages: [mockStorage] })
+            connectedCallback?.({ deviceId: 'mtp-336592896', storages: [mockStorage] })
 
-            const device = getDevice('mtp-1-5')
+            const device = getDevice('mtp-336592896')
             expect(device?.connectionState).toBe('connected')
             expect(device?.storages).toEqual([mockStorage])
         })
@@ -423,13 +424,13 @@ describe('mtp-store', () => {
             const { initialize, connect, getDevice } = await loadModule()
 
             await initialize()
-            await connect('mtp-1-5')
-            expect(getDevice('mtp-1-5')?.connectionState).toBe('connected')
+            await connect('mtp-336592896')
+            expect(getDevice('mtp-336592896')?.connectionState).toBe('connected')
 
             // Simulate event from backend
-            disconnectedCallback?.({ deviceId: 'mtp-1-5', reason: 'disconnected' })
+            disconnectedCallback?.({ deviceId: 'mtp-336592896', reason: 'disconnected' })
 
-            const device = getDevice('mtp-1-5')
+            const device = getDevice('mtp-336592896')
             expect(device?.connectionState).toBe('disconnected')
             expect(device?.storages).toEqual([])
         })
@@ -446,9 +447,9 @@ describe('mtp-store', () => {
             await initialize()
 
             // Simulate event from backend
-            exclusiveCallback?.({ deviceId: 'mtp-1-5', blockingProcess: 'ptpcamerad' })
+            exclusiveCallback?.({ deviceId: 'mtp-336592896', blockingProcess: 'ptpcamerad' })
 
-            const device = getDevice('mtp-1-5')
+            const device = getDevice('mtp-336592896')
             expect(device?.connectionState).toBe('error')
             expect(device?.error).toContain('ptpcamerad')
         })
@@ -468,7 +469,7 @@ describe('mtp-store', () => {
             expect(listMtpDevices).toHaveBeenCalledTimes(1)
 
             // Simulate device hotplug
-            detectedCallback?.({ deviceId: 'mtp-1-5', vendorId: 0x18d1, productId: 0x4ee1 })
+            detectedCallback?.({ deviceId: 'mtp-336592896', vendorId: 0x18d1, productId: 0x4ee1 })
 
             // Wait for async rescan
             await new Promise((resolve) => setTimeout(resolve, 10))
@@ -485,14 +486,14 @@ describe('mtp-store', () => {
             const { initialize, getDevice } = await loadModule()
 
             await initialize()
-            expect(getDevice('mtp-1-5')).toBeDefined()
+            expect(getDevice('mtp-336592896')).toBeDefined()
 
             // Simulate device removal
             vi.mocked(listMtpDevices).mockResolvedValue([])
-            removedCallback?.({ deviceId: 'mtp-1-5' })
+            removedCallback?.({ deviceId: 'mtp-336592896' })
 
             // Device should be removed immediately
-            expect(getDevice('mtp-1-5')).toBeUndefined()
+            expect(getDevice('mtp-336592896')).toBeUndefined()
         })
     })
 
@@ -503,12 +504,13 @@ describe('mtp-store', () => {
 
             await scanDevices()
 
-            expect(getDevice('mtp-1-5')?.displayName).toBe('Pixel 8')
+            expect(getDevice('mtp-336592896')?.displayName).toBe('Pixel 8')
         })
 
         it('uses manufacturer name when product is missing', async () => {
             const deviceWithoutProduct: MtpDeviceInfo = {
-                id: 'mtp-2-6',
+                id: 'mtp-336592897',
+                locationId: 336592897,
                 vendorId: 0x04e8,
                 productId: 0x6860,
                 manufacturer: 'Samsung',
@@ -518,12 +520,13 @@ describe('mtp-store', () => {
 
             await scanDevices()
 
-            expect(getDevice('mtp-2-6')?.displayName).toBe('Samsung device')
+            expect(getDevice('mtp-336592897')?.displayName).toBe('Samsung device')
         })
 
         it('uses vendor:product format as fallback', async () => {
             const deviceWithoutNames: MtpDeviceInfo = {
-                id: 'mtp-3-7',
+                id: 'mtp-336592898',
+                locationId: 336592898,
                 vendorId: 0x1234,
                 productId: 0x5678,
             }
@@ -532,7 +535,7 @@ describe('mtp-store', () => {
 
             await scanDevices()
 
-            expect(getDevice('mtp-3-7')?.displayName).toBe('MTP device (1234:5678)')
+            expect(getDevice('mtp-336592898')?.displayName).toBe('MTP device (1234:5678)')
         })
     })
 })

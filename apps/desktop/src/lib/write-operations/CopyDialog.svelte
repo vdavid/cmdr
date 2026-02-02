@@ -9,13 +9,19 @@
         onScanPreviewComplete,
         onScanPreviewError,
         onScanPreviewCancelled,
+        scanVolumeForConflicts,
         type VolumeSpaceInfo,
+        type VolumeConflictInfo,
+        type SourceItemInput,
         type UnlistenFn,
     } from '$lib/tauri-commands'
-    import type { VolumeInfo, SortColumn, SortOrder } from '$lib/file-explorer/types'
+    import type { VolumeInfo, SortColumn, SortOrder, ConflictResolution } from '$lib/file-explorer/types'
     import { getSetting } from '$lib/settings'
     import DirectionIndicator from './DirectionIndicator.svelte'
     import { generateTitle } from './copy-dialog-utils'
+    import { getAppLogger } from '$lib/logger'
+
+    const log = getAppLogger('copyDialog')
 
     interface Props {
         sourcePaths: string[]
@@ -30,7 +36,16 @@
         sortColumn: SortColumn
         /** Current sort order on source pane */
         sortOrder: SortOrder
-        onConfirm: (destination: string, volumeId: string, previewId: string | null) => void
+        /** Source volume ID (e.g., "root", "mtp-336592896:65537") */
+        sourceVolumeId: string
+        /** Destination volume ID */
+        destVolumeId: string
+        onConfirm: (
+            destination: string,
+            volumeId: string,
+            previewId: string | null,
+            conflictResolution: ConflictResolution,
+        ) => void
         onCancel: () => void
     }
 
@@ -45,6 +60,9 @@
         sourceFolderPath,
         sortColumn,
         sortOrder,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Passed through for consistency; conflict check uses destVolumeId
+        sourceVolumeId: _sourceVolumeId,
+        destVolumeId,
         onConfirm,
         onCancel,
     }: Props = $props()
@@ -69,6 +87,12 @@
     let isScanning = $state(false)
     let scanComplete = $state(false)
     let unlisteners: UnlistenFn[] = []
+
+    // Conflict detection state
+    let conflicts = $state<VolumeConflictInfo[]>([])
+    let isCheckingConflicts = $state(false)
+    let conflictCheckComplete = $state(false)
+    let conflictPolicy = $state<ConflictResolution>('stop') // Default to "ask for each"
 
     // Filter to only actual volumes (not favorites)
     const actualVolumes = $derived(volumes.filter((v) => v.category !== 'favorite' && v.category !== 'network'))
@@ -117,6 +141,43 @@
         unlisteners = []
     }
 
+    /** Checks for conflicts at the destination. */
+    async function checkConflicts() {
+        if (isCheckingConflicts || conflictCheckComplete) return
+
+        isCheckingConflicts = true
+        try {
+            // Build source item info from the source paths
+            // For conflict detection, we need the name, size, and modified time of each source item
+            // We extract the filename from each path
+            const sourceItems: SourceItemInput[] = sourcePaths.map((path) => {
+                const name = path.split('/').pop() || path
+                return {
+                    name,
+                    size: 0, // Size not known at this point, but name matching is enough for conflict detection
+                    modified: null,
+                }
+            })
+
+            const maxConflicts = getSetting('fileOperations.maxConflictsToShow')
+            const foundConflicts = await scanVolumeForConflicts(destVolumeId, sourceItems, editedPath)
+
+            // Limit the conflicts shown
+            conflicts = foundConflicts.slice(0, maxConflicts)
+            conflictCheckComplete = true
+
+            if (conflicts.length > 0) {
+                log.info('Found {count} conflicts at destination', { count: conflicts.length })
+            }
+        } catch (err) {
+            log.error('Failed to check for conflicts: {error}', { error: err })
+            // Don't block the copy operation on conflict check failure
+            conflictCheckComplete = true
+        } finally {
+            isCheckingConflicts = false
+        }
+    }
+
     /** Starts the scan preview to count files/dirs/bytes. */
     async function startScan() {
         // Subscribe to events BEFORE starting scan (avoid race condition)
@@ -136,6 +197,8 @@
                 bytesFound = event.bytesTotal
                 isScanning = false
                 scanComplete = true
+                // After source scan completes, check for conflicts
+                void checkConflicts()
             }),
         )
         unlisteners.push(
@@ -185,8 +248,8 @@
     })
 
     function handleConfirm() {
-        // Pass the previewId so copy operation can reuse scan results
-        onConfirm(editedPath, selectedVolumeId, previewId)
+        // Pass the previewId and conflict policy so copy operation can reuse scan results
+        onConfirm(editedPath, selectedVolumeId, previewId, conflictPolicy)
     }
 
     function handleCancel() {
@@ -317,6 +380,35 @@
                 <span class="scan-checkmark">✓</span>
             {/if}
         </div>
+
+        <!-- Conflicts section -->
+        {#if isCheckingConflicts}
+            <div class="conflicts-checking">
+                <span class="scan-spinner"></span>
+                <span class="conflicts-checking-text">Checking for conflicts...</span>
+            </div>
+        {:else if conflicts.length > 0}
+            <div class="conflicts-section">
+                <p class="conflicts-summary">
+                    {conflicts.length}
+                    {conflicts.length === 1 ? 'file already exists' : 'files already exist'}
+                </p>
+                <div class="conflict-policy">
+                    <label class="policy-option">
+                        <input type="radio" bind:group={conflictPolicy} value="skip" />
+                        <span>Skip all</span>
+                    </label>
+                    <label class="policy-option">
+                        <input type="radio" bind:group={conflictPolicy} value="overwrite" />
+                        <span>Overwrite all</span>
+                    </label>
+                    <label class="policy-option">
+                        <input type="radio" bind:group={conflictPolicy} value="stop" />
+                        <span>Ask for each</span>
+                    </label>
+                </div>
+            </div>
+        {/if}
 
         <!-- Buttons (centered) -->
         <div class="button-row">
@@ -516,5 +608,59 @@
         font-size: 14px;
         font-weight: bold;
         margin-left: 4px;
+    }
+
+    /* Conflicts checking */
+    .conflicts-checking {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 0 24px 12px;
+        font-size: 12px;
+    }
+
+    .conflicts-checking-text {
+        color: var(--color-text-muted);
+    }
+
+    /* Conflicts section */
+    .conflicts-section {
+        padding: 0 24px 12px;
+        border-top: 1px solid var(--color-border-primary);
+        margin-top: 4px;
+        padding-top: 12px;
+    }
+
+    .conflicts-summary {
+        margin: 0 0 12px;
+        font-size: 13px;
+        color: var(--color-warning);
+        text-align: center;
+        font-weight: 500;
+    }
+
+    .conflict-policy {
+        display: flex;
+        justify-content: center;
+        gap: 16px;
+    }
+
+    .policy-option {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--color-text-secondary);
+        cursor: pointer;
+    }
+
+    .policy-option input[type='radio'] {
+        margin: 0;
+        cursor: pointer;
+    }
+
+    .policy-option:hover {
+        color: var(--color-text-primary);
     }
 </style>

@@ -1048,6 +1048,7 @@ dependencies = [
  "urlencoding",
  "uuid",
  "uzers",
+ "walkdir",
 ]
 
 [[package]]
@@ -3752,8 +3753,11 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "bytes",
+ "core-foundation 0.9.4",
  "futures",
  "futures-timer",
+ "io-kit-sys",
+ "num_enum",
  "nusb",
  "parking_lot",
  "thiserror 1.0.69",

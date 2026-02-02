@@ -108,55 +108,50 @@
         return null
     }
 
-    /**
-     * Extracts message from a parsed error object.
-     * Handles MTP error types with 'type' field and standard error formats.
-     */
+    /** Static error messages for MTP error types */
+    const MTP_ERROR_MESSAGES: Record<string, string> = {
+        notConnected: 'Device not connected. Please reconnect from the volume picker.',
+        deviceNotFound: 'Device not found. It may have been unplugged.',
+        alreadyConnected: 'Device is already connected.',
+        exclusiveAccess: 'Another app is using this device. Close it and try again.',
+        disconnected: 'Device was disconnected.',
+        deviceBusy: 'Device is busy. Please wait and try again.',
+        storageFull: 'Device storage is full.',
+    }
+
+    /** Gets a user-friendly message for a typed MTP error */
+    function getMtpErrorMessage(errObj: Record<string, unknown>, errType: string): string {
+        // Check static messages first
+        const staticMsg = MTP_ERROR_MESSAGES[errType]
+        if (staticMsg) return staticMsg
+
+        // Handle dynamic messages that need context from the error object
+        const deviceId = (errObj.deviceId as string) || (errObj.device_id as string) || 'device'
+        const path = (errObj.path as string) || 'unknown'
+        const message = (errObj.message as string) || ''
+
+        if (errType === 'timeout') return `Connection timed out. The device (${deviceId}) may be slow or unresponsive.`
+        if (errType === 'objectNotFound') return `File or folder not found: ${path}`
+        if (errType === 'protocol') return `Device error: ${message || 'protocol error'}`
+        if (errType === 'other') return message || 'An error occurred'
+
+        // Unknown type - stringify for debugging
+        return `Error (${errType}): ${JSON.stringify(errObj)}`
+    }
+
+    /** Extracts message from a parsed error object */
     function extractFromParsedError(errObj: Record<string, unknown>): string | null {
-        // Standard error fields
-        if (errObj.userMessage) return String(errObj.userMessage)
-        if (errObj.message) return String(errObj.message)
+        // Standard error fields - check for string values first
+        if (typeof errObj.userMessage === 'string') return errObj.userMessage
+        if (typeof errObj.message === 'string' && !errObj.type) return errObj.message
 
         // MTP errors have a 'type' field (from Rust enum with serde tag="type")
-        if (errObj.type && typeof errObj.type === 'string') {
-            const deviceId = (errObj.deviceId as string) || (errObj.device_id as string) || 'device'
-            const errType = errObj.type as string
-
-            switch (errType) {
-                case 'timeout':
-                    return `Connection timed out. The device (${deviceId}) may be slow or unresponsive.`
-                case 'notConnected':
-                    return 'Device not connected. Please reconnect from the volume picker.'
-                case 'deviceNotFound':
-                    return 'Device not found. It may have been unplugged.'
-                case 'alreadyConnected':
-                    return 'Device is already connected.'
-                case 'exclusiveAccess':
-                    return 'Another app is using this device. Close it and try again.'
-                case 'disconnected':
-                    return 'Device was disconnected.'
-                case 'deviceBusy':
-                    return 'Device is busy. Please wait and try again.'
-                case 'storageFull':
-                    return 'Device storage is full.'
-                case 'objectNotFound':
-                    return `File or folder not found: ${(errObj.path as string) || 'unknown'}`
-                case 'protocol':
-                    return `Device error: ${(errObj.message as string) || 'protocol error'}`
-                case 'other':
-                    return (errObj.message as string) || 'An error occurred'
-                default:
-                    // Unknown type, try to provide useful info
-                    return `Error (${errType}): ${JSON.stringify(errObj)}`
-            }
-        }
+        if (typeof errObj.type === 'string') return getMtpErrorMessage(errObj, errObj.type)
 
         // Fallback: try to stringify
         try {
             const json = JSON.stringify(errObj)
-            // Avoid returning unhelpful empty object
-            if (json === '{}') return null
-            return json
+            return json === '{}' ? null : json
         } catch {
             return null
         }
@@ -1464,8 +1459,8 @@
         top: var(--spacing-sm);
         left: var(--spacing-sm);
         right: var(--spacing-sm);
-        background: var(--color-error-bg, #fef2f2);
-        border: 1px solid var(--color-error-border, #fecaca);
+        background: var(--color-error-bg);
+        border: 1px solid var(--color-error-border);
         border-radius: 6px;
         padding: var(--spacing-xs) var(--spacing-sm);
         display: flex;
@@ -1478,14 +1473,14 @@
 
     @media (prefers-color-scheme: dark) {
         .error-toast {
-            background: var(--color-error-bg, #450a0a);
-            border-color: var(--color-error-border, #7f1d1d);
+            background: var(--color-error-bg);
+            border-color: var(--color-error-border);
         }
     }
 
     .error-toast-message {
         font-size: var(--font-size-sm);
-        color: var(--color-error-text, #b91c1c);
+        color: var(--color-error-text);
         flex: 1;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -1494,7 +1489,7 @@
 
     @media (prefers-color-scheme: dark) {
         .error-toast-message {
-            color: var(--color-error-text, #fca5a5);
+            color: var(--color-error-text);
         }
     }
 
