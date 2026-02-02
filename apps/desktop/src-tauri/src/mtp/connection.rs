@@ -17,7 +17,7 @@ use tauri::{AppHandle, Emitter};
 use tokio::io::AsyncWriteExt;
 
 use super::types::{MtpDeviceInfo, MtpStorageInfo};
-use crate::file_system::FileEntry;
+use crate::file_system::{get_volume_manager, FileEntry, MtpVolume};
 
 /// Default timeout for MTP operations (30 seconds - some devices are slow).
 const MTP_TIMEOUT_SECS: u64 = 30;
@@ -417,6 +417,15 @@ impl MtpConnectionManager {
             );
         }
 
+        // Register MTP volumes for each storage with the global VolumeManager
+        // This enables MTP browsing through the standard file listing pipeline
+        for storage in &connected_info.storages {
+            let volume_id = format!("{}:{}", device_id, storage.id);
+            let volume = Arc::new(MtpVolume::new(device_id, storage.id, &storage.name));
+            get_volume_manager().register(&volume_id, volume);
+            debug!("Registered MTP volume: {} ({})", volume_id, storage.name);
+        }
+
         // Emit connected event
         if let Some(app) = app {
             let _ = app.emit(
@@ -454,6 +463,13 @@ impl MtpConnectionManager {
                 device_id: device_id.to_string(),
             });
         };
+
+        // Unregister MTP volumes from the VolumeManager
+        for storage in &entry.storages {
+            let volume_id = format!("{}:{}", device_id, storage.id);
+            get_volume_manager().unregister(&volume_id);
+            debug!("Unregistered MTP volume: {}", volume_id);
+        }
 
         // The device will be closed when it's dropped.
         // MtpDevice::close() takes ownership, but we have it in an Arc<Mutex>.

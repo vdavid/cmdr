@@ -110,9 +110,11 @@ pub trait Volume: Send + Sync {
 // Implementations
 mod in_memory;
 mod local_posix;
+mod mtp;
 
 pub use in_memory::InMemoryVolume;
 pub use local_posix::LocalPosixVolume;
+pub use mtp::MtpVolume;
 
 #[cfg(test)]
 mod in_memory_test;
