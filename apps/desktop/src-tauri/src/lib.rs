@@ -99,6 +99,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             // Initialize logging - respects RUST_LOG env var (default: info)
             env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))

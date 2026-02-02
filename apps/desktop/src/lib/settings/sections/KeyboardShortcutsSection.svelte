@@ -22,6 +22,7 @@
         getConflictCount,
         type CommandScope,
     } from '$lib/shortcuts'
+    import { confirmDialog } from '$lib/utils/confirm-dialog'
 
     interface Props {
         searchQuery: string
@@ -252,7 +253,11 @@
     }
 
     async function handleResetAll() {
-        if (confirm('Reset all keyboard shortcuts to their defaults?')) {
+        const confirmed = await confirmDialog(
+            'Reset all keyboard shortcuts to their defaults?',
+            'Reset keyboard shortcuts',
+        )
+        if (confirmed) {
             await resetAllShortcuts()
         }
     }

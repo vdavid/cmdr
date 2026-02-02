@@ -5,6 +5,7 @@
         setSetting,
         resetSetting,
         isModified,
+        onSettingChange,
         type SettingId,
         type SettingsValues,
         formatDuration,
@@ -12,6 +13,7 @@
     import { Switch } from '@ark-ui/svelte/switch'
     import { NumberInput, type NumberInputValueChangeDetails } from '@ark-ui/svelte/number-input'
     import { searchAdvancedSettings, getMatchIndicesForLabel, highlightMatches } from '$lib/settings/settings-search'
+    import { confirmDialog } from '$lib/utils/confirm-dialog'
 
     interface Props {
         searchQuery: string
@@ -21,8 +23,21 @@
 
     const allAdvancedSettings = getAdvancedSettings()
 
+    // Reactivity trigger for settings changes
+    let settingsChangeCounter = $state(0)
+
+    // Subscribe to setting changes to trigger re-renders
+    $effect(() => {
+        const unsubscribe = onSettingChange(() => {
+            settingsChangeCounter++
+        })
+        return unsubscribe
+    })
+
     // Filter by search
     const filteredSettings = $derived.by(() => {
+        // Depend on change counter to re-evaluate when settings change
+        void settingsChangeCounter
         if (!searchQuery.trim()) {
             return allAdvancedSettings
         }
@@ -30,8 +45,12 @@
         return results.map((r) => r.setting)
     })
 
-    function handleResetAll() {
-        if (confirm('Reset all advanced settings to their defaults? This cannot be undone.')) {
+    async function handleResetAll() {
+        const confirmed = await confirmDialog(
+            'Reset all advanced settings to their defaults? This cannot be undone.',
+            'Reset advanced settings',
+        )
+        if (confirmed) {
             for (const setting of allAdvancedSettings) {
                 resetSetting(setting.id as SettingId)
             }
@@ -75,7 +94,7 @@
     </div>
 
     <div class="advanced-settings">
-        {#each filteredSettings as setting (setting.id)}
+        {#each filteredSettings as setting (`${setting.id}-${String(settingsChangeCounter)}`)}
             {@const id = setting.id as SettingId}
             {@const modified = isModified(id)}
             <div class="advanced-setting-row">
