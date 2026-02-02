@@ -28,7 +28,7 @@ tauri = { version = "2", features = [] }
 tauri-plugin-opener = "2"
 tauri-plugin-mcp-bridge = "0.6"
 tauri-plugin-store = "2"
-tauri-plugin-dialog = "2"
+tauri-plugin-dialog = "2.6"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 notify = "8"

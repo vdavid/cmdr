@@ -78,6 +78,14 @@ func main() {
 		os.Exit(0)
 	}
 
+	// Ensure pnpm dependencies are installed before running checks
+	if needsPnpmInstall(checksToRun) {
+		if err := ensurePnpmDependencies(ctx); err != nil {
+			printError("Error: %v", err)
+			os.Exit(1)
+		}
+	}
+
 	runChecks(ctx, checksToRun, flags.failFast)
 }
 
@@ -200,6 +208,37 @@ func printFailure(failedChecks []string) {
 		}
 		fmt.Printf("To rerun the failed %s: ./scripts/check.sh --check %s\n", checkWord, strings.Join(failedChecks, ","))
 	}
+}
+
+// needsPnpmInstall returns true if any of the checks require pnpm dependencies.
+func needsPnpmInstall(checksToRun []checks.CheckDefinition) bool {
+	for _, check := range checksToRun {
+		// Checks that need pnpm: Svelte, Astro, TS (license-server), and pnpm-audit
+		switch check.App {
+		case checks.AppDesktop, checks.AppWebsite, checks.AppLicenseServer:
+			return true
+		case checks.AppOther:
+			if check.ID == "pnpm-audit" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// ensurePnpmDependencies runs pnpm install before checks.
+func ensurePnpmDependencies(ctx *checks.CheckContext) error {
+	fmt.Print("📦 Ensuring pnpm dependencies are installed... ")
+	startTime := time.Now()
+
+	if err := checks.EnsurePnpmDependencies(ctx); err != nil {
+		fmt.Printf("%sFAILED%s\n", colorRed, colorReset)
+		return err
+	}
+
+	duration := time.Since(startTime)
+	fmt.Printf("%sOK%s (%s)\n\n", colorGreen, colorReset, formatDuration(duration))
+	return nil
 }
 
 // showUsage displays the help message with dynamically generated check list.

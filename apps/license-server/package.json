@@ -20,11 +20,11 @@
     },
     "dependencies": {
         "@noble/ed25519": "^3.0.0",
-        "hono": "^4.11.4",
+        "hono": "^4.11.7",
         "resend": "^6.6.0"
     },
     "devDependencies": {
-        "@cloudflare/workers-types": "^4.20260108.0",
+        "@cloudflare/workers-types": "^4.20260131.0",
         "@eslint/js": "^9.39.2",
         "eslint": "^9.39.2",
         "eslint-config-prettier": "^10.1.8",
@@ -34,6 +34,6 @@
         "typescript": "^5.9.3",
         "typescript-eslint": "^8.52.0",
         "vitest": "^4.0.16",
-        "wrangler": "^4.58.0"
+        "wrangler": "^4.61.1"
     }
 }
