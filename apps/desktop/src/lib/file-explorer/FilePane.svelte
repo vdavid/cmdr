@@ -55,7 +55,8 @@
     const log = getAppLogger('fileExplorer')
     import NetworkBrowser from './NetworkBrowser.svelte'
     import ShareBrowser from './ShareBrowser.svelte'
-    import { MtpBrowser, isMtpVolumeId, parseMtpVolumeId, getMtpDisplayPath } from '$lib/mtp'
+    import { MtpBrowser, isMtpVolumeId, parseMtpVolumeId, getMtpDisplayPath, constructMtpPath } from '$lib/mtp'
+    import { connect as connectMtpDevice } from '$lib/mtp/mtp-store.svelte'
     import * as benchmark from '$lib/benchmark'
     import { handleNavigationShortcut } from './keyboard-shortcuts'
 
@@ -77,6 +78,8 @@
         onNetworkHostChange?: (host: NetworkHost | null) => void
         /** Called when user cancels loading (ESC key) - parent should reload previous folder, optionally selecting the folder we tried to enter */
         onCancelLoading?: (selectName?: string) => void
+        /** Called when MTP connection fails fatally (device disconnected, timeout) - parent should fall back to previous volume */
+        onMtpFatalError?: (error: string) => void
     }
 
     const {
@@ -95,6 +98,7 @@
         onRequestFocus,
         onNetworkHostChange,
         onCancelLoading,
+        onMtpFatalError,
     }: Props = $props()
 
     let currentPath = $state(untrack(() => initialPath))
@@ -141,8 +145,127 @@
     const isMtpView = $derived(isMtpVolumeId(volumeId))
     const mtpVolumeInfo = $derived(isMtpView ? parseMtpVolumeId(volumeId) : null)
 
+    // Check if this is a device-only MTP ID (needs connection)
+    // Device-only IDs start with "mtp-" but don't contain ":" (no storage ID)
+    const isMtpDeviceOnly = $derived(isMtpView && volumeId.startsWith('mtp-') && !volumeId.includes(':'))
+
+    // MTP connection state for device-only IDs
+    let mtpConnecting = $state(false)
+    let mtpConnectionError = $state<string | null>(null)
+    // Track the device ID we've successfully connected to, to prevent re-triggering auto-connect
+    // while waiting for the parent to update volumeId after onVolumeChange
+    let mtpConnectedDeviceId = $state<string | null>(null)
+
     // MTP browser ref
     let mtpBrowserRef: MtpBrowser | undefined = $state()
+
+    // Effect: Reset connected device ID when we're no longer on a device-only MTP volume
+    // This runs when the volume change completes and we switch to a storage-specific ID
+    $effect(() => {
+        if (!isMtpDeviceOnly) {
+            mtpConnectedDeviceId = null
+        }
+    })
+
+    // Effect: Auto-connect when a device-only MTP ID is selected
+    $effect(() => {
+        // Skip if we've already successfully connected to this device (waiting for volume change)
+        if (isMtpDeviceOnly && !mtpConnecting && !mtpConnectionError && mtpConnectedDeviceId !== volumeId) {
+            // Extract device ID from "mtp-{deviceId}" format
+            const deviceId = volumeId // The whole thing is the device ID for device-only format
+
+            mtpConnecting = true
+            mtpConnectionError = null
+
+            log.info('Auto-connecting to MTP device: {deviceId}', { deviceId })
+
+            void connectMtpDevice(deviceId)
+                .then((result) => {
+                    log.info('MTP connection result: {result}', { result: JSON.stringify(result) })
+                    if (result && result.storages.length > 0) {
+                        // Connection successful, switch to first storage
+                        const storage = result.storages[0]
+                        const newVolumeId = `${deviceId}:${String(storage.id)}`
+                        const newPath = constructMtpPath(deviceId, storage.id)
+                        log.info(
+                            'MTP connected, switching to storage: {storageId}, newVolumeId: {newVolumeId}, hasOnVolumeChange: {hasCallback}',
+                            {
+                                storageId: storage.id,
+                                newVolumeId,
+                                hasCallback: !!onVolumeChange,
+                            },
+                        )
+                        // Mark device as connected to prevent auto-connect re-triggering
+                        // while waiting for the parent to update volumeId
+                        mtpConnectedDeviceId = deviceId
+                        if (onVolumeChange) {
+                            onVolumeChange(newVolumeId, newPath, newPath)
+                            log.info('onVolumeChange called successfully')
+                        } else {
+                            log.warn('onVolumeChange callback not provided!')
+                        }
+                    } else {
+                        mtpConnectionError = 'Device has no accessible storage'
+                        log.warn('Device has no storages')
+                    }
+                })
+                .catch((err: unknown) => {
+                    // Handle various error formats from Tauri
+                    let msg: string
+
+                    // Helper to convert error type to user-friendly message
+                    // Note: Rust serde uses camelCase for enum variants (e.g., "timeout" not "Timeout")
+                    const getMessageForType = (errType: string | undefined): string | undefined => {
+                        switch (errType) {
+                            case 'timeout':
+                                return 'Connection timed out. The device may be slow or unresponsive.'
+                            case 'exclusiveAccess':
+                                return 'Another app is using this device. Run the ptpcamerad workaround.'
+                            case 'deviceNotFound':
+                                return 'Device not found. It may have been unplugged.'
+                            case 'disconnected':
+                                return 'Device was disconnected.'
+                            case 'deviceBusy':
+                                return 'Device is busy. Please try again.'
+                            case 'alreadyConnected':
+                                return 'Device is already connected.'
+                            default:
+                                return undefined
+                        }
+                    }
+
+                    if (err instanceof Error) {
+                        msg = err.message
+                    } else if (typeof err === 'string') {
+                        // Error might be a JSON string - try to parse it
+                        try {
+                            const parsed = JSON.parse(err) as Record<string, unknown>
+                            const typeMsg = getMessageForType(parsed.type as string | undefined)
+                            msg = typeMsg || (parsed.userMessage as string) || (parsed.message as string) || err
+                        } catch {
+                            msg = err
+                        }
+                    } else if (typeof err === 'object' && err !== null) {
+                        // Tauri MTP errors come as objects with type field
+                        const errObj = err as Record<string, unknown>
+                        const typeMsg = getMessageForType(errObj.type as string | undefined)
+                        msg =
+                            typeMsg ||
+                            (errObj.userMessage as string) ||
+                            (errObj.message as string) ||
+                            JSON.stringify(err)
+                    } else {
+                        msg = String(err)
+                    }
+                    log.error('MTP connection failed: {error}', { error: msg })
+                    mtpConnectionError = msg
+                })
+                .finally(() => {
+                    log.info('MTP connection finally block, setting mtpConnecting=false')
+                    mtpConnecting = false
+                })
+        }
+    })
 
     // Network browsing state - which host is currently active (if any)
     let currentNetworkHost = $state<NetworkHost | null>(null)
@@ -847,6 +970,12 @@
         error = errorMessage
     }
 
+    // Handle fatal MTP errors (device disconnected, timeout)
+    function handleMtpFatalError(errorMessage: string) {
+        log.error('Fatal MTP error, triggering fallback: {error}', { error: errorMessage })
+        onMtpFatalError?.(errorMessage)
+    }
+
     // Handle network host switching - show the ShareBrowser
     function handleNetworkHostSelect(host: NetworkHost) {
         currentNetworkHost = host
@@ -1324,6 +1453,28 @@
                     onHostSelect={handleNetworkHostSelect}
                 />
             {/if}
+        {:else if isMtpDeviceOnly}
+            <!-- MTP device selected but not yet connected -->
+            <div class="mtp-connecting">
+                {#if mtpConnecting}
+                    <div class="connecting-spinner">
+                        <div class="spinner"></div>
+                        <span>Connecting to device...</span>
+                    </div>
+                {:else if mtpConnectionError}
+                    <div class="mtp-error">
+                        <span class="error-icon">⚠</span>
+                        <span class="error-message">{mtpConnectionError}</span>
+                        <button
+                            type="button"
+                            class="btn"
+                            onclick={() => {
+                                mtpConnectionError = null
+                            }}>Try again</button
+                        >
+                    </div>
+                {/if}
+            </div>
         {:else if isMtpView && mtpVolumeInfo}
             <MtpBrowser
                 bind:this={mtpBrowserRef}
@@ -1333,6 +1484,7 @@
                 {isFocused}
                 onNavigate={handleMtpNavigate}
                 onError={handleMtpError}
+                onFatalError={handleMtpFatalError}
             />
         {:else if loading}
             <LoadingIcon {openingFolder} loadedCount={loadingCount} {finalizingCount} showCancelHint={true} />
@@ -1526,6 +1678,75 @@
     }
 
     .mount-error-state .btn:hover {
+        background-color: var(--color-bg-hover);
+    }
+
+    /* MTP connecting state */
+    .mtp-connecting {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        flex: 1;
+        gap: 12px;
+        padding: 24px;
+    }
+
+    .connecting-spinner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        color: var(--color-text-secondary);
+        font-size: var(--font-size-sm);
+    }
+
+    .connecting-spinner .spinner {
+        width: 24px;
+        height: 24px;
+        border: 2px solid var(--color-border-primary);
+        border-top-color: var(--color-accent);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .mtp-error {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        text-align: center;
+    }
+
+    .mtp-error .error-icon {
+        font-size: 32px;
+    }
+
+    .mtp-error .error-message {
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-sm);
+        height: auto;
+        padding: 0;
+    }
+
+    .mtp-error .btn {
+        padding: 8px 16px;
+        border: 1px solid var(--color-border-primary);
+        border-radius: 6px;
+        background-color: var(--color-bg-secondary);
+        color: var(--color-text-primary);
+        font-size: var(--font-size-sm);
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+    }
+
+    .mtp-error .btn:hover {
         background-color: var(--color-bg-hover);
     }
 </style>
