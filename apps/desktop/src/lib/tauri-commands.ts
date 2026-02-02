@@ -106,13 +106,15 @@ export async function listDirectoryStart(
  * Starts a new streaming directory listing (async version).
  * Returns immediately with listing ID and "loading" status.
  * Progress is reported via events: listing-progress, listing-complete, listing-error, listing-cancelled.
- * @param path - Directory path to list. Supports tilde expansion (~).
+ * @param volumeId - Volume ID (e.g., "root", "mtp-20-5:65537").
+ * @param path - Directory path to list. Supports tilde expansion (~) for local volumes.
  * @param includeHidden - Whether to include hidden files in total count.
  * @param sortBy - Column to sort by.
  * @param sortOrder - Ascending or descending.
  * @param listingId - Unique identifier for the listing (used for cancellation)
  */
 export async function listDirectoryStartStreaming(
+    volumeId: string,
     path: string,
     includeHidden: boolean,
     sortBy: SortColumn,
@@ -120,6 +122,7 @@ export async function listDirectoryStartStreaming(
     listingId: string,
 ): Promise<StreamingListingStartResult> {
     return invoke<StreamingListingStartResult>('list_directory_start_streaming', {
+        volumeId,
         path,
         includeHidden,
         sortBy,

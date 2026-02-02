@@ -37,7 +37,7 @@ pub use operations::get_paths_at_indices;
 pub use provider::FileSystemProvider;
 // Re-export volume types (some not used externally yet)
 #[allow(unused_imports, reason = "Public API re-exports for future use")]
-pub use volume::{InMemoryVolume, LocalPosixVolume, Volume, VolumeError};
+pub use volume::{InMemoryVolume, LocalPosixVolume, MtpVolume, Volume, VolumeError};
 #[allow(unused_imports, reason = "Public API re-exports for future use")]
 pub use volume_manager::VolumeManager;
 // Watcher management - init_watcher_manager must be called from lib.rs

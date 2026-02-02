@@ -1332,6 +1332,7 @@ pub async fn list_directory_start_streaming(
 /// Reads a directory with progress reporting.
 ///
 /// This function runs on a blocking thread pool and emits progress events.
+/// Uses the Volume abstraction to support both local filesystem and MTP devices.
 #[allow(
     clippy::too_many_arguments,
     reason = "Streaming operation requires many state parameters"
@@ -1348,14 +1349,10 @@ fn read_directory_with_progress(
 ) -> Result<(), std::io::Error> {
     use tauri::Emitter;
 
-    let mut entries = Vec::new();
-    let mut last_progress_time = std::time::Instant::now();
-    const PROGRESS_INTERVAL: std::time::Duration = std::time::Duration::from_millis(500);
-
     benchmark::log_event("read_directory_with_progress START");
 
     // Emit opening event - this is the slow part for network folders
-    // (SMB connection establishment, directory handle creation)
+    // (SMB connection establishment, directory handle creation, MTP queries)
     let _ = app.emit(
         "listing-opening",
         ListingOpeningEvent {
@@ -1363,43 +1360,31 @@ fn read_directory_with_progress(
         },
     );
 
-    // Read directory entries one by one
-    let read_start = std::time::Instant::now();
-    for entry_result in fs::read_dir(path)? {
-        // Check cancellation
-        if state.cancelled.load(Ordering::Relaxed) {
-            benchmark::log_event("read_directory_with_progress CANCELLED");
-            let _ = app.emit(
-                "listing-cancelled",
-                ListingCancelledEvent {
-                    listing_id: listing_id.to_string(),
-                },
-            );
-            return Ok(());
-        }
-
-        let entry = match entry_result {
-            Ok(e) => e,
-            Err(_) => continue, // Skip unreadable entries
-        };
-
-        // Process entry (same logic as list_directory_core)
-        if let Some(file_entry) = process_dir_entry(&entry) {
-            entries.push(file_entry);
-        }
-
-        // Emit progress every 500ms
-        if last_progress_time.elapsed() >= PROGRESS_INTERVAL {
-            let _ = app.emit(
-                "listing-progress",
-                ListingProgressEvent {
-                    listing_id: listing_id.to_string(),
-                    loaded_count: entries.len(),
-                },
-            );
-            last_progress_time = std::time::Instant::now();
-        }
+    // Check cancellation before starting
+    if state.cancelled.load(Ordering::Relaxed) {
+        benchmark::log_event("read_directory_with_progress CANCELLED (before read)");
+        let _ = app.emit(
+            "listing-cancelled",
+            ListingCancelledEvent {
+                listing_id: listing_id.to_string(),
+            },
+        );
+        return Ok(());
     }
+
+    // Get the volume from VolumeManager
+    let volume = super::get_volume_manager().get(volume_id).ok_or_else(|| {
+        std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            format!("Volume not found: {}", volume_id),
+        )
+    })?;
+
+    // Read directory entries via Volume abstraction
+    let read_start = std::time::Instant::now();
+    let mut entries = volume
+        .list_directory(path)
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
     let read_dir_time = read_start.elapsed();
     benchmark::log_event_value("read_dir COMPLETE, entries", entries.len());
 

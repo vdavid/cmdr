@@ -32,6 +32,7 @@
         listen,
         listVolumes,
         mountNetworkShare,
+        onMtpDeviceRemoved,
         openFile,
         openInEditor,
         showFileContextMenu,
@@ -55,7 +56,7 @@
     const log = getAppLogger('fileExplorer')
     import NetworkBrowser from './NetworkBrowser.svelte'
     import ShareBrowser from './ShareBrowser.svelte'
-    import { MtpBrowser, isMtpVolumeId, parseMtpVolumeId, getMtpDisplayPath, constructMtpPath } from '$lib/mtp'
+    import { isMtpVolumeId, getMtpDisplayPath, constructMtpPath } from '$lib/mtp'
     import { connect as connectMtpDevice } from '$lib/mtp/mtp-store.svelte'
     import * as benchmark from '$lib/benchmark'
     import { handleNavigationShortcut } from './keyboard-shortcuts'
@@ -143,7 +144,6 @@
 
     // Check if we're viewing an MTP device
     const isMtpView = $derived(isMtpVolumeId(volumeId))
-    const mtpVolumeInfo = $derived(isMtpView ? parseMtpVolumeId(volumeId) : null)
 
     // Check if this is a device-only MTP ID (needs connection)
     // Device-only IDs start with "mtp-" but don't contain ":" (no storage ID)
@@ -155,9 +155,6 @@
     // Track the device ID we've successfully connected to, to prevent re-triggering auto-connect
     // while waiting for the parent to update volumeId after onVolumeChange
     let mtpConnectedDeviceId = $state<string | null>(null)
-
-    // MTP browser ref
-    let mtpBrowserRef: MtpBrowser | undefined = $state()
 
     // Effect: Reset connected device ID when we're no longer on a device-only MTP volume
     // This runs when the volume change completes and we switch to a storage-specific ID
@@ -388,23 +385,32 @@
         return currentPath
     }
 
-    // Get MTP browser reference for operations
-    export function getMtpBrowser(): MtpBrowser | undefined {
-        return mtpBrowserRef
+    // Get MTP browser reference for operations - DEPRECATED, MTP now uses standard listing
+    // Kept for backwards compatibility but returns undefined
+    export function getMtpBrowser(): undefined {
+        return undefined
     }
 
-    // Get selected files from MTP browser
-    export function getMtpSelectedFiles(): FileEntry[] {
-        if (!isMtpView || !mtpBrowserRef) return []
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return
-        return mtpBrowserRef.getSelectedFiles()
+    // Get selected files from MTP browser - DEPRECATED, use standard selection
+    // For MTP views, this now returns files from the standard listing
+    export async function getMtpSelectedFiles(): Promise<FileEntry[]> {
+        if (!isMtpView || !listingId) return []
+        const files: FileEntry[] = []
+        for (const index of selectedIndices) {
+            const backendIndex = hasParent ? index - 1 : index
+            if (backendIndex >= 0) {
+                const entry = await getFileAt(listingId, backendIndex, includeHidden)
+                if (entry) files.push(entry)
+            }
+        }
+        return files
     }
 
-    // Get file under cursor from MTP browser
+    // Get file under cursor from MTP browser - DEPRECATED, use standard cursor
+    // For MTP views, this now returns the file from the standard listing
     export function getMtpEntryUnderCursor(): FileEntry | null {
-        if (!isMtpView || !mtpBrowserRef) return null
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return
-        return mtpBrowserRef.getEntryUnderCursor()
+        if (!isMtpView) return null
+        return entryUnderCursor
     }
 
     // Set network host state (for history navigation)
@@ -448,6 +454,8 @@
     // Finalizing state (read_dir done, now sorting/caching)
     let finalizingCount = $state<number | undefined>(undefined)
     let unlistenReadComplete: UnlistenFn | undefined
+    // MTP device removal listener
+    let unlistenMtpRemoved: UnlistenFn | undefined
     // Polling interval for sync status (visible files only)
     let syncPollInterval: ReturnType<typeof setInterval> | undefined
     const SYNC_POLL_INTERVAL_MS = 2000 // Poll every 2 seconds
@@ -748,6 +756,14 @@
                     openingFolder = false
                     loadingCount = undefined
                     finalizingCount = undefined
+
+                    // For MTP volumes, trigger fallback on error (device likely disconnected)
+                    if (isMtpView) {
+                        log.warn('MTP listing error, triggering fallback: {error}', {
+                            error: event.payload.message,
+                        })
+                        onMtpFatalError?.(event.payload.message)
+                    }
                 }
             })
 
@@ -765,7 +781,7 @@
 
             // Now start streaming listing - listeners are already set up
             benchmark.logEvent('IPC listDirectoryStartStreaming CALL')
-            const result = await listDirectoryStartStreaming(path, includeHidden, sortBy, sortOrder, newListingId)
+            const result = await listDirectoryStartStreaming(volumeId, path, includeHidden, sortBy, sortOrder, newListingId)
             benchmark.logEventValue('IPC listDirectoryStartStreaming RETURNED', result.listingId)
 
             // Check if this load was cancelled while we were starting
@@ -951,8 +967,11 @@
         currentPath = targetPath
         onVolumeChange?.(newVolumeId, newVolumePath, targetPath)
 
-        // Don't load directory for network/MTP volumes - they handle their own data
-        if (newVolumeId !== 'network' && !isMtpVolumeId(newVolumeId)) {
+        // Don't load directory for network views (they handle their own data)
+        // or device-only MTP views (they need connection first via auto-connect effect)
+        // But DO load for connected MTP views (storage-specific volume ID contains ":")
+        const isDeviceOnlyMtp = isMtpVolumeId(newVolumeId) && !newVolumeId.includes(':')
+        if (newVolumeId !== 'network' && !isDeviceOnlyMtp) {
             void loadDirectory(targetPath)
         }
     }
@@ -1181,13 +1200,6 @@
             return
         }
 
-        // Delegate to MtpBrowser for MTP views
-        if (isMtpView) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            mtpBrowserRef?.handleKeyDown(e)
-            return
-        }
-
         // Handle Enter key - navigate into the entry under the cursor
         if (e.key === 'Enter') {
             const entry = getEntryUnderCursor()
@@ -1229,11 +1241,6 @@
     // Handle key release - clear range state when Shift is released
     // This ensures a new Shift+navigation starts fresh selection from current cursor
     export function handleKeyUp(e: KeyboardEvent) {
-        if (isMtpView) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            mtpBrowserRef?.handleKeyUp(e)
-            return
-        }
         if (e.key === 'Shift') {
             clearRangeState()
         }
@@ -1254,18 +1261,19 @@
     })
 
     // Update path when initialPath prop changes (for persistence loading)
-    // Skip for network/MTP views - they handle their own data
+    // Skip for network views and device-only MTP views (not yet connected)
     // Use untrack for currentPath so this effect only fires when initialPath changes,
     // not when the user navigates (which changes currentPath before onPathChange is called)
     $effect(() => {
         const newPath = initialPath // Track this
         const curPath = untrack(() => currentPath) // Don't track this
-        if (!isNetworkView && !isMtpView && newPath !== curPath) {
+        // Load for local volumes and connected MTP views (not device-only)
+        if (!isNetworkView && !isMtpDeviceOnly && newPath !== curPath) {
             currentPath = newPath
             void loadDirectory(newPath)
         }
-        // For MTP views, just update the path (MtpBrowser handles loading via its own effect)
-        if (isMtpView && newPath !== curPath) {
+        // For device-only MTP views, just update the path (auto-connect will handle switching to storage)
+        if (isMtpDeviceOnly && newPath !== curPath) {
             currentPath = newPath
         }
     })
@@ -1364,9 +1372,36 @@
         }
     })
 
+    // Listen for MTP device removal events
+    // When the device is disconnected, trigger fallback to previous volume
+    $effect(() => {
+        void onMtpDeviceRemoved((event) => {
+            // Check if the removed device matches our current MTP volume
+            // volumeId format: "mtp-{bus}-{addr}:{storageId}" (e.g., "mtp-0-1:65537")
+            // event.deviceId format: "mtp-{bus}-{addr}" (e.g., "mtp-0-1")
+            if (isMtpView && volumeId.startsWith(event.deviceId + ':')) {
+                log.warn('MTP device disconnected while viewing: {deviceId}, triggering fallback', {
+                    deviceId: event.deviceId,
+                })
+                onMtpFatalError?.('Device disconnected')
+            }
+        })
+            .then((unsub) => {
+                unlistenMtpRemoved = unsub
+            })
+            .catch(() => {})
+
+        return () => {
+            unlistenMtpRemoved?.()
+        }
+    })
+
     onMount(() => {
-        // Skip directory loading for network/MTP views - they handle their own data
-        if (!isNetworkView && !isMtpView) {
+        // Skip directory loading for:
+        // - Network views (they handle their own data via NetworkBrowser/ShareBrowser)
+        // - Device-only MTP views (they need connection first, handled by auto-connect effect)
+        // But DO load for connected MTP views (storage-specific volume ID)
+        if (!isNetworkView && !isMtpDeviceOnly) {
             void loadDirectory(currentPath)
         }
 
@@ -1390,6 +1425,7 @@
         unlistenComplete?.()
         unlistenError?.()
         unlistenCancelled?.()
+        unlistenMtpRemoved?.()
         if (syncPollInterval) {
             clearInterval(syncPollInterval)
         }
@@ -1475,17 +1511,6 @@
                     </div>
                 {/if}
             </div>
-        {:else if isMtpView && mtpVolumeInfo}
-            <MtpBrowser
-                bind:this={mtpBrowserRef}
-                path={currentPath}
-                deviceId={mtpVolumeInfo.deviceId}
-                storageId={mtpVolumeInfo.storageId}
-                {isFocused}
-                onNavigate={handleMtpNavigate}
-                onError={handleMtpError}
-                onFatalError={handleMtpFatalError}
-            />
         {:else if loading}
             <LoadingIcon {openingFolder} loadedCount={loadingCount} {finalizingCount} showCancelHint={true} />
         {:else if isPermissionDenied}
@@ -1545,8 +1570,8 @@
             />
         {/if}
     </div>
-    <!-- SelectionInfo shown in both modes (not in network/MTP views) -->
-    {#if !isNetworkView && !isMtpView}
+    <!-- SelectionInfo shown in both modes (not in network view or MTP connecting state) -->
+    {#if !isNetworkView && !isMtpDeviceOnly}
         <SelectionInfo
             {viewMode}
             entry={entryUnderCursor}

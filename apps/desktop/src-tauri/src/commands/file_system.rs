@@ -112,22 +112,25 @@ pub fn list_directory_start(
 ///
 /// # Arguments
 /// * `app` - Tauri app handle (injected by Tauri).
-/// * `path` - The directory path to list. Supports tilde expansion (~).
+/// * `volume_id` - The volume ID (e.g., "root", "mtp-20-5:65537").
+/// * `path` - The directory path to list. Supports tilde expansion (~) for local volumes.
 /// * `include_hidden` - Whether to include hidden files in total count.
 /// * `sort_by` - Column to sort by (name, extension, size, modified, created).
 /// * `sort_order` - Ascending or descending.
 #[tauri::command]
 pub async fn list_directory_start_streaming(
     app: tauri::AppHandle,
+    volume_id: String,
     path: String,
     include_hidden: bool,
     sort_by: SortColumn,
     sort_order: SortOrder,
     listing_id: String,
 ) -> Result<StreamingListingStartResult, String> {
-    let expanded_path = expand_tilde(&path);
+    // Only expand tilde for local volumes (not MTP)
+    let expanded_path = if volume_id == "root" { expand_tilde(&path) } else { path.clone() };
     let path_buf = PathBuf::from(&expanded_path);
-    ops_list_directory_start_streaming(app, "root", &path_buf, include_hidden, sort_by, sort_order, listing_id)
+    ops_list_directory_start_streaming(app, &volume_id, &path_buf, include_hidden, sort_by, sort_order, listing_id)
         .await
         .map_err(|e| format!("Failed to start directory listing '{}': {}", path, e))
 }
