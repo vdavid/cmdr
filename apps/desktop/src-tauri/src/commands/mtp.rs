@@ -1,5 +1,6 @@
 //! Tauri commands for MTP (Android device) operations.
 
+use log::debug;
 use std::path::PathBuf;
 
 use crate::file_system::FileEntry;
@@ -61,8 +62,8 @@ pub async fn disconnect_mtp_device(app: AppHandle, device_id: String) -> Result<
 ///
 /// * `device_id` - The device ID to query
 #[tauri::command]
-pub fn get_mtp_device_info(device_id: String) -> Option<ConnectedDeviceInfo> {
-    mtp::connection_manager().get_device_info(&device_id)
+pub async fn get_mtp_device_info(device_id: String) -> Option<ConnectedDeviceInfo> {
+    mtp::connection_manager().get_device_info(&device_id).await
 }
 
 /// Gets the ptpcamerad workaround command for macOS.
@@ -84,9 +85,10 @@ pub fn get_ptpcamerad_workaround_command() -> String {
 ///
 /// A vector of storage info, or empty if device is not connected.
 #[tauri::command]
-pub fn get_mtp_storages(device_id: String) -> Vec<MtpStorageInfo> {
+pub async fn get_mtp_storages(device_id: String) -> Vec<MtpStorageInfo> {
     mtp::connection_manager()
         .get_device_info(&device_id)
+        .await
         .map(|info| info.storages)
         .unwrap_or_default()
 }
@@ -111,9 +113,22 @@ pub async fn list_mtp_directory(
     storage_id: u32,
     path: String,
 ) -> Result<Vec<FileEntry>, MtpConnectionError> {
-    mtp::connection_manager()
+    debug!(
+        "list_mtp_directory: ENTERED - device={}, storage={}, path={}",
+        device_id, storage_id, path
+    );
+    let result = mtp::connection_manager()
         .list_directory(&device_id, storage_id, &path)
-        .await
+        .await;
+    match &result {
+        Ok(entries) => debug!(
+            "list_mtp_directory: SUCCESS - {} entries for {}",
+            entries.len(),
+            path
+        ),
+        Err(e) => debug!("list_mtp_directory: ERROR - {:?}", e),
+    }
+    result
 }
 
 // ============================================================================

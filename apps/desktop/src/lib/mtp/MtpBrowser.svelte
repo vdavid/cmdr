@@ -51,6 +51,117 @@
     /** Row height for file list */
     const ROW_HEIGHT = 20
 
+    /**
+     * Extracts a user-friendly error message from various error formats.
+     * Handles Error objects, Tauri error objects (including MTP errors), and plain strings.
+     */
+    function extractErrorMessage(e: unknown): string {
+        if (e instanceof Error) {
+            return e.message
+        }
+        if (typeof e === 'string') {
+            // Could be a JSON string from Tauri
+            try {
+                const parsed = JSON.parse(e) as Record<string, unknown>
+                return extractFromParsedError(parsed) || e
+            } catch {
+                return e
+            }
+        }
+        if (typeof e === 'object' && e !== null) {
+            const errObj = e as Record<string, unknown>
+            return extractFromParsedError(errObj) || 'Unknown error'
+        }
+        return String(e)
+    }
+
+    /**
+     * Checks if an error indicates the MTP connection is unrecoverable.
+     * Fatal errors mean the device is disconnected or inaccessible.
+     */
+    function isFatalMtpError(e: unknown): boolean {
+        // Check parsed error type
+        const errType = getErrorType(e)
+        if (!errType) return false
+
+        // These error types indicate the device is no longer available
+        const fatalTypes = ['notConnected', 'deviceNotFound', 'disconnected', 'timeout']
+        return fatalTypes.includes(errType)
+    }
+
+    /**
+     * Extracts the error type from various error formats.
+     */
+    function getErrorType(e: unknown): string | null {
+        if (typeof e === 'string') {
+            try {
+                const parsed = JSON.parse(e) as Record<string, unknown>
+                return (parsed.type as string) || null
+            } catch {
+                return null
+            }
+        }
+        if (typeof e === 'object' && e !== null) {
+            const errObj = e as Record<string, unknown>
+            return (errObj.type as string) || null
+        }
+        return null
+    }
+
+    /**
+     * Extracts message from a parsed error object.
+     * Handles MTP error types with 'type' field and standard error formats.
+     */
+    function extractFromParsedError(errObj: Record<string, unknown>): string | null {
+        // Standard error fields
+        if (errObj.userMessage) return String(errObj.userMessage)
+        if (errObj.message) return String(errObj.message)
+
+        // MTP errors have a 'type' field (from Rust enum with serde tag="type")
+        if (errObj.type && typeof errObj.type === 'string') {
+            const deviceId = (errObj.deviceId as string) || (errObj.device_id as string) || 'device'
+            const errType = errObj.type as string
+
+            switch (errType) {
+                case 'timeout':
+                    return `Connection timed out. The device (${deviceId}) may be slow or unresponsive.`
+                case 'notConnected':
+                    return 'Device not connected. Please reconnect from the volume picker.'
+                case 'deviceNotFound':
+                    return 'Device not found. It may have been unplugged.'
+                case 'alreadyConnected':
+                    return 'Device is already connected.'
+                case 'exclusiveAccess':
+                    return 'Another app is using this device. Close it and try again.'
+                case 'disconnected':
+                    return 'Device was disconnected.'
+                case 'deviceBusy':
+                    return 'Device is busy. Please wait and try again.'
+                case 'storageFull':
+                    return 'Device storage is full.'
+                case 'objectNotFound':
+                    return `File or folder not found: ${(errObj.path as string) || 'unknown'}`
+                case 'protocol':
+                    return `Device error: ${(errObj.message as string) || 'protocol error'}`
+                case 'other':
+                    return (errObj.message as string) || 'An error occurred'
+                default:
+                    // Unknown type, try to provide useful info
+                    return `Error (${errType}): ${JSON.stringify(errObj)}`
+            }
+        }
+
+        // Fallback: try to stringify
+        try {
+            const json = JSON.stringify(errObj)
+            // Avoid returning unhelpful empty object
+            if (json === '{}') return null
+            return json
+        } catch {
+            return null
+        }
+    }
+
     interface Props {
         /** Full MTP path: mtp://{deviceId}/{storageId}/{path} */
         path: string
@@ -64,14 +175,20 @@
         onNavigate?: (newPath: string, selectName?: string) => void
         /** Callback when an error occurs */
         onError?: (error: string) => void
+        /** Callback when a fatal error occurs (device disconnected, unrecoverable timeout) - parent should fall back to previous volume */
+        onFatalError?: (error: string) => void
     }
 
-    const { path, deviceId, storageId, isFocused = false, onNavigate, onError }: Props = $props()
+    const { path, deviceId, storageId, isFocused = false, onNavigate, onError, onFatalError }: Props = $props()
 
     // State
     let loading = $state(true)
     let connecting = $state(false)
     let error = $state<string | null>(null)
+    // Guard to prevent concurrent loadDirectory calls
+    let loadInProgress = $state(false)
+    // Track which path was last loaded to prevent redundant loads
+    let lastLoadedPath = $state<string | null>(null)
     let files = $state<FileEntry[]>([])
     let cursorIndex = $state(0)
     let showPtpcameradDialog = $state(false)
@@ -138,16 +255,21 @@
      * Attempts to connect to the MTP device.
      */
     async function connectToDevice() {
+        log.debug('connectToDevice: starting connection to {deviceId}', { deviceId })
         connecting = true
         error = null
 
         try {
+            log.debug('connectToDevice: calling connect()...')
             await connect(deviceId)
             log.info('Connected to MTP device: {deviceId}', { deviceId })
+            log.debug('connectToDevice: connection complete, isConnected={isConnected}', { isConnected })
             // After connection, load the directory
+            log.debug('connectToDevice: calling loadDirectory()...')
             await loadDirectory()
+            log.debug('connectToDevice: loadDirectory() complete')
         } catch (e) {
-            const errorMessage = e instanceof Error ? e.message : String(e)
+            const errorMessage = extractErrorMessage(e)
             log.error('Failed to connect to MTP device: {error}', { error: errorMessage })
 
             // Check if it's an exclusive access error (ptpcamerad)
@@ -159,6 +281,12 @@
             } else {
                 error = errorMessage
                 onError?.(errorMessage)
+
+                // Connection failures (except exclusive access) are fatal - trigger fallback
+                if (isFatalMtpError(e)) {
+                    log.warn('Fatal MTP connection error, triggering fallback: {error}', { error: errorMessage })
+                    onFatalError?.(errorMessage)
+                }
             }
         } finally {
             connecting = false
@@ -167,30 +295,63 @@
 
     /**
      * Loads the current directory from the MTP device.
+     * @param force - If true, ignores lastLoadedPath check and forces a reload
      */
-    async function loadDirectory() {
+    async function loadDirectory(force = false) {
+        log.debug('loadDirectory called, isConnected={isConnected}, loadInProgress={loadInProgress}', {
+            isConnected,
+            loadInProgress,
+        })
         if (!isConnected) {
+            log.debug('loadDirectory: not connected, returning early')
             return
         }
 
+        // Prevent concurrent or redundant calls
+        if (loadInProgress) {
+            log.debug('loadDirectory: already in progress, skipping')
+            return
+        }
+
+        const currentPath = path
+        if (!force && lastLoadedPath === currentPath) {
+            log.debug('loadDirectory: path unchanged ({path}), skipping', { path: currentPath })
+            return
+        }
+
+        loadInProgress = true
         loading = true
         error = null
 
         try {
             const innerPath = parsed?.path ?? ''
+            log.debug('loadDirectory: calling listMtpDirectory({deviceId}, {storageId}, {path})', {
+                deviceId,
+                storageId,
+                path: innerPath || '/',
+            })
             const entries = await listMtpDirectory(deviceId, storageId, innerPath)
+            log.debug('loadDirectory: got {count} entries', { count: entries.length })
             files = entries
             cursorIndex = 0
             selectedIndices.clear()
+            lastLoadedPath = currentPath
             log.debug('Loaded {count} entries from MTP: {path}', { count: entries.length, path: innerPath || '/' })
         } catch (e) {
-            const errorMessage = e instanceof Error ? e.message : String(e)
+            const errorMessage = extractErrorMessage(e)
             log.error('Failed to list MTP directory: {error}', { error: errorMessage })
             error = errorMessage
             files = []
             onError?.(errorMessage)
+
+            // Check if this is a fatal error that requires falling back to another volume
+            if (isFatalMtpError(e)) {
+                log.warn('Fatal MTP error detected, triggering fallback: {error}', { error: errorMessage })
+                onFatalError?.(errorMessage)
+            }
         } finally {
             loading = false
+            loadInProgress = false
         }
     }
 

@@ -50,38 +50,45 @@
         }
     }
 
-    onMount(async () => {
-        // Initialize reactive settings for UI components
-        await initReactiveSettings()
+    // Cleanup functions stored for onDestroy
+    let mtpUnlistenPromise: Promise<() => void> | undefined
+    let updateCleanup: (() => void) | undefined
 
-        // Initialize settings and apply them to CSS variables
-        await initSettingsApplier()
+    onMount(() => {
+        // Initialize all async setup
+        void (async () => {
+            // Initialize reactive settings for UI components
+            await initReactiveSettings()
 
-        // Initialize keyboard shortcuts store (loads custom shortcuts from disk)
-        await initializeShortcuts()
+            // Initialize settings and apply them to CSS variables
+            await initSettingsApplier()
 
-        // Set up MCP shortcuts listener (allows MCP tools to modify shortcuts)
-        await setupMcpShortcutsListener()
+            // Initialize keyboard shortcuts store (loads custom shortcuts from disk)
+            await initializeShortcuts()
 
-        // Initialize window state persistence on resize
-        // This ensures window size/position survives hot reloads
-        void initWindowStateListener()
+            // Set up MCP shortcuts listener (allows MCP tools to modify shortcuts)
+            await setupMcpShortcutsListener()
 
-        // Listen for MTP exclusive access errors
-        const mtpUnlisten = onMtpExclusiveAccessError(handleMtpExclusiveAccessError)
+            // Initialize window state persistence on resize
+            // This ensures window size/position survives hot reloads
+            void initWindowStateListener()
 
-        // Start checking for updates (skips in dev mode)
-        const updateCleanup = startUpdateChecker()
+            // Listen for MTP exclusive access errors
+            mtpUnlistenPromise = onMtpExclusiveAccessError(handleMtpExclusiveAccessError)
 
-        return () => {
-            void mtpUnlisten.then((unlisten) => {
-                unlisten()
-            })
-            updateCleanup()
-        }
+            // Start checking for updates (skips in dev mode)
+            updateCleanup = startUpdateChecker()
+        })()
     })
 
     onDestroy(() => {
+        // Cleanup MTP listener
+        void mtpUnlistenPromise?.then((unlisten) => {
+            unlisten()
+        })
+        // Cleanup update checker
+        updateCleanup?.()
+        // Cleanup other modules
         cleanupReactiveSettings()
         cleanupSettingsApplier()
         cleanupMcpShortcutsListener()

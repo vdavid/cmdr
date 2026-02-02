@@ -718,6 +718,40 @@
     }
 
     /**
+     * Handles fatal MTP errors for the left pane.
+     * Falls back to the default volume when the MTP device becomes unavailable.
+     */
+    async function handleLeftMtpFatalError(errorMessage: string) {
+        log.warn('Left pane MTP fatal error, falling back to default volume: {error}', { error: errorMessage })
+
+        const defaultVolumeId = await getDefaultVolumeId()
+        const defaultVolume = volumes.find((v) => v.id === defaultVolumeId)
+        const defaultPath = defaultVolume?.path ?? '~'
+
+        leftVolumeId = defaultVolumeId
+        leftPath = defaultPath
+        leftHistory = push(leftHistory, { volumeId: defaultVolumeId, path: defaultPath })
+        void saveAppStatus({ leftVolumeId: defaultVolumeId, leftPath: defaultPath })
+    }
+
+    /**
+     * Handles fatal MTP errors for the right pane.
+     * Falls back to the default volume when the MTP device becomes unavailable.
+     */
+    async function handleRightMtpFatalError(errorMessage: string) {
+        log.warn('Right pane MTP fatal error, falling back to default volume: {error}', { error: errorMessage })
+
+        const defaultVolumeId = await getDefaultVolumeId()
+        const defaultVolume = volumes.find((v) => v.id === defaultVolumeId)
+        const defaultPath = defaultVolume?.path ?? '~'
+
+        rightVolumeId = defaultVolumeId
+        rightPath = defaultPath
+        rightHistory = push(rightHistory, { volumeId: defaultVolumeId, path: defaultPath })
+        void saveAppStatus({ rightVolumeId: defaultVolumeId, rightPath: defaultPath })
+    }
+
+    /**
      * Resolves a path to a valid existing path by walking up the parent tree.
      * Returns null if even the root doesn't exist (volume unmounted).
      */
@@ -1541,6 +1575,7 @@
                 onSortChange={handleLeftSortChange}
                 onNetworkHostChange={handleLeftNetworkHostChange}
                 onCancelLoading={handleLeftCancelLoading}
+                onMtpFatalError={handleLeftMtpFatalError}
             />
         </div>
         <PaneResizer onResize={handlePaneResize} onResizeEnd={handlePaneResizeEnd} onReset={handlePaneResizeReset} />
@@ -1562,6 +1597,7 @@
                 onSortChange={handleRightSortChange}
                 onNetworkHostChange={handleRightNetworkHostChange}
                 onCancelLoading={handleRightCancelLoading}
+                onMtpFatalError={handleRightMtpFatalError}
             />
         </div>
     {:else}

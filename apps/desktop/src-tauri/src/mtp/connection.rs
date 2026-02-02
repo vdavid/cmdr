@@ -10,7 +10,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
-use std::sync::{Arc, LazyLock, Mutex, RwLock};
+use std::sync::{Arc, LazyLock, RwLock};
+use tokio::sync::Mutex;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
 use tokio::io::AsyncWriteExt;
@@ -230,7 +231,7 @@ pub struct ConnectedDeviceInfo {
 /// Internal entry for a connected device.
 struct DeviceEntry {
     /// The MTP device handle (wrapped in Arc for shared access).
-    device: Arc<tokio::sync::Mutex<MtpDevice>>,
+    device: Arc<Mutex<MtpDevice>>,
     /// Device metadata.
     info: MtpDeviceInfo,
     /// Cached storage information.
@@ -272,6 +273,23 @@ pub struct MtpConnectionManager {
     devices: Mutex<HashMap<String, DeviceEntry>>,
 }
 
+/// Acquires the device lock with a timeout.
+/// This prevents indefinite blocking if the device is unresponsive or another operation is stuck.
+async fn acquire_device_lock<'a>(
+    device_arc: &'a Arc<Mutex<MtpDevice>>,
+    device_id: &str,
+    operation: &str,
+) -> Result<tokio::sync::MutexGuard<'a, MtpDevice>, MtpConnectionError> {
+    tokio::time::timeout(Duration::from_secs(MTP_TIMEOUT_SECS), device_arc.lock())
+        .await
+        .map_err(|_| {
+            error!("MTP {}: timed out waiting for device lock", operation);
+            MtpConnectionError::Timeout {
+                device_id: device_id.to_string(),
+            }
+        })
+}
+
 impl MtpConnectionManager {
     /// Creates a new connection manager.
     fn new() -> Self {
@@ -294,7 +312,7 @@ impl MtpConnectionManager {
     ) -> Result<ConnectedDeviceInfo, MtpConnectionError> {
         // Check if already connected
         {
-            let devices = self.devices.lock().unwrap();
+            let devices = self.devices.lock().await;
             if devices.contains_key(device_id) {
                 return Err(MtpConnectionError::AlreadyConnected {
                     device_id: device_id.to_string(),
@@ -308,8 +326,10 @@ impl MtpConnectionManager {
         let (bus, address) = parse_device_id(device_id).ok_or_else(|| MtpConnectionError::DeviceNotFound {
             device_id: device_id.to_string(),
         })?;
+        debug!("Parsed device_id: bus={}, address={}", bus, address);
 
         // Find and open the device
+        debug!("Opening MTP device (timeout={}s)...", MTP_TIMEOUT_SECS);
         let device = match open_device(bus, address).await {
             Ok(d) => d,
             Err(e) => {
@@ -365,9 +385,10 @@ impl MtpConnectionManager {
             },
         };
 
-        debug!("Connected to: {} {}", mtp_info.manufacturer, mtp_info.model);
+        debug!("Device opened successfully: {} {}", mtp_info.manufacturer, mtp_info.model);
 
         // Get storage information
+        debug!("Fetching storage information...");
         let storages = match get_storages(&device).await {
             Ok(s) => s,
             Err(e) => {
@@ -383,11 +404,11 @@ impl MtpConnectionManager {
 
         // Store in registry with Arc-wrapped device for shared access
         {
-            let mut devices = self.devices.lock().unwrap();
+            let mut devices = self.devices.lock().await;
             devices.insert(
                 device_id.to_string(),
                 DeviceEntry {
-                    device: Arc::new(tokio::sync::Mutex::new(device)),
+                    device: Arc::new(Mutex::new(device)),
                     info: device_info,
                     storages,
                     path_cache: RwLock::new(HashMap::new()),
@@ -424,7 +445,7 @@ impl MtpConnectionManager {
 
         // Remove from registry
         let entry = {
-            let mut devices = self.devices.lock().unwrap();
+            let mut devices = self.devices.lock().await;
             devices.remove(device_id)
         };
 
@@ -457,8 +478,8 @@ impl MtpConnectionManager {
     }
 
     /// Gets information about a connected device.
-    pub fn get_device_info(&self, device_id: &str) -> Option<ConnectedDeviceInfo> {
-        let devices = self.devices.lock().unwrap();
+    pub async fn get_device_info(&self, device_id: &str) -> Option<ConnectedDeviceInfo> {
+        let devices = self.devices.lock().await;
         devices.get(device_id).map(|entry| ConnectedDeviceInfo {
             device: entry.info.clone(),
             storages: entry.storages.clone(),
@@ -467,15 +488,15 @@ impl MtpConnectionManager {
 
     /// Checks if a device is connected.
     #[allow(dead_code, reason = "Will be used in Phase 3+ for file browsing")]
-    pub fn is_connected(&self, device_id: &str) -> bool {
-        let devices = self.devices.lock().unwrap();
+    pub async fn is_connected(&self, device_id: &str) -> bool {
+        let devices = self.devices.lock().await;
         devices.contains_key(device_id)
     }
 
     /// Returns a list of all connected device IDs.
     #[allow(dead_code, reason = "Will be used in Phase 5 for multi-device management")]
-    pub fn connected_device_ids(&self) -> Vec<String> {
-        let devices = self.devices.lock().unwrap();
+    pub async fn connected_device_ids(&self) -> Vec<String> {
+        let devices = self.devices.lock().await;
         devices.keys().cloned().collect()
     }
 
@@ -506,7 +527,7 @@ impl MtpConnectionManager {
 
         // Check listing cache first
         {
-            let devices = self.devices.lock().unwrap();
+            let devices = self.devices.lock().await;
             if let Some(entry) = devices.get(device_id)
                 && let Ok(cache_map) = entry.listing_cache.read()
                 && let Some(storage_cache) = cache_map.get(&storage_id)
@@ -525,20 +546,26 @@ impl MtpConnectionManager {
         }
 
         // Get the device and resolve path to handle
+        debug!("MTP list_directory: acquiring devices lock...");
         let (device_arc, parent_handle) = {
-            let devices = self.devices.lock().unwrap();
+            let devices = self.devices.lock().await;
+            debug!("MTP list_directory: got devices lock, looking up device...");
             let entry = devices.get(device_id).ok_or_else(|| MtpConnectionError::NotConnected {
                 device_id: device_id.to_string(),
             })?;
 
             // Resolve path to parent handle
+            debug!("MTP list_directory: resolving path to handle...");
             let parent_handle = self.resolve_path_to_handle(entry, storage_id, path)?;
+            debug!("MTP list_directory: resolved to handle {:?}", parent_handle);
 
             (Arc::clone(&entry.device), parent_handle)
         };
 
         // List directory contents (async operation)
-        let device = device_arc.lock().await;
+        debug!("MTP list_directory: acquiring device lock...");
+        let device = acquire_device_lock(&device_arc, device_id, "list_directory").await?;
+        debug!("MTP list_directory: got device lock, getting storage...");
 
         // Get the storage object
         let storage = tokio::time::timeout(
@@ -550,6 +577,7 @@ impl MtpConnectionManager {
             device_id: device_id.to_string(),
         })?
         .map_err(|e| map_mtp_error(e, device_id))?;
+        debug!("MTP list_directory: got storage object");
 
         // Use list_objects which returns Vec<ObjectInfo> directly
         let parent_opt = if parent_handle == ObjectHandle::ROOT {
@@ -558,6 +586,7 @@ impl MtpConnectionManager {
             Some(parent_handle)
         };
 
+        debug!("MTP list_directory: calling list_objects (parent={:?})...", parent_opt);
         let object_infos =
             tokio::time::timeout(Duration::from_secs(MTP_TIMEOUT_SECS), storage.list_objects(parent_opt))
                 .await
@@ -566,7 +595,7 @@ impl MtpConnectionManager {
                 })?
                 .map_err(|e| map_mtp_error(e, device_id))?;
 
-        debug!("MTP list_directory: found {} objects", object_infos.len());
+        debug!("MTP list_directory: list_objects returned {} objects", object_infos.len());
 
         let mut entries = Vec::with_capacity(object_infos.len());
         let mut cache_updates: Vec<(PathBuf, ObjectHandle)> = Vec::new();
@@ -606,7 +635,7 @@ impl MtpConnectionManager {
 
         // Update path cache
         {
-            let devices = self.devices.lock().unwrap();
+            let devices = self.devices.lock().await;
             if let Some(entry) = devices.get(device_id)
                 && let Ok(mut cache_map) = entry.path_cache.write()
             {
@@ -626,7 +655,7 @@ impl MtpConnectionManager {
 
         // Store in listing cache
         {
-            let devices = self.devices.lock().unwrap();
+            let devices = self.devices.lock().await;
             if let Some(entry) = devices.get(device_id)
                 && let Ok(mut cache_map) = entry.listing_cache.write()
             {
@@ -647,8 +676,8 @@ impl MtpConnectionManager {
 
     /// Invalidates the listing cache for a specific directory.
     /// Call this after any operation that modifies the directory contents.
-    fn invalidate_listing_cache(&self, device_id: &str, storage_id: u32, dir_path: &Path) {
-        let devices = self.devices.lock().unwrap();
+    async fn invalidate_listing_cache(&self, device_id: &str, storage_id: u32, dir_path: &Path) {
+        let devices = self.devices.lock().await;
         if let Some(entry) = devices.get(device_id)
             && let Ok(mut cache_map) = entry.listing_cache.write()
             && let Some(storage_cache) = cache_map.get_mut(&storage_id)
@@ -698,9 +727,9 @@ impl MtpConnectionManager {
 
     /// Handles a device disconnection (called when we detect the device was unplugged).
     #[allow(dead_code, reason = "Will be used in Phase 5 for USB hotplug detection")]
-    pub fn handle_device_disconnected(&self, device_id: &str, app: Option<&AppHandle>) {
+    pub async fn handle_device_disconnected(&self, device_id: &str, app: Option<&AppHandle>) {
         let removed = {
-            let mut devices = self.devices.lock().unwrap();
+            let mut devices = self.devices.lock().await;
             devices.remove(device_id).is_some()
         };
 
@@ -752,7 +781,7 @@ impl MtpConnectionManager {
 
         // Get the device and resolve path to handle
         let (device_arc, object_handle) = {
-            let devices = self.devices.lock().unwrap();
+            let devices = self.devices.lock().await;
             let entry = devices.get(device_id).ok_or_else(|| MtpConnectionError::NotConnected {
                 device_id: device_id.to_string(),
             })?;
@@ -762,7 +791,7 @@ impl MtpConnectionManager {
             (Arc::clone(&entry.device), handle)
         };
 
-        let device = device_arc.lock().await;
+        let device = acquire_device_lock(&device_arc, device_id, "download_file").await?;
 
         // Get the storage
         let storage = tokio::time::timeout(
@@ -940,7 +969,7 @@ impl MtpConnectionManager {
 
         // Get device and resolve parent folder
         let (device_arc, parent_handle) = {
-            let devices = self.devices.lock().unwrap();
+            let devices = self.devices.lock().await;
             let entry = devices.get(device_id).ok_or_else(|| MtpConnectionError::NotConnected {
                 device_id: device_id.to_string(),
             })?;
@@ -964,7 +993,7 @@ impl MtpConnectionManager {
             );
         }
 
-        let device = device_arc.lock().await;
+        let device = acquire_device_lock(&device_arc, device_id, "upload_file").await?;
 
         // Get the storage
         let storage = tokio::time::timeout(
@@ -1011,7 +1040,7 @@ impl MtpConnectionManager {
 
         // Update path cache
         {
-            let devices = self.devices.lock().unwrap();
+            let devices = self.devices.lock().await;
             if let Some(entry) = devices.get(device_id)
                 && let Ok(mut cache_map) = entry.path_cache.write()
             {
@@ -1039,7 +1068,7 @@ impl MtpConnectionManager {
 
         // Invalidate the parent directory's listing cache
         let dest_folder_path = normalize_mtp_path(dest_folder);
-        self.invalidate_listing_cache(device_id, storage_id, &dest_folder_path);
+        self.invalidate_listing_cache(device_id, storage_id, &dest_folder_path).await;
 
         Ok(MtpObjectInfo {
             handle: new_handle.0,
@@ -1073,7 +1102,7 @@ impl MtpConnectionManager {
 
         // Get the device and resolve path to handle
         let (device_arc, object_handle) = {
-            let devices = self.devices.lock().unwrap();
+            let devices = self.devices.lock().await;
             let entry = devices.get(device_id).ok_or_else(|| MtpConnectionError::NotConnected {
                 device_id: device_id.to_string(),
             })?;
@@ -1082,7 +1111,7 @@ impl MtpConnectionManager {
             (Arc::clone(&entry.device), handle)
         };
 
-        let device = device_arc.lock().await;
+        let device = acquire_device_lock(&device_arc, device_id, "delete_object").await?;
 
         // Get the storage
         let storage = tokio::time::timeout(
@@ -1131,7 +1160,7 @@ impl MtpConnectionManager {
 
                 // Cache the child handle for the recursive call
                 {
-                    let devices = self.devices.lock().unwrap();
+                    let devices = self.devices.lock().await;
                     if let Some(entry) = devices.get(device_id)
                         && let Ok(mut cache_map) = entry.path_cache.write()
                     {
@@ -1147,7 +1176,7 @@ impl MtpConnectionManager {
             }
 
             // Re-acquire device and storage lock to delete the now-empty folder
-            let device = device_arc.lock().await;
+            let device = acquire_device_lock(&device_arc, device_id, "delete_object (empty folder)").await?;
             let storage = tokio::time::timeout(
                 Duration::from_secs(MTP_TIMEOUT_SECS),
                 device.storage(StorageId(storage_id)),
@@ -1177,7 +1206,7 @@ impl MtpConnectionManager {
         // Remove from path cache
         let object_path_normalized = normalize_mtp_path(object_path);
         {
-            let devices = self.devices.lock().unwrap();
+            let devices = self.devices.lock().await;
             if let Some(entry) = devices.get(device_id)
                 && let Ok(mut cache_map) = entry.path_cache.write()
                 && let Some(storage_cache) = cache_map.get_mut(&storage_id)
@@ -1188,7 +1217,7 @@ impl MtpConnectionManager {
 
         // Invalidate the parent directory's listing cache
         if let Some(parent) = object_path_normalized.parent() {
-            self.invalidate_listing_cache(device_id, storage_id, parent);
+            self.invalidate_listing_cache(device_id, storage_id, parent).await;
         }
 
         info!("MTP delete complete: {}", object_path);
@@ -1217,7 +1246,7 @@ impl MtpConnectionManager {
 
         // Get device and resolve parent folder
         let (device_arc, parent_handle) = {
-            let devices = self.devices.lock().unwrap();
+            let devices = self.devices.lock().await;
             let entry = devices.get(device_id).ok_or_else(|| MtpConnectionError::NotConnected {
                 device_id: device_id.to_string(),
             })?;
@@ -1226,7 +1255,7 @@ impl MtpConnectionManager {
             (Arc::clone(&entry.device), parent)
         };
 
-        let device = device_arc.lock().await;
+        let device = acquire_device_lock(&device_arc, device_id, "create_folder").await?;
 
         // Get the storage
         let storage = tokio::time::timeout(
@@ -1266,7 +1295,7 @@ impl MtpConnectionManager {
 
         // Update path cache
         {
-            let devices = self.devices.lock().unwrap();
+            let devices = self.devices.lock().await;
             if let Some(entry) = devices.get(device_id)
                 && let Ok(mut cache_map) = entry.path_cache.write()
             {
@@ -1277,7 +1306,7 @@ impl MtpConnectionManager {
 
         // Invalidate the parent directory's listing cache
         let parent_path_normalized = normalize_mtp_path(parent_path);
-        self.invalidate_listing_cache(device_id, storage_id, &parent_path_normalized);
+        self.invalidate_listing_cache(device_id, storage_id, &parent_path_normalized).await;
 
         info!("MTP folder created: {}", new_path_str);
 
@@ -1312,7 +1341,7 @@ impl MtpConnectionManager {
 
         // Get device and resolve object handle
         let (device_arc, object_handle) = {
-            let devices = self.devices.lock().unwrap();
+            let devices = self.devices.lock().await;
             let entry = devices.get(device_id).ok_or_else(|| MtpConnectionError::NotConnected {
                 device_id: device_id.to_string(),
             })?;
@@ -1321,7 +1350,7 @@ impl MtpConnectionManager {
             (Arc::clone(&entry.device), handle)
         };
 
-        let device = device_arc.lock().await;
+        let device = acquire_device_lock(&device_arc, device_id, "rename_object").await?;
 
         // Get the storage
         let storage = tokio::time::timeout(
@@ -1370,7 +1399,7 @@ impl MtpConnectionManager {
         let new_path_str = new_path.to_string_lossy().to_string();
 
         {
-            let devices = self.devices.lock().unwrap();
+            let devices = self.devices.lock().await;
             if let Some(entry) = devices.get(device_id)
                 && let Ok(mut cache_map) = entry.path_cache.write()
                 && let Some(storage_cache) = cache_map.get_mut(&storage_id)
@@ -1381,7 +1410,7 @@ impl MtpConnectionManager {
         }
 
         // Invalidate the parent directory's listing cache (rename affects the parent listing)
-        self.invalidate_listing_cache(device_id, storage_id, parent);
+        self.invalidate_listing_cache(device_id, storage_id, parent).await;
 
         info!("MTP rename complete: {} -> {}", object_path, new_path_str);
 
@@ -1418,7 +1447,7 @@ impl MtpConnectionManager {
 
         // Get device and resolve both handles
         let (device_arc, object_handle, new_parent_handle) = {
-            let devices = self.devices.lock().unwrap();
+            let devices = self.devices.lock().await;
             let entry = devices.get(device_id).ok_or_else(|| MtpConnectionError::NotConnected {
                 device_id: device_id.to_string(),
             })?;
@@ -1428,7 +1457,7 @@ impl MtpConnectionManager {
             (Arc::clone(&entry.device), obj_handle, parent_handle)
         };
 
-        let device = device_arc.lock().await;
+        let device = acquire_device_lock(&device_arc, device_id, "move_object").await?;
 
         // Get the storage
         let storage = tokio::time::timeout(
@@ -1483,7 +1512,7 @@ impl MtpConnectionManager {
 
                 // Update path cache
                 {
-                    let devices = self.devices.lock().unwrap();
+                    let devices = self.devices.lock().await;
                     if let Some(entry) = devices.get(device_id)
                         && let Ok(mut cache_map) = entry.path_cache.write()
                         && let Some(storage_cache) = cache_map.get_mut(&storage_id)
@@ -1495,9 +1524,9 @@ impl MtpConnectionManager {
 
                 // Invalidate listing cache for both old and new parent directories
                 let old_parent = old_path.parent().unwrap_or(Path::new("/"));
-                self.invalidate_listing_cache(device_id, storage_id, old_parent);
+                self.invalidate_listing_cache(device_id, storage_id, old_parent).await;
                 let new_parent = normalize_mtp_path(new_parent_path);
-                self.invalidate_listing_cache(device_id, storage_id, &new_parent);
+                self.invalidate_listing_cache(device_id, storage_id, &new_parent).await;
 
                 info!("MTP move complete: {} -> {}", object_path, new_path_str);
 
@@ -1560,7 +1589,9 @@ async fn open_device(bus: u8, address: u8) -> Result<MtpDevice, mtp_rs::Error> {
 
 /// Gets storage information from a connected device.
 async fn get_storages(device: &MtpDevice) -> Result<Vec<MtpStorageInfo>, mtp_rs::Error> {
+    debug!("Calling device.storages()...");
     let storage_list = device.storages().await?;
+    debug!("Got {} storage(s)", storage_list.len());
     let mut storages = Vec::new();
 
     for storage in storage_list {

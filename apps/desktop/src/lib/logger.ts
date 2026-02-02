@@ -47,6 +47,7 @@ const debugCategories: string[] = [
     'settings', // Enable to debug settings dialog initialization and persistence
     'reactive-settings', // Enable to debug reactive settings updates
     'shortcuts', // Enable to debug keyboard shortcut persistence
+    'mtp', // Enable to debug MTP device operations
 ]
 
 // Track if verbose logging is enabled for reconfiguration

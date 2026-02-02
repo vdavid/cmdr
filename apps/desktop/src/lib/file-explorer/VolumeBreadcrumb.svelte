@@ -2,7 +2,7 @@
     import { onMount, onDestroy } from 'svelte'
     import { listVolumes, findContainingVolume, listen, type UnlistenFn } from '$lib/tauri-commands'
     import type { VolumeInfo, LocationCategory } from './types'
-    import { getMtpVolumes, initialize as initMtpStore, type MtpVolume } from '$lib/mtp'
+    import { getMtpVolumes, initialize as initMtpStore, scanDevices as scanMtpDevices, type MtpVolume } from '$lib/mtp'
 
     interface Props {
         volumeId: string
@@ -19,6 +19,8 @@
     let dropdownRef: HTMLDivElement | undefined = $state()
     let unlistenMount: UnlistenFn | undefined
     let unlistenUnmount: UnlistenFn | undefined
+    let unlistenMtpDetected: UnlistenFn | undefined
+    let unlistenMtpRemoved: UnlistenFn | undefined
 
     // The ID of the actual volume that contains the current path
     // This is used to show the checkmark on the correct volume, not on favorites
@@ -262,6 +264,10 @@
     // before the mount event is received
     $effect(() => {
         if (volumeId && volumeId !== 'network') {
+            // Skip check for MTP volumes - they're tracked separately in mtpVolumes
+            if (volumeId.startsWith('mtp-')) {
+                return
+            }
             const found = volumes.find((v) => v.id === volumeId)
             if (!found && volumes.length > 0) {
                 // Volume not found but we have a list - might be a newly mounted volume
@@ -271,7 +277,15 @@
     })
 
     async function loadMtpVolumes() {
-        // Initialize the MTP store if needed, then get volumes
+        // Initialize the MTP store if needed, scan for devices, then get volumes
+        await initMtpStore()
+        await scanMtpDevices()
+        mtpVolumes = getMtpVolumes()
+    }
+
+    async function refreshMtpVolumes() {
+        // Small delay to let mtp-store's event handler finish scanning first
+        await new Promise((resolve) => setTimeout(resolve, 100))
         await initMtpStore()
         mtpVolumes = getMtpVolumes()
     }
@@ -290,6 +304,16 @@
             void loadVolumes()
         })
 
+        // Listen for MTP device hotplug events
+        // Use refreshMtpVolumes() to avoid race with mtp-store's event handler
+        unlistenMtpDetected = await listen<{ deviceId: string }>('mtp-device-detected', () => {
+            void refreshMtpVolumes()
+        })
+
+        unlistenMtpRemoved = await listen<{ deviceId: string }>('mtp-device-removed', () => {
+            void refreshMtpVolumes()
+        })
+
         // Close on click outside
         document.addEventListener('click', handleClickOutside)
         document.addEventListener('keydown', handleDocumentKeyDown)
@@ -298,6 +322,8 @@
     onDestroy(() => {
         unlistenMount?.()
         unlistenUnmount?.()
+        unlistenMtpDetected?.()
+        unlistenMtpRemoved?.()
         document.removeEventListener('click', handleClickOutside)
         document.removeEventListener('keydown', handleDocumentKeyDown)
     })

@@ -188,7 +188,17 @@ export async function connect(deviceId: string): Promise<ConnectedMtpDeviceInfo 
         logger.info('Connected to MTP device: {displayName}', { displayName: deviceState.displayName })
         return result
     } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error)
+        // Handle various error formats from Tauri
+        let errorMessage: string
+        if (error instanceof Error) {
+            errorMessage = error.message
+        } else if (typeof error === 'object' && error !== null) {
+            // Tauri errors often come as objects with message or userMessage
+            const errObj = error as Record<string, unknown>
+            errorMessage = (errObj.userMessage as string) || (errObj.message as string) || JSON.stringify(error)
+        } else {
+            errorMessage = String(error)
+        }
 
         state.devices.set(deviceId, {
             ...deviceState,
