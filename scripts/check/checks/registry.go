@@ -339,6 +339,15 @@ var AllChecks = []CheckDefinition{
 		Run:         RunGovulncheck,
 	},
 	{
+		ID:          "scripts-go-deadcode",
+		Nickname:    "deadcode",
+		DisplayName: "deadcode",
+		App:         AppScripts,
+		Tech:        "🐹 Go",
+		DependsOn:   []string{"scripts-go-vet"},
+		Run:         RunDeadcode,
+	},
+	{
 		ID:          "scripts-go-tests",
 		Nickname:    "go-tests",
 		DisplayName: "tests",

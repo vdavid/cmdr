@@ -62,11 +62,6 @@ func SuccessWithChanges(message string) CheckResult {
 	return CheckResult{Code: ResultSuccess, Message: message, MadeChanges: true}
 }
 
-// Warning creates a warning result with the given message.
-func Warning(message string) CheckResult {
-	return CheckResult{Code: ResultWarning, Message: message}
-}
-
 // Skipped creates a skipped result with the given reason.
 func Skipped(reason string) CheckResult {
 	return CheckResult{Code: ResultSkipped, Message: reason}

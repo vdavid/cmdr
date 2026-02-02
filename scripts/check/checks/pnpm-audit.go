@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
-	"path/filepath"
 	"sort"
 	"strings"
 )
@@ -198,22 +197,4 @@ func EnsurePnpmDependencies(ctx *CheckContext) error {
 		return fmt.Errorf("pnpm install failed:\n%s", indentOutput(output))
 	}
 	return nil
-}
-
-// GetPnpmApps returns the apps that use pnpm (have a package.json).
-func GetPnpmApps(rootDir string) []string {
-	apps := []string{"desktop", "website", "license-server"}
-	var result []string
-	for _, app := range apps {
-		pkgPath := filepath.Join(rootDir, "apps", app, "package.json")
-		if fileExists(pkgPath) {
-			result = append(result, app)
-		}
-	}
-	return result
-}
-
-func fileExists(path string) bool {
-	cmd := exec.Command("test", "-f", path)
-	return cmd.Run() == nil
 }
