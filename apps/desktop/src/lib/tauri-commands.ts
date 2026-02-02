@@ -275,15 +275,22 @@ export async function startSelectionDrag(
 /**
  * Checks if a path exists.
  * @param path - Path to check.
+ * @param volumeId - Optional volume ID. Defaults to "root" for local filesystem.
  * @returns True if the path exists.
  */
-export async function pathExists(path: string): Promise<boolean> {
-    return invoke<boolean>('path_exists', { path })
+export async function pathExists(path: string, volumeId?: string): Promise<boolean> {
+    return invoke<boolean>('path_exists', { volumeId, path })
 }
 
-/** Creates a new directory. Returns the full path of the created folder. */
-export async function createDirectory(parentPath: string, name: string): Promise<string> {
-    return invoke<string>('create_directory', { parentPath, name })
+/**
+ * Creates a new directory.
+ * @param parentPath - The parent directory path.
+ * @param name - The folder name to create.
+ * @param volumeId - Optional volume ID. Defaults to "root" for local filesystem.
+ * @returns The full path of the created directory.
+ */
+export async function createDirectory(parentPath: string, name: string, volumeId?: string): Promise<string> {
+    return invoke<string>('create_directory', { volumeId, parentPath, name })
 }
 
 // ============================================================================

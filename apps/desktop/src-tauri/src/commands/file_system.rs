@@ -14,12 +14,12 @@ use crate::file_system::{
     find_file_index as ops_find_file_index, get_file_at as ops_get_file_at, get_file_range as ops_get_file_range,
     get_listing_stats as ops_get_listing_stats, get_max_filename_width as ops_get_max_filename_width,
     get_operation_status as ops_get_operation_status, get_total_count as ops_get_total_count,
-    list_active_operations as ops_list_active_operations, list_directory_end as ops_list_directory_end,
-    list_directory_start_streaming as ops_list_directory_start_streaming,
+    get_volume_manager, list_active_operations as ops_list_active_operations,
+    list_directory_end as ops_list_directory_end, list_directory_start_streaming as ops_list_directory_start_streaming,
     list_directory_start_with_volume as ops_list_directory_start_with_volume, move_files_start as ops_move_files_start,
     resort_listing as ops_resort_listing,
 };
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 #[cfg(target_os = "macos")]
 use std::sync::mpsc::channel;
 #[cfg(target_os = "macos")]
@@ -28,13 +28,24 @@ use tauri::Manager;
 /// Checks if a path exists.
 ///
 /// # Arguments
-/// * `path` - The path to check. Supports tilde expansion (~).
+/// * `volume_id` - Optional volume ID. Defaults to "root" for local filesystem.
+/// * `path` - The path to check. Supports tilde expansion (~) for local volumes.
 ///
 /// # Returns
 /// True if the path exists.
 #[tauri::command]
-pub fn path_exists(path: String) -> bool {
-    let expanded_path = expand_tilde(&path);
+pub fn path_exists(volume_id: Option<String>, path: String) -> bool {
+    let volume_id = volume_id.unwrap_or_else(|| "root".to_string());
+
+    // For local volumes, expand tilde
+    let expanded_path = if volume_id == "root" { expand_tilde(&path) } else { path };
+
+    // Try to use Volume abstraction
+    if let Some(volume) = get_volume_manager().get(&volume_id) {
+        return volume.exists(Path::new(&expanded_path));
+    }
+
+    // Fallback for unknown volumes (shouldn't happen in practice)
     let path_buf = PathBuf::from(expanded_path);
     path_buf.exists()
 }
@@ -42,20 +53,40 @@ pub fn path_exists(path: String) -> bool {
 /// Creates a new directory.
 ///
 /// # Arguments
-/// * `parent_path` - The parent directory path. Supports tilde expansion (~).
+/// * `volume_id` - Optional volume ID. Defaults to "root" for local filesystem.
+/// * `parent_path` - The parent directory path. Supports tilde expansion (~) for local volumes.
 /// * `name` - The folder name to create.
 ///
 /// # Returns
 /// The full path of the created directory, or an error message.
 #[tauri::command]
-pub fn create_directory(parent_path: String, name: String) -> Result<String, String> {
+pub fn create_directory(volume_id: Option<String>, parent_path: String, name: String) -> Result<String, String> {
     if name.is_empty() {
         return Err("Folder name cannot be empty".to_string());
     }
     if name.contains('/') || name.contains('\0') {
         return Err("Folder name contains invalid characters".to_string());
     }
-    let expanded_path = expand_tilde(&parent_path);
+
+    let volume_id = volume_id.unwrap_or_else(|| "root".to_string());
+
+    // For local volumes, expand tilde
+    let expanded_path = if volume_id == "root" { expand_tilde(&parent_path) } else { parent_path.clone() };
+
+    // Try to use Volume abstraction
+    if let Some(volume) = get_volume_manager().get(&volume_id) {
+        let new_path = PathBuf::from(&expanded_path).join(&name);
+        volume.create_directory(&new_path).map_err(|e| match e {
+            crate::file_system::VolumeError::AlreadyExists(_) => format!("'{}' already exists", name),
+            crate::file_system::VolumeError::PermissionDenied(_) => {
+                format!("Permission denied: cannot create '{}' in '{}'", name, parent_path)
+            }
+            _ => format!("Failed to create folder: {}", e),
+        })?;
+        return Ok(new_path.to_string_lossy().to_string());
+    }
+
+    // Fallback for unknown volumes (shouldn't happen in practice)
     let mut new_path = PathBuf::from(&expanded_path);
     new_path.push(&name);
     std::fs::create_dir(&new_path).map_err(|e| match e.kind() {
@@ -618,7 +649,7 @@ mod tests {
     fn test_create_directory_success() {
         let tmp = create_test_dir("create_success");
         let parent = tmp.to_string_lossy().to_string();
-        let result = create_directory(parent, "new-folder".to_string());
+        let result = create_directory(None, parent, "new-folder".to_string());
         assert!(result.is_ok());
         let created_path = result.unwrap();
         assert!(PathBuf::from(&created_path).is_dir());
@@ -631,7 +662,7 @@ mod tests {
         let tmp = create_test_dir("create_exists");
         let parent = tmp.to_string_lossy().to_string();
         fs::create_dir(tmp.join("existing")).unwrap();
-        let result = create_directory(parent, "existing".to_string());
+        let result = create_directory(None, parent, "existing".to_string());
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("already exists"));
         cleanup_test_dir(&tmp);
@@ -641,7 +672,7 @@ mod tests {
     fn test_create_directory_empty_name() {
         let tmp = create_test_dir("create_empty");
         let parent = tmp.to_string_lossy().to_string();
-        let result = create_directory(parent, "".to_string());
+        let result = create_directory(None, parent, "".to_string());
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("cannot be empty"));
         cleanup_test_dir(&tmp);
@@ -651,11 +682,11 @@ mod tests {
     fn test_create_directory_invalid_chars() {
         let tmp = create_test_dir("create_invalid");
         let parent = tmp.to_string_lossy().to_string();
-        let result = create_directory(parent.clone(), "foo/bar".to_string());
+        let result = create_directory(None, parent.clone(), "foo/bar".to_string());
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("invalid characters"));
 
-        let result = create_directory(parent, "foo\0bar".to_string());
+        let result = create_directory(None, parent, "foo\0bar".to_string());
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("invalid characters"));
         cleanup_test_dir(&tmp);
@@ -663,7 +694,7 @@ mod tests {
 
     #[test]
     fn test_create_directory_nonexistent_parent() {
-        let result = create_directory("/nonexistent_path_12345".to_string(), "test".to_string());
+        let result = create_directory(None, "/nonexistent_path_12345".to_string(), "test".to_string());
         assert!(result.is_err());
     }
 }

@@ -16,6 +16,8 @@ pub enum VolumeError {
     NotFound(String),
     /// Permission denied
     PermissionDenied(String),
+    /// Path already exists
+    AlreadyExists(String),
     /// Operation not supported by this volume type
     NotSupported,
     /// Generic I/O error
@@ -27,6 +29,7 @@ impl std::fmt::Display for VolumeError {
         match self {
             Self::NotFound(path) => write!(f, "Path not found: {}", path),
             Self::PermissionDenied(path) => write!(f, "Permission denied: {}", path),
+            Self::AlreadyExists(path) => write!(f, "Already exists: {}", path),
             Self::NotSupported => write!(f, "Operation not supported"),
             Self::IoError(msg) => write!(f, "I/O error: {}", msg),
         }
@@ -40,6 +43,7 @@ impl From<std::io::Error> for VolumeError {
         match err.kind() {
             std::io::ErrorKind::NotFound => Self::NotFound(err.to_string()),
             std::io::ErrorKind::PermissionDenied => Self::PermissionDenied(err.to_string()),
+            std::io::ErrorKind::AlreadyExists => Self::AlreadyExists(err.to_string()),
             _ => Self::IoError(err.to_string()),
         }
     }
@@ -94,6 +98,14 @@ pub trait Volume: Send + Sync {
     /// Deletes a file or empty directory.
     fn delete(&self, path: &Path) -> Result<(), VolumeError> {
         let _ = path;
+        Err(VolumeError::NotSupported)
+    }
+
+    /// Renames/moves a file or directory within this volume.
+    ///
+    /// Both source and destination paths are relative to the volume root.
+    fn rename(&self, from: &Path, to: &Path) -> Result<(), VolumeError> {
+        let _ = (from, to);
         Err(VolumeError::NotSupported)
     }
 

@@ -102,17 +102,46 @@ fn test_supports_watching_returns_true() {
 }
 
 #[test]
-fn test_optional_methods_return_not_supported() {
-    let volume = LocalPosixVolume::new("Test", "/tmp");
+fn test_write_operations() {
+    use std::fs;
 
-    let result = volume.create_file(Path::new("test.txt"), b"content");
-    assert!(matches!(result, Err(VolumeError::NotSupported)));
+    // Create a temp directory for this test
+    let test_dir = std::env::temp_dir().join("cmdr_write_ops_test");
+    let _ = fs::remove_dir_all(&test_dir);
+    fs::create_dir_all(&test_dir).unwrap();
 
-    let result = volume.create_directory(Path::new("testdir"));
-    assert!(matches!(result, Err(VolumeError::NotSupported)));
+    let volume = LocalPosixVolume::new("Test", &test_dir);
 
+    // Test create_file
+    let result = volume.create_file(Path::new("test.txt"), b"hello world");
+    assert!(result.is_ok());
+    assert!(test_dir.join("test.txt").exists());
+    assert_eq!(fs::read_to_string(test_dir.join("test.txt")).unwrap(), "hello world");
+
+    // Test create_directory
+    let result = volume.create_directory(Path::new("subdir"));
+    assert!(result.is_ok());
+    assert!(test_dir.join("subdir").is_dir());
+
+    // Test delete file
     let result = volume.delete(Path::new("test.txt"));
-    assert!(matches!(result, Err(VolumeError::NotSupported)));
+    assert!(result.is_ok());
+    assert!(!test_dir.join("test.txt").exists());
+
+    // Test delete directory
+    let result = volume.delete(Path::new("subdir"));
+    assert!(result.is_ok());
+    assert!(!test_dir.join("subdir").exists());
+
+    // Test rename
+    volume.create_file(Path::new("old.txt"), b"content").unwrap();
+    let result = volume.rename(Path::new("old.txt"), Path::new("new.txt"));
+    assert!(result.is_ok());
+    assert!(!test_dir.join("old.txt").exists());
+    assert!(test_dir.join("new.txt").exists());
+
+    // Cleanup
+    let _ = fs::remove_dir_all(&test_dir);
 }
 
 // ============================================================================
