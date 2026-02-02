@@ -2,6 +2,13 @@
 //!
 //! Manages device connections with a global registry. Each connected device
 //! maintains an active MTP session until disconnected or unplugged.
+//!
+//! ## File watching
+//!
+//! MTP devices support event notifications via USB interrupt endpoints. When a
+//! device is connected, we start a background task that polls for events using
+//! `device.next_event()`. Events like ObjectAdded, ObjectRemoved, and ObjectInfoChanged
+//! trigger `mtp-directory-changed` events to the frontend, which refreshes the view.
 
 use futures_util::StreamExt;
 use log::{debug, error, info, warn};
@@ -11,16 +18,22 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, LazyLock, RwLock};
-use tokio::sync::Mutex;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter};
 use tokio::io::AsyncWriteExt;
+use tokio::sync::{Mutex, broadcast};
 
 use super::types::{MtpDeviceInfo, MtpStorageInfo};
-use crate::file_system::{get_volume_manager, FileEntry, MtpVolume};
+use crate::file_system::{CopyScanResult, FileEntry, MtpVolume, get_volume_manager};
 
 /// Default timeout for MTP operations (30 seconds - some devices are slow).
 const MTP_TIMEOUT_SECS: u64 = 30;
+
+/// Global counter for generating unique request IDs for debugging.
+static REQUEST_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+/// Tracks concurrent list_directory calls for debugging lock contention.
+static CONCURRENT_LIST_CALLS: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
 
 /// Error types for MTP connection operations.
 #[derive(Debug, Clone, serde::Serialize)]
@@ -261,16 +274,67 @@ struct CachedListing {
     /// The cached file entries.
     entries: Vec<FileEntry>,
     /// When this listing was cached (for TTL checks).
-    cached_at: std::time::Instant,
+    cached_at: Instant,
 }
 
 /// How long to keep cached listings (5 seconds).
 const LISTING_CACHE_TTL_SECS: u64 = 5;
 
+/// Debounce duration for MTP directory change events (500ms).
+/// MTP devices can emit rapid events during bulk operations (e.g., copying many files).
+const EVENT_DEBOUNCE_MS: u64 = 500;
+
+/// Debouncer for MTP directory change events.
+///
+/// Prevents flooding the frontend with events during rapid operations like
+/// bulk copy/delete. Each device has its own last-emit timestamp.
+struct EventDebouncer {
+    /// Last emit time per device ID.
+    last_emit: RwLock<HashMap<String, Instant>>,
+    /// Debounce duration.
+    debounce_duration: Duration,
+}
+
+impl EventDebouncer {
+    /// Creates a new debouncer with the given duration.
+    fn new(debounce_duration: Duration) -> Self {
+        Self {
+            last_emit: RwLock::new(HashMap::new()),
+            debounce_duration,
+        }
+    }
+
+    /// Checks if we should emit an event for the given device.
+    /// Updates the last emit time if we should emit.
+    fn should_emit(&self, device_id: &str) -> bool {
+        let now = Instant::now();
+        let mut last_emit = self.last_emit.write().unwrap();
+
+        if let Some(last) = last_emit.get(device_id)
+            && now.duration_since(*last) < self.debounce_duration
+        {
+            return false;
+        }
+
+        last_emit.insert(device_id.to_string(), now);
+        true
+    }
+
+    /// Clears the debounce state for a device (called on disconnect).
+    fn clear(&self, device_id: &str) {
+        let mut last_emit = self.last_emit.write().unwrap();
+        last_emit.remove(device_id);
+    }
+}
+
 /// Global connection manager for MTP devices.
 pub struct MtpConnectionManager {
     /// Map of device_id -> connected device entry.
     devices: Mutex<HashMap<String, DeviceEntry>>,
+    /// Channels to signal event loop shutdown per device.
+    event_loop_shutdown: RwLock<HashMap<String, broadcast::Sender<()>>>,
+    /// Debouncer for directory change events.
+    event_debouncer: EventDebouncer,
 }
 
 /// Acquires the device lock with a timeout.
@@ -295,6 +359,8 @@ impl MtpConnectionManager {
     fn new() -> Self {
         Self {
             devices: Mutex::new(HashMap::new()),
+            event_loop_shutdown: RwLock::new(HashMap::new()),
+            event_debouncer: EventDebouncer::new(Duration::from_millis(EVENT_DEBOUNCE_MS)),
         }
     }
 
@@ -322,15 +388,15 @@ impl MtpConnectionManager {
 
         info!("Connecting to MTP device: {}", device_id);
 
-        // Parse device_id to get bus and address (format: "mtp-{bus}-{address}")
-        let (bus, address) = parse_device_id(device_id).ok_or_else(|| MtpConnectionError::DeviceNotFound {
+        // Parse device_id to get location_id (format: "mtp-{location_id}")
+        let location_id = parse_device_id(device_id).ok_or_else(|| MtpConnectionError::DeviceNotFound {
             device_id: device_id.to_string(),
         })?;
-        debug!("Parsed device_id: bus={}, address={}", bus, address);
+        debug!("Parsed device_id: location_id={}", location_id);
 
         // Find and open the device
         debug!("Opening MTP device (timeout={}s)...", MTP_TIMEOUT_SECS);
-        let device = match open_device(bus, address).await {
+        let device = match open_device(location_id).await {
             Ok(d) => d,
             Err(e) => {
                 // Check for exclusive access error
@@ -366,6 +432,7 @@ impl MtpConnectionManager {
         let mtp_info = device.device_info();
         let device_info = MtpDeviceInfo {
             id: device_id.to_string(),
+            location_id,
             vendor_id: 0, // Not available from device_info
             product_id: 0,
             manufacturer: if mtp_info.manufacturer.is_empty() {
@@ -385,7 +452,10 @@ impl MtpConnectionManager {
             },
         };
 
-        debug!("Device opened successfully: {} {}", mtp_info.manufacturer, mtp_info.model);
+        debug!(
+            "Device opened successfully: {} {}",
+            mtp_info.manufacturer, mtp_info.model
+        );
 
         // Get storage information
         debug!("Fetching storage information...");
@@ -402,13 +472,16 @@ impl MtpConnectionManager {
             storages: storages.clone(),
         };
 
-        // Store in registry with Arc-wrapped device for shared access
+        // Wrap device in Arc for shared access
+        let device_arc = Arc::new(Mutex::new(device));
+
+        // Store in registry
         {
             let mut devices = self.devices.lock().await;
             devices.insert(
                 device_id.to_string(),
                 DeviceEntry {
-                    device: Arc::new(Mutex::new(device)),
+                    device: Arc::clone(&device_arc),
                     info: device_info,
                     storages,
                     path_cache: RwLock::new(HashMap::new()),
@@ -424,6 +497,11 @@ impl MtpConnectionManager {
             let volume = Arc::new(MtpVolume::new(device_id, storage.id, &storage.name));
             get_volume_manager().register(&volume_id, volume);
             debug!("Registered MTP volume: {} ({})", volume_id, storage.name);
+        }
+
+        // Start the event loop for file watching (requires AppHandle)
+        if let Some(app) = app {
+            self.start_event_loop(device_id.to_string(), device_arc, app.clone());
         }
 
         // Emit connected event
@@ -451,6 +529,9 @@ impl MtpConnectionManager {
     /// Closes the MTP session gracefully.
     pub async fn disconnect(&self, device_id: &str, app: Option<&AppHandle>) -> Result<(), MtpConnectionError> {
         info!("Disconnecting from MTP device: {}", device_id);
+
+        // Stop the event loop first
+        self.stop_event_loop(device_id);
 
         // Remove from registry
         let entry = {
@@ -493,6 +574,174 @@ impl MtpConnectionManager {
         Ok(())
     }
 
+    // ========================================================================
+    // Event Loop for File Watching
+    // ========================================================================
+
+    /// Starts the event polling loop for a connected device.
+    ///
+    /// This spawns a background task that polls for MTP device events and emits
+    /// `mtp-directory-changed` events to the frontend when files change on the device.
+    fn start_event_loop(&self, device_id: String, device: Arc<Mutex<MtpDevice>>, app: AppHandle) {
+        let (shutdown_tx, _) = broadcast::channel(1);
+
+        // Store shutdown sender
+        {
+            let mut shutdown_map = self.event_loop_shutdown.write().unwrap();
+            shutdown_map.insert(device_id.clone(), shutdown_tx.clone());
+        }
+
+        // Clone for the spawned task
+        let device_id_clone = device_id.clone();
+
+        // Spawn the event loop task. It uses connection_manager() to access the debouncer
+        // since the debouncer is part of the global singleton.
+        tokio::spawn(async move {
+            let mut shutdown_rx = shutdown_tx.subscribe();
+
+            debug!("MTP event loop started for device: {}", device_id_clone);
+
+            loop {
+                // Try to acquire the device lock with a short timeout to check for shutdown
+                let poll_result = tokio::select! {
+                    biased;
+
+                    // Check for shutdown signal first
+                    _ = shutdown_rx.recv() => {
+                        debug!("MTP event loop shutting down (signal): {}", device_id_clone);
+                        break;
+                    }
+
+                    // Poll for next event (with timeout built into next_event)
+                    result = async {
+                        // Try to lock the device - use a timeout to prevent deadlocks
+                        match tokio::time::timeout(Duration::from_secs(5), device.lock()).await {
+                            Ok(guard) => {
+                                // Poll for event
+                                guard.next_event().await
+                            }
+                            Err(_) => {
+                                // Timeout acquiring lock - device might be busy with another operation
+                                // Return timeout to continue polling
+                                Err(mtp_rs::Error::Timeout)
+                            }
+                        }
+                    } => {
+                        result
+                    }
+                };
+
+                match poll_result {
+                    Ok(event) => {
+                        Self::handle_device_event(&device_id_clone, event, &app);
+                    }
+                    Err(mtp_rs::Error::Timeout) => {
+                        // No event within timeout period - continue polling
+                        // Add a small sleep to avoid tight loop when device is idle
+                        tokio::time::sleep(Duration::from_millis(100)).await;
+                    }
+                    Err(mtp_rs::Error::Disconnected) => {
+                        info!("MTP device disconnected (event loop): {}", device_id_clone);
+                        // Device was unplugged - emit event and exit loop
+                        let _ = app.emit(
+                            "mtp-device-removed",
+                            serde_json::json!({
+                                "deviceId": device_id_clone
+                            }),
+                        );
+                        break;
+                    }
+                    Err(e) => {
+                        // Log other errors but continue polling - device might recover
+                        warn!("MTP event error for {}: {:?}", device_id_clone, e);
+                        // Sleep a bit before retrying to avoid tight error loop
+                        tokio::time::sleep(Duration::from_millis(500)).await;
+                    }
+                }
+            }
+
+            debug!("MTP event loop exited for device: {}", device_id_clone);
+        });
+
+        debug!("MTP event loop spawned for device: {}", device_id);
+    }
+
+    /// Stops the event loop for a device.
+    fn stop_event_loop(&self, device_id: &str) {
+        // Remove and signal shutdown
+        if let Some(tx) = self.event_loop_shutdown.write().unwrap().remove(device_id) {
+            let _ = tx.send(()); // Signal shutdown - ignore error if receiver is gone
+            debug!("MTP event loop shutdown signaled for device: {}", device_id);
+        }
+
+        // Clear debouncer state for this device
+        self.event_debouncer.clear(device_id);
+    }
+
+    /// Handles a device event and emits to frontend if appropriate.
+    fn handle_device_event(device_id: &str, event: mtp_rs::mtp::DeviceEvent, app: &AppHandle) {
+        use mtp_rs::mtp::DeviceEvent;
+
+        match event {
+            DeviceEvent::ObjectAdded { handle } => {
+                debug!("MTP object added: {:?} on {}", handle, device_id);
+                Self::emit_directory_changed(device_id, app);
+            }
+            DeviceEvent::ObjectRemoved { handle } => {
+                debug!("MTP object removed: {:?} on {}", handle, device_id);
+                Self::emit_directory_changed(device_id, app);
+            }
+            DeviceEvent::ObjectInfoChanged { handle } => {
+                debug!("MTP object changed: {:?} on {}", handle, device_id);
+                Self::emit_directory_changed(device_id, app);
+            }
+            DeviceEvent::StorageInfoChanged { storage_id } => {
+                debug!("MTP storage info changed: {:?} on {}", storage_id, device_id);
+                // Could emit a storage space update event in the future
+            }
+            DeviceEvent::StoreAdded { storage_id } => {
+                info!("MTP storage added: {:?} on {}", storage_id, device_id);
+                // Could emit a storage list update event in the future
+            }
+            DeviceEvent::StoreRemoved { storage_id } => {
+                info!("MTP storage removed: {:?} on {}", storage_id, device_id);
+                // Could emit a storage list update event in the future
+            }
+            DeviceEvent::DeviceInfoChanged => {
+                debug!("MTP device info changed: {}", device_id);
+            }
+            DeviceEvent::DeviceReset => {
+                warn!("MTP device reset: {}", device_id);
+            }
+            DeviceEvent::Unknown { code, params } => {
+                debug!("MTP unknown event {:04x} {:?} on {}", code, params, device_id);
+            }
+        }
+    }
+
+    /// Emits a directory changed event to the frontend (with debouncing).
+    fn emit_directory_changed(device_id: &str, app: &AppHandle) {
+        // Check debouncer via the global connection manager
+        if !connection_manager().event_debouncer.should_emit(device_id) {
+            debug!(
+                "MTP event loop: directory change DEBOUNCED for device={} (within {}ms window)",
+                device_id, EVENT_DEBOUNCE_MS
+            );
+            return;
+        }
+
+        let _ = app.emit(
+            "mtp-directory-changed",
+            serde_json::json!({
+                "deviceId": device_id
+            }),
+        );
+        info!(
+            "MTP event loop: emitted mtp-directory-changed for device={} (may trigger UI refresh)",
+            device_id
+        );
+    }
+
     /// Gets information about a connected device.
     pub async fn get_device_info(&self, device_id: &str) -> Option<ConnectedDeviceInfo> {
         let devices = self.devices.lock().await;
@@ -533,15 +782,53 @@ impl MtpConnectionManager {
         storage_id: u32,
         path: &str,
     ) -> Result<Vec<FileEntry>, MtpConnectionError> {
+        use std::sync::atomic::Ordering;
+
+        // Generate unique request ID for tracing this call
+        let request_id = REQUEST_COUNTER.fetch_add(1, Ordering::Relaxed);
+        let call_start = Instant::now();
+
+        // Track concurrent calls
+        let concurrent_before = CONCURRENT_LIST_CALLS.fetch_add(1, Ordering::Relaxed);
         debug!(
-            "MTP list_directory: device={}, storage={}, path={}",
-            device_id, storage_id, path
+            "MTP list_directory [req#{}]: START device={}, storage={}, path={}, concurrent_calls={}",
+            request_id,
+            device_id,
+            storage_id,
+            path,
+            concurrent_before + 1
         );
 
+        // Wrap the entire operation to ensure we decrement the counter on exit
+        let result = self
+            .list_directory_inner(request_id, device_id, storage_id, path, call_start)
+            .await;
+
+        let concurrent_after = CONCURRENT_LIST_CALLS.fetch_sub(1, Ordering::Relaxed);
+        debug!(
+            "MTP list_directory [req#{}]: END total_time={:?}, concurrent_calls_remaining={}",
+            request_id,
+            call_start.elapsed(),
+            concurrent_after - 1
+        );
+
+        result
+    }
+
+    /// Inner implementation of list_directory with detailed phase logging.
+    async fn list_directory_inner(
+        &self,
+        request_id: u64,
+        device_id: &str,
+        storage_id: u32,
+        path: &str,
+        call_start: Instant,
+    ) -> Result<Vec<FileEntry>, MtpConnectionError> {
         // Normalize the path for building child paths
         let parent_path = normalize_mtp_path(path);
 
         // Check listing cache first
+        let cache_check_start = Instant::now();
         {
             let devices = self.devices.lock().await;
             if let Some(entry) = devices.get(device_id)
@@ -552,38 +839,83 @@ impl MtpConnectionManager {
                 // Check if cache is still valid (within TTL)
                 if cached.cached_at.elapsed().as_secs() < LISTING_CACHE_TTL_SECS {
                     debug!(
-                        "MTP list_directory: returning {} cached entries for {}",
+                        "MTP list_directory [req#{}]: cache HIT, returning {} entries, cache_check_time={:?}, elapsed_since_start={:?}",
+                        request_id,
                         cached.entries.len(),
-                        path
+                        cache_check_start.elapsed(),
+                        call_start.elapsed()
                     );
                     return Ok(cached.entries.clone());
+                } else {
+                    debug!(
+                        "MTP list_directory [req#{}]: cache STALE (age={}s > TTL={}s)",
+                        request_id,
+                        cached.cached_at.elapsed().as_secs(),
+                        LISTING_CACHE_TTL_SECS
+                    );
                 }
+            } else {
+                debug!("MTP list_directory [req#{}]: cache MISS for path={}", request_id, path);
             }
         }
+        debug!(
+            "MTP list_directory [req#{}]: cache check complete, time={:?}",
+            request_id,
+            cache_check_start.elapsed()
+        );
 
         // Get the device and resolve path to handle
-        debug!("MTP list_directory: acquiring devices lock...");
+        let path_resolve_start = Instant::now();
+        debug!(
+            "MTP list_directory [req#{}]: acquiring devices registry lock...",
+            request_id
+        );
         let (device_arc, parent_handle) = {
             let devices = self.devices.lock().await;
-            debug!("MTP list_directory: got devices lock, looking up device...");
+            debug!(
+                "MTP list_directory [req#{}]: got devices registry lock in {:?}, looking up device...",
+                request_id,
+                path_resolve_start.elapsed()
+            );
             let entry = devices.get(device_id).ok_or_else(|| MtpConnectionError::NotConnected {
                 device_id: device_id.to_string(),
             })?;
 
             // Resolve path to parent handle
-            debug!("MTP list_directory: resolving path to handle...");
+            debug!("MTP list_directory [req#{}]: resolving path to handle...", request_id);
             let parent_handle = self.resolve_path_to_handle(entry, storage_id, path)?;
-            debug!("MTP list_directory: resolved to handle {:?}", parent_handle);
+            debug!(
+                "MTP list_directory [req#{}]: resolved to handle {:?} in {:?}",
+                request_id,
+                parent_handle,
+                path_resolve_start.elapsed()
+            );
 
             (Arc::clone(&entry.device), parent_handle)
         };
+        debug!(
+            "MTP list_directory [req#{}]: path resolution complete, total_time={:?}",
+            request_id,
+            path_resolve_start.elapsed()
+        );
 
         // List directory contents (async operation)
-        debug!("MTP list_directory: acquiring device lock...");
-        let device = acquire_device_lock(&device_arc, device_id, "list_directory").await?;
-        debug!("MTP list_directory: got device lock, getting storage...");
+        let device_lock_start = Instant::now();
+        debug!(
+            "MTP list_directory [req#{}]: waiting to acquire device USB lock...",
+            request_id
+        );
+        let device =
+            acquire_device_lock(&device_arc, device_id, &format!("list_directory[req#{}]", request_id)).await?;
+        let device_lock_acquired_at = Instant::now();
+        debug!(
+            "MTP list_directory [req#{}]: acquired device USB lock after {:?} wait, getting storage...",
+            request_id,
+            device_lock_start.elapsed()
+        );
 
         // Get the storage object
+        let usb_io_start = Instant::now();
         let storage = tokio::time::timeout(
             Duration::from_secs(MTP_TIMEOUT_SECS),
             device.storage(StorageId(storage_id)),
@@ -593,7 +925,11 @@ impl MtpConnectionManager {
             device_id: device_id.to_string(),
         })?
         .map_err(|e| map_mtp_error(e, device_id))?;
-        debug!("MTP list_directory: got storage object");
+        debug!(
+            "MTP list_directory [req#{}]: got storage object in {:?}",
+            request_id,
+            usb_io_start.elapsed()
+        );
 
         // Use list_objects which returns Vec<ObjectInfo> directly
         let parent_opt = if parent_handle == ObjectHandle::ROOT {
@@ -602,16 +938,43 @@ impl MtpConnectionManager {
             Some(parent_handle)
         };
 
-        debug!("MTP list_directory: calling list_objects (parent={:?})...", parent_opt);
+        let list_objects_start = Instant::now();
+        debug!(
+            "MTP list_directory [req#{}]: calling list_objects (parent={:?})...",
+            request_id, parent_opt
+        );
         let object_infos =
-            tokio::time::timeout(Duration::from_secs(MTP_TIMEOUT_SECS), storage.list_objects(parent_opt))
-                .await
-                .map_err(|_| MtpConnectionError::Timeout {
-                    device_id: device_id.to_string(),
-                })?
-                .map_err(|e| map_mtp_error(e, device_id))?;
+            match tokio::time::timeout(Duration::from_secs(MTP_TIMEOUT_SECS), storage.list_objects(parent_opt)).await {
+                Ok(Ok(infos)) => infos,
+                Ok(Err(e)) => {
+                    let mapped_err = map_mtp_error(e, device_id);
+                    error!(
+                        "MTP list_directory [req#{}]: list_objects failed after {:?}: {:?}",
+                        request_id,
+                        list_objects_start.elapsed(),
+                        mapped_err
+                    );
+                    return Err(mapped_err);
+                }
+                Err(_) => {
+                    error!(
+                        "MTP list_directory [req#{}]: list_objects timed out after {:?}",
+                        request_id,
+                        list_objects_start.elapsed()
+                    );
+                    return Err(MtpConnectionError::Timeout {
+                        device_id: device_id.to_string(),
+                    });
+                }
+            };
 
-        debug!("MTP list_directory: list_objects returned {} objects", object_infos.len());
+        debug!(
+            "MTP list_directory [req#{}]: list_objects returned {} objects in {:?}, total USB I/O time={:?}",
+            request_id,
+            object_infos.len(),
+            list_objects_start.elapsed(),
+            usb_io_start.elapsed()
+        );
 
         let mut entries = Vec::with_capacity(object_infos.len());
         let mut cache_updates: Vec<(PathBuf, ObjectHandle)> = Vec::new();
@@ -648,8 +1011,14 @@ impl MtpConnectionManager {
         // Release device lock before updating cache
         drop(storage);
         drop(device);
+        let lock_held_duration = device_lock_acquired_at.elapsed();
+        debug!(
+            "MTP list_directory [req#{}]: released device USB lock after holding for {:?}",
+            request_id, lock_held_duration
+        );
 
         // Update path cache
+        let cache_update_start = Instant::now();
         {
             let devices = self.devices.lock().await;
             if let Some(entry) = devices.get(device_id)
@@ -680,13 +1049,23 @@ impl MtpConnectionManager {
                     parent_path,
                     CachedListing {
                         entries: entries.clone(),
-                        cached_at: std::time::Instant::now(),
+                        cached_at: Instant::now(),
                     },
                 );
             }
         }
+        debug!(
+            "MTP list_directory [req#{}]: cache update complete in {:?}",
+            request_id,
+            cache_update_start.elapsed()
+        );
 
-        debug!("MTP list_directory: returning {} entries", entries.len());
+        debug!(
+            "MTP list_directory [req#{}]: returning {} entries, total_time={:?}",
+            request_id,
+            entries.len(),
+            call_start.elapsed()
+        );
         Ok(entries)
     }
 
@@ -1084,7 +1463,8 @@ impl MtpConnectionManager {
 
         // Invalidate the parent directory's listing cache
         let dest_folder_path = normalize_mtp_path(dest_folder);
-        self.invalidate_listing_cache(device_id, storage_id, &dest_folder_path).await;
+        self.invalidate_listing_cache(device_id, storage_id, &dest_folder_path)
+            .await;
 
         Ok(MtpObjectInfo {
             handle: new_handle.0,
@@ -1322,7 +1702,8 @@ impl MtpConnectionManager {
 
         // Invalidate the parent directory's listing cache
         let parent_path_normalized = normalize_mtp_path(parent_path);
-        self.invalidate_listing_cache(device_id, storage_id, &parent_path_normalized).await;
+        self.invalidate_listing_cache(device_id, storage_id, &parent_path_normalized)
+            .await;
 
         info!("MTP folder created: {}", new_path_str);
 
@@ -1437,6 +1818,366 @@ impl MtpConnectionManager {
             is_directory: is_dir,
             size: if is_dir { None } else { Some(old_size) },
         })
+    }
+
+    // ========================================================================
+    // Phase 5: Copy/Export Operations
+    // ========================================================================
+
+    /// Scans an MTP path recursively to get statistics for a copy operation.
+    ///
+    /// # Arguments
+    ///
+    /// * `device_id` - The connected device ID
+    /// * `storage_id` - The storage ID within the device
+    /// * `path` - Virtual path on the device to scan
+    ///
+    /// # Returns
+    ///
+    /// Statistics including file count, directory count, and total bytes.
+    pub async fn scan_for_copy(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        path: &str,
+    ) -> Result<CopyScanResult, MtpConnectionError> {
+        debug!(
+            "MTP scan_for_copy: device={}, storage={}, path={}",
+            device_id, storage_id, path
+        );
+
+        // Try to list the directory - if it fails or returns empty, it might be a file
+        let entries = match self.list_directory(device_id, storage_id, path).await {
+            Ok(entries) => entries,
+            Err(e) => {
+                // list_directory failed - this might be because path is a file, not a directory.
+                // Try to check by listing the parent directory.
+                debug!(
+                    "MTP scan_for_copy: list_directory failed for '{}', checking if it's a file: {:?}",
+                    path, e
+                );
+                if let Some(result) = self.try_scan_as_file(device_id, storage_id, path).await {
+                    return Ok(result);
+                }
+                // Not a file either, propagate the original error
+                return Err(e);
+            }
+        };
+
+        let mut file_count = 0usize;
+        let mut dir_count = 0usize;
+        let mut total_bytes = 0u64;
+
+        // If entries is empty, it might be an empty directory OR a file (some MTP devices
+        // return empty for files instead of an error)
+        if entries.is_empty() {
+            if let Some(result) = self.try_scan_as_file(device_id, storage_id, path).await {
+                return Ok(result);
+            }
+            // Empty directory
+            return Ok(CopyScanResult {
+                file_count: 0,
+                dir_count: 1,
+                total_bytes: 0,
+            });
+        }
+
+        // Process entries recursively
+        for entry in &entries {
+            if entry.is_directory {
+                dir_count += 1;
+                // Recursively scan subdirectory
+                let child_result = Box::pin(self.scan_for_copy(device_id, storage_id, &entry.path)).await?;
+                file_count += child_result.file_count;
+                dir_count += child_result.dir_count;
+                total_bytes += child_result.total_bytes;
+            } else {
+                file_count += 1;
+                total_bytes += entry.size.unwrap_or(0);
+            }
+        }
+
+        debug!(
+            "MTP scan_for_copy: {} files, {} dirs, {} bytes for {}",
+            file_count, dir_count, total_bytes, path
+        );
+
+        Ok(CopyScanResult {
+            file_count,
+            dir_count,
+            total_bytes,
+        })
+    }
+
+    /// Helper to check if a path is a file by listing its parent directory.
+    /// Returns Some(CopyScanResult) if path is a file, None otherwise.
+    async fn try_scan_as_file(&self, device_id: &str, storage_id: u32, path: &str) -> Option<CopyScanResult> {
+        let path_buf = normalize_mtp_path(path);
+        let parent = path_buf.parent()?;
+        let name = path_buf.file_name()?.to_str()?;
+
+        let parent_entries = self
+            .list_directory(device_id, storage_id, &parent.to_string_lossy())
+            .await
+            .ok()?;
+
+        let entry = parent_entries.iter().find(|e| e.name == name)?;
+
+        if entry.is_directory {
+            // It's a directory, not a file - let caller handle it
+            return None;
+        }
+
+        debug!(
+            "MTP scan_for_copy: path '{}' is a file with size {}",
+            path,
+            entry.size.unwrap_or(0)
+        );
+
+        Some(CopyScanResult {
+            file_count: 1,
+            dir_count: 0,
+            total_bytes: entry.size.unwrap_or(0),
+        })
+    }
+
+    /// Downloads a file or directory recursively from the MTP device to a local path.
+    ///
+    /// # Arguments
+    ///
+    /// * `device_id` - The connected device ID
+    /// * `storage_id` - The storage ID within the device
+    /// * `object_path` - Virtual path on the device to download
+    /// * `local_dest` - Local destination path
+    ///
+    /// # Returns
+    ///
+    /// Total bytes transferred.
+    pub async fn download_recursive(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        object_path: &str,
+        local_dest: &Path,
+    ) -> Result<u64, MtpConnectionError> {
+        debug!(
+            "MTP download_recursive: device={}, storage={}, path={}, dest={}",
+            device_id,
+            storage_id,
+            object_path,
+            local_dest.display()
+        );
+
+        // Try to list the path as a directory first
+        let entries = self.list_directory(device_id, storage_id, object_path).await;
+
+        match entries {
+            Ok(entries) if !entries.is_empty() => {
+                // It's a directory with contents - create local directory and download contents
+                debug!(
+                    "MTP download_recursive: {} is a directory with {} entries",
+                    object_path,
+                    entries.len()
+                );
+
+                tokio::fs::create_dir_all(local_dest)
+                    .await
+                    .map_err(|e| MtpConnectionError::Other {
+                        device_id: device_id.to_string(),
+                        message: format!("Failed to create local directory: {}", e),
+                    })?;
+
+                let mut total_bytes = 0u64;
+                for entry in entries {
+                    let child_dest = local_dest.join(&entry.name);
+                    let bytes =
+                        Box::pin(self.download_recursive(device_id, storage_id, &entry.path, &child_dest)).await?;
+                    total_bytes += bytes;
+                }
+
+                debug!(
+                    "MTP download_recursive: directory {} complete, {} bytes",
+                    object_path, total_bytes
+                );
+                Ok(total_bytes)
+            }
+            Ok(_) => {
+                // Empty directory or file - check if it's a file by checking parent listing
+                let path_buf = normalize_mtp_path(object_path);
+                let is_file = if let Some(parent) = path_buf.parent() {
+                    let parent_str = parent.to_string_lossy();
+                    if let Ok(parent_entries) = self.list_directory(device_id, storage_id, &parent_str).await {
+                        if let Some(name) = path_buf.file_name().and_then(|n| n.to_str()) {
+                            parent_entries
+                                .iter()
+                                .find(|e| e.name == name)
+                                .is_some_and(|e| !e.is_directory)
+                        } else {
+                            false
+                        }
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                };
+
+                if is_file {
+                    // It's a file - download it
+                    debug!("MTP download_recursive: {} is a file, downloading", object_path);
+                    let operation_id = format!("download-{}", uuid::Uuid::new_v4());
+                    let result = self
+                        .download_file(device_id, storage_id, object_path, local_dest, None, &operation_id)
+                        .await?;
+                    Ok(result.bytes_transferred)
+                } else {
+                    // Empty directory - create it
+                    debug!("MTP download_recursive: {} is an empty directory", object_path);
+                    tokio::fs::create_dir_all(local_dest)
+                        .await
+                        .map_err(|e| MtpConnectionError::Other {
+                            device_id: device_id.to_string(),
+                            message: format!("Failed to create local directory: {}", e),
+                        })?;
+                    Ok(0)
+                }
+            }
+            Err(e) => {
+                // list_directory failed - might be a file (MTP returns ObjectNotFound when
+                // trying to list children of a file). Try to check by listing the parent.
+                debug!(
+                    "MTP download_recursive: list failed for '{}', checking if it's a file: {:?}",
+                    object_path, e
+                );
+
+                let path_buf = normalize_mtp_path(object_path);
+                let is_file = if let Some(parent) = path_buf.parent() {
+                    let parent_str = parent.to_string_lossy();
+                    if let Ok(parent_entries) = self.list_directory(device_id, storage_id, &parent_str).await {
+                        if let Some(name) = path_buf.file_name().and_then(|n| n.to_str()) {
+                            parent_entries
+                                .iter()
+                                .find(|e| e.name == name)
+                                .is_some_and(|entry| !entry.is_directory)
+                        } else {
+                            false
+                        }
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                };
+
+                if is_file {
+                    debug!("MTP download_recursive: {} is a file, downloading", object_path);
+                    let operation_id = format!("download-{}", uuid::Uuid::new_v4());
+                    let result = self
+                        .download_file(device_id, storage_id, object_path, local_dest, None, &operation_id)
+                        .await?;
+                    Ok(result.bytes_transferred)
+                } else {
+                    // Not a file, propagate the original error
+                    Err(e)
+                }
+            }
+        }
+    }
+
+    /// Uploads a file or directory from local filesystem to MTP device recursively.
+    ///
+    /// If the source is a directory, creates the directory on the device and
+    /// recursively uploads all contents.
+    ///
+    /// # Arguments
+    ///
+    /// * `device_id` - The connected device ID
+    /// * `storage_id` - The storage ID within the device
+    /// * `local_source` - Local source path (file or directory)
+    /// * `dest_folder` - Destination folder path on device
+    ///
+    /// # Returns
+    ///
+    /// Total bytes transferred.
+    pub async fn upload_recursive(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        local_source: &Path,
+        dest_folder: &str,
+    ) -> Result<u64, MtpConnectionError> {
+        debug!(
+            "MTP upload_recursive: device={}, storage={}, source={}, dest={}",
+            device_id,
+            storage_id,
+            local_source.display(),
+            dest_folder
+        );
+
+        let metadata = tokio::fs::metadata(local_source)
+            .await
+            .map_err(|e| MtpConnectionError::Other {
+                device_id: device_id.to_string(),
+                message: format!("Failed to read local path: {}", e),
+            })?;
+
+        if metadata.is_file() {
+            // Upload single file
+            let operation_id = format!("upload-{}", uuid::Uuid::new_v4());
+            let result = self
+                .upload_file(device_id, storage_id, local_source, dest_folder, None, &operation_id)
+                .await?;
+            Ok(result.size.unwrap_or(0))
+        } else if metadata.is_dir() {
+            // Create directory on device and upload contents
+            let dir_name = local_source
+                .file_name()
+                .ok_or_else(|| MtpConnectionError::Other {
+                    device_id: device_id.to_string(),
+                    message: "Invalid directory path".to_string(),
+                })?
+                .to_string_lossy()
+                .to_string();
+
+            // Create the directory on the device
+            let new_folder = self
+                .create_folder(device_id, storage_id, dest_folder, &dir_name)
+                .await?;
+            let new_folder_path = new_folder.path;
+
+            // Upload all contents
+            let mut total_bytes = 0u64;
+            let mut entries = tokio::fs::read_dir(local_source)
+                .await
+                .map_err(|e| MtpConnectionError::Other {
+                    device_id: device_id.to_string(),
+                    message: format!("Failed to read local directory: {}", e),
+                })?;
+
+            while let Some(entry) = entries.next_entry().await.map_err(|e| MtpConnectionError::Other {
+                device_id: device_id.to_string(),
+                message: format!("Failed to read directory entry: {}", e),
+            })? {
+                let entry_path = entry.path();
+                let bytes =
+                    Box::pin(self.upload_recursive(device_id, storage_id, &entry_path, &new_folder_path)).await?;
+                total_bytes += bytes;
+            }
+
+            debug!(
+                "MTP upload_recursive: directory {} complete, {} bytes",
+                local_source.display(),
+                total_bytes
+            );
+            Ok(total_bytes)
+        } else {
+            // Not a file or directory (symlink, etc.) - skip
+            debug!(
+                "MTP upload_recursive: skipping non-file/non-directory: {}",
+                local_source.display()
+            );
+            Ok(0)
+        }
     }
 
     /// Moves an object to a new parent folder on the MTP device.
@@ -1580,26 +2321,23 @@ pub fn connection_manager() -> &'static MtpConnectionManager {
     &CONNECTION_MANAGER
 }
 
-/// Parses a device ID to extract bus and address.
+/// Parses a device ID to extract location_id.
 ///
-/// Format: "mtp-{bus}-{address}"
-fn parse_device_id(device_id: &str) -> Option<(u8, u8)> {
-    let parts: Vec<&str> = device_id.split('-').collect();
-    if parts.len() != 3 || parts[0] != "mtp" {
+/// Format: "mtp-{location_id}"
+fn parse_device_id(device_id: &str) -> Option<u64> {
+    let prefix = "mtp-";
+    if !device_id.starts_with(prefix) {
         return None;
     }
 
-    let bus = parts[1].parse().ok()?;
-    let address = parts[2].parse().ok()?;
-    Some((bus, address))
+    device_id[prefix.len()..].parse().ok()
 }
 
-/// Opens an MTP device by bus and address.
-async fn open_device(bus: u8, address: u8) -> Result<MtpDevice, mtp_rs::Error> {
-    // Open the device directly by bus and address
+/// Opens an MTP device by location_id.
+async fn open_device(location_id: u64) -> Result<MtpDevice, mtp_rs::Error> {
     MtpDeviceBuilder::new()
         .timeout(Duration::from_secs(MTP_TIMEOUT_SECS))
-        .open(bus, address)
+        .open_by_location(location_id)
         .await
 }
 
@@ -1750,15 +2488,17 @@ mod tests {
 
     #[test]
     fn test_parse_device_id_valid() {
-        assert_eq!(parse_device_id("mtp-1-5"), Some((1, 5)));
-        assert_eq!(parse_device_id("mtp-20-100"), Some((20, 100)));
+        assert_eq!(parse_device_id("mtp-336592896"), Some(336592896));
+        assert_eq!(parse_device_id("mtp-12345"), Some(12345));
+        assert_eq!(parse_device_id("mtp-0"), Some(0));
     }
 
     #[test]
     fn test_parse_device_id_invalid() {
-        assert_eq!(parse_device_id("mtp-1"), None);
-        assert_eq!(parse_device_id("usb-1-5"), None);
-        assert_eq!(parse_device_id("mtp-abc-5"), None);
+        assert_eq!(parse_device_id("usb-336592896"), None);
+        assert_eq!(parse_device_id("mtp-abc"), None);
+        assert_eq!(parse_device_id("mtp-"), None);
+        assert_eq!(parse_device_id("mtp"), None);
         assert_eq!(parse_device_id(""), None);
     }
 
@@ -2191,7 +2931,8 @@ mod tests {
 
         let info = ConnectedDeviceInfo {
             device: MtpDeviceInfo {
-                id: "mtp-1-5".to_string(),
+                id: "mtp-336592896".to_string(),
+                location_id: 336592896,
                 vendor_id: 0x18d1,
                 product_id: 0x4ee1,
                 manufacturer: Some("Google".to_string()),
@@ -2208,7 +2949,8 @@ mod tests {
         };
 
         let json = serde_json::to_string(&info).unwrap();
-        assert!(json.contains("\"id\":\"mtp-1-5\""));
+        assert!(json.contains("\"id\":\"mtp-336592896\""));
+        assert!(json.contains("\"locationId\":336592896"));
         assert!(json.contains("\"manufacturer\":\"Google\""));
         assert!(json.contains("\"product\":\"Pixel 8\""));
         assert!(json.contains("\"Internal shared storage\""));
@@ -2220,25 +2962,24 @@ mod tests {
 
     #[test]
     fn test_parse_device_id_edge_cases() {
-        // Maximum u8 values
-        assert_eq!(parse_device_id("mtp-255-255"), Some((255, 255)));
+        // Maximum u64 value
+        assert_eq!(parse_device_id("mtp-18446744073709551615"), Some(u64::MAX));
 
-        // Zero values
-        assert_eq!(parse_device_id("mtp-0-0"), Some((0, 0)));
+        // Zero value
+        assert_eq!(parse_device_id("mtp-0"), Some(0));
 
-        // Overflow values (should fail because u8 max is 255)
-        assert_eq!(parse_device_id("mtp-256-1"), None);
-        assert_eq!(parse_device_id("mtp-1-256"), None);
+        // Typical macOS location_id values
+        assert_eq!(parse_device_id("mtp-336592896"), Some(336592896));
 
-        // Extra dashes
-        assert_eq!(parse_device_id("mtp-1-5-extra"), None);
-
-        // Wrong prefix
-        assert_eq!(parse_device_id("MTP-1-5"), None);
+        // Wrong prefix (case sensitive)
+        assert_eq!(parse_device_id("MTP-336592896"), None);
 
         // Whitespace
-        assert_eq!(parse_device_id(" mtp-1-5"), None);
-        assert_eq!(parse_device_id("mtp-1-5 "), None);
+        assert_eq!(parse_device_id(" mtp-336592896"), None);
+        assert_eq!(parse_device_id("mtp-336592896 "), None);
+
+        // Negative numbers (not valid for u64)
+        assert_eq!(parse_device_id("mtp--1"), None);
     }
 
     // ========================================================================
@@ -2256,5 +2997,82 @@ mod tests {
         let state = MtpOperationState::default();
         state.cancelled.store(true, std::sync::atomic::Ordering::Relaxed);
         assert!(state.cancelled.load(std::sync::atomic::Ordering::Relaxed));
+    }
+
+    // ========================================================================
+    // EventDebouncer tests
+    // ========================================================================
+
+    #[test]
+    fn test_event_debouncer_allows_first_event() {
+        let debouncer = EventDebouncer::new(Duration::from_millis(500));
+
+        // First event for a device should always be allowed
+        assert!(debouncer.should_emit("device-1"));
+
+        // First event for a different device should also be allowed
+        assert!(debouncer.should_emit("device-2"));
+    }
+
+    #[test]
+    fn test_event_debouncer_throttles_rapid_events() {
+        let debouncer = EventDebouncer::new(Duration::from_millis(100));
+
+        // First event should be allowed
+        assert!(debouncer.should_emit("device-1"));
+
+        // Immediate second event should be throttled
+        assert!(!debouncer.should_emit("device-1"));
+
+        // Third rapid event should also be throttled
+        assert!(!debouncer.should_emit("device-1"));
+    }
+
+    #[test]
+    fn test_event_debouncer_allows_after_timeout() {
+        let debouncer = EventDebouncer::new(Duration::from_millis(10));
+
+        // First event should be allowed
+        assert!(debouncer.should_emit("device-1"));
+
+        // Wait for debounce period to elapse
+        std::thread::sleep(Duration::from_millis(20));
+
+        // Event after timeout should be allowed
+        assert!(debouncer.should_emit("device-1"));
+    }
+
+    #[test]
+    fn test_event_debouncer_clear() {
+        let debouncer = EventDebouncer::new(Duration::from_millis(500));
+
+        // First event allowed
+        assert!(debouncer.should_emit("device-1"));
+
+        // Second event should be throttled
+        assert!(!debouncer.should_emit("device-1"));
+
+        // Clear the device state
+        debouncer.clear("device-1");
+
+        // After clear, next event should be allowed immediately
+        assert!(debouncer.should_emit("device-1"));
+    }
+
+    #[test]
+    fn test_event_debouncer_per_device_isolation() {
+        let debouncer = EventDebouncer::new(Duration::from_millis(500));
+
+        // First event for device-1
+        assert!(debouncer.should_emit("device-1"));
+
+        // Rapid event for device-1 should be throttled
+        assert!(!debouncer.should_emit("device-1"));
+
+        // But event for device-2 should be allowed (independent)
+        assert!(debouncer.should_emit("device-2"));
+
+        // And rapid event for device-2 should be throttled independently
+        assert!(!debouncer.should_emit("device-2"));
     }
 }

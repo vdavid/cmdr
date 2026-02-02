@@ -20,11 +20,13 @@
         showHiddenFiles: boolean
         /** Pre-fill name (filename without extension, or empty) */
         initialName: string
+        /** Volume ID for the filesystem (e.g., "root" for local, "mtp-336592896:65537" for MTP) */
+        volumeId?: string
         onCreated: (folderName: string) => void
         onCancel: () => void
     }
 
-    const { currentPath, listingId, showHiddenFiles, initialName, onCreated, onCancel }: Props = $props()
+    const { currentPath, listingId, showHiddenFiles, initialName, volumeId, onCreated, onCancel }: Props = $props()
 
     let folderName = $state(initialName)
     let errorMessage = $state('')
@@ -140,7 +142,7 @@
         const trimmed = folderName.trim()
         if (!trimmed || errorMessage) return
         try {
-            await createDirectory(currentPath, trimmed)
+            await createDirectory(currentPath, trimmed, volumeId)
             onCreated(trimmed)
         } catch (e) {
             errorMessage = String(e)

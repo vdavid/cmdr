@@ -2,6 +2,7 @@
     import { onMount, onDestroy, tick } from 'svelte'
     import {
         copyFiles,
+        copyBetweenVolumes,
         onWriteProgress,
         onWriteComplete,
         onWriteError,
@@ -11,6 +12,7 @@
         cancelWriteOperation,
         formatBytes,
         formatDuration,
+        DEFAULT_VOLUME_ID,
         type WriteProgressEvent,
         type WriteCompleteEvent,
         type WriteErrorEvent,
@@ -53,9 +55,15 @@
         sortOrder: SortOrder
         /** Preview scan ID from CopyDialog (for reusing scan results, optional) */
         previewId: string | null
+        /** Source volume ID (e.g., "root", "mtp-336592896:65537") */
+        sourceVolumeId: string
+        /** Destination volume ID */
+        destVolumeId: string
+        /** Conflict resolution policy from CopyDialog */
+        conflictResolution: ConflictResolution
         onComplete: (filesProcessed: number, bytesProcessed: number) => void
         onCancelled: (filesProcessed: number) => void
-        onError: (error: string) => void
+        onError: (error: WriteOperationError) => void
     }
 
     const {
@@ -66,6 +74,9 @@
         sortColumn,
         sortOrder,
         previewId,
+        sourceVolumeId,
+        destVolumeId,
+        conflictResolution,
         onComplete,
         onCancelled,
         onError,
@@ -167,32 +178,6 @@
         onComplete(event.filesProcessed, event.bytesProcessed)
     }
 
-    /** Converts a WriteOperationError to a user-friendly message. */
-    function formatErrorMessage(error: WriteOperationError): string {
-        switch (error.type) {
-            case 'source_not_found':
-                return `Source not found: ${error.path}`
-            case 'destination_exists':
-                return `Destination already exists: ${error.path}`
-            case 'permission_denied':
-                return `Permission denied: ${error.path}${error.message ? ` - ${error.message}` : ''}`
-            case 'insufficient_space':
-                return `Not enough space: need ${formatBytes(error.required)}, only ${formatBytes(error.available)} available`
-            case 'same_location':
-                return `Source and destination are the same: ${error.path}`
-            case 'destination_inside_source':
-                return `Can't copy a folder into itself`
-            case 'symlink_loop':
-                return `Symbolic link loop detected: ${error.path}`
-            case 'cancelled':
-                return `Operation cancelled: ${error.message}`
-            case 'io_error':
-                return `I/O error at ${error.path}: ${error.message}`
-            default:
-                return 'An unknown error occurred'
-        }
-    }
-
     function handleError(event: WriteErrorEvent) {
         // Filter by operationId (events are global)
         // Accept if operationId is null (race condition) or matches
@@ -205,7 +190,7 @@
         log.error('Copy error: {errorType}', { errorType: event.error.type, error: event.error })
 
         cleanup()
-        onError(formatErrorMessage(event.error))
+        onError(event.error)
     }
 
     function handleCancelled(event: WriteCancelledEvent) {
@@ -289,26 +274,41 @@
         unlisteners.push(await onWriteCancelled(handleCancelled))
         unlisteners.push(await onWriteConflict(handleConflict))
 
-        log.debug('Event subscriptions ready, starting copyFiles')
+        log.debug('Event subscriptions ready, starting copy')
 
         try {
             const progressIntervalMs = getSetting('fileOperations.progressUpdateInterval')
             const maxConflictsToShow = getSetting('fileOperations.maxConflictsToShow')
-            const result = await copyFiles(sourcePaths, destinationPath, {
-                conflictResolution: 'stop',
-                progressIntervalMs,
-                maxConflictsToShow,
-                sortColumn,
-                sortOrder,
-                previewId,
-            })
+
+            // Use unified copyBetweenVolumes for cross-volume operations (including MTP)
+            // Fall back to copyFiles for local-to-local copies when both volumes are "root"
+            const isLocalToLocal = sourceVolumeId === DEFAULT_VOLUME_ID && destVolumeId === DEFAULT_VOLUME_ID
+            const result = isLocalToLocal
+                ? await copyFiles(sourcePaths, destinationPath, {
+                      conflictResolution,
+                      progressIntervalMs,
+                      maxConflictsToShow,
+                      sortColumn,
+                      sortOrder,
+                      previewId,
+                  })
+                : await copyBetweenVolumes(sourceVolumeId, sourcePaths, destVolumeId, destinationPath, {
+                      conflictResolution,
+                      progressIntervalMs,
+                      maxConflictsToShow,
+                  })
 
             operationId = result.operationId
             log.info('Copy operation started with operationId: {operationId}', { operationId })
         } catch (err) {
             log.error('Failed to start copy operation: {error}', { error: err })
             cleanup()
-            onError(`Failed to start copy: ${String(err)}`)
+            // Create an io_error type for startup failures
+            onError({
+                type: 'io_error',
+                path: sourcePaths[0] ?? '',
+                message: `Failed to start copy: ${String(err)}`,
+            })
         }
     }
 

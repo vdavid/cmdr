@@ -321,6 +321,10 @@ pub fn run() {
             commands::file_system::resolve_write_conflict,
             commands::file_system::list_active_operations,
             commands::file_system::get_operation_status,
+            // Unified volume copy commands
+            commands::file_system::copy_between_volumes,
+            commands::file_system::scan_volume_for_copy,
+            commands::file_system::scan_volume_for_conflicts,
             commands::file_system::get_listing_stats,
             commands::file_system::start_selection_drag,
             commands::file_viewer::viewer_open,
@@ -383,6 +387,8 @@ pub fn run() {
             commands::mtp::rename_mtp_object,
             #[cfg(target_os = "macos")]
             commands::mtp::move_mtp_object,
+            #[cfg(target_os = "macos")]
+            commands::mtp::scan_mtp_for_copy,
             #[cfg(not(target_os = "macos"))]
             stubs::mtp::list_mtp_devices,
             #[cfg(not(target_os = "macos"))]
@@ -409,6 +415,8 @@ pub fn run() {
             stubs::mtp::rename_mtp_object,
             #[cfg(not(target_os = "macos"))]
             stubs::mtp::move_mtp_object,
+            #[cfg(not(target_os = "macos"))]
+            stubs::mtp::scan_mtp_for_copy,
             // Volume commands (platform-specific)
             #[cfg(target_os = "macos")]
             commands::volumes::list_volumes,

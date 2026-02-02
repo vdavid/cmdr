@@ -7,17 +7,18 @@ use crate::file_system::write_operations::{
     resolve_write_conflict as ops_resolve_write_conflict, start_scan_preview as ops_start_scan_preview,
 };
 use crate::file_system::{
-    FileEntry, ListingStartResult, ListingStats, OperationStatus, OperationSummary, ResortResult, SortColumn,
-    SortOrder, StreamingListingStartResult, WriteOperationConfig, WriteOperationError, WriteOperationStartResult,
-    cancel_listing as ops_cancel_listing, cancel_write_operation as ops_cancel_write_operation,
+    ConflictInfo, FileEntry, ListingStartResult, ListingStats, OperationStatus, OperationSummary, ResortResult,
+    SortColumn, SortOrder, StreamingListingStartResult, VolumeCopyConfig, VolumeCopyScanResult, WriteOperationConfig,
+    WriteOperationError, WriteOperationStartResult, cancel_listing as ops_cancel_listing,
+    cancel_write_operation as ops_cancel_write_operation, copy_between_volumes as ops_copy_between_volumes,
     copy_files_start as ops_copy_files_start, delete_files_start as ops_delete_files_start,
     find_file_index as ops_find_file_index, get_file_at as ops_get_file_at, get_file_range as ops_get_file_range,
     get_listing_stats as ops_get_listing_stats, get_max_filename_width as ops_get_max_filename_width,
-    get_operation_status as ops_get_operation_status, get_total_count as ops_get_total_count,
-    get_volume_manager, list_active_operations as ops_list_active_operations,
-    list_directory_end as ops_list_directory_end, list_directory_start_streaming as ops_list_directory_start_streaming,
+    get_operation_status as ops_get_operation_status, get_total_count as ops_get_total_count, get_volume_manager,
+    list_active_operations as ops_list_active_operations, list_directory_end as ops_list_directory_end,
+    list_directory_start_streaming as ops_list_directory_start_streaming,
     list_directory_start_with_volume as ops_list_directory_start_with_volume, move_files_start as ops_move_files_start,
-    resort_listing as ops_resort_listing,
+    resort_listing as ops_resort_listing, scan_for_volume_copy as ops_scan_for_volume_copy,
 };
 use std::path::{Path, PathBuf};
 #[cfg(target_os = "macos")]
@@ -34,7 +35,7 @@ use tauri::Manager;
 /// # Returns
 /// True if the path exists.
 #[tauri::command]
-pub fn path_exists(volume_id: Option<String>, path: String) -> bool {
+pub async fn path_exists(volume_id: Option<String>, path: String) -> bool {
     let volume_id = volume_id.unwrap_or_else(|| "root".to_string());
 
     // For local volumes, expand tilde
@@ -42,7 +43,11 @@ pub fn path_exists(volume_id: Option<String>, path: String) -> bool {
 
     // Try to use Volume abstraction
     if let Some(volume) = get_volume_manager().get(&volume_id) {
-        return volume.exists(Path::new(&expanded_path));
+        let path_for_check = expanded_path.clone();
+        // Use spawn_blocking for MTP volumes which need tokio runtime context
+        return tokio::task::spawn_blocking(move || volume.exists(Path::new(&path_for_check)))
+            .await
+            .unwrap_or(false);
     }
 
     // Fallback for unknown volumes (shouldn't happen in practice)
@@ -60,7 +65,7 @@ pub fn path_exists(volume_id: Option<String>, path: String) -> bool {
 /// # Returns
 /// The full path of the created directory, or an error message.
 #[tauri::command]
-pub fn create_directory(volume_id: Option<String>, parent_path: String, name: String) -> Result<String, String> {
+pub async fn create_directory(volume_id: Option<String>, parent_path: String, name: String) -> Result<String, String> {
     if name.is_empty() {
         return Err("Folder name cannot be empty".to_string());
     }
@@ -71,18 +76,36 @@ pub fn create_directory(volume_id: Option<String>, parent_path: String, name: St
     let volume_id = volume_id.unwrap_or_else(|| "root".to_string());
 
     // For local volumes, expand tilde
-    let expanded_path = if volume_id == "root" { expand_tilde(&parent_path) } else { parent_path.clone() };
+    let expanded_path = if volume_id == "root" {
+        expand_tilde(&parent_path)
+    } else {
+        parent_path.clone()
+    };
 
     // Try to use Volume abstraction
     if let Some(volume) = get_volume_manager().get(&volume_id) {
         let new_path = PathBuf::from(&expanded_path).join(&name);
-        volume.create_directory(&new_path).map_err(|e| match e {
-            crate::file_system::VolumeError::AlreadyExists(_) => format!("'{}' already exists", name),
-            crate::file_system::VolumeError::PermissionDenied(_) => {
-                format!("Permission denied: cannot create '{}' in '{}'", name, parent_path)
-            }
-            _ => format!("Failed to create folder: {}", e),
-        })?;
+        let new_path_clone = new_path.clone();
+        let parent_path_clone = parent_path.clone();
+        let name_clone = name.clone();
+
+        // Use spawn_blocking to run the Volume operation in a context where
+        // tokio::runtime::Handle::current() is available (needed for MtpVolume)
+        tokio::task::spawn_blocking(move || {
+            volume.create_directory(&new_path_clone).map_err(|e| match e {
+                crate::file_system::VolumeError::AlreadyExists(_) => format!("'{}' already exists", name_clone),
+                crate::file_system::VolumeError::PermissionDenied(_) => {
+                    format!(
+                        "Permission denied: cannot create '{}' in '{}'",
+                        name_clone, parent_path_clone
+                    )
+                }
+                _ => format!("Failed to create folder: {}", e),
+            })
+        })
+        .await
+        .map_err(|e| format!("Task failed: {}", e))??;
+
         return Ok(new_path.to_string_lossy().to_string());
     }
 
@@ -159,11 +182,23 @@ pub async fn list_directory_start_streaming(
     listing_id: String,
 ) -> Result<StreamingListingStartResult, String> {
     // Only expand tilde for local volumes (not MTP)
-    let expanded_path = if volume_id == "root" { expand_tilde(&path) } else { path.clone() };
+    let expanded_path = if volume_id == "root" {
+        expand_tilde(&path)
+    } else {
+        path.clone()
+    };
     let path_buf = PathBuf::from(&expanded_path);
-    ops_list_directory_start_streaming(app, &volume_id, &path_buf, include_hidden, sort_by, sort_order, listing_id)
-        .await
-        .map_err(|e| format!("Failed to start directory listing '{}': {}", path, e))
+    ops_list_directory_start_streaming(
+        app,
+        &volume_id,
+        &path_buf,
+        include_hidden,
+        sort_by,
+        sort_order,
+        listing_id,
+    )
+    .await
+    .map_err(|e| format!("Failed to start directory listing '{}': {}", path, e))
 }
 
 /// Cancels an in-progress streaming directory listing.
@@ -598,6 +633,155 @@ pub fn start_selection_drag(
     Err("Drag operation is not yet supported on this platform".to_string())
 }
 
+// ============================================================================
+// Unified volume copy commands
+// ============================================================================
+
+/// Copy files between any two volumes (local, MTP, etc.).
+///
+/// This is the unified copy command that works for all volume types:
+/// - Local → Local (regular file copy)
+/// - Local → MTP (upload to Android device)
+/// - MTP → Local (download from Android device)
+///
+/// # Events emitted
+/// * `write-progress` - Progress updates
+/// * `write-complete` - On success
+/// * `write-error` - On error
+/// * `write-cancelled` - If cancelled
+///
+/// # Arguments
+/// * `app` - Tauri app handle (injected by Tauri)
+/// * `source_volume_id` - ID of the source volume (e.g., "root" for local filesystem)
+/// * `source_paths` - List of source file/directory paths relative to source volume
+/// * `dest_volume_id` - ID of the destination volume
+/// * `dest_path` - Destination directory path relative to destination volume
+/// * `config` - Optional copy configuration (progress interval, conflict resolution)
+#[tauri::command]
+pub async fn copy_between_volumes(
+    app: tauri::AppHandle,
+    source_volume_id: String,
+    source_paths: Vec<String>,
+    dest_volume_id: String,
+    dest_path: String,
+    config: Option<VolumeCopyConfig>,
+) -> Result<WriteOperationStartResult, WriteOperationError> {
+    let source_volume = get_volume_manager()
+        .get(&source_volume_id)
+        .ok_or_else(|| WriteOperationError::IoError {
+            path: source_volume_id.clone(),
+            message: format!("Source volume '{}' not found", source_volume_id),
+        })?;
+
+    let dest_volume = get_volume_manager()
+        .get(&dest_volume_id)
+        .ok_or_else(|| WriteOperationError::IoError {
+            path: dest_volume_id.clone(),
+            message: format!("Destination volume '{}' not found", dest_volume_id),
+        })?;
+
+    let source_paths: Vec<PathBuf> = source_paths.iter().map(PathBuf::from).collect();
+    let dest_path = PathBuf::from(dest_path);
+    let config = config.unwrap_or_default();
+
+    ops_copy_between_volumes(app, source_volume, source_paths, dest_volume, dest_path, config).await
+}
+
+/// Scans source files for a volume copy operation without executing it.
+///
+/// This performs a "pre-flight" scan to determine:
+/// - Total file count and bytes to copy
+/// - Available space on destination
+/// - Any conflicts (files that already exist at destination)
+///
+/// Use this to show users what will happen before they confirm a copy.
+///
+/// # Arguments
+/// * `source_volume_id` - ID of the source volume
+/// * `source_paths` - List of source file/directory paths
+/// * `dest_volume_id` - ID of the destination volume
+/// * `dest_path` - Destination directory path
+/// * `max_conflicts` - Maximum number of conflicts to return (for performance)
+#[tauri::command]
+pub async fn scan_volume_for_copy(
+    source_volume_id: String,
+    source_paths: Vec<String>,
+    dest_volume_id: String,
+    dest_path: String,
+    max_conflicts: Option<usize>,
+) -> Result<VolumeCopyScanResult, String> {
+    let source_volume = get_volume_manager()
+        .get(&source_volume_id)
+        .ok_or_else(|| format!("Source volume '{}' not found", source_volume_id))?;
+
+    let dest_volume = get_volume_manager()
+        .get(&dest_volume_id)
+        .ok_or_else(|| format!("Destination volume '{}' not found", dest_volume_id))?;
+
+    let source_paths: Vec<PathBuf> = source_paths.iter().map(PathBuf::from).collect();
+    let dest_path = PathBuf::from(dest_path);
+    let max_conflicts = max_conflicts.unwrap_or(100);
+
+    // Run scan in blocking context for MTP volume support
+    tokio::task::spawn_blocking(move || {
+        ops_scan_for_volume_copy(&*source_volume, &source_paths, &*dest_volume, &dest_path, max_conflicts)
+            .map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| format!("Scan task failed: {}", e))?
+}
+
+/// Scans destination volume for conflicts with source items.
+///
+/// Checks if any of the source item names already exist at the destination path.
+/// Returns detailed conflict information for UI display.
+///
+/// # Arguments
+/// * `volume_id` - ID of the destination volume to scan
+/// * `source_items` - List of source items to check (name, size, modified timestamp)
+/// * `dest_path` - Destination directory path on the volume
+#[tauri::command]
+pub async fn scan_volume_for_conflicts(
+    volume_id: String,
+    source_items: Vec<SourceItemInput>,
+    dest_path: String,
+) -> Result<Vec<ConflictInfo>, String> {
+    let volume = get_volume_manager()
+        .get(&volume_id)
+        .ok_or_else(|| format!("Volume '{}' not found", volume_id))?;
+
+    let source_items: Vec<crate::file_system::SourceItemInfo> = source_items
+        .into_iter()
+        .map(|item| crate::file_system::SourceItemInfo {
+            name: item.name,
+            size: item.size,
+            modified: item.modified,
+        })
+        .collect();
+    let dest_path = PathBuf::from(dest_path);
+
+    // Run in blocking context for MTP volume support
+    tokio::task::spawn_blocking(move || {
+        volume
+            .scan_for_conflicts(&source_items, &dest_path)
+            .map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| format!("Conflict scan task failed: {}", e))?
+}
+
+/// Input type for source item information (used by scan_volume_for_conflicts).
+#[derive(Debug, Clone, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SourceItemInput {
+    /// File/directory name.
+    pub name: String,
+    /// Size in bytes.
+    pub size: u64,
+    /// Modification time (Unix timestamp in seconds).
+    pub modified: Option<i64>,
+}
+
 /// Expands tilde (~) to the user's home directory.
 fn expand_tilde(path: &str) -> String {
     if (path.starts_with("~/") || path == "~")
@@ -645,11 +829,11 @@ mod tests {
         assert_eq!(expand_tilde(path), path);
     }
 
-    #[test]
-    fn test_create_directory_success() {
+    #[tokio::test]
+    async fn test_create_directory_success() {
         let tmp = create_test_dir("create_success");
         let parent = tmp.to_string_lossy().to_string();
-        let result = create_directory(None, parent, "new-folder".to_string());
+        let result = create_directory(None, parent, "new-folder".to_string()).await;
         assert!(result.is_ok());
         let created_path = result.unwrap();
         assert!(PathBuf::from(&created_path).is_dir());
@@ -657,44 +841,44 @@ mod tests {
         cleanup_test_dir(&tmp);
     }
 
-    #[test]
-    fn test_create_directory_already_exists() {
+    #[tokio::test]
+    async fn test_create_directory_already_exists() {
         let tmp = create_test_dir("create_exists");
         let parent = tmp.to_string_lossy().to_string();
         fs::create_dir(tmp.join("existing")).unwrap();
-        let result = create_directory(None, parent, "existing".to_string());
+        let result = create_directory(None, parent, "existing".to_string()).await;
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("already exists"));
         cleanup_test_dir(&tmp);
     }
 
-    #[test]
-    fn test_create_directory_empty_name() {
+    #[tokio::test]
+    async fn test_create_directory_empty_name() {
         let tmp = create_test_dir("create_empty");
         let parent = tmp.to_string_lossy().to_string();
-        let result = create_directory(None, parent, "".to_string());
+        let result = create_directory(None, parent, "".to_string()).await;
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("cannot be empty"));
         cleanup_test_dir(&tmp);
     }
 
-    #[test]
-    fn test_create_directory_invalid_chars() {
+    #[tokio::test]
+    async fn test_create_directory_invalid_chars() {
         let tmp = create_test_dir("create_invalid");
         let parent = tmp.to_string_lossy().to_string();
-        let result = create_directory(None, parent.clone(), "foo/bar".to_string());
+        let result = create_directory(None, parent.clone(), "foo/bar".to_string()).await;
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("invalid characters"));
 
-        let result = create_directory(None, parent, "foo\0bar".to_string());
+        let result = create_directory(None, parent, "foo\0bar".to_string()).await;
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("invalid characters"));
         cleanup_test_dir(&tmp);
     }
 
-    #[test]
-    fn test_create_directory_nonexistent_parent() {
-        let result = create_directory(None, "/nonexistent_path_12345".to_string(), "test".to_string());
+    #[tokio::test]
+    async fn test_create_directory_nonexistent_parent() {
+        let result = create_directory(None, "/nonexistent_path_12345".to_string(), "test".to_string()).await;
         assert!(result.is_err());
     }
 }

@@ -232,6 +232,233 @@ fn test_broken_symlink_still_exists() {
     let _ = fs::remove_dir_all(&test_dir);
 }
 
+// ============================================================================
+// Copy operation tests
+// ============================================================================
+
+#[test]
+fn test_supports_export_returns_true() {
+    let volume = LocalPosixVolume::new("Test", "/tmp");
+    assert!(volume.supports_export());
+}
+
+#[test]
+fn test_scan_for_copy_single_file() {
+    use std::fs;
+
+    let test_dir = std::env::temp_dir().join("cmdr_scan_copy_file_test");
+    let _ = fs::remove_dir_all(&test_dir);
+    fs::create_dir_all(&test_dir).unwrap();
+
+    // Create a single file with known content
+    fs::write(test_dir.join("test.txt"), "Hello, World!").unwrap();
+
+    let volume = LocalPosixVolume::new("Test", test_dir.to_str().unwrap());
+    let result = volume.scan_for_copy(Path::new("test.txt")).unwrap();
+
+    assert_eq!(result.file_count, 1);
+    assert_eq!(result.dir_count, 0);
+    assert_eq!(result.total_bytes, 13); // "Hello, World!" is 13 bytes
+
+    let _ = fs::remove_dir_all(&test_dir);
+}
+
+#[test]
+fn test_scan_for_copy_directory() {
+    use std::fs;
+
+    let test_dir = std::env::temp_dir().join("cmdr_scan_copy_dir_test");
+    let _ = fs::remove_dir_all(&test_dir);
+    fs::create_dir_all(&test_dir).unwrap();
+
+    // Create directory structure
+    let subdir = test_dir.join("mydir");
+    fs::create_dir(&subdir).unwrap();
+    fs::write(subdir.join("file1.txt"), "123").unwrap();
+    fs::write(subdir.join("file2.txt"), "456789").unwrap();
+    let nested = subdir.join("nested");
+    fs::create_dir(&nested).unwrap();
+    fs::write(nested.join("file3.txt"), "A").unwrap();
+
+    let volume = LocalPosixVolume::new("Test", test_dir.to_str().unwrap());
+    let result = volume.scan_for_copy(Path::new("mydir")).unwrap();
+
+    assert_eq!(result.file_count, 3);
+    assert_eq!(result.dir_count, 1); // Just the nested dir (root not counted)
+    assert_eq!(result.total_bytes, 10); // 3 + 6 + 1
+
+    let _ = fs::remove_dir_all(&test_dir);
+}
+
+#[test]
+fn test_export_to_local_single_file() {
+    use std::fs;
+
+    let src_dir = std::env::temp_dir().join("cmdr_export_src_test");
+    let dst_dir = std::env::temp_dir().join("cmdr_export_dst_test");
+    let _ = fs::remove_dir_all(&src_dir);
+    let _ = fs::remove_dir_all(&dst_dir);
+    fs::create_dir_all(&src_dir).unwrap();
+    fs::create_dir_all(&dst_dir).unwrap();
+
+    fs::write(src_dir.join("source.txt"), "Test content").unwrap();
+
+    let volume = LocalPosixVolume::new("Test", src_dir.to_str().unwrap());
+    let bytes = volume
+        .export_to_local(Path::new("source.txt"), &dst_dir.join("dest.txt"))
+        .unwrap();
+
+    assert_eq!(bytes, 12); // "Test content" is 12 bytes
+    assert_eq!(fs::read_to_string(dst_dir.join("dest.txt")).unwrap(), "Test content");
+
+    let _ = fs::remove_dir_all(&src_dir);
+    let _ = fs::remove_dir_all(&dst_dir);
+}
+
+#[test]
+fn test_export_to_local_directory() {
+    use std::fs;
+
+    let src_dir = std::env::temp_dir().join("cmdr_export_dir_src_test");
+    let dst_dir = std::env::temp_dir().join("cmdr_export_dir_dst_test");
+    let _ = fs::remove_dir_all(&src_dir);
+    let _ = fs::remove_dir_all(&dst_dir);
+    fs::create_dir_all(&src_dir).unwrap();
+    fs::create_dir_all(&dst_dir).unwrap();
+
+    // Create source directory with files
+    let source_subdir = src_dir.join("sourcedir");
+    fs::create_dir(&source_subdir).unwrap();
+    fs::write(source_subdir.join("file1.txt"), "AAA").unwrap();
+    fs::write(source_subdir.join("file2.txt"), "BBBBB").unwrap();
+
+    let volume = LocalPosixVolume::new("Test", src_dir.to_str().unwrap());
+    let bytes = volume
+        .export_to_local(Path::new("sourcedir"), &dst_dir.join("destdir"))
+        .unwrap();
+
+    assert_eq!(bytes, 8); // 3 + 5 bytes
+    assert!(dst_dir.join("destdir").is_dir());
+    assert_eq!(fs::read_to_string(dst_dir.join("destdir/file1.txt")).unwrap(), "AAA");
+    assert_eq!(fs::read_to_string(dst_dir.join("destdir/file2.txt")).unwrap(), "BBBBB");
+
+    let _ = fs::remove_dir_all(&src_dir);
+    let _ = fs::remove_dir_all(&dst_dir);
+}
+
+#[test]
+fn test_import_from_local_single_file() {
+    use std::fs;
+
+    let local_dir = std::env::temp_dir().join("cmdr_import_local_test");
+    let vol_dir = std::env::temp_dir().join("cmdr_import_vol_test");
+    let _ = fs::remove_dir_all(&local_dir);
+    let _ = fs::remove_dir_all(&vol_dir);
+    fs::create_dir_all(&local_dir).unwrap();
+    fs::create_dir_all(&vol_dir).unwrap();
+
+    fs::write(local_dir.join("local.txt"), "Imported content").unwrap();
+
+    let volume = LocalPosixVolume::new("Test", vol_dir.to_str().unwrap());
+    let bytes = volume
+        .import_from_local(&local_dir.join("local.txt"), Path::new("imported.txt"))
+        .unwrap();
+
+    assert_eq!(bytes, 16); // "Imported content" is 16 bytes
+    assert_eq!(
+        fs::read_to_string(vol_dir.join("imported.txt")).unwrap(),
+        "Imported content"
+    );
+
+    let _ = fs::remove_dir_all(&local_dir);
+    let _ = fs::remove_dir_all(&vol_dir);
+}
+
+#[test]
+fn test_scan_for_conflicts_no_conflicts() {
+    use std::fs;
+
+    let test_dir = std::env::temp_dir().join("cmdr_conflicts_none_test");
+    let _ = fs::remove_dir_all(&test_dir);
+    fs::create_dir_all(&test_dir).unwrap();
+
+    let volume = LocalPosixVolume::new("Test", test_dir.to_str().unwrap());
+
+    let source_items = vec![
+        SourceItemInfo {
+            name: "newfile.txt".to_string(),
+            size: 100,
+            modified: None,
+        },
+        SourceItemInfo {
+            name: "another.txt".to_string(),
+            size: 200,
+            modified: None,
+        },
+    ];
+
+    let conflicts = volume.scan_for_conflicts(&source_items, Path::new("")).unwrap();
+    assert!(conflicts.is_empty());
+
+    let _ = fs::remove_dir_all(&test_dir);
+}
+
+#[test]
+fn test_scan_for_conflicts_with_conflicts() {
+    use std::fs;
+
+    let test_dir = std::env::temp_dir().join("cmdr_conflicts_some_test");
+    let _ = fs::remove_dir_all(&test_dir);
+    fs::create_dir_all(&test_dir).unwrap();
+
+    // Create existing files
+    fs::write(test_dir.join("existing.txt"), "Old content").unwrap();
+    fs::write(test_dir.join("another.txt"), "Another old").unwrap();
+
+    let volume = LocalPosixVolume::new("Test", test_dir.to_str().unwrap());
+
+    let source_items = vec![
+        SourceItemInfo {
+            name: "existing.txt".to_string(),
+            size: 100,
+            modified: Some(1_700_000_000),
+        },
+        SourceItemInfo {
+            name: "newfile.txt".to_string(),
+            size: 200,
+            modified: None,
+        },
+        SourceItemInfo {
+            name: "another.txt".to_string(),
+            size: 300,
+            modified: Some(1_700_000_000),
+        },
+    ];
+
+    let conflicts = volume.scan_for_conflicts(&source_items, Path::new("")).unwrap();
+    assert_eq!(conflicts.len(), 2);
+
+    // Verify conflict info
+    let existing_conflict = conflicts.iter().find(|c| c.source_path == "existing.txt").unwrap();
+    assert_eq!(existing_conflict.source_size, 100);
+    assert_eq!(existing_conflict.dest_size, 11); // "Old content" is 11 bytes
+    assert_eq!(existing_conflict.source_modified, Some(1_700_000_000));
+
+    let _ = fs::remove_dir_all(&test_dir);
+}
+
+#[test]
+fn test_get_space_info() {
+    // Test against /tmp which should exist on any POSIX system
+    let volume = LocalPosixVolume::new("Test", "/tmp");
+    let space = volume.get_space_info().unwrap();
+
+    // Basic sanity checks
+    assert!(space.total_bytes > 0);
+    assert!(space.available_bytes <= space.total_bytes);
+    assert!(space.used_bytes <= space.total_bytes);
+}
+
 #[test]
 fn test_list_directory_includes_symlinks() {
     use std::fs;

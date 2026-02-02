@@ -1342,7 +1342,7 @@ fn read_directory_with_progress(
     listing_id: &str,
     state: &Arc<StreamingListingState>,
     volume_id: &str,
-    path: &PathBuf,
+    path: &Path,
     include_hidden: bool,
     sort_by: SortColumn,
     sort_order: SortOrder,
@@ -1350,6 +1350,12 @@ fn read_directory_with_progress(
     use tauri::Emitter;
 
     benchmark::log_event("read_directory_with_progress START");
+    log::debug!(
+        "read_directory_with_progress: listing_id={}, volume_id={}, path={}",
+        listing_id,
+        volume_id,
+        path.display()
+    );
 
     // Emit opening event - this is the slow part for network folders
     // (SMB connection establishment, directory handle creation, MTP queries)
@@ -1373,18 +1379,15 @@ fn read_directory_with_progress(
     }
 
     // Get the volume from VolumeManager
-    let volume = super::get_volume_manager().get(volume_id).ok_or_else(|| {
-        std::io::Error::new(
-            std::io::ErrorKind::NotFound,
-            format!("Volume not found: {}", volume_id),
-        )
-    })?;
+    let volume = super::get_volume_manager()
+        .get(volume_id)
+        .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, format!("Volume not found: {}", volume_id)))?;
 
     // Read directory entries via Volume abstraction
     let read_start = std::time::Instant::now();
     let mut entries = volume
         .list_directory(path)
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        .map_err(|e| std::io::Error::other(e.to_string()))?;
     let read_dir_time = read_start.elapsed();
     benchmark::log_event_value("read_dir COMPLETE, entries", entries.len());
 
@@ -1434,7 +1437,7 @@ fn read_directory_with_progress(
             listing_id.to_string(),
             CachedListing {
                 volume_id: volume_id.to_string(),
-                path: path.clone(),
+                path: path.to_path_buf(),
                 entries,
                 sort_by,
                 sort_order,

@@ -1,6 +1,7 @@
 //! Tauri commands for MTP (Android device) operations.
 
 use log::debug;
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 use crate::file_system::FileEntry;
@@ -8,6 +9,18 @@ use crate::mtp::{
     self, ConnectedDeviceInfo, MtpConnectionError, MtpDeviceInfo, MtpObjectInfo, MtpOperationResult, MtpStorageInfo,
 };
 use tauri::AppHandle;
+
+/// Result of scanning an MTP path for copy operation.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MtpScanResult {
+    /// Number of files found.
+    pub file_count: usize,
+    /// Number of directories found.
+    pub dir_count: usize,
+    /// Total bytes of all files.
+    pub total_bytes: u64,
+}
 
 /// Lists all connected MTP devices.
 ///
@@ -121,11 +134,7 @@ pub async fn list_mtp_directory(
         .list_directory(&device_id, storage_id, &path)
         .await;
     match &result {
-        Ok(entries) => debug!(
-            "list_mtp_directory: SUCCESS - {} entries for {}",
-            entries.len(),
-            path
-        ),
+        Ok(entries) => debug!("list_mtp_directory: SUCCESS - {} entries for {}", entries.len(), path),
         Err(e) => debug!("list_mtp_directory: ERROR - {:?}", e),
     }
     result
@@ -275,4 +284,39 @@ pub async fn move_mtp_object(
     mtp::connection_manager()
         .move_object(&device_id, storage_id, &object_path, &new_parent_path)
         .await
+}
+
+// ============================================================================
+// Phase 5: Copy/Export Operations
+// ============================================================================
+
+/// Scans an MTP path for copy statistics.
+///
+/// Recursively scans the specified path to get file count, directory count,
+/// and total bytes. Useful for showing progress during copy operations.
+///
+/// # Arguments
+///
+/// * `device_id` - The connected device ID
+/// * `storage_id` - The storage ID within the device
+/// * `path` - Virtual path on the device to scan
+#[tauri::command]
+pub async fn scan_mtp_for_copy(
+    device_id: String,
+    storage_id: u32,
+    path: String,
+) -> Result<MtpScanResult, MtpConnectionError> {
+    debug!(
+        "scan_mtp_for_copy: device={}, storage={}, path={}",
+        device_id, storage_id, path
+    );
+    let result = mtp::connection_manager()
+        .scan_for_copy(&device_id, storage_id, &path)
+        .await?;
+
+    Ok(MtpScanResult {
+        file_count: result.file_count,
+        dir_count: result.dir_count,
+        total_bytes: result.total_bytes,
+    })
 }

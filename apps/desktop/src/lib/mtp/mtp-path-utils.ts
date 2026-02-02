@@ -67,30 +67,6 @@ export function constructMtpPath(deviceId: string, storageId: number, path: stri
 }
 
 /**
- * Parses a volume ID to extract device and storage IDs.
- * Handles both "mtp-{deviceId}-{storageId}" and "{deviceId}:{storageId}" formats.
- * @returns Parsed IDs, or null if not a valid MTP volume ID.
- */
-export function parseMtpVolumeId(volumeId: string): { deviceId: string; storageId: number } | null {
-    // Format: "deviceId:storageId"
-    if (volumeId.includes(':')) {
-        const [deviceId, storageIdStr] = volumeId.split(':')
-        const storageId = parseInt(storageIdStr, 10)
-        if (!isNaN(storageId)) {
-            return { deviceId, storageId }
-        }
-    }
-
-    // Format: "mtp-{deviceId}" (no storage, used for unconnected devices)
-    if (volumeId.startsWith('mtp-')) {
-        // This is a device-only ID, not a storage-specific one
-        return null
-    }
-
-    return null
-}
-
-/**
  * Checks if a volume ID represents an MTP volume.
  */
 export function isMtpVolumeId(volumeId: string): boolean {

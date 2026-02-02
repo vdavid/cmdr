@@ -33,6 +33,7 @@
         listVolumes,
         mountNetworkShare,
         onMtpDeviceRemoved,
+        onMtpDirectoryChanged,
         openFile,
         openInEditor,
         showFileContextMenu,
@@ -456,6 +457,8 @@
     let unlistenReadComplete: UnlistenFn | undefined
     // MTP device removal listener
     let unlistenMtpRemoved: UnlistenFn | undefined
+    // MTP directory changed listener (file watching)
+    let unlistenMtpDirectoryChanged: UnlistenFn | undefined
     // Polling interval for sync status (visible files only)
     let syncPollInterval: ReturnType<typeof setInterval> | undefined
     const SYNC_POLL_INTERVAL_MS = 2000 // Poll every 2 seconds
@@ -665,11 +668,19 @@
         benchmark.resetEpoch()
         benchmark.logEventValue('loadDirectory CALLED', path)
 
+        // Debug logging for diagnosing concurrent list_directory calls
+        console.debug(
+            `[FilePane] loadDirectory called: paneId=${paneId}, volumeId=${volumeId}, path=${path}, ` +
+                `selectName=${selectName ?? 'none'}, currentLoading=${loading}, currentListingId=${listingId}`,
+        )
+
         // Increment generation to cancel any in-flight requests
         const thisGeneration = ++loadGeneration
+        console.debug(`[FilePane] loadDirectory: generation=${thisGeneration}`)
 
         // Cancel any abandoned listing from previous navigation
         if (listingId) {
+            console.debug(`[FilePane] loadDirectory: cancelling previous listing ${listingId}`)
             void cancelListing(listingId)
             void listDirectoryEnd(listingId)
             listingId = ''
@@ -781,8 +792,20 @@
 
             // Now start streaming listing - listeners are already set up
             benchmark.logEvent('IPC listDirectoryStartStreaming CALL')
-            const result = await listDirectoryStartStreaming(volumeId, path, includeHidden, sortBy, sortOrder, newListingId)
+            console.debug(
+                `[FilePane] calling listDirectoryStartStreaming: volumeId=${volumeId}, path=${loadPath}, ` +
+                    `listingId=${newListingId}`,
+            )
+            const result = await listDirectoryStartStreaming(
+                volumeId,
+                path,
+                includeHidden,
+                sortBy,
+                sortOrder,
+                newListingId,
+            )
             benchmark.logEventValue('IPC listDirectoryStartStreaming RETURNED', result.listingId)
+            console.debug(`[FilePane] listDirectoryStartStreaming returned: status=${result.status}`)
 
             // Check if this load was cancelled while we were starting
             if (thisGeneration !== loadGeneration) {
@@ -981,18 +1004,6 @@
     function handleMtpNavigate(newPath: string, selectName?: string) {
         currentPath = newPath
         onPathChange?.(newPath)
-    }
-
-    // Handle MTP errors
-    function handleMtpError(errorMessage: string) {
-        log.error('MTP error: {error}', { error: errorMessage })
-        error = errorMessage
-    }
-
-    // Handle fatal MTP errors (device disconnected, timeout)
-    function handleMtpFatalError(errorMessage: string) {
-        log.error('Fatal MTP error, triggering fallback: {error}', { error: errorMessage })
-        onMtpFatalError?.(errorMessage)
     }
 
     // Handle network host switching - show the ShareBrowser
@@ -1260,6 +1271,9 @@
         }
     })
 
+    // Track the previous volumeId to detect MTP connection completion
+    let prevVolumeId = $state(volumeId)
+
     // Update path when initialPath prop changes (for persistence loading)
     // Skip for network views and device-only MTP views (not yet connected)
     // Use untrack for currentPath so this effect only fires when initialPath changes,
@@ -1269,13 +1283,37 @@
         const curPath = untrack(() => currentPath) // Don't track this
         // Load for local volumes and connected MTP views (not device-only)
         if (!isNetworkView && !isMtpDeviceOnly && newPath !== curPath) {
+            console.debug(
+                `[FilePane] initialPath effect: triggering loadDirectory, paneId=${paneId}, ` +
+                    `newPath=${newPath}, curPath=${curPath}`,
+            )
             currentPath = newPath
             void loadDirectory(newPath)
         }
         // For device-only MTP views, just update the path (auto-connect will handle switching to storage)
         if (isMtpDeviceOnly && newPath !== curPath) {
+            console.debug(`[FilePane] initialPath effect (MTP device-only): updating path only, paneId=${paneId}`)
             currentPath = newPath
         }
+    })
+
+    // Detect when MTP volume transitions from device-only to connected (has storage ID)
+    // This triggers loading after auto-connect completes
+    $effect(() => {
+        const wasDeviceOnly = isMtpVolumeId(prevVolumeId) && !prevVolumeId.includes(':')
+        const isNowConnected = isMtpVolumeId(volumeId) && volumeId.includes(':')
+
+        if (wasDeviceOnly && isNowConnected) {
+            log.info('MTP volume connected, loading directory: {path}', { path: initialPath })
+            console.debug(
+                `[FilePane] MTP volume transition effect: triggering loadDirectory, paneId=${paneId}, ` +
+                    `prevVolumeId=${prevVolumeId}, volumeId=${volumeId}, initialPath=${initialPath}`,
+            )
+            currentPath = initialPath
+            void loadDirectory(initialPath)
+        }
+
+        prevVolumeId = volumeId
     })
 
     // Update global menu context when cursor position or focus changes
@@ -1377,8 +1415,8 @@
     $effect(() => {
         void onMtpDeviceRemoved((event) => {
             // Check if the removed device matches our current MTP volume
-            // volumeId format: "mtp-{bus}-{addr}:{storageId}" (e.g., "mtp-0-1:65537")
-            // event.deviceId format: "mtp-{bus}-{addr}" (e.g., "mtp-0-1")
+            // volumeId format: "mtp-{locationId}:{storageId}" (e.g., "mtp-336592896:65537")
+            // event.deviceId format: "mtp-{locationId}" (e.g., "mtp-336592896")
             if (isMtpView && volumeId.startsWith(event.deviceId + ':')) {
                 log.warn('MTP device disconnected while viewing: {deviceId}, triggering fallback', {
                     deviceId: event.deviceId,
@@ -1396,13 +1434,74 @@
         }
     })
 
+    // Listen for MTP directory changed events (file watching)
+    // Re-fetch the current directory when files change on the MTP device
+    $effect(() => {
+        void onMtpDirectoryChanged((event) => {
+            console.debug(
+                `[FilePane] mtp-directory-changed event received: deviceId=${event.deviceId}, ` +
+                    `paneId=${paneId}, volumeId=${volumeId}, isMtpView=${isMtpView}, loading=${loading}`,
+            )
+
+            // Check if we're viewing a storage on this device
+            // volumeId format: "mtp-{locationId}:{storageId}" (e.g., "mtp-336592896:65537")
+            // event.deviceId format: "mtp-{locationId}" (e.g., "mtp-336592896")
+            if (isMtpView && volumeId.startsWith(event.deviceId + ':') && !loading) {
+                log.info('MTP directory changed for device: {deviceId}, refreshing view', {
+                    deviceId: event.deviceId,
+                })
+                console.debug(
+                    `[FilePane] MTP directory changed: triggering refresh for paneId=${paneId}, ` +
+                        `incrementing cacheGeneration from ${cacheGeneration}`,
+                )
+                // Increment cache generation to force list components to re-fetch
+                cacheGeneration++
+                // Re-fetch total count and max filename width
+                if (listingId) {
+                    console.debug(
+                        `[FilePane] MTP directory changed: re-fetching count/width for listingId=${listingId}`,
+                    )
+                    void Promise.all([
+                        getTotalCount(listingId, includeHidden),
+                        getMaxFilenameWidth(listingId, includeHidden),
+                    ]).then(([count, newMaxWidth]) => {
+                        totalCount = count
+                        maxFilenameWidth = newMaxWidth
+                        void fetchEntryUnderCursor()
+                        void fetchListingStats()
+                    })
+                }
+            } else {
+                console.debug(
+                    `[FilePane] MTP directory changed event IGNORED: ` +
+                        `isMtpView=${isMtpView}, matchesDevice=${volumeId.startsWith(event.deviceId + ':')}, loading=${loading}`,
+                )
+            }
+        })
+            .then((unsub) => {
+                unlistenMtpDirectoryChanged = unsub
+            })
+            .catch(() => {})
+
+        return () => {
+            unlistenMtpDirectoryChanged?.()
+        }
+    })
+
     onMount(() => {
         // Skip directory loading for:
         // - Network views (they handle their own data via NetworkBrowser/ShareBrowser)
         // - Device-only MTP views (they need connection first, handled by auto-connect effect)
         // But DO load for connected MTP views (storage-specific volume ID)
+        console.debug(
+            `[FilePane] onMount: paneId=${paneId}, volumeId=${volumeId}, currentPath=${currentPath}, ` +
+                `isNetworkView=${isNetworkView}, isMtpDeviceOnly=${isMtpDeviceOnly}`,
+        )
         if (!isNetworkView && !isMtpDeviceOnly) {
+            console.debug(`[FilePane] onMount: triggering loadDirectory for paneId=${paneId}`)
             void loadDirectory(currentPath)
+        } else {
+            console.debug(`[FilePane] onMount: SKIPPING loadDirectory for paneId=${paneId}`)
         }
 
         // Set up sync status polling for visible files
@@ -1426,6 +1525,7 @@
         unlistenError?.()
         unlistenCancelled?.()
         unlistenMtpRemoved?.()
+        unlistenMtpDirectoryChanged?.()
         if (syncPollInterval) {
             clearInterval(syncPollInterval)
         }

@@ -3,9 +3,10 @@
 //! Wraps MTP device storage as a Volume, enabling MTP browsing through
 //! the standard file listing pipeline (same icons, sorting, view modes as local files).
 
-use super::{Volume, VolumeError};
+use super::{ConflictInfo, CopyScanResult, SourceItemInfo, SpaceInfo, Volume, VolumeError};
 use crate::file_system::FileEntry;
-use crate::mtp::connection::{connection_manager, MtpConnectionError};
+use crate::mtp::connection::{MtpConnectionError, connection_manager};
+use log::debug;
 use std::path::{Path, PathBuf};
 
 /// A volume backed by an MTP device storage.
@@ -102,17 +103,39 @@ impl Volume for MtpVolume {
         let device_id = self.device_id.clone();
         let storage_id = self.storage_id;
 
+        debug!(
+            "MtpVolume::list_directory: device={}, storage={}, input_path={}, mtp_path={}",
+            device_id,
+            storage_id,
+            path.display(),
+            mtp_path
+        );
+
         // Get the tokio runtime handle - we're inside spawn_blocking,
         // so block_on is safe here
         let handle = tokio::runtime::Handle::current();
 
-        handle
-            .block_on(async move {
-                connection_manager()
-                    .list_directory(&device_id, storage_id, &mtp_path)
-                    .await
-            })
-            .map_err(map_mtp_error)
+        let start = std::time::Instant::now();
+        let result = handle.block_on(async move {
+            connection_manager()
+                .list_directory(&device_id, storage_id, &mtp_path)
+                .await
+        });
+
+        match &result {
+            Ok(entries) => debug!(
+                "MtpVolume::list_directory: completed in {:?}, {} entries",
+                start.elapsed(),
+                entries.len()
+            ),
+            Err(e) => debug!(
+                "MtpVolume::list_directory: failed in {:?}, error={:?}",
+                start.elapsed(),
+                e
+            ),
+        }
+
+        result.map_err(map_mtp_error)
     }
 
     fn get_metadata(&self, path: &Path) -> Result<FileEntry, VolumeError> {
@@ -141,8 +164,10 @@ impl Volume for MtpVolume {
     }
 
     fn supports_watching(&self) -> bool {
-        // MTP doesn't support file watching - the protocol has no notification mechanism
-        false
+        // MTP supports file watching via USB interrupt endpoint event polling.
+        // The event loop in MtpConnectionManager polls for ObjectAdded/ObjectRemoved/ObjectInfoChanged
+        // events and emits `mtp-directory-changed` to the frontend for auto-refresh.
+        true
     }
 
     fn create_directory(&self, path: &Path) -> Result<(), VolumeError> {
@@ -207,6 +232,145 @@ impl Volume for MtpVolume {
                     .await
             })
             .map(|_| ())
+            .map_err(map_mtp_error)
+    }
+
+    fn supports_export(&self) -> bool {
+        true
+    }
+
+    fn scan_for_copy(&self, path: &Path) -> Result<CopyScanResult, VolumeError> {
+        let mtp_path = self.to_mtp_path(path);
+        let device_id = self.device_id.clone();
+        let storage_id = self.storage_id;
+
+        debug!(
+            "MtpVolume::scan_for_copy: device={}, storage={}, path={}",
+            device_id, storage_id, mtp_path
+        );
+
+        let handle = tokio::runtime::Handle::current();
+
+        handle
+            .block_on(async move {
+                connection_manager()
+                    .scan_for_copy(&device_id, storage_id, &mtp_path)
+                    .await
+            })
+            .map_err(map_mtp_error)
+    }
+
+    fn export_to_local(&self, source: &Path, local_dest: &Path) -> Result<u64, VolumeError> {
+        let mtp_path = self.to_mtp_path(source);
+        let device_id = self.device_id.clone();
+        let storage_id = self.storage_id;
+        let local_dest = local_dest.to_path_buf();
+
+        debug!(
+            "MtpVolume::export_to_local: device={}, storage={}, source={}, dest={}",
+            device_id,
+            storage_id,
+            mtp_path,
+            local_dest.display()
+        );
+
+        let handle = tokio::runtime::Handle::current();
+
+        handle
+            .block_on(async move {
+                connection_manager()
+                    .download_recursive(&device_id, storage_id, &mtp_path, &local_dest)
+                    .await
+            })
+            .map_err(map_mtp_error)
+    }
+
+    fn import_from_local(&self, local_source: &Path, dest: &Path) -> Result<u64, VolumeError> {
+        // upload_recursive expects the destination FOLDER, not the full path.
+        // It derives the filename from the source. So we need to extract the parent.
+        let dest_folder = dest.parent().map(|p| self.to_mtp_path(p)).unwrap_or_default();
+
+        let device_id = self.device_id.clone();
+        let storage_id = self.storage_id;
+        let local_source = local_source.to_path_buf();
+
+        debug!(
+            "MtpVolume::import_from_local: device={}, storage={}, source={}, dest_folder={}",
+            device_id,
+            storage_id,
+            local_source.display(),
+            dest_folder
+        );
+
+        let handle = tokio::runtime::Handle::current();
+
+        handle
+            .block_on(async move {
+                connection_manager()
+                    .upload_recursive(&device_id, storage_id, &local_source, &dest_folder)
+                    .await
+            })
+            .map_err(map_mtp_error)
+    }
+
+    fn scan_for_conflicts(
+        &self,
+        source_items: &[SourceItemInfo],
+        dest_path: &Path,
+    ) -> Result<Vec<ConflictInfo>, VolumeError> {
+        // List destination directory to check for conflicts
+        let entries = self.list_directory(dest_path)?;
+        let mut conflicts = Vec::new();
+
+        for item in source_items {
+            // Check if a file with the same name exists at destination
+            if let Some(existing) = entries.iter().find(|e| e.name == item.name) {
+                // Convert modified_at (milliseconds u64) to i64 seconds
+                let dest_modified = existing.modified_at.map(|ms| (ms / 1000) as i64);
+                conflicts.push(ConflictInfo {
+                    source_path: item.name.clone(),
+                    dest_path: existing.path.clone(),
+                    source_size: item.size,
+                    dest_size: existing.size.unwrap_or(0),
+                    source_modified: item.modified,
+                    dest_modified,
+                });
+            }
+        }
+
+        Ok(conflicts)
+    }
+
+    fn get_space_info(&self) -> Result<SpaceInfo, VolumeError> {
+        let device_id = self.device_id.clone();
+        let storage_id = self.storage_id;
+
+        let handle = tokio::runtime::Handle::current();
+
+        handle
+            .block_on(async move {
+                let info = connection_manager().get_device_info(&device_id).await.ok_or_else(|| {
+                    MtpConnectionError::NotConnected {
+                        device_id: device_id.clone(),
+                    }
+                })?;
+
+                // Find this storage in the device info
+                let storage =
+                    info.storages
+                        .iter()
+                        .find(|s| s.id == storage_id)
+                        .ok_or_else(|| MtpConnectionError::Other {
+                            device_id: device_id.clone(),
+                            message: format!("Storage {} not found", storage_id),
+                        })?;
+
+                Ok(SpaceInfo {
+                    total_bytes: storage.total_bytes,
+                    available_bytes: storage.available_bytes,
+                    used_bytes: storage.total_bytes.saturating_sub(storage.available_bytes),
+                })
+            })
             .map_err(map_mtp_error)
     }
 }
@@ -284,6 +448,6 @@ mod tests {
     #[test]
     fn test_supports_watching() {
         let vol = MtpVolume::new("mtp-20-5", 65537, "Test");
-        assert!(!vol.supports_watching());
+        assert!(vol.supports_watching());
     }
 }

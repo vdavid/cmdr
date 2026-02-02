@@ -205,25 +205,25 @@ mod tests {
     #[test]
     fn test_device_detected_payload_serialization() {
         let payload = MtpDeviceDetectedPayload {
-            device_id: "mtp-1-5".to_string(),
+            device_id: "mtp-336592896".to_string(),
             name: Some("Pixel 8".to_string()),
             vendor_id: 0x18d1,
             product_id: 0x4ee1,
         };
         let json = serde_json::to_string(&payload).unwrap();
         assert!(json.contains("deviceId"));
-        assert!(json.contains("mtp-1-5"));
+        assert!(json.contains("mtp-336592896"));
         assert!(json.contains("vendorId"));
     }
 
     #[test]
     fn test_device_removed_payload_serialization() {
         let payload = MtpDeviceRemovedPayload {
-            device_id: "mtp-1-5".to_string(),
+            device_id: "mtp-336592896".to_string(),
         };
         let json = serde_json::to_string(&payload).unwrap();
         assert!(json.contains("deviceId"));
-        assert!(json.contains("mtp-1-5"));
+        assert!(json.contains("mtp-336592896"));
     }
 
     #[test]

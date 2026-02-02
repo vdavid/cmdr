@@ -106,7 +106,7 @@ export async function listDirectoryStart(
  * Starts a new streaming directory listing (async version).
  * Returns immediately with listing ID and "loading" status.
  * Progress is reported via events: listing-progress, listing-complete, listing-error, listing-cancelled.
- * @param volumeId - Volume ID (e.g., "root", "mtp-20-5:65537").
+ * @param volumeId - Volume ID (e.g., "root", "mtp-336592896:65537").
  * @param path - Directory path to list. Supports tilde expansion (~) for local volumes.
  * @param includeHidden - Whether to include hidden files in total count.
  * @param sortBy - Column to sort by.
@@ -1750,8 +1750,10 @@ export async function updateServiceResolveTimeout(timeoutMs: number): Promise<vo
 
 /** Information about a connected MTP device. */
 export interface MtpDeviceInfo {
-    /** Unique identifier for the device (based on USB bus/address). */
+    /** Unique identifier for the device (format: "mtp-{locationId}"). */
     id: string
+    /** Physical USB location identifier. Stable for a given port. */
+    locationId: number
     /** USB vendor ID (e.g., 0x18d1 for Google). */
     vendorId: number
     /** USB product ID. */
@@ -1979,6 +1981,22 @@ export async function onMtpDeviceDisconnected(
     })
 }
 
+/** Event payload for mtp-directory-changed (file watching). */
+export interface MtpDirectoryChangedEvent {
+    deviceId: string
+}
+
+/**
+ * Subscribes to MTP directory changed events (file watching).
+ * Emitted when files are added, removed, or modified on the device.
+ * Events are debounced to avoid overwhelming the UI during bulk operations.
+ */
+export async function onMtpDirectoryChanged(callback: (event: MtpDirectoryChangedEvent) => void): Promise<UnlistenFn> {
+    return listen<MtpDirectoryChangedEvent>('mtp-directory-changed', (event) => {
+        callback(event.payload)
+    })
+}
+
 /**
  * Lists the contents of a directory on a connected MTP device.
  * Returns file entries in the same format as local directory listings.
@@ -2152,5 +2170,149 @@ export async function moveMtpObject(
 export async function onMtpTransferProgress(callback: (event: MtpTransferProgress) => void): Promise<UnlistenFn> {
     return listen<MtpTransferProgress>('mtp-transfer-progress', (event) => {
         callback(event.payload)
+    })
+}
+
+/** Result of scanning MTP files/directories for copy operation. */
+export interface MtpScanResult {
+    fileCount: number
+    dirCount: number
+    totalBytes: number
+}
+
+/**
+ * Scans MTP files/directories to get total counts and size before copying.
+ * For directories, recursively scans all contents.
+ * @param deviceId - The connected device ID
+ * @param storageId - The storage ID within the device
+ * @param path - Virtual path on the device to scan
+ * @returns Scan result with file/dir counts and total bytes
+ */
+export async function scanMtpForCopy(deviceId: string, storageId: number, path: string): Promise<MtpScanResult> {
+    return invoke<MtpScanResult>('scan_mtp_for_copy', { deviceId, storageId, path })
+}
+
+// ============================================================================
+// Unified volume copy operations
+// ============================================================================
+
+/** Space information for a volume. */
+export interface VolumeSpaceInfoExtended {
+    totalBytes: number
+    availableBytes: number
+    usedBytes: number
+}
+
+/** Conflict information for a file that already exists at destination. */
+export interface VolumeConflictInfo {
+    sourcePath: string
+    destPath: string
+    sourceSize: number
+    destSize: number
+    sourceModified: number | null
+    destModified: number | null
+}
+
+/** Result of scanning for a volume copy operation. */
+export interface VolumeCopyScanResult {
+    fileCount: number
+    dirCount: number
+    totalBytes: number
+    destSpace: VolumeSpaceInfoExtended
+    conflicts: VolumeConflictInfo[]
+}
+
+/** Configuration for volume copy operations. */
+export interface VolumeCopyConfig {
+    progressIntervalMs?: number
+    conflictResolution?: ConflictResolution
+    maxConflictsToShow?: number
+}
+
+/** Input for source item in conflict scanning. */
+export interface SourceItemInput {
+    name: string
+    size: number
+    modified: number | null
+}
+
+/**
+ * Copies files between any two volumes (local, MTP, etc.).
+ * This is the unified copy command that works for all volume types:
+ * - Local -> Local (regular file copy)
+ * - Local -> MTP (upload to Android device)
+ * - MTP -> Local (download from Android device)
+ *
+ * @param sourceVolumeId - ID of the source volume (e.g., "root" for local filesystem)
+ * @param sourcePaths - List of source file/directory paths relative to source volume
+ * @param destVolumeId - ID of the destination volume
+ * @param destPath - Destination directory path relative to destination volume
+ * @param config - Optional copy configuration
+ * @returns Operation start result with operation ID
+ */
+export async function copyBetweenVolumes(
+    sourceVolumeId: string,
+    sourcePaths: string[],
+    destVolumeId: string,
+    destPath: string,
+    config?: VolumeCopyConfig,
+): Promise<WriteOperationStartResult> {
+    return invoke<WriteOperationStartResult>('copy_between_volumes', {
+        sourceVolumeId,
+        sourcePaths,
+        destVolumeId,
+        destPath,
+        config: config ?? {},
+    })
+}
+
+/**
+ * Scans source files for a volume copy operation without executing it.
+ * Performs a "pre-flight" scan to determine:
+ * - Total file count and bytes to copy
+ * - Available space on destination
+ * - Any conflicts (files that already exist at destination)
+ *
+ * @param sourceVolumeId - ID of the source volume
+ * @param sourcePaths - List of source file/directory paths
+ * @param destVolumeId - ID of the destination volume
+ * @param destPath - Destination directory path
+ * @param maxConflicts - Maximum number of conflicts to return (default: 100)
+ * @returns Scan result with file counts, space info, and conflicts
+ */
+export async function scanVolumeForCopy(
+    sourceVolumeId: string,
+    sourcePaths: string[],
+    destVolumeId: string,
+    destPath: string,
+    maxConflicts?: number,
+): Promise<VolumeCopyScanResult> {
+    return invoke<VolumeCopyScanResult>('scan_volume_for_copy', {
+        sourceVolumeId,
+        sourcePaths,
+        destVolumeId,
+        destPath,
+        maxConflicts,
+    })
+}
+
+/**
+ * Scans destination volume for conflicts with source items.
+ * Checks if any of the source item names already exist at the destination path.
+ *
+ * @param volumeId - ID of the destination volume to scan
+ * @param sourceItems - List of source items to check
+ * @param destPath - Destination directory path on the volume
+ * @returns List of conflicts found
+ */
+export async function scanVolumeForConflicts(
+    volumeId: string,
+    sourceItems: SourceItemInput[],
+    destPath: string,
+): Promise<VolumeConflictInfo[]> {
+    return invoke<VolumeConflictInfo[]>('scan_volume_for_conflicts', {
+        volumeId,
+        sourceItems,
+        destPath,
     })
 }
