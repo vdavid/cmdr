@@ -49,10 +49,19 @@ impl LocalPosixVolume {
         if path.as_os_str().is_empty() || path == Path::new(".") {
             self.root.clone()
         } else if path.is_absolute() {
-            // Treat absolute paths as relative to volume root
-            // Strip the leading "/" and join with root
-            let relative = path.strip_prefix("/").unwrap_or(path);
-            self.root.join(relative)
+            // If path already starts with our root, use it directly
+            // This handles the case where frontend sends full absolute paths
+            if path.starts_with(&self.root) {
+                path.to_path_buf()
+            } else if self.root == Path::new("/") {
+                // For root volume, absolute paths are valid as-is
+                path.to_path_buf()
+            } else {
+                // Treat absolute paths as relative to volume root
+                // Strip the leading "/" and join with root
+                let relative = path.strip_prefix("/").unwrap_or(path);
+                self.root.join(relative)
+            }
         } else {
             self.root.join(path)
         }

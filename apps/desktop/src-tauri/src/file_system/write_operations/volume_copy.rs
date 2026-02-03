@@ -533,9 +533,9 @@ fn copy_single_path(
         return Err(VolumeError::IoError("Operation cancelled".to_string()));
     }
 
-    // Check if source volume root is a local path (starts with /)
-    let source_is_local = source_volume.root().starts_with("/") && !source_volume.root().starts_with("/mtp-volume/");
-    let dest_is_local = dest_volume.root().starts_with("/") && !dest_volume.root().starts_with("/mtp-volume/");
+    // Check if source volume root is a local path (starts with /, not mtp://)
+    let source_is_local = source_volume.root().starts_with("/");
+    let dest_is_local = dest_volume.root().starts_with("/");
 
     // Try streaming path for non-local volumes that support it
     if !source_is_local && !dest_is_local {

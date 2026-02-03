@@ -125,6 +125,8 @@ pub struct ListingCompleteEvent {
     pub listing_id: String,
     pub total_count: usize,
     pub max_filename_width: Option<f32>,
+    /// Root path of the volume this listing belongs to
+    pub volume_root: String,
 }
 
 /// Error event payload
@@ -1308,18 +1310,32 @@ pub async fn list_directory_start_streaming(
         }
 
         // Handle task result
-        if let Err(e) = result {
-            // Task panicked or was cancelled
-            use tauri::Emitter;
-            let _ = app_for_error.emit(
-                "listing-error",
-                ListingErrorEvent {
-                    listing_id: listing_id_for_cleanup,
-                    message: format!("Task failed: {}", e),
-                },
-            );
+        use tauri::Emitter;
+        match result {
+            Err(e) => {
+                // Task panicked or was cancelled
+                let _ = app_for_error.emit(
+                    "listing-error",
+                    ListingErrorEvent {
+                        listing_id: listing_id_for_cleanup,
+                        message: format!("Task failed: {}", e),
+                    },
+                );
+            }
+            Ok(Err(e)) => {
+                // Function returned an error (e.g., volume not found, permission denied)
+                let _ = app_for_error.emit(
+                    "listing-error",
+                    ListingErrorEvent {
+                        listing_id: listing_id_for_cleanup,
+                        message: e.to_string(),
+                    },
+                );
+            }
+            Ok(Ok(())) => {
+                // Success - read_directory_with_progress already emitted listing-complete
+            }
         }
-        // Note: read_directory_with_progress handles its own event emission for success/error/cancel
     });
 
     benchmark::log_event("list_directory_start_streaming RETURNING");
@@ -1454,6 +1470,12 @@ fn read_directory_with_progress(
         // Continue anyway - watcher is optional enhancement
     }
 
+    // Get volume root for the event (used by frontend to determine if at volume root)
+    let volume_root = super::get_volume_manager()
+        .get(volume_id)
+        .map(|v| v.root().to_string_lossy().to_string())
+        .unwrap_or_else(|| "/".to_string());
+
     // Emit completion event
     let _ = app.emit(
         "listing-complete",
@@ -1461,6 +1483,7 @@ fn read_directory_with_progress(
             listing_id: listing_id.to_string(),
             total_count,
             max_filename_width,
+            volume_root,
         },
     );
 

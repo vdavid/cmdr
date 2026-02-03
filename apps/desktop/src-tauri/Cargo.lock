@@ -3759,7 +3759,6 @@ dependencies = [
  "io-kit-sys",
  "num_enum",
  "nusb",
- "parking_lot",
  "thiserror 1.0.69",
 ]
 

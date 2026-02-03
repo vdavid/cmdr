@@ -142,8 +142,11 @@ pub fn stop_volume_watcher() {
     debug!("Volume watcher stopped");
 }
 
-/// Emit a volume mounted event to the frontend.
+/// Emit a volume mounted event to the frontend and register with VolumeManager.
 fn emit_volume_mounted(volume_path: &str) {
+    // Register the new volume with VolumeManager so it can be used for file operations
+    register_volume_with_manager(volume_path);
+
     if let Some(app) = APP_HANDLE.get() {
         let payload = VolumeEventPayload {
             volume_path: volume_path.to_string(),
@@ -156,8 +159,37 @@ fn emit_volume_mounted(volume_path: &str) {
     }
 }
 
-/// Emit a volume unmounted event to the frontend.
+/// Register a mounted volume with the VolumeManager.
+fn register_volume_with_manager(volume_path: &str) {
+    use crate::file_system::get_volume_manager;
+    use crate::file_system::volume::LocalPosixVolume;
+    use std::path::Path;
+    use std::sync::Arc;
+
+    // Generate volume ID from path (same logic as path_to_id in mod.rs)
+    let volume_id: String = volume_path
+        .chars()
+        .filter(|c| c.is_alphanumeric() || *c == '-')
+        .collect::<String>()
+        .to_lowercase();
+
+    // Get volume name from path
+    let name = Path::new(volume_path)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("Unknown")
+        .to_string();
+
+    let volume = Arc::new(LocalPosixVolume::new(&name, volume_path));
+    get_volume_manager().register(&volume_id, volume);
+    debug!("Registered mounted volume: {} -> {}", volume_id, volume_path);
+}
+
+/// Emit a volume unmounted event to the frontend and unregister from VolumeManager.
 fn emit_volume_unmounted(volume_path: &str) {
+    // Unregister the volume from VolumeManager
+    unregister_volume_from_manager(volume_path);
+
     if let Some(app) = APP_HANDLE.get() {
         let payload = VolumeEventPayload {
             volume_path: volume_path.to_string(),
@@ -168,6 +200,21 @@ fn emit_volume_unmounted(volume_path: &str) {
             debug!("Emitted volume-unmounted event for {}", volume_path);
         }
     }
+}
+
+/// Unregister a volume from the VolumeManager.
+fn unregister_volume_from_manager(volume_path: &str) {
+    use crate::file_system::get_volume_manager;
+
+    // Generate volume ID from path (same logic as path_to_id in mod.rs)
+    let volume_id: String = volume_path
+        .chars()
+        .filter(|c| c.is_alphanumeric() || *c == '-')
+        .collect::<String>()
+        .to_lowercase();
+
+    get_volume_manager().unregister(&volume_id);
+    debug!("Unregistered volume: {} ({})", volume_id, volume_path);
 }
 
 #[cfg(test)]

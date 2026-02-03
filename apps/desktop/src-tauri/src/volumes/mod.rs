@@ -157,7 +157,7 @@ fn get_main_volume() -> Option<LocationInfo> {
 }
 
 /// Get attached volumes (external drives, USB, etc.).
-fn get_attached_volumes() -> Vec<LocationInfo> {
+pub fn get_attached_volumes() -> Vec<LocationInfo> {
     use objc2_foundation::{NSArray, NSFileManager, NSURL, NSVolumeEnumerationOptions};
 
     let file_manager = NSFileManager::defaultManager();
@@ -215,7 +215,7 @@ fn get_attached_volumes() -> Vec<LocationInfo> {
 }
 
 /// Get cloud drives (Dropbox, iCloud, Google Drive, etc.).
-fn get_cloud_drives() -> Vec<LocationInfo> {
+pub fn get_cloud_drives() -> Vec<LocationInfo> {
     let mut drives = Vec::new();
     let home = dirs::home_dir().unwrap_or_default();
 

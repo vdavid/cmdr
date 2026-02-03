@@ -245,20 +245,24 @@ describe('Streaming types', () => {
             listingId: 'test-789',
             totalCount: 5000,
             maxFilenameWidth: 150.5,
+            volumeRoot: '/Volumes/External',
         }
 
         expect(event.listingId).toBe('test-789')
         expect(event.totalCount).toBe(5000)
         expect(event.maxFilenameWidth).toBe(150.5)
+        expect(event.volumeRoot).toBe('/Volumes/External')
     })
 
     it('ListingCompleteEvent maxFilenameWidth is optional', () => {
         const event: ListingCompleteEvent = {
             listingId: 'test-abc',
             totalCount: 100,
+            volumeRoot: '/',
         }
 
         expect(event.maxFilenameWidth).toBeUndefined()
+        expect(event.volumeRoot).toBe('/')
     })
 
     it('ListingErrorEvent has correct shape', () => {
@@ -346,6 +350,7 @@ describe('Streaming event handling', () => {
             listingId: 'test-listing',
             totalCount: 2500,
             maxFilenameWidth: 120,
+            volumeRoot: '/',
         }
 
         // Simulate the event handler

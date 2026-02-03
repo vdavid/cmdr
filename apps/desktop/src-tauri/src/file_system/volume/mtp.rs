@@ -44,7 +44,7 @@ impl MtpVolume {
             name: name.to_string(),
             device_id: device_id.to_string(),
             storage_id,
-            root: PathBuf::from(format!("/mtp-volume/{}/{}", device_id, storage_id)),
+            root: PathBuf::from(format!("mtp://{}/{}", device_id, storage_id)),
         }
     }
 
@@ -513,7 +513,7 @@ mod tests {
     #[test]
     fn test_root_path() {
         let vol = MtpVolume::new("mtp-20-5", 65537, "Internal storage");
-        assert_eq!(vol.root().to_string_lossy(), "/mtp-volume/mtp-20-5/65537");
+        assert_eq!(vol.root().to_string_lossy(), "mtp://mtp-20-5/65537");
     }
 
     #[test]
