@@ -91,6 +91,21 @@ impl std::fmt::Display for VolumeError {
 
 impl std::error::Error for VolumeError {}
 
+/// A stream of bytes read from a volume.
+///
+/// This is a synchronous, blocking iterator-style interface for reading
+/// file data in chunks. Used for streaming transfers between volumes.
+pub trait VolumeReadStream: Send {
+    /// Returns the next chunk of data, or None if complete.
+    fn next_chunk(&mut self) -> Option<Result<Vec<u8>, VolumeError>>;
+
+    /// Total size of the file in bytes.
+    fn total_size(&self) -> u64;
+
+    /// Bytes read so far (for progress tracking).
+    fn bytes_read(&self) -> u64;
+}
+
 impl From<std::io::Error> for VolumeError {
     fn from(err: std::io::Error) -> Self {
         match err.kind() {
@@ -216,6 +231,35 @@ pub trait Volume: Send + Sync {
 
     /// Gets space information for this volume.
     fn get_space_info(&self) -> Result<SpaceInfo, VolumeError> {
+        Err(VolumeError::NotSupported)
+    }
+
+    // ========================================
+    // Streaming: Optional, default not supported
+    // ========================================
+
+    /// Returns true if this volume supports streaming read/write operations.
+    fn supports_streaming(&self) -> bool {
+        false
+    }
+
+    /// Opens a streaming reader for the given path.
+    ///
+    /// Returns a VolumeReadStream that yields chunks of data.
+    /// The stream must be fully consumed or dropped before other operations.
+    fn open_read_stream(&self, path: &Path) -> Result<Box<dyn VolumeReadStream>, VolumeError> {
+        let _ = path;
+        Err(VolumeError::NotSupported)
+    }
+
+    /// Writes data from a stream to the given path.
+    ///
+    /// # Arguments
+    /// * `dest` - Destination path (file will be created/overwritten)
+    /// * `size` - Total size in bytes (required for protocols like MTP)
+    /// * `stream` - Source data stream
+    fn write_from_stream(&self, dest: &Path, size: u64, stream: Box<dyn VolumeReadStream>) -> Result<u64, VolumeError> {
+        let _ = (dest, size, stream);
         Err(VolumeError::NotSupported)
     }
 }

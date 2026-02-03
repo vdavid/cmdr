@@ -102,6 +102,14 @@ fn test_supports_watching_returns_true() {
 }
 
 #[test]
+fn test_supports_streaming_returns_false() {
+    // LocalPosixVolume uses the default implementation which returns false.
+    // Streaming is primarily for MTP-to-MTP transfers.
+    let volume = LocalPosixVolume::new("Test", "/tmp");
+    assert!(!volume.supports_streaming());
+}
+
+#[test]
 fn test_write_operations() {
     use std::fs;
 

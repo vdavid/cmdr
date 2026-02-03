@@ -11,6 +11,7 @@
 //! trigger `mtp-directory-changed` events to the frontend, which refreshes the view.
 
 use log::{debug, error, info, warn};
+use mtp_rs::ptp::OperationCode;
 use mtp_rs::{MtpDevice, MtpDeviceBuilder, NewObjectInfo, ObjectHandle, StorageId};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -456,9 +457,26 @@ impl MtpConnectionManager {
             mtp_info.manufacturer, mtp_info.model
         );
 
+        // Check if device supports write operations (SendObjectInfo is required for uploads)
+        // PTP cameras often don't support this, making them effectively read-only
+        let device_supports_write = mtp_info.supports_operation(OperationCode::SendObjectInfo);
+        info!(
+            "Device '{}' write support: {} (operations: {:?})",
+            mtp_info.model,
+            device_supports_write,
+            mtp_info
+                .operations_supported
+                .iter()
+                .filter(|op| matches!(
+                    op,
+                    OperationCode::SendObjectInfo | OperationCode::SendObject | OperationCode::DeleteObject
+                ))
+                .collect::<Vec<_>>()
+        );
+
         // Get storage information
         debug!("Fetching storage information...");
-        let storages = match get_storages(&device).await {
+        let storages = match get_storages(&device, device_supports_write).await {
             Ok(s) => s,
             Err(e) => {
                 error!("Failed to get storages for {}: {:?}", device_id, e);
@@ -2308,6 +2326,203 @@ impl MtpConnectionManager {
             }),
         }
     }
+
+    // ========================================================================
+    // Phase 6: Streaming Operations for Volume-to-Volume Copy
+    // ========================================================================
+
+    /// Opens a streaming download for a file.
+    ///
+    /// Returns the FileDownload stream and the file size.
+    /// The caller must consume the entire stream before releasing it.
+    ///
+    /// # Arguments
+    ///
+    /// * `device_id` - The connected device ID
+    /// * `storage_id` - The storage ID within the device
+    /// * `path` - Virtual path on the device (e.g., "DCIM/photo.jpg")
+    pub async fn open_download_stream(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        path: &str,
+    ) -> Result<(mtp_rs::FileDownload, u64), MtpConnectionError> {
+        debug!(
+            "MTP open_download_stream: device={}, storage={}, path={}",
+            device_id, storage_id, path
+        );
+
+        // Get the device and resolve path to handle
+        let (device_arc, object_handle) = {
+            let devices = self.devices.lock().await;
+            let entry = devices.get(device_id).ok_or_else(|| MtpConnectionError::NotConnected {
+                device_id: device_id.to_string(),
+            })?;
+
+            let handle = self.resolve_path_to_handle(entry, storage_id, path)?;
+            (Arc::clone(&entry.device), handle)
+        };
+
+        let device = acquire_device_lock(&device_arc, device_id, "open_download_stream").await?;
+
+        // Get the storage
+        let storage = tokio::time::timeout(
+            Duration::from_secs(MTP_TIMEOUT_SECS),
+            device.storage(StorageId(storage_id)),
+        )
+        .await
+        .map_err(|_| MtpConnectionError::Timeout {
+            device_id: device_id.to_string(),
+        })?
+        .map_err(|e| map_mtp_error(e, device_id))?;
+
+        // Get object info to determine size
+        let object_info = tokio::time::timeout(
+            Duration::from_secs(MTP_TIMEOUT_SECS),
+            storage.get_object_info(object_handle),
+        )
+        .await
+        .map_err(|_| MtpConnectionError::Timeout {
+            device_id: device_id.to_string(),
+        })?
+        .map_err(|e| map_mtp_error(e, device_id))?;
+
+        let total_size = object_info.size;
+
+        // Open the download stream
+        let download = tokio::time::timeout(
+            Duration::from_secs(MTP_TIMEOUT_SECS * 10),
+            storage.download_stream(object_handle),
+        )
+        .await
+        .map_err(|_| MtpConnectionError::Timeout {
+            device_id: device_id.to_string(),
+        })?
+        .map_err(|e| map_mtp_error(e, device_id))?;
+
+        // Note: We intentionally don't drop 'storage' and 'device' here.
+        // The FileDownload holds a reference to the storage session internally.
+        // The caller must consume the entire download before other operations.
+        // This is a design limitation of the current mtp-rs streaming API.
+        // In practice, the Volume trait methods run in spawn_blocking, so
+        // the device lock is released when the blocking task completes.
+
+        debug!("MTP open_download_stream: stream opened for {} bytes", total_size);
+
+        Ok((download, total_size))
+    }
+
+    /// Uploads pre-collected chunks to the MTP device.
+    ///
+    /// This variant takes already-collected chunks instead of a stream reference,
+    /// avoiding nested `block_on` issues when the stream uses `block_on` internally.
+    ///
+    /// # Arguments
+    ///
+    /// * `device_id` - The connected device ID
+    /// * `storage_id` - The storage ID within the device
+    /// * `dest_folder` - Destination folder path on device (e.g., "DCIM")
+    /// * `filename` - Name for the new file
+    /// * `size` - Total size in bytes
+    /// * `chunks` - Pre-collected data chunks
+    pub async fn upload_from_chunks(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        dest_folder: &str,
+        filename: &str,
+        size: u64,
+        chunks: Vec<bytes::Bytes>,
+    ) -> Result<u64, MtpConnectionError> {
+        debug!(
+            "MTP upload_from_chunks: device={}, storage={}, dest={}/{}, size={}, chunks={}",
+            device_id,
+            storage_id,
+            dest_folder,
+            filename,
+            size,
+            chunks.len()
+        );
+
+        // Get device and resolve parent folder
+        let (device_arc, parent_handle) = {
+            let devices = self.devices.lock().await;
+            let entry = devices.get(device_id).ok_or_else(|| MtpConnectionError::NotConnected {
+                device_id: device_id.to_string(),
+            })?;
+
+            let parent = if dest_folder.is_empty() {
+                ObjectHandle::ROOT
+            } else {
+                self.resolve_path_to_handle(entry, storage_id, dest_folder)?
+            };
+            (Arc::clone(&entry.device), parent)
+        };
+
+        let device = acquire_device_lock(&device_arc, device_id, "upload_from_chunks").await?;
+
+        // Get the storage
+        let storage = tokio::time::timeout(
+            Duration::from_secs(MTP_TIMEOUT_SECS),
+            device.storage(StorageId(storage_id)),
+        )
+        .await
+        .map_err(|_| MtpConnectionError::Timeout {
+            device_id: device_id.to_string(),
+        })?
+        .map_err(|e| map_mtp_error(e, device_id))?;
+
+        // Create object info for the upload
+        let object_info = NewObjectInfo::file(filename, size);
+
+        let parent_opt = if parent_handle == ObjectHandle::ROOT {
+            None
+        } else {
+            Some(parent_handle)
+        };
+
+        // Convert chunks to stream format expected by mtp-rs
+        let chunk_results: Vec<Result<bytes::Bytes, std::io::Error>> = chunks.into_iter().map(Ok).collect();
+        let data_stream = futures_util::stream::iter(chunk_results);
+
+        let new_handle = tokio::time::timeout(
+            Duration::from_secs(MTP_TIMEOUT_SECS * 10),
+            storage.upload(parent_opt, object_info, data_stream),
+        )
+        .await
+        .map_err(|_| MtpConnectionError::Timeout {
+            device_id: device_id.to_string(),
+        })?
+        .map_err(|e| map_mtp_error(e, device_id))?;
+
+        // Release device lock
+        drop(storage);
+        drop(device);
+
+        // Update path cache
+        let new_path = normalize_mtp_path(dest_folder).join(filename);
+        {
+            let devices = self.devices.lock().await;
+            if let Some(entry) = devices.get(device_id)
+                && let Ok(mut cache_map) = entry.path_cache.write()
+            {
+                let storage_cache = cache_map.entry(storage_id).or_default();
+                storage_cache.path_to_handle.insert(new_path.clone(), new_handle);
+            }
+        }
+
+        // Invalidate the parent directory's listing cache
+        let dest_folder_path = normalize_mtp_path(dest_folder);
+        self.invalidate_listing_cache(device_id, storage_id, &dest_folder_path)
+            .await;
+
+        info!(
+            "MTP upload_from_chunks complete: {} bytes to {}/{}",
+            size, dest_folder, filename
+        );
+
+        Ok(size)
+    }
 }
 
 /// Global connection manager instance.
@@ -2338,8 +2553,78 @@ async fn open_device(location_id: u64) -> Result<MtpDevice, mtp_rs::Error> {
         .await
 }
 
+/// Probes whether a storage actually supports writes by attempting to create
+/// and delete a hidden test folder.
+///
+/// Some devices (especially cameras) report ReadWrite capability but actually
+/// reject writes at runtime with `StoreReadOnly`. This probe detects such cases early.
+///
+/// Returns `true` if writes are supported (or probe was inconclusive), `false` only
+/// if the device explicitly rejected writes with `StoreReadOnly` or `AccessDenied`.
+async fn probe_write_capability(storage: &mtp_rs::Storage, storage_name: &str) -> bool {
+    use mtp_rs::ptp::ResponseCode;
+
+    const PROBE_FOLDER_NAME: &str = ".cmdr_write_probe";
+    const PROBE_TIMEOUT_SECS: u64 = 3;
+
+    // Try to create a hidden probe folder at the root
+    match tokio::time::timeout(
+        Duration::from_secs(PROBE_TIMEOUT_SECS),
+        storage.create_folder(None, PROBE_FOLDER_NAME),
+    )
+    .await
+    {
+        Ok(Ok(handle)) => {
+            // Success! Clean up by deleting the probe folder
+            debug!("Storage '{}': write probe succeeded, cleaning up", storage_name);
+            if let Err(e) = storage.delete(handle).await {
+                warn!("Storage '{}': failed to clean up probe folder: {:?}", storage_name, e);
+            }
+            true
+        }
+        Ok(Err(e)) => {
+            // Check the specific error code to determine if this is a read-only issue
+            // or just a restriction on where we can create folders
+            let is_read_only_error = match &e {
+                mtp_rs::Error::Protocol { code, .. } => {
+                    matches!(code, ResponseCode::StoreReadOnly | ResponseCode::AccessDenied)
+                }
+                _ => false,
+            };
+
+            if is_read_only_error {
+                debug!(
+                    "Storage '{}': write probe failed with read-only error: {:?}",
+                    storage_name, e
+                );
+                false
+            } else {
+                // Other errors (InvalidObjectHandle, InvalidParentObject, etc.) likely mean
+                // we just can't create at root, not that the device is read-only.
+                // Android devices often don't allow creating at root but are still writable.
+                debug!(
+                    "Storage '{}': write probe failed with non-fatal error (assuming writable): {:?}",
+                    storage_name, e
+                );
+                true
+            }
+        }
+        Err(_) => {
+            // Timeout - assume writable (benefit of the doubt)
+            debug!("Storage '{}': write probe timed out (assuming writable)", storage_name);
+            true
+        }
+    }
+}
+
 /// Gets storage information from a connected device.
-async fn get_storages(device: &MtpDevice) -> Result<Vec<MtpStorageInfo>, mtp_rs::Error> {
+///
+/// # Arguments
+/// * `device` - The connected MTP device
+/// * `device_supports_write` - Whether the device supports write operations (SendObjectInfo)
+async fn get_storages(device: &MtpDevice, device_supports_write: bool) -> Result<Vec<MtpStorageInfo>, mtp_rs::Error> {
+    use mtp_rs::ptp::AccessCapability;
+
     debug!("Calling device.storages()...");
     let storage_list = device.storages().await?;
     debug!("Got {} storage(s)", storage_list.len());
@@ -2347,12 +2632,39 @@ async fn get_storages(device: &MtpDevice) -> Result<Vec<MtpStorageInfo>, mtp_rs:
 
     for storage in storage_list {
         let info = storage.info();
+        // Check if storage reports read-only capability
+        let storage_reports_read_only = !matches!(info.access_capability, AccessCapability::ReadWrite);
+
+        // Determine actual read-only status
+        let is_read_only = if !device_supports_write || storage_reports_read_only {
+            // Device/storage claims no write support - trust it
+            true
+        } else {
+            // Device claims write support - probe to verify
+            // This catches cameras that advertise write support but reject writes at runtime
+            let probe_ok = probe_write_capability(&storage, &info.description).await;
+            if !probe_ok {
+                info!(
+                    "Storage '{}' claims write support but probe failed - marking read-only",
+                    info.description
+                );
+            }
+            !probe_ok // read-only if probe failed
+        };
+
+        // Log final determination
+        info!(
+            "Storage '{}': access_capability={:?}, device_supports_write={}, is_read_only={}",
+            info.description, info.access_capability, device_supports_write, is_read_only
+        );
+
         storages.push(MtpStorageInfo {
             id: storage.id().0,
             name: info.description.clone(),
             total_bytes: info.max_capacity,
             available_bytes: info.free_space_bytes,
             storage_type: Some(format!("{:?}", info.storage_type)),
+            is_read_only,
         });
     }
 
@@ -2388,6 +2700,10 @@ fn map_mtp_error(e: mtp_rs::Error, device_id: &str) -> MtpConnectionError {
                 },
                 ResponseCode::StoreFull => MtpConnectionError::StorageFull {
                     device_id: device_id.to_string(),
+                },
+                ResponseCode::StoreReadOnly => MtpConnectionError::Other {
+                    device_id: device_id.to_string(),
+                    message: "This device is read-only. You can copy files from it, but not to it.".to_string(),
                 },
                 ResponseCode::InvalidObjectHandle | ResponseCode::InvalidParentObject => {
                     MtpConnectionError::ObjectNotFound {
@@ -2942,6 +3258,7 @@ mod tests {
                 total_bytes: 128_000_000_000,
                 available_bytes: 64_000_000_000,
                 storage_type: Some("FixedRAM".to_string()),
+                is_read_only: false,
             }],
         };
 
@@ -2951,6 +3268,7 @@ mod tests {
         assert!(json.contains("\"manufacturer\":\"Google\""));
         assert!(json.contains("\"product\":\"Pixel 8\""));
         assert!(json.contains("\"Internal shared storage\""));
+        assert!(json.contains("\"isReadOnly\":false"));
     }
 
     // ========================================================================

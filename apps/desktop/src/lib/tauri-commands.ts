@@ -1806,6 +1806,8 @@ export interface MtpStorageInfo {
     availableBytes: number
     /** Storage type description (e.g., "FixedROM", "RemovableRAM"). */
     storageType?: string
+    /** Whether this storage is read-only (e.g., PTP cameras). */
+    isReadOnly: boolean
 }
 
 /** Information about a connected MTP device including its storages. */

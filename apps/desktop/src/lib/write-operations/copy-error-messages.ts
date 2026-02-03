@@ -5,6 +5,7 @@
 
 import type { WriteOperationError } from '$lib/file-explorer/types'
 import { formatBytes } from '$lib/tauri-commands'
+import { getDevice } from '$lib/mtp/mtp-store.svelte'
 
 export interface FriendlyErrorMessage {
     /** Short title for the error */
@@ -88,10 +89,33 @@ export function getUserFriendlyMessage(error: WriteOperationError): FriendlyErro
 }
 
 /**
+ * Extracts a friendly device name from an MTP device ID in an error message.
+ * Falls back to "The target device" if device not found.
+ */
+function getDeviceNameFromError(rawMessage: string): string {
+    // Extract device ID pattern like "mtp-35651584" from the message
+    const deviceIdMatch = rawMessage.match(/mtp-\d+/)
+    if (deviceIdMatch) {
+        const deviceId = deviceIdMatch[0]
+        const device = getDevice(deviceId)
+        if (device) {
+            return device.displayName
+        }
+    }
+    return 'The target device'
+}
+
+/**
  * Parses IO error messages into user-friendly text.
  */
 function getIoErrorMessage(rawMessage: string): string {
     const lower = rawMessage.toLowerCase()
+
+    // Read-only device (check BEFORE generic "read" + "error" check!)
+    if (lower.includes('read-only')) {
+        const deviceName = getDeviceNameFromError(rawMessage)
+        return `${deviceName} is read-only. You can copy files from it, but not to it.`
+    }
 
     // Device disconnected
     if (lower.includes('disconnect') || lower.includes('not found') || lower.includes('no such device')) {
@@ -128,6 +152,11 @@ function getIoErrorMessage(rawMessage: string): string {
  */
 function getIoErrorSuggestion(rawMessage: string): string {
     const lower = rawMessage.toLowerCase()
+
+    // Read-only device - no action the user can take
+    if (lower.includes('read-only')) {
+        return 'Choose a different destination that supports writing.'
+    }
 
     if (lower.includes('disconnect') || lower.includes('not found') || lower.includes('no such device')) {
         return 'Make sure the device is properly connected and try again.'

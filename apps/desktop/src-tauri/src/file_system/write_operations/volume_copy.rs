@@ -517,9 +517,10 @@ fn copy_volumes_with_progress(
 /// Copies a single path from source volume to destination volume.
 ///
 /// Determines the appropriate strategy based on volume types:
+/// - If both support streaming: Use streaming for direct transfer
 /// - If source is local: dest.import_from_local()
 /// - If dest is local: source.export_to_local()
-/// - Otherwise: export to temp, then import from temp
+/// - Otherwise: Not supported
 fn copy_single_path(
     source_volume: &Arc<dyn Volume>,
     source_path: &Path,
@@ -535,6 +536,22 @@ fn copy_single_path(
     // Check if source volume root is a local path (starts with /)
     let source_is_local = source_volume.root().starts_with("/") && !source_volume.root().starts_with("/mtp-volume/");
     let dest_is_local = dest_volume.root().starts_with("/") && !dest_volume.root().starts_with("/mtp-volume/");
+
+    // Try streaming path for non-local volumes that support it
+    if !source_is_local && !dest_is_local {
+        if source_volume.supports_streaming() && dest_volume.supports_streaming() {
+            log::debug!(
+                "copy_single_path: using streaming for {} -> {}",
+                source_path.display(),
+                dest_path.display()
+            );
+            let stream = source_volume.open_read_stream(source_path)?;
+            let size = stream.total_size();
+            return dest_volume.write_from_stream(dest_path, size, stream);
+        }
+        // Neither supports streaming - not supported
+        return Err(VolumeError::NotSupported);
+    }
 
     if source_is_local && !dest_is_local {
         // Source is local, dest is not (e.g., Local → MTP)
@@ -554,7 +571,7 @@ fn copy_single_path(
             dest_volume.root().join(dest_path)
         };
         source_volume.export_to_local(source_path, &local_dest)
-    } else if source_is_local && dest_is_local {
+    } else {
         // Both are local, use export which resolves paths internally
         // Note: export_to_local takes a path relative to the volume root for source,
         // and an absolute local path for destination
@@ -564,10 +581,6 @@ fn copy_single_path(
             dest_volume.root().join(dest_path)
         };
         source_volume.export_to_local(source_path, &local_dest)
-    } else {
-        // Both are non-local (e.g., MTP → MTP) - not supported directly
-        // Would need to go through temp directory
-        Err(VolumeError::NotSupported)
     }
 }
 

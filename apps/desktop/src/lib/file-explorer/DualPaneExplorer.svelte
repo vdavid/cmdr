@@ -59,8 +59,8 @@
     import { initNetworkDiscovery, cleanupNetworkDiscovery } from '$lib/network-store.svelte'
     import { openFileViewer } from '$lib/file-viewer/open-viewer'
     import { getAppLogger } from '$lib/logger'
-    import { isMtpVolumeId } from '$lib/mtp'
     import AlertDialog from '$lib/AlertDialog.svelte'
+    import { getMtpVolumes } from '$lib/mtp'
 
     const log = getAppLogger('fileExplorer')
 
@@ -1012,23 +1012,39 @@
         const sourceVolId = isLeft ? leftVolumeId : rightVolumeId
         const destVolId = isLeft ? rightVolumeId : leftVolumeId
 
-        const sourceIsMtp = isMtpVolumeId(sourceVolId)
-        const destIsMtp = isMtpVolumeId(destVolId)
-
-        // MTP to MTP copy is not supported
-        if (sourceIsMtp && destIsMtp) {
-            log.warn('MTP to MTP copy is not supported')
+        // Check if destination volume is read-only (e.g., PTP cameras)
+        const destVolume = getDestinationVolumeInfo(destVolId)
+        if (destVolume?.isReadOnly) {
             alertDialogProps = {
-                title: 'Not supported',
-                message:
-                    "Copying between two mobile devices isn't supported yet. Copy to your Mac first, then to the other device.",
+                title: 'Read-only device',
+                message: `"${destVolume.name}" is read-only. You can copy files from it, but not to it.`,
             }
             showAlertDialog = true
             return
         }
 
-        // Use unified copy dialog for all supported volume combinations
+        // Use unified copy dialog for all supported volume combinations (including MTP-to-MTP)
         await openUnifiedCopyDialog(sourcePaneRef, isLeft, sourceVolId, destVolId)
+    }
+
+    /** Gets volume info for a given volume ID, checking both regular volumes and MTP volumes. */
+    function getDestinationVolumeInfo(volumeId: string): { name: string; isReadOnly: boolean } | undefined {
+        // Check MTP volumes first (they have the isReadOnly flag)
+        if (volumeId.startsWith('mtp-')) {
+            const mtpVolumes = getMtpVolumes()
+            const mtpVolume = mtpVolumes.find((v) => v.id === volumeId || v.deviceId === volumeId)
+            if (mtpVolume) {
+                return { name: mtpVolume.name, isReadOnly: mtpVolume.isReadOnly }
+            }
+        }
+
+        // Regular volumes (currently none are read-only, but this supports future use)
+        const volume = volumes.find((v) => v.id === volumeId)
+        if (volume) {
+            return { name: volume.name, isReadOnly: volume.isReadOnly ?? false }
+        }
+
+        return undefined
     }
 
     /** Opens the unified copy dialog for all volume types (local, MTP, etc.). */
