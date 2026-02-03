@@ -76,6 +76,7 @@
         "write-operations/DirectionIndicator.svelte": {
             "reason": "Simple UI component, logic tested in copy-dialog-utils.test.ts"
         },
-        "write-operations/CopyProgressDialog.svelte": { "reason": "UI dialog, depends on Tauri events" }
+        "write-operations/CopyProgressDialog.svelte": { "reason": "UI dialog, depends on Tauri events" },
+        "write-operations/CopyErrorDialog.svelte": { "reason": "UI modal, logic tested in copy-error-messages.test.ts" }
     }
 }

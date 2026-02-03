@@ -123,8 +123,8 @@
     }
 
     .error-dialog {
-        background: var(--color-bg-secondary);
-        border: 1px solid var(--color-border-primary);
+        background: var(--color-error-bg);
+        border: 1px solid var(--color-error-border);
         border-radius: 12px;
         width: 420px;
         max-width: 90vw;
@@ -152,7 +152,7 @@
         margin: 0;
         font-size: 16px;
         font-weight: 600;
-        color: var(--color-text-primary);
+        color: var(--color-error-text);
     }
 
     .error-content {
