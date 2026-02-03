@@ -147,6 +147,8 @@ export interface VolumeInfo {
     icon?: string
     /** Whether this can be ejected */
     isEjectable: boolean
+    /** Whether this volume is read-only (e.g., PTP cameras) */
+    isReadOnly?: boolean
 }
 
 // ============================================================================

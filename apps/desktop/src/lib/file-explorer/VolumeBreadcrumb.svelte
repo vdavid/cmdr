@@ -20,6 +20,7 @@
     let unlistenMount: UnlistenFn | undefined
     let unlistenUnmount: UnlistenFn | undefined
     let unlistenMtpDetected: UnlistenFn | undefined
+    let unlistenMtpConnected: UnlistenFn | undefined
     let unlistenMtpRemoved: UnlistenFn | undefined
 
     // The ID of the actual volume that contains the current path
@@ -43,6 +44,7 @@
                               path: mtpVolume.path,
                               category: 'mobile_device' as const,
                               isEjectable: true,
+                              isReadOnly: mtpVolume.isReadOnly,
                           }
                         : undefined
                 })()
@@ -107,6 +109,7 @@
                     category: 'mobile_device' as const,
                     icon: undefined, // Will use 📱 placeholder
                     isEjectable: true,
+                    isReadOnly: v.isReadOnly,
                 }))
 
                 if (mobileItems.length > 0) {
@@ -310,6 +313,11 @@
             void refreshMtpVolumes()
         })
 
+        // Listen for MTP device connection (this is when isReadOnly is determined via probe)
+        unlistenMtpConnected = await listen<{ deviceId: string }>('mtp-device-connected', () => {
+            void refreshMtpVolumes()
+        })
+
         unlistenMtpRemoved = await listen<{ deviceId: string }>('mtp-device-removed', () => {
             void refreshMtpVolumes()
         })
@@ -323,6 +331,7 @@
         unlistenMount?.()
         unlistenUnmount?.()
         unlistenMtpDetected?.()
+        unlistenMtpConnected?.()
         unlistenMtpRemoved?.()
         document.removeEventListener('click', handleClickOutside)
         document.removeEventListener('keydown', handleDocumentKeyDown)
@@ -349,6 +358,9 @@
             <span class="icon-emoji">🌐</span>
         {/if}
         {currentVolumeName}
+        {#if currentVolume?.isReadOnly}
+            <span class="read-only-indicator" title="Read-only">🔒</span>
+        {/if}
         <span class="chevron">▾</span>
     </span>
 
@@ -393,6 +405,9 @@
                             <span class="volume-icon-placeholder">📁</span>
                         {/if}
                         <span class="volume-label">{volume.name}</span>
+                        {#if volume.isReadOnly}
+                            <span class="read-only-indicator" title="Read-only">🔒</span>
+                        {/if}
                     </div>
                 {/each}
             {/each}
@@ -524,5 +539,11 @@
     .checkmark-placeholder {
         width: 14px;
         flex-shrink: 0;
+    }
+
+    .read-only-indicator {
+        font-size: 12px;
+        margin-left: auto;
+        opacity: 0.7;
     }
 </style>

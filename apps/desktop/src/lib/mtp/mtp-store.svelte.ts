@@ -106,6 +106,7 @@ export function isScanning(): boolean {
 /**
  * Scans for connected MTP devices and updates the store.
  * Preserves connection state for already-known devices.
+ * After scanning, automatically connects to all disconnected devices.
  */
 export async function scanDevices(): Promise<void> {
     if (state.scanning) return
@@ -137,11 +138,40 @@ export async function scanDevices(): Promise<void> {
 
         state.devices = newDevices
         logger.info('Scanned {count} MTP device(s)', { count: devices.length })
+
+        // Auto-connect to all disconnected devices
+        void connectAllDisconnected()
     } catch (error) {
         logger.error('Failed to scan MTP devices: {error}', { error: String(error) })
     } finally {
         state.scanning = false
     }
+}
+
+/**
+ * Connects to all disconnected MTP devices.
+ * Runs connections in parallel for faster startup.
+ * Errors are logged but don't prevent other devices from connecting.
+ */
+async function connectAllDisconnected(): Promise<void> {
+    const disconnectedDevices = Array.from(state.devices.values()).filter(
+        (d) => d.connectionState === 'disconnected',
+    )
+
+    if (disconnectedDevices.length === 0) return
+
+    logger.info('Auto-connecting to {count} MTP device(s)', { count: disconnectedDevices.length })
+
+    // Connect in parallel - each connect() handles its own errors
+    await Promise.allSettled(
+        disconnectedDevices.map(async (deviceState) => {
+            try {
+                await connect(deviceState.device.id)
+            } catch {
+                // Error already logged by connect(), just continue with other devices
+            }
+        }),
+    )
 }
 
 /**
@@ -366,6 +396,8 @@ export interface MtpVolume {
     path: string
     /** Whether the device is connected */
     isConnected: boolean
+    /** Whether this storage is read-only (e.g., PTP cameras) */
+    isReadOnly: boolean
 }
 
 /**
@@ -392,6 +424,7 @@ export function getMtpVolumes(): MtpVolume[] {
                     name: volumeName,
                     path: `mtp://${deviceState.device.id}/${String(storage.id)}`,
                     isConnected: true,
+                    isReadOnly: storage.isReadOnly,
                 })
             }
         } else {
@@ -403,6 +436,7 @@ export function getMtpVolumes(): MtpVolume[] {
                 name: deviceState.displayName,
                 path: `mtp://${deviceState.device.id}`,
                 isConnected: deviceState.connectionState === 'connected',
+                isReadOnly: false, // Unknown until connected
             })
         }
     }

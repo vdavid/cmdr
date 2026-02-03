@@ -47,6 +47,7 @@ const mockStorage: MtpStorageInfo = {
     totalBytes: 128_000_000_000,
     availableBytes: 64_000_000_000,
     storageType: 'FixedRAM',
+    isReadOnly: false,
 }
 
 const mockConnectedInfo: ConnectedMtpDeviceInfo = {
@@ -86,16 +87,22 @@ describe('mtp-store', () => {
     })
 
     describe('scanDevices', () => {
-        it('scans and adds new devices', async () => {
+        it('scans and adds new devices, then auto-connects', async () => {
             vi.mocked(listMtpDevices).mockResolvedValue([mockDevice])
+            vi.mocked(connectMtpDevice).mockResolvedValue(mockConnectedInfo)
             const { scanDevices, getDevices, getDevice } = await loadModule()
 
             await scanDevices()
+            // Wait for auto-connect to complete (it runs asynchronously)
+            await vi.waitFor(() => {
+                const device = getDevice('mtp-336592896')
+                expect(device?.connectionState).toBe('connected')
+            })
 
             const devices = getDevices()
             expect(devices).toHaveLength(1)
             expect(devices[0].device.id).toBe('mtp-336592896')
-            expect(devices[0].connectionState).toBe('disconnected')
+            expect(devices[0].connectionState).toBe('connected')
             expect(devices[0].displayName).toBe('Pixel 8')
 
             const device = getDevice('mtp-336592896')
@@ -166,17 +173,17 @@ describe('mtp-store', () => {
     })
 
     describe('connect', () => {
-        it('connects to a device and updates state', async () => {
+        it('auto-connects devices after scan and updates state', async () => {
             vi.mocked(listMtpDevices).mockResolvedValue([mockDevice])
             vi.mocked(connectMtpDevice).mockResolvedValue(mockConnectedInfo)
-            const { scanDevices, connect, getDevice, getConnectedDevices, hasConnectedDevices } = await loadModule()
+            const { scanDevices, getDevice, getConnectedDevices, hasConnectedDevices } = await loadModule()
 
             await scanDevices()
-            const result = await connect('mtp-336592896')
-
-            expect(result).toBeDefined()
-            expect(result?.device.id).toBe('mtp-336592896')
-            expect(result?.storages).toHaveLength(1)
+            // Wait for auto-connect to complete
+            await vi.waitFor(() => {
+                const device = getDevice('mtp-336592896')
+                expect(device?.connectionState).toBe('connected')
+            })
 
             const device = getDevice('mtp-336592896')
             expect(device?.connectionState).toBe('connected')
@@ -184,6 +191,7 @@ describe('mtp-store', () => {
 
             expect(hasConnectedDevices()).toBe(true)
             expect(getConnectedDevices()).toHaveLength(1)
+            expect(connectMtpDevice).toHaveBeenCalledTimes(1)
         })
 
         it('returns undefined for unknown device', async () => {
@@ -209,14 +217,17 @@ describe('mtp-store', () => {
             expect(connectMtpDevice).toHaveBeenCalledTimes(1) // Should not call again
         })
 
-        it('sets error state on connection failure', async () => {
+        it('sets error state on auto-connect failure', async () => {
             vi.mocked(listMtpDevices).mockResolvedValue([mockDevice])
             vi.mocked(connectMtpDevice).mockRejectedValue(new Error('Exclusive access error'))
-            const { scanDevices, connect, getDevice } = await loadModule()
+            const { scanDevices, getDevice } = await loadModule()
 
             await scanDevices()
-
-            await expect(connect('mtp-336592896')).rejects.toThrow('Exclusive access error')
+            // Wait for auto-connect to fail
+            await vi.waitFor(() => {
+                const device = getDevice('mtp-336592896')
+                expect(device?.connectionState).toBe('error')
+            })
 
             const device = getDevice('mtp-336592896')
             expect(device?.connectionState).toBe('error')
@@ -250,15 +261,26 @@ describe('mtp-store', () => {
             await disconnect('mtp-unknown')
         })
 
-        it('handles disconnect for already disconnected device', async () => {
+        it('handles double disconnect gracefully (only calls backend once)', async () => {
             vi.mocked(listMtpDevices).mockResolvedValue([mockDevice])
-            const { scanDevices, disconnect } = await loadModule()
+            vi.mocked(connectMtpDevice).mockResolvedValue(mockConnectedInfo)
+            vi.mocked(disconnectMtpDevice).mockResolvedValue(undefined)
+            const { scanDevices, disconnect, getDevice } = await loadModule()
 
             await scanDevices()
+            // Wait for auto-connect to complete
+            await vi.waitFor(() => {
+                const device = getDevice('mtp-336592896')
+                expect(device?.connectionState).toBe('connected')
+            })
 
-            // Should not throw or call backend
+            // First disconnect
             await disconnect('mtp-336592896')
-            expect(disconnectMtpDevice).not.toHaveBeenCalled()
+            expect(disconnectMtpDevice).toHaveBeenCalledTimes(1)
+
+            // Second disconnect - should not call backend again
+            await disconnect('mtp-336592896')
+            expect(disconnectMtpDevice).toHaveBeenCalledTimes(1)
         })
     })
 
@@ -355,6 +377,7 @@ describe('mtp-store', () => {
                         totalBytes: 64_000_000_000,
                         availableBytes: 32_000_000_000,
                         storageType: 'RemovableRAM',
+                        isReadOnly: false,
                     },
                 ],
             }
@@ -374,6 +397,32 @@ describe('mtp-store', () => {
             expect(volumes[1].id).toBe('mtp-336592896:65538')
             expect(volumes[1].name).toBe('Pixel 8 - SD Card')
             expect(volumes[1].storageId).toBe(65538)
+        })
+
+        it('propagates isReadOnly flag from storage to volume', async () => {
+            const readOnlyStorageInfo: ConnectedMtpDeviceInfo = {
+                device: mockDevice,
+                storages: [
+                    {
+                        id: 65537,
+                        name: 'Camera Storage',
+                        totalBytes: 32_000_000_000,
+                        availableBytes: 16_000_000_000,
+                        storageType: 'FixedRAM',
+                        isReadOnly: true,
+                    },
+                ],
+            }
+            vi.mocked(listMtpDevices).mockResolvedValue([mockDevice])
+            vi.mocked(connectMtpDevice).mockResolvedValue(readOnlyStorageInfo)
+            const { scanDevices, connect, getMtpVolumes } = await loadModule()
+
+            await scanDevices()
+            await connect('mtp-336592896')
+
+            const volumes = getMtpVolumes()
+            expect(volumes).toHaveLength(1)
+            expect(volumes[0].isReadOnly).toBe(true)
         })
 
         it('uses storage name only for single storage device', async () => {

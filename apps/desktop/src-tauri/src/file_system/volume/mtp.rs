@@ -3,10 +3,11 @@
 //! Wraps MTP device storage as a Volume, enabling MTP browsing through
 //! the standard file listing pipeline (same icons, sorting, view modes as local files).
 
-use super::{ConflictInfo, CopyScanResult, SourceItemInfo, SpaceInfo, Volume, VolumeError};
+use super::{ConflictInfo, CopyScanResult, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream};
 use crate::file_system::FileEntry;
 use crate::mtp::connection::{MtpConnectionError, connection_manager};
 use log::debug;
+use mtp_rs::FileDownload;
 use std::path::{Path, PathBuf};
 
 /// A volume backed by an MTP device storage.
@@ -380,6 +381,109 @@ impl Volume for MtpVolume {
             })
             .map_err(map_mtp_error)
     }
+
+    fn supports_streaming(&self) -> bool {
+        true
+    }
+
+    fn open_read_stream(&self, path: &Path) -> Result<Box<dyn VolumeReadStream>, VolumeError> {
+        let mtp_path = self.to_mtp_path(path);
+        let device_id = self.device_id.clone();
+        let storage_id = self.storage_id;
+
+        let handle = tokio::runtime::Handle::current();
+
+        // Get the file download stream from connection manager
+        let (download, total_size) = handle
+            .block_on(async {
+                connection_manager()
+                    .open_download_stream(&device_id, storage_id, &mtp_path)
+                    .await
+            })
+            .map_err(map_mtp_error)?;
+
+        Ok(Box::new(MtpReadStream {
+            handle,
+            download: Some(download),
+            total_size,
+            bytes_read: 0,
+        }))
+    }
+
+    fn write_from_stream(
+        &self,
+        dest: &Path,
+        size: u64,
+        mut stream: Box<dyn VolumeReadStream>,
+    ) -> Result<u64, VolumeError> {
+        let dest_folder = dest.parent().map(|p| self.to_mtp_path(p)).unwrap_or_default();
+        let filename = dest
+            .file_name()
+            .and_then(|n| n.to_str())
+            .ok_or_else(|| VolumeError::IoError("Invalid filename".into()))?
+            .to_string();
+
+        let device_id = self.device_id.clone();
+        let storage_id = self.storage_id;
+
+        // IMPORTANT: Collect all chunks BEFORE entering block_on to avoid nested runtime error.
+        // MtpReadStream::next_chunk() uses block_on internally, so we can't call it from
+        // within another block_on (which upload_from_stream would do).
+        let mut chunks: Vec<bytes::Bytes> = Vec::new();
+        while let Some(result) = stream.next_chunk() {
+            let data = result?;
+            chunks.push(bytes::Bytes::from(data));
+        }
+
+        let handle = tokio::runtime::Handle::current();
+
+        handle
+            .block_on(async {
+                connection_manager()
+                    .upload_from_chunks(&device_id, storage_id, &dest_folder, &filename, size, chunks)
+                    .await
+            })
+            .map_err(map_mtp_error)
+    }
+}
+
+/// Streaming reader for MTP files.
+///
+/// Wraps the mtp-rs FileDownload to provide sync iteration.
+pub struct MtpReadStream {
+    /// Tokio runtime handle for blocking on async operations.
+    handle: tokio::runtime::Handle,
+    /// The underlying async download (wrapped in Option for take semantics).
+    download: Option<FileDownload>,
+    /// Total file size.
+    total_size: u64,
+    /// Bytes read so far.
+    bytes_read: u64,
+}
+
+impl VolumeReadStream for MtpReadStream {
+    fn next_chunk(&mut self) -> Option<Result<Vec<u8>, VolumeError>> {
+        let download = self.download.as_mut()?;
+
+        self.handle.block_on(async {
+            match download.next_chunk().await {
+                Some(Ok(bytes)) => {
+                    self.bytes_read += bytes.len() as u64;
+                    Some(Ok(bytes.to_vec()))
+                }
+                Some(Err(e)) => Some(Err(VolumeError::IoError(e.to_string()))),
+                None => None,
+            }
+        })
+    }
+
+    fn total_size(&self) -> u64 {
+        self.total_size
+    }
+
+    fn bytes_read(&self) -> u64 {
+        self.bytes_read
+    }
 }
 
 /// Maps MTP connection errors to Volume errors.
@@ -460,5 +564,12 @@ mod tests {
         // for the local notify-based watcher, which doesn't work for MTP paths.
         let vol = MtpVolume::new("mtp-20-5", 65537, "Test");
         assert!(!vol.supports_watching());
+    }
+
+    #[test]
+    fn test_supports_streaming_returns_true() {
+        // MTP volumes support streaming for direct MTP-to-MTP transfers.
+        let vol = MtpVolume::new("mtp-20-5", 65537, "Test");
+        assert!(vol.supports_streaming());
     }
 }

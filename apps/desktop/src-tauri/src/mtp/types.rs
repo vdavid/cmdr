@@ -65,6 +65,8 @@ pub struct MtpStorageInfo {
     /// Storage type description (e.g., "FixedROM", "RemovableRAM").
     #[serde(skip_serializing_if = "Option::is_none")]
     pub storage_type: Option<String>,
+    /// Whether this storage is read-only (e.g., PTP cameras).
+    pub is_read_only: bool,
 }
 
 #[cfg(test)]
@@ -140,9 +142,25 @@ mod tests {
             total_bytes: 128_000_000_000,
             available_bytes: 64_000_000_000,
             storage_type: Some("FixedRAM".to_string()),
+            is_read_only: false,
         };
         let json = serde_json::to_string(&storage).unwrap();
         assert!(json.contains("\"totalBytes\":128000000000"));
         assert!(json.contains("\"availableBytes\":64000000000"));
+        assert!(json.contains("\"isReadOnly\":false"));
+    }
+
+    #[test]
+    fn test_storage_read_only_serialization() {
+        let storage = MtpStorageInfo {
+            id: 0x10001,
+            name: "Camera Storage".to_string(),
+            total_bytes: 32_000_000_000,
+            available_bytes: 16_000_000_000,
+            storage_type: Some("FixedRAM".to_string()),
+            is_read_only: true,
+        };
+        let json = serde_json::to_string(&storage).unwrap();
+        assert!(json.contains("\"isReadOnly\":true"));
     }
 }

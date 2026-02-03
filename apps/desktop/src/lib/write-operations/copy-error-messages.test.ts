@@ -153,6 +153,34 @@ describe('getUserFriendlyMessage', () => {
 
             expect(result.message).toContain('error occurred')
         })
+
+        it('detects read-only device errors', () => {
+            const error: WriteOperationError = {
+                type: 'io_error',
+                path: '',
+                message: 'Error for mtp-35651584: This device is read-only. You can copy files from it, but not to it.',
+            }
+            const result = getUserFriendlyMessage(error)
+
+            // Should mention read-only and provide helpful suggestion
+            expect(result.message).toContain('read-only')
+            expect(result.message).toContain('copy files from it')
+            expect(result.suggestion).toContain('different destination')
+        })
+
+        it('does not misinterpret read-only as read error', () => {
+            // This test verifies the fix: "read-only" should NOT trigger "Couldn't read from the source"
+            const error: WriteOperationError = {
+                type: 'io_error',
+                path: '',
+                message: 'Error for mtp-35651584: This device is read-only.',
+            }
+            const result = getUserFriendlyMessage(error)
+
+            // Should NOT say "Couldn't read from the source"
+            expect(result.message).not.toContain("Couldn't read from the source")
+            expect(result.message).toContain('read-only')
+        })
     })
 })
 
