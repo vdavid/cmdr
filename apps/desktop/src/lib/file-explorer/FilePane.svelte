@@ -1408,12 +1408,27 @@
 
     // Listen for MTP device removal events
     // When the device is disconnected, trigger fallback to previous volume
+    //
+    // IMPORTANT: We capture reactive values (volumeId, isMtpView) in the effect body
+    // so Svelte tracks them as dependencies. This ensures the listener is re-created
+    // when volumeId changes, avoiding stale closures in the callback.
     $effect(() => {
+        // Capture current values - this makes Svelte track volumeId as a dependency
+        const currentVolumeId = volumeId
+        const currentIsMtpView = isMtpView
+
+        // Extract device ID from volume ID (e.g., "mtp-2097152:65537" -> "mtp-2097152")
+        const deviceIdFromVolume =
+            currentIsMtpView && currentVolumeId.includes(':') ? currentVolumeId.split(':')[0] : null
+
+        // Only set up listener if we're viewing an MTP volume with a storage ID
+        if (!currentIsMtpView || !deviceIdFromVolume) {
+            return
+        }
+
         void onMtpDeviceRemoved((event) => {
             // Check if the removed device matches our current MTP volume
-            // volumeId format: "mtp-{locationId}:{storageId}" (e.g., "mtp-336592896:65537")
-            // event.deviceId format: "mtp-{locationId}" (e.g., "mtp-336592896")
-            if (isMtpView && volumeId.startsWith(event.deviceId + ':')) {
+            if (event.deviceId === deviceIdFromVolume) {
                 log.warn('MTP device disconnected while viewing: {deviceId}, triggering fallback', {
                     deviceId: event.deviceId,
                 })
@@ -1432,52 +1447,77 @@
 
     // Listen for MTP directory changed events (file watching)
     // Re-fetch the current directory when files change on the MTP device
+    //
+    // IMPORTANT: We capture reactive values (volumeId, isMtpView) in the effect body
+    // so Svelte tracks them as dependencies. This ensures the listener is re-created
+    // when volumeId changes, avoiding stale closures in the callback.
     $effect(() => {
+        // Capture current values - this makes Svelte track volumeId as a dependency
+        const currentVolumeId = volumeId
+        const currentIsMtpView = isMtpView
+        const currentPaneId = paneId
+
+        // Extract device ID from volume ID (e.g., "mtp-2097152:65537" -> "mtp-2097152")
+        // This is used to match incoming events
+        const deviceIdFromVolume =
+            currentIsMtpView && currentVolumeId.includes(':') ? currentVolumeId.split(':')[0] : null
+
+        // Only set up listener if we're viewing an MTP volume with a storage ID
+        if (!currentIsMtpView || !deviceIdFromVolume) {
+            return
+        }
+
+        log.debug('Setting up MTP directory changed listener for device: {deviceId}, pane: {paneId}', {
+            deviceId: deviceIdFromVolume,
+            paneId: currentPaneId,
+        })
+        // Use console.warn for visibility during debugging (console.debug may be filtered)
+        console.warn(
+            `[FilePane] Setting up MTP directory changed listener: ` +
+                `deviceId=${deviceIdFromVolume}, paneId=${String(currentPaneId)}, volumeId=${currentVolumeId}`,
+        )
+
         void onMtpDirectoryChanged((event) => {
-            console.debug(
-                `[FilePane] mtp-directory-changed event received: deviceId=${event.deviceId}, ` +
-                    `paneId=${String(paneId)}, volumeId=${volumeId}, isMtpView=${String(isMtpView)}, loading=${String(loading)}`,
+            // Access current loading state at event time (not captured)
+            const isCurrentlyLoading = loading
+            const currentListingId = listingId
+
+            // Use console.warn for visibility during debugging
+            console.warn(
+                `[FilePane] mtp-directory-changed event received: eventDeviceId=${event.deviceId}, ` +
+                    `paneId=${String(currentPaneId)}, volumeId=${currentVolumeId}, ` +
+                    `deviceIdFromVolume=${deviceIdFromVolume}, loading=${String(isCurrentlyLoading)}`,
             )
 
-            // Check if we're viewing a storage on this device
-            // volumeId format: "mtp-{locationId}:{storageId}" (e.g., "mtp-336592896:65537")
-            // event.deviceId format: "mtp-{locationId}" (e.g., "mtp-336592896")
-            if (isMtpView && volumeId.startsWith(event.deviceId + ':') && !loading) {
+            // Check if this event is for our device
+            if (event.deviceId === deviceIdFromVolume && !isCurrentlyLoading) {
                 log.info('MTP directory changed for device: {deviceId}, refreshing view', {
                     deviceId: event.deviceId,
                 })
-                console.debug(
-                    `[FilePane] MTP directory changed: triggering refresh for paneId=${String(paneId)}, ` +
-                        `incrementing cacheGeneration from ${String(cacheGeneration)}`,
+                // Get the current path at event time (not captured)
+                const pathToReload = currentPath
+                console.warn(
+                    `[FilePane] MTP directory changed: reloading directory for paneId=${String(currentPaneId)}, ` +
+                        `path=${pathToReload}`,
                 )
-                // Increment cache generation to force list components to re-fetch
-                cacheGeneration++
-                // Re-fetch total count and max filename width
-                if (listingId) {
-                    console.debug(
-                        `[FilePane] MTP directory changed: re-fetching count/width for listingId=${listingId}`,
-                    )
-                    void Promise.all([
-                        getTotalCount(listingId, includeHidden),
-                        getMaxFilenameWidth(listingId, includeHidden),
-                    ]).then(([count, newMaxWidth]) => {
-                        totalCount = count
-                        maxFilenameWidth = newMaxWidth
-                        void fetchEntryUnderCursor()
-                        void fetchListingStats()
-                    })
-                }
+                // Reload the directory to get fresh data from MTP device
+                // This creates a new listing that fetches actual data from the device
+                void loadDirectory(pathToReload)
             } else {
-                console.debug(
+                console.warn(
                     `[FilePane] MTP directory changed event IGNORED: ` +
-                        `isMtpView=${String(isMtpView)}, matchesDevice=${String(volumeId.startsWith(event.deviceId + ':'))}, loading=${String(loading)}`,
+                        `eventDeviceId=${event.deviceId}, deviceIdFromVolume=${deviceIdFromVolume}, ` +
+                        `matches=${String(event.deviceId === deviceIdFromVolume)}, loading=${String(isCurrentlyLoading)}`,
                 )
             }
         })
             .then((unsub) => {
                 unlistenMtpDirectoryChanged = unsub
+                console.warn(`[FilePane] MTP directory changed listener registered successfully`)
             })
-            .catch(() => {})
+            .catch((error: unknown) => {
+                console.error(`[FilePane] Failed to register MTP directory changed listener:`, error)
+            })
 
         return () => {
             unlistenMtpDirectoryChanged?.()
