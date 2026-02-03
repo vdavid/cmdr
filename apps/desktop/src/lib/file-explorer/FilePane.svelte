@@ -386,12 +386,6 @@
         return currentPath
     }
 
-    // Get MTP browser reference for operations - DEPRECATED, MTP now uses standard listing
-    // Kept for backwards compatibility but returns undefined
-    export function getMtpBrowser(): undefined {
-        return undefined
-    }
-
     // Get selected files from MTP browser - DEPRECATED, use standard selection
     // For MTP views, this now returns files from the standard listing
     export async function getMtpSelectedFiles(): Promise<FileEntry[]> {
