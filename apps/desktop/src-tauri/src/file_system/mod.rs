@@ -59,14 +59,36 @@ pub use write_operations::{VolumeCopyConfig, VolumeCopyScanResult, copy_between_
 /// Global volume manager instance
 static VOLUME_MANAGER: LazyLock<VolumeManager> = LazyLock::new(VolumeManager::new);
 
-/// Initializes the global volume manager with the root volume.
+/// Initializes the global volume manager with all discovered volumes.
 ///
 /// This should be called during app startup (after init_watcher_manager).
-/// Registers the "root" volume pointing to "/" (the entire filesystem).
+/// Registers:
+/// - "root" volume pointing to "/" (the entire filesystem)
+/// - Attached volumes (external drives, USB, etc.)
+/// - Cloud drives (Dropbox, iCloud, Google Drive, etc.)
 pub fn init_volume_manager() {
+    // Register root volume
     let root_volume = Arc::new(LocalPosixVolume::new("Macintosh HD", "/"));
     VOLUME_MANAGER.register("root", root_volume);
     VOLUME_MANAGER.set_default("root");
+
+    // Register attached volumes (external drives)
+    let attached = crate::volumes::get_attached_volumes();
+    log::info!("Registering {} attached volume(s)", attached.len());
+    for location in attached {
+        let volume = Arc::new(LocalPosixVolume::new(&location.name, &location.path));
+        VOLUME_MANAGER.register(&location.id, volume);
+        log::info!("  Registered attached volume: {} -> {}", location.id, location.path);
+    }
+
+    // Register cloud drives
+    let cloud = crate::volumes::get_cloud_drives();
+    log::info!("Registering {} cloud drive(s)", cloud.len());
+    for location in cloud {
+        let volume = Arc::new(LocalPosixVolume::new(&location.name, &location.path));
+        VOLUME_MANAGER.register(&location.id, volume);
+        log::info!("  Registered cloud drive: {} -> {}", location.id, location.path);
+    }
 }
 
 /// Returns a reference to the global volume manager.

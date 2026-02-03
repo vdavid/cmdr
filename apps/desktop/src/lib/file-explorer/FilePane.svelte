@@ -133,6 +133,9 @@
     // Listing stats for SelectionInfo (selection summary in Full mode, totals display)
     let listingStats = $state<ListingStats | null>(null)
 
+    // Volume root path from listing-complete event (accurate for MTP and all volume types)
+    let volumeRootFromEvent = $state<string | undefined>(undefined)
+
     // Component refs for keyboard navigation
     let fullListRef: FullList | undefined = $state()
     let briefListRef: BriefList | undefined = $state()
@@ -535,7 +538,9 @@
     }
 
     // Check if current directory has a parent (not at filesystem root AND not at volume root)
-    const hasParent = $derived(currentPath !== '/' && currentPath !== volumePath)
+    // Prefer volumeRoot from the listing event (accurate for MTP), fall back to prop (for initial state)
+    const effectiveVolumeRoot = $derived(volumeRootFromEvent ?? volumePath)
+    const hasParent = $derived(currentPath !== '/' && currentPath !== effectiveVolumeRoot)
 
     // Helper: Clear all selection state
     function clearSelection() {
@@ -828,6 +833,7 @@
         benchmark.logEventValue('listing-complete received, totalCount', payload.totalCount)
         totalCount = payload.totalCount
         maxFilenameWidth = payload.maxFilenameWidth
+        volumeRootFromEvent = payload.volumeRoot
 
         // Determine initial cursor position
         if (loadSelectName) {

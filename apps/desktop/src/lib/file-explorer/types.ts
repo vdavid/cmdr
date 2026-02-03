@@ -73,6 +73,8 @@ export interface ListingCompleteEvent {
     listingId: string
     totalCount: number
     maxFilenameWidth?: number
+    /** Root path of the volume this listing belongs to */
+    volumeRoot: string
 }
 
 /**
