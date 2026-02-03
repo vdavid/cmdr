@@ -676,18 +676,18 @@
         benchmark.logEventValue('loadDirectory CALLED', path)
 
         // Debug logging for diagnosing concurrent list_directory calls
-        console.debug(
-            `[FilePane] loadDirectory called: paneId=${String(paneId)}, volumeId=${volumeId}, path=${path}, ` +
-                `selectName=${selectName ?? 'none'}, currentLoading=${String(loading)}, currentListingId=${listingId}`,
+        log.debug(
+            '[FilePane] loadDirectory called: paneId={paneId}, volumeId={volumeId}, path={path}, selectName={selectName}, currentLoading={loading}, currentListingId={listingId}',
+            { paneId, volumeId, path, selectName: selectName ?? 'none', loading, listingId },
         )
 
         // Increment generation to cancel any in-flight requests
         const thisGeneration = ++loadGeneration
-        console.debug(`[FilePane] loadDirectory: generation=${String(thisGeneration)}`)
+        log.debug('[FilePane] loadDirectory: generation={generation}', { generation: thisGeneration })
 
         // Cancel any abandoned listing from previous navigation
         if (listingId) {
-            console.debug(`[FilePane] loadDirectory: cancelling previous listing ${listingId}`)
+            log.debug('[FilePane] loadDirectory: cancelling previous listing {listingId}', { listingId })
             void cancelListing(listingId)
             void listDirectoryEnd(listingId)
             listingId = ''
@@ -799,9 +799,9 @@
 
             // Now start streaming listing - listeners are already set up
             benchmark.logEvent('IPC listDirectoryStartStreaming CALL')
-            console.debug(
-                `[FilePane] calling listDirectoryStartStreaming: volumeId=${volumeId}, path=${loadPath}, ` +
-                    `listingId=${newListingId}`,
+            log.debug(
+                '[FilePane] calling listDirectoryStartStreaming: volumeId={volumeId}, path={loadPath}, listingId={listingId}',
+                { volumeId, loadPath, listingId: newListingId },
             )
             const result = await listDirectoryStartStreaming(
                 volumeId,
@@ -812,7 +812,9 @@
                 newListingId,
             )
             benchmark.logEventValue('IPC listDirectoryStartStreaming RETURNED', result.listingId)
-            console.debug(`[FilePane] listDirectoryStartStreaming returned: status=${JSON.stringify(result.status)}`)
+            log.debug('[FilePane] listDirectoryStartStreaming returned: status={status}', {
+                status: JSON.stringify(result.status),
+            })
 
             // Check if this load was cancelled while we were starting
             if (thisGeneration !== loadGeneration) {
@@ -1291,18 +1293,18 @@
         const curPath = untrack(() => currentPath) // Don't track this
         // Load for local volumes and connected MTP views (not device-only)
         if (!isNetworkView && !isMtpDeviceOnly && newPath !== curPath) {
-            console.debug(
-                `[FilePane] initialPath effect: triggering loadDirectory, paneId=${String(paneId)}, ` +
-                    `newPath=${newPath}, curPath=${curPath}`,
+            log.debug(
+                '[FilePane] initialPath effect: triggering loadDirectory, paneId={paneId}, newPath={newPath}, curPath={curPath}',
+                { paneId, newPath, curPath },
             )
             currentPath = newPath
             void loadDirectory(newPath)
         }
         // For device-only MTP views, just update the path (auto-connect will handle switching to storage)
         if (isMtpDeviceOnly && newPath !== curPath) {
-            console.debug(
-                `[FilePane] initialPath effect (MTP device-only): updating path only, paneId=${String(paneId)}`,
-            )
+            log.debug('[FilePane] initialPath effect (MTP device-only): updating path only, paneId={paneId}', {
+                paneId,
+            })
             currentPath = newPath
         }
     })
@@ -1315,9 +1317,9 @@
 
         if (wasDeviceOnly && isNowConnected) {
             log.info('MTP volume connected, loading directory: {path}', { path: initialPath })
-            console.debug(
-                `[FilePane] MTP volume transition effect: triggering loadDirectory, paneId=${String(paneId)}, ` +
-                    `prevVolumeId=${prevVolumeId}, volumeId=${volumeId}, initialPath=${initialPath}`,
+            log.debug(
+                '[FilePane] MTP volume transition effect: triggering loadDirectory, paneId={paneId}, prevVolumeId={prevVolumeId}, volumeId={volumeId}, initialPath={initialPath}',
+                { paneId, prevVolumeId, volumeId, initialPath },
             )
             currentPath = initialPath
             void loadDirectory(initialPath)
@@ -1468,15 +1470,15 @@
         // - Network views (they handle their own data via NetworkBrowser/ShareBrowser)
         // - Device-only MTP views (they need connection first, handled by auto-connect effect)
         // But DO load for connected MTP views (storage-specific volume ID)
-        console.debug(
-            `[FilePane] onMount: paneId=${String(paneId)}, volumeId=${volumeId}, currentPath=${currentPath}, ` +
-                `isNetworkView=${String(isNetworkView)}, isMtpDeviceOnly=${String(isMtpDeviceOnly)}`,
+        log.debug(
+            '[FilePane] onMount: paneId={paneId}, volumeId={volumeId}, currentPath={currentPath}, isNetworkView={isNetworkView}, isMtpDeviceOnly={isMtpDeviceOnly}',
+            { paneId, volumeId, currentPath, isNetworkView, isMtpDeviceOnly },
         )
         if (!isNetworkView && !isMtpDeviceOnly) {
-            console.debug(`[FilePane] onMount: triggering loadDirectory for paneId=${String(paneId)}`)
+            log.debug('[FilePane] onMount: triggering loadDirectory for paneId={paneId}', { paneId })
             void loadDirectory(currentPath)
         } else {
-            console.debug(`[FilePane] onMount: SKIPPING loadDirectory for paneId=${String(paneId)}`)
+            log.debug('[FilePane] onMount: SKIPPING loadDirectory for paneId={paneId}', { paneId })
         }
 
         // Set up sync status polling for visible files
