@@ -164,10 +164,17 @@ impl Volume for MtpVolume {
     }
 
     fn supports_watching(&self) -> bool {
-        // MTP supports file watching via USB interrupt endpoint event polling.
-        // The event loop in MtpConnectionManager polls for ObjectAdded/ObjectRemoved/ObjectInfoChanged
-        // events and emits `mtp-directory-changed` to the frontend for auto-refresh.
-        true
+        // Return false because MTP has its OWN file watching mechanism that is
+        // independent of the listing pipeline. The MtpConnectionManager starts an
+        // event loop when a device connects (see start_event_loop) that polls for
+        // USB interrupt endpoint events (ObjectAdded/ObjectRemoved/ObjectInfoChanged).
+        // These events emit `mtp-directory-changed` directly to the frontend.
+        //
+        // The `supports_watching()` check in operations.rs is used to decide whether
+        // to start the local notify-based file watcher, which only works for POSIX
+        // paths. MTP paths like "/DCIM/Camera" don't exist on the local filesystem,
+        // so we must return false to prevent the notify watcher from failing.
+        false
     }
 
     fn create_directory(&self, path: &Path) -> Result<(), VolumeError> {
@@ -446,8 +453,12 @@ mod tests {
     }
 
     #[test]
-    fn test_supports_watching() {
+    fn test_supports_watching_returns_false() {
+        // MTP volumes return false for supports_watching because they have their
+        // own event loop (in MtpConnectionManager) that handles file watching
+        // independently. The supports_watching check in operations.rs is only
+        // for the local notify-based watcher, which doesn't work for MTP paths.
         let vol = MtpVolume::new("mtp-20-5", 65537, "Test");
-        assert!(vol.supports_watching());
+        assert!(!vol.supports_watching());
     }
 }

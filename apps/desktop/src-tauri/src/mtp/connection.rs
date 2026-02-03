@@ -1254,12 +1254,10 @@ impl MtpConnectionManager {
                 message: format!("Download error: {}", e),
             })?;
 
-            file.write_all(&chunk)
-                .await
-                .map_err(|e| MtpConnectionError::Other {
-                    device_id: device_id.to_string(),
-                    message: format!("Failed to write local file: {}", e),
-                })?;
+            file.write_all(&chunk).await.map_err(|e| MtpConnectionError::Other {
+                device_id: device_id.to_string(),
+                message: format!("Failed to write local file: {}", e),
+            })?;
 
             bytes_written += chunk.len() as u64;
         }
