@@ -45,6 +45,8 @@ pub use volume::{
 pub use volume_manager::VolumeManager;
 // Watcher management - init_watcher_manager must be called from lib.rs
 pub use watcher::{init_watcher_manager, update_debounce_ms};
+// Diff types for file watching (used by MTP module for unified diff events)
+pub(crate) use watcher::{DirectoryDiff, compute_diff};
 // Re-export write operation types
 pub use write_operations::{
     OperationStatus, OperationSummary, WriteOperationConfig, WriteOperationError, WriteOperationStartResult,

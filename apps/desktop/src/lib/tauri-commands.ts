@@ -1821,7 +1821,6 @@ export interface ConnectedMtpDeviceInfo {
 /** Error types for MTP connection operations. */
 export type MtpConnectionError =
     | { type: 'deviceNotFound'; deviceId: string }
-    | { type: 'alreadyConnected'; deviceId: string }
     | { type: 'notConnected'; deviceId: string }
     | { type: 'exclusiveAccess'; deviceId: string; blockingProcess?: string }
     | { type: 'timeout'; deviceId: string }
@@ -1983,21 +1982,9 @@ export async function onMtpDeviceDisconnected(
     })
 }
 
-/** Event payload for mtp-directory-changed (file watching). */
-export interface MtpDirectoryChangedEvent {
-    deviceId: string
-}
-
-/**
- * Subscribes to MTP directory changed events (file watching).
- * Emitted when files are added, removed, or modified on the device.
- * Events are debounced to avoid overwhelming the UI during bulk operations.
- */
-export async function onMtpDirectoryChanged(callback: (event: MtpDirectoryChangedEvent) => void): Promise<UnlistenFn> {
-    return listen<MtpDirectoryChangedEvent>('mtp-directory-changed', (event) => {
-        callback(event.payload)
-    })
-}
+// NOTE: MTP file watching now uses the unified directory-diff event system (same as local volumes).
+// The mtp-directory-changed event and onMtpDirectoryChanged function have been removed.
+// MTP events are now handled by the existing directory-diff listener in FilePane.svelte.
 
 /**
  * Lists the contents of a directory on a connected MTP device.

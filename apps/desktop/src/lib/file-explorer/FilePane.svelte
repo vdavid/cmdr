@@ -33,7 +33,6 @@
         listVolumes,
         mountNetworkShare,
         onMtpDeviceRemoved,
-        onMtpDirectoryChanged,
         openFile,
         openInEditor,
         showFileContextMenu,
@@ -170,11 +169,24 @@
 
     // Effect: Auto-connect when a device-only MTP ID is selected
     $effect(() => {
+        // Log all conditions for debugging reconnection issues
+        log.debug(
+            'MTP auto-connect effect evaluated: isMtpDeviceOnly={isMtpDeviceOnly}, mtpConnecting={mtpConnecting}, mtpConnectionError={mtpConnectionError}, mtpConnectedDeviceId={mtpConnectedDeviceId}, volumeId={volumeId}',
+            {
+                isMtpDeviceOnly,
+                mtpConnecting,
+                mtpConnectionError,
+                mtpConnectedDeviceId,
+                volumeId,
+            },
+        )
+
         // Skip if we've already successfully connected to this device (waiting for volume change)
         if (isMtpDeviceOnly && !mtpConnecting && !mtpConnectionError && mtpConnectedDeviceId !== volumeId) {
             // Extract device ID from "mtp-{deviceId}" format
             const deviceId = volumeId // The whole thing is the device ID for device-only format
 
+            log.info('MTP auto-connect conditions met, starting connection to device: {deviceId}', { deviceId })
             mtpConnecting = true
             mtpConnectionError = null
 
@@ -228,8 +240,6 @@
                                 return 'Device was disconnected.'
                             case 'deviceBusy':
                                 return 'Device is busy. Please try again.'
-                            case 'alreadyConnected':
-                                return 'Device is already connected.'
                             default:
                                 return undefined
                         }
@@ -454,8 +464,6 @@
     let unlistenReadComplete: UnlistenFn | undefined
     // MTP device removal listener
     let unlistenMtpRemoved: UnlistenFn | undefined
-    // MTP directory changed listener (file watching)
-    let unlistenMtpDirectoryChanged: UnlistenFn | undefined
     // Polling interval for sync status (visible files only)
     let syncPollInterval: ReturnType<typeof setInterval> | undefined
     const SYNC_POLL_INTERVAL_MS = 2000 // Poll every 2 seconds
@@ -1451,84 +1459,9 @@
         }
     })
 
-    // Listen for MTP directory changed events (file watching)
-    // Re-fetch the current directory when files change on the MTP device
-    //
-    // IMPORTANT: We capture reactive values (volumeId, isMtpView) in the effect body
-    // so Svelte tracks them as dependencies. This ensures the listener is re-created
-    // when volumeId changes, avoiding stale closures in the callback.
-    $effect(() => {
-        // Capture current values - this makes Svelte track volumeId as a dependency
-        const currentVolumeId = volumeId
-        const currentIsMtpView = isMtpView
-        const currentPaneId = paneId
-
-        // Extract device ID from volume ID (e.g., "mtp-2097152:65537" -> "mtp-2097152")
-        // This is used to match incoming events
-        const deviceIdFromVolume =
-            currentIsMtpView && currentVolumeId.includes(':') ? currentVolumeId.split(':')[0] : null
-
-        // Only set up listener if we're viewing an MTP volume with a storage ID
-        if (!currentIsMtpView || !deviceIdFromVolume) {
-            return
-        }
-
-        log.debug('Setting up MTP directory changed listener for device: {deviceId}, pane: {paneId}', {
-            deviceId: deviceIdFromVolume,
-            paneId: currentPaneId,
-        })
-        // Use console.warn for visibility during debugging (console.debug may be filtered)
-        console.warn(
-            `[FilePane] Setting up MTP directory changed listener: ` +
-                `deviceId=${deviceIdFromVolume}, paneId=${String(currentPaneId)}, volumeId=${currentVolumeId}`,
-        )
-
-        void onMtpDirectoryChanged((event) => {
-            // Access current loading state at event time (not captured)
-            const isCurrentlyLoading = loading
-            const currentListingId = listingId
-
-            // Use console.warn for visibility during debugging
-            console.warn(
-                `[FilePane] mtp-directory-changed event received: eventDeviceId=${event.deviceId}, ` +
-                    `paneId=${String(currentPaneId)}, volumeId=${currentVolumeId}, ` +
-                    `deviceIdFromVolume=${deviceIdFromVolume}, loading=${String(isCurrentlyLoading)}`,
-            )
-
-            // Check if this event is for our device
-            if (event.deviceId === deviceIdFromVolume && !isCurrentlyLoading) {
-                log.info('MTP directory changed for device: {deviceId}, refreshing view', {
-                    deviceId: event.deviceId,
-                })
-                // Get the current path at event time (not captured)
-                const pathToReload = currentPath
-                console.warn(
-                    `[FilePane] MTP directory changed: reloading directory for paneId=${String(currentPaneId)}, ` +
-                        `path=${pathToReload}`,
-                )
-                // Reload the directory to get fresh data from MTP device
-                // This creates a new listing that fetches actual data from the device
-                void loadDirectory(pathToReload)
-            } else {
-                console.warn(
-                    `[FilePane] MTP directory changed event IGNORED: ` +
-                        `eventDeviceId=${event.deviceId}, deviceIdFromVolume=${deviceIdFromVolume}, ` +
-                        `matches=${String(event.deviceId === deviceIdFromVolume)}, loading=${String(isCurrentlyLoading)}`,
-                )
-            }
-        })
-            .then((unsub) => {
-                unlistenMtpDirectoryChanged = unsub
-                console.warn(`[FilePane] MTP directory changed listener registered successfully`)
-            })
-            .catch((error: unknown) => {
-                console.error(`[FilePane] Failed to register MTP directory changed listener:`, error)
-            })
-
-        return () => {
-            unlistenMtpDirectoryChanged?.()
-        }
-    })
+    // NOTE: MTP file watching now uses the unified directory-diff event system
+    // (same as local volumes). The existing directory-diff listener above handles
+    // both local and MTP changes, providing smooth incremental updates.
 
     onMount(() => {
         // Skip directory loading for:
@@ -1567,7 +1500,6 @@
         unlistenError?.()
         unlistenCancelled?.()
         unlistenMtpRemoved?.()
-        unlistenMtpDirectoryChanged?.()
         if (syncPollInterval) {
             clearInterval(syncPollInterval)
         }
@@ -1647,7 +1579,14 @@
                             type="button"
                             class="btn"
                             onclick={() => {
+                                log.info(
+                                    'MTP "Try again" clicked. Clearing error to trigger auto-connect. volumeId={volumeId}, isMtpDeviceOnly={isMtpDeviceOnly}, mtpConnectedDeviceId={mtpConnectedDeviceId}',
+                                    { volumeId, isMtpDeviceOnly, mtpConnectedDeviceId },
+                                )
                                 mtpConnectionError = null
+                                // Also reset mtpConnectedDeviceId to allow re-triggering auto-connect
+                                // even if we previously "connected" to this device
+                                mtpConnectedDeviceId = null
                             }}>Try again</button
                         >
                     </div>

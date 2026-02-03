@@ -29,8 +29,9 @@ use super::state::{
     update_operation_status,
 };
 use super::types::{
-    WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig, WriteOperationError,
-    WriteOperationPhase, WriteOperationStartResult, WriteOperationType, WriteProgressEvent,
+    ConflictResolution, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent, WriteErrorEvent,
+    WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType,
+    WriteProgressEvent,
 };
 use crate::file_system::volume::{ConflictInfo, SourceItemInfo, SpaceInfo, Volume, VolumeError};
 
@@ -41,7 +42,7 @@ pub struct VolumeCopyConfig {
     /// Progress update interval in milliseconds.
     pub progress_interval_ms: u64,
     /// How to handle conflicts (skip, overwrite, stop).
-    pub conflict_resolution: super::types::ConflictResolution,
+    pub conflict_resolution: ConflictResolution,
     /// Maximum number of conflicts to return in pre-flight scan.
     pub max_conflicts_to_show: usize,
 }
@@ -50,7 +51,7 @@ impl Default for VolumeCopyConfig {
     fn default() -> Self {
         Self {
             progress_interval_ms: 200,
-            conflict_resolution: super::types::ConflictResolution::Stop,
+            conflict_resolution: ConflictResolution::Stop,
             max_conflicts_to_show: 100,
         }
     }
@@ -411,9 +412,8 @@ fn copy_volumes_with_progress(
         total_bytes,
     );
 
-    // Determine copy strategy based on volume types
-    // If both volumes are the same (e.g., both are local), we can use export_to_local directly
-    // Otherwise, we need to use the appropriate import/export methods
+    // Track "apply to all" resolution for conflicts
+    let mut apply_to_all_resolution: Option<ConflictResolution> = None;
 
     for source_path in source_paths {
         // Check cancellation
@@ -433,31 +433,69 @@ fn copy_volumes_with_progress(
         }
 
         let file_name = source_path.file_name().map(|n| n.to_string_lossy().to_string());
-        let dest_item_path = if let Some(name) = source_path.file_name() {
+        let mut dest_item_path = if let Some(name) = source_path.file_name() {
             dest_path.join(name)
         } else {
             dest_path.to_path_buf()
         };
+
+        // Check for conflict: does destination already exist?
+        if dest_volume.exists(&dest_item_path) {
+            // Check if both source and destination are directories - directories merge, not conflict
+            let source_is_dir = source_volume.is_directory(source_path).unwrap_or(false);
+            let dest_is_dir = dest_volume.is_directory(&dest_item_path).unwrap_or(false);
+
+            if source_is_dir && dest_is_dir {
+                // Both are directories - this is a merge, not a conflict
+                // Continue with the copy (contents will be merged)
+                log::debug!(
+                    "copy_volumes_with_progress: merging directories {} -> {}",
+                    source_path.display(),
+                    dest_item_path.display()
+                );
+            } else {
+                // Either both are files, or there's a type mismatch - this is a conflict
+                log::debug!(
+                    "copy_volumes_with_progress: conflict detected at {} (source_is_dir={}, dest_is_dir={})",
+                    dest_item_path.display(),
+                    source_is_dir,
+                    dest_is_dir
+                );
+
+                // Resolve the conflict
+                let resolved = resolve_volume_conflict(
+                    &source_volume,
+                    source_path,
+                    &dest_volume,
+                    &dest_item_path,
+                    config,
+                    app,
+                    operation_id,
+                    state,
+                    &mut apply_to_all_resolution,
+                )?;
+
+                match resolved {
+                    None => {
+                        // Skip this file
+                        log::debug!(
+                            "copy_volumes_with_progress: skipping {} due to conflict resolution",
+                            source_path.display()
+                        );
+                        continue;
+                    }
+                    Some(resolved_path) => {
+                        dest_item_path = resolved_path;
+                    }
+                }
+            }
+        }
 
         log::debug!(
             "copy_volumes_with_progress: copying {} -> {}",
             source_path.display(),
             dest_item_path.display()
         );
-
-        // For cross-volume copy, we need to determine the strategy:
-        // - Source volume exports to local temp, then dest volume imports from local temp
-        // - OR: If source is local, dest.import_from_local directly
-        // - OR: If dest is local, source.export_to_local directly
-
-        // Check if source path is an absolute local path (starts with /)
-        // If so, use import_from_local on destination
-        // Otherwise, we need to export from source first
-
-        // For now, we'll use a simple approach:
-        // 1. If the dest volume supports import and source is local -> import directly
-        // 2. If the dest is local -> export directly
-        // 3. Otherwise -> export to temp, then import
 
         let bytes_copied = copy_single_path(&source_volume, source_path, &dest_volume, &dest_item_path, state)
             .map_err(map_volume_error)?;
@@ -514,10 +552,197 @@ fn copy_volumes_with_progress(
     Ok(())
 }
 
+/// Resolves a file conflict for volume-to-volume copy.
+/// Returns None if file should be skipped, or Some(path) with the resolved destination path.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "Conflict resolution requires many context parameters"
+)]
+fn resolve_volume_conflict(
+    source_volume: &Arc<dyn Volume>,
+    source_path: &Path,
+    dest_volume: &Arc<dyn Volume>,
+    dest_path: &Path,
+    config: &VolumeCopyConfig,
+    app: &tauri::AppHandle,
+    operation_id: &str,
+    state: &Arc<WriteOperationState>,
+    apply_to_all_resolution: &mut Option<ConflictResolution>,
+) -> Result<Option<PathBuf>, WriteOperationError> {
+    use tauri::Emitter;
+
+    // Determine effective conflict resolution
+    let resolution = if let Some(saved_resolution) = apply_to_all_resolution {
+        // Use saved "apply to all" resolution
+        *saved_resolution
+    } else {
+        config.conflict_resolution
+    };
+
+    match resolution {
+        ConflictResolution::Stop => {
+            // Need to prompt user - gather metadata for the conflict event
+            let source_scan = source_volume.scan_for_copy(source_path).ok();
+            let source_size = source_scan.as_ref().map(|s| s.total_bytes).unwrap_or(0);
+
+            // Try to get destination size by scanning (best effort)
+            let dest_size = dest_volume
+                .scan_for_copy(dest_path)
+                .ok()
+                .map(|s| s.total_bytes)
+                .unwrap_or(0);
+
+            // We can't easily get modification times from Volume trait, so use None
+            let source_modified: Option<i64> = None;
+            let destination_modified: Option<i64> = None;
+            let destination_is_newer = false;
+            let size_difference = dest_size as i64 - source_size as i64;
+
+            let _ = app.emit(
+                "write-conflict",
+                WriteConflictEvent {
+                    operation_id: operation_id.to_string(),
+                    source_path: source_path.display().to_string(),
+                    destination_path: dest_path.display().to_string(),
+                    source_size,
+                    destination_size: dest_size,
+                    source_modified,
+                    destination_modified,
+                    destination_is_newer,
+                    size_difference,
+                },
+            );
+
+            // Wait for user to call resolve_write_conflict
+            let guard = state.conflict_mutex.lock().unwrap();
+            let _guard = state
+                .conflict_condvar
+                .wait_while(guard, |_| {
+                    // Keep waiting while:
+                    // 1. No pending resolution
+                    // 2. Not cancelled
+                    let has_resolution = state.pending_resolution.read().map(|r| r.is_some()).unwrap_or(false);
+                    let is_cancelled = state.cancelled.load(Ordering::Relaxed);
+                    !has_resolution && !is_cancelled
+                })
+                .unwrap();
+
+            // Check if cancelled
+            if state.cancelled.load(Ordering::Relaxed) {
+                return Err(WriteOperationError::Cancelled {
+                    message: "Operation cancelled by user".to_string(),
+                });
+            }
+
+            // Get the resolution
+            let response = state.pending_resolution.write().ok().and_then(|mut r| r.take());
+
+            if let Some(response) = response {
+                // Save for future conflicts if apply_to_all
+                if response.apply_to_all {
+                    *apply_to_all_resolution = Some(response.resolution);
+                }
+
+                // Apply the chosen resolution
+                apply_volume_conflict_resolution(response.resolution, dest_volume, dest_path)
+            } else {
+                // No resolution provided, treat as error
+                Err(WriteOperationError::DestinationExists {
+                    path: dest_path.display().to_string(),
+                })
+            }
+        }
+        ConflictResolution::Skip => Ok(None),
+        ConflictResolution::Overwrite => {
+            apply_volume_conflict_resolution(ConflictResolution::Overwrite, dest_volume, dest_path)
+        }
+        ConflictResolution::Rename => {
+            apply_volume_conflict_resolution(ConflictResolution::Rename, dest_volume, dest_path)
+        }
+    }
+}
+
+/// Applies a specific conflict resolution for volume copy.
+/// Returns None for Skip, or Some(path) with the path to write to.
+fn apply_volume_conflict_resolution(
+    resolution: ConflictResolution,
+    dest_volume: &Arc<dyn Volume>,
+    dest_path: &Path,
+) -> Result<Option<PathBuf>, WriteOperationError> {
+    match resolution {
+        ConflictResolution::Stop => {
+            // Should not happen - Stop waits for user input
+            Err(WriteOperationError::DestinationExists {
+                path: dest_path.display().to_string(),
+            })
+        }
+        ConflictResolution::Skip => Ok(None),
+        ConflictResolution::Overwrite => {
+            // Delete existing item first, then return the same path
+            // Note: For directories, this will fail if not empty - that's expected behavior
+            if let Err(e) = dest_volume.delete(dest_path) {
+                log::warn!(
+                    "Failed to delete existing item for overwrite: {} - {}",
+                    dest_path.display(),
+                    e
+                );
+                // Continue anyway - the copy might succeed if it's a file being overwritten
+            }
+            Ok(Some(dest_path.to_path_buf()))
+        }
+        ConflictResolution::Rename => {
+            // Find a unique name - we need to check what exists on the volume
+            let unique_path = find_unique_volume_name(dest_volume, dest_path);
+            Ok(Some(unique_path))
+        }
+    }
+}
+
+/// Finds a unique filename on a volume by appending " (1)", " (2)", etc.
+fn find_unique_volume_name(dest_volume: &Arc<dyn Volume>, path: &Path) -> PathBuf {
+    let parent = path.parent().unwrap_or(Path::new(""));
+    let stem = path
+        .file_stem()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_default();
+    let extension = path.extension().map(|s| s.to_string_lossy().to_string());
+
+    let mut counter = 1;
+    loop {
+        let new_name = match &extension {
+            Some(ext) => format!("{} ({}).{}", stem, counter, ext),
+            None => format!("{} ({})", stem, counter),
+        };
+        let new_path = parent.join(new_name);
+        if !dest_volume.exists(&new_path) {
+            return new_path;
+        }
+        counter += 1;
+
+        // Safety limit to prevent infinite loop
+        if counter > 1000 {
+            // Just return with counter - extremely unlikely to happen
+            let new_name = match &extension {
+                Some(ext) => format!("{} ({}).{}", stem, counter, ext),
+                None => format!("{} ({})", stem, counter),
+            };
+            return parent.join(new_name);
+        }
+    }
+}
+
+/// Checks if a volume is a real local filesystem (not MTP or other virtual volumes).
+fn is_local_volume(volume: &dyn Volume) -> bool {
+    let root = volume.root();
+    // Local volumes start with "/" but NOT "/mtp-volume/"
+    root.starts_with("/") && !root.starts_with("/mtp-volume/")
+}
+
 /// Copies a single path from source volume to destination volume.
 ///
 /// Determines the appropriate strategy based on volume types:
-/// - If both support streaming: Use streaming for direct transfer
+/// - If both are MTP and source is a file: Use streaming for direct transfer
+/// - If both are MTP and source is a directory: Use temp local (export then import)
 /// - If source is local: dest.import_from_local()
 /// - If dest is local: source.export_to_local()
 /// - Otherwise: Not supported
@@ -533,12 +758,25 @@ fn copy_single_path(
         return Err(VolumeError::IoError("Operation cancelled".to_string()));
     }
 
-    // Check if source volume root is a local path (starts with /, not mtp://)
-    let source_is_local = source_volume.root().starts_with("/");
-    let dest_is_local = dest_volume.root().starts_with("/");
+    let source_is_local = is_local_volume(source_volume.as_ref());
+    let dest_is_local = is_local_volume(dest_volume.as_ref());
 
-    // Try streaming path for non-local volumes that support it
+    // Handle non-local to non-local (e.g., MTP → MTP)
     if !source_is_local && !dest_is_local {
+        // Check if source is a directory
+        let is_dir = source_volume.is_directory(source_path).unwrap_or(false);
+
+        if is_dir {
+            // For directories, use temp local approach: export to temp, import from temp
+            log::debug!(
+                "copy_single_path: MTP→MTP directory copy via temp local: {} -> {}",
+                source_path.display(),
+                dest_path.display()
+            );
+            return copy_via_temp_local(source_volume, source_path, dest_volume, dest_path);
+        }
+
+        // For files, try streaming if both volumes support it
         if source_volume.supports_streaming() && dest_volume.supports_streaming() {
             log::debug!(
                 "copy_single_path: using streaming for {} -> {}",
@@ -549,7 +787,8 @@ fn copy_single_path(
             let size = stream.total_size();
             return dest_volume.write_from_stream(dest_path, size, stream);
         }
-        // Neither supports streaming - not supported
+
+        // Neither supports streaming and it's not a directory - not supported
         return Err(VolumeError::NotSupported);
     }
 
@@ -582,6 +821,57 @@ fn copy_single_path(
         };
         source_volume.export_to_local(source_path, &local_dest)
     }
+}
+
+/// Copies a path between two non-local volumes via a temporary local directory.
+///
+/// This is used for MTP-to-MTP directory copies where streaming doesn't work.
+/// The process:
+/// 1. Export from source to a temp local directory
+/// 2. Import from temp local to destination
+/// 3. Clean up temp directory
+fn copy_via_temp_local(
+    source_volume: &Arc<dyn Volume>,
+    source_path: &Path,
+    dest_volume: &Arc<dyn Volume>,
+    dest_path: &Path,
+) -> Result<u64, VolumeError> {
+    // Create a temporary directory for the transfer
+    let temp_dir = std::env::temp_dir().join(format!("cmdr_volume_copy_{}", Uuid::new_v4()));
+    std::fs::create_dir_all(&temp_dir).map_err(|e| VolumeError::IoError(e.to_string()))?;
+
+    // Determine the name of the item being copied
+    let item_name = source_path
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_else(|| "item".to_string());
+    let temp_item_path = temp_dir.join(&item_name);
+
+    log::debug!(
+        "copy_via_temp_local: exporting {} to temp {}",
+        source_path.display(),
+        temp_item_path.display()
+    );
+
+    // Step 1: Export from source to temp local
+    let bytes = source_volume.export_to_local(source_path, &temp_item_path)?;
+
+    log::debug!(
+        "copy_via_temp_local: importing from temp {} to {}",
+        temp_item_path.display(),
+        dest_path.display()
+    );
+
+    // Step 2: Import from temp local to destination
+    let result = dest_volume.import_from_local(&temp_item_path, dest_path);
+
+    // Step 3: Clean up temp directory (best effort)
+    if let Err(e) = std::fs::remove_dir_all(&temp_dir) {
+        log::warn!("Failed to clean up temp directory {}: {}", temp_dir.display(), e);
+    }
+
+    // Return the bytes from export (import might report different due to protocol overhead)
+    result.or(Ok(bytes))
 }
 
 /// Maps VolumeError to WriteOperationError.

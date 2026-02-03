@@ -185,6 +185,20 @@ impl Volume for InMemoryVolume {
         entries.contains_key(&normalized)
     }
 
+    fn is_directory(&self, path: &Path) -> Result<bool, VolumeError> {
+        let entries = self
+            .entries
+            .read()
+            .map_err(|_| VolumeError::IoError("Lock poisoned".into()))?;
+
+        let normalized = self.normalize(path);
+
+        entries
+            .get(&normalized)
+            .map(|e| e.metadata.is_directory)
+            .ok_or_else(|| VolumeError::NotFound(normalized.display().to_string()))
+    }
+
     fn create_file(&self, path: &Path, content: &[u8]) -> Result<(), VolumeError> {
         let mut entries = self
             .entries

@@ -93,6 +93,12 @@ impl Volume for LocalPosixVolume {
         std::fs::symlink_metadata(self.resolve(path)).is_ok()
     }
 
+    fn is_directory(&self, path: &Path) -> Result<bool, VolumeError> {
+        let abs_path = self.resolve(path);
+        let metadata = std::fs::symlink_metadata(&abs_path)?;
+        Ok(metadata.is_dir())
+    }
+
     fn supports_watching(&self) -> bool {
         true
     }

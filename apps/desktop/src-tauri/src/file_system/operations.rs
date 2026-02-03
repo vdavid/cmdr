@@ -960,12 +960,38 @@ pub(super) fn get_listing_entries(listing_id: &str) -> Option<(PathBuf, Vec<File
 }
 
 /// Updates the entries in the listing cache (after watcher detects changes).
-pub(super) fn update_listing_entries(listing_id: &str, entries: Vec<FileEntry>) {
+pub(crate) fn update_listing_entries(listing_id: &str, entries: Vec<FileEntry>) {
     if let Ok(mut cache) = LISTING_CACHE.write()
         && let Some(listing) = cache.get_mut(listing_id)
     {
         listing.entries = entries;
     }
+}
+
+/// Gets all listings for volumes matching a specific prefix.
+///
+/// Used by MTP file watching to find all listings belonging to a device.
+/// MTP volume IDs have the format "mtp-{device_id}:{storage_id}".
+///
+/// Returns: Vec<(listing_id, volume_id, path, entries)>
+pub(crate) fn get_listings_by_volume_prefix(prefix: &str) -> Vec<(String, String, PathBuf, Vec<FileEntry>)> {
+    let cache = match LISTING_CACHE.read() {
+        Ok(c) => c,
+        Err(_) => return Vec::new(),
+    };
+
+    cache
+        .iter()
+        .filter(|(_, listing)| listing.volume_id.starts_with(prefix))
+        .map(|(listing_id, listing)| {
+            (
+                listing_id.clone(),
+                listing.volume_id.clone(),
+                listing.path.clone(),
+                listing.entries.clone(),
+            )
+        })
+        .collect()
 }
 
 // ============================================================================

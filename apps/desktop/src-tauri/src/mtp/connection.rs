@@ -8,7 +8,9 @@
 //! MTP devices support event notifications via USB interrupt endpoints. When a
 //! device is connected, we start a background task that polls for events using
 //! `device.next_event()`. Events like ObjectAdded, ObjectRemoved, and ObjectInfoChanged
-//! trigger `mtp-directory-changed` events to the frontend, which refreshes the view.
+//! trigger incremental `directory-diff` events to the frontend, using the same
+//! unified diff system as local file watching. This provides smooth UI updates
+//! without full directory reloads.
 
 use log::{debug, error, info, warn};
 use mtp_rs::ptp::OperationCode;
@@ -24,7 +26,8 @@ use tokio::io::AsyncWriteExt;
 use tokio::sync::{Mutex, broadcast};
 
 use super::types::{MtpDeviceInfo, MtpStorageInfo};
-use crate::file_system::{CopyScanResult, FileEntry, MtpVolume, get_volume_manager};
+use crate::file_system::operations::{get_listings_by_volume_prefix, update_listing_entries};
+use crate::file_system::{CopyScanResult, DirectoryDiff, FileEntry, MtpVolume, compute_diff, get_volume_manager};
 
 /// Default timeout for MTP operations (30 seconds - some devices are slow).
 const MTP_TIMEOUT_SECS: u64 = 30;
@@ -41,8 +44,6 @@ static CONCURRENT_LIST_CALLS: std::sync::atomic::AtomicU32 = std::sync::atomic::
 pub enum MtpConnectionError {
     /// Device not found (may have been unplugged).
     DeviceNotFound { device_id: String },
-    /// Device is already connected.
-    AlreadyConnected { device_id: String },
     /// Device is not connected.
     NotConnected { device_id: String },
     /// Another process has exclusive access to the device.
@@ -78,7 +79,6 @@ impl MtpConnectionError {
     pub fn user_message(&self) -> String {
         match self {
             Self::DeviceNotFound { .. } => "Device not found. It may have been unplugged.".to_string(),
-            Self::AlreadyConnected { .. } => "Device is already connected.".to_string(),
             Self::NotConnected { .. } => {
                 "Device is not connected. Select it from the volume picker to connect.".to_string()
             }
@@ -114,9 +114,6 @@ impl std::fmt::Display for MtpConnectionError {
         match self {
             Self::DeviceNotFound { device_id } => {
                 write!(f, "Device not found: {device_id}")
-            }
-            Self::AlreadyConnected { device_id } => {
-                write!(f, "Device already connected: {device_id}")
             }
             Self::NotConnected { device_id } => {
                 write!(f, "Device not connected: {device_id}")
@@ -376,12 +373,17 @@ impl MtpConnectionManager {
         device_id: &str,
         app: Option<&AppHandle>,
     ) -> Result<ConnectedDeviceInfo, MtpConnectionError> {
-        // Check if already connected
+        // Check if already connected - if so, return existing connection info (idempotent)
         {
             let devices = self.devices.lock().await;
-            if devices.contains_key(device_id) {
-                return Err(MtpConnectionError::AlreadyConnected {
-                    device_id: device_id.to_string(),
+            if let Some(entry) = devices.get(device_id) {
+                debug!(
+                    "connect: {} already connected, returning existing connection info",
+                    device_id
+                );
+                return Ok(ConnectedDeviceInfo {
+                    device: entry.info.clone(),
+                    storages: entry.storages.clone(),
                 });
             }
         }
@@ -659,13 +661,12 @@ impl MtpConnectionManager {
                     }
                     Err(mtp_rs::Error::Disconnected) => {
                         info!("MTP device disconnected (event loop): {}", device_id_clone);
-                        // Device was unplugged - emit event and exit loop
-                        let _ = app.emit(
-                            "mtp-device-removed",
-                            serde_json::json!({
-                                "deviceId": device_id_clone
-                            }),
-                        );
+                        // Device was unplugged - clean up state and emit event
+                        // IMPORTANT: Call handle_device_disconnected to remove from devices registry
+                        // so reconnection attempts don't fail with "already connected"
+                        connection_manager()
+                            .handle_device_disconnected(&device_id_clone, Some(&app))
+                            .await;
                         break;
                     }
                     Err(e) => {
@@ -736,7 +737,10 @@ impl MtpConnectionManager {
         }
     }
 
-    /// Emits a directory changed event to the frontend (with debouncing).
+    /// Emits directory-diff events for all affected listings (with debouncing).
+    ///
+    /// Uses the unified diff system shared with local file watching, providing
+    /// smooth incremental UI updates without full directory reloads.
     fn emit_directory_changed(device_id: &str, app: &AppHandle) {
         // Check debouncer via the global connection manager
         if !connection_manager().event_debouncer.should_emit(device_id) {
@@ -747,16 +751,119 @@ impl MtpConnectionManager {
             return;
         }
 
-        let _ = app.emit(
-            "mtp-directory-changed",
-            serde_json::json!({
-                "deviceId": device_id
-            }),
-        );
-        info!(
-            "MTP event loop: emitted mtp-directory-changed for device={} (may trigger UI refresh)",
+        // Find all listings for this device (volume IDs like "mtp-123:65537")
+        let listings = get_listings_by_volume_prefix(device_id);
+        if listings.is_empty() {
+            debug!(
+                "MTP event loop: no active listings for device={}, skipping diff",
+                device_id
+            );
+            return;
+        }
+
+        debug!(
+            "MTP event loop: found {} listings for device={}, computing diffs",
+            listings.len(),
             device_id
         );
+
+        // Clone what we need for the spawned task
+        let device_id_owned = device_id.to_string();
+        let app_clone = app.clone();
+
+        // Spawn task to re-read directories and compute diffs
+        tokio::spawn(async move {
+            Self::compute_and_emit_diffs(&device_id_owned, listings, &app_clone).await;
+        });
+    }
+
+    /// Re-reads MTP directories and emits directory-diff events.
+    ///
+    /// For each listing belonging to this device:
+    /// 1. Extract the storage_id and path from the volume_id and listing path
+    /// 2. Re-read the directory from the MTP device
+    /// 3. Compute the diff between old and new entries
+    /// 4. Update LISTING_CACHE with new entries
+    /// 5. Emit directory-diff event
+    async fn compute_and_emit_diffs(
+        device_id: &str,
+        listings: Vec<(String, String, PathBuf, Vec<FileEntry>)>,
+        app: &AppHandle,
+    ) {
+        // Track sequence numbers per listing (simple counter, increments each diff)
+        static SEQUENCE_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+        for (listing_id, volume_id, path, old_entries) in listings {
+            // Extract storage_id from volume_id (format: "mtp-{device}:{storage}")
+            let Some(storage_id) = volume_id.split(':').nth(1).and_then(|s| s.parse::<u32>().ok()) else {
+                warn!(
+                    "MTP diff: could not parse storage_id from volume_id={}, skipping",
+                    volume_id
+                );
+                continue;
+            };
+
+            // Convert path to MTP inner path
+            let mtp_path = path.to_string_lossy();
+            let mtp_path = if mtp_path.starts_with("mtp://") {
+                // Parse: mtp://mtp-0-1/65537/DCIM/Camera -> DCIM/Camera
+                let without_scheme = mtp_path.strip_prefix("mtp://").unwrap_or(&mtp_path);
+                let parts: Vec<&str> = without_scheme.splitn(3, '/').collect();
+                if parts.len() >= 3 {
+                    parts[2].to_string()
+                } else {
+                    String::new()
+                }
+            } else if mtp_path == "/" || mtp_path.is_empty() {
+                String::new()
+            } else {
+                mtp_path.strip_prefix('/').unwrap_or(&mtp_path).to_string()
+            };
+
+            // Re-read the directory from the MTP device
+            let new_entries = match connection_manager()
+                .list_directory(device_id, storage_id, &mtp_path)
+                .await
+            {
+                Ok(entries) => entries,
+                Err(e) => {
+                    debug!("MTP diff: failed to re-read directory {}: {:?}, skipping", mtp_path, e);
+                    continue;
+                }
+            };
+
+            // Compute diff
+            let changes = compute_diff(&old_entries, &new_entries);
+            if changes.is_empty() {
+                debug!(
+                    "MTP diff: no changes detected for listing_id={}, path={}",
+                    listing_id, mtp_path
+                );
+                continue;
+            }
+
+            // Update LISTING_CACHE with new entries
+            update_listing_entries(&listing_id, new_entries);
+
+            // Get sequence number
+            let sequence = SEQUENCE_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
+
+            // Emit directory-diff event (same format as local watcher)
+            let diff = DirectoryDiff {
+                listing_id: listing_id.clone(),
+                sequence,
+                changes,
+            };
+
+            if let Err(e) = app.emit("directory-diff", &diff) {
+                warn!("MTP diff: failed to emit event: {}", e);
+            } else {
+                info!(
+                    "MTP diff: emitted directory-diff for listing_id={}, sequence={}",
+                    listing_id, sequence
+                );
+            }
+        }
     }
 
     /// Gets information about a connected device.
@@ -1138,15 +1245,33 @@ impl MtpConnectionManager {
     }
 
     /// Handles a device disconnection (called when we detect the device was unplugged).
-    #[allow(dead_code, reason = "Will be used in Phase 5 for USB hotplug detection")]
+    ///
+    /// This cleans up the devices registry and emits a disconnection event.
+    /// Called from the event loop when MTP reports a disconnect, ensuring that
+    /// subsequent reconnection attempts don't fail with "already connected".
     pub async fn handle_device_disconnected(&self, device_id: &str, app: Option<&AppHandle>) {
+        debug!(
+            "handle_device_disconnected: cleaning up device {} from registry",
+            device_id
+        );
+
         let removed = {
             let mut devices = self.devices.lock().await;
-            devices.remove(device_id).is_some()
+            let was_present = devices.remove(device_id).is_some();
+            debug!(
+                "handle_device_disconnected: device {} was {} in registry, {} devices remaining",
+                device_id,
+                if was_present { "found" } else { "NOT found" },
+                devices.len()
+            );
+            was_present
         };
 
+        // Stop the event loop for this device
+        self.stop_event_loop(device_id);
+
         if removed {
-            warn!("MTP device unexpectedly disconnected: {}", device_id);
+            info!("MTP device disconnected and removed from registry: {}", device_id);
 
             if let Some(app) = app {
                 let _ = app.emit(
@@ -1156,7 +1281,16 @@ impl MtpConnectionManager {
                         "reason": "disconnected"
                     }),
                 );
+                debug!(
+                    "handle_device_disconnected: emitted mtp-device-disconnected event for {}",
+                    device_id
+                );
             }
+        } else {
+            debug!(
+                "handle_device_disconnected: device {} was not in registry (already cleaned up?)",
+                device_id
+            );
         }
     }
 
@@ -3034,9 +3168,6 @@ mod tests {
             MtpConnectionError::DeviceNotFound {
                 device_id: "test".to_string(),
             },
-            MtpConnectionError::AlreadyConnected {
-                device_id: "test".to_string(),
-            },
             MtpConnectionError::NotConnected {
                 device_id: "test".to_string(),
             },
@@ -3076,16 +3207,6 @@ mod tests {
             // Each should have non-empty user message
             assert!(!err.user_message().is_empty());
         }
-    }
-
-    #[test]
-    fn test_already_connected_error() {
-        let err = MtpConnectionError::AlreadyConnected {
-            device_id: "mtp-1-5".to_string(),
-        };
-        assert_eq!(err.to_string(), "Device already connected: mtp-1-5");
-        assert!(err.user_message().contains("already connected"));
-        assert!(!err.is_retryable());
     }
 
     #[test]
