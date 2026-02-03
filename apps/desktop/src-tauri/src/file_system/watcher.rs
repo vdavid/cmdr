@@ -208,8 +208,11 @@ fn handle_directory_change(listing_id: &str) {
     }
 }
 
-/// Compute the diff between old and new directory listings.
-pub(crate) fn compute_diff(old: &[FileEntry], new: &[FileEntry]) -> Vec<DiffChange> {
+/// Computes the diff between old and new directory listings.
+///
+/// Used by both local file watcher and MTP file watcher to generate
+/// incremental updates for the frontend.
+pub fn compute_diff(old: &[FileEntry], new: &[FileEntry]) -> Vec<DiffChange> {
     let mut changes = Vec::new();
 
     // Create lookup maps by path

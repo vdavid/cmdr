@@ -147,6 +147,10 @@ pub trait Volume: Send + Sync {
     /// Checks if a path exists (relative to volume root).
     fn exists(&self, path: &Path) -> bool;
 
+    /// Checks if a path is a directory.
+    /// Returns Ok(true) if directory, Ok(false) if file, Err if path doesn't exist.
+    fn is_directory(&self, path: &Path) -> Result<bool, VolumeError>;
+
     // ========================================
     // Optional: Default to NotSupported
     // ========================================

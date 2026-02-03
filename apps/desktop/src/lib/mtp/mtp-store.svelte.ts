@@ -154,9 +154,7 @@ export async function scanDevices(): Promise<void> {
  * Errors are logged but don't prevent other devices from connecting.
  */
 async function connectAllDisconnected(): Promise<void> {
-    const disconnectedDevices = Array.from(state.devices.values()).filter(
-        (d) => d.connectionState === 'disconnected',
-    )
+    const disconnectedDevices = Array.from(state.devices.values()).filter((d) => d.connectionState === 'disconnected')
 
     if (disconnectedDevices.length === 0) return
 

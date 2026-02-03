@@ -164,6 +164,31 @@ impl Volume for MtpVolume {
         }
     }
 
+    fn is_directory(&self, path: &Path) -> Result<bool, VolumeError> {
+        // Empty path or root is always a directory
+        let path_str = path.to_string_lossy();
+        if path_str.is_empty() || path_str == "/" || path_str == "." {
+            return Ok(true);
+        }
+
+        // Check by listing the parent directory and finding the entry
+        let Some(parent) = path.parent() else {
+            // Root is a directory
+            return Ok(true);
+        };
+
+        let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
+            return Err(VolumeError::NotFound(path.display().to_string()));
+        };
+
+        let entries = self.list_directory(parent)?;
+        entries
+            .iter()
+            .find(|e| e.name == name)
+            .map(|e| e.is_directory)
+            .ok_or_else(|| VolumeError::NotFound(path.display().to_string()))
+    }
+
     fn supports_watching(&self) -> bool {
         // Return false because MTP has its OWN file watching mechanism that is
         // independent of the listing pipeline. The MtpConnectionManager starts an
