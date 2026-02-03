@@ -10,7 +10,6 @@
 //! `device.next_event()`. Events like ObjectAdded, ObjectRemoved, and ObjectInfoChanged
 //! trigger `mtp-directory-changed` events to the frontend, which refreshes the view.
 
-use futures_util::StreamExt;
 use log::{debug, error, info, warn};
 use mtp_rs::{MtpDevice, MtpDeviceBuilder, NewObjectInfo, ObjectHandle, StorageId};
 use serde::{Deserialize, Serialize};
@@ -1228,20 +1227,16 @@ impl MtpConnectionManager {
             );
         }
 
-        // Download the file as a stream
-        let mut download_stream = tokio::time::timeout(
+        // Download the file as a stream (holds session lock until complete)
+        let mut download = tokio::time::timeout(
             Duration::from_secs(MTP_TIMEOUT_SECS * 10), // Longer timeout for large files
-            storage.download(object_handle),
+            storage.download_stream(object_handle),
         )
         .await
         .map_err(|_| MtpConnectionError::Timeout {
             device_id: device_id.to_string(),
         })?
         .map_err(|e| map_mtp_error(e, device_id))?;
-
-        // Release device lock before writing to disk
-        drop(storage);
-        drop(device);
 
         // Create the local file
         let mut file = tokio::fs::File::create(local_dest)
@@ -1251,23 +1246,27 @@ impl MtpConnectionManager {
                 message: format!("Failed to create local file: {}", e),
             })?;
 
-        // Write chunks to file
+        // Write chunks to file (must complete before releasing device lock)
         let mut bytes_written = 0u64;
-        while let Some(chunk_result) = download_stream.next().await {
+        while let Some(chunk_result) = download.next_chunk().await {
             let chunk = chunk_result.map_err(|e| MtpConnectionError::Other {
                 device_id: device_id.to_string(),
                 message: format!("Download error: {}", e),
             })?;
 
-            file.write_all(&chunk.data)
+            file.write_all(&chunk)
                 .await
                 .map_err(|e| MtpConnectionError::Other {
                     device_id: device_id.to_string(),
                     message: format!("Failed to write local file: {}", e),
                 })?;
 
-            bytes_written += chunk.data.len() as u64;
+            bytes_written += chunk.len() as u64;
         }
+
+        // Release device lock after download completes
+        drop(storage);
+        drop(device);
 
         file.flush().await.map_err(|e| MtpConnectionError::Other {
             device_id: device_id.to_string(),

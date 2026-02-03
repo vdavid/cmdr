@@ -670,13 +670,13 @@
 
         // Debug logging for diagnosing concurrent list_directory calls
         console.debug(
-            `[FilePane] loadDirectory called: paneId=${paneId}, volumeId=${volumeId}, path=${path}, ` +
-                `selectName=${selectName ?? 'none'}, currentLoading=${loading}, currentListingId=${listingId}`,
+            `[FilePane] loadDirectory called: paneId=${String(paneId)}, volumeId=${volumeId}, path=${path}, ` +
+                `selectName=${selectName ?? 'none'}, currentLoading=${String(loading)}, currentListingId=${listingId}`,
         )
 
         // Increment generation to cancel any in-flight requests
         const thisGeneration = ++loadGeneration
-        console.debug(`[FilePane] loadDirectory: generation=${thisGeneration}`)
+        console.debug(`[FilePane] loadDirectory: generation=${String(thisGeneration)}`)
 
         // Cancel any abandoned listing from previous navigation
         if (listingId) {
@@ -805,7 +805,7 @@
                 newListingId,
             )
             benchmark.logEventValue('IPC listDirectoryStartStreaming RETURNED', result.listingId)
-            console.debug(`[FilePane] listDirectoryStartStreaming returned: status=${result.status}`)
+            console.debug(`[FilePane] listDirectoryStartStreaming returned: status=${JSON.stringify(result.status)}`)
 
             // Check if this load was cancelled while we were starting
             if (thisGeneration !== loadGeneration) {
@@ -1284,7 +1284,7 @@
         // Load for local volumes and connected MTP views (not device-only)
         if (!isNetworkView && !isMtpDeviceOnly && newPath !== curPath) {
             console.debug(
-                `[FilePane] initialPath effect: triggering loadDirectory, paneId=${paneId}, ` +
+                `[FilePane] initialPath effect: triggering loadDirectory, paneId=${String(paneId)}, ` +
                     `newPath=${newPath}, curPath=${curPath}`,
             )
             currentPath = newPath
@@ -1292,7 +1292,9 @@
         }
         // For device-only MTP views, just update the path (auto-connect will handle switching to storage)
         if (isMtpDeviceOnly && newPath !== curPath) {
-            console.debug(`[FilePane] initialPath effect (MTP device-only): updating path only, paneId=${paneId}`)
+            console.debug(
+                `[FilePane] initialPath effect (MTP device-only): updating path only, paneId=${String(paneId)}`,
+            )
             currentPath = newPath
         }
     })
@@ -1306,7 +1308,7 @@
         if (wasDeviceOnly && isNowConnected) {
             log.info('MTP volume connected, loading directory: {path}', { path: initialPath })
             console.debug(
-                `[FilePane] MTP volume transition effect: triggering loadDirectory, paneId=${paneId}, ` +
+                `[FilePane] MTP volume transition effect: triggering loadDirectory, paneId=${String(paneId)}, ` +
                     `prevVolumeId=${prevVolumeId}, volumeId=${volumeId}, initialPath=${initialPath}`,
             )
             currentPath = initialPath
@@ -1440,7 +1442,7 @@
         void onMtpDirectoryChanged((event) => {
             console.debug(
                 `[FilePane] mtp-directory-changed event received: deviceId=${event.deviceId}, ` +
-                    `paneId=${paneId}, volumeId=${volumeId}, isMtpView=${isMtpView}, loading=${loading}`,
+                    `paneId=${String(paneId)}, volumeId=${volumeId}, isMtpView=${String(isMtpView)}, loading=${String(loading)}`,
             )
 
             // Check if we're viewing a storage on this device
@@ -1451,8 +1453,8 @@
                     deviceId: event.deviceId,
                 })
                 console.debug(
-                    `[FilePane] MTP directory changed: triggering refresh for paneId=${paneId}, ` +
-                        `incrementing cacheGeneration from ${cacheGeneration}`,
+                    `[FilePane] MTP directory changed: triggering refresh for paneId=${String(paneId)}, ` +
+                        `incrementing cacheGeneration from ${String(cacheGeneration)}`,
                 )
                 // Increment cache generation to force list components to re-fetch
                 cacheGeneration++
@@ -1474,7 +1476,7 @@
             } else {
                 console.debug(
                     `[FilePane] MTP directory changed event IGNORED: ` +
-                        `isMtpView=${isMtpView}, matchesDevice=${volumeId.startsWith(event.deviceId + ':')}, loading=${loading}`,
+                        `isMtpView=${String(isMtpView)}, matchesDevice=${String(volumeId.startsWith(event.deviceId + ':'))}, loading=${String(loading)}`,
                 )
             }
         })
@@ -1494,14 +1496,14 @@
         // - Device-only MTP views (they need connection first, handled by auto-connect effect)
         // But DO load for connected MTP views (storage-specific volume ID)
         console.debug(
-            `[FilePane] onMount: paneId=${paneId}, volumeId=${volumeId}, currentPath=${currentPath}, ` +
-                `isNetworkView=${isNetworkView}, isMtpDeviceOnly=${isMtpDeviceOnly}`,
+            `[FilePane] onMount: paneId=${String(paneId)}, volumeId=${volumeId}, currentPath=${currentPath}, ` +
+                `isNetworkView=${String(isNetworkView)}, isMtpDeviceOnly=${String(isMtpDeviceOnly)}`,
         )
         if (!isNetworkView && !isMtpDeviceOnly) {
-            console.debug(`[FilePane] onMount: triggering loadDirectory for paneId=${paneId}`)
+            console.debug(`[FilePane] onMount: triggering loadDirectory for paneId=${String(paneId)}`)
             void loadDirectory(currentPath)
         } else {
-            console.debug(`[FilePane] onMount: SKIPPING loadDirectory for paneId=${paneId}`)
+            console.debug(`[FilePane] onMount: SKIPPING loadDirectory for paneId=${String(paneId)}`)
         }
 
         // Set up sync status polling for visible files
