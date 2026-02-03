@@ -1473,8 +1473,24 @@ fn read_directory_with_progress(
         crate::font_metrics::calculate_max_width(&filenames, font_id)
     };
 
-    // Cache the completed listing
+    // Cache the completed listing, with atomic cancellation check.
+    // We check cancellation WHILE holding the cache lock to avoid a race condition:
+    // without this, a cancel arriving between a check and insert would leave a stale
+    // entry (listDirectoryEnd would try to remove before the entry exists, then this
+    // insert would add it permanently).
     if let Ok(mut cache) = LISTING_CACHE.write() {
+        // Check cancellation while holding the lock - makes check+insert atomic
+        if state.cancelled.load(Ordering::Relaxed) {
+            benchmark::log_event("read_directory_with_progress CANCELLED (at cache insert)");
+            let _ = app.emit(
+                "listing-cancelled",
+                ListingCancelledEvent {
+                    listing_id: listing_id.to_string(),
+                },
+            );
+            return Ok(());
+        }
+
         cache.insert(
             listing_id.to_string(),
             CachedListing {

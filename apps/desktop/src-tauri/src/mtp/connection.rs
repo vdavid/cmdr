@@ -820,6 +820,12 @@ impl MtpConnectionManager {
                 mtp_path.strip_prefix('/').unwrap_or(&mtp_path).to_string()
             };
 
+            // Invalidate the MTP listing cache before re-reading so we get fresh data
+            // (otherwise we'd compare stale cached data with itself and detect no changes)
+            connection_manager()
+                .invalidate_listing_cache(device_id, storage_id, &path)
+                .await;
+
             // Re-read the directory from the MTP device
             let new_entries = match connection_manager()
                 .list_directory(device_id, storage_id, &mtp_path)
