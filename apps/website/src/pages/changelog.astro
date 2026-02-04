@@ -1,0 +1,149 @@
+---
+import Layout from '../layouts/Layout.astro'
+import Header from '../components/Header.astro'
+import Footer from '../components/Footer.astro'
+import { marked } from 'marked'
+import fs from 'node:fs'
+import path from 'node:path'
+
+// Read the changelog file at build time
+const changelogPath = path.resolve(import.meta.dirname, '../../../../CHANGELOG.md')
+const changelogContent = fs.readFileSync(changelogPath, 'utf-8')
+
+// Parse markdown to HTML
+const htmlContent = await marked.parse(changelogContent)
+---
+
+<Layout title="Changelog - Cmdr" description="See what's new in Cmdr. All notable changes documented here.">
+    <Header />
+    <main class="mx-auto max-w-4xl px-6 pt-32 pb-24">
+        <header class="mb-12">
+            <h1 class="mb-4 text-4xl font-bold tracking-tight text-[var(--color-text-primary)]">Changelog</h1>
+            <p class="text-[var(--color-text-secondary)]">
+                All notable changes to Cmdr are documented here. The format is based on
+                <a
+                    href="https://keepachangelog.com/en/1.1.0/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-[var(--color-accent)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]"
+                    >keep a changelog</a
+                >.
+            </p>
+        </header>
+
+        <article class="changelog-content" set:html={htmlContent} />
+    </main>
+    <Footer />
+</Layout>
+
+<style>
+    .changelog-content {
+        font-family: var(--font-mono) monospace;
+        font-size: 0.875rem;
+        line-height: 1.75;
+    }
+
+    /* Hide the title and intro from the markdown since we render them manually */
+    .changelog-content :global(h1:first-child),
+    .changelog-content :global(h1:first-child + p) {
+        display: none;
+    }
+
+    .changelog-content :global(h2) {
+        margin-top: 3rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--color-border);
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--color-accent);
+    }
+
+    .changelog-content :global(h2:first-of-type) {
+        margin-top: 0;
+    }
+
+    .changelog-content :global(h3) {
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--color-text-primary);
+    }
+
+    .changelog-content :global(h4) {
+        margin-top: 1.25rem;
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--color-text-secondary);
+    }
+
+    .changelog-content :global(p) {
+        margin-bottom: 1rem;
+        color: var(--color-text-secondary);
+    }
+
+    .changelog-content :global(ul) {
+        margin-bottom: 1rem;
+        padding-left: 1.5rem;
+        list-style-type: disc;
+    }
+
+    .changelog-content :global(li) {
+        margin-bottom: 0.5rem;
+        color: var(--color-text-secondary);
+    }
+
+    .changelog-content :global(a) {
+        color: var(--color-accent);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+        transition: color 0.2s;
+    }
+
+    .changelog-content :global(a:hover) {
+        color: var(--color-accent-hover);
+    }
+
+    .changelog-content :global(strong) {
+        color: var(--color-text-primary);
+        font-weight: 600;
+    }
+
+    .changelog-content :global(code) {
+        padding: 0.125rem 0.375rem;
+        background: var(--color-surface);
+        border-radius: 0.25rem;
+        font-size: 0.875em;
+    }
+
+    .changelog-content :global(hr) {
+        margin: 2rem 0;
+        border: none;
+        border-top: 1px solid var(--color-border);
+    }
+
+    /* Collapsible details/summary styling */
+    .changelog-content :global(details) {
+        margin-top: 2rem;
+        padding: 1rem 1.5rem;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: 0.75rem;
+    }
+
+    .changelog-content :global(summary) {
+        cursor: pointer;
+        font-weight: 600;
+        color: var(--color-text-primary);
+    }
+
+    .changelog-content :global(summary:hover) {
+        color: var(--color-accent);
+    }
+
+    .changelog-content :global(details[open] summary) {
+        margin-bottom: 1rem;
+    }
+</style>

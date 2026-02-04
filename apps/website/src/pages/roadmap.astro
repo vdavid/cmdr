@@ -1,0 +1,354 @@
+---
+import Layout from '../layouts/Layout.astro'
+import Header from '../components/Header.astro'
+import Footer from '../components/Footer.astro'
+import CheckIcon from '../components/CheckIcon.astro'
+---
+
+<Layout
+    title="Roadmap - Cmdr"
+    description="See what's coming to Cmdr. From completed features to future AI-powered capabilities."
+>
+    <Header />
+    <main class="mx-auto max-w-4xl px-6 pt-32 pb-24">
+        <header class="mb-10">
+            <h1 class="mb-4 text-4xl font-bold tracking-tight text-[var(--color-text-primary)]">Roadmap</h1>
+            <p class="text-[var(--color-text-secondary)]">
+                Where we've been, where we're headed. Building the future of file management, one feature at a time.
+            </p>
+        </header>
+
+        <div class="roadmap-content">
+            <!-- 2025 -->
+            <section class="year-section">
+                <h2>2025</h2>
+                <ul class="milestone-list">
+                    <li>
+                        <CheckIcon checked={true} />
+                        <span class="date">(Dec 25)</span>
+                        <span class="title">Start project 🎄</span>
+                        <span class="description">Create Rust + Tauri + Svelte boilerplate</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={true} />
+                        <span class="date">(Dec 27)</span>
+                        <span class="title">Build the core</span>
+                        <span class="description">Two-pane view, Full/Brief mode, virtual scrolling, icons</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={true} />
+                        <span class="date">(Dec 29)</span>
+                        <span class="title">Make it crazy fast</span>
+                        <span class="description">350ms to first file for a 50k file folder!</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={true} />
+                        <span class="date">(Dec 30)</span>
+                        <span class="title">Add file watching</span>
+                        <span class="description">Live updates, always</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={true} />
+                        <span class="date">(Dec 31)</span>
+                        <span class="title">Show Dropbox overlays</span>
+                        <span class="description">See synced/syncing/offline-only/online-only statuses</span>
+                    </li>
+                </ul>
+            </section>
+
+            <!-- 2026 -->
+            <section class="year-section">
+                <h2>2026</h2>
+                <ul class="milestone-list">
+                    <li>
+                        <CheckIcon checked={true} />
+                        <span class="date">(Jan 1)</span>
+                        <span class="title">Add volumes and drag &amp; drop</span>
+                        <span class="description">Volume switching, drag <em>from</em> app</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={true} />
+                        <span class="date">(Jan 5)</span>
+                        <span class="title">Add network drive support! ✨</span>
+                        <span class="description">SMB host discovery via Bonjour, share mounting, authentication</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={true} />
+                        <span class="date">(Jan 7)</span>
+                        <span class="title">Add command palette</span>
+                        <span class="description">⌘P to find your actions fast</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={true} />
+                        <span class="date">(Jan 9)</span>
+                        <span class="title">Licensing</span>
+                        <span class="description">Business planning, set up Paddle. It's free for individuals!</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={true} />
+                        <span class="date">(Jan 10)</span>
+                        <span class="title">Ship initial release 🚢</span>
+                        <span class="description">And created getcmdr.com</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={true} />
+                        <span class="date">(Jan 13)</span>
+                        <span class="title">Add MCP server 🤖</span>
+                        <span class="description">AI agents can now use the app</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={true} />
+                        <span class="date">(Jan 14)</span>
+                        <span class="title">Add automatic updates ⬆️</span>
+                        <span class="description">Auto-updater, also custom title bar and website redesign</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={true} />
+                        <span class="date">(Jan 16)</span>
+                        <span class="title">Add file selection</span>
+                        <span class="description">Space to toggle, Shift+arrows for range, Cmd+A for all</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={true} />
+                        <span class="date">(Jan 17)</span>
+                        <span class="title">Make SMB access delightful</span>
+                        <span class="description">Show progress: "Opening...", "Loaded N files...", be transparent</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={true} />
+                        <span class="date">(Jan 20)</span>
+                        <span class="title">Add copy! (F5) 📂</span>
+                        <span class="description">Pre-flight check for precise stats, progress, even rollback!</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={true} />
+                        <span class="date">(Jan 20)</span>
+                        <span class="title">Add multifile drag &amp; drop</span>
+                        <span class="description">Drag several files out of the app</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={true} />
+                        <span class="date">(Jan 21)</span>
+                        <span class="title">Add copy conflict handling</span>
+                        <span class="description">Skip, overwrite, or rename when files/folders collide</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={true} />
+                        <span class="date">(Jan 22)</span>
+                        <span class="title">Add mkdir (F7) 📁</span>
+                        <span class="description">Folder creation with conflict handling and file watching</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={true} />
+                        <span class="date">(Jan 24)</span>
+                        <span class="title">Add file viewer (F3) 📄</span>
+                        <span class="description">Works for 10+ GB files instantly, with fast search</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={true} />
+                        <span class="date">(Jan 24)</span>
+                        <span class="title">Make copy safe 🛡️</span>
+                        <span class="description">Check for writability, disk space, inode identity, path limits</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={true} />
+                        <span class="date">(Jan 25)</span>
+                        <span class="title">Add settings dialog ⚙️</span>
+                        <span class="description">Ark UI components, fuzzy search, 9+ sections.</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={true} />
+                        <span class="date">(Jan 26)</span>
+                        <span class="title">Edit keyboard shortcuts ⌨️</span>
+                        <span class="description">Click-to-edit, conflict detection, scope hierarchy,searchable</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={true} />
+                        <span class="date">(Jan 27)</span>
+                        <span class="title">Add local AI 🧠</span>
+                        <span class="description">Optional 4.6GB download, folder name suggestions in F7 dialog</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={true} />
+                        <span class="date">(Jan 31)</span>
+                        <span class="title">Wire up Settings</span>
+                        <span class="description">Instant updates!</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={true} />
+                        <span class="date">(Feb 4)</span>
+                        <span class="title">Add MTP support 🦖</span>
+                        <span class="description">Copy files to/from Android phones and cameras very fast!</span>
+                    </li>
+                </ul>
+            </section>
+
+            <!-- Coming soon -->
+            <section class="year-section">
+                <h2>Very soon</h2>
+                <ul class="milestone-list">
+                    <li>
+                        <CheckIcon checked={false} />
+                        <span class="title">Add move and delete</span>
+                        <span class="description">Implement remaining basic file operations to make this actually useful 😅</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={false} />
+                        <span class="title">Add renaming</span>
+                        <span class="description">To rename files and folders</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={false} />
+                        <span class="title">Add tabs 📑</span>
+                        <span class="description">For easy switching between folders</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={false} />
+                        <span class="title">Make app a drag &amp; drop target</span>
+                        <span class="description">Drag between panes and from Finder and other apps</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={false} />
+                        <span class="title">Add ⌘C ⌘V</span>
+                        <span class="description">To move files around with the clipboard</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={false} />
+                        <span class="title">Calculate folder sizes</span>
+                        <span class="description">See how big folders are, sort by size</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={false} />
+                        <span class="title">Handle zips</span>
+                        <span class="description">Compress/uncompress files, and browse/modify zips</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={false} />
+                        <span class="title">Add undo</span>
+                        <span class="description">Keep log of operations, allow rollback</span>
+                    </li>
+                </ul>
+            </section>
+
+            <!-- On the horizon -->
+            <section class="year-section">
+                <h2>Also soon</h2>
+                <ul class="milestone-list">
+                    <li>
+                        <CheckIcon checked={false} />
+                        <span class="title">AI-powered smart selection</span>
+                        <span class="description">"Select all error logs from last week" just like that</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={false} />
+                        <span class="title">AI-powered file organization</span>
+                        <span class="description">Clean up your Downloads folder, with 100% human oversight</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={false} />
+                        <span class="title">AI-powered rename</span>
+                        <span class="description">"Name these screenshots based on contents in 50 chars each"</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={false} />
+                        <span class="title">AI-powered "Tell me about this"</span>
+                        <span class="description">Right-click any file for a quick AI explanation</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={false} />
+                        <span class="title">Add plugins</span>
+                        <span class="description">Let you 🫵 extend Cmdr with your scripts and tools</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={false} />
+                        <span class="title">Add privacy-first local LLM</span>
+                        <span class="description">A smaller model to push your sensitive files around</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={false} />
+                        <span class="title">Add disk space visualizer</span>
+                        <span class="description"><a href="https://grandperspectiv.sourceforge.net/HelpDocumentation/QuickStart.html" target="_blank">GrandPerspective</a>-style treemap built-in</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={false} />
+                        <span class="title">Add Windows and Linux support</span>
+                        <span class="description">Bring Cmdr to more platforms</span>
+                    </li>
+                </ul>
+            </section>
+        </div>
+    </main>
+    <Footer />
+</Layout>
+
+<style>
+    .roadmap-content {
+        font-family: var(--font-sans) sans-serif;
+        line-height: 1.5;
+    }
+
+    .year-section {
+        margin-bottom: 2.5rem;
+    }
+
+    .year-section h2 {
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--color-border);
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--color-accent);
+    }
+
+    .milestone-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .milestone-list li {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .milestone-list li:last-child {
+        border-bottom: none;
+    }
+
+    .title {
+        font-weight: 600;
+        color: var(--color-text-primary);
+    }
+
+    .description {
+        color: var(--color-text-secondary);
+    }
+
+    .date {
+        flex-shrink: 0;
+        color: var(--color-text-tertiary);
+        font-size: 0.875rem;
+        font-family: var(--font-mono) monospace;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 640px) {
+        .milestone-list li {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
+        }
+
+        .date {
+            margin-left: 1.75rem;
+        }
+
+        .description {
+            margin-left: 1.75rem;
+        }
+    }
+</style>
