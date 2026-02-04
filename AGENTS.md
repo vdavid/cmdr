@@ -111,6 +111,26 @@ There are two MCP servers available to you:
 - ❌ Don't ignore linter warnings (fix them or justify with a comment)
 - ❌ Don't add dependencies without checking license compatibility (`cargo deny check`)
 
+## Planning
+- When coming up with a plan for a development, save it to `docs/specs/{feature}-plan.md in this repo.
+- Also create an  accompanying task list that fully covers but doesn't duplicate the plan on a high level.
+  If all items on the task list are honestly marked as done, the plan is fully implemented in great quality.
+  Tasks should be one-liners, grouped by milestones. Include docs, testing, and running all necessary checks.
+
+## Development
+
+- Always tick off tasks as they are done when using a task list.
+- When testing, consider using Rust/Go tests, Vitest, Playwright, and manual tests with the MCP servers, whatever is
+  needed to feel confident about the development. Do this per milestone. Don't go overboard with unit tests. Test
+  exactly so that you feel confident.
+
+Always do a last round of checks before wrapping up:
+
+1. Looking back at this work, do you think this will be convenient to maintain this later?
+2. Will this lead to superb UX for the end-user, with sufficient transparency into the work that's happening?
+3. Is this as fast as possible, adhering to the "blazing fast" promise we have?
+4. Discuss with the user anything that's not great, or fix if straightforward then GOTO point 1.
+
 ## Useful references
 
 - [Tauri docs](https://tauri.app/v2/)
