@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount, onDestroy, untrack } from 'svelte'
+    import { onMount, onDestroy, untrack, tick } from 'svelte'
     import FilePane from './FilePane.svelte'
     import PaneResizer from './PaneResizer.svelte'
     import LoadingIcon from '../LoadingIcon.svelte'
@@ -675,6 +675,10 @@
                 rightViewMode = newMode
                 void saveAppStatus({ rightViewMode: newMode })
             }
+            // Refocus after Svelte re-renders the new list component to restore keyboard navigation
+            void tick().then(() => {
+                containerElement?.focus()
+            })
         })
 
         // Subscribe to volume mount events (refresh volume list when new volumes appear)
