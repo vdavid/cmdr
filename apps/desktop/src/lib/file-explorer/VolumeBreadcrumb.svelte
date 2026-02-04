@@ -17,6 +17,9 @@
     let isOpen = $state(false)
     let highlightedIndex = $state(-1)
     let dropdownRef: HTMLDivElement | undefined = $state()
+    // Keyboard mode: when true, CSS :hover is suppressed to avoid double-highlight
+    let isKeyboardMode = $state(false)
+    let lastMousePos = $state<{ x: number; y: number } | null>(null)
     let unlistenMount: UnlistenFn | undefined
     let unlistenUnmount: UnlistenFn | undefined
     let unlistenMtpDetected: UnlistenFn | undefined
@@ -66,6 +69,8 @@
             highlightedIndex = currentIdx >= 0 ? currentIdx : 0
         } else {
             highlightedIndex = -1
+            isKeyboardMode = false
+            lastMousePos = null
         }
     })
 
@@ -208,10 +213,12 @@
             case 'ArrowDown':
                 e.preventDefault()
                 highlightedIndex = Math.min(highlightedIndex + 1, allVolumes.length - 1)
+                enterKeyboardMode()
                 return true
             case 'ArrowUp':
                 e.preventDefault()
                 highlightedIndex = Math.max(highlightedIndex - 1, 0)
+                enterKeyboardMode()
                 return true
             case 'Enter':
                 e.preventDefault()
@@ -226,21 +233,55 @@
             case 'Home':
                 e.preventDefault()
                 highlightedIndex = 0
+                enterKeyboardMode()
                 return true
             case 'End':
                 e.preventDefault()
                 highlightedIndex = allVolumes.length - 1
+                enterKeyboardMode()
                 return true
             default:
                 return false
         }
     }
 
+    function enterKeyboardMode() {
+        isKeyboardMode = true
+        lastMousePos = null // Will be captured on next mousemove
+    }
+
     // Handle mouse hover to sync with keyboard navigation
     function handleVolumeHover(volume: VolumeInfo) {
+        if (isKeyboardMode) return // Don't update highlight while in keyboard mode
         const idx = allVolumes.indexOf(volume)
         if (idx >= 0) {
             highlightedIndex = idx
+        }
+    }
+
+    // Handle mouse movement to exit keyboard mode after 5px threshold
+    function handleDropdownMouseMove(e: MouseEvent) {
+        if (!isKeyboardMode) return
+
+        if (!lastMousePos) {
+            // Capture position on first move after entering keyboard mode
+            lastMousePos = { x: e.clientX, y: e.clientY }
+            return
+        }
+
+        const dx = Math.abs(e.clientX - lastMousePos.x)
+        const dy = Math.abs(e.clientY - lastMousePos.y)
+        if (dx > 5 || dy > 5) {
+            isKeyboardMode = false
+            lastMousePos = null
+            // Update highlight to the item under the mouse cursor
+            const volumeItem = (e.target as HTMLElement).closest('.volume-item')
+            if (volumeItem) {
+                const idx = parseInt(volumeItem.getAttribute('data-index') ?? '-1', 10)
+                if (idx >= 0) {
+                    highlightedIndex = idx
+                }
+            }
         }
     }
 
@@ -365,7 +406,8 @@
     </span>
 
     {#if isOpen && groupedVolumes.length > 0}
-        <div class="volume-dropdown">
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div class="volume-dropdown" class:keyboard-mode={isKeyboardMode} onmousemove={handleDropdownMouseMove}>
             {#each groupedVolumes as group, groupIndex (group.category)}
                 {#if group.label && groupIndex > 0}
                     <div class="category-separator"></div>
@@ -381,6 +423,7 @@
                         class="volume-item"
                         class:is-under-cursor={shouldShowCheckmark(volume)}
                         class:is-focused-and-under-cursor={allVolumes.indexOf(volume) === highlightedIndex}
+                        data-index={allVolumes.indexOf(volume)}
                         onclick={() => {
                             void handleVolumeSelect(volume)
                         }}
@@ -504,7 +547,8 @@
         cursor: default;
     }
 
-    .volume-item:hover,
+    /* Show hover only when NOT in keyboard mode */
+    .volume-dropdown:not(.keyboard-mode) .volume-item:hover,
     .volume-item.is-focused-and-under-cursor {
         background-color: var(--color-cursor-focused-bg);
     }
