@@ -89,7 +89,7 @@ smb-rpc = "=0.11.1"
 chrono = "0.4"
 security-framework = "3.2"
 # MTP (Android device) support via pure Rust implementation
-mtp-rs = { path = "../../../../mtp-rs" }
+mtp-rs = { git = "https://github.com/vdavid/mtp-rs", branch = "main" }
 # USB hotplug detection for MTP device watcher
 nusb = "0.1"
 
