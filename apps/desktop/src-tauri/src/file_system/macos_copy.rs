@@ -116,6 +116,14 @@ extern "C" fn copy_progress_callback(
     _dst: *const i8,
     ctx: *mut c_void,
 ) -> c_int {
+    // Log callback invocation (helps diagnose if callback is being called at all)
+    log::trace!(
+        "copyfile callback: what={}, stage={}, ctx_null={}",
+        what,
+        stage,
+        ctx.is_null()
+    );
+
     if ctx.is_null() {
         return COPYFILE_CONTINUE;
     }
@@ -125,6 +133,7 @@ extern "C" fn copy_progress_callback(
 
     // Check cancellation
     if context.cancelled.load(Ordering::Relaxed) {
+        log::info!("copyfile callback: cancellation detected, returning COPYFILE_QUIT");
         return COPYFILE_QUIT;
     }
 
@@ -296,7 +305,14 @@ pub fn copy_file_native(
     }
 
     // Perform the copy
+    log::info!(
+        "copyfile: starting copy from {} to {} (flags={:#x})",
+        source.display(),
+        destination.display(),
+        flags
+    );
     let result = unsafe { copyfile(src_cstring.as_ptr(), dst_cstring.as_ptr(), state, flags) };
+    log::info!("copyfile: completed with result={}", result);
 
     // Free state
     unsafe {

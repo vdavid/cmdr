@@ -8,7 +8,9 @@ use std::fs;
 use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc;
 use std::sync::{Arc, LazyLock, RwLock};
+use std::time::Duration;
 use uuid::Uuid;
 use uzers::{get_group_by_gid, get_user_by_uid};
 
@@ -164,6 +166,10 @@ pub struct StreamingListingState {
     /// Cancellation flag - checked periodically during iteration
     pub cancelled: AtomicBool,
 }
+
+/// Interval for checking cancellation while waiting for directory listing results.
+/// This ensures we can respond to ESC within ~100ms even if I/O is blocked.
+const CANCELLATION_POLL_INTERVAL: Duration = Duration::from_millis(100);
 
 /// Cache for streaming state (separate from completed listings cache)
 pub(crate) static STREAMING_STATE: LazyLock<RwLock<HashMap<String, Arc<StreamingListingState>>>> =
@@ -361,9 +367,9 @@ pub fn list_directory(path: &Path) -> Result<Vec<FileEntry>, std::io::Error> {
     let overall_start = std::time::Instant::now();
     let mut entries = Vec::new();
 
-    let mut metadata_time = std::time::Duration::ZERO;
-    let mut owner_lookup_time = std::time::Duration::ZERO;
-    let mut entry_creation_time = std::time::Duration::ZERO;
+    let mut metadata_time = Duration::ZERO;
+    let mut owner_lookup_time = Duration::ZERO;
+    let mut entry_creation_time = Duration::ZERO;
 
     let read_start = std::time::Instant::now();
     let dir_entries: Vec<_> = fs::read_dir(path)?.collect();
@@ -1022,8 +1028,8 @@ pub fn list_directory_core(path: &Path) -> Result<Vec<FileEntry>, std::io::Error
     benchmark::log_event_value("readdir END, count", dir_entries.len());
 
     benchmark::log_event("stat_loop START");
-    let mut metadata_time = std::time::Duration::ZERO;
-    let mut owner_lookup_time = std::time::Duration::ZERO;
+    let mut metadata_time = Duration::ZERO;
+    let mut owner_lookup_time = Duration::ZERO;
 
     for entry in dir_entries {
         let entry = entry?;
@@ -1426,10 +1432,40 @@ fn read_directory_with_progress(
         .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, format!("Volume not found: {}", volume_id)))?;
 
     // Read directory entries via Volume abstraction
+    // Use polling-based cancellation to remain responsive even when filesystem I/O blocks
+    // (e.g., on slow/stuck network drives like SMB mounts)
     let read_start = std::time::Instant::now();
-    let mut entries = volume
-        .list_directory(path)
-        .map_err(|e| std::io::Error::other(e.to_string()))?;
+    let path_for_thread = path.to_path_buf();
+    let (tx, rx) = mpsc::channel();
+
+    std::thread::spawn(move || {
+        let result = volume.list_directory(&path_for_thread);
+        let _ = tx.send(result);
+    });
+
+    // Poll for results, checking cancellation between polls
+    let entries_result = loop {
+        if state.cancelled.load(Ordering::Relaxed) {
+            benchmark::log_event("read_directory_with_progress CANCELLED (during read_dir polling)");
+            let _ = app.emit(
+                "listing-cancelled",
+                ListingCancelledEvent {
+                    listing_id: listing_id.to_string(),
+                },
+            );
+            return Ok(());
+        }
+
+        match rx.recv_timeout(CANCELLATION_POLL_INTERVAL) {
+            Ok(result) => break result,
+            Err(mpsc::RecvTimeoutError::Timeout) => continue,
+            Err(mpsc::RecvTimeoutError::Disconnected) => {
+                return Err(std::io::Error::other("Directory listing thread terminated unexpectedly"));
+            }
+        }
+    };
+
+    let mut entries = entries_result.map_err(|e| std::io::Error::other(e.to_string()))?;
     let read_dir_time = read_start.elapsed();
     benchmark::log_event_value("read_dir COMPLETE, entries", entries.len());
 

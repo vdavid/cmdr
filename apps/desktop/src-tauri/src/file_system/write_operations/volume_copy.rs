@@ -124,6 +124,31 @@ pub async fn copy_between_volumes(
         });
     }
 
+    // Optimization: If both volumes are local filesystem paths, use the battle-tested
+    // copy.rs implementation which has proper cancellation support via macOS copyfile API.
+    if let (Some(src_root), Some(dest_root)) = (source_volume.local_path(), dest_volume.local_path()) {
+        log::info!(
+            "copy_between_volumes: both volumes are local, delegating to native copy (src={}, dest={})",
+            src_root.display(),
+            dest_root.display()
+        );
+
+        // Convert relative paths to absolute paths
+        let absolute_sources: Vec<PathBuf> = source_paths.iter().map(|p| src_root.join(p)).collect();
+        let absolute_dest = dest_root.join(&dest_path);
+
+        // Convert VolumeCopyConfig to WriteOperationConfig
+        let write_config = WriteOperationConfig {
+            progress_interval_ms: config.progress_interval_ms,
+            conflict_resolution: config.conflict_resolution,
+            max_conflicts_to_show: config.max_conflicts_to_show,
+            ..Default::default()
+        };
+
+        // Delegate to the existing copy implementation with full cancellation support
+        return super::copy_files_start(app, absolute_sources, absolute_dest, write_config).await;
+    }
+
     let operation_id = Uuid::new_v4().to_string();
     log::info!(
         "copy_between_volumes: operation_id={}, source_volume={}, dest_volume={}, {} sources, dest={}",
@@ -135,7 +160,7 @@ pub async fn copy_between_volumes(
     );
 
     let state = Arc::new(WriteOperationState {
-        cancelled: AtomicBool::new(false),
+        cancelled: Arc::new(AtomicBool::new(false)),
         skip_rollback: AtomicBool::new(false),
         progress_interval: Duration::from_millis(config.progress_interval_ms),
         pending_resolution: std::sync::RwLock::new(None),
@@ -1065,7 +1090,7 @@ mod tests {
         let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
 
         let state = Arc::new(WriteOperationState {
-            cancelled: AtomicBool::new(false),
+            cancelled: Arc::new(AtomicBool::new(false)),
             skip_rollback: AtomicBool::new(false),
             progress_interval: Duration::from_millis(200),
             pending_resolution: std::sync::RwLock::new(None),
@@ -1099,7 +1124,7 @@ mod tests {
         let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
 
         let state = Arc::new(WriteOperationState {
-            cancelled: AtomicBool::new(true), // Already cancelled
+            cancelled: Arc::new(AtomicBool::new(true)), // Already cancelled
             skip_rollback: AtomicBool::new(false),
             progress_interval: Duration::from_millis(200),
             pending_resolution: std::sync::RwLock::new(None),

@@ -4,14 +4,13 @@ use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-#[cfg(target_os = "macos")]
-use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 
 #[cfg(target_os = "macos")]
 use crate::file_system::macos_copy::{CopyProgressContext, copy_single_file_native, copy_symlink};
 
+use super::chunked_copy::{ChunkedCopyProgressFn, chunked_copy_with_metadata, is_network_filesystem};
 use super::helpers::{
     is_same_file, resolve_conflict, safe_overwrite_file, spawn_async_sync, validate_disk_space, validate_path_length,
 };
@@ -21,6 +20,58 @@ use super::types::{
     ConflictResolution, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig,
     WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
 };
+
+// ============================================================================
+// Cancellation-aware helpers
+// ============================================================================
+
+/// Interval for checking cancellation while waiting for blocking operations.
+const CANCELLATION_POLL_INTERVAL: Duration = Duration::from_millis(100);
+
+/// Runs `validate_disk_space` with polling-based cancellation.
+/// This ensures we respond quickly to cancellation even if `statvfs` blocks on slow network drives.
+fn validate_disk_space_cancellable(
+    destination: &Path,
+    required_bytes: u64,
+    state: &Arc<WriteOperationState>,
+    operation_id: &str,
+) -> Result<(), WriteOperationError> {
+    use std::sync::mpsc;
+
+    let destination = destination.to_path_buf();
+    let (tx, rx) = mpsc::channel();
+
+    std::thread::spawn(move || {
+        let result = validate_disk_space(&destination, required_bytes);
+        let _ = tx.send(result);
+    });
+
+    // Poll for results, checking cancellation flag between polls
+    loop {
+        if state.cancelled.load(Ordering::Relaxed) {
+            log::debug!(
+                "copy: cancellation detected during disk space check polling op={}",
+                operation_id
+            );
+            return Err(WriteOperationError::Cancelled {
+                message: "Operation cancelled by user".to_string(),
+            });
+        }
+
+        match rx.recv_timeout(CANCELLATION_POLL_INTERVAL) {
+            Ok(result) => return result,
+            Err(mpsc::RecvTimeoutError::Timeout) => {
+                // Continue polling
+            }
+            Err(mpsc::RecvTimeoutError::Disconnected) => {
+                return Err(WriteOperationError::IoError {
+                    path: "disk_space_check".to_string(),
+                    message: "Disk space check thread terminated unexpectedly".to_string(),
+                });
+            }
+        }
+    }
+}
 
 // ============================================================================
 // Copy implementation
@@ -110,7 +161,16 @@ pub(super) fn copy_files_with_progress(
     );
 
     // Pre-flight disk space check: verify destination has enough free space
-    validate_disk_space(destination, scan_result.total_bytes)?;
+    // Use polling-based cancellation to remain responsive on slow network drives
+    log::info!(
+        "copy_files_with_progress: starting disk space check for operation_id={}",
+        operation_id
+    );
+    validate_disk_space_cancellable(destination, scan_result.total_bytes, state, operation_id)?;
+    log::info!(
+        "copy_files_with_progress: disk space check complete for operation_id={}",
+        operation_id
+    );
 
     // Phase 2: Copy files in sorted order with rollback support
     let mut transaction = CopyTransaction::new();
@@ -144,8 +204,19 @@ pub(super) fn copy_files_with_progress(
         scan_result.total_bytes,
     );
 
+    log::info!(
+        "copy_files_with_progress: starting copy loop for operation_id={}, {} files",
+        operation_id,
+        scan_result.files.len()
+    );
+
     let result: Result<(), WriteOperationError> = (|| {
         for file_info in &scan_result.files {
+            log::debug!(
+                "copy_files_with_progress: copying file {} ({} bytes)",
+                file_info.path.display(),
+                file_info.size
+            );
             copy_single_file_sorted(
                 &file_info.path,
                 file_info.dest_path(destination),
@@ -432,11 +503,62 @@ fn copy_single_file_sorted(
         }
 
         // Copy file using platform-specific method
-        let bytes = if needs_safe_overwrite {
+        // For network filesystems, use chunked copy for responsive cancellation
+        let bytes = if is_network_filesystem(&actual_dest) {
+            log::debug!(
+                "copy: using chunked copy for network destination {}",
+                actual_dest.display()
+            );
+
+            // Create progress callback for intra-file progress reporting
+            let base_bytes_done = *bytes_done;
+            let current_file_name = file_name.to_string_lossy().to_string();
+            let last_emit_time = std::cell::Cell::new(Instant::now());
+
+            let progress_cb: ChunkedCopyProgressFn = &|chunk_bytes: u64, _total: u64| {
+                // Check if enough time has passed to emit a progress event
+                if last_emit_time.get().elapsed() >= *progress_interval {
+                    let effective_bytes_done = base_bytes_done + chunk_bytes;
+                    log::debug!(
+                        "copy: emitting chunked progress op={} files={}/{} bytes={}/{}",
+                        operation_id,
+                        *files_done,
+                        files_total,
+                        effective_bytes_done,
+                        bytes_total
+                    );
+                    let _ = app.emit(
+                        "write-progress",
+                        WriteProgressEvent {
+                            operation_id: operation_id.to_string(),
+                            operation_type: WriteOperationType::Copy,
+                            phase: WriteOperationPhase::Copying,
+                            current_file: Some(current_file_name.clone()),
+                            files_done: *files_done,
+                            files_total,
+                            bytes_done: effective_bytes_done,
+                            bytes_total,
+                        },
+                    );
+                    update_operation_status(
+                        operation_id,
+                        WriteOperationPhase::Copying,
+                        Some(current_file_name.clone()),
+                        *files_done,
+                        files_total,
+                        effective_bytes_done,
+                        bytes_total,
+                    );
+                    last_emit_time.set(Instant::now());
+                }
+            };
+
+            chunked_copy_with_metadata(source, &actual_dest, &state.cancelled, Some(progress_cb))?
+        } else if needs_safe_overwrite {
             #[cfg(target_os = "macos")]
             {
                 let context = CopyProgressContext {
-                    cancelled: Arc::new(AtomicBool::new(false)),
+                    cancelled: Arc::clone(&state.cancelled),
                     ..Default::default()
                 };
                 safe_overwrite_file(source, &actual_dest, Some(&context))?
@@ -449,7 +571,7 @@ fn copy_single_file_sorted(
             #[cfg(target_os = "macos")]
             {
                 let context = CopyProgressContext {
-                    cancelled: Arc::new(AtomicBool::new(false)),
+                    cancelled: Arc::clone(&state.cancelled),
                     ..Default::default()
                 };
                 copy_single_file_native(source, &actual_dest, false, Some(&context))?
@@ -658,12 +780,63 @@ pub(super) fn copy_path_recursive(
         }
 
         // Copy file using platform-specific method
-        let bytes = if needs_safe_overwrite {
+        // For network filesystems, use chunked copy for responsive cancellation
+        let bytes = if is_network_filesystem(&actual_dest) {
+            log::debug!(
+                "copy: using chunked copy for network destination {}",
+                actual_dest.display()
+            );
+
+            // Create progress callback for intra-file progress reporting
+            let base_bytes_done = *bytes_done;
+            let current_file_name = file_name.to_string_lossy().to_string();
+            let last_emit_time = std::cell::Cell::new(Instant::now());
+
+            let progress_cb: ChunkedCopyProgressFn = &|chunk_bytes: u64, _total: u64| {
+                // Check if enough time has passed to emit a progress event
+                if last_emit_time.get().elapsed() >= *progress_interval {
+                    let effective_bytes_done = base_bytes_done + chunk_bytes;
+                    log::debug!(
+                        "copy: emitting chunked progress (recursive) op={} files={}/{} bytes={}/{}",
+                        operation_id,
+                        *files_done,
+                        files_total,
+                        effective_bytes_done,
+                        bytes_total
+                    );
+                    let _ = app.emit(
+                        "write-progress",
+                        WriteProgressEvent {
+                            operation_id: operation_id.to_string(),
+                            operation_type: WriteOperationType::Copy,
+                            phase: WriteOperationPhase::Copying,
+                            current_file: Some(current_file_name.clone()),
+                            files_done: *files_done,
+                            files_total,
+                            bytes_done: effective_bytes_done,
+                            bytes_total,
+                        },
+                    );
+                    update_operation_status(
+                        operation_id,
+                        WriteOperationPhase::Copying,
+                        Some(current_file_name.clone()),
+                        *files_done,
+                        files_total,
+                        effective_bytes_done,
+                        bytes_total,
+                    );
+                    last_emit_time.set(Instant::now());
+                }
+            };
+
+            chunked_copy_with_metadata(source, &actual_dest, &state.cancelled, Some(progress_cb))?
+        } else if needs_safe_overwrite {
             // Use safe overwrite pattern (temp + rename)
             #[cfg(target_os = "macos")]
             {
                 let context = CopyProgressContext {
-                    cancelled: Arc::new(AtomicBool::new(false)),
+                    cancelled: Arc::clone(&state.cancelled),
                     ..Default::default()
                 };
                 safe_overwrite_file(source, &actual_dest, Some(&context))?
@@ -677,7 +850,7 @@ pub(super) fn copy_path_recursive(
             #[cfg(target_os = "macos")]
             {
                 let context = CopyProgressContext {
-                    cancelled: Arc::new(AtomicBool::new(false)),
+                    cancelled: Arc::clone(&state.cancelled),
                     ..Default::default()
                 };
                 copy_single_file_native(source, &actual_dest, false, Some(&context))?

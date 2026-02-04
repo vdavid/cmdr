@@ -103,6 +103,10 @@ impl Volume for LocalPosixVolume {
         true
     }
 
+    fn local_path(&self) -> Option<PathBuf> {
+        Some(self.root.clone())
+    }
+
     fn create_file(&self, path: &Path, content: &[u8]) -> Result<(), VolumeError> {
         let abs_path = self.resolve(path);
         std::fs::write(&abs_path, content)?;

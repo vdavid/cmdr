@@ -16,8 +16,8 @@ use super::types::{ConflictResolution, OperationStatus, OperationSummary, WriteO
 
 /// State for an in-progress write operation.
 pub struct WriteOperationState {
-    /// Cancellation flag
-    pub cancelled: AtomicBool,
+    /// Cancellation flag (Arc so it can be shared with native copy operations)
+    pub cancelled: Arc<AtomicBool>,
     /// Skip rollback flag (when true, keep partial files on cancellation)
     pub skip_rollback: AtomicBool,
     /// Progress reporting interval

@@ -16,6 +16,7 @@
 //! - Copy rollback on failure (CopyTransaction)
 //! - Atomic cross-filesystem moves using staging directory
 
+mod chunked_copy;
 mod copy;
 mod delete;
 mod helpers;
@@ -109,7 +110,7 @@ pub async fn copy_files_start(
         config.dry_run
     );
     let state = Arc::new(WriteOperationState {
-        cancelled: AtomicBool::new(false),
+        cancelled: Arc::new(AtomicBool::new(false)),
         skip_rollback: AtomicBool::new(false),
         progress_interval: Duration::from_millis(config.progress_interval_ms),
         pending_resolution: std::sync::RwLock::new(None),
@@ -185,7 +186,7 @@ pub async fn move_files_start(
 
     let operation_id = Uuid::new_v4().to_string();
     let state = Arc::new(WriteOperationState {
-        cancelled: AtomicBool::new(false),
+        cancelled: Arc::new(AtomicBool::new(false)),
         skip_rollback: AtomicBool::new(false),
         progress_interval: Duration::from_millis(config.progress_interval_ms),
         pending_resolution: std::sync::RwLock::new(None),
@@ -255,7 +256,7 @@ pub async fn delete_files_start(
 
     let operation_id = Uuid::new_v4().to_string();
     let state = Arc::new(WriteOperationState {
-        cancelled: AtomicBool::new(false),
+        cancelled: Arc::new(AtomicBool::new(false)),
         skip_rollback: AtomicBool::new(false),
         progress_interval: Duration::from_millis(config.progress_interval_ms),
         pending_resolution: std::sync::RwLock::new(None),

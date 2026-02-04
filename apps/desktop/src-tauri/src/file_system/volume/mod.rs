@@ -239,8 +239,15 @@ pub trait Volume: Send + Sync {
     }
 
     // ========================================
-    // Streaming: Optional, default not supported
+    // Capability hints for copy optimization
     // ========================================
+
+    /// Returns the local filesystem path if this volume is backed by one.
+    /// Used to optimize local-to-local copies using native OS APIs (e.g., copyfile on macOS).
+    /// Returns None for non-local volumes (MTP, S3, FTP, etc.).
+    fn local_path(&self) -> Option<std::path::PathBuf> {
+        None
+    }
 
     /// Returns true if this volume supports streaming read/write operations.
     fn supports_streaming(&self) -> bool {

@@ -30,7 +30,7 @@ fn cleanup_temp_dir(path: &PathBuf) {
 #[test]
 fn test_cancel_sets_flag() {
     let state = Arc::new(WriteOperationState {
-        cancelled: AtomicBool::new(false),
+        cancelled: Arc::new(AtomicBool::new(false)),
         skip_rollback: AtomicBool::new(false),
         progress_interval: Duration::from_millis(200),
         pending_resolution: RwLock::new(None),
@@ -245,7 +245,7 @@ fn test_copy_transaction_rollback_handles_already_deleted_files() {
 fn test_skip_rollback_flag_behavior() {
     // Test that skip_rollback flag controls rollback behavior
     let state = Arc::new(WriteOperationState {
-        cancelled: AtomicBool::new(false),
+        cancelled: Arc::new(AtomicBool::new(false)),
         skip_rollback: AtomicBool::new(false),
         progress_interval: Duration::from_millis(200),
         pending_resolution: RwLock::new(None),

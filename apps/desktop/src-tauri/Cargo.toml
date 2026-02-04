@@ -65,6 +65,10 @@ tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
 memchr = "2"
 walkdir = "2"
+# For chunked copy metadata preservation (network filesystems)
+xattr = "1"
+filetime = "0.2"
+exacl = "0.12"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
