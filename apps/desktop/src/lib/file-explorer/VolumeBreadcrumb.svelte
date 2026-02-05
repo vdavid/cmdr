@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte'
-    import { listVolumes, findContainingVolume, listen, type UnlistenFn } from '$lib/tauri-commands'
+    import { listVolumes, findContainingVolume, listen, type UnlistenFn, updateDialogState } from '$lib/tauri-commands'
     import type { VolumeInfo, LocationCategory } from './types'
     import { getMtpVolumes, initialize as initMtpStore, scanDevices as scanMtpDevices, type MtpVolume } from '$lib/mtp'
 
@@ -25,6 +25,8 @@
     let unlistenMtpDetected: UnlistenFn | undefined
     let unlistenMtpConnected: UnlistenFn | undefined
     let unlistenMtpRemoved: UnlistenFn | undefined
+    // Track previous open state to avoid redundant dialog state updates on initial mount
+    let wasOpen = $state(false)
 
     // The ID of the actual volume that contains the current path
     // This is used to show the checkmark on the correct volume, not on favorites
@@ -62,16 +64,22 @@
     // Flat list of all volumes for keyboard navigation
     const allVolumes = $derived(groupedVolumes.flatMap((g) => g.items))
 
-    // When dropdown opens, initialize highlight to current volume
+    // When dropdown opens, initialize highlight to current volume and track dialog state
     $effect(() => {
         if (isOpen) {
             const currentIdx = allVolumes.findIndex((v) => shouldShowCheckmark(v))
             highlightedIndex = currentIdx >= 0 ? currentIdx : 0
+            void updateDialogState('volume-picker', 'open')
         } else {
             highlightedIndex = -1
             isKeyboardMode = false
             lastMousePos = null
+            // Only send close event if we were previously open (avoid redundant close on initial mount)
+            if (wasOpen) {
+                void updateDialogState('volume-picker', 'close')
+            }
         }
+        wasOpen = isOpen
     })
 
     // Get appropriate icon for a volume (use cloud icon for cloud drives, mobile icon for devices)
@@ -203,6 +211,11 @@
     // Export to explicitly close the dropdown
     export function close() {
         isOpen = false
+    }
+
+    // Export to explicitly open the dropdown
+    export function open() {
+        isOpen = true
     }
 
     // Export keyboard handler for parent components to call

@@ -25,6 +25,7 @@
     } from '$lib/tauri-commands'
     import { loadSettings, saveSettings } from '$lib/settings-store'
     import { openSettingsWindow } from '$lib/settings/settings-window'
+    import { openFileViewer } from '$lib/file-viewer/open-viewer'
     import { hideExpirationModal, loadLicenseStatus, triggerValidationIfNeeded } from '$lib/licensing-store.svelte'
     import type { ViewMode } from '$lib/app-status-store'
 
@@ -33,20 +34,35 @@
         refocus: () => void
         switchPane: () => void
         toggleVolumeChooser: (pane: 'left' | 'right') => void
+        openVolumeChooser: () => void
+        closeVolumeChooser: () => void
         toggleHiddenFiles: () => void
-        setViewMode: (mode: ViewMode) => void
+        setViewMode: (mode: ViewMode, pane?: 'left' | 'right') => void
         navigate: (action: 'back' | 'forward' | 'parent') => void
         getFileAndPathUnderCursor: () => { path: string; filename: string } | null
         sendKeyToFocusedPane: (key: string) => void
-        setSortColumn: (column: 'name' | 'extension' | 'size' | 'modified' | 'created') => void
-        setSortOrder: (order: 'asc' | 'desc' | 'toggle') => void
+        setSortColumn: (column: 'name' | 'extension' | 'size' | 'modified' | 'created', pane?: 'left' | 'right') => void
+        setSortOrder: (order: 'asc' | 'desc' | 'toggle', pane?: 'left' | 'right') => void
+        setSort: (
+            column: 'name' | 'extension' | 'size' | 'modified' | 'created',
+            order: 'asc' | 'desc',
+            pane: 'left' | 'right',
+        ) => Promise<void>
         getFocusedPane: () => 'left' | 'right'
         getVolumes: () => { id: string; name: string; path: string }[]
         selectVolumeByIndex: (pane: 'left' | 'right', index: number) => Promise<boolean>
+        selectVolumeByName: (pane: 'left' | 'right', name: string) => Promise<boolean>
         handleSelectionAction: (action: string, startIndex?: number, endIndex?: number) => void
+        handleMcpSelect: (pane: 'left' | 'right', start: number, count: number | 'all', mode: string) => void
         openCopyDialog: () => Promise<void>
         openNewFolderDialog: () => Promise<void>
+        closeConfirmationDialog: () => void
+        isConfirmationDialogOpen: () => boolean
         openViewerForCursor: () => Promise<void>
+        navigateToPath: (pane: 'left' | 'right', path: string) => void
+        moveCursor: (pane: 'left' | 'right', to: number | string) => Promise<void>
+        scrollTo: (pane: 'left' | 'right', index: number) => void
+        refreshPane: () => void
     }
 
     let showFdaPrompt = $state(false)
@@ -119,6 +135,273 @@
         if (e.metaKey && e.key === 'a') return true
         if (!import.meta.env.DEV && e.metaKey && e.altKey && e.key === 'i') return true
         return false
+    }
+
+    /** Safe wrapper for Tauri event listeners - handles non-Tauri environment */
+    async function safeListenTauri(
+        event: string,
+        handler: (event: { payload: unknown }) => void,
+    ): Promise<UnlistenFn | undefined> {
+        try {
+            return await listen(event, handler)
+        } catch {
+            return undefined
+        }
+    }
+
+    /** Get all file viewer windows (labels starting with 'viewer-'), sorted by creation time (most recent first) */
+    async function getFileViewerWindows() {
+        try {
+            const { getAllWindows } = await import('@tauri-apps/api/window')
+            const windows = await getAllWindows()
+            return windows
+                .filter((w) => w.label.startsWith('viewer-'))
+                .sort((a, b) => {
+                    const aTime = parseInt(a.label.replace('viewer-', ''), 10)
+                    const bTime = parseInt(b.label.replace('viewer-', ''), 10)
+                    return bTime - aTime // Most recent first
+                })
+        } catch {
+            return []
+        }
+    }
+
+    /** Emit an event to file viewer windows. Returns true if the event was emitted to at least one viewer. */
+    async function emitToFileViewers(event: string, payload?: { path?: string }): Promise<boolean> {
+        try {
+            const { emit } = await import('@tauri-apps/api/event')
+            await emit(event, payload)
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    /** Close a file viewer window. If path is provided, closes the viewer with that path. Otherwise closes the most recent. */
+    async function closeFileViewer(path?: string) {
+        const viewers = await getFileViewerWindows()
+        if (viewers.length === 0) return
+
+        if (path) {
+            // Emit event with path - the viewer with that path will close itself
+            await emitToFileViewers('mcp-viewer-close', { path })
+        } else {
+            // Close the most recent viewer directly
+            await viewers[0].close()
+        }
+    }
+
+    /** Close all file viewer windows */
+    async function closeAllFileViewers() {
+        const viewers = await getFileViewerWindows()
+        await Promise.all(viewers.map((v) => v.close()))
+    }
+
+    /** Focus a file viewer window. If path is provided, focuses the viewer with that path. Otherwise focuses the most recent. */
+    async function focusFileViewer(path?: string) {
+        const viewers = await getFileViewerWindows()
+        if (viewers.length === 0) return
+
+        if (path) {
+            // Emit event with path - the viewer with that path will focus itself
+            await emitToFileViewers('mcp-viewer-focus', { path })
+        } else {
+            // Focus the most recent viewer directly
+            await viewers[0].setFocus()
+        }
+    }
+
+    /** Focus the main window */
+    async function focusMainWindow() {
+        try {
+            const { getCurrentWindow } = await import('@tauri-apps/api/window')
+            await getCurrentWindow().setFocus()
+        } catch {
+            // Not in Tauri environment
+        }
+    }
+
+    /** Set up menu-related event listeners */
+    async function setupMenuListeners() {
+        unlistenShowAbout = await safeListenTauri('show-about', () => {
+            showAboutWindow = true
+        })
+        unlistenLicenseKeyDialog = await safeListenTauri('show-license-key-dialog', () => {
+            showLicenseKeyDialog = true
+        })
+        unlistenCommandPalette = await safeListenTauri('show-command-palette', () => {
+            showCommandPalette = true
+        })
+        await safeListenTauri('open-settings', () => {
+            void openSettingsWindow()
+        })
+        unlistenSwitchPane = await safeListenTauri('switch-pane', () => {
+            explorerRef?.switchPane()
+        })
+    }
+
+    /** Set up MCP dialog event listeners (close/focus) */
+    async function setupDialogListeners() {
+        // About dialog
+        await safeListenTauri('close-about', () => {
+            showAboutWindow = false
+        })
+        await safeListenTauri('focus-about', () => {
+            // Already shown, just ensure it's visible
+            showAboutWindow = true
+        })
+
+        // Volume picker
+        await safeListenTauri('open-volume-picker', () => {
+            explorerRef?.openVolumeChooser()
+        })
+        await safeListenTauri('close-volume-picker', () => {
+            explorerRef?.closeVolumeChooser()
+        })
+        await safeListenTauri('focus-volume-picker', () => {
+            // Volume picker is handled by DualPaneExplorer
+        })
+
+        // File viewer
+        await safeListenTauri('open-file-viewer', (event) => {
+            const payload = event.payload as { path?: string } | undefined
+            if (payload?.path) {
+                // Open viewer for specific path
+                void openFileViewer(payload.path)
+            } else {
+                // Open viewer for cursor file
+                void explorerRef?.openViewerForCursor()
+            }
+        })
+        await safeListenTauri('close-file-viewer', (event) => {
+            const payload = event.payload as { path?: string } | undefined
+            void closeFileViewer(payload?.path)
+        })
+        await safeListenTauri('close-all-file-viewers', () => {
+            void closeAllFileViewers()
+        })
+        await safeListenTauri('focus-file-viewer', (event) => {
+            const payload = event.payload as { path?: string } | undefined
+            void focusFileViewer(payload?.path)
+        })
+
+        // Confirmation dialog - handled by DualPaneExplorer
+        await safeListenTauri('close-confirmation', () => {
+            explorerRef?.closeConfirmationDialog()
+        })
+        await safeListenTauri('focus-confirmation', () => {
+            // The confirmation dialog is a modal overlay in the main window.
+            // If it's open, ensure the main window is focused so the dialog is visible.
+            if (explorerRef?.isConfirmationDialogOpen()) {
+                void focusMainWindow()
+            }
+        })
+    }
+
+    /** Set up MCP-related event listeners */
+    async function setupMcpListeners() {
+        await safeListenTauri('mcp-key', (event) => {
+            const { key } = event.payload as { key: string }
+            if (key === 'GoBack') {
+                explorerRef?.navigate('back')
+            } else if (key === 'GoForward') {
+                explorerRef?.navigate('forward')
+            } else {
+                explorerRef?.sendKeyToFocusedPane(key)
+            }
+        })
+
+        await safeListenTauri('menu-sort', (event) => {
+            const { action, value } = event.payload as { action: string; value: string }
+            if (action === 'sortBy') {
+                const column = value as 'name' | 'extension' | 'size' | 'modified' | 'created'
+                explorerRef?.setSortColumn(column)
+            } else if (action === 'sortOrder') {
+                const order = value as 'asc' | 'desc' | 'toggle'
+                explorerRef?.setSortOrder(order)
+            }
+        })
+
+        await safeListenTauri('mcp-sort', (event) => {
+            const { pane, by, order } = event.payload as { pane: 'left' | 'right'; by: string; order: string }
+            const column = by === 'ext' ? 'extension' : (by as 'name' | 'extension' | 'size' | 'modified' | 'created')
+            void explorerRef?.setSort(column, order as 'asc' | 'desc', pane)
+            // Update focus state when MCP targets a specific pane
+            void import('$lib/tauri-commands').then(({ updateFocusedPane }) => {
+                void updateFocusedPane(pane)
+            })
+        })
+
+        await safeListenTauri('mcp-volume-select', (event) => {
+            const { pane, name } = event.payload as { pane: 'left' | 'right'; name: string }
+            void explorerRef?.selectVolumeByName(pane, name)
+            // Update focus state when MCP targets a specific pane
+            void import('$lib/tauri-commands').then(({ updateFocusedPane }) => {
+                void updateFocusedPane(pane)
+            })
+        })
+
+        await safeListenTauri('mcp-select', (event) => {
+            const { pane, start, count, mode } = event.payload as {
+                pane: 'left' | 'right'
+                start: number
+                count: number | 'all'
+                mode: string
+            }
+            explorerRef?.handleMcpSelect(pane, start, count, mode)
+            // Update focus state when MCP targets a specific pane
+            void import('$lib/tauri-commands').then(({ updateFocusedPane }) => {
+                void updateFocusedPane(pane)
+            })
+        })
+
+        await safeListenTauri('mcp-nav-to-path', (event) => {
+            const { pane, path } = event.payload as { pane: 'left' | 'right'; path: string }
+            explorerRef?.navigateToPath(pane, path)
+            // Update focus state when MCP targets a specific pane
+            void import('$lib/tauri-commands').then(({ updateFocusedPane }) => {
+                void updateFocusedPane(pane)
+            })
+        })
+
+        await safeListenTauri('mcp-move-cursor', (event) => {
+            const { pane, to } = event.payload as { pane: 'left' | 'right'; to: number | string }
+            void explorerRef?.moveCursor(pane, to)
+            // Update focus state when MCP targets a specific pane
+            void import('$lib/tauri-commands').then(({ updateFocusedPane }) => {
+                void updateFocusedPane(pane)
+            })
+        })
+
+        await safeListenTauri('mcp-scroll-to', (event) => {
+            const { pane, index } = event.payload as { pane: 'left' | 'right'; index: number }
+            explorerRef?.scrollTo(pane, index)
+            // Update focus state when MCP targets a specific pane
+            void import('$lib/tauri-commands').then(({ updateFocusedPane }) => {
+                void updateFocusedPane(pane)
+            })
+        })
+
+        await safeListenTauri('mcp-set-view-mode', (event) => {
+            const { pane, mode } = event.payload as { pane: 'left' | 'right'; mode: string }
+            explorerRef?.setViewMode(mode as ViewMode, pane)
+            // Update focus state when MCP targets a specific pane
+            void import('$lib/tauri-commands').then(({ updateFocusedPane }) => {
+                void updateFocusedPane(pane)
+            })
+        })
+
+        await safeListenTauri('mcp-refresh', () => {
+            explorerRef?.refreshPane()
+        })
+
+        await safeListenTauri('mcp-copy', () => {
+            void explorerRef?.openCopyDialog()
+        })
+
+        await safeListenTauri('mcp-mkdir', () => {
+            void explorerRef?.openNewFolderDialog()
+        })
     }
 
     /** Global keyboard handler for app-level shortcuts */
@@ -233,110 +516,9 @@
      * Set up Tauri event listeners for menu actions, MCP events, etc.
      */
     async function setupTauriEventListeners() {
-        // Listen for show-about event from menu
-        try {
-            unlistenShowAbout = await listen('show-about', () => {
-                showAboutWindow = true
-            })
-        } catch {
-            // Not in Tauri environment
-        }
-
-        // Listen for license key dialog event from menu
-        try {
-            unlistenLicenseKeyDialog = await listen('show-license-key-dialog', () => {
-                showLicenseKeyDialog = true
-            })
-        } catch {
-            // Not in Tauri environment
-        }
-
-        // Listen for command palette event from menu
-        try {
-            unlistenCommandPalette = await listen('show-command-palette', () => {
-                showCommandPalette = true
-            })
-        } catch {
-            // Not in Tauri environment
-        }
-
-        // Listen for open-settings event from menu
-        try {
-            await listen('open-settings', () => {
-                void openSettingsWindow()
-            })
-        } catch {
-            // Not in Tauri environment
-        }
-
-        // Listen for switch pane event from menu
-        try {
-            unlistenSwitchPane = await listen('switch-pane', () => {
-                explorerRef?.switchPane()
-            })
-        } catch {
-            // Not in Tauri environment
-        }
-
-        // Listen for MCP key events (navigation via MCP)
-        try {
-            await listen<{ key: string }>('mcp-key', (event) => {
-                const { key } = event.payload
-                if (key === 'GoBack') {
-                    explorerRef?.navigate('back')
-                } else if (key === 'GoForward') {
-                    explorerRef?.navigate('forward')
-                } else {
-                    explorerRef?.sendKeyToFocusedPane(key)
-                }
-            })
-        } catch {
-            // Not in Tauri environment
-        }
-
-        // Listen for MCP and menu sort events
-        const handleSort = (event: { payload: { action: string; value: string } }) => {
-            const { action, value } = event.payload
-            if (action === 'sortBy') {
-                const column = value as 'name' | 'extension' | 'size' | 'modified' | 'created'
-                explorerRef?.setSortColumn(column)
-            } else if (action === 'sortOrder') {
-                const order = value as 'asc' | 'desc' | 'toggle'
-                explorerRef?.setSortOrder(order)
-            }
-        }
-
-        try {
-            await listen<{ action: string; value: string }>('mcp-sort', handleSort)
-        } catch {
-            // Not in Tauri environment
-        }
-
-        try {
-            await listen<{ action: string; value: string }>('menu-sort', handleSort)
-        } catch {
-            // Not in Tauri environment
-        }
-
-        // Listen for MCP volume select events
-        try {
-            await listen<{ pane: 'left' | 'right'; index: number }>('mcp-volume-select', (event) => {
-                const { pane, index } = event.payload
-                void explorerRef?.selectVolumeByIndex(pane, index)
-            })
-        } catch {
-            // Not in Tauri environment
-        }
-
-        // Listen for MCP selection events
-        try {
-            await listen<{ action: string; startIndex?: number; endIndex?: number }>('mcp-selection', (event) => {
-                const { action, startIndex, endIndex } = event.payload
-                explorerRef?.handleSelectionAction(action, startIndex, endIndex)
-            })
-        } catch {
-            // Not in Tauri environment
-        }
+        await setupMenuListeners()
+        await setupDialogListeners()
+        await setupMcpListeners()
     }
 
     onDestroy(() => {

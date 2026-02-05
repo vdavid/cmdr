@@ -172,6 +172,13 @@
     const rightVolumePath = $derived(
         rightVolumeId === 'network' ? 'smb://' : (volumes.find((v) => v.id === rightVolumeId)?.path ?? '/'),
     )
+    // Derived volume names for MCP state sync
+    const leftVolumeName = $derived(
+        leftVolumeId === 'network' ? 'Network' : volumes.find((v) => v.id === leftVolumeId)?.name,
+    )
+    const rightVolumeName = $derived(
+        rightVolumeId === 'network' ? 'Network' : volumes.find((v) => v.id === rightVolumeId)?.name,
+    )
 
     function handleLeftPathChange(path: string) {
         leftPath = path
@@ -927,6 +934,25 @@
         containerElement?.focus()
     }
 
+    /** Closes any confirmation dialog (new folder or copy) if open (for MCP). */
+    export function closeConfirmationDialog() {
+        if (showNewFolderDialog) {
+            showNewFolderDialog = false
+            newFolderDialogProps = null
+            containerElement?.focus()
+        }
+        if (showCopyDialog) {
+            showCopyDialog = false
+            copyDialogProps = null
+            containerElement?.focus()
+        }
+    }
+
+    /** Returns whether any confirmation dialog is currently open. */
+    export function isConfirmationDialogOpen(): boolean {
+        return showNewFolderDialog || showCopyDialog
+    }
+
     /** Opens the file viewer for the file under the cursor. */
     export async function openViewerForCursor() {
         const paneRef = focusedPane === 'left' ? leftPaneRef : rightPaneRef
@@ -1212,6 +1238,7 @@
         const newFocus = focusedPane === 'left' ? 'right' : 'left'
         focusedPane = newFocus
         void saveAppStatus({ focusedPane: newFocus })
+        void updateFocusedPane(newFocus)
         containerElement?.focus()
     }
 
@@ -1234,6 +1261,34 @@
     }
 
     /**
+     * Open volume chooser for the focused pane.
+     * Closes the other pane's volume chooser first.
+     */
+    export function openVolumeChooser() {
+        if (focusedPane === 'left') {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            rightPaneRef?.closeVolumeChooser()
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            leftPaneRef?.openVolumeChooser()
+        } else {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            leftPaneRef?.closeVolumeChooser()
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            rightPaneRef?.openVolumeChooser()
+        }
+    }
+
+    /**
+     * Close volume chooser on all panes.
+     */
+    export function closeVolumeChooser() {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        leftPaneRef?.closeVolumeChooser()
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        rightPaneRef?.closeVolumeChooser()
+    }
+
+    /**
      * Toggle show hidden files.
      */
     export function toggleHiddenFiles() {
@@ -1242,10 +1297,12 @@
     }
 
     /**
-     * Set view mode for the focused pane.
+     * Set view mode for a specific pane (or focused pane if not specified).
+     * Used by command palette and MCP.
      */
-    export function setViewMode(mode: ViewMode) {
-        if (focusedPane === 'left') {
+    export function setViewMode(mode: ViewMode, pane?: 'left' | 'right') {
+        const targetPane = pane ?? focusedPane
+        if (targetPane === 'left') {
             leftViewMode = mode
             void saveAppStatus({ leftViewMode: mode })
         } else {
@@ -1285,11 +1342,12 @@
     }
 
     /**
-     * Set sort column for the focused pane.
-     * Used by command palette and MCP.
+     * Set sort column for a specific pane (or focused pane if not specified).
+     * Used by command palette.
      */
-    export function setSortColumn(column: SortColumn) {
-        if (focusedPane === 'left') {
+    export function setSortColumn(column: SortColumn, pane?: 'left' | 'right') {
+        const targetPane = pane ?? focusedPane
+        if (targetPane === 'left') {
             void handleLeftSortChange(column)
         } else {
             void handleRightSortChange(column)
@@ -1297,12 +1355,13 @@
     }
 
     /**
-     * Set sort order for the focused pane.
-     * Used by command palette and MCP.
+     * Set sort order for a specific pane (or focused pane if not specified).
+     * Used by command palette.
      */
-    export function setSortOrder(order: 'asc' | 'desc' | 'toggle') {
-        const currentOrder = focusedPane === 'left' ? leftSortOrder : rightSortOrder
-        const currentColumn = focusedPane === 'left' ? leftSortBy : rightSortBy
+    export function setSortOrder(order: 'asc' | 'desc' | 'toggle', pane?: 'left' | 'right') {
+        const targetPane = pane ?? focusedPane
+        const currentOrder = targetPane === 'left' ? leftSortOrder : rightSortOrder
+        const currentColumn = targetPane === 'left' ? leftSortBy : rightSortBy
 
         let newOrder: SortOrder
         if (order === 'toggle') {
@@ -1315,12 +1374,54 @@
         // This triggers the toggle logic in the handler
         if (newOrder !== currentOrder) {
             // Force the column to match so it will toggle order
-            if (focusedPane === 'left') {
+            if (targetPane === 'left') {
                 void handleLeftSortChange(currentColumn)
             } else {
                 void handleRightSortChange(currentColumn)
             }
         }
+    }
+
+    /**
+     * Set both sort column and order atomically for a specific pane.
+     * Used by MCP sort command to avoid race conditions.
+     */
+    export async function setSort(column: SortColumn, order: 'asc' | 'desc', pane: 'left' | 'right') {
+        const paneRef = pane === 'left' ? leftPaneRef : rightPaneRef
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const listingId = paneRef?.getListingId?.() as string | undefined
+        if (!listingId) return
+
+        const newOrder: SortOrder = order === 'asc' ? 'ascending' : 'descending'
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const cursorFilename = paneRef?.getFilenameUnderCursor?.() as string | undefined
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const selectedIndices = paneRef?.getSelectedIndices?.() as number[] | undefined
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const allSelected = paneRef?.isAllSelected?.() as boolean | undefined
+
+        const result = await resortListing(
+            listingId,
+            column,
+            newOrder,
+            cursorFilename,
+            showHiddenFiles,
+            selectedIndices,
+            allSelected,
+        )
+
+        if (pane === 'left') {
+            leftSortBy = column
+            leftSortOrder = newOrder
+            void saveAppStatus({ leftSortBy: column })
+        } else {
+            rightSortBy = column
+            rightSortOrder = newOrder
+            void saveAppStatus({ rightSortBy: column })
+        }
+        void saveColumnSortOrder(column, newOrder)
+        applySortResult(paneRef, result)
     }
 
     /**
@@ -1406,6 +1507,133 @@
                 break
         }
     }
+
+    /**
+     * Navigate a pane to a specific path.
+     * Used by MCP nav_to_path tool.
+     */
+    export function navigateToPath(pane: 'left' | 'right', path: string) {
+        const paneRef = pane === 'left' ? leftPaneRef : rightPaneRef
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        paneRef?.navigateToPath?.(path)
+    }
+
+    /**
+     * Move cursor to a specific index or filename.
+     * Used by MCP move_cursor tool.
+     */
+    export async function moveCursor(pane: 'left' | 'right', to: number | string) {
+        const paneRef = pane === 'left' ? leftPaneRef : rightPaneRef
+        if (!paneRef) return
+
+        if (typeof to === 'number') {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            paneRef.setCursorIndex?.(to)
+        } else {
+            // Find index by filename
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+            const listingId: string | undefined = paneRef.getListingId?.()
+            if (listingId) {
+                const backendIndex = await findFileIndex(listingId, to, showHiddenFiles)
+                if (backendIndex !== null) {
+                    // Backend index doesn't include ".." entry, but frontend does
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+                    const hasParent: boolean = paneRef.hasParentEntry?.() ?? false
+                    const frontendIndex = hasParent ? backendIndex + 1 : backendIndex
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+                    paneRef.setCursorIndex?.(frontendIndex)
+                }
+            }
+        }
+    }
+
+    /**
+     * Scroll to load a region around a specific index in a large directory.
+     * Used by MCP scroll_to tool.
+     */
+    export function scrollTo(pane: 'left' | 'right', index: number) {
+        const paneRef = pane === 'left' ? leftPaneRef : rightPaneRef
+        // For now, just set cursor to that index - virtualization handles the rest
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        paneRef?.setCursorIndex?.(index)
+    }
+
+    /**
+     * Select a volume by name for a specific pane.
+     * Used by MCP select_volume tool.
+     */
+    export async function selectVolumeByName(pane: 'left' | 'right', name: string): Promise<boolean> {
+        const index = volumes.findIndex((v) => v.name === name)
+        if (index === -1) {
+            log.warn('Volume not found: {name}', { name })
+            return false
+        }
+        return selectVolumeByIndex(pane, index)
+    }
+
+    /**
+     * Refresh the focused pane.
+     * Used by MCP refresh tool.
+     */
+    export function refreshPane() {
+        const paneRef = focusedPane === 'left' ? leftPaneRef : rightPaneRef
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        paneRef?.refreshView?.()
+    }
+
+    /**
+     * Handle unified select command from MCP.
+     * @param pane - Which pane to select in
+     * @param start - Start index (0-based)
+     * @param count - Number of items to select, or 'all' for select all
+     * @param mode - 'replace', 'add', or 'subtract'
+     */
+    export function handleMcpSelect(pane: 'left' | 'right', start: number, count: number | 'all', mode: string) {
+        const paneRef = pane === 'left' ? leftPaneRef : rightPaneRef
+        if (!paneRef) return
+
+        // Get current selection for add/subtract modes (local Set, not reactive state)
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, svelte/prefer-svelte-reactivity
+        const currentSelection = new Set<number>(paneRef.getSelectedIndices?.() ?? [])
+
+        if (count === 0) {
+            // Clear selection
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            paneRef.setSelectedIndices?.([])
+            return
+        }
+
+        if (count === 'all') {
+            // Select all
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            paneRef.selectAll?.()
+            return
+        }
+
+        // Calculate the indices to select
+        const endIndex = start + count - 1
+        const targetIndices: number[] = []
+        for (let i = start; i <= endIndex; i++) {
+            targetIndices.push(i)
+        }
+
+        let newSelection: number[]
+        if (mode === 'add') {
+            // Add to current selection
+            targetIndices.forEach((i) => currentSelection.add(i))
+            newSelection = Array.from(currentSelection)
+        } else if (mode === 'subtract') {
+            // Remove from current selection
+            targetIndices.forEach((i) => currentSelection.delete(i))
+            newSelection = Array.from(currentSelection)
+        } else {
+            // Replace mode (default)
+            newSelection = targetIndices
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        paneRef.setSelectedIndices?.(newSelection)
+    }
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex,a11y_no_noninteractive_element_interactions -->
@@ -1426,6 +1654,7 @@
                 initialPath={leftPath}
                 volumeId={leftVolumeId}
                 volumePath={leftVolumePath}
+                volumeName={leftVolumeName}
                 isFocused={focusedPane === 'left'}
                 {showHiddenFiles}
                 viewMode={leftViewMode}
@@ -1448,6 +1677,7 @@
                 initialPath={rightPath}
                 volumeId={rightVolumeId}
                 volumePath={rightVolumePath}
+                volumeName={rightVolumeName}
                 isFocused={focusedPane === 'right'}
                 {showHiddenFiles}
                 viewMode={rightViewMode}

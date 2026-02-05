@@ -105,13 +105,11 @@ fn test_tool_input_schemas_are_valid() {
 #[test]
 fn test_total_tool_count() {
     let tools = get_all_tools();
-    // 3 app + 3 view + 1 pane + 12 nav + 8 sort + 6 file + 2 volume + 5 selection = 40
-    // + 7 settings + 4 shortcuts = 51
-    // (context tools and volume_list moved to resources)
+    // 6 nav + 2 cursor + 1 select + 3 file_op + 3 view + 1 dialog + 2 app = 18
     assert_eq!(
         tools.len(),
-        51,
-        "Expected 51 tools, got {}. Did you add/remove tools?",
+        18,
+        "Expected 18 tools, got {}. Did you add/remove tools?",
         tools.len()
     );
 }
@@ -133,10 +131,11 @@ fn test_no_duplicate_tool_names() {
 #[test]
 fn test_resource_count() {
     let resources = get_all_resources();
-    #[cfg(target_os = "macos")]
-    assert_eq!(resources.len(), 9, "Expected 9 resources");
-    #[cfg(not(target_os = "macos"))]
-    assert_eq!(resources.len(), 8, "Expected 8 resources");
+    assert_eq!(
+        resources.len(),
+        2,
+        "Expected 2 resources (cmdr://state and cmdr://dialogs/available)"
+    );
 }
 
 #[test]
@@ -169,26 +168,19 @@ fn test_no_duplicate_resource_uris() {
 #[test]
 fn test_resources_exist() {
     let resources = get_all_resources();
-    let expected_uris = [
-        "cmdr://pane/focused",
-        "cmdr://pane/left/path",
-        "cmdr://pane/right/path",
-        "cmdr://pane/left/content",
-        "cmdr://pane/right/content",
-        "cmdr://pane/cursor",
-    ];
+    let expected_uris = ["cmdr://state", "cmdr://dialogs/available"];
     for uri in expected_uris {
         assert!(resources.iter().any(|r| r.uri == uri), "Missing resource: {}", uri);
     }
 }
 
 #[test]
-fn test_all_resources_have_json_mime_type() {
+fn test_all_resources_have_yaml_mime_type() {
     let resources = get_all_resources();
     for resource in resources {
         assert_eq!(
-            resource.mime_type, "application/json",
-            "Resource {} should have application/json mime type",
+            resource.mime_type, "text/yaml",
+            "Resource {} should have text/yaml mime type",
             resource.uri
         );
     }
@@ -201,58 +193,63 @@ fn test_all_resources_have_json_mime_type() {
 #[test]
 fn test_app_tools_exist() {
     let tools = get_all_tools();
-    let app_tools: Vec<_> = tools.iter().filter(|t| t.name.starts_with("app_")).collect();
 
-    let expected = ["app_quit", "app_hide", "app_about"];
+    // App tools: quit, switch_pane
+    let expected = ["quit", "switch_pane"];
     for name in expected {
-        assert!(app_tools.iter().any(|t| t.name == name), "Missing app tool: {}", name);
+        assert!(tools.iter().any(|t| t.name == name), "Missing app tool: {}", name);
     }
 }
 
 #[test]
 fn test_nav_tools_exist() {
     let tools = get_all_tools();
-    let nav_tools: Vec<_> = tools.iter().filter(|t| t.name.starts_with("nav_")).collect();
 
+    // Navigation tools: select_volume, nav_to_path, nav_to_parent, nav_back, nav_forward, scroll_to
     let expected = [
-        "nav_open",
-        "nav_parent",
+        "select_volume",
+        "nav_to_path",
+        "nav_to_parent",
         "nav_back",
         "nav_forward",
-        "nav_up",
-        "nav_down",
-        "nav_home",
-        "nav_end",
-        "nav_pageUp",
-        "nav_pageDown",
-        "nav_left",
-        "nav_right",
+        "scroll_to",
     ];
     for name in expected {
-        assert!(nav_tools.iter().any(|t| t.name == name), "Missing nav tool: {}", name);
+        assert!(tools.iter().any(|t| t.name == name), "Missing nav tool: {}", name);
     }
-    assert_eq!(nav_tools.len(), 12, "Expected 12 nav tools");
 }
 
 #[test]
-fn test_sort_tools_exist() {
+fn test_cursor_tools_exist() {
     let tools = get_all_tools();
-    let sort_tools: Vec<_> = tools.iter().filter(|t| t.name.starts_with("sort_")).collect();
 
-    let expected = [
-        "sort_byName",
-        "sort_byExtension",
-        "sort_bySize",
-        "sort_byModified",
-        "sort_byCreated",
-        "sort_ascending",
-        "sort_descending",
-        "sort_toggleOrder",
-    ];
+    // Cursor tools: move_cursor, open_under_cursor
+    let expected = ["move_cursor", "open_under_cursor"];
     for name in expected {
-        assert!(sort_tools.iter().any(|t| t.name == name), "Missing sort tool: {}", name);
+        assert!(tools.iter().any(|t| t.name == name), "Missing cursor tool: {}", name);
     }
-    assert_eq!(sort_tools.len(), 8, "Expected 8 sort tools");
+}
+
+#[test]
+fn test_view_tools_exist() {
+    let tools = get_all_tools();
+
+    // View tools: toggle_hidden, set_view_mode, sort
+    let expected = ["toggle_hidden", "set_view_mode", "sort"];
+    for name in expected {
+        assert!(tools.iter().any(|t| t.name == name), "Missing view tool: {}", name);
+    }
+}
+
+#[test]
+fn test_file_op_tools_exist() {
+    let tools = get_all_tools();
+
+    // File operation tools: copy, mkdir, refresh
+    let expected = ["copy", "mkdir", "refresh"];
+    for name in expected {
+        assert!(tools.iter().any(|t| t.name == name), "Missing file op tool: {}", name);
+    }
 }
 
 #[test]
@@ -267,73 +264,71 @@ fn test_context_tools_removed() {
 }
 
 #[test]
-fn test_volume_tools_require_index_param() {
+fn test_select_volume_tool_schema() {
     let tools = get_all_tools();
+    let tool = tools.iter().find(|t| t.name == "select_volume").expect("select_volume");
 
-    for name in ["volume_selectLeft", "volume_selectRight"] {
-        let tool = tools.iter().find(|t| t.name == name).expect(name);
-        let required = tool.input_schema.get("required").and_then(|r| r.as_array());
-        assert!(
-            required.is_some_and(|r| r.iter().any(|v| v == "index")),
-            "{} should require 'index' parameter",
-            name
-        );
-    }
-}
-
-#[test]
-fn test_volume_tools_exist() {
-    let tools = get_all_tools();
-    let volume_tools: Vec<_> = tools.iter().filter(|t| t.name.starts_with("volume_")).collect();
-
-    // volume_list is now a resource (cmdr://volumes), not a tool
-    let expected = ["volume_selectLeft", "volume_selectRight"];
-    for name in expected {
-        assert!(
-            volume_tools.iter().any(|t| t.name == name),
-            "Missing volume tool: {}",
-            name
-        );
-    }
-    assert_eq!(volume_tools.len(), 2, "Expected 2 volume tools");
-}
-
-#[cfg(target_os = "macos")]
-#[test]
-fn test_volumes_resource_exists() {
-    // volume_list is now a resource (cmdr://volumes), not a tool
-    let resources = get_all_resources();
+    let required = tool.input_schema.get("required").and_then(|r| r.as_array());
     assert!(
-        resources.iter().any(|r| r.uri == "cmdr://volumes"),
-        "cmdr://volumes resource should exist"
+        required.is_some_and(|r| r.iter().any(|v| v == "pane")),
+        "select_volume should require 'pane' parameter"
+    );
+    assert!(
+        required.is_some_and(|r| r.iter().any(|v| v == "name")),
+        "select_volume should require 'name' parameter"
     );
 }
 
 #[test]
-fn test_volume_select_index_schema() {
+fn test_volume_tools_removed() {
     let tools = get_all_tools();
+    let volume_tools: Vec<_> = tools.iter().filter(|t| t.name.starts_with("volume_")).collect();
 
-    for name in ["volume_selectLeft", "volume_selectRight"] {
-        let tool = tools.iter().find(|t| t.name == name).expect(name);
+    // volume_selectLeft/Right are removed, replaced by select_volume
+    assert!(
+        volume_tools.is_empty(),
+        "volume_* tools should be removed (replaced by select_volume), but found: {:?}",
+        volume_tools.iter().map(|t| &t.name).collect::<Vec<_>>()
+    );
+}
 
-        // Check that index property exists and is of type integer
-        let properties = tool.input_schema.get("properties").expect("properties");
-        let index_prop = properties.get("index").expect("index property");
+#[test]
+fn test_state_resource_includes_volumes() {
+    // Volumes list is now part of the cmdr://state resource, not a separate resource
+    let resources = get_all_resources();
+    assert!(
+        resources.iter().any(|r| r.uri == "cmdr://state"),
+        "cmdr://state resource should exist (includes volumes)"
+    );
+}
 
-        assert_eq!(
-            index_prop.get("type").and_then(|t| t.as_str()),
-            Some("integer"),
-            "{} index should be type integer",
-            name
-        );
+#[test]
+fn test_nav_to_path_schema() {
+    let tools = get_all_tools();
+    let tool = tools.iter().find(|t| t.name == "nav_to_path").expect("nav_to_path");
 
-        // Check description exists
-        assert!(
-            index_prop.get("description").is_some(),
-            "{} index should have description",
-            name
-        );
-    }
+    let properties = tool.input_schema.get("properties").expect("properties");
+
+    // Check pane property
+    let pane_prop = properties.get("pane").expect("pane property");
+    assert_eq!(
+        pane_prop.get("type").and_then(|t| t.as_str()),
+        Some("string"),
+        "nav_to_path pane should be type string"
+    );
+
+    // Check path property
+    let path_prop = properties.get("path").expect("path property");
+    assert_eq!(
+        path_prop.get("type").and_then(|t| t.as_str()),
+        Some("string"),
+        "nav_to_path path should be type string"
+    );
+
+    // Check required params
+    let required = tool.input_schema.get("required").and_then(|r| r.as_array());
+    assert!(required.is_some_and(|r| r.iter().any(|v| v == "pane")));
+    assert!(required.is_some_and(|r| r.iter().any(|v| v == "path")));
 }
 
 #[test]
@@ -534,6 +529,7 @@ fn test_pane_state_store_update_left() {
     let state = PaneState {
         path: "/test/path".to_string(),
         volume_id: Some("test-vol".to_string()),
+        volume_name: Some("Test Volume".to_string()),
         files: vec![FileEntry {
             name: "file1.txt".to_string(),
             path: "/test/path/file1.txt".to_string(),
@@ -544,6 +540,12 @@ fn test_pane_state_store_update_left() {
         cursor_index: 0,
         view_mode: "brief".to_string(),
         selected_indices: vec![],
+        sort_field: "name".to_string(),
+        sort_order: "asc".to_string(),
+        total_files: 1,
+        loaded_start: 0,
+        loaded_end: 1,
+        show_hidden: false,
     };
 
     store.set_left(state.clone());
@@ -586,6 +588,7 @@ fn test_pane_state_cursor_index_bounds() {
     let state = PaneState {
         path: "/test".to_string(),
         volume_id: None,
+        volume_name: None,
         files: vec![FileEntry {
             name: "file1.txt".to_string(),
             path: "/test/file1.txt".to_string(),
@@ -596,6 +599,12 @@ fn test_pane_state_cursor_index_bounds() {
         cursor_index: 999, // Out of bounds
         view_mode: "brief".to_string(),
         selected_indices: vec![],
+        sort_field: "name".to_string(),
+        sort_order: "asc".to_string(),
+        total_files: 1,
+        loaded_start: 0,
+        loaded_end: 1,
+        show_hidden: false,
     };
 
     store.set_left(state);
@@ -649,12 +658,12 @@ fn test_file_entry_optional_fields_omitted() {
 fn test_tool_names_are_case_sensitive() {
     let tools = get_all_tools();
 
-    // Should find nav_up
-    assert!(tools.iter().any(|t| t.name == "nav_up"));
+    // Should find move_cursor
+    assert!(tools.iter().any(|t| t.name == "move_cursor"));
 
-    // Should NOT find NAV_UP or Nav_Up
-    assert!(!tools.iter().any(|t| t.name == "NAV_UP"));
-    assert!(!tools.iter().any(|t| t.name == "Nav_Up"));
+    // Should NOT find MOVE_CURSOR or Move_Cursor
+    assert!(!tools.iter().any(|t| t.name == "MOVE_CURSOR"));
+    assert!(!tools.iter().any(|t| t.name == "Move_Cursor"));
 }
 
 #[test]
@@ -711,10 +720,17 @@ fn test_empty_file_list() {
     let state = PaneState {
         path: "/empty".to_string(),
         volume_id: None,
+        volume_name: None,
         files: vec![],
         cursor_index: 0,
         view_mode: "brief".to_string(),
         selected_indices: vec![],
+        sort_field: "name".to_string(),
+        sort_order: "asc".to_string(),
+        total_files: 0,
+        loaded_start: 0,
+        loaded_end: 0,
+        show_hidden: false,
     };
 
     let json = serde_json::to_value(&state).unwrap();
@@ -737,10 +753,17 @@ fn test_large_file_count() {
     let state = PaneState {
         path: "/test".to_string(),
         volume_id: None,
+        volume_name: None,
         files,
         cursor_index: 500,
         view_mode: "full".to_string(),
         selected_indices: vec![1, 5, 10], // Some selected files
+        sort_field: "name".to_string(),
+        sort_order: "asc".to_string(),
+        total_files: 1000,
+        loaded_start: 0,
+        loaded_end: 1000,
+        show_hidden: false,
     };
 
     // Should serialize reasonably fast

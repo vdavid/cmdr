@@ -47,6 +47,10 @@ use mtp_rs as _;
 // nusb is used in mtp/watcher.rs for USB hotplug detection
 #[cfg(target_os = "macos")]
 use nusb as _;
+//noinspection ALL
+// objc2-app-kit is used in volumes/mod.rs for NSRunningApplication
+#[cfg(target_os = "macos")]
+use objc2_app_kit as _;
 
 mod ai;
 pub mod benchmark;
@@ -179,6 +183,9 @@ pub fn run() {
 
             // Initialize pane state store for MCP context tools
             app.manage(mcp::PaneStateStore::new());
+
+            // Initialize dialog state store for MCP dialog tracking
+            app.manage(mcp::DialogStateStore::new());
 
             // Initialize settings state store for MCP settings tools
             app.manage(mcp::SettingsStateStore::new());
@@ -352,6 +359,7 @@ pub fn run() {
             mcp::pane_state::update_left_pane_state,
             mcp::pane_state::update_right_pane_state,
             mcp::pane_state::update_focused_pane,
+            mcp::dialog_state::update_dialog_state,
             mcp::settings_state::mcp_update_settings_state,
             mcp::settings_state::mcp_update_settings_open,
             mcp::settings_state::mcp_update_settings_section,

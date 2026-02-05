@@ -26,10 +26,12 @@
         viewerSearchPoll,
         viewerSearchCancel,
         feLog,
+        updateDialogState,
         type ViewerSearchMatch,
         type BackendCapabilities,
     } from '$lib/tauri-commands'
     import { getCurrentWindow } from '@tauri-apps/api/window'
+    import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 
     let fileName = $state('')
     let totalLines = $state<number | null>(null)
@@ -83,6 +85,10 @@
     // Window lifecycle state: prevents closing before WebKit is fully initialized
     let windowReady = $state(false)
     let closeRequested = $state(false)
+
+    // MCP event listener cleanup functions
+    let unlistenMcpClose: UnlistenFn | undefined
+    let unlistenMcpFocus: UnlistenFn | undefined
 
     function estimatedTotalLines(): number {
         // Use exact count if known (FullLoad or LineIndex backends)
@@ -513,6 +519,33 @@
         return segments
     }
 
+    /** Set up MCP event listeners for close/focus commands from the main window */
+    async function setupMcpListeners(myFilePath: string) {
+        // Listen for close requests - close this viewer if the path matches or no path is specified
+        unlistenMcpClose = await listen<{ path?: string }>('mcp-viewer-close', (event) => {
+            const requestedPath = event.payload.path
+            if (!requestedPath || requestedPath === myFilePath) {
+                feLog(`[viewer] MCP close request received for path=${requestedPath ?? 'any'}`)
+                closeWindow()
+            }
+        })
+
+        // Listen for focus requests - focus this viewer if the path matches
+        unlistenMcpFocus = await listen<{ path?: string }>('mcp-viewer-focus', (event) => {
+            const requestedPath = event.payload.path
+            if (requestedPath === myFilePath) {
+                feLog(`[viewer] MCP focus request received for path=${requestedPath}`)
+                void getCurrentWindow().setFocus()
+            }
+        })
+    }
+
+    /** Clean up MCP event listeners */
+    function cleanupMcpListeners() {
+        unlistenMcpClose?.()
+        unlistenMcpFocus?.()
+    }
+
     onMount(async () => {
         const loadingScreen = document.getElementById('loading-screen')
         if (loadingScreen) {
@@ -563,6 +596,12 @@
                 .catch(() => {
                     // Not in Tauri environment
                 })
+
+            // Track file viewer dialog state for MCP
+            void updateDialogState('file-viewer', 'open', filePath)
+
+            // Set up MCP event listeners for close/focus commands
+            await setupMcpListeners(filePath)
         } catch (e) {
             error = typeof e === 'string' ? e : 'Failed to read file'
             feLog(`[viewer] Failed to open file: ${String(e)}`)
@@ -584,6 +623,14 @@
     })
 
     onDestroy(() => {
+        // Track file viewer dialog close state for MCP
+        const params = new URLSearchParams(window.location.search)
+        const filePath = params.get('path')
+        if (filePath) {
+            void updateDialogState('file-viewer', 'close', filePath)
+        }
+
+        cleanupMcpListeners()
         stopSearchPoll()
         stopIndexingPoll()
         if (searchDebounceTimer) clearTimeout(searchDebounceTimer)

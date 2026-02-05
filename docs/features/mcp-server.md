@@ -1,16 +1,21 @@
 # MCP server
 
-The cmdr MCP (Model Context Protocol) server enables AI agents to interact with the file manager through a standardized protocol. This allows AI assistants like Claude to navigate directories, manage views, and query file information using the same capabilities available to users.
+The cmdr MCP (Model Context Protocol) server enables AI agents to interact with the file manager through a standardized
+protocol. This allows AI assistants like Claude to navigate directories, manage views, and query file information using
+the same capabilities available to users.
 
 ## Overview
 
-The MCP server exposes 43 tools that mirror user capabilities exactly. AI agents can:
+The MCP server exposes 18 tools and 2 resources that mirror user capabilities exactly. AI agents can:
 
 - Navigate directories (up, down, open, back, forward)
 - Change sort order and view modes
 - Switch between volumes
+- Copy files and create folders
+- Query complete app state in YAML format
 
-**Security principle**: Agents can only do what users can do through the UI. There are no elevated privileges like direct file system access or shell execution.
+**Security principle**: Agents can only do what users can do through the UI. There are no elevated privileges like
+direct file system access or shell execution.
 
 ## Configuration
 
@@ -30,6 +35,7 @@ pnpm tauri dev
 ```
 
 The server will log:
+
 ```
 MCP server listening on http://127.0.0.1:9224
 ```
@@ -42,90 +48,66 @@ Set the environment variable before launching:
 CMDR_MCP_ENABLED=true open /Applications/cmdr.app
 ```
 
-## Available tools
+## Resources
 
-### App commands (3)
+Resources provide read-only state that agents can query.
 
-| Tool        | Description                 |
-|-------------|-----------------------------|
-| `app.quit`  | Quit the application        |
-| `app.hide`  | Hide the application window |
-| `app.about` | Show the about window       |
+| URI                        | Description                                          | MIME type   |
+|----------------------------|------------------------------------------------------|-------------|
+| `cmdr://state`             | Complete app state including panes, volumes, dialogs | `text/yaml` |
+| `cmdr://dialogs/available` | Available dialog types and their parameters          | `text/yaml` |
 
-### View commands (3)
+## Tools
 
-| Tool              | Description                    |
-|-------------------|--------------------------------|
-| `view.showHidden` | Toggle hidden files visibility |
-| `view.briefMode`  | Switch to Brief view mode      |
-| `view.fullMode`   | Switch to Full view mode       |
+All tools return plain text responses: `"OK: ..."` on success, `"ERROR: ..."` on failure.
 
-### Pane commands (3)
+### Navigation (6)
 
-| Tool                      | Description                        |
-|---------------------------|------------------------------------|
-| `pane.switch`             | Switch focus to the other pane     |
-| `pane.leftVolumeChooser`  | Open volume chooser for left pane  |
-| `pane.rightVolumeChooser` | Open volume chooser for right pane |
+| Tool            | Description                           | Parameters                                    |
+|-----------------|---------------------------------------|-----------------------------------------------|
+| `select_volume` | Switch pane to specified volume       | `pane`: left/right, `name`: volume name       |
+| `nav_to_path`   | Navigate pane to specified path       | `pane`: left/right, `path`: absolute path     |
+| `nav_to_parent` | Navigate to parent folder             | None                                          |
+| `nav_back`      | Navigate back in history              | None                                          |
+| `nav_forward`   | Navigate forward in history           | None                                          |
+| `scroll_to`     | Load region around index (large dirs) | `pane`: left/right, `index`: zero-based index |
 
-### Navigation commands (12)
+### Cursor and selection (3)
 
-| Tool           | Description                      |
-|----------------|----------------------------------|
-| `nav.open`     | Open/enter item under the cursor |
-| `nav.parent`   | Navigate to parent folder        |
-| `nav.back`     | Navigate back in history         |
-| `nav.forward`  | Navigate forward in history      |
-| `nav.up`       | Select previous file             |
-| `nav.down`     | Select next file                 |
-| `nav.home`     | Go to first file                 |
-| `nav.end`      | Go to last file                  |
-| `nav.pageUp`   | Page up                          |
-| `nav.pageDown` | Page down                        |
-| `nav.left`     | Previous column (Brief mode)     |
-| `nav.right`    | Next column (Brief mode)         |
+| Tool                | Description                      | Parameters                                                                                 |
+|---------------------|----------------------------------|--------------------------------------------------------------------------------------------|
+| `move_cursor`       | Move cursor to index or filename | `pane`: left/right, `to`: index (number) or filename (string)                              |
+| `open_under_cursor` | Open/enter item under cursor     | None                                                                                       |
+| `select`            | Select files in pane             | `pane`: left/right, `start`: index, `count`: number or "all", `mode`: replace/add/subtract |
 
-### Sort commands (8)
+### File operations (3)
 
-| Tool               | Description               |
-|--------------------|---------------------------|
-| `sort.byName`      | Sort by filename          |
-| `sort.byExtension` | Sort by file extension    |
-| `sort.bySize`      | Sort by file size         |
-| `sort.byModified`  | Sort by modification date |
-| `sort.byCreated`   | Sort by creation date     |
-| `sort.ascending`   | Set ascending order       |
-| `sort.descending`  | Set descending order      |
-| `sort.toggleOrder` | Toggle sort order         |
+| Tool      | Description                                                      | Parameters |
+|-----------|------------------------------------------------------------------|------------|
+| `copy`    | Copy selected files to other pane (triggers confirmation dialog) | None       |
+| `mkdir`   | Create folder in focused pane (triggers naming dialog)           | None       |
+| `refresh` | Refresh focused pane                                             | None       |
 
-### File commands (5)
+### View (3)
 
-| Tool                | Description                          |
-|---------------------|--------------------------------------|
-| `file.showInFinder` | Show file under the cursor in Finder |
-| `file.copyPath`     | Copy file path to clipboard          |
-| `file.copyFilename` | Copy filename to clipboard           |
-| `file.quickLook`    | Preview with Quick Look              |
-| `file.getInfo`      | Open Get Info window                 |
+| Tool            | Description                    | Parameters                                                                  |
+|-----------------|--------------------------------|-----------------------------------------------------------------------------|
+| `sort`          | Sort files in pane             | `pane`: left/right, `by`: name/ext/size/modified/created, `order`: asc/desc |
+| `toggle_hidden` | Toggle hidden files visibility | None                                                                        |
+| `set_view_mode` | Set view mode for pane         | `pane`: left/right, `mode`: brief/full                                      |
 
-### Volume commands (3)
+### Dialogs (1)
 
-| Tool                 | Description                  | Parameters       |
-|----------------------|------------------------------|------------------|
-| `volume.list`        | List available volumes       | None             |
-| `volume.selectLeft`  | Select volume for left pane  | `index: integer` |
-| `volume.selectRight` | Select volume for right pane | `index: integer` |
+| Tool     | Description                   | Parameters                                                                                                                                    |
+|----------|-------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
+| `dialog` | Open, focus, or close dialogs | `action`: open/focus/close, `type`: settings/volume-picker/file-viewer/about/confirmation, `section`?: for settings, `path`?: for file-viewer |
 
-### Context commands (6)
+### App (2)
 
-| Tool                                | Description                              |
-|-------------------------------------|------------------------------------------|
-| `context.getFocusedPane`            | Get focused pane (left/right)            |
-| `context.getLeftPanePath`           | Get left pane path and volume            |
-| `context.getRightPanePath`          | Get right pane path and volume           |
-| `context.getLeftPaneContent`        | Get left pane file listing               |
-| `context.getRightPaneContent`       | Get right pane file listing              |
-| `context.getInfoForFileUnderCursor` | Get details of the file under the cursor |
+| Tool          | Description                    | Parameters |
+|---------------|--------------------------------|------------|
+| `switch_pane` | Switch focus to the other pane | None       |
+| `quit`        | Quit the application           | None       |
 
 ## Protocol
 
@@ -149,8 +131,8 @@ curl -X POST http://localhost:9224/mcp \
     "id": 1,
     "method": "tools/call",
     "params": {
-      "name": "nav.down",
-      "arguments": {}
+      "name": "nav_to_path",
+      "arguments": {"pane": "left", "path": "/Users"}
     }
   }'
 ```
@@ -162,10 +144,12 @@ curl -X POST http://localhost:9224/mcp \
   "jsonrpc": "2.0",
   "id": 1,
   "result": {
-    "content": [{
-      "type": "text",
-      "text": "{\"success\":true,\"key\":\"ArrowDown\"}"
-    }]
+    "content": [
+      {
+        "type": "text",
+        "text": "OK: Navigated left pane to /Users"
+      }
+    ]
   }
 }
 ```
@@ -199,6 +183,7 @@ The MCP server is designed with security in mind:
 ### Server not starting
 
 Check if MCP is enabled:
+
 ```bash
 # Development (should be enabled by default)
 pnpm tauri dev
@@ -210,6 +195,7 @@ CMDR_MCP_ENABLED=true open /Applications/cmdr.app
 ### Port already in use
 
 Change the port:
+
 ```bash
 CMDR_MCP_PORT=9225 pnpm tauri dev
 ```

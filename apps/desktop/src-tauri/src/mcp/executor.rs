@@ -3,15 +3,14 @@
 //! Handles the execution of MCP tools and returns results.
 //! All tools are designed to match user capabilities exactly.
 
+use std::path::Path;
+
 use serde_json::{Value, json};
 use tauri::{AppHandle, Emitter, Manager, Runtime};
 
-use super::pane_state::PaneStateStore;
+use super::dialog_state::DialogStateStore;
 use super::protocol::{INTERNAL_ERROR, INVALID_PARAMS};
-use super::settings_state::SettingsStateStore;
-use crate::commands::ui::{
-    copy_to_clipboard, get_info, open_in_editor, quick_look, set_view_mode, show_in_finder, toggle_hidden_files,
-};
+use crate::commands::ui::toggle_hidden_files;
 
 /// Result of tool execution.
 pub type ToolResult = Result<Value, ToolError>;
@@ -43,510 +42,524 @@ impl ToolError {
 pub fn execute_tool<R: Runtime>(app: &AppHandle<R>, name: &str, params: &Value) -> ToolResult {
     match name {
         // App commands
-        n if n.starts_with("app_") => execute_app_command(app, n),
+        "quit" => execute_quit(app),
+        "switch_pane" => execute_switch_pane(app),
         // View commands
-        n if n.starts_with("view_") => execute_view_command(app, n),
-        // Pane commands
-        n if n.starts_with("pane_") => execute_pane_command(app, n),
-        // Navigation commands
-        n if n.starts_with("nav_") => execute_nav_command(app, n),
-        // Sort commands
-        n if n.starts_with("sort_") => execute_sort_command(app, n),
-        // File commands
-        n if n.starts_with("file_") => execute_file_command(app, n),
-        // Volume commands
-        n if n.starts_with("volume_") => execute_volume_command(app, n, params),
-        // Selection commands
-        n if n.starts_with("selection_") => execute_selection_command(app, n, params),
-        // Context commands
-        n if n.starts_with("context_") => execute_context_command(app, n),
-        // Settings commands
-        n if n.starts_with("settings_") => execute_settings_command(app, n, params),
-        // Shortcuts commands
-        n if n.starts_with("shortcuts_") => execute_shortcuts_command(app, n, params),
+        "toggle_hidden" => execute_toggle_hidden(app),
+        "set_view_mode" => execute_set_view_mode(app, params),
+        "sort" => execute_sort(app, params),
+        // Navigation commands (no params)
+        "open_under_cursor" | "nav_to_parent" | "nav_back" | "nav_forward" => execute_nav_command(app, name),
+        // Navigation commands (with params)
+        "select_volume" | "nav_to_path" | "move_cursor" | "scroll_to" => {
+            execute_nav_command_with_params(app, name, params)
+        }
+        // File operation commands
+        "copy" => execute_copy(app),
+        "mkdir" => execute_mkdir(app),
+        "refresh" => execute_refresh(app),
+        // Selection command
+        "select" => execute_select_command(app, params),
+        // Dialog command
+        "dialog" => execute_dialog_command(app, params),
         _ => Err(ToolError::invalid_params(format!("Unknown tool: {name}"))),
     }
 }
 
-/// Execute an app command.
-fn execute_app_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolResult {
-    match name {
-        "app_quit" => {
-            app.exit(0);
-            Ok(json!({"success": true}))
-        }
-        "app_hide" => {
-            // Use macOS NSApplication hide (same as ⌘H)
-            #[cfg(target_os = "macos")]
-            {
-                use objc2::MainThreadMarker;
-                use objc2_app_kit::NSApplication;
-                if let Some(mtm) = MainThreadMarker::new() {
-                    let app_instance = NSApplication::sharedApplication(mtm);
-                    app_instance.hide(None);
-                }
-            }
-            Ok(json!({"success": true}))
-        }
-        "app_about" => {
-            app.emit("show-about", ())
-                .map_err(|e| ToolError::internal(e.to_string()))?;
-            Ok(json!({"success": true}))
-        }
-        _ => Err(ToolError::invalid_params(format!("Unknown app command: {name}"))),
-    }
+/// Execute quit command.
+fn execute_quit<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
+    app.exit(0);
+    Ok(json!("OK: Quitting application"))
 }
 
-/// Execute a view command.
-fn execute_view_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolResult {
-    match name {
-        "view_showHidden" => {
-            let result = toggle_hidden_files(app.clone()).map_err(ToolError::internal)?;
-            Ok(json!({"success": true, "showHiddenFiles": result}))
-        }
-        "view_briefMode" => {
-            set_view_mode(app.clone(), "brief".to_string()).map_err(ToolError::internal)?;
-            Ok(json!({"success": true, "viewMode": "brief"}))
-        }
-        "view_fullMode" => {
-            set_view_mode(app.clone(), "full".to_string()).map_err(ToolError::internal)?;
-            Ok(json!({"success": true, "viewMode": "full"}))
-        }
-        _ => Err(ToolError::invalid_params(format!("Unknown view command: {name}"))),
-    }
+/// Execute switch_pane command.
+fn execute_switch_pane<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
+    app.emit("switch-pane", ())
+        .map_err(|e| ToolError::internal(e.to_string()))?;
+    Ok(json!("OK: Switched focus to other pane"))
 }
 
-/// Execute a pane command.
-fn execute_pane_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolResult {
-    match name {
-        "pane_switch" => {
-            app.emit("switch-pane", ())
-                .map_err(|e| ToolError::internal(e.to_string()))?;
-            Ok(json!({"success": true}))
-        }
-        _ => Err(ToolError::invalid_params(format!("Unknown pane command: {name}"))),
-    }
+/// Execute toggle_hidden command.
+fn execute_toggle_hidden<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
+    let result = toggle_hidden_files(app.clone()).map_err(ToolError::internal)?;
+    let state = if result { "visible" } else { "hidden" };
+    Ok(json!(format!("OK: Hidden files now {state}")))
 }
 
-/// Execute a navigation command.
+/// Execute set_view_mode command.
+fn execute_set_view_mode<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+    let pane = params
+        .get("pane")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ToolError::invalid_params("Missing 'pane' parameter"))?;
+    let mode = params
+        .get("mode")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ToolError::invalid_params("Missing 'mode' parameter"))?;
+
+    if !["left", "right"].contains(&pane) {
+        return Err(ToolError::invalid_params("pane must be 'left' or 'right'"));
+    }
+    if !["brief", "full"].contains(&mode) {
+        return Err(ToolError::invalid_params("mode must be 'brief' or 'full'"));
+    }
+
+    app.emit("mcp-set-view-mode", json!({"pane": pane, "mode": mode}))
+        .map_err(|e| ToolError::internal(e.to_string()))?;
+    Ok(json!(format!("OK: Set {pane} pane to {mode} view")))
+}
+
+/// Execute unified sort command.
+fn execute_sort<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+    let pane = params
+        .get("pane")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ToolError::invalid_params("Missing 'pane' parameter"))?;
+    let by = params
+        .get("by")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ToolError::invalid_params("Missing 'by' parameter"))?;
+    let order = params
+        .get("order")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ToolError::invalid_params("Missing 'order' parameter"))?;
+
+    if !["left", "right"].contains(&pane) {
+        return Err(ToolError::invalid_params("pane must be 'left' or 'right'"));
+    }
+    if !["name", "ext", "size", "modified", "created"].contains(&by) {
+        return Err(ToolError::invalid_params(
+            "by must be 'name', 'ext', 'size', 'modified', or 'created'",
+        ));
+    }
+    if !["asc", "desc"].contains(&order) {
+        return Err(ToolError::invalid_params("order must be 'asc' or 'desc'"));
+    }
+
+    app.emit("mcp-sort", json!({"pane": pane, "by": by, "order": order}))
+        .map_err(|e| ToolError::internal(e.to_string()))?;
+
+    let order_name = if order == "asc" { "ascending" } else { "descending" };
+    Ok(json!(format!("OK: Sorted {pane} pane by {by} ({order_name})")))
+}
+
+/// Execute a navigation command without parameters.
 /// These emit keyboard-equivalent events to the frontend.
 fn execute_nav_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolResult {
     let key = match name {
-        "nav_open" => "Enter",
-        "nav_parent" => "Backspace",
+        "open_under_cursor" => "Enter",
+        "nav_to_parent" => "Backspace",
         "nav_back" => "GoBack",       // Custom event, handled by frontend
         "nav_forward" => "GoForward", // Custom event
-        "nav_up" => "ArrowUp",
-        "nav_down" => "ArrowDown",
-        "nav_left" => "ArrowLeft",
-        "nav_right" => "ArrowRight",
-        "nav_home" => "Home",
-        "nav_end" => "End",
-        "nav_pageUp" => "PageUp",
-        "nav_pageDown" => "PageDown",
         _ => return Err(ToolError::invalid_params(format!("Unknown nav command: {name}"))),
+    };
+
+    let action = match name {
+        "open_under_cursor" => "Opened item under cursor",
+        "nav_to_parent" => "Navigated to parent directory",
+        "nav_back" => "Navigated back",
+        "nav_forward" => "Navigated forward",
+        _ => "Navigation action completed",
     };
 
     app.emit("mcp-key", json!({"key": key}))
         .map_err(|e| ToolError::internal(e.to_string()))?;
-    Ok(json!({"success": true, "key": key}))
+    Ok(json!(format!("OK: {action}")))
 }
 
-/// Execute a sort command.
-fn execute_sort_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolResult {
-    let (action, value) = match name {
-        "sort_byName" => ("sortBy", "name"),
-        "sort_byExtension" => ("sortBy", "extension"),
-        "sort_bySize" => ("sortBy", "size"),
-        "sort_byModified" => ("sortBy", "modified"),
-        "sort_byCreated" => ("sortBy", "created"),
-        "sort_ascending" => ("sortOrder", "asc"),
-        "sort_descending" => ("sortOrder", "desc"),
-        "sort_toggleOrder" => ("sortOrder", "toggle"),
-        _ => return Err(ToolError::invalid_params(format!("Unknown sort command: {name}"))),
-    };
-
-    app.emit("mcp-sort", json!({"action": action, "value": value}))
-        .map_err(|e| ToolError::internal(e.to_string()))?;
-    Ok(json!({"success": true, "action": action, "value": value}))
-}
-
-/// Execute a file command.
-/// Gets the file under the cursor from PaneStateStore and operates on it directly.
-fn execute_file_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolResult {
-    // Get the file under the cursor from pane state
-    let store = app
-        .try_state::<PaneStateStore>()
-        .ok_or_else(|| ToolError::internal("Pane state not initialized"))?;
-
-    let focused = store.get_focused_pane();
-    let pane = if focused == "right" {
-        store.get_right()
-    } else {
-        store.get_left()
-    };
-
-    let file_under_cursor = pane
-        .files
-        .get(pane.cursor_index)
-        .ok_or_else(|| ToolError::internal("No file under cursor"))?;
-
+/// Execute a navigation command with parameters.
+fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, name: &str, params: &Value) -> ToolResult {
     match name {
-        "file_openInEditor" => {
-            open_in_editor(file_under_cursor.path.clone()).map_err(ToolError::internal)?;
-            Ok(json!({"success": true, "path": file_under_cursor.path}))
-        }
-        "file_showInFinder" => {
-            show_in_finder(file_under_cursor.path.clone()).map_err(ToolError::internal)?;
-            Ok(json!({"success": true, "path": file_under_cursor.path}))
-        }
-        "file_copyPath" => {
-            copy_to_clipboard(app.clone(), file_under_cursor.path.clone()).map_err(ToolError::internal)?;
-            Ok(json!({"success": true, "copied": file_under_cursor.path}))
-        }
-        "file_copyFilename" => {
-            copy_to_clipboard(app.clone(), file_under_cursor.name.clone()).map_err(ToolError::internal)?;
-            Ok(json!({"success": true, "copied": file_under_cursor.name}))
-        }
-        "file_quickLook" => {
-            quick_look(file_under_cursor.path.clone()).map_err(ToolError::internal)?;
-            Ok(json!({"success": true, "path": file_under_cursor.path}))
-        }
-        "file_getInfo" => {
-            get_info(file_under_cursor.path.clone()).map_err(ToolError::internal)?;
-            Ok(json!({"success": true, "path": file_under_cursor.path}))
-        }
-        _ => Err(ToolError::invalid_params(format!("Unknown file command: {name}"))),
-    }
-}
+        "select_volume" => {
+            let pane = params
+                .get("pane")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| ToolError::invalid_params("Missing 'pane' parameter"))?;
+            let volume_name = params
+                .get("name")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| ToolError::invalid_params("Missing 'name' parameter"))?;
 
-/// Execute a volume command.
-/// Note: volume listing is now a resource (cmdr://volumes), not a tool.
-fn execute_volume_command<R: Runtime>(app: &AppHandle<R>, name: &str, params: &Value) -> ToolResult {
-    match name {
-        "volume_selectLeft" | "volume_selectRight" => {
+            if !["left", "right"].contains(&pane) {
+                return Err(ToolError::invalid_params("pane must be 'left' or 'right'"));
+            }
+
+            // Validate that the volume exists
+            #[cfg(target_os = "macos")]
+            {
+                let locations = crate::volumes::list_locations();
+                if !locations.iter().any(|loc| loc.name == volume_name) {
+                    let available: Vec<&str> = locations.iter().map(|l| l.name.as_str()).collect();
+                    return Err(ToolError::invalid_params(format!(
+                        "Volume '{}' not found. Available volumes: {}",
+                        volume_name,
+                        available.join(", ")
+                    )));
+                }
+            }
+
+            app.emit("mcp-volume-select", json!({"pane": pane, "name": volume_name}))
+                .map_err(|e| ToolError::internal(e.to_string()))?;
+            Ok(json!(format!("OK: Switched {pane} pane to volume {volume_name}")))
+        }
+        "nav_to_path" => {
+            let pane = params
+                .get("pane")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| ToolError::invalid_params("Missing 'pane' parameter"))?;
+            let path = params
+                .get("path")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| ToolError::invalid_params("Missing 'path' parameter"))?;
+
+            if !["left", "right"].contains(&pane) {
+                return Err(ToolError::invalid_params("pane must be 'left' or 'right'"));
+            }
+
+            // Validate that the path exists
+            if !Path::new(path).exists() {
+                return Err(ToolError::invalid_params(format!("Path does not exist: {}", path)));
+            }
+
+            app.emit("mcp-nav-to-path", json!({"pane": pane, "path": path}))
+                .map_err(|e| ToolError::internal(e.to_string()))?;
+            Ok(json!(format!("OK: Navigated {pane} pane to {path}")))
+        }
+        "move_cursor" => {
+            let pane = params
+                .get("pane")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| ToolError::invalid_params("Missing 'pane' parameter"))?;
+            let to = params
+                .get("to")
+                .ok_or_else(|| ToolError::invalid_params("Missing 'to' parameter"))?;
+
+            if !["left", "right"].contains(&pane) {
+                return Err(ToolError::invalid_params("pane must be 'left' or 'right'"));
+            }
+
+            // 'to' can be either an integer index or a string filename
+            // If it's a number, validate it's non-negative
+            if let Some(index) = to.as_i64() {
+                if index < 0 {
+                    return Err(ToolError::invalid_params("index must be >= 0"));
+                }
+            } else if to.as_str().is_none() {
+                return Err(ToolError::invalid_params(
+                    "'to' must be an index (number) or filename (string)",
+                ));
+            }
+
+            app.emit("mcp-move-cursor", json!({"pane": pane, "to": to}))
+                .map_err(|e| ToolError::internal(e.to_string()))?;
+            Ok(json!(format!("OK: Moved cursor in {pane} pane to {to}")))
+        }
+        "scroll_to" => {
+            let pane = params
+                .get("pane")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| ToolError::invalid_params("Missing 'pane' parameter"))?;
             let index = params
                 .get("index")
                 .and_then(|v| v.as_i64())
                 .ok_or_else(|| ToolError::invalid_params("Missing 'index' parameter"))?;
 
-            let pane = if name == "volume_selectLeft" { "left" } else { "right" };
+            if !["left", "right"].contains(&pane) {
+                return Err(ToolError::invalid_params("pane must be 'left' or 'right'"));
+            }
+            if index < 0 {
+                return Err(ToolError::invalid_params("index must be >= 0"));
+            }
 
-            app.emit("mcp-volume-select", json!({"pane": pane, "index": index}))
+            app.emit("mcp-scroll-to", json!({"pane": pane, "index": index}))
                 .map_err(|e| ToolError::internal(e.to_string()))?;
-            Ok(json!({"success": true, "pane": pane, "index": index}))
+            Ok(json!(format!("OK: Scrolled {pane} pane to index {index}")))
         }
-        _ => Err(ToolError::invalid_params(format!("Unknown volume command: {name}"))),
+        _ => Err(ToolError::invalid_params(format!("Unknown nav command: {name}"))),
     }
 }
 
-/// Execute a selection command.
-/// These emit events to the frontend to manipulate file selection.
-fn execute_selection_command<R: Runtime>(app: &AppHandle<R>, name: &str, params: &Value) -> ToolResult {
-    match name {
-        "selection_clear" => {
-            app.emit("mcp-selection", json!({"action": "clear"}))
-                .map_err(|e| ToolError::internal(e.to_string()))?;
-            Ok(json!({"success": true, "action": "clear"}))
-        }
-        "selection_selectAll" => {
-            app.emit("mcp-selection", json!({"action": "selectAll"}))
-                .map_err(|e| ToolError::internal(e.to_string()))?;
-            Ok(json!({"success": true, "action": "selectAll"}))
-        }
-        "selection_deselectAll" => {
-            app.emit("mcp-selection", json!({"action": "deselectAll"}))
-                .map_err(|e| ToolError::internal(e.to_string()))?;
-            Ok(json!({"success": true, "action": "deselectAll"}))
-        }
-        "selection_toggleAtCursor" => {
-            app.emit("mcp-selection", json!({"action": "toggleAtCursor"}))
-                .map_err(|e| ToolError::internal(e.to_string()))?;
-            Ok(json!({"success": true, "action": "toggleAtCursor"}))
-        }
-        "selection_selectRange" => {
-            let start_index = params
-                .get("startIndex")
-                .and_then(|v| v.as_i64())
-                .ok_or_else(|| ToolError::invalid_params("Missing 'startIndex' parameter"))?;
-            let end_index = params
-                .get("endIndex")
-                .and_then(|v| v.as_i64())
-                .ok_or_else(|| ToolError::invalid_params("Missing 'endIndex' parameter"))?;
+/// Execute copy command.
+///
+/// Note: We cannot validate whether files are selected because selection state
+/// is managed by the frontend. The validation happens in the frontend event handler
+/// which will show an appropriate error if no files are selected.
+fn execute_copy<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
+    app.emit("mcp-copy", ())
+        .map_err(|e| ToolError::internal(e.to_string()))?;
+    Ok(json!("OK: Copy dialog opened. Waiting for user confirmation."))
+}
 
-            app.emit(
-                "mcp-selection",
-                json!({"action": "selectRange", "startIndex": start_index, "endIndex": end_index}),
-            )
-            .map_err(|e| ToolError::internal(e.to_string()))?;
-            Ok(json!({"success": true, "action": "selectRange", "startIndex": start_index, "endIndex": end_index}))
+/// Execute mkdir command.
+///
+/// Note: We cannot validate whether the current directory is writable because
+/// the current directory path is managed by the frontend. The validation happens
+/// when the actual mkdir operation is attempted, which will return an appropriate
+/// error if the directory is not writable.
+fn execute_mkdir<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
+    app.emit("mcp-mkdir", ())
+        .map_err(|e| ToolError::internal(e.to_string()))?;
+    Ok(json!("OK: Create folder dialog opened."))
+}
+
+/// Execute refresh command.
+fn execute_refresh<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
+    app.emit("mcp-refresh", ())
+        .map_err(|e| ToolError::internal(e.to_string()))?;
+    Ok(json!("OK: Pane refreshed"))
+}
+
+/// Execute the unified select command.
+/// Emits event to frontend to manipulate file selection.
+fn execute_select_command<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+    let pane = params
+        .get("pane")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ToolError::invalid_params("Missing 'pane' parameter"))?;
+
+    let start = params
+        .get("start")
+        .and_then(|v| v.as_i64())
+        .ok_or_else(|| ToolError::invalid_params("Missing 'start' parameter"))?;
+
+    // count can be a number or the string "all"
+    let count_value = params
+        .get("count")
+        .ok_or_else(|| ToolError::invalid_params("Missing 'count' parameter"))?;
+
+    if !["left", "right"].contains(&pane) {
+        return Err(ToolError::invalid_params("pane must be 'left' or 'right'"));
+    }
+    if start < 0 {
+        return Err(ToolError::invalid_params("start must be >= 0"));
+    }
+
+    let count: Value = if let Some(n) = count_value.as_i64() {
+        if n < 0 {
+            return Err(ToolError::invalid_params("count must be >= 0"));
         }
-        _ => Err(ToolError::invalid_params(format!("Unknown selection command: {name}"))),
+        json!(n)
+    } else if let Some(s) = count_value.as_str() {
+        if s == "all" {
+            json!("all")
+        } else {
+            return Err(ToolError::invalid_params("count must be a number or 'all'"));
+        }
+    } else {
+        return Err(ToolError::invalid_params("count must be a number or 'all'"));
+    };
+
+    // mode defaults to "replace" if not provided
+    let mode = params.get("mode").and_then(|v| v.as_str()).unwrap_or("replace");
+
+    // Validate mode
+    if !["replace", "add", "subtract"].contains(&mode) {
+        return Err(ToolError::invalid_params(
+            "mode must be 'replace', 'add', or 'subtract'",
+        ));
+    }
+
+    app.emit(
+        "mcp-select",
+        json!({"pane": pane, "start": start, "count": count, "mode": mode}),
+    )
+    .map_err(|e| ToolError::internal(e.to_string()))?;
+
+    Ok(json!(format!("OK: Selection updated in {pane} pane")))
+}
+
+/// Execute the unified dialog command.
+/// Handles opening, focusing, and closing dialogs.
+fn execute_dialog_command<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+    let action = params
+        .get("action")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ToolError::invalid_params("Missing 'action' parameter"))?;
+
+    let dialog_type = params
+        .get("type")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ToolError::invalid_params("Missing 'type' parameter"))?;
+
+    // Optional params
+    let section = params.get("section").and_then(|v| v.as_str());
+    let path = params.get("path").and_then(|v| v.as_str());
+
+    match action {
+        "open" => execute_dialog_open(app, dialog_type, section, path),
+        "focus" => execute_dialog_focus(app, dialog_type, path),
+        "close" => execute_dialog_close(app, dialog_type, path),
+        _ => Err(ToolError::invalid_params(format!("Invalid action: {action}"))),
     }
 }
 
-/// Execute a context command.
-fn execute_context_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolResult {
-    let store = app
-        .try_state::<PaneStateStore>()
-        .ok_or_else(|| ToolError::internal("Pane state not initialized"))?;
-
-    match name {
-        "context_getFocusedPane" => {
-            let focused = store.get_focused_pane();
-            Ok(json!({"focusedPane": focused}))
+/// Execute dialog open action.
+fn execute_dialog_open<R: Runtime>(
+    app: &AppHandle<R>,
+    dialog_type: &str,
+    section: Option<&str>,
+    path: Option<&str>,
+) -> ToolResult {
+    // Track dialog state
+    if let Some(store) = app.try_state::<DialogStateStore>() {
+        match dialog_type {
+            "settings" => store.set_settings_open(true),
+            "about" => store.set_about_open(true),
+            "volume-picker" => store.set_volume_picker_open(true),
+            "file-viewer" => {
+                if let Some(p) = path {
+                    store.add_file_viewer(p.to_string());
+                }
+            }
+            _ => {}
         }
+    }
 
-        "context_getLeftPanePath" => {
-            let left = store.get_left();
-            Ok(json!({
-                "path": left.path,
-                "volumeId": left.volume_id,
-            }))
-        }
-
-        "context_getRightPanePath" => {
-            let right = store.get_right();
-            Ok(json!({
-                "path": right.path,
-                "volumeId": right.volume_id,
-            }))
-        }
-
-        "context_getLeftPaneContent" => {
-            let left = store.get_left();
-            Ok(json!({
-                "path": left.path,
-                "files": left.files,
-                "cursorIndex": left.cursor_index,
-                "viewMode": left.view_mode,
-                "totalCount": left.files.len(),
-            }))
-        }
-
-        "context_getRightPaneContent" => {
-            let right = store.get_right();
-            Ok(json!({
-                "path": right.path,
-                "files": right.files,
-                "cursorIndex": right.cursor_index,
-                "viewMode": right.view_mode,
-                "totalCount": right.files.len(),
-            }))
-        }
-
-        "context_getInfoForFileUnderCursor" => {
-            let focused = store.get_focused_pane();
-            let pane = if focused == "right" {
-                store.get_right()
+    match dialog_type {
+        "settings" => {
+            // Emit event to open settings, optionally with a section
+            if let Some(section) = section {
+                app.emit_to("main", "open-settings", json!({"section": section}))
+                    .map_err(|e| ToolError::internal(e.to_string()))?;
+                Ok(json!(format!("OK: Opened settings at {section}")))
             } else {
-                store.get_left()
-            };
-
-            let file_under_cursor = pane.files.get(pane.cursor_index).cloned();
-            match file_under_cursor {
-                Some(file) => Ok(json!({
-                    "name": file.name,
-                    "path": file.path,
-                    "isDirectory": file.is_directory,
-                    "size": file.size,
-                    "modified": file.modified,
-                })),
-                None => Ok(json!({"error": "No file under cursor"})),
+                app.emit_to("main", "open-settings", ())
+                    .map_err(|e| ToolError::internal(e.to_string()))?;
+                Ok(json!("OK: Opened settings"))
             }
         }
-
-        _ => Err(ToolError::invalid_params(format!("Unknown context command: {name}"))),
+        "volume-picker" => {
+            app.emit("open-volume-picker", ())
+                .map_err(|e| ToolError::internal(e.to_string()))?;
+            Ok(json!("OK: Opened volume picker"))
+        }
+        "file-viewer" => {
+            // If path is provided, open for that file; otherwise, use cursor file
+            if let Some(path) = path {
+                // Validate that the file exists
+                if !Path::new(path).exists() {
+                    return Err(ToolError::invalid_params(format!("File does not exist: {}", path)));
+                }
+                app.emit("open-file-viewer", json!({"path": path}))
+                    .map_err(|e| ToolError::internal(e.to_string()))?;
+                Ok(json!(format!("OK: Opened file viewer for {path}")))
+            } else {
+                // Open for file under cursor (validation happens in frontend)
+                app.emit("open-file-viewer", ())
+                    .map_err(|e| ToolError::internal(e.to_string()))?;
+                Ok(json!("OK: Opened file viewer for cursor file"))
+            }
+        }
+        "about" => {
+            app.emit("show-about", ())
+                .map_err(|e| ToolError::internal(e.to_string()))?;
+            Ok(json!("OK: Opened about dialog"))
+        }
+        "confirmation" => Err(ToolError::invalid_params(
+            "Cannot open confirmation dialog directly. Use copy or mkdir tools instead.",
+        )),
+        _ => Err(ToolError::invalid_params(format!("Invalid dialog type: {dialog_type}"))),
     }
 }
 
-/// Execute a settings command.
-/// These manage the Settings window and its values.
-fn execute_settings_command<R: Runtime>(app: &AppHandle<R>, name: &str, params: &Value) -> ToolResult {
-    match name {
-        "settings_open" => {
-            // Emit event to main window to open settings
-            app.emit_to("main", "open-settings", ())
+/// Execute dialog focus action.
+fn execute_dialog_focus<R: Runtime>(app: &AppHandle<R>, dialog_type: &str, path: Option<&str>) -> ToolResult {
+    match dialog_type {
+        "settings" => {
+            app.emit("focus-settings", ())
                 .map_err(|e| ToolError::internal(e.to_string()))?;
-            Ok(json!({"success": true, "message": "Settings window opening"}))
+            Ok(json!("OK: Focused settings"))
         }
-        "settings_close" => {
-            // Emit event to settings window to close
+        "file-viewer" => {
+            if let Some(path) = path {
+                // Validate that the file exists
+                if !Path::new(path).exists() {
+                    return Err(ToolError::invalid_params(format!("File does not exist: {}", path)));
+                }
+                app.emit("focus-file-viewer", json!({"path": path}))
+                    .map_err(|e| ToolError::internal(e.to_string()))?;
+                Ok(json!(format!("OK: Focused file viewer for {path}")))
+            } else {
+                // Focus most recently opened file-viewer
+                app.emit("focus-file-viewer", ())
+                    .map_err(|e| ToolError::internal(e.to_string()))?;
+                Ok(json!("OK: Focused most recent file viewer"))
+            }
+        }
+        "volume-picker" => {
+            app.emit("focus-volume-picker", ())
+                .map_err(|e| ToolError::internal(e.to_string()))?;
+            Ok(json!("OK: Focused volume picker"))
+        }
+        "about" => {
+            app.emit("focus-about", ())
+                .map_err(|e| ToolError::internal(e.to_string()))?;
+            Ok(json!("OK: Focused about dialog"))
+        }
+        "confirmation" => {
+            app.emit("focus-confirmation", ())
+                .map_err(|e| ToolError::internal(e.to_string()))?;
+            Ok(json!("OK: Focused confirmation dialog"))
+        }
+        _ => Err(ToolError::invalid_params(format!("Invalid dialog type: {dialog_type}"))),
+    }
+}
+
+/// Execute dialog close action.
+fn execute_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_type: &str, path: Option<&str>) -> ToolResult {
+    // Track dialog state
+    if let Some(store) = app.try_state::<DialogStateStore>() {
+        match dialog_type {
+            "settings" => store.set_settings_open(false),
+            "about" => store.set_about_open(false),
+            "volume-picker" => store.set_volume_picker_open(false),
+            "confirmation" => store.set_confirmation_open(false),
+            "file-viewer" => {
+                if let Some(p) = path {
+                    store.remove_file_viewer(p);
+                } else {
+                    store.clear_all_file_viewers();
+                }
+            }
+            _ => {}
+        }
+    }
+
+    match dialog_type {
+        "settings" => {
             app.emit_to("settings", "mcp-settings-close", ())
                 .map_err(|e| ToolError::internal(e.to_string()))?;
-            Ok(json!({"success": true, "message": "Settings window closing"}))
+            Ok(json!("OK: Closed settings"))
         }
-        "settings_listSections" => {
-            let store = app
-                .try_state::<SettingsStateStore>()
-                .ok_or_else(|| ToolError::internal("Settings state not initialized"))?;
-
-            let state = store.get_state();
-            Ok(json!({
-                "sections": state.sections,
-                "selectedSection": state.selected_section
-            }))
+        "volume-picker" => {
+            app.emit("close-volume-picker", ())
+                .map_err(|e| ToolError::internal(e.to_string()))?;
+            Ok(json!("OK: Closed volume picker"))
         }
-        "settings_selectSection" => {
-            let section_path = params
-                .get("sectionPath")
-                .and_then(|v| v.as_array())
-                .map(|arr| {
-                    arr.iter()
-                        .filter_map(|v| v.as_str().map(String::from))
-                        .collect::<Vec<_>>()
-                })
-                .ok_or_else(|| ToolError::invalid_params("Missing 'sectionPath' parameter"))?;
-
-            // Emit event to settings window to select section
-            app.emit_to(
-                "settings",
-                "mcp-settings-select-section",
-                json!({"sectionPath": section_path}),
-            )
-            .map_err(|e| ToolError::internal(e.to_string()))?;
-            Ok(json!({"success": true, "selectedSection": section_path}))
-        }
-        "settings_listItems" => {
-            let store = app
-                .try_state::<SettingsStateStore>()
-                .ok_or_else(|| ToolError::internal("Settings state not initialized"))?;
-
-            let state = store.get_state();
-            Ok(json!({
-                "selectedSection": state.selected_section,
-                "settings": state.current_settings
-            }))
-        }
-        "settings_getValue" => {
-            let setting_id = params
-                .get("settingId")
-                .and_then(|v| v.as_str())
-                .ok_or_else(|| ToolError::invalid_params("Missing 'settingId' parameter"))?;
-
-            let store = app
-                .try_state::<SettingsStateStore>()
-                .ok_or_else(|| ToolError::internal("Settings state not initialized"))?;
-
-            let state = store.get_state();
-            let setting = state.current_settings.iter().find(|s| s.id == setting_id).cloned();
-
-            match setting {
-                Some(s) => Ok(json!({
-                    "settingId": s.id,
-                    "value": s.value,
-                    "isModified": s.is_modified,
-                    "defaultValue": s.default_value
-                })),
-                None => Err(ToolError::invalid_params(format!("Setting not found: {setting_id}"))),
+        "file-viewer" => {
+            if let Some(path) = path {
+                // Close specific file viewer
+                app.emit("close-file-viewer", json!({"path": path}))
+                    .map_err(|e| ToolError::internal(e.to_string()))?;
+                Ok(json!(format!("OK: Closed file viewer for {path}")))
+            } else {
+                // Close all file viewers
+                app.emit("close-all-file-viewers", ())
+                    .map_err(|e| ToolError::internal(e.to_string()))?;
+                Ok(json!("OK: Closed all file viewer dialogs"))
             }
         }
-        "settings_setValue" => {
-            let setting_id = params
-                .get("settingId")
-                .and_then(|v| v.as_str())
-                .ok_or_else(|| ToolError::invalid_params("Missing 'settingId' parameter"))?;
-
-            let value = params
-                .get("value")
-                .ok_or_else(|| ToolError::invalid_params("Missing 'value' parameter"))?;
-
-            // Emit event to settings window to set the value
-            app.emit_to(
-                "settings",
-                "mcp-settings-set-value",
-                json!({"settingId": setting_id, "value": value}),
-            )
-            .map_err(|e| ToolError::internal(e.to_string()))?;
-
-            Ok(json!({"success": true, "settingId": setting_id, "value": value}))
-        }
-        _ => Err(ToolError::invalid_params(format!("Unknown settings command: {name}"))),
-    }
-}
-
-/// Execute a shortcuts command.
-/// These manage keyboard shortcuts configuration.
-fn execute_shortcuts_command<R: Runtime>(app: &AppHandle<R>, name: &str, params: &Value) -> ToolResult {
-    match name {
-        "shortcuts_list" => {
-            let store = app
-                .try_state::<SettingsStateStore>()
-                .ok_or_else(|| ToolError::internal("Settings state not initialized"))?;
-
-            let state = store.get_state();
-            Ok(json!({
-                "commands": state.shortcuts
-            }))
-        }
-        "shortcuts_set" => {
-            let command_id = params
-                .get("commandId")
-                .and_then(|v| v.as_str())
-                .ok_or_else(|| ToolError::invalid_params("Missing 'commandId' parameter"))?;
-
-            let index = params
-                .get("index")
-                .and_then(|v| v.as_i64())
-                .ok_or_else(|| ToolError::invalid_params("Missing 'index' parameter"))?;
-
-            let shortcut = params
-                .get("shortcut")
-                .and_then(|v| v.as_str())
-                .ok_or_else(|| ToolError::invalid_params("Missing 'shortcut' parameter"))?;
-
-            // Emit event to settings window (or main window if settings is closed)
-            // to set the shortcut
-            app.emit(
-                "mcp-shortcuts-set",
-                json!({"commandId": command_id, "index": index, "shortcut": shortcut}),
-            )
-            .map_err(|e| ToolError::internal(e.to_string()))?;
-
-            Ok(json!({
-                "success": true,
-                "commandId": command_id,
-                "index": index,
-                "shortcut": shortcut
-            }))
-        }
-        "shortcuts_remove" => {
-            let command_id = params
-                .get("commandId")
-                .and_then(|v| v.as_str())
-                .ok_or_else(|| ToolError::invalid_params("Missing 'commandId' parameter"))?;
-
-            let index = params
-                .get("index")
-                .and_then(|v| v.as_i64())
-                .ok_or_else(|| ToolError::invalid_params("Missing 'index' parameter"))?;
-
-            // Emit event to remove the shortcut
-            app.emit("mcp-shortcuts-remove", json!({"commandId": command_id, "index": index}))
+        "about" => {
+            app.emit("close-about", ())
                 .map_err(|e| ToolError::internal(e.to_string()))?;
-
-            Ok(json!({
-                "success": true,
-                "commandId": command_id,
-                "index": index
-            }))
+            Ok(json!("OK: Closed about dialog"))
         }
-        "shortcuts_reset" => {
-            let command_id = params
-                .get("commandId")
-                .and_then(|v| v.as_str())
-                .ok_or_else(|| ToolError::invalid_params("Missing 'commandId' parameter"))?;
-
-            // Emit event to reset the shortcut
-            app.emit("mcp-shortcuts-reset", json!({"commandId": command_id}))
+        "confirmation" => {
+            app.emit("close-confirmation", ())
                 .map_err(|e| ToolError::internal(e.to_string()))?;
-
-            Ok(json!({
-                "success": true,
-                "commandId": command_id
-            }))
+            Ok(json!("OK: Cancelled confirmation dialog"))
         }
-        _ => Err(ToolError::invalid_params(format!("Unknown shortcuts command: {name}"))),
+        _ => Err(ToolError::invalid_params(format!("Invalid dialog type: {dialog_type}"))),
     }
 }
 
@@ -566,5 +579,31 @@ mod tests {
         let err = ToolError::internal("internal error");
         assert_eq!(err.code, INTERNAL_ERROR);
         assert_eq!(err.message, "internal error");
+    }
+
+    #[test]
+    fn test_path_exists_validation() {
+        // Test that Path::new().exists() works as expected for our validation
+        assert!(Path::new("/").exists(), "Root should exist");
+        assert!(Path::new("/tmp").exists(), "Temp dir should exist");
+        assert!(
+            !Path::new("/nonexistent/path/that/does/not/exist").exists(),
+            "Nonexistent path should not exist"
+        );
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn test_volume_list_not_empty() {
+        // Verify we can list volumes for validation
+        let locations = crate::volumes::list_locations();
+        assert!(!locations.is_empty(), "Should have at least one volume");
+        // Should have a main volume
+        assert!(
+            locations
+                .iter()
+                .any(|l| l.category == crate::volumes::LocationCategory::MainVolume),
+            "Should have main volume"
+        );
     }
 }

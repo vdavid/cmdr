@@ -28,6 +28,9 @@ pub struct PaneState {
     /// Volume ID (if applicable)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub volume_id: Option<String>,
+    /// Volume name for display
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub volume_name: Option<String>,
     /// Currently visible files
     pub files: Vec<FileEntry>,
     /// Index of the file under the cursor (0-based)
@@ -37,6 +40,24 @@ pub struct PaneState {
     /// Indices of selected files
     #[serde(default)]
     pub selected_indices: Vec<usize>,
+    /// Sort field (name, size, date, extension)
+    #[serde(default)]
+    pub sort_field: String,
+    /// Sort order (asc or desc)
+    #[serde(default)]
+    pub sort_order: String,
+    /// Total number of files in directory
+    #[serde(default)]
+    pub total_files: usize,
+    /// Start index of loaded range
+    #[serde(default)]
+    pub loaded_start: usize,
+    /// End index of loaded range
+    #[serde(default)]
+    pub loaded_end: usize,
+    /// Whether hidden files are shown
+    #[serde(default)]
+    pub show_hidden: bool,
 }
 
 /// Shared state for both panes.
@@ -116,6 +137,7 @@ mod tests {
         let state = PaneState {
             path: "/tmp".to_string(),
             volume_id: None,
+            volume_name: None,
             files: vec![FileEntry {
                 name: "test.txt".to_string(),
                 path: "/tmp/test.txt".to_string(),
@@ -126,6 +148,12 @@ mod tests {
             cursor_index: 0,
             view_mode: "brief".to_string(),
             selected_indices: vec![],
+            sort_field: "name".to_string(),
+            sort_order: "asc".to_string(),
+            total_files: 1,
+            loaded_start: 0,
+            loaded_end: 1,
+            show_hidden: false,
         };
 
         store.set_left(state.clone());

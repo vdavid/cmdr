@@ -4,6 +4,7 @@
 //! enabling AI agents to control the file manager.
 
 mod config;
+pub mod dialog_state;
 mod executor;
 pub mod pane_state;
 mod protocol;
@@ -16,6 +17,7 @@ mod tools;
 mod tests;
 
 pub use config::McpConfig;
+pub use dialog_state::DialogStateStore;
 pub use pane_state::PaneStateStore;
 pub use server::start_mcp_server;
 pub use settings_state::SettingsStateStore;

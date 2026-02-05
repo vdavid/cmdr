@@ -204,10 +204,17 @@ export interface PaneFileEntry {
 export interface PaneState {
     path: string
     volumeId?: string
+    volumeName?: string
     files: PaneFileEntry[]
     cursorIndex: number
     viewMode: string
     selectedIndices: number[]
+    sortField?: string
+    sortOrder?: string
+    totalFiles?: number
+    loadedStart?: number
+    loadedEnd?: number
+    showHidden?: boolean
 }
 
 /**
@@ -229,6 +236,20 @@ export async function updateRightPaneState(state: PaneState): Promise<void> {
  */
 export async function updateFocusedPane(pane: 'left' | 'right'): Promise<void> {
     await invoke('update_focused_pane', { pane })
+}
+
+/**
+ * Update dialog state for MCP tracking.
+ * @param dialogType - Type of dialog: 'settings', 'about', 'volume-picker', 'confirmation', 'file-viewer'
+ * @param action - Action: 'open', 'close', or 'close-all' (for file-viewer)
+ * @param path - Optional path (for file-viewer dialogs)
+ */
+export async function updateDialogState(
+    dialogType: string,
+    action: 'open' | 'close' | 'close-all',
+    path?: string,
+): Promise<void> {
+    await invoke('update_dialog_state', { dialogType, action, path })
 }
 
 // ============================================================================

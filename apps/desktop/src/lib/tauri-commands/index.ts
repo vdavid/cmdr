@@ -40,6 +40,7 @@ export {
     updateLeftPaneState,
     updateRightPaneState,
     updateFocusedPane,
+    updateDialogState,
     showInFinder,
     copyToClipboard,
     quickLook,

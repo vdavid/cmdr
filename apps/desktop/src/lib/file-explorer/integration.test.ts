@@ -90,6 +90,8 @@ vi.mock('$lib/tauri-commands', () => ({
     onMtpExclusiveAccessError: vi.fn().mockResolvedValue(() => {}),
     onMtpDeviceDetected: vi.fn().mockResolvedValue(() => {}),
     onMtpDeviceRemoved: vi.fn().mockResolvedValue(() => {}),
+    // Dialog state tracking for MCP
+    updateDialogState: vi.fn().mockResolvedValue(undefined),
 }))
 
 vi.mock('$lib/icon-cache', async () => {

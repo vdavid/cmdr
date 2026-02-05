@@ -38,6 +38,7 @@
         onContextMenu?: (entry: FileEntry) => void
         onSyncStatusRequest?: (paths: string[]) => void
         onSortChange?: (column: SortColumn) => void
+        onVisibleRangeChange?: (start: number, end: number) => void
     }
 
     const {
@@ -59,6 +60,7 @@
         onContextMenu,
         onSyncStatusRequest,
         onSortChange,
+        onVisibleRangeChange,
     }: Props = $props()
 
     // ==== Cached entries (prefetch buffer) ====
@@ -282,6 +284,11 @@
         const position = getScrollToPosition(columnIndex, maxFilenameWidth, scrollLeft, containerWidth)
         if (position !== undefined) {
             scrollContainer.scrollLeft = position
+            // Also update state directly to trigger reactive chain immediately
+            // (scroll events may be batched or delayed by the browser)
+            scrollLeft = position
+            // Fetch entries for the new visible range
+            void fetchVisibleRange()
         }
     }
 
@@ -359,6 +366,16 @@
         if (cachedEntries.length > 0) {
             refetchIconsForEntries(cachedEntries)
         }
+    })
+
+    // Report visible range to parent for MCP state sync
+    $effect(() => {
+        // Calculate visible item range from column range
+        const startCol = virtualWindow.startIndex
+        const endCol = virtualWindow.endIndex
+        const startItem = startCol * itemsPerColumn
+        const endItem = Math.min(endCol * itemsPerColumn, totalCount)
+        onVisibleRangeChange?.(startItem, endItem)
     })
 </script>
 

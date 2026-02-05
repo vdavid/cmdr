@@ -10,6 +10,7 @@
         onScanPreviewError,
         onScanPreviewCancelled,
         scanVolumeForConflicts,
+        updateDialogState,
         type VolumeSpaceInfo,
         type VolumeConflictInfo,
         type SourceItemInput,
@@ -223,6 +224,9 @@
     }
 
     onMount(async () => {
+        // Track dialog open state for MCP
+        void updateDialogState('confirmation', 'open')
+
         // Focus overlay for keyboard events
         await tick()
         overlayElement?.focus()
@@ -240,6 +244,9 @@
     })
 
     onDestroy(() => {
+        // Track dialog close state for MCP
+        void updateDialogState('confirmation', 'close')
+
         // Cancel scan preview if still running
         if (previewId && isScanning) {
             void cancelScanPreview(previewId)

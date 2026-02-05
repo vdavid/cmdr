@@ -66,6 +66,7 @@
         paneId?: 'left' | 'right'
         volumeId?: string
         volumePath?: string
+        volumeName?: string
         isFocused?: boolean
         showHiddenFiles?: boolean
         viewMode?: ViewMode
@@ -88,6 +89,7 @@
         paneId,
         volumeId = 'root',
         volumePath = '/',
+        volumeName,
         isFocused = false,
         showHiddenFiles = true,
         viewMode = 'brief',
@@ -299,6 +301,12 @@
         volumeBreadcrumbRef?.close()
     }
 
+    // Open the volume chooser dropdown (for MCP)
+    export function openVolumeChooser() {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        volumeBreadcrumbRef?.open()
+    }
+
     // Forward keyboard events to volume chooser when open
     export function handleVolumeChooserKeyDown(e: KeyboardEvent): boolean {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
@@ -321,9 +329,17 @@
     }
 
     // Set cursor index directly (for cursor tracking after re-sort)
-    export function setCursorIndex(index: number): void {
+    // Also scrolls the view to make the cursor visible, then syncs to MCP
+    export async function setCursorIndex(index: number): Promise<void> {
         cursorIndex = index
         void fetchEntryUnderCursor()
+        // Scroll to make cursor visible
+        const listRef = viewMode === 'brief' ? briefListRef : fullListRef
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        listRef?.scrollToIndex(index)
+        // Wait for scroll effects to complete before syncing to MCP
+        await tick()
+        void syncPaneStateToMcp()
     }
 
     // Get current cursor index
@@ -354,6 +370,7 @@
             selectedIndices.add(i)
         }
         clearRangeState()
+        void syncPaneStateToMcp()
     }
 
     // Export clearSelection for MCP
@@ -474,53 +491,92 @@
     // Derive includeHidden from showHiddenFiles prop
     const includeHidden = $derived(showHiddenFiles)
 
+    // Map sort column names to MCP format (constant, no need to recreate)
+    const sortFieldMap: Record<string, string> = {
+        name: 'name',
+        extension: 'ext',
+        size: 'size',
+        modified: 'modified',
+        created: 'created',
+    }
+
+    /** Build file list for MCP state sync */
+    async function buildMcpFileList(): Promise<PaneFileEntry[]> {
+        const files: PaneFileEntry[] = []
+
+        // For network views, we don't sync files
+        if (isNetworkView || !listingId || totalCount === 0) return files
+
+        // Calculate backend indices from visible range (frontend indices include "..")
+        const backendStart = hasParent ? Math.max(0, visibleRangeStart - 1) : visibleRangeStart
+        const backendEnd = hasParent ? Math.max(0, visibleRangeEnd - 1) : visibleRangeEnd
+
+        // Include ".." entry if it's in the visible range
+        if (hasParent && visibleRangeStart === 0) {
+            const parentPath = currentPath.substring(0, currentPath.lastIndexOf('/')) || '/'
+            files.push({ name: '..', path: parentPath, isDirectory: true })
+        }
+
+        // Limit to 100 files max for performance
+        const maxToFetch = Math.min(backendEnd - backendStart, 100)
+        for (let i = 0; i < maxToFetch; i++) {
+            const backendIndex = backendStart + i
+            if (backendIndex >= totalCount) break
+            const entry = await getFileAt(listingId, backendIndex, includeHidden)
+            if (entry) {
+                files.push({
+                    name: entry.name,
+                    path: entry.path,
+                    isDirectory: entry.isDirectory,
+                    size: entry.size,
+                    modified: entry.modifiedAt ? new Date(entry.modifiedAt * 1000).toISOString() : undefined,
+                })
+            }
+        }
+        return files
+    }
+
     /**
      * Sync pane state to Rust for MCP context tools.
      * Called when files load, cursor position changes, or view mode changes.
      */
     async function syncPaneStateToMcp() {
-        if (!paneId) return // No pane ID, can't sync
+        if (!paneId) return
 
         try {
-            // Build file list from current state
-            const files: PaneFileEntry[] = []
-
-            // For network views, we don't sync files
-            if (!isNetworkView && listingId && totalCount > 0) {
-                // Get visible files - for now, just get first 100 for context
-                const maxToFetch = Math.min(totalCount, 100)
-                for (let i = 0; i < maxToFetch; i++) {
-                    const backendIndex = hasParent ? i : i
-                    const entry = await getFileAt(listingId, backendIndex, includeHidden)
-                    if (entry) {
-                        files.push({
-                            name: entry.name,
-                            path: entry.path,
-                            isDirectory: entry.isDirectory,
-                            size: entry.size,
-                            modified: entry.modifiedAt ? new Date(entry.modifiedAt * 1000).toISOString() : undefined,
-                        })
-                    }
-                }
-            }
-
+            const files = await buildMcpFileList()
+            const effectiveTotal = hasParent ? totalCount + 1 : totalCount
+            // Use actual visible range, clamped to valid bounds
+            const loadedStart = Math.max(0, visibleRangeStart)
+            const loadedEnd = Math.min(effectiveTotal, visibleRangeEnd)
             const state: PaneState = {
                 path: currentPath,
                 volumeId,
+                volumeName,
                 files,
                 cursorIndex,
                 viewMode,
                 selectedIndices: Array.from(selectedIndices),
+                sortField: sortFieldMap[sortBy] ?? 'name',
+                sortOrder: sortOrder === 'ascending' ? 'asc' : 'desc',
+                totalFiles: effectiveTotal,
+                loadedStart,
+                loadedEnd,
+                showHidden: showHiddenFiles,
             }
 
-            if (paneId === 'left') {
-                await updateLeftPaneState(state)
-            } else {
-                await updateRightPaneState(state)
-            }
+            const updateFn = paneId === 'left' ? updateLeftPaneState : updateRightPaneState
+            await updateFn(state)
         } catch {
             // Silently ignore sync errors - MCP is optional
         }
+    }
+
+    /** Handle visible range change from list components */
+    function handleVisibleRangeChange(start: number, end: number) {
+        visibleRangeStart = start
+        visibleRangeEnd = end
+        void syncPaneStateToMcp()
     }
 
     // Check if error is a permission denied error
@@ -556,6 +612,7 @@
         selectionAnchorIndex = null
         selectionEndIndex = null
         isDeselecting = false
+        void syncPaneStateToMcp()
     }
 
     // Helper: Toggle selection at a given index (returns true if now selected)
@@ -659,16 +716,23 @@
             selectedIndices.add(i)
         }
         clearRangeState()
+        void syncPaneStateToMcp()
     }
 
     // Helper: Deselect all files
     function deselectAll() {
         selectedIndices.clear()
         clearRangeState()
+        void syncPaneStateToMcp()
     }
 
     // Effective total count includes ".." entry if not at root
     const effectiveTotalCount = $derived(hasParent ? totalCount + 1 : totalCount)
+
+    // Track the visible range for MCP state sync
+    // This is updated by the list components when they scroll
+    let visibleRangeStart = $state(0)
+    let visibleRangeEnd = $state(100)
 
     async function loadDirectory(path: string, selectName?: string) {
         // Reset benchmark epoch for this navigation
@@ -1625,6 +1689,7 @@
                           onSortChange(column)
                       }
                     : undefined}
+                onVisibleRangeChange={handleVisibleRangeChange}
             />
         {:else}
             <FullList
@@ -1650,6 +1715,7 @@
                           onSortChange(column)
                       }
                     : undefined}
+                onVisibleRangeChange={handleVisibleRangeChange}
             />
         {/if}
     </div>

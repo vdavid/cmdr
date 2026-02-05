@@ -73,6 +73,8 @@ impl SettingsStateStore {
         }
     }
 
+    /// Get a copy of the current state. Used by tests and potentially future resource handlers.
+    #[allow(dead_code, reason = "Used by tests and may be needed for future resource handlers")]
     pub fn get_state(&self) -> SettingsState {
         self.state.read().unwrap().clone()
     }

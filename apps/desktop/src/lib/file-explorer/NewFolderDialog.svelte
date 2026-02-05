@@ -7,6 +7,7 @@
         getFileAt,
         getFolderSuggestions,
         listen,
+        updateDialogState,
         type UnlistenFn,
     } from '$lib/tauri-commands'
     import type { DirectoryDiff } from './types'
@@ -86,6 +87,9 @@
     }
 
     onMount(async () => {
+        // Track dialog open state for MCP
+        void updateDialogState('confirmation', 'open')
+
         await tick()
         overlayElement?.focus()
         await tick()
@@ -109,6 +113,9 @@
     })
 
     onDestroy(() => {
+        // Track dialog close state for MCP
+        void updateDialogState('confirmation', 'close')
+
         if (validateTimer) clearTimeout(validateTimer)
         unlistenDiff?.()
     })
