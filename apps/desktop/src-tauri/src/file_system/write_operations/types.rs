@@ -5,8 +5,8 @@
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
-// Re-export sort types from operations module
-pub use crate::file_system::operations::{SortColumn, SortOrder};
+// Re-export sort types from sorting module
+pub use crate::file_system::sorting::{SortColumn, SortOrder};
 
 // ============================================================================
 // Operation types

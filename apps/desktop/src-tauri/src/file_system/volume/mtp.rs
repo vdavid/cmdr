@@ -4,7 +4,7 @@
 //! the standard file listing pipeline (same icons, sorting, view modes as local files).
 
 use super::{ConflictInfo, CopyScanResult, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream};
-use crate::file_system::FileEntry;
+use crate::file_system::metadata::FileEntry;
 use crate::mtp::connection::{MtpConnectionError, connection_manager};
 use log::debug;
 use mtp_rs::FileDownload;

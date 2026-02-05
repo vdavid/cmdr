@@ -6,9 +6,14 @@
 //! Uses runtime check `use_real_ai()` to enable/disable real AI features.
 //! In dev mode without `CMDR_REAL_AI=1`, all AI features return Unavailable.
 
-use super::{AiState, AiStatus, DownloadProgress, ModelInfo, get_default_model, get_model_by_id, use_real_ai};
+use super::download::{cleanup_partial, download_file};
+use super::extract::{LLAMA_SERVER_BINARY, REQUIRED_DYLIB, extract_bundled_llama_server};
+use super::process::{
+    SERVER_LOG_FILENAME, find_available_port, is_process_alive, log_diagnostics, read_log_tail, spawn_llama_server,
+    stop_process,
+};
+use super::{AiState, AiStatus, ModelInfo, get_default_model, get_model_by_id, use_real_ai};
 use std::fs;
-use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -27,14 +32,6 @@ struct ManagerState {
     /// Flag to prevent multiple concurrent downloads
     download_in_progress: bool,
 }
-
-/// Binary filename for the llama-server executable.
-const LLAMA_SERVER_BINARY: &str = "llama-server";
-
-/// Bundled llama-server archive (included in app bundle).
-const BUNDLED_LLAMA_ARCHIVE: &str = "resources/llama-server.tar.gz";
-/// Path of the llama-server binary inside the tar.gz archive (version-prefixed directory).
-const LLAMA_ARCHIVE_BINARY_SUFFIX: &str = "llama-server";
 
 const STATE_FILENAME: &str = "ai-state.json";
 const DISMISS_SECONDS: u64 = 7 * 24 * 60 * 60; // 7 days in seconds
@@ -365,9 +362,6 @@ fn save_state(ai_dir: &Path, state: &AiState) {
     }
 }
 
-/// A required shared library that must exist for llama-server to run.
-const REQUIRED_DYLIB: &str = "libllama.dylib";
-
 /// Returns true if AI is fully installed and ready to run.
 /// Requires binary, model, AND shared libraries to exist.
 fn is_fully_installed(m: &ManagerState) -> bool {
@@ -487,7 +481,7 @@ async fn do_download<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
         }
     }
 
-    download_file(app, model.url, &model_path).await?;
+    download_file(app, model.url, &model_path, is_cancel_requested).await?;
 
     // Verify download integrity by checking file size
     let actual_size = fs::metadata(&model_path)
@@ -532,313 +526,28 @@ async fn do_download<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
     Ok(())
 }
 
-/// Extracts llama-server and its dylibs from the bundled archive.
-fn extract_bundled_llama_server<R: Runtime>(app: &AppHandle<R>, ai_dir: &Path) -> Result<(), String> {
-    log::debug!("AI: extracting bundled llama-server runtime...");
-
-    // Get path to bundled resource
-    let resource_path = app
-        .path()
-        .resolve(BUNDLED_LLAMA_ARCHIVE, tauri::path::BaseDirectory::Resource)
-        .map_err(|e| format!("Failed to resolve bundled archive path: {e}"))?;
-
-    if !resource_path.exists() {
-        return Err(format!("Bundled llama-server archive not found at: {resource_path:?}"));
-    }
-
-    let binary_path = ai_dir.join(LLAMA_SERVER_BINARY);
-    extract_llama_server(&resource_path, &binary_path)?;
-
-    // Set executable permissions
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let perms = fs::Permissions::from_mode(0o755);
-        fs::set_permissions(&binary_path, perms).map_err(|e| format!("Failed to set permissions: {e}"))?;
-    }
-
-    log::debug!("AI: llama-server runtime extracted successfully");
-    Ok(())
-}
-
-/// Extracts the llama-server binary and required shared libraries from the tar.gz archive.
-fn extract_llama_server(archive_path: &Path, dest_path: &Path) -> Result<(), String> {
-    use flate2::read::GzDecoder;
-    use std::io::Read;
-    use tar::{Archive, EntryType};
-
-    let dest_dir = dest_path.parent().ok_or("Invalid destination path")?;
-    let file = fs::File::open(archive_path).map_err(|e| format!("Failed to open archive: {e}"))?;
-    let gz = GzDecoder::new(file);
-    let mut archive = Archive::new(gz);
-
-    let mut found_binary = false;
-    let mut extracted_libs = Vec::new();
-    let mut symlinks_to_create: Vec<(String, String)> = Vec::new();
-
-    for entry in archive
-        .entries()
-        .map_err(|e| format!("Failed to read archive entries: {e}"))?
-    {
-        let mut entry = entry.map_err(|e| format!("Failed to read archive entry: {e}"))?;
-
-        // Get entry type and file info before any operations
-        let entry_type = entry.header().entry_type();
-
-        // Get file name and convert to owned String to release the borrow on entry
-        let file_name = {
-            let path = entry.path().map_err(|e| format!("Failed to get entry path: {e}"))?;
-            path.file_name().and_then(|n| n.to_str()).map(String::from)
-        };
-
-        let Some(file_name) = file_name else {
-            continue;
-        };
-
-        // Handle symlinks (common for versioned dylibs like libfoo.dylib -> libfoo.0.dylib)
-        if entry_type == EntryType::Symlink && file_name.ends_with(".dylib") {
-            let link_target = entry
-                .link_name()
-                .map_err(|e| format!("Failed to get symlink target for {file_name}: {e}"))?
-                .ok_or_else(|| format!("Symlink {file_name} has no target"))?;
-            let target_name = link_target
-                .file_name()
-                .and_then(|n| n.to_str())
-                .ok_or_else(|| format!("Invalid symlink target for {file_name}"))?
-                .to_string();
-            // Defer symlink creation until after all files are extracted
-            symlinks_to_create.push((file_name, target_name));
-            continue;
-        }
-
-        // Extract the llama-server binary
-        if file_name == LLAMA_ARCHIVE_BINARY_SUFFIX {
-            let mut contents = Vec::new();
-            entry
-                .read_to_end(&mut contents)
-                .map_err(|e| format!("Failed to extract llama-server: {e}"))?;
-            fs::write(dest_path, &contents).map_err(|e| format!("Failed to write llama-server binary: {e}"))?;
-            found_binary = true;
-            log::debug!("AI extract: extracted llama-server binary");
-        }
-        // Extract all .dylib files (shared libraries required by llama-server)
-        else if file_name.ends_with(".dylib") {
-            let mut contents = Vec::new();
-            entry
-                .read_to_end(&mut contents)
-                .map_err(|e| format!("Failed to extract {file_name}: {e}"))?;
-            let lib_dest = dest_dir.join(&file_name);
-            fs::write(&lib_dest, &contents).map_err(|e| format!("Failed to write {file_name}: {e}"))?;
-            extracted_libs.push(file_name);
-        }
-    }
-
-    if !found_binary {
-        return Err(String::from("llama-server binary not found in downloaded archive"));
-    }
-
-    // Create symlinks after all regular files are extracted
-    #[cfg(unix)]
-    for (link_name, target_name) in &symlinks_to_create {
-        let link_path = dest_dir.join(link_name);
-        // Remove existing file/symlink if present (from previous extraction)
-        let _ = fs::remove_file(&link_path);
-        std::os::unix::fs::symlink(target_name, &link_path)
-            .map_err(|e| format!("Failed to create symlink {link_name} -> {target_name}: {e}"))?;
-        log::debug!("AI extract: created symlink {link_name} -> {target_name}");
-    }
-
-    log::debug!(
-        "AI extract: extracted {} libraries, {} symlinks",
-        extracted_libs.len(),
-        symlinks_to_create.len()
-    );
-    Ok(())
-}
-
-/// Downloads the AI model with progress reporting and resume support.
-async fn download_file<R: Runtime>(app: &AppHandle<R>, url: &str, dest: &Path) -> Result<(), String> {
-    use futures_util::StreamExt;
-
-    let client = reqwest::Client::new();
-
-    // Check for resume (existing partial file)
-    let existing_size = dest.metadata().map(|m| m.len()).unwrap_or(0);
-    if existing_size > 0 {
-        log::debug!("AI download: resuming from {} bytes", existing_size);
-    }
-
-    let mut request = client.get(url);
-    if existing_size > 0 {
-        request = request.header("Range", format!("bytes={existing_size}-"));
-    }
-
-    let response = request.send().await.map_err(|e| format!("Download failed: {e}"))?;
-
-    if !response.status().is_success() && response.status() != reqwest::StatusCode::PARTIAL_CONTENT {
-        return Err(format!("Download failed: HTTP {}", response.status()));
-    }
-
-    let total_bytes = response.content_length().map(|cl| cl + existing_size).unwrap_or(0);
-
-    let mut file = fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(dest)
-        .map_err(|e| format!("Failed to open file: {e}"))?;
-
-    let mut stream = response.bytes_stream();
-    let mut downloaded = existing_size;
-    let start_time = std::time::Instant::now();
-    let mut last_emit = std::time::Instant::now();
-
-    while let Some(chunk) = stream.next().await {
-        // Check cancel
-        if is_cancel_requested() {
-            return Err(String::from("Download cancelled"));
-        }
-
-        let chunk = chunk.map_err(|e| format!("Download error: {e}"))?;
-        file.write_all(&chunk).map_err(|e| format!("Write error: {e}"))?;
-        downloaded += chunk.len() as u64;
-
-        // Emit progress at most every 200ms
-        if last_emit.elapsed() >= std::time::Duration::from_millis(200) {
-            let elapsed = start_time.elapsed().as_secs_f64();
-            let speed = if elapsed > 0.0 {
-                ((downloaded - existing_size) as f64 / elapsed) as u64
-            } else {
-                0
-            };
-            let eta_seconds = if speed > 0 {
-                (total_bytes.saturating_sub(downloaded)) / speed
-            } else {
-                0
-            };
-
-            let progress = DownloadProgress {
-                bytes_downloaded: downloaded,
-                total_bytes,
-                speed,
-                eta_seconds,
-            };
-            let _ = app.emit("ai-download-progress", &progress);
-            last_emit = std::time::Instant::now();
-        }
-    }
-
-    // Final progress emit
-    let _ = app.emit(
-        "ai-download-progress",
-        &DownloadProgress {
-            bytes_downloaded: downloaded,
-            total_bytes: downloaded,
-            speed: 0,
-            eta_seconds: 0,
-        },
-    );
-
-    Ok(())
-}
-
 fn is_cancel_requested() -> bool {
     let manager = MANAGER.lock().unwrap_or_else(|e| e.into_inner());
     manager.as_ref().is_some_and(|m| m.cancel_requested)
 }
 
-fn cleanup_partial(ai_dir: &Path, model: &ModelInfo) {
-    let _ = fs::remove_file(ai_dir.join(LLAMA_SERVER_BINARY));
-    let _ = fs::remove_file(ai_dir.join(model.filename));
-    // Also remove any dylibs that were extracted
-    if let Ok(entries) = fs::read_dir(ai_dir) {
-        for entry in entries.flatten() {
-            if entry.path().extension().is_some_and(|ext| ext == "dylib") {
-                let _ = fs::remove_file(entry.path());
-            }
-        }
-    }
-}
-
-/// Log file name for llama-server output (useful for debugging startup issues).
-const SERVER_LOG_FILENAME: &str = "llama-server.log";
-
 async fn start_server_inner<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
     let ai_dir = get_ai_dir(app);
     let model = get_current_model();
-    let binary_path = ai_dir.join(LLAMA_SERVER_BINARY);
-    let model_path = ai_dir.join(model.filename);
-
-    log::debug!("AI server: checking files at {:?}", ai_dir);
-    log::debug!(
-        "AI server: binary exists={}, model exists={} ({})",
-        binary_path.exists(),
-        model_path.exists(),
-        model.id
-    );
-
-    if !binary_path.exists() || !model_path.exists() {
-        return Err(String::from("AI files not found"));
-    }
 
     // Find an available port
     let port = find_available_port().ok_or("No available port")?;
     log::debug!("AI server: starting llama-server on port {port}");
 
-    // Create log file for llama-server output (helps debug startup issues)
-    let log_path = ai_dir.join(SERVER_LOG_FILENAME);
-    let log_file = fs::File::create(&log_path).map_err(|e| format!("Failed to create llama-server log file: {e}"))?;
-    let log_file_stderr = log_file
-        .try_clone()
-        .map_err(|e| format!("Failed to clone log file handle: {e}"))?;
-
-    log::debug!("AI server: logging output to {:?}", log_path);
-
-    // Spawn llama-server with DYLD_LIBRARY_PATH set to find the shared libraries
-    // The @rpath in the binary points to the directory where the dylibs are located
-    let ai_dir_str = ai_dir.to_string_lossy();
-    log::debug!("AI server: setting DYLD_LIBRARY_PATH to {}", ai_dir_str);
-
-    let child = std::process::Command::new(&binary_path)
-        .env("DYLD_LIBRARY_PATH", &*ai_dir_str)
-        .current_dir(&ai_dir)
-        .arg("-m")
-        .arg(&model_path)
-        .arg("--port")
-        .arg(port.to_string())
-        .arg("--host")
-        .arg("127.0.0.1")
-        .arg("--temp")
-        .arg("0.6")
-        .arg("--top-p")
-        .arg("0.95")
-        .arg("-n")
-        .arg("4096")
-        .arg("--jinja")
-        .arg("-ngl")
-        .arg("99")
-        .stdout(std::process::Stdio::from(log_file))
-        .stderr(std::process::Stdio::from(log_file_stderr))
-        .spawn()
-        .map_err(|e| format!("Failed to start llama-server: {e}"))?;
-
-    let pid = child.id();
-    log::debug!("AI server: spawned llama-server with PID {pid}");
+    // Spawn the server process
+    let pid = spawn_llama_server(&ai_dir, model.filename, port)?;
 
     // Brief pause to let the process initialize, then check if it's still alive
     tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     if !is_process_alive(pid) {
-        // Process died immediately - read the log to see why
-        let log_content = fs::read_to_string(&log_path).unwrap_or_default();
-        let last_lines: String = log_content
-            .lines()
-            .rev()
-            .take(20)
-            .collect::<Vec<_>>()
-            .into_iter()
-            .rev()
-            .collect::<Vec<_>>()
-            .join("\n");
+        let last_lines = read_log_tail(&ai_dir, 20);
         log::error!("AI server: process died immediately. Last log lines:\n{last_lines}");
+        let log_path = ai_dir.join(SERVER_LOG_FILENAME);
         return Err(format!("llama-server crashed on startup. Check log at: {log_path:?}"));
     }
 
@@ -860,17 +569,7 @@ async fn start_server_inner<R: Runtime>(app: &AppHandle<R>) -> Result<(), String
 
         // Check if process is still alive
         if !is_process_alive(pid) {
-            // Process died - read the log to see why
-            let log_content = fs::read_to_string(&log_path).unwrap_or_default();
-            let last_lines: String = log_content
-                .lines()
-                .rev()
-                .take(20)
-                .collect::<Vec<_>>()
-                .into_iter()
-                .rev()
-                .collect::<Vec<_>>()
-                .join("\n");
+            let last_lines = read_log_tail(&ai_dir, 20);
             log::error!("AI server: process died during startup. Last log lines:\n{last_lines}");
             return Err(format!("llama-server process (PID {pid}) died during startup"));
         }
@@ -883,84 +582,17 @@ async fn start_server_inner<R: Runtime>(app: &AppHandle<R>) -> Result<(), String
         // Log progress every 5 seconds
         if i % 10 == 9 {
             log::debug!("AI server: still waiting for health check ({}s)...", (i + 1) / 2);
-            // Also peek at the log file to see what llama-server is doing
-            if let Ok(log_content) = fs::read_to_string(&log_path) {
-                let line_count = log_content.lines().count();
-                if let Some(last_line) = log_content.lines().last() {
-                    log::debug!("AI server: log has {line_count} lines, last: {last_line}");
-                }
+            if let Some((line_count, last_line)) = log_diagnostics(&ai_dir) {
+                log::debug!("AI server: log has {line_count} lines, last: {last_line}");
             }
         }
     }
 
     // Timed out - read the log for diagnostics
-    let log_content = fs::read_to_string(&log_path).unwrap_or_default();
-    let last_lines: String = log_content
-        .lines()
-        .rev()
-        .take(20)
-        .collect::<Vec<_>>()
-        .into_iter()
-        .rev()
-        .collect::<Vec<_>>()
-        .join("\n");
+    let last_lines = read_log_tail(&ai_dir, 20);
     log::error!("AI server: health check timed out. Last log lines:\n{last_lines}");
 
     Err(String::from("llama-server failed to become healthy within 60s"))
-}
-
-fn find_available_port() -> Option<u16> {
-    std::net::TcpListener::bind("127.0.0.1:0")
-        .ok()
-        .and_then(|listener| listener.local_addr().ok())
-        .map(|addr| addr.port())
-}
-
-fn stop_process(pid: u32) {
-    #[cfg(unix)]
-    {
-        use std::time::Duration;
-
-        // Send SIGTERM
-        unsafe {
-            libc::kill(pid as i32, libc::SIGTERM);
-        }
-
-        // Wait up to 5s for graceful shutdown
-        let start = std::time::Instant::now();
-        while start.elapsed() < Duration::from_secs(5) {
-            // Check if process is still alive
-            let result = unsafe { libc::kill(pid as i32, 0) };
-            if result != 0 {
-                return; // Process is gone
-            }
-            std::thread::sleep(Duration::from_millis(100));
-        }
-
-        // Force kill
-        unsafe {
-            libc::kill(pid as i32, libc::SIGKILL);
-        }
-    }
-
-    #[cfg(not(unix))]
-    {
-        let _ = pid;
-    }
-}
-
-fn is_process_alive(pid: u32) -> bool {
-    #[cfg(unix)]
-    {
-        // kill(pid, 0) checks if a process exists without sending a signal
-        let result = unsafe { libc::kill(pid as i32, 0) };
-        result == 0
-    }
-    #[cfg(not(unix))]
-    {
-        let _ = pid;
-        false
-    }
 }
 
 #[cfg(test)]

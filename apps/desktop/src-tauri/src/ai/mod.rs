@@ -16,7 +16,10 @@
 //! 4. Update `DEFAULT_MODEL_ID` if the new model should be the default
 
 pub mod client;
+mod download;
+pub mod extract;
 pub mod manager;
+mod process;
 pub mod suggestions;
 
 use serde::{Deserialize, Serialize};

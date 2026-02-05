@@ -1,9 +1,11 @@
 //! File system module - operations, watchers, volumes, and providers.
 
+pub(crate) mod caching;
 #[cfg(target_os = "macos")]
 pub(crate) mod macos_copy;
 #[cfg(target_os = "macos")]
 mod macos_metadata;
+pub(crate) mod metadata;
 #[cfg(test)]
 mod mock_provider;
 pub(crate) mod operations;
@@ -11,6 +13,8 @@ pub(crate) mod operations;
 mod provider;
 #[cfg(test)]
 mod real_provider;
+pub(crate) mod sorting;
+pub(crate) mod streaming;
 #[cfg(target_os = "macos")]
 pub mod sync_status;
 pub mod volume;
@@ -20,7 +24,7 @@ pub(crate) mod write_operations;
 
 use std::sync::{Arc, LazyLock};
 
-// Re-export public types
+// Re-export public types - operations.rs re-exports from the submodules
 #[cfg(test)]
 pub use mock_provider::MockFileSystemProvider;
 pub use operations::{

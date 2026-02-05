@@ -17,9 +17,10 @@ use super::state::{
 };
 use super::types::{
     ConflictInfo, ScanPreviewCancelledEvent, ScanPreviewCompleteEvent, ScanPreviewErrorEvent, ScanPreviewProgressEvent,
-    ScanPreviewStartResult, ScanProgressEvent, SortColumn, SortOrder, WriteOperationError, WriteOperationPhase,
-    WriteOperationType, WriteProgressEvent,
+    ScanPreviewStartResult, ScanProgressEvent, WriteOperationError, WriteOperationPhase, WriteOperationType,
+    WriteProgressEvent,
 };
+use crate::file_system::sorting::{SortColumn, SortOrder};
 
 // ============================================================================
 // Scan preview (for Copy dialog live stats)

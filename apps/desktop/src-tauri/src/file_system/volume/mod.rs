@@ -6,7 +6,7 @@
 // TODO: Remove this once Volume is integrated into operations.rs (Phase 2)
 #![allow(dead_code, reason = "Volume abstraction not yet integrated into operations.rs")]
 
-use super::FileEntry;
+use super::metadata::FileEntry;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 

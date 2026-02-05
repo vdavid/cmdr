@@ -180,7 +180,8 @@ fn test_get_single_entry_nonexistent() {
 
 #[test]
 fn test_cancel_listing_sets_flag() {
-    use super::operations::{STREAMING_STATE, StreamingListingState, cancel_listing};
+    use super::operations::cancel_listing;
+    use super::streaming::{STREAMING_STATE, StreamingListingState};
     use std::sync::Arc;
     use std::sync::atomic::{AtomicBool, Ordering};
 

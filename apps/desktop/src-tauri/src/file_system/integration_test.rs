@@ -3,7 +3,7 @@
 //! These tests verify that the volume abstraction works correctly
 //! without touching the real file system.
 
-use super::FileEntry;
+use super::metadata::FileEntry;
 use super::volume::{InMemoryVolume, Volume};
 use std::path::Path;
 
@@ -207,7 +207,8 @@ fn test_volume_manager_with_inmemory() {
 
 #[test]
 fn test_streaming_state_lifecycle() {
-    use super::operations::{STREAMING_STATE, StreamingListingState, cancel_listing};
+    use super::operations::cancel_listing;
+    use super::streaming::{STREAMING_STATE, StreamingListingState};
     use std::sync::Arc;
     use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -248,7 +249,8 @@ fn test_streaming_state_lifecycle() {
 
 #[test]
 fn test_multiple_concurrent_streaming_states() {
-    use super::operations::{STREAMING_STATE, StreamingListingState, cancel_listing};
+    use super::operations::cancel_listing;
+    use super::streaming::{STREAMING_STATE, StreamingListingState};
     use std::sync::Arc;
     use std::sync::atomic::{AtomicBool, Ordering};
 

@@ -9,6 +9,13 @@ pub mod known_shares;
 pub mod mount;
 pub mod smb_client;
 
+// SMB submodules - these are implementation details of smb_client
+mod smb_cache;
+mod smb_connection;
+mod smb_smbutil;
+mod smb_types;
+mod smb_util;
+
 use log::{debug, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

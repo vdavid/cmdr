@@ -12,7 +12,6 @@
     import {
         loadAppStatus,
         saveAppStatus,
-        getLastUsedPathForVolume,
         saveLastUsedPathForVolume,
         getColumnSortOrder,
         saveColumnSortOrder,
@@ -45,6 +44,7 @@
     import { defaultSortOrders, DEFAULT_SORT_BY } from './types'
     import { ensureFontMetricsLoaded } from '$lib/font-metrics'
     import { removeExtension } from './new-folder-utils'
+    import { determineNavigationPath, resolveValidPath } from './path-navigation'
     import {
         createHistory,
         push,
@@ -365,48 +365,6 @@
         // Focus the right pane after successful volume change
         focusedPane = 'right'
         void saveAppStatus({ rightVolumeId: volumeId, rightPath: pathToNavigate, focusedPane: 'right' })
-    }
-
-    interface OtherPaneState {
-        otherPaneVolumeId: string
-        otherPanePath: string
-    }
-
-    /**
-     * Determines which path to navigate to when switching volumes.
-     * Priority order:
-     * 1. Favorite path (if targetPath !== volumePath)
-     * 2. Other pane's path (if the other pane is on the same volume)
-     * 3. Stored lastUsedPath for this volume
-     * 4. Default: ~ for main volume, volume root for others
-     */
-    async function determineNavigationPath(
-        volumeId: string,
-        volumePath: string,
-        targetPath: string,
-        otherPane: OtherPaneState,
-    ): Promise<string> {
-        // User navigated to a favorite - go to the favorite's path directly
-        if (targetPath !== volumePath) {
-            return targetPath
-        }
-
-        // If the other pane is on the same volume, use its path (allows copying paths between panes)
-        if (otherPane.otherPaneVolumeId === volumeId && (await pathExists(otherPane.otherPanePath))) {
-            return otherPane.otherPanePath
-        }
-
-        // Look up the last used path for this volume
-        const lastUsedPath = await getLastUsedPathForVolume(volumeId)
-        if (lastUsedPath && (await pathExists(lastUsedPath))) {
-            return lastUsedPath
-        }
-
-        // Default: ~ for main volume (root), volume path for others
-        if (volumeId === DEFAULT_VOLUME_ID) {
-            return '~'
-        }
-        return volumePath
     }
 
     function handleLeftFocus() {
@@ -761,27 +719,6 @@
         rightPath = defaultPath
         rightHistory = push(rightHistory, { volumeId: defaultVolumeId, path: defaultPath })
         void saveAppStatus({ rightVolumeId: defaultVolumeId, rightPath: defaultPath })
-    }
-
-    /**
-     * Resolves a path to a valid existing path by walking up the parent tree.
-     * Returns null if even the root doesn't exist (volume unmounted).
-     */
-    async function resolveValidPath(targetPath: string): Promise<string | null> {
-        let path = targetPath
-        while (path !== '/' && path !== '') {
-            if (await pathExists(path)) {
-                return path
-            }
-            // Go to parent
-            const lastSlash = path.lastIndexOf('/')
-            path = lastSlash > 0 ? path.substring(0, lastSlash) : '/'
-        }
-        // Check root
-        if (await pathExists('/')) {
-            return '/'
-        }
-        return null
     }
 
     /**

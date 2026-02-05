@@ -1,7 +1,7 @@
 //! Local POSIX file system volume implementation.
 
 use super::{ConflictInfo, CopyScanResult, SourceItemInfo, SpaceInfo, Volume, VolumeError};
-use crate::file_system::FileEntry;
+use crate::file_system::metadata::FileEntry;
 use crate::file_system::operations::{get_single_entry, list_directory_core};
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;

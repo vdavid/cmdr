@@ -6,6 +6,7 @@
         "src/routes/+layout.ts",
         "src/lib/benchmark.ts",
         "src/lib/tauri-commands.ts",
+        "src/lib/tauri-commands/**",
         "src/lib/licensing-store.svelte.ts",
         "src/lib/settings/settings-store.ts",
         "src/lib/settings/settings-window.ts",

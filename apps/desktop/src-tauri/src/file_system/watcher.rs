@@ -14,7 +14,8 @@ use std::sync::{LazyLock, RwLock};
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
 
-use super::operations::{FileEntry, get_listing_entries, list_directory_core, update_listing_entries};
+use super::metadata::FileEntry;
+use super::operations::{get_listing_entries, list_directory_core, update_listing_entries};
 
 /// Default debounce duration in milliseconds (used if not configured)
 const DEFAULT_DEBOUNCE_MS: u64 = 200;
