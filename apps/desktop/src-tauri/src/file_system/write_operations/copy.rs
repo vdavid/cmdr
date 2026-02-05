@@ -8,7 +8,7 @@ use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 
 #[cfg(target_os = "macos")]
-use crate::file_system::macos_copy::copy_symlink;
+use super::macos_copy::copy_symlink;
 
 use super::chunked_copy::ChunkedCopyProgressFn;
 use super::copy_strategy::copy_file_with_strategy;

@@ -21,6 +21,8 @@ mod copy;
 mod copy_strategy;
 mod delete;
 mod helpers;
+#[cfg(target_os = "macos")]
+pub(crate) mod macos_copy;
 mod move_op;
 mod scan;
 mod state;
@@ -313,3 +315,8 @@ pub async fn delete_files_start(
         operation_type: WriteOperationType::Delete,
     })
 }
+
+#[cfg(test)]
+mod integration_test;
+#[cfg(test)]
+mod tests;

@@ -7,12 +7,12 @@ use std::sync::{LazyLock, RwLock};
 use uzers::{get_group_by_gid, get_user_by_uid};
 
 /// Cache for uid→username resolution.
-pub(super) static OWNER_CACHE: LazyLock<RwLock<HashMap<u32, String>>> = LazyLock::new(|| RwLock::new(HashMap::new()));
+pub(crate) static OWNER_CACHE: LazyLock<RwLock<HashMap<u32, String>>> = LazyLock::new(|| RwLock::new(HashMap::new()));
 /// Cache for gid→groupname resolution.
-pub(super) static GROUP_CACHE: LazyLock<RwLock<HashMap<u32, String>>> = LazyLock::new(|| RwLock::new(HashMap::new()));
+pub(crate) static GROUP_CACHE: LazyLock<RwLock<HashMap<u32, String>>> = LazyLock::new(|| RwLock::new(HashMap::new()));
 
 /// Resolves a uid to a username, with caching.
-pub(super) fn get_owner_name(uid: u32) -> String {
+pub(crate) fn get_owner_name(uid: u32) -> String {
     // Try read lock first
     if let Ok(cache) = OWNER_CACHE.read()
         && let Some(name) = cache.get(&uid)
@@ -30,7 +30,7 @@ pub(super) fn get_owner_name(uid: u32) -> String {
 }
 
 /// Resolves a gid to a group name, with caching.
-pub(super) fn get_group_name(gid: u32) -> String {
+pub(crate) fn get_group_name(gid: u32) -> String {
     if let Ok(cache) = GROUP_CACHE.read()
         && let Some(name) = cache.get(&gid)
     {
@@ -46,7 +46,7 @@ pub(super) fn get_group_name(gid: u32) -> String {
 }
 
 /// Generates icon ID based on file type and extension.
-pub(super) fn get_icon_id(is_dir: bool, is_symlink: bool, name: &str) -> String {
+pub(crate) fn get_icon_id(is_dir: bool, is_symlink: bool, name: &str) -> String {
     if is_symlink {
         // Distinguish symlinks to directories vs files
         return if is_dir {

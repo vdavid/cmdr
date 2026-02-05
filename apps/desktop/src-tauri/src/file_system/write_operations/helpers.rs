@@ -10,7 +10,7 @@ use std::sync::atomic::Ordering;
 use uuid::Uuid;
 
 #[cfg(target_os = "macos")]
-use crate::file_system::macos_copy::{CopyProgressContext, copy_single_file_native};
+use super::macos_copy::{CopyProgressContext, copy_single_file_native};
 
 use super::state::WriteOperationState;
 use super::types::{ConflictInfo, ConflictResolution, WriteConflictEvent, WriteOperationConfig, WriteOperationError};

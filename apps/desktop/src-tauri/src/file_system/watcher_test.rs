@@ -9,7 +9,7 @@
 // The start_watching/stop_watching functions require a running app context
 // to emit events, so proper testing requires integration tests.
 
-use super::operations::FileEntry;
+use super::listing::FileEntry;
 use super::watcher::compute_diff;
 
 fn make_entry(name: &str, size: Option<u64>) -> FileEntry {

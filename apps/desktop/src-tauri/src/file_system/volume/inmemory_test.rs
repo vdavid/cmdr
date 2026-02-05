@@ -3,8 +3,8 @@
 //! These tests verify that the volume abstraction works correctly
 //! without touching the real file system.
 
-use super::metadata::FileEntry;
-use super::volume::{InMemoryVolume, Volume};
+use super::{InMemoryVolume, Volume};
+use crate::file_system::listing::FileEntry;
 use std::path::Path;
 
 /// Creates a sample file entry for testing.
@@ -162,7 +162,7 @@ fn test_volume_create_and_list_sequence() {
 
 #[test]
 fn test_volume_manager_with_inmemory() {
-    use super::volume_manager::VolumeManager;
+    use super::manager::VolumeManager;
     use std::sync::Arc;
 
     let manager = VolumeManager::new();
@@ -207,8 +207,8 @@ fn test_volume_manager_with_inmemory() {
 
 #[test]
 fn test_streaming_state_lifecycle() {
-    use super::operations::cancel_listing;
-    use super::streaming::{STREAMING_STATE, StreamingListingState};
+    use crate::file_system::listing::cancel_listing;
+    use crate::file_system::listing::streaming::{STREAMING_STATE, StreamingListingState};
     use std::sync::Arc;
     use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -249,8 +249,8 @@ fn test_streaming_state_lifecycle() {
 
 #[test]
 fn test_multiple_concurrent_streaming_states() {
-    use super::operations::cancel_listing;
-    use super::streaming::{STREAMING_STATE, StreamingListingState};
+    use crate::file_system::listing::cancel_listing;
+    use crate::file_system::listing::streaming::{STREAMING_STATE, StreamingListingState};
     use std::sync::Arc;
     use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -298,7 +298,8 @@ fn test_multiple_concurrent_streaming_states() {
 
 #[test]
 fn test_streaming_entries_are_sorted() {
-    use super::operations::{SortColumn, SortOrder, sort_entries};
+    use crate::file_system::listing::sorting::sort_entries;
+    use crate::file_system::listing::{SortColumn, SortOrder};
 
     // Create unsorted entries
     let mut entries = vec![

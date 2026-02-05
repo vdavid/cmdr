@@ -1,33 +1,26 @@
 //! File system module - operations, watchers, volumes, and providers.
 
-pub(crate) mod caching;
-#[cfg(target_os = "macos")]
-pub(crate) mod macos_copy;
+pub(crate) mod listing;
 #[cfg(target_os = "macos")]
 mod macos_metadata;
-pub(crate) mod metadata;
 #[cfg(test)]
 mod mock_provider;
-pub(crate) mod operations;
 #[cfg(test)]
 mod provider;
 #[cfg(test)]
 mod real_provider;
-pub(crate) mod sorting;
-pub(crate) mod streaming;
 #[cfg(target_os = "macos")]
 pub mod sync_status;
 pub mod volume;
-mod volume_manager;
-mod watcher;
+pub(crate) mod watcher;
 pub(crate) mod write_operations;
 
 use std::sync::{Arc, LazyLock};
 
-// Re-export public types - operations.rs re-exports from the submodules
-#[cfg(test)]
-pub use mock_provider::MockFileSystemProvider;
-pub use operations::{
+// Re-export public types from the listing module
+#[allow(unused_imports, reason = "Public API re-exports for future use")]
+pub use listing::ExtendedMetadata;
+pub use listing::{
     FileEntry, ListingStartResult, ListingStats, ResortResult, SortColumn, SortOrder, StreamingListingStartResult,
     cancel_listing, find_file_index, get_file_at, get_file_range, get_listing_stats, get_max_filename_width,
     get_total_count, list_directory_end, list_directory_start_streaming, list_directory_start_with_volume,
@@ -35,18 +28,15 @@ pub use operations::{
 };
 // macOS-only exports (used by drag operations)
 #[cfg(target_os = "macos")]
-pub use operations::get_paths_at_indices;
-// FileEntry also re-exported for internal test modules
-#[cfg(test)]
-pub use provider::FileSystemProvider;
+pub use listing::get_paths_at_indices;
 // Re-export volume types (some not used externally yet)
+#[allow(unused_imports, reason = "Public API re-exports for future use")]
+pub use volume::manager::VolumeManager;
 #[allow(unused_imports, reason = "Public API re-exports for future use")]
 pub use volume::{
     ConflictInfo, CopyScanResult, InMemoryVolume, LocalPosixVolume, MtpVolume, SourceItemInfo, SpaceInfo, Volume,
     VolumeError,
 };
-#[allow(unused_imports, reason = "Public API re-exports for future use")]
-pub use volume_manager::VolumeManager;
 // Watcher management - init_watcher_manager must be called from lib.rs
 pub use watcher::{init_watcher_manager, update_debounce_ms};
 // Diff types for file watching (used by MTP module for unified diff events)
@@ -103,25 +93,4 @@ pub fn get_volume_manager() -> &'static VolumeManager {
 }
 
 #[cfg(test)]
-mod operations_test;
-
-#[cfg(test)]
 mod watcher_test;
-
-#[cfg(test)]
-mod mock_provider_test;
-
-#[cfg(test)]
-mod integration_test;
-
-#[cfg(test)]
-mod hidden_files_test;
-
-#[cfg(test)]
-mod sorting_test;
-
-#[cfg(test)]
-mod write_operations_test;
-
-#[cfg(test)]
-mod write_operations_integration_test;

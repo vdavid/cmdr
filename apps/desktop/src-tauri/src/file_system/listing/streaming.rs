@@ -10,7 +10,7 @@ use std::time::Duration;
 
 /// Interval for checking cancellation while waiting for directory listing results.
 /// This ensures we can respond to ESC within ~100ms even if I/O is blocked.
-pub(super) const CANCELLATION_POLL_INTERVAL: Duration = Duration::from_millis(100);
+pub(crate) const CANCELLATION_POLL_INTERVAL: Duration = Duration::from_millis(100);
 
 /// Status of a streaming directory listing
 #[derive(Debug, Clone, Serialize, Deserialize)]

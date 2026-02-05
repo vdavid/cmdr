@@ -12,7 +12,7 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
 #[cfg(target_os = "macos")]
-use crate::file_system::macos_copy::{CopyProgressContext, copy_single_file_native};
+use super::macos_copy::{CopyProgressContext, copy_single_file_native};
 
 use super::chunked_copy::{ChunkedCopyProgressFn, chunked_copy_with_metadata, is_network_filesystem};
 use super::helpers::safe_overwrite_file;

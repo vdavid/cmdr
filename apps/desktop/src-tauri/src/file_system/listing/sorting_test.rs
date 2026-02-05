@@ -3,7 +3,8 @@
 //! These tests verify that sort_entries correctly sorts files by
 //! name, extension, size, modified date, and created date.
 
-use super::operations::{FileEntry, SortColumn, SortOrder, sort_entries};
+use super::sorting::sort_entries;
+use super::{FileEntry, SortColumn, SortOrder};
 
 /// Creates a test entry with the given name and properties.
 fn make_entry(name: &str, is_dir: bool, size: Option<u64>, modified: Option<u64>) -> FileEntry {

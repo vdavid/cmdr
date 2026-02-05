@@ -6,7 +6,7 @@
 // TODO: Remove this once VolumeManager is used in lib.rs (Phase 4)
 #![allow(dead_code, reason = "VolumeManager not yet integrated into lib.rs")]
 
-use super::volume::Volume;
+use super::Volume;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
@@ -111,8 +111,8 @@ impl Default for VolumeManager {
 
 #[cfg(test)]
 mod tests {
+    use super::super::InMemoryVolume;
     use super::*;
-    use crate::file_system::volume::InMemoryVolume;
 
     #[test]
     fn test_new_creates_empty_manager() {

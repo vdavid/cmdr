@@ -6,7 +6,7 @@
 // TODO: Remove this once Volume is integrated into operations.rs (Phase 2)
 #![allow(dead_code, reason = "Volume abstraction not yet integrated into operations.rs")]
 
-use super::metadata::FileEntry;
+use crate::file_system::listing::FileEntry;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
@@ -278,6 +278,7 @@ pub trait Volume: Send + Sync {
 // Implementations
 mod in_memory;
 mod local_posix;
+pub(crate) mod manager;
 mod mtp;
 
 pub use in_memory::InMemoryVolume;
@@ -289,5 +290,7 @@ pub use mtp::MtpVolume;
 
 #[cfg(test)]
 mod in_memory_test;
+#[cfg(test)]
+mod inmemory_test;
 #[cfg(test)]
 mod local_posix_test;

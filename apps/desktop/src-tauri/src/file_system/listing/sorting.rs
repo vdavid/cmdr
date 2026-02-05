@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::metadata::FileEntry;
+use crate::file_system::listing::metadata::FileEntry;
 
 // ============================================================================
 // Sorting configuration

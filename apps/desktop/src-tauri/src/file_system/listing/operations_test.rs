@@ -1,8 +1,8 @@
 //! Tests for file system operations
 
 use super::operations::{get_extended_metadata_batch, list_directory_core};
-use super::provider::FileSystemProvider;
-use super::real_provider::RealFileSystemProvider;
+use crate::file_system::provider::FileSystemProvider;
+use crate::file_system::real_provider::RealFileSystemProvider;
 use std::fs;
 
 #[test]
@@ -139,7 +139,7 @@ fn test_get_single_entry_file() {
     let test_file = temp_dir.join("single_file.txt");
     fs::write(&test_file, "test content").unwrap();
 
-    let entry = super::operations::get_single_entry(&test_file).unwrap();
+    let entry = super::get_single_entry(&test_file).unwrap();
 
     // Cleanup
     let _ = fs::remove_file(&test_file);
@@ -157,7 +157,7 @@ fn test_get_single_entry_directory() {
     let temp_dir = std::env::temp_dir().join("cmdr_single_dir_test");
     fs::create_dir_all(&temp_dir).unwrap();
 
-    let entry = super::operations::get_single_entry(&temp_dir).unwrap();
+    let entry = super::get_single_entry(&temp_dir).unwrap();
 
     // Cleanup
     let _ = fs::remove_dir(&temp_dir);
@@ -170,7 +170,7 @@ fn test_get_single_entry_directory() {
 
 #[test]
 fn test_get_single_entry_nonexistent() {
-    let result = super::operations::get_single_entry(std::path::Path::new("/definitely_does_not_exist_12345"));
+    let result = super::get_single_entry(std::path::Path::new("/definitely_does_not_exist_12345"));
     assert!(result.is_err());
 }
 
@@ -180,7 +180,7 @@ fn test_get_single_entry_nonexistent() {
 
 #[test]
 fn test_cancel_listing_sets_flag() {
-    use super::operations::cancel_listing;
+    use super::cancel_listing;
     use super::streaming::{STREAMING_STATE, StreamingListingState};
     use std::sync::Arc;
     use std::sync::atomic::{AtomicBool, Ordering};
@@ -215,7 +215,7 @@ fn test_cancel_listing_sets_flag() {
 
 #[test]
 fn test_cancel_listing_nonexistent_does_not_panic() {
-    use super::operations::cancel_listing;
+    use super::cancel_listing;
 
     // Should not panic when listing doesn't exist
     cancel_listing("nonexistent-listing-id");

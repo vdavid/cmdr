@@ -4,10 +4,9 @@
 //! files starting with "." from directory listings.
 
 use super::caching::{CachedListing, LISTING_CACHE};
-use super::metadata::FileEntry;
 use super::operations::{find_file_index, get_file_at, get_file_range, get_total_count, list_directory_end};
-use super::sorting::{SortColumn, SortOrder};
-use super::volume::{InMemoryVolume, Volume};
+use super::{FileEntry, SortColumn, SortOrder};
+use crate::file_system::volume::{InMemoryVolume, Volume};
 use std::path::Path;
 use std::sync::Arc;
 

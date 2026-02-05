@@ -11,7 +11,7 @@ use std::fs;
 use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 
-use super::write_operations::*;
+use super::*;
 
 // ============================================================================
 // Test utilities
@@ -631,7 +631,7 @@ fn find_unique_name(path: &std::path::Path) -> PathBuf {
 
 #[test]
 fn test_copy_transaction_records_files() {
-    use super::write_operations::CopyTransaction;
+    use super::CopyTransaction;
 
     let temp_dir = create_temp_dir("transaction_record");
 
@@ -651,7 +651,7 @@ fn test_copy_transaction_records_files() {
 
 #[test]
 fn test_copy_transaction_records_dirs() {
-    use super::write_operations::CopyTransaction;
+    use super::CopyTransaction;
 
     let temp_dir = create_temp_dir("transaction_record_dirs");
 
@@ -671,7 +671,7 @@ fn test_copy_transaction_records_dirs() {
 
 #[test]
 fn test_copy_transaction_rollback_removes_files() {
-    use super::write_operations::CopyTransaction;
+    use super::CopyTransaction;
 
     let temp_dir = create_temp_dir("transaction_rollback_files");
 
@@ -702,7 +702,7 @@ fn test_copy_transaction_rollback_removes_files() {
 
 #[test]
 fn test_copy_transaction_rollback_removes_dirs() {
-    use super::write_operations::CopyTransaction;
+    use super::CopyTransaction;
 
     let temp_dir = create_temp_dir("transaction_rollback_dirs");
 
@@ -732,7 +732,7 @@ fn test_copy_transaction_rollback_removes_dirs() {
 
 #[test]
 fn test_copy_transaction_rollback_mixed() {
-    use super::write_operations::CopyTransaction;
+    use super::CopyTransaction;
 
     let temp_dir = create_temp_dir("transaction_rollback_mixed");
 
@@ -763,7 +763,7 @@ fn test_copy_transaction_rollback_mixed() {
 
 #[test]
 fn test_copy_transaction_commit_preserves_files() {
-    use super::write_operations::CopyTransaction;
+    use super::CopyTransaction;
 
     let temp_dir = create_temp_dir("transaction_commit");
 
@@ -790,7 +790,7 @@ fn test_copy_transaction_commit_preserves_files() {
 
 #[test]
 fn test_validate_sources_with_existing_files() {
-    use super::write_operations::validate_sources;
+    use super::validate_sources;
 
     let temp_dir = create_temp_dir("validate_sources_exist");
     let file1 = temp_dir.join("file1.txt");
@@ -806,7 +806,7 @@ fn test_validate_sources_with_existing_files() {
 
 #[test]
 fn test_validate_sources_with_missing_file() {
-    use super::write_operations::validate_sources;
+    use super::validate_sources;
 
     let temp_dir = create_temp_dir("validate_sources_missing");
     let file1 = temp_dir.join("exists.txt");
@@ -821,7 +821,7 @@ fn test_validate_sources_with_missing_file() {
 
 #[test]
 fn test_validate_sources_with_symlink() {
-    use super::write_operations::validate_sources;
+    use super::validate_sources;
 
     let temp_dir = create_temp_dir("validate_sources_symlink");
     let target = temp_dir.join("target.txt");
@@ -838,7 +838,7 @@ fn test_validate_sources_with_symlink() {
 
 #[test]
 fn test_validate_sources_with_broken_symlink() {
-    use super::write_operations::validate_sources;
+    use super::validate_sources;
 
     let temp_dir = create_temp_dir("validate_sources_broken_symlink");
     let link = temp_dir.join("broken_link");
@@ -853,7 +853,7 @@ fn test_validate_sources_with_broken_symlink() {
 
 #[test]
 fn test_validate_destination_with_existing_dir() {
-    use super::write_operations::validate_destination;
+    use super::validate_destination;
 
     let temp_dir = create_temp_dir("validate_dest_dir");
     let dest = temp_dir.join("dest");
@@ -867,7 +867,7 @@ fn test_validate_destination_with_existing_dir() {
 
 #[test]
 fn test_validate_destination_with_missing_dir() {
-    use super::write_operations::validate_destination;
+    use super::validate_destination;
 
     let temp_dir = create_temp_dir("validate_dest_missing");
     let dest = temp_dir.join("missing");
@@ -880,7 +880,7 @@ fn test_validate_destination_with_missing_dir() {
 
 #[test]
 fn test_validate_destination_with_file() {
-    use super::write_operations::validate_destination;
+    use super::validate_destination;
 
     let temp_dir = create_temp_dir("validate_dest_file");
     let dest = temp_dir.join("file.txt");
@@ -894,7 +894,7 @@ fn test_validate_destination_with_file() {
 
 #[test]
 fn test_validate_not_same_location_different() {
-    use super::write_operations::validate_not_same_location;
+    use super::validate_not_same_location;
 
     let temp_dir = create_temp_dir("validate_same_loc_diff");
     let src_dir = temp_dir.join("src");
@@ -913,7 +913,7 @@ fn test_validate_not_same_location_different() {
 
 #[test]
 fn test_validate_not_same_location_same() {
-    use super::write_operations::validate_not_same_location;
+    use super::validate_not_same_location;
 
     let temp_dir = create_temp_dir("validate_same_loc_same");
     let file = temp_dir.join("file.txt");
@@ -928,7 +928,7 @@ fn test_validate_not_same_location_same() {
 
 #[test]
 fn test_validate_destination_not_inside_source_ok() {
-    use super::write_operations::validate_destination_not_inside_source;
+    use super::validate_destination_not_inside_source;
 
     let temp_dir = create_temp_dir("validate_inside_ok");
     let src_dir = temp_dir.join("src");
@@ -944,7 +944,7 @@ fn test_validate_destination_not_inside_source_ok() {
 
 #[test]
 fn test_validate_destination_not_inside_source_nested() {
-    use super::write_operations::validate_destination_not_inside_source;
+    use super::validate_destination_not_inside_source;
 
     let temp_dir = create_temp_dir("validate_inside_nested");
     let src_dir = temp_dir.join("src");
@@ -968,7 +968,7 @@ fn test_validate_destination_not_inside_source_nested() {
 
 #[test]
 fn test_is_same_filesystem_same_volume() {
-    use super::write_operations::is_same_filesystem;
+    use super::is_same_filesystem;
 
     let temp_dir = create_temp_dir("same_fs");
     let dir1 = temp_dir.join("dir1");
@@ -985,7 +985,7 @@ fn test_is_same_filesystem_same_volume() {
 
 #[test]
 fn test_is_same_filesystem_with_root() {
-    use super::write_operations::is_same_filesystem;
+    use super::is_same_filesystem;
 
     let temp_dir = create_temp_dir("same_fs_root");
 
@@ -1003,7 +1003,7 @@ fn test_is_same_filesystem_with_root() {
 
 #[test]
 fn test_validate_destination_not_inside_source_dotdot_bypass() {
-    use super::write_operations::validate_destination_not_inside_source;
+    use super::validate_destination_not_inside_source;
 
     let temp_dir = create_temp_dir("validate_inside_dotdot");
     let src_dir = temp_dir.join("src");
@@ -1023,7 +1023,7 @@ fn test_validate_destination_not_inside_source_dotdot_bypass() {
 
 #[test]
 fn test_validate_destination_not_inside_source_symlink_bypass() {
-    use super::write_operations::validate_destination_not_inside_source;
+    use super::validate_destination_not_inside_source;
 
     let temp_dir = create_temp_dir("validate_inside_symlink");
     let src_dir = temp_dir.join("src");
@@ -1050,7 +1050,7 @@ fn test_validate_destination_not_inside_source_symlink_bypass() {
 
 #[test]
 fn test_validate_destination_writable_ok() {
-    use super::write_operations::validate_destination_writable;
+    use super::validate_destination_writable;
 
     let temp_dir = create_temp_dir("validate_writable_ok");
     let dest = temp_dir.join("writable_dest");
@@ -1064,7 +1064,7 @@ fn test_validate_destination_writable_ok() {
 
 #[test]
 fn test_validate_destination_writable_readonly() {
-    use super::write_operations::validate_destination_writable;
+    use super::validate_destination_writable;
 
     // Skip if running as root (root bypasses permission checks)
     if unsafe { libc::geteuid() } == 0 {
@@ -1093,7 +1093,7 @@ fn test_validate_destination_writable_readonly() {
 
 #[test]
 fn test_is_same_file_different_files() {
-    use super::write_operations::is_same_file;
+    use super::is_same_file;
 
     let temp_dir = create_temp_dir("same_file_diff");
     let file1 = temp_dir.join("file1.txt");
@@ -1108,7 +1108,7 @@ fn test_is_same_file_different_files() {
 
 #[test]
 fn test_is_same_file_via_symlink() {
-    use super::write_operations::is_same_file;
+    use super::is_same_file;
 
     let temp_dir = create_temp_dir("same_file_symlink");
     let file = temp_dir.join("original.txt");
@@ -1124,7 +1124,7 @@ fn test_is_same_file_via_symlink() {
 
 #[test]
 fn test_is_same_file_via_hardlink() {
-    use super::write_operations::is_same_file;
+    use super::is_same_file;
 
     let temp_dir = create_temp_dir("same_file_hardlink");
     let file = temp_dir.join("original.txt");
@@ -1140,7 +1140,7 @@ fn test_is_same_file_via_hardlink() {
 
 #[test]
 fn test_is_same_file_nonexistent_dest() {
-    use super::write_operations::is_same_file;
+    use super::is_same_file;
 
     let temp_dir = create_temp_dir("same_file_noexist");
     let file = temp_dir.join("exists.txt");
@@ -1159,7 +1159,7 @@ fn test_is_same_file_nonexistent_dest() {
 
 #[test]
 fn test_validate_path_length_ok() {
-    use super::write_operations::validate_path_length;
+    use super::validate_path_length;
 
     let path = PathBuf::from("/tmp/short/path/file.txt");
     assert!(validate_path_length(&path).is_ok());
@@ -1167,7 +1167,7 @@ fn test_validate_path_length_ok() {
 
 #[test]
 fn test_validate_path_length_name_too_long() {
-    use super::write_operations::validate_path_length;
+    use super::validate_path_length;
 
     // 256-byte filename exceeds the 255-byte APFS limit
     let long_name = "a".repeat(256);
@@ -1182,7 +1182,7 @@ fn test_validate_path_length_name_too_long() {
 
 #[test]
 fn test_validate_path_length_path_too_long() {
-    use super::write_operations::validate_path_length;
+    use super::validate_path_length;
 
     // Build a path longer than 1024 bytes
     let mut path = PathBuf::from("/tmp");
@@ -1200,7 +1200,7 @@ fn test_validate_path_length_path_too_long() {
 
 #[test]
 fn test_validate_path_length_exact_limit() {
-    use super::write_operations::validate_path_length;
+    use super::validate_path_length;
 
     // Exactly 255 bytes is acceptable
     let name = "a".repeat(255);
@@ -1267,7 +1267,7 @@ fn test_special_file_fifo_skipped() {
 #[cfg(unix)]
 #[test]
 fn test_validate_disk_space_sufficient() {
-    use super::write_operations::validate_disk_space;
+    use super::validate_disk_space;
 
     let temp_dir = create_temp_dir("disk_space_ok");
     // Requesting 1 byte should always succeed on any volume with free space
@@ -1280,7 +1280,7 @@ fn test_validate_disk_space_sufficient() {
 #[cfg(unix)]
 #[test]
 fn test_validate_disk_space_insufficient() {
-    use super::write_operations::validate_disk_space;
+    use super::validate_disk_space;
 
     let temp_dir = create_temp_dir("disk_space_fail");
     // Requesting an absurdly large amount (1 exabyte) should fail

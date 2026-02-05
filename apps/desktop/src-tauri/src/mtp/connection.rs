@@ -26,7 +26,7 @@ use tokio::io::AsyncWriteExt;
 use tokio::sync::{Mutex, broadcast};
 
 use super::types::{MtpDeviceInfo, MtpStorageInfo};
-use crate::file_system::operations::{get_listings_by_volume_prefix, update_listing_entries};
+use crate::file_system::listing::{get_listings_by_volume_prefix, update_listing_entries};
 use crate::file_system::{CopyScanResult, DirectoryDiff, FileEntry, MtpVolume, compute_diff, get_volume_manager};
 
 /// Default timeout for MTP operations (30 seconds - some devices are slow).

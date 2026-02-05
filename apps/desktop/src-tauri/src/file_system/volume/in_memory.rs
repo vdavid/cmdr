@@ -5,7 +5,7 @@
 //! without touching the real file system.
 
 use super::{Volume, VolumeError};
-use crate::file_system::metadata::FileEntry;
+use crate::file_system::listing::FileEntry;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::RwLock;

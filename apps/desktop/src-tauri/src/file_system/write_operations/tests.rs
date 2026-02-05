@@ -3,7 +3,7 @@
 //! Note: Serialization tests were removed - serde derive macros are well-tested.
 //! We keep deserialization tests as they verify the API contract with the frontend.
 
-use super::write_operations::*;
+use super::*;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};

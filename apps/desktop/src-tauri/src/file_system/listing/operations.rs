@@ -12,20 +12,20 @@ use std::sync::mpsc;
 use std::time::Duration;
 use uuid::Uuid;
 
-use super::caching::{CachedListing, LISTING_CACHE};
-use super::metadata::{get_group_name, get_icon_id, get_owner_name};
-use super::streaming::{
+use crate::benchmark;
+use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
+use crate::file_system::listing::metadata::{get_group_name, get_icon_id, get_owner_name};
+use crate::file_system::listing::sorting::{SortColumn, SortOrder, sort_entries};
+use crate::file_system::listing::streaming::{
     CANCELLATION_POLL_INTERVAL, ListingCancelledEvent, ListingCompleteEvent, ListingErrorEvent, ListingOpeningEvent,
     ListingReadCompleteEvent, ListingStatus, STREAMING_STATE, StreamingListingState,
 };
-use super::watcher::{start_watching, stop_watching};
-use crate::benchmark;
+use crate::file_system::watcher::{start_watching, stop_watching};
 
 // Re-export types for backwards compatibility (they were originally defined in operations.rs)
 // These re-exports make the types available both externally and locally in this module
-pub use super::metadata::{ExtendedMetadata, FileEntry};
-pub use super::sorting::{SortColumn, SortOrder, sort_entries};
-pub use super::streaming::StreamingListingStartResult;
+pub use crate::file_system::listing::metadata::{ExtendedMetadata, FileEntry};
+pub use crate::file_system::listing::streaming::StreamingListingStartResult;
 
 /// Lists the contents of a directory.
 ///
@@ -100,7 +100,7 @@ pub fn list_directory(path: &Path) -> Result<Vec<FileEntry>, std::io::Error> {
                 // Get macOS-specific metadata (added_at, opened_at)
                 #[cfg(target_os = "macos")]
                 let (added_at, opened_at) = {
-                    let macos_meta = super::macos_metadata::get_macos_metadata(&entry.path());
+                    let macos_meta = crate::file_system::macos_metadata::get_macos_metadata(&entry.path());
                     (macos_meta.added_at, macos_meta.opened_at)
                 };
                 #[cfg(not(target_os = "macos"))]
@@ -230,7 +230,7 @@ pub fn list_directory_start_with_volume(
     benchmark::log_event_value("list_directory_start CALLED", path.display());
 
     // Get the volume from VolumeManager
-    let volume = super::get_volume_manager().get(volume_id).ok_or_else(|| {
+    let volume = crate::file_system::get_volume_manager().get(volume_id).ok_or_else(|| {
         std::io::Error::new(
             std::io::ErrorKind::NotFound,
             format!("Volume '{}' not found", volume_id),
@@ -631,7 +631,7 @@ pub fn resort_listing(
 
 /// Gets entries and path from the listing cache (for watcher diff computation).
 /// Returns None if listing not found.
-pub(super) fn get_listing_entries(listing_id: &str) -> Option<(PathBuf, Vec<FileEntry>)> {
+pub(crate) fn get_listing_entries(listing_id: &str) -> Option<(PathBuf, Vec<FileEntry>)> {
     let cache = LISTING_CACHE.read().ok()?;
     let listing = cache.get(listing_id)?;
     Some((listing.path.clone(), listing.entries.clone()))
@@ -901,7 +901,7 @@ pub fn get_extended_metadata_batch(paths: Vec<String>) -> Vec<ExtendedMetadata> 
         .into_iter()
         .map(|path_str| {
             let path = Path::new(&path_str);
-            let macos_meta = super::macos_metadata::get_macos_metadata(path);
+            let macos_meta = crate::file_system::macos_metadata::get_macos_metadata(path);
             ExtendedMetadata {
                 path: path_str,
                 added_at: macos_meta.added_at,
@@ -1087,7 +1087,7 @@ fn read_directory_with_progress(
     }
 
     // Get the volume from VolumeManager
-    let volume = super::get_volume_manager()
+    let volume = crate::file_system::get_volume_manager()
         .get(volume_id)
         .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, format!("Volume not found: {}", volume_id)))?;
 
@@ -1202,7 +1202,7 @@ fn read_directory_with_progress(
     }
 
     // Get the volume from VolumeManager to check if it supports watching
-    if let Some(volume) = super::get_volume_manager().get(volume_id)
+    if let Some(volume) = crate::file_system::get_volume_manager().get(volume_id)
         && volume.supports_watching()
         && let Err(e) = start_watching(listing_id, path)
     {
@@ -1211,7 +1211,7 @@ fn read_directory_with_progress(
     }
 
     // Get volume root for the event (used by frontend to determine if at volume root)
-    let volume_root = super::get_volume_manager()
+    let volume_root = crate::file_system::get_volume_manager()
         .get(volume_id)
         .map(|v| v.root().to_string_lossy().to_string())
         .unwrap_or_else(|| "/".to_string());
