@@ -1460,7 +1460,9 @@ fn read_directory_with_progress(
             Ok(result) => break result,
             Err(mpsc::RecvTimeoutError::Timeout) => continue,
             Err(mpsc::RecvTimeoutError::Disconnected) => {
-                return Err(std::io::Error::other("Directory listing thread terminated unexpectedly"));
+                return Err(std::io::Error::other(
+                    "Directory listing thread terminated unexpectedly",
+                ));
             }
         }
     };

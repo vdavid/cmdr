@@ -107,6 +107,18 @@ impl Default for CopyProgressContext {
     }
 }
 
+impl CopyProgressContext {
+    /// Creates a context with only cancellation support (no callbacks).
+    pub fn with_cancellation(cancelled: Arc<AtomicBool>) -> Self {
+        Self {
+            cancelled,
+            on_progress: None,
+            on_file_start: None,
+            on_file_finish: None,
+        }
+    }
+}
+
 /// The progress callback called by copyfile.
 extern "C" fn copy_progress_callback(
     what: c_int,
@@ -590,10 +602,7 @@ mod tests {
 
         fs::write(&src, "content").unwrap();
 
-        let context = CopyProgressContext {
-            cancelled: Arc::new(AtomicBool::new(true)), // Pre-cancelled
-            ..Default::default()
-        };
+        let context = CopyProgressContext::with_cancellation(Arc::new(AtomicBool::new(true))); // Pre-cancelled
 
         let _result = copy_single_file_native(&src, &dst, false, Some(&context));
         // Note: cancellation is checked in the callback, so for small files it may complete

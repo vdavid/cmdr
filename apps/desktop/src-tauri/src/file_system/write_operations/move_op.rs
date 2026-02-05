@@ -1,18 +1,19 @@
 //! Move implementation for write operations.
 
+use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::time::Instant;
 
-use super::copy::copy_path_recursive;
+use super::copy::copy_single_item;
 use super::helpers::{is_same_filesystem, resolve_conflict, safe_overwrite_dir, spawn_async_sync};
 use super::scan::{handle_dry_run, scan_sources};
-use super::state::{CopyTransaction, WriteOperationState};
+use super::state::{CopyTransaction, WriteOperationState, update_operation_status};
 use super::types::{
     ConflictResolution, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig,
-    WriteOperationError, WriteOperationType,
+    WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
 };
 
 // ============================================================================
@@ -187,18 +188,56 @@ fn move_with_staging(
         message: format!("Failed to create staging directory: {}", e),
     })?;
 
-    // Phase 2: Copy to staging directory
+    // Phase 2: Copy files to staging directory (using scan results, same as copy operation)
     let mut transaction = CopyTransaction::new();
     let mut files_done = 0;
     let mut bytes_done = 0u64;
     let mut last_progress_time = Instant::now();
     let mut apply_to_all_resolution: Option<ConflictResolution> = None;
+    let mut created_dirs: HashSet<PathBuf> = HashSet::new();
+
+    // Emit initial copying phase event
+    let _ = app.emit(
+        "write-progress",
+        WriteProgressEvent {
+            operation_id: operation_id.to_string(),
+            operation_type: WriteOperationType::Move,
+            phase: WriteOperationPhase::Copying,
+            current_file: None,
+            files_done: 0,
+            files_total: scan_result.file_count,
+            bytes_done: 0,
+            bytes_total: scan_result.total_bytes,
+        },
+    );
+    update_operation_status(
+        operation_id,
+        WriteOperationPhase::Copying,
+        None,
+        0,
+        scan_result.file_count,
+        0,
+        scan_result.total_bytes,
+    );
+
+    log::info!(
+        "move_with_staging: starting copy loop for operation_id={}, {} files",
+        operation_id,
+        scan_result.files.len()
+    );
 
     let copy_result: Result<(), WriteOperationError> = (|| {
-        for source in sources {
-            copy_path_recursive(
-                source,
-                &staging_dir,
+        for file_info in &scan_result.files {
+            log::debug!(
+                "move_with_staging: copying file {} ({} bytes) to staging",
+                file_info.path.display(),
+                file_info.size
+            );
+            // Copy to staging directory instead of final destination
+            copy_single_item(
+                &file_info.path,
+                file_info.dest_path(&staging_dir),
+                file_info.is_symlink,
                 &mut files_done,
                 &mut bytes_done,
                 scan_result.file_count,
@@ -206,11 +245,13 @@ fn move_with_staging(
                 state,
                 app,
                 operation_id,
+                WriteOperationType::Move,
                 &state.progress_interval,
                 &mut last_progress_time,
                 config,
                 &mut transaction,
                 &mut apply_to_all_resolution,
+                &mut created_dirs,
             )?;
         }
         Ok(())

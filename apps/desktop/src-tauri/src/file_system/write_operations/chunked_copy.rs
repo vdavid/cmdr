@@ -55,9 +55,7 @@ pub fn is_network_filesystem(path: &Path) -> bool {
     }
 
     // SAFETY: f_fstypename is a null-terminated C string
-    let fstype = unsafe {
-        std::ffi::CStr::from_ptr(stat.f_fstypename.as_ptr()).to_string_lossy()
-    };
+    let fstype = unsafe { std::ffi::CStr::from_ptr(stat.f_fstypename.as_ptr()).to_string_lossy() };
 
     let is_network = matches!(fstype.as_ref(), "smbfs" | "nfs" | "afpfs" | "webdav");
 
@@ -110,9 +108,7 @@ pub fn chunked_copy_with_metadata(
     );
 
     // Get source size for progress reporting
-    let source_size = std::fs::metadata(source)
-        .map(|m| m.len())
-        .unwrap_or(0);
+    let source_size = std::fs::metadata(source).map(|m| m.len()).unwrap_or(0);
 
     // 1. Chunked data copy with cancellation checks
     let bytes = copy_data_chunked(source, dest, cancelled, source_size, progress_callback)?;

@@ -8,12 +8,11 @@ use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 
 #[cfg(target_os = "macos")]
-use crate::file_system::macos_copy::{CopyProgressContext, copy_single_file_native, copy_symlink};
+use crate::file_system::macos_copy::copy_symlink;
 
-use super::chunked_copy::{ChunkedCopyProgressFn, chunked_copy_with_metadata, is_network_filesystem};
-use super::helpers::{
-    is_same_file, resolve_conflict, safe_overwrite_file, spawn_async_sync, validate_disk_space, validate_path_length,
-};
+use super::chunked_copy::ChunkedCopyProgressFn;
+use super::copy_strategy::copy_file_with_strategy;
+use super::helpers::{is_same_file, resolve_conflict, spawn_async_sync, validate_disk_space, validate_path_length};
 use super::scan::{handle_dry_run, scan_sources, take_cached_scan_result};
 use super::state::{CopyTransaction, WriteOperationState, update_operation_status};
 use super::types::{
@@ -217,7 +216,7 @@ pub(super) fn copy_files_with_progress(
                 file_info.path.display(),
                 file_info.size
             );
-            copy_single_file_sorted(
+            copy_single_item(
                 &file_info.path,
                 file_info.dest_path(destination),
                 file_info.is_symlink,
@@ -228,6 +227,7 @@ pub(super) fn copy_files_with_progress(
                 state,
                 app,
                 operation_id,
+                WriteOperationType::Copy,
                 &state.progress_interval,
                 &mut last_progress_time,
                 config,
@@ -320,13 +320,14 @@ pub(super) fn copy_files_with_progress(
     }
 }
 
-/// Copies a single file from the sorted file list to its destination.
+/// Copies a single file or symlink to its destination.
 /// Ensures parent directories exist before copying.
+/// Used by both copy and cross-filesystem move operations.
 #[allow(
     clippy::too_many_arguments,
     reason = "File copy requires passing state through multiple levels"
 )]
-fn copy_single_file_sorted(
+pub(super) fn copy_single_item(
     source: &Path,
     dest_path: PathBuf,
     is_symlink: bool,
@@ -337,6 +338,7 @@ fn copy_single_file_sorted(
     state: &Arc<WriteOperationState>,
     app: &tauri::AppHandle,
     operation_id: &str,
+    operation_type: WriteOperationType,
     progress_interval: &Duration,
     last_progress_time: &mut Instant,
     config: &WriteOperationConfig,
@@ -502,88 +504,56 @@ fn copy_single_file_sorted(
             });
         }
 
-        // Copy file using platform-specific method
-        // For network filesystems, use chunked copy for responsive cancellation
-        let bytes = if is_network_filesystem(&actual_dest) {
-            log::debug!(
-                "copy: using chunked copy for network destination {}",
-                actual_dest.display()
-            );
+        // Copy file using appropriate strategy (network, safe overwrite, or native)
+        // Create progress callback for intra-file progress reporting on network filesystems
+        let base_bytes_done = *bytes_done;
+        let current_file_name = file_name.to_string_lossy().to_string();
+        let last_emit_time = std::cell::Cell::new(Instant::now());
 
-            // Create progress callback for intra-file progress reporting
-            let base_bytes_done = *bytes_done;
-            let current_file_name = file_name.to_string_lossy().to_string();
-            let last_emit_time = std::cell::Cell::new(Instant::now());
-
-            let progress_cb: ChunkedCopyProgressFn = &|chunk_bytes: u64, _total: u64| {
-                // Check if enough time has passed to emit a progress event
-                if last_emit_time.get().elapsed() >= *progress_interval {
-                    let effective_bytes_done = base_bytes_done + chunk_bytes;
-                    log::debug!(
-                        "copy: emitting chunked progress op={} files={}/{} bytes={}/{}",
-                        operation_id,
-                        *files_done,
+        let progress_cb: ChunkedCopyProgressFn = &|chunk_bytes: u64, _total: u64| {
+            if last_emit_time.get().elapsed() >= *progress_interval {
+                let effective_bytes_done = base_bytes_done + chunk_bytes;
+                log::debug!(
+                    "copy: emitting chunked progress op={} files={}/{} bytes={}/{}",
+                    operation_id,
+                    *files_done,
+                    files_total,
+                    effective_bytes_done,
+                    bytes_total
+                );
+                let _ = app.emit(
+                    "write-progress",
+                    WriteProgressEvent {
+                        operation_id: operation_id.to_string(),
+                        operation_type,
+                        phase: WriteOperationPhase::Copying,
+                        current_file: Some(current_file_name.clone()),
+                        files_done: *files_done,
                         files_total,
-                        effective_bytes_done,
-                        bytes_total
-                    );
-                    let _ = app.emit(
-                        "write-progress",
-                        WriteProgressEvent {
-                            operation_id: operation_id.to_string(),
-                            operation_type: WriteOperationType::Copy,
-                            phase: WriteOperationPhase::Copying,
-                            current_file: Some(current_file_name.clone()),
-                            files_done: *files_done,
-                            files_total,
-                            bytes_done: effective_bytes_done,
-                            bytes_total,
-                        },
-                    );
-                    update_operation_status(
-                        operation_id,
-                        WriteOperationPhase::Copying,
-                        Some(current_file_name.clone()),
-                        *files_done,
-                        files_total,
-                        effective_bytes_done,
+                        bytes_done: effective_bytes_done,
                         bytes_total,
-                    );
-                    last_emit_time.set(Instant::now());
-                }
-            };
-
-            chunked_copy_with_metadata(source, &actual_dest, &state.cancelled, Some(progress_cb))?
-        } else if needs_safe_overwrite {
-            #[cfg(target_os = "macos")]
-            {
-                let context = CopyProgressContext {
-                    cancelled: Arc::clone(&state.cancelled),
-                    ..Default::default()
-                };
-                safe_overwrite_file(source, &actual_dest, Some(&context))?
-            }
-            #[cfg(not(target_os = "macos"))]
-            {
-                safe_overwrite_file(source, &actual_dest)?
-            }
-        } else {
-            #[cfg(target_os = "macos")]
-            {
-                let context = CopyProgressContext {
-                    cancelled: Arc::clone(&state.cancelled),
-                    ..Default::default()
-                };
-                copy_single_file_native(source, &actual_dest, false, Some(&context))?
-            }
-            #[cfg(not(target_os = "macos"))]
-            {
-                fs::copy(source, &actual_dest).map_err(|e| WriteOperationError::IoError {
-                    path: source.display().to_string(),
-                    message: e.to_string(),
-                })?
+                    },
+                );
+                update_operation_status(
+                    operation_id,
+                    WriteOperationPhase::Copying,
+                    Some(current_file_name.clone()),
+                    *files_done,
+                    files_total,
+                    effective_bytes_done,
+                    bytes_total,
+                );
+                last_emit_time.set(Instant::now());
             }
         };
+
+        let bytes = copy_file_with_strategy(
+            source,
+            &actual_dest,
+            needs_safe_overwrite,
+            &state.cancelled,
+            Some(progress_cb),
+        )?;
 
         transaction.record_file(actual_dest.clone());
         *files_done += 1;
@@ -604,7 +574,7 @@ fn copy_single_file_sorted(
                 "write-progress",
                 WriteProgressEvent {
                     operation_id: operation_id.to_string(),
-                    operation_type: WriteOperationType::Copy,
+                    operation_type,
                     phase: WriteOperationPhase::Copying,
                     current_file: Some(current_file_name.clone()),
                     files_done: *files_done,
@@ -624,328 +594,6 @@ fn copy_single_file_sorted(
             );
             *last_progress_time = Instant::now();
         }
-    }
-
-    Ok(())
-}
-
-/// Recursively copies a path to a destination directory.
-/// Used by move_with_staging for cross-filesystem moves.
-#[allow(
-    clippy::too_many_arguments,
-    reason = "Recursive fn requires passing state through multiple levels"
-)]
-pub(super) fn copy_path_recursive(
-    source: &Path,
-    dest_dir: &Path,
-    files_done: &mut usize,
-    bytes_done: &mut u64,
-    files_total: usize,
-    bytes_total: u64,
-    state: &Arc<WriteOperationState>,
-    app: &tauri::AppHandle,
-    operation_id: &str,
-    progress_interval: &Duration,
-    last_progress_time: &mut Instant,
-    config: &WriteOperationConfig,
-    transaction: &mut CopyTransaction,
-    apply_to_all_resolution: &mut Option<ConflictResolution>,
-) -> Result<(), WriteOperationError> {
-    use tauri::Emitter;
-
-    // Check cancellation (event will be emitted from error handler after rollback decision)
-    if state.cancelled.load(Ordering::Relaxed) {
-        log::debug!(
-            "copy: cancellation detected op={} files_done={}",
-            operation_id,
-            *files_done
-        );
-        return Err(WriteOperationError::Cancelled {
-            message: "Operation cancelled by user".to_string(),
-        });
-    }
-
-    let file_name = source.file_name().ok_or_else(|| WriteOperationError::IoError {
-        path: source.display().to_string(),
-        message: "Invalid source path".to_string(),
-    })?;
-    let dest_path = dest_dir.join(file_name);
-
-    // Use symlink_metadata to check type without following symlinks
-    let metadata = fs::symlink_metadata(source).map_err(|e| WriteOperationError::IoError {
-        path: source.display().to_string(),
-        message: e.to_string(),
-    })?;
-
-    if metadata.is_symlink() {
-        // Handle symlink - copy as symlink, not target
-        let (actual_dest, needs_safe_overwrite) = if dest_path.exists() || fs::symlink_metadata(&dest_path).is_ok() {
-            match resolve_conflict(
-                source,
-                &dest_path,
-                config,
-                app,
-                operation_id,
-                state,
-                apply_to_all_resolution,
-            )? {
-                Some(resolved) => (resolved.path, resolved.needs_safe_overwrite),
-                None => {
-                    // Skip this file
-                    return Ok(());
-                }
-            }
-        } else {
-            (dest_path.clone(), false)
-        };
-
-        // Validate destination path length limits
-        validate_path_length(&actual_dest)?;
-
-        // For symlink overwrite, remove the existing symlink/file first (safe since we can recreate)
-        if needs_safe_overwrite {
-            if actual_dest.is_dir() {
-                fs::remove_dir_all(&actual_dest).map_err(|e| WriteOperationError::IoError {
-                    path: actual_dest.display().to_string(),
-                    message: e.to_string(),
-                })?;
-            } else {
-                fs::remove_file(&actual_dest).map_err(|e| WriteOperationError::IoError {
-                    path: actual_dest.display().to_string(),
-                    message: e.to_string(),
-                })?;
-            }
-        }
-
-        #[cfg(target_os = "macos")]
-        {
-            copy_symlink(source, &actual_dest)?;
-        }
-        #[cfg(not(target_os = "macos"))]
-        {
-            let target = fs::read_link(source).map_err(|e| WriteOperationError::IoError {
-                path: source.display().to_string(),
-                message: format!("Failed to read symlink: {}", e),
-            })?;
-            std::os::unix::fs::symlink(&target, &actual_dest).map_err(|e| WriteOperationError::IoError {
-                path: actual_dest.display().to_string(),
-                message: format!("Failed to create symlink: {}", e),
-            })?;
-        }
-
-        transaction.record_file(actual_dest);
-        *files_done += 1;
-        *bytes_done += metadata.len();
-    } else if metadata.is_file() {
-        // Handle regular file
-        let (actual_dest, needs_safe_overwrite) = if dest_path.exists() {
-            match resolve_conflict(
-                source,
-                &dest_path,
-                config,
-                app,
-                operation_id,
-                state,
-                apply_to_all_resolution,
-            )? {
-                Some(resolved) => (resolved.path, resolved.needs_safe_overwrite),
-                None => {
-                    // Skip this file
-                    return Ok(());
-                }
-            }
-        } else {
-            (dest_path.clone(), false)
-        };
-
-        // Validate destination path length limits
-        validate_path_length(&actual_dest)?;
-
-        // Prevent copying a file over itself via symlinks (same inode + device)
-        if is_same_file(source, &actual_dest) {
-            log::warn!(
-                "copy: skipping {}: source and destination resolve to the same file",
-                source.display()
-            );
-            *files_done += 1;
-            *bytes_done += metadata.len();
-            return Ok(());
-        }
-
-        // Check cancellation before copy
-        if state.cancelled.load(Ordering::Relaxed) {
-            return Err(WriteOperationError::Cancelled {
-                message: "Operation cancelled by user".to_string(),
-            });
-        }
-
-        // Copy file using platform-specific method
-        // For network filesystems, use chunked copy for responsive cancellation
-        let bytes = if is_network_filesystem(&actual_dest) {
-            log::debug!(
-                "copy: using chunked copy for network destination {}",
-                actual_dest.display()
-            );
-
-            // Create progress callback for intra-file progress reporting
-            let base_bytes_done = *bytes_done;
-            let current_file_name = file_name.to_string_lossy().to_string();
-            let last_emit_time = std::cell::Cell::new(Instant::now());
-
-            let progress_cb: ChunkedCopyProgressFn = &|chunk_bytes: u64, _total: u64| {
-                // Check if enough time has passed to emit a progress event
-                if last_emit_time.get().elapsed() >= *progress_interval {
-                    let effective_bytes_done = base_bytes_done + chunk_bytes;
-                    log::debug!(
-                        "copy: emitting chunked progress (recursive) op={} files={}/{} bytes={}/{}",
-                        operation_id,
-                        *files_done,
-                        files_total,
-                        effective_bytes_done,
-                        bytes_total
-                    );
-                    let _ = app.emit(
-                        "write-progress",
-                        WriteProgressEvent {
-                            operation_id: operation_id.to_string(),
-                            operation_type: WriteOperationType::Copy,
-                            phase: WriteOperationPhase::Copying,
-                            current_file: Some(current_file_name.clone()),
-                            files_done: *files_done,
-                            files_total,
-                            bytes_done: effective_bytes_done,
-                            bytes_total,
-                        },
-                    );
-                    update_operation_status(
-                        operation_id,
-                        WriteOperationPhase::Copying,
-                        Some(current_file_name.clone()),
-                        *files_done,
-                        files_total,
-                        effective_bytes_done,
-                        bytes_total,
-                    );
-                    last_emit_time.set(Instant::now());
-                }
-            };
-
-            chunked_copy_with_metadata(source, &actual_dest, &state.cancelled, Some(progress_cb))?
-        } else if needs_safe_overwrite {
-            // Use safe overwrite pattern (temp + rename)
-            #[cfg(target_os = "macos")]
-            {
-                let context = CopyProgressContext {
-                    cancelled: Arc::clone(&state.cancelled),
-                    ..Default::default()
-                };
-                safe_overwrite_file(source, &actual_dest, Some(&context))?
-            }
-            #[cfg(not(target_os = "macos"))]
-            {
-                safe_overwrite_file(source, &actual_dest)?
-            }
-        } else {
-            // Normal copy to new location
-            #[cfg(target_os = "macos")]
-            {
-                let context = CopyProgressContext {
-                    cancelled: Arc::clone(&state.cancelled),
-                    ..Default::default()
-                };
-                copy_single_file_native(source, &actual_dest, false, Some(&context))?
-            }
-            #[cfg(not(target_os = "macos"))]
-            {
-                fs::copy(source, &actual_dest).map_err(|e| WriteOperationError::IoError {
-                    path: source.display().to_string(),
-                    message: e.to_string(),
-                })?
-            }
-        };
-
-        transaction.record_file(actual_dest.clone());
-        *files_done += 1;
-        *bytes_done += bytes;
-
-        // Emit progress
-        if last_progress_time.elapsed() >= *progress_interval {
-            let current_file_name = file_name.to_string_lossy().to_string();
-            log::debug!(
-                "copy: emitting write-progress op={} phase=copying files={}/{} bytes={}/{}",
-                operation_id,
-                *files_done,
-                files_total,
-                *bytes_done,
-                bytes_total
-            );
-            let _ = app.emit(
-                "write-progress",
-                WriteProgressEvent {
-                    operation_id: operation_id.to_string(),
-                    operation_type: WriteOperationType::Copy,
-                    phase: WriteOperationPhase::Copying,
-                    current_file: Some(current_file_name.clone()),
-                    files_done: *files_done,
-                    files_total,
-                    bytes_done: *bytes_done,
-                    bytes_total,
-                },
-            );
-            update_operation_status(
-                operation_id,
-                WriteOperationPhase::Copying,
-                Some(current_file_name),
-                *files_done,
-                files_total,
-                *bytes_done,
-                bytes_total,
-            );
-            *last_progress_time = Instant::now();
-        }
-    } else if metadata.is_dir() {
-        // Handle directory
-        let dir_created = if !dest_path.exists() {
-            fs::create_dir(&dest_path).map_err(|e| WriteOperationError::IoError {
-                path: dest_path.display().to_string(),
-                message: e.to_string(),
-            })?;
-            true
-        } else {
-            false
-        };
-
-        if dir_created {
-            transaction.record_dir(dest_path.clone());
-        }
-
-        // Recursively copy contents
-        let entries = fs::read_dir(source).map_err(|e| WriteOperationError::IoError {
-            path: source.display().to_string(),
-            message: e.to_string(),
-        })?;
-
-        for entry in entries.flatten() {
-            copy_path_recursive(
-                &entry.path(),
-                &dest_path,
-                files_done,
-                bytes_done,
-                files_total,
-                bytes_total,
-                state,
-                app,
-                operation_id,
-                progress_interval,
-                last_progress_time,
-                config,
-                transaction,
-                apply_to_all_resolution,
-            )?;
-        }
-    } else {
-        // Skip special files (sockets, FIFOs, char/block devices)
-        log::warn!("copy: skipping special file: {}", source.display());
     }
 
     Ok(())

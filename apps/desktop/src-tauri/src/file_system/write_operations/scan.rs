@@ -318,10 +318,7 @@ pub(super) fn scan_sources(
     loop {
         // Check cancellation before waiting
         if state.cancelled.load(Ordering::Relaxed) {
-            log::debug!(
-                "scan: cancellation detected during scan polling op={}",
-                operation_id
-            );
+            log::debug!("scan: cancellation detected during scan polling op={}", operation_id);
             return Err(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),
             });

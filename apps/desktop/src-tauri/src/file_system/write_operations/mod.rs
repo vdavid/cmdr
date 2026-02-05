@@ -18,6 +18,7 @@
 
 mod chunked_copy;
 mod copy;
+mod copy_strategy;
 mod delete;
 mod helpers;
 mod move_op;
