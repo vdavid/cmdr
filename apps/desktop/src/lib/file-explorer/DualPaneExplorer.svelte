@@ -3,12 +3,9 @@
     import FilePane from './FilePane.svelte'
     import PaneResizer from './PaneResizer.svelte'
     import LoadingIcon from '../LoadingIcon.svelte'
-    import NewFolderDialog from './NewFolderDialog.svelte'
-    import CopyDialog from '../write-operations/CopyDialog.svelte'
-    import CopyProgressDialog from '../write-operations/CopyProgressDialog.svelte'
-    import CopyErrorDialog from '../write-operations/CopyErrorDialog.svelte'
-    import { toBackendIndices, toBackendCursorIndex } from '../write-operations/copy-dialog-utils'
-    import { formatBytes } from '$lib/tauri-commands'
+    import DialogManager from './DialogManager.svelte'
+    import { toBackendCursorIndex } from '../write-operations/copy-dialog-utils'
+    import { formatBytes, getFileAt } from '$lib/tauri-commands'
     import {
         loadAppStatus,
         saveAppStatus,
@@ -28,8 +25,6 @@
         DEFAULT_VOLUME_ID,
         type UnlistenFn,
         updateFocusedPane,
-        getFileAt,
-        getListingStats,
         findFileIndex,
     } from '$lib/tauri-commands'
     import type {
@@ -37,13 +32,11 @@
         SortColumn,
         SortOrder,
         NetworkHost,
-        DirectoryDiff,
         ConflictResolution,
         WriteOperationError,
     } from './types'
-    import { defaultSortOrders, DEFAULT_SORT_BY } from './types'
+    import { DEFAULT_SORT_BY, defaultSortOrders } from './types'
     import { ensureFontMetricsLoaded } from '$lib/font-metrics'
-    import { removeExtension } from './new-folder-utils'
     import { determineNavigationPath, resolveValidPath } from './path-navigation'
     import {
         createHistory,
@@ -59,8 +52,16 @@
     import { initNetworkDiscovery, cleanupNetworkDiscovery } from '$lib/network-store.svelte'
     import { openFileViewer } from '$lib/file-viewer/open-viewer'
     import { getAppLogger } from '$lib/logger'
-    import AlertDialog from '$lib/AlertDialog.svelte'
     import { getMtpVolumes } from '$lib/mtp'
+    import { getNewSortOrder, applySortResult, collectSortState } from './sorting-handlers'
+    import {
+        type CopyDialogPropsData,
+        type CopyContext,
+        buildCopyPropsFromSelection,
+        buildCopyPropsFromCursor,
+        getDestinationVolumeInfo,
+    } from './copy-operations'
+    import { getInitialFolderName, moveCursorToNewFolder } from './new-folder-operations'
 
     const log = getAppLogger('fileExplorer')
 
@@ -93,19 +94,7 @@
 
     // Copy dialog state
     let showCopyDialog = $state(false)
-    let copyDialogProps = $state<{
-        sourcePaths: string[]
-        destinationPath: string
-        direction: 'left' | 'right'
-        currentVolumeId: string
-        fileCount: number
-        folderCount: number
-        sourceFolderPath: string
-        sortColumn: SortColumn
-        sortOrder: SortOrder
-        sourceVolumeId: string
-        destVolumeId: string
-    } | null>(null)
+    let copyDialogProps = $state<CopyDialogPropsData | null>(null)
 
     // Copy progress dialog state
     let showCopyProgressDialog = $state(false)
@@ -150,6 +139,64 @@
     let leftHistory = $state<NavigationHistory>(createHistory(DEFAULT_VOLUME_ID, '~'))
     let rightHistory = $state<NavigationHistory>(createHistory(DEFAULT_VOLUME_ID, '~'))
 
+    // --- Pane accessor helpers ---
+
+    function getPaneRef(pane: 'left' | 'right'): FilePane | undefined {
+        return pane === 'left' ? leftPaneRef : rightPaneRef
+    }
+
+    function getPanePath(pane: 'left' | 'right'): string {
+        return pane === 'left' ? leftPath : rightPath
+    }
+
+    function getPaneVolumeId(pane: 'left' | 'right'): string {
+        return pane === 'left' ? leftVolumeId : rightVolumeId
+    }
+
+    function getPaneHistory(pane: 'left' | 'right'): NavigationHistory {
+        return pane === 'left' ? leftHistory : rightHistory
+    }
+
+    function getPaneSort(pane: 'left' | 'right'): { sortBy: SortColumn; sortOrder: SortOrder } {
+        return pane === 'left'
+            ? { sortBy: leftSortBy, sortOrder: leftSortOrder }
+            : { sortBy: rightSortBy, sortOrder: rightSortOrder }
+    }
+
+    function setPanePath(pane: 'left' | 'right', path: string) {
+        if (pane === 'left') leftPath = path
+        else rightPath = path
+    }
+
+    function setPaneVolumeId(pane: 'left' | 'right', volumeId: string) {
+        if (pane === 'left') leftVolumeId = volumeId
+        else rightVolumeId = volumeId
+    }
+
+    function setPaneHistory(pane: 'left' | 'right', history: NavigationHistory) {
+        if (pane === 'left') leftHistory = history
+        else rightHistory = history
+    }
+
+    function setPaneSort(pane: 'left' | 'right', sortBy: SortColumn, sortOrder: SortOrder) {
+        if (pane === 'left') {
+            leftSortBy = sortBy
+            leftSortOrder = sortOrder
+        } else {
+            rightSortBy = sortBy
+            rightSortOrder = sortOrder
+        }
+    }
+
+    function otherPane(pane: 'left' | 'right'): 'left' | 'right' {
+        return pane === 'left' ? 'right' : 'left'
+    }
+
+    /** Builds a save-status key like 'leftPath' or 'rightVolumeId' from pane and field name. */
+    function paneKey(pane: 'left' | 'right', field: string): string {
+        return `${pane}${field.charAt(0).toUpperCase()}${field.slice(1)}`
+    }
+
     // Emit history state to debug window (dev mode only, skip in tests)
     $effect(() => {
         if (!import.meta.env.DEV || import.meta.env.MODE === 'test') return
@@ -180,215 +227,140 @@
         rightVolumeId === 'network' ? 'Network' : volumes.find((v) => v.id === rightVolumeId)?.name,
     )
 
-    function handleLeftPathChange(path: string) {
-        leftPath = path
-        // Use pushPath to keep current volumeId (directory navigation within volume)
-        leftHistory = pushPath(leftHistory, path)
-        void saveAppStatus({ leftPath: path })
-        void saveLastUsedPathForVolume(leftVolumeId, path)
-        // Re-focus to maintain keyboard handling after navigation
+    // --- Unified handler functions ---
+
+    function handlePathChange(pane: 'left' | 'right', path: string) {
+        setPanePath(pane, path)
+        setPaneHistory(pane, pushPath(getPaneHistory(pane), path))
+        void saveAppStatus({ [paneKey(pane, 'path')]: path })
+        void saveLastUsedPathForVolume(getPaneVolumeId(pane), path)
         containerElement?.focus()
     }
 
-    function handleRightPathChange(path: string) {
-        rightPath = path
-        // Use pushPath to keep current volumeId (directory navigation within volume)
-        rightHistory = pushPath(rightHistory, path)
-        void saveAppStatus({ rightPath: path })
-        void saveLastUsedPathForVolume(rightVolumeId, path)
-        // Re-focus to maintain keyboard handling after navigation
+    function handleNetworkHostChange(pane: 'left' | 'right', host: NetworkHost | null) {
+        setPaneHistory(
+            pane,
+            push(getPaneHistory(pane), {
+                volumeId: 'network',
+                path: 'smb://',
+                networkHost: host ?? undefined,
+            }),
+        )
         containerElement?.focus()
     }
 
-    // Handle network host changes (for history tracking)
-    function handleLeftNetworkHostChange(host: NetworkHost | null) {
-        // Push to history with network host state
-        leftHistory = push(leftHistory, {
-            volumeId: 'network',
-            path: 'smb://',
-            networkHost: host ?? undefined,
-        })
-        containerElement?.focus()
+    async function handleSortChange(pane: 'left' | 'right', newColumn: SortColumn) {
+        const paneRef = getPaneRef(pane)
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const listingId = paneRef?.getListingId?.() as string | undefined
+        if (!listingId) return
+
+        const { sortBy, sortOrder } = getPaneSort(pane)
+        const newOrder =
+            newColumn === sortBy ? getNewSortOrder(newColumn, sortBy, sortOrder) : await getColumnSortOrder(newColumn)
+
+        const sortState = collectSortState(paneRef)
+        const result = await resortListing(
+            listingId,
+            newColumn,
+            newOrder,
+            sortState.cursorFilename,
+            showHiddenFiles,
+            sortState.selectedIndices,
+            sortState.allSelected,
+        )
+
+        setPaneSort(pane, newColumn, newOrder)
+        void saveAppStatus({ [paneKey(pane, 'sortBy')]: newColumn })
+        void saveColumnSortOrder(newColumn, newOrder)
+        applySortResult(paneRef, result)
     }
 
-    function handleRightNetworkHostChange(host: NetworkHost | null) {
-        // Push to history with network host state
-        rightHistory = push(rightHistory, {
-            volumeId: 'network',
-            path: 'smb://',
-            networkHost: host ?? undefined,
-        })
-        containerElement?.focus()
-    }
-
-    // Helper to apply sort results to a pane
-    function applySortResult(
-        paneRef: FilePane | undefined,
-        result: { newCursorIndex?: number; newSelectedIndices?: number[] },
+    async function handleVolumeChange(
+        pane: 'left' | 'right',
+        volumeId: string,
+        volumePath: string,
+        targetPath: string,
     ) {
-        if (result.newCursorIndex !== undefined) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            paneRef?.setCursorIndex?.(result.newCursorIndex)
-        }
-        if (result.newSelectedIndices !== undefined) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            paneRef?.setSelectedIndices?.(result.newSelectedIndices)
-        }
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        paneRef?.refreshView?.()
-    }
+        void saveLastUsedPathForVolume(getPaneVolumeId(pane), getPanePath(pane))
 
-    // Helper to determine new sort order
-    function getNewSortOrder(newColumn: SortColumn, currentColumn: SortColumn, currentOrder: SortOrder): SortOrder {
-        if (newColumn === currentColumn) {
-            return currentOrder === 'ascending' ? 'descending' : 'ascending'
-        }
-        return defaultSortOrders[newColumn]
-    }
-
-    /**
-     * Handles sorting column click for left pane.
-     * If clicking the same column, toggles order. Otherwise, switches to new column with its default order.
-     */
-    async function handleLeftSortChange(newColumn: SortColumn) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const listingId = leftPaneRef?.getListingId?.() as string | undefined
-        if (!listingId) return
-
-        const newOrder =
-            newColumn === leftSortBy
-                ? getNewSortOrder(newColumn, leftSortBy, leftSortOrder)
-                : await getColumnSortOrder(newColumn)
-
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const cursorFilename = leftPaneRef?.getFilenameUnderCursor?.() as string | undefined
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const selectedIndices = leftPaneRef?.getSelectedIndices?.() as number[] | undefined
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const allSelected = leftPaneRef?.isAllSelected?.() as boolean | undefined
-
-        const result = await resortListing(
-            listingId,
-            newColumn,
-            newOrder,
-            cursorFilename,
-            showHiddenFiles,
-            selectedIndices,
-            allSelected,
-        )
-
-        leftSortBy = newColumn
-        leftSortOrder = newOrder
-        void saveAppStatus({ leftSortBy: newColumn })
-        void saveColumnSortOrder(newColumn, newOrder)
-        applySortResult(leftPaneRef, result)
-    }
-
-    /**
-     * Handles sorting column click for right pane.
-     */
-    async function handleRightSortChange(newColumn: SortColumn) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const listingId = rightPaneRef?.getListingId?.() as string | undefined
-        if (!listingId) return
-
-        const newOrder =
-            newColumn === rightSortBy
-                ? getNewSortOrder(newColumn, rightSortBy, rightSortOrder)
-                : await getColumnSortOrder(newColumn)
-
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const cursorFilename = rightPaneRef?.getFilenameUnderCursor?.() as string | undefined
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const selectedIndices = rightPaneRef?.getSelectedIndices?.() as number[] | undefined
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const allSelected = rightPaneRef?.isAllSelected?.() as boolean | undefined
-
-        const result = await resortListing(
-            listingId,
-            newColumn,
-            newOrder,
-            cursorFilename,
-            showHiddenFiles,
-            selectedIndices,
-            allSelected,
-        )
-
-        rightSortBy = newColumn
-        rightSortOrder = newOrder
-        void saveAppStatus({ rightSortBy: newColumn })
-        void saveColumnSortOrder(newColumn, newOrder)
-        applySortResult(rightPaneRef, result)
-    }
-
-    async function handleLeftVolumeChange(volumeId: string, volumePath: string, targetPath: string) {
-        // Save the current path for the old volume before switching
-        void saveLastUsedPathForVolume(leftVolumeId, leftPath)
-
-        // If this is a new volume (e.g., freshly mounted network share), refresh volume list first
-        const found = volumes.find((v) => v.id === volumeId)
-        if (!found) {
-            volumes = await listVolumes()
-        }
-
-        // Pass the right pane's state so we can copy its path if it's on the same volume
-        const pathToNavigate = await determineNavigationPath(volumeId, volumePath, targetPath, {
-            otherPaneVolumeId: rightVolumeId,
-            otherPanePath: rightPath,
-        })
-
-        leftVolumeId = volumeId
-        leftPath = pathToNavigate
-
-        // Push volume change to history (this enables back/forward across volumes)
-        leftHistory = push(leftHistory, { volumeId, path: pathToNavigate })
-
-        // Focus the left pane after successful volume change
-        focusedPane = 'left'
-        void saveAppStatus({ leftVolumeId: volumeId, leftPath: pathToNavigate, focusedPane: 'left' })
-    }
-
-    async function handleRightVolumeChange(volumeId: string, volumePath: string, targetPath: string) {
-        // Save the current path for the old volume before switching
-        void saveLastUsedPathForVolume(rightVolumeId, rightPath)
-
-        // If this is a new volume (e.g., freshly mounted network share), refresh volume list first
         if (!volumes.find((v) => v.id === volumeId)) {
             volumes = await listVolumes()
         }
 
-        // Pass the left pane's state so we can copy its path if it's on the same volume
+        const other = otherPane(pane)
         const pathToNavigate = await determineNavigationPath(volumeId, volumePath, targetPath, {
-            otherPaneVolumeId: leftVolumeId,
-            otherPanePath: leftPath,
+            otherPaneVolumeId: getPaneVolumeId(other),
+            otherPanePath: getPanePath(other),
         })
 
-        rightVolumeId = volumeId
-        rightPath = pathToNavigate
+        setPaneVolumeId(pane, volumeId)
+        setPanePath(pane, pathToNavigate)
+        setPaneHistory(pane, push(getPaneHistory(pane), { volumeId, path: pathToNavigate }))
 
-        // Push volume change to history (this enables back/forward across volumes)
-        rightHistory = push(rightHistory, { volumeId, path: pathToNavigate })
-
-        // Focus the right pane after successful volume change
-        focusedPane = 'right'
-        void saveAppStatus({ rightVolumeId: volumeId, rightPath: pathToNavigate, focusedPane: 'right' })
+        focusedPane = pane
+        void saveAppStatus({
+            [paneKey(pane, 'volumeId')]: volumeId,
+            [paneKey(pane, 'path')]: pathToNavigate,
+            focusedPane: pane,
+        })
     }
 
-    function handleLeftFocus() {
-        if (focusedPane !== 'left') {
-            focusedPane = 'left'
-            void saveAppStatus({ focusedPane: 'left' })
-            void updateFocusedPane('left')
+    function handleFocus(pane: 'left' | 'right') {
+        if (focusedPane !== pane) {
+            focusedPane = pane
+            void saveAppStatus({ focusedPane: pane })
+            void updateFocusedPane(pane)
         }
     }
 
-    function handleRightFocus() {
-        if (focusedPane !== 'right') {
-            focusedPane = 'right'
-            void saveAppStatus({ focusedPane: 'right' })
-            void updateFocusedPane('right')
+    function handleCancelLoading(pane: 'left' | 'right', selectName?: string) {
+        const entry = getCurrentEntry(getPaneHistory(pane))
+        const paneRef = getPaneRef(pane)
+
+        if (entry.volumeId === 'network') {
+            setPanePath(pane, entry.path)
+            setPaneVolumeId(pane, 'network')
+            void saveAppStatus({ [paneKey(pane, 'volumeId')]: 'network', [paneKey(pane, 'path')]: entry.path })
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            paneRef?.setNetworkHost?.(entry.networkHost ?? null)
+        } else {
+            void resolveValidPath(entry.path).then((resolvedPath) => {
+                if (resolvedPath !== null) {
+                    setPanePath(pane, resolvedPath)
+                    if (entry.volumeId !== getPaneVolumeId(pane)) {
+                        setPaneVolumeId(pane, entry.volumeId)
+                        void saveAppStatus({
+                            [paneKey(pane, 'volumeId')]: entry.volumeId,
+                            [paneKey(pane, 'path')]: resolvedPath,
+                        })
+                    } else {
+                        void saveAppStatus({ [paneKey(pane, 'path')]: resolvedPath })
+                    }
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+                    paneRef?.navigateToPath?.(resolvedPath, selectName)
+                } else {
+                    setPanePath(pane, '~')
+                    setPaneVolumeId(pane, DEFAULT_VOLUME_ID)
+                    void saveAppStatus({ [paneKey(pane, 'path')]: '~', [paneKey(pane, 'volumeId')]: DEFAULT_VOLUME_ID })
+                }
+            })
         }
+        containerElement?.focus()
     }
+
+    async function handleMtpFatalError(pane: 'left' | 'right', errorMessage: string) {
+        log.warn('{pane} pane MTP fatal error, falling back to default volume: {error}', { pane, error: errorMessage })
+        const defaultVolumeId = await getDefaultVolumeId()
+        const defaultVolume = volumes.find((v) => v.id === defaultVolumeId)
+        const defaultPath = defaultVolume?.path ?? '~'
+
+        setPaneVolumeId(pane, defaultVolumeId)
+        setPanePath(pane, defaultPath)
+        setPaneHistory(pane, push(getPaneHistory(pane), { volumeId: defaultVolumeId, path: defaultPath }))
+        void saveAppStatus({ [paneKey(pane, 'volumeId')]: defaultVolumeId, [paneKey(pane, 'path')]: defaultPath })
+    }
+
     // Helper: Route key event to any open volume chooser
     // Returns true if the event was handled by a volume chooser
     function routeToVolumeChooser(e: KeyboardEvent): boolean {
@@ -411,76 +383,6 @@
         return false
     }
 
-    // Handle cancel loading for left pane - reload current history entry (the folder we were in before the slow load)
-    // The slow-loading folder was never added to history, so current entry is already correct.
-    function handleLeftCancelLoading(selectName?: string) {
-        const entry = getCurrentEntry(leftHistory)
-
-        if (entry.volumeId === 'network') {
-            leftPath = entry.path
-            leftVolumeId = 'network'
-            void saveAppStatus({ leftVolumeId: 'network', leftPath: entry.path })
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            leftPaneRef?.setNetworkHost?.(entry.networkHost ?? null)
-        } else {
-            void resolveValidPath(entry.path).then((resolvedPath) => {
-                if (resolvedPath !== null) {
-                    leftPath = resolvedPath
-                    if (entry.volumeId !== leftVolumeId) {
-                        leftVolumeId = entry.volumeId
-                        void saveAppStatus({ leftVolumeId: entry.volumeId, leftPath: resolvedPath })
-                    } else {
-                        void saveAppStatus({ leftPath: resolvedPath })
-                    }
-                    // Navigate with selection to restore cursor to the folder we tried to enter
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                    leftPaneRef?.navigateToPath?.(resolvedPath, selectName)
-                } else {
-                    // Path doesn't exist, fall back to home
-                    leftPath = '~'
-                    leftVolumeId = DEFAULT_VOLUME_ID
-                    void saveAppStatus({ leftPath: '~', leftVolumeId: DEFAULT_VOLUME_ID })
-                }
-            })
-        }
-        containerElement?.focus()
-    }
-
-    // Handle cancel loading for right pane - reload current history entry (the folder we were in before the slow load)
-    // The slow-loading folder was never added to history, so current entry is already correct.
-    function handleRightCancelLoading(selectName?: string) {
-        const entry = getCurrentEntry(rightHistory)
-
-        if (entry.volumeId === 'network') {
-            rightPath = entry.path
-            rightVolumeId = 'network'
-            void saveAppStatus({ rightVolumeId: 'network', rightPath: entry.path })
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            rightPaneRef?.setNetworkHost?.(entry.networkHost ?? null)
-        } else {
-            void resolveValidPath(entry.path).then((resolvedPath) => {
-                if (resolvedPath !== null) {
-                    rightPath = resolvedPath
-                    if (entry.volumeId !== rightVolumeId) {
-                        rightVolumeId = entry.volumeId
-                        void saveAppStatus({ rightVolumeId: entry.volumeId, rightPath: resolvedPath })
-                    } else {
-                        void saveAppStatus({ rightPath: resolvedPath })
-                    }
-                    // Navigate with selection to restore cursor to the folder we tried to enter
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                    rightPaneRef?.navigateToPath?.(resolvedPath, selectName)
-                } else {
-                    // Path doesn't exist, fall back to home
-                    rightPath = '~'
-                    rightVolumeId = DEFAULT_VOLUME_ID
-                    void saveAppStatus({ rightPath: '~', rightVolumeId: DEFAULT_VOLUME_ID })
-                }
-            })
-        }
-        containerElement?.focus()
-    }
-
     // Helper: Handle Tab key (switch pane focus)
     function handleTabKey() {
         const newFocus = focusedPane === 'left' ? 'right' : 'left'
@@ -490,7 +392,7 @@
 
     // Helper: Handle ESC key during loading (cancel and go back)
     function handleEscapeDuringLoading(): boolean {
-        const paneRef = focusedPane === 'left' ? leftPaneRef : rightPaneRef
+        const paneRef = getPaneRef(focusedPane)
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         if (paneRef?.isLoading?.()) {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call
@@ -554,7 +456,7 @@
 
         // Forward arrow keys and Enter to the focused pane
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- TypeScript thinks FilePane methods are unused without this
-        const activePaneRef = (focusedPane === 'left' ? leftPaneRef : rightPaneRef) as FilePane | undefined
+        const activePaneRef = getPaneRef(focusedPane) as FilePane | undefined
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         activePaneRef?.handleKeyDown(e)
     }
@@ -562,7 +464,7 @@
     function handleKeyUp(e: KeyboardEvent) {
         // Forward to the focused pane for range selection finalization
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- TypeScript thinks FilePane methods are unused without this
-        const activePaneRef = (focusedPane === 'left' ? leftPaneRef : rightPaneRef) as FilePane | undefined
+        const activePaneRef = getPaneRef(focusedPane) as FilePane | undefined
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         activePaneRef?.handleKeyUp(e)
     }
@@ -694,73 +596,24 @@
         volumes = await listVolumes()
     }
 
-    /**
-     * Handles fatal MTP errors for the left pane.
-     * Falls back to the default volume when the MTP device becomes unavailable.
-     */
-    async function handleLeftMtpFatalError(errorMessage: string) {
-        log.warn('Left pane MTP fatal error, falling back to default volume: {error}', { error: errorMessage })
-
-        const defaultVolumeId = await getDefaultVolumeId()
-        const defaultVolume = volumes.find((v) => v.id === defaultVolumeId)
-        const defaultPath = defaultVolume?.path ?? '~'
-
-        leftVolumeId = defaultVolumeId
-        leftPath = defaultPath
-        leftHistory = push(leftHistory, { volumeId: defaultVolumeId, path: defaultPath })
-        void saveAppStatus({ leftVolumeId: defaultVolumeId, leftPath: defaultPath })
-    }
-
-    /**
-     * Handles fatal MTP errors for the right pane.
-     * Falls back to the default volume when the MTP device becomes unavailable.
-     */
-    async function handleRightMtpFatalError(errorMessage: string) {
-        log.warn('Right pane MTP fatal error, falling back to default volume: {error}', { error: errorMessage })
-
-        const defaultVolumeId = await getDefaultVolumeId()
-        const defaultVolume = volumes.find((v) => v.id === defaultVolumeId)
-        const defaultPath = defaultVolume?.path ?? '~'
-
-        rightVolumeId = defaultVolumeId
-        rightPath = defaultPath
-        rightHistory = push(rightHistory, { volumeId: defaultVolumeId, path: defaultPath })
-        void saveAppStatus({ rightVolumeId: defaultVolumeId, rightPath: defaultPath })
-    }
-
-    /**
-     * Updates pane state after navigating back/forward (restores full state from history entry).
-     * This includes both path AND volumeId changes - enabling back/forward across volumes.
-     */
-    function updatePaneAfterHistoryNavigation(isLeft: boolean, newHistory: NavigationHistory, targetPath: string) {
+    function updatePaneAfterHistoryNavigation(
+        pane: 'left' | 'right',
+        newHistory: NavigationHistory,
+        targetPath: string,
+    ) {
         const entry = getCurrentEntry(newHistory)
-        const paneRef = isLeft ? leftPaneRef : rightPaneRef
+        const paneRef = getPaneRef(pane)
 
-        if (isLeft) {
-            leftHistory = newHistory
-            leftPath = targetPath
-            // Restore volume context if it changed
-            if (entry.volumeId !== leftVolumeId) {
-                leftVolumeId = entry.volumeId
-                void saveAppStatus({ leftVolumeId: entry.volumeId, leftPath: targetPath })
-            } else {
-                void saveAppStatus({ leftPath: targetPath })
-            }
-            void saveLastUsedPathForVolume(entry.volumeId, targetPath)
+        setPaneHistory(pane, newHistory)
+        setPanePath(pane, targetPath)
+        if (entry.volumeId !== getPaneVolumeId(pane)) {
+            setPaneVolumeId(pane, entry.volumeId)
+            void saveAppStatus({ [paneKey(pane, 'volumeId')]: entry.volumeId, [paneKey(pane, 'path')]: targetPath })
         } else {
-            rightHistory = newHistory
-            rightPath = targetPath
-            // Restore volume context if it changed
-            if (entry.volumeId !== rightVolumeId) {
-                rightVolumeId = entry.volumeId
-                void saveAppStatus({ rightVolumeId: entry.volumeId, rightPath: targetPath })
-            } else {
-                void saveAppStatus({ rightPath: targetPath })
-            }
-            void saveLastUsedPathForVolume(entry.volumeId, targetPath)
+            void saveAppStatus({ [paneKey(pane, 'path')]: targetPath })
         }
+        void saveLastUsedPathForVolume(entry.volumeId, targetPath)
 
-        // Restore network host state if navigating within network volume
         if (entry.volumeId === 'network') {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call
             paneRef?.setNetworkHost?.(entry.networkHost ?? null)
@@ -769,12 +622,9 @@
         containerElement?.focus()
     }
 
-    /**
-     * Handles navigation actions from the Go menu (back/forward/parent).
-     */
     async function handleNavigationAction(action: string) {
-        const isLeft = focusedPane === 'left'
-        const paneRef = isLeft ? leftPaneRef : rightPaneRef
+        const pane = focusedPane
+        const paneRef = getPaneRef(pane)
 
         if (action === 'parent') {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call
@@ -782,7 +632,7 @@
             return
         }
 
-        const history = isLeft ? leftHistory : rightHistory
+        const history = getPaneHistory(pane)
         let newHistory: NavigationHistory
 
         if (action === 'back' && canGoBack(history)) {
@@ -793,20 +643,15 @@
             return
         }
 
-        // Get the target entry (includes volumeId, path, and network state)
         const targetEntry = getCurrentEntry(newHistory)
-
-        // For network virtual volume, path resolution doesn't apply
-        // (network browser handles its own state)
         if (targetEntry.volumeId === 'network') {
-            updatePaneAfterHistoryNavigation(isLeft, newHistory, targetEntry.path)
+            updatePaneAfterHistoryNavigation(pane, newHistory, targetEntry.path)
             return
         }
 
-        // For real volumes, resolve path to handle deleted folders
         const resolvedPath = await resolveValidPath(targetEntry.path)
         if (resolvedPath !== null) {
-            updatePaneAfterHistoryNavigation(isLeft, newHistory, resolvedPath)
+            updatePaneAfterHistoryNavigation(pane, newHistory, resolvedPath)
         }
     }
 
@@ -832,48 +677,17 @@
         void saveAppStatus({ leftPaneWidthPercent: 50 })
     }
 
-    /** Gets file paths for the given indices from a listing. */
-    async function getSelectedFilePaths(listingId: string, backendIndices: number[]): Promise<string[]> {
-        const paths: string[] = []
-        for (const index of backendIndices) {
-            const file = await getFileAt(listingId, index, showHiddenFiles)
-            if (file && file.name !== '..') {
-                paths.push(file.path)
-            }
-        }
-        return paths
-    }
-
-    /** Gets the initial name for the new folder dialog (dir name as-is, file name without extension). */
-    async function getInitialFolderName(paneRef: FilePane | undefined, paneListingId: string): Promise<string> {
-        try {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            const cursorIndex = paneRef?.getCursorIndex?.() as number | undefined
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            const hasParent = paneRef?.hasParentEntry?.() as boolean | undefined
-            if (cursorIndex === undefined || cursorIndex < 0) return ''
-            const backendIndex = hasParent ? cursorIndex - 1 : cursorIndex
-            if (backendIndex < 0) return ''
-            const entry = await getFileAt(paneListingId, backendIndex, showHiddenFiles)
-            if (!entry) return ''
-            return entry.isDirectory ? entry.name : removeExtension(entry.name)
-        } catch {
-            return ''
-        }
-    }
-
     /** Opens the new folder dialog. Pre-fills with the entry name under cursor. */
     export async function openNewFolderDialog() {
-        const isLeft = focusedPane === 'left'
-        const paneRef = isLeft ? leftPaneRef : rightPaneRef
-        const path = isLeft ? leftPath : rightPath
-        const volumeIdForPane = isLeft ? leftVolumeId : rightVolumeId
+        const paneRef = getPaneRef(focusedPane)
+        const path = getPanePath(focusedPane)
+        const volumeIdForPane = getPaneVolumeId(focusedPane)
 
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         const paneListingId = paneRef?.getListingId?.() as string | undefined
         if (!paneListingId) return
 
-        const initialName = await getInitialFolderName(paneRef, paneListingId)
+        const initialName = await getInitialFolderName(paneRef, paneListingId, showHiddenFiles, getFileAt)
 
         newFolderDialogProps = {
             currentPath: path,
@@ -886,7 +700,7 @@
     }
 
     function handleNewFolderCreated(folderName: string) {
-        const paneRef = focusedPane === 'left' ? leftPaneRef : rightPaneRef
+        const paneRef = getPaneRef(focusedPane)
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         const paneListingId = paneRef?.getListingId?.() as string | undefined
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
@@ -896,36 +710,16 @@
         newFolderDialogProps = null
         containerElement?.focus()
 
-        // Wait for file watcher to pick up the new folder, then move cursor to it
         if (!paneListingId) return
-        void moveCursorToNewFolder(paneListingId, folderName, paneRef, hasParent ?? false)
-    }
-
-    /** Waits for the file watcher diff, then moves cursor to the newly created folder. */
-    async function moveCursorToNewFolder(
-        paneListingId: string,
-        folderName: string,
-        paneRef: FilePane | undefined,
-        hasParent: boolean,
-    ) {
-        const unlisten = await listen<DirectoryDiff>('directory-diff', (event) => {
-            if (event.payload.listingId !== paneListingId) return
-            // Small delay to ensure listing cache is fully updated before querying
-            setTimeout(() => {
-                void findFileIndex(paneListingId, folderName, showHiddenFiles).then((index) => {
-                    if (index !== null) {
-                        const frontendIndex = hasParent ? index + 1 : index
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                        paneRef?.setCursorIndex?.(frontendIndex)
-                        unlisten()
-                    }
-                })
-            }, 50)
-        })
-        // Clean up listener after 3 seconds if folder never appears
-        setTimeout(() => {
-            unlisten()
-        }, 3000)
+        void moveCursorToNewFolder(
+            paneListingId,
+            folderName,
+            paneRef,
+            hasParent ?? false,
+            showHiddenFiles,
+            listen,
+            findFileIndex,
+        )
     }
 
     function handleNewFolderCancel() {
@@ -955,7 +749,7 @@
 
     /** Opens the file viewer for the file under the cursor. */
     export async function openViewerForCursor() {
-        const paneRef = focusedPane === 'left' ? leftPaneRef : rightPaneRef
+        const paneRef = getPaneRef(focusedPane)
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         const listingId = paneRef?.getListingId?.() as string | undefined
         if (!listingId) return
@@ -972,55 +766,23 @@
         void openFileViewer(file.path)
     }
 
-    /** Opens the copy dialog with the current selection info. */
-    export async function openCopyDialog() {
-        const isLeft = focusedPane === 'left'
-        const sourcePaneRef = isLeft ? leftPaneRef : rightPaneRef
-        const sourceVolId = isLeft ? leftVolumeId : rightVolumeId
-        const destVolId = isLeft ? rightVolumeId : leftVolumeId
-
-        // Check if destination volume is read-only (e.g., PTP cameras)
-        const destVolume = getDestinationVolumeInfo(destVolId)
-        if (destVolume?.isReadOnly) {
-            alertDialogProps = {
-                title: 'Read-only device',
-                message: `"${destVolume.name}" is read-only. You can copy files from it, but not to it.`,
-            }
-            showAlertDialog = true
-            return
+    /** Builds a CopyContext from pane state. */
+    function buildCopyContext(pane: 'left' | 'right'): CopyContext {
+        const other = otherPane(pane)
+        const { sortBy, sortOrder } = getPaneSort(pane)
+        return {
+            showHiddenFiles,
+            sourcePath: getPanePath(pane),
+            destPath: getPanePath(other),
+            sourceVolumeId: getPaneVolumeId(pane),
+            destVolumeId: getPaneVolumeId(other),
+            sortColumn: sortBy,
+            sortOrder,
         }
-
-        // Use unified copy dialog for all supported volume combinations (including MTP-to-MTP)
-        await openUnifiedCopyDialog(sourcePaneRef, isLeft, sourceVolId, destVolId)
-    }
-
-    /** Gets volume info for a given volume ID, checking both regular volumes and MTP volumes. */
-    function getDestinationVolumeInfo(volumeId: string): { name: string; isReadOnly: boolean } | undefined {
-        // Check MTP volumes first (they have the isReadOnly flag)
-        if (volumeId.startsWith('mtp-')) {
-            const mtpVolumes = getMtpVolumes()
-            const mtpVolume = mtpVolumes.find((v) => v.id === volumeId || v.deviceId === volumeId)
-            if (mtpVolume) {
-                return { name: mtpVolume.name, isReadOnly: mtpVolume.isReadOnly }
-            }
-        }
-
-        // Regular volumes (currently none are read-only, but this supports future use)
-        const volume = volumes.find((v) => v.id === volumeId)
-        if (volume) {
-            return { name: volume.name, isReadOnly: volume.isReadOnly ?? false }
-        }
-
-        return undefined
     }
 
     /** Opens the unified copy dialog for all volume types (local, MTP, etc.). */
-    async function openUnifiedCopyDialog(
-        sourcePaneRef: FilePane | undefined,
-        isLeft: boolean,
-        sourceVolId: string,
-        destVolId: string,
-    ) {
+    async function openUnifiedCopyDialog(sourcePaneRef: FilePane | undefined, pane: 'left' | 'right') {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         const listingId = sourcePaneRef?.getListingId?.() as string | undefined
         if (!listingId) return
@@ -1031,23 +793,12 @@
         const selectedIndices = sourcePaneRef?.getSelectedIndices?.() as number[] | undefined
         const hasSelection = selectedIndices && selectedIndices.length > 0
 
+        const context = buildCopyContext(pane)
+        const isLeft = pane === 'left'
+
         const props = hasSelection
-            ? await buildCopyPropsFromSelection(
-                  listingId,
-                  selectedIndices,
-                  hasParent ?? false,
-                  isLeft,
-                  sourceVolId,
-                  destVolId,
-              )
-            : await buildCopyPropsFromCursor(
-                  listingId,
-                  sourcePaneRef,
-                  hasParent ?? false,
-                  isLeft,
-                  sourceVolId,
-                  destVolId,
-              )
+            ? await buildCopyPropsFromSelection(listingId, selectedIndices, hasParent ?? false, isLeft, context)
+            : await buildCopyPropsFromCursor(listingId, sourcePaneRef, hasParent ?? false, isLeft, context)
 
         if (props) {
             copyDialogProps = props
@@ -1055,82 +806,22 @@
         }
     }
 
-    type CopyDialogPropsData = {
-        sourcePaths: string[]
-        destinationPath: string
-        direction: 'left' | 'right'
-        currentVolumeId: string
-        fileCount: number
-        folderCount: number
-        sourceFolderPath: string
-        sortColumn: SortColumn
-        sortOrder: SortOrder
-        sourceVolumeId: string
-        destVolumeId: string
-    }
+    /** Opens the copy dialog with the current selection info. */
+    export async function openCopyDialog() {
+        const sourcePaneRef = getPaneRef(focusedPane)
+        const destVolId = getPaneVolumeId(otherPane(focusedPane))
 
-    /** Builds copy dialog props from selected files. */
-    async function buildCopyPropsFromSelection(
-        listingId: string,
-        selectedIndices: number[],
-        hasParent: boolean,
-        isLeft: boolean,
-        sourceVolId: string,
-        destVolId: string,
-    ): Promise<CopyDialogPropsData | null> {
-        // Convert frontend indices to backend indices (adjust for ".." entry)
-        const backendIndices = toBackendIndices(selectedIndices, hasParent)
-        if (backendIndices.length === 0) return null
-
-        const stats = await getListingStats(listingId, showHiddenFiles, backendIndices)
-        const sourcePaths = await getSelectedFilePaths(listingId, backendIndices)
-        if (sourcePaths.length === 0) return null
-
-        return {
-            sourcePaths,
-            destinationPath: isLeft ? rightPath : leftPath,
-            direction: isLeft ? 'right' : 'left',
-            currentVolumeId: isLeft ? rightVolumeId : leftVolumeId,
-            fileCount: stats.selectedFiles ?? 0,
-            folderCount: stats.selectedDirs ?? 0,
-            sourceFolderPath: isLeft ? leftPath : rightPath,
-            sortColumn: isLeft ? leftSortBy : rightSortBy,
-            sortOrder: isLeft ? leftSortOrder : rightSortOrder,
-            sourceVolumeId: sourceVolId,
-            destVolumeId: destVolId,
+        const destVolume = getDestinationVolumeInfo(destVolId, volumes, getMtpVolumes())
+        if (destVolume?.isReadOnly) {
+            alertDialogProps = {
+                title: 'Read-only device',
+                message: `"${destVolume.name}" is read-only. You can copy files from it, but not to it.`,
+            }
+            showAlertDialog = true
+            return
         }
-    }
 
-    /** Builds copy dialog props from the file under cursor. */
-    async function buildCopyPropsFromCursor(
-        listingId: string,
-        paneRef: FilePane | undefined,
-        hasParent: boolean,
-        isLeft: boolean,
-        sourceVolId: string,
-        destVolId: string,
-    ): Promise<CopyDialogPropsData | null> {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const cursorIndex = paneRef?.getCursorIndex?.() as number | undefined
-        const backendIndex = toBackendCursorIndex(cursorIndex ?? -1, hasParent)
-        if (backendIndex === null) return null
-
-        const file = await getFileAt(listingId, backendIndex, showHiddenFiles)
-        if (!file || file.name === '..') return null
-
-        return {
-            sourcePaths: [file.path],
-            destinationPath: isLeft ? rightPath : leftPath,
-            direction: isLeft ? 'right' : 'left',
-            currentVolumeId: isLeft ? rightVolumeId : leftVolumeId,
-            fileCount: file.isDirectory ? 0 : 1,
-            folderCount: file.isDirectory ? 1 : 0,
-            sourceFolderPath: isLeft ? leftPath : rightPath,
-            sortColumn: isLeft ? leftSortBy : rightSortBy,
-            sortOrder: isLeft ? leftSortOrder : rightSortOrder,
-            sourceVolumeId: sourceVolId,
-            destVolumeId: destVolId,
-        }
+        await openUnifiedCopyDialog(sourcePaneRef, focusedPane)
     }
 
     function handleCopyConfirm(
@@ -1216,6 +907,12 @@
         containerElement?.focus()
     }
 
+    function handleAlertClose() {
+        showAlertDialog = false
+        alertDialogProps = null
+        containerElement?.focus()
+    }
+
     // Focus the container after initialization so keyboard events work
     $effect(() => {
         if (initialized) {
@@ -1235,7 +932,7 @@
      * Switch focus to the other pane.
      */
     export function switchPane() {
-        const newFocus = focusedPane === 'left' ? 'right' : 'left'
+        const newFocus = otherPane(focusedPane)
         focusedPane = newFocus
         void saveAppStatus({ focusedPane: newFocus })
         void updateFocusedPane(newFocus)
@@ -1247,17 +944,10 @@
      * Closes the other pane's volume chooser to ensure only one is open at a time.
      */
     export function toggleVolumeChooser(pane: 'left' | 'right') {
-        if (pane === 'left') {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            rightPaneRef?.closeVolumeChooser()
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            leftPaneRef?.toggleVolumeChooser()
-        } else {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            leftPaneRef?.closeVolumeChooser()
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            rightPaneRef?.toggleVolumeChooser()
-        }
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        getPaneRef(otherPane(pane))?.closeVolumeChooser()
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        getPaneRef(pane)?.toggleVolumeChooser()
     }
 
     /**
@@ -1265,17 +955,10 @@
      * Closes the other pane's volume chooser first.
      */
     export function openVolumeChooser() {
-        if (focusedPane === 'left') {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            rightPaneRef?.closeVolumeChooser()
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            leftPaneRef?.openVolumeChooser()
-        } else {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            leftPaneRef?.closeVolumeChooser()
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            rightPaneRef?.openVolumeChooser()
-        }
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        getPaneRef(otherPane(focusedPane))?.closeVolumeChooser()
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        getPaneRef(focusedPane)?.openVolumeChooser()
     }
 
     /**
@@ -1322,8 +1005,8 @@
      * Get the path and filename of the file under the cursor in the focused pane.
      */
     export function getFileAndPathUnderCursor(): { path: string; filename: string } | null {
-        const paneRef = focusedPane === 'left' ? leftPaneRef : rightPaneRef
-        const currentPath = focusedPane === 'left' ? leftPath : rightPath
+        const paneRef = getPaneRef(focusedPane)
+        const currentPath = getPanePath(focusedPane)
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         const filename = paneRef?.getFilenameUnderCursor?.() as string | undefined
         if (!filename || filename === '..') return null
@@ -1335,7 +1018,7 @@
      * Simulate a key press on the focused pane (for commands like Enter to open).
      */
     export function sendKeyToFocusedPane(key: string) {
-        const paneRef = focusedPane === 'left' ? leftPaneRef : rightPaneRef
+        const paneRef = getPaneRef(focusedPane)
         const event = new KeyboardEvent('keydown', { key, bubbles: false })
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         paneRef?.handleKeyDown(event)
@@ -1346,12 +1029,7 @@
      * Used by command palette.
      */
     export function setSortColumn(column: SortColumn, pane?: 'left' | 'right') {
-        const targetPane = pane ?? focusedPane
-        if (targetPane === 'left') {
-            void handleLeftSortChange(column)
-        } else {
-            void handleRightSortChange(column)
-        }
+        void handleSortChange(pane ?? focusedPane, column)
     }
 
     /**
@@ -1360,8 +1038,7 @@
      */
     export function setSortOrder(order: 'asc' | 'desc' | 'toggle', pane?: 'left' | 'right') {
         const targetPane = pane ?? focusedPane
-        const currentOrder = targetPane === 'left' ? leftSortOrder : rightSortOrder
-        const currentColumn = targetPane === 'left' ? leftSortBy : rightSortBy
+        const { sortOrder: currentOrder, sortBy: currentColumn } = getPaneSort(targetPane)
 
         let newOrder: SortOrder
         if (order === 'toggle') {
@@ -1373,12 +1050,7 @@
         // Re-apply sort with new order by pretending to click same column
         // This triggers the toggle logic in the handler
         if (newOrder !== currentOrder) {
-            // Force the column to match so it will toggle order
-            if (targetPane === 'left') {
-                void handleLeftSortChange(currentColumn)
-            } else {
-                void handleRightSortChange(currentColumn)
-            }
+            void handleSortChange(targetPane, currentColumn)
         }
     }
 
@@ -1387,39 +1059,26 @@
      * Used by MCP sort command to avoid race conditions.
      */
     export async function setSort(column: SortColumn, order: 'asc' | 'desc', pane: 'left' | 'right') {
-        const paneRef = pane === 'left' ? leftPaneRef : rightPaneRef
+        const paneRef = getPaneRef(pane)
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         const listingId = paneRef?.getListingId?.() as string | undefined
         if (!listingId) return
 
         const newOrder: SortOrder = order === 'asc' ? 'ascending' : 'descending'
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const cursorFilename = paneRef?.getFilenameUnderCursor?.() as string | undefined
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const selectedIndices = paneRef?.getSelectedIndices?.() as number[] | undefined
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const allSelected = paneRef?.isAllSelected?.() as boolean | undefined
-
+        const sortState = collectSortState(paneRef)
         const result = await resortListing(
             listingId,
             column,
             newOrder,
-            cursorFilename,
+            sortState.cursorFilename,
             showHiddenFiles,
-            selectedIndices,
-            allSelected,
+            sortState.selectedIndices,
+            sortState.allSelected,
         )
 
-        if (pane === 'left') {
-            leftSortBy = column
-            leftSortOrder = newOrder
-            void saveAppStatus({ leftSortBy: column })
-        } else {
-            rightSortBy = column
-            rightSortOrder = newOrder
-            void saveAppStatus({ rightSortBy: column })
-        }
+        setPaneSort(pane, column, newOrder)
+        void saveAppStatus({ [paneKey(pane, 'sortBy')]: column })
         void saveColumnSortOrder(column, newOrder)
         applySortResult(paneRef, result)
     }
@@ -1454,7 +1113,6 @@
         }
 
         const volume = volumes[index]
-        const handler = pane === 'left' ? handleLeftVolumeChange : handleRightVolumeChange
 
         // Handle favorites differently from actual volumes (same as VolumeBreadcrumb)
         if (volume.category === 'favorite') {
@@ -1462,14 +1120,14 @@
             const containingVolume = await findContainingVolume(volume.path)
             if (containingVolume) {
                 // Navigate to the favorite's path, but set the volume to the containing volume
-                await handler(containingVolume.id, containingVolume.path, volume.path)
+                await handleVolumeChange(pane, containingVolume.id, containingVolume.path, volume.path)
             } else {
                 // Fallback: use root volume
-                await handler('root', '/', volume.path)
+                await handleVolumeChange(pane, 'root', '/', volume.path)
             }
         } else {
             // For actual volumes, navigate to the volume's root
-            await handler(volume.id, volume.path, volume.path)
+            await handleVolumeChange(pane, volume.id, volume.path, volume.path)
         }
 
         return true
@@ -1482,7 +1140,7 @@
      * @param endIndex - End index for range selection
      */
     export function handleSelectionAction(action: string, startIndex?: number, endIndex?: number) {
-        const paneRef = focusedPane === 'left' ? leftPaneRef : rightPaneRef
+        const paneRef = getPaneRef(focusedPane)
         if (!paneRef) return
 
         switch (action) {
@@ -1513,7 +1171,7 @@
      * Used by MCP nav_to_path tool.
      */
     export function navigateToPath(pane: 'left' | 'right', path: string) {
-        const paneRef = pane === 'left' ? leftPaneRef : rightPaneRef
+        const paneRef = getPaneRef(pane)
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         paneRef?.navigateToPath?.(path)
     }
@@ -1523,7 +1181,7 @@
      * Used by MCP move_cursor tool.
      */
     export async function moveCursor(pane: 'left' | 'right', to: number | string) {
-        const paneRef = pane === 'left' ? leftPaneRef : rightPaneRef
+        const paneRef = getPaneRef(pane)
         if (!paneRef) return
 
         if (typeof to === 'number') {
@@ -1552,7 +1210,7 @@
      * Used by MCP scroll_to tool.
      */
     export function scrollTo(pane: 'left' | 'right', index: number) {
-        const paneRef = pane === 'left' ? leftPaneRef : rightPaneRef
+        const paneRef = getPaneRef(pane)
         // For now, just set cursor to that index - virtualization handles the rest
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         paneRef?.setCursorIndex?.(index)
@@ -1576,7 +1234,7 @@
      * Used by MCP refresh tool.
      */
     export function refreshPane() {
-        const paneRef = focusedPane === 'left' ? leftPaneRef : rightPaneRef
+        const paneRef = getPaneRef(focusedPane)
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         paneRef?.refreshView?.()
     }
@@ -1589,7 +1247,7 @@
      * @param mode - 'replace', 'add', or 'subtract'
      */
     export function handleMcpSelect(pane: 'left' | 'right', start: number, count: number | 'all', mode: string) {
-        const paneRef = pane === 'left' ? leftPaneRef : rightPaneRef
+        const paneRef = getPaneRef(pane)
         if (!paneRef) return
 
         // Get current selection for add/subtract modes (local Set, not reactive state)
@@ -1660,13 +1318,22 @@
                 viewMode={leftViewMode}
                 sortBy={leftSortBy}
                 sortOrder={leftSortOrder}
-                onPathChange={handleLeftPathChange}
-                onVolumeChange={handleLeftVolumeChange}
-                onRequestFocus={handleLeftFocus}
-                onSortChange={handleLeftSortChange}
-                onNetworkHostChange={handleLeftNetworkHostChange}
-                onCancelLoading={handleLeftCancelLoading}
-                onMtpFatalError={handleLeftMtpFatalError}
+                onPathChange={(path: string) => {
+                    handlePathChange('left', path)
+                }}
+                onVolumeChange={(volumeId: string, volumePath: string, targetPath: string) =>
+                    handleVolumeChange('left', volumeId, volumePath, targetPath)}
+                onRequestFocus={() => {
+                    handleFocus('left')
+                }}
+                onSortChange={(column: SortColumn) => handleSortChange('left', column)}
+                onNetworkHostChange={(host: NetworkHost | null) => {
+                    handleNetworkHostChange('left', host)
+                }}
+                onCancelLoading={(selectName: string | undefined) => {
+                    handleCancelLoading('left', selectName)
+                }}
+                onMtpFatalError={(msg: string) => handleMtpFatalError('left', msg)}
             />
         </div>
         <PaneResizer onResize={handlePaneResize} onResizeEnd={handlePaneResizeEnd} onReset={handlePaneResizeReset} />
@@ -1683,13 +1350,22 @@
                 viewMode={rightViewMode}
                 sortBy={rightSortBy}
                 sortOrder={rightSortOrder}
-                onPathChange={handleRightPathChange}
-                onVolumeChange={handleRightVolumeChange}
-                onRequestFocus={handleRightFocus}
-                onSortChange={handleRightSortChange}
-                onNetworkHostChange={handleRightNetworkHostChange}
-                onCancelLoading={handleRightCancelLoading}
-                onMtpFatalError={handleRightMtpFatalError}
+                onPathChange={(path: string) => {
+                    handlePathChange('right', path)
+                }}
+                onVolumeChange={(volumeId: string, volumePath: string, targetPath: string) =>
+                    handleVolumeChange('right', volumeId, volumePath, targetPath)}
+                onRequestFocus={() => {
+                    handleFocus('right')
+                }}
+                onSortChange={(column: SortColumn) => handleSortChange('right', column)}
+                onNetworkHostChange={(host: NetworkHost | null) => {
+                    handleNetworkHostChange('right', host)
+                }}
+                onCancelLoading={(selectName: string | undefined) => {
+                    handleCancelLoading('right', selectName)
+                }}
+                onMtpFatalError={(msg: string) => handleMtpFatalError('right', msg)}
             />
         </div>
     {:else}
@@ -1697,70 +1373,28 @@
     {/if}
 </div>
 
-{#if showCopyDialog && copyDialogProps}
-    <CopyDialog
-        sourcePaths={copyDialogProps.sourcePaths}
-        destinationPath={copyDialogProps.destinationPath}
-        direction={copyDialogProps.direction}
-        {volumes}
-        currentVolumeId={copyDialogProps.currentVolumeId}
-        fileCount={copyDialogProps.fileCount}
-        folderCount={copyDialogProps.folderCount}
-        sourceFolderPath={copyDialogProps.sourceFolderPath}
-        sortColumn={copyDialogProps.sortColumn}
-        sortOrder={copyDialogProps.sortOrder}
-        sourceVolumeId={copyDialogProps.sourceVolumeId}
-        destVolumeId={copyDialogProps.destVolumeId}
-        onConfirm={handleCopyConfirm}
-        onCancel={handleCopyCancel}
-    />
-{/if}
-
-{#if showCopyProgressDialog && copyProgressProps}
-    <CopyProgressDialog
-        sourcePaths={copyProgressProps.sourcePaths}
-        sourceFolderPath={copyProgressProps.sourceFolderPath}
-        destinationPath={copyProgressProps.destinationPath}
-        direction={copyProgressProps.direction}
-        sortColumn={copyProgressProps.sortColumn}
-        sortOrder={copyProgressProps.sortOrder}
-        previewId={copyProgressProps.previewId}
-        sourceVolumeId={copyProgressProps.sourceVolumeId}
-        destVolumeId={copyProgressProps.destVolumeId}
-        conflictResolution={copyProgressProps.conflictResolution}
-        onComplete={handleCopyComplete}
-        onCancelled={handleCopyCancelled}
-        onError={handleCopyError}
-    />
-{/if}
-
-{#if showNewFolderDialog && newFolderDialogProps}
-    <NewFolderDialog
-        currentPath={newFolderDialogProps.currentPath}
-        listingId={newFolderDialogProps.listingId}
-        showHiddenFiles={newFolderDialogProps.showHiddenFiles}
-        initialName={newFolderDialogProps.initialName}
-        volumeId={newFolderDialogProps.volumeId}
-        onCreated={handleNewFolderCreated}
-        onCancel={handleNewFolderCancel}
-    />
-{/if}
-
-{#if showAlertDialog && alertDialogProps}
-    <AlertDialog
-        title={alertDialogProps.title}
-        message={alertDialogProps.message}
-        onClose={() => {
-            showAlertDialog = false
-            alertDialogProps = null
-            containerElement?.focus()
-        }}
-    />
-{/if}
-
-{#if showCopyErrorDialog && copyErrorProps}
-    <CopyErrorDialog error={copyErrorProps.error} onClose={handleCopyErrorClose} />
-{/if}
+<DialogManager
+    {showCopyDialog}
+    {copyDialogProps}
+    {volumes}
+    {showCopyProgressDialog}
+    {copyProgressProps}
+    {showNewFolderDialog}
+    {newFolderDialogProps}
+    {showAlertDialog}
+    {alertDialogProps}
+    {showCopyErrorDialog}
+    {copyErrorProps}
+    onCopyConfirm={handleCopyConfirm}
+    onCopyCancel={handleCopyCancel}
+    onCopyComplete={handleCopyComplete}
+    onCopyCancelled={handleCopyCancelled}
+    onCopyError={handleCopyError}
+    onCopyErrorClose={handleCopyErrorClose}
+    onNewFolderCreated={handleNewFolderCreated}
+    onNewFolderCancel={handleNewFolderCancel}
+    onAlertClose={handleAlertClose}
+/>
 
 <style>
     .dual-pane-explorer {
