@@ -8,7 +8,6 @@ use std::path::Path;
 use serde_json::{Value, json};
 use tauri::{AppHandle, Emitter, Manager, Runtime};
 
-use super::dialog_state::DialogStateStore;
 use super::pane_state::PaneStateStore;
 use super::protocol::{INTERNAL_ERROR, INVALID_PARAMS};
 use crate::commands::ui::toggle_hidden_files;
@@ -429,20 +428,8 @@ fn execute_dialog_open<R: Runtime>(
     section: Option<&str>,
     path: Option<&str>,
 ) -> ToolResult {
-    // Track dialog state
-    if let Some(store) = app.try_state::<DialogStateStore>() {
-        match dialog_type {
-            "settings" => store.set_settings_open(true),
-            "about" => store.set_about_open(true),
-            "volume-picker" => store.set_volume_picker_open(true),
-            "file-viewer" => {
-                if let Some(p) = path {
-                    store.add_file_viewer(p.to_string());
-                }
-            }
-            _ => {}
-        }
-    }
+    // Window-based dialogs (settings, file-viewer) are tracked automatically
+    // via webview_windows() in resources.rs. No manual tracking needed here.
 
     match dialog_type {
         "settings" => {
@@ -456,11 +443,6 @@ fn execute_dialog_open<R: Runtime>(
                     .map_err(|e| ToolError::internal(e.to_string()))?;
                 Ok(json!("OK: Opened settings"))
             }
-        }
-        "volume-picker" => {
-            app.emit("open-volume-picker", ())
-                .map_err(|e| ToolError::internal(e.to_string()))?;
-            Ok(json!("OK: Opened volume picker"))
         }
         "file-viewer" => {
             // If path is provided, open for that file; otherwise, use cursor file
@@ -484,8 +466,8 @@ fn execute_dialog_open<R: Runtime>(
                 .map_err(|e| ToolError::internal(e.to_string()))?;
             Ok(json!("OK: Opened about dialog"))
         }
-        "confirmation" => Err(ToolError::invalid_params(
-            "Cannot open confirmation dialog directly. Use copy or mkdir tools instead.",
+        "copy-confirmation" | "mkdir-confirmation" => Err(ToolError::invalid_params(
+            "Cannot open confirmation dialogs directly. Use copy or mkdir tools instead.",
         )),
         _ => Err(ToolError::invalid_params(format!("Invalid dialog type: {dialog_type}"))),
     }
@@ -515,17 +497,12 @@ fn execute_dialog_focus<R: Runtime>(app: &AppHandle<R>, dialog_type: &str, path:
                 Ok(json!("OK: Focused most recent file viewer"))
             }
         }
-        "volume-picker" => {
-            app.emit("focus-volume-picker", ())
-                .map_err(|e| ToolError::internal(e.to_string()))?;
-            Ok(json!("OK: Focused volume picker"))
-        }
         "about" => {
             app.emit("focus-about", ())
                 .map_err(|e| ToolError::internal(e.to_string()))?;
             Ok(json!("OK: Focused about dialog"))
         }
-        "confirmation" => {
+        "copy-confirmation" | "mkdir-confirmation" => {
             app.emit("focus-confirmation", ())
                 .map_err(|e| ToolError::internal(e.to_string()))?;
             Ok(json!("OK: Focused confirmation dialog"))
@@ -536,23 +513,8 @@ fn execute_dialog_focus<R: Runtime>(app: &AppHandle<R>, dialog_type: &str, path:
 
 /// Execute dialog close action.
 fn execute_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_type: &str, path: Option<&str>) -> ToolResult {
-    // Track dialog state
-    if let Some(store) = app.try_state::<DialogStateStore>() {
-        match dialog_type {
-            "settings" => store.set_settings_open(false),
-            "about" => store.set_about_open(false),
-            "volume-picker" => store.set_volume_picker_open(false),
-            "confirmation" => store.set_confirmation_open(false),
-            "file-viewer" => {
-                if let Some(p) = path {
-                    store.remove_file_viewer(p);
-                } else {
-                    store.clear_all_file_viewers();
-                }
-            }
-            _ => {}
-        }
-    }
+    // Window-based dialogs are closed via their window; soft dialogs are tracked
+    // automatically by the frontend via notify_dialog_closed.
 
     match dialog_type {
         "settings" => {
@@ -560,19 +522,12 @@ fn execute_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_type: &str, path:
                 .map_err(|e| ToolError::internal(e.to_string()))?;
             Ok(json!("OK: Closed settings"))
         }
-        "volume-picker" => {
-            app.emit("close-volume-picker", ())
-                .map_err(|e| ToolError::internal(e.to_string()))?;
-            Ok(json!("OK: Closed volume picker"))
-        }
         "file-viewer" => {
             if let Some(path) = path {
-                // Close specific file viewer
                 app.emit("close-file-viewer", json!({"path": path}))
                     .map_err(|e| ToolError::internal(e.to_string()))?;
                 Ok(json!(format!("OK: Closed file viewer for {path}")))
             } else {
-                // Close all file viewers
                 app.emit("close-all-file-viewers", ())
                     .map_err(|e| ToolError::internal(e.to_string()))?;
                 Ok(json!("OK: Closed all file viewer dialogs"))
@@ -583,7 +538,7 @@ fn execute_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_type: &str, path:
                 .map_err(|e| ToolError::internal(e.to_string()))?;
             Ok(json!("OK: Closed about dialog"))
         }
-        "confirmation" => {
+        "copy-confirmation" | "mkdir-confirmation" => {
             app.emit("close-confirmation", ())
                 .map_err(|e| ToolError::internal(e.to_string()))?;
             Ok(json!("OK: Cancelled confirmation dialog"))

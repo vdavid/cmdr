@@ -26,7 +26,6 @@
         viewerSearchPoll,
         viewerSearchCancel,
         feLog,
-        updateDialogState,
         type ViewerSearchMatch,
         type BackendCapabilities,
     } from '$lib/tauri-commands'
@@ -597,9 +596,6 @@
                     // Not in Tauri environment
                 })
 
-            // Track file viewer dialog state for MCP
-            void updateDialogState('file-viewer', 'open', filePath)
-
             // Set up MCP event listeners for close/focus commands
             await setupMcpListeners(filePath)
         } catch (e) {
@@ -623,13 +619,6 @@
     })
 
     onDestroy(() => {
-        // Track file viewer dialog close state for MCP
-        const params = new URLSearchParams(window.location.search)
-        const filePath = params.get('path')
-        if (filePath) {
-            void updateDialogState('file-viewer', 'close', filePath)
-        }
-
         cleanupMcpListeners()
         stopSearchPoll()
         stopIndexingPoll()

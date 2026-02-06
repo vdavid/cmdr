@@ -22,6 +22,8 @@
         toggleHiddenFiles,
         setViewMode,
         getWindowTitle,
+        notifyDialogOpened,
+        notifyDialogClosed,
     } from '$lib/tauri-commands'
     import { loadSettings, saveSettings } from '$lib/settings-store'
     import { openSettingsWindow } from '$lib/settings/settings-window'
@@ -228,9 +230,11 @@
     async function setupMenuListeners() {
         unlistenShowAbout = await safeListenTauri('show-about', () => {
             showAboutWindow = true
+            void notifyDialogOpened('about')
         })
         unlistenLicenseKeyDialog = await safeListenTauri('show-license-key-dialog', () => {
             showLicenseKeyDialog = true
+            void notifyDialogOpened('license')
         })
         unlistenCommandPalette = await safeListenTauri('show-command-palette', () => {
             showCommandPalette = true
@@ -248,6 +252,7 @@
         // About dialog
         await safeListenTauri('close-about', () => {
             showAboutWindow = false
+            void notifyDialogClosed('about')
         })
         await safeListenTauri('focus-about', () => {
             // Already shown, just ensure it's visible
@@ -535,20 +540,24 @@
 
     function handleAboutClose() {
         showAboutWindow = false
+        void notifyDialogClosed('about')
         explorerRef?.refocus()
     }
 
     function handleLicenseKeyDialogClose() {
         showLicenseKeyDialog = false
+        void notifyDialogClosed('license')
         explorerRef?.refocus()
     }
 
     async function handleLicenseKeySuccess() {
         showLicenseKeyDialog = false
+        void notifyDialogClosed('license')
         // Refresh the window title to reflect new license status
         windowTitle = await getWindowTitle()
         // Show the About window so user can see their license status
         showAboutWindow = true
+        void notifyDialogOpened('about')
     }
 
     function handleCommandPaletteClose() {
@@ -607,6 +616,7 @@
 
             case 'app.about':
                 showAboutWindow = true
+                void notifyDialogOpened('about')
                 return
 
             // === View commands ===
@@ -793,6 +803,7 @@
 
             case 'about.close':
                 showAboutWindow = false
+                void notifyDialogClosed('about')
                 explorerRef?.refocus()
                 return
 

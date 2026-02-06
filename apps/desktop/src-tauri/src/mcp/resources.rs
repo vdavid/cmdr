@@ -4,9 +4,9 @@
 //! Resources are read-only state that agents can query.
 
 use serde::{Deserialize, Serialize};
-use tauri::{Manager, Runtime};
+use tauri::{Manager, Runtime, WebviewWindow};
 
-use super::dialog_state::DialogStateStore;
+use super::dialog_state::SoftDialogTracker;
 use super::pane_state::{FileEntry, PaneState, PaneStateStore};
 #[cfg(target_os = "macos")]
 use crate::volumes;
@@ -172,6 +172,15 @@ fn build_pane_yaml(state: &PaneState, indent: &str) -> String {
     lines.join("\n")
 }
 
+/// Extract the file path from a viewer window's URL.
+/// Viewer URLs look like: http://localhost:PORT/viewer?path=%2FUsers%2F...
+fn extract_viewer_path<R: Runtime>(window: &WebviewWindow<R>) -> Option<String> {
+    let url = window.url().ok()?;
+    url.query_pairs()
+        .find(|(key, _)| key == "path")
+        .map(|(_, value)| value.into_owned())
+}
+
 /// Read a resource by URI.
 pub fn read_resource<R: Runtime>(app: &tauri::AppHandle<R>, uri: &str) -> Result<ResourceContent, String> {
     let (content, mime_type) = match uri {
@@ -213,38 +222,39 @@ pub fn read_resource<R: Runtime>(app: &tauri::AppHandle<R>, uri: &str) -> Result
                 yaml.push_str("  - root\n");
             }
 
-            // Dialogs
-            let dialog_state = app.try_state::<DialogStateStore>();
-            if let Some(dialog_store) = dialog_state {
-                let dialogs = dialog_store.get();
-                let has_any_dialog = dialogs.settings_open
-                    || dialogs.about_open
-                    || dialogs.volume_picker_open
-                    || dialogs.confirmation_open
-                    || !dialogs.file_viewers.is_empty();
+            // Dialogs — derived from window manager + soft dialog tracker
+            let mut dialog_entries: Vec<String> = Vec::new();
 
-                if has_any_dialog {
-                    yaml.push_str("dialogs:\n");
-                    if dialogs.settings_open {
-                        yaml.push_str("  - type: settings\n");
+            // Window-based dialogs: derive from Tauri's window manager
+            let windows = app.webview_windows();
+            if windows.contains_key("settings") {
+                dialog_entries.push("  - type: settings".to_string());
+            }
+            for (label, window) in &windows {
+                if label.starts_with("viewer-") {
+                    if let Some(path) = extract_viewer_path(window) {
+                        dialog_entries.push(format!("  - type: file-viewer\n    path: \"{}\"", path));
+                    } else {
+                        dialog_entries.push("  - type: file-viewer".to_string());
                     }
-                    if dialogs.about_open {
-                        yaml.push_str("  - type: about\n");
-                    }
-                    if dialogs.volume_picker_open {
-                        yaml.push_str("  - type: volume-picker\n");
-                    }
-                    if dialogs.confirmation_open {
-                        yaml.push_str("  - type: confirmation\n");
-                    }
-                    for viewer in &dialogs.file_viewers {
-                        yaml.push_str(&format!("  - type: file-viewer\n    path: \"{}\"\n", viewer.path));
-                    }
-                } else {
-                    yaml.push_str("dialogs: []\n");
                 }
-            } else {
+            }
+
+            // Soft (overlay) dialogs: from tracker
+            if let Some(tracker) = app.try_state::<SoftDialogTracker>() {
+                for dialog_type in tracker.get_open_types() {
+                    dialog_entries.push(format!("  - type: {}", dialog_type));
+                }
+            }
+
+            if dialog_entries.is_empty() {
                 yaml.push_str("dialogs: []\n");
+            } else {
+                yaml.push_str("dialogs:\n");
+                for entry in &dialog_entries {
+                    yaml.push_str(entry);
+                    yaml.push('\n');
+                }
             }
 
             (yaml, "text/yaml")
@@ -252,13 +262,13 @@ pub fn read_resource<R: Runtime>(app: &tauri::AppHandle<R>, uri: &str) -> Result
         "cmdr://dialogs/available" => {
             let yaml = r#"- type: settings
   sections: [general, appearance, shortcuts, advanced]
-- type: volume-picker
-  description: Only one can be open at a time
 - type: file-viewer
   description: Opens for file under cursor, or specify path. Multiple can be open.
 - type: about
-- type: confirmation
-  description: Copy/mkdir confirmation. Opened by copy/mkdir tools, not directly. Can only be closed.
+- type: copy-confirmation
+  description: Opened by the copy tool, not directly. Can only be closed.
+- type: mkdir-confirmation
+  description: Opened by the mkdir tool, not directly. Can only be closed.
 "#;
             (yaml.to_string(), "text/yaml")
         }

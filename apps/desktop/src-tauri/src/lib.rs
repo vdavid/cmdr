@@ -184,8 +184,8 @@ pub fn run() {
             // Initialize pane state store for MCP context tools
             app.manage(mcp::PaneStateStore::new());
 
-            // Initialize dialog state store for MCP dialog tracking
-            app.manage(mcp::DialogStateStore::new());
+            // Initialize soft dialog tracker for MCP (overlays like about, license, confirmations)
+            app.manage(mcp::SoftDialogTracker::new());
 
             // Initialize settings state store for MCP settings tools
             app.manage(mcp::SettingsStateStore::new());
@@ -359,7 +359,8 @@ pub fn run() {
             mcp::pane_state::update_left_pane_state,
             mcp::pane_state::update_right_pane_state,
             mcp::pane_state::update_focused_pane,
-            mcp::dialog_state::update_dialog_state,
+            mcp::dialog_state::notify_dialog_opened,
+            mcp::dialog_state::notify_dialog_closed,
             mcp::settings_state::mcp_update_settings_state,
             mcp::settings_state::mcp_update_settings_open,
             mcp::settings_state::mcp_update_settings_section,

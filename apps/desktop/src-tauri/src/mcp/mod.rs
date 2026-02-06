@@ -17,7 +17,7 @@ mod tools;
 mod tests;
 
 pub use config::McpConfig;
-pub use dialog_state::DialogStateStore;
+pub use dialog_state::SoftDialogTracker;
 pub use pane_state::PaneStateStore;
 pub use server::start_mcp_server;
 pub use settings_state::SettingsStateStore;

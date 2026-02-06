@@ -238,18 +238,14 @@ export async function updateFocusedPane(pane: 'left' | 'right'): Promise<void> {
     await invoke('update_focused_pane', { pane })
 }
 
-/**
- * Update dialog state for MCP tracking.
- * @param dialogType - Type of dialog: 'settings', 'about', 'volume-picker', 'confirmation', 'file-viewer'
- * @param action - Action: 'open', 'close', or 'close-all' (for file-viewer)
- * @param path - Optional path (for file-viewer dialogs)
- */
-export async function updateDialogState(
-    dialogType: string,
-    action: 'open' | 'close' | 'close-all',
-    path?: string,
-): Promise<void> {
-    await invoke('update_dialog_state', { dialogType, action, path })
+/** Notify backend that a soft (overlay) dialog opened. */
+export async function notifyDialogOpened(dialogType: string): Promise<void> {
+    await invoke('notify_dialog_opened', { dialogType })
+}
+
+/** Notify backend that a soft (overlay) dialog closed. */
+export async function notifyDialogClosed(dialogType: string): Promise<void> {
+    await invoke('notify_dialog_closed', { dialogType })
 }
 
 // ============================================================================

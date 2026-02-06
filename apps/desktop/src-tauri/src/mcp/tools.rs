@@ -253,7 +253,7 @@ fn get_dialog_tools() -> Vec<Tool> {
                 },
                 "type": {
                     "type": "string",
-                    "enum": ["settings", "volume-picker", "file-viewer", "about", "confirmation"],
+                    "enum": ["settings", "file-viewer", "about", "copy-confirmation", "mkdir-confirmation"],
                     "description": "Dialog type"
                 },
                 "section": {
@@ -388,10 +388,10 @@ mod tests {
         // Check type enum values
         let type_enum = props.get("type").unwrap().get("enum").unwrap().as_array().unwrap();
         assert!(type_enum.contains(&json!("settings")));
-        assert!(type_enum.contains(&json!("volume-picker")));
         assert!(type_enum.contains(&json!("file-viewer")));
         assert!(type_enum.contains(&json!("about")));
-        assert!(type_enum.contains(&json!("confirmation")));
+        assert!(type_enum.contains(&json!("copy-confirmation")));
+        assert!(type_enum.contains(&json!("mkdir-confirmation")));
 
         // Check required fields
         let required = schema.get("required").unwrap().as_array().unwrap();
