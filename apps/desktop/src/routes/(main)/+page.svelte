@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte'
-    import DualPaneExplorer from '$lib/file-explorer/DualPaneExplorer.svelte'
-    import FunctionKeyBar from '$lib/file-explorer/FunctionKeyBar.svelte'
+    import DualPaneExplorer from '$lib/file-explorer/pane/DualPaneExplorer.svelte'
+    import FunctionKeyBar from '$lib/file-explorer/pane/FunctionKeyBar.svelte'
     import FullDiskAccessPrompt from '$lib/onboarding/FullDiskAccessPrompt.svelte'
     import ExpirationModal from '$lib/licensing/ExpirationModal.svelte'
     import CommercialReminderModal from '$lib/licensing/CommercialReminderModal.svelte'
@@ -26,7 +26,11 @@
     import { loadSettings, saveSettings } from '$lib/settings-store'
     import { openSettingsWindow } from '$lib/settings/settings-window'
     import { openFileViewer } from '$lib/file-viewer/open-viewer'
-    import { hideExpirationModal, loadLicenseStatus, triggerValidationIfNeeded } from '$lib/licensing-store.svelte'
+    import {
+        hideExpirationModal,
+        loadLicenseStatus,
+        triggerValidationIfNeeded,
+    } from '$lib/licensing/licensing-store.svelte'
     import type { ViewMode } from '$lib/app-status-store'
 
     // Interface for DualPaneExplorer's exported methods

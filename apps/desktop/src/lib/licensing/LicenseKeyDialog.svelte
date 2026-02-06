@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount, tick } from 'svelte'
     import { activateLicense, validateLicenseWithServer, getLicenseInfo, type LicenseInfo } from '$lib/tauri-commands'
-    import { loadLicenseStatus, getCachedStatus } from '$lib/licensing-store.svelte'
+    import { loadLicenseStatus, getCachedStatus } from './licensing-store.svelte'
 
     interface Props {
         onClose: () => void

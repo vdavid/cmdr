@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount, tick } from 'svelte'
-    import { getCachedStatus } from '$lib/licensing-store.svelte'
+    import { getCachedStatus } from './licensing-store.svelte'
     import { openExternalUrl } from '$lib/tauri-commands'
 
     /** Props */

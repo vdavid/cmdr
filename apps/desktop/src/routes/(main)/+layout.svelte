@@ -5,13 +5,13 @@
      */
     import { onMount, onDestroy } from 'svelte'
     import { initWindowStateListener } from '$lib/window-state'
-    import { startUpdateChecker } from '$lib/updater.svelte'
+    import { startUpdateChecker } from '$lib/updates/updater.svelte'
     import { initSettingsApplier, cleanupSettingsApplier } from '$lib/settings/settings-applier'
     import { initReactiveSettings, cleanupReactiveSettings } from '$lib/settings/reactive-settings.svelte'
     import { initializeShortcuts, setupMcpShortcutsListener, cleanupMcpShortcutsListener } from '$lib/shortcuts'
     import { onMtpExclusiveAccessError, connectMtpDevice, type MtpExclusiveAccessErrorEvent } from '$lib/tauri-commands'
-    import AiNotification from '$lib/AiNotification.svelte'
-    import UpdateNotification from '$lib/UpdateNotification.svelte'
+    import AiNotification from '$lib/ai/AiNotification.svelte'
+    import UpdateNotification from '$lib/updates/UpdateNotification.svelte'
     import { PtpcameradDialog } from '$lib/mtp'
     import type { Snippet } from 'svelte'
 
