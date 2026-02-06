@@ -166,12 +166,12 @@ These are borderline (700-900 lines). Don't prioritize, but split if you're alre
 
 ### Phase 1 (Rust)
 
-- [ ] `mtp/connection.rs` — errors.rs
-- [ ] `mtp/connection.rs` — cache.rs
-- [ ] `mtp/connection.rs` — directory_ops.rs
-- [ ] `mtp/connection.rs` — file_ops.rs
-- [ ] `mtp/connection.rs` — mutation_ops.rs
-- [ ] `mtp/connection.rs` — move tests
+- [x] `mtp/connection.rs` — errors.rs
+- [x] `mtp/connection.rs` — cache.rs
+- [x] `mtp/connection.rs` — directory_ops.rs
+- [x] `mtp/connection.rs` — file_ops.rs
+- [x] `mtp/connection.rs` — mutation_ops.rs
+- [x] `mtp/connection.rs` — move tests
 - [ ] `listing/operations.rs` — sorting.rs
 - [ ] `listing/operations.rs` — metadata.rs
 - [ ] `listing/operations.rs` — cache.rs
