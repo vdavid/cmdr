@@ -1,179 +1,22 @@
-//! File system operations: read, list, copy, move, delete.
+//! Directory listing lifecycle, cache API, sorting, and statistics.
+//!
+//! This is the synchronous, frontend-facing API. Low-level disk I/O is in reading.rs,
+//! async streaming is in streaming.rs.
 
 #![allow(dead_code, reason = "Boilerplate for future use")]
 
 use serde::{Deserialize, Serialize};
-use std::fs;
-use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc;
-use std::time::Duration;
 use uuid::Uuid;
 
 use crate::benchmark;
 use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
-use crate::file_system::listing::metadata::{get_group_name, get_icon_id, get_owner_name};
+use crate::file_system::listing::metadata::FileEntry;
 use crate::file_system::listing::sorting::{SortColumn, SortOrder, sort_entries};
-use crate::file_system::listing::streaming::{
-    CANCELLATION_POLL_INTERVAL, ListingCancelledEvent, ListingCompleteEvent, ListingErrorEvent, ListingOpeningEvent,
-    ListingReadCompleteEvent, ListingStatus, STREAMING_STATE, StreamingListingState,
-};
 use crate::file_system::watcher::{start_watching, stop_watching};
 
-// Re-export types for backwards compatibility (they were originally defined in operations.rs)
-// These re-exports make the types available both externally and locally in this module
-pub use crate::file_system::listing::metadata::{ExtendedMetadata, FileEntry};
-pub use crate::file_system::listing::streaming::StreamingListingStartResult;
-
-/// Lists the contents of a directory.
-///
-/// # Arguments
-/// * `path` - The directory path to list
-///
-/// # Returns
-/// A vector of FileEntry representing the directory contents, sorted with directories first,
-/// then files, both alphabetically.
-pub fn list_directory(path: &Path) -> Result<Vec<FileEntry>, std::io::Error> {
-    let overall_start = std::time::Instant::now();
-    let mut entries = Vec::new();
-
-    let mut metadata_time = Duration::ZERO;
-    let mut owner_lookup_time = Duration::ZERO;
-    let mut entry_creation_time = Duration::ZERO;
-
-    let read_start = std::time::Instant::now();
-    let dir_entries: Vec<_> = fs::read_dir(path)?.collect();
-    let read_dir_time = read_start.elapsed();
-
-    for entry in dir_entries {
-        let entry = entry?;
-
-        let meta_start = std::time::Instant::now();
-        let file_type = entry.file_type()?;
-        let is_symlink = file_type.is_symlink();
-
-        // For symlinks, check if the TARGET is a directory by following the link
-        // fs::metadata follows symlinks, fs::symlink_metadata does not
-        let target_is_dir = if is_symlink {
-            fs::metadata(entry.path()).map(|m| m.is_dir()).unwrap_or(false) // Broken symlink = treat as file
-        } else {
-            false
-        };
-
-        // For symlinks, get metadata of the link itself (not target) for size/timestamps
-        let metadata = if is_symlink {
-            fs::symlink_metadata(entry.path())
-        } else {
-            entry.metadata()
-        };
-        metadata_time += meta_start.elapsed();
-
-        match metadata {
-            Ok(metadata) => {
-                let name = entry.file_name().to_string_lossy().to_string();
-                // is_directory: true if it's a real dir OR a symlink pointing to a dir
-                let is_dir = metadata.is_dir() || target_is_dir;
-
-                let modified = metadata
-                    .modified()
-                    .ok()
-                    .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-                    .map(|d| d.as_secs());
-
-                let created = metadata
-                    .created()
-                    .ok()
-                    .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-                    .map(|d| d.as_secs());
-
-                let uid = metadata.uid();
-                let gid = metadata.gid();
-
-                let owner_start = std::time::Instant::now();
-                let owner = get_owner_name(uid);
-                let group = get_group_name(gid);
-                owner_lookup_time += owner_start.elapsed();
-
-                let create_start = std::time::Instant::now();
-                // Get macOS-specific metadata (added_at, opened_at)
-                #[cfg(target_os = "macos")]
-                let (added_at, opened_at) = {
-                    let macos_meta = crate::file_system::macos_metadata::get_macos_metadata(&entry.path());
-                    (macos_meta.added_at, macos_meta.opened_at)
-                };
-                #[cfg(not(target_os = "macos"))]
-                let (added_at, opened_at) = (None, None);
-
-                entries.push(FileEntry {
-                    name: name.clone(),
-                    path: entry.path().to_string_lossy().to_string(),
-                    is_directory: is_dir,
-                    is_symlink,
-                    size: if metadata.is_file() { Some(metadata.len()) } else { None },
-                    modified_at: modified,
-                    created_at: created,
-                    added_at,
-                    opened_at,
-                    permissions: metadata.permissions().mode(),
-                    owner,
-                    group,
-                    icon_id: get_icon_id(is_dir, is_symlink, &name),
-                    extended_metadata_loaded: true,
-                });
-                entry_creation_time += create_start.elapsed();
-            }
-            Err(_) => {
-                // Permission denied or broken symlink—return minimal entry
-                let name = entry.file_name().to_string_lossy().to_string();
-                entries.push(FileEntry {
-                    name: name.clone(),
-                    path: entry.path().to_string_lossy().to_string(),
-                    is_directory: false,
-                    is_symlink,
-                    size: None,
-                    modified_at: None,
-                    created_at: None,
-                    added_at: None,
-                    opened_at: None,
-                    permissions: 0,
-                    owner: String::new(),
-                    group: String::new(),
-                    icon_id: if is_symlink {
-                        "symlink-broken".to_string()
-                    } else {
-                        "file".to_string()
-                    },
-                    extended_metadata_loaded: true,
-                });
-            }
-        }
-    }
-
-    let sort_start = std::time::Instant::now();
-    // Sort: directories first, then files, both alphabetically (using natural sort)
-    sort_entries(&mut entries, SortColumn::Name, SortOrder::Ascending);
-    let sort_time = sort_start.elapsed();
-
-    let total_time = overall_start.elapsed();
-    log::debug!(
-        "list_directory: path={}, entries={}, read_dir={}ms, metadata={}ms, owner={}ms, create={}ms, sort={}ms, total={}ms",
-        path.display(),
-        entries.len(),
-        read_dir_time.as_millis(),
-        metadata_time.as_millis(),
-        owner_lookup_time.as_millis(),
-        entry_creation_time.as_millis(),
-        sort_time.as_millis(),
-        total_time.as_millis()
-    );
-
-    Ok(entries)
-}
-
 // ============================================================================
-// On-demand virtual scrolling API (listing-based, fetch by range)
+// Listing lifecycle
 // ============================================================================
 
 /// Result of starting a new directory listing.
@@ -193,31 +36,13 @@ pub struct ListingStartResult {
 ///
 /// Reads the directory once, caches it, and returns listing ID + total count.
 /// Frontend then fetches visible ranges on demand via `get_file_range`.
-///
-/// # Arguments
-/// * `path` - The directory path to list
-/// * `include_hidden` - Whether to include hidden files in total count
-///
-/// # Returns
-/// A `ListingStartResult` with listing ID and total count.
 pub fn list_directory_start(path: &Path, include_hidden: bool) -> Result<ListingStartResult, std::io::Error> {
-    // Use the default volume from VolumeManager with default sorting
     list_directory_start_with_volume("root", path, include_hidden, SortColumn::Name, SortOrder::Ascending)
 }
 
 /// Starts a new directory listing using a specific volume.
 ///
 /// This is the internal implementation that supports multi-volume access.
-///
-/// # Arguments
-/// * `volume_id` - The volume ID to use (e.g., "root", "dropbox")
-/// * `path` - The directory path to list (relative to volume root)
-/// * `include_hidden` - Whether to include hidden files in total count
-/// * `sort_by` - Column to sort by
-/// * `sort_order` - Ascending or descending
-///
-/// # Returns
-/// A `ListingStartResult` with listing ID and total count.
 pub fn list_directory_start_with_volume(
     volume_id: &str,
     path: &Path,
@@ -272,16 +97,12 @@ pub fn list_directory_start_with_volume(
     }
 
     // Start watching the directory (only if volume supports it)
-    // For now, we still use the absolute path for watching
     // TODO: Update watcher to be volume-aware
-    if volume.supports_watching() {
-        // For LocalPosixVolume, the path is already absolute or needs to be resolved
-        // We use the original path since LocalPosixVolume root is "/"
-        if let Err(e) = start_watching(&listing_id, path) {
+    if volume.supports_watching()
+        && let Err(e) = start_watching(&listing_id, path) {
             log::warn!("Failed to start watcher: {}", e);
             // Continue anyway - watcher is optional enhancement
         }
-    }
 
     // Calculate max filename width if font metrics are available
     let max_filename_width = {
@@ -298,16 +119,22 @@ pub fn list_directory_start_with_volume(
     })
 }
 
+/// Ends a directory listing and cleans up the cache.
+pub fn list_directory_end(listing_id: &str) {
+    // Stop the file watcher
+    stop_watching(listing_id);
+
+    // Remove from listing cache
+    if let Ok(mut cache) = LISTING_CACHE.write() {
+        cache.remove(listing_id);
+    }
+}
+
+// ============================================================================
+// On-demand virtual scrolling API (cache accessors)
+// ============================================================================
+
 /// Gets a range of entries from a cached listing.
-///
-/// # Arguments
-/// * `listing_id` - The listing ID from `list_directory_start`
-/// * `start` - Start index (0-based)
-/// * `count` - Number of entries to return
-/// * `include_hidden` - Whether to include hidden files
-///
-/// # Returns
-/// Vector of FileEntry for the requested range.
 pub fn get_file_range(
     listing_id: &str,
     start: usize,
@@ -333,13 +160,6 @@ pub fn get_file_range(
 }
 
 /// Gets total count of entries in a cached listing.
-///
-/// # Arguments
-/// * `listing_id` - The listing ID from `list_directory_start`
-/// * `include_hidden` - Whether to include hidden files in count
-///
-/// # Returns
-/// Total count of (visible) entries.
 pub fn get_total_count(listing_id: &str, include_hidden: bool) -> Result<usize, String> {
     let cache = LISTING_CACHE.read().map_err(|_| "Failed to acquire cache lock")?;
 
@@ -357,14 +177,7 @@ pub fn get_total_count(listing_id: &str, include_hidden: bool) -> Result<usize, 
 /// Gets the maximum filename width for a cached listing.
 ///
 /// Recalculates the width based on current entries using font metrics.
-/// This is useful after files are added/removed by the file watcher.
-///
-/// # Arguments
-/// * `listing_id` - The listing ID from `list_directory_start`
-/// * `include_hidden` - Whether to include hidden files
-///
-/// # Returns
-/// Maximum filename width in pixels, or None if font metrics are not available.
+/// Useful after files are added/removed by the file watcher.
 pub fn get_max_filename_width(listing_id: &str, include_hidden: bool) -> Result<Option<f32>, String> {
     let cache = LISTING_CACHE.read().map_err(|_| "Failed to acquire cache lock")?;
 
@@ -391,14 +204,6 @@ pub fn get_max_filename_width(listing_id: &str, include_hidden: bool) -> Result<
 }
 
 /// Finds the index of a file by name in a cached listing.
-///
-/// # Arguments
-/// * `listing_id` - The listing ID from `list_directory_start`
-/// * `name` - File name to find
-/// * `include_hidden` - Whether to include hidden files when calculating index
-///
-/// # Returns
-/// Index of the file, or None if not found.
 pub fn find_file_index(listing_id: &str, name: &str, include_hidden: bool) -> Result<Option<usize>, String> {
     let cache = LISTING_CACHE.read().map_err(|_| "Failed to acquire cache lock")?;
 
@@ -416,14 +221,6 @@ pub fn find_file_index(listing_id: &str, name: &str, include_hidden: bool) -> Re
 }
 
 /// Gets a single file at the given index.
-///
-/// # Arguments
-/// * `listing_id` - The listing ID from `list_directory_start`
-/// * `index` - Index of the file to get
-/// * `include_hidden` - Whether to include hidden files when calculating index
-///
-/// # Returns
-/// FileEntry at the index, or None if out of bounds.
 pub fn get_file_at(listing_id: &str, index: usize, include_hidden: bool) -> Result<Option<FileEntry>, String> {
     let cache = LISTING_CACHE.read().map_err(|_| "Failed to acquire cache lock")?;
 
@@ -457,16 +254,7 @@ pub fn get_file_at(listing_id: &str, index: usize, include_hidden: bool) -> Resu
 
 /// Gets file paths at specific indices from a cached listing.
 ///
-/// This is optimized for drag operations where we only need paths, not full FileEntry objects.
-///
-/// # Arguments
-/// * `listing_id` - The listing ID from `list_directory_start`
-/// * `selected_indices` - Frontend indices of selected files
-/// * `include_hidden` - Whether hidden files are visible (affects index mapping)
-/// * `has_parent` - Whether the ".." entry is shown (index 0 in frontend)
-///
-/// # Returns
-/// Vector of absolute file paths for the selected files.
+/// Optimized for drag operations where we only need paths, not full FileEntry objects.
 pub fn get_paths_at_indices(
     listing_id: &str,
     selected_indices: &[usize],
@@ -504,19 +292,9 @@ pub fn get_paths_at_indices(
     Ok(paths)
 }
 
-/// Ends a directory listing and cleans up the cache.
-///
-/// # Arguments
-/// * `listing_id` - The listing ID to clean up
-pub fn list_directory_end(listing_id: &str) {
-    // Stop the file watcher
-    stop_watching(listing_id);
-
-    // Remove from listing cache
-    if let Ok(mut cache) = LISTING_CACHE.write() {
-        cache.remove(listing_id);
-    }
-}
+// ============================================================================
+// Re-sorting
+// ============================================================================
 
 /// Result of re-sorting a directory listing.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -532,19 +310,7 @@ pub struct ResortResult {
 
 /// Re-sorts an existing cached listing in-place.
 ///
-/// This is more efficient than creating a new listing when you just want to change the sort order.
-///
-/// # Arguments
-/// * `listing_id` - The listing ID from `list_directory_start`
-/// * `sort_by` - Column to sort by
-/// * `sort_order` - Ascending or descending
-/// * `cursor_filename` - Optional filename to track; returns its new index after sorting
-/// * `include_hidden` - Whether to include hidden files when calculating cursor index
-/// * `selected_indices` - Optional indices of selected files to track through re-sort
-/// * `all_selected` - If true, all files are selected (optimization to avoid passing huge arrays)
-///
-/// # Returns
-/// A `ResortResult` with the new cursor index and new selected indices.
+/// More efficient than creating a new listing when you just want to change the sort order.
 pub fn resort_listing(
     listing_id: &str,
     sort_by: SortColumn,
@@ -673,638 +439,6 @@ pub(crate) fn get_listings_by_volume_prefix(prefix: &str) -> Vec<(String, String
 }
 
 // ============================================================================
-// Two-phase metadata loading: Fast core data, then extended metadata
-// ============================================================================
-
-/// Lists the contents of a directory with CORE metadata only.
-///
-/// This is significantly faster than `list_directory()` because it skips
-/// macOS-specific metadata (addedAt, openedAt) which require additional system calls.
-///
-/// Use `get_extended_metadata_batch()` to fetch extended metadata later.
-///
-/// # Arguments
-/// * `path` - The directory path to list
-///
-/// # Returns
-/// A vector of FileEntry with `extended_metadata_loaded = false`
-pub fn list_directory_core(path: &Path) -> Result<Vec<FileEntry>, std::io::Error> {
-    benchmark::log_event("list_directory_core START");
-    let overall_start = std::time::Instant::now();
-    let mut entries = Vec::new();
-
-    benchmark::log_event("readdir START");
-    let read_start = std::time::Instant::now();
-    let dir_entries: Vec<_> = fs::read_dir(path)?.collect();
-    let read_dir_time = read_start.elapsed();
-    benchmark::log_event_value("readdir END, count", dir_entries.len());
-
-    benchmark::log_event("stat_loop START");
-    let mut metadata_time = Duration::ZERO;
-    let mut owner_lookup_time = Duration::ZERO;
-
-    for entry in dir_entries {
-        let entry = entry?;
-
-        let meta_start = std::time::Instant::now();
-        let file_type = entry.file_type()?;
-        let is_symlink = file_type.is_symlink();
-
-        // For symlinks, check if the TARGET is a directory
-        let target_is_dir = if is_symlink {
-            fs::metadata(entry.path()).map(|m| m.is_dir()).unwrap_or(false)
-        } else {
-            false
-        };
-
-        // For symlinks, get metadata of the link itself (not target)
-        let metadata = if is_symlink {
-            fs::symlink_metadata(entry.path())
-        } else {
-            entry.metadata()
-        };
-        metadata_time += meta_start.elapsed();
-
-        match metadata {
-            Ok(metadata) => {
-                let name = entry.file_name().to_string_lossy().to_string();
-                let is_dir = metadata.is_dir() || target_is_dir;
-
-                let modified = metadata
-                    .modified()
-                    .ok()
-                    .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-                    .map(|d| d.as_secs());
-
-                let created = metadata
-                    .created()
-                    .ok()
-                    .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-                    .map(|d| d.as_secs());
-
-                let uid = metadata.uid();
-                let gid = metadata.gid();
-
-                let owner_start = std::time::Instant::now();
-                let owner = get_owner_name(uid);
-                let group = get_group_name(gid);
-                owner_lookup_time += owner_start.elapsed();
-
-                // SKIP macOS metadata - that's the key optimization!
-                entries.push(FileEntry {
-                    name: name.clone(),
-                    path: entry.path().to_string_lossy().to_string(),
-                    is_directory: is_dir,
-                    is_symlink,
-                    size: if metadata.is_file() { Some(metadata.len()) } else { None },
-                    modified_at: modified,
-                    created_at: created,
-                    added_at: None,  // Will be loaded later
-                    opened_at: None, // Will be loaded later
-                    permissions: metadata.permissions().mode(),
-                    owner,
-                    group,
-                    icon_id: get_icon_id(is_dir, is_symlink, &name),
-                    extended_metadata_loaded: false, // Not loaded yet!
-                });
-            }
-            Err(_) => {
-                // Permission denied or broken symlink
-                let name = entry.file_name().to_string_lossy().to_string();
-                entries.push(FileEntry {
-                    name: name.clone(),
-                    path: entry.path().to_string_lossy().to_string(),
-                    is_directory: false,
-                    is_symlink,
-                    size: None,
-                    modified_at: None,
-                    created_at: None,
-                    added_at: None,
-                    opened_at: None,
-                    permissions: 0,
-                    owner: String::new(),
-                    group: String::new(),
-                    icon_id: if is_symlink {
-                        "symlink-broken".to_string()
-                    } else {
-                        "file".to_string()
-                    },
-                    extended_metadata_loaded: true, // Nothing to load for broken entries
-                });
-            }
-        }
-    }
-    benchmark::log_event_value("stat_loop END, entries", entries.len());
-
-    // Sort: directories first, then files, both alphabetically (using natural sort)
-    benchmark::log_event("sort START");
-    sort_entries(&mut entries, SortColumn::Name, SortOrder::Ascending);
-    benchmark::log_event("sort END");
-
-    let total_time = overall_start.elapsed();
-    log::debug!(
-        "list_directory_core: path={}, entries={}, read_dir={}ms, metadata={}ms, owner={}ms, total={}ms",
-        path.display(),
-        entries.len(),
-        read_dir_time.as_millis(),
-        metadata_time.as_millis(),
-        owner_lookup_time.as_millis(),
-        total_time.as_millis()
-    );
-    benchmark::log_event("list_directory_core END");
-
-    Ok(entries)
-}
-
-/// Gets metadata for a single file or directory path.
-///
-/// This is used when we need metadata for a single path rather than listing
-/// a directory. Useful for symlink target resolution and volume implementations.
-///
-/// # Arguments
-/// * `path` - Absolute path to the file or directory
-///
-/// # Returns
-/// A FileEntry with metadata for the path
-pub fn get_single_entry(path: &Path) -> Result<FileEntry, std::io::Error> {
-    // Check if it's a symlink first
-    let symlink_meta = fs::symlink_metadata(path)?;
-    let is_symlink = symlink_meta.file_type().is_symlink();
-
-    // For symlinks, check if the target is a directory
-    let target_is_dir = if is_symlink {
-        fs::metadata(path).map(|m| m.is_dir()).unwrap_or(false)
-    } else {
-        false
-    };
-
-    // Use symlink metadata for the entry (not following the link)
-    let metadata = &symlink_meta;
-    let is_dir = metadata.is_dir() || target_is_dir;
-
-    let name = path
-        .file_name()
-        .map(|s| s.to_string_lossy().to_string())
-        .unwrap_or_else(|| path.to_string_lossy().to_string());
-
-    let modified = metadata
-        .modified()
-        .ok()
-        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-        .map(|d| d.as_secs());
-
-    let created = metadata
-        .created()
-        .ok()
-        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-        .map(|d| d.as_secs());
-
-    let uid = metadata.uid();
-    let gid = metadata.gid();
-    let owner = get_owner_name(uid);
-    let group = get_group_name(gid);
-
-    Ok(FileEntry {
-        name: name.clone(),
-        path: path.to_string_lossy().to_string(),
-        is_directory: is_dir,
-        is_symlink,
-        size: if metadata.is_file() { Some(metadata.len()) } else { None },
-        modified_at: modified,
-        created_at: created,
-        added_at: None,
-        opened_at: None,
-        permissions: metadata.permissions().mode(),
-        owner,
-        group,
-        icon_id: get_icon_id(is_dir, is_symlink, &name),
-        extended_metadata_loaded: false,
-    })
-}
-
-/// Fetches extended metadata for a batch of file paths.
-///
-/// This is called after the initial directory listing to populate
-/// macOS-specific metadata (addedAt, openedAt) without blocking initial render.
-///
-/// # Arguments
-/// * `paths` - File paths to fetch extended metadata for
-///
-/// # Returns
-/// Vector of ExtendedMetadata for each path
-#[cfg(target_os = "macos")]
-pub fn get_extended_metadata_batch(paths: Vec<String>) -> Vec<ExtendedMetadata> {
-    use std::path::Path;
-
-    benchmark::log_event_value("get_extended_metadata_batch START, count", paths.len());
-    let result: Vec<ExtendedMetadata> = paths
-        .into_iter()
-        .map(|path_str| {
-            let path = Path::new(&path_str);
-            let macos_meta = crate::file_system::macos_metadata::get_macos_metadata(path);
-            ExtendedMetadata {
-                path: path_str,
-                added_at: macos_meta.added_at,
-                opened_at: macos_meta.opened_at,
-            }
-        })
-        .collect();
-    benchmark::log_event_value("get_extended_metadata_batch END, count", result.len());
-    result
-}
-
-#[cfg(not(target_os = "macos"))]
-pub fn get_extended_metadata_batch(paths: Vec<String>) -> Vec<ExtendedMetadata> {
-    benchmark::log_event_value("get_extended_metadata_batch (non-macOS), count", paths.len());
-    // On non-macOS, there's no extended metadata to fetch
-    paths
-        .into_iter()
-        .map(|path_str| ExtendedMetadata {
-            path: path_str,
-            added_at: None,
-            opened_at: None,
-        })
-        .collect()
-}
-
-// ============================================================================
-// Streaming directory listing implementation
-// ============================================================================
-
-/// Starts a streaming directory listing that returns immediately and emits progress events.
-///
-/// This is non-blocking - the actual directory reading happens in a background task.
-/// Progress is reported via Tauri events every 500ms.
-///
-/// # Arguments
-/// * `app` - Tauri app handle for emitting events
-/// * `volume_id` - The volume ID to use (e.g., "root", "dropbox")
-/// * `path` - The directory path to list
-/// * `include_hidden` - Whether to include hidden files in total count
-/// * `sort_by` - Column to sort by
-/// * `sort_order` - Ascending or descending
-///
-/// # Returns
-/// A `StreamingListingStartResult` with listing ID and initial status.
-pub async fn list_directory_start_streaming(
-    app: tauri::AppHandle,
-    volume_id: &str,
-    path: &Path,
-    include_hidden: bool,
-    sort_by: SortColumn,
-    sort_order: SortOrder,
-    listing_id: String,
-) -> Result<StreamingListingStartResult, std::io::Error> {
-    // Reset benchmark epoch for this navigation
-    benchmark::reset_epoch();
-    benchmark::log_event_value("list_directory_start_streaming CALLED", path.display());
-
-    // Create streaming state with cancellation flag
-    let state = Arc::new(StreamingListingState {
-        cancelled: AtomicBool::new(false),
-    });
-
-    // Store state for cancellation
-    if let Ok(mut cache) = STREAMING_STATE.write() {
-        cache.insert(listing_id.clone(), Arc::clone(&state));
-    }
-
-    // Clone values for the spawned task
-    let listing_id_for_spawn = listing_id.clone();
-    let path_owned = path.to_path_buf();
-    let volume_id_owned = volume_id.to_string();
-    let app_for_spawn = app.clone();
-
-    // Spawn background task
-    tokio::spawn(async move {
-        // Clone again for use after spawn_blocking
-        let listing_id_for_cleanup = listing_id_for_spawn.clone();
-        let app_for_error = app_for_spawn.clone();
-
-        // Run blocking I/O on dedicated thread pool
-        let result = tokio::task::spawn_blocking(move || {
-            read_directory_with_progress(
-                &app_for_spawn,
-                &listing_id_for_spawn,
-                &state,
-                &volume_id_owned,
-                &path_owned,
-                include_hidden,
-                sort_by,
-                sort_order,
-            )
-        })
-        .await;
-
-        // Clean up streaming state
-        if let Ok(mut cache) = STREAMING_STATE.write() {
-            cache.remove(&listing_id_for_cleanup);
-        }
-
-        // Handle task result
-        use tauri::Emitter;
-        match result {
-            Err(e) => {
-                // Task panicked or was cancelled
-                let _ = app_for_error.emit(
-                    "listing-error",
-                    ListingErrorEvent {
-                        listing_id: listing_id_for_cleanup,
-                        message: format!("Task failed: {}", e),
-                    },
-                );
-            }
-            Ok(Err(e)) => {
-                // Function returned an error (e.g., volume not found, permission denied)
-                let _ = app_for_error.emit(
-                    "listing-error",
-                    ListingErrorEvent {
-                        listing_id: listing_id_for_cleanup,
-                        message: e.to_string(),
-                    },
-                );
-            }
-            Ok(Ok(())) => {
-                // Success - read_directory_with_progress already emitted listing-complete
-            }
-        }
-    });
-
-    benchmark::log_event("list_directory_start_streaming RETURNING");
-    Ok(StreamingListingStartResult {
-        listing_id,
-        status: ListingStatus::Loading,
-    })
-}
-
-/// Reads a directory with progress reporting.
-///
-/// This function runs on a blocking thread pool and emits progress events.
-/// Uses the Volume abstraction to support both local filesystem and MTP devices.
-#[allow(
-    clippy::too_many_arguments,
-    reason = "Streaming operation requires many state parameters"
-)]
-fn read_directory_with_progress(
-    app: &tauri::AppHandle,
-    listing_id: &str,
-    state: &Arc<StreamingListingState>,
-    volume_id: &str,
-    path: &Path,
-    include_hidden: bool,
-    sort_by: SortColumn,
-    sort_order: SortOrder,
-) -> Result<(), std::io::Error> {
-    use tauri::Emitter;
-
-    benchmark::log_event("read_directory_with_progress START");
-    log::debug!(
-        "read_directory_with_progress: listing_id={}, volume_id={}, path={}",
-        listing_id,
-        volume_id,
-        path.display()
-    );
-
-    // Emit opening event - this is the slow part for network folders
-    // (SMB connection establishment, directory handle creation, MTP queries)
-    let _ = app.emit(
-        "listing-opening",
-        ListingOpeningEvent {
-            listing_id: listing_id.to_string(),
-        },
-    );
-
-    // Check cancellation before starting
-    if state.cancelled.load(Ordering::Relaxed) {
-        benchmark::log_event("read_directory_with_progress CANCELLED (before read)");
-        let _ = app.emit(
-            "listing-cancelled",
-            ListingCancelledEvent {
-                listing_id: listing_id.to_string(),
-            },
-        );
-        return Ok(());
-    }
-
-    // Get the volume from VolumeManager
-    let volume = crate::file_system::get_volume_manager()
-        .get(volume_id)
-        .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, format!("Volume not found: {}", volume_id)))?;
-
-    // Read directory entries via Volume abstraction
-    // Use polling-based cancellation to remain responsive even when filesystem I/O blocks
-    // (e.g., on slow/stuck network drives like SMB mounts)
-    let read_start = std::time::Instant::now();
-    let path_for_thread = path.to_path_buf();
-    let (tx, rx) = mpsc::channel();
-
-    std::thread::spawn(move || {
-        let result = volume.list_directory(&path_for_thread);
-        let _ = tx.send(result);
-    });
-
-    // Poll for results, checking cancellation between polls
-    let entries_result = loop {
-        if state.cancelled.load(Ordering::Relaxed) {
-            benchmark::log_event("read_directory_with_progress CANCELLED (during read_dir polling)");
-            let _ = app.emit(
-                "listing-cancelled",
-                ListingCancelledEvent {
-                    listing_id: listing_id.to_string(),
-                },
-            );
-            return Ok(());
-        }
-
-        match rx.recv_timeout(CANCELLATION_POLL_INTERVAL) {
-            Ok(result) => break result,
-            Err(mpsc::RecvTimeoutError::Timeout) => continue,
-            Err(mpsc::RecvTimeoutError::Disconnected) => {
-                return Err(std::io::Error::other(
-                    "Directory listing thread terminated unexpectedly",
-                ));
-            }
-        }
-    };
-
-    let mut entries = entries_result.map_err(|e| std::io::Error::other(e.to_string()))?;
-    let read_dir_time = read_start.elapsed();
-    benchmark::log_event_value("read_dir COMPLETE, entries", entries.len());
-
-    // Emit read-complete event (before sorting/caching) so UI can show "All N files loaded"
-    let _ = app.emit(
-        "listing-read-complete",
-        ListingReadCompleteEvent {
-            listing_id: listing_id.to_string(),
-            total_count: entries.len(),
-        },
-    );
-
-    // Check cancellation one more time before finalizing
-    if state.cancelled.load(Ordering::Relaxed) {
-        benchmark::log_event("read_directory_with_progress CANCELLED (after read)");
-        let _ = app.emit(
-            "listing-cancelled",
-            ListingCancelledEvent {
-                listing_id: listing_id.to_string(),
-            },
-        );
-        return Ok(());
-    }
-
-    // Sort entries
-    benchmark::log_event("sort START");
-    sort_entries(&mut entries, sort_by, sort_order);
-    benchmark::log_event("sort END");
-
-    // Calculate counts based on include_hidden setting
-    let total_count = if include_hidden {
-        entries.len()
-    } else {
-        entries.iter().filter(|e| !e.name.starts_with('.')).count()
-    };
-
-    // Calculate max filename width if font metrics are available
-    let max_filename_width = {
-        let font_id = "system-400-12"; // Default font (must match list_directory_start_with_volume)
-        let filenames: Vec<&str> = entries.iter().map(|e| e.name.as_str()).collect();
-        crate::font_metrics::calculate_max_width(&filenames, font_id)
-    };
-
-    // Cache the completed listing, with atomic cancellation check.
-    // We check cancellation WHILE holding the cache lock to avoid a race condition:
-    // without this, a cancel arriving between a check and insert would leave a stale
-    // entry (listDirectoryEnd would try to remove before the entry exists, then this
-    // insert would add it permanently).
-    if let Ok(mut cache) = LISTING_CACHE.write() {
-        // Check cancellation while holding the lock - makes check+insert atomic
-        if state.cancelled.load(Ordering::Relaxed) {
-            benchmark::log_event("read_directory_with_progress CANCELLED (at cache insert)");
-            let _ = app.emit(
-                "listing-cancelled",
-                ListingCancelledEvent {
-                    listing_id: listing_id.to_string(),
-                },
-            );
-            return Ok(());
-        }
-
-        cache.insert(
-            listing_id.to_string(),
-            CachedListing {
-                volume_id: volume_id.to_string(),
-                path: path.to_path_buf(),
-                entries,
-                sort_by,
-                sort_order,
-            },
-        );
-    }
-
-    // Get the volume from VolumeManager to check if it supports watching
-    if let Some(volume) = crate::file_system::get_volume_manager().get(volume_id)
-        && volume.supports_watching()
-        && let Err(e) = start_watching(listing_id, path)
-    {
-        log::warn!("Failed to start watcher: {}", e);
-        // Continue anyway - watcher is optional enhancement
-    }
-
-    // Get volume root for the event (used by frontend to determine if at volume root)
-    let volume_root = crate::file_system::get_volume_manager()
-        .get(volume_id)
-        .map(|v| v.root().to_string_lossy().to_string())
-        .unwrap_or_else(|| "/".to_string());
-
-    // Emit completion event
-    let _ = app.emit(
-        "listing-complete",
-        ListingCompleteEvent {
-            listing_id: listing_id.to_string(),
-            total_count,
-            max_filename_width,
-            volume_root,
-        },
-    );
-
-    benchmark::log_event_value(
-        "read_directory_with_progress COMPLETE, read_dir_time_ms",
-        read_dir_time.as_millis(),
-    );
-    Ok(())
-}
-
-/// Process a single directory entry into a FileEntry.
-/// Returns None if the entry cannot be processed (permissions, etc).
-pub(crate) fn process_dir_entry(entry: &fs::DirEntry) -> Option<FileEntry> {
-    let file_type = entry.file_type().ok()?;
-    let is_symlink = file_type.is_symlink();
-
-    // For symlinks, check if the TARGET is a directory
-    let target_is_dir = if is_symlink {
-        fs::metadata(entry.path()).map(|m| m.is_dir()).unwrap_or(false)
-    } else {
-        false
-    };
-
-    // For symlinks, get metadata of the link itself (not target)
-    let metadata = if is_symlink {
-        fs::symlink_metadata(entry.path()).ok()?
-    } else {
-        entry.metadata().ok()?
-    };
-
-    let name = entry.file_name().to_string_lossy().to_string();
-    let is_dir = metadata.is_dir() || target_is_dir;
-
-    let modified = metadata
-        .modified()
-        .ok()
-        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-        .map(|d| d.as_secs());
-
-    let created = metadata
-        .created()
-        .ok()
-        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-        .map(|d| d.as_secs());
-
-    let uid = metadata.uid();
-    let gid = metadata.gid();
-    let owner = get_owner_name(uid);
-    let group = get_group_name(gid);
-
-    Some(FileEntry {
-        name: name.clone(),
-        path: entry.path().to_string_lossy().to_string(),
-        is_directory: is_dir,
-        is_symlink,
-        size: if metadata.is_file() { Some(metadata.len()) } else { None },
-        modified_at: modified,
-        created_at: created,
-        added_at: None,  // Will be loaded later if needed
-        opened_at: None, // Will be loaded later if needed
-        permissions: metadata.permissions().mode(),
-        owner,
-        group,
-        icon_id: get_icon_id(is_dir, is_symlink, &name),
-        extended_metadata_loaded: false, // Not loaded yet
-    })
-}
-
-/// Cancels an in-progress streaming listing.
-///
-/// Sets the cancellation flag, which will be checked by the background task.
-pub fn cancel_listing(listing_id: &str) {
-    if let Ok(cache) = STREAMING_STATE.read()
-        && let Some(state) = cache.get(listing_id)
-    {
-        state.cancelled.store(true, Ordering::Relaxed);
-        benchmark::log_event_value("cancel_listing", listing_id);
-    }
-}
-
-// ============================================================================
 // Listing statistics for selection info display
 // ============================================================================
 
@@ -1330,14 +464,6 @@ pub struct ListingStats {
 ///
 /// Returns total file/dir counts and sizes. If `selected_indices` is provided,
 /// also returns statistics for the selected items.
-///
-/// # Arguments
-/// * `listing_id` - The listing ID from `list_directory_start`
-/// * `include_hidden` - Whether to include hidden files in calculations
-/// * `selected_indices` - Optional indices of selected files to calculate selection stats
-///
-/// # Returns
-/// Statistics about the listing (totals and optionally selection stats).
 pub fn get_listing_stats(
     listing_id: &str,
     include_hidden: bool,

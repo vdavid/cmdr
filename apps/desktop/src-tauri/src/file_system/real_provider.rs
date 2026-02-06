@@ -1,7 +1,7 @@
 //! Real file system provider implementation.
 
 use super::FileEntry;
-use super::listing::operations;
+use super::listing::reading;
 use super::provider::FileSystemProvider;
 use std::path::Path;
 
@@ -10,6 +10,6 @@ pub struct RealFileSystemProvider;
 
 impl FileSystemProvider for RealFileSystemProvider {
     fn list_directory(&self, path: &Path) -> Result<Vec<FileEntry>, std::io::Error> {
-        operations::list_directory(path)
+        reading::list_directory(path)
     }
 }

@@ -1,6 +1,6 @@
 //! Tests for file system operations
 
-use super::operations::{get_extended_metadata_batch, list_directory_core};
+use super::reading::{get_extended_metadata_batch, list_directory_core};
 use crate::file_system::provider::FileSystemProvider;
 use crate::file_system::real_provider::RealFileSystemProvider;
 use std::fs;
@@ -223,7 +223,7 @@ fn test_cancel_listing_nonexistent_does_not_panic() {
 
 #[test]
 fn test_process_dir_entry_returns_file_entry() {
-    use super::operations::process_dir_entry;
+    use super::reading::process_dir_entry;
 
     let temp_dir = std::env::temp_dir().join("cmdr_process_entry_test");
     fs::create_dir_all(&temp_dir).unwrap();
@@ -251,7 +251,7 @@ fn test_process_dir_entry_returns_file_entry() {
 
 #[test]
 fn test_process_dir_entry_handles_directory() {
-    use super::operations::process_dir_entry;
+    use super::reading::process_dir_entry;
 
     let temp_dir = std::env::temp_dir().join("cmdr_process_dir_test");
     fs::create_dir_all(&temp_dir).unwrap();

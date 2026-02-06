@@ -21,7 +21,7 @@ Files over 500 lines, sorted by urgency. Excluding MCP module (separate effort) 
 | `mtp/connection.rs`               | 3,520 | 🔴 CRIT  | Was "done" but grew 1,260 lines! |
 | `FilePane.svelte`                 | 1,860 | 🔴 HIGH  | Never started                    |
 | `DualPaneExplorer.svelte`         | 1,414 |  🟡 MED  | Split: sorting/copy/folder/dialog extracted, L/R unified |
-| `listing/operations.rs`           | 1,407 |  🟡 MED  | Original plan never executed     |
+| `listing/operations.rs`           |   533 |  ✅ DONE | Split into reading.rs (275) + streaming.rs (418) + operations.rs (533) |
 | `write_operations/volume_copy.rs` | 1,143 |  🟡 MED  | New file, already too big        |
 | `CopyProgressDialog.svelte`       | 1,026 |  🟡 MED  | Never started                    |
 | `commands/file_system.rs`         |   884 |  🟡 MED  | New file                         |
@@ -172,10 +172,11 @@ These are borderline (700-900 lines). Don't prioritize, but split if you're alre
 - [x] `mtp/connection.rs` — file_ops.rs
 - [x] `mtp/connection.rs` — mutation_ops.rs
 - [x] `mtp/connection.rs` — move tests
-- [ ] `listing/operations.rs` — sorting.rs
-- [ ] `listing/operations.rs` — metadata.rs
-- [ ] `listing/operations.rs` — cache.rs
-- [ ] `listing/operations.rs` — streaming.rs
+- [x] `listing/operations.rs` — sorting.rs
+- [x] `listing/operations.rs` — metadata.rs
+- [x] `listing/operations.rs` — cache.rs (as caching.rs)
+- [x] `listing/operations.rs` — streaming.rs (types + impl)
+- [x] `listing/operations.rs` — reading.rs (disk I/O, deduped list_directory/list_directory_core)
 - [ ] `write_operations/volume_copy.rs` — split
 - [ ] `commands/file_system.rs` — split
 
