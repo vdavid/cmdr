@@ -1,6 +1,6 @@
 //! Local POSIX file system volume implementation.
 
-use super::{ConflictInfo, CopyScanResult, SourceItemInfo, SpaceInfo, Volume, VolumeError};
+use super::{CopyScanResult, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError};
 use crate::file_system::listing::{FileEntry, get_single_entry, list_directory_core};
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
@@ -193,7 +193,7 @@ impl Volume for LocalPosixVolume {
         &self,
         source_items: &[SourceItemInfo],
         dest_path: &Path,
-    ) -> Result<Vec<ConflictInfo>, VolumeError> {
+    ) -> Result<Vec<ScanConflict>, VolumeError> {
         let dest_abs = self.resolve(dest_path);
         let mut conflicts = Vec::new();
 
@@ -207,7 +207,7 @@ impl Volume for LocalPosixVolume {
                     .ok()
                     .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok().map(|d| d.as_secs() as i64));
 
-                conflicts.push(ConflictInfo {
+                conflicts.push(ScanConflict {
                     source_path: item.name.clone(),
                     dest_path: dest_file_path.to_string_lossy().to_string(),
                     source_size: item.size,

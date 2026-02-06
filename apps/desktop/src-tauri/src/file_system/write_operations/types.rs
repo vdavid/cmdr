@@ -5,7 +5,7 @@
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
-use crate::file_system::volume::{ConflictInfo as VolumeConflictInfo, SpaceInfo};
+use crate::file_system::volume::{ScanConflict, SpaceInfo};
 
 // Re-export sort types from sorting module
 pub use crate::file_system::listing::{SortColumn, SortOrder};
@@ -528,5 +528,5 @@ pub struct VolumeCopyScanResult {
     /// Available space on destination.
     pub dest_space: SpaceInfo,
     /// Detected conflicts at destination.
-    pub conflicts: Vec<VolumeConflictInfo>,
+    pub conflicts: Vec<ScanConflict>,
 }

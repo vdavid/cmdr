@@ -34,7 +34,7 @@ pub use listing::get_paths_at_indices;
 pub use volume::manager::VolumeManager;
 #[allow(unused_imports, reason = "Public API re-exports for future use")]
 pub use volume::{
-    ConflictInfo, CopyScanResult, InMemoryVolume, LocalPosixVolume, MtpVolume, SourceItemInfo, SpaceInfo, Volume,
+    CopyScanResult, InMemoryVolume, LocalPosixVolume, MtpVolume, ScanConflict, SourceItemInfo, SpaceInfo, Volume,
     VolumeError,
 };
 // Watcher management - init_watcher_manager must be called from lib.rs

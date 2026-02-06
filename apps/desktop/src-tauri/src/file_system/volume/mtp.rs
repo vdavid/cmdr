@@ -3,7 +3,7 @@
 //! Wraps MTP device storage as a Volume, enabling MTP browsing through
 //! the standard file listing pipeline (same icons, sorting, view modes as local files).
 
-use super::{ConflictInfo, CopyScanResult, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream};
+use super::{CopyScanResult, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream};
 use crate::file_system::listing::FileEntry;
 use crate::mtp::connection::{MtpConnectionError, connection_manager};
 use log::debug;
@@ -350,7 +350,7 @@ impl Volume for MtpVolume {
         &self,
         source_items: &[SourceItemInfo],
         dest_path: &Path,
-    ) -> Result<Vec<ConflictInfo>, VolumeError> {
+    ) -> Result<Vec<ScanConflict>, VolumeError> {
         // List destination directory to check for conflicts
         let entries = self.list_directory(dest_path)?;
         let mut conflicts = Vec::new();
@@ -360,7 +360,7 @@ impl Volume for MtpVolume {
             if let Some(existing) = entries.iter().find(|e| e.name == item.name) {
                 // Convert modified_at (milliseconds u64) to i64 seconds
                 let dest_modified = existing.modified_at.map(|ms| (ms / 1000) as i64);
-                conflicts.push(ConflictInfo {
+                conflicts.push(ScanConflict {
                     source_path: item.name.clone(),
                     dest_path: existing.path.clone(),
                     source_size: item.size,

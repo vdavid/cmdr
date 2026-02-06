@@ -7,7 +7,7 @@ use crate::file_system::write_operations::{
     resolve_write_conflict as ops_resolve_write_conflict, start_scan_preview as ops_start_scan_preview,
 };
 use crate::file_system::{
-    ConflictInfo, FileEntry, ListingStartResult, ListingStats, OperationStatus, OperationSummary, ResortResult,
+    FileEntry, ListingStartResult, ListingStats, OperationStatus, OperationSummary, ResortResult, ScanConflict,
     SortColumn, SortOrder, StreamingListingStartResult, VolumeCopyConfig, VolumeCopyScanResult, WriteOperationConfig,
     WriteOperationError, WriteOperationStartResult, cancel_listing as ops_cancel_listing,
     cancel_write_operation as ops_cancel_write_operation, copy_between_volumes as ops_copy_between_volumes,
@@ -745,7 +745,7 @@ pub async fn scan_volume_for_conflicts(
     volume_id: String,
     source_items: Vec<SourceItemInput>,
     dest_path: String,
-) -> Result<Vec<ConflictInfo>, String> {
+) -> Result<Vec<ScanConflict>, String> {
     let volume = get_volume_manager()
         .get(&volume_id)
         .ok_or_else(|| format!("Volume '{}' not found", volume_id))?;

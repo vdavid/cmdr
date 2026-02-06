@@ -21,10 +21,10 @@ pub struct CopyScanResult {
     pub total_bytes: u64,
 }
 
-/// Information about a potential conflict when copying.
+/// A conflict detected during pre-copy scanning: a source item that already exists at the destination.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ConflictInfo {
+pub struct ScanConflict {
     /// Source path (relative to volume root).
     pub source_path: String,
     /// Destination path (relative to volume root).
@@ -228,7 +228,7 @@ pub trait Volume: Send + Sync {
         &self,
         source_items: &[SourceItemInfo],
         dest_path: &Path,
-    ) -> Result<Vec<ConflictInfo>, VolumeError> {
+    ) -> Result<Vec<ScanConflict>, VolumeError> {
         let _ = (source_items, dest_path);
         Err(VolumeError::NotSupported)
     }
