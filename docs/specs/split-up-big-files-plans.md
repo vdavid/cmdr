@@ -19,10 +19,10 @@ Files over 500 lines, sorted by urgency. Excluding MCP module (separate effort) 
 | File                              | Lines | Priority | Status                           |
 |-----------------------------------|------:|:--------:|----------------------------------|
 | `mtp/connection.rs`               | 3,520 | 🔴 CRIT  | Was "done" but grew 1,260 lines! |
-| `FilePane.svelte`                 | 1,860 | 🔴 HIGH  | Never started                    |
+| `FilePane.svelte`                 | 1,360 |  ✅ DONE | Extracted: selection-state, NetworkMountView, MtpConnectionView |
 | `DualPaneExplorer.svelte`         | 1,414 |  🟡 MED  | Split: sorting/copy/folder/dialog extracted, L/R unified |
 | `listing/operations.rs`           |   533 |  ✅ DONE | Split into reading.rs (275) + streaming.rs (418) + operations.rs (533) |
-| `write_operations/volume_copy.rs` | 1,143 |  🟡 MED  | New file, already too big        |
+| `write_operations/volume_copy.rs` |   708 |  ✅ DONE | Split: conflict (197) + strategy (242) + types to types.rs |
 | `CopyProgressDialog.svelte`       | 1,026 |  🟡 MED  | Never started                    |
 | `commands/file_system.rs`         |   884 |  🟡 MED  | New file                         |
 | `viewer/+page.svelte`             |   872 |  🟢 LOW  | Borderline, can wait             |
@@ -115,17 +115,21 @@ This is an emergency. 3.5k lines is absurd.
 
 These need careful prop/callback design. Extract pure logic first, then UI chunks.
 
-### 2.1 `FilePane.svelte` (1,860 → ~700 lines)
+### 2.1 `FilePane.svelte` (1,919 → ~1,360 lines)
 
-**Extract:**
+**Extracted (done):**
 
-| New file               | Content                               | Approach                              |
-|------------------------|---------------------------------------|---------------------------------------|
-| `selection-logic.ts`   | Selection state, range select, toggle | Pure TS module with state object      |
-| `keyboard-handlers.ts` | Brief/Full mode key handlers          | Pure functions taking state+callbacks |
-| `DirectoryLoader.ts`   | loadDirectory(), event setup          | Pure async functions                  |
+| New file                     | Content                                    | Approach                                    |
+|------------------------------|--------------------------------------------|---------------------------------------------|
+| `selection-state.svelte.ts`  | Selection state, range select, toggle      | Factory function with `$state` reactivity   |
+| `NetworkMountView.svelte`    | Network host browse, share mount, errors   | Svelte component with `bind:this` exports   |
+| `MtpConnectionView.svelte`   | MTP auto-connect, error display, retry     | Svelte component (props only, no exports)   |
 
-Keep in FilePane: UI markup, lifecycle, state binding, scrolling
+**Not extracted** (too coupled to FilePane's 30 exports + internal state):
+- `keyboard-handlers.ts` — handlers reference ~10 state vars each, extraction would just move complexity
+- `DirectoryLoader.ts` — loadDirectory() is deeply interleaved with event listeners + state updates
+
+Keep in FilePane: UI markup, lifecycle, state binding, scrolling, keyboard, directory loading
 
 ### 2.2 `DualPaneExplorer.svelte` (1,550 → ~600 lines)
 
@@ -177,14 +181,16 @@ These are borderline (700-900 lines). Don't prioritize, but split if you're alre
 - [x] `listing/operations.rs` — cache.rs (as caching.rs)
 - [x] `listing/operations.rs` — streaming.rs (types + impl)
 - [x] `listing/operations.rs` — reading.rs (disk I/O, deduped list_directory/list_directory_core)
-- [ ] `write_operations/volume_copy.rs` — split
+- [x] `write_operations/volume_copy.rs` — split into volume_conflict.rs (197), volume_strategy.rs (242), types moved to types.rs
 - [ ] `commands/file_system.rs` — split
 
 ### Phase 2 (Svelte/TS)
 
-- [ ] `FilePane.svelte` — selection-logic.ts
-- [ ] `FilePane.svelte` — keyboard-handlers.ts
-- [ ] `FilePane.svelte` — DirectoryLoader.ts
+- [x] `FilePane.svelte` — selection-state.svelte.ts (factory function pattern)
+- [x] `FilePane.svelte` — NetworkMountView.svelte (network host + share mount UI)
+- [x] `FilePane.svelte` — MtpConnectionView.svelte (MTP auto-connect + error UI)
+- [~] `FilePane.svelte` — keyboard-handlers.ts (skipped: too coupled, not worth it)
+- [~] `FilePane.svelte` — DirectoryLoader.ts (skipped: too coupled, not worth it)
 - [x] `DualPaneExplorer.svelte` — copy-operations.ts + new-folder-operations.ts
 - [x] `DualPaneExplorer.svelte` — sorting-handlers.ts (L/R unified!)
 - [x] `DualPaneExplorer.svelte` — DialogManager.svelte (replaces planned CopyDialogManager + dialog-state)

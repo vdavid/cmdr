@@ -5,6 +5,8 @@
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
+use crate::file_system::volume::{ConflictInfo as VolumeConflictInfo, SpaceInfo};
+
 // Re-export sort types from sorting module
 pub use crate::file_system::listing::{SortColumn, SortOrder};
 
@@ -475,4 +477,56 @@ pub struct ScanPreviewCancelledEvent {
 #[serde(rename_all = "camelCase")]
 pub struct ScanPreviewStartResult {
     pub preview_id: String,
+}
+
+// ============================================================================
+// Volume copy types
+// ============================================================================
+
+/// Copy operation configuration for volume-to-volume copy.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VolumeCopyConfig {
+    /// Progress update interval in milliseconds.
+    pub progress_interval_ms: u64,
+    /// How to handle conflicts (skip, overwrite, stop).
+    pub conflict_resolution: ConflictResolution,
+    /// Maximum number of conflicts to return in pre-flight scan.
+    pub max_conflicts_to_show: usize,
+}
+
+impl Default for VolumeCopyConfig {
+    fn default() -> Self {
+        Self {
+            progress_interval_ms: 200,
+            conflict_resolution: ConflictResolution::Stop,
+            max_conflicts_to_show: 100,
+        }
+    }
+}
+
+impl From<&WriteOperationConfig> for VolumeCopyConfig {
+    fn from(config: &WriteOperationConfig) -> Self {
+        Self {
+            progress_interval_ms: config.progress_interval_ms,
+            conflict_resolution: config.conflict_resolution,
+            max_conflicts_to_show: config.max_conflicts_to_show,
+        }
+    }
+}
+
+/// Result of a pre-flight scan for volume copy.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VolumeCopyScanResult {
+    /// Total number of files to copy.
+    pub file_count: usize,
+    /// Total number of directories to create.
+    pub dir_count: usize,
+    /// Total bytes to copy.
+    pub total_bytes: u64,
+    /// Available space on destination.
+    pub dest_space: SpaceInfo,
+    /// Detected conflicts at destination.
+    pub conflicts: Vec<VolumeConflictInfo>,
 }
