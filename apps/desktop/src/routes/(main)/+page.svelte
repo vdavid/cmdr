@@ -329,19 +329,11 @@
             const { pane, by, order } = event.payload as { pane: 'left' | 'right'; by: string; order: string }
             const column = by === 'ext' ? 'extension' : (by as 'name' | 'extension' | 'size' | 'modified' | 'created')
             void explorerRef?.setSort(column, order as 'asc' | 'desc', pane)
-            // Update focus state when MCP targets a specific pane
-            void import('$lib/tauri-commands').then(({ updateFocusedPane }) => {
-                void updateFocusedPane(pane)
-            })
         })
 
         await safeListenTauri('mcp-volume-select', (event) => {
             const { pane, name } = event.payload as { pane: 'left' | 'right'; name: string }
             void explorerRef?.selectVolumeByName(pane, name)
-            // Update focus state when MCP targets a specific pane
-            void import('$lib/tauri-commands').then(({ updateFocusedPane }) => {
-                void updateFocusedPane(pane)
-            })
         })
 
         await safeListenTauri('mcp-select', (event) => {
@@ -352,46 +344,26 @@
                 mode: string
             }
             explorerRef?.handleMcpSelect(pane, start, count, mode)
-            // Update focus state when MCP targets a specific pane
-            void import('$lib/tauri-commands').then(({ updateFocusedPane }) => {
-                void updateFocusedPane(pane)
-            })
         })
 
         await safeListenTauri('mcp-nav-to-path', (event) => {
             const { pane, path } = event.payload as { pane: 'left' | 'right'; path: string }
             explorerRef?.navigateToPath(pane, path)
-            // Update focus state when MCP targets a specific pane
-            void import('$lib/tauri-commands').then(({ updateFocusedPane }) => {
-                void updateFocusedPane(pane)
-            })
         })
 
         await safeListenTauri('mcp-move-cursor', (event) => {
             const { pane, to } = event.payload as { pane: 'left' | 'right'; to: number | string }
             void explorerRef?.moveCursor(pane, to)
-            // Update focus state when MCP targets a specific pane
-            void import('$lib/tauri-commands').then(({ updateFocusedPane }) => {
-                void updateFocusedPane(pane)
-            })
         })
 
         await safeListenTauri('mcp-scroll-to', (event) => {
             const { pane, index } = event.payload as { pane: 'left' | 'right'; index: number }
             explorerRef?.scrollTo(pane, index)
-            // Update focus state when MCP targets a specific pane
-            void import('$lib/tauri-commands').then(({ updateFocusedPane }) => {
-                void updateFocusedPane(pane)
-            })
         })
 
         await safeListenTauri('mcp-set-view-mode', (event) => {
             const { pane, mode } = event.payload as { pane: 'left' | 'right'; mode: string }
             explorerRef?.setViewMode(mode as ViewMode, pane)
-            // Update focus state when MCP targets a specific pane
-            void import('$lib/tauri-commands').then(({ updateFocusedPane }) => {
-                void updateFocusedPane(pane)
-            })
         })
 
         await safeListenTauri('mcp-refresh', () => {

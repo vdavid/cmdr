@@ -9,6 +9,7 @@ use serde_json::{Value, json};
 use tauri::{AppHandle, Emitter, Manager, Runtime};
 
 use super::dialog_state::DialogStateStore;
+use super::pane_state::PaneStateStore;
 use super::protocol::{INTERNAL_ERROR, INVALID_PARAMS};
 use crate::commands::ui::toggle_hidden_files;
 
@@ -104,6 +105,10 @@ fn execute_set_view_mode<R: Runtime>(app: &AppHandle<R>, params: &Value) -> Tool
         return Err(ToolError::invalid_params("mode must be 'brief' or 'full'"));
     }
 
+    if let Some(store) = app.try_state::<PaneStateStore>() {
+        store.set_focused_pane(pane.to_string());
+    }
+
     app.emit("mcp-set-view-mode", json!({"pane": pane, "mode": mode}))
         .map_err(|e| ToolError::internal(e.to_string()))?;
     Ok(json!(format!("OK: Set {pane} pane to {mode} view")))
@@ -134,6 +139,10 @@ fn execute_sort<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
     }
     if !["asc", "desc"].contains(&order) {
         return Err(ToolError::invalid_params("order must be 'asc' or 'desc'"));
+    }
+
+    if let Some(store) = app.try_state::<PaneStateStore>() {
+        store.set_focused_pane(pane.to_string());
     }
 
     app.emit("mcp-sort", json!({"pane": pane, "by": by, "order": order}))
@@ -198,6 +207,10 @@ fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, name: &str, p
                 }
             }
 
+            if let Some(store) = app.try_state::<PaneStateStore>() {
+                store.set_focused_pane(pane.to_string());
+            }
+
             app.emit("mcp-volume-select", json!({"pane": pane, "name": volume_name}))
                 .map_err(|e| ToolError::internal(e.to_string()))?;
             Ok(json!(format!("OK: Switched {pane} pane to volume {volume_name}")))
@@ -219,6 +232,10 @@ fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, name: &str, p
             // Validate that the path exists
             if !Path::new(path).exists() {
                 return Err(ToolError::invalid_params(format!("Path does not exist: {}", path)));
+            }
+
+            if let Some(store) = app.try_state::<PaneStateStore>() {
+                store.set_focused_pane(pane.to_string());
             }
 
             app.emit("mcp-nav-to-path", json!({"pane": pane, "path": path}))
@@ -250,6 +267,10 @@ fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, name: &str, p
                 ));
             }
 
+            if let Some(store) = app.try_state::<PaneStateStore>() {
+                store.set_focused_pane(pane.to_string());
+            }
+
             app.emit("mcp-move-cursor", json!({"pane": pane, "to": to}))
                 .map_err(|e| ToolError::internal(e.to_string()))?;
             Ok(json!(format!("OK: Moved cursor in {pane} pane to {to}")))
@@ -269,6 +290,10 @@ fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, name: &str, p
             }
             if index < 0 {
                 return Err(ToolError::invalid_params("index must be >= 0"));
+            }
+
+            if let Some(store) = app.try_state::<PaneStateStore>() {
+                store.set_focused_pane(pane.to_string());
             }
 
             app.emit("mcp-scroll-to", json!({"pane": pane, "index": index}))
@@ -357,6 +382,10 @@ fn execute_select_command<R: Runtime>(app: &AppHandle<R>, params: &Value) -> Too
         return Err(ToolError::invalid_params(
             "mode must be 'replace', 'add', or 'subtract'",
         ));
+    }
+
+    if let Some(store) = app.try_state::<PaneStateStore>() {
+        store.set_focused_pane(pane.to_string());
     }
 
     app.emit(
