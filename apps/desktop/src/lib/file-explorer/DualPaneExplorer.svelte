@@ -1306,6 +1306,7 @@
 >
     {#if initialized}
         <div class="pane-wrapper" style="width: {leftPaneWidthPercent}%">
+            <!--suppress JSUnresolvedReference -->
             <FilePane
                 bind:this={leftPaneRef}
                 paneId="left"
@@ -1338,6 +1339,7 @@
         </div>
         <PaneResizer onResize={handlePaneResize} onResizeEnd={handlePaneResizeEnd} onReset={handlePaneResizeReset} />
         <div class="pane-wrapper" style="width: {100 - leftPaneWidthPercent}%">
+            <!--suppress JSUnresolvedReference -->
             <FilePane
                 bind:this={rightPaneRef}
                 paneId="right"

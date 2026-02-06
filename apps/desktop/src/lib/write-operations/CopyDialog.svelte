@@ -477,7 +477,7 @@
         flex: 0 0 auto;
         padding: 8px 12px;
         font-size: 13px;
-        font-family: var(--font-system);
+        font-family: var(--font-system) sans-serif;
         background: var(--color-bg-primary);
         border: 1px solid var(--color-border-primary);
         border-radius: 6px;
@@ -504,7 +504,7 @@
         width: 100%;
         padding: 10px 12px;
         font-size: 13px;
-        font-family: var(--font-system);
+        font-family: var(--font-system) sans-serif;
         background: var(--color-bg-primary);
         border: 2px solid var(--color-accent);
         border-radius: 6px;

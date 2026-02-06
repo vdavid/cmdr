@@ -133,8 +133,7 @@
     /** Check if key event should be suppressed (Cmd+A, Cmd+Opt+I in prod) */
     function shouldSuppressKey(e: KeyboardEvent): boolean {
         if (e.metaKey && e.key === 'a') return true
-        if (!import.meta.env.DEV && e.metaKey && e.altKey && e.key === 'i') return true
-        return false
+        return !import.meta.env.DEV && e.metaKey && e.altKey && e.key === 'i'
     }
 
     /** Safe wrapper for Tauri event listeners - handles non-Tauri environment */

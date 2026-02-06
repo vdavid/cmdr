@@ -561,6 +561,7 @@
     }
 
     /* Show hover only when NOT in keyboard mode */
+    /*noinspection CssUnusedSymbol*/
     .volume-dropdown:not(.keyboard-mode) .volume-item:hover,
     .volume-item.is-focused-and-under-cursor {
         background-color: var(--color-cursor-focused-bg);

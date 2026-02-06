@@ -1073,13 +1073,6 @@
         }
     }
 
-    // Handle MTP navigation (selectName is for future use when we implement cursor restoration)
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    function handleMtpNavigate(newPath: string, selectName?: string) {
-        currentPath = newPath
-        onPathChange?.(newPath)
-    }
-
     // Handle network host switching - show the ShareBrowser
     function handleNetworkHostSelect(host: NetworkHost) {
         currentNetworkHost = host
