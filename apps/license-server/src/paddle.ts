@@ -1,3 +1,13 @@
+/** XOR-accumulate comparison that always inspects every byte, preventing timing attacks. */
+function constantTimeEqual(a: string, b: string): boolean {
+    if (a.length !== b.length) return false
+    let mismatch = 0
+    for (let i = 0; i < a.length; i++) {
+        mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i)
+    }
+    return mismatch === 0
+}
+
 /**
  * Verify Paddle webhook signature.
  * See: https://developer.paddle.com/webhooks/signature-verification
@@ -32,8 +42,7 @@ export async function verifyPaddleWebhook(body: string, signatureHeader: string,
         .map((b) => b.toString(16).padStart(2, '0'))
         .join('')
 
-    // Constant-time comparison
-    return signature === expectedSignature
+    return constantTimeEqual(signature, expectedSignature)
 }
 
 /**
