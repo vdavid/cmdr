@@ -19,13 +19,17 @@ export function generateShortCode(): string {
     const chars = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'
     const segments: string[] = []
 
-    for (let s = 0; s < 3; s++) {
-        let segment = ''
-        for (let i = 0; i < 4; i++) {
-            const randomIndex = Math.floor(Math.random() * chars.length)
-            segment += chars[randomIndex]
+    // Rejection sampling: discard bytes that would cause modulo bias (256 % 29 != 0)
+    const maxUnbiased = 256 - (256 % chars.length) // 232
+    let filled = 0
+    while (filled < 12) {
+        const batch = crypto.getRandomValues(new Uint8Array(12 - filled))
+        for (const byte of batch) {
+            if (byte < maxUnbiased && filled < 12) {
+                segments[Math.floor(filled / 4)] = (segments[Math.floor(filled / 4)] ?? '') + chars[byte % chars.length]
+                filled++
+            }
         }
-        segments.push(segment)
     }
 
     return `CMDR-${segments.join('-')}`
