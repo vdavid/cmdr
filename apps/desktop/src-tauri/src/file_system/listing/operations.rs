@@ -99,10 +99,11 @@ pub fn list_directory_start_with_volume(
     // Start watching the directory (only if volume supports it)
     // TODO: Update watcher to be volume-aware
     if volume.supports_watching()
-        && let Err(e) = start_watching(&listing_id, path) {
-            log::warn!("Failed to start watcher: {}", e);
-            // Continue anyway - watcher is optional enhancement
-        }
+        && let Err(e) = start_watching(&listing_id, path)
+    {
+        log::warn!("Failed to start watcher: {}", e);
+        // Continue anyway - watcher is optional enhancement
+    }
 
     // Calculate max filename width if font metrics are available
     let max_filename_width = {

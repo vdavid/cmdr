@@ -704,5 +704,4 @@ mod tests {
         let _ = fs::remove_dir_all(&src_dir);
         let _ = fs::remove_dir_all(&dst_dir);
     }
-
 }
