@@ -17,6 +17,9 @@
         "file-explorer/pane/sorting-handlers.ts": { "reason": "getNewSortOrder tested, rest depends on FilePane refs" },
         "file-explorer/selection/FileIcon.svelte": { "reason": "Simple UI component, display only" },
         "file-explorer/pane/FilePane.svelte": { "reason": "Tested in integration.test.ts, complex component" },
+        "file-explorer/pane/MtpConnectionView.svelte": { "reason": "MTP connection UI, depends on Tauri APIs" },
+        "file-explorer/pane/NetworkMountView.svelte": { "reason": "Network mount UI, depends on Tauri APIs" },
+        "file-explorer/pane/selection-state.svelte.ts": { "reason": "Reactive selection state, tested via FilePane integration" },
         "file-explorer/views/FullList.svelte": {
             "reason": "Logic tested in full-list-utils.ts, component mounting heavy"
         },

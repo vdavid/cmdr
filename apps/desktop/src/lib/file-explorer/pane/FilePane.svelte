@@ -1,6 +1,5 @@
 <script lang="ts">
     import { onDestroy, onMount, tick, untrack } from 'svelte'
-    import { SvelteSet } from 'svelte/reactivity'
     import type {
         DirectoryDiff,
         FileEntry,
@@ -11,16 +10,13 @@
         ListingProgressEvent,
         ListingReadCompleteEvent,
         ListingStats,
-        MountError,
         NetworkHost,
-        ShareInfo,
         SortColumn,
         SortOrder,
         SyncStatus,
     } from '../types'
     import {
         cancelListing,
-        findContainingVolume,
         findFileIndex,
         getFileAt,
         getListingStats,
@@ -30,8 +26,6 @@
         listDirectoryEnd,
         listDirectoryStartStreaming,
         listen,
-        listVolumes,
-        mountNetworkShare,
         onMtpDeviceRemoved,
         openFile,
         openInEditor,
@@ -44,20 +38,19 @@
         type PaneFileEntry,
     } from '$lib/tauri-commands'
     import type { ViewMode } from '$lib/app-status-store'
-    import { getMountTimeoutMs } from '$lib/settings/network-settings'
     import FullList from '../views/FullList.svelte'
     import BriefList from '../views/BriefList.svelte'
     import SelectionInfo from '../selection/SelectionInfo.svelte'
     import LoadingIcon from '$lib/ui/LoadingIcon.svelte'
     import VolumeBreadcrumb from '../navigation/VolumeBreadcrumb.svelte'
     import PermissionDeniedPane from './PermissionDeniedPane.svelte'
+    import NetworkMountView from './NetworkMountView.svelte'
+    import MtpConnectionView from './MtpConnectionView.svelte'
+    import { createSelectionState } from './selection-state.svelte'
     import { getAppLogger } from '$lib/logger'
 
     const log = getAppLogger('fileExplorer')
-    import NetworkBrowser from '../network/NetworkBrowser.svelte'
-    import ShareBrowser from '../network/ShareBrowser.svelte'
-    import { isMtpVolumeId, getMtpDisplayPath, constructMtpPath } from '$lib/mtp'
-    import { connect as connectMtpDevice } from '$lib/mtp/mtp-store.svelte'
+    import { isMtpVolumeId, getMtpDisplayPath } from '$lib/mtp'
     import * as benchmark from '$lib/benchmark'
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
 
@@ -114,19 +107,8 @@
     let error = $state<string | null>(null)
     let cursorIndex = $state(0)
 
-    // Selection state
-    // SAFETY CONTRACT: selectedIndices is the single source of truth for what files are selected.
-    // Both the UI (via props to BriefList/FullList) and file operations (via getSelectedIndices())
-    // read from this same Set. This ensures what the user sees is what operations act on.
-    //
-    // CRITICAL: Always use mutations (.add(), .delete(), .clear()) - never reassign this variable.
-    // SvelteSet only tracks mutations for reactivity. Reassignment breaks UI updates, which could
-    // cause users to see stale selection while operations act on different data.
-    // See: "Selection state consistency" tests in integration.test.ts
-    const selectedIndices: SvelteSet<number> = new SvelteSet()
-    let selectionAnchorIndex = $state<number | null>(null)
-    let selectionEndIndex = $state<number | null>(null)
-    let isDeselecting = $state(false)
+    // Selection state (extracted to selection-state.svelte.ts)
+    const selection = createSelectionState({ onChanged: () => void syncPaneStateToMcp() })
 
     // File under the cursor fetched separately for SelectionInfo
     let entryUnderCursor = $state<FileEntry | null>(null)
@@ -141,8 +123,7 @@
     let fullListRef: FullList | undefined = $state()
     let briefListRef: BriefList | undefined = $state()
     let volumeBreadcrumbRef: VolumeBreadcrumb | undefined = $state()
-    let networkBrowserRef: NetworkBrowser | undefined = $state()
-    let shareBrowserRef: ShareBrowser | undefined = $state()
+    let networkMountViewRef: NetworkMountView | undefined = $state()
 
     // Check if we're viewing the network (special virtual volume)
     const isNetworkView = $derived(volumeId === 'network')
@@ -154,133 +135,7 @@
     // Device-only IDs start with "mtp-" but don't contain ":" (no storage ID)
     const isMtpDeviceOnly = $derived(isMtpView && volumeId.startsWith('mtp-') && !volumeId.includes(':'))
 
-    // MTP connection state for device-only IDs
-    let mtpConnecting = $state(false)
-    let mtpConnectionError = $state<string | null>(null)
-    // Track the device ID we've successfully connected to, to prevent re-triggering auto-connect
-    // while waiting for the parent to update volumeId after onVolumeChange
-    let mtpConnectedDeviceId = $state<string | null>(null)
-
-    // Effect: Reset connected device ID when we're no longer on a device-only MTP volume
-    // This runs when the volume change completes and we switch to a storage-specific ID
-    $effect(() => {
-        if (!isMtpDeviceOnly) {
-            mtpConnectedDeviceId = null
-        }
-    })
-
-    // Effect: Auto-connect when a device-only MTP ID is selected
-    $effect(() => {
-        // Log all conditions for debugging reconnection issues
-        log.debug(
-            'MTP auto-connect effect evaluated: isMtpDeviceOnly={isMtpDeviceOnly}, mtpConnecting={mtpConnecting}, mtpConnectionError={mtpConnectionError}, mtpConnectedDeviceId={mtpConnectedDeviceId}, volumeId={volumeId}',
-            {
-                isMtpDeviceOnly,
-                mtpConnecting,
-                mtpConnectionError,
-                mtpConnectedDeviceId,
-                volumeId,
-            },
-        )
-
-        // Skip if we've already successfully connected to this device (waiting for volume change)
-        if (isMtpDeviceOnly && !mtpConnecting && !mtpConnectionError && mtpConnectedDeviceId !== volumeId) {
-            // Extract device ID from "mtp-{deviceId}" format
-            const deviceId = volumeId // The whole thing is the device ID for device-only format
-
-            log.info('MTP auto-connect conditions met, starting connection to device: {deviceId}', { deviceId })
-            mtpConnecting = true
-            mtpConnectionError = null
-
-            log.info('Auto-connecting to MTP device: {deviceId}', { deviceId })
-
-            void connectMtpDevice(deviceId)
-                .then((result) => {
-                    log.info('MTP connection result: {result}', { result: JSON.stringify(result) })
-                    if (result && result.storages.length > 0) {
-                        // Connection successful, switch to first storage
-                        const storage = result.storages[0]
-                        const newVolumeId = `${deviceId}:${String(storage.id)}`
-                        const newPath = constructMtpPath(deviceId, storage.id)
-                        log.info(
-                            'MTP connected, switching to storage: {storageId}, newVolumeId: {newVolumeId}, hasOnVolumeChange: {hasCallback}',
-                            {
-                                storageId: storage.id,
-                                newVolumeId,
-                                hasCallback: !!onVolumeChange,
-                            },
-                        )
-                        // Mark device as connected to prevent auto-connect re-triggering
-                        // while waiting for the parent to update volumeId
-                        mtpConnectedDeviceId = deviceId
-                        if (onVolumeChange) {
-                            onVolumeChange(newVolumeId, newPath, newPath)
-                            log.info('onVolumeChange called successfully')
-                        } else {
-                            log.warn('onVolumeChange callback not provided!')
-                        }
-                    } else {
-                        mtpConnectionError = 'Device has no accessible storage'
-                        log.warn('Device has no storages')
-                    }
-                })
-                .catch((err: unknown) => {
-                    // Handle various error formats from Tauri
-                    let msg: string
-
-                    // Helper to convert error type to user-friendly message
-                    // Note: Rust serde uses camelCase for enum variants (e.g., "timeout" not "Timeout")
-                    const getMessageForType = (errType: string | undefined): string | undefined => {
-                        switch (errType) {
-                            case 'timeout':
-                                return 'Connection timed out. The device may be slow or unresponsive.'
-                            case 'exclusiveAccess':
-                                return 'Another app is using this device. Run the ptpcamerad workaround.'
-                            case 'deviceNotFound':
-                                return 'Device not found. It may have been unplugged.'
-                            case 'disconnected':
-                                return 'Device was disconnected.'
-                            case 'deviceBusy':
-                                return 'Device is busy. Please try again.'
-                            default:
-                                return undefined
-                        }
-                    }
-
-                    if (err instanceof Error) {
-                        msg = err.message
-                    } else if (typeof err === 'string') {
-                        // Error might be a JSON string - try to parse it
-                        try {
-                            const parsed = JSON.parse(err) as Record<string, unknown>
-                            const typeMsg = getMessageForType(parsed.type as string | undefined)
-                            msg = typeMsg || (parsed.userMessage as string) || (parsed.message as string) || err
-                        } catch {
-                            msg = err
-                        }
-                    } else if (typeof err === 'object' && err !== null) {
-                        // Tauri MTP errors come as objects with type field
-                        const errObj = err as Record<string, unknown>
-                        const typeMsg = getMessageForType(errObj.type as string | undefined)
-                        msg =
-                            typeMsg ||
-                            (errObj.userMessage as string) ||
-                            (errObj.message as string) ||
-                            JSON.stringify(err)
-                    } else {
-                        msg = String(err)
-                    }
-                    log.error('MTP connection failed: {error}', { error: msg })
-                    mtpConnectionError = msg
-                })
-                .finally(() => {
-                    log.info('MTP connection finally block, setting mtpConnecting=false')
-                    mtpConnecting = false
-                })
-        }
-    })
-
-    // Network browsing state - which host is currently active (if any)
+    // Network browsing state - tracked here for history navigation integration
     let currentNetworkHost = $state<NetworkHost | null>(null)
 
     // Export method for keyboard shortcut
@@ -349,7 +204,7 @@
 
     // Get selected indices (for selection preservation during re-sort)
     export function getSelectedIndices(): number[] {
-        return Array.from(selectedIndices)
+        return selection.getSelectedIndices()
     }
 
     // Check if the ".." entry is shown (needed for index adjustment in copy/move operations)
@@ -359,38 +214,32 @@
 
     // Check if all files are selected (optimization for resort)
     export function isAllSelected(): boolean {
-        const selectableCount = hasParent ? effectiveTotalCount - 1 : effectiveTotalCount
-        return selectedIndices.size === selectableCount && selectableCount > 0
+        return selection.isAllSelected(hasParent, effectiveTotalCount)
     }
 
     // Set selected indices directly (for selection preservation after re-sort)
     export function setSelectedIndices(indices: number[]): void {
-        selectedIndices.clear()
-        for (const i of indices) {
-            selectedIndices.add(i)
-        }
-        clearRangeState()
-        void syncPaneStateToMcp()
+        selection.setSelectedIndices(indices)
     }
 
     // Export clearSelection for MCP
-    export { clearSelection }
+    export function clearSelection(): void {
+        selection.clearSelection()
+    }
 
-    // Export selectAll for MCP (wrapper to use the local helper)
-    export { selectAll }
+    // Export selectAll for MCP
+    export function selectAll(): void {
+        selection.selectAll(hasParent, effectiveTotalCount)
+    }
 
     // Export toggle selection at cursor for MCP
     export function toggleSelectionAtCursor(): void {
-        toggleSelectionAt(cursorIndex)
+        selection.toggleAt(cursorIndex, hasParent)
     }
 
     // Export select range for MCP
     export function selectRange(startIndex: number, endIndex: number): void {
-        const indices = getIndicesInRange(startIndex, endIndex)
-        for (const i of indices) {
-            selectedIndices.add(i)
-        }
-        clearRangeState()
+        selection.selectRange(startIndex, endIndex, hasParent)
     }
 
     // Cache generation counter - incremented to force list components to re-fetch
@@ -421,7 +270,7 @@
     export async function getMtpSelectedFiles(): Promise<FileEntry[]> {
         if (!isMtpView || !listingId) return []
         const files: FileEntry[] = []
-        for (const index of selectedIndices) {
+        for (const index of selection.selectedIndices) {
             const backendIndex = hasParent ? index - 1 : index
             if (backendIndex >= 0) {
                 const entry = await getFileAt(listingId, backendIndex, includeHidden)
@@ -441,8 +290,8 @@
     // Set network host state (for history navigation)
     export function setNetworkHost(host: NetworkHost | null): void {
         currentNetworkHost = host
-        mountError = null
-        lastMountAttempt = null
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        networkMountViewRef?.setNetworkHost(host)
     }
 
     // Navigate to parent directory, selecting the folder we came from
@@ -556,7 +405,7 @@
                 files,
                 cursorIndex,
                 viewMode,
-                selectedIndices: Array.from(selectedIndices),
+                selectedIndices: selection.getSelectedIndices(),
                 sortField: sortFieldMap[sortBy] ?? 'name',
                 sortOrder: sortOrder === 'ascending' ? 'asc' : 'desc',
                 totalFiles: effectiveTotal,
@@ -606,126 +455,6 @@
     const effectiveVolumeRoot = $derived(volumeRootFromEvent ?? volumePath)
     const hasParent = $derived(currentPath !== '/' && currentPath !== effectiveVolumeRoot)
 
-    // Helper: Clear all selection state
-    function clearSelection() {
-        selectedIndices.clear()
-        selectionAnchorIndex = null
-        selectionEndIndex = null
-        isDeselecting = false
-        void syncPaneStateToMcp()
-    }
-
-    // Helper: Toggle selection at a given index (returns true if now selected)
-    function toggleSelectionAt(index: number): boolean {
-        // Can't select ".." entry
-        if (hasParent && index === 0) return false
-
-        if (selectedIndices.has(index)) {
-            selectedIndices.delete(index)
-            return false
-        } else {
-            selectedIndices.add(index)
-            return true
-        }
-    }
-
-    // Helper: Get indices in range [a, b] inclusive, skipping ".." entry (index 0 when hasParent)
-    function getIndicesInRange(a: number, b: number): number[] {
-        const start = Math.min(a, b)
-        const end = Math.max(a, b)
-        const indices: number[] = []
-        for (let i = start; i <= end; i++) {
-            // Skip ".." entry
-            if (hasParent && i === 0) continue
-            indices.push(i)
-        }
-        return indices
-    }
-
-    // Helper: Apply range selection from anchor to end
-    // Handles both selection and deselection modes, including range shrinking
-    // When cursor returns to anchor (newEnd === anchor), nothing is selected
-    function applyRangeSelection(newEnd: number) {
-        if (selectionAnchorIndex === null) return
-
-        // When cursor returns to anchor, range is empty (nothing selected)
-        const rangeIsEmpty = newEnd === selectionAnchorIndex
-        const newRange = rangeIsEmpty ? [] : getIndicesInRange(selectionAnchorIndex, newEnd)
-
-        if (isDeselecting) {
-            // Deselection mode: remove items in range
-            for (const i of newRange) {
-                selectedIndices.delete(i)
-            }
-        } else {
-            // Selection mode: add items in range
-            for (const i of newRange) {
-                selectedIndices.add(i)
-            }
-        }
-
-        // Handle range shrinking: if old range was larger, clear the difference
-        if (selectionEndIndex !== null) {
-            const oldRange =
-                selectionEndIndex === selectionAnchorIndex
-                    ? []
-                    : getIndicesInRange(selectionAnchorIndex, selectionEndIndex)
-            for (const i of oldRange) {
-                if (!newRange.includes(i)) {
-                    if (isDeselecting) {
-                        // In deselect mode, shrinking means we stop deselecting those items
-                        // They stay in whatever state they were before this selection action
-                        // Since we track from start, we need to re-add them if they were selected
-                        // For simplicity, in deselect mode we just keep them deselected
-                    } else {
-                        // In select mode, shrinking means we deselect the items no longer in range
-                        selectedIndices.delete(i)
-                    }
-                }
-            }
-        }
-
-        selectionEndIndex = newEnd
-    }
-
-    // Helper: Start or continue range selection
-    function handleShiftNavigation(newIndex: number) {
-        // Set anchor if not already set (use current cursor position before moving)
-        if (selectionAnchorIndex === null) {
-            selectionAnchorIndex = cursorIndex
-            // Determine if we're in deselect mode (anchor was already selected)
-            isDeselecting = selectedIndices.has(cursorIndex)
-        }
-
-        // Apply the range selection
-        applyRangeSelection(newIndex)
-    }
-
-    // Helper: Clear anchor/end on non-shift navigation (selection remains)
-    function clearRangeState() {
-        selectionAnchorIndex = null
-        selectionEndIndex = null
-        isDeselecting = false
-    }
-
-    // Helper: Select all files (excluding ".." entry)
-    function selectAll() {
-        selectedIndices.clear()
-        const startIndex = hasParent ? 1 : 0 // Skip ".." entry
-        for (let i = startIndex; i < effectiveTotalCount; i++) {
-            selectedIndices.add(i)
-        }
-        clearRangeState()
-        void syncPaneStateToMcp()
-    }
-
-    // Helper: Deselect all files
-    function deselectAll() {
-        selectedIndices.clear()
-        clearRangeState()
-        void syncPaneStateToMcp()
-    }
-
     // Effective total count includes ".." entry if not at root
     const effectiveTotalCount = $derived(hasParent ? totalCount + 1 : totalCount)
 
@@ -774,7 +503,7 @@
         finalizingCount = undefined
         error = null
         syncStatusMap = {}
-        clearSelection()
+        selection.clearSelection()
         totalCount = 0 // Reset to show empty list immediately
         entryUnderCursor = null // Clear old under-the-cursor entry info
 
@@ -997,7 +726,9 @@
         try {
             // Convert selected indices to backend indices (adjust for ".." entry)
             const backendIndices =
-                selectedIndices.size > 0 ? Array.from(selectedIndices).map((i) => (hasParent ? i - 1 : i)) : undefined
+                selection.selectedIndices.size > 0
+                    ? Array.from(selection.selectedIndices).map((i) => (hasParent ? i - 1 : i))
+                    : undefined
 
             listingStats = await getListingStats(listingId, includeHidden, backendIndices)
         } catch {
@@ -1019,9 +750,9 @@
 
     function handleSelect(index: number, shiftKey = false) {
         if (shiftKey) {
-            handleShiftNavigation(index)
+            selection.handleShiftNavigation(index, cursorIndex, hasParent)
         } else {
-            clearRangeState()
+            selection.clearRangeState()
         }
         cursorIndex = index
         onRequestFocus?.()
@@ -1073,96 +804,12 @@
         }
     }
 
-    // Handle network host switching - show the ShareBrowser
-    function handleNetworkHostSelect(host: NetworkHost) {
+    // Handle network host change from NetworkMountView
+    function handleNetworkHostChange(host: NetworkHost | null) {
         currentNetworkHost = host
         onNetworkHostChange?.(host)
     }
 
-    // Handle going back from ShareBrowser to network host list
-    function handleNetworkBack() {
-        currentNetworkHost = null
-        mountError = null
-        lastMountAttempt = null
-        onNetworkHostChange?.(null)
-    }
-
-    // Handle going back from mount error to share list
-    function handleMountErrorBack() {
-        mountError = null
-        // Stay on the share list (currentNetworkHost remains set)
-    }
-
-    // Mounting state
-    let isMounting = $state(false)
-    let mountError = $state<MountError | null>(null)
-
-    // Track last mount attempt for retry
-    let lastMountAttempt = $state<{
-        share: ShareInfo
-        credentials: { username: string; password: string } | null
-    } | null>(null)
-
-    // Handle share selection from ShareBrowser - mount and navigate
-    async function handleShareSelect(share: ShareInfo, credentials: { username: string; password: string } | null) {
-        if (!currentNetworkHost) return
-
-        // Store for retry
-        lastMountAttempt = { share, credentials }
-
-        isMounting = true
-        mountError = null
-
-        try {
-            // Get server address - prefer IP, fall back to hostname
-            const server = currentNetworkHost.ipAddress ?? currentNetworkHost.hostname ?? currentNetworkHost.name
-
-            // Use provided credentials if available
-            const result = await mountNetworkShare(
-                server,
-                share.name,
-                credentials?.username ?? null,
-                credentials?.password ?? null,
-                getMountTimeoutMs(),
-            )
-
-            // Navigate to the mounted share
-            // Clear current network host first
-            currentNetworkHost = null
-            lastMountAttempt = null
-
-            // The mount path is typically /Volumes/<ShareName>
-            const mountPath = result.mountPath
-
-            // Refresh the volume list first - the new mount needs to be recognized
-            await listVolumes()
-
-            // Find the actual volume for the mounted path
-            // This ensures proper breadcrumb display and volume context
-            const mountedVolume = await findContainingVolume(mountPath)
-
-            if (mountedVolume) {
-                // Use the real volume ID and path from the system
-                onVolumeChange?.(mountedVolume.id, mountedVolume.path, mountPath)
-            } else {
-                // Fallback: use mount path as both volume path and target
-                // This can happen if the volume list hasn't refreshed yet
-                onVolumeChange?.(mountPath, mountPath, mountPath)
-            }
-        } catch (e) {
-            mountError = e as MountError
-            log.error('Mount failed: {error}', { error: mountError })
-        } finally {
-            isMounting = false
-        }
-    }
-
-    // Retry last mount attempt
-    function handleMountRetry() {
-        if (lastMountAttempt) {
-            void handleShareSelect(lastMountAttempt.share, lastMountAttempt.credentials)
-        }
-    }
     // Helper: Handle navigation result by updating cursor index and scrolling
     // If shiftKey is true, handles range selection; otherwise clears range state
     function applyNavigation(
@@ -1171,9 +818,9 @@
         shiftKey = false,
     ) {
         if (shiftKey) {
-            handleShiftNavigation(newIndex)
+            selection.handleShiftNavigation(newIndex, cursorIndex, hasParent)
         } else {
-            clearRangeState()
+            selection.clearRangeState()
         }
         cursorIndex = newIndex
         listRef?.scrollToIndex(newIndex)
@@ -1237,31 +884,20 @@
         // Space - toggle selection at cursor
         if (e.key === ' ') {
             e.preventDefault()
-            toggleSelectionAt(cursorIndex)
+            selection.toggleAt(cursorIndex, hasParent)
             return true
         }
         // Cmd+A - select all (Cmd+Shift+A - deselect all)
         if (e.key === 'a' && e.metaKey) {
             e.preventDefault()
             if (e.shiftKey) {
-                deselectAll()
+                selection.deselectAll()
             } else {
-                selectAll()
+                selection.selectAll(hasParent, effectiveTotalCount)
             }
             return true
         }
         return false
-    }
-
-    // Helper: Delegate to network components when in network view
-    function handleNetworkKeyDown(e: KeyboardEvent): void {
-        if (currentNetworkHost) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            shareBrowserRef?.handleKeyDown(e)
-        } else {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            networkBrowserRef?.handleKeyDown(e)
-        }
     }
 
     /** Gets the file entry under the cursor from the current list view */
@@ -1274,7 +910,8 @@
     // Exported so DualPaneExplorer can forward keyboard events
     export function handleKeyDown(e: KeyboardEvent) {
         if (isNetworkView) {
-            handleNetworkKeyDown(e)
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            networkMountViewRef?.handleKeyDown(e)
             return
         }
 
@@ -1320,7 +957,7 @@
     // This ensures a new Shift+navigation starts fresh selection from current cursor
     export function handleKeyUp(e: KeyboardEvent) {
         if (e.key === 'Shift') {
-            clearRangeState()
+            selection.clearRangeState()
         }
     }
 
@@ -1403,7 +1040,7 @@
 
     // Re-fetch listing stats when selection changes
     $effect(() => {
-        void selectedIndices.size // Track selection changes
+        void selection.selectedIndices.size // Track selection changes
         if (listingId && !loading) {
             void fetchListingStats()
         }
@@ -1591,66 +1228,16 @@
     </div>
     <div class="content">
         {#if isNetworkView}
-            {#if isMounting}
-                <div class="mounting-state">
-                    <span class="spinner"></span>
-                    <span class="mounting-text">Mounting {currentNetworkHost?.name ?? 'share'}...</span>
-                </div>
-            {:else if mountError}
-                <div class="mount-error-state">
-                    <div class="error-icon">❌</div>
-                    <div class="error-title">Couldn't mount share</div>
-                    <div class="error-message">{mountError.message}</div>
-                    <div class="error-actions">
-                        <button type="button" class="btn" onclick={handleMountRetry}>Try again</button>
-                        <button type="button" class="btn" onclick={handleMountErrorBack}>Back</button>
-                    </div>
-                </div>
-            {:else if currentNetworkHost}
-                <ShareBrowser
-                    bind:this={shareBrowserRef}
-                    host={currentNetworkHost}
-                    {isFocused}
-                    onShareSelect={handleShareSelect}
-                    onBack={handleNetworkBack}
-                />
-            {:else}
-                <NetworkBrowser
-                    bind:this={networkBrowserRef}
-                    {paneId}
-                    {isFocused}
-                    onHostSelect={handleNetworkHostSelect}
-                />
-            {/if}
+            <NetworkMountView
+                bind:this={networkMountViewRef}
+                {paneId}
+                {isFocused}
+                initialNetworkHost={currentNetworkHost}
+                {onVolumeChange}
+                onNetworkHostChange={handleNetworkHostChange}
+            />
         {:else if isMtpDeviceOnly}
-            <!-- MTP device selected but not yet connected -->
-            <div class="mtp-connecting">
-                {#if mtpConnecting}
-                    <div class="connecting-spinner">
-                        <div class="spinner"></div>
-                        <span>Connecting to device...</span>
-                    </div>
-                {:else if mtpConnectionError}
-                    <div class="mtp-error">
-                        <span class="error-icon">⚠</span>
-                        <span class="error-message">{mtpConnectionError}</span>
-                        <button
-                            type="button"
-                            class="btn"
-                            onclick={() => {
-                                log.info(
-                                    'MTP "Try again" clicked. Clearing error to trigger auto-connect. volumeId={volumeId}, isMtpDeviceOnly={isMtpDeviceOnly}, mtpConnectedDeviceId={mtpConnectedDeviceId}',
-                                    { volumeId, isMtpDeviceOnly, mtpConnectedDeviceId },
-                                )
-                                mtpConnectionError = null
-                                // Also reset mtpConnectedDeviceId to allow re-triggering auto-connect
-                                // even if we previously "connected" to this device
-                                mtpConnectedDeviceId = null
-                            }}>Try again</button
-                        >
-                    </div>
-                {/if}
-            </div>
+            <MtpConnectionView {volumeId} {onVolumeChange} />
         {:else if loading}
             <LoadingIcon {openingFolder} loadedCount={loadingCount} {finalizingCount} showCancelHint={true} />
         {:else if isPermissionDenied}
@@ -1667,7 +1254,7 @@
                 {cursorIndex}
                 {isFocused}
                 {syncStatusMap}
-                {selectedIndices}
+                selectedIndices={selection.selectedIndices}
                 {hasParent}
                 {maxFilenameWidth}
                 {sortBy}
@@ -1694,7 +1281,7 @@
                 {cursorIndex}
                 {isFocused}
                 {syncStatusMap}
-                {selectedIndices}
+                selectedIndices={selection.selectedIndices}
                 {hasParent}
                 {sortBy}
                 {sortOrder}
@@ -1719,7 +1306,7 @@
             entry={entryUnderCursor}
             currentDirModifiedAt={undefined}
             stats={listingStats}
-            selectedCount={selectedIndices.size}
+            selectedCount={selection.selectedIndices.size}
         />
     {/if}
 </div>
@@ -1767,153 +1354,5 @@
         color: var(--color-error);
         text-align: center;
         padding: var(--spacing-md);
-    }
-
-    .mounting-state {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        gap: 12px;
-        color: var(--color-text-secondary);
-    }
-
-    .mounting-state .spinner {
-        width: 24px;
-        height: 24px;
-        border: 3px solid var(--color-border-primary);
-        border-top-color: var(--color-accent);
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-        to {
-            transform: rotate(360deg);
-        }
-    }
-
-    .mounting-text {
-        font-size: var(--font-size-sm);
-    }
-
-    .mount-error-state {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        padding: 24px;
-        gap: 12px;
-        color: var(--color-text-secondary);
-    }
-
-    .mount-error-state .error-icon {
-        font-size: 32px;
-    }
-
-    .mount-error-state .error-title {
-        font-size: 16px;
-        font-weight: 500;
-        color: var(--color-text-primary);
-    }
-
-    .mount-error-state .error-message {
-        font-size: var(--font-size-sm);
-        color: var(--color-text-tertiary);
-        text-align: center;
-        height: auto;
-        padding: 0;
-    }
-
-    .mount-error-state .error-actions {
-        display: flex;
-        gap: 8px;
-        margin-top: 8px;
-    }
-
-    .mount-error-state .btn {
-        padding: 8px 16px;
-        border: 1px solid var(--color-border-primary);
-        border-radius: 6px;
-        background-color: var(--color-bg-secondary);
-        color: var(--color-text-primary);
-        font-size: var(--font-size-sm);
-        cursor: pointer;
-        transition: background-color 0.15s ease;
-    }
-
-    .mount-error-state .btn:hover {
-        background-color: var(--color-bg-hover);
-    }
-
-    /* MTP connecting state */
-    .mtp-connecting {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        flex: 1;
-        gap: 12px;
-        padding: 24px;
-    }
-
-    .connecting-spinner {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 12px;
-        color: var(--color-text-secondary);
-        font-size: var(--font-size-sm);
-    }
-
-    .connecting-spinner .spinner {
-        width: 24px;
-        height: 24px;
-        border: 2px solid var(--color-border-primary);
-        border-top-color: var(--color-accent);
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-        to {
-            transform: rotate(360deg);
-        }
-    }
-
-    .mtp-error {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 12px;
-        text-align: center;
-    }
-
-    .mtp-error .error-icon {
-        font-size: 32px;
-    }
-
-    .mtp-error .error-message {
-        color: var(--color-text-tertiary);
-        font-size: var(--font-size-sm);
-        height: auto;
-        padding: 0;
-    }
-
-    .mtp-error .btn {
-        padding: 8px 16px;
-        border: 1px solid var(--color-border-primary);
-        border-radius: 6px;
-        background-color: var(--color-bg-secondary);
-        color: var(--color-text-primary);
-        font-size: var(--font-size-sm);
-        cursor: pointer;
-        transition: background-color 0.15s ease;
-    }
-
-    .mtp-error .btn:hover {
-        background-color: var(--color-bg-hover);
     }
 </style>
