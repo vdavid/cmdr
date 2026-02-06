@@ -7,6 +7,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
+use std::time::Duration;
 use uuid::Uuid;
 
 #[cfg(target_os = "macos")]
@@ -356,11 +357,13 @@ pub(super) fn resolve_conflict(
                 },
             );
 
-            // Wait for user to call resolve_write_conflict
+            // Wait for user to call resolve_write_conflict.
+            // The frontend cancels the operation if the dialog is destroyed, so this timeout
+            // is only a safety net for when the frontend is completely dead (crash/hang).
             let guard = state.conflict_mutex.lock().unwrap();
-            let _guard = state
+            let (_guard, wait_result) = state
                 .conflict_condvar
-                .wait_while(guard, |_| {
+                .wait_timeout_while(guard, Duration::from_secs(300), |_| {
                     // Keep waiting while:
                     // 1. No pending resolution
                     // 2. Not cancelled
@@ -369,6 +372,13 @@ pub(super) fn resolve_conflict(
                     !has_resolution && !is_cancelled
                 })
                 .unwrap();
+
+            // Safety net: if we timed out without a resolution, cancel
+            if wait_result.timed_out() {
+                return Err(WriteOperationError::Cancelled {
+                    message: "Conflict resolution timed out — frontend may have disconnected".to_string(),
+                });
+            }
 
             // Check if cancelled
             if state.cancelled.load(Ordering::Relaxed) {

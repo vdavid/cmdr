@@ -420,6 +420,11 @@
     })
 
     onDestroy(() => {
+        // If destroyed while a conflict is pending, cancel the operation
+        // so the backend thread doesn't block forever on the condvar
+        if (conflictEvent && operationId) {
+            void cancelWriteOperation(operationId, false)
+        }
         cleanup()
     })
 </script>
