@@ -34,12 +34,15 @@ pub use listing::get_paths_at_indices;
 pub use volume::manager::VolumeManager;
 #[allow(unused_imports, reason = "Public API re-exports for future use")]
 pub use volume::{
-    CopyScanResult, InMemoryVolume, LocalPosixVolume, MtpVolume, ScanConflict, SourceItemInfo, SpaceInfo, Volume,
-    VolumeError,
+    CopyScanResult, InMemoryVolume, LocalPosixVolume, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError,
 };
+#[cfg(target_os = "macos")]
+#[allow(unused_imports, reason = "Public API re-exports for future use")]
+pub use volume::MtpVolume;
 // Watcher management - init_watcher_manager must be called from lib.rs
 pub use watcher::{init_watcher_manager, update_debounce_ms};
 // Diff types for file watching (used by MTP module for unified diff events)
+#[cfg(target_os = "macos")]
 pub(crate) use watcher::{DirectoryDiff, compute_diff};
 // Re-export write operation types
 pub use write_operations::{
@@ -68,22 +71,24 @@ pub fn init_volume_manager() {
     VOLUME_MANAGER.register("root", root_volume);
     VOLUME_MANAGER.set_default("root");
 
-    // Register attached volumes (external drives)
-    let attached = crate::volumes::get_attached_volumes();
-    log::info!("Registering {} attached volume(s)", attached.len());
-    for location in attached {
-        let volume = Arc::new(LocalPosixVolume::new(&location.name, &location.path));
-        VOLUME_MANAGER.register(&location.id, volume);
-        log::info!("  Registered attached volume: {} -> {}", location.id, location.path);
-    }
+    // Register attached volumes and cloud drives (macOS only)
+    #[cfg(target_os = "macos")]
+    {
+        let attached = crate::volumes::get_attached_volumes();
+        log::info!("Registering {} attached volume(s)", attached.len());
+        for location in attached {
+            let volume = Arc::new(LocalPosixVolume::new(&location.name, &location.path));
+            VOLUME_MANAGER.register(&location.id, volume);
+            log::info!("  Registered attached volume: {} -> {}", location.id, location.path);
+        }
 
-    // Register cloud drives
-    let cloud = crate::volumes::get_cloud_drives();
-    log::info!("Registering {} cloud drive(s)", cloud.len());
-    for location in cloud {
-        let volume = Arc::new(LocalPosixVolume::new(&location.name, &location.path));
-        VOLUME_MANAGER.register(&location.id, volume);
-        log::info!("  Registered cloud drive: {} -> {}", location.id, location.path);
+        let cloud = crate::volumes::get_cloud_drives();
+        log::info!("Registering {} cloud drive(s)", cloud.len());
+        for location in cloud {
+            let volume = Arc::new(LocalPosixVolume::new(&location.name, &location.path));
+            VOLUME_MANAGER.register(&location.id, volume);
+            log::info!("  Registered cloud drive: {} -> {}", location.id, location.path);
+        }
     }
 }
 

@@ -23,7 +23,9 @@ pub use streaming::{StreamingListingStartResult, cancel_listing, list_directory_
 pub use operations::get_paths_at_indices;
 
 // Internal re-exports for file_system module internals (pub(crate) for crate-internal use)
-pub(crate) use operations::{get_listing_entries, get_listings_by_volume_prefix, update_listing_entries};
+pub(crate) use operations::{get_listing_entries, update_listing_entries};
+#[cfg(target_os = "macos")]
+pub(crate) use operations::get_listings_by_volume_prefix;
 
 #[cfg(test)]
 mod hidden_files_test;
