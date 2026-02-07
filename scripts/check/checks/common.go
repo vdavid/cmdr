@@ -188,6 +188,107 @@ func Pluralize(count int, singular, plural string) string {
 	return plural
 }
 
+// runPrettierCheck runs Prettier formatting check/fix for a given directory.
+// extensions are the file extensions to count (e.g., []string{"*.ts", "*.svelte", "*.css", "*.js"}).
+func runPrettierCheck(ctx *CheckContext, dir string, extensions []string) (CheckResult, error) {
+	// Count files that prettier would check
+	findArgs := buildFindArgs("src", extensions)
+	findCmd := exec.Command("find", findArgs...)
+	findCmd.Dir = dir
+	findOutput, _ := RunCommand(findCmd, true)
+	fileCount := 0
+	if strings.TrimSpace(findOutput) != "" {
+		fileCount = len(strings.Split(strings.TrimSpace(findOutput), "\n"))
+	}
+
+	// Check which files need formatting (--list-different lists them)
+	// Note: prettier exits with code 1 if files differ, so we ignore the error
+	// Prettier's default behavior respects .gitignore files in current dir and parents
+	checkCmd := exec.Command("pnpm", "exec", "prettier", "--list-different", ".")
+	checkCmd.Dir = dir
+	checkOutput, _ := RunCommand(checkCmd, true)
+
+	// Parse files that need formatting
+	var needsFormat []string
+	if strings.TrimSpace(checkOutput) != "" {
+		needsFormat = strings.Split(strings.TrimSpace(checkOutput), "\n")
+	}
+
+	if ctx.CI {
+		if len(needsFormat) > 0 {
+			return CheckResult{}, fmt.Errorf("code is not formatted, run pnpm format locally\n%s", indentOutput(checkOutput))
+		}
+		return Success(fmt.Sprintf("%d %s already formatted", fileCount, Pluralize(fileCount, "file", "files"))), nil
+	}
+
+	// Non-CI mode: format if needed
+	if len(needsFormat) > 0 {
+		fmtCmd := exec.Command("pnpm", "format")
+		fmtCmd.Dir = dir
+		output, err := RunCommand(fmtCmd, true)
+		if err != nil {
+			return CheckResult{}, fmt.Errorf("prettier formatting failed\n%s", indentOutput(output))
+		}
+		return SuccessWithChanges(fmt.Sprintf("Formatted %d of %d %s", len(needsFormat), fileCount, Pluralize(fileCount, "file", "files"))), nil
+	}
+
+	return Success(fmt.Sprintf("%d %s already formatted", fileCount, Pluralize(fileCount, "file", "files"))), nil
+}
+
+// runESLintCheck runs ESLint check/fix for a given directory.
+// extensions are the file extensions to count (e.g., []string{"*.ts", "*.svelte", "*.js"}).
+// If requireConfig is true, skips when eslint.config.js is missing.
+func runESLintCheck(ctx *CheckContext, dir string, extensions []string, requireConfig bool) (CheckResult, error) {
+	if requireConfig {
+		if _, err := os.Stat(filepath.Join(dir, "eslint.config.js")); os.IsNotExist(err) {
+			return Skipped("no eslint.config.js"), nil
+		}
+	}
+
+	// Count lintable files
+	findArgs := buildFindArgs("src", extensions)
+	findCmd := exec.Command("find", findArgs...)
+	findCmd.Dir = dir
+	findOutput, _ := RunCommand(findCmd, true)
+	fileCount := 0
+	if strings.TrimSpace(findOutput) != "" {
+		fileCount = len(strings.Split(strings.TrimSpace(findOutput), "\n"))
+	}
+
+	var cmd *exec.Cmd
+	if ctx.CI {
+		cmd = exec.Command("pnpm", "lint")
+	} else {
+		cmd = exec.Command("pnpm", "lint:fix")
+	}
+	cmd.Dir = dir
+	output, err := RunCommand(cmd, true)
+	if err != nil {
+		if ctx.CI {
+			return CheckResult{}, fmt.Errorf("lint errors found, run pnpm lint:fix locally\n%s", indentOutput(output))
+		}
+		return CheckResult{}, fmt.Errorf("eslint found unfixable errors\n%s", indentOutput(output))
+	}
+
+	if fileCount > 0 {
+		return Success(fmt.Sprintf("%d %s passed", fileCount, Pluralize(fileCount, "file", "files"))), nil
+	}
+	return Success("All files passed"), nil
+}
+
+// buildFindArgs constructs arguments for a find command to locate files with given extensions.
+func buildFindArgs(searchDir string, extensions []string) []string {
+	args := []string{searchDir, "-type", "f", "("}
+	for i, ext := range extensions {
+		if i > 0 {
+			args = append(args, "-o")
+		}
+		args = append(args, "-name", ext)
+	}
+	args = append(args, ")")
+	return args
+}
+
 // GetGoDirectories returns all directories in the repo that contain Go code.
 // Each returned path is relative to rootDir.
 func GetGoDirectories() []string {
