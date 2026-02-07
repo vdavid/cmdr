@@ -313,8 +313,6 @@
     let loadGeneration = 0
     // Track last sequence for file watcher diffs
     let lastSequence = 0
-    let unlisten: UnlistenFn | undefined
-    let unlistenMenuAction: UnlistenFn | undefined
     // Streaming event listeners
     let unlistenOpening: UnlistenFn | undefined
     let unlistenProgress: UnlistenFn | undefined
@@ -328,8 +326,6 @@
     // Finalizing state (read_dir done, now sorting/caching)
     let finalizingCount = $state<number | undefined>(undefined)
     let unlistenReadComplete: UnlistenFn | undefined
-    // MTP device removal listener
-    let unlistenMtpRemoved: UnlistenFn | undefined
     // Polling interval for sync status (visible files only)
     let syncPollInterval: ReturnType<typeof setInterval> | undefined
     const SYNC_POLL_INTERVAL_MS = 2000 // Poll every 2 seconds
@@ -1058,7 +1054,7 @@
 
     // Listen for file watcher diff events
     $effect(() => {
-        void listen<DirectoryDiff>('directory-diff', (event) => {
+        const listenerPromise = listen<DirectoryDiff>('directory-diff', (event) => {
             const diff = event.payload
             // Only process diffs for our current listing
             if (diff.listingId !== listingId) return
@@ -1080,21 +1076,19 @@
                 void fetchEntryUnderCursor()
             })
         })
-            .then((unsub) => {
-                unlisten = unsub
-            })
-            .catch(() => {
-                // Ignore - file watching is optional enhancement
-            })
 
         return () => {
-            unlisten?.()
+            void listenerPromise
+                .then((unsub) => {
+                    unsub()
+                })
+                .catch(() => {})
         }
     })
 
     // Listen for menu action events
     $effect(() => {
-        void listen<string>('menu-action', (event) => {
+        const listenerPromise = listen<string>('menu-action', (event) => {
             const action = event.payload
             if (action === 'open') {
                 // Use the list component's cached entry for consistency
@@ -1106,13 +1100,13 @@
                 }
             }
         })
-            .then((unsub) => {
-                unlistenMenuAction = unsub
-            })
-            .catch(() => {})
 
         return () => {
-            unlistenMenuAction?.()
+            void listenerPromise
+                .then((unsub) => {
+                    unsub()
+                })
+                .catch(() => {})
         }
     })
 
@@ -1136,7 +1130,7 @@
             return
         }
 
-        void onMtpDeviceRemoved((event) => {
+        const listenerPromise = onMtpDeviceRemoved((event) => {
             // Check if the removed device matches our current MTP volume
             if (event.deviceId === deviceIdFromVolume) {
                 log.warn('MTP device disconnected while viewing: {deviceId}, triggering fallback', {
@@ -1145,13 +1139,13 @@
                 onMtpFatalError?.('Device disconnected')
             }
         })
-            .then((unsub) => {
-                unlistenMtpRemoved = unsub
-            })
-            .catch(() => {})
 
         return () => {
-            unlistenMtpRemoved?.()
+            void listenerPromise
+                .then((unsub) => {
+                    unsub()
+                })
+                .catch(() => {})
         }
     })
 
@@ -1187,15 +1181,12 @@
             void cancelListing(listingId)
             void listDirectoryEnd(listingId)
         }
-        unlisten?.()
-        unlistenMenuAction?.()
         unlistenOpening?.()
         unlistenProgress?.()
         unlistenReadComplete?.()
         unlistenComplete?.()
         unlistenError?.()
         unlistenCancelled?.()
-        unlistenMtpRemoved?.()
         if (syncPollInterval) {
             clearInterval(syncPollInterval)
         }
