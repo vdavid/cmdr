@@ -30,7 +30,6 @@ use mtp_rs::{MtpDevice, MtpDeviceBuilder};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, LazyLock, RwLock};
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
@@ -82,21 +81,6 @@ pub struct MtpOperationResult {
     pub files_processed: usize,
     /// Total bytes transferred.
     pub bytes_transferred: u64,
-}
-
-/// State for tracking cancellation of MTP operations.
-#[allow(dead_code, reason = "Will be used in Phase 5 for operation cancellation")]
-pub struct MtpOperationState {
-    /// Cancellation flag.
-    pub cancelled: AtomicBool,
-}
-
-impl Default for MtpOperationState {
-    fn default() -> Self {
-        Self {
-            cancelled: AtomicBool::new(false),
-        }
-    }
 }
 
 /// Information about an object on the device (returned after creation).
@@ -421,19 +405,6 @@ impl MtpConnectionManager {
         })
     }
 
-    /// Checks if a device is connected.
-    #[allow(dead_code, reason = "Will be used in Phase 3+ for file browsing")]
-    pub async fn is_connected(&self, device_id: &str) -> bool {
-        let devices = self.devices.lock().await;
-        devices.contains_key(device_id)
-    }
-
-    /// Returns a list of all connected device IDs.
-    #[allow(dead_code, reason = "Will be used in Phase 5 for multi-device management")]
-    pub async fn connected_device_ids(&self) -> Vec<String> {
-        let devices = self.devices.lock().await;
-        devices.keys().cloned().collect()
-    }
 }
 
 // Remaining impl blocks are in submodules:
@@ -868,20 +839,4 @@ mod tests {
         assert_eq!(parse_device_id("mtp--1"), None);
     }
 
-    // ========================================================================
-    // MtpOperationState tests
-    // ========================================================================
-
-    #[test]
-    fn test_operation_state_default() {
-        let state = MtpOperationState::default();
-        assert!(!state.cancelled.load(std::sync::atomic::Ordering::Relaxed));
-    }
-
-    #[test]
-    fn test_operation_state_cancel() {
-        let state = MtpOperationState::default();
-        state.cancelled.store(true, std::sync::atomic::Ordering::Relaxed);
-        assert!(state.cancelled.load(std::sync::atomic::Ordering::Relaxed));
-    }
 }

@@ -15,10 +15,6 @@ use super::{
 };
 
 impl MtpConnectionManager {
-    // ========================================================================
-    // Phase 4: File Operations
-    // ========================================================================
-
     /// Downloads a file from the MTP device to a local path.
     ///
     /// # Arguments

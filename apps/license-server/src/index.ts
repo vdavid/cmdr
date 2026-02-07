@@ -1,6 +1,5 @@
 import { Hono } from 'hono'
 import { generateLicenseKey, generateShortCode, isValidShortCode, type LicenseType } from './license'
-// Note: formatLicenseKey is no longer used - we use short codes now
 import { sendLicenseEmail } from './email'
 import { verifyPaddleWebhookMulti } from './paddle'
 import {

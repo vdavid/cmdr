@@ -316,8 +316,8 @@ These slot into the existing severity tiers -- the scan walker duplication and 1
 - [ ] Remove verbose JSDoc that restates function names (~32 functions across TS/Svelte files) `[medium — batch]`
 - [ ] Remove verbose # Arguments doc blocks on one-line Rust wrappers in commands/file_system.rs `[medium — batch]`
 - [ ] Deduplicate CSS patterns: size-color classes, .close-button, .modal-overlay, monospace font stack, hardcoded colors `[medium]`
-- [ ] Remove dead code: formatLicenseKey(), stale Go monorepo path, commented-out CSS, scaffold comments `[quick fix]`
-- [ ] Remove "Phase N" dead code stubs in mtp/connection/mod.rs `[quick fix]`
+- [x] Remove dead code: formatLicenseKey(), stale Go monorepo path, commented-out CSS, scaffold comments `[quick fix]`
+- [x] Remove "Phase N" dead code stubs in mtp/connection/mod.rs `[quick fix]`
 - [x] Replace ~80 instances of "e.g." and "etc." in active docs `[quick fix — batch]`
 - [x] Fix Title Case headings in mtp-library-info.md, e2e-testing-guide.md, and others `[quick fix]`
 - [x] Rewrite "A comprehensive guide to..." opener in benchmarking-file-loading.md `[quick fix]`

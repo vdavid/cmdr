@@ -365,9 +365,7 @@ impl MtpConnectionManager {
             return Ok(*handle);
         }
 
-        // Path not in cache - we need to traverse
-        // For Phase 3, we'll only support navigating to paths that have been listed
-        // (the cache is populated as directories are browsed)
+        // Path not in cache — only paths that have been listed (browsed) are cached
         Err(MtpConnectionError::Other {
             device_id: entry.info.id.clone(),
             message: format!(

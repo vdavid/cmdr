@@ -2,9 +2,6 @@
 //!
 //! These types are serialized to JSON for Tauri commands.
 
-// Phase 1 foundation: some types not yet used, will be used in subsequent phases
-#![allow(dead_code, reason = "Phase 1 foundation: types used in later phases")]
-
 use serde::{Deserialize, Serialize};
 
 /// Information about a connected MTP device.
@@ -37,6 +34,7 @@ impl MtpDeviceInfo {
     /// Returns a display name for the device.
     ///
     /// Prefers product name, falls back to "MTP Device (vendor:product)".
+    #[allow(dead_code, reason = "Tested, not yet used in production paths")]
     pub fn display_name(&self) -> String {
         if let Some(product) = &self.product {
             return product.clone();

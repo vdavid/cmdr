@@ -76,8 +76,6 @@
         align-items: center;
         justify-content: center;
         line-height: 24px;
-        /*background: var(--color-bg-primary);*/
-        /*font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;*/
         color: var(--color-text-primary);
     }
 

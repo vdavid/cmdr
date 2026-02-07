@@ -61,16 +61,6 @@ export async function generateLicenseKey(data: LicenseData, privateKeyHex: strin
     return `${payloadBase64}.${signatureBase64}`
 }
 
-/**
- * Format license key for display.
- * Returns the full key as-is since it must contain the `.` separator
- * for the client-side Ed25519 signature verification to work.
- */
-export function formatLicenseKey(key: string): string {
-    // Return the full key - clients need the complete payload.signature format
-    return key
-}
-
 // Helper functions
 function hexToBytes(hex: string): Uint8Array {
     const bytes = new Uint8Array(hex.length / 2)

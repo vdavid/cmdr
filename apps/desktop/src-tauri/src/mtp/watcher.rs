@@ -189,15 +189,6 @@ async fn run_hotplug_watcher(_app: AppHandle) {
     warn!("USB hotplug watcher stream ended unexpectedly");
 }
 
-/// Stops the MTP device watcher.
-/// This is called on app shutdown to clean up resources.
-#[allow(dead_code, reason = "Will be used for explicit cleanup on app shutdown")]
-pub fn stop_mtp_watcher() {
-    // The watcher uses static state, so stopping just means we won't process more events
-    // The tokio task will be cancelled when the runtime shuts down
-    debug!("MTP watcher stopped");
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
