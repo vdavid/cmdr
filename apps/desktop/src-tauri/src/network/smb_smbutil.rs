@@ -147,16 +147,17 @@ pub fn build_smbutil_url(
 
     match credentials {
         Some((username, password)) => {
+            let encoded_username = urlencoding::encode(username);
             let encoded_password = urlencoding::encode(password);
             let url = if port == 445 {
-                format!("//{}:{}@{}", username, encoded_password, host)
+                format!("//{}:{}@{}", encoded_username, encoded_password, host)
             } else {
-                format!("//{}:{}@{}:{}", username, encoded_password, host, port)
+                format!("//{}:{}@{}:{}", encoded_username, encoded_password, host, port)
             };
             let safe_url = if port == 445 {
-                format!("//{}:***@{}", username, host)
+                format!("//{}:***@{}", encoded_username, host)
             } else {
-                format!("//{}:***@{}:{}", username, host, port)
+                format!("//{}:***@{}:{}", encoded_username, host, port)
             };
             (url, safe_url)
         }
