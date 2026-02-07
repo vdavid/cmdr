@@ -1170,7 +1170,7 @@
         // Poll sync status so iCloud/Dropbox icons update while idle
         syncPollInterval = setInterval(() => {
             const paths = Object.keys(syncStatusMap)
-            if (!listingId || !isFocused || paths.length === 0) return
+            if (!listingId || paths.length === 0) return
             void fetchSyncStatusForPaths(paths)
         }, syncPollIntervalMs)
     })
