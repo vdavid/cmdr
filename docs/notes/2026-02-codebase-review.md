@@ -304,7 +304,7 @@ These slot into the existing severity tiers -- the scan walker duplication and 1
 - [x] Fix identical ternary branches in DualPaneExplorer.svelte:1012-1014 `[quick fix]`
 - [x] Pass path context to map_volume_error() instead of String::new() in volume_copy.rs `[quick fix]`
 - [ ] Fix selection cleared before directory load in FilePane.svelte `[not quick — needs architectural change]`
-- [ ] Unify scan_preview_recursive and scan_path_recursive into a shared walker `[medium]`
+- [x] Unify scan_preview_recursive and scan_path_recursive into a shared walker `[medium]`
 - [x] Extract hidden-file filter helper (repeated 12 times in operations.rs) `[quick fix]`
 - [ ] Extract generic run_cancellable helper from 3 identical poll-loop wrappers in copy.rs/scan.rs `[medium]`
 - [x] Unify response_to_app_status and cached_to_app_status into one function `[quick fix]`

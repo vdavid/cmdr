@@ -83,19 +83,36 @@ fn run_scan_preview(
     let mut visited = HashSet::new();
 
     let result: Result<(), String> = (|| {
+        let ctx = WalkContext {
+            progress_interval: state.progress_interval,
+            is_cancelled: &|| state.cancelled.load(Ordering::Relaxed),
+            on_io_error: &|_, e| e.to_string(),
+            on_cancelled: &|| "Cancelled".to_string(),
+            on_symlink_loop: &|path| format!("Symlink loop detected: {}", path.display()),
+            on_progress: &|files_found, dirs_found, bytes_found, current_path| {
+                let _ = app.emit(
+                    "scan-preview-progress",
+                    ScanPreviewProgressEvent {
+                        preview_id: preview_id.to_string(),
+                        files_found,
+                        dirs_found,
+                        bytes_found,
+                        current_path,
+                    },
+                );
+            },
+        };
         for source in &sources {
             let source_root = source.parent().unwrap_or(source);
-            scan_preview_recursive(
+            walk_dir_recursive(
                 source,
                 source_root,
                 &mut files,
                 &mut dirs,
                 &mut total_bytes,
-                &state,
-                &app,
-                &preview_id,
                 &mut last_progress_time,
                 &mut visited,
+                &ctx,
             )?;
         }
         Ok(())
@@ -153,39 +170,46 @@ fn run_scan_preview(
     }
 }
 
-/// Recursive helper for scan preview. Returns Err if cancelled.
+/// Callbacks for customizing `walk_dir_recursive` behavior per caller.
+struct WalkContext<'a, E> {
+    progress_interval: Duration,
+    is_cancelled: &'a dyn Fn() -> bool,
+    on_io_error: &'a dyn Fn(&Path, std::io::Error) -> E,
+    on_cancelled: &'a dyn Fn() -> E,
+    on_symlink_loop: &'a dyn Fn(&Path) -> E,
+    on_progress: &'a dyn Fn(usize, usize, u64, Option<String>),
+}
+
+/// Recursively walks a directory tree, collecting files and directories.
+///
+/// Shared walker used by both scan preview and write operation scanning.
+/// Behavior is customized via `WalkContext` callbacks for error handling and progress reporting.
 #[allow(
     clippy::too_many_arguments,
     reason = "Recursive fn requires passing state through multiple levels"
 )]
-fn scan_preview_recursive(
+fn walk_dir_recursive<E>(
     path: &Path,
     source_root: &Path,
     files: &mut Vec<FileInfo>,
     dirs: &mut Vec<PathBuf>,
     total_bytes: &mut u64,
-    state: &Arc<ScanPreviewState>,
-    app: &tauri::AppHandle,
-    preview_id: &str,
     last_progress_time: &mut Instant,
     visited: &mut HashSet<PathBuf>,
-) -> Result<(), String> {
-    use tauri::Emitter;
-
-    // Check cancellation
-    if state.cancelled.load(Ordering::Relaxed) {
-        return Err("Cancelled".to_string());
+    ctx: &WalkContext<'_, E>,
+) -> Result<(), E> {
+    if (ctx.is_cancelled)() {
+        return Err((ctx.on_cancelled)());
     }
 
-    let metadata = fs::symlink_metadata(path).map_err(|e| e.to_string())?;
+    let metadata = fs::symlink_metadata(path).map_err(|e| (ctx.on_io_error)(path, e))?;
 
     if metadata.is_symlink() || metadata.is_file() {
         *total_bytes += metadata.len();
         files.push(FileInfo::new(path.to_path_buf(), source_root.to_path_buf(), &metadata));
     } else if metadata.is_dir() {
-        // Check for symlink loop
         if is_symlink_loop(path, visited) {
-            return Err(format!("Symlink loop detected: {}", path.display()));
+            return Err((ctx.on_symlink_loop)(path));
         }
 
         if let Ok(canonical) = path.canonicalize() {
@@ -194,37 +218,29 @@ fn scan_preview_recursive(
 
         dirs.push(path.to_path_buf());
 
-        let entries = fs::read_dir(path).map_err(|e| e.to_string())?;
+        let entries = fs::read_dir(path).map_err(|e| (ctx.on_io_error)(path, e))?;
         for entry in entries.flatten() {
-            scan_preview_recursive(
+            walk_dir_recursive(
                 &entry.path(),
                 source_root,
                 files,
                 dirs,
                 total_bytes,
-                state,
-                app,
-                preview_id,
                 last_progress_time,
                 visited,
+                ctx,
             )?;
         }
     } else {
-        // Skip special files (sockets, FIFOs, char/block devices)
-        log::warn!("scan_preview: skipping special file: {}", path.display());
+        log::warn!("scan: skipping special file: {}", path.display());
     }
 
-    // Emit progress periodically
-    if last_progress_time.elapsed() >= state.progress_interval {
-        let _ = app.emit(
-            "scan-preview-progress",
-            ScanPreviewProgressEvent {
-                preview_id: preview_id.to_string(),
-                files_found: files.len(),
-                dirs_found: dirs.len(),
-                bytes_found: *total_bytes,
-                current_path: path.file_name().map(|n| n.to_string_lossy().to_string()),
-            },
+    if last_progress_time.elapsed() >= ctx.progress_interval {
+        (ctx.on_progress)(
+            files.len(),
+            dirs.len(),
+            *total_bytes,
+            path.file_name().map(|n| n.to_string_lossy().to_string()),
         );
         *last_progress_time = Instant::now();
     }
@@ -364,23 +380,62 @@ fn scan_sources_internal(
     let mut last_progress_time = Instant::now();
     let mut visited = HashSet::new();
 
+    let ctx = WalkContext {
+        progress_interval,
+        is_cancelled: &|| state.cancelled.load(Ordering::Relaxed),
+        on_io_error: &|path, e| WriteOperationError::IoError {
+            path: path.display().to_string(),
+            message: e.to_string(),
+        },
+        on_cancelled: &|| WriteOperationError::Cancelled {
+            message: "Operation cancelled by user".to_string(),
+        },
+        on_symlink_loop: &|path| WriteOperationError::SymlinkLoop {
+            path: path.display().to_string(),
+        },
+        on_progress: &|files_done, _, bytes_done, current_file| {
+            log::debug!(
+                "scan: emitting write-progress op={} phase=scanning files_found={} bytes_found={}",
+                operation_id,
+                files_done,
+                bytes_done
+            );
+            let _ = app.emit(
+                "write-progress",
+                WriteProgressEvent {
+                    operation_id: operation_id.to_string(),
+                    operation_type,
+                    phase: WriteOperationPhase::Scanning,
+                    current_file: current_file.clone(),
+                    files_done,
+                    files_total: 0,
+                    bytes_done,
+                    bytes_total: 0,
+                },
+            );
+            update_operation_status(
+                operation_id,
+                WriteOperationPhase::Scanning,
+                current_file,
+                files_done,
+                0,
+                bytes_done,
+                0,
+            );
+        },
+    };
+
     for source in sources {
-        // source_root is the parent directory of the source file/folder
-        // This is used to compute relative paths for the destination
         let source_root = source.parent().unwrap_or(source);
-        scan_path_recursive(
+        walk_dir_recursive(
             source,
             source_root,
             &mut files,
             &mut dirs,
             &mut total_bytes,
-            state,
-            app,
-            operation_id,
-            operation_type,
-            &progress_interval,
             &mut last_progress_time,
             &mut visited,
+            &ctx,
         )?;
     }
 
@@ -414,126 +469,6 @@ fn scan_sources_internal(
         dirs,
         total_bytes,
     })
-}
-
-#[allow(
-    clippy::too_many_arguments,
-    reason = "Recursive fn requires passing state through multiple levels"
-)]
-fn scan_path_recursive(
-    path: &Path,
-    source_root: &Path,
-    files: &mut Vec<FileInfo>,
-    dirs: &mut Vec<PathBuf>,
-    total_bytes: &mut u64,
-    state: &Arc<WriteOperationState>,
-    app: &tauri::AppHandle,
-    operation_id: &str,
-    operation_type: WriteOperationType,
-    progress_interval: &Duration,
-    last_progress_time: &mut Instant,
-    visited: &mut HashSet<PathBuf>,
-) -> Result<(), WriteOperationError> {
-    use tauri::Emitter;
-
-    // Check cancellation
-    if state.cancelled.load(Ordering::Relaxed) {
-        return Err(WriteOperationError::Cancelled {
-            message: "Operation cancelled by user".to_string(),
-        });
-    }
-
-    // Use symlink_metadata to not follow symlinks
-    let metadata = fs::symlink_metadata(path).map_err(|e| WriteOperationError::IoError {
-        path: path.display().to_string(),
-        message: e.to_string(),
-    })?;
-
-    if metadata.is_symlink() {
-        // For symlinks, just add the size and the file itself
-        *total_bytes += metadata.len();
-        files.push(FileInfo::new(path.to_path_buf(), source_root.to_path_buf(), &metadata));
-    } else if metadata.is_file() {
-        *total_bytes += metadata.len();
-        files.push(FileInfo::new(path.to_path_buf(), source_root.to_path_buf(), &metadata));
-    } else if metadata.is_dir() {
-        // Check for symlink loop before recursing
-        if is_symlink_loop(path, visited) {
-            return Err(WriteOperationError::SymlinkLoop {
-                path: path.display().to_string(),
-            });
-        }
-
-        // Track this directory
-        if let Ok(canonical) = path.canonicalize() {
-            visited.insert(canonical);
-        }
-
-        // Add directory to list (for deletion tracking)
-        dirs.push(path.to_path_buf());
-
-        // Scan contents
-        let entries = fs::read_dir(path).map_err(|e| WriteOperationError::IoError {
-            path: path.display().to_string(),
-            message: e.to_string(),
-        })?;
-
-        for entry in entries.flatten() {
-            scan_path_recursive(
-                &entry.path(),
-                source_root,
-                files,
-                dirs,
-                total_bytes,
-                state,
-                app,
-                operation_id,
-                operation_type,
-                progress_interval,
-                last_progress_time,
-                visited,
-            )?;
-        }
-    } else {
-        // Skip special files (sockets, FIFOs, char/block devices)
-        log::warn!("scan: skipping special file: {}", path.display());
-    }
-
-    // Emit progress periodically
-    if last_progress_time.elapsed() >= *progress_interval {
-        let current_file = path.file_name().map(|n| n.to_string_lossy().to_string());
-        log::debug!(
-            "scan: emitting write-progress op={} phase=scanning files_found={} bytes_found={}",
-            operation_id,
-            files.len(),
-            *total_bytes
-        );
-        let _ = app.emit(
-            "write-progress",
-            WriteProgressEvent {
-                operation_id: operation_id.to_string(),
-                operation_type,
-                phase: WriteOperationPhase::Scanning,
-                current_file: current_file.clone(),
-                files_done: files.len(),
-                files_total: 0, // Unknown during scanning
-                bytes_done: *total_bytes,
-                bytes_total: 0, // Unknown during scanning
-            },
-        );
-        update_operation_status(
-            operation_id,
-            WriteOperationPhase::Scanning,
-            current_file,
-            files.len(),
-            0,
-            *total_bytes,
-            0,
-        );
-        *last_progress_time = Instant::now();
-    }
-
-    Ok(())
 }
 
 // ============================================================================

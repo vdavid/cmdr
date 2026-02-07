@@ -404,7 +404,6 @@ impl MtpConnectionManager {
             storages: entry.storages.clone(),
         })
     }
-
 }
 
 // Remaining impl blocks are in submodules:
@@ -838,5 +837,4 @@ mod tests {
         // Negative numbers (not valid for u64)
         assert_eq!(parse_device_id("mtp--1"), None);
     }
-
 }
