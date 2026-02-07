@@ -30,15 +30,15 @@ pub use listing::{
 #[cfg(target_os = "macos")]
 pub use listing::get_paths_at_indices;
 // Re-export volume types (some not used externally yet)
+#[cfg(target_os = "macos")]
+#[allow(unused_imports, reason = "Public API re-exports for future use")]
+pub use volume::MtpVolume;
 #[allow(unused_imports, reason = "Public API re-exports for future use")]
 pub use volume::manager::VolumeManager;
 #[allow(unused_imports, reason = "Public API re-exports for future use")]
 pub use volume::{
     CopyScanResult, InMemoryVolume, LocalPosixVolume, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError,
 };
-#[cfg(target_os = "macos")]
-#[allow(unused_imports, reason = "Public API re-exports for future use")]
-pub use volume::MtpVolume;
 // Watcher management - init_watcher_manager must be called from lib.rs
 pub use watcher::{init_watcher_manager, update_debounce_ms};
 // Diff types for file watching (used by MTP module for unified diff events)

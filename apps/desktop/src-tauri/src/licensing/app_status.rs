@@ -180,7 +180,13 @@ fn response_to_app_status(
     resp: &crate::licensing::validation_client::ValidationResponse,
 ) -> AppStatus {
     let license_type = resp.license_type.as_deref().and_then(string_to_license_type);
-    to_app_status(app, &resp.status, license_type, resp.organization_name.clone(), resp.expires_at.clone())
+    to_app_status(
+        app,
+        &resp.status,
+        license_type,
+        resp.organization_name.clone(),
+        resp.expires_at.clone(),
+    )
 }
 
 /// Convert string to LicenseType.
@@ -270,7 +276,13 @@ fn get_cached_or_validate(app: &tauri::AppHandle, license_info: &LicenseInfo) ->
 
 /// Convert cached status to AppStatus.
 fn cached_to_app_status(app: &tauri::AppHandle, cached: &CachedLicenseStatus) -> AppStatus {
-    to_app_status(app, &cached.status, cached.license_type, cached.organization_name.clone(), cached.expires_at.clone())
+    to_app_status(
+        app,
+        &cached.status,
+        cached.license_type,
+        cached.organization_name.clone(),
+        cached.expires_at.clone(),
+    )
 }
 
 /// Check if expiration modal has been shown for current expiration.

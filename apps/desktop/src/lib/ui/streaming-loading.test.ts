@@ -187,4 +187,3 @@ describe('LoadingIcon component', () => {
         })
     })
 })
-

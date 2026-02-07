@@ -588,7 +588,9 @@ mod tests {
     #[test]
     fn test_map_volume_error_permission_denied() {
         let err = map_volume_error("/ctx", VolumeError::PermissionDenied("Access denied".to_string()));
-        assert!(matches!(err, WriteOperationError::PermissionDenied { path, message } if message == "Access denied" && path == "/ctx"));
+        assert!(
+            matches!(err, WriteOperationError::PermissionDenied { path, message } if message == "Access denied" && path == "/ctx")
+        );
     }
 
     #[test]
@@ -600,7 +602,9 @@ mod tests {
     #[test]
     fn test_map_volume_error_not_supported() {
         let err = map_volume_error("/ctx", VolumeError::NotSupported);
-        assert!(matches!(err, WriteOperationError::IoError { path, message } if message.contains("not supported") && path == "/ctx"));
+        assert!(
+            matches!(err, WriteOperationError::IoError { path, message } if message.contains("not supported") && path == "/ctx")
+        );
     }
 
     // ========================================
