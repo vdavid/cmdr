@@ -38,6 +38,12 @@ impl ToolError {
     }
 }
 
+impl From<tauri::Error> for ToolError {
+    fn from(e: tauri::Error) -> Self {
+        Self::internal(e.to_string())
+    }
+}
+
 /// Execute a tool by name.
 pub fn execute_tool<R: Runtime>(app: &AppHandle<R>, name: &str, params: &Value) -> ToolResult {
     match name {
@@ -74,8 +80,7 @@ fn execute_quit<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
 
 /// Execute switch_pane command.
 fn execute_switch_pane<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
-    app.emit("switch-pane", ())
-        .map_err(|e| ToolError::internal(e.to_string()))?;
+    app.emit("switch-pane", ())?;
     Ok(json!("OK: Switched focus to other pane"))
 }
 
@@ -108,8 +113,7 @@ fn execute_set_view_mode<R: Runtime>(app: &AppHandle<R>, params: &Value) -> Tool
         store.set_focused_pane(pane.to_string());
     }
 
-    app.emit("mcp-set-view-mode", json!({"pane": pane, "mode": mode}))
-        .map_err(|e| ToolError::internal(e.to_string()))?;
+    app.emit("mcp-set-view-mode", json!({"pane": pane, "mode": mode}))?;
     Ok(json!(format!("OK: Set {pane} pane to {mode} view")))
 }
 
@@ -144,8 +148,7 @@ fn execute_sort<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
         store.set_focused_pane(pane.to_string());
     }
 
-    app.emit("mcp-sort", json!({"pane": pane, "by": by, "order": order}))
-        .map_err(|e| ToolError::internal(e.to_string()))?;
+    app.emit("mcp-sort", json!({"pane": pane, "by": by, "order": order}))?;
 
     let order_name = if order == "asc" { "ascending" } else { "descending" };
     Ok(json!(format!("OK: Sorted {pane} pane by {by} ({order_name})")))
@@ -170,8 +173,7 @@ fn execute_nav_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolResult
         _ => "Navigation action completed",
     };
 
-    app.emit("mcp-key", json!({"key": key}))
-        .map_err(|e| ToolError::internal(e.to_string()))?;
+    app.emit("mcp-key", json!({"key": key}))?;
     Ok(json!(format!("OK: {action}")))
 }
 
@@ -210,8 +212,7 @@ fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, name: &str, p
                 store.set_focused_pane(pane.to_string());
             }
 
-            app.emit("mcp-volume-select", json!({"pane": pane, "name": volume_name}))
-                .map_err(|e| ToolError::internal(e.to_string()))?;
+            app.emit("mcp-volume-select", json!({"pane": pane, "name": volume_name}))?;
             Ok(json!(format!("OK: Switched {pane} pane to volume {volume_name}")))
         }
         "nav_to_path" => {
@@ -237,8 +238,7 @@ fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, name: &str, p
                 store.set_focused_pane(pane.to_string());
             }
 
-            app.emit("mcp-nav-to-path", json!({"pane": pane, "path": path}))
-                .map_err(|e| ToolError::internal(e.to_string()))?;
+            app.emit("mcp-nav-to-path", json!({"pane": pane, "path": path}))?;
             Ok(json!(format!("OK: Navigated {pane} pane to {path}")))
         }
         "move_cursor" => {
@@ -270,8 +270,7 @@ fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, name: &str, p
                 store.set_focused_pane(pane.to_string());
             }
 
-            app.emit("mcp-move-cursor", json!({"pane": pane, "to": to}))
-                .map_err(|e| ToolError::internal(e.to_string()))?;
+            app.emit("mcp-move-cursor", json!({"pane": pane, "to": to}))?;
             Ok(json!(format!("OK: Moved cursor in {pane} pane to {to}")))
         }
         "scroll_to" => {
@@ -295,8 +294,7 @@ fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, name: &str, p
                 store.set_focused_pane(pane.to_string());
             }
 
-            app.emit("mcp-scroll-to", json!({"pane": pane, "index": index}))
-                .map_err(|e| ToolError::internal(e.to_string()))?;
+            app.emit("mcp-scroll-to", json!({"pane": pane, "index": index}))?;
             Ok(json!(format!("OK: Scrolled {pane} pane to index {index}")))
         }
         _ => Err(ToolError::invalid_params(format!("Unknown nav command: {name}"))),
@@ -309,8 +307,7 @@ fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, name: &str, p
 /// is managed by the frontend. The validation happens in the frontend event handler
 /// which will show an appropriate error if no files are selected.
 fn execute_copy<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
-    app.emit("mcp-copy", ())
-        .map_err(|e| ToolError::internal(e.to_string()))?;
+    app.emit("mcp-copy", ())?;
     Ok(json!("OK: Copy dialog opened. Waiting for user confirmation."))
 }
 
@@ -321,15 +318,13 @@ fn execute_copy<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
 /// when the actual mkdir operation is attempted, which will return an appropriate
 /// error if the directory is not writable.
 fn execute_mkdir<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
-    app.emit("mcp-mkdir", ())
-        .map_err(|e| ToolError::internal(e.to_string()))?;
+    app.emit("mcp-mkdir", ())?;
     Ok(json!("OK: Create folder dialog opened."))
 }
 
 /// Execute refresh command.
 fn execute_refresh<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
-    app.emit("mcp-refresh", ())
-        .map_err(|e| ToolError::internal(e.to_string()))?;
+    app.emit("mcp-refresh", ())?;
     Ok(json!("OK: Pane refreshed"))
 }
 
@@ -390,8 +385,7 @@ fn execute_select_command<R: Runtime>(app: &AppHandle<R>, params: &Value) -> Too
     app.emit(
         "mcp-select",
         json!({"pane": pane, "start": start, "count": count, "mode": mode}),
-    )
-    .map_err(|e| ToolError::internal(e.to_string()))?;
+    )?;
 
     Ok(json!(format!("OK: Selection updated in {pane} pane")))
 }
@@ -435,12 +429,10 @@ fn execute_dialog_open<R: Runtime>(
         "settings" => {
             // Emit event to open settings, optionally with a section
             if let Some(section) = section {
-                app.emit_to("main", "open-settings", json!({"section": section}))
-                    .map_err(|e| ToolError::internal(e.to_string()))?;
+                app.emit_to("main", "open-settings", json!({"section": section}))?;
                 Ok(json!(format!("OK: Opened settings at {section}")))
             } else {
-                app.emit_to("main", "open-settings", ())
-                    .map_err(|e| ToolError::internal(e.to_string()))?;
+                app.emit_to("main", "open-settings", ())?;
                 Ok(json!("OK: Opened settings"))
             }
         }
@@ -451,19 +443,16 @@ fn execute_dialog_open<R: Runtime>(
                 if !Path::new(path).exists() {
                     return Err(ToolError::invalid_params(format!("File does not exist: {}", path)));
                 }
-                app.emit("open-file-viewer", json!({"path": path}))
-                    .map_err(|e| ToolError::internal(e.to_string()))?;
+                app.emit("open-file-viewer", json!({"path": path}))?;
                 Ok(json!(format!("OK: Opened file viewer for {path}")))
             } else {
                 // Open for file under cursor (validation happens in frontend)
-                app.emit("open-file-viewer", ())
-                    .map_err(|e| ToolError::internal(e.to_string()))?;
+                app.emit("open-file-viewer", ())?;
                 Ok(json!("OK: Opened file viewer for cursor file"))
             }
         }
         "about" => {
-            app.emit("show-about", ())
-                .map_err(|e| ToolError::internal(e.to_string()))?;
+            app.emit("show-about", ())?;
             Ok(json!("OK: Opened about dialog"))
         }
         "copy-confirmation" | "mkdir-confirmation" => Err(ToolError::invalid_params(
@@ -477,8 +466,7 @@ fn execute_dialog_open<R: Runtime>(
 fn execute_dialog_focus<R: Runtime>(app: &AppHandle<R>, dialog_type: &str, path: Option<&str>) -> ToolResult {
     match dialog_type {
         "settings" => {
-            app.emit("focus-settings", ())
-                .map_err(|e| ToolError::internal(e.to_string()))?;
+            app.emit("focus-settings", ())?;
             Ok(json!("OK: Focused settings"))
         }
         "file-viewer" => {
@@ -487,24 +475,20 @@ fn execute_dialog_focus<R: Runtime>(app: &AppHandle<R>, dialog_type: &str, path:
                 if !Path::new(path).exists() {
                     return Err(ToolError::invalid_params(format!("File does not exist: {}", path)));
                 }
-                app.emit("focus-file-viewer", json!({"path": path}))
-                    .map_err(|e| ToolError::internal(e.to_string()))?;
+                app.emit("focus-file-viewer", json!({"path": path}))?;
                 Ok(json!(format!("OK: Focused file viewer for {path}")))
             } else {
                 // Focus most recently opened file-viewer
-                app.emit("focus-file-viewer", ())
-                    .map_err(|e| ToolError::internal(e.to_string()))?;
+                app.emit("focus-file-viewer", ())?;
                 Ok(json!("OK: Focused most recent file viewer"))
             }
         }
         "about" => {
-            app.emit("focus-about", ())
-                .map_err(|e| ToolError::internal(e.to_string()))?;
+            app.emit("focus-about", ())?;
             Ok(json!("OK: Focused about dialog"))
         }
         "copy-confirmation" | "mkdir-confirmation" => {
-            app.emit("focus-confirmation", ())
-                .map_err(|e| ToolError::internal(e.to_string()))?;
+            app.emit("focus-confirmation", ())?;
             Ok(json!("OK: Focused confirmation dialog"))
         }
         _ => Err(ToolError::invalid_params(format!("Invalid dialog type: {dialog_type}"))),
@@ -518,29 +502,24 @@ fn execute_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_type: &str, path:
 
     match dialog_type {
         "settings" => {
-            app.emit_to("settings", "mcp-settings-close", ())
-                .map_err(|e| ToolError::internal(e.to_string()))?;
+            app.emit_to("settings", "mcp-settings-close", ())?;
             Ok(json!("OK: Closed settings"))
         }
         "file-viewer" => {
             if let Some(path) = path {
-                app.emit("close-file-viewer", json!({"path": path}))
-                    .map_err(|e| ToolError::internal(e.to_string()))?;
+                app.emit("close-file-viewer", json!({"path": path}))?;
                 Ok(json!(format!("OK: Closed file viewer for {path}")))
             } else {
-                app.emit("close-all-file-viewers", ())
-                    .map_err(|e| ToolError::internal(e.to_string()))?;
+                app.emit("close-all-file-viewers", ())?;
                 Ok(json!("OK: Closed all file viewer dialogs"))
             }
         }
         "about" => {
-            app.emit("close-about", ())
-                .map_err(|e| ToolError::internal(e.to_string()))?;
+            app.emit("close-about", ())?;
             Ok(json!("OK: Closed about dialog"))
         }
         "copy-confirmation" | "mkdir-confirmation" => {
-            app.emit("close-confirmation", ())
-                .map_err(|e| ToolError::internal(e.to_string()))?;
+            app.emit("close-confirmation", ())?;
             Ok(json!("OK: Cancelled confirmation dialog"))
         }
         _ => Err(ToolError::invalid_params(format!("Invalid dialog type: {dialog_type}"))),
