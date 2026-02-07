@@ -143,35 +143,4 @@ describe('Sorting integration', () => {
         // Should be called for both left and right panes
         expect(mockGetColumnSortOrder.mock.calls.length).toBeGreaterThanOrEqual(2)
     })
-
-    it('has infrastructure to persist sort changes via saveColumnSortOrder', async () => {
-        const { saveColumnSortOrder } = await import('$lib/app-status-store')
-        const mockSaveColumnSortOrder = vi.mocked(saveColumnSortOrder)
-
-        // Verify the mock is available and callable
-        expect(mockSaveColumnSortOrder).toBeDefined()
-        expect(typeof mockSaveColumnSortOrder).toBe('function')
-
-        // Verify it can be called with proper arguments
-        await mockSaveColumnSortOrder('size', 'ascending')
-        expect(mockSaveColumnSortOrder).toHaveBeenCalledWith('size', 'ascending')
-    })
-
-    it('has infrastructure to call resortListing command', async () => {
-        const { invoke } = await import('@tauri-apps/api/core')
-        const mockInvoke = vi.mocked(invoke)
-
-        // Verify the mock is available
-        expect(mockInvoke).toBeDefined()
-
-        // Verify resortListing can be called
-        await mockInvoke('plugin:file_system|resort_listing', {
-            listingId: 'test-id',
-            sortBy: 'size',
-            sortOrder: 'ascending',
-        })
-
-        const resortCalls = mockInvoke.mock.calls.filter((call) => call[0] === 'plugin:file_system|resort_listing')
-        expect(resortCalls.length).toBeGreaterThan(0)
-    })
 })
