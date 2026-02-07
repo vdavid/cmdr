@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount, onDestroy, tick } from 'svelte'
+    import { onMount, onDestroy } from 'svelte'
     import {
         copyFiles,
         copyBetweenVolumes,
@@ -31,6 +31,7 @@
     import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
     import { getSetting } from '$lib/settings'
     import DirectionIndicator from './DirectionIndicator.svelte'
+    import DraggableDialog from '$lib/ui/DraggableDialog.svelte'
     import { getAppLogger } from '$lib/logger'
 
     /** Returns CSS class for size coloring based on bytes (kb/mb/gb/tb) */
@@ -156,11 +157,6 @@
         const estimatedSecondsRemaining = bytesPerSecond > 0 ? bytesRemaining / bytesPerSecond : null
         return { bytesPerSecond, estimatedSecondsRemaining }
     })
-
-    // Dialog dragging state
-    let overlayElement: HTMLDivElement | undefined = $state()
-    let dialogPosition = $state({ x: 0, y: 0 })
-    let isDragging = $state(false)
 
     // Progress stages for visualization
     const stages: { id: WriteOperationPhase; label: string }[] = [
@@ -373,22 +369,21 @@
             void handleCancel(false)
         } else if (event.key === 'Tab') {
             // Trap focus within the dialog
-            const focusableElements = overlayElement?.querySelectorAll<HTMLElement>(
+            const overlay = event.currentTarget as HTMLElement
+            const focusableElements = overlay.querySelectorAll<HTMLElement>(
                 'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
             )
-            if (!focusableElements || focusableElements.length === 0) return
+            if (focusableElements.length === 0) return
 
             const firstElement = focusableElements[0]
             const lastElement = focusableElements[focusableElements.length - 1]
 
             if (event.shiftKey) {
-                // Shift+Tab: if on first element, go to last
                 if (document.activeElement === firstElement) {
                     event.preventDefault()
                     lastElement.focus()
                 }
             } else {
-                // Tab: if on last element, go to first
                 if (document.activeElement === lastElement) {
                     event.preventDefault()
                     firstElement.focus()
@@ -397,38 +392,7 @@
         }
     }
 
-    // Drag handling for movable dialog
-    function handleTitleMouseDown(event: MouseEvent) {
-        if ((event.target as HTMLElement).tagName === 'BUTTON') return
-
-        event.preventDefault()
-        isDragging = true
-
-        const startX = event.clientX - dialogPosition.x
-        const startY = event.clientY - dialogPosition.y
-
-        const handleMouseMove = (e: MouseEvent) => {
-            dialogPosition = {
-                x: e.clientX - startX,
-                y: e.clientY - startY,
-            }
-        }
-
-        const handleMouseUp = () => {
-            isDragging = false
-            document.removeEventListener('mousemove', handleMouseMove)
-            document.removeEventListener('mouseup', handleMouseUp)
-            document.body.style.cursor = ''
-        }
-
-        document.addEventListener('mousemove', handleMouseMove)
-        document.addEventListener('mouseup', handleMouseUp)
-        document.body.style.cursor = 'move'
-    }
-
-    onMount(async () => {
-        await tick()
-        overlayElement?.focus()
+    onMount(() => {
         void startOperation()
     })
 
@@ -442,256 +406,199 @@
     })
 </script>
 
-<div
-    bind:this={overlayElement}
-    class="modal-overlay"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="progress-dialog-title"
-    tabindex="-1"
-    onkeydown={handleKeydown}
->
-    <div
-        class="progress-dialog"
-        class:dragging={isDragging}
-        style="transform: translate({dialogPosition.x}px, {dialogPosition.y}px)"
-    >
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div class="dialog-title-bar" onmousedown={handleTitleMouseDown}>
-            <h2 id="progress-dialog-title">
-                {#if isRollingBack}
-                    Rolling back...
-                {:else if conflictEvent}
-                    File already exists
-                {:else}
-                    Copying...
-                {/if}
-            </h2>
-        </div>
+<DraggableDialog titleId="progress-dialog-title" onkeydown={handleKeydown}>
+    {#snippet title()}
+        {#if isRollingBack}
+            Rolling back...
+        {:else if conflictEvent}
+            File already exists
+        {:else}
+            Copying...
+        {/if}
+    {/snippet}
 
-        {#if conflictEvent}
-            <!-- Conflict resolution -->
-            {@const fileName = conflictEvent.destinationPath.split('/').pop() ?? ''}
-            {@const existingIsNewer = conflictEvent.destinationIsNewer}
-            {@const newIsNewer = !existingIsNewer && conflictEvent.sourceModified !== conflictEvent.destinationModified}
-            {@const existingIsLarger = conflictEvent.sizeDifference > 0}
-            {@const newIsLarger = conflictEvent.sizeDifference < 0}
-            <div class="conflict-section">
-                <!-- Filename -->
-                <p class="conflict-filename" title={conflictEvent.destinationPath}>{fileName}</p>
+    {#if conflictEvent}
+        <!-- Conflict resolution -->
+        {@const fileName = conflictEvent.destinationPath.split('/').pop() ?? ''}
+        {@const existingIsNewer = conflictEvent.destinationIsNewer}
+        {@const newIsNewer = !existingIsNewer && conflictEvent.sourceModified !== conflictEvent.destinationModified}
+        {@const existingIsLarger = conflictEvent.sizeDifference > 0}
+        {@const newIsLarger = conflictEvent.sizeDifference < 0}
+        <div class="conflict-section">
+            <!-- Filename -->
+            <p class="conflict-filename" title={conflictEvent.destinationPath}>{fileName}</p>
 
-                <!-- File comparison -->
-                <div class="conflict-comparison">
-                    <div class="conflict-file">
-                        <span class="conflict-file-label">Existing:</span>
-                        <span class="conflict-file-size {getSizeColorClass(conflictEvent.destinationSize)}"
-                            >{formatFileSize(conflictEvent.destinationSize)}</span
-                        >
-                        {#if existingIsLarger}<span class="conflict-annotation larger">(larger)</span>{/if}
-                        <span class="conflict-file-date"
-                            >{conflictEvent.destinationModified
-                                ? formatDate(conflictEvent.destinationModified)
-                                : ''}</span
-                        >
-                        {#if existingIsNewer}<span class="conflict-annotation newer">(newer)</span>{/if}
-                    </div>
-                    <div class="conflict-file">
-                        <span class="conflict-file-label">New:</span>
-                        <span class="conflict-file-size {getSizeColorClass(conflictEvent.sourceSize)}"
-                            >{formatFileSize(conflictEvent.sourceSize)}</span
-                        >
-                        {#if newIsLarger}<span class="conflict-annotation larger">(larger)</span>{/if}
-                        <span class="conflict-file-date"
-                            >{conflictEvent.sourceModified ? formatDate(conflictEvent.sourceModified) : ''}</span
-                        >
-                        {#if newIsNewer}<span class="conflict-annotation newer">(newer)</span>{/if}
-                    </div>
-                </div>
-
-                <!-- Question -->
-                <p class="conflict-question">Do you want to keep the existing file or overwrite it?</p>
-
-                <!-- Buttons in two rows -->
-                <div class="conflict-buttons">
-                    <div class="conflict-buttons-row">
-                        <button
-                            class="secondary"
-                            onclick={() => handleConflictResolution('skip', false)}
-                            disabled={isResolvingConflict}
-                        >
-                            Skip
-                        </button>
-                        <button
-                            class="secondary"
-                            onclick={() => handleConflictResolution('overwrite', false)}
-                            disabled={isResolvingConflict}
-                        >
-                            Overwrite
-                        </button>
-                    </div>
-                    <div class="conflict-buttons-row">
-                        <button
-                            class="secondary"
-                            onclick={() => handleConflictResolution('skip', true)}
-                            disabled={isResolvingConflict}
-                        >
-                            Skip all
-                        </button>
-                        <button
-                            class="secondary"
-                            onclick={() => handleConflictResolution('overwrite', true)}
-                            disabled={isResolvingConflict}
-                        >
-                            Overwrite all
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Cancel at bottom -->
-                <div class="conflict-cancel">
-                    <button
-                        class="danger-text"
-                        onclick={() => handleCancel(true)}
-                        disabled={isCancelling || isResolvingConflict}
+            <!-- File comparison -->
+            <div class="conflict-comparison">
+                <div class="conflict-file">
+                    <span class="conflict-file-label">Existing:</span>
+                    <span class="conflict-file-size {getSizeColorClass(conflictEvent.destinationSize)}"
+                        >{formatFileSize(conflictEvent.destinationSize)}</span
                     >
-                        Rollback
+                    {#if existingIsLarger}<span class="conflict-annotation larger">(larger)</span>{/if}
+                    <span class="conflict-file-date"
+                        >{conflictEvent.destinationModified ? formatDate(conflictEvent.destinationModified) : ''}</span
+                    >
+                    {#if existingIsNewer}<span class="conflict-annotation newer">(newer)</span>{/if}
+                </div>
+                <div class="conflict-file">
+                    <span class="conflict-file-label">New:</span>
+                    <span class="conflict-file-size {getSizeColorClass(conflictEvent.sourceSize)}"
+                        >{formatFileSize(conflictEvent.sourceSize)}</span
+                    >
+                    {#if newIsLarger}<span class="conflict-annotation larger">(larger)</span>{/if}
+                    <span class="conflict-file-date"
+                        >{conflictEvent.sourceModified ? formatDate(conflictEvent.sourceModified) : ''}</span
+                    >
+                    {#if newIsNewer}<span class="conflict-annotation newer">(newer)</span>{/if}
+                </div>
+            </div>
+
+            <!-- Question -->
+            <p class="conflict-question">Do you want to keep the existing file or overwrite it?</p>
+
+            <!-- Buttons in two rows -->
+            <div class="conflict-buttons">
+                <div class="conflict-buttons-row">
+                    <button
+                        class="secondary"
+                        onclick={() => handleConflictResolution('skip', false)}
+                        disabled={isResolvingConflict}
+                    >
+                        Skip
+                    </button>
+                    <button
+                        class="secondary"
+                        onclick={() => handleConflictResolution('overwrite', false)}
+                        disabled={isResolvingConflict}
+                    >
+                        Overwrite
+                    </button>
+                </div>
+                <div class="conflict-buttons-row">
+                    <button
+                        class="secondary"
+                        onclick={() => handleConflictResolution('skip', true)}
+                        disabled={isResolvingConflict}
+                    >
+                        Skip all
+                    </button>
+                    <button
+                        class="secondary"
+                        onclick={() => handleConflictResolution('overwrite', true)}
+                        disabled={isResolvingConflict}
+                    >
+                        Overwrite all
                     </button>
                 </div>
             </div>
-        {:else if isRollingBack}
-            <!-- Rollback in progress -->
-            <div class="rollback-section">
-                <div class="rollback-indicator">
-                    <span class="spinner"></span>
-                </div>
-                <p class="rollback-message">Deleting {filesDone} copied files...</p>
-            </div>
-        {:else}
-            <!-- Direction indicator -->
-            <DirectionIndicator sourcePath={sourceFolderPath} {destinationPath} {direction} />
 
-            <!-- Progress stages -->
-            <div class="progress-stages">
-                {#each stages as stage (stage.id)}
-                    {@const status = getStageStatus(stage.id)}
-                    <div class="stage" class:done={status === 'done'} class:active={status === 'active'}>
-                        <div class="stage-indicator">
-                            {#if status === 'done'}
-                                <span class="checkmark">✓</span>
-                            {:else if status === 'active'}
-                                <span class="spinner"></span>
-                            {:else}
-                                <span class="dot"></span>
-                            {/if}
-                        </div>
-                        <span>{stage.label}</span>
-                    </div>
-                    {#if stage.id !== stages[stages.length - 1].id}
-                        <div class="stage-connector" class:done={status === 'done'}></div>
-                    {/if}
-                {/each}
-            </div>
-
-            <!-- Progress bar -->
-            <div class="progress-section">
-                <div class="progress-bar-container">
-                    <div class="progress-bar" style="width: {percentComplete}%"></div>
-                </div>
-                <div class="progress-info">
-                    <span class="progress-percent">{Math.round(percentComplete)}%</span>
-                    {#if stats.estimatedSecondsRemaining !== null}
-                        <span class="eta">~{formatDuration(stats.estimatedSecondsRemaining)} remaining</span>
-                    {/if}
-                </div>
-            </div>
-
-            <!-- Stats -->
-            <div class="stats-section">
-                <div class="stat-row">
-                    <span class="stat-label">Files:</span>
-                    <span class="stat-value">{filesDone} / {filesTotal}</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Size:</span>
-                    <span class="stat-value">{formatBytes(bytesDone)} / {formatBytes(bytesTotal)}</span>
-                </div>
-                {#if stats.bytesPerSecond > 0}
-                    <div class="stat-row">
-                        <span class="stat-label">Speed:</span>
-                        <span class="stat-value">{formatBytes(stats.bytesPerSecond)}/s</span>
-                    </div>
-                {/if}
-            </div>
-
-            <!-- Current file -->
-            {#if currentFile}
-                <div class="current-file" title={currentFile}>
-                    {currentFile}
-                </div>
-            {/if}
-
-            <!-- Action buttons -->
-            <div class="button-row">
+            <!-- Cancel at bottom -->
+            <div class="conflict-cancel">
                 <button
-                    class="secondary"
-                    onclick={() => handleCancel(false)}
-                    disabled={isCancelling}
-                    title="Cancel and keep progress"
-                >
-                    Cancel
-                </button>
-                <button
-                    class="danger"
+                    class="danger-text"
                     onclick={() => handleCancel(true)}
-                    disabled={isCancelling}
-                    title="Cancel and delete any partial target files created"
+                    disabled={isCancelling || isResolvingConflict}
                 >
                     Rollback
                 </button>
             </div>
+        </div>
+    {:else if isRollingBack}
+        <!-- Rollback in progress -->
+        <div class="rollback-section">
+            <div class="rollback-indicator">
+                <span class="spinner"></span>
+            </div>
+            <p class="rollback-message">Deleting {filesDone} copied files...</p>
+        </div>
+    {:else}
+        <!-- Direction indicator -->
+        <DirectionIndicator sourcePath={sourceFolderPath} {destinationPath} {direction} />
+
+        <!-- Progress stages -->
+        <div class="progress-stages">
+            {#each stages as stage (stage.id)}
+                {@const status = getStageStatus(stage.id)}
+                <div class="stage" class:done={status === 'done'} class:active={status === 'active'}>
+                    <div class="stage-indicator">
+                        {#if status === 'done'}
+                            <span class="checkmark">✓</span>
+                        {:else if status === 'active'}
+                            <span class="spinner"></span>
+                        {:else}
+                            <span class="dot"></span>
+                        {/if}
+                    </div>
+                    <span>{stage.label}</span>
+                </div>
+                {#if stage.id !== stages[stages.length - 1].id}
+                    <div class="stage-connector" class:done={status === 'done'}></div>
+                {/if}
+            {/each}
+        </div>
+
+        <!-- Progress bar -->
+        <div class="progress-section">
+            <div class="progress-bar-container">
+                <div class="progress-bar" style="width: {percentComplete}%"></div>
+            </div>
+            <div class="progress-info">
+                <span class="progress-percent">{Math.round(percentComplete)}%</span>
+                {#if stats.estimatedSecondsRemaining !== null}
+                    <span class="eta">~{formatDuration(stats.estimatedSecondsRemaining)} remaining</span>
+                {/if}
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-section">
+            <div class="stat-row">
+                <span class="stat-label">Files:</span>
+                <span class="stat-value">{filesDone} / {filesTotal}</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Size:</span>
+                <span class="stat-value">{formatBytes(bytesDone)} / {formatBytes(bytesTotal)}</span>
+            </div>
+            {#if stats.bytesPerSecond > 0}
+                <div class="stat-row">
+                    <span class="stat-label">Speed:</span>
+                    <span class="stat-value">{formatBytes(stats.bytesPerSecond)}/s</span>
+                </div>
+            {/if}
+        </div>
+
+        <!-- Current file -->
+        {#if currentFile}
+            <div class="current-file" title={currentFile}>
+                {currentFile}
+            </div>
         {/if}
-    </div>
-</div>
+
+        <!-- Action buttons -->
+        <div class="button-row">
+            <button
+                class="secondary"
+                onclick={() => handleCancel(false)}
+                disabled={isCancelling}
+                title="Cancel and keep progress"
+            >
+                Cancel
+            </button>
+            <button
+                class="danger"
+                onclick={() => handleCancel(true)}
+                disabled={isCancelling}
+                title="Cancel and delete any partial target files created"
+            >
+                Rollback
+            </button>
+        </div>
+    {/if}
+</DraggableDialog>
 
 <style>
-    .modal-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.4);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-    }
-
-    .progress-dialog {
-        background: var(--color-bg-secondary);
-        border: 1px solid var(--color-border-primary);
-        border-radius: 12px;
-        min-width: 420px;
-        max-width: 500px;
-        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
-        position: relative;
-    }
-
-    .progress-dialog.dragging {
-        cursor: move;
-    }
-
-    .dialog-title-bar {
-        padding: 16px 24px 8px;
-        cursor: move;
-        user-select: none;
-    }
-
-    h2 {
-        margin: 0;
-        font-size: 16px;
-        font-weight: 600;
-        color: var(--color-text-primary);
-        text-align: center;
-    }
-
     /* Progress stages */
     .progress-stages {
         display: flex;

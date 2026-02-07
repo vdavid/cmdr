@@ -303,7 +303,7 @@ These slot into the existing severity tiers -- the scan walker duplication and 1
 - [x] Remove no-op setInterval in FilePane.svelte:1179-1181 `[quick fix]`
 - [x] Fix identical ternary branches in DualPaneExplorer.svelte:1012-1014 `[quick fix]`
 - [x] Pass path context to map_volume_error() instead of String::new() in volume_copy.rs `[quick fix]`
-- [ ] Fix selection cleared before directory load in FilePane.svelte `[not quick — needs architectural change]`
+- [-] Fix selection cleared before directory load in FilePane.svelte `[not quick — needs architectural change]`
 - [x] Unify scan_preview_recursive and scan_path_recursive into a shared walker `[medium]`
 - [x] Extract hidden-file filter helper (repeated 12 times in operations.rs) `[quick fix]`
 - [x] Extract generic run_cancellable helper from 3 identical poll-loop wrappers in copy.rs/scan.rs `[medium]`
@@ -311,7 +311,7 @@ These slot into the existing severity tiers -- the scan walker duplication and 1
 
 ### Low — cleanup, style, docs
 
-- [ ] Extract shared draggable dialog utility from CopyDialog + CopyProgressDialog (~30 duplicate lines) `[medium]`
+- [x] Extract shared draggable dialog utility from CopyDialog + CopyProgressDialog (~30 duplicate lines) `[medium]`
 - [ ] Extract shared MTP error parsing utility from MtpConnectionView + mtp-store `[quick fix]`
 - [x] Remove verbose JSDoc that restates function names (~32 functions across TS/Svelte files) `[medium — batch]`
 - [x] Remove verbose # Arguments doc blocks on one-line Rust wrappers in commands/file_system.rs `[medium — batch]`

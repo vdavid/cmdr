@@ -20,6 +20,7 @@
     import type { VolumeInfo, SortColumn, SortOrder, ConflictResolution } from '$lib/file-explorer/types'
     import { getSetting } from '$lib/settings'
     import DirectionIndicator from './DirectionIndicator.svelte'
+    import DraggableDialog from '$lib/ui/DraggableDialog.svelte'
     import { generateTitle } from './copy-dialog-utils'
     import { getAppLogger } from '$lib/logger'
 
@@ -71,12 +72,7 @@
 
     let editedPath = $state(destinationPath)
     let selectedVolumeId = $state(currentVolumeId)
-    let overlayElement: HTMLDivElement | undefined = $state()
     let pathInputRef: HTMLInputElement | undefined = $state()
-
-    // Dragging state
-    let dialogPosition = $state({ x: 0, y: 0 })
-    let isDragging = $state(false)
 
     // Volume space info
     let volumeSpace = $state<VolumeSpaceInfo | null>(null)
@@ -102,8 +98,7 @@
     // Get selected volume info
     const selectedVolume = $derived(actualVolumes.find((v) => v.id === selectedVolumeId))
 
-    // Generate dynamic title with proper pluralization
-    const title = $derived(generateTitle(fileCount, folderCount))
+    const dialogTitle = $derived(generateTitle(fileCount, folderCount))
 
     // Format space info for display
     function formatSpaceInfo(space: VolumeSpaceInfo | null): string {
@@ -228,10 +223,6 @@
         // Track dialog open state for MCP
         void notifyDialogOpened('copy-confirmation')
 
-        // Focus overlay for keyboard events
-        await tick()
-        overlayElement?.focus()
-
         // Focus and select the path input
         await tick()
         pathInputRef?.focus()
@@ -287,185 +278,99 @@
             handleConfirm()
         }
     }
-
-    // Drag handling for movable dialog
-    function handleTitleMouseDown(event: MouseEvent) {
-        if ((event.target as HTMLElement).tagName === 'BUTTON') return // Don't drag when clicking buttons
-
-        event.preventDefault()
-        isDragging = true
-
-        const startX = event.clientX - dialogPosition.x
-        const startY = event.clientY - dialogPosition.y
-
-        const handleMouseMove = (e: MouseEvent) => {
-            dialogPosition = {
-                x: e.clientX - startX,
-                y: e.clientY - startY,
-            }
-        }
-
-        const handleMouseUp = () => {
-            isDragging = false
-            document.removeEventListener('mousemove', handleMouseMove)
-            document.removeEventListener('mouseup', handleMouseUp)
-            document.body.style.cursor = ''
-        }
-
-        document.addEventListener('mousemove', handleMouseMove)
-        document.addEventListener('mouseup', handleMouseUp)
-        document.body.style.cursor = 'move'
-    }
 </script>
 
-<div
-    bind:this={overlayElement}
-    class="modal-overlay"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="dialog-title"
-    tabindex="-1"
-    onkeydown={handleKeydown}
->
-    <div
-        class="copy-dialog"
-        class:dragging={isDragging}
-        style="transform: translate({dialogPosition.x}px, {dialogPosition.y}px)"
-    >
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <!-- Draggable title bar -->
-        <div class="dialog-title-bar" onmousedown={handleTitleMouseDown}>
-            <h2 id="dialog-title">{title}</h2>
-        </div>
+<DraggableDialog titleId="dialog-title" onkeydown={handleKeydown}>
+    {#snippet title()}{dialogTitle}{/snippet}
 
-        <!-- Direction indicator -->
-        <DirectionIndicator sourcePath={sourceFolderPath} {destinationPath} {direction} />
+    <!-- Direction indicator -->
+    <DirectionIndicator sourcePath={sourceFolderPath} {destinationPath} {direction} />
 
-        <!-- Volume selector -->
-        <div class="volume-selector">
-            <select bind:value={selectedVolumeId} class="volume-select" aria-label="Destination volume">
-                {#each actualVolumes as volume (volume.id)}
-                    <option value={volume.id}>{volume.name}</option>
-                {/each}
-            </select>
-            {#if volumeSpace}
-                <span class="space-info">{formatSpaceInfo(volumeSpace)}</span>
-            {/if}
-        </div>
-
-        <!-- Path input -->
-        <div class="path-input-group">
-            <input
-                bind:this={pathInputRef}
-                bind:value={editedPath}
-                type="text"
-                class="path-input"
-                aria-label="Destination path"
-                spellcheck="false"
-                autocomplete="off"
-                onkeydown={handleInputKeydown}
-            />
-        </div>
-
-        <!-- Scan stats (live counting) -->
-        <div class="scan-stats">
-            <div class="scan-stat">
-                <span class="scan-value">{formatBytes(bytesFound)}</span>
-            </div>
-            <span class="scan-divider">/</span>
-            <div class="scan-stat">
-                <span class="scan-value">{filesFound}</span>
-                <span class="scan-label">{filesFound === 1 ? 'file' : 'files'}</span>
-            </div>
-            <span class="scan-divider">/</span>
-            <div class="scan-stat">
-                <span class="scan-value">{dirsFound}</span>
-                <span class="scan-label">{dirsFound === 1 ? 'dir' : 'dirs'}</span>
-            </div>
-            {#if isScanning}
-                <span class="scan-spinner"></span>
-            {:else if scanComplete}
-                <span class="scan-checkmark">✓</span>
-            {/if}
-        </div>
-
-        <!-- Conflicts section -->
-        {#if isCheckingConflicts}
-            <div class="conflicts-checking">
-                <span class="scan-spinner"></span>
-                <span class="conflicts-checking-text">Checking for conflicts...</span>
-            </div>
-        {:else if conflicts.length > 0}
-            <div class="conflicts-section">
-                <p class="conflicts-summary">
-                    {conflicts.length}
-                    {conflicts.length === 1 ? 'file already exists' : 'files already exist'}
-                </p>
-                <div class="conflict-policy">
-                    <label class="policy-option">
-                        <input type="radio" bind:group={conflictPolicy} value="skip" />
-                        <span>Skip all</span>
-                    </label>
-                    <label class="policy-option">
-                        <input type="radio" bind:group={conflictPolicy} value="overwrite" />
-                        <span>Overwrite all</span>
-                    </label>
-                    <label class="policy-option">
-                        <input type="radio" bind:group={conflictPolicy} value="stop" />
-                        <span>Ask for each</span>
-                    </label>
-                </div>
-            </div>
+    <!-- Volume selector -->
+    <div class="volume-selector">
+        <select bind:value={selectedVolumeId} class="volume-select" aria-label="Destination volume">
+            {#each actualVolumes as volume (volume.id)}
+                <option value={volume.id}>{volume.name}</option>
+            {/each}
+        </select>
+        {#if volumeSpace}
+            <span class="space-info">{formatSpaceInfo(volumeSpace)}</span>
         {/if}
-
-        <!-- Buttons (centered) -->
-        <div class="button-row">
-            <button class="secondary" onclick={handleCancel}>Cancel</button>
-            <button class="primary" onclick={handleConfirm}>Copy</button>
-        </div>
     </div>
-</div>
+
+    <!-- Path input -->
+    <div class="path-input-group">
+        <input
+            bind:this={pathInputRef}
+            bind:value={editedPath}
+            type="text"
+            class="path-input"
+            aria-label="Destination path"
+            spellcheck="false"
+            autocomplete="off"
+            onkeydown={handleInputKeydown}
+        />
+    </div>
+
+    <!-- Scan stats (live counting) -->
+    <div class="scan-stats">
+        <div class="scan-stat">
+            <span class="scan-value">{formatBytes(bytesFound)}</span>
+        </div>
+        <span class="scan-divider">/</span>
+        <div class="scan-stat">
+            <span class="scan-value">{filesFound}</span>
+            <span class="scan-label">{filesFound === 1 ? 'file' : 'files'}</span>
+        </div>
+        <span class="scan-divider">/</span>
+        <div class="scan-stat">
+            <span class="scan-value">{dirsFound}</span>
+            <span class="scan-label">{dirsFound === 1 ? 'dir' : 'dirs'}</span>
+        </div>
+        {#if isScanning}
+            <span class="scan-spinner"></span>
+        {:else if scanComplete}
+            <span class="scan-checkmark">✓</span>
+        {/if}
+    </div>
+
+    <!-- Conflicts section -->
+    {#if isCheckingConflicts}
+        <div class="conflicts-checking">
+            <span class="scan-spinner"></span>
+            <span class="conflicts-checking-text">Checking for conflicts...</span>
+        </div>
+    {:else if conflicts.length > 0}
+        <div class="conflicts-section">
+            <p class="conflicts-summary">
+                {conflicts.length}
+                {conflicts.length === 1 ? 'file already exists' : 'files already exist'}
+            </p>
+            <div class="conflict-policy">
+                <label class="policy-option">
+                    <input type="radio" bind:group={conflictPolicy} value="skip" />
+                    <span>Skip all</span>
+                </label>
+                <label class="policy-option">
+                    <input type="radio" bind:group={conflictPolicy} value="overwrite" />
+                    <span>Overwrite all</span>
+                </label>
+                <label class="policy-option">
+                    <input type="radio" bind:group={conflictPolicy} value="stop" />
+                    <span>Ask for each</span>
+                </label>
+            </div>
+        </div>
+    {/if}
+
+    <!-- Buttons (centered) -->
+    <div class="button-row">
+        <button class="secondary" onclick={handleCancel}>Cancel</button>
+        <button class="primary" onclick={handleConfirm}>Copy</button>
+    </div>
+</DraggableDialog>
 
 <style>
-    .modal-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.4);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-        /* No backdrop-filter blur - user needs to see content behind */
-    }
-
-    .copy-dialog {
-        background: var(--color-bg-secondary);
-        border: 1px solid var(--color-border-primary);
-        border-radius: 12px;
-        min-width: 420px;
-        max-width: 500px;
-        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
-        position: relative;
-    }
-
-    .copy-dialog.dragging {
-        cursor: move;
-    }
-
-    .dialog-title-bar {
-        padding: 16px 24px 8px;
-        cursor: move;
-        user-select: none;
-    }
-
-    h2 {
-        margin: 0;
-        font-size: 16px;
-        font-weight: 600;
-        color: var(--color-text-primary);
-        text-align: center;
-    }
-
     .volume-selector {
         display: flex;
         align-items: center;
