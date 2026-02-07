@@ -361,8 +361,7 @@
         void saveAppStatus({ [paneKey(pane, 'volumeId')]: defaultVolumeId, [paneKey(pane, 'path')]: defaultPath })
     }
 
-    // Helper: Route key event to any open volume chooser
-    // Returns true if the event was handled by a volume chooser
+    /** Routes to whichever pane has its volume chooser open. Returns true if handled. */
     function routeToVolumeChooser(e: KeyboardEvent): boolean {
         // Check if EITHER pane has a volume chooser open - if so, route events there
         // This is important because F1/F2 can open a volume chooser on the non-focused pane
@@ -383,14 +382,12 @@
         return false
     }
 
-    // Helper: Handle Tab key (switch pane focus)
     function handleTabKey() {
         const newFocus = focusedPane === 'left' ? 'right' : 'left'
         focusedPane = newFocus
         void saveAppStatus({ focusedPane: newFocus })
     }
 
-    // Helper: Handle ESC key during loading (cancel and go back)
     function handleEscapeDuringLoading(): boolean {
         const paneRef = getPaneRef(focusedPane)
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call

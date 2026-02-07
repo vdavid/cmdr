@@ -55,14 +55,7 @@ export type {
 // Scan preview (for Copy dialog live stats)
 // ============================================================================
 
-/**
- * Starts a scan preview for the Copy dialog.
- * Immediately starts scanning source files and emits progress events.
- * @param sources - List of source file/directory paths
- * @param sortColumn - Column to sort by
- * @param sortOrder - Sort order
- * @param progressIntervalMs - Progress update interval in milliseconds (default: 500)
- */
+/** Starts scanning source files immediately, emitting progress events for the Copy dialog. */
 export async function startScanPreview(
     sources: string[],
     sortColumn: SortColumn,
@@ -72,36 +65,28 @@ export async function startScanPreview(
     return invoke<ScanPreviewStartResult>('start_scan_preview', { sources, sortColumn, sortOrder, progressIntervalMs })
 }
 
-/**
- * Cancels a running scan preview.
- * @param previewId - The preview ID to cancel
- */
 export async function cancelScanPreview(previewId: string): Promise<void> {
     await invoke('cancel_scan_preview', { previewId })
 }
 
-/** Subscribe to scan preview progress events */
 export async function onScanPreviewProgress(callback: (event: ScanPreviewProgressEvent) => void): Promise<UnlistenFn> {
     return listen<ScanPreviewProgressEvent>('scan-preview-progress', (event) => {
         callback(event.payload)
     })
 }
 
-/** Subscribe to scan preview complete events */
 export async function onScanPreviewComplete(callback: (event: ScanPreviewCompleteEvent) => void): Promise<UnlistenFn> {
     return listen<ScanPreviewCompleteEvent>('scan-preview-complete', (event) => {
         callback(event.payload)
     })
 }
 
-/** Subscribe to scan preview error events */
 export async function onScanPreviewError(callback: (event: ScanPreviewErrorEvent) => void): Promise<UnlistenFn> {
     return listen<ScanPreviewErrorEvent>('scan-preview-error', (event) => {
         callback(event.payload)
     })
 }
 
-/** Subscribe to scan preview cancelled events */
 export async function onScanPreviewCancelled(
     callback: (event: ScanPreviewCancelledEvent) => void,
 ): Promise<UnlistenFn> {
@@ -114,13 +99,7 @@ export async function onScanPreviewCancelled(
 // Write operations (copy, move, delete)
 // ============================================================================
 
-/**
- * Starts a copy operation in the background.
- * Progress events are emitted via write-progress, write-complete, write-error, write-cancelled.
- * @param sources - List of source file/directory paths (absolute)
- * @param destination - Destination directory path (absolute)
- * @param config - Operation configuration (optional)
- */
+/** Emits write-progress, write-complete, write-error, write-cancelled events. */
 export async function copyFiles(
     sources: string[],
     destination: string,
@@ -129,13 +108,7 @@ export async function copyFiles(
     return invoke<WriteOperationStartResult>('copy_files', { sources, destination, config: config ?? {} })
 }
 
-/**
- * Starts a move operation in the background.
- * Uses instant rename for same-filesystem moves, copy+delete for cross-filesystem.
- * @param sources - List of source file/directory paths (absolute)
- * @param destination - Destination directory path (absolute)
- * @param config - Operation configuration (optional)
- */
+/** Uses instant rename for same-filesystem, copy+delete for cross-filesystem. Same events as copyFiles. */
 export async function moveFiles(
     sources: string[],
     destination: string,
@@ -144,12 +117,7 @@ export async function moveFiles(
     return invoke<WriteOperationStartResult>('move_files', { sources, destination, config: config ?? {} })
 }
 
-/**
- * Starts a delete operation in the background.
- * Recursively deletes files and directories.
- * @param sources - List of source file/directory paths (absolute)
- * @param config - Operation configuration (optional)
- */
+/** Recursively deletes files and directories. Same events as copyFiles. */
 export async function deleteFiles(
     sources: string[],
     config?: WriteOperationConfig,
@@ -157,25 +125,11 @@ export async function deleteFiles(
     return invoke<WriteOperationStartResult>('delete_files', { sources, config: config ?? {} })
 }
 
-/**
- * Cancels an in-progress write operation.
- * The operation will emit a write-cancelled event when it stops.
- * @param operationId - The operation ID to cancel
- * @param rollback - If true, delete any partial files created. If false, keep them.
- */
 export async function cancelWriteOperation(operationId: string, rollback: boolean): Promise<void> {
     await invoke('cancel_write_operation', { operationId, rollback })
 }
 
-/**
- * Resolves a pending conflict for an in-progress write operation.
- * When an operation encounters a conflict in Stop mode, it emits a write-conflict
- * event and waits for this function to be called. The operation will then proceed
- * with the chosen resolution.
- * @param operationId - The operation ID that has a pending conflict
- * @param resolution - How to resolve the conflict (skip, overwrite, or rename)
- * @param applyToAll - If true, apply this resolution to all future conflicts in this operation
- */
+/** In Stop mode, the operation pauses on conflict and waits for this call to proceed. */
 export async function resolveWriteConflict(
     operationId: string,
     resolution: ConflictResolution,
@@ -184,28 +138,14 @@ export async function resolveWriteConflict(
     await invoke('resolve_write_conflict', { operationId, resolution, applyToAll })
 }
 
-/**
- * Lists all active write operations.
- * Returns a list of operation summaries for all currently running operations.
- * Useful for showing a global progress view or managing multiple concurrent operations.
- * @returns List of operation summaries
- */
 export async function listActiveOperations(): Promise<OperationSummary[]> {
     return invoke<OperationSummary[]>('list_active_operations')
 }
 
-/**
- * Gets the detailed status of a specific write operation.
- * @param operationId - The operation ID to query
- * @returns Current status, or null if the operation is not found
- */
 export async function getOperationStatus(operationId: string): Promise<OperationStatus | null> {
     return invoke<OperationStatus | null>('get_operation_status', { operationId })
 }
 
-/**
- * Type guard for WriteOperationError.
- */
 export function isWriteOperationError(error: unknown): error is WriteOperationError {
     return (
         typeof error === 'object' &&
@@ -219,91 +159,49 @@ export function isWriteOperationError(error: unknown): error is WriteOperationEr
 // Write operation event helpers
 // ============================================================================
 
-/**
- * Subscribes to write operation progress events.
- * @param callback - Function to call when progress is reported
- * @returns Unsubscribe function
- */
 export async function onWriteProgress(callback: (event: WriteProgressEvent) => void): Promise<UnlistenFn> {
     return listen<WriteProgressEvent>('write-progress', (event) => {
         callback(event.payload)
     })
 }
 
-/**
- * Subscribes to write operation completion events.
- * @param callback - Function to call when an operation completes successfully
- * @returns Unsubscribe function
- */
 export async function onWriteComplete(callback: (event: WriteCompleteEvent) => void): Promise<UnlistenFn> {
     return listen<WriteCompleteEvent>('write-complete', (event) => {
         callback(event.payload)
     })
 }
 
-/**
- * Subscribes to write operation error events.
- * @param callback - Function to call when an operation fails
- * @returns Unsubscribe function
- */
 export async function onWriteError(callback: (event: WriteErrorEvent) => void): Promise<UnlistenFn> {
     return listen<WriteErrorEvent>('write-error', (event) => {
         callback(event.payload)
     })
 }
 
-/**
- * Subscribes to write operation cancelled events.
- * @param callback - Function to call when an operation is cancelled
- * @returns Unsubscribe function
- */
 export async function onWriteCancelled(callback: (event: WriteCancelledEvent) => void): Promise<UnlistenFn> {
     return listen<WriteCancelledEvent>('write-cancelled', (event) => {
         callback(event.payload)
     })
 }
 
-/**
- * Subscribes to write operation conflict events.
- * Only emitted when using Stop conflict resolution mode.
- * @param callback - Function to call when a conflict is detected
- * @returns Unsubscribe function
- */
+/** Only emitted in Stop conflict resolution mode. */
 export async function onWriteConflict(callback: (event: WriteConflictEvent) => void): Promise<UnlistenFn> {
     return listen<WriteConflictEvent>('write-conflict', (event) => {
         callback(event.payload)
     })
 }
 
-/**
- * Subscribes to scan progress events during dry-run operations.
- * @param callback - Function to call when scan progress is reported
- * @returns Unsubscribe function
- */
 export async function onScanProgress(callback: (event: ScanProgressEvent) => void): Promise<UnlistenFn> {
     return listen<ScanProgressEvent>('scan-progress', (event) => {
         callback(event.payload)
     })
 }
 
-/**
- * Subscribes to scan conflict events during dry-run operations.
- * Conflicts are streamed as they are detected.
- * @param callback - Function to call when a conflict is detected during scan
- * @returns Unsubscribe function
- */
 export async function onScanConflict(callback: (event: ConflictInfo) => void): Promise<UnlistenFn> {
     return listen<ConflictInfo>('scan-conflict', (event) => {
         callback(event.payload)
     })
 }
 
-/**
- * Subscribes to dry-run completion events.
- * Emitted when a dry-run operation finishes scanning.
- * @param callback - Function to call with the dry-run result
- * @returns Unsubscribe function
- */
 export async function onDryRunComplete(callback: (event: DryRunResult) => void): Promise<UnlistenFn> {
     return listen<DryRunResult>('dry-run-complete', (event) => {
         callback(event.payload)
@@ -441,13 +339,7 @@ export interface WriteOperationStats {
     elapsedSeconds: number
 }
 
-/**
- * Calculates derived statistics from a progress event.
- * Call this from your onProgress handler to get ETA, speed, etc.
- *
- * @param event - The progress event
- * @param startTime - When the operation started (Date.now() when you called copyFiles/etc)
- */
+/** Derives ETA, speed, and percent from a progress event. Pair with Date.now() from when the operation started. */
 export function calculateOperationStats(event: WriteProgressEvent, startTime: number): WriteOperationStats {
     const now = Date.now()
     const elapsedMs = now - startTime

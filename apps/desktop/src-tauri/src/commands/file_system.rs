@@ -26,14 +26,6 @@ use std::sync::mpsc::channel;
 #[cfg(target_os = "macos")]
 use tauri::Manager;
 
-/// Checks if a path exists.
-///
-/// # Arguments
-/// * `volume_id` - Optional volume ID. Defaults to "root" for local filesystem.
-/// * `path` - The path to check. Supports tilde expansion (~) for local volumes.
-///
-/// # Returns
-/// True if the path exists.
 #[tauri::command]
 pub async fn path_exists(volume_id: Option<String>, path: String) -> bool {
     let volume_id = volume_id.unwrap_or_else(|| "root".to_string());
@@ -55,15 +47,6 @@ pub async fn path_exists(volume_id: Option<String>, path: String) -> bool {
     path_buf.exists()
 }
 
-/// Creates a new directory.
-///
-/// # Arguments
-/// * `volume_id` - Optional volume ID. Defaults to "root" for local filesystem.
-/// * `parent_path` - The parent directory path. Supports tilde expansion (~) for local volumes.
-/// * `name` - The folder name to create.
-///
-/// # Returns
-/// The full path of the created directory, or an error message.
 #[tauri::command]
 pub async fn create_directory(volume_id: Option<String>, parent_path: String, name: String) -> Result<String, String> {
     if name.is_empty() {
@@ -126,19 +109,7 @@ pub async fn create_directory(volume_id: Option<String>, parent_path: String, na
 // On-demand virtual scrolling API
 // ============================================================================
 
-/// Starts a new directory listing (synchronous version).
-///
-/// Reads the directory once, caches it, and returns listing ID + total count.
-/// Frontend then fetches visible ranges on demand via `get_file_range`.
-///
-/// NOTE: This is the synchronous version. For non-blocking operation, use
-/// `list_directory_start_streaming` instead.
-///
-/// # Arguments
-/// * `path` - The directory path to list. Supports tilde expansion (~).
-/// * `include_hidden` - Whether to include hidden files in total count.
-/// * `sort_by` - Column to sort by (name, extension, size, modified, created).
-/// * `sort_order` - Ascending or descending.
+/// Synchronous version — prefer `list_directory_start_streaming` for non-blocking operation.
 #[tauri::command]
 pub fn list_directory_start(
     path: String,
@@ -152,25 +123,8 @@ pub fn list_directory_start(
         .map_err(|e| format!("Failed to start directory listing '{}': {}", path, e))
 }
 
-/// Starts a new streaming directory listing (async version).
-///
-/// Returns immediately with a listing ID and "loading" status. The actual
-/// directory reading happens in a background task, with progress events
-/// emitted every 500ms.
-///
-/// # Events emitted
-/// * `listing-progress` - Every 500ms with `{ listingId, loadedCount }`
-/// * `listing-complete` - When done with `{ listingId, totalCount, maxFilenameWidth }`
-/// * `listing-error` - On error with `{ listingId, message }`
-/// * `listing-cancelled` - If cancelled with `{ listingId }`
-///
-/// # Arguments
-/// * `app` - Tauri app handle (injected by Tauri).
-/// * `volume_id` - The volume ID (e.g., "root", "mtp-20-5:65537").
-/// * `path` - The directory path to list. Supports tilde expansion (~) for local volumes.
-/// * `include_hidden` - Whether to include hidden files in total count.
-/// * `sort_by` - Column to sort by (name, extension, size, modified, created).
-/// * `sort_order` - Ascending or descending.
+/// Returns immediately; reads in background.
+/// Emits listing-progress, listing-complete, listing-error, listing-cancelled.
 #[tauri::command]
 pub async fn list_directory_start_streaming(
     app: tauri::AppHandle,
@@ -201,28 +155,11 @@ pub async fn list_directory_start_streaming(
     .map_err(|e| format!("Failed to start directory listing '{}': {}", path, e))
 }
 
-/// Cancels an in-progress streaming directory listing.
-///
-/// Sets the cancellation flag, which will be checked by the background task.
-/// The task will emit a `listing-cancelled` event when it stops.
-///
-/// # Arguments
-/// * `listing_id` - The listing ID to cancel.
 #[tauri::command]
 pub fn cancel_listing(listing_id: String) {
     ops_cancel_listing(&listing_id);
 }
 
-/// Re-sorts an existing cached listing in-place.
-///
-/// # Arguments
-/// * `listing_id` - The listing ID from `list_directory_start`.
-/// * `sort_by` - Column to sort by.
-/// * `sort_order` - Ascending or descending.
-/// * `cursor_filename` - Optional filename to track; returns its new index after sorting.
-/// * `include_hidden` - Whether to include hidden files when calculating cursor index.
-/// * `selected_indices` - Optional indices of selected files to track through re-sort.
-/// * `all_selected` - If true, all files are selected (optimization).
 #[tauri::command]
 pub fn resort_listing(
     listing_id: String,
@@ -244,13 +181,6 @@ pub fn resort_listing(
     )
 }
 
-/// Gets a range of entries from a cached listing.
-///
-/// # Arguments
-/// * `listing_id` - The listing ID from `list_directory_start`.
-/// * `start` - Start index (0-based).
-/// * `count` - Number of entries to return.
-/// * `include_hidden` - Whether to include hidden files.
 #[tauri::command]
 pub fn get_file_range(
     listing_id: String,
@@ -261,69 +191,33 @@ pub fn get_file_range(
     ops_get_file_range(&listing_id, start, count, include_hidden)
 }
 
-/// Gets total count of entries in a cached listing.
-///
-/// # Arguments
-/// * `listing_id` - The listing ID from `list_directory_start`.
-/// * `include_hidden` - Whether to include hidden files in count.
 #[tauri::command]
 pub fn get_total_count(listing_id: String, include_hidden: bool) -> Result<usize, String> {
     ops_get_total_count(&listing_id, include_hidden)
 }
 
-/// Gets the maximum filename width for a cached listing.
-///
-/// Recalculates the width based on current entries using font metrics.
-/// This is useful after files are added/removed by the file watcher.
-///
-/// # Arguments
-/// * `listing_id` - The listing ID from `list_directory_start`.
-/// * `include_hidden` - Whether to include hidden files.
+/// Recalculates using font metrics — call after file watcher updates.
 #[tauri::command]
 pub fn get_max_filename_width(listing_id: String, include_hidden: bool) -> Result<Option<f32>, String> {
     ops_get_max_filename_width(&listing_id, include_hidden)
 }
 
-/// Finds the index of a file by name in a cached listing.
-///
-/// # Arguments
-/// * `listing_id` - The listing ID from `list_directory_start`.
-/// * `name` - File name to find.
-/// * `include_hidden` - Whether to include hidden files when calculating index.
 #[tauri::command]
 pub fn find_file_index(listing_id: String, name: String, include_hidden: bool) -> Result<Option<usize>, String> {
     ops_find_file_index(&listing_id, &name, include_hidden)
 }
 
-/// Gets a single file at the given index.
-///
-/// # Arguments
-/// * `listing_id` - The listing ID from `list_directory_start`.
-/// * `index` - Index of the file to get.
-/// * `include_hidden` - Whether to include hidden files when calculating index.
 #[tauri::command]
 pub fn get_file_at(listing_id: String, index: usize, include_hidden: bool) -> Result<Option<FileEntry>, String> {
     ops_get_file_at(&listing_id, index, include_hidden)
 }
 
-/// Ends a directory listing and cleans up the cache.
-///
-/// # Arguments
-/// * `listing_id` - The listing ID to clean up.
 #[tauri::command]
 pub fn list_directory_end(listing_id: String) {
     ops_list_directory_end(&listing_id);
 }
 
-/// Gets statistics about a cached listing.
-///
-/// Returns total file/dir counts and sizes. If `selected_indices` is provided,
-/// also returns statistics for the selected items.
-///
-/// # Arguments
-/// * `listing_id` - The listing ID from `list_directory_start`.
-/// * `include_hidden` - Whether to include hidden files in calculations.
-/// * `selected_indices` - Optional indices of selected files to calculate selection stats.
+/// Returns total file/dir counts and sizes, plus selection stats if `selected_indices` is given.
 #[tauri::command]
 pub fn get_listing_stats(
     listing_id: String,
@@ -354,19 +248,7 @@ pub fn benchmark_log(message: String) {
 // Write operations (copy, move, delete)
 // ============================================================================
 
-/// Starts a copy operation in the background.
-///
-/// # Events emitted
-/// * `write-progress` - Every 200ms (configurable) with progress
-/// * `write-complete` - On success
-/// * `write-error` - On error
-/// * `write-cancelled` - If cancelled
-///
-/// # Arguments
-/// * `app` - Tauri app handle (injected by Tauri).
-/// * `sources` - List of source file/directory paths. Supports tilde expansion (~).
-/// * `destination` - Destination directory path. Supports tilde expansion (~).
-/// * `config` - Optional configuration (progress interval, overwrite).
+/// Emits write-progress, write-complete, write-error, write-cancelled.
 #[tauri::command]
 pub async fn copy_files(
     app: tauri::AppHandle,
@@ -381,22 +263,8 @@ pub async fn copy_files(
     ops_copy_files_start(app, sources, destination, config).await
 }
 
-/// Starts a move operation in the background.
-///
-/// Uses rename() for same-filesystem moves (instant).
-/// Falls back to copy+delete for cross-filesystem moves.
-///
-/// # Events emitted
-/// * `write-progress` - Every 200ms (configurable) with progress
-/// * `write-complete` - On success
-/// * `write-error` - On error
-/// * `write-cancelled` - If cancelled
-///
-/// # Arguments
-/// * `app` - Tauri app handle (injected by Tauri).
-/// * `sources` - List of source file/directory paths. Supports tilde expansion (~).
-/// * `destination` - Destination directory path. Supports tilde expansion (~).
-/// * `config` - Optional configuration (progress interval, overwrite).
+/// Uses rename() for same-filesystem (instant), copy+delete for cross-filesystem.
+/// Same events as `copy_files`.
 #[tauri::command]
 pub async fn move_files(
     app: tauri::AppHandle,
@@ -411,20 +279,7 @@ pub async fn move_files(
     ops_move_files_start(app, sources, destination, config).await
 }
 
-/// Starts a delete operation in the background.
-///
-/// Recursively deletes files and directories.
-///
-/// # Events emitted
-/// * `write-progress` - Every 200ms (configurable) with progress
-/// * `write-complete` - On success
-/// * `write-error` - On error
-/// * `write-cancelled` - If cancelled
-///
-/// # Arguments
-/// * `app` - Tauri app handle (injected by Tauri).
-/// * `sources` - List of file/directory paths to delete. Supports tilde expansion (~).
-/// * `config` - Optional configuration (progress interval).
+/// Recursively deletes files and directories. Same events as `copy_files`.
 #[tauri::command]
 pub async fn delete_files(
     app: tauri::AppHandle,
@@ -437,14 +292,6 @@ pub async fn delete_files(
     ops_delete_files_start(app, sources, config).await
 }
 
-/// Cancels an in-progress write operation.
-///
-/// Sets the cancellation flag, which will be checked by the background task.
-/// The task will emit a `write-cancelled` event when it stops.
-///
-/// # Arguments
-/// * `operation_id` - The operation ID to cancel.
-/// * `rollback` - If true, delete any partial files created. If false, keep them.
 #[tauri::command]
 pub fn cancel_write_operation(operation_id: String, rollback: bool) {
     ops_cancel_write_operation(&operation_id, rollback);
@@ -454,24 +301,8 @@ pub fn cancel_write_operation(operation_id: String, rollback: bool) {
 // Scan preview (for Copy dialog live stats)
 // ============================================================================
 
-/// Starts a scan preview for the Copy dialog.
-///
-/// This immediately starts scanning the source files in the background and emits
-/// progress events. The scan results are cached and can be reused when starting
-/// the actual copy operation.
-///
-/// # Events emitted
-/// * `scan-preview-progress` - Based on progress_interval_ms setting
-/// * `scan-preview-complete` - When scanning finishes
-/// * `scan-preview-error` - On error
-/// * `scan-preview-cancelled` - If cancelled
-///
-/// # Arguments
-/// * `app` - Tauri app handle (injected by Tauri).
-/// * `sources` - List of source file/directory paths. Supports tilde expansion (~).
-/// * `sort_column` - Column to sort files by.
-/// * `sort_order` - Sort order (ascending/descending).
-/// * `progress_interval_ms` - Progress update interval in milliseconds (default: 500).
+/// Scans source files for Copy dialog stats. Results are cached for reuse by the actual copy.
+/// Emits scan-preview-progress, scan-preview-complete, scan-preview-error, scan-preview-cancelled.
 #[tauri::command]
 pub fn start_scan_preview(
     app: tauri::AppHandle,
@@ -485,49 +316,22 @@ pub fn start_scan_preview(
     ops_start_scan_preview(app, sources, sort_column, sort_order, progress_interval)
 }
 
-/// Cancels a running scan preview.
-///
-/// Sets the cancellation flag, which will stop the scan. A `scan-preview-cancelled`
-/// event will be emitted when the scan stops.
-///
-/// # Arguments
-/// * `preview_id` - The preview ID to cancel.
 #[tauri::command]
 pub fn cancel_scan_preview(preview_id: String) {
     ops_cancel_scan_preview(&preview_id);
 }
 
-/// Resolves a pending conflict for an in-progress write operation.
-///
-/// When an operation encounters a conflict in Stop mode, it emits a `write-conflict`
-/// event and waits for this function to be called. The operation will then proceed
-/// with the chosen resolution.
-///
-/// # Arguments
-/// * `operation_id` - The operation ID that has a pending conflict.
-/// * `resolution` - How to resolve the conflict (skip, overwrite, or rename).
-/// * `apply_to_all` - If true, apply this resolution to all future conflicts in this operation.
+/// In Stop mode, the operation pauses on conflict and waits for this call to proceed.
 #[tauri::command]
 pub fn resolve_write_conflict(operation_id: String, resolution: ConflictResolution, apply_to_all: bool) {
     ops_resolve_write_conflict(&operation_id, resolution, apply_to_all);
 }
 
-/// Lists all active write operations.
-///
-/// Returns a list of operation summaries for all currently running operations.
-/// This is useful for showing a global progress view or managing multiple concurrent operations.
 #[tauri::command]
 pub fn list_active_operations() -> Vec<OperationSummary> {
     ops_list_active_operations()
 }
 
-/// Gets the detailed status of a specific write operation.
-///
-/// Returns the current status including phase, progress, and file information.
-/// Returns None if the operation is not found (either never existed or already completed).
-///
-/// # Arguments
-/// * `operation_id` - The operation ID to query.
 #[tauri::command]
 pub fn get_operation_status(operation_id: String) -> Option<OperationStatus> {
     ops_get_operation_status(&operation_id)
@@ -537,19 +341,7 @@ pub fn get_operation_status(operation_id: String) -> Option<OperationStatus> {
 // Drag operations
 // ============================================================================
 
-/// Starts a native drag operation for selected files from a cached listing (macOS only).
-///
-/// This initiates the drag from Rust directly, avoiding IPC transfer of file paths.
-/// The paths are looked up from LISTING_CACHE using the provided indices.
-///
-/// # Arguments
-/// * `app` - Tauri app handle for accessing the window
-/// * `listing_id` - The listing ID from `list_directory_start`
-/// * `selected_indices` - Frontend indices of selected files
-/// * `include_hidden` - Whether hidden files are shown (affects index mapping)
-/// * `has_parent` - Whether the ".." entry is shown at index 0
-/// * `mode` - Drag mode: "copy" or "move"
-/// * `icon_path` - Path to the drag preview icon (temp file)
+/// Initiates native drag from Rust directly, looking up paths from LISTING_CACHE (macOS only).
 #[cfg(target_os = "macos")]
 #[tauri::command]
 pub fn start_selection_drag(
@@ -637,26 +429,7 @@ pub fn start_selection_drag(
 // Unified volume copy commands
 // ============================================================================
 
-/// Copy files between any two volumes (local, MTP, etc.).
-///
-/// This is the unified copy command that works for all volume types:
-/// - Local → Local (regular file copy)
-/// - Local → MTP (upload to Android device)
-/// - MTP → Local (download from Android device)
-///
-/// # Events emitted
-/// * `write-progress` - Progress updates
-/// * `write-complete` - On success
-/// * `write-error` - On error
-/// * `write-cancelled` - If cancelled
-///
-/// # Arguments
-/// * `app` - Tauri app handle (injected by Tauri)
-/// * `source_volume_id` - ID of the source volume (e.g., "root" for local filesystem)
-/// * `source_paths` - List of source file/directory paths relative to source volume
-/// * `dest_volume_id` - ID of the destination volume
-/// * `dest_path` - Destination directory path relative to destination volume
-/// * `config` - Optional copy configuration (progress interval, conflict resolution)
+/// Unified copy across volume types (local, MTP, etc.). Same events as `copy_files`.
 #[tauri::command]
 pub async fn copy_between_volumes(
     app: tauri::AppHandle,
@@ -687,21 +460,7 @@ pub async fn copy_between_volumes(
     ops_copy_between_volumes(app, source_volume, source_paths, dest_volume, dest_path, config).await
 }
 
-/// Scans source files for a volume copy operation without executing it.
-///
-/// This performs a "pre-flight" scan to determine:
-/// - Total file count and bytes to copy
-/// - Available space on destination
-/// - Any conflicts (files that already exist at destination)
-///
-/// Use this to show users what will happen before they confirm a copy.
-///
-/// # Arguments
-/// * `source_volume_id` - ID of the source volume
-/// * `source_paths` - List of source file/directory paths
-/// * `dest_volume_id` - ID of the destination volume
-/// * `dest_path` - Destination directory path
-/// * `max_conflicts` - Maximum number of conflicts to return (for performance)
+/// Pre-flight scan: total count/bytes, available space, conflicts. Doesn't copy anything.
 #[tauri::command]
 pub async fn scan_volume_for_copy(
     source_volume_id: String,
@@ -731,15 +490,7 @@ pub async fn scan_volume_for_copy(
     .map_err(|e| format!("Scan task failed: {}", e))?
 }
 
-/// Scans destination volume for conflicts with source items.
-///
-/// Checks if any of the source item names already exist at the destination path.
-/// Returns detailed conflict information for UI display.
-///
-/// # Arguments
-/// * `volume_id` - ID of the destination volume to scan
-/// * `source_items` - List of source items to check (name, size, modified timestamp)
-/// * `dest_path` - Destination directory path on the volume
+/// Checks which source items already exist at the destination. Returns conflict details for UI.
 #[tauri::command]
 pub async fn scan_volume_for_conflicts(
     volume_id: String,

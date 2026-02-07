@@ -313,8 +313,8 @@ These slot into the existing severity tiers -- the scan walker duplication and 1
 
 - [ ] Extract shared draggable dialog utility from CopyDialog + CopyProgressDialog (~30 duplicate lines) `[medium]`
 - [ ] Extract shared MTP error parsing utility from MtpConnectionView + mtp-store `[quick fix]`
-- [ ] Remove verbose JSDoc that restates function names (~32 functions across TS/Svelte files) `[medium — batch]`
-- [ ] Remove verbose # Arguments doc blocks on one-line Rust wrappers in commands/file_system.rs `[medium — batch]`
+- [x] Remove verbose JSDoc that restates function names (~32 functions across TS/Svelte files) `[medium — batch]`
+- [x] Remove verbose # Arguments doc blocks on one-line Rust wrappers in commands/file_system.rs `[medium — batch]`
 - [ ] Deduplicate CSS patterns: size-color classes, .close-button, .modal-overlay, monospace font stack, hardcoded colors `[medium]`
 - [x] Remove dead code: formatLicenseKey(), stale Go monorepo path, commented-out CSS, scaffold comments `[quick fix]`
 - [x] Remove "Phase N" dead code stubs in mtp/connection/mod.rs `[quick fix]`

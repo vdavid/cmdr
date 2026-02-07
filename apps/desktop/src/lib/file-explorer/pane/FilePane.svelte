@@ -138,53 +138,44 @@
     // Network browsing state - tracked here for history navigation integration
     let currentNetworkHost = $state<NetworkHost | null>(null)
 
-    // Export method for keyboard shortcut
     export function toggleVolumeChooser() {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         volumeBreadcrumbRef?.toggle()
     }
 
-    // Check if volume chooser is open (for event routing)
     export function isVolumeChooserOpen(): boolean {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
         return volumeBreadcrumbRef?.getIsOpen() ?? false
     }
 
-    // Close the volume chooser dropdown (for coordination between panes)
     export function closeVolumeChooser() {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         volumeBreadcrumbRef?.close()
     }
 
-    // Open the volume chooser dropdown (for MCP)
     export function openVolumeChooser() {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         volumeBreadcrumbRef?.open()
     }
 
-    // Forward keyboard events to volume chooser when open
     export function handleVolumeChooserKeyDown(e: KeyboardEvent): boolean {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
         return volumeBreadcrumbRef?.handleKeyDown(e) ?? false
     }
 
-    // Get current listing ID for re-sorting
     export function getListingId(): string {
         return listingId
     }
 
-    // Check if the pane is currently loading
     export function isLoading(): boolean {
         return loading
     }
 
-    // Get the filename of the file under the cursor for cursor tracking during re-sort
     export function getFilenameUnderCursor(): string | undefined {
         return entryUnderCursor?.name
     }
 
-    // Set cursor index directly (for cursor tracking after re-sort)
-    // Also scrolls the view to make the cursor visible, then syncs to MCP
+    /** Also scrolls to make the cursor visible and syncs state to MCP. */
     export async function setCursorIndex(index: number): Promise<void> {
         cursorIndex = index
         void fetchEntryUnderCursor()
@@ -197,47 +188,39 @@
         void syncPaneStateToMcp()
     }
 
-    // Get current cursor index
     export function getCursorIndex(): number {
         return cursorIndex
     }
 
-    // Get selected indices (for selection preservation during re-sort)
     export function getSelectedIndices(): number[] {
         return selection.getSelectedIndices()
     }
 
-    // Check if the ".." entry is shown (needed for index adjustment in copy/move operations)
+    /** Whether ".." is shown — needed for index adjustment in copy/move. */
     export function hasParentEntry(): boolean {
         return hasParent
     }
 
-    // Check if all files are selected (optimization for resort)
     export function isAllSelected(): boolean {
         return selection.isAllSelected(hasParent, effectiveTotalCount)
     }
 
-    // Set selected indices directly (for selection preservation after re-sort)
     export function setSelectedIndices(indices: number[]): void {
         selection.setSelectedIndices(indices)
     }
 
-    // Export clearSelection for MCP
     export function clearSelection(): void {
         selection.clearSelection()
     }
 
-    // Export selectAll for MCP
     export function selectAll(): void {
         selection.selectAll(hasParent, effectiveTotalCount)
     }
 
-    // Export toggle selection at cursor for MCP
     export function toggleSelectionAtCursor(): void {
         selection.toggleAt(cursorIndex, hasParent)
     }
 
-    // Export select range for MCP
     export function selectRange(startIndex: number, endIndex: number): void {
         selection.selectRange(startIndex, endIndex, hasParent)
     }
@@ -245,28 +228,23 @@
     // Cache generation counter - incremented to force list components to re-fetch
     let cacheGeneration = $state(0)
 
-    // Force refresh the view by incrementing cache generation
     export function refreshView(): void {
         cacheGeneration++
     }
 
-    // Check if this pane is showing an MTP volume
     export function isMtp(): boolean {
         return isMtpView
     }
 
-    // Get the current volume ID
     export function getVolumeId(): string {
         return volumeId
     }
 
-    // Get the current path
     export function getCurrentPath(): string {
         return currentPath
     }
 
-    // Get selected files from MTP browser - DEPRECATED, use standard selection
-    // For MTP views, this now returns files from the standard listing
+    /** @deprecated Use standard selection instead. */
     export async function getMtpSelectedFiles(): Promise<FileEntry[]> {
         if (!isMtpView || !listingId) return []
         const files: FileEntry[] = []
@@ -280,21 +258,19 @@
         return files
     }
 
-    // Get file under cursor from MTP browser - DEPRECATED, use standard cursor
-    // For MTP views, this now returns the file from the standard listing
+    /** @deprecated Use standard cursor instead. */
     export function getMtpEntryUnderCursor(): FileEntry | null {
         if (!isMtpView) return null
         return entryUnderCursor
     }
 
-    // Set network host state (for history navigation)
     export function setNetworkHost(host: NetworkHost | null): void {
         currentNetworkHost = host
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         networkMountViewRef?.setNetworkHost(host)
     }
 
-    // Navigate to parent directory, selecting the folder we came from
+    /** Navigates up and selects the folder we came from. Returns false if already at root. */
     export async function navigateToParent(): Promise<boolean> {
         if (currentPath === '/' || currentPath === volumePath) {
             return false // Already at root
