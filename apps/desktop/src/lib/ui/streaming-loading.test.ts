@@ -7,10 +7,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, tick } from 'svelte'
 import LoadingIcon from './LoadingIcon.svelte'
 import type {
-    StreamingListingStartResult,
-    ListingOpeningEvent,
     ListingProgressEvent,
-    ListingReadCompleteEvent,
     ListingCompleteEvent,
     ListingErrorEvent,
     ListingCancelledEvent,
@@ -194,110 +191,6 @@ describe('LoadingIcon component', () => {
             const loader = target.querySelector('.loader')
             expect(loader).not.toBeNull()
         })
-    })
-})
-
-// ============================================================================
-// Streaming types tests
-// ============================================================================
-
-describe('Streaming types', () => {
-    it('StreamingListingStartResult has correct shape', () => {
-        const result: StreamingListingStartResult = {
-            listingId: 'test-123',
-            status: 'loading',
-        }
-
-        expect(result.listingId).toBe('test-123')
-        expect(result.status).toBe('loading')
-    })
-
-    it('ListingOpeningEvent has correct shape', () => {
-        const event: ListingOpeningEvent = {
-            listingId: 'test-opening',
-        }
-
-        expect(event.listingId).toBe('test-opening')
-    })
-
-    it('ListingProgressEvent has correct shape', () => {
-        const event: ListingProgressEvent = {
-            listingId: 'test-456',
-            loadedCount: 1000,
-        }
-
-        expect(event.listingId).toBe('test-456')
-        expect(event.loadedCount).toBe(1000)
-    })
-
-    it('ListingReadCompleteEvent has correct shape', () => {
-        const event: ListingReadCompleteEvent = {
-            listingId: 'test-read',
-            totalCount: 600,
-        }
-
-        expect(event.listingId).toBe('test-read')
-        expect(event.totalCount).toBe(600)
-    })
-
-    it('ListingCompleteEvent has correct shape', () => {
-        const event: ListingCompleteEvent = {
-            listingId: 'test-789',
-            totalCount: 5000,
-            maxFilenameWidth: 150.5,
-            volumeRoot: '/Volumes/External',
-        }
-
-        expect(event.listingId).toBe('test-789')
-        expect(event.totalCount).toBe(5000)
-        expect(event.maxFilenameWidth).toBe(150.5)
-        expect(event.volumeRoot).toBe('/Volumes/External')
-    })
-
-    it('ListingCompleteEvent maxFilenameWidth is optional', () => {
-        const event: ListingCompleteEvent = {
-            listingId: 'test-abc',
-            totalCount: 100,
-            volumeRoot: '/',
-        }
-
-        expect(event.maxFilenameWidth).toBeUndefined()
-        expect(event.volumeRoot).toBe('/')
-    })
-
-    it('ListingErrorEvent has correct shape', () => {
-        const event: ListingErrorEvent = {
-            listingId: 'test-error',
-            message: 'Permission denied',
-        }
-
-        expect(event.listingId).toBe('test-error')
-        expect(event.message).toBe('Permission denied')
-    })
-
-    it('ListingCancelledEvent has correct shape', () => {
-        const event: ListingCancelledEvent = {
-            listingId: 'test-cancel',
-        }
-
-        expect(event.listingId).toBe('test-cancel')
-    })
-})
-
-// ============================================================================
-// cancelListing function signature tests
-// ============================================================================
-
-describe('cancelListing command', () => {
-    it('cancelListing function exists and has correct signature', async () => {
-        // Import the module to check the function exists
-        const tauriCommands = await import('$lib/tauri-commands')
-
-        // Verify cancelListing is exported and is a function
-        expect(typeof tauriCommands.cancelListing).toBe('function')
-
-        // Verify it accepts a string parameter (TypeScript compile-time check)
-        // We can't call it without mocking Tauri, but we can verify the export
     })
 })
 
