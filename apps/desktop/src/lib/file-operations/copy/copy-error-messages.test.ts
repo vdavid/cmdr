@@ -151,7 +151,7 @@ describe('getUserFriendlyMessage', () => {
             }
             const result = getUserFriendlyMessage(error)
 
-            expect(result.message).toContain('error occurred')
+            expect(result.message).toBe("Couldn't copy the file.")
         })
 
         it('detects read-only device errors', () => {

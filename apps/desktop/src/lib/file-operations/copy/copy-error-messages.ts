@@ -144,7 +144,7 @@ function getIoErrorMessage(rawMessage: string): string {
     }
 
     // Default
-    return 'An error occurred while copying the file.'
+    return "Couldn't copy the file."
 }
 
 /**
