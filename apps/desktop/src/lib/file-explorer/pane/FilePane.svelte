@@ -328,6 +328,8 @@
     let unlistenReadComplete: UnlistenFn | undefined
     // Sync status map for visible files
     let syncStatusMap = $state<Record<string, SyncStatus>>({})
+    const syncPollIntervalMs = 3000
+    let syncPollInterval: ReturnType<typeof setInterval>
 
     // Derive includeHidden from showHiddenFiles prop
     const includeHidden = $derived(showHiddenFiles)
@@ -1165,6 +1167,12 @@
             log.debug('[FilePane] onMount: SKIPPING loadDirectory for paneId={paneId}', { paneId })
         }
 
+        // Poll sync status so iCloud/Dropbox icons update while idle
+        syncPollInterval = setInterval(() => {
+            const paths = Object.keys(syncStatusMap)
+            if (!listingId || !isFocused || paths.length === 0) return
+            void fetchSyncStatusForPaths(paths)
+        }, syncPollIntervalMs)
     })
 
     onDestroy(() => {
@@ -1173,6 +1181,7 @@
             void cancelListing(listingId)
             void listDirectoryEnd(listingId)
         }
+        clearInterval(syncPollInterval)
         unlistenOpening?.()
         unlistenProgress?.()
         unlistenReadComplete?.()
