@@ -605,63 +605,6 @@ mod tests {
         assert_eq!(COMMERCIAL_REMINDER_INTERVAL_SECS, 30 * 24 * 60 * 60);
     }
 
-    // Note: Mock status tests that required a tauri::AppHandle have been converted to
-    // test the parsing logic via environment variable simulation in integration tests.
-    // The mock status function now requires an AppHandle for consistency with the rest
-    // of the licensing system, but mock parsing is tested via the status serialization tests.
-
-    #[cfg(debug_assertions)]
-    #[test]
-    fn test_mock_env_var_parsing() {
-        // Test that the mock environment variable values are correctly parsed
-        // by checking the expected AppStatus variants match the documented values.
-        // These tests verify the string parsing without needing a full tauri::AppHandle.
-
-        // Test Personal variant
-        let personal = AppStatus::Personal {
-            show_commercial_reminder: false,
-        };
-        assert!(matches!(
-            personal,
-            AppStatus::Personal {
-                show_commercial_reminder: false
-            }
-        ));
-
-        // Test Personal with reminder
-        let personal_reminder = AppStatus::Personal {
-            show_commercial_reminder: true,
-        };
-        assert!(matches!(
-            personal_reminder,
-            AppStatus::Personal {
-                show_commercial_reminder: true
-            }
-        ));
-
-        // Test Supporter variant
-        let supporter = AppStatus::Supporter {
-            show_commercial_reminder: false,
-        };
-        assert!(matches!(
-            supporter,
-            AppStatus::Supporter {
-                show_commercial_reminder: false
-            }
-        ));
-
-        // Test Supporter with reminder
-        let supporter_reminder = AppStatus::Supporter {
-            show_commercial_reminder: true,
-        };
-        assert!(matches!(
-            supporter_reminder,
-            AppStatus::Supporter {
-                show_commercial_reminder: true
-            }
-        ));
-    }
-
     #[test]
     fn test_expired_status_structure() {
         // Test that expired status has correct structure
