@@ -31,7 +31,7 @@
     import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
     import { getSetting } from '$lib/settings'
     import DirectionIndicator from './DirectionIndicator.svelte'
-    import DraggableDialog from '$lib/ui/DraggableDialog.svelte'
+    import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import { getAppLogger } from '$lib/logger'
 
     /** Returns CSS class for size coloring based on bytes (kb/mb/gb/tb) */
@@ -363,11 +363,7 @@
     }
 
     function handleKeydown(event: KeyboardEvent) {
-        event.stopPropagation()
-        if (event.key === 'Escape') {
-            // Escape key cancels without rollback (keeps partial files)
-            void handleCancel(false)
-        } else if (event.key === 'Tab') {
+        if (event.key === 'Tab') {
             // Trap focus within the dialog
             const overlay = event.currentTarget as HTMLElement
             const focusableElements = overlay.querySelectorAll<HTMLElement>(
@@ -406,7 +402,13 @@
     })
 </script>
 
-<DraggableDialog titleId="progress-dialog-title" onkeydown={handleKeydown}>
+<ModalDialog
+    titleId="progress-dialog-title"
+    onkeydown={handleKeydown}
+    dialogId="copy-progress"
+    onclose={() => void handleCancel(false)}
+    containerStyle="min-width: 420px; max-width: 500px"
+>
     {#snippet title()}
         {#if isRollingBack}
             Rolling back...
@@ -596,7 +598,7 @@
             </button>
         </div>
     {/if}
-</DraggableDialog>
+</ModalDialog>
 
 <style>
     /* Progress stages */

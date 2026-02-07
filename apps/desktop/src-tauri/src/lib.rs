@@ -368,6 +368,7 @@ pub fn run() {
             mcp::pane_state::update_focused_pane,
             mcp::dialog_state::notify_dialog_opened,
             mcp::dialog_state::notify_dialog_closed,
+            mcp::dialog_state::register_known_dialogs,
             mcp::settings_state::mcp_update_settings_state,
             mcp::settings_state::mcp_update_settings_open,
             mcp::settings_state::mcp_update_settings_section,

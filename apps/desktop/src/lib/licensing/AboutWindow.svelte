@@ -1,9 +1,9 @@
 <script lang="ts">
-    import { onMount, tick } from 'svelte'
+    import { onMount } from 'svelte'
     import { getCachedStatus } from './licensing-store.svelte'
     import { openExternalUrl } from '$lib/tauri-commands'
+    import ModalDialog from '$lib/ui/ModalDialog.svelte'
 
-    /** Props */
     interface Props {
         onClose: () => void
     }
@@ -15,14 +15,8 @@
 
     // Version will be loaded from Tauri
     let version = $state('0.0.0')
-    let overlayElement: HTMLDivElement | undefined = $state()
 
     onMount(async () => {
-        // Focus overlay so keyboard events work immediately
-        void tick().then(() => {
-            overlayElement?.focus()
-        })
-
         try {
             const { getVersion } = await import('@tauri-apps/api/app')
             version = await getVersion()
@@ -81,14 +75,6 @@
         return status?.type === 'supporter'
     }
 
-    function handleKeydown(event: KeyboardEvent) {
-        // Stop propagation to prevent file explorer from handling keys while modal is open
-        event.stopPropagation()
-        if (event.key === 'Escape') {
-            onClose()
-        }
-    }
-
     function handleLinkClick(url: string) {
         return (event: MouseEvent) => {
             event.preventDefault()
@@ -97,25 +83,25 @@
     }
 </script>
 
-<div
-    bind:this={overlayElement}
-    class="about-overlay"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="about-title"
-    tabindex="-1"
-    onkeydown={handleKeydown}
+<ModalDialog
+    titleId="about-title"
+    blur
+    dialogId="about"
+    onclose={onClose}
+    containerStyle="min-width: 380px; max-width: 480px"
 >
-    <div class="about-window">
-        <button class="close-button" onclick={onClose} aria-label="Close">×</button>
+    {#snippet title()}
+        <!-- Title is visually hidden, app name serves as the visual title -->
+        <span class="sr-only">About Cmdr</span>
+    {/snippet}
 
+    <div class="about-body">
         <div class="about-content">
             <div class="app-icon">
-                <!-- App icon placeholder -->
                 <span class="icon-text">⌘</span>
             </div>
 
-            <h1 id="about-title" class="app-name">Cmdr</h1>
+            <p class="app-name">Cmdr</p>
             <p class="app-tagline">Keyboard-driven file manager</p>
 
             <div class="version-info">
@@ -153,48 +139,23 @@
             <p class="copyright">© 2024-2026 David Veszelovszki</p>
         </div>
     </div>
-</div>
+</ModalDialog>
 
 <style>
-    .about-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.6);
-        backdrop-filter: blur(4px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-    }
-
-    .about-window {
-        background: var(--color-bg-secondary);
-        border: 1px solid var(--color-border-primary);
-        border-radius: 12px;
-        padding: 32px;
-        min-width: 380px;
-        max-width: 480px;
-        position: relative;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-    }
-
-    .close-button {
+    .sr-only {
         position: absolute;
-        top: 12px;
-        right: 12px;
-        background: none;
-        border: none;
-        color: var(--color-text-secondary);
-        font-size: 24px;
-        cursor: pointer;
-        padding: 4px 8px;
-        line-height: 1;
-        border-radius: 4px;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+        border: 0;
     }
 
-    .close-button:hover {
-        background: var(--color-button-hover);
-        color: var(--color-text-primary);
+    .about-body {
+        padding: 0 32px 32px;
     }
 
     .about-content {

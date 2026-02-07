@@ -1,82 +1,44 @@
 <script lang="ts">
-    /**
-     * Simple alert dialog for showing informational messages.
-     */
-    import { onMount, tick } from 'svelte'
+    import ModalDialog from '$lib/ui/ModalDialog.svelte'
 
     interface Props {
-        /** Dialog title */
         title: string
-        /** Message to display */
         message: string
-        /** Button text (defaults to "OK") */
         buttonText?: string
-        /** Callback when dialog is dismissed */
         onClose: () => void
     }
 
-    const { title, message, buttonText = 'OK', onClose }: Props = $props()
-
-    let overlayElement: HTMLDivElement | undefined = $state()
+    const { title: dialogTitle, message, buttonText = 'OK', onClose }: Props = $props()
 
     function handleKeydown(event: KeyboardEvent) {
-        event.stopPropagation()
-        if (event.key === 'Escape' || event.key === 'Enter') {
+        if (event.key === 'Enter') {
             onClose()
         }
     }
-
-    onMount(async () => {
-        await tick()
-        overlayElement?.focus()
-    })
 </script>
 
-<div
-    bind:this={overlayElement}
-    class="modal-overlay"
-    role="alertdialog"
-    aria-modal="true"
-    aria-labelledby="alert-dialog-title"
-    aria-describedby="alert-dialog-message"
-    tabindex="-1"
+<ModalDialog
+    titleId="alert-dialog-title"
     onkeydown={handleKeydown}
+    role="alertdialog"
+    dialogId="alert"
+    onclose={onClose}
+    ariaDescribedby="alert-dialog-message"
+    containerStyle="width: 360px"
 >
-    <div class="alert-dialog">
-        <h2 id="alert-dialog-title">{title}</h2>
+    {#snippet title()}{dialogTitle}{/snippet}
+
+    <div class="alert-body">
         <p id="alert-dialog-message" class="message">{message}</p>
         <div class="button-row">
             <button class="primary" onclick={onClose}>{buttonText}</button>
         </div>
     </div>
-</div>
+</ModalDialog>
 
 <style>
-    .modal-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.4);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-    }
-
-    .alert-dialog {
-        background: var(--color-bg-secondary);
-        border: 1px solid var(--color-border-primary);
-        border-radius: 12px;
-        width: 360px;
-        padding: 20px 24px;
-        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
-    }
-
-    h2 {
-        margin: 0 0 12px;
-        font-size: 16px;
-        font-weight: 600;
-        color: var(--color-text-primary);
-        text-align: center;
+    .alert-body {
+        padding: 0 24px 20px;
     }
 
     .message {

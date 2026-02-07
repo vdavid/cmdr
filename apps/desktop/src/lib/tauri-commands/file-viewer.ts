@@ -248,6 +248,11 @@ export async function notifyDialogClosed(dialogType: string): Promise<void> {
     await invoke('notify_dialog_closed', { dialogType })
 }
 
+/** Register all known soft dialog types with the backend for the MCP "available dialogs" resource. */
+export async function registerKnownDialogs(dialogs: readonly { id: string; description?: string }[]): Promise<void> {
+    await invoke('register_known_dialogs', { dialogs })
+}
+
 // ============================================================================
 // File action commands (for command palette)
 // ============================================================================

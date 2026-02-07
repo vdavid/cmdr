@@ -1,5 +1,6 @@
 <script lang="ts">
     import { markExpirationModalShown, openExternalUrl } from '$lib/tauri-commands'
+    import ModalDialog from '$lib/ui/ModalDialog.svelte'
 
     interface Props {
         organizationName: string | null
@@ -24,23 +25,22 @@
     }
 
     async function handleRenew() {
-        // Open renew page in the system browser
         await openExternalUrl('https://getcmdr.com/renew')
-    }
-
-    function handleKeydown(event: KeyboardEvent) {
-        // Stop propagation to prevent file explorer from handling keys while modal is open
-        event.stopPropagation()
-        if (event.key === 'Escape') {
-            void handleDismiss()
-        }
     }
 </script>
 
-<div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title" onkeydown={handleKeydown}>
-    <div class="modal-content">
-        <h2 id="modal-title">Your commercial license has expired</h2>
+<ModalDialog
+    titleId="modal-title"
+    blur
+    dialogId="expiration"
+    onclose={() => {
+        void handleDismiss()
+    }}
+    containerStyle="max-width: 420px; background: var(--color-bg-primary); border-color: var(--color-border)"
+>
+    {#snippet title()}Your commercial license has expired{/snippet}
 
+    <div class="modal-body">
         {#if organizationName}
             <p class="org-name">License for: <strong>{organizationName}</strong></p>
         {/if}
@@ -58,34 +58,11 @@
             <button class="secondary" onclick={handleDismiss}>Continue in personal mode</button>
         </div>
     </div>
-</div>
+</ModalDialog>
 
 <style>
-    .modal-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.6);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-        backdrop-filter: blur(4px);
-    }
-
-    .modal-content {
-        background: var(--color-bg-primary);
-        border: 1px solid var(--color-border);
-        border-radius: 12px;
-        padding: 24px 32px;
-        max-width: 420px;
-        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
-    }
-
-    h2 {
-        margin: 0 0 16px;
-        font-size: 18px;
-        font-weight: 600;
-        color: var(--color-text-primary);
+    .modal-body {
+        padding: 0 32px 24px;
     }
 
     .org-name {

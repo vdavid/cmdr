@@ -2,6 +2,7 @@
     import { onMount, tick } from 'svelte'
     import { activateLicense, validateLicenseWithServer, getLicenseInfo, type LicenseInfo } from '$lib/tauri-commands'
     import { loadLicenseStatus, getCachedStatus } from './licensing-store.svelte'
+    import ModalDialog from '$lib/ui/ModalDialog.svelte'
 
     interface Props {
         onClose: () => void
@@ -15,7 +16,6 @@
     let isActivating = $state(false)
     let hasError = $state(false)
     let inputElement: HTMLInputElement | undefined = $state()
-    let overlayElement: HTMLDivElement | undefined = $state()
 
     // Existing license info (if any)
     let existingLicense = $state<LicenseInfo | null>(null)
@@ -53,11 +53,9 @@
     const isPerpetual = $derived(status?.type === 'commercial' && status.licenseType === 'commercial_perpetual')
 
     function getErrorHelpText(errorMessage: string): string {
-        // Check if this is a "not found" error from the license server
         if (errorMessage.includes('not found') || errorMessage.includes('expired')) {
             return '\n\nPlease verify that you pasted the correct license key from your purchase email.'
         }
-        // For other errors (network issues, server errors, etc.)
         return '\n\nPlease check your internet connection and try activating your license again.'
     }
 
@@ -73,10 +71,6 @@
         } finally {
             isLoading = false
         }
-
-        // Focus overlay so keyboard events work immediately
-        await tick()
-        overlayElement?.focus()
 
         // Only focus input if entering a new license
         if (!existingLicense) {
@@ -118,43 +112,40 @@
     }
 
     function handleKeydown(event: KeyboardEvent) {
-        // Stop propagation to prevent file explorer from handling keys while modal is open
-        event.stopPropagation()
-        if (event.key === 'Escape') {
-            onClose()
-        } else if (event.key === 'Enter' && !isActivating && !hasExistingLicense) {
+        if (event.key === 'Enter' && !isActivating && !hasExistingLicense) {
             void handleActivate()
         }
     }
 
     function handleInputKeydown(event: KeyboardEvent) {
-        // Allow Enter to submit (only for new license entry)
         if (event.key === 'Enter' && !isActivating && !hasExistingLicense) {
             event.preventDefault()
+            event.stopPropagation()
             void handleActivate()
         }
-        // Stop propagation for all keys to prevent file explorer shortcuts
-        event.stopPropagation()
     }
 </script>
 
-<div
-    bind:this={overlayElement}
-    class="modal-overlay"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="dialog-title"
-    tabindex="-1"
+<ModalDialog
+    titleId="dialog-title"
     onkeydown={handleKeydown}
+    blur
+    dialogId="license"
+    onclose={onClose}
+    containerStyle="min-width: 400px; max-width: 500px"
 >
-    <div class="modal-content">
-        <button class="close-button" onclick={onClose} aria-label="Close">×</button>
-
+    {#snippet title()}
         {#if isLoading}
-            <h2 id="dialog-title">Loading...</h2>
+            Loading...
         {:else if hasExistingLicense}
-            <h2 id="dialog-title">License details</h2>
+            License details
+        {:else}
+            Enter license key
+        {/if}
+    {/snippet}
 
+    <div class="dialog-body">
+        {#if !isLoading && hasExistingLicense}
             <p class="description">Your software is registered to {organizationName} with the license key:</p>
 
             <div class="input-group">
@@ -185,9 +176,7 @@
             <div class="actions">
                 <button class="primary" onclick={onClose}>Close</button>
             </div>
-        {:else}
-            <h2 id="dialog-title">Enter license key</h2>
-
+        {:else if !isLoading}
             <p class="description">Paste your license key from the email you received after purchase.</p>
 
             <div class="input-group">
@@ -223,55 +212,11 @@
             </div>
         {/if}
     </div>
-</div>
+</ModalDialog>
 
 <style>
-    .modal-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.6);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-        backdrop-filter: blur(4px);
-    }
-
-    .modal-content {
-        background: var(--color-bg-secondary);
-        border: 1px solid var(--color-border-primary);
-        border-radius: 12px;
-        padding: 24px 32px;
-        min-width: 400px;
-        max-width: 500px;
-        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
-        position: relative;
-    }
-
-    .close-button {
-        position: absolute;
-        top: 12px;
-        right: 12px;
-        background: none;
-        border: none;
-        color: var(--color-text-secondary);
-        font-size: 24px;
-        cursor: pointer;
-        padding: 4px 8px;
-        line-height: 1;
-        border-radius: 4px;
-    }
-
-    .close-button:hover {
-        background: var(--color-button-hover);
-        color: var(--color-text-primary);
-    }
-
-    h2 {
-        margin: 0 0 12px;
-        font-size: 18px;
-        font-weight: 600;
-        color: var(--color-text-primary);
+    .dialog-body {
+        padding: 0 32px 24px;
     }
 
     .description {

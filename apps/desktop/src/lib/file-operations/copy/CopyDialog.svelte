@@ -10,8 +10,6 @@
         onScanPreviewError,
         onScanPreviewCancelled,
         scanVolumeForConflicts,
-        notifyDialogOpened,
-        notifyDialogClosed,
         type VolumeSpaceInfo,
         type VolumeConflictInfo,
         type SourceItemInput,
@@ -20,7 +18,7 @@
     import type { VolumeInfo, SortColumn, SortOrder, ConflictResolution } from '$lib/file-explorer/types'
     import { getSetting } from '$lib/settings'
     import DirectionIndicator from './DirectionIndicator.svelte'
-    import DraggableDialog from '$lib/ui/DraggableDialog.svelte'
+    import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import { generateTitle } from './copy-dialog-utils'
     import { getAppLogger } from '$lib/logger'
 
@@ -220,9 +218,6 @@
     }
 
     onMount(async () => {
-        // Track dialog open state for MCP
-        void notifyDialogOpened('copy-confirmation')
-
         // Focus and select the path input
         await tick()
         pathInputRef?.focus()
@@ -236,9 +231,6 @@
     })
 
     onDestroy(() => {
-        // Track dialog close state for MCP
-        void notifyDialogClosed('copy-confirmation')
-
         // Cancel scan preview if still running
         if (previewId && isScanning) {
             void cancelScanPreview(previewId)
@@ -261,26 +253,27 @@
     }
 
     function handleKeydown(event: KeyboardEvent) {
-        event.stopPropagation()
-        if (event.key === 'Escape') {
-            handleCancel()
-        } else if (event.key === 'Enter') {
+        if (event.key === 'Enter') {
             handleConfirm()
         }
     }
 
     function handleInputKeydown(event: KeyboardEvent) {
-        event.stopPropagation()
-        if (event.key === 'Escape') {
-            handleCancel()
-        } else if (event.key === 'Enter') {
+        if (event.key === 'Enter') {
             event.preventDefault()
+            event.stopPropagation()
             handleConfirm()
         }
     }
 </script>
 
-<DraggableDialog titleId="dialog-title" onkeydown={handleKeydown}>
+<ModalDialog
+    titleId="dialog-title"
+    onkeydown={handleKeydown}
+    dialogId="copy-confirmation"
+    onclose={handleCancel}
+    containerStyle="min-width: 420px; max-width: 500px"
+>
     {#snippet title()}{dialogTitle}{/snippet}
 
     <!-- Direction indicator -->
@@ -368,7 +361,7 @@
         <button class="secondary" onclick={handleCancel}>Cancel</button>
         <button class="primary" onclick={handleConfirm}>Copy</button>
     </div>
-</DraggableDialog>
+</ModalDialog>
 
 <style>
     .volume-selector {

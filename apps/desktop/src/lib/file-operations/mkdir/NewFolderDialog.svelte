@@ -7,11 +7,10 @@
         getFileAt,
         getFolderSuggestions,
         listen,
-        notifyDialogOpened,
-        notifyDialogClosed,
         type UnlistenFn,
     } from '$lib/tauri-commands'
     import type { DirectoryDiff } from '$lib/file-explorer/types'
+    import ModalDialog from '$lib/ui/ModalDialog.svelte'
 
     interface Props {
         /** The directory in which to create the new folder */
@@ -33,7 +32,6 @@
     let folderName = $state(initialName)
     let errorMessage = $state('')
     let isChecking = $state(false)
-    let overlayElement: HTMLDivElement | undefined = $state()
     let nameInputRef: HTMLInputElement | undefined = $state()
     let unlistenDiff: UnlistenFn | undefined
 
@@ -88,11 +86,6 @@
     }
 
     onMount(async () => {
-        // Track dialog open state for MCP
-        void notifyDialogOpened('mkdir-confirmation')
-
-        await tick()
-        overlayElement?.focus()
         await tick()
         nameInputRef?.focus()
         nameInputRef?.select()
@@ -114,9 +107,6 @@
     })
 
     onDestroy(() => {
-        // Track dialog close state for MCP
-        void notifyDialogClosed('mkdir-confirmation')
-
         if (validateTimer) clearTimeout(validateTimer)
         unlistenDiff?.()
     })
@@ -158,20 +148,15 @@
     }
 
     function handleKeydown(event: KeyboardEvent) {
-        event.stopPropagation()
-        if (event.key === 'Escape') {
-            onCancel()
-        } else if (event.key === 'Enter') {
+        if (event.key === 'Enter') {
             void handleConfirm()
         }
     }
 
     function handleInputKeydown(event: KeyboardEvent) {
-        event.stopPropagation()
-        if (event.key === 'Escape') {
-            onCancel()
-        } else if (event.key === 'Enter') {
+        if (event.key === 'Enter') {
             event.preventDefault()
+            event.stopPropagation()
             void handleConfirm()
         }
     }
@@ -181,17 +166,16 @@
     }
 </script>
 
-<div
-    bind:this={overlayElement}
-    class="modal-overlay"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="new-folder-title"
-    tabindex="-1"
+<ModalDialog
+    titleId="new-folder-title"
     onkeydown={handleKeydown}
+    dialogId="mkdir-confirmation"
+    onclose={onCancel}
+    containerStyle="width: 400px"
 >
-    <div class="new-folder-dialog">
-        <h2 id="new-folder-title">New folder</h2>
+    {#snippet title()}New folder{/snippet}
+
+    <div class="dialog-body">
         <p class="subtitle">Create folder in <span class="dir-name">{currentDirName}</span></p>
 
         <div class="input-group">
@@ -247,34 +231,11 @@
             <button class="primary" onclick={() => void handleConfirm()} disabled={!isValid || isChecking}>OK</button>
         </div>
     </div>
-</div>
+</ModalDialog>
 
 <style>
-    .modal-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.4);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-    }
-
-    .new-folder-dialog {
-        background: var(--color-bg-secondary);
-        border: 1px solid var(--color-border-primary);
-        border-radius: 12px;
-        width: 400px;
-        padding: 20px 24px;
-        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
-    }
-
-    h2 {
-        margin: 0 0 4px;
-        font-size: 16px;
-        font-weight: 600;
-        color: var(--color-text-primary);
-        text-align: center;
+    .dialog-body {
+        padding: 0 24px 20px;
     }
 
     .subtitle {

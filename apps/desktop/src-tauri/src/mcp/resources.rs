@@ -181,6 +181,31 @@ fn extract_viewer_path<R: Runtime>(window: &WebviewWindow<R>) -> Option<String> 
         .map(|(_, value)| value.into_owned())
 }
 
+/// Build YAML for the "available dialogs" resource.
+/// Combines window-based types (hardcoded, stable) with soft dialog types
+/// registered by the frontend at startup.
+fn build_available_dialogs_yaml<R: Runtime>(app: &tauri::AppHandle<R>) -> String {
+    let mut yaml = String::new();
+
+    // Window-based dialog types (managed on the Rust side)
+    yaml.push_str("- type: settings\n  sections: [general, appearance, shortcuts, advanced]\n");
+    yaml.push_str(
+        "- type: file-viewer\n  description: Opens for file under cursor, or specify path. Multiple can be open.\n",
+    );
+
+    // Soft dialog types (registered by the frontend)
+    if let Some(tracker) = app.try_state::<SoftDialogTracker>() {
+        for dialog in tracker.get_known_dialogs() {
+            yaml.push_str(&format!("- type: {}\n", dialog.id));
+            if let Some(ref desc) = dialog.description {
+                yaml.push_str(&format!("  description: {}\n", desc));
+            }
+        }
+    }
+
+    yaml
+}
+
 /// Read a resource by URI.
 pub fn read_resource<R: Runtime>(app: &tauri::AppHandle<R>, uri: &str) -> Result<ResourceContent, String> {
     let (content, mime_type) = match uri {
@@ -260,17 +285,8 @@ pub fn read_resource<R: Runtime>(app: &tauri::AppHandle<R>, uri: &str) -> Result
             (yaml, "text/yaml")
         }
         "cmdr://dialogs/available" => {
-            let yaml = r#"- type: settings
-  sections: [general, appearance, shortcuts, advanced]
-- type: file-viewer
-  description: Opens for file under cursor, or specify path. Multiple can be open.
-- type: about
-- type: copy-confirmation
-  description: Opened by the copy tool, not directly. Can only be closed.
-- type: mkdir-confirmation
-  description: Opened by the mkdir tool, not directly. Can only be closed.
-"#;
-            (yaml.to_string(), "text/yaml")
+            let yaml = build_available_dialogs_yaml(app);
+            (yaml, "text/yaml")
         }
         _ => return Err(format!("Unknown resource URI: {}", uri)),
     };

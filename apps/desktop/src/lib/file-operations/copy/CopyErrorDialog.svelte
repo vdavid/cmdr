@@ -1,33 +1,23 @@
 <script lang="ts">
-    /**
-     * Error dialog for copy operation failures.
-     * Shows user-friendly, volume-agnostic error messages with selectable text
-     * and collapsible technical details.
-     */
-    import { onMount, tick } from 'svelte'
     import type { WriteOperationError } from '$lib/file-explorer/types'
     import { getUserFriendlyMessage, getTechnicalDetails } from './copy-error-messages'
+    import ModalDialog from '$lib/ui/ModalDialog.svelte'
 
     interface Props {
-        /** The error that occurred */
         error: WriteOperationError
-        /** Callback when dialog is closed */
         onClose: () => void
-        /** Optional callback to retry the operation */
         onRetry?: () => void
     }
 
     const { error, onClose, onRetry }: Props = $props()
 
-    let overlayElement: HTMLDivElement | undefined = $state()
     let showDetails = $state(false)
 
     const friendly = $derived(getUserFriendlyMessage(error))
     const technicalDetails = $derived(getTechnicalDetails(error))
 
     function handleKeydown(event: KeyboardEvent) {
-        event.stopPropagation()
-        if (event.key === 'Escape' || event.key === 'Enter') {
+        if (event.key === 'Enter') {
             onClose()
         }
     }
@@ -35,27 +25,20 @@
     function toggleDetails() {
         showDetails = !showDetails
     }
-
-    onMount(async () => {
-        await tick()
-        overlayElement?.focus()
-    })
 </script>
 
-<div
-    bind:this={overlayElement}
-    class="modal-overlay"
-    role="alertdialog"
-    aria-modal="true"
-    aria-labelledby="error-dialog-title"
-    aria-describedby="error-dialog-message"
-    tabindex="-1"
+<ModalDialog
+    titleId="error-dialog-title"
     onkeydown={handleKeydown}
+    role="alertdialog"
+    dialogId="copy-error"
+    onclose={onClose}
+    ariaDescribedby="error-dialog-message"
+    containerStyle="width: 420px; max-width: 90vw; background: var(--color-error-bg); border-color: var(--color-error-border)"
 >
-    <div class="error-dialog">
-        <!-- Error icon and title -->
-        <div class="error-header">
-            <div class="error-icon" aria-hidden="true">
+    {#snippet title()}
+        <span class="error-title-content">
+            <span class="error-icon" aria-hidden="true">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
                     <line
@@ -69,90 +52,64 @@
                     />
                     <circle cx="12" cy="16.5" r="1" fill="currentColor" />
                 </svg>
-            </div>
-            <h2 id="error-dialog-title">{friendly.title}</h2>
-        </div>
+            </span>
+            {friendly.title}
+        </span>
+    {/snippet}
 
-        <!-- Main message (selectable) -->
-        <div class="error-content">
-            <p id="error-dialog-message" class="message selectable">{friendly.message}</p>
-            <p class="suggestion">{friendly.suggestion}</p>
-        </div>
-
-        <!-- Technical details (collapsible) -->
-        <div class="details-section">
-            <button class="details-toggle" onclick={toggleDetails} aria-expanded={showDetails}>
-                <span class="toggle-icon" class:expanded={showDetails}>
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M4 2L8 6L4 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                    </svg>
-                </span>
-                Technical details
-            </button>
-            {#if showDetails}
-                <div class="details-content">
-                    <textarea
-                        class="details-text"
-                        readonly
-                        rows={technicalDetails.split('\n').length}
-                        aria-label="Technical error details">{technicalDetails}</textarea
-                    >
-                </div>
-            {/if}
-        </div>
-
-        <!-- Action buttons -->
-        <div class="button-row">
-            {#if onRetry}
-                <button class="secondary" onclick={onRetry}>Retry</button>
-            {/if}
-            <button class="primary" onclick={onClose}>Close</button>
-        </div>
+    <!-- Main message (selectable) -->
+    <div class="error-content">
+        <p id="error-dialog-message" class="message selectable">{friendly.message}</p>
+        <p class="suggestion">{friendly.suggestion}</p>
     </div>
-</div>
+
+    <!-- Technical details (collapsible) -->
+    <div class="details-section">
+        <button class="details-toggle" onclick={toggleDetails} aria-expanded={showDetails}>
+            <span class="toggle-icon" class:expanded={showDetails}>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M4 2L8 6L4 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+            </span>
+            Technical details
+        </button>
+        {#if showDetails}
+            <div class="details-content">
+                <textarea
+                    class="details-text"
+                    readonly
+                    rows={technicalDetails.split('\n').length}
+                    aria-label="Technical error details">{technicalDetails}</textarea
+                >
+            </div>
+        {/if}
+    </div>
+
+    <!-- Action buttons -->
+    <div class="button-row">
+        {#if onRetry}
+            <button class="secondary" onclick={onRetry}>Retry</button>
+        {/if}
+        <button class="primary" onclick={onClose}>Close</button>
+    </div>
+</ModalDialog>
 
 <style>
-    .modal-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.4);
+    .error-title-content {
         display: flex;
         align-items: center;
         justify-content: center;
-        z-index: 9999;
-    }
-
-    .error-dialog {
-        background: var(--color-error-bg);
-        border: 1px solid var(--color-error-border);
-        border-radius: 12px;
-        width: 420px;
-        max-width: 90vw;
-        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
-    }
-
-    .error-header {
-        display: flex;
-        align-items: center;
         gap: 12px;
-        padding: 20px 24px 12px;
     }
 
     .error-icon {
         flex-shrink: 0;
-        width: 32px;
-        height: 32px;
+        width: 24px;
+        height: 24px;
         display: flex;
         align-items: center;
         justify-content: center;
         color: var(--color-error);
-    }
-
-    h2 {
-        margin: 0;
-        font-size: 16px;
-        font-weight: 600;
-        color: var(--color-error-text);
     }
 
     .error-content {
@@ -229,7 +186,6 @@
         border: 1px solid var(--color-border-primary);
         border-radius: 6px;
         resize: none;
-        /* Make text selectable */
         user-select: text;
         -webkit-user-select: text;
         cursor: text;

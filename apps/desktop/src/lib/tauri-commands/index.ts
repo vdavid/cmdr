@@ -42,6 +42,7 @@ export {
     updateFocusedPane,
     notifyDialogOpened,
     notifyDialogClosed,
+    registerKnownDialogs,
     showInFinder,
     copyToClipboard,
     quickLook,
