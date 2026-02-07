@@ -11,7 +11,6 @@ When a user selects a network host (like "Office"), the app enumerates what shar
 - `Documents`
 - `Media`
 - `TimeMachine`
-- etc.
 
 ## Implementation: `smb-rs` crate
 
@@ -55,7 +54,7 @@ async fn list_shares(server: &str, credentials: Option<Credentials>) -> Result<V
 
     Ok(shares.into_iter().map(|s| ShareInfo {
         name: s.name,
-        share_type: s.share_type, // disk, printer, etc.
+        share_type: s.share_type, // disk, printer, IPC
     }).collect())
 }
 ```

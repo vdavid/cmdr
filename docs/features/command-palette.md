@@ -12,7 +12,7 @@ The command palette provides quick keyboard access to all application commands, 
 
 ## Features
 
-- **Fuzzy search**: Type partial matches or even typos (e.g., "cop" matches "Copy path to clipboard")
+- **Fuzzy search**: Type partial matches or even typos ("cop" matches "Copy path to clipboard")
 - **Match highlighting**: Matched characters are underlined for clarity
 - **Keyboard shortcuts**: Each command shows its keyboard shortcut if available
 - **Persisted query**: The search query is remembered within the session

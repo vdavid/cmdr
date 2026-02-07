@@ -1,6 +1,6 @@
 # Benchmarking file loading performance
 
-A comprehensive guide to benchmarking directory loading performance in Cmdr.
+How to measure and analyze directory loading performance in Cmdr.
 
 ## Overview
 
@@ -46,7 +46,7 @@ RUSTY_COMMANDER_BENCHMARK=1 VITE_BENCHMARK=1 pnpm tauri dev 2>&1 | tee benchmark
 
 ### Step 2: Navigate to the test directory
 
-In the app, navigate to your test data folder (e.g., `_ignored/test-data/20k-files`).
+In the app, navigate to your test data folder (like `_ignored/test-data/20k-files`).
 
 ### Step 3: Extract and analyze the timeline
 

@@ -126,7 +126,7 @@ describe('Navigation', () => {
 })
 ```
 
-**Capabilities**: Full file operations, keyboard navigation, copy dialog, etc.
+**Capabilities**: Full file operations, keyboard navigation, copy dialog, and more.
 
 ## Docker environment
 
@@ -210,7 +210,7 @@ These stubs are in `src-tauri/src/stubs/` and are compiled only on non-macOS pla
 
 1. Get a shell in the container: `pnpm test:e2e:linux:shell`
 2. Run the app manually: `$TAURI_BINARY`
-3. Check for error messages (GTK warnings, missing libraries, etc.)
+3. Check for error messages (GTK warnings, missing libraries)
 
 ### Docker build is slow
 

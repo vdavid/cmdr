@@ -95,7 +95,7 @@ The containers will appear in the app's Network browser via Bonjour as:
 
 | Container       | Port | Purpose             | Notes                        |
 | --------------- | ---- | ------------------- | ---------------------------- |
-| `smb-unicode`   | 9454 | Unicode share names | `日本語`, `émojis📁`, etc.   |
+| `smb-unicode`   | 9454 | Unicode share names | `日本語`, `émojis📁`         |
 | `smb-longnames` | 9455 | 200+ char names     | Tests path truncation        |
 | `smb-deepnest`  | 9456 | 50-level deep tree  | Tests navigation, breadcrumb |
 | `smb-manyfiles` | 9457 | 10k+ files          | Tests listing performance    |

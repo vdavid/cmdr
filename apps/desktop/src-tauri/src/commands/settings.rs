@@ -66,7 +66,7 @@ pub fn update_menu_accelerator(app: AppHandle, command_id: &str, shortcut: &str)
             let is_checked = menu_state
                 .view_mode_full
                 .lock()
-                .unwrap()
+                .unwrap_or_else(|e| e.into_inner())
                 .as_ref()
                 .and_then(|item| item.is_checked().ok())
                 .unwrap_or(false);
@@ -75,7 +75,7 @@ pub fn update_menu_accelerator(app: AppHandle, command_id: &str, shortcut: &str)
                 .map_err(|e| format!("Failed to update Full view accelerator: {e}"))?;
 
             // Update the reference in MenuState
-            *menu_state.view_mode_full.lock().unwrap() = Some(new_item);
+            *menu_state.view_mode_full.lock().unwrap_or_else(|e| e.into_inner()) = Some(new_item);
             Ok(())
         }
         "view.briefMode" => {
@@ -83,7 +83,7 @@ pub fn update_menu_accelerator(app: AppHandle, command_id: &str, shortcut: &str)
             let is_checked = menu_state
                 .view_mode_brief
                 .lock()
-                .unwrap()
+                .unwrap_or_else(|e| e.into_inner())
                 .as_ref()
                 .and_then(|item| item.is_checked().ok())
                 .unwrap_or(true);
@@ -92,7 +92,7 @@ pub fn update_menu_accelerator(app: AppHandle, command_id: &str, shortcut: &str)
                 .map_err(|e| format!("Failed to update Brief view accelerator: {e}"))?;
 
             // Update the reference in MenuState
-            *menu_state.view_mode_brief.lock().unwrap() = Some(new_item);
+            *menu_state.view_mode_brief.lock().unwrap_or_else(|e| e.into_inner()) = Some(new_item);
             Ok(())
         }
         _ => {

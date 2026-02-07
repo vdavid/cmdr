@@ -6,7 +6,7 @@ Cmdr supports sorting files by column headers in the file list.
 
 Click any column header to sort by that column:
 
-- **Name**: Alphabetical, with natural sorting (e.g., `img_2` before `img_10`)
+- **Name**: Alphabetical, with natural sorting (`img_2` before `img_10`)
 - **Size**: File size in bytes
 - **Modified**: Last modification date
 
@@ -26,7 +26,7 @@ Names are sorted alphanumerically, so `file10.txt` comes after `file2.txt`, not 
 
 When sorting by name, files without extensions are grouped logically:
 
-1. Dotfiles (e.g., `.gitignore`)
+1. Dotfiles (like `.gitignore`)
 2. Files without extension
 3. Files by extension alphabetically
 

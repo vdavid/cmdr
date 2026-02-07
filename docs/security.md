@@ -3,7 +3,7 @@
 ## withGlobalTauri
 
 The app uses [MCP Server Tauri](https://github.com/hypothesi/mcp-server-tauri) to let AI assistants (Claude Code,
-Cursor, etc.) control this app: take screenshots, click buttons, read front-end logs, etc.
+Cursor) control this app: take screenshots, click buttons, and read front-end logs.
 
 The MCP bridge requires `withGlobalTauri: true` which exposes `window.__TAURI__` to the frontend. This would be a huge
 security risk in production (untrusted JS could access system APIs, not good), so we enable it **only in development**:

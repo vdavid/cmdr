@@ -7,7 +7,7 @@ Navigate between previously visited folders using browser-style back/forward fun
 - **Per-pane history**: Each pane maintains its own independent back/forward stack
 - **Session-only**: History resets when quitting the app (not persisted)
 - **Cross-volume navigation**: History tracks navigation across different volumes, so you can go back/forward between
-  volumes (e.g., from an external drive back to Macintosh HD)
+  volumes (for example, from an external drive back to Macintosh HD)
 - **Network volume support**: When navigating to/from the Network virtual volume, history is preserved
 - **Deleted folders**: When navigating to a folder that no longer exists, walks up the parent tree until finding an
   existing folder. If the entire volume is gone, skips to the next history entry.

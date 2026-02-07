@@ -76,7 +76,7 @@ The viewer uses a `FileViewerBackend` trait with three implementations, chosen b
 - **Window opener**: `apps/desktop/src/lib/file-viewer/open-viewer.ts`
 - **Key binding**: F3 handler in `DualPaneExplorer.svelte` calls `openViewerForCursor()`
 - **Function key bar**: F3 button in `FunctionKeyBar.svelte`
-- **Tauri wrappers**: `viewerOpen()`, `viewerGetLines()`, etc. in `$lib/tauri-commands.ts`
+- **Tauri wrappers**: `viewerOpen()`, `viewerGetLines()`, and others in `$lib/tauri-commands.ts`
 
 ### Virtual scrolling
 

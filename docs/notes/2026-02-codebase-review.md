@@ -296,7 +296,7 @@ These slot into the existing severity tiers -- the scan walker duplication and 1
 
 ### Medium — bugs, visible duplication
 
-- [ ] Replace 67 .lock().unwrap() calls with .unwrap_or_else(|e| e.into_inner()) or .expect() `[medium — batch]`
+- [x] Replace 67 .lock().unwrap() calls with .unwrap_or_else(|e| e.into_inner()) or .expect() `[medium — batch]`
 - [x] URL-encode SMB username in smb_smbutil.rs `[quick fix]`
 - [x] Extract .map_err(|e| ToolError::internal(e.to_string())) helper in mcp/executor.rs (~30 occurrences) `[quick fix]`
 - [x] Extract operationId filtering helper in CopyProgressDialog.svelte (5 duplications) `[quick fix]` *(already done)*
@@ -318,9 +318,9 @@ These slot into the existing severity tiers -- the scan walker duplication and 1
 - [ ] Deduplicate CSS patterns: size-color classes, .close-button, .modal-overlay, monospace font stack, hardcoded colors `[medium]`
 - [ ] Remove dead code: formatLicenseKey(), stale Go monorepo path, commented-out CSS, scaffold comments `[quick fix]`
 - [ ] Remove "Phase N" dead code stubs in mtp/connection/mod.rs `[quick fix]`
-- [ ] Replace ~80 instances of "e.g." and "etc." in active docs `[quick fix — batch]`
-- [ ] Fix Title Case headings in mtp-library-info.md, e2e-testing-guide.md, and others `[quick fix]`
-- [ ] Rewrite "A comprehensive guide to..." opener in benchmarking-file-loading.md `[quick fix]`
+- [x] Replace ~80 instances of "e.g." and "etc." in active docs `[quick fix — batch]`
+- [x] Fix Title Case headings in mtp-library-info.md, e2e-testing-guide.md, and others `[quick fix]`
+- [x] Rewrite "A comprehensive guide to..." opener in benchmarking-file-loading.md `[quick fix]`
 
 ### Ongoing
 

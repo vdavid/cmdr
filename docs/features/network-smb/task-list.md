@@ -159,7 +159,7 @@ See [known-shares-store.md](./known-shares-store.md) for details.
 
 ## 6. Pre-mounted shares
 
-Pre-mounted SMB shares (e.g., mounted via Finder) appear automatically in the volume selector because the existing
+Pre-mounted SMB shares (for example, mounted via Finder) appear automatically in the volume selector because the existing
 volume listing code at `/Volumes/*` picks them up. The macOS APIs return the correct network share icon.
 
 ### Backend (Rust)

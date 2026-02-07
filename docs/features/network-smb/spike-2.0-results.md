@@ -1,4 +1,4 @@
-# SMB-RS Validation Spike (Task 2.0) Results
+# SMB-RS validation spike (task 2.0) results
 
 **Date:** 2026-01-05 **Tested smb crate version:** 0.11.1
 
@@ -70,7 +70,7 @@ connection. May need to dig into smb-rs internals or use lower-level APIs.
 The `list_shares` API returns `Vec<ShareInfo1>` which includes:
 
 - `netname`: Share name
-- `share_type`: Disk/printer/IPC/etc.
+- `share_type`: Disk/printer/IPC
 - `remark`: Optional description
 
 This is sufficient for our needs.

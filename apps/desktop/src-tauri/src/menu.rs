@@ -487,22 +487,28 @@ pub fn update_view_mode_accelerator<R: Runtime>(
     new_accelerator: Option<&str>,
     is_checked: bool,
 ) -> tauri::Result<CheckMenuItem<R>> {
-    let view_submenu_guard = menu_state.view_submenu.lock().unwrap();
+    let view_submenu_guard = menu_state.view_submenu.lock().unwrap_or_else(|e| e.into_inner());
     let view_submenu = view_submenu_guard
         .as_ref()
         .ok_or_else(|| tauri::Error::InvalidWindowHandle)?;
 
     let (menu_item_guard, position_guard, menu_id, label) = if is_full_mode {
         (
-            menu_state.view_mode_full.lock().unwrap(),
-            menu_state.view_mode_full_position.lock().unwrap(),
+            menu_state.view_mode_full.lock().unwrap_or_else(|e| e.into_inner()),
+            menu_state
+                .view_mode_full_position
+                .lock()
+                .unwrap_or_else(|e| e.into_inner()),
             VIEW_MODE_FULL_ID,
             "Full view",
         )
     } else {
         (
-            menu_state.view_mode_brief.lock().unwrap(),
-            menu_state.view_mode_brief_position.lock().unwrap(),
+            menu_state.view_mode_brief.lock().unwrap_or_else(|e| e.into_inner()),
+            menu_state
+                .view_mode_brief_position
+                .lock()
+                .unwrap_or_else(|e| e.into_inner()),
             VIEW_MODE_BRIEF_ID,
             "Brief view",
         )

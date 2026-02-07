@@ -29,7 +29,7 @@ Frontend                          Rust Backend
    |<---- listing-read-complete event -| (when read_dir finishes)
    |     { listingId, totalCount }     |
    |                                   |
-   |                                   | (sorting, caching, etc.)
+   |                                   | (sorting, caching)
    |                                   |
    |<---- listing-complete event ------|
    |     { listingId, totalCount,      |

@@ -60,7 +60,7 @@ with instructions on how to grant access in System Settings.
 
 This happens when:
 
-- User navigates to a protected folder (Downloads, Documents, etc.)
+- User navigates to a protected folder (Downloads, Documents, Desktop)
 - FDA wasn't granted, and the folder-specific permission wasn't given either
 
 ### Background vs. explicit access

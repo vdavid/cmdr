@@ -136,7 +136,7 @@ interface WriteOperationConfig {
 | `stop` | Pause and emit `write-conflict` event. Wait for `resolveWriteConflict()` |
 | `skip` | Skip conflicting files silently |
 | `overwrite` | Replace destination files |
-| `rename` | Rename source as "file (1).txt", "file (2).txt", etc. |
+| `rename` | Rename source as "file (1).txt", "file (2).txt", and so on |
 
 ## Events
 
@@ -158,7 +158,7 @@ The returned `unlisten` function cleans up all subscriptions at once.
 
 ### Global event listeners
 
-For monitoring all operations (e.g., a system-wide progress panel):
+For monitoring all operations (like a system-wide progress panel):
 
 ```ts
 import { onWriteProgress, onWriteComplete, onWriteError } from '$lib/tauri-commands'
@@ -403,7 +403,7 @@ interface DryRunResult {
 }
 ```
 
-## Example: Full copy dialog
+## Example: full copy dialog
 
 ```ts
 import { copyFiles, onOperationEvents, cancelWriteOperation, calculateOperationStats, formatBytes, formatDuration } from '$lib/tauri-commands'

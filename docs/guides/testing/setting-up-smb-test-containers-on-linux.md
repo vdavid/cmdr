@@ -1,6 +1,6 @@
 # Setting up SMB test containers on a Linux device
 
-This guide explains how to run the SMB test containers on a Linux device (e.g., Raspberry Pi) so they are discoverable
+This guide explains how to run the SMB test containers on a Linux device (like a Raspberry Pi) so they are discoverable
 via Bonjour/mDNS from your Mac.
 
 ## Why use a separate Linux device?
@@ -19,7 +19,7 @@ connections.
 
 ## Prerequisites
 
-- A Linux device on your LAN (Raspberry Pi, NUC, Linux VM, etc.)
+- A Linux device on your LAN (Raspberry Pi, NUC, Linux VM)
 - Docker and Docker Compose installed
 - SSH access to the device
 - Access to your router's DHCP settings (to reserve IPs)
@@ -161,7 +161,7 @@ With macvlan networking, the host can't directly communicate with containers. Th
 To add more containers, edit `docker-compose.pi.yml`:
 
 1. Add a new service definition
-2. Assign the next available IP (192.168.1.204, etc.)
+2. Assign the next available IP (192.168.1.204 and up)
 3. Set a unique `MDNS_NAME` environment variable
 4. Rebuild and restart
 

@@ -79,7 +79,7 @@ pub(super) fn resolve_volume_conflict(
             );
 
             // Wait for user to call resolve_write_conflict
-            let guard = state.conflict_mutex.lock().unwrap();
+            let guard = state.conflict_mutex.lock().unwrap_or_else(|e| e.into_inner());
             let _guard = state
                 .conflict_condvar
                 .wait_while(guard, |_| {

@@ -35,7 +35,7 @@ int32_t NetFSMountURLAsync(
 
 1. **Link to NetFS.framework**: Add to Cargo build config
 2. **Declare bindings**: NetFS isn't in `objc2-foundation`, so we declare functions manually or use `bindgen`
-3. **Handle Core Foundation types**: Use `core-foundation` crate for `CFURLRef`, `CFStringRef`, etc.
+3. **Handle Core Foundation types**: Use `core-foundation` crate for `CFURLRef`, `CFStringRef`, and others
 4. **Completion callback**: Use a Rust closure or channel to receive the result
 
 ### Pseudocode
@@ -94,7 +94,7 @@ Mounted shares appear in `/Volumes/`:
 └── Macintosh HD       ← Local volume (symlink)
 ```
 
-If a share with the same name already exists, macOS appends a number: `Documents-1`, `Documents-2`, etc.
+If a share with the same name already exists, macOS appends a number: `Documents-1`, `Documents-2`, and so on.
 
 ## Integration with volume selector
 

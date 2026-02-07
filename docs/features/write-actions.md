@@ -172,7 +172,7 @@ These run synchronously before spawning the background task. A failure returns a
 | Destination exists + is directory | Writing into a file or a void | `validate_destination` |
 | Destination writable | Starting a copy that will fail on first write | `validate_destination_writable` — `access(W_OK)` |
 | Same location | Copying a file onto itself | `validate_not_same_location` — parent check |
-| Destination inside source | Infinite recursion (e.g. copying `/a` into `/a/b`) | `validate_destination_not_inside_source` — uses `canonicalize` to resolve symlinks and `..` segments |
+| Destination inside source | Infinite recursion (copying `/a` into `/a/b`) | `validate_destination_not_inside_source` — uses `canonicalize` to resolve symlinks and `..` segments |
 
 ### Post-scan validations (after file tree is counted, before copying)
 

@@ -25,7 +25,7 @@ Use this checklist before each release to verify features that cannot be automat
 ### Drag-and-drop (Tauri plugin—cannot be automated)
 
 - [ ] Drag file to Finder copies/moves it
-- [ ] Drag file to other apps (e.g., Mail) attaches it
+- [ ] Drag file to other apps (like Mail) attaches it
 - [ ] Drag icon shows file preview
 
 ### File watcher (requires real file system events)

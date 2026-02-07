@@ -210,7 +210,7 @@ curl -X POST http://localhost:9224/mcp \
 When adding new tools, follow these principles:
 
 1. **Match user capabilities**: Tools should only do what users can do through the UI
-2. **No direct file access**: Don't add `fs.read`, `fs.write`, etc.
+2. **No direct file access**: Don't add `fs.read`, `fs.write`, or similar
 3. **No shell execution**: Don't add `shell.run` or similar
 4. **Validate all inputs**: Check types, bounds, and sanitize strings
 5. **Use events, not direct calls**: Emit events that frontend handles

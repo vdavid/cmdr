@@ -8,7 +8,7 @@ cmdr supports two MCP transports:
 
 | Transport       | URL / Command                              | When to use                      |
 |-----------------|--------------------------------------------|----------------------------------|
-| Streamable HTTP | `http://localhost:9224/mcp`                | Most clients (Claude, Amp, etc.) |
+| Streamable HTTP | `http://localhost:9224/mcp`                | Most clients (Claude, Amp, and others) |
 | STDIO           | `cmdr-mcp-stdio` binary                    | Clients that spawn subprocesses  |
 
 ## Prerequisites
