@@ -1010,7 +1010,7 @@
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         const filename = paneRef?.getFilenameUnderCursor?.() as string | undefined
         if (!filename || filename === '..') return null
-        const path = currentPath === '~' ? `${currentPath}/${filename}` : `${currentPath}/${filename}`
+        const path = `${currentPath}/${filename}`
         return { path, filename }
     }
 
