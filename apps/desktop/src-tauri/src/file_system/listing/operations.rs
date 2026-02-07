@@ -15,6 +15,11 @@ use crate::file_system::listing::metadata::FileEntry;
 use crate::file_system::listing::sorting::{SortColumn, SortOrder, sort_entries};
 use crate::file_system::watcher::{start_watching, stop_watching};
 
+/// Returns true if the entry is not a hidden dotfile.
+fn is_visible(entry: &FileEntry) -> bool {
+    !entry.name.starts_with('.')
+}
+
 // ============================================================================
 // Listing lifecycle
 // ============================================================================
@@ -75,7 +80,7 @@ pub fn list_directory_start_with_volume(
     let total_count = if include_hidden {
         all_entries.len()
     } else {
-        all_entries.iter().filter(|e| !e.name.starts_with('.')).count()
+        all_entries.iter().filter(|e| is_visible(e)).count()
     };
 
     // Sort the entries
@@ -154,7 +159,7 @@ pub fn get_file_range(
         Ok(listing.entries[start..end].to_vec())
     } else {
         // Need to filter and then slice
-        let visible: Vec<&FileEntry> = listing.entries.iter().filter(|e| !e.name.starts_with('.')).collect();
+        let visible: Vec<&FileEntry> = listing.entries.iter().filter(|e| is_visible(e)).collect();
         let end = (start + count).min(visible.len());
         Ok(visible[start..end].iter().cloned().cloned().collect())
     }
@@ -171,7 +176,7 @@ pub fn get_total_count(listing_id: &str, include_hidden: bool) -> Result<usize, 
     if include_hidden {
         Ok(listing.entries.len())
     } else {
-        Ok(listing.entries.iter().filter(|e| !e.name.starts_with('.')).count())
+        Ok(listing.entries.iter().filter(|e| is_visible(e)).count())
     }
 }
 
@@ -195,7 +200,7 @@ pub fn get_max_filename_width(listing_id: &str, include_hidden: bool) -> Result<
         let filenames: Vec<&str> = listing
             .entries
             .iter()
-            .filter(|e| !e.name.starts_with('.'))
+            .filter(|e| is_visible(e))
             .map(|e| e.name.as_str())
             .collect();
         crate::font_metrics::calculate_max_width(&filenames, font_id)
@@ -216,7 +221,7 @@ pub fn find_file_index(listing_id: &str, name: &str, include_hidden: bool) -> Re
         Ok(listing.entries.iter().position(|e| e.name == name))
     } else {
         // Find index in filtered list
-        let visible: Vec<&FileEntry> = listing.entries.iter().filter(|e| !e.name.starts_with('.')).collect();
+        let visible: Vec<&FileEntry> = listing.entries.iter().filter(|e| is_visible(e)).collect();
         Ok(visible.iter().position(|e| e.name == name))
     }
 }
@@ -240,7 +245,7 @@ pub fn get_file_at(listing_id: &str, index: usize, include_hidden: bool) -> Resu
         }
         Ok(result)
     } else {
-        let visible: Vec<&FileEntry> = listing.entries.iter().filter(|e| !e.name.starts_with('.')).collect();
+        let visible: Vec<&FileEntry> = listing.entries.iter().filter(|e| is_visible(e)).collect();
         let result = visible.get(index).cloned().cloned();
         if result.is_none() {
             log::error!(
@@ -272,7 +277,7 @@ pub fn get_paths_at_indices(
     let visible: Vec<&FileEntry> = if include_hidden {
         listing.entries.iter().collect()
     } else {
-        listing.entries.iter().filter(|e| !e.name.starts_with('.')).collect()
+        listing.entries.iter().filter(|e| is_visible(e)).collect()
     };
 
     let mut paths = Vec::with_capacity(selected_indices.len());
@@ -336,7 +341,7 @@ pub fn resort_listing(
             let entries_for_index = if include_hidden {
                 listing.entries.iter().collect::<Vec<_>>()
             } else {
-                listing.entries.iter().filter(|e| !e.name.starts_with('.')).collect()
+                listing.entries.iter().filter(|e| is_visible(e)).collect()
             };
             indices
                 .iter()
@@ -358,7 +363,7 @@ pub fn resort_listing(
             listing
                 .entries
                 .iter()
-                .filter(|e| !e.name.starts_with('.'))
+                .filter(|e| is_visible(e))
                 .position(|e| e.name == name)
         }
     });
@@ -369,7 +374,7 @@ pub fn resort_listing(
         let count = if include_hidden {
             listing.entries.len()
         } else {
-            listing.entries.iter().filter(|e| !e.name.starts_with('.')).count()
+            listing.entries.iter().filter(|e| is_visible(e)).count()
         };
         Some((0..count).collect())
     } else {
@@ -377,7 +382,7 @@ pub fn resort_listing(
             let entries_for_lookup: Vec<_> = if include_hidden {
                 listing.entries.iter().collect()
             } else {
-                listing.entries.iter().filter(|e| !e.name.starts_with('.')).collect()
+                listing.entries.iter().filter(|e| is_visible(e)).collect()
             };
             filenames
                 .iter()
@@ -480,7 +485,7 @@ pub fn get_listing_stats(
     let visible_entries: Vec<&FileEntry> = if include_hidden {
         listing.entries.iter().collect()
     } else {
-        listing.entries.iter().filter(|e| !e.name.starts_with('.')).collect()
+        listing.entries.iter().filter(|e| is_visible(e)).collect()
     };
 
     // Calculate totals
