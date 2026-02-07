@@ -94,6 +94,50 @@
     let isCancelling = $state(false)
     let isRollingBack = $state(false)
 
+    // Events that arrived before we know our operationId (from the copyFiles() response).
+    // Without buffering, a stale event from a previous copy could claim the ID slot first.
+    type BufferedEvent =
+        | { type: 'progress'; event: WriteProgressEvent }
+        | { type: 'complete'; event: WriteCompleteEvent }
+        | { type: 'error'; event: WriteErrorEvent }
+        | { type: 'cancelled'; event: WriteCancelledEvent }
+        | { type: 'conflict'; event: WriteConflictEvent }
+    let pendingEvents: BufferedEvent[] = []
+
+    /** Returns true if the event belongs to this operation and should be processed. */
+    function filterEvent(entry: BufferedEvent): boolean {
+        if (operationId === null) {
+            pendingEvents.push(entry)
+            return false
+        }
+        return entry.event.operationId === operationId
+    }
+
+    function replayBufferedEvents() {
+        const events = pendingEvents
+        pendingEvents = []
+        for (const entry of events) {
+            if (entry.event.operationId !== operationId) continue
+            switch (entry.type) {
+                case 'progress':
+                    handleProgress(entry.event)
+                    break
+                case 'complete':
+                    handleComplete(entry.event)
+                    break
+                case 'error':
+                    handleError(entry.event)
+                    break
+                case 'cancelled':
+                    handleCancelled(entry.event)
+                    break
+                case 'conflict':
+                    handleConflict(entry.event)
+                    break
+            }
+        }
+    }
+
     // Conflict state
     let conflictEvent = $state<WriteConflictEvent | null>(null)
     let isResolvingConflict = $state(false)
@@ -134,15 +178,7 @@
     }
 
     function handleProgress(event: WriteProgressEvent) {
-        // Filter by operationId (events are global)
-        // If operationId is null, accept the event and capture the ID (handles race condition
-        // where events arrive before copyFiles() returns the operationId to the frontend)
-        if (operationId === null) {
-            operationId = event.operationId
-            log.debug('Captured operationId from event: {operationId}', { operationId })
-        } else if (event.operationId !== operationId) {
-            return
-        }
+        if (!filterEvent({ type: 'progress', event })) return
 
         log.debug('Progress event: {phase} {filesDone}/{filesTotal} files, {bytesDone}/{bytesTotal} bytes', {
             phase: event.phase,
@@ -161,13 +197,7 @@
     }
 
     function handleComplete(event: WriteCompleteEvent) {
-        // Filter by operationId (events are global)
-        // Accept if operationId is null (race condition) or matches
-        if (operationId === null) {
-            operationId = event.operationId
-        } else if (event.operationId !== operationId) {
-            return
-        }
+        if (!filterEvent({ type: 'complete', event })) return
 
         log.info('Copy complete: {filesProcessed} files, {bytesProcessed} bytes', {
             filesProcessed: event.filesProcessed,
@@ -179,13 +209,7 @@
     }
 
     function handleError(event: WriteErrorEvent) {
-        // Filter by operationId (events are global)
-        // Accept if operationId is null (race condition) or matches
-        if (operationId === null) {
-            operationId = event.operationId
-        } else if (event.operationId !== operationId) {
-            return
-        }
+        if (!filterEvent({ type: 'error', event })) return
 
         log.error('Copy error: {errorType}', { errorType: event.error.type, error: event.error })
 
@@ -194,13 +218,7 @@
     }
 
     function handleCancelled(event: WriteCancelledEvent) {
-        // Filter by operationId (events are global)
-        // Accept if operationId is null (race condition) or matches
-        if (operationId === null) {
-            operationId = event.operationId
-        } else if (event.operationId !== operationId) {
-            return
-        }
+        if (!filterEvent({ type: 'cancelled', event })) return
 
         log.info('Copy cancelled after {filesProcessed} files, rolledBack={rolledBack}', {
             filesProcessed: event.filesProcessed,
@@ -212,13 +230,7 @@
     }
 
     function handleConflict(event: WriteConflictEvent) {
-        // Filter by operationId (events are global)
-        // Accept if operationId is null (race condition) or matches
-        if (operationId === null) {
-            operationId = event.operationId
-        } else if (event.operationId !== operationId) {
-            return
-        }
+        if (!filterEvent({ type: 'conflict', event })) return
 
         log.info('Conflict detected: {sourcePath} -> {destinationPath}', {
             sourcePath: event.sourcePath,
@@ -300,6 +312,7 @@
 
             operationId = result.operationId
             log.info('Copy operation started with operationId: {operationId}', { operationId })
+            replayBufferedEvents()
         } catch (err) {
             log.error('Failed to start copy operation: {error}', { error: err })
             cleanup()
@@ -995,23 +1008,28 @@
         border-top: 1px solid var(--color-border-primary);
     }
 
-    /* Size colors (matching file list) */
+    /* Size colors (matching file list) - these are used dynamically */
+    /*noinspection CssUnusedSymbol*/
     .size-bytes {
         color: var(--color-text-secondary);
     }
 
+    /*noinspection CssUnusedSymbol*/
     .size-kb {
         color: var(--color-size-kb);
     }
 
+    /*noinspection CssUnusedSymbol*/
     .size-mb {
         color: var(--color-size-mb);
     }
 
+    /*noinspection CssUnusedSymbol*/
     .size-gb {
         color: var(--color-size-gb);
     }
 
+    /*noinspection CssUnusedSymbol*/
     .size-tb {
         color: var(--color-size-tb);
     }
