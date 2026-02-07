@@ -180,33 +180,7 @@ fn response_to_app_status(
     resp: &crate::licensing::validation_client::ValidationResponse,
 ) -> AppStatus {
     let license_type = resp.license_type.as_deref().and_then(string_to_license_type);
-
-    match resp.status.as_str() {
-        "active" => match license_type {
-            Some(LicenseType::Supporter) => AppStatus::Supporter {
-                show_commercial_reminder: should_show_commercial_reminder(app),
-            },
-            Some(lt) => AppStatus::Commercial {
-                license_type: lt,
-                organization_name: resp.organization_name.clone(),
-                expires_at: resp.expires_at.clone(),
-            },
-            None => AppStatus::Personal {
-                show_commercial_reminder: should_show_commercial_reminder(app),
-            },
-        },
-        "expired" => {
-            let show_modal = !expiration_modal_shown(app);
-            AppStatus::Expired {
-                organization_name: resp.organization_name.clone(),
-                expired_at: resp.expires_at.clone().unwrap_or_else(|| "unknown".to_string()),
-                show_modal,
-            }
-        }
-        _ => AppStatus::Personal {
-            show_commercial_reminder: should_show_commercial_reminder(app),
-        },
-    }
+    to_app_status(app, &resp.status, license_type, resp.organization_name.clone(), resp.expires_at.clone())
 }
 
 /// Convert string to LicenseType.
@@ -216,6 +190,42 @@ fn string_to_license_type(s: &str) -> Option<LicenseType> {
         "commercial_subscription" => Some(LicenseType::CommercialSubscription),
         "commercial_perpetual" => Some(LicenseType::CommercialPerpetual),
         _ => None,
+    }
+}
+
+/// Shared logic for converting a status string + license metadata into AppStatus.
+fn to_app_status(
+    app: &tauri::AppHandle,
+    status: &str,
+    license_type: Option<LicenseType>,
+    organization_name: Option<String>,
+    expires_at: Option<String>,
+) -> AppStatus {
+    match status {
+        "active" => match license_type {
+            Some(LicenseType::Supporter) => AppStatus::Supporter {
+                show_commercial_reminder: should_show_commercial_reminder(app),
+            },
+            Some(lt) => AppStatus::Commercial {
+                license_type: lt,
+                organization_name,
+                expires_at,
+            },
+            None => AppStatus::Personal {
+                show_commercial_reminder: should_show_commercial_reminder(app),
+            },
+        },
+        "expired" => {
+            let show_modal = !expiration_modal_shown(app);
+            AppStatus::Expired {
+                organization_name,
+                expired_at: expires_at.unwrap_or_else(|| "unknown".to_string()),
+                show_modal,
+            }
+        }
+        _ => AppStatus::Personal {
+            show_commercial_reminder: should_show_commercial_reminder(app),
+        },
     }
 }
 
@@ -260,32 +270,7 @@ fn get_cached_or_validate(app: &tauri::AppHandle, license_info: &LicenseInfo) ->
 
 /// Convert cached status to AppStatus.
 fn cached_to_app_status(app: &tauri::AppHandle, cached: &CachedLicenseStatus) -> AppStatus {
-    match cached.status.as_str() {
-        "active" => match cached.license_type {
-            Some(LicenseType::Supporter) => AppStatus::Supporter {
-                show_commercial_reminder: should_show_commercial_reminder(app),
-            },
-            Some(lt) => AppStatus::Commercial {
-                license_type: lt,
-                organization_name: cached.organization_name.clone(),
-                expires_at: cached.expires_at.clone(),
-            },
-            None => AppStatus::Personal {
-                show_commercial_reminder: should_show_commercial_reminder(app),
-            },
-        },
-        "expired" => {
-            let show_modal = !expiration_modal_shown(app);
-            AppStatus::Expired {
-                organization_name: cached.organization_name.clone(),
-                expired_at: cached.expires_at.clone().unwrap_or_else(|| "unknown".to_string()),
-                show_modal,
-            }
-        }
-        _ => AppStatus::Personal {
-            show_commercial_reminder: should_show_commercial_reminder(app),
-        },
-    }
+    to_app_status(app, &cached.status, cached.license_type, cached.organization_name.clone(), cached.expires_at.clone())
 }
 
 /// Check if expiration modal has been shown for current expiration.
