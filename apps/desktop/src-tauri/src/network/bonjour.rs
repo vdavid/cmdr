@@ -353,7 +353,7 @@ fn start_resolving_service(service: &NSNetService, host_id: &str) {
         return;
     };
 
-    let mut manager_guard = get_bonjour_manager().lock().unwrap();
+    let mut manager_guard = get_bonjour_manager().lock().unwrap_or_else(|e| e.into_inner());
     let Some(manager) = manager_guard.as_mut() else {
         return;
     };
@@ -409,7 +409,7 @@ fn start_resolving_service(service: &NSNetService, host_id: &str) {
 
 /// Stops resolving a service and cleans up.
 fn stop_resolving_service(host_id: &str) {
-    let mut manager_guard = get_bonjour_manager().lock().unwrap();
+    let mut manager_guard = get_bonjour_manager().lock().unwrap_or_else(|e| e.into_inner());
     let Some(manager) = manager_guard.as_mut() else {
         return;
     };
@@ -441,7 +441,7 @@ pub fn start_discovery(app_handle: AppHandle) {
         return;
     };
 
-    let mut manager_guard = get_bonjour_manager().lock().unwrap();
+    let mut manager_guard = get_bonjour_manager().lock().unwrap_or_else(|e| e.into_inner());
 
     // Don't start if already running
     if manager_guard.is_some() {
@@ -482,7 +482,7 @@ pub fn start_discovery(app_handle: AppHandle) {
 /// Stops Bonjour discovery.
 #[allow(dead_code, reason = "Will be used for explicit cleanup on app shutdown")]
 pub fn stop_discovery() {
-    let mut manager_guard = get_bonjour_manager().lock().unwrap();
+    let mut manager_guard = get_bonjour_manager().lock().unwrap_or_else(|e| e.into_inner());
 
     if let Some(manager) = manager_guard.take() {
         manager.browser.stop();

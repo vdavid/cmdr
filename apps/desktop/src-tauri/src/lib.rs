@@ -166,12 +166,19 @@ pub fn run() {
 
             // Store the CheckMenuItem references in app state
             let menu_state = MenuState::default();
-            *menu_state.show_hidden_files.lock().unwrap() = Some(menu_items.show_hidden_files);
-            *menu_state.view_mode_full.lock().unwrap() = Some(menu_items.view_mode_full);
-            *menu_state.view_mode_brief.lock().unwrap() = Some(menu_items.view_mode_brief);
-            *menu_state.view_submenu.lock().unwrap() = Some(menu_items.view_submenu);
-            *menu_state.view_mode_full_position.lock().unwrap() = menu_items.view_mode_full_position;
-            *menu_state.view_mode_brief_position.lock().unwrap() = menu_items.view_mode_brief_position;
+            *menu_state.show_hidden_files.lock().unwrap_or_else(|e| e.into_inner()) =
+                Some(menu_items.show_hidden_files);
+            *menu_state.view_mode_full.lock().unwrap_or_else(|e| e.into_inner()) = Some(menu_items.view_mode_full);
+            *menu_state.view_mode_brief.lock().unwrap_or_else(|e| e.into_inner()) = Some(menu_items.view_mode_brief);
+            *menu_state.view_submenu.lock().unwrap_or_else(|e| e.into_inner()) = Some(menu_items.view_submenu);
+            *menu_state
+                .view_mode_full_position
+                .lock()
+                .unwrap_or_else(|e| e.into_inner()) = menu_items.view_mode_full_position;
+            *menu_state
+                .view_mode_brief_position
+                .lock()
+                .unwrap_or_else(|e| e.into_inner()) = menu_items.view_mode_brief_position;
             app.manage(menu_state);
 
             // Set window title based on license status
@@ -208,7 +215,7 @@ pub fn run() {
             if id == SHOW_HIDDEN_FILES_ID {
                 // Get the CheckMenuItem from app state
                 let menu_state = app.state::<MenuState<tauri::Wry>>();
-                let guard = menu_state.show_hidden_files.lock().unwrap();
+                let guard = menu_state.show_hidden_files.lock().unwrap_or_else(|e| e.into_inner());
                 let Some(check_item) = guard.as_ref() else {
                     return;
                 };
@@ -228,8 +235,8 @@ pub fn run() {
                 let menu_state = app.state::<MenuState<tauri::Wry>>();
 
                 let (full_guard, brief_guard) = (
-                    menu_state.view_mode_full.lock().unwrap(),
-                    menu_state.view_mode_brief.lock().unwrap(),
+                    menu_state.view_mode_full.lock().unwrap_or_else(|e| e.into_inner()),
+                    menu_state.view_mode_brief.lock().unwrap_or_else(|e| e.into_inner()),
                 );
 
                 if let (Some(full_item), Some(brief_item)) = (full_guard.as_ref(), brief_guard.as_ref()) {

@@ -81,19 +81,19 @@ fn get_discovery_state() -> &'static Mutex<NetworkDiscoveryState> {
 
 /// Gets all currently discovered network hosts.
 pub fn get_discovered_hosts() -> Vec<NetworkHost> {
-    let state = get_discovery_state().lock().unwrap();
+    let state = get_discovery_state().lock().unwrap_or_else(|e| e.into_inner());
     state.hosts.values().cloned().collect()
 }
 
 /// Gets the current discovery state.
 pub fn get_discovery_state_value() -> DiscoveryState {
-    let state = get_discovery_state().lock().unwrap();
+    let state = get_discovery_state().lock().unwrap_or_else(|e| e.into_inner());
     state.state
 }
 
 /// Called by the Bonjour module when a host is discovered.
 pub(crate) fn on_host_found(host: NetworkHost, app_handle: &AppHandle) {
-    let mut state = get_discovery_state().lock().unwrap();
+    let mut state = get_discovery_state().lock().unwrap_or_else(|e| e.into_inner());
 
     let is_new = !state.hosts.contains_key(&host.id);
     debug!(
@@ -114,7 +114,7 @@ pub(crate) fn on_host_found(host: NetworkHost, app_handle: &AppHandle) {
 
 /// Called by the Bonjour module when a host disappears.
 pub(crate) fn on_host_lost(host_id: &str, app_handle: &AppHandle) {
-    let mut state = get_discovery_state().lock().unwrap();
+    let mut state = get_discovery_state().lock().unwrap_or_else(|e| e.into_inner());
 
     if let Some(removed) = state.hosts.remove(host_id) {
         debug!(
@@ -128,7 +128,7 @@ pub(crate) fn on_host_lost(host_id: &str, app_handle: &AppHandle) {
 
 /// Called when discovery state changes.
 pub(crate) fn on_discovery_state_changed(new_state: DiscoveryState, app_handle: &AppHandle) {
-    let mut state = get_discovery_state().lock().unwrap();
+    let mut state = get_discovery_state().lock().unwrap_or_else(|e| e.into_inner());
     state.state = new_state;
 
     // Emit event to frontend
@@ -146,7 +146,7 @@ pub(crate) fn on_host_resolved(
     port: u16,
     app_handle: &AppHandle,
 ) {
-    let mut state = get_discovery_state().lock().unwrap();
+    let mut state = get_discovery_state().lock().unwrap_or_else(|e| e.into_inner());
 
     // Update the host with resolved info
     if let Some(host) = state.hosts.get_mut(host_id) {
@@ -250,7 +250,7 @@ pub struct HostResolutionInfo {
 
 /// Gets the information needed to resolve a host. Brief mutex hold.
 pub fn get_host_for_resolution(host_id: &str) -> Option<HostResolutionInfo> {
-    let state = get_discovery_state().lock().unwrap();
+    let state = get_discovery_state().lock().unwrap_or_else(|e| e.into_inner());
     state.hosts.get(host_id).map(|h| HostResolutionInfo {
         id: h.id.clone(),
         name: h.name.clone(),
@@ -262,7 +262,7 @@ pub fn get_host_for_resolution(host_id: &str) -> Option<HostResolutionInfo> {
 
 /// Updates a host with resolved hostname and IP. Brief mutex hold.
 pub fn update_host_resolution(host_id: &str, hostname: String, ip_address: Option<String>) -> Option<NetworkHost> {
-    let mut state = get_discovery_state().lock().unwrap();
+    let mut state = get_discovery_state().lock().unwrap_or_else(|e| e.into_inner());
     if let Some(host) = state.hosts.get_mut(host_id) {
         host.hostname = Some(hostname);
         host.ip_address = ip_address;
@@ -281,7 +281,7 @@ pub fn resolve_network_host_sync(host_id: &str) -> Option<NetworkHost> {
 
     // If already resolved, return current state
     if info.ip_address.is_some() {
-        let state = get_discovery_state().lock().unwrap();
+        let state = get_discovery_state().lock().unwrap_or_else(|e| e.into_inner());
         return state.hosts.get(host_id).cloned();
     }
 

@@ -136,7 +136,7 @@ impl FileViewerBackend for FullLoadBackend {
             let mut search_start = 0;
             while let Some(pos) = line_lower[search_start..].find(&query_lower) {
                 let col = search_start + pos;
-                let mut matches = results.lock().unwrap();
+                let mut matches = results.lock().unwrap_or_else(|e| e.into_inner());
                 matches.push(SearchMatch {
                     line: line_idx,
                     column: col,
