@@ -326,10 +326,6 @@
     // Finalizing state (read_dir done, now sorting/caching)
     let finalizingCount = $state<number | undefined>(undefined)
     let unlistenReadComplete: UnlistenFn | undefined
-    // Polling interval for sync status (visible files only)
-    let syncPollInterval: ReturnType<typeof setInterval> | undefined
-    const SYNC_POLL_INTERVAL_MS = 2000 // Poll every 2 seconds
-
     // Sync status map for visible files
     let syncStatusMap = $state<Record<string, SyncStatus>>({})
 
@@ -1169,10 +1165,6 @@
             log.debug('[FilePane] onMount: SKIPPING loadDirectory for paneId={paneId}', { paneId })
         }
 
-        // Set up sync status polling for visible files
-        syncPollInterval = setInterval(() => {
-            // List components will call fetchSyncStatusForPaths with their visible entries
-        }, SYNC_POLL_INTERVAL_MS)
     })
 
     onDestroy(() => {
@@ -1187,9 +1179,6 @@
         unlistenComplete?.()
         unlistenError?.()
         unlistenCancelled?.()
-        if (syncPollInterval) {
-            clearInterval(syncPollInterval)
-        }
     })
 </script>
 
