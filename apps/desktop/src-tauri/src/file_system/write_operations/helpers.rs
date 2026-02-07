@@ -650,3 +650,53 @@ pub(super) fn sample_conflicts(conflicts: Vec<ConflictInfo>, max_count: usize) -
 
     (sampled, true)
 }
+
+// ============================================================================
+// Cancellation-aware execution
+// ============================================================================
+
+/// Interval for checking cancellation while waiting for blocking operations.
+const CANCELLATION_POLL_INTERVAL: Duration = Duration::from_millis(100);
+
+/// Runs a closure on a background thread with polling-based cancellation.
+///
+/// Spawns `work` on a new thread and polls for results every 100ms, checking the
+/// cancellation flag between polls. This ensures quick cancellation response even
+/// when filesystem I/O blocks (for example, on stuck network drives).
+pub(super) fn run_cancellable<T>(
+    work: impl FnOnce() -> Result<T, WriteOperationError> + Send + 'static,
+    state: &Arc<WriteOperationState>,
+    context: &str,
+    operation_id: &str,
+) -> Result<T, WriteOperationError>
+where
+    T: Send + 'static,
+{
+    use std::sync::mpsc;
+
+    let (tx, rx) = mpsc::channel();
+
+    std::thread::spawn(move || {
+        let _ = tx.send(work());
+    });
+
+    loop {
+        if state.cancelled.load(Ordering::Relaxed) {
+            log::debug!("{context}: cancellation detected during polling op={operation_id}");
+            return Err(WriteOperationError::Cancelled {
+                message: "Operation cancelled by user".to_string(),
+            });
+        }
+
+        match rx.recv_timeout(CANCELLATION_POLL_INTERVAL) {
+            Ok(result) => return result,
+            Err(mpsc::RecvTimeoutError::Timeout) => {}
+            Err(mpsc::RecvTimeoutError::Disconnected) => {
+                return Err(WriteOperationError::IoError {
+                    path: context.to_string(),
+                    message: format!("{context} thread terminated unexpectedly"),
+                });
+            }
+        }
+    }
+}

@@ -12,7 +12,9 @@ use super::macos_copy::copy_symlink;
 
 use super::chunked_copy::ChunkedCopyProgressFn;
 use super::copy_strategy::copy_file_with_strategy;
-use super::helpers::{is_same_file, resolve_conflict, spawn_async_sync, validate_disk_space, validate_path_length};
+use super::helpers::{
+    is_same_file, resolve_conflict, run_cancellable, spawn_async_sync, validate_disk_space, validate_path_length,
+};
 use super::scan::{handle_dry_run, scan_sources, take_cached_scan_result};
 use super::state::{CopyTransaction, WriteOperationState, update_operation_status};
 use super::types::{
@@ -24,9 +26,6 @@ use super::types::{
 // Cancellation-aware helpers
 // ============================================================================
 
-/// Interval for checking cancellation while waiting for blocking operations.
-const CANCELLATION_POLL_INTERVAL: Duration = Duration::from_millis(100);
-
 /// Runs `validate_disk_space` with polling-based cancellation.
 /// This ensures we respond quickly to cancellation even if `statvfs` blocks on slow network drives.
 fn validate_disk_space_cancellable(
@@ -35,41 +34,13 @@ fn validate_disk_space_cancellable(
     state: &Arc<WriteOperationState>,
     operation_id: &str,
 ) -> Result<(), WriteOperationError> {
-    use std::sync::mpsc;
-
     let destination = destination.to_path_buf();
-    let (tx, rx) = mpsc::channel();
-
-    std::thread::spawn(move || {
-        let result = validate_disk_space(&destination, required_bytes);
-        let _ = tx.send(result);
-    });
-
-    // Poll for results, checking cancellation flag between polls
-    loop {
-        if state.cancelled.load(Ordering::Relaxed) {
-            log::debug!(
-                "copy: cancellation detected during disk space check polling op={}",
-                operation_id
-            );
-            return Err(WriteOperationError::Cancelled {
-                message: "Operation cancelled by user".to_string(),
-            });
-        }
-
-        match rx.recv_timeout(CANCELLATION_POLL_INTERVAL) {
-            Ok(result) => return result,
-            Err(mpsc::RecvTimeoutError::Timeout) => {
-                // Continue polling
-            }
-            Err(mpsc::RecvTimeoutError::Disconnected) => {
-                return Err(WriteOperationError::IoError {
-                    path: "disk_space_check".to_string(),
-                    message: "Disk space check thread terminated unexpectedly".to_string(),
-                });
-            }
-        }
-    }
+    run_cancellable(
+        move || validate_disk_space(&destination, required_bytes),
+        state,
+        "disk_space_check",
+        operation_id,
+    )
 }
 
 // ============================================================================

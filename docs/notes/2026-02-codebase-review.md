@@ -306,7 +306,7 @@ These slot into the existing severity tiers -- the scan walker duplication and 1
 - [ ] Fix selection cleared before directory load in FilePane.svelte `[not quick — needs architectural change]`
 - [x] Unify scan_preview_recursive and scan_path_recursive into a shared walker `[medium]`
 - [x] Extract hidden-file filter helper (repeated 12 times in operations.rs) `[quick fix]`
-- [ ] Extract generic run_cancellable helper from 3 identical poll-loop wrappers in copy.rs/scan.rs `[medium]`
+- [x] Extract generic run_cancellable helper from 3 identical poll-loop wrappers in copy.rs/scan.rs `[medium]`
 - [x] Unify response_to_app_status and cached_to_app_status into one function `[quick fix]`
 
 ### Low — cleanup, style, docs

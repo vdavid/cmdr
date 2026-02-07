@@ -10,7 +10,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 use uuid::Uuid;
 
-use super::helpers::{calculate_dest_path, create_conflict_info, is_symlink_loop, sample_conflicts};
+use super::helpers::{calculate_dest_path, create_conflict_info, is_symlink_loop, run_cancellable, sample_conflicts};
 use super::state::{
     CachedScanResult, FileInfo, SCAN_PREVIEW_RESULTS, SCAN_PREVIEW_STATE, ScanPreviewState, ScanResult,
     WriteOperationState, update_operation_status,
@@ -266,9 +266,6 @@ pub(super) fn take_cached_scan_result(preview_id: &str) -> Option<ScanResult> {
 // Scanning helpers
 // ============================================================================
 
-/// Interval for checking cancellation while waiting for scan results.
-const CANCELLATION_POLL_INTERVAL: Duration = Duration::from_millis(100);
-
 /// Sorts files according to the specified column and order.
 pub(super) fn sort_files(files: &mut [FileInfo], column: SortColumn, order: SortOrder) {
     files.sort_by(|a, b| {
@@ -303,58 +300,29 @@ pub(super) fn scan_sources(
     sort_column: SortColumn,
     sort_order: SortOrder,
 ) -> Result<ScanResult, WriteOperationError> {
-    use std::sync::mpsc;
-
-    // Clone data for the background thread
     let sources = sources.to_vec();
     let state_clone = Arc::clone(state);
     let app_clone = app.clone();
     let operation_id_owned = operation_id.to_string();
     let progress_interval = state.progress_interval;
 
-    // Channel for receiving scan results
-    let (tx, rx) = mpsc::channel();
-
-    // Spawn scanning thread
-    std::thread::spawn(move || {
-        let result = scan_sources_internal(
-            &sources,
-            &state_clone,
-            &app_clone,
-            &operation_id_owned,
-            operation_type,
-            sort_column,
-            sort_order,
-            progress_interval,
-        );
-        let _ = tx.send(result);
-    });
-
-    // Poll for results, checking cancellation flag between polls.
-    // This ensures we respond quickly to cancellation even if filesystem I/O is blocked.
-    loop {
-        // Check cancellation before waiting
-        if state.cancelled.load(Ordering::Relaxed) {
-            log::debug!("scan: cancellation detected during scan polling op={}", operation_id);
-            return Err(WriteOperationError::Cancelled {
-                message: "Operation cancelled by user".to_string(),
-            });
-        }
-
-        match rx.recv_timeout(CANCELLATION_POLL_INTERVAL) {
-            Ok(result) => return result,
-            Err(mpsc::RecvTimeoutError::Timeout) => {
-                // Continue polling
-            }
-            Err(mpsc::RecvTimeoutError::Disconnected) => {
-                // Thread panicked or was unexpectedly terminated
-                return Err(WriteOperationError::IoError {
-                    path: "scan".to_string(),
-                    message: "Scan thread terminated unexpectedly".to_string(),
-                });
-            }
-        }
-    }
+    run_cancellable(
+        move || {
+            scan_sources_internal(
+                &sources,
+                &state_clone,
+                &app_clone,
+                &operation_id_owned,
+                operation_type,
+                sort_column,
+                sort_order,
+                progress_interval,
+            )
+        },
+        state,
+        "scan",
+        operation_id,
+    )
 }
 
 /// Internal scan implementation (runs in background thread).
@@ -503,57 +471,28 @@ pub(super) fn dry_run_scan(
     operation_type: WriteOperationType,
     progress_interval: Duration,
 ) -> Result<DryRunScanResult, WriteOperationError> {
-    use std::sync::mpsc;
-
-    // Clone data for the background thread
     let sources = sources.to_vec();
     let destination = destination.to_path_buf();
     let state_clone = Arc::clone(state);
     let app_clone = app.clone();
     let operation_id_owned = operation_id.to_string();
 
-    // Channel for receiving scan results
-    let (tx, rx) = mpsc::channel();
-
-    // Spawn scanning thread
-    std::thread::spawn(move || {
-        let result = dry_run_scan_internal(
-            &sources,
-            &destination,
-            &state_clone,
-            &app_clone,
-            &operation_id_owned,
-            operation_type,
-            progress_interval,
-        );
-        let _ = tx.send(result);
-    });
-
-    // Poll for results, checking cancellation flag between polls
-    loop {
-        if state.cancelled.load(Ordering::Relaxed) {
-            log::debug!(
-                "scan: cancellation detected during dry-run scan polling op={}",
-                operation_id
-            );
-            return Err(WriteOperationError::Cancelled {
-                message: "Operation cancelled by user".to_string(),
-            });
-        }
-
-        match rx.recv_timeout(CANCELLATION_POLL_INTERVAL) {
-            Ok(result) => return result,
-            Err(mpsc::RecvTimeoutError::Timeout) => {
-                // Continue polling
-            }
-            Err(mpsc::RecvTimeoutError::Disconnected) => {
-                return Err(WriteOperationError::IoError {
-                    path: "dry_run_scan".to_string(),
-                    message: "Scan thread terminated unexpectedly".to_string(),
-                });
-            }
-        }
-    }
+    run_cancellable(
+        move || {
+            dry_run_scan_internal(
+                &sources,
+                &destination,
+                &state_clone,
+                &app_clone,
+                &operation_id_owned,
+                operation_type,
+                progress_interval,
+            )
+        },
+        state,
+        "dry_run_scan",
+        operation_id,
+    )
 }
 
 /// Internal dry-run scan implementation (runs in background thread).
