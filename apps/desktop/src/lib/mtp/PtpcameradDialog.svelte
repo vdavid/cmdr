@@ -4,7 +4,7 @@
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
 
     interface Props {
-        /** The process name that's blocking (e.g., "pid 45145, ptpcamerad"). */
+        /** The process name that's blocking (like "pid 45145, ptpcamerad"). */
         blockingProcess?: string
         /** Called when the dialog is closed. */
         onClose: () => void

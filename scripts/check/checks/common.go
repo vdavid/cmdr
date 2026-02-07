@@ -189,7 +189,7 @@ func Pluralize(count int, singular, plural string) string {
 }
 
 // runPrettierCheck runs Prettier formatting check/fix for a given directory.
-// extensions are the file extensions to count (e.g., []string{"*.ts", "*.svelte", "*.css", "*.js"}).
+// extensions are the file extensions to count (like []string{"*.ts", "*.svelte", "*.css", "*.js"}).
 func runPrettierCheck(ctx *CheckContext, dir string, extensions []string) (CheckResult, error) {
 	// Count files that prettier would check
 	findArgs := buildFindArgs("src", extensions)
@@ -236,7 +236,7 @@ func runPrettierCheck(ctx *CheckContext, dir string, extensions []string) (Check
 }
 
 // runESLintCheck runs ESLint check/fix for a given directory.
-// extensions are the file extensions to count (e.g., []string{"*.ts", "*.svelte", "*.js"}).
+// extensions are the file extensions to count (like []string{"*.ts", "*.svelte", "*.js"}).
 // If requireConfig is true, skips when eslint.config.js is missing.
 func runESLintCheck(ctx *CheckContext, dir string, extensions []string, requireConfig bool) (CheckResult, error) {
 	if requireConfig {

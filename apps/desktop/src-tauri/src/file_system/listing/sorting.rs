@@ -37,7 +37,7 @@ pub enum SortOrder {
 /// Returns: (is_dotfile, has_extension, extension_lowercase)
 /// Dotfiles (names starting with .) sort first, then files without extension, then by extension.
 fn extract_extension_for_sort(name: &str) -> (bool, bool, String) {
-    // Dotfiles (e.g., .gitignore) sort first
+    // Dotfiles (like .gitignore) sort first
     if name.starts_with('.') && !name[1..].contains('.') {
         return (true, false, String::new());
     }
@@ -57,7 +57,7 @@ fn extract_extension_for_sort(name: &str) -> (bool, bool, String) {
 
 /// Sorts file entries by the specified column and order.
 /// Directories always come first, then files.
-/// Uses natural sorting for string comparisons (e.g., "img_2" before "img_10").
+/// Uses natural sorting for string comparisons (for example, "img_2" before "img_10").
 pub fn sort_entries(entries: &mut [FileEntry], sort_by: SortColumn, sort_order: SortOrder) {
     entries.sort_by(|a, b| {
         // Directories always come first

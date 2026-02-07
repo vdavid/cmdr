@@ -56,7 +56,7 @@
         sortOrder: SortOrder
         /** Preview scan ID from CopyDialog (for reusing scan results, optional) */
         previewId: string | null
-        /** Source volume ID (e.g., "root", "mtp-336592896:65537") */
+        /** Source volume ID (like "root", "mtp-336592896:65537") */
         sourceVolumeId: string
         /** Destination volume ID */
         destVolumeId: string

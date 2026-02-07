@@ -10,7 +10,7 @@ use std::fs;
 use std::sync::{LazyLock, RwLock};
 use tauri::Manager;
 
-/// Cache for font metrics, keyed by font ID (e.g., "system-400-12")
+/// Cache for font metrics, keyed by font ID (like "system-400-12")
 static METRICS_CACHE: LazyLock<RwLock<HashMap<String, FontMetrics>>> = LazyLock::new(|| RwLock::new(HashMap::new()));
 
 /// Font metrics for a specific font configuration.
@@ -19,7 +19,7 @@ static METRICS_CACHE: LazyLock<RwLock<HashMap<String, FontMetrics>>> = LazyLock:
 pub struct FontMetrics {
     /// Version for future format changes
     version: u32,
-    /// Font identifier (e.g., "system-400-12")
+    /// Font identifier (like "system-400-12")
     font_id: String,
     /// Map of code point → width in pixels
     widths: HashMap<u32, f32>,

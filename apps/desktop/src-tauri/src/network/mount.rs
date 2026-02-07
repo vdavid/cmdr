@@ -13,7 +13,7 @@ use std::ptr;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MountResult {
-    /// e.g. "/Volumes/Documents".
+    /// For example, "/Volumes/Documents".
     pub mount_path: String,
     pub already_mounted: bool,
 }

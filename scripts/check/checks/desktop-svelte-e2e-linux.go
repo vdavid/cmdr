@@ -28,7 +28,7 @@ func RunDesktopE2ELinux(ctx *CheckContext) (CheckResult, error) {
 		return CheckResult{}, fmt.Errorf("linux E2E tests failed\n%s", indentOutput(output))
 	}
 
-	// Extract test count from WebDriverIO output (e.g., "11 passing")
+	// Extract test count from WebDriverIO output (like "11 passing")
 	re := regexp.MustCompile(`(\d+) passing`)
 	matches := re.FindStringSubmatch(output)
 	if len(matches) > 1 {

@@ -303,7 +303,7 @@ pub struct AiModelInfo {
     pub id: String,
     pub display_name: String,
     pub size_bytes: u64,
-    /// Human-readable size (e.g., "4.3 GB")
+    /// Human-readable size (like "4.3 GB")
     pub size_formatted: String,
 }
 
@@ -319,7 +319,7 @@ pub fn get_ai_model_info() -> AiModelInfo {
     }
 }
 
-/// Formats bytes as GB with one decimal place (e.g., "4.3 GB").
+/// Formats bytes as GB with one decimal place (like "4.3 GB").
 fn format_bytes_gb(bytes: u64) -> String {
     let gb = bytes as f64 / 1_000_000_000.0;
     format!("{gb:.1} GB")

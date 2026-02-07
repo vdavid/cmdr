@@ -10,7 +10,7 @@ export interface MtpDeviceInfo {
     id: string
     /** Physical USB location identifier. Stable for a given port. */
     locationId: number
-    /** USB vendor ID (e.g., 0x18d1 for Google). */
+    /** USB vendor ID (for example, 0x18d1 for Google). */
     vendorId: number
     /** USB product ID. */
     productId: number
@@ -54,15 +54,15 @@ export async function listMtpDevices(): Promise<MtpDeviceInfo[]> {
 export interface MtpStorageInfo {
     /** Storage ID (MTP storage handle). */
     id: number
-    /** Display name (e.g., "Internal shared storage"). */
+    /** Display name (like "Internal shared storage"). */
     name: string
     /** Total capacity in bytes. */
     totalBytes: number
     /** Available space in bytes. */
     availableBytes: number
-    /** Storage type description (e.g., "FixedROM", "RemovableRAM"). */
+    /** Storage type description (like "FixedROM", "RemovableRAM"). */
     storageType?: string
-    /** Whether this storage is read-only (e.g., PTP cameras). */
+    /** Whether this storage is read-only (for example, PTP cameras). */
     isReadOnly: boolean
 }
 
@@ -488,7 +488,7 @@ export interface SourceItemInput {
  * - Local -> MTP (upload to Android device)
  * - MTP -> Local (download from Android device)
  *
- * @param sourceVolumeId - ID of the source volume (e.g., "root" for local filesystem)
+ * @param sourceVolumeId - ID of the source volume (like "root" for local filesystem)
  * @param sourcePaths - List of source file/directory paths relative to source volume
  * @param destVolumeId - ID of the destination volume
  * @param destPath - Destination directory path relative to destination volume

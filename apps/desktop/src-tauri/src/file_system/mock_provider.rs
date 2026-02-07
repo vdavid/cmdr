@@ -4,7 +4,7 @@ use super::{FileEntry, provider::FileSystemProvider};
 use std::path::Path;
 
 /// Mock file system provider with configurable data for testing.
-/// Can be used for stress testing with large file counts (e.g., 50k+ files).
+/// Can be used for stress testing with large file counts (like 50k+ files).
 pub struct MockFileSystemProvider {
     entries: Vec<FileEntry>,
 }

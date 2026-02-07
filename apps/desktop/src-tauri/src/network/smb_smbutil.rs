@@ -1,7 +1,7 @@
 //! macOS smbutil wrapper for SMB share listing.
 //!
 //! Provides fallback share listing using the macOS `smbutil` command when
-//! the pure Rust smb-rs implementation fails (e.g., with certain Samba servers).
+//! the pure Rust smb-rs implementation fails (for example, with certain Samba servers).
 
 use crate::network::smb_types::{AuthMode, ShareInfo, ShareListError, ShareListResult};
 use log::debug;
@@ -28,7 +28,7 @@ pub async fn list_shares_smbutil(
 
 /// Lists shares using macOS Keychain credentials via smbutil.
 /// This runs smbutil WITHOUT explicit credentials, allowing it to use
-/// credentials stored in macOS Keychain (e.g., from previous Finder connections).
+/// credentials stored in macOS Keychain (for example, from previous Finder connections).
 /// No -G (guest) flag, so smbutil will try to authenticate using Keychain.
 #[cfg(target_os = "macos")]
 pub async fn list_shares_smbutil_authenticated_from_keychain(

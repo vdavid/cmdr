@@ -35,7 +35,7 @@ pub(super) struct CachedListing {
 pub(super) const LISTING_CACHE_TTL_SECS: u64 = 5;
 
 /// Debounce duration for MTP directory change events (500ms).
-/// MTP devices can emit rapid events during bulk operations (e.g., copying many files).
+/// MTP devices can emit rapid events during bulk operations (like copying many files).
 pub(super) const EVENT_DEBOUNCE_MS: u64 = 500;
 
 /// Debouncer for MTP directory change events.

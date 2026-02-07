@@ -23,7 +23,7 @@ static KNOWN_VOLUMES: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
 #[derive(Clone, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VolumeEventPayload {
-    /// The volume path (e.g., "/Volumes/MyDrive")
+    /// The volume path (like "/Volumes/MyDrive")
     pub volume_path: String,
 }
 

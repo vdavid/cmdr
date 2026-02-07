@@ -7,7 +7,7 @@ use std::collections::HashMap;
 ///
 /// # Arguments
 /// * `app` - Tauri app handle for accessing app data directory
-/// * `font_id` - Font identifier (e.g., "system-400-12")
+/// * `font_id` - Font identifier (like "system-400-12")
 /// * `widths` - Map of code point → width in pixels
 #[tauri::command]
 pub fn store_font_metrics<R: tauri::Runtime>(

@@ -15,7 +15,7 @@ import type { NetworkHost } from '../types'
 
 /** A single entry in the navigation history */
 export interface HistoryEntry {
-    /** The volume ID (e.g., 'root', 'network', '/Volumes/MyDrive') */
+    /** The volume ID (like 'root', 'network', '/Volumes/MyDrive') */
     volumeId: string
     /** The path within the volume (or 'smb://' for network root) */
     path: string

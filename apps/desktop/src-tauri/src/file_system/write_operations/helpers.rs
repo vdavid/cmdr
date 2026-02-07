@@ -66,7 +66,7 @@ pub(crate) fn validate_destination_not_inside_source(
     destination: &Path,
 ) -> Result<(), WriteOperationError> {
     // Canonicalize destination to resolve symlinks and ".." segments that could
-    // bypass a naive starts_with check (e.g. /foo/bar/../foo/sub → /foo/sub)
+    // bypass a naive starts_with check (like /foo/bar/../foo/sub → /foo/sub)
     let canonical_dest = destination.canonicalize().unwrap_or_else(|_| destination.to_path_buf());
 
     for source in sources {

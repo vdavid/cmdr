@@ -33,7 +33,7 @@ pub struct NetworkHost {
     pub id: String,
     /// The advertised service name.
     pub name: String,
-    /// e.g. "macbook.local". None if not yet resolved.
+    /// For example, "macbook.local". None if not yet resolved.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hostname: Option<String>,
     /// None if not yet resolved.

@@ -30,7 +30,7 @@ pub struct MtpStorageInfo {
     pub available_bytes: u64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub storage_type: Option<String>,
-    /// Whether this storage is read-only (e.g., PTP cameras).
+    /// Whether this storage is read-only (for example, PTP cameras).
     pub is_read_only: bool,
 }
 

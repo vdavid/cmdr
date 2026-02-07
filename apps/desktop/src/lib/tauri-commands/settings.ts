@@ -61,7 +61,7 @@ export interface AiModelInfo {
     id: string
     displayName: string
     sizeBytes: number
-    /** Human-readable size (e.g., "4.3 GB") */
+    /** Human-readable size (like "4.3 GB") */
     sizeFormatted: string
 }
 

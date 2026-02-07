@@ -377,7 +377,7 @@ export function calculateOperationStats(event: WriteProgressEvent, startTime: nu
 }
 
 /**
- * Formats bytes as human-readable string (e.g., "1.5 GB").
+ * Formats bytes as human-readable string (like "1.5 GB").
  */
 export function formatBytes(bytes: number): string {
     if (bytes < 1024) return `${String(bytes)} B`
@@ -387,7 +387,7 @@ export function formatBytes(bytes: number): string {
 }
 
 /**
- * Formats seconds as human-readable duration (e.g., "2m 30s").
+ * Formats seconds as human-readable duration (like "2m 30s").
  */
 export function formatDuration(seconds: number): string {
     if (seconds < 60) return `${String(Math.round(seconds))}s`

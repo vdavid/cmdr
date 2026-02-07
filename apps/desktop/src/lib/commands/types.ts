@@ -18,7 +18,7 @@ export type CommandScope =
 
 /** A command definition */
 export interface Command {
-    /** Unique identifier (e.g., 'file.open', 'nav.parent') */
+    /** Unique identifier (like 'file.open', 'nav.parent') */
     id: string
     /** Display name shown in palette */
     name: string
@@ -26,7 +26,7 @@ export interface Command {
     scope: CommandScope
     /** Show in command palette? (false for low-level nav like ↑/↓) */
     showInPalette: boolean
-    /** Keyboard shortcuts (e.g., ['⌘⇧P', 'F1']) */
+    /** Keyboard shortcuts (like ['⌘⇧P', 'F1']) */
     shortcuts: string[]
     /** Optional description for long-form help */
     description?: string

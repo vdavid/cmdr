@@ -32,7 +32,7 @@
     })
 
     // Helper to convert error type to user-friendly message
-    // Note: Rust serde uses camelCase for enum variants (e.g., "timeout" not "Timeout")
+    // Note: Rust serde uses camelCase for enum variants (like "timeout" not "Timeout")
     function getMessageForType(errType: string | undefined): string | undefined {
         switch (errType) {
             case 'timeout':

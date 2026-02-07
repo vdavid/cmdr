@@ -37,7 +37,7 @@
         sortColumn: SortColumn
         /** Current sort order on source pane */
         sortOrder: SortOrder
-        /** Source volume ID (e.g., "root", "mtp-336592896:65537") */
+        /** Source volume ID (like "root", "mtp-336592896:65537") */
         sourceVolumeId: string
         /** Destination volume ID */
         destVolumeId: string

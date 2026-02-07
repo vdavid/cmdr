@@ -19,7 +19,7 @@ pub(crate) static LISTING_CACHE: LazyLock<RwLock<HashMap<String, CachedListing>>
 /// Cached directory listing for on-demand virtual scrolling.
 #[cfg(not(test))]
 pub(crate) struct CachedListing {
-    /// Volume ID this listing belongs to (e.g., "root", "dropbox")
+    /// Volume ID this listing belongs to (like "root", "dropbox")
     pub volume_id: String,
     /// Path within the volume (absolute path for now)
     pub path: PathBuf,
@@ -34,7 +34,7 @@ pub(crate) struct CachedListing {
 /// Cached directory listing for on-demand virtual scrolling.
 #[cfg(test)]
 pub(crate) struct CachedListing {
-    /// Volume ID this listing belongs to (e.g., "root", "dropbox")
+    /// Volume ID this listing belongs to (like "root", "dropbox")
     pub volume_id: String,
     /// Path within the volume (absolute path for now)
     pub path: PathBuf,

@@ -139,7 +139,7 @@ export type LocationCategory =
 export interface VolumeInfo {
     /** Unique identifier for the location */
     id: string
-    /** Display name (e.g., "Macintosh HD", "Dropbox") */
+    /** Display name (like "Macintosh HD", "Dropbox") */
     name: string
     /** Path to the location */
     path: string
@@ -149,7 +149,7 @@ export interface VolumeInfo {
     icon?: string
     /** Whether this can be ejected */
     isEjectable: boolean
-    /** Whether this volume is read-only (e.g., PTP cameras) */
+    /** Whether this volume is read-only (for example, PTP cameras) */
     isReadOnly?: boolean
 }
 
@@ -212,7 +212,7 @@ export interface NetworkHost {
     id: string
     /** Display name (the advertised service name) */
     name: string
-    /** Resolved hostname (e.g., "macbook.local"), or undefined if not yet resolved */
+    /** Resolved hostname (like "macbook.local"), or undefined if not yet resolved */
     hostname?: string
     /** Resolved IP address, or undefined if not yet resolved */
     ipAddress?: string
@@ -309,7 +309,7 @@ export type KeychainError =
 
 /** Result of a successful mount operation. */
 export interface MountResult {
-    /** Path where the share was mounted (e.g., "/Volumes/Documents") */
+    /** Path where the share was mounted (like "/Volumes/Documents") */
     mountPath: string
     /** Whether the share was already mounted (we didn't mount it ourselves) */
     alreadyMounted: boolean

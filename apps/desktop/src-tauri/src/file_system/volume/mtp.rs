@@ -66,12 +66,12 @@ impl MtpVolume {
             let without_scheme = path_str.strip_prefix("mtp://").unwrap_or(&path_str);
 
             // Find the device_id/storage_id prefix and skip it
-            // Device ID format: mtp-{bus}-{address} (e.g., mtp-0-1)
+            // Device ID format: mtp-{bus}-{address} (like mtp-0-1)
             // So we need to skip: device_id/storage_id/
             let parts: Vec<&str> = without_scheme.splitn(3, '/').collect();
-            // parts[0] = device_id (e.g., "mtp-0-1")
-            // parts[1] = storage_id (e.g., "65537")
-            // parts[2] = inner path (e.g., "DCIM/Camera") or absent for root
+            // parts[0] = device_id (like "mtp-0-1")
+            // parts[1] = storage_id (like "65537")
+            // parts[2] = inner path (like "DCIM/Camera") or absent for root
 
             return if parts.len() >= 3 {
                 parts[2].to_string()

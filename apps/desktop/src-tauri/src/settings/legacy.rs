@@ -54,7 +54,7 @@ impl Default for Settings {
 /// Loads settings from the persistent store file (settings-v2.json).
 /// Returns defaults if the file doesn't exist or can't be parsed.
 pub fn load_settings<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Settings {
-    // Get the app data directory (e.g., ~/Library/Application Support/com.veszelovszki.cmdr/)
+    // Get the app data directory (like ~/Library/Application Support/com.veszelovszki.cmdr/)
     let Some(data_dir) = app.path().app_data_dir().ok() else {
         return Settings::default();
     };
@@ -78,7 +78,7 @@ pub fn load_settings<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Settings {
     Settings::default()
 }
 
-/// Parse settings-v2.json which uses dot notation for keys (e.g., "developer.mcpEnabled")
+/// Parse settings-v2.json which uses dot notation for keys (like "developer.mcpEnabled")
 fn parse_settings_v2(contents: &str) -> Result<Settings, serde_json::Error> {
     // tauri-plugin-store uses flat JSON with dot notation keys
     let json: serde_json::Value = serde_json::from_str(contents)?;

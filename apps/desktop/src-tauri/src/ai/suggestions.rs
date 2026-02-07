@@ -72,9 +72,9 @@ fn parse_suggestions(response: &str, existing_names: &[String]) -> Vec<String> {
     response
         .lines()
         .map(|line| line.trim().to_string())
-        // Remove any accidental bullet points (e.g., "- docs" → "docs")
+        // Remove any accidental bullet points (like "- docs" → "docs")
         .map(|line| line.trim_start_matches(['-', '*']).trim_start().to_string())
-        // Remove any accidental numbering (e.g., "1. docs" → "docs")
+        // Remove any accidental numbering (like "1. docs" → "docs")
         .map(|line| {
             if let Some(rest) = line.strip_prefix(|c: char| c.is_ascii_digit()) {
                 rest.trim_start_matches(['.', ')', ' ']).to_string()

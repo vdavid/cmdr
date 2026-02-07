@@ -21,7 +21,7 @@
         showHiddenFiles: boolean
         /** Pre-fill name (filename without extension, or empty) */
         initialName: string
-        /** Volume ID for the filesystem (e.g., "root" for local, "mtp-336592896:65537" for MTP) */
+        /** Volume ID for the filesystem (like "root" for local, "mtp-336592896:65537" for MTP) */
         volumeId?: string
         onCreated: (folderName: string) => void
         onCancel: () => void

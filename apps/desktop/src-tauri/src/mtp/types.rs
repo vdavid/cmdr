@@ -15,7 +15,7 @@ pub struct MtpDeviceInfo {
     pub id: String,
     /// Stable for a given USB port.
     pub location_id: u64,
-    /// e.g. 0x18d1 for Google.
+    /// For example, 0x18d1 for Google.
     pub vendor_id: u16,
     pub product_id: u16,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -50,13 +50,13 @@ impl MtpDeviceInfo {
 pub struct MtpStorageInfo {
     /// MTP storage handle.
     pub id: u32,
-    /// e.g. "Internal shared storage".
+    /// For example, "Internal shared storage".
     pub name: String,
     /// In bytes.
     pub total_bytes: u64,
     /// In bytes.
     pub available_bytes: u64,
-    /// e.g. "FixedROM", "RemovableRAM".
+    /// For example, "FixedROM", "RemovableRAM".
     #[serde(skip_serializing_if = "Option::is_none")]
     pub storage_type: Option<String>,
     pub is_read_only: bool,

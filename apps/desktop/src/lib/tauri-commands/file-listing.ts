@@ -35,7 +35,7 @@ export async function listDirectoryStart(
  * Starts a new streaming directory listing (async version).
  * Returns immediately with listing ID and "loading" status.
  * Progress is reported via events: listing-progress, listing-complete, listing-error, listing-cancelled.
- * @param volumeId - Volume ID (e.g., "root", "mtp-336592896:65537").
+ * @param volumeId - Volume ID (like "root", "mtp-336592896:65537").
  * @param path - Directory path to list. Supports tilde expansion (~) for local volumes.
  * @param includeHidden - Whether to include hidden files in total count.
  * @param sortBy - Column to sort by.

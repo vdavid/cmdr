@@ -38,7 +38,7 @@ export const config: Options.Testrunner & { capabilities: Capabilities.Testrunne
     // Use WebDriver protocol (not DevTools)
     runner: 'local',
 
-    // Test files (relative to where wdio is invoked from, i.e., apps/desktop)
+    // Test files (relative to where wdio is invoked from, that is, apps/desktop)
     specs: [path.join(__dirname, '*.spec.ts')],
     exclude: [],
 

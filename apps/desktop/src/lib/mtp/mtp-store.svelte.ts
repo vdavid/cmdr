@@ -394,7 +394,7 @@ export interface MtpVolume {
     path: string
     /** Whether the device is connected */
     isConnected: boolean
-    /** Whether this storage is read-only (e.g., PTP cameras) */
+    /** Whether this storage is read-only (for example, PTP cameras) */
     isReadOnly: boolean
 }
 

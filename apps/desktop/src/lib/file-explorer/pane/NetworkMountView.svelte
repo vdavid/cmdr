@@ -44,7 +44,7 @@
     let networkBrowserRef: NetworkBrowser | undefined = $state()
     let shareBrowserRef: ShareBrowser | undefined = $state()
 
-    // Sync when parent changes the prop (e.g. history navigation)
+    // Sync when parent changes the prop (for example, history navigation)
     $effect(() => {
         currentNetworkHost = initialNetworkHost
     })

@@ -20,8 +20,8 @@ impl LocalPosixVolume {
     /// Creates a new local volume with the given name and root path.
     ///
     /// # Arguments
-    /// * `name` - Display name (e.g., "Macintosh HD", "Dropbox")
-    /// * `root` - Absolute path to the volume root (e.g., "/", "/Users/you/Dropbox")
+    /// * `name` - Display name (like "Macintosh HD", "Dropbox")
+    /// * `root` - Absolute path to the volume root (like "/", "/Users/you/Dropbox")
     pub fn new(name: impl Into<String>, root: impl Into<PathBuf>) -> Self {
         Self {
             name: name.into(),

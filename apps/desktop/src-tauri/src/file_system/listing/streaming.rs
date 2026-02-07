@@ -181,7 +181,7 @@ pub async fn list_directory_start_streaming(
                 );
             }
             Ok(Err(e)) => {
-                // Function returned an error (e.g., volume not found, permission denied)
+                // Function returned an error (like volume not found, permission denied)
                 let _ = app_for_error.emit(
                     "listing-error",
                     ListingErrorEvent {
@@ -259,7 +259,7 @@ fn read_directory_with_progress(
 
     // Read directory entries via Volume abstraction
     // Use polling-based cancellation to remain responsive even when filesystem I/O blocks
-    // (e.g., on slow/stuck network drives like SMB mounts)
+    // (for example, on slow/stuck network drives like SMB mounts)
     let read_start = std::time::Instant::now();
     let path_for_thread = path.to_path_buf();
     let (tx, rx) = mpsc::channel();

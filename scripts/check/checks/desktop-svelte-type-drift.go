@@ -17,7 +17,7 @@ func RunTypeDrift(ctx *CheckContext) (CheckResult, error) {
 		return CheckResult{}, fmt.Errorf("type drift detected between Rust and TypeScript\n%s", indentOutput(output))
 	}
 
-	// Try to extract type count from output (e.g., "Checked 42 types")
+	// Try to extract type count from output (like "Checked 42 types")
 	re := regexp.MustCompile(`(\d+) types?`)
 	matches := re.FindStringSubmatch(output)
 	if len(matches) > 1 {

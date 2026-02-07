@@ -350,7 +350,7 @@ impl MtpConnectionManager {
     ///
     /// * `device_id` - The connected device ID
     /// * `storage_id` - The storage ID within the device
-    /// * `path` - Virtual path on the device (e.g., "DCIM/photo.jpg")
+    /// * `path` - Virtual path on the device (like "DCIM/photo.jpg")
     pub async fn open_download_stream(
         &self,
         device_id: &str,
@@ -431,7 +431,7 @@ impl MtpConnectionManager {
     ///
     /// * `device_id` - The connected device ID
     /// * `storage_id` - The storage ID within the device
-    /// * `dest_folder` - Destination folder path on device (e.g., "DCIM")
+    /// * `dest_folder` - Destination folder path on device (like "DCIM")
     /// * `filename` - Name for the new file
     /// * `size` - Total size in bytes
     /// * `chunks` - Pre-collected data chunks

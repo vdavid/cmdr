@@ -31,7 +31,7 @@ export async function getLicenseStatus(): Promise<LicenseStatus> {
 
 /**
  * Gets the window title based on current license status.
- * @returns Window title string (e.g., "Cmdr – Personal use only")
+ * @returns Window title string (like "Cmdr – Personal use only")
  */
 export async function getWindowTitle(): Promise<string> {
     return invoke<string>('get_window_title')

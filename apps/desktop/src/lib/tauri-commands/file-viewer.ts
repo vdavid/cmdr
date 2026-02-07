@@ -108,7 +108,7 @@ export async function openFile(path: string): Promise<void> {
 
 /**
  * Opens a URL in the system's default browser.
- * @param url - URL to open (e.g., "https://getcmdr.com/renew")
+ * @param url - URL to open (like "https://getcmdr.com/renew")
  */
 export async function openExternalUrl(url: string): Promise<void> {
     await openUrl(url)
@@ -324,7 +324,7 @@ export async function getSyncStatus(paths: string[]): Promise<Record<string, Syn
 
 /**
  * Stores font metrics for a font configuration.
- * @param fontId - Font identifier (e.g., "system-400-12")
+ * @param fontId - Font identifier (like "system-400-12")
  * @param widths - Map of code point -> width in pixels
  */
 export async function storeFontMetrics(fontId: string, widths: Record<number, number>): Promise<void> {

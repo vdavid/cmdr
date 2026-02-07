@@ -49,7 +49,7 @@ pub(super) fn copy_single_path(
     let source_is_local = is_local_volume(source_volume.as_ref());
     let dest_is_local = is_local_volume(dest_volume.as_ref());
 
-    // Handle non-local to non-local (e.g., MTP → MTP)
+    // Handle non-local to non-local (like MTP → MTP)
     if !source_is_local && !dest_is_local {
         // Check if source is a directory
         let is_dir = source_volume.is_directory(source_path).unwrap_or(false);
@@ -81,7 +81,7 @@ pub(super) fn copy_single_path(
     }
 
     if source_is_local && !dest_is_local {
-        // Source is local, dest is not (e.g., Local → MTP)
+        // Source is local, dest is not (like Local → MTP)
         // Use import_from_local on destination
         let local_source = if source_path.is_absolute() {
             source_path.to_path_buf()
@@ -90,7 +90,7 @@ pub(super) fn copy_single_path(
         };
         dest_volume.import_from_local(&local_source, dest_path)
     } else if !source_is_local && dest_is_local {
-        // Source is not local, dest is local (e.g., MTP → Local)
+        // Source is not local, dest is local (like MTP → Local)
         // Use export_to_local on source
         let local_dest = if dest_path.is_absolute() {
             dest_path.to_path_buf()

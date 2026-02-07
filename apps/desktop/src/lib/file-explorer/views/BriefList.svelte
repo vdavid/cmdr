@@ -348,7 +348,7 @@
     // Track previous container height to detect resizes
     let prevContainerHeight = 0
 
-    // Scroll to cursor index when container height changes (e.g., window resize)
+    // Scroll to cursor index when container height changes (for example, window resize)
     $effect(() => {
         const height = containerHeight
         // Only react to meaningful height changes (not initial 0)
@@ -557,5 +557,4 @@
     .brief-list-container.is-focused .file-entry.is-under-cursor.is-selected .name {
         color: var(--color-selection-fg);
     }
-
 </style>

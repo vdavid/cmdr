@@ -25,7 +25,7 @@ export function generateTitle(files: number, folders: number): string {
 /**
  * Extracts the folder name from a full path.
  * @param path - Full path like "/Users/john/Documents"
- * @returns The last path component, e.g., "Documents"
+ * @returns The last path component, like "Documents"
  */
 export function getFolderName(path: string): string {
     if (path === '/') return '/'

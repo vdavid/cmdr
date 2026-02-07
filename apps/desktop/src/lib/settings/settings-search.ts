@@ -47,7 +47,7 @@ function buildSearchIndex(): SearchIndexEntry[] {
 
 /**
  * Build searchable text for a setting by concatenating:
- * - Section path (e.g., "General › Appearance")
+ * - Section path (like "General > Appearance")
  * - Label
  * - Description
  * - Keywords

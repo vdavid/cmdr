@@ -119,7 +119,7 @@ impl From<std::io::Error> for VolumeError {
 /// All path parameters are relative to the volume root. The volume handles
 /// translating these to actual storage locations.
 pub trait Volume: Send + Sync {
-    /// Returns the display name for this volume (e.g., "Macintosh HD", "Dropbox").
+    /// Returns the display name for this volume (like "Macintosh HD", "Dropbox").
     fn name(&self) -> &str;
 
     /// Returns the root path of this volume.
@@ -236,7 +236,7 @@ pub trait Volume: Send + Sync {
     // ========================================
 
     /// Returns the local filesystem path if this volume is backed by one.
-    /// Used to optimize local-to-local copies using native OS APIs (e.g., copyfile on macOS).
+    /// Used to optimize local-to-local copies using native OS APIs (such as copyfile on macOS).
     /// Returns None for non-local volumes (MTP, S3, FTP, etc.).
     fn local_path(&self) -> Option<std::path::PathBuf> {
         None

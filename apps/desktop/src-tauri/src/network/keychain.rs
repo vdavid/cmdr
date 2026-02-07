@@ -17,7 +17,7 @@ use std::sync::RwLock;
 const SERVICE_NAME: &str = "Cmdr";
 
 /// In-memory cache for credentials to avoid repeated Keychain dialogs.
-/// Key is the account name (e.g., "smb://server" or "smb://server/share").
+/// Key is the account name (like "smb://server" or "smb://server/share").
 static CREDENTIAL_CACHE: std::sync::LazyLock<RwLock<HashMap<String, SmbCredentials>>> =
     std::sync::LazyLock::new(|| RwLock::new(HashMap::new()));
 

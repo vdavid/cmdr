@@ -1095,7 +1095,7 @@
         const currentVolumeId = volumeId
         const currentIsMtpView = isMtpView
 
-        // Extract device ID from volume ID (e.g., "mtp-2097152:65537" -> "mtp-2097152")
+        // Extract device ID from volume ID (like "mtp-2097152:65537" -> "mtp-2097152")
         const deviceIdFromVolume =
             currentIsMtpView && currentVolumeId.includes(':') ? currentVolumeId.split(':')[0] : null
 

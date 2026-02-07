@@ -12,7 +12,7 @@ pub const PTPCAMERAD_WORKAROUND_COMMAND: &str = "while true; do pkill -9 ptpcame
 
 /// Queries IORegistry to find the process holding exclusive access to MTP devices.
 ///
-/// Returns the process name (e.g., "ptpcamerad") if found.
+/// Returns the process name (like "ptpcamerad") if found.
 ///
 /// # How it works
 ///
