@@ -261,13 +261,13 @@ fn get_space_info_for_path(path: &Path) -> Result<SpaceInfo, VolumeError> {
     unsafe {
         let mut stat: libc::statvfs = std::mem::zeroed();
         if libc::statvfs(path_c.as_ptr(), &mut stat) == 0 {
-            #[allow(clippy::unnecessary_cast)]
+            #[allow(clippy::unnecessary_cast, reason = "statvfs field types vary across platforms")]
             let block_size = stat.f_frsize as u64;
-            #[allow(clippy::unnecessary_cast)]
+            #[allow(clippy::unnecessary_cast, reason = "statvfs field types vary across platforms")]
             let total_bytes = (stat.f_blocks as u64) * block_size;
-            #[allow(clippy::unnecessary_cast)]
+            #[allow(clippy::unnecessary_cast, reason = "statvfs field types vary across platforms")]
             let available_bytes = (stat.f_bavail as u64) * block_size;
-            #[allow(clippy::unnecessary_cast)]
+            #[allow(clippy::unnecessary_cast, reason = "statvfs field types vary across platforms")]
             let used_bytes = total_bytes.saturating_sub((stat.f_bfree as u64) * block_size);
 
             Ok(SpaceInfo {
