@@ -297,17 +297,17 @@ These slot into the existing severity tiers -- the scan walker duplication and 1
 ### Medium — bugs, visible duplication
 
 - [ ] Replace 67 .lock().unwrap() calls with .unwrap_or_else(|e| e.into_inner()) or .expect() `[medium — batch]`
-- [ ] URL-encode SMB username in smb_smbutil.rs `[quick fix]`
-- [ ] Extract .map_err(|e| ToolError::internal(e.to_string())) helper in mcp/executor.rs (~30 occurrences) `[quick fix]`
-- [ ] Extract operationId filtering helper in CopyProgressDialog.svelte (5 duplications) `[quick fix]`
-- [ ] Remove no-op setInterval in FilePane.svelte:1179-1181 `[quick fix]`
-- [ ] Fix identical ternary branches in DualPaneExplorer.svelte:1012-1014 `[quick fix]`
-- [ ] Pass path context to map_volume_error() instead of String::new() in volume_copy.rs `[quick fix]`
-- [ ] Fix selection cleared before directory load in FilePane.svelte `[quick fix]`
+- [x] URL-encode SMB username in smb_smbutil.rs `[quick fix]`
+- [x] Extract .map_err(|e| ToolError::internal(e.to_string())) helper in mcp/executor.rs (~30 occurrences) `[quick fix]`
+- [x] Extract operationId filtering helper in CopyProgressDialog.svelte (5 duplications) `[quick fix]` *(already done)*
+- [x] Remove no-op setInterval in FilePane.svelte:1179-1181 `[quick fix]`
+- [x] Fix identical ternary branches in DualPaneExplorer.svelte:1012-1014 `[quick fix]`
+- [x] Pass path context to map_volume_error() instead of String::new() in volume_copy.rs `[quick fix]`
+- [ ] Fix selection cleared before directory load in FilePane.svelte `[not quick — needs architectural change]`
 - [ ] Unify scan_preview_recursive and scan_path_recursive into a shared walker `[medium]`
-- [ ] Extract hidden-file filter helper (repeated 12 times in operations.rs) `[quick fix]`
+- [x] Extract hidden-file filter helper (repeated 12 times in operations.rs) `[quick fix]`
 - [ ] Extract generic run_cancellable helper from 3 identical poll-loop wrappers in copy.rs/scan.rs `[medium]`
-- [ ] Unify response_to_app_status and cached_to_app_status into one function `[quick fix]`
+- [x] Unify response_to_app_status and cached_to_app_status into one function `[quick fix]`
 
 ### Low — cleanup, style, docs
 
