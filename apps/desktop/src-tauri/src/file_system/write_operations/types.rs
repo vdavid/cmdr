@@ -65,15 +65,11 @@ pub struct WriteProgressEvent {
     pub operation_id: String,
     pub operation_type: WriteOperationType,
     pub phase: WriteOperationPhase,
-    /// Current file being processed (filename only, not full path)
+    /// Filename only, not full path.
     pub current_file: Option<String>,
-    /// Number of files processed
     pub files_done: usize,
-    /// Total number of files
     pub files_total: usize,
-    /// Bytes processed so far
     pub bytes_done: u64,
-    /// Total bytes to process
     pub bytes_total: u64,
 }
 
@@ -102,9 +98,8 @@ pub struct WriteErrorEvent {
 pub struct WriteCancelledEvent {
     pub operation_id: String,
     pub operation_type: WriteOperationType,
-    /// Number of files processed before cancellation
     pub files_processed: usize,
-    /// Whether partial files were rolled back (deleted)
+    /// Whether partial files were rolled back (deleted).
     pub rolled_back: bool,
 }
 
@@ -115,17 +110,16 @@ pub struct WriteConflictEvent {
     pub operation_id: String,
     pub source_path: String,
     pub destination_path: String,
-    /// Source file size in bytes
+    /// In bytes.
     pub source_size: u64,
-    /// Destination file size in bytes
+    /// In bytes.
     pub destination_size: u64,
-    /// Source modification time (Unix timestamp in seconds), if available
+    /// Unix timestamp in seconds.
     pub source_modified: Option<i64>,
-    /// Destination modification time (Unix timestamp in seconds), if available
+    /// Unix timestamp in seconds.
     pub destination_modified: Option<i64>,
-    /// Whether destination is newer than source
     pub destination_is_newer: bool,
-    /// Size difference (positive = destination is larger)
+    /// Positive = destination is larger.
     pub size_difference: i64,
 }
 
@@ -135,13 +129,10 @@ pub struct WriteConflictEvent {
 pub struct ScanProgressEvent {
     pub operation_id: String,
     pub operation_type: WriteOperationType,
-    /// Number of files found so far
     pub files_found: usize,
-    /// Total bytes found so far
     pub bytes_found: u64,
-    /// Number of conflicts detected so far
     pub conflicts_found: usize,
-    /// Current path being scanned (for activity indication)
+    /// For activity indication.
     pub current_path: Option<String>,
 }
 
@@ -151,17 +142,15 @@ pub struct ScanProgressEvent {
 pub struct ConflictInfo {
     pub source_path: String,
     pub destination_path: String,
-    /// Source file size in bytes
+    /// In bytes.
     pub source_size: u64,
-    /// Destination file size in bytes
+    /// In bytes.
     pub destination_size: u64,
-    /// Source modification time (Unix timestamp in seconds)
+    /// Unix timestamp in seconds.
     pub source_modified: Option<u64>,
-    /// Destination modification time (Unix timestamp in seconds)
+    /// Unix timestamp in seconds.
     pub destination_modified: Option<u64>,
-    /// Whether destination is newer than source
     pub destination_is_newer: bool,
-    /// Whether source is a directory
     pub is_directory: bool,
 }
 
@@ -171,15 +160,12 @@ pub struct ConflictInfo {
 pub struct DryRunResult {
     pub operation_id: String,
     pub operation_type: WriteOperationType,
-    /// Total number of files that would be processed
     pub files_total: usize,
-    /// Total bytes that would be processed
     pub bytes_total: u64,
-    /// Total number of conflicts detected
     pub conflicts_total: usize,
-    /// Sampled conflicts (max 200 for large sets)
+    /// Sampled subset (max 200 for large sets).
     pub conflicts: Vec<ConflictInfo>,
-    /// Whether the conflicts list is a sample (true if conflicts_total > conflicts.len())
+    /// True if `conflicts` is a sample (`conflicts_total > conflicts.len()`).
     pub conflicts_sampled: bool,
 }
 
@@ -196,25 +182,19 @@ pub const MAX_CONFLICTS_IN_RESULT: usize = 200;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OperationStatus {
-    /// The operation ID
     pub operation_id: String,
-    /// Type of operation
     pub operation_type: WriteOperationType,
-    /// Current phase of the operation
     pub phase: WriteOperationPhase,
-    /// Whether the operation is still running
     pub is_running: bool,
-    /// Current file being processed (filename only)
+    /// Filename only.
     pub current_file: Option<String>,
-    /// Number of files processed
     pub files_done: usize,
-    /// Total number of files (0 if unknown/scanning)
+    /// 0 if unknown/scanning.
     pub files_total: usize,
-    /// Bytes processed so far
     pub bytes_done: u64,
-    /// Total bytes to process (0 if unknown/scanning)
+    /// 0 if unknown/scanning.
     pub bytes_total: u64,
-    /// Operation start time (Unix timestamp in milliseconds)
+    /// Unix timestamp in milliseconds.
     pub started_at: u64,
 }
 
@@ -222,15 +202,12 @@ pub struct OperationStatus {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OperationSummary {
-    /// The operation ID
     pub operation_id: String,
-    /// Type of operation
     pub operation_type: WriteOperationType,
-    /// Current phase of the operation
     pub phase: WriteOperationPhase,
-    /// Percentage complete (0-100)
+    /// 0-100.
     pub percent_complete: u8,
-    /// Operation start time (Unix timestamp in milliseconds)
+    /// Unix timestamp in milliseconds.
     pub started_at: u64,
 }
 
@@ -242,28 +219,40 @@ pub struct OperationSummary {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum WriteOperationError {
-    /// Source path not found
-    SourceNotFound { path: String },
-    /// Destination already exists (and overwrite not enabled)
-    DestinationExists { path: String },
-    /// Permission denied
-    PermissionDenied { path: String, message: String },
-    /// Not enough space on destination
+    SourceNotFound {
+        path: String,
+    },
+    /// Overwrite not enabled.
+    DestinationExists {
+        path: String,
+    },
+    PermissionDenied {
+        path: String,
+        message: String,
+    },
     InsufficientSpace {
         required: u64,
         available: u64,
         volume_name: Option<String>,
     },
-    /// Cannot move/copy to same location
-    SameLocation { path: String },
-    /// Destination is inside source (would cause infinite recursion)
-    DestinationInsideSource { source: String, destination: String },
-    /// Symlink loop detected
-    SymlinkLoop { path: String },
-    /// Operation was cancelled
-    Cancelled { message: String },
-    /// Generic I/O error
-    IoError { path: String, message: String },
+    SameLocation {
+        path: String,
+    },
+    /// Would cause infinite recursion.
+    DestinationInsideSource {
+        source: String,
+        destination: String,
+    },
+    SymlinkLoop {
+        path: String,
+    },
+    Cancelled {
+        message: String,
+    },
+    IoError {
+        path: String,
+        message: String,
+    },
 }
 
 impl WriteOperationError {
@@ -364,9 +353,7 @@ impl From<std::io::Error> for WriteOperationError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WriteOperationStartResult {
-    /// Unique operation ID for tracking and cancellation
     pub operation_id: String,
-    /// Type of operation started
     pub operation_type: WriteOperationType,
 }
 
@@ -384,17 +371,14 @@ pub struct WriteOperationConfig {
     /// Whether to overwrite existing files (deprecated, use conflict_resolution)
     #[serde(default)]
     pub overwrite: bool,
-    /// How to handle conflicts
     #[serde(default)]
     pub conflict_resolution: ConflictResolution,
     /// If true, only scan and detect conflicts without executing the operation.
     /// Returns a DryRunResult with totals and conflicts.
     #[serde(default)]
     pub dry_run: bool,
-    /// Column to sort files by during copy (default: name)
     #[serde(default)]
     pub sort_column: SortColumn,
-    /// Sort order (default: ascending)
     #[serde(default)]
     pub sort_order: SortOrder,
     /// Preview scan ID to reuse cached scan results (from start_scan_preview)
@@ -437,13 +421,10 @@ fn default_max_conflicts_to_show() -> usize {
 #[serde(rename_all = "camelCase")]
 pub struct ScanPreviewProgressEvent {
     pub preview_id: String,
-    /// Number of files found so far
     pub files_found: usize,
-    /// Number of directories found so far
     pub dirs_found: usize,
-    /// Total bytes found so far
     pub bytes_found: u64,
-    /// Current path being scanned (for activity indication)
+    /// For activity indication.
     pub current_path: Option<String>,
 }
 
@@ -487,11 +468,10 @@ pub struct ScanPreviewStartResult {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VolumeCopyConfig {
-    /// Progress update interval in milliseconds.
+    /// In milliseconds.
     pub progress_interval_ms: u64,
-    /// How to handle conflicts (skip, overwrite, stop).
     pub conflict_resolution: ConflictResolution,
-    /// Maximum number of conflicts to return in pre-flight scan.
+    /// Maximum returned in pre-flight scan.
     pub max_conflicts_to_show: usize,
 }
 
@@ -519,14 +499,9 @@ impl From<&WriteOperationConfig> for VolumeCopyConfig {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VolumeCopyScanResult {
-    /// Total number of files to copy.
     pub file_count: usize,
-    /// Total number of directories to create.
     pub dir_count: usize,
-    /// Total bytes to copy.
     pub total_bytes: u64,
-    /// Available space on destination.
     pub dest_space: SpaceInfo,
-    /// Detected conflicts at destination.
     pub conflicts: Vec<ScanConflict>,
 }

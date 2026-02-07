@@ -17,15 +17,10 @@ use std::path::Path;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum LocationCategory {
-    /// User's favorite locations from Finder sidebar.
     Favorite,
-    /// Main boot volume (Macintosh HD).
     MainVolume,
-    /// External/attached volumes (USB drives, etc.).
     AttachedVolume,
-    /// Cloud storage providers (Dropbox, iCloud, Google Drive).
     CloudDrive,
-    /// Network locations.
     Network,
 }
 
@@ -33,18 +28,13 @@ pub enum LocationCategory {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LocationInfo {
-    /// Unique identifier for the location.
     pub id: String,
-    /// Display name (e.g., "Macintosh HD", "Dropbox").
     pub name: String,
-    /// Path to the location.
     pub path: String,
-    /// Category of this location.
     pub category: LocationCategory,
-    /// Base64-encoded icon (WebP format).
+    /// Base64-encoded WebP.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub icon: Option<String>,
-    /// Whether this can be ejected.
     pub is_ejectable: bool,
 }
 
@@ -395,9 +385,9 @@ fn get_u64_resource(url: &objc2_foundation::NSURL, key: &str) -> Option<u64> {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VolumeSpaceInfo {
-    /// Total capacity in bytes.
+    /// In bytes.
     pub total_bytes: u64,
-    /// Available capacity in bytes (free space for user).
+    /// In bytes.
     pub available_bytes: u64,
 }
 

@@ -99,10 +99,10 @@ fn default_extended_loaded() -> bool {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ExtendedMetadata {
-    /// File path (key for merging)
+    /// Key for merging with FileEntry.
     pub path: String,
-    /// When the file was added to its current directory (macOS only)
+    /// macOS only.
     pub added_at: Option<u64>,
-    /// When the file was last opened (macOS only)
+    /// macOS only.
     pub opened_at: Option<u64>,
 }

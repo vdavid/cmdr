@@ -6,29 +6,41 @@ use mtp_rs::ptp::ResponseCode;
 #[derive(Debug, Clone, serde::Serialize)]
 #[serde(rename_all = "camelCase", tag = "type")]
 pub enum MtpConnectionError {
-    /// Device not found (may have been unplugged).
-    DeviceNotFound { device_id: String },
-    /// Device is not connected.
-    NotConnected { device_id: String },
-    /// Another process has exclusive access to the device.
+    DeviceNotFound {
+        device_id: String,
+    },
+    NotConnected {
+        device_id: String,
+    },
     ExclusiveAccess {
         device_id: String,
         blocking_process: Option<String>,
     },
-    /// Connection timed out.
-    Timeout { device_id: String },
-    /// Device was disconnected unexpectedly.
-    Disconnected { device_id: String },
-    /// Protocol error from device.
-    Protocol { device_id: String, message: String },
-    /// Device is busy (retryable).
-    DeviceBusy { device_id: String },
-    /// Storage is full.
-    StorageFull { device_id: String },
-    /// Object not found on device.
-    ObjectNotFound { device_id: String, path: String },
-    /// Other connection error.
-    Other { device_id: String, message: String },
+    Timeout {
+        device_id: String,
+    },
+    Disconnected {
+        device_id: String,
+    },
+    Protocol {
+        device_id: String,
+        message: String,
+    },
+    /// Retryable.
+    DeviceBusy {
+        device_id: String,
+    },
+    StorageFull {
+        device_id: String,
+    },
+    ObjectNotFound {
+        device_id: String,
+        path: String,
+    },
+    Other {
+        device_id: String,
+        message: String,
+    },
 }
 
 impl MtpConnectionError {

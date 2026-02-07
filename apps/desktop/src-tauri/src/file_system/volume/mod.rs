@@ -13,11 +13,9 @@ use std::path::Path;
 /// Result of scanning a path for copy operation.
 #[derive(Debug, Clone)]
 pub struct CopyScanResult {
-    /// Number of files found.
     pub file_count: usize,
-    /// Number of directories found.
     pub dir_count: usize,
-    /// Total bytes of all files.
+    /// Total size in bytes.
     pub total_bytes: u64,
 }
 
@@ -25,17 +23,17 @@ pub struct CopyScanResult {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ScanConflict {
-    /// Source path (relative to volume root).
+    /// Relative to volume root.
     pub source_path: String,
-    /// Destination path (relative to volume root).
+    /// Relative to volume root.
     pub dest_path: String,
-    /// Size of source file in bytes.
+    /// In bytes.
     pub source_size: u64,
-    /// Size of existing destination file in bytes.
+    /// In bytes.
     pub dest_size: u64,
-    /// Source file modification time (Unix timestamp in seconds).
+    /// Unix timestamp in seconds.
     pub source_modified: Option<i64>,
-    /// Destination file modification time (Unix timestamp in seconds).
+    /// Unix timestamp in seconds.
     pub dest_modified: Option<i64>,
 }
 
@@ -43,37 +41,32 @@ pub struct ScanConflict {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SpaceInfo {
-    /// Total capacity in bytes.
+    /// In bytes.
     pub total_bytes: u64,
-    /// Available (free) space in bytes.
+    /// In bytes.
     pub available_bytes: u64,
-    /// Used space in bytes.
+    /// In bytes.
     pub used_bytes: u64,
 }
 
 /// Information about a source item for conflict scanning.
 #[derive(Debug, Clone)]
 pub struct SourceItemInfo {
-    /// File/directory name.
     pub name: String,
-    /// Size in bytes.
+    /// In bytes.
     pub size: u64,
-    /// Modification time (Unix timestamp in seconds).
+    /// Unix timestamp in seconds.
     pub modified: Option<i64>,
 }
 
 /// Error type for volume operations.
 #[derive(Debug, Clone)]
 pub enum VolumeError {
-    /// Path not found
     NotFound(String),
-    /// Permission denied
     PermissionDenied(String),
-    /// Path already exists
     AlreadyExists(String),
-    /// Operation not supported by this volume type
+    /// Not supported by this volume type.
     NotSupported,
-    /// Generic I/O error
     IoError(String),
 }
 

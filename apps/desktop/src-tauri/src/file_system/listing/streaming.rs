@@ -30,13 +30,9 @@ pub(crate) const CANCELLATION_POLL_INTERVAL: Duration = Duration::from_millis(10
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "status")]
 pub enum ListingStatus {
-    /// Listing is in progress
     Loading,
-    /// Listing completed successfully
     Ready,
-    /// Listing was cancelled by the user
     Cancelled,
-    /// Listing failed with an error
     Error { message: String },
 }
 
@@ -44,9 +40,8 @@ pub enum ListingStatus {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StreamingListingStartResult {
-    /// Unique listing ID for subsequent API calls
     pub listing_id: String,
-    /// Initial status (always "loading")
+    /// Always `Loading`.
     pub status: ListingStatus,
 }
 
@@ -101,7 +96,7 @@ pub struct ListingOpeningEvent {
 
 /// State for an in-progress streaming listing
 pub struct StreamingListingState {
-    /// Cancellation flag - checked periodically during iteration
+    /// Checked periodically during iteration.
     pub cancelled: AtomicBool,
 }
 

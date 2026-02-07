@@ -41,10 +41,9 @@ static WATCHER_MANAGER: LazyLock<RwLock<WatcherManager>> = LazyLock::new(|| RwLo
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DiffChange {
-    /// Type of change: add, remove, or modify
+    /// `"add"`, `"remove"`, or `"modify"`.
     #[serde(rename = "type")]
     pub change_type: String,
-    /// The file entry
     pub entry: FileEntry,
 }
 
@@ -52,11 +51,9 @@ pub struct DiffChange {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DirectoryDiff {
-    /// Listing ID this diff belongs to
     pub listing_id: String,
-    /// Monotonic sequence number
+    /// Monotonic.
     pub sequence: u64,
-    /// List of changes
     pub changes: Vec<DiffChange>,
 }
 

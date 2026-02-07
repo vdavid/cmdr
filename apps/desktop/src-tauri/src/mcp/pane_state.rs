@@ -23,39 +23,27 @@ pub struct FileEntry {
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct PaneState {
-    /// Current directory path
     pub path: String,
-    /// Volume ID (if applicable)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub volume_id: Option<String>,
-    /// Volume name for display
     #[serde(skip_serializing_if = "Option::is_none")]
     pub volume_name: Option<String>,
-    /// Currently visible files
     pub files: Vec<FileEntry>,
-    /// Index of the file under the cursor (0-based)
+    /// 0-based.
     pub cursor_index: usize,
-    /// View mode (brief or full)
     pub view_mode: String,
-    /// Indices of selected files
     #[serde(default)]
     pub selected_indices: Vec<usize>,
-    /// Sort field (name, size, date, extension)
     #[serde(default)]
     pub sort_field: String,
-    /// Sort order (asc or desc)
     #[serde(default)]
     pub sort_order: String,
-    /// Total number of files in directory
     #[serde(default)]
     pub total_files: usize,
-    /// Start index of loaded range
     #[serde(default)]
     pub loaded_start: usize,
-    /// End index of loaded range
     #[serde(default)]
     pub loaded_end: usize,
-    /// Whether hidden files are shown
     #[serde(default)]
     pub show_hidden: bool,
 }

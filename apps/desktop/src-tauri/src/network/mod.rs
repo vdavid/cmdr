@@ -29,17 +29,17 @@ pub use smb_client::{AuthMode, ShareListError, ShareListResult};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NetworkHost {
-    /// Unique identifier for the host (derived from service name).
+    /// Derived from service name.
     pub id: String,
-    /// Display name (the advertised service name).
+    /// The advertised service name.
     pub name: String,
-    /// Resolved hostname (e.g., "macbook.local"), or None if not yet resolved.
+    /// e.g. "macbook.local". None if not yet resolved.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hostname: Option<String>,
-    /// Resolved IP address, or None if not yet resolved.
+    /// None if not yet resolved.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ip_address: Option<String>,
-    /// SMB port (usually 445).
+    /// Usually 445.
     pub port: u16,
 }
 
@@ -47,19 +47,15 @@ pub struct NetworkHost {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum DiscoveryState {
-    /// Discovery has not started.
     Idle,
-    /// Actively searching for hosts.
     Searching,
-    /// Discovery is running but initial burst is complete.
+    /// Initial burst is complete, still listening.
     Active,
 }
 
 /// Current network discovery state, accessible globally.
 struct NetworkDiscoveryState {
-    /// Map of host ID to NetworkHost.
     hosts: HashMap<String, NetworkHost>,
-    /// Current discovery state.
     state: DiscoveryState,
 }
 

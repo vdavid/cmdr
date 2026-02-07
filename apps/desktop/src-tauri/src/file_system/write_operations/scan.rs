@@ -445,11 +445,8 @@ fn scan_sources_internal(
 
 /// Result of a dry-run scan including conflicts.
 pub(super) struct DryRunScanResult {
-    /// Total number of files
     pub file_count: usize,
-    /// Total bytes
     pub total_bytes: u64,
-    /// All detected conflicts
     pub conflicts: Vec<ConflictInfo>,
 }
 

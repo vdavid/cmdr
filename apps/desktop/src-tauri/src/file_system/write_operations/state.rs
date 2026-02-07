@@ -16,26 +16,21 @@ use super::types::{ConflictResolution, OperationStatus, OperationSummary, WriteO
 
 /// State for an in-progress write operation.
 pub struct WriteOperationState {
-    /// Cancellation flag (Arc so it can be shared with native copy operations)
+    /// Arc so it can be shared with native copy operations.
     pub cancelled: Arc<AtomicBool>,
-    /// Skip rollback flag (when true, keep partial files on cancellation)
+    /// When true, keep partial files on cancellation.
     pub skip_rollback: AtomicBool,
-    /// Progress reporting interval
     pub progress_interval: Duration,
-    /// Pending conflict resolution (set by resolve_write_conflict)
+    /// Set by `resolve_write_conflict`.
     pub pending_resolution: RwLock<Option<ConflictResolutionResponse>>,
-    /// Condvar for waiting on conflict resolution
     pub conflict_condvar: std::sync::Condvar,
-    /// Mutex for conflict condvar
     pub conflict_mutex: std::sync::Mutex<bool>,
 }
 
 /// Response to a conflict resolution request.
 #[derive(Debug, Clone)]
 pub struct ConflictResolutionResponse {
-    /// The resolution to apply
     pub resolution: ConflictResolution,
-    /// Whether to apply this resolution to all future conflicts
     pub apply_to_all: bool,
 }
 
@@ -231,9 +226,7 @@ pub fn resolve_write_conflict(operation_id: &str, resolution: ConflictResolution
 
 /// State for a scan preview operation.
 pub(super) struct ScanPreviewState {
-    /// Cancellation flag
     pub cancelled: AtomicBool,
-    /// Progress reporting interval
     pub progress_interval: Duration,
 }
 
@@ -323,13 +316,11 @@ impl FileInfo {
 
 /// Information about files to be processed.
 pub(super) struct ScanResult {
-    /// All files to process with metadata for sorting
     pub files: Vec<FileInfo>,
-    /// Directories to process (for deletion, in reverse order - deepest first)
+    /// For deletion: in reverse order, deepest first.
     pub dirs: Vec<PathBuf>,
-    /// Total file count (not including directories)
+    /// Not including directories.
     pub file_count: usize,
-    /// Total byte size of all files
     pub total_bytes: u64,
 }
 
@@ -340,9 +331,9 @@ pub(super) struct ScanResult {
 /// Tracks created files/directories for rollback on failure.
 #[cfg_attr(test, derive(Debug))]
 pub(crate) struct CopyTransaction {
-    /// Files created during the operation (in creation order)
+    /// In creation order.
     pub created_files: Vec<PathBuf>,
-    /// Directories created during the operation (in creation order)
+    /// In creation order.
     pub created_dirs: Vec<PathBuf>,
 }
 

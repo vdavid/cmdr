@@ -21,15 +21,12 @@ const SF_DATALESS: u32 = 0x40000000;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SyncStatus {
-    /// File is fully synced - local content matches cloud
     Synced,
-    /// File is online-only - stub file, content in cloud
+    /// Stub file, content in cloud only.
     OnlineOnly,
-    /// File is being uploaded to cloud
     Uploading,
-    /// File is being downloaded from cloud
     Downloading,
-    /// Not a cloud file or status cannot be determined
+    /// Not a cloud file or status cannot be determined.
     Unknown,
 }
 

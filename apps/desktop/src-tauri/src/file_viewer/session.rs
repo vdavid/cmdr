@@ -37,14 +37,12 @@ pub struct ViewerOpenResult {
     pub file_name: String,
     pub total_bytes: u64,
     pub total_lines: Option<usize>,
-    /// Estimated total lines based on initial sample (for ByteSeek where total_lines is unknown).
-    /// Calculated as total_bytes / avg_bytes_per_line from initial lines.
+    /// For ByteSeek where `total_lines` is unknown. Based on `total_bytes / avg_bytes_per_line`.
     pub estimated_total_lines: usize,
     pub backend_type: BackendType,
     pub capabilities: BackendCapabilities,
-    /// Initial chunk of lines from the start of the file.
     pub initial_lines: LineChunk,
-    /// Whether background indexing is in progress (for ByteSeek -> LineIndex upgrade).
+    /// ByteSeek -> LineIndex upgrade in progress.
     pub is_indexing: bool,
 }
 
@@ -61,13 +59,9 @@ pub struct ViewerSessionStatus {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum SearchStatus {
-    /// Search is running. `bytes_scanned` shows progress.
     Running,
-    /// Search completed.
     Done,
-    /// Search was cancelled.
     Cancelled,
-    /// No search is active.
     Idle,
 }
 

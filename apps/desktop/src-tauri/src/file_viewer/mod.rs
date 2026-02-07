@@ -50,15 +50,12 @@ pub enum SeekTarget {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LineChunk {
-    /// The lines of text.
     pub lines: Vec<String>,
-    /// The 0-based line number of the first line in this chunk.
+    /// 0-based.
     pub first_line_number: usize,
-    /// Byte offset of the first line in the file.
     pub byte_offset: u64,
-    /// Total number of lines in the file (known after full scan or full load).
+    /// Known only after full scan or full load.
     pub total_lines: Option<usize>,
-    /// Total file size in bytes.
     pub total_bytes: u64,
 }
 
@@ -66,11 +63,11 @@ pub struct LineChunk {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SearchMatch {
-    /// 0-based line number.
+    /// 0-based.
     pub line: usize,
-    /// Column (byte offset within the line) where the match starts.
+    /// Byte offset within the line.
     pub column: usize,
-    /// Length of the match in bytes.
+    /// In bytes.
     pub length: usize,
 }
 

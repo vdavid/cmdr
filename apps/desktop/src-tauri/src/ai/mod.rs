@@ -56,15 +56,12 @@ pub fn use_real_ai() -> bool {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub enum AiStatus {
-    /// AI not available (dev mode without env var, or user opted out)
     Unavailable,
-    /// Offer shown, waiting for user action
+    /// Waiting for user action.
     Offer,
-    /// Downloading binary + model
     Downloading,
-    /// Setting up (chmod, starting server)
+    /// chmod, starting server.
     Installing,
-    /// Server running and healthy
     Available,
 }
 
@@ -74,9 +71,8 @@ pub enum AiStatus {
 pub struct DownloadProgress {
     pub bytes_downloaded: u64,
     pub total_bytes: u64,
-    /// Bytes per second
+    /// Bytes per second.
     pub speed: u64,
-    /// Estimated seconds remaining
     pub eta_seconds: u64,
 }
 
@@ -87,16 +83,12 @@ pub struct DownloadProgress {
 /// Information about an available AI model.
 #[derive(Debug, Clone)]
 pub struct ModelInfo {
-    /// Unique identifier (e.g., "falcon-h1r-7b-q4km")
     pub id: &'static str,
-    /// Human-readable name (e.g., "Falcon H1R 7B")
     pub display_name: &'static str,
-    /// GGUF filename stored locally
+    /// GGUF filename stored locally.
     pub filename: &'static str,
-    /// HuggingFace download URL
     pub url: &'static str,
-    /// Expected file size in bytes (for download verification).
-    /// Get this via: `curl -sIL "<url>" | grep -i content-length`
+    /// For download verification. Get via: `curl -sIL "<url>" | grep -i content-length`
     pub size_bytes: u64,
 }
 
@@ -141,19 +133,18 @@ pub struct AiState {
     pub installed: bool,
     pub port: Option<u16>,
     pub pid: Option<u32>,
-    /// ID of the currently installed model (matches ModelInfo.id)
+    /// Matches `ModelInfo.id`.
     #[serde(default = "default_model_id")]
     pub installed_model_id: String,
-    /// Unix timestamp (seconds) until which the offer is dismissed
+    /// Unix timestamp (seconds).
     #[serde(default)]
     pub dismissed_until: Option<u64>,
-    /// User permanently opted out of AI features
     #[serde(default)]
     pub opted_out: bool,
-    /// Whether the model download completed successfully (verified by size)
+    /// Verified by file size.
     #[serde(default)]
     pub model_download_complete: bool,
-    /// Unix timestamp when a partial download was started (for stale cleanup)
+    /// Unix timestamp, for stale cleanup.
     #[serde(default)]
     pub partial_download_started: Option<u64>,
 }

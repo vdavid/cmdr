@@ -14,9 +14,7 @@ use tauri::Manager;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ConnectionMode {
-    /// Connected as guest (anonymous).
     Guest,
-    /// Connected with credentials.
     Credentials,
 }
 
@@ -24,11 +22,8 @@ pub enum ConnectionMode {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum AuthOptions {
-    /// Only guest access is available.
     GuestOnly,
-    /// Only authenticated access is available.
     CredentialsOnly,
-    /// Both guest and authenticated access are available.
     GuestOrCredentials,
 }
 
@@ -36,19 +31,15 @@ pub enum AuthOptions {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct KnownNetworkShare {
-    /// Hostname or IP of the server.
     pub server_name: String,
-    /// Name of the specific share.
     pub share_name: String,
-    /// Protocol type (currently only "smb").
+    /// Currently only "smb".
     pub protocol: String,
-    /// When we last successfully connected (ISO 8601).
+    /// ISO 8601.
     pub last_connected_at: String,
-    /// How we connected last time.
     pub last_connection_mode: ConnectionMode,
-    /// Auth options detected last time.
     pub last_known_auth_options: AuthOptions,
-    /// Username used (None for guest).
+    /// None for guest.
     pub username: Option<String>,
 }
 
@@ -56,7 +47,6 @@ pub struct KnownNetworkShare {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct KnownSharesStore {
-    /// All known network shares, keyed by "server_name/share_name".
     #[serde(default)]
     pub known_network_shares: Vec<KnownNetworkShare>,
 }

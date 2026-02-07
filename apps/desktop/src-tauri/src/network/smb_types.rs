@@ -8,11 +8,9 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ShareInfo {
-    /// Name of the share (for example, "Documents", "Media").
     pub name: String,
-    /// Whether this is a disk share (true) or other type like printer/IPC.
+    /// False for printer/IPC shares.
     pub is_disk: bool,
-    /// Optional description/comment for the share.
     pub comment: Option<String>,
 }
 
@@ -20,11 +18,9 @@ pub struct ShareInfo {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum AuthMode {
-    /// Guest access works for this host.
     GuestAllowed,
-    /// Authentication is required (guest access failed).
     CredsRequired,
-    /// Haven't checked yet or check failed.
+    /// Not yet checked or check failed.
     Unknown,
 }
 
@@ -32,11 +28,9 @@ pub enum AuthMode {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ShareListResult {
-    /// Shares found on the host (already filtered to disk shares only).
+    /// Already filtered to disk shares only.
     pub shares: Vec<ShareInfo>,
-    /// Authentication mode detected.
     pub auth_mode: AuthMode,
-    /// Whether this result came from cache.
     pub from_cache: bool,
 }
 
@@ -44,19 +38,13 @@ pub struct ShareListResult {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", tag = "type", content = "message")]
 pub enum ShareListError {
-    /// Host is not reachable.
     HostUnreachable(String),
-    /// Connection timed out.
     Timeout(String),
-    /// Authentication required but no credentials provided.
     AuthRequired(String),
-    /// Server requires SMB signing - guest access won't work.
+    /// Guest access won't work.
     SigningRequired(String),
-    /// Authentication failed with provided credentials.
     AuthFailed(String),
-    /// Other SMB protocol error.
     ProtocolError(String),
-    /// DNS/hostname resolution failed.
     ResolutionFailed(String),
 }
 

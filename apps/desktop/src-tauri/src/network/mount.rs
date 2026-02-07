@@ -13,9 +13,8 @@ use std::ptr;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MountResult {
-    /// Path where the share was mounted (e.g., "/Volumes/Documents")
+    /// e.g. "/Volumes/Documents".
     pub mount_path: String,
-    /// Whether the share was already mounted (we didn't mount it ourselves)
     pub already_mounted: bool,
 }
 
@@ -23,24 +22,34 @@ pub struct MountResult {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum MountError {
-    /// Host is unreachable
-    HostUnreachable { message: String },
-    /// Share not found on the server
-    ShareNotFound { message: String },
-    /// Authentication required (credentials needed)
-    AuthRequired { message: String },
-    /// Authentication failed (wrong credentials)
-    AuthFailed { message: String },
-    /// Permission denied
-    PermissionDenied { message: String },
-    /// Operation timed out
-    Timeout { message: String },
-    /// User cancelled the operation
-    Cancelled { message: String },
-    /// General protocol/network error
-    ProtocolError { message: String },
-    /// Mount path already exists but isn't a mountpoint
-    MountPathConflict { message: String },
+    HostUnreachable {
+        message: String,
+    },
+    ShareNotFound {
+        message: String,
+    },
+    AuthRequired {
+        message: String,
+    },
+    AuthFailed {
+        message: String,
+    },
+    PermissionDenied {
+        message: String,
+    },
+    Timeout {
+        message: String,
+    },
+    Cancelled {
+        message: String,
+    },
+    ProtocolError {
+        message: String,
+    },
+    /// Path already exists but isn't a mountpoint.
+    MountPathConflict {
+        message: String,
+    },
 }
 
 // NetFS.framework FFI declarations

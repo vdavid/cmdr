@@ -28,12 +28,9 @@ fn is_visible(entry: &FileEntry) -> bool {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ListingStartResult {
-    /// Unique listing ID for subsequent API calls
     pub listing_id: String,
-    /// Total number of entries in the directory
     pub total_count: usize,
-    /// Maximum filename width in pixels (for Brief mode columns)
-    /// None if font metrics are not available
+    /// In pixels, for Brief mode columns. None if font metrics are not available.
     pub max_filename_width: Option<f32>,
 }
 
@@ -452,17 +449,16 @@ pub(crate) fn get_listings_by_volume_prefix(prefix: &str) -> Vec<(String, String
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ListingStats {
-    /// Total number of files (not directories)
+    /// Not including directories.
     pub total_files: usize,
-    /// Total number of directories
     pub total_dirs: usize,
-    /// Total size of all files in bytes
+    /// In bytes.
     pub total_file_size: u64,
-    /// Number of selected files (if selected_indices provided)
+    /// Present only if `selected_indices` was provided.
     pub selected_files: Option<usize>,
-    /// Number of selected directories (if selected_indices provided)
+    /// Present only if `selected_indices` was provided.
     pub selected_dirs: Option<usize>,
-    /// Total size of selected files in bytes (if selected_indices provided)
+    /// In bytes. Present only if `selected_indices` was provided.
     pub selected_file_size: Option<u64>,
 }
 

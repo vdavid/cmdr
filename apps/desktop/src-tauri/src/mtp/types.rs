@@ -11,21 +11,17 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MtpDeviceInfo {
-    /// Unique identifier for the device (format: "mtp-{location_id}").
+    /// Format: "mtp-{location_id}".
     pub id: String,
-    /// Physical USB location identifier. Stable for a given port.
+    /// Stable for a given USB port.
     pub location_id: u64,
-    /// USB vendor ID (e.g., 0x18d1 for Google).
+    /// e.g. 0x18d1 for Google.
     pub vendor_id: u16,
-    /// USB product ID.
     pub product_id: u16,
-    /// Device manufacturer name, if available from USB descriptor.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub manufacturer: Option<String>,
-    /// Device product name, if available from USB descriptor.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub product: Option<String>,
-    /// USB serial number, if available.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub serial_number: Option<String>,
 }
@@ -52,18 +48,17 @@ impl MtpDeviceInfo {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MtpStorageInfo {
-    /// Storage ID (MTP storage handle).
+    /// MTP storage handle.
     pub id: u32,
-    /// Display name (e.g., "Internal shared storage").
+    /// e.g. "Internal shared storage".
     pub name: String,
-    /// Total capacity in bytes.
+    /// In bytes.
     pub total_bytes: u64,
-    /// Available space in bytes.
+    /// In bytes.
     pub available_bytes: u64,
-    /// Storage type description (e.g., "FixedROM", "RemovableRAM").
+    /// e.g. "FixedROM", "RemovableRAM".
     #[serde(skip_serializing_if = "Option::is_none")]
     pub storage_type: Option<String>,
-    /// Whether this storage is read-only (e.g., PTP cameras).
     pub is_read_only: bool,
 }
 
