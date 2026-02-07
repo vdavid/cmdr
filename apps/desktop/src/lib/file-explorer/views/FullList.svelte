@@ -467,5 +467,4 @@
     .full-list-container.is-focused .file-entry.is-under-cursor.is-selected .col-name {
         color: var(--color-selection-fg);
     }
-
 </style>

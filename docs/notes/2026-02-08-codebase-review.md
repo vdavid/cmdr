@@ -105,8 +105,8 @@ three ESLint variants. Extract `runPrettierCheck(dir string)` and `runESLintChec
 ## Task list
 
 - [x] Strip redundant struct field doc comments in Rust (volume/mod.rs and similar) `[medium impact, quick]` - make sure to not just blindly remove all docs, keep the info that's not tautological.
-- [ ] Delete two meaningless "infrastructure" tests in DualPaneExplorer.test.ts:147-177 `[medium impact, quick]`
-- [ ] Replace generic error fallback in copy-error-messages.ts:147 `[low impact, quick]` - make it in line with the style guide: be helpful, transparent, etc.
-- [ ] Batch-replace `e.g.` in code comments if desired `[low impact, quick]` - thoughtful replacing pls.
-- [ ] Unify E2E test naming to imperative style (drop `should`) `[low impact, quick]`
-- [ ] Extract shared prettier/eslint helpers in Go check scripts `[low impact, small]`
+- [x] Delete two meaningless "infrastructure" tests in DualPaneExplorer.test.ts:147-177 `[medium impact, quick]`
+- [x] Replace generic error fallback in copy-error-messages.ts:147 `[low impact, quick]` - make it in line with the style guide: be helpful, transparent, etc.
+- [x] Batch-replace `e.g.` in code comments if desired `[low impact, quick]` - thoughtful replacing pls.
+- [x] Unify E2E test naming to imperative style (drop `should`) `[low impact, quick]`
+- [x] Extract shared prettier/eslint helpers in Go check scripts `[low impact, small]`

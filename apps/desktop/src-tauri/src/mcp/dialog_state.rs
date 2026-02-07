@@ -8,9 +8,9 @@
 //! `register_known_dialogs`, so the MCP "available dialogs" resource
 //! stays in sync with the actual Svelte components automatically.
 
+use serde::Deserialize;
 use std::collections::HashSet;
 use std::sync::RwLock;
-use serde::Deserialize;
 use tauri::{AppHandle, Manager};
 
 /// A dialog type registered by the frontend at startup.
@@ -124,8 +124,14 @@ mod tests {
         assert!(tracker.get_known_dialogs().is_empty());
 
         let dialogs = vec![
-            KnownDialog { id: "about".to_string(), description: None },
-            KnownDialog { id: "alert".to_string(), description: None },
+            KnownDialog {
+                id: "about".to_string(),
+                description: None,
+            },
+            KnownDialog {
+                id: "alert".to_string(),
+                description: None,
+            },
             KnownDialog {
                 id: "copy-confirmation".to_string(),
                 description: Some("Opened by the copy tool".to_string()),
@@ -143,14 +149,21 @@ mod tests {
     fn test_register_known_replaces_previous() {
         let tracker = SoftDialogTracker::new();
 
-        tracker.register_known(vec![
-            KnownDialog { id: "about".to_string(), description: None },
-        ]);
+        tracker.register_known(vec![KnownDialog {
+            id: "about".to_string(),
+            description: None,
+        }]);
         assert_eq!(tracker.get_known_dialogs().len(), 1);
 
         tracker.register_known(vec![
-            KnownDialog { id: "about".to_string(), description: None },
-            KnownDialog { id: "alert".to_string(), description: None },
+            KnownDialog {
+                id: "about".to_string(),
+                description: None,
+            },
+            KnownDialog {
+                id: "alert".to_string(),
+                description: None,
+            },
         ]);
         assert_eq!(tracker.get_known_dialogs().len(), 2);
     }
