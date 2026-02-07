@@ -46,7 +46,7 @@ async function ensureAppReadyWithFocus(): Promise<void> {
 }
 
 describe('Basic rendering', () => {
-    it('should launch and show the main window', async () => {
+    it('launches and shows the main window', async () => {
         // Wait for the app to fully load
         await browser.pause(3000)
 
@@ -55,7 +55,7 @@ describe('Basic rendering', () => {
         expect(title).toContain('Cmdr')
     })
 
-    it('should display the dual pane interface', async () => {
+    it('displays the dual pane interface', async () => {
         // Wait for the dual pane explorer to render
         const explorer = await browser.$('.dual-pane-explorer')
         await explorer.waitForExist({ timeout: 10000 })
@@ -65,7 +65,7 @@ describe('Basic rendering', () => {
         expect(panes.length).toBe(2)
     })
 
-    it('should show file entries in the panes', async () => {
+    it('shows file entries in the panes', async () => {
         // Wait for file entries to load
         const fileEntry = await browser.$('.file-entry')
         await fileEntry.waitForExist({ timeout: 10000 })
@@ -77,7 +77,7 @@ describe('Basic rendering', () => {
 })
 
 describe('Keyboard navigation', () => {
-    it('should move cursor with arrow keys', async () => {
+    it('moves cursor with arrow keys', async () => {
         await ensureAppReadyWithFocus()
 
         // Get all file entries and find which one has the cursor
@@ -122,7 +122,7 @@ describe('Keyboard navigation', () => {
         expect(newCursorIndex).not.toBe(initialCursorIndex)
     })
 
-    it('should switch panes with Tab key', async () => {
+    it('switches panes with Tab key', async () => {
         await ensureAppReadyWithFocus()
 
         // Re-query panes after ensureAppReady
@@ -157,7 +157,7 @@ describe('Keyboard navigation', () => {
         expect(leftPaneClassFinal).toContain('is-focused')
     })
 
-    it('should toggle selection with Space key', async () => {
+    it('toggles selection with Space key', async () => {
         await ensureAppReadyWithFocus()
 
         // Get cursor entry (cast needed due to WDIO ChainablePromiseElement type quirk)
@@ -196,7 +196,7 @@ describe('Keyboard navigation', () => {
 })
 
 describe('Mouse interactions', () => {
-    it('should move cursor when clicking a file entry', async () => {
+    it('moves cursor when clicking a file entry', async () => {
         await ensureAppReadyWithFocus()
 
         const entries = [...(await browser.$$('.file-entry'))]
@@ -215,7 +215,7 @@ describe('Mouse interactions', () => {
         expect(entryClass).toContain('is-under-cursor')
     })
 
-    it('should switch pane focus when clicking other pane', async () => {
+    it('switches pane focus when clicking other pane', async () => {
         await ensureAppReadyWithFocus()
 
         let panes = await browser.$$('.file-pane')
@@ -242,7 +242,7 @@ describe('Mouse interactions', () => {
 })
 
 describe('Navigation', () => {
-    it('should navigate into directories with Enter', async () => {
+    it('navigates into directories with Enter', async () => {
         await ensureAppReadyWithFocus()
 
         // Get current path from the focused pane's header
@@ -275,7 +275,7 @@ describe('Navigation', () => {
         expect(newPath).not.toBe(initialPath)
     })
 
-    it('should navigate to parent with Backspace', async () => {
+    it('navigates to parent with Backspace', async () => {
         await ensureAppReadyWithFocus()
 
         // First, navigate into a directory so we can go back
@@ -308,7 +308,7 @@ describe('Navigation', () => {
 })
 
 describe('New folder dialog', () => {
-    it('should open new folder dialog with F7', async () => {
+    it('opens new folder dialog with F7', async () => {
         await ensureAppReadyWithFocus()
 
         // Press F7 to open new folder dialog
@@ -350,7 +350,7 @@ describe('New folder dialog', () => {
         await modalOverlay.waitForExist({ timeout: 3000, reverse: true })
     })
 
-    it('should create a folder and close the dialog', async () => {
+    it('creates a folder and closes the dialog', async () => {
         await ensureAppReadyWithFocus()
 
         // Press F7 to open new folder dialog
@@ -381,7 +381,7 @@ describe('New folder dialog', () => {
 })
 
 describe('Copy dialog', () => {
-    it('should open copy dialog with F5', async () => {
+    it('opens copy dialog with F5', async () => {
         await ensureAppReadyWithFocus()
 
         // Move cursor to a file (skip ".." entry)

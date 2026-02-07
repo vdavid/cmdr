@@ -103,7 +103,7 @@ describe('Settings window', () => {
         }
     })
 
-    it('should open settings window with keyboard shortcut', async () => {
+    it('opens settings window with keyboard shortcut', async () => {
         // Capture handles before opening settings
         const handlesBefore = await browser.getWindowHandles()
 
@@ -126,7 +126,7 @@ describe('Settings window', () => {
         }
     })
 
-    it('should display settings sidebar with sections', async () => {
+    it('displays settings sidebar with sections', async () => {
         const handlesBefore = await browser.getWindowHandles()
 
         await openSettingsViaShortcut()
@@ -158,7 +158,7 @@ describe('Settings window', () => {
         expect(sectionTexts.some((t) => t.includes('Keyboard shortcuts'))).toBe(true)
     })
 
-    it('should have a working search input', async () => {
+    it('has a working search input', async () => {
         const handlesBefore = await browser.getWindowHandles()
 
         await openSettingsViaShortcut()
@@ -184,7 +184,7 @@ describe('Settings window', () => {
         expect(value).toBe('theme')
     })
 
-    it('should navigate between sections when clicking', async () => {
+    it('navigates between sections when clicking', async () => {
         const handlesBefore = await browser.getWindowHandles()
 
         await openSettingsViaShortcut()
@@ -214,7 +214,7 @@ describe('Settings window', () => {
         }
     })
 
-    it('should close settings window with Escape key', async () => {
+    it('closes settings window with Escape key', async () => {
         const handlesBefore = await browser.getWindowHandles()
 
         await openSettingsViaShortcut()
@@ -257,7 +257,7 @@ describe('Settings window', () => {
  * These navigate directly to the /settings route.
  */
 describe('Settings page (direct navigation)', () => {
-    it('should render settings page when navigated to directly', async () => {
+    it('renders settings page when navigated to directly', async () => {
         // Navigate to settings route
         await browser.url('/settings')
         await browser.pause(1000)
