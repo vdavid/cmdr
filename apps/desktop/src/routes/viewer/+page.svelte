@@ -797,7 +797,7 @@
     .file-content {
         flex: 1;
         overflow: auto;
-        font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
+        font-family: var(--font-mono);
         font-size: 12px;
         line-height: 1.5;
         user-select: text;

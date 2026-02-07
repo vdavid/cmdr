@@ -180,7 +180,7 @@
         width: 100%;
         padding: 8px 10px;
         font-size: 11px;
-        font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Monaco, Consolas, monospace;
+        font-family: var(--font-mono);
         color: var(--color-text-secondary);
         background: var(--color-bg-tertiary);
         border: 1px solid var(--color-border-primary);

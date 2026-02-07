@@ -917,32 +917,6 @@
         border-top: 1px solid var(--color-border-primary);
     }
 
-    /* Size colors (matching file list) - these are used dynamically */
-    /*noinspection CssUnusedSymbol*/
-    .size-bytes {
-        color: var(--color-text-secondary);
-    }
-
-    /*noinspection CssUnusedSymbol*/
-    .size-kb {
-        color: var(--color-size-kb);
-    }
-
-    /*noinspection CssUnusedSymbol*/
-    .size-mb {
-        color: var(--color-size-mb);
-    }
-
-    /*noinspection CssUnusedSymbol*/
-    .size-gb {
-        color: var(--color-size-gb);
-    }
-
-    /*noinspection CssUnusedSymbol*/
-    .size-tb {
-        color: var(--color-size-tb);
-    }
-
     /* Text-only danger button (for less prominent cancel) */
     .danger-text {
         background: transparent;

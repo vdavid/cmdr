@@ -175,7 +175,7 @@
         background: var(--color-bg-primary);
         color: var(--color-text-primary);
         font-size: var(--font-size-sm);
-        font-family: monospace;
+        font-family: var(--font-mono);
     }
 
     .format-input:focus {
@@ -189,7 +189,7 @@
     }
 
     .format-preview strong {
-        font-family: monospace;
+        font-family: var(--font-mono);
     }
 
     .help-toggle {
@@ -228,6 +228,6 @@
         background: var(--color-bg-tertiary);
         padding: 1px 4px;
         border-radius: 2px;
-        font-family: monospace;
+        font-family: var(--font-mono);
     }
 </style>

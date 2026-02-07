@@ -123,7 +123,7 @@
         background: var(--color-bg-tertiary);
         padding: 2px 6px;
         border-radius: 4px;
-        font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
+        font-family: var(--font-mono);
         font-size: 12px;
     }
 
@@ -140,7 +140,7 @@
 
     .command {
         flex: 1;
-        font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
+        font-family: var(--font-mono);
         font-size: 12px;
         color: var(--color-text-primary);
         word-break: break-all;

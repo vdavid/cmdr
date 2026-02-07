@@ -300,7 +300,7 @@
         margin: 0;
         padding: 0;
         font-size: 11px;
-        font-family: ui-monospace, monospace;
+        font-family: var(--font-mono);
     }
 
     .history-list li {

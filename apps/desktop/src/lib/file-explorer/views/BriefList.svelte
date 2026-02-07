@@ -558,9 +558,4 @@
         color: var(--color-selection-fg);
     }
 
-    @media (prefers-color-scheme: dark) {
-        .file-entry.is-under-cursor {
-            background-color: rgba(10, 80, 208, 0.1);
-        }
-    }
 </style>

@@ -454,31 +454,6 @@
         color: var(--color-text-secondary);
     }
 
-    /*noinspection CssUnusedSymbol*/
-    .size-bytes {
-        color: var(--color-text-secondary);
-    }
-
-    /*noinspection CssUnusedSymbol*/
-    .size-kb {
-        color: var(--color-size-kb);
-    }
-
-    /*noinspection CssUnusedSymbol*/
-    .size-mb {
-        color: var(--color-size-mb);
-    }
-
-    /*noinspection CssUnusedSymbol*/
-    .size-gb {
-        color: var(--color-size-gb);
-    }
-
-    /*noinspection CssUnusedSymbol*/
-    .size-tb {
-        color: var(--color-size-tb);
-    }
-
     .col-date {
         font-size: var(--font-size-xs);
         color: var(--color-text-secondary);
@@ -493,9 +468,4 @@
         color: var(--color-selection-fg);
     }
 
-    @media (prefers-color-scheme: dark) {
-        .file-entry.is-under-cursor {
-            background-color: rgba(10, 80, 208, 0.1);
-        }
-    }
 </style>
