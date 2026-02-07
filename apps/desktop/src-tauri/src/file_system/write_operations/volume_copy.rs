@@ -337,7 +337,9 @@ fn copy_volumes_with_progress(
             });
         }
 
-        let scan = source_volume.scan_for_copy(source_path).map_err(map_volume_error)?;
+        let scan = source_volume
+            .scan_for_copy(source_path)
+            .map_err(|e| map_volume_error(&source_path.display().to_string(), e))?;
         total_files += scan.file_count;
         total_dirs += scan.dir_count;
         total_bytes += scan.total_bytes;
@@ -352,7 +354,9 @@ fn copy_volumes_with_progress(
     );
 
     // Phase 2: Check destination space
-    let dest_space = dest_volume.get_space_info().map_err(map_volume_error)?;
+    let dest_space = dest_volume
+        .get_space_info()
+        .map_err(|e| map_volume_error(&dest_path.display().to_string(), e))?;
     if dest_space.available_bytes < total_bytes {
         return Err(WriteOperationError::InsufficientSpace {
             required: total_bytes,
@@ -477,7 +481,7 @@ fn copy_volumes_with_progress(
         );
 
         let bytes_copied = copy_single_path(&source_volume, source_path, &dest_volume, &dest_item_path, state)
-            .map_err(map_volume_error)?;
+            .map_err(|e| map_volume_error(&source_path.display().to_string(), e))?;
 
         files_done += 1;
         bytes_done += bytes_copied;
@@ -531,21 +535,21 @@ fn copy_volumes_with_progress(
     Ok(())
 }
 
-/// Maps VolumeError to WriteOperationError.
-fn map_volume_error(e: VolumeError) -> WriteOperationError {
+/// Maps VolumeError to WriteOperationError, attaching path context where the original error lacks one.
+fn map_volume_error(context_path: &str, e: VolumeError) -> WriteOperationError {
     match e {
         VolumeError::NotFound(path) => WriteOperationError::SourceNotFound { path },
         VolumeError::PermissionDenied(msg) => WriteOperationError::PermissionDenied {
-            path: String::new(),
+            path: context_path.to_string(),
             message: msg,
         },
         VolumeError::AlreadyExists(path) => WriteOperationError::DestinationExists { path },
         VolumeError::NotSupported => WriteOperationError::IoError {
-            path: String::new(),
+            path: context_path.to_string(),
             message: "Operation not supported by this volume type".to_string(),
         },
         VolumeError::IoError(msg) => WriteOperationError::IoError {
-            path: String::new(),
+            path: context_path.to_string(),
             message: msg,
         },
     }
@@ -577,26 +581,26 @@ mod tests {
 
     #[test]
     fn test_map_volume_error_not_found() {
-        let err = map_volume_error(VolumeError::NotFound("/test/path".to_string()));
+        let err = map_volume_error("/ctx", VolumeError::NotFound("/test/path".to_string()));
         assert!(matches!(err, WriteOperationError::SourceNotFound { path } if path == "/test/path"));
     }
 
     #[test]
     fn test_map_volume_error_permission_denied() {
-        let err = map_volume_error(VolumeError::PermissionDenied("Access denied".to_string()));
-        assert!(matches!(err, WriteOperationError::PermissionDenied { message, .. } if message == "Access denied"));
+        let err = map_volume_error("/ctx", VolumeError::PermissionDenied("Access denied".to_string()));
+        assert!(matches!(err, WriteOperationError::PermissionDenied { path, message } if message == "Access denied" && path == "/ctx"));
     }
 
     #[test]
     fn test_map_volume_error_already_exists() {
-        let err = map_volume_error(VolumeError::AlreadyExists("/existing".to_string()));
+        let err = map_volume_error("/ctx", VolumeError::AlreadyExists("/existing".to_string()));
         assert!(matches!(err, WriteOperationError::DestinationExists { path } if path == "/existing"));
     }
 
     #[test]
     fn test_map_volume_error_not_supported() {
-        let err = map_volume_error(VolumeError::NotSupported);
-        assert!(matches!(err, WriteOperationError::IoError { message, .. } if message.contains("not supported")));
+        let err = map_volume_error("/ctx", VolumeError::NotSupported);
+        assert!(matches!(err, WriteOperationError::IoError { path, message } if message.contains("not supported") && path == "/ctx"));
     }
 
     // ========================================
