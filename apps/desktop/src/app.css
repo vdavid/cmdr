@@ -104,6 +104,7 @@
         --color-accent-hover: #6eb5ff;
 
         /* === Semantic Colors === */
+        --color-allow: #66bb6a;
         --color-error: #f44336;
         --color-error-bg: #450a0a;
         --color-error-border: #7f1d1d;
