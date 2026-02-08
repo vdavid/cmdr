@@ -15,6 +15,14 @@ pub use verification::{LicenseInfo, activate_license, activate_license_async, ge
 
 use serde::{Deserialize, Serialize};
 
+/// Redact an email for logging: "john@example.com" -> "j***@example.com"
+pub(crate) fn redact_email(email: &str) -> String {
+    match email.find('@') {
+        Some(0) | None => "***".to_string(),
+        Some(at) => format!("{}***{}", &email[..1], &email[at..]),
+    }
+}
+
 /// License data encoded in the license key.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LicenseData {

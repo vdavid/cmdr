@@ -62,6 +62,13 @@ function isValidLicenseType(type: string): type is LicenseType {
     return (licenseTypes as readonly string[]).includes(type)
 }
 
+/** Redact an email for logging: "john@example.com" -> "j***@example.com" */
+function redactEmail(email: string): string {
+    const atIndex = email.indexOf('@')
+    if (atIndex <= 0) return '***'
+    return email[0] + '***' + email.slice(atIndex)
+}
+
 const app = new Hono<{ Bindings: Bindings }>()
 
 // Health check
@@ -237,7 +244,7 @@ async function processCompletedTransaction(payload: PaddleWebhookPayload, env: B
         return Response.json({ error: 'Failed to fetch customer details' }, { status: 500 })
     }
 
-    console.log('Customer email:', customer.email, 'business:', customer.businessName)
+    console.log('Customer:', redactEmail(customer.email))
 
     // Determine license type from price ID
     const priceIds: PriceIdMapping = {
@@ -274,7 +281,14 @@ async function processCompletedTransaction(payload: PaddleWebhookPayload, env: B
     const sevenDaysInSeconds = 604_800
     await env.LICENSE_CODES.put(idempotencyKey, 'processed', { expirationTtl: sevenDaysInSeconds })
 
-    console.log('Licenses sent to:', customer.email, 'type:', result.licenseType, 'quantity:', result.quantity)
+    console.log(
+        'Licenses sent to:',
+        redactEmail(customer.email),
+        'type:',
+        result.licenseType,
+        'quantity:',
+        result.quantity,
+    )
     return Response.json({
         status: 'ok',
         email: customer.email,

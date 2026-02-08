@@ -158,24 +158,24 @@ locations. The staging pattern, atomic rename failure handling, and rollback-on-
 
 ### Immediate (critical, affects real money)
 
-- [ ] Add webhook idempotency — check KV for existing transaction before processing (#1) `[S]`
-- [ ] Wrap webhook handler in try-catch, handle email/KV failures gracefully (#2) `[S]`
+- [x] Add webhook idempotency — check KV for existing transaction before processing (#1) `[S]`
+- [x] Wrap webhook handler in try-catch, handle email/KV failures gracefully (#2) `[S]`
 
 ### Urgent (high severity)
 
-- [ ] Fix admin auth timing attack + audit for other constant-time comparison gaps (#3) `[S]`
-- [ ] Add `--color-allow` to dark mode CSS block (#4) `[XS]`
-- [ ] Add Rust tests for `delete.rs` — success, cancellation, permission errors, partial failure (#11) `[M]`
+- [x] Fix admin auth timing attack + audit for other constant-time comparison gaps (#3) `[S]`
+- [x] Add `--color-allow` to dark mode CSS block (#4) `[XS]`
+- [x] Add Rust tests for `delete.rs` — success, cancellation, permission errors, partial failure (#11) `[M]`
 
 ### Soon (medium severity)
 
-- [ ] Fix AppleScript injection + audit codebase for other shell/script interpolation gaps (#5) `[M]`
-- [ ] Replace hardcoded viewer highlight colors with CSS variables (#6) `[XS]`
-- [ ] HTML-escape user inputs in license email templates (#7) `[XS]`
-- [ ] Add input validation to admin endpoint + audit other endpoints (#8) `[S]`
-- [ ] Add tests for cross-filesystem move staging pattern (#12) `[M]`
+- [x] Fix AppleScript injection + audit codebase for other shell/script interpolation gaps (#5) `[M]`
+- [x] Replace hardcoded viewer highlight colors with CSS variables (#6) `[XS]`
+- [x] HTML-escape user inputs in license email templates (#7) `[XS]`
+- [x] Add input validation to admin endpoint + audit other endpoints (#8) `[S]`
+- [x] Add tests for cross-filesystem move staging pattern (#12) `[M]`
 
 ### When convenient (low severity)
 
-- [ ] Delete completed specs from `docs/specs/` (#9) `[XS]`
-- [ ] Remove/redact PII from production logs + audit for more (#10) `[S]`
+- [x] Delete completed specs from `docs/specs/` (#9) `[XS]`
+- [x] Remove/redact PII from production logs + audit for more (#10) `[S]`

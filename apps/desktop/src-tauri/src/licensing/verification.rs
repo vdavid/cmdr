@@ -1,6 +1,7 @@
 //! License key verification using Ed25519 signatures.
 
 use crate::licensing::LicenseData;
+use crate::licensing::redact_email;
 use crate::licensing::validation_client::{activate_short_code, is_short_code};
 use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
 use ed25519_dalek::{Signature, Verifier, VerifyingKey};
@@ -137,15 +138,11 @@ fn validate_license_key_with_public_key(license_key: &str, public_key_hex: &str)
 
     // Parse payload
     let data: LicenseData = serde_json::from_slice(&payload_bytes).map_err(|e| {
-        log::info!(
-            "License payload parse error: {}. Raw payload: {}",
-            e,
-            String::from_utf8_lossy(&payload_bytes)
-        );
+        log::info!("License payload parse error: {}", e);
         "Invalid license key: bad payload data"
     })?;
 
-    log::info!("License validated successfully for: {}", data.email);
+    log::info!("License validated successfully for: {}", redact_email(&data.email));
 
     Ok(data)
 }

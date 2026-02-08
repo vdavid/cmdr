@@ -6,6 +6,7 @@
 //! - Caching for offline use (30-day grace period)
 //! - Mock mode for local testing
 
+use crate::licensing::redact_email;
 use crate::licensing::verification::{LicenseInfo, get_license_info};
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -267,7 +268,7 @@ fn get_cached_or_validate(app: &tauri::AppHandle, license_info: &LicenseInfo) ->
     // We'll return Personal until async validation completes
     log::info!(
         "License key found for {} but no cached status, returning Personal until validation",
-        license_info.email
+        redact_email(&license_info.email)
     );
     AppStatus::Personal {
         show_commercial_reminder: should_show_commercial_reminder(app),
