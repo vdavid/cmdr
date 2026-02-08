@@ -1230,6 +1230,12 @@
      * Used by MCP select_volume tool.
      */
     export async function selectVolumeByName(pane: 'left' | 'right', name: string): Promise<boolean> {
+        // "Network" is a virtual volume not in the volumes list
+        if (name === 'Network') {
+            await handleVolumeChange(pane, 'network', 'smb://', 'smb://')
+            return true
+        }
+
         const index = volumes.findIndex((v) => v.name === name)
         if (index === -1) {
             log.warn('Volume not found: {name}', { name })

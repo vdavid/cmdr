@@ -241,6 +241,8 @@ pub fn read_resource<R: Runtime>(app: &tauri::AppHandle<R>, uri: &str) -> Result
                 for loc in locations {
                     yaml.push_str(&format!("  - {}\n", loc.name));
                 }
+                // Virtual volumes (frontend-only, not from list_locations)
+                yaml.push_str("  - Network\n");
             }
             #[cfg(not(target_os = "macos"))]
             {

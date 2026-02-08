@@ -205,8 +205,10 @@ fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, name: &str, p
             #[cfg(target_os = "macos")]
             {
                 let locations = crate::volumes::list_locations();
-                if !locations.iter().any(|loc| loc.name == volume_name) {
-                    let available: Vec<&str> = locations.iter().map(|l| l.name.as_str()).collect();
+                let is_virtual = volume_name == "Network";
+                if !is_virtual && !locations.iter().any(|loc| loc.name == volume_name) {
+                    let mut available: Vec<&str> = locations.iter().map(|l| l.name.as_str()).collect();
+                    available.push("Network");
                     return Err(ToolError::invalid_params(format!(
                         "Volume '{}' not found. Available volumes: {}",
                         volume_name,
