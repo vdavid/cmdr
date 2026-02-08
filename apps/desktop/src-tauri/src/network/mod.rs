@@ -1,11 +1,11 @@
 //! Network host discovery and SMB share listing for macOS.
 //!
-//! Discovers SMB-capable hosts on the local network using Bonjour (mDNS/DNS-SD)
+//! Discovers SMB-capable hosts on the local network using mDNS/DNS-SD
 //! and enumerates shares using the smb-rs crate.
 
-pub mod bonjour;
 pub mod keychain;
 pub mod known_shares;
+pub mod mdns_discovery;
 pub mod mount;
 pub mod smb_client;
 
@@ -23,7 +23,7 @@ use std::collections::HashMap;
 use std::sync::{Mutex, OnceLock};
 use tauri::{AppHandle, Emitter};
 
-pub use bonjour::start_discovery;
+pub use mdns_discovery::start_discovery;
 pub use smb_client::{AuthMode, ShareListError, ShareListResult};
 
 /// A discovered network host advertising SMB services.
@@ -88,7 +88,7 @@ pub fn get_discovery_state_value() -> DiscoveryState {
     state.state
 }
 
-/// Called by the Bonjour module when a host is discovered.
+/// Called by the mDNS discovery module when a host is discovered.
 pub(crate) fn on_host_found(host: NetworkHost, app_handle: &AppHandle) {
     let mut state = get_discovery_state().lock_ignore_poison();
 
@@ -109,7 +109,7 @@ pub(crate) fn on_host_found(host: NetworkHost, app_handle: &AppHandle) {
     let _ = app_handle.emit("network-host-found", &host);
 }
 
-/// Called by the Bonjour module when a host disappears.
+/// Called by the mDNS discovery module when a host disappears.
 pub(crate) fn on_host_lost(host_id: &str, app_handle: &AppHandle) {
     let mut state = get_discovery_state().lock_ignore_poison();
 
@@ -135,7 +135,7 @@ pub(crate) fn on_discovery_state_changed(new_state: DiscoveryState, app_handle: 
     );
 }
 
-/// Called by the Bonjour module when a host's address is resolved via mDNS.
+/// Called by the mDNS discovery module when a host's address is resolved.
 pub(crate) fn on_host_resolved(
     host_id: &str,
     hostname: Option<String>,
@@ -175,7 +175,7 @@ pub(crate) fn service_name_to_id(name: &str) -> String {
         .to_lowercase()
 }
 
-/// Converts a Bonjour service name to a hostname that can be resolved.
+/// Converts a service name to a hostname that can be resolved.
 /// Service names like "David's MacBook" become "davids-macbook.local".
 pub fn service_name_to_hostname(name: &str) -> String {
     let cleaned: String = name

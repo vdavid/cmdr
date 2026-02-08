@@ -8,7 +8,7 @@ use crate::file_system::update_debounce_ms;
 use crate::ignore_poison::IgnorePoison;
 use crate::menu::{MenuState, frontend_shortcut_to_accelerator, update_view_mode_accelerator};
 #[cfg(target_os = "macos")]
-use crate::network::bonjour::update_resolve_timeout;
+use crate::network::mdns_discovery::update_resolve_timeout;
 
 /// Check if a port is available for binding.
 #[tauri::command]
@@ -36,7 +36,7 @@ pub fn update_file_watcher_debounce(debounce_ms: u64) {
     update_debounce_ms(debounce_ms);
 }
 
-/// Updates the Bonjour service resolve timeout in milliseconds.
+/// Updates the mDNS service resolve timeout in milliseconds.
 /// This affects future service resolutions; ongoing resolutions keep their original timeout.
 #[cfg(target_os = "macos")]
 #[tauri::command]

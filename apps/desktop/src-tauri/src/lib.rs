@@ -557,11 +557,15 @@ pub fn run() {
                 && window.label() == "main"
             {
                 ai::manager::shutdown();
+                #[cfg(target_os = "macos")]
+                network::mdns_discovery::stop_discovery();
                 window.app_handle().exit(0);
             }
             // Also handle window destruction for cleanup
             if let tauri::WindowEvent::Destroyed = event {
                 ai::manager::shutdown();
+                #[cfg(target_os = "macos")]
+                network::mdns_discovery::stop_discovery();
             }
         })
         .run(tauri::generate_context!())

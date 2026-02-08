@@ -84,8 +84,9 @@ urlencoding = "2.1.3"
 objc2 = { version = "0.6", features = ["std"] }
 objc2-foundation = { version = "0.3", features = [
     "NSURL", "NSString", "NSDictionary", "NSDate", "NSArray", "NSValue", "NSError",
-    "NSFileManager", "NSNetServices", "NSRunLoop"
+    "NSFileManager",
 ] }
+mdns-sd = { version = "0.17", features = ["logging"] }
 objc2-app-kit = { version = "0.3", features = ["NSApplication", "NSRunningApplication"] }
 smb = "0.11.1"
 smb-rpc = "=0.11.1"
