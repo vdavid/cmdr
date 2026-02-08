@@ -1,6 +1,12 @@
 import { Resend } from 'resend'
 import type { LicenseType } from './license'
 
+const htmlEscapeMap: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
+
+function escapeHtml(text: string): string {
+    return text.replace(/[&<>"']/g, (char) => htmlEscapeMap[char])
+}
+
 interface EmailParams {
     to: string
     customerName: string
@@ -31,8 +37,11 @@ function getLicenseDescription(type: LicenseType | undefined, orgName?: string):
 
 export async function sendLicenseEmail(params: EmailParams): Promise<void> {
     const resend = new Resend(params.resendApiKey)
-    const licenseDescription = getLicenseDescription(params.licenseType, params.organizationName)
-    const orgLine = params.organizationName ? `<p><strong>Licensed to:</strong> ${params.organizationName}</p>` : ''
+    const escapedCustomerName = escapeHtml(params.customerName)
+    const escapedOrgName = params.organizationName ? escapeHtml(params.organizationName) : undefined
+    const licenseDescriptionHtml = getLicenseDescription(params.licenseType, escapedOrgName)
+    const licenseDescriptionText = getLicenseDescription(params.licenseType, params.organizationName)
+    const orgLine = escapedOrgName ? `<p><strong>Licensed to:</strong> ${escapedOrgName}</p>` : ''
     const orgLineText = params.organizationName ? `Licensed to: ${params.organizationName}\n` : ''
 
     const count = params.licenseKeys.length
@@ -82,7 +91,7 @@ export async function sendLicenseEmail(params: EmailParams): Promise<void> {
 <body>
     <h1>Welcome to ${params.productName}! 🚀</h1>
 
-    <p>Hey ${params.customerName},</p>
+    <p>Hey ${escapedCustomerName},</p>
 
     <p>${introText}</p>
 
@@ -97,7 +106,7 @@ export async function sendLicenseEmail(params: EmailParams): Promise<void> {
         <li>Paste a key and click Activate</li>
     </ol>
 
-    <p>${licenseDescription}</p>
+    <p>${licenseDescriptionHtml}</p>
 
     <div class="note">
         <strong>Multiple machines?</strong> Each license lets you run ${params.productName} on multiple machines — like a laptop and desktop for remote debugging — as long as you're the only one using that license.
@@ -125,7 +134,7 @@ How to activate:
 2. Go to Cmdr menu → Enter license key...
 3. Paste a key and click Activate
 
-${licenseDescription}
+${licenseDescriptionText}
 
 Multiple machines? Each license lets you run ${params.productName} on multiple machines — like a laptop and desktop for remote debugging — as long as you're the one using that license.
 
