@@ -182,86 +182,90 @@ app.post('/webhook/paddle', async (c) => {
     }
 
     try {
-        // Extract purchase data from webhook
-        const purchaseData = extractPurchaseData(payload)
-        if (!purchaseData) {
-            console.error('Missing customer_id or transaction ID in webhook payload')
-            return c.json({ error: 'Missing customer_id or transaction ID' }, 400)
-        }
-
-        // Idempotency: skip if this transaction was already processed
-        const idempotencyKey = `transaction:${purchaseData.transactionId}`
-        const alreadyProcessed = await c.env.LICENSE_CODES.get(idempotencyKey)
-        if (alreadyProcessed) {
-            console.log('Transaction already processed:', purchaseData.transactionId)
-            return c.json({ status: 'already_processed', transactionId: purchaseData.transactionId })
-        }
-
-        console.log('Processing transaction:', purchaseData.transactionId, 'for customer:', purchaseData.customerId)
-
-        // Determine Paddle API config (sandbox vs live based on transaction ID)
-        const paddleConfig = getPaddleConfig(purchaseData.transactionId, c.env)
-        if (!paddleConfig) {
-            console.error('No Paddle API key configured')
-            return c.json({ error: 'Server configuration error' }, 500)
-        }
-
-        // Fetch customer details from Paddle API
-        const customer = await getCustomerDetails(purchaseData.customerId, paddleConfig)
-        if (!customer) {
-            console.error('Failed to fetch customer details for:', purchaseData.customerId)
-            return c.json({ error: 'Failed to fetch customer details' }, 500)
-        }
-
-        console.log('Customer email:', customer.email, 'business:', customer.businessName)
-
-        // Determine license type from price ID
-        const priceIds: PriceIdMapping = {
-            supporter: c.env.PRICE_ID_SUPPORTER,
-            commercialSubscription: c.env.PRICE_ID_COMMERCIAL_SUBSCRIPTION,
-            commercialPerpetual: c.env.PRICE_ID_COMMERCIAL_PERPETUAL,
-        }
-        const licenseType = purchaseData.priceId
-            ? getLicenseTypeFromPriceId(purchaseData.priceId, priceIds)
-            : 'commercial_subscription'
-
-        // Get organization name: prefer customer's business name, fall back to custom_data
-        const organizationName =
-            licenseType !== 'supporter' ? (customer.businessName ?? purchaseData.organizationName) : undefined
-
-        // Generate and send license(s) - one per quantity
-        // If email fails after KV writes, we intentionally don't mark the transaction as processed
-        // so the next Paddle retry will re-generate and re-send the licenses.
-        const result = await generateAndSendLicenses({
-            customerEmail: customer.email,
-            customerName: customer.name ?? 'there',
-            transactionId: purchaseData.transactionId,
-            quantity: purchaseData.quantity,
-            licenseType: licenseType ?? 'commercial_subscription',
-            organizationName,
-            privateKey: c.env.ED25519_PRIVATE_KEY,
-            productName: c.env.PRODUCT_NAME,
-            supportEmail: c.env.SUPPORT_EMAIL,
-            resendApiKey: c.env.RESEND_API_KEY,
-            kv: c.env.LICENSE_CODES,
-        })
-
-        // Mark transaction as processed (7-day TTL)
-        const sevenDaysInSeconds = 604_800
-        await c.env.LICENSE_CODES.put(idempotencyKey, 'processed', { expirationTtl: sevenDaysInSeconds })
-
-        console.log('Licenses sent to:', customer.email, 'type:', result.licenseType, 'quantity:', result.quantity)
-        return c.json({
-            status: 'ok',
-            email: customer.email,
-            licenseType: result.licenseType,
-            quantity: result.quantity,
-        })
+        return await processCompletedTransaction(payload, c.env)
     } catch (error) {
         console.error('Webhook processing failed:', error instanceof Error ? error.message : String(error))
         return c.json({ error: 'Internal server error' }, 500)
     }
 })
+
+/** Process a completed Paddle transaction: validate, generate licenses, send email. */
+async function processCompletedTransaction(payload: PaddleWebhookPayload, env: Bindings): Promise<Response> {
+    const purchaseData = extractPurchaseData(payload)
+    if (!purchaseData) {
+        console.error('Missing customer_id or transaction ID in webhook payload')
+        return Response.json({ error: 'Missing customer_id or transaction ID' }, { status: 400 })
+    }
+
+    // Idempotency: skip if this transaction was already processed
+    const idempotencyKey = `transaction:${purchaseData.transactionId}`
+    const alreadyProcessed = await env.LICENSE_CODES.get(idempotencyKey)
+    if (alreadyProcessed) {
+        console.log('Transaction already processed:', purchaseData.transactionId)
+        return Response.json({ status: 'already_processed', transactionId: purchaseData.transactionId })
+    }
+
+    console.log('Processing transaction:', purchaseData.transactionId, 'for customer:', purchaseData.customerId)
+
+    // Determine Paddle API config (sandbox vs live based on transaction ID)
+    const paddleConfig = getPaddleConfig(purchaseData.transactionId, env)
+    if (!paddleConfig) {
+        console.error('No Paddle API key configured')
+        return Response.json({ error: 'Server configuration error' }, { status: 500 })
+    }
+
+    // Fetch customer details from Paddle API
+    const customer = await getCustomerDetails(purchaseData.customerId, paddleConfig)
+    if (!customer) {
+        console.error('Failed to fetch customer details for:', purchaseData.customerId)
+        return Response.json({ error: 'Failed to fetch customer details' }, { status: 500 })
+    }
+
+    console.log('Customer email:', customer.email, 'business:', customer.businessName)
+
+    // Determine license type from price ID
+    const priceIds: PriceIdMapping = {
+        supporter: env.PRICE_ID_SUPPORTER,
+        commercialSubscription: env.PRICE_ID_COMMERCIAL_SUBSCRIPTION,
+        commercialPerpetual: env.PRICE_ID_COMMERCIAL_PERPETUAL,
+    }
+    const licenseType = purchaseData.priceId
+        ? getLicenseTypeFromPriceId(purchaseData.priceId, priceIds)
+        : 'commercial_subscription'
+
+    // Get organization name: prefer customer's business name, fall back to custom_data
+    const organizationName =
+        licenseType !== 'supporter' ? (customer.businessName ?? purchaseData.organizationName) : undefined
+
+    // Generate and send license(s) - one per quantity
+    // If email fails after KV writes, we intentionally don't mark the transaction as processed
+    // so the next Paddle retry will re-generate and re-send the licenses.
+    const result = await generateAndSendLicenses({
+        customerEmail: customer.email,
+        customerName: customer.name ?? 'there',
+        transactionId: purchaseData.transactionId,
+        quantity: purchaseData.quantity,
+        licenseType: licenseType ?? 'commercial_subscription',
+        organizationName,
+        privateKey: env.ED25519_PRIVATE_KEY,
+        productName: env.PRODUCT_NAME,
+        supportEmail: env.SUPPORT_EMAIL,
+        resendApiKey: env.RESEND_API_KEY,
+        kv: env.LICENSE_CODES,
+    })
+
+    // Mark transaction as processed (7-day TTL)
+    const sevenDaysInSeconds = 604_800
+    await env.LICENSE_CODES.put(idempotencyKey, 'processed', { expirationTtl: sevenDaysInSeconds })
+
+    console.log('Licenses sent to:', customer.email, 'type:', result.licenseType, 'quantity:', result.quantity)
+    return Response.json({
+        status: 'ok',
+        email: customer.email,
+        licenseType: result.licenseType,
+        quantity: result.quantity,
+    })
+}
 
 /** Extract purchase data from webhook payload (customer fetched separately via API) */
 function extractPurchaseData(payload: PaddleWebhookPayload): {
