@@ -80,6 +80,13 @@ fn execute_quit<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
 
 /// Execute switch_pane command.
 fn execute_switch_pane<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
+    // Update the MCP store immediately so the state is correct when read back.
+    // The frontend will also update via its own updateFocusedPane call, but that's async.
+    if let Some(store) = app.try_state::<PaneStateStore>() {
+        let current = store.get_focused_pane();
+        let new_pane = if current == "left" { "right" } else { "left" };
+        store.set_focused_pane(new_pane.to_string());
+    }
     app.emit("switch-pane", ())?;
     Ok(json!("OK: Switched focus to other pane"))
 }
