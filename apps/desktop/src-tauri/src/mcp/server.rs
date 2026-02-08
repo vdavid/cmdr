@@ -308,23 +308,23 @@ async fn handle_mcp_post<R: Runtime>(
             .and_then(|v| v.to_str().ok())
             .map(|s| s.to_string());
 
-        // Only validate if client sends a session ID (stateless clients may not)
+        // On session mismatch, auto-adopt the client's session ID instead of rejecting.
+        // This is a single-user localhost server, so strict session validation adds no
+        // security benefit and breaks the workflow when the app restarts during dev.
         if let Some(ref client_session) = provided_session
             && let Ok(session_guard) = state.session_id.read()
             && let Some(ref expected_session) = *session_guard
             && client_session != expected_session
         {
-            log::warn!(
-                "MCP: Session ID mismatch (got: {}, expected: {})",
+            log::info!(
+                "MCP: Session ID mismatch (got: {}, expected: {}), auto-adopting client session",
                 client_session,
                 expected_session
             );
-            let error = McpResponse::error(request.id.clone(), INVALID_REQUEST, "Invalid session ID");
-            return if use_sse {
-                build_sse_response(error, None)
-            } else {
-                (StatusCode::BAD_REQUEST, Json(error)).into_response()
-            };
+            drop(session_guard);
+            if let Ok(mut session_guard) = state.session_id.write() {
+                *session_guard = Some(client_session.clone());
+            }
         }
 
         // Validate protocol version matches negotiated version
