@@ -117,7 +117,7 @@ jobs:
             - name: Install Tauri dependencies (Linux)
               run: |
                   sudo apt-get update
-                  sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+                  sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libacl1-dev
 
             - name: Build check tool
               run: go build -o check .
@@ -255,6 +255,7 @@ jobs:
                       libayatana-appindicator3-dev \
                       librsvg2-dev \
                       patchelf \
+                      libacl1-dev \
                       webkit2gtk-driver \
                       xvfb
 
