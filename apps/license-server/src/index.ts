@@ -182,6 +182,14 @@ app.post('/webhook/paddle', async (c) => {
         return c.json({ error: 'Missing customer_id or transaction ID' }, 400)
     }
 
+    // Idempotency: skip if this transaction was already processed
+    const idempotencyKey = `transaction:${purchaseData.transactionId}`
+    const alreadyProcessed = await c.env.LICENSE_CODES.get(idempotencyKey)
+    if (alreadyProcessed) {
+        console.log('Transaction already processed:', purchaseData.transactionId)
+        return c.json({ status: 'already_processed', transactionId: purchaseData.transactionId })
+    }
+
     console.log('Processing transaction:', purchaseData.transactionId, 'for customer:', purchaseData.customerId)
 
     // Determine Paddle API config (sandbox vs live based on transaction ID)
@@ -228,6 +236,10 @@ app.post('/webhook/paddle', async (c) => {
         resendApiKey: c.env.RESEND_API_KEY,
         kv: c.env.LICENSE_CODES,
     })
+
+    // Mark transaction as processed (7-day TTL)
+    const sevenDaysInSeconds = 604_800
+    await c.env.LICENSE_CODES.put(idempotencyKey, 'processed', { expirationTtl: sevenDaysInSeconds })
 
     console.log('Licenses sent to:', customer.email, 'type:', result.licenseType, 'quantity:', result.quantity)
     return c.json({ status: 'ok', email: customer.email, licenseType: result.licenseType, quantity: result.quantity })
