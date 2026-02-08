@@ -47,7 +47,7 @@ Writing and code styles.
 
 ### Comments
 
-Only add JSDoc that actually adds info.
+Only add JSDoc that actually adds info. No tautologies.
 
 - ✅ Add meaningful comments for public functions, methods, and types to help the next dev.
 - ❌ BUT DO NOT use JSDoc for stuff like `Gets the name` for a function called `getName` :D
@@ -57,7 +57,7 @@ Only add JSDoc that actually adds info.
 
 ### TypeScript
 
-- Only use functional components and modules. No classes anywhere.
+- Only functional components and modules. No classes.
 - Prefer functional programming (map, reduce, some, forEach) and pure functions wherever it makes sense.
 - Use `const` for everything, unless it makes the code unnecessarily verbose.
 - Start function names with a verb, unless unidiomatic in the specific case.
@@ -68,9 +68,7 @@ Only add JSDoc that actually adds info.
 
 ### Rust
 
-- Max line width: 120 characters
-- 4 spaces indentation
-- Cognitive complexity threshold: 15 (enforced by clippy)
+- Max 120 char lines, 4-space indent, cognitive complexity threshold: 15, enforced by clippy.
 
 ### CSS
 
@@ -82,11 +80,7 @@ Only add JSDoc that actually adds info.
 
 ### Commit messages
 
-The first line is max 50 characters. Examples: "Add new feature X", "Frontend: Fix Save button size on the Settings
-page"
-
-Then a blank line. Then a more detailed description if needed, as a form of a concise bulleted list, or free text with
-meaningful extra details on what the commit does.
+Max 50 chars title, a few bullets of body if needed. No co-author.
 
 ### PRs
 

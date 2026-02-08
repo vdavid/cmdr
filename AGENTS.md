@@ -104,7 +104,7 @@ There are two MCP servers available to you:
 
 ## Things to avoid
 
-- ❌ Don't touch git, user handles commits manually
+- ❌ Don't touch git, user handles commits manually. Unless explicitly asked to.
 - ❌ Don't use classes in TypeScript (use functional components/modules)
 - ❌ Don't add JSDoc that just repeats types or obvious function names
 - ❌ Don't use `any` type (ESLint will error)
