@@ -4,7 +4,7 @@
     import PaneResizer from './PaneResizer.svelte'
     import LoadingIcon from '$lib/ui/LoadingIcon.svelte'
     import DialogManager from './DialogManager.svelte'
-    import { toBackendCursorIndex } from '../../file-operations/copy/copy-dialog-utils'
+    import { toBackendCursorIndex } from '$lib/file-operations/copy/copy-dialog-utils'
     import { formatBytes, getFileAt } from '$lib/tauri-commands'
     import {
         loadAppStatus,
@@ -266,14 +266,14 @@
             newOrder,
             sortState.cursorFilename,
             showHiddenFiles,
-            sortState.selectedIndices,
+            sortState.backendSelectedIndices,
             sortState.allSelected,
         )
 
         setPaneSort(pane, newColumn, newOrder)
         void saveAppStatus({ [paneKey(pane, 'sortBy')]: newColumn })
         void saveColumnSortOrder(newColumn, newOrder)
-        applySortResult(paneRef, result)
+        applySortResult(paneRef, result, sortState.hasParent)
     }
 
     async function handleVolumeChange(
@@ -1070,14 +1070,14 @@
             newOrder,
             sortState.cursorFilename,
             showHiddenFiles,
-            sortState.selectedIndices,
+            sortState.backendSelectedIndices,
             sortState.allSelected,
         )
 
         setPaneSort(pane, column, newOrder)
         void saveAppStatus({ [paneKey(pane, 'sortBy')]: column })
         void saveColumnSortOrder(column, newOrder)
-        applySortResult(paneRef, result)
+        applySortResult(paneRef, result, sortState.hasParent)
     }
 
     /**
