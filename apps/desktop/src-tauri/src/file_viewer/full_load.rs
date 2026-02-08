@@ -3,6 +3,7 @@
 //! Best for files under FULL_LOAD_THRESHOLD (1 MB). Provides instant random
 //! access by line number and fast search since all content is in RAM.
 
+use crate::ignore_poison::IgnorePoison;
 use std::path::Path;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -136,7 +137,7 @@ impl FileViewerBackend for FullLoadBackend {
             let mut search_start = 0;
             while let Some(pos) = line_lower[search_start..].find(&query_lower) {
                 let col = search_start + pos;
-                let mut matches = results.lock().unwrap_or_else(|e| e.into_inner());
+                let mut matches = results.lock_ignore_poison();
                 matches.push(SearchMatch {
                     line: line_idx,
                     column: col,

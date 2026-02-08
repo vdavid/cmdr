@@ -14,6 +14,7 @@
 #![allow(deprecated, reason = "NSNetService* APIs are deprecated but still functional")]
 #![allow(non_snake_case, reason = "ObjC delegate methods require camelCase naming")]
 
+use crate::ignore_poison::IgnorePoison;
 use crate::network::{
     DiscoveryState, NetworkHost, on_discovery_state_changed, on_host_found, on_host_lost, on_host_resolved,
     service_name_to_id,
@@ -353,7 +354,7 @@ fn start_resolving_service(service: &NSNetService, host_id: &str) {
         return;
     };
 
-    let mut manager_guard = get_bonjour_manager().lock().unwrap_or_else(|e| e.into_inner());
+    let mut manager_guard = get_bonjour_manager().lock_ignore_poison();
     let Some(manager) = manager_guard.as_mut() else {
         return;
     };
@@ -409,7 +410,7 @@ fn start_resolving_service(service: &NSNetService, host_id: &str) {
 
 /// Stops resolving a service and cleans up.
 fn stop_resolving_service(host_id: &str) {
-    let mut manager_guard = get_bonjour_manager().lock().unwrap_or_else(|e| e.into_inner());
+    let mut manager_guard = get_bonjour_manager().lock_ignore_poison();
     let Some(manager) = manager_guard.as_mut() else {
         return;
     };
@@ -441,7 +442,7 @@ pub fn start_discovery(app_handle: AppHandle) {
         return;
     };
 
-    let mut manager_guard = get_bonjour_manager().lock().unwrap_or_else(|e| e.into_inner());
+    let mut manager_guard = get_bonjour_manager().lock_ignore_poison();
 
     // Don't start if already running
     if manager_guard.is_some() {
@@ -482,7 +483,7 @@ pub fn start_discovery(app_handle: AppHandle) {
 /// Stops Bonjour discovery.
 #[allow(dead_code, reason = "Will be used for explicit cleanup on app shutdown")]
 pub fn stop_discovery() {
-    let mut manager_guard = get_bonjour_manager().lock().unwrap_or_else(|e| e.into_inner());
+    let mut manager_guard = get_bonjour_manager().lock_ignore_poison();
 
     if let Some(manager) = manager_guard.take() {
         manager.browser.stop();

@@ -52,6 +52,9 @@ use nusb as _;
 #[cfg(target_os = "macos")]
 use objc2_app_kit as _;
 
+mod ignore_poison;
+pub use ignore_poison::IgnorePoison;
+
 mod ai;
 pub mod benchmark;
 mod commands;
@@ -166,19 +169,12 @@ pub fn run() {
 
             // Store the CheckMenuItem references in app state
             let menu_state = MenuState::default();
-            *menu_state.show_hidden_files.lock().unwrap_or_else(|e| e.into_inner()) =
-                Some(menu_items.show_hidden_files);
-            *menu_state.view_mode_full.lock().unwrap_or_else(|e| e.into_inner()) = Some(menu_items.view_mode_full);
-            *menu_state.view_mode_brief.lock().unwrap_or_else(|e| e.into_inner()) = Some(menu_items.view_mode_brief);
-            *menu_state.view_submenu.lock().unwrap_or_else(|e| e.into_inner()) = Some(menu_items.view_submenu);
-            *menu_state
-                .view_mode_full_position
-                .lock()
-                .unwrap_or_else(|e| e.into_inner()) = menu_items.view_mode_full_position;
-            *menu_state
-                .view_mode_brief_position
-                .lock()
-                .unwrap_or_else(|e| e.into_inner()) = menu_items.view_mode_brief_position;
+            *menu_state.show_hidden_files.lock_ignore_poison() = Some(menu_items.show_hidden_files);
+            *menu_state.view_mode_full.lock_ignore_poison() = Some(menu_items.view_mode_full);
+            *menu_state.view_mode_brief.lock_ignore_poison() = Some(menu_items.view_mode_brief);
+            *menu_state.view_submenu.lock_ignore_poison() = Some(menu_items.view_submenu);
+            *menu_state.view_mode_full_position.lock_ignore_poison() = menu_items.view_mode_full_position;
+            *menu_state.view_mode_brief_position.lock_ignore_poison() = menu_items.view_mode_brief_position;
             app.manage(menu_state);
 
             // Set window title based on license status
@@ -215,7 +211,7 @@ pub fn run() {
             if id == SHOW_HIDDEN_FILES_ID {
                 // Get the CheckMenuItem from app state
                 let menu_state = app.state::<MenuState<tauri::Wry>>();
-                let guard = menu_state.show_hidden_files.lock().unwrap_or_else(|e| e.into_inner());
+                let guard = menu_state.show_hidden_files.lock_ignore_poison();
                 let Some(check_item) = guard.as_ref() else {
                     return;
                 };
@@ -235,8 +231,8 @@ pub fn run() {
                 let menu_state = app.state::<MenuState<tauri::Wry>>();
 
                 let (full_guard, brief_guard) = (
-                    menu_state.view_mode_full.lock().unwrap_or_else(|e| e.into_inner()),
-                    menu_state.view_mode_brief.lock().unwrap_or_else(|e| e.into_inner()),
+                    menu_state.view_mode_full.lock_ignore_poison(),
+                    menu_state.view_mode_brief.lock_ignore_poison(),
                 );
 
                 if let (Some(full_item), Some(brief_item)) = (full_guard.as_ref(), brief_guard.as_ref()) {

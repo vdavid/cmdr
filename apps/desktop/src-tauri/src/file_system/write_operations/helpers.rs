@@ -15,6 +15,7 @@ use super::macos_copy::{CopyProgressContext, copy_single_file_native};
 
 use super::state::WriteOperationState;
 use super::types::{ConflictInfo, ConflictResolution, WriteConflictEvent, WriteOperationConfig, WriteOperationError};
+use crate::ignore_poison::IgnorePoison;
 
 // ============================================================================
 // Validation helpers
@@ -360,7 +361,7 @@ pub(super) fn resolve_conflict(
             // Wait for user to call resolve_write_conflict.
             // The frontend cancels the operation if the dialog is destroyed, so this timeout
             // is only a safety net for when the frontend is completely dead (crash/hang).
-            let guard = state.conflict_mutex.lock().unwrap_or_else(|e| e.into_inner());
+            let guard = state.conflict_mutex.lock_ignore_poison();
             let (_guard, wait_result) = state
                 .conflict_condvar
                 .wait_timeout_while(guard, Duration::from_secs(300), |_| {

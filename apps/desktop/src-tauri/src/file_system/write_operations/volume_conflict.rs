@@ -16,6 +16,7 @@ use std::sync::atomic::Ordering;
 use super::state::WriteOperationState;
 use super::types::{ConflictResolution, VolumeCopyConfig, WriteConflictEvent, WriteOperationError};
 use crate::file_system::volume::Volume;
+use crate::ignore_poison::IgnorePoison;
 
 /// Resolves a file conflict for volume-to-volume copy.
 /// Returns None if file should be skipped, or Some(path) with the resolved destination path.
@@ -79,7 +80,7 @@ pub(super) fn resolve_volume_conflict(
             );
 
             // Wait for user to call resolve_write_conflict
-            let guard = state.conflict_mutex.lock().unwrap_or_else(|e| e.into_inner());
+            let guard = state.conflict_mutex.lock_ignore_poison();
             let _guard = state
                 .conflict_condvar
                 .wait_while(guard, |_| {

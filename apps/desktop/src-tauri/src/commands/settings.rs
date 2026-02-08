@@ -5,6 +5,7 @@ use std::net::TcpListener;
 use tauri::{AppHandle, Manager};
 
 use crate::file_system::update_debounce_ms;
+use crate::ignore_poison::IgnorePoison;
 use crate::menu::{MenuState, frontend_shortcut_to_accelerator, update_view_mode_accelerator};
 #[cfg(target_os = "macos")]
 use crate::network::bonjour::update_resolve_timeout;
@@ -65,8 +66,7 @@ pub fn update_menu_accelerator(app: AppHandle, command_id: &str, shortcut: &str)
             // Get current checked state before updating
             let is_checked = menu_state
                 .view_mode_full
-                .lock()
-                .unwrap_or_else(|e| e.into_inner())
+                .lock_ignore_poison()
                 .as_ref()
                 .and_then(|item| item.is_checked().ok())
                 .unwrap_or(false);
@@ -75,15 +75,14 @@ pub fn update_menu_accelerator(app: AppHandle, command_id: &str, shortcut: &str)
                 .map_err(|e| format!("Failed to update Full view accelerator: {e}"))?;
 
             // Update the reference in MenuState
-            *menu_state.view_mode_full.lock().unwrap_or_else(|e| e.into_inner()) = Some(new_item);
+            *menu_state.view_mode_full.lock_ignore_poison() = Some(new_item);
             Ok(())
         }
         "view.briefMode" => {
             // Get current checked state before updating
             let is_checked = menu_state
                 .view_mode_brief
-                .lock()
-                .unwrap_or_else(|e| e.into_inner())
+                .lock_ignore_poison()
                 .as_ref()
                 .and_then(|item| item.is_checked().ok())
                 .unwrap_or(true);
@@ -92,7 +91,7 @@ pub fn update_menu_accelerator(app: AppHandle, command_id: &str, shortcut: &str)
                 .map_err(|e| format!("Failed to update Brief view accelerator: {e}"))?;
 
             // Update the reference in MenuState
-            *menu_state.view_mode_brief.lock().unwrap_or_else(|e| e.into_inner()) = Some(new_item);
+            *menu_state.view_mode_brief.lock_ignore_poison() = Some(new_item);
             Ok(())
         }
         _ => {

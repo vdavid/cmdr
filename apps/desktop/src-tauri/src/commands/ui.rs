@@ -1,3 +1,4 @@
+use crate::ignore_poison::IgnorePoison;
 use crate::menu::{MenuState, build_context_menu};
 #[cfg(target_os = "macos")]
 use std::process::Command;
@@ -9,7 +10,7 @@ use tauri_plugin_opener::OpenerExt;
 #[tauri::command]
 pub fn update_menu_context<R: Runtime>(app: AppHandle<R>, path: String, filename: String) {
     let state = app.state::<MenuState<R>>();
-    let mut context = state.context.lock().unwrap_or_else(|e| e.into_inner());
+    let mut context = state.context.lock_ignore_poison();
     context.path = path;
     context.filename = filename;
 }
@@ -42,7 +43,7 @@ pub fn show_main_window<R: Runtime>(window: Window<R>) -> Result<(), String> {
 #[tauri::command]
 pub fn toggle_hidden_files<R: Runtime>(app: AppHandle<R>) -> Result<bool, String> {
     let menu_state = app.state::<MenuState<R>>();
-    let guard = menu_state.show_hidden_files.lock().unwrap_or_else(|e| e.into_inner());
+    let guard = menu_state.show_hidden_files.lock_ignore_poison();
     let Some(check_item) = guard.as_ref() else {
         return Err("Menu not initialized".to_string());
     };
@@ -64,8 +65,8 @@ pub fn toggle_hidden_files<R: Runtime>(app: AppHandle<R>) -> Result<bool, String
 #[tauri::command]
 pub fn set_view_mode<R: Runtime>(app: AppHandle<R>, mode: String) -> Result<(), String> {
     let menu_state = app.state::<MenuState<R>>();
-    let full_guard = menu_state.view_mode_full.lock().unwrap_or_else(|e| e.into_inner());
-    let brief_guard = menu_state.view_mode_brief.lock().unwrap_or_else(|e| e.into_inner());
+    let full_guard = menu_state.view_mode_full.lock_ignore_poison();
+    let brief_guard = menu_state.view_mode_brief.lock_ignore_poison();
 
     let (Some(full_item), Some(brief_item)) = (full_guard.as_ref(), brief_guard.as_ref()) else {
         return Err("Menu not initialized".to_string());
@@ -179,7 +180,7 @@ pub fn open_in_editor(_path: String) -> Result<(), String> {
 /// Executes a menu action for the current context.
 pub fn execute_menu_action<R: Runtime>(app: &AppHandle<R>, id: &str) {
     let state = app.state::<MenuState<R>>();
-    let context = state.context.lock().unwrap_or_else(|e| e.into_inner()).clone();
+    let context = state.context.lock_ignore_poison().clone();
 
     if context.path.is_empty() {
         return;

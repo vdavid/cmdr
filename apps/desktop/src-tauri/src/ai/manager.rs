@@ -13,6 +13,7 @@ use super::process::{
     stop_process,
 };
 use super::{AiState, AiStatus, ModelInfo, get_default_model, get_model_by_id, use_real_ai};
+use crate::ignore_poison::IgnorePoison;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
@@ -43,7 +44,7 @@ pub fn init<R: Runtime>(app: &AppHandle<R>) {
     let ai_dir = get_ai_dir(app);
     let state = load_state(&ai_dir);
 
-    let mut manager = MANAGER.lock().unwrap_or_else(|e| e.into_inner());
+    let mut manager = MANAGER.lock_ignore_poison();
     *manager = Some(ManagerState {
         ai_dir,
         state,
@@ -135,7 +136,7 @@ pub fn init<R: Runtime>(app: &AppHandle<R>) {
 
 /// Shuts down the AI server. Called on app quit.
 pub fn shutdown() {
-    let mut manager = MANAGER.lock().unwrap_or_else(|e| e.into_inner());
+    let mut manager = MANAGER.lock_ignore_poison();
     if let Some(ref mut m) = *manager
         && let Some(pid) = m.child_pid.take()
     {
@@ -151,7 +152,7 @@ pub fn get_ai_status() -> AiStatus {
         return AiStatus::Unavailable;
     }
 
-    let manager = MANAGER.lock().unwrap_or_else(|e| e.into_inner());
+    let manager = MANAGER.lock_ignore_poison();
     match &*manager {
         Some(m) if m.state.opted_out => AiStatus::Unavailable,
         Some(m) if m.state.installed && m.child_pid.is_some() => AiStatus::Available,
@@ -174,7 +175,7 @@ pub fn get_port() -> Option<u16> {
     if !use_real_ai() {
         return None;
     }
-    let manager = MANAGER.lock().unwrap_or_else(|e| e.into_inner());
+    let manager = MANAGER.lock_ignore_poison();
     manager.as_ref().and_then(|m| m.state.port)
 }
 
@@ -187,7 +188,7 @@ pub async fn start_ai_download<R: Runtime>(app: AppHandle<R>) -> Result<(), Stri
 
     // Check if download is already in progress
     {
-        let mut manager = MANAGER.lock().unwrap_or_else(|e| e.into_inner());
+        let mut manager = MANAGER.lock_ignore_poison();
         if let Some(ref mut m) = *manager {
             if m.download_in_progress {
                 log::warn!("AI download: already in progress, ignoring duplicate request");
@@ -201,7 +202,7 @@ pub async fn start_ai_download<R: Runtime>(app: AppHandle<R>) -> Result<(), Stri
 
     // Clear in-progress flag
     {
-        let mut manager = MANAGER.lock().unwrap_or_else(|e| e.into_inner());
+        let mut manager = MANAGER.lock_ignore_poison();
         if let Some(ref mut m) = *manager {
             m.download_in_progress = false;
         }
@@ -213,7 +214,7 @@ pub async fn start_ai_download<R: Runtime>(app: AppHandle<R>) -> Result<(), Stri
 /// Cancels an in-progress download.
 #[tauri::command]
 pub fn cancel_ai_download() {
-    let mut manager = MANAGER.lock().unwrap_or_else(|e| e.into_inner());
+    let mut manager = MANAGER.lock_ignore_poison();
     if let Some(ref mut m) = *manager {
         m.cancel_requested = true;
     }
@@ -222,7 +223,7 @@ pub fn cancel_ai_download() {
 /// Uninstalls the AI model and binary, resets state.
 #[tauri::command]
 pub fn uninstall_ai() {
-    let mut manager = MANAGER.lock().unwrap_or_else(|e| e.into_inner());
+    let mut manager = MANAGER.lock_ignore_poison();
     if let Some(ref mut m) = *manager {
         // Stop server if running
         if let Some(pid) = m.child_pid.take() {
@@ -246,7 +247,7 @@ pub fn uninstall_ai() {
 /// Dismisses the AI offer notification for 7 days.
 #[tauri::command]
 pub fn dismiss_ai_offer() {
-    let mut manager = MANAGER.lock().unwrap_or_else(|e| e.into_inner());
+    let mut manager = MANAGER.lock_ignore_poison();
     if let Some(ref mut m) = *manager {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -262,7 +263,7 @@ pub fn dismiss_ai_offer() {
 /// Also cleans up any partial downloads to avoid wasting disk space.
 #[tauri::command]
 pub fn opt_out_ai() {
-    let mut manager = MANAGER.lock().unwrap_or_else(|e| e.into_inner());
+    let mut manager = MANAGER.lock_ignore_poison();
     if let Some(ref mut m) = *manager {
         // Clean up partial model download if exists
         let model = get_model_by_id(&m.state.installed_model_id).unwrap_or_else(get_default_model);
@@ -282,7 +283,7 @@ pub fn opt_out_ai() {
 /// Re-enables AI features after opting out.
 #[tauri::command]
 pub fn opt_in_ai() {
-    let mut manager = MANAGER.lock().unwrap_or_else(|e| e.into_inner());
+    let mut manager = MANAGER.lock_ignore_poison();
     if let Some(ref mut m) = *manager {
         m.state.opted_out = false;
         save_state(&m.ai_dir, &m.state);
@@ -292,7 +293,7 @@ pub fn opt_in_ai() {
 /// Returns whether the user has opted out of AI features.
 #[tauri::command]
 pub fn is_ai_opted_out() -> bool {
-    let manager = MANAGER.lock().unwrap_or_else(|e| e.into_inner());
+    let manager = MANAGER.lock_ignore_poison();
     manager.as_ref().is_some_and(|m| m.state.opted_out)
 }
 
@@ -330,7 +331,7 @@ fn format_bytes_gb(bytes: u64) -> String {
 /// Returns the model info for the currently selected/installed model.
 /// Falls back to default if the stored model ID is not in the registry.
 fn get_current_model() -> &'static ModelInfo {
-    let manager = MANAGER.lock().unwrap_or_else(|e| e.into_inner());
+    let manager = MANAGER.lock_ignore_poison();
     if let Some(ref m) = *manager
         && let Some(model) = get_model_by_id(&m.state.installed_model_id)
     {
@@ -446,7 +447,7 @@ async fn do_download<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
 
     // Reset cancel flag and set the model ID we're installing
     {
-        let mut manager = MANAGER.lock().unwrap_or_else(|e| e.into_inner());
+        let mut manager = MANAGER.lock_ignore_poison();
         if let Some(ref mut m) = *manager {
             m.cancel_requested = false;
             m.state.installed_model_id = model.id.to_string();
@@ -470,7 +471,7 @@ async fn do_download<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
 
     // Track when this partial download started (for stale cleanup)
     {
-        let mut manager = MANAGER.lock().unwrap_or_else(|e| e.into_inner());
+        let mut manager = MANAGER.lock_ignore_poison();
         if let Some(ref mut m) = *manager {
             let now = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
@@ -504,7 +505,7 @@ async fn do_download<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
 
     // Mark download as complete and update state
     {
-        let mut manager = MANAGER.lock().unwrap_or_else(|e| e.into_inner());
+        let mut manager = MANAGER.lock_ignore_poison();
         if let Some(ref mut m) = *manager {
             m.state.installed = true;
             m.state.model_download_complete = true;
@@ -527,7 +528,7 @@ async fn do_download<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
 }
 
 fn is_cancel_requested() -> bool {
-    let manager = MANAGER.lock().unwrap_or_else(|e| e.into_inner());
+    let manager = MANAGER.lock_ignore_poison();
     manager.as_ref().is_some_and(|m| m.cancel_requested)
 }
 
@@ -553,7 +554,7 @@ async fn start_server_inner<R: Runtime>(app: &AppHandle<R>) -> Result<(), String
 
     // Update state
     {
-        let mut manager = MANAGER.lock().unwrap_or_else(|e| e.into_inner());
+        let mut manager = MANAGER.lock_ignore_poison();
         if let Some(ref mut m) = *manager {
             m.state.port = Some(port);
             m.state.pid = Some(pid);

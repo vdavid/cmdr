@@ -10,6 +10,7 @@ use std::sync::{Arc, LazyLock, Mutex};
 use std::thread;
 use std::time::Duration;
 
+use crate::ignore_poison::IgnorePoison;
 use log::debug;
 use serde::Serialize;
 
@@ -191,7 +192,7 @@ pub fn open_session(path: &str) -> Result<ViewerOpenResult, ViewerError> {
             match LineIndexBackend::open(&path_clone, &cancel_for_indexer) {
                 Ok(new_backend) => {
                     if !cancel_for_indexer.load(Ordering::Relaxed) {
-                        let mut sessions = SESSIONS.lock().unwrap_or_else(|e| e.into_inner());
+                        let mut sessions = SESSIONS.lock_ignore_poison();
                         if let Some(session) = sessions.get_mut(&session_id_clone) {
                             debug!(
                                 "Indexing completed for session {}, upgrading to LineIndex",
@@ -253,17 +254,14 @@ pub fn open_session(path: &str) -> Result<ViewerOpenResult, ViewerError> {
         is_indexing,
     };
 
-    SESSIONS
-        .lock()
-        .unwrap_or_else(|e| e.into_inner())
-        .insert(session_id, session);
+    SESSIONS.lock_ignore_poison().insert(session_id, session);
 
     Ok(result)
 }
 
 /// Gets the current status of a session (backend type, indexing state).
 pub fn get_session_status(session_id: &str) -> Result<ViewerSessionStatus, ViewerError> {
-    let sessions = SESSIONS.lock().unwrap_or_else(|e| e.into_inner());
+    let sessions = SESSIONS.lock_ignore_poison();
     let session = sessions
         .get(session_id)
         .ok_or(ViewerError::SessionNotFound(session_id.to_string()))?;
@@ -277,7 +275,7 @@ pub fn get_session_status(session_id: &str) -> Result<ViewerSessionStatus, Viewe
 
 /// Gets a range of lines from a session.
 pub fn get_lines(session_id: &str, target: SeekTarget, count: usize) -> Result<LineChunk, ViewerError> {
-    let sessions = SESSIONS.lock().unwrap_or_else(|e| e.into_inner());
+    let sessions = SESSIONS.lock_ignore_poison();
     let session = sessions
         .get(session_id)
         .ok_or(ViewerError::SessionNotFound(session_id.to_string()))?;
@@ -310,7 +308,7 @@ pub fn search_start(session_id: &str, query: String) -> Result<(), ViewerError> 
 
     // Get the file path from the session to open a fresh file handle in the search thread
     let path = {
-        let mut sessions = SESSIONS.lock().unwrap_or_else(|e| e.into_inner());
+        let mut sessions = SESSIONS.lock_ignore_poison();
         let session = sessions
             .get_mut(session_id)
             .ok_or(ViewerError::SessionNotFound(session_id.to_string()))?;
@@ -329,7 +327,7 @@ pub fn search_start(session_id: &str, query: String) -> Result<(), ViewerError> 
         let backend = match ByteSeekBackend::open(&path) {
             Ok(b) => b,
             Err(_) => {
-                *status_clone.lock().unwrap_or_else(|e| e.into_inner()) = SearchStatus::Done;
+                *status_clone.lock_ignore_poison() = SearchStatus::Done;
                 return;
             }
         };
@@ -337,14 +335,14 @@ pub fn search_start(session_id: &str, query: String) -> Result<(), ViewerError> 
         let result = backend.search(&query, &cancel_clone, &matches_clone);
         let final_scanned: u64 = result.unwrap_or_default();
 
-        *bytes_scanned_clone.lock().unwrap_or_else(|e| e.into_inner()) = final_scanned;
+        *bytes_scanned_clone.lock_ignore_poison() = final_scanned;
 
         let final_status = if cancel_clone.load(Ordering::Relaxed) {
             SearchStatus::Cancelled
         } else {
             SearchStatus::Done
         };
-        *status_clone.lock().unwrap_or_else(|e| e.into_inner()) = final_status;
+        *status_clone.lock_ignore_poison() = final_status;
     });
 
     Ok(())
@@ -352,7 +350,7 @@ pub fn search_start(session_id: &str, query: String) -> Result<(), ViewerError> 
 
 /// Polls search progress for a session.
 pub fn search_poll(session_id: &str) -> Result<SearchPollResult, ViewerError> {
-    let sessions = SESSIONS.lock().unwrap_or_else(|e| e.into_inner());
+    let sessions = SESSIONS.lock_ignore_poison();
     let session = sessions
         .get(session_id)
         .ok_or(ViewerError::SessionNotFound(session_id.to_string()))?;
@@ -367,9 +365,9 @@ pub fn search_poll(session_id: &str) -> Result<SearchPollResult, ViewerError> {
             bytes_scanned: 0,
         }),
         Some(search) => {
-            let status = search.status.lock().unwrap_or_else(|e| e.into_inner()).clone();
-            let matches = search.matches.lock().unwrap_or_else(|e| e.into_inner()).clone();
-            let bytes_scanned = *search.bytes_scanned.lock().unwrap_or_else(|e| e.into_inner());
+            let status = search.status.lock_ignore_poison().clone();
+            let matches = search.matches.lock_ignore_poison().clone();
+            let bytes_scanned = *search.bytes_scanned.lock_ignore_poison();
 
             Ok(SearchPollResult {
                 status,
@@ -383,7 +381,7 @@ pub fn search_poll(session_id: &str) -> Result<SearchPollResult, ViewerError> {
 
 /// Cancels an ongoing search.
 pub fn search_cancel(session_id: &str) -> Result<(), ViewerError> {
-    let mut sessions = SESSIONS.lock().unwrap_or_else(|e| e.into_inner());
+    let mut sessions = SESSIONS.lock_ignore_poison();
     let session = sessions
         .get_mut(session_id)
         .ok_or(ViewerError::SessionNotFound(session_id.to_string()))?;
@@ -398,7 +396,7 @@ pub fn search_cancel(session_id: &str) -> Result<(), ViewerError> {
 
 /// Closes a viewer session and frees resources.
 pub fn close_session(session_id: &str) -> Result<(), ViewerError> {
-    let mut sessions = SESSIONS.lock().unwrap_or_else(|e| e.into_inner());
+    let mut sessions = SESSIONS.lock_ignore_poison();
     if let Some(session) = sessions.remove(session_id) {
         // Cancel any ongoing search
         if let Some(search) = &session.search {

@@ -13,6 +13,7 @@ use std::path::Path;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
 
+use crate::ignore_poison::IgnorePoison;
 use log::debug;
 use memchr::memchr;
 
@@ -253,7 +254,7 @@ impl FileViewerBackend for ByteSeekBackend {
                     let mut search_start = 0;
                     while let Some(match_pos) = line_lower[search_start..].find(&query_lower) {
                         let col = search_start + match_pos;
-                        let mut matches = results.lock().unwrap_or_else(|e| e.into_inner());
+                        let mut matches = results.lock_ignore_poison();
                         matches.push(SearchMatch {
                             line: line_number,
                             column: col,
@@ -280,7 +281,7 @@ impl FileViewerBackend for ByteSeekBackend {
             let mut search_start = 0;
             while let Some(match_pos) = line_lower[search_start..].find(&query_lower) {
                 let col = search_start + match_pos;
-                let mut matches = results.lock().unwrap_or_else(|e| e.into_inner());
+                let mut matches = results.lock_ignore_poison();
                 matches.push(SearchMatch {
                     line: line_number,
                     column: col,
