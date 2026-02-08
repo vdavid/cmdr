@@ -176,7 +176,7 @@ fn get_cursor_tools() -> Vec<Tool> {
         // Cursor movement
         Tool {
             name: "move_cursor".to_string(),
-            description: "Move cursor to index or filename".to_string(),
+            description: "Move cursor to index or filename. Provide either index or filename".to_string(),
             input_schema: json!({
                 "type": "object",
                 "properties": {
@@ -185,15 +185,16 @@ fn get_cursor_tools() -> Vec<Tool> {
                         "enum": ["left", "right"],
                         "description": "Which pane to move cursor in"
                     },
-                    "to": {
-                        "oneOf": [
-                            {"type": "integer", "description": "Zero-based index"},
-                            {"type": "string", "description": "Filename to move to"}
-                        ],
-                        "description": "Index or filename to move cursor to"
+                    "index": {
+                        "type": "integer",
+                        "description": "Zero-based index to move cursor to"
+                    },
+                    "filename": {
+                        "type": "string",
+                        "description": "Filename to move cursor to"
                     }
                 },
-                "required": ["pane", "to"]
+                "required": ["pane"]
             }),
         },
         Tool::no_params(
@@ -207,7 +208,7 @@ fn get_cursor_tools() -> Vec<Tool> {
 fn get_selection_tools() -> Vec<Tool> {
     vec![Tool {
         name: "select".to_string(),
-        description: "Select files in pane. count=0 clears, count='all' selects all from start".to_string(),
+        description: "Select files in pane. Use count for ranges, all for everything, count=0 to clear".to_string(),
         input_schema: json!({
             "type": "object",
             "properties": {
@@ -221,11 +222,12 @@ fn get_selection_tools() -> Vec<Tool> {
                     "description": "Zero-based start index"
                 },
                 "count": {
-                    "oneOf": [
-                        {"type": "integer", "description": "Number of items from start (0 = clear selection)"},
-                        {"type": "string", "enum": ["all"], "description": "Select all items from start"}
-                    ],
-                    "description": "Items to select from start. 0 = clear selection, 'all' = select all from start"
+                    "type": "integer",
+                    "description": "Number of items from start. 0 clears selection"
+                },
+                "all": {
+                    "type": "boolean",
+                    "description": "Select all files"
                 },
                 "mode": {
                     "type": "string",
@@ -233,7 +235,7 @@ fn get_selection_tools() -> Vec<Tool> {
                     "description": "Selection mode (default: replace)"
                 }
             },
-            "required": ["pane", "start", "count"]
+            "required": ["pane"]
         }),
     }]
 }
@@ -350,18 +352,45 @@ mod tests {
         let schema = &select_tool.input_schema;
         let props = schema.get("properties").unwrap();
 
-        // Check required properties exist
+        // Check properties exist
         assert!(props.get("pane").is_some());
         assert!(props.get("start").is_some());
         assert!(props.get("count").is_some());
+        assert!(props.get("all").is_some());
         assert!(props.get("mode").is_some());
 
-        // Check required fields
+        // count should be a plain integer, not oneOf
+        assert_eq!(props["count"]["type"], "integer");
+
+        // all should be boolean
+        assert_eq!(props["all"]["type"], "boolean");
+
+        // Only pane is required
         let required = schema.get("required").unwrap().as_array().unwrap();
-        assert_eq!(required.len(), 3);
+        assert_eq!(required.len(), 1);
         assert!(required.contains(&json!("pane")));
-        assert!(required.contains(&json!("start")));
-        assert!(required.contains(&json!("count")));
+    }
+
+    #[test]
+    fn test_move_cursor_tool_schema() {
+        let tools = get_cursor_tools();
+        let tool = tools.iter().find(|t| t.name == "move_cursor").unwrap();
+
+        let schema = &tool.input_schema;
+        let props = schema.get("properties").unwrap();
+
+        // Check properties exist with correct types
+        assert!(props.get("pane").is_some());
+        assert_eq!(props["index"]["type"], "integer");
+        assert_eq!(props["filename"]["type"], "string");
+
+        // Only pane is required (index/filename validated in executor)
+        let required = schema.get("required").unwrap().as_array().unwrap();
+        assert_eq!(required.len(), 1);
+        assert!(required.contains(&json!("pane")));
+
+        // Should NOT have a "to" property
+        assert!(props.get("to").is_none());
     }
 
     #[test]

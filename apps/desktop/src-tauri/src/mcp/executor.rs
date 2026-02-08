@@ -253,25 +253,39 @@ fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, name: &str, p
                 .get("pane")
                 .and_then(|v| v.as_str())
                 .ok_or_else(|| ToolError::invalid_params("Missing 'pane' parameter"))?;
-            let to = params
-                .get("to")
-                .ok_or_else(|| ToolError::invalid_params("Missing 'to' parameter"))?;
 
             if !["left", "right"].contains(&pane) {
                 return Err(ToolError::invalid_params("pane must be 'left' or 'right'"));
             }
 
-            // 'to' can be either an integer index or a string filename
-            // If it's a number, validate it's non-negative
-            if let Some(index) = to.as_i64() {
-                if index < 0 {
-                    return Err(ToolError::invalid_params("index must be >= 0"));
+            let index_param = params.get("index");
+            let filename_param = params.get("filename");
+
+            let to = match (index_param, filename_param) {
+                (Some(_), Some(_)) => {
+                    return Err(ToolError::invalid_params(
+                        "Provide either 'index' or 'filename', not both",
+                    ));
                 }
-            } else if to.as_str().is_none() {
-                return Err(ToolError::invalid_params(
-                    "'to' must be an index (number) or filename (string)",
-                ));
-            }
+                (None, None) => {
+                    return Err(ToolError::invalid_params("Provide either 'index' or 'filename'"));
+                }
+                (Some(idx), None) => {
+                    let index = idx
+                        .as_i64()
+                        .ok_or_else(|| ToolError::invalid_params("'index' must be an integer"))?;
+                    if index < 0 {
+                        return Err(ToolError::invalid_params("index must be >= 0"));
+                    }
+                    json!(index)
+                }
+                (None, Some(name)) => {
+                    let filename = name
+                        .as_str()
+                        .ok_or_else(|| ToolError::invalid_params("'filename' must be a string"))?;
+                    json!(filename)
+                }
+            };
 
             if let Some(store) = app.try_state::<PaneStateStore>() {
                 store.set_focused_pane(pane.to_string());
@@ -343,42 +357,46 @@ fn execute_select_command<R: Runtime>(app: &AppHandle<R>, params: &Value) -> Too
         .and_then(|v| v.as_str())
         .ok_or_else(|| ToolError::invalid_params("Missing 'pane' parameter"))?;
 
-    let start = params
-        .get("start")
-        .and_then(|v| v.as_i64())
-        .ok_or_else(|| ToolError::invalid_params("Missing 'start' parameter"))?;
-
-    // count can be a number or the string "all"
-    let count_value = params
-        .get("count")
-        .ok_or_else(|| ToolError::invalid_params("Missing 'count' parameter"))?;
-
     if !["left", "right"].contains(&pane) {
         return Err(ToolError::invalid_params("pane must be 'left' or 'right'"));
     }
-    if start < 0 {
-        return Err(ToolError::invalid_params("start must be >= 0"));
-    }
 
-    let count: Value = if let Some(n) = count_value.as_i64() {
-        if n < 0 {
-            return Err(ToolError::invalid_params("count must be >= 0"));
+    let all_param = params.get("all").and_then(|v| v.as_bool());
+    let count_param = params.get("count").and_then(|v| v.as_i64());
+
+    let (start, count): (i64, Value) = match (all_param, count_param) {
+        (Some(true), Some(_)) => {
+            return Err(ToolError::invalid_params("Provide either 'all' or 'count', not both"));
         }
-        json!(n)
-    } else if let Some(s) = count_value.as_str() {
-        if s == "all" {
-            json!("all")
-        } else {
-            return Err(ToolError::invalid_params("count must be a number or 'all'"));
+        (Some(true), None) => {
+            // Select all: start doesn't matter, frontend handles it
+            (0, json!("all"))
         }
-    } else {
-        return Err(ToolError::invalid_params("count must be a number or 'all'"));
+        (_, Some(n)) => {
+            if n < 0 {
+                return Err(ToolError::invalid_params("count must be >= 0"));
+            }
+            if n == 0 {
+                // Clear selection: start doesn't matter
+                (0, json!(0))
+            } else {
+                // Range select: start is required
+                let start = params
+                    .get("start")
+                    .and_then(|v| v.as_i64())
+                    .ok_or_else(|| ToolError::invalid_params("'start' is required when count > 0"))?;
+                if start < 0 {
+                    return Err(ToolError::invalid_params("start must be >= 0"));
+                }
+                (start, json!(n))
+            }
+        }
+        (_, None) => {
+            return Err(ToolError::invalid_params("Provide either 'all' or 'count'"));
+        }
     };
 
-    // mode defaults to "replace" if not provided
     let mode = params.get("mode").and_then(|v| v.as_str()).unwrap_or("replace");
-
-    // Validate mode
     if !["replace", "add", "subtract"].contains(&mode) {
         return Err(ToolError::invalid_params(
             "mode must be 'replace', 'add', or 'subtract'",
