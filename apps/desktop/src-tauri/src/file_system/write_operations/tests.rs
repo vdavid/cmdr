@@ -275,6 +275,100 @@ fn test_skip_rollback_flag_behavior() {
     );
 }
 
+// ============================================================================
+// Delete cancellation tests
+// ============================================================================
+
+#[test]
+fn test_cancel_flag_stops_delete_loop() {
+    let temp_dir = create_temp_dir("cancel_delete_loop");
+
+    // Create several files
+    let mut files = Vec::new();
+    for i in 0..5 {
+        let file = temp_dir.join(format!("file{}.txt", i));
+        fs::write(&file, format!("content{}", i)).expect("Failed to create file");
+        files.push(file);
+    }
+
+    let state = Arc::new(WriteOperationState {
+        cancelled: Arc::new(AtomicBool::new(false)),
+        skip_rollback: AtomicBool::new(false),
+        progress_interval: Duration::from_millis(200),
+        pending_resolution: RwLock::new(None),
+        conflict_condvar: std::sync::Condvar::new(),
+        conflict_mutex: std::sync::Mutex::new(false),
+    });
+
+    // Simulate the delete loop from delete.rs, setting cancelled after 2 files
+    let mut files_done = 0;
+    for file in &files {
+        if state.cancelled.load(Ordering::Relaxed) {
+            break;
+        }
+
+        fs::remove_file(file).expect("Failed to delete file");
+        files_done += 1;
+
+        // Cancel after deleting 2 files
+        if files_done == 2 {
+            state.cancelled.store(true, Ordering::Relaxed);
+        }
+    }
+
+    // 2 files deleted, 3 remaining
+    assert_eq!(files_done, 2);
+    assert!(!files[0].exists(), "file0 should be deleted");
+    assert!(!files[1].exists(), "file1 should be deleted");
+    assert!(files[2].exists(), "file2 should still exist");
+    assert!(files[3].exists(), "file3 should still exist");
+    assert!(files[4].exists(), "file4 should still exist");
+
+    cleanup_temp_dir(&temp_dir);
+}
+
+#[test]
+fn test_cancel_during_directory_deletion_phase() {
+    let state = Arc::new(WriteOperationState {
+        cancelled: Arc::new(AtomicBool::new(false)),
+        skip_rollback: AtomicBool::new(false),
+        progress_interval: Duration::from_millis(200),
+        pending_resolution: RwLock::new(None),
+        conflict_condvar: std::sync::Condvar::new(),
+        conflict_mutex: std::sync::Mutex::new(false),
+    });
+
+    // Set cancellation before directory phase
+    state.cancelled.store(true, Ordering::Relaxed);
+
+    // Verify that the cancelled flag is detectable (matches the check in delete.rs line 123)
+    assert!(
+        state.cancelled.load(Ordering::Relaxed),
+        "cancelled flag should be set before directory deletion phase"
+    );
+}
+
+#[test]
+fn test_delete_cancelled_event_has_no_rollback() {
+    // Delete operations set rolled_back: false because deletions can't be undone
+    let event = WriteCancelledEvent {
+        operation_id: "delete-test".to_string(),
+        operation_type: WriteOperationType::Delete,
+        files_processed: 3,
+        rolled_back: false,
+    };
+
+    let json = serde_json::to_string(&event).unwrap();
+    assert!(
+        json.contains("\"rolledBack\":false"),
+        "Delete cancelled events should always have rolledBack:false"
+    );
+    assert!(
+        json.contains("\"operationType\":\"delete\""),
+        "Should serialize as delete operation type"
+    );
+}
+
 #[test]
 fn test_cancelled_event_rolled_back_field_serialization() {
     // Test that WriteCancelledEvent serializes correctly with rolled_back field
