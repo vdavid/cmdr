@@ -63,7 +63,9 @@ Run the smallest set of checks possible for efficiency while maintaining confide
 
 - **Svelte/TypeScript**: Use LogTape via `getAppLogger('feature')` from `$lib/logger`. Levels: debug, info, warn, error.
   Dev mode shows info+, prod shows error+ only. Enable debug for a feature by adding to `debugCategories` in logger.ts.
-- **Rust**: Uses `env_logger` with `RUST_LOG` env var. Default: info. Example: `RUST_LOG=cmdr::network=debug pnpm dev`
+- **Rust**: Uses `env_logger` with `RUST_LOG` var. Default: info. Example: `RUST_LOG=cmdr_lib::network=debug pnpm dev`.
+  It's usually worth adding `,smb=warn,sspi=warn,info` too to suppress some excessive logging from smb, unless you're
+  debugging SMB issues.
 - When ran with `pnpm dev`, Cmdr hot reloads on file changes. Takes max 15s for back-end changes, max 3s on front-end.
 
 ## MCP
