@@ -59,32 +59,48 @@
                 void checkCredentialsForHost(host.name)
             }
         }
-        // Sync to MCP
+    })
+
+    // Re-sync MCP state when hosts or cursor change
+    $effect(() => {
+        // Touch reactive deps
+        void hosts.length
+        void cursorIndex
         void syncPaneStateToMcp()
     })
 
     /**
      * Sync network hosts to MCP for context tools.
-     * Represents hosts as "files" for simplicity.
+     * Encodes host details (IP, hostname, shares, status) into file entry names
+     * so MCP agents can see the same info as the UI.
      */
     async function syncPaneStateToMcp() {
         if (!paneId) return
 
         try {
-            // Represent hosts as file entries (simple approach)
-            const files: PaneFileEntry[] = hosts.map((host) => ({
-                name: host.name,
-                path: `network://${host.name}`,
-                isDirectory: true, // Hosts act like directories (contain shares)
-            }))
+            const files: PaneFileEntry[] = hosts.map((host) => {
+                const ip = getIpDisplay(host)
+                const hostname = getHostnameDisplay(host)
+                const shares = getSharesDisplay(host)
+                const status = getStatusDisplay(host)
+                return {
+                    name: `${host.name}  ip=${ip}  hostname=${hostname}  shares=${shares}  status="${status}"`,
+                    path: `smb://${host.ipAddress ?? host.name}`,
+                    isDirectory: true,
+                }
+            })
 
             const state: PaneState = {
-                path: 'network://',
+                path: 'smb://',
                 volumeId: 'network',
+                volumeName: 'Network',
                 files,
                 cursorIndex,
                 viewMode: 'full',
-                selectedIndices: [], // Network view doesn't support selection
+                selectedIndices: [],
+                totalFiles: hosts.length,
+                loadedStart: 0,
+                loadedEnd: hosts.length,
             }
 
             if (paneId === 'left') {
