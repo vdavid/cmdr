@@ -134,20 +134,18 @@ pub fn quick_look(_path: String) -> Result<(), String> {
 #[tauri::command]
 #[cfg(target_os = "macos")]
 pub fn get_info(path: String) -> Result<(), String> {
-    // Use AppleScript to open the Get Info window
-    // The path needs to be escaped for AppleScript
-    let escaped_path = path.replace("\\", "\\\\").replace("\"", "\\\"");
-    let script = format!(
-        r#"tell application "Finder"
+    // Pass the path as a positional argument via `on run argv` to avoid AppleScript injection.
+    let script = r#"on run argv
+        tell application "Finder"
             activate
-            open information window of (POSIX file "{}" as alias)
-        end tell"#,
-        escaped_path
-    );
+            open information window of (POSIX file (item 1 of argv) as alias)
+        end tell
+    end run"#;
 
     Command::new("osascript")
         .arg("-e")
-        .arg(&script)
+        .arg(script)
+        .arg(&path)
         .spawn()
         .map_err(|e| e.to_string())?;
     Ok(())
