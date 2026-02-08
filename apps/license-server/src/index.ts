@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { generateLicenseKey, generateShortCode, isValidShortCode, type LicenseType } from './license'
 import { sendLicenseEmail } from './email'
-import { verifyPaddleWebhookMulti } from './paddle'
+import { constantTimeEqual, verifyPaddleWebhookMulti } from './paddle'
 import {
     getSubscriptionStatus,
     getLicenseTypeFromPriceId,
@@ -349,7 +349,7 @@ app.post('/admin/generate', async (c) => {
     const validSecrets = [c.env.PADDLE_WEBHOOK_SECRET_LIVE, c.env.PADDLE_WEBHOOK_SECRET_SANDBOX].filter(
         (s): s is string => !!s,
     )
-    const isAuthorized = validSecrets.some((secret) => authHeader === `Bearer ${secret}`)
+    const isAuthorized = validSecrets.some((secret) => constantTimeEqual(authHeader ?? '', `Bearer ${secret}`))
     if (!isAuthorized) {
         return c.json({ error: 'Unauthorized' }, 401)
     }
