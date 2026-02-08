@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { generateLicenseKey, generateShortCode, isValidShortCode, type LicenseType } from './license'
+import { generateLicenseKey, generateShortCode, isValidShortCode, licenseTypes, type LicenseType } from './license'
 import { sendLicenseEmail } from './email'
 import { constantTimeEqual, verifyPaddleWebhookMulti } from './paddle'
 import {
@@ -50,6 +50,18 @@ interface PaddleWebhookPayload {
     }
 }
 
+const maxOrganizationNameLength = 500
+const maxTransactionIdLength = 200
+
+function isValidEmail(email: string): boolean {
+    const atIndex = email.indexOf('@')
+    return atIndex > 0 && email.indexOf('.', atIndex) > atIndex + 1
+}
+
+function isValidLicenseType(type: string): type is LicenseType {
+    return (licenseTypes as readonly string[]).includes(type)
+}
+
 const app = new Hono<{ Bindings: Bindings }>()
 
 // Health check
@@ -67,8 +79,8 @@ interface StoredLicense {
 app.post('/activate', async (c) => {
     const { code } = await c.req.json<{ code?: string }>()
 
-    if (!code) {
-        return c.json({ error: 'Missing license code' }, 400)
+    if (!code || typeof code !== 'string' || code.length > 50) {
+        return c.json({ error: 'Missing or invalid license code' }, 400)
     }
 
     const normalizedCode = code.trim().toUpperCase()
@@ -94,7 +106,11 @@ app.post('/activate', async (c) => {
 app.post('/validate', async (c) => {
     const { transactionId } = await c.req.json<{ transactionId?: string }>()
 
-    if (!transactionId) {
+    if (!transactionId || typeof transactionId !== 'string') {
+        return c.json(invalidResponse())
+    }
+
+    if (transactionId.length > maxTransactionIdLength) {
         return c.json(invalidResponse())
     }
 
@@ -267,6 +283,11 @@ async function processCompletedTransaction(payload: PaddleWebhookPayload, env: B
     })
 }
 
+/** Truncate organization name to max allowed length */
+function truncateOrgName(name: string | undefined): string | undefined {
+    return typeof name === 'string' ? name.slice(0, maxOrganizationNameLength) : undefined
+}
+
 /** Extract purchase data from webhook payload (customer fetched separately via API) */
 function extractPurchaseData(payload: PaddleWebhookPayload): {
     customerId: string
@@ -285,7 +306,7 @@ function extractPurchaseData(payload: PaddleWebhookPayload): {
         transactionId,
         priceId: payload.data?.items?.[0]?.price?.id,
         quantity: payload.data?.items?.[0]?.quantity ?? 1,
-        organizationName: payload.data?.custom_data?.organizationName,
+        organizationName: truncateOrgName(payload.data?.custom_data?.organizationName),
     }
 }
 
@@ -362,7 +383,23 @@ app.post('/admin/generate', async (c) => {
         email,
         type = 'commercial_subscription',
         organizationName,
-    } = await c.req.json<{ email: string; type?: LicenseType; organizationName?: string }>()
+    } = await c.req.json<{ email: string; type?: string; organizationName?: string }>()
+
+    if (!email || typeof email !== 'string' || !isValidEmail(email)) {
+        return c.json({ error: 'Invalid email format' }, 400)
+    }
+    if (!isValidLicenseType(type)) {
+        return c.json({ error: `Invalid license type. Must be one of: ${licenseTypes.join(', ')}` }, 400)
+    }
+    if (
+        organizationName !== undefined &&
+        (typeof organizationName !== 'string' || organizationName.length > maxOrganizationNameLength)
+    ) {
+        return c.json(
+            { error: `Organization name must be a string of at most ${String(maxOrganizationNameLength)} characters` },
+            400,
+        )
+    }
 
     const licenseData = {
         email,

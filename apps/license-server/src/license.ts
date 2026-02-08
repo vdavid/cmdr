@@ -1,6 +1,7 @@
 import * as ed from '@noble/ed25519'
 
-export type LicenseType = 'supporter' | 'commercial_subscription' | 'commercial_perpetual'
+export const licenseTypes = ['supporter', 'commercial_subscription', 'commercial_perpetual'] as const
+export type LicenseType = (typeof licenseTypes)[number]
 
 export interface LicenseData {
     email: string
