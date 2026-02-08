@@ -128,6 +128,17 @@
         }
     }
 
+    /** Move cursor to a specific index (used by MCP move_cursor tool). */
+    export function setCursorIndex(index: number) {
+        cursorIndex = Math.max(0, Math.min(index, hosts.length - 1))
+        scrollToIndex(cursorIndex)
+    }
+
+    /** Find a host by name, returns its index or -1. */
+    export function findItemIndex(name: string): number {
+        return hosts.findIndex((h) => h.name.toLowerCase() === name.toLowerCase())
+    }
+
     // Handle keyboard navigation
     export function handleKeyDown(e: KeyboardEvent): boolean {
         if (hosts.length === 0) return false

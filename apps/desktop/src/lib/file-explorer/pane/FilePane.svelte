@@ -177,6 +177,10 @@
 
     /** Also scrolls to make the cursor visible and syncs state to MCP. */
     export async function setCursorIndex(index: number): Promise<void> {
+        if (isNetworkView) {
+            networkMountViewRef?.setCursorIndex(index)
+            return
+        }
         cursorIndex = index
         void fetchEntryUnderCursor()
         // Scroll to make cursor visible
@@ -190,6 +194,15 @@
 
     export function getCursorIndex(): number {
         return cursorIndex
+    }
+
+    /** Find an item by name in network views. Returns index or -1. */
+    export function findNetworkItemIndex(name: string): number {
+        return networkMountViewRef?.findItemIndex(name) ?? -1
+    }
+
+    export function isInNetworkView(): boolean {
+        return isNetworkView
     }
 
     export function getSelectedIndices(): number[] {

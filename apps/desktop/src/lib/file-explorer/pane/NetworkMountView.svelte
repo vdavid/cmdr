@@ -135,6 +135,23 @@
         }
     }
 
+    /** Move cursor to a specific index (used by MCP move_cursor tool). */
+    export function setCursorIndex(index: number) {
+        if (currentNetworkHost) {
+            shareBrowserRef?.setCursorIndex(index)
+        } else {
+            networkBrowserRef?.setCursorIndex(index)
+        }
+    }
+
+    /** Find an item by name, returns its index or -1. */
+    export function findItemIndex(name: string): number {
+        if (currentNetworkHost) {
+            return shareBrowserRef?.findItemIndex(name) ?? -1
+        }
+        return networkBrowserRef?.findItemIndex(name) ?? -1
+    }
+
     export function setNetworkHost(host: NetworkHost | null) {
         currentNetworkHost = host
         mountError = null
@@ -161,6 +178,7 @@
     <ShareBrowser
         bind:this={shareBrowserRef}
         host={currentNetworkHost}
+        {paneId}
         {isFocused}
         onShareSelect={handleShareSelect}
         onBack={handleNetworkBack}

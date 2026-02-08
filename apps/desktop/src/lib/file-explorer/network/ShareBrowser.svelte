@@ -21,6 +21,7 @@
     import { getNetworkTimeoutMs, getShareCacheTtlMs } from '$lib/settings/network-settings'
     import NetworkLoginForm from './NetworkLoginForm.svelte'
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
+    import { updateLeftPaneState, updateRightPaneState, type PaneState, type PaneFileEntry } from '$lib/tauri-commands'
 
     /** Row height for share list (matches Full list) */
     const SHARE_ROW_HEIGHT = 20
@@ -28,6 +29,8 @@
     interface Props {
         /** The host we're browsing */
         host: NetworkHost
+        /** Which pane this browser lives in (for MCP state sync) */
+        paneId?: 'left' | 'right'
         /** Whether this pane is focused */
         isFocused?: boolean
         /** Callback when user selects a share, includes credentials if auth was used */
@@ -36,7 +39,7 @@
         onBack?: () => void
     }
 
-    const { host, isFocused = false, onShareSelect, onBack }: Props = $props()
+    const { host, paneId, isFocused = false, onShareSelect, onBack }: Props = $props()
 
     // Local state
     let shares = $state<ShareInfo[]>([])
@@ -66,6 +69,48 @@
     onMount(async () => {
         await loadShares()
     })
+
+    // Sync share list to MCP when shares or cursor change
+    $effect(() => {
+        void sortedShares.length
+        void cursorIndex
+        void loading
+        void syncPaneStateToMcp()
+    })
+
+    /** Sync share list to MCP so agents see the same data as the UI. */
+    async function syncPaneStateToMcp() {
+        if (!paneId) return
+
+        try {
+            const files: PaneFileEntry[] = sortedShares.map((share) => ({
+                name: share.comment ? `${share.name}  comment="${share.comment}"` : share.name,
+                path: `smb://${host.ipAddress ?? host.name}/${share.name}`,
+                isDirectory: true,
+            }))
+
+            const state: PaneState = {
+                path: `smb://${host.ipAddress ?? host.name}/`,
+                volumeId: 'network',
+                volumeName: `Network > ${host.name}`,
+                files,
+                cursorIndex,
+                viewMode: 'full',
+                selectedIndices: [],
+                totalFiles: sortedShares.length,
+                loadedStart: 0,
+                loadedEnd: sortedShares.length,
+            }
+
+            if (paneId === 'left') {
+                await updateLeftPaneState(state)
+            } else {
+                await updateRightPaneState(state)
+            }
+        } catch {
+            // Silently ignore sync errors
+        }
+    }
 
     async function loadShares() {
         loading = true
@@ -215,6 +260,17 @@
     function handleCancel() {
         showLoginForm = false
         onBack?.()
+    }
+
+    /** Move cursor to a specific index (used by MCP move_cursor tool). */
+    export function setCursorIndex(index: number) {
+        cursorIndex = Math.max(0, Math.min(index, sortedShares.length - 1))
+        scrollToIndex(cursorIndex)
+    }
+
+    /** Find a share by name, returns its index or -1. */
+    export function findItemIndex(name: string): number {
+        return sortedShares.findIndex((s) => s.name.toLowerCase() === name.toLowerCase())
     }
 
     function handleShareClick(index: number) {
