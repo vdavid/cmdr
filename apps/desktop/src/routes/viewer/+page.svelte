@@ -846,26 +846,13 @@
     }
 
     mark {
-        background: #fff3a8;
-        color: #000;
+        background: var(--color-highlight);
         border-radius: 2px;
         padding: 0 1px;
     }
 
     mark.active {
-        background: #ff9632;
-        color: #fff;
-    }
-
-    @media (prefers-color-scheme: dark) {
-        mark {
-            background: #665d20;
-            color: #fff;
-        }
-        mark.active {
-            background: #cc6600;
-            color: #fff;
-        }
+        background: var(--color-highlight-active);
     }
 
     .status-bar {

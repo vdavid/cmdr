@@ -53,6 +53,7 @@
 
     /* === Search Highlight === */
     --color-highlight: rgba(255, 213, 0, 0.4);
+    --color-highlight-active: rgba(255, 150, 50, 0.6);
 
     /* === Size tier colors (20% offset toward target color) === */
     --color-size-kb: color-mix(in srgb, var(--color-text-secondary) 70%, #f0c000);
@@ -116,6 +117,7 @@
 
         /* === Search Highlight === */
         --color-highlight: rgba(255, 213, 0, 0.35);
+        --color-highlight-active: rgba(255, 130, 0, 0.6);
     }
 }
 
