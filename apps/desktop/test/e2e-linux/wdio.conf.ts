@@ -129,8 +129,12 @@ export const config: Options.Testrunner & { capabilities: Capabilities.Testrunne
     // Take screenshots on failure
     afterTest: async function (_test: unknown, _context: unknown, result: { passed: boolean }) {
         if (!result.passed) {
+            const testResultsDir = path.join(__dirname, '../../test-results')
+            if (!fs.existsSync(testResultsDir)) {
+                fs.mkdirSync(testResultsDir, { recursive: true })
+            }
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-            await browser.saveScreenshot(`./test-results/failure-${timestamp}.png`)
+            await browser.saveScreenshot(path.join(testResultsDir, `failure-${timestamp}.png`))
         }
     },
 }
