@@ -105,6 +105,7 @@
     aria-modal="true"
     aria-labelledby={titleId}
     aria-describedby={ariaDescribedby}
+    data-dialog-id={dialogId}
     tabindex="-1"
     onkeydown={handleOverlayKeydown}
 >

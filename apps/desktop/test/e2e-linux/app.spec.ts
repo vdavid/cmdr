@@ -8,10 +8,16 @@
  * Note: On Linux, some features use stubs (volumes, network) so tests
  * are adapted to work with the stubbed implementations.
  *
+ * WebKitGTK WebDriver quirks addressed in these tests:
+ * - Native WebDriver clicks fail on non-form elements — use jsClick()
+ * - browser.keys(' ') doesn't deliver Space — use pressSpaceKey()
+ *
  * Usage:
  *   pnpm test:e2e:linux        # Run via Docker (recommended)
  *   pnpm test:e2e:linux:native # Run natively on Linux
  */
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
 
 /**
  * Helper to get file entry name text. Works with both Full and Brief view modes.
@@ -34,16 +40,72 @@ async function getEntryName(entry: WebdriverIO.Element): Promise<string> {
 
 /**
  * Helper to ensure app is ready and panes have focus initialized.
+ * Clicks on a file entry (not the container pane) because WebKitGTK's
+ * WebDriver rejects clicks on non-interactive container elements.
  */
 async function ensureAppReadyWithFocus(): Promise<void> {
+    // Wait for file entries to be visible (confirms app is fully loaded)
     const fileEntry = await browser.$('.file-entry')
-    await fileEntry.waitForExist({ timeout: 10000 })
+    await fileEntry.waitForDisplayed({ timeout: 10000 })
 
-    // Click on left pane to ensure it has focus
-    const leftPane = await browser.$('.file-pane')
-    await leftPane.click()
+    // Wait for the HTML loading screen to be gone
+    const loadingScreen = await browser.$('#loading-screen')
+    if (await loadingScreen.isExisting()) {
+        await browser.waitUntil(
+            async () => !(await loadingScreen.isDisplayed()),
+            { timeout: 5000, timeoutMsg: 'Loading screen did not disappear' },
+        )
+    }
+
+    // Dismiss any overlays (AI notification, etc.) via JS click to bypass
+    // WebKitGTK's strict clickability checks
+    await browser.execute(() => {
+        const dismissBtn = document.querySelector('.ai-notification .ai-button.secondary') as HTMLElement | null
+        dismissBtn?.click()
+    })
+    await browser.pause(300)
+
+    // Click on a file entry in the left pane to ensure focus, then
+    // focus the explorer container so keyboard events reach the handler.
+    await browser.execute(() => {
+        const entry = document.querySelector('.file-pane .file-entry') as HTMLElement | null
+        entry?.click()
+        const explorer = document.querySelector('.dual-pane-explorer') as HTMLElement | null
+        explorer?.focus()
+    })
     await browser.pause(300)
 }
+
+/**
+ * Clicks an element via JavaScript, bypassing WebKitGTK WebDriver's strict
+ * clickability checks that reject clicks on non-form elements.
+ */
+async function jsClick(element: WebdriverIO.Element): Promise<void> {
+    await browser.execute((el: HTMLElement) => el.click(), element as unknown as HTMLElement)
+}
+
+/**
+ * Sends a Space key event via the W3C Actions API.
+ * browser.keys(' ') doesn't deliver Space in WebKitGTK WebDriver due to how
+ * it handles the CharKey vs VirtualKey code paths for the space character.
+ * The explicit key down/up via the Actions API works around this.
+ * See: https://github.com/webdriverio/webdriverio/issues/10996
+ * See: https://github.com/SeleniumHQ/selenium/issues/4334
+ */
+async function pressSpaceKey(): Promise<void> {
+    await browser.action('key').down(' ').pause(50).up(' ').perform()
+    await browser.releaseActions()
+    await browser.pause(300)
+}
+
+// ─── Selectors ───────────────────────────────────────────────────────────────
+
+// ModalDialog renders as .modal-overlay[data-dialog-id] > .modal-dialog,
+// with no dialog-specific CSS class. Use data-dialog-id to target each dialog.
+const MKDIR_DIALOG = '[data-dialog-id="mkdir-confirmation"]'
+const COPY_DIALOG = '[data-dialog-id="copy-confirmation"]'
+
+// ─── Tests ──────────────────────────────────────────────────────────────────
 
 describe('Basic rendering', () => {
     it('launches and shows the main window', async () => {
@@ -175,9 +237,9 @@ describe('Keyboard navigation', () => {
         let cursorClass = await cursorEntry.getAttribute('class')
         expect(cursorClass).not.toContain('is-selected')
 
-        // Press Space to select
-        await browser.keys('Space')
-        await browser.pause(300)
+        // Press Space to select — uses W3C Actions API with explicit key down/up
+        // because browser.keys(' ') doesn't deliver Space in WebKitGTK WebDriver
+        await pressSpaceKey()
 
         // Verify now selected - re-query the cursor entry
         cursorEntry = (await browser.$('.file-entry.is-under-cursor')) as unknown as WebdriverIO.Element
@@ -185,8 +247,7 @@ describe('Keyboard navigation', () => {
         expect(cursorClass).toContain('is-selected')
 
         // Press Space again to deselect
-        await browser.keys('Space')
-        await browser.pause(300)
+        await pressSpaceKey()
 
         // Verify now deselected
         cursorEntry = (await browser.$('.file-entry.is-under-cursor')) as unknown as WebdriverIO.Element
@@ -199,18 +260,20 @@ describe('Mouse interactions', () => {
     it('moves cursor when clicking a file entry', async () => {
         await ensureAppReadyWithFocus()
 
-        const entries = [...(await browser.$$('.file-entry'))]
+        // Scope to left pane only ($$('.file-entry') returns entries from both panes)
+        const panes = [...(await browser.$$('.file-pane'))]
+        const entries = [...(await panes[0].$$('.file-entry'))]
         if (entries.length < 2) {
             // Skip if not enough entries
             return
         }
 
-        // Click on second entry
-        await entries[1].click()
+        // Click on second entry via JS (WebKitGTK rejects native clicks on non-form elements)
+        await jsClick(entries[1])
         await browser.pause(300)
 
         // Re-query and verify cursor moved to clicked entry
-        const updatedEntries = await browser.$$('.file-entry')
+        const updatedEntries = [...(await panes[0].$$('.file-entry'))]
         const entryClass = await updatedEntries[1].getAttribute('class')
         expect(entryClass).toContain('is-under-cursor')
     })
@@ -218,24 +281,26 @@ describe('Mouse interactions', () => {
     it('switches pane focus when clicking other pane', async () => {
         await ensureAppReadyWithFocus()
 
-        let panes = await browser.$$('.file-pane')
+        let panes = [...(await browser.$$('.file-pane'))]
         expect(panes.length).toBe(2)
 
-        // Click on right pane
-        await panes[1].click()
+        // Click on a file entry in the right pane to transfer focus
+        const rightPaneEntry = (await panes[1].$('.file-entry')) as unknown as WebdriverIO.Element
+        await jsClick(rightPaneEntry)
         await browser.pause(300)
 
         // Re-query and verify right pane is focused
-        panes = await browser.$$('.file-pane')
+        panes = [...(await browser.$$('.file-pane'))]
         const rightPaneClass = await panes[1].getAttribute('class')
         expect(rightPaneClass).toContain('is-focused')
 
-        // Click on left pane
-        await panes[0].click()
+        // Click on a file entry in the left pane to transfer focus back
+        const leftPaneEntry = (await panes[0].$('.file-entry')) as unknown as WebdriverIO.Element
+        await jsClick(leftPaneEntry)
         await browser.pause(300)
 
         // Re-query and verify left pane is focused
-        panes = await browser.$$('.file-pane')
+        panes = [...(await browser.$$('.file-pane'))]
         const leftPaneClass = await panes[0].getAttribute('class')
         expect(leftPaneClass).toContain('is-focused')
     })
@@ -250,20 +315,16 @@ describe('Navigation', () => {
         const initialPath = await pathElement.getText()
 
         // Find a directory entry (has .size-dir class which shows "<dir>")
-        const dirEntry = await browser.$('.file-entry:has(.size-dir)')
+        const dirEntry = (await browser.$('.file-pane.is-focused .file-entry:has(.size-dir)')) as unknown as WebdriverIO.Element
 
-        let hasNavigableEntry = false
-
-        if (await dirEntry.isExisting()) {
-            await dirEntry.click()
-            hasNavigableEntry = true
-        }
-
-        if (!hasNavigableEntry) {
+        if (!(await dirEntry.isExisting())) {
             // No directories to navigate into, skip test
             console.log('Skipping navigation test: no directories found')
             return
         }
+
+        await jsClick(dirEntry)
+        await browser.pause(300)
 
         // Press Enter to navigate
         await browser.keys('Enter')
@@ -279,7 +340,7 @@ describe('Navigation', () => {
         await ensureAppReadyWithFocus()
 
         // First, navigate into a directory so we can go back
-        const dirEntry = await browser.$('.file-entry:has(.size-dir)')
+        const dirEntry = (await browser.$('.file-pane.is-focused .file-entry:has(.size-dir)')) as unknown as WebdriverIO.Element
 
         if (!(await dirEntry.isExisting())) {
             // No directories, skip test
@@ -288,7 +349,8 @@ describe('Navigation', () => {
         }
 
         // Navigate into a directory first
-        await dirEntry.click()
+        await jsClick(dirEntry)
+        await browser.pause(300)
         await browser.keys('Enter')
         await browser.pause(1000)
 
@@ -314,30 +376,26 @@ describe('New folder dialog', () => {
         // Press F7 to open new folder dialog
         await browser.keys('F7')
 
-        // Wait for modal overlay to appear
-        const modalOverlay = await browser.$('.modal-overlay')
-        await modalOverlay.waitForExist({ timeout: 5000 })
-
         // Verify new folder dialog appears
-        const dialog = await browser.$('.new-folder-dialog')
+        const dialog = await browser.$(MKDIR_DIALOG)
         await dialog.waitForExist({ timeout: 5000 })
 
         // Verify title says "New folder"
-        const title = await browser.$('.new-folder-dialog h2')
+        const title = await browser.$(`${MKDIR_DIALOG} h2`)
         expect(await title.getText()).toBe('New folder')
 
         // Verify subtitle contains "Create folder in"
-        const subtitle = await browser.$('.new-folder-dialog .subtitle')
+        const subtitle = await browser.$(`${MKDIR_DIALOG} .subtitle`)
         const subtitleText = await subtitle.getText()
         expect(subtitleText).toContain('Create folder in')
 
         // Verify dialog has a name input
-        const nameInput = await browser.$('.new-folder-dialog .name-input')
+        const nameInput = await browser.$(`${MKDIR_DIALOG} .name-input`)
         expect(await nameInput.isExisting()).toBe(true)
 
         // Verify OK and Cancel buttons exist
-        const okButton = await browser.$('.new-folder-dialog button.primary')
-        const cancelButton = await browser.$('.new-folder-dialog button.secondary')
+        const okButton = await browser.$(`${MKDIR_DIALOG} button.primary`)
+        const cancelButton = await browser.$(`${MKDIR_DIALOG} button.secondary`)
         expect(await okButton.isExisting()).toBe(true)
         expect(await cancelButton.isExisting()).toBe(true)
         expect(await okButton.getText()).toBe('OK')
@@ -347,6 +405,7 @@ describe('New folder dialog', () => {
         await browser.keys('Escape')
 
         // Wait for dialog to close
+        const modalOverlay = await browser.$('.modal-overlay')
         await modalOverlay.waitForExist({ timeout: 3000, reverse: true })
     })
 
@@ -357,22 +416,22 @@ describe('New folder dialog', () => {
         await browser.keys('F7')
 
         // Wait for dialog to appear
-        const dialog = await browser.$('.new-folder-dialog')
+        const dialog = await browser.$(MKDIR_DIALOG)
         await dialog.waitForExist({ timeout: 5000 })
 
         // Type a unique folder name
         const folderName = `test-folder-${Date.now()}`
-        const nameInput = await browser.$('.new-folder-dialog .name-input')
+        const nameInput = await browser.$(`${MKDIR_DIALOG} .name-input`)
         await nameInput.waitForExist({ timeout: 3000 })
         await nameInput.setValue(folderName)
         await browser.pause(200)
 
         // Verify OK button is enabled
-        const okButton = await browser.$('.new-folder-dialog button.primary')
+        const okButton = (await browser.$(`${MKDIR_DIALOG} button.primary`)) as unknown as WebdriverIO.Element
         expect(await okButton.isEnabled()).toBe(true)
 
         // Click OK to create the folder
-        await okButton.click()
+        await jsClick(okButton)
 
         // Wait for dialog to close (confirms create_directory succeeded)
         const modalOverlay = await browser.$('.modal-overlay')
@@ -395,23 +454,21 @@ describe('Copy dialog', () => {
 
         // Press F5 to open copy dialog
         await browser.keys('F5')
-        await browser.pause(500)
 
-        // Verify copy dialog appears
+        // Wait for copy dialog to appear
         const modalOverlay = await browser.$('.modal-overlay')
-        expect(await modalOverlay.isExisting()).toBe(true)
+        await modalOverlay.waitForExist({ timeout: 5000 })
 
-        const copyDialog = await browser.$('.copy-dialog')
-        expect(await copyDialog.isExisting()).toBe(true)
+        const copyDialog = await browser.$(COPY_DIALOG)
+        await copyDialog.waitForExist({ timeout: 5000 })
 
         // Verify dialog has path input
-        const pathInput = await browser.$('.copy-dialog .path-input')
+        const pathInput = await browser.$(`${COPY_DIALOG} .path-input`)
         expect(await pathInput.isExisting()).toBe(true)
 
-        // Verify dialog has Copy and Cancel buttons (using class selectors)
-        // Copy button has class "primary", Cancel button has class "secondary"
-        const copyButton = await browser.$('.copy-dialog button.primary')
-        const cancelButton = await browser.$('.copy-dialog button.secondary')
+        // Verify dialog has Copy and Cancel buttons
+        const copyButton = await browser.$(`${COPY_DIALOG} button.primary`)
+        const cancelButton = await browser.$(`${COPY_DIALOG} button.secondary`)
         expect(await copyButton.isExisting()).toBe(true)
         expect(await cancelButton.isExisting()).toBe(true)
 
