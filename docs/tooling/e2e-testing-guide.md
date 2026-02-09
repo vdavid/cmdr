@@ -84,15 +84,15 @@ pnpm test:e2e:linux:native
 
 ## Test files
 
-| File                                  | Description                                    |
-|---------------------------------------|------------------------------------------------|
-| `test/e2e-smoke/smoke.test.ts`        | Playwright tests for basic UI (browser-based)  |
-| `test/e2e-linux/app.spec.ts`          | WebDriverIO tests for Tauri app (Linux)        |
-| `test/e2e-linux/wdio.conf.ts`         | WebDriverIO configuration                      |
-| `test/e2e-linux/docker/Dockerfile`    | Docker image for Linux E2E tests               |
-| `test/e2e-linux/docker/entrypoint.sh` | Xvfb/dbus setup for headless GUI               |
-| `scripts/e2e-linux.sh`                | Main script for Docker-based E2E tests         |
-| `playwright.config.ts`                | Playwright configuration                       |
+| File                                  | Description                                         |
+|---------------------------------------|-----------------------------------------------------|
+| `test/e2e-smoke/smoke.test.ts`        | Playwright tests for basic UI (browser-based)       |
+| `test/e2e-linux/app.spec.ts`          | WebDriverIO tests for Tauri app (Linux)             |
+| `test/e2e-linux/wdio.conf.ts`         | WebDriverIO configuration                           |
+| `test/e2e-linux/docker/Dockerfile`    | Docker image for Linux E2E tests                    |
+| `test/e2e-linux/docker/entrypoint.sh` | Xvfb/dbus setup for headless GUI                    |
+| `scripts/e2e-linux.sh`                | Main script for Docker-based E2E tests (+ VNC mode) |
+| `playwright.config.ts`                | Playwright configuration                            |
 
 ## Writing tests
 
@@ -152,6 +152,31 @@ Inside the container, you can:
 - Run the app manually: `$TAURI_BINARY`
 - Check the display: `echo $DISPLAY`
 - Inspect the environment
+
+### VNC mode (visual debugging with hot reload)
+
+VNC mode runs `pnpm dev` inside the Docker container with a VNC server, so you can see and
+interact with the Cmdr GUI in a browser while editing code on macOS:
+
+Honestly, it's a bit weird, the VM feels better, but this is a small change so good to have this as a quick backup.
+
+```bash
+cd apps/desktop
+pnpm test:e2e:linux:vnc
+```
+
+Once it starts, open the URL printed in the terminal (http://localhost:6090/vnc.html?autoconnect=true).
+You can also connect with a native VNC client (macOS Screen Sharing) at `vnc://localhost:5990`.
+
+How it works:
+- The container runs Xvfb + x11vnc + noVNC, forwarding the virtual display to your browser
+- `pnpm dev` starts Vite + Tauri inside the container
+- Source code is mounted from your host, so `.svelte`/`.ts` edits trigger Vite HMR (~1–3s reload)
+- Rust changes require restarting (`Ctrl+C` + re-run)
+- Terminal streams all Rust/Vite logs
+
+This is useful for debugging issues specific to the Linux/WebKitGTK environment, like keyboard
+events or GTK focus behavior that differ from macOS.
 
 ### Build caching
 

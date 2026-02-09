@@ -8,6 +8,7 @@
 #   ./scripts/e2e-linux.sh           # Run tests
 #   ./scripts/e2e-linux.sh --build   # Force rebuild Docker image
 #   ./scripts/e2e-linux.sh --shell   # Start interactive shell in container
+#   ./scripts/e2e-linux.sh --vnc     # Interactive VNC mode with hot reload
 #   ./scripts/e2e-linux.sh --clean   # Clean Linux build cache
 
 set -e
@@ -46,6 +47,7 @@ log_error() {
 # Parse arguments
 FORCE_BUILD=false
 INTERACTIVE=false
+VNC_MODE=false
 CLEAN=false
 
 for arg in "$@"; do
@@ -56,6 +58,9 @@ for arg in "$@"; do
         --shell)
             INTERACTIVE=true
             ;;
+        --vnc)
+            VNC_MODE=true
+            ;;
         --clean)
             CLEAN=true
             ;;
@@ -65,6 +70,7 @@ for arg in "$@"; do
             echo "Options:"
             echo "  --build    Force rebuild of Docker image"
             echo "  --shell    Start interactive shell in container"
+            echo "  --vnc      Interactive VNC mode with hot reload (pnpm dev)"
             echo "  --clean    Clean Linux build cache (forces rebuild)"
             echo "  --help     Show this help message"
             exit 0
@@ -93,6 +99,65 @@ fi
 if $FORCE_BUILD || ! docker image inspect "$IMAGE_NAME" &> /dev/null; then
     log_info "Building Docker image: $IMAGE_NAME"
     docker build -t "$IMAGE_NAME" -f "$DESKTOP_DIR/test/e2e-linux/docker/Dockerfile" "$DESKTOP_DIR/test/e2e-linux/docker"
+fi
+
+# VNC mode: runs pnpm dev inside Docker with VNC for interactive debugging.
+# Does NOT require a pre-built binary — uses Vite + Tauri hot reload instead.
+if $VNC_MODE; then
+    log_info "Starting VNC mode with hot reload..."
+
+    # Temporarily clear .cargo/config.toml if present (local path patches don't exist in Docker)
+    CARGO_CONFIG="$DESKTOP_DIR/src-tauri/.cargo/config.toml"
+    CARGO_CONFIG_BAK=""
+    if [ -f "$CARGO_CONFIG" ]; then
+        CARGO_CONFIG_BAK="${CARGO_CONFIG}.docker-bak"
+        cp "$CARGO_CONFIG" "$CARGO_CONFIG_BAK"
+        > "$CARGO_CONFIG"
+        trap 'mv "${CARGO_CONFIG_BAK}" "${CARGO_CONFIG}" 2>/dev/null || true' EXIT
+    fi
+
+    docker run -it --rm \
+        -v "$REPO_ROOT:/app" \
+        -v "$CARGO_VOLUME:/root/.cargo" \
+        -v "$TARGET_VOLUME:/target" \
+        -v "$ROOT_NODE_MODULES_VOLUME:/app/node_modules" \
+        -v "$DESKTOP_NODE_MODULES_VOLUME:/app/apps/desktop/node_modules" \
+        -w /app \
+        -p 5990:5990 \
+        -p 6090:6090 \
+        -e VNC=1 \
+        -e CARGO_TARGET_DIR=/target \
+        -e TAURI_DEV_HOST=0.0.0.0 \
+        -e RUST_LOG=smb=warn,sspi=warn,info \
+        "$IMAGE_NAME" \
+        bash -c '
+            set -e
+
+            # Install dev packages needed for Tauri build
+            apt-get update > /dev/null && apt-get install -y \
+                libwebkit2gtk-4.1-dev \
+                libayatana-appindicator3-dev \
+                librsvg2-dev \
+                libacl1-dev \
+                patchelf \
+                > /dev/null
+
+            # Install dependencies if needed (node_modules is a Docker volume)
+            if [ ! -f "/app/node_modules/.linux-installed" ]; then
+                echo "Installing Linux node_modules..."
+                pnpm install --frozen-lockfile
+                touch /app/node_modules/.linux-installed
+            fi
+
+            echo "Starting Cmdr in dev mode (Vite HMR + Tauri)..."
+            echo "Frontend edits on macOS will hot reload in ~1-3s."
+            echo "Rust edits require Ctrl+C and re-run."
+            echo ""
+            pnpm dev
+        '
+
+    log_info "VNC session ended."
+    exit 0
 fi
 
 # Check if a Linux binary exists in the Docker volume

@@ -25,6 +25,7 @@
         "test:e2e:linux:native": "wdio run test/e2e-linux/wdio.conf.ts",
         "test:e2e:linux:build": "docker build -t cmdr-e2e -f test/e2e-linux/docker/Dockerfile test/e2e-linux/docker",
         "test:e2e:linux:shell": "./scripts/e2e-linux.sh --shell",
+        "test:e2e:linux:vnc": "./scripts/e2e-linux.sh --vnc",
         "knip": "knip",
         "check:type-drift": "tsx scripts/check-type-drift.ts"
     },

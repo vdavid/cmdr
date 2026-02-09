@@ -39,8 +39,21 @@ if ! kill -0 $XVFB_PID 2>/dev/null; then
 fi
 echo "Xvfb is running (PID: $XVFB_PID)"
 
-# Change to the app directory if we're mounted
-if [ -d "/app/apps/desktop" ]; then
+# Start VNC server if requested (for interactive debugging with --vnc mode)
+if [ "${VNC:-}" = "1" ]; then
+    echo "Starting VNC server..."
+    x11vnc -display :99 -forever -nopw -shared -rfbport 5990 -q &
+    /usr/share/novnc/utils/novnc_proxy --vnc localhost:5990 --listen 6090 &>/dev/null &
+    echo ""
+    echo "╔═══════════════════════════════════════════════════════════════════╗"
+    echo "║  Open in browser: http://localhost:6090/vnc.html?autoconnect=true  ║"
+    echo "║  Native VNC:      vnc://localhost:5990 (no password)               ║"
+    echo "╚═══════════════════════════════════════════════════════════════════╝"
+    echo ""
+fi
+
+# Change to the app directory if we're mounted (skip in VNC mode — it runs from repo root)
+if [ -d "/app/apps/desktop" ] && [ "${VNC:-}" != "1" ]; then
     cd /app/apps/desktop
 fi
 

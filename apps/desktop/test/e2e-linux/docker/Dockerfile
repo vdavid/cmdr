@@ -42,6 +42,10 @@ RUN apt-get update && apt-get install -y \
     libcairo2 \
     libatk1.0-0 \
     libgdk-pixbuf-2.0-0 \
+    # VNC for interactive debugging (--vnc mode)
+    x11vnc \
+    novnc \
+    python3-websockify \
     # Useful utilities
     ca-certificates \
     # Clean up
