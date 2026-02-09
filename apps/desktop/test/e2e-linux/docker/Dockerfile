@@ -20,6 +20,8 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     libayatana-appindicator3-dev \
     librsvg2-dev \
+    # ACL support for file operations
+    libacl1-dev \
     # WebKitWebDriver for tauri-driver
     webkit2gtk-driver \
     # X11 virtual framebuffer for headless GUI
@@ -42,6 +44,8 @@ RUN apt-get update && apt-get install -y \
     libcairo2 \
     libatk1.0-0 \
     libgdk-pixbuf-2.0-0 \
+    # Go (needed by beforeBuildCommand for llama-server placeholder)
+    golang-go \
     # VNC for interactive debugging (--vnc mode)
     x11vnc \
     novnc \
