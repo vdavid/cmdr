@@ -138,8 +138,10 @@
     /** Move cursor to a specific index (used by MCP move_cursor tool). */
     export function setCursorIndex(index: number) {
         if (currentNetworkHost) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte bind:this ref
             shareBrowserRef?.setCursorIndex(index)
         } else {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte bind:this ref
             networkBrowserRef?.setCursorIndex(index)
         }
     }
@@ -147,9 +149,11 @@
     /** Find an item by name, returns its index or -1. */
     export function findItemIndex(name: string): number {
         if (currentNetworkHost) {
-            return shareBrowserRef?.findItemIndex(name) ?? -1
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte bind:this ref
+            return (shareBrowserRef?.findItemIndex(name) as number | undefined) ?? -1
         }
-        return networkBrowserRef?.findItemIndex(name) ?? -1
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte bind:this ref
+        return (networkBrowserRef?.findItemIndex(name) as number | undefined) ?? -1
     }
 
     export function setNetworkHost(host: NetworkHost | null) {

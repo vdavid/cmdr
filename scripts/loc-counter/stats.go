@@ -82,53 +82,57 @@ const (
 	catOther
 )
 
+// simpleExtToCategory maps extensions that don't need test/prod distinction.
+var simpleExtToCategory = map[string]category{
+	".svelte": catSvelte,
+	".astro":  catAstro,
+	".go":     catGo,
+	".css":    catCSS,
+	".scss":   catCSS,
+	".md":     catDocs,
+}
+
+// tsExtensions is the set of TypeScript/JavaScript file extensions.
+var tsExtensions = map[string]bool{
+	".ts": true, ".tsx": true, ".js": true, ".jsx": true, ".mjs": true, ".cjs": true,
+}
+
 func categorizeFile(file string) category {
 	ext := strings.ToLower(filepath.Ext(file))
 	base := filepath.Base(file)
-	testDir := isTestPath(file)
 
-	switch {
-	// Rust
-	case ext == ".rs":
-		if testDir {
-			return catRustTest
-		}
-		return catRustProd
-
-	// TypeScript test files (by naming convention)
-	case strings.HasSuffix(base, ".test.ts") || strings.HasSuffix(base, ".test.tsx") ||
-		strings.HasSuffix(base, ".spec.ts") || strings.HasSuffix(base, ".spec.tsx"):
-		return catTSTest
-	// TypeScript/JS
-	case ext == ".ts" || ext == ".tsx" || ext == ".js" || ext == ".jsx" || ext == ".mjs" || ext == ".cjs":
-		if testDir {
-			return catTSTest
-		}
-		return catTSProd
-
-	// Svelte
-	case ext == ".svelte":
-		return catSvelte
-
-	// Astro
-	case ext == ".astro":
-		return catAstro
-
-	// Go
-	case ext == ".go":
-		return catGo
-
-	// CSS
-	case ext == ".css" || ext == ".scss":
-		return catCSS
-
-	// Docs
-	case ext == ".md" || base == "LICENSE":
-		return catDocs
-
-	default:
-		return catOther
+	if cat, ok := simpleExtToCategory[ext]; ok {
+		return cat
 	}
+	if base == "LICENSE" {
+		return catDocs
+	}
+	if ext == ".rs" {
+		return categorizeRust(file)
+	}
+	if tsExtensions[ext] {
+		return categorizeTypeScript(file, base)
+	}
+	return catOther
+}
+
+func categorizeRust(file string) category {
+	if isTestPath(file) {
+		return catRustTest
+	}
+	return catRustProd
+}
+
+func categorizeTypeScript(file, base string) category {
+	if isTestFilename(base) || isTestPath(file) {
+		return catTSTest
+	}
+	return catTSProd
+}
+
+func isTestFilename(base string) bool {
+	return strings.HasSuffix(base, ".test.ts") || strings.HasSuffix(base, ".test.tsx") ||
+		strings.HasSuffix(base, ".spec.ts") || strings.HasSuffix(base, ".spec.tsx")
 }
 
 // isTestPath checks if a file lives under a test/tests/e2e directory.
@@ -203,44 +207,47 @@ func countLinesForCommit(commitHash string, messages []string) (*fileStats, erro
 		if !ok {
 			continue // binary or missing
 		}
-
-		lines := countLines(content)
-		stats.total += lines
-		cat := categorizeFile(f.path)
-
-		// For Rust prod files, split inline #[cfg(test)] lines from prod lines.
-		if cat == catRustProd {
-			testLines := countRustTestLines(content)
-			stats.rustProd += lines - testLines
-			stats.rustTest += testLines
-			stats.rust += lines
-			continue
-		}
-
-		switch cat {
-		case catRustTest:
-			stats.rustTest += lines
-			stats.rust += lines
-		case catTSProd:
-			stats.tsProd += lines
-			stats.ts += lines
-		case catTSTest:
-			stats.tsTest += lines
-			stats.ts += lines
-		case catSvelte:
-			stats.svelte += lines
-		case catAstro:
-			stats.astro += lines
-		case catGo:
-			stats.goTotal += lines
-		case catCSS:
-			stats.css += lines
-		case catDocs:
-			stats.docs += lines
-		case catOther:
-			stats.other += lines
-		}
+		accumulateFileStats(stats, f.path, content)
 	}
 
 	return stats, nil
+}
+
+func accumulateFileStats(stats *fileStats, path, content string) {
+	lines := countLines(content)
+	stats.total += lines
+	cat := categorizeFile(path)
+
+	// For Rust prod files, split inline #[cfg(test)] lines from prod lines.
+	if cat == catRustProd {
+		testLines := countRustTestLines(content)
+		stats.rustProd += lines - testLines
+		stats.rustTest += testLines
+		stats.rust += lines
+		return
+	}
+
+	switch cat {
+	case catRustTest:
+		stats.rustTest += lines
+		stats.rust += lines
+	case catTSProd:
+		stats.tsProd += lines
+		stats.ts += lines
+	case catTSTest:
+		stats.tsTest += lines
+		stats.ts += lines
+	case catSvelte:
+		stats.svelte += lines
+	case catAstro:
+		stats.astro += lines
+	case catGo:
+		stats.goTotal += lines
+	case catCSS:
+		stats.css += lines
+	case catDocs:
+		stats.docs += lines
+	case catOther:
+		stats.other += lines
+	}
 }

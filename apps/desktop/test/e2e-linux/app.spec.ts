@@ -51,10 +51,10 @@ async function ensureAppReadyWithFocus(): Promise<void> {
     // Wait for the HTML loading screen to be gone
     const loadingScreen = await browser.$('#loading-screen')
     if (await loadingScreen.isExisting()) {
-        await browser.waitUntil(
-            async () => !(await loadingScreen.isDisplayed()),
-            { timeout: 5000, timeoutMsg: 'Loading screen did not disappear' },
-        )
+        await browser.waitUntil(async () => !(await loadingScreen.isDisplayed()), {
+            timeout: 5000,
+            timeoutMsg: 'Loading screen did not disappear',
+        })
     }
 
     // Dismiss any overlays (AI notification, etc.) via JS click to bypass
@@ -315,7 +315,9 @@ describe('Navigation', () => {
         const initialPath = await pathElement.getText()
 
         // Find a directory entry (has .size-dir class which shows "<dir>")
-        const dirEntry = (await browser.$('.file-pane.is-focused .file-entry:has(.size-dir)')) as unknown as WebdriverIO.Element
+        const dirEntry = (await browser.$(
+            '.file-pane.is-focused .file-entry:has(.size-dir)',
+        )) as unknown as WebdriverIO.Element
 
         if (!(await dirEntry.isExisting())) {
             // No directories to navigate into, skip test
@@ -340,7 +342,9 @@ describe('Navigation', () => {
         await ensureAppReadyWithFocus()
 
         // First, navigate into a directory so we can go back
-        const dirEntry = (await browser.$('.file-pane.is-focused .file-entry:has(.size-dir)')) as unknown as WebdriverIO.Element
+        const dirEntry = (await browser.$(
+            '.file-pane.is-focused .file-entry:has(.size-dir)',
+        )) as unknown as WebdriverIO.Element
 
         if (!(await dirEntry.isExisting())) {
             // No directories, skip test

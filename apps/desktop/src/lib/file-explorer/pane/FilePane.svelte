@@ -178,6 +178,7 @@
     /** Also scrolls to make the cursor visible and syncs state to MCP. */
     export async function setCursorIndex(index: number): Promise<void> {
         if (isNetworkView) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte bind:this ref
             networkMountViewRef?.setCursorIndex(index)
             return
         }
@@ -198,7 +199,8 @@
 
     /** Find an item by name in network views. Returns index or -1. */
     export function findNetworkItemIndex(name: string): number {
-        return networkMountViewRef?.findItemIndex(name) ?? -1
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte bind:this ref
+        return (networkMountViewRef?.findItemIndex(name) as number | undefined) ?? -1
     }
 
     export function isInNetworkView(): boolean {

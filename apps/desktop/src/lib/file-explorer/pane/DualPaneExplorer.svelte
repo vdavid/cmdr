@@ -1185,33 +1185,40 @@
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call
             paneRef.setCursorIndex?.(to)
         } else {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-            const inNetwork: boolean = paneRef.isInNetworkView?.() ?? false
-            if (inNetwork) {
-                // Network views handle name lookup locally
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-                const idx: number = paneRef.findNetworkItemIndex?.(to) ?? -1
-                if (idx >= 0) {
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                    paneRef.setCursorIndex?.(idx)
-                }
-            } else {
-                // File listing: find index via backend
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-                const listingId: string | undefined = paneRef.getListingId?.()
-                if (listingId) {
-                    const backendIndex = await findFileIndex(listingId, to, showHiddenFiles)
-                    if (backendIndex !== null) {
-                        // Backend index doesn't include ".." entry, but frontend does
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-                        const hasParent: boolean = paneRef.hasParentEntry?.() ?? false
-                        const frontendIndex = hasParent ? backendIndex + 1 : backendIndex
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                        paneRef.setCursorIndex?.(frontendIndex)
-                    }
-                }
-            }
+            await moveCursorByName(paneRef, to)
         }
+    }
+
+    async function moveCursorByName(paneRef: NonNullable<ReturnType<typeof getPaneRef>>, name: string) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+        const inNetwork: boolean = paneRef.isInNetworkView?.() ?? false
+        if (inNetwork) {
+            // Network views handle name lookup locally
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+            const idx: number = paneRef.findNetworkItemIndex?.(name) ?? -1
+            if (idx >= 0) {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+                paneRef.setCursorIndex?.(idx)
+            }
+        } else {
+            await moveCursorByNameInFileListing(paneRef, name)
+        }
+    }
+
+    async function moveCursorByNameInFileListing(paneRef: NonNullable<ReturnType<typeof getPaneRef>>, name: string) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+        const listingId: string | undefined = paneRef.getListingId?.()
+        if (!listingId) return
+
+        const backendIndex = await findFileIndex(listingId, name, showHiddenFiles)
+        if (backendIndex === null) return
+
+        // Backend index doesn't include ".." entry, but frontend does
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+        const hasParent: boolean = paneRef.hasParentEntry?.() ?? false
+        const frontendIndex = hasParent ? backendIndex + 1 : backendIndex
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        paneRef.setCursorIndex?.(frontendIndex)
     }
 
     /**
