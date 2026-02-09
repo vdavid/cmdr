@@ -218,7 +218,18 @@ else
                 libwebkit2gtk-4.1-dev \
                 libayatana-appindicator3-dev \
                 librsvg2-dev \
+                libacl1-dev \
                 patchelf
+
+            # Temporarily clear .cargo/config.toml if present -- it is a gitignored dev
+            # override that patches mtp-rs to a local path which does not exist in Docker.
+            # Uses trap to guarantee restore even if the build fails.
+            CARGO_CONFIG="/app/apps/desktop/src-tauri/.cargo/config.toml"
+            if [ -f "$CARGO_CONFIG" ]; then
+                cp "$CARGO_CONFIG" "${CARGO_CONFIG}.docker-bak"
+                > "$CARGO_CONFIG"
+                trap "mv ${CARGO_CONFIG}.docker-bak $CARGO_CONFIG 2>/dev/null || true" EXIT
+            fi
 
             # Install dependencies if needed (node_modules is a Docker volume)
             # Check root node_modules marker since that is where pnpm writes the marker
