@@ -48,17 +48,20 @@
         sourceVolumeId: string
         /** Destination volume ID */
         destVolumeId: string
+        /** When true, shows a copy/move segmented control (for drag-and-drop). */
+        allowOperationToggle?: boolean
         onConfirm: (
             destination: string,
             volumeId: string,
             previewId: string | null,
             conflictResolution: ConflictResolution,
+            operationType: TransferOperationType,
         ) => void
         onCancel: () => void
     }
 
     const {
-        operationType,
+        operationType: initialOperationType,
         sourcePaths,
         destinationPath,
         direction,
@@ -72,9 +75,12 @@
         // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Passed through for consistency; conflict check uses destVolumeId
         sourceVolumeId: _sourceVolumeId,
         destVolumeId,
+        allowOperationToggle = false,
         onConfirm,
         onCancel,
     }: Props = $props()
+
+    let activeOperationType = $state<TransferOperationType>(initialOperationType)
 
     let editedPath = $state(destinationPath)
     let selectedVolumeId = $state(currentVolumeId)
@@ -104,9 +110,9 @@
     // Get selected volume info
     const selectedVolume = $derived(actualVolumes.find((v) => v.id === selectedVolumeId))
 
-    const dialogTitle = $derived(generateTitle(operationType, fileCount, folderCount))
+    const dialogTitle = $derived(generateTitle(activeOperationType, fileCount, folderCount))
 
-    const confirmLabel = $derived(operationType === 'copy' ? 'Copy' : 'Move')
+    const confirmLabel = $derived(activeOperationType === 'copy' ? 'Copy' : 'Move')
 
     // Format space info for display
     function formatSpaceInfo(space: VolumeSpaceInfo | null): string {
@@ -183,12 +189,20 @@
         }
     }
 
+    /** Accepts the event if it belongs to our scan, filtering stale events from previous scans. */
+    function isOurScanEvent(eventPreviewId: string): boolean {
+        // previewId may still be null if the scan completes before startScanPreview returns.
+        // In that case, adopt the first event's previewId (it's from the scan we just started).
+        if (!previewId) previewId = eventPreviewId
+        return eventPreviewId === previewId
+    }
+
     /** Starts the scan preview to count files/dirs/bytes. */
     async function startScan() {
-        // Subscribe to events BEFORE starting scan (avoid race condition)
+        // Subscribe to events BEFORE starting scan (avoid missing fast completions)
         unlisteners.push(
             await onScanPreviewProgress((event) => {
-                if (event.previewId !== previewId) return
+                if (!isOurScanEvent(event.previewId)) return
                 filesFound = event.filesFound
                 dirsFound = event.dirsFound
                 bytesFound = event.bytesFound
@@ -196,7 +210,7 @@
         )
         unlisteners.push(
             await onScanPreviewComplete((event) => {
-                if (event.previewId !== previewId) return
+                if (!isOurScanEvent(event.previewId)) return
                 filesFound = event.filesTotal
                 dirsFound = event.dirsTotal
                 bytesFound = event.bytesTotal
@@ -208,14 +222,14 @@
         )
         unlisteners.push(
             await onScanPreviewError((event) => {
-                if (event.previewId !== previewId) return
+                if (!isOurScanEvent(event.previewId)) return
                 isScanning = false
                 // Keep showing whatever stats we have
             }),
         )
         unlisteners.push(
             await onScanPreviewCancelled((event) => {
-                if (event.previewId !== previewId) return
+                if (!isOurScanEvent(event.previewId)) return
                 isScanning = false
             }),
         )
@@ -249,8 +263,8 @@
     })
 
     function handleConfirm() {
-        // Pass the previewId and conflict policy so the operation can reuse scan results
-        onConfirm(editedPath, selectedVolumeId, previewId, conflictPolicy)
+        // Pass the previewId, conflict policy, and (possibly toggled) operation type
+        onConfirm(editedPath, selectedVolumeId, previewId, conflictPolicy, activeOperationType)
     }
 
     function handleCancel() {
@@ -285,6 +299,22 @@
     containerStyle="min-width: 420px; max-width: 500px"
 >
     {#snippet title()}{dialogTitle}{/snippet}
+
+    <!-- Copy/Move toggle (shown for drag-and-drop, where the user hasn't chosen yet) -->
+    {#if allowOperationToggle}
+        <div class="operation-toggle">
+            <button
+                class="toggle-option"
+                class:active={activeOperationType === 'copy'}
+                onclick={() => (activeOperationType = 'copy')}>Copy</button
+            >
+            <button
+                class="toggle-option"
+                class:active={activeOperationType === 'move'}
+                onclick={() => (activeOperationType = 'move')}>Move</button
+            >
+        </div>
+    {/if}
 
     <!-- Direction indicator -->
     <DirectionIndicator sourcePath={sourceFolderPath} {destinationPath} {direction} />
@@ -577,6 +607,46 @@
     }
 
     .policy-option:hover {
+        color: var(--color-text-primary);
+    }
+
+    /* Copy/Move segmented control */
+    .operation-toggle {
+        display: flex;
+        justify-content: center;
+        gap: 0;
+        padding: 0 24px 12px;
+    }
+
+    .toggle-option {
+        padding: 5px 16px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        border: 1px solid var(--color-border-primary);
+        background: transparent;
+        color: var(--color-text-secondary);
+        transition: all 0.15s ease;
+        min-width: 60px;
+    }
+
+    .toggle-option:first-child {
+        border-radius: 6px 0 0 6px;
+        border-right: none;
+    }
+
+    .toggle-option:last-child {
+        border-radius: 0 6px 6px 0;
+    }
+
+    .toggle-option.active {
+        background: var(--color-accent);
+        border-color: var(--color-accent);
+        color: white;
+    }
+
+    .toggle-option:not(.active):hover {
+        background: var(--color-bg-tertiary);
         color: var(--color-text-primary);
     }
 </style>

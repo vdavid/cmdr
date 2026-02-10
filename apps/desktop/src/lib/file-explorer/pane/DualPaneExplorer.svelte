@@ -59,10 +59,13 @@
         type TransferContext,
         buildTransferPropsFromSelection,
         buildTransferPropsFromCursor,
+        buildTransferPropsFromDroppedPaths,
         getDestinationVolumeInfo,
     } from './transfer-operations'
     import type { TransferOperationType } from '../types'
     import { getInitialFolderName, moveCursorToNewFolder } from '$lib/file-operations/mkdir/new-folder-operations'
+    import { getCurrentWebview } from '@tauri-apps/api/webview'
+    import { getIsDraggingFromSelf } from '../drag-drop'
 
     const log = getAppLogger('fileExplorer')
 
@@ -92,6 +95,14 @@
     let unlistenVolumeMount: UnlistenFn | undefined
     let unlistenVolumeUnmount: UnlistenFn | undefined
     let unlistenNavigation: UnlistenFn | undefined
+    let unlistenDragDrop: UnlistenFn | undefined
+
+    // Drop target highlight state: which pane (if any) is the active drop target
+    let dropTargetPane = $state<'left' | 'right' | null>(null)
+
+    // Refs for pane wrapper elements (used for hit-testing drop targets)
+    let leftPaneWrapperEl: HTMLDivElement | undefined = $state()
+    let rightPaneWrapperEl: HTMLDivElement | undefined = $state()
 
     // Transfer dialog state (copy/move)
     let showTransferDialog = $state(false)
@@ -472,6 +483,29 @@
         activePaneRef?.handleKeyUp(e)
     }
 
+    /** Resolves cursor position to a target pane using the browser's own hit-testing. */
+    function resolveDropTargetPane(x: number, y: number): 'left' | 'right' | null {
+        const el = document.elementFromPoint(x, y)
+        if (el && leftPaneWrapperEl?.contains(el)) return 'left'
+        if (el && rightPaneWrapperEl?.contains(el)) return 'right'
+        return null
+    }
+
+    /** Handles a file drop onto a target pane by opening the transfer confirmation dialog. */
+    function handleFileDrop(paths: string[], targetPane: 'left' | 'right') {
+        if (paths.length === 0) return
+
+        const { sortBy, sortOrder } = getPaneSort(targetPane)
+        const destPath = getPanePath(targetPane)
+        const destVolId = getPaneVolumeId(targetPane)
+
+        transferDialogProps = {
+            ...buildTransferPropsFromDroppedPaths('copy', paths, destPath, targetPane, destVolId, sortBy, sortOrder),
+            allowOperationToggle: true,
+        }
+        showTransferDialog = true
+    }
+
     onMount(async () => {
         // Start font metrics measurement in background (non-blocking)
         void ensureFontMetricsLoaded()
@@ -576,6 +610,27 @@
         unlistenNavigation = await listen<{ action: string }>('navigation-action', (event) => {
             void handleNavigationAction(event.payload.action)
         })
+
+        // Register drag-and-drop target handler for external and pane-to-pane drops
+        unlistenDragDrop = await getCurrentWebview().onDragDropEvent((event) => {
+            const { type } = event.payload
+            if (type === 'enter' || type === 'over') {
+                const { position } = event.payload
+                const resolved = resolveDropTargetPane(position.x, position.y)
+                // Suppress highlight on the source pane during a self-drag (no-op target)
+                dropTargetPane = getIsDraggingFromSelf() && resolved === focusedPane ? null : resolved
+            } else if (type === 'drop') {
+                const { paths, position } = event.payload
+                const targetPane = resolveDropTargetPane(position.x, position.y)
+                dropTargetPane = null
+                if (targetPane) {
+                    handleFileDrop(paths, targetPane)
+                }
+            } else {
+                // 'leave' — cursor left the window or drag was cancelled
+                dropTargetPane = null
+            }
+        })
     })
 
     async function handleVolumeUnmount(unmountedId: string) {
@@ -664,6 +719,7 @@
         unlistenVolumeMount?.()
         unlistenVolumeUnmount?.()
         unlistenNavigation?.()
+        unlistenDragDrop?.()
         cleanupNetworkDiscovery()
     })
 
@@ -873,12 +929,13 @@
         _volumeId: string,
         previewId: string | null,
         conflictResolution: ConflictResolution,
+        operationType: TransferOperationType,
     ) {
         if (!transferDialogProps) return
 
-        // Store the props needed for the progress dialog
+        // Store the props needed for the progress dialog (operationType may have been toggled by the user)
         transferProgressProps = {
-            operationType: transferDialogProps.operationType,
+            operationType,
             sourcePaths: transferDialogProps.sourcePaths,
             sourceFolderPath: transferDialogProps.sourceFolderPath,
             destinationPath: destination,
@@ -1383,7 +1440,12 @@
     aria-label="File explorer"
 >
     {#if initialized}
-        <div class="pane-wrapper" style="width: {leftPaneWidthPercent}%">
+        <div
+            class="pane-wrapper"
+            class:drop-target-active={dropTargetPane === 'left'}
+            style="width: {leftPaneWidthPercent}%"
+            bind:this={leftPaneWrapperEl}
+        >
             <!--suppress JSUnresolvedReference -->
             <FilePane
                 bind:this={leftPaneRef}
@@ -1416,7 +1478,12 @@
             />
         </div>
         <PaneResizer onResize={handlePaneResize} onResizeEnd={handlePaneResizeEnd} onReset={handlePaneResizeReset} />
-        <div class="pane-wrapper" style="width: {100 - leftPaneWidthPercent}%">
+        <div
+            class="pane-wrapper"
+            class:drop-target-active={dropTargetPane === 'right'}
+            style="width: {100 - leftPaneWidthPercent}%"
+            bind:this={rightPaneWrapperEl}
+        >
             <!--suppress JSUnresolvedReference -->
             <FilePane
                 bind:this={rightPaneRef}
@@ -1490,5 +1557,15 @@
         flex-direction: column;
         height: 100%;
         min-width: 0;
+        position: relative;
+    }
+
+    .pane-wrapper.drop-target-active::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border: 2px solid var(--color-accent);
+        pointer-events: none;
+        z-index: 1;
     }
 </style>

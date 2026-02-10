@@ -26,6 +26,8 @@ export interface TransferDialogPropsData {
     sortOrder: SortOrder
     sourceVolumeId: string
     destVolumeId: string
+    /** When true, shows a copy/move toggle in the transfer dialog (used for drag-and-drop). */
+    allowOperationToggle?: boolean
 }
 
 interface MtpVolumeInfo {
@@ -110,6 +112,63 @@ export async function buildTransferPropsFromCursor(
         sortOrder: context.sortOrder,
         sourceVolumeId: context.sourceVolumeId,
         destVolumeId: context.destVolumeId,
+    }
+}
+
+/** Derives the common parent directory from a list of absolute paths. */
+export function getCommonParentPath(paths: string[]): string {
+    if (paths.length === 0) return '/'
+    if (paths.length === 1) {
+        const lastSlash = paths[0].lastIndexOf('/')
+        return lastSlash > 0 ? paths[0].substring(0, lastSlash) : '/'
+    }
+
+    // Split each path and find the longest common prefix
+    const segments = paths.map((p) => p.split('/'))
+    const firstSegments = segments[0]
+    let commonLength = 0
+    for (let i = 0; i < firstSegments.length; i++) {
+        if (segments.every((s) => s[i] === firstSegments[i])) {
+            commonLength = i + 1
+        } else {
+            break
+        }
+    }
+
+    const commonPath = firstSegments.slice(0, commonLength).join('/')
+    return commonPath || '/'
+}
+
+/**
+ * Builds transfer dialog props from externally dropped file paths.
+ * Unlike the listing-based builders, this works with absolute paths directly
+ * (no listing ID or pane ref needed).
+ */
+export function buildTransferPropsFromDroppedPaths(
+    operationType: TransferOperationType,
+    droppedPaths: string[],
+    destPath: string,
+    direction: 'left' | 'right',
+    destVolumeId: string,
+    sortColumn: SortColumn,
+    sortOrder: SortOrder,
+): TransferDialogPropsData {
+    const sourceFolderPath = getCommonParentPath(droppedPaths)
+
+    return {
+        operationType,
+        sourcePaths: droppedPaths,
+        destinationPath: destPath,
+        direction,
+        currentVolumeId: destVolumeId,
+        // Approximate counts — the transfer dialog will scan for accurate totals
+        fileCount: droppedPaths.length,
+        folderCount: 0,
+        sourceFolderPath,
+        sortColumn,
+        sortOrder,
+        sourceVolumeId: destVolumeId,
+        destVolumeId,
     }
 }
 

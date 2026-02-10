@@ -3,6 +3,8 @@ import {
     getDestinationVolumeInfo,
     getSelectedFilePaths,
     buildTransferPropsFromSelection,
+    buildTransferPropsFromDroppedPaths,
+    getCommonParentPath,
     type TransferContext,
 } from './transfer-operations'
 import type { FileEntry, VolumeInfo } from '../types'
@@ -169,5 +171,98 @@ describe('buildTransferPropsFromSelection', () => {
 
         const result = await buildTransferPropsFromSelection('move', 'listing-1', [0], false, true, context)
         expect(result?.operationType).toBe('move')
+    })
+})
+
+describe('getCommonParentPath', () => {
+    it('returns / for empty paths', () => {
+        expect(getCommonParentPath([])).toBe('/')
+    })
+
+    it('returns parent of single path', () => {
+        expect(getCommonParentPath(['/Users/alice/file.txt'])).toBe('/Users/alice')
+    })
+
+    it('returns / for single root-level path', () => {
+        expect(getCommonParentPath(['/file.txt'])).toBe('/')
+    })
+
+    it('returns common parent for sibling files', () => {
+        expect(getCommonParentPath(['/Users/alice/a.txt', '/Users/alice/b.txt'])).toBe('/Users/alice')
+    })
+
+    it('returns common parent for paths in different subdirectories', () => {
+        expect(getCommonParentPath(['/Users/alice/docs/a.txt', '/Users/alice/photos/b.jpg'])).toBe('/Users/alice')
+    })
+
+    it('returns / when only root is common', () => {
+        expect(getCommonParentPath(['/foo/a.txt', '/bar/b.txt'])).toBe('/')
+    })
+
+    it('handles deeply nested common path', () => {
+        expect(getCommonParentPath(['/a/b/c/d/file1.txt', '/a/b/c/d/file2.txt', '/a/b/c/d/file3.txt'])).toBe('/a/b/c/d')
+    })
+})
+
+describe('buildTransferPropsFromDroppedPaths', () => {
+    it('returns correct props for a single dropped file', () => {
+        const result = buildTransferPropsFromDroppedPaths(
+            'copy',
+            ['/Users/alice/file.txt'],
+            '/dest',
+            'right',
+            'vol-dest',
+            'name',
+            'ascending',
+        )
+
+        expect(result).toEqual({
+            operationType: 'copy',
+            sourcePaths: ['/Users/alice/file.txt'],
+            destinationPath: '/dest',
+            direction: 'right',
+            currentVolumeId: 'vol-dest',
+            fileCount: 1,
+            folderCount: 0,
+            sourceFolderPath: '/Users/alice',
+            sortColumn: 'name',
+            sortOrder: 'ascending',
+            sourceVolumeId: 'vol-dest',
+            destVolumeId: 'vol-dest',
+        })
+    })
+
+    it('returns correct props for multiple dropped files', () => {
+        const result = buildTransferPropsFromDroppedPaths(
+            'copy',
+            ['/Users/alice/a.txt', '/Users/alice/b.txt', '/Users/alice/c.txt'],
+            '/dest/folder',
+            'left',
+            'vol-1',
+            'size',
+            'descending',
+        )
+
+        expect(result.fileCount).toBe(3)
+        expect(result.sourceFolderPath).toBe('/Users/alice')
+        expect(result.direction).toBe('left')
+        expect(result.sortColumn).toBe('size')
+        expect(result.sortOrder).toBe('descending')
+    })
+
+    it('uses destVolumeId as sourceVolumeId fallback', () => {
+        const result = buildTransferPropsFromDroppedPaths(
+            'move',
+            ['/file.txt'],
+            '/dest',
+            'right',
+            'vol-dest',
+            'name',
+            'ascending',
+        )
+
+        expect(result.sourceVolumeId).toBe('vol-dest')
+        expect(result.destVolumeId).toBe('vol-dest')
+        expect(result.operationType).toBe('move')
     })
 })

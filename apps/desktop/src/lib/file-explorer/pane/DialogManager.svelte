@@ -70,6 +70,7 @@
             volumeId: string,
             previewId: string | null,
             conflictResolution: ConflictResolution,
+            operationType: TransferOperationType,
         ) => void
         onTransferCancel: () => void
         onTransferComplete: (filesProcessed: number, bytesProcessed: number) => void
@@ -83,23 +84,26 @@
 </script>
 
 {#if showTransferDialog && transferDialogProps}
-    <TransferDialog
-        operationType={transferDialogProps.operationType}
-        sourcePaths={transferDialogProps.sourcePaths}
-        destinationPath={transferDialogProps.destinationPath}
-        direction={transferDialogProps.direction}
-        {volumes}
-        currentVolumeId={transferDialogProps.currentVolumeId}
-        fileCount={transferDialogProps.fileCount}
-        folderCount={transferDialogProps.folderCount}
-        sourceFolderPath={transferDialogProps.sourceFolderPath}
-        sortColumn={transferDialogProps.sortColumn}
-        sortOrder={transferDialogProps.sortOrder}
-        sourceVolumeId={transferDialogProps.sourceVolumeId}
-        destVolumeId={transferDialogProps.destVolumeId}
-        onConfirm={onTransferConfirm}
-        onCancel={onTransferCancel}
-    />
+    {#key transferDialogProps}
+        <TransferDialog
+            operationType={transferDialogProps.operationType}
+            sourcePaths={transferDialogProps.sourcePaths}
+            destinationPath={transferDialogProps.destinationPath}
+            direction={transferDialogProps.direction}
+            {volumes}
+            currentVolumeId={transferDialogProps.currentVolumeId}
+            fileCount={transferDialogProps.fileCount}
+            folderCount={transferDialogProps.folderCount}
+            sourceFolderPath={transferDialogProps.sourceFolderPath}
+            sortColumn={transferDialogProps.sortColumn}
+            sortOrder={transferDialogProps.sortOrder}
+            sourceVolumeId={transferDialogProps.sourceVolumeId}
+            destVolumeId={transferDialogProps.destVolumeId}
+            allowOperationToggle={transferDialogProps.allowOperationToggle}
+            onConfirm={onTransferConfirm}
+            onCancel={onTransferCancel}
+        />
+    {/key}
 {/if}
 
 {#if showTransferProgressDialog && transferProgressProps}

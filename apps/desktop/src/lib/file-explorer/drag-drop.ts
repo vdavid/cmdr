@@ -42,6 +42,14 @@ interface DragCallbacks {
     onDragCancel?: () => void
 }
 
+/** Tracks whether the current native drag originated from this app (pane-to-pane or self-drop). */
+let draggingFromSelf = false
+
+/** Getter to read the flag reliably across modules (avoids ES module live-binding timing issues). */
+export function getIsDraggingFromSelf(): boolean {
+    return draggingFromSelf
+}
+
 /** Global state for active drag operation */
 let activeDrag: {
     startX: number
@@ -179,6 +187,7 @@ export function cancelDragTracking(): void {
         activeDrag.cleanup()
         activeDrag = null
     }
+    draggingFromSelf = false
 }
 
 /**
@@ -201,6 +210,7 @@ async function performSingleFileDrag(filePath: string, iconId: string, mode: 'co
         return
     }
 
+    draggingFromSelf = true
     try {
         // Start the native drag operation with the specified mode
         await startDrag({
@@ -209,7 +219,7 @@ async function performSingleFileDrag(filePath: string, iconId: string, mode: 'co
             mode,
         })
     } finally {
-        // Clean up temp icon after drag completes
+        draggingFromSelf = false
         void cleanupTempIcon()
     }
 }
@@ -235,6 +245,7 @@ async function performSelectionDrag(context: SelectionDragContext, mode: 'copy' 
         return
     }
 
+    draggingFromSelf = true
     try {
         // Start the drag via backend (paths are looked up from cache)
         await startSelectionDrag(
@@ -246,7 +257,7 @@ async function performSelectionDrag(context: SelectionDragContext, mode: 'copy' 
             iconPath,
         )
     } finally {
-        // Clean up temp icon after drag completes
+        draggingFromSelf = false
         void cleanupTempIcon()
     }
 }

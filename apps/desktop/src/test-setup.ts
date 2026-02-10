@@ -34,3 +34,10 @@ vi.mock('@tauri-apps/api/event', () => ({
     listen: vi.fn(() => Promise.resolve(() => {})),
     emit: vi.fn(() => Promise.resolve()),
 }))
+
+// Mock Tauri webview API for drag-and-drop
+vi.mock('@tauri-apps/api/webview', () => ({
+    getCurrentWebview: vi.fn(() => ({
+        onDragDropEvent: vi.fn(() => Promise.resolve(() => {})),
+    })),
+}))
