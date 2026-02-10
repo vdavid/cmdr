@@ -315,9 +315,7 @@ describe('Navigation', () => {
         const initialPath = await pathElement.getText()
 
         // Find a directory entry (has .size-dir class which shows "<dir>")
-        const dirEntry = browser.$(
-            '.file-pane.is-focused .file-entry:has(.size-dir)',
-        ) as unknown as WebdriverIO.Element
+        const dirEntry = browser.$('.file-pane.is-focused .file-entry:has(.size-dir)') as unknown as WebdriverIO.Element
 
         if (!(await dirEntry.isExisting())) {
             // No directories to navigate into, skip test
@@ -342,9 +340,7 @@ describe('Navigation', () => {
         await ensureAppReadyWithFocus()
 
         // First, navigate into a directory so we can go back
-        const dirEntry = browser.$(
-            '.file-pane.is-focused .file-entry:has(.size-dir)',
-        ) as unknown as WebdriverIO.Element
+        const dirEntry = browser.$('.file-pane.is-focused .file-entry:has(.size-dir)') as unknown as WebdriverIO.Element
 
         if (!(await dirEntry.isExisting())) {
             // No directories, skip test

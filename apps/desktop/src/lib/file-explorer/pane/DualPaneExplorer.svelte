@@ -580,19 +580,19 @@
 
     async function handleVolumeUnmount(unmountedId: string) {
         const defaultVolumeId = await getDefaultVolumeId()
-        const defaultVolume = volumes.find((v) => v.id === defaultVolumeId)
-        const defaultPath = defaultVolume?.path ?? '/'
+        // Navigate to home directory, falling back to / if home doesn't exist
+        const homePath = (await pathExists('~')) ? '~' : '/'
 
         // Switch affected panes to default volume
         if (leftVolumeId === unmountedId) {
             leftVolumeId = defaultVolumeId
-            leftPath = defaultPath
-            void saveAppStatus({ leftVolumeId: defaultVolumeId, leftPath: defaultPath })
+            leftPath = homePath
+            void saveAppStatus({ leftVolumeId: defaultVolumeId, leftPath: homePath })
         }
         if (rightVolumeId === unmountedId) {
             rightVolumeId = defaultVolumeId
-            rightPath = defaultPath
-            void saveAppStatus({ rightVolumeId: defaultVolumeId, rightPath: defaultPath })
+            rightPath = homePath
+            void saveAppStatus({ rightVolumeId: defaultVolumeId, rightPath: homePath })
         }
 
         // Refresh volume list

@@ -57,6 +57,14 @@ pub struct DirectoryDiff {
     pub changes: Vec<DiffChange>,
 }
 
+/// Event sent when the watched directory itself is deleted
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DirectoryDeletedEvent {
+    pub listing_id: String,
+    pub path: String,
+}
+
 /// State for a watched directory.
 /// NOTE: No `entries` field - we use the unified LISTING_CACHE instead.
 struct WatchedDirectory {
@@ -105,9 +113,16 @@ pub fn start_watching(listing_id: &str, path: &Path) -> Result<(), String> {
         debounce_duration,
         None, // No tick rate limit
         move |result: DebounceEventResult| {
-            if let Ok(_events) = result {
-                // Events occurred - re-read directory and compute diff
-                handle_directory_change(&listing_for_closure);
+            match result {
+                Ok(_events) => {
+                    // Events occurred - re-read directory and compute diff
+                    handle_directory_change(&listing_for_closure);
+                }
+                Err(_errors) => {
+                    // Watcher errors often mean the watched directory was deleted.
+                    // Try to re-read; if it fails with NotFound, we'll emit directory-deleted.
+                    handle_directory_change(&listing_for_closure);
+                }
             }
         },
     )
@@ -156,6 +171,21 @@ fn handle_directory_change(listing_id: &str) {
     // Re-read the directory using core metadata (extended metadata not needed for diffs)
     let new_entries = match list_directory_core(&path) {
         Ok(entries) => entries,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            // Directory was deleted — notify frontend so it can navigate to a valid parent
+            log::info!("Watcher: Directory deleted, notifying frontend: {}", path.display());
+            if let Some(app) = app_handle {
+                let event = DirectoryDeletedEvent {
+                    listing_id: listing_id.to_string(),
+                    path: path.to_string_lossy().to_string(),
+                };
+                if let Err(emit_err) = app.emit("directory-deleted", &event) {
+                    log::warn!("Watcher: Failed to emit directory-deleted event: {}", emit_err);
+                }
+            }
+            stop_watching(listing_id);
+            return;
+        }
         Err(e) => {
             // Silently ignore permission denied - user may have revoked access
             if e.kind() != std::io::ErrorKind::PermissionDenied {

@@ -122,6 +122,12 @@ export interface DirectoryDiff {
     changes: DiffChange[]
 }
 
+/** Sent when the watched directory itself is deleted. */
+export interface DirectoryDeletedEvent {
+    listingId: string
+    path: string
+}
+
 /**
  * Category of a location item.
  */

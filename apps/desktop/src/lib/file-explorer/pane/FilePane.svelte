@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onDestroy, onMount, tick, untrack } from 'svelte'
     import type {
+        DirectoryDeletedEvent,
         DirectoryDiff,
         FileEntry,
         ListingCancelledEvent,
@@ -18,6 +19,7 @@
     import {
         cancelListing,
         findFileIndex,
+        pathExists,
         getFileAt,
         getListingStats,
         getMaxFilenameWidth,
@@ -53,6 +55,7 @@
     import { isMtpVolumeId, getMtpDisplayPath } from '$lib/mtp'
     import * as benchmark from '$lib/benchmark'
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
+    import { resolveValidPath } from '../navigation/path-navigation'
 
     interface Props {
         initialPath: string
@@ -321,6 +324,9 @@
     let syncStatusMap = $state<Record<string, SyncStatus>>({})
     const syncPollIntervalMs = 3000
     let syncPollInterval: ReturnType<typeof setInterval>
+    // Poll to detect when the current directory is deleted externally (FSEvents doesn't notify)
+    const dirExistsPollMs = 2000
+    let dirExistsPollInterval: ReturnType<typeof setInterval>
 
     // Derive includeHidden from showHiddenFiles prop
     const includeHidden = $derived(showHiddenFiles)
@@ -545,21 +551,45 @@
             // Subscribe to error event
             unlistenError = await listen<ListingErrorEvent>('listing-error', (event) => {
                 if (event.payload.listingId === newListingId && thisGeneration === loadGeneration) {
-                    error = event.payload.message
-                    listingId = ''
-                    totalCount = 0
-                    loading = false
-                    openingFolder = false
-                    loadingCount = undefined
-                    finalizingCount = undefined
-
                     // For MTP volumes, trigger fallback on error (device likely disconnected)
                     if (isMtpView) {
+                        error = event.payload.message
+                        listingId = ''
+                        totalCount = 0
+                        loading = false
+                        openingFolder = false
+                        loadingCount = undefined
+                        finalizingCount = undefined
                         log.warn('MTP listing error, triggering fallback: {error}', {
                             error: event.payload.message,
                         })
                         onMtpFatalError?.(event.payload.message)
+                        return
                     }
+
+                    // For local volumes, check if the path was deleted
+                    void pathExists(loadPath).then((exists) => {
+                        if (!exists) {
+                            // Path is gone — auto-navigate to nearest valid parent
+                            log.info('Listing error for deleted path, navigating to valid parent: {path}', {
+                                path: loadPath,
+                            })
+                            void resolveValidPath(loadPath).then((validPath) => {
+                                const target = validPath ?? volumePath
+                                currentPath = target
+                                void loadDirectory(target)
+                            })
+                        } else {
+                            // Path exists but has another error (permission denied, etc.)
+                            error = event.payload.message
+                            listingId = ''
+                            totalCount = 0
+                            loading = false
+                            openingFolder = false
+                            loadingCount = undefined
+                            finalizingCount = undefined
+                        }
+                    })
                 }
             })
 
@@ -1087,6 +1117,32 @@
         }
     })
 
+    // Listen for directory-deleted events (watched directory was removed externally)
+    $effect(() => {
+        const listenerPromise = listen<DirectoryDeletedEvent>('directory-deleted', (event) => {
+            if (event.payload.listingId !== listingId) return
+
+            log.info('Directory deleted externally, navigating to nearest valid parent: {path}', {
+                path: event.payload.path,
+            })
+
+            void resolveValidPath(currentPath).then((validPath) => {
+                const target = validPath ?? volumePath
+                currentPath = target
+                // loadDirectory handles onPathChange via handleListingComplete
+                void loadDirectory(target)
+            })
+        })
+
+        return () => {
+            void listenerPromise
+                .then((unsub) => {
+                    unsub()
+                })
+                .catch(() => {})
+        }
+    })
+
     // Listen for menu action events
     $effect(() => {
         const listenerPromise = listen<string>('menu-action', (event) => {
@@ -1176,6 +1232,39 @@
             if (!listingId || paths.length === 0) return
             void fetchSyncStatusForPaths(paths)
         }, syncPollIntervalMs)
+
+        // Poll to detect externally deleted directories (macOS FSEvents doesn't notify)
+        dirExistsPollInterval = setInterval(() => {
+            if (!listingId || loading || isNetworkView || isMtpView) return
+            void pathExists(currentPath).then((exists) => {
+                if (exists) return
+
+                // If on an external volume, check whether the volume root itself is gone.
+                // If so, skip — the volume unmount handler will manage the transition.
+                if (volumePath !== '/') {
+                    void pathExists(volumePath).then((volumeExists) => {
+                        if (!volumeExists) return
+                        log.info('Directory no longer exists, navigating to valid parent: {path}', {
+                            path: currentPath,
+                        })
+                        void resolveValidPath(currentPath).then((validPath) => {
+                            const target = validPath ?? volumePath
+                            currentPath = target
+                            void loadDirectory(target)
+                        })
+                    })
+                } else {
+                    log.info('Directory no longer exists, navigating to valid parent: {path}', {
+                        path: currentPath,
+                    })
+                    void resolveValidPath(currentPath).then((validPath) => {
+                        const target = validPath ?? volumePath
+                        currentPath = target
+                        void loadDirectory(target)
+                    })
+                }
+            })
+        }, dirExistsPollMs)
     })
 
     onDestroy(() => {
@@ -1185,6 +1274,7 @@
             void listDirectoryEnd(listingId)
         }
         clearInterval(syncPollInterval)
+        clearInterval(dirExistsPollInterval)
         unlistenOpening?.()
         unlistenProgress?.()
         unlistenReadComplete?.()

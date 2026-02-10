@@ -51,6 +51,7 @@ export async function determineNavigationPath(
 
 /**
  * Resolves a path to a valid existing path by walking up the parent tree.
+ * Fallback chain: parent tree → user home (~) → filesystem root (/).
  * Returns null if even the root doesn't exist (volume unmounted).
  */
 export async function resolveValidPath(targetPath: string): Promise<string | null> {
@@ -62,6 +63,10 @@ export async function resolveValidPath(targetPath: string): Promise<string | nul
         // Go to parent
         const lastSlash = path.lastIndexOf('/')
         path = lastSlash > 0 ? path.substring(0, lastSlash) : '/'
+    }
+    // Try user home before falling back to root (~ is expanded by the backend)
+    if (await pathExists('~')) {
+        return '~'
     }
     // Check root
     if (await pathExists('/')) {
