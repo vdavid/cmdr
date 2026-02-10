@@ -95,6 +95,9 @@ pub enum ViewMode {
     Brief,
 }
 
+/// Menu item ID for viewer word wrap toggle.
+pub const VIEWER_WORD_WRAP_ID: &str = "viewer_word_wrap";
+
 /// Menu item ID for About window.
 pub const ABOUT_ID: &str = "about";
 
@@ -375,6 +378,25 @@ pub fn build_context_menu<R: Runtime>(
     menu.append(&PredefinedMenuItem::separator(app)?)?;
     menu.append(&get_info_item)?;
     menu.append(&quick_look_item)?;
+
+    Ok(menu)
+}
+
+/// Builds a menu for viewer windows. Starts from the default macOS menu and adds a "Word wrap" toggle to the View submenu.
+pub fn build_viewer_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
+    let menu = Menu::default(app)?;
+
+    for item in menu.items()? {
+        if let MenuItemKind::Submenu(submenu) = item
+            && submenu.text()? == "View"
+        {
+            submenu.append(&PredefinedMenuItem::separator(app)?)?;
+            let word_wrap_item =
+                CheckMenuItem::with_id(app, VIEWER_WORD_WRAP_ID, "Word wrap", true, false, None::<&str>)?;
+            submenu.append(&word_wrap_item)?;
+            break;
+        }
+    }
 
     Ok(menu)
 }

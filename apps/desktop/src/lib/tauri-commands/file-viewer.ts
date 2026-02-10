@@ -98,6 +98,16 @@ export async function viewerClose(sessionId: string): Promise<void> {
     await invoke('viewer_close', { sessionId })
 }
 
+/** Sets up a viewer-specific menu on the given window (adds "Word wrap" to View submenu). */
+export async function viewerSetupMenu(label: string): Promise<void> {
+    await invoke('viewer_setup_menu', { label })
+}
+
+/** Syncs the viewer menu "Word wrap" check state (called when toggled via keyboard). */
+export async function viewerSetWordWrap(label: string, checked: boolean): Promise<void> {
+    await invoke('viewer_set_word_wrap', { label, checked })
+}
+
 /**
  * Opens a file with the system's default application.
  * @param path - Path to the file to open.

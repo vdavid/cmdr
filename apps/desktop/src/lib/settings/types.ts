@@ -96,6 +96,9 @@ export interface SettingsValues {
     // Theme
     'theme.mode': ThemeMode
 
+    // Viewer
+    'viewer.wordWrap': boolean
+
     // Developer
     'developer.mcpEnabled': boolean
     'developer.mcpPort': number

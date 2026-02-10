@@ -25,12 +25,15 @@
         viewerSearchStart,
         viewerSearchPoll,
         viewerSearchCancel,
+        viewerSetupMenu,
+        viewerSetWordWrap,
         feLog,
         type ViewerSearchMatch,
         type BackendCapabilities,
     } from '$lib/tauri-commands'
     import { getCurrentWindow } from '@tauri-apps/api/window'
     import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+    import { initializeSettings, getSetting, setSetting } from '$lib/settings'
 
     let fileName = $state('')
     let totalLines = $state<number | null>(null)
@@ -56,10 +59,15 @@
     // High watermark of rendered line container width, for horizontal scroll
     let contentWidth = $state(0)
 
+    // Word wrap state
+    let wordWrap = $state(false)
+    let avgWrappedLineHeight = $state(LINE_HEIGHT)
+    const effectiveLineHeight = $derived(wordWrap ? avgWrappedLineHeight : LINE_HEIGHT)
+
     // Derived: which lines are visible
-    const visibleFrom = $derived(Math.max(0, Math.floor(scrollTop / LINE_HEIGHT) - BUFFER_LINES))
+    const visibleFrom = $derived(Math.max(0, Math.floor(scrollTop / effectiveLineHeight) - BUFFER_LINES))
     const visibleTo = $derived(
-        Math.min(estimatedTotalLines(), Math.ceil((scrollTop + viewportHeight) / LINE_HEIGHT) + BUFFER_LINES),
+        Math.min(estimatedTotalLines(), Math.ceil((scrollTop + viewportHeight) / effectiveLineHeight) + BUFFER_LINES),
     )
     const visibleLines = $derived(getVisibleLines())
     const gutterWidth = $derived(String(estimatedTotalLines()).length)
@@ -89,9 +97,10 @@
     let windowReady = $state(false)
     let closeRequested = $state(false)
 
-    // MCP event listener cleanup functions
+    // Event listener cleanup functions
     let unlistenMcpClose: UnlistenFn | undefined
     let unlistenMcpFocus: UnlistenFn | undefined
+    let unlistenWordWrap: UnlistenFn | undefined
 
     function estimatedTotalLines(): number {
         // Use exact count if known (FullLoad or LineIndex backends)
@@ -132,6 +141,7 @@
 
     // Track horizontal content width so .scroll-spacer can create a scrollbar
     $effect(() => {
+        if (wordWrap) return
         void visibleLines
         const rafId = requestAnimationFrame(() => {
             if (linesContainerRef) {
@@ -144,6 +154,44 @@
         return () => {
             cancelAnimationFrame(rafId)
         }
+    })
+
+    // Measure average wrapped line height for virtual scroll approximation.
+    // Depends on scrollTop (not visibleLines) to avoid a feedback loop:
+    // visibleLines → measure → avgWrappedLineHeight → effectiveLineHeight → visibleLines
+    $effect(() => {
+        if (!wordWrap) return
+        void scrollTop
+        const rafId = requestAnimationFrame(() => {
+            if (!linesContainerRef) return
+            const lineCount = linesContainerRef.children.length
+            if (lineCount === 0) return
+            const renderedHeight = linesContainerRef.getBoundingClientRect().height
+            if (renderedHeight > 0) {
+                const measured = renderedHeight / lineCount
+                if (Math.abs(measured - avgWrappedLineHeight) > 1) {
+                    avgWrappedLineHeight = measured
+                }
+            }
+        })
+        return () => {
+            cancelAnimationFrame(rafId)
+        }
+    })
+
+    // Compensate scroll position when effectiveLineHeight changes (toggle or measurement update).
+    // Proportional adjustment keeps the same line visible: ratio * scrollTop preserves the line
+    // at the top of the viewport, and ON ratio * OFF ratio = 1.0 so there's zero cumulative drift.
+    let prevEffectiveLineHeight = LINE_HEIGHT
+    $effect(() => {
+        const newHeight = effectiveLineHeight
+        if (!contentRef || prevEffectiveLineHeight === newHeight) {
+            prevEffectiveLineHeight = newHeight
+            return
+        }
+        const ratio = newHeight / prevEffectiveLineHeight
+        contentRef.scrollTop = Math.round(contentRef.scrollTop * ratio)
+        prevEffectiveLineHeight = newHeight
     })
 
     function scheduleFetch(from: number, to: number) {
@@ -165,14 +213,14 @@
             return
         }
         // Calculate current scroll fraction before updating
-        const oldHeight = oldEstimate * LINE_HEIGHT
+        const oldHeight = oldEstimate * effectiveLineHeight
         const scrollFraction = contentRef.scrollTop / oldHeight
         feLog(
             `[viewer] totalLines changed: ${String(oldEstimate)} -> ${String(newTotal)}, preserving scroll fraction ${scrollFraction.toFixed(3)}`,
         )
         totalLines = newTotal
         // Restore scroll fraction after DOM updates using rAF to run after browser's scroll clamping
-        const newHeight = newTotal * LINE_HEIGHT
+        const newHeight = newTotal * effectiveLineHeight
         const newScrollTop = Math.round(scrollFraction * newHeight)
         const ref = contentRef // Capture reference for rAF callback
         requestAnimationFrame(() => {
@@ -368,7 +416,7 @@
 
     function scrollToMatch(match: ViewerSearchMatch) {
         if (!contentRef) return
-        const targetScroll = match.line * LINE_HEIGHT - viewportHeight / 2
+        const targetScroll = match.line * effectiveLineHeight - viewportHeight / 2
         contentRef.scrollTop = Math.max(0, targetScroll)
     }
 
@@ -427,13 +475,13 @@
 
     function scrollByLines(lines: number) {
         if (contentRef) {
-            contentRef.scrollTop = Math.max(0, contentRef.scrollTop + lines * LINE_HEIGHT)
+            contentRef.scrollTop = Math.max(0, contentRef.scrollTop + lines * effectiveLineHeight)
         }
     }
 
     function scrollByPages(pages: number) {
         if (contentRef) {
-            const pageSize = contentRef.clientHeight - LINE_HEIGHT // Overlap by 1 line
+            const pageSize = contentRef.clientHeight - effectiveLineHeight // Overlap by 1 line
             contentRef.scrollTop = Math.max(0, contentRef.scrollTop + pages * pageSize)
         }
     }
@@ -448,6 +496,25 @@
         if (contentRef) {
             contentRef.scrollTop = contentRef.scrollHeight - contentRef.clientHeight
         }
+    }
+
+    function toggleWordWrap(fromMenu = false) {
+        wordWrap = !wordWrap
+        contentWidth = 0
+        // Sync menu checkbox when toggled via keyboard (menu auto-toggles on click)
+        if (!fromMenu) {
+            viewerSetWordWrap(getCurrentWindow().label, wordWrap).catch(() => {})
+        }
+        setSetting('viewer.wordWrap', wordWrap)
+    }
+
+    /** Handle toggle keys (word wrap). Returns true if handled. */
+    function handleToggleKey(e: KeyboardEvent): boolean {
+        if (e.key.toLowerCase() === 'w' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+            toggleWordWrap()
+            return true
+        }
+        return false
     }
 
     /** Handle navigation keys (arrows, page up/down, home/end). Returns true if handled. */
@@ -504,9 +571,10 @@
             return
         }
 
-        // Navigation keys (only when search input is not focused)
-        const isSearchInputFocused = searchVisible && document.activeElement === searchInputRef
-        if (!isSearchInputFocused && handleNavigationKey(e.key)) {
+        // Remaining keys only apply when search input is not focused
+        if (searchVisible && document.activeElement === searchInputRef) return
+
+        if (handleToggleKey(e) || handleNavigationKey(e.key)) {
             e.preventDefault()
         }
     }
@@ -559,16 +627,25 @@
         })
     }
 
-    /** Clean up MCP event listeners */
-    function cleanupMcpListeners() {
+    /** Clean up event listeners */
+    function cleanupListeners() {
         unlistenMcpClose?.()
         unlistenMcpFocus?.()
+        unlistenWordWrap?.()
     }
 
     onMount(async () => {
         const loadingScreen = document.getElementById('loading-screen')
         if (loadingScreen) {
             loadingScreen.style.display = 'none'
+        }
+
+        // Restore word wrap setting (best-effort — viewer works without it)
+        try {
+            await initializeSettings()
+            wordWrap = getSetting('viewer.wordWrap')
+        } catch {
+            // Settings store not available in this context, use defaults
         }
 
         const params = new URLSearchParams(window.location.search)
@@ -618,6 +695,19 @@
 
             // Set up MCP event listeners for close/focus commands
             await setupMcpListeners(filePath)
+
+            // Set up viewer-specific menu with Word wrap toggle, sync initial state
+            const windowLabel = getCurrentWindow().label
+            viewerSetupMenu(windowLabel)
+                .then(() => {
+                    if (wordWrap) viewerSetWordWrap(windowLabel, true).catch(() => {})
+                })
+                .catch(() => {})
+
+            // Listen for menu-triggered word wrap toggle
+            unlistenWordWrap = await listen('viewer-word-wrap-toggled', () => {
+                toggleWordWrap(true)
+            })
         } catch (e) {
             error = typeof e === 'string' ? e : 'Failed to read file'
             feLog(`[viewer] Failed to open file: ${String(e)}`)
@@ -639,7 +729,7 @@
     })
 
     onDestroy(() => {
-        cleanupMcpListeners()
+        cleanupListeners()
         stopSearchPoll()
         stopIndexingPoll()
         if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
@@ -695,6 +785,7 @@
     {:else}
         <div
             class="file-content"
+            class:word-wrap={wordWrap}
             role="document"
             aria-label="File content: {fileName}"
             bind:this={contentRef}
@@ -702,12 +793,14 @@
         >
             <div
                 class="scroll-spacer"
-                style="height: {estimatedTotalLines() * LINE_HEIGHT}px; min-width: {contentWidth}px"
+                style="height: {estimatedTotalLines() * effectiveLineHeight}px; min-width: {wordWrap
+                    ? 0
+                    : contentWidth}px"
             >
                 <div
                     class="lines-container"
                     bind:this={linesContainerRef}
-                    style="transform: translateY({visibleFrom * LINE_HEIGHT}px)"
+                    style="transform: translateY({visibleFrom * effectiveLineHeight}px)"
                 >
                     {#each visibleLines as { lineNumber, text } (lineNumber)}
                         <div class="line" data-line={lineNumber}>
@@ -756,7 +849,10 @@
                 >streaming</span
             >
         {/if}
-        <span class="shortcut-hint">Ctrl+F search &middot; Esc close</span>
+        {#if wordWrap}
+            <span class="backend-badge" title="Lines wrap at the window edge. Press W to toggle.">wrap</span>
+        {/if}
+        <span class="shortcut-hint">W wrap &middot; Ctrl+F search &middot; Esc close</span>
     </div>
 </div>
 
@@ -870,6 +966,24 @@
 
     .line-text {
         white-space: pre;
+    }
+
+    .word-wrap {
+        overflow-x: hidden;
+    }
+
+    .word-wrap .lines-container {
+        width: auto;
+        right: 0;
+    }
+
+    .word-wrap .line {
+        height: auto;
+    }
+
+    .word-wrap .line-text {
+        white-space: pre-wrap;
+        overflow-wrap: break-word;
     }
 
     mark {

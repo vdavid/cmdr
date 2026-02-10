@@ -86,7 +86,7 @@ use menu::{
     ABOUT_ID, COMMAND_PALETTE_ID, ENTER_LICENSE_KEY_ID, GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID, MenuState,
     SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID,
     SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SORT_DESCENDING_ID, SWITCH_PANE_ID, VIEW_MODE_BRIEF_ID,
-    VIEW_MODE_FULL_ID, ViewMode,
+    VIEW_MODE_FULL_ID, VIEWER_WORD_WRAP_ID, ViewMode,
 };
 use tauri::{Emitter, Manager};
 
@@ -302,6 +302,14 @@ pub fn run() {
                     "menu-sort",
                     serde_json::json!({ "action": "sortOrder", "value": order }),
                 );
+            } else if id == VIEWER_WORD_WRAP_ID {
+                // Find the focused viewer window and emit toggle event to it
+                for (label, window) in app.webview_windows() {
+                    if label.starts_with("viewer-") && window.is_focused().unwrap_or(false) {
+                        let _ = app.emit_to(&label, "viewer-word-wrap-toggled", ());
+                        break;
+                    }
+                }
             } else {
                 // Handle file actions
                 commands::ui::execute_menu_action(app, id);
@@ -344,6 +352,8 @@ pub fn run() {
             commands::file_viewer::viewer_search_poll,
             commands::file_viewer::viewer_search_cancel,
             commands::file_viewer::viewer_close,
+            commands::file_viewer::viewer_setup_menu,
+            commands::file_viewer::viewer_set_word_wrap,
             commands::font_metrics::store_font_metrics,
             commands::font_metrics::has_font_metrics,
             commands::icons::get_icons,

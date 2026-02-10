@@ -2,6 +2,8 @@
 
 use crate::file_viewer::{self, LineChunk, SearchPollResult, SeekTarget, ViewerOpenResult, ViewerSessionStatus};
 use log::debug;
+use tauri::Manager;
+use tauri::menu::MenuItemKind;
 
 /// Opens a viewer session for the given file.
 /// Returns session metadata + initial lines from the start of the file.
@@ -86,4 +88,41 @@ pub fn viewer_get_status(session_id: String) -> Result<ViewerSessionStatus, Stri
 #[tauri::command]
 pub fn viewer_close(session_id: String) -> Result<(), String> {
     file_viewer::close_session(&session_id).map_err(|e| e.to_string())
+}
+
+/// Sets up a viewer-specific menu on the given window (adds "Word wrap" to View submenu).
+#[tauri::command]
+pub fn viewer_setup_menu(app_handle: tauri::AppHandle, label: String) -> Result<(), String> {
+    let window = app_handle
+        .get_webview_window(&label)
+        .ok_or_else(|| format!("Window '{}' not found", label))?;
+    let menu = crate::menu::build_viewer_menu(&app_handle).map_err(|e| e.to_string())?;
+    window.set_menu(menu).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// Syncs the viewer menu "Word wrap" check state (called when toggled via keyboard).
+#[tauri::command]
+pub fn viewer_set_word_wrap(app_handle: tauri::AppHandle, label: String, checked: bool) -> Result<(), String> {
+    let window = app_handle
+        .get_webview_window(&label)
+        .ok_or_else(|| format!("Window '{}' not found", label))?;
+    let Some(menu) = window.menu() else {
+        return Ok(());
+    };
+    for item in menu.items().map_err(|e| e.to_string())? {
+        if let MenuItemKind::Submenu(submenu) = item
+            && submenu.text().map_err(|e| e.to_string())? == "View"
+        {
+            for sub_item in submenu.items().map_err(|e| e.to_string())? {
+                if let MenuItemKind::Check(check) = sub_item
+                    && check.id().as_ref() == crate::menu::VIEWER_WORD_WRAP_ID
+                {
+                    check.set_checked(checked).map_err(|e| e.to_string())?;
+                    return Ok(());
+                }
+            }
+        }
+    }
+    Ok(())
 }

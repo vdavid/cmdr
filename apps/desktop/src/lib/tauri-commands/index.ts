@@ -28,6 +28,8 @@ export {
     viewerSearchCancel,
     viewerGetStatus,
     viewerClose,
+    viewerSetupMenu,
+    viewerSetWordWrap,
     openFile,
     openExternalUrl,
     getIcons,

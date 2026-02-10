@@ -259,6 +259,20 @@ export const settingsRegistry: SettingDefinition[] = [
     },
 
     // ========================================================================
+    // Viewer
+    // ========================================================================
+    {
+        id: 'viewer.wordWrap',
+        section: ['General', 'Viewer'],
+        label: 'Word wrap',
+        description: 'Wrap long lines at the window edge in the file viewer instead of scrolling horizontally.',
+        keywords: ['viewer', 'wrap', 'word', 'line', 'horizontal', 'scroll'],
+        type: 'boolean',
+        default: false,
+        component: 'switch',
+    },
+
+    // ========================================================================
     // Developer › MCP server
     // ========================================================================
     {
