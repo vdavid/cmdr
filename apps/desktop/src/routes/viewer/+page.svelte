@@ -51,6 +51,10 @@
     let viewportHeight = $state(600)
     let contentRef: HTMLDivElement | undefined = $state()
     let containerRef: HTMLDivElement | undefined = $state()
+    let linesContainerRef: HTMLDivElement | undefined = $state()
+
+    // High watermark of rendered line container width, for horizontal scroll
+    let contentWidth = $state(0)
 
     // Derived: which lines are visible
     const visibleFrom = $derived(Math.max(0, Math.floor(scrollTop / LINE_HEIGHT) - BUFFER_LINES))
@@ -123,6 +127,22 @@
         const to = visibleTo
         if (sessionId && needsFetch(from, to)) {
             scheduleFetch(from, to)
+        }
+    })
+
+    // Track horizontal content width so .scroll-spacer can create a scrollbar
+    $effect(() => {
+        void visibleLines
+        const rafId = requestAnimationFrame(() => {
+            if (linesContainerRef) {
+                const w = linesContainerRef.scrollWidth
+                if (w > contentWidth) {
+                    contentWidth = w
+                }
+            }
+        })
+        return () => {
+            cancelAnimationFrame(rafId)
         }
     })
 
@@ -677,8 +697,15 @@
             bind:this={contentRef}
             onscroll={handleScroll}
         >
-            <div class="scroll-spacer" style="height: {estimatedTotalLines() * LINE_HEIGHT}px">
-                <div class="lines-container" style="transform: translateY({visibleFrom * LINE_HEIGHT}px)">
+            <div
+                class="scroll-spacer"
+                style="height: {estimatedTotalLines() * LINE_HEIGHT}px; min-width: {contentWidth}px"
+            >
+                <div
+                    class="lines-container"
+                    bind:this={linesContainerRef}
+                    style="transform: translateY({visibleFrom * LINE_HEIGHT}px)"
+                >
                     {#each visibleLines as { lineNumber, text } (lineNumber)}
                         <div class="line" data-line={lineNumber}>
                             <span class="line-number" style="width: {gutterWidth}ch" aria-hidden="true"
@@ -812,7 +839,8 @@
     .lines-container {
         position: absolute;
         left: 0;
-        right: 0;
+        width: max-content;
+        min-width: 100%;
     }
 
     .line {
@@ -839,10 +867,6 @@
 
     .line-text {
         white-space: pre;
-        word-break: break-all;
-        flex: 1;
-        min-width: 0;
-        overflow: hidden;
     }
 
     mark {
