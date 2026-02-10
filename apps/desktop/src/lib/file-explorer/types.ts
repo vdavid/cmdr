@@ -334,6 +334,9 @@ export type MountError =
 /** Type of write operation. */
 export type WriteOperationType = 'copy' | 'move' | 'delete'
 
+/** Transfer operations (copy or move) — subset of write operations that share UI. */
+export type TransferOperationType = 'copy' | 'move'
+
 /** Phase of a write operation. */
 export type WriteOperationPhase = 'scanning' | 'copying' | 'deleting'
 

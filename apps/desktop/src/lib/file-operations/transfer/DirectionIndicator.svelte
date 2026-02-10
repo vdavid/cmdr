@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { getFolderName } from './copy-dialog-utils'
+    import { getFolderName } from './transfer-dialog-utils'
 
     interface Props {
         sourcePath: string

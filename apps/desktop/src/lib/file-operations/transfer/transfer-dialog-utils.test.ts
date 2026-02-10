@@ -1,42 +1,66 @@
 /**
- * Tests for copy dialog utility functions
+ * Tests for transfer dialog utility functions
  */
 import { describe, it, expect } from 'vitest'
-import { generateTitle, getFolderName, toBackendIndices, toBackendCursorIndex } from './copy-dialog-utils'
+import { generateTitle, getFolderName, toBackendIndices, toBackendCursorIndex } from './transfer-dialog-utils'
 
 describe('generateTitle', () => {
-    it('returns "Copy" for zero files and folders', () => {
-        expect(generateTitle(0, 0)).toBe('Copy')
+    describe('copy operation', () => {
+        it('returns "Copy" for zero files and folders', () => {
+            expect(generateTitle('copy', 0, 0)).toBe('Copy')
+        })
+
+        it('returns singular file correctly', () => {
+            expect(generateTitle('copy', 1, 0)).toBe('Copy 1 file')
+        })
+
+        it('returns plural files correctly', () => {
+            expect(generateTitle('copy', 2, 0)).toBe('Copy 2 files')
+            expect(generateTitle('copy', 10, 0)).toBe('Copy 10 files')
+            expect(generateTitle('copy', 100, 0)).toBe('Copy 100 files')
+        })
+
+        it('returns singular folder correctly', () => {
+            expect(generateTitle('copy', 0, 1)).toBe('Copy 1 folder')
+        })
+
+        it('returns plural folders correctly', () => {
+            expect(generateTitle('copy', 0, 2)).toBe('Copy 2 folders')
+            expect(generateTitle('copy', 0, 10)).toBe('Copy 10 folders')
+        })
+
+        it('combines files and folders with "and"', () => {
+            expect(generateTitle('copy', 1, 1)).toBe('Copy 1 file and 1 folder')
+            expect(generateTitle('copy', 2, 3)).toBe('Copy 2 files and 3 folders')
+            expect(generateTitle('copy', 5, 1)).toBe('Copy 5 files and 1 folder')
+            expect(generateTitle('copy', 1, 5)).toBe('Copy 1 file and 5 folders')
+        })
+
+        it('handles large numbers', () => {
+            expect(generateTitle('copy', 1000, 500)).toBe('Copy 1000 files and 500 folders')
+        })
     })
 
-    it('returns singular file correctly', () => {
-        expect(generateTitle(1, 0)).toBe('Copy 1 file')
-    })
+    describe('move operation', () => {
+        it('returns "Move" for zero files and folders', () => {
+            expect(generateTitle('move', 0, 0)).toBe('Move')
+        })
 
-    it('returns plural files correctly', () => {
-        expect(generateTitle(2, 0)).toBe('Copy 2 files')
-        expect(generateTitle(10, 0)).toBe('Copy 10 files')
-        expect(generateTitle(100, 0)).toBe('Copy 100 files')
-    })
+        it('returns singular file correctly', () => {
+            expect(generateTitle('move', 1, 0)).toBe('Move 1 file')
+        })
 
-    it('returns singular folder correctly', () => {
-        expect(generateTitle(0, 1)).toBe('Copy 1 folder')
-    })
+        it('returns plural files correctly', () => {
+            expect(generateTitle('move', 2, 0)).toBe('Move 2 files')
+        })
 
-    it('returns plural folders correctly', () => {
-        expect(generateTitle(0, 2)).toBe('Copy 2 folders')
-        expect(generateTitle(0, 10)).toBe('Copy 10 folders')
-    })
+        it('returns singular folder correctly', () => {
+            expect(generateTitle('move', 0, 1)).toBe('Move 1 folder')
+        })
 
-    it('combines files and folders with "and"', () => {
-        expect(generateTitle(1, 1)).toBe('Copy 1 file and 1 folder')
-        expect(generateTitle(2, 3)).toBe('Copy 2 files and 3 folders')
-        expect(generateTitle(5, 1)).toBe('Copy 5 files and 1 folder')
-        expect(generateTitle(1, 5)).toBe('Copy 1 file and 5 folders')
-    })
-
-    it('handles large numbers', () => {
-        expect(generateTitle(1000, 500)).toBe('Copy 1000 files and 500 folders')
+        it('combines files and folders with "and"', () => {
+            expect(generateTitle('move', 2, 3)).toBe('Move 2 files and 3 folders')
+        })
     })
 })
 
@@ -72,23 +96,18 @@ describe('getFolderName', () => {
 describe('toBackendIndices', () => {
     describe('with hasParent=true (directory has ".." entry at index 0)', () => {
         it('adjusts indices by -1', () => {
-            // Frontend [1,2,3] → backend [0,1,2]
             expect(toBackendIndices([1, 2, 3], true)).toEqual([0, 1, 2])
         })
 
         it('filters out index 0 (the ".." entry)', () => {
-            // Frontend [0,1,2] → backend [0,1] (index 0 becomes -1 and is filtered)
             expect(toBackendIndices([0, 1, 2], true)).toEqual([0, 1])
         })
 
         it('handles the last file correctly (the original bug)', () => {
-            // If frontend has 6 items (index 0-5) and backend has 5 (index 0-4),
-            // frontend index 5 should become backend index 4
             expect(toBackendIndices([5], true)).toEqual([4])
         })
 
         it('handles selecting all files (excluding "..")', () => {
-            // Frontend [1,2,3,4,5] → backend [0,1,2,3,4]
             expect(toBackendIndices([1, 2, 3, 4, 5], true)).toEqual([0, 1, 2, 3, 4])
         })
 
@@ -128,8 +147,6 @@ describe('toBackendCursorIndex', () => {
         })
 
         it('handles the last file correctly (the original bug)', () => {
-            // If frontend cursor is at index 5 with hasParent=true,
-            // backend index should be 4 (not 5 which would be out of bounds)
             expect(toBackendCursorIndex(5, true)).toBe(4)
         })
     })

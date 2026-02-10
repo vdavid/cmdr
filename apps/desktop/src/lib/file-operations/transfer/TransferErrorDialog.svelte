@@ -1,19 +1,20 @@
 <script lang="ts">
-    import type { WriteOperationError } from '$lib/file-explorer/types'
-    import { getUserFriendlyMessage, getTechnicalDetails } from './copy-error-messages'
+    import type { WriteOperationError, TransferOperationType } from '$lib/file-explorer/types'
+    import { getUserFriendlyMessage, getTechnicalDetails } from './transfer-error-messages'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
 
     interface Props {
+        operationType: TransferOperationType
         error: WriteOperationError
         onClose: () => void
         onRetry?: () => void
     }
 
-    const { error, onClose, onRetry }: Props = $props()
+    const { operationType, error, onClose, onRetry }: Props = $props()
 
     let showDetails = $state(false)
 
-    const friendly = $derived(getUserFriendlyMessage(error))
+    const friendly = $derived(getUserFriendlyMessage(error, operationType))
     const technicalDetails = $derived(getTechnicalDetails(error))
 
     function handleKeydown(event: KeyboardEvent) {
@@ -31,7 +32,7 @@
     titleId="error-dialog-title"
     onkeydown={handleKeydown}
     role="alertdialog"
-    dialogId="copy-error"
+    dialogId="transfer-error"
     onclose={onClose}
     ariaDescribedby="error-dialog-message"
     containerStyle="width: 420px; max-width: 90vw; background: var(--color-error-bg); border-color: var(--color-error-border)"

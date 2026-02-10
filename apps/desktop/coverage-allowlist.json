@@ -101,13 +101,15 @@
         "utils/confirm-dialog.ts": { "reason": "Thin wrapper over Tauri dialog API" },
         "updates/updater.svelte.ts": { "reason": "Depends on Tauri updater APIs" },
         "window-state.ts": { "reason": "Depends on Tauri window APIs" },
-        "file-operations/copy/CopyDialog.svelte": { "reason": "UI modal, logic tested in copy-dialog-utils.test.ts" },
-        "file-operations/copy/DirectionIndicator.svelte": {
-            "reason": "Simple UI component, logic tested in copy-dialog-utils.test.ts"
+        "file-operations/transfer/TransferDialog.svelte": {
+            "reason": "UI modal, logic tested in transfer-dialog-utils.test.ts"
         },
-        "file-operations/copy/CopyProgressDialog.svelte": { "reason": "UI dialog, depends on Tauri events" },
-        "file-operations/copy/CopyErrorDialog.svelte": {
-            "reason": "UI modal, logic tested in copy-error-messages.test.ts"
+        "file-operations/transfer/DirectionIndicator.svelte": {
+            "reason": "Simple UI component, logic tested in transfer-dialog-utils.test.ts"
+        },
+        "file-operations/transfer/TransferProgressDialog.svelte": { "reason": "UI dialog, depends on Tauri events" },
+        "file-operations/transfer/TransferErrorDialog.svelte": {
+            "reason": "UI modal, logic tested in transfer-error-messages.test.ts"
         }
     }
 }

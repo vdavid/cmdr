@@ -18,28 +18,35 @@ describe('FunctionKeyBar', () => {
         expect(target.querySelector('.function-key-bar')).toBeNull()
     })
 
-    it('disables F6 and F8 buttons', () => {
+    it('disables only F8 button', () => {
         const target = document.createElement('div')
         mount(FunctionKeyBar, { target, props: { visible: true } })
 
         const buttons = target.querySelectorAll('button')
-        // F6 (index 3), F8 (index 5)
-        expect(buttons[3].disabled).toBe(true)
+        // F8 (index 5) is still disabled
         expect(buttons[5].disabled).toBe(true)
     })
 
-    it('enables F3, F4, F5, and F7 buttons', () => {
+    it('enables F3, F4, F5, F6, and F7 buttons', () => {
         const target = document.createElement('div')
         mount(FunctionKeyBar, {
             target,
-            props: { visible: true, onView: () => {}, onEdit: () => {}, onCopy: () => {}, onNewFolder: () => {} },
+            props: {
+                visible: true,
+                onView: () => {},
+                onEdit: () => {},
+                onCopy: () => {},
+                onMove: () => {},
+                onNewFolder: () => {},
+            },
         })
 
         const buttons = target.querySelectorAll('button')
-        // F3 (index 0), F4 (index 1), F5 (index 2), F7 (index 4)
+        // F3 (0), F4 (1), F5 (2), F6 (3), F7 (4)
         expect(buttons[0].disabled).toBe(false)
         expect(buttons[1].disabled).toBe(false)
         expect(buttons[2].disabled).toBe(false)
+        expect(buttons[3].disabled).toBe(false)
         expect(buttons[4].disabled).toBe(false)
     })
 
@@ -71,6 +78,16 @@ describe('FunctionKeyBar', () => {
         const buttons = target.querySelectorAll('button')
         buttons[2].click()
         expect(onCopy).toHaveBeenCalledOnce()
+    })
+
+    it('calls onMove when F6 button is clicked', () => {
+        const onMove = vi.fn()
+        const target = document.createElement('div')
+        mount(FunctionKeyBar, { target, props: { visible: true, onMove } })
+
+        const buttons = target.querySelectorAll('button')
+        buttons[3].click()
+        expect(onMove).toHaveBeenCalledOnce()
     })
 
     it('calls onNewFolder when F7 button is clicked', () => {

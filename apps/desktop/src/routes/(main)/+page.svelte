@@ -61,6 +61,7 @@
         handleSelectionAction: (action: string, startIndex?: number, endIndex?: number) => void
         handleMcpSelect: (pane: 'left' | 'right', start: number, count: number | 'all', mode: string) => void
         openCopyDialog: () => Promise<void>
+        openMoveDialog: () => Promise<void>
         openNewFolderDialog: () => Promise<void>
         closeConfirmationDialog: () => void
         isConfirmationDialogOpen: () => boolean
@@ -579,6 +580,11 @@
         explorerRef?.refocus()
     }
 
+    function handleFnMove() {
+        void explorerRef?.openMoveDialog()
+        explorerRef?.refocus()
+    }
+
     function handleFnNewFolder() {
         void explorerRef?.openNewFolderDialog()
         explorerRef?.refocus()
@@ -848,6 +854,7 @@
             onView={handleFnView}
             onEdit={() => void handleFnEdit()}
             onCopy={handleFnCopy}
+            onMove={handleFnMove}
             onNewFolder={handleFnNewFolder}
         />
     {/if}

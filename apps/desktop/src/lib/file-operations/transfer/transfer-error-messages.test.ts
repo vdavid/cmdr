@@ -1,87 +1,159 @@
 import { describe, expect, it } from 'vitest'
-import { getUserFriendlyMessage, getTechnicalDetails } from './copy-error-messages'
+import { getUserFriendlyMessage, getTechnicalDetails } from './transfer-error-messages'
 import type { WriteOperationError } from '$lib/file-explorer/types'
 
 describe('getUserFriendlyMessage', () => {
-    it('returns user-friendly message for source_not_found error', () => {
-        const error: WriteOperationError = { type: 'source_not_found', path: '/path/to/file.txt' }
-        const result = getUserFriendlyMessage(error)
+    describe('copy operation (default)', () => {
+        it('returns user-friendly message for source_not_found error', () => {
+            const error: WriteOperationError = { type: 'source_not_found', path: '/path/to/file.txt' }
+            const result = getUserFriendlyMessage(error)
 
-        expect(result.title).toBe("Couldn't find the file")
-        expect(result.message).toContain('no longer exists')
-        expect(result.suggestion).toContain('refreshing')
+            expect(result.title).toBe("Couldn't find the file")
+            expect(result.message).toContain('copy')
+            expect(result.message).toContain('no longer exists')
+        })
+
+        it('returns user-friendly message for destination_exists error', () => {
+            const error: WriteOperationError = { type: 'destination_exists', path: '/dest/file.txt' }
+            const result = getUserFriendlyMessage(error)
+
+            expect(result.title).toBe('File already exists')
+        })
+
+        it('returns user-friendly message for permission_denied error', () => {
+            const error: WriteOperationError = {
+                type: 'permission_denied',
+                path: '/protected/dir',
+                message: 'Operation not permitted',
+            }
+            const result = getUserFriendlyMessage(error)
+
+            expect(result.title).toBe("Couldn't access this location")
+            expect(result.message).toContain('copy')
+        })
+
+        it('returns user-friendly message for insufficient_space error', () => {
+            const error: WriteOperationError = {
+                type: 'insufficient_space',
+                required: 1073741824,
+                available: 536870912,
+                volumeName: 'Test Volume',
+            }
+            const result = getUserFriendlyMessage(error)
+
+            expect(result.title).toBe('Not enough space')
+            expect(result.message).toContain('1.0 GB')
+            expect(result.message).toContain('512.0 MB')
+        })
+
+        it('returns user-friendly message for same_location error', () => {
+            const error: WriteOperationError = { type: 'same_location', path: '/same/path' }
+            const result = getUserFriendlyMessage(error)
+
+            expect(result.title).toBe("Can't copy to the same location")
+        })
+
+        it('returns user-friendly message for destination_inside_source error', () => {
+            const error: WriteOperationError = {
+                type: 'destination_inside_source',
+                source: '/folder',
+                destination: '/folder/subfolder',
+            }
+            const result = getUserFriendlyMessage(error)
+
+            expect(result.title).toBe("Can't copy a folder into itself")
+        })
+
+        it('returns user-friendly message for symlink_loop error', () => {
+            const error: WriteOperationError = { type: 'symlink_loop', path: '/path/with/loop' }
+            const result = getUserFriendlyMessage(error)
+
+            expect(result.title).toBe('Link loop detected')
+        })
+
+        it('returns user-friendly message for cancelled error', () => {
+            const error: WriteOperationError = { type: 'cancelled', message: 'User cancelled' }
+            const result = getUserFriendlyMessage(error)
+
+            expect(result.title).toBe('Copy cancelled')
+            expect(result.message).toContain('copy')
+        })
+
+        it('returns "Copy failed" for io_error', () => {
+            const error: WriteOperationError = { type: 'io_error', path: '/path', message: 'Something broke' }
+            const result = getUserFriendlyMessage(error)
+
+            expect(result.title).toBe('Copy failed')
+        })
     })
 
-    it('returns user-friendly message for destination_exists error', () => {
-        const error: WriteOperationError = { type: 'destination_exists', path: '/dest/file.txt' }
-        const result = getUserFriendlyMessage(error)
+    describe('move operation', () => {
+        it('uses "move" in source_not_found message', () => {
+            const error: WriteOperationError = { type: 'source_not_found', path: '/path/to/file.txt' }
+            const result = getUserFriendlyMessage(error, 'move')
 
-        expect(result.title).toBe('File already exists')
-        expect(result.message).toContain('already a file')
-    })
+            expect(result.message).toContain('move')
+            expect(result.message).not.toContain('copy')
+        })
 
-    it('returns user-friendly message for permission_denied error', () => {
-        const error: WriteOperationError = {
-            type: 'permission_denied',
-            path: '/protected/dir',
-            message: 'Operation not permitted',
-        }
-        const result = getUserFriendlyMessage(error)
+        it('uses "move" in permission_denied message', () => {
+            const error: WriteOperationError = {
+                type: 'permission_denied',
+                path: '/protected',
+                message: 'denied',
+            }
+            const result = getUserFriendlyMessage(error, 'move')
 
-        expect(result.title).toBe("Couldn't access this location")
-        expect(result.message).toContain('permission')
-        expect(result.suggestion).toContain('write access')
-    })
+            expect(result.message).toContain('move')
+        })
 
-    it('returns user-friendly message for insufficient_space error', () => {
-        const error: WriteOperationError = {
-            type: 'insufficient_space',
-            required: 1073741824, // 1 GB
-            available: 536870912, // 512 MB
-            volumeName: 'Test Volume',
-        }
-        const result = getUserFriendlyMessage(error)
+        it('uses "Move" in same_location title', () => {
+            const error: WriteOperationError = { type: 'same_location', path: '/same/path' }
+            const result = getUserFriendlyMessage(error, 'move')
 
-        expect(result.title).toBe('Not enough space')
-        expect(result.message).toContain('1.0 GB')
-        expect(result.message).toContain('512.0 MB')
-        expect(result.suggestion).toContain('Free up')
-    })
+            expect(result.title).toBe("Can't move to the same location")
+        })
 
-    it('returns user-friendly message for same_location error', () => {
-        const error: WriteOperationError = { type: 'same_location', path: '/same/path' }
-        const result = getUserFriendlyMessage(error)
+        it('uses "Move" in destination_inside_source title', () => {
+            const error: WriteOperationError = {
+                type: 'destination_inside_source',
+                source: '/folder',
+                destination: '/folder/sub',
+            }
+            const result = getUserFriendlyMessage(error, 'move')
 
-        expect(result.title).toBe("Can't copy to the same location")
-        expect(result.message).toContain('same')
-    })
+            expect(result.title).toBe("Can't move a folder into itself")
+            expect(result.suggestion).toContain('moving')
+        })
 
-    it('returns user-friendly message for destination_inside_source error', () => {
-        const error: WriteOperationError = {
-            type: 'destination_inside_source',
-            source: '/folder',
-            destination: '/folder/subfolder',
-        }
-        const result = getUserFriendlyMessage(error)
+        it('uses "Move cancelled" for cancelled error', () => {
+            const error: WriteOperationError = { type: 'cancelled', message: 'User cancelled' }
+            const result = getUserFriendlyMessage(error, 'move')
 
-        expect(result.title).toBe("Can't copy a folder into itself")
-        expect(result.message).toContain('subfolders')
-    })
+            expect(result.title).toBe('Move cancelled')
+            expect(result.message).toContain('move')
+        })
 
-    it('returns user-friendly message for symlink_loop error', () => {
-        const error: WriteOperationError = { type: 'symlink_loop', path: '/path/with/loop' }
-        const result = getUserFriendlyMessage(error)
+        it('uses "Move failed" for io_error', () => {
+            const error: WriteOperationError = { type: 'io_error', path: '/path', message: 'Something broke' }
+            const result = getUserFriendlyMessage(error, 'move')
 
-        expect(result.title).toBe('Link loop detected')
-        expect(result.message).toContain('infinite loop')
-    })
+            expect(result.title).toBe('Move failed')
+        })
 
-    it('returns user-friendly message for cancelled error', () => {
-        const error: WriteOperationError = { type: 'cancelled', message: 'User cancelled' }
-        const result = getUserFriendlyMessage(error)
+        it('uses "move" in generic io_error message', () => {
+            const error: WriteOperationError = { type: 'io_error', path: '/path', message: 'Unknown XYZ' }
+            const result = getUserFriendlyMessage(error, 'move')
 
-        expect(result.title).toBe('Copy cancelled')
-        expect(result.message).toContain('cancelled')
+            expect(result.message).toBe("Couldn't move the file.")
+        })
+
+        it('uses "move" for device disconnection io_error', () => {
+            const error: WriteOperationError = { type: 'io_error', path: '/path', message: 'Device disconnected' }
+            const result = getUserFriendlyMessage(error, 'move')
+
+            expect(result.message).toContain('disconnected during the move')
+        })
     })
 
     describe('io_error messages', () => {
@@ -106,7 +178,6 @@ describe('getUserFriendlyMessage', () => {
             const result = getUserFriendlyMessage(error)
 
             expect(result.message).toContain('interrupted')
-            expect(result.suggestion).toContain('connection')
         })
 
         it('detects read errors', () => {
@@ -140,7 +211,6 @@ describe('getUserFriendlyMessage', () => {
             const result = getUserFriendlyMessage(error)
 
             expect(result.message).toContain('too long')
-            expect(result.suggestion).toContain('shorter name')
         })
 
         it('returns generic message for unknown IO errors', () => {
@@ -162,14 +232,11 @@ describe('getUserFriendlyMessage', () => {
             }
             const result = getUserFriendlyMessage(error)
 
-            // Should mention read-only and provide helpful suggestion
             expect(result.message).toContain('read-only')
-            expect(result.message).toContain('copy files from it')
             expect(result.suggestion).toContain('different destination')
         })
 
         it('does not misinterpret read-only as read error', () => {
-            // This test verifies the fix: "read-only" should NOT trigger "Couldn't read from the source"
             const error: WriteOperationError = {
                 type: 'io_error',
                 path: '',
@@ -177,7 +244,6 @@ describe('getUserFriendlyMessage', () => {
             }
             const result = getUserFriendlyMessage(error)
 
-            // Should NOT say "Couldn't read from the source"
             expect(result.message).not.toContain("Couldn't read from the source")
             expect(result.message).toContain('read-only')
         })

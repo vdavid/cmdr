@@ -3,6 +3,7 @@
     import {
         copyFiles,
         copyBetweenVolumes,
+        moveFiles,
         onWriteProgress,
         onWriteComplete,
         onWriteError,
@@ -21,6 +22,7 @@
         type UnlistenFn,
     } from '$lib/tauri-commands'
     import type {
+        TransferOperationType,
         WriteOperationPhase,
         WriteOperationError,
         SortColumn,
@@ -43,24 +45,25 @@
         return 'size-tb'
     }
 
-    const log = getAppLogger('copyProgress')
+    const log = getAppLogger('transferProgress')
 
     interface Props {
+        operationType: TransferOperationType
         sourcePaths: string[]
         sourceFolderPath: string
         destinationPath: string
         direction: 'left' | 'right'
-        /** Current sort column on source pane (files will be copied in this order) */
+        /** Current sort column on source pane (files will be processed in this order) */
         sortColumn: SortColumn
         /** Current sort order on source pane */
         sortOrder: SortOrder
-        /** Preview scan ID from CopyDialog (for reusing scan results, optional) */
+        /** Preview scan ID from TransferDialog (for reusing scan results, optional) */
         previewId: string | null
         /** Source volume ID (like "root", "mtp-336592896:65537") */
         sourceVolumeId: string
         /** Destination volume ID */
         destVolumeId: string
-        /** Conflict resolution policy from CopyDialog */
+        /** Conflict resolution policy from TransferDialog */
         conflictResolution: ConflictResolution
         onComplete: (filesProcessed: number, bytesProcessed: number) => void
         onCancelled: (filesProcessed: number) => void
@@ -68,6 +71,7 @@
     }
 
     const {
+        operationType,
         sourcePaths,
         sourceFolderPath,
         destinationPath,
@@ -83,6 +87,9 @@
         onError,
     }: Props = $props()
 
+    const operationLabel = $derived(operationType === 'copy' ? 'Copy' : 'Move')
+    const operationGerund = $derived(operationType === 'copy' ? 'Copying' : 'Moving')
+
     // Operation state
     let operationId = $state<string | null>(null)
     let phase = $state<WriteOperationPhase>('scanning')
@@ -95,8 +102,8 @@
     let isCancelling = $state(false)
     let isRollingBack = $state(false)
 
-    // Events that arrived before we know our operationId (from the copyFiles() response).
-    // Without buffering, a stale event from a previous copy could claim the ID slot first.
+    // Events that arrived before we know our operationId (from the command response).
+    // Without buffering, a stale event from a previous operation could claim the ID slot first.
     type BufferedEvent =
         | { type: 'progress'; event: WriteProgressEvent }
         | { type: 'complete'; event: WriteCompleteEvent }
@@ -158,11 +165,11 @@
         return { bytesPerSecond, estimatedSecondsRemaining }
     })
 
-    // Progress stages for visualization
-    const stages: { id: WriteOperationPhase; label: string }[] = [
+    // Progress stages for visualization — the active phase label adapts to operation type
+    const stages = $derived<{ id: WriteOperationPhase; label: string }[]>([
         { id: 'scanning', label: 'Scanning' },
-        { id: 'copying', label: 'Copying' },
-    ]
+        { id: 'copying', label: operationGerund },
+    ])
 
     function getStageStatus(stageId: WriteOperationPhase): 'done' | 'active' | 'pending' {
         const currentIndex = stages.findIndex((s) => s.id === phase)
@@ -195,7 +202,8 @@
     function handleComplete(event: WriteCompleteEvent) {
         if (!filterEvent({ type: 'complete', event })) return
 
-        log.info('Copy complete: {filesProcessed} files, {bytesProcessed} bytes', {
+        log.info('{op} complete: {filesProcessed} files, {bytesProcessed} bytes', {
+            op: operationLabel,
             filesProcessed: event.filesProcessed,
             bytesProcessed: event.bytesProcessed,
         })
@@ -207,7 +215,7 @@
     function handleError(event: WriteErrorEvent) {
         if (!filterEvent({ type: 'error', event })) return
 
-        log.error('Copy error: {errorType}', { errorType: event.error.type, error: event.error })
+        log.error('{op} error: {errorType}', { op: operationLabel, errorType: event.error.type, error: event.error })
 
         cleanup()
         onError(event.error)
@@ -216,7 +224,8 @@
     function handleCancelled(event: WriteCancelledEvent) {
         if (!filterEvent({ type: 'cancelled', event })) return
 
-        log.info('Copy cancelled after {filesProcessed} files, rolledBack={rolledBack}', {
+        log.info('{op} cancelled after {filesProcessed} files, rolledBack={rolledBack}', {
+            op: operationLabel,
             filesProcessed: event.filesProcessed,
             rolledBack: event.rolledBack,
         })
@@ -264,7 +273,8 @@
     }
 
     async function startOperation() {
-        log.info('Starting copy operation: {sourceCount} sources to {destination}', {
+        log.info('Starting {op} operation: {sourceCount} sources to {destination}', {
+            op: operationType,
             sourceCount: sourcePaths.length,
             destination: destinationPath,
         })
@@ -282,41 +292,58 @@
         unlisteners.push(await onWriteCancelled(handleCancelled))
         unlisteners.push(await onWriteConflict(handleConflict))
 
-        log.debug('Event subscriptions ready, starting copy')
+        log.debug('Event subscriptions ready, starting {op}', { op: operationType })
 
         try {
             const progressIntervalMs = getSetting('fileOperations.progressUpdateInterval')
             const maxConflictsToShow = getSetting('fileOperations.maxConflictsToShow')
 
-            // Use unified copyBetweenVolumes for cross-volume operations (including MTP)
-            // Fall back to copyFiles for local-to-local copies when both volumes are "root"
-            const isLocalToLocal = sourceVolumeId === DEFAULT_VOLUME_ID && destVolumeId === DEFAULT_VOLUME_ID
-            const result = isLocalToLocal
-                ? await copyFiles(sourcePaths, destinationPath, {
-                      conflictResolution,
-                      progressIntervalMs,
-                      maxConflictsToShow,
-                      sortColumn,
-                      sortOrder,
-                      previewId,
-                  })
-                : await copyBetweenVolumes(sourceVolumeId, sourcePaths, destVolumeId, destinationPath, {
-                      conflictResolution,
-                      progressIntervalMs,
-                      maxConflictsToShow,
-                  })
+            let result
+
+            if (operationType === 'move') {
+                // Move always uses moveFiles (backend handles same-fs rename vs cross-fs copy+delete)
+                result = await moveFiles(sourcePaths, destinationPath, {
+                    conflictResolution,
+                    progressIntervalMs,
+                    maxConflictsToShow,
+                    sortColumn,
+                    sortOrder,
+                    previewId,
+                })
+            } else {
+                // Copy: use unified copyBetweenVolumes for cross-volume operations (including MTP)
+                // Fall back to copyFiles for local-to-local copies when both volumes are "root"
+                const isLocalToLocal = sourceVolumeId === DEFAULT_VOLUME_ID && destVolumeId === DEFAULT_VOLUME_ID
+                result = isLocalToLocal
+                    ? await copyFiles(sourcePaths, destinationPath, {
+                          conflictResolution,
+                          progressIntervalMs,
+                          maxConflictsToShow,
+                          sortColumn,
+                          sortOrder,
+                          previewId,
+                      })
+                    : await copyBetweenVolumes(sourceVolumeId, sourcePaths, destVolumeId, destinationPath, {
+                          conflictResolution,
+                          progressIntervalMs,
+                          maxConflictsToShow,
+                      })
+            }
 
             operationId = result.operationId
-            log.info('Copy operation started with operationId: {operationId}', { operationId })
+            log.info('{op} operation started with operationId: {operationId}', {
+                op: operationLabel,
+                operationId,
+            })
             replayBufferedEvents()
         } catch (err) {
-            log.error('Failed to start copy operation: {error}', { error: err })
+            log.error('Failed to start {op} operation: {error}', { op: operationType, error: err })
             cleanup()
             // Create an io_error type for startup failures
             onError({
                 type: 'io_error',
                 path: sourcePaths[0] ?? '',
-                message: `Failed to start copy: ${String(err)}`,
+                message: `Failed to start ${operationType}: ${String(err)}`,
             })
         }
     }
@@ -405,7 +432,7 @@
 <ModalDialog
     titleId="progress-dialog-title"
     onkeydown={handleKeydown}
-    dialogId="copy-progress"
+    dialogId="transfer-progress"
     onclose={() => void handleCancel(false)}
     containerStyle="min-width: 420px; max-width: 500px"
 >
@@ -415,7 +442,7 @@
         {:else if conflictEvent}
             File already exists
         {:else}
-            Copying...
+            {operationGerund}...
         {/if}
     {/snippet}
 
@@ -512,7 +539,10 @@
             <div class="rollback-indicator">
                 <span class="spinner"></span>
             </div>
-            <p class="rollback-message">Deleting {filesDone} copied files...</p>
+            <p class="rollback-message">
+                Deleting {filesDone}
+                {operationType === 'copy' ? 'copied' : 'partially moved'} files...
+            </p>
         </div>
     {:else}
         <!-- Direction indicator -->

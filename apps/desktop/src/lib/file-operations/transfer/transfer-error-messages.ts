@@ -1,9 +1,9 @@
 /**
- * User-friendly error message generation for copy operations.
- * Extracted from CopyErrorDialog.svelte for testability.
+ * User-friendly error message generation for transfer (copy/move) operations.
+ * Extracted from TransferErrorDialog.svelte for testability.
  */
 
-import type { WriteOperationError } from '$lib/file-explorer/types'
+import type { WriteOperationError, TransferOperationType } from '$lib/file-explorer/types'
 import { formatBytes } from '$lib/tauri-commands'
 import { getDevice } from '$lib/mtp/mtp-store.svelte'
 
@@ -16,16 +16,27 @@ export interface FriendlyErrorMessage {
     suggestion: string
 }
 
+const operationVerbMap: Record<TransferOperationType, { verb: string; pastTense: string; gerund: string }> = {
+    copy: { verb: 'copy', pastTense: 'copied', gerund: 'copying' },
+    move: { verb: 'move', pastTense: 'moved', gerund: 'moving' },
+}
+
 /**
- * Returns a user-friendly message for a copy operation error.
+ * Returns a user-friendly message for a transfer operation error.
  * Volume-agnostic: doesn't mention MTP, SMB, etc. directly.
  */
-export function getUserFriendlyMessage(error: WriteOperationError): FriendlyErrorMessage {
+export function getUserFriendlyMessage(
+    error: WriteOperationError,
+    operationType: TransferOperationType = 'copy',
+): FriendlyErrorMessage {
+    const { verb, gerund } = operationVerbMap[operationType]
+    const Verb = verb.charAt(0).toUpperCase() + verb.slice(1)
+
     switch (error.type) {
         case 'source_not_found':
             return {
                 title: "Couldn't find the file",
-                message: 'The file or folder you tried to copy no longer exists.',
+                message: `The file or folder you tried to ${verb} no longer exists.`,
                 suggestion: 'It may have been moved, renamed, or deleted. Try refreshing the file list.',
             }
         case 'destination_exists':
@@ -37,7 +48,7 @@ export function getUserFriendlyMessage(error: WriteOperationError): FriendlyErro
         case 'permission_denied':
             return {
                 title: "Couldn't access this location",
-                message: "You don't have permission to copy files here.",
+                message: `You don't have permission to ${verb} files here.`,
                 suggestion:
                     'Check that you have write access to the destination folder. You may need to unlock the device or change folder permissions.',
             }
@@ -50,15 +61,15 @@ export function getUserFriendlyMessage(error: WriteOperationError): FriendlyErro
             }
         case 'same_location':
             return {
-                title: "Can't copy to the same location",
+                title: `Can't ${verb} to the same location`,
                 message: 'The source and destination are the same.',
                 suggestion: 'Choose a different destination folder.',
             }
         case 'destination_inside_source':
             return {
-                title: "Can't copy a folder into itself",
-                message: "You're trying to copy a folder into one of its own subfolders.",
-                suggestion: 'Choose a destination outside of the folder you are copying.',
+                title: `Can't ${verb} a folder into itself`,
+                message: `You're trying to ${verb} a folder into one of its own subfolders.`,
+                suggestion: `Choose a destination outside of the folder you are ${gerund}.`,
             }
         case 'symlink_loop':
             return {
@@ -69,20 +80,20 @@ export function getUserFriendlyMessage(error: WriteOperationError): FriendlyErro
             }
         case 'cancelled':
             return {
-                title: 'Copy cancelled',
-                message: 'The copy operation was cancelled.',
+                title: `${Verb} cancelled`,
+                message: `The ${verb} operation was cancelled.`,
                 suggestion: 'You can try again when ready.',
             }
         case 'io_error':
             return {
-                title: 'Copy failed',
-                message: getIoErrorMessage(error.message),
+                title: `${Verb} failed`,
+                message: getIoErrorMessage(error.message, operationType),
                 suggestion: getIoErrorSuggestion(error.message),
             }
         default:
             return {
-                title: 'Copy failed',
-                message: 'An unexpected error occurred while copying.',
+                title: `${Verb} failed`,
+                message: `An unexpected error occurred while ${gerund}.`,
                 suggestion: 'Try again, or check the technical details below for more information.',
             }
     }
@@ -108,8 +119,9 @@ function getDeviceNameFromError(rawMessage: string): string {
 /**
  * Parses IO error messages into user-friendly text.
  */
-function getIoErrorMessage(rawMessage: string): string {
+function getIoErrorMessage(rawMessage: string, operationType: TransferOperationType): string {
     const lower = rawMessage.toLowerCase()
+    const { verb } = operationVerbMap[operationType]
 
     // Read-only device (check BEFORE generic "read" + "error" check!)
     if (lower.includes('read-only')) {
@@ -119,7 +131,7 @@ function getIoErrorMessage(rawMessage: string): string {
 
     // Device disconnected
     if (lower.includes('disconnect') || lower.includes('not found') || lower.includes('no such device')) {
-        return 'The device was disconnected during the copy.'
+        return `The device was disconnected during the ${verb}.`
     }
 
     // Connection errors
@@ -144,7 +156,7 @@ function getIoErrorMessage(rawMessage: string): string {
     }
 
     // Default
-    return "Couldn't copy the file."
+    return `Couldn't ${verb} the file.`
 }
 
 /**

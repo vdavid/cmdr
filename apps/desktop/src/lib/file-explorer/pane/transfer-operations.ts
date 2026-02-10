@@ -1,9 +1,9 @@
 import { getFileAt, getListingStats } from '$lib/tauri-commands'
-import { toBackendIndices, toBackendCursorIndex } from '$lib/file-operations/copy/copy-dialog-utils'
-import type { SortColumn, SortOrder, VolumeInfo } from '../types'
+import { toBackendIndices, toBackendCursorIndex } from '$lib/file-operations/transfer/transfer-dialog-utils'
+import type { SortColumn, SortOrder, TransferOperationType, VolumeInfo } from '../types'
 import type FilePane from './FilePane.svelte'
 
-export interface CopyContext {
+export interface TransferContext {
     showHiddenFiles: boolean
     sourcePath: string
     destPath: string
@@ -13,7 +13,8 @@ export interface CopyContext {
     sortOrder: SortOrder
 }
 
-export interface CopyDialogPropsData {
+export interface TransferDialogPropsData {
+    operationType: TransferOperationType
     sourcePaths: string[]
     destinationPath: string
     direction: 'left' | 'right'
@@ -49,13 +50,14 @@ export async function getSelectedFilePaths(
     return paths
 }
 
-export async function buildCopyPropsFromSelection(
+export async function buildTransferPropsFromSelection(
+    operationType: TransferOperationType,
     listingId: string,
     selectedIndices: number[],
     hasParent: boolean,
     isLeft: boolean,
-    context: CopyContext,
-): Promise<CopyDialogPropsData | null> {
+    context: TransferContext,
+): Promise<TransferDialogPropsData | null> {
     const backendIndices = toBackendIndices(selectedIndices, hasParent)
     if (backendIndices.length === 0) return null
 
@@ -64,6 +66,7 @@ export async function buildCopyPropsFromSelection(
     if (sourcePaths.length === 0) return null
 
     return {
+        operationType,
         sourcePaths,
         destinationPath: context.destPath,
         direction: isLeft ? 'right' : 'left',
@@ -78,13 +81,14 @@ export async function buildCopyPropsFromSelection(
     }
 }
 
-export async function buildCopyPropsFromCursor(
+export async function buildTransferPropsFromCursor(
+    operationType: TransferOperationType,
     listingId: string,
     paneRef: FilePane | undefined,
     hasParent: boolean,
     isLeft: boolean,
-    context: CopyContext,
-): Promise<CopyDialogPropsData | null> {
+    context: TransferContext,
+): Promise<TransferDialogPropsData | null> {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     const cursorIndex = paneRef?.getCursorIndex?.() as number | undefined
     const backendIndex = toBackendCursorIndex(cursorIndex ?? -1, hasParent)
@@ -94,6 +98,7 @@ export async function buildCopyPropsFromCursor(
     if (!file || file.name === '..') return null
 
     return {
+        operationType,
         sourcePaths: [file.path],
         destinationPath: context.destPath,
         direction: isLeft ? 'right' : 'left',

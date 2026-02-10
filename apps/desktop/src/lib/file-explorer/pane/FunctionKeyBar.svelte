@@ -4,10 +4,11 @@
         onView?: () => void
         onEdit?: () => void
         onCopy?: () => void
+        onMove?: () => void
         onNewFolder?: () => void
     }
 
-    const { visible = true, onView, onEdit, onCopy, onNewFolder }: Props = $props()
+    const { visible = true, onView, onEdit, onCopy, onMove, onNewFolder }: Props = $props()
 </script>
 
 {#if visible}
@@ -27,7 +28,7 @@
         <button onclick={onCopy} tabindex={-1} aria-label="Copy (F5)">
             <kbd>F5</kbd><span>Copy</span>
         </button>
-        <button disabled tabindex={-1} aria-label="Move (F6) — not yet available">
+        <button onclick={onMove} tabindex={-1} aria-label="Move (F6)">
             <kbd>F6</kbd><span>Move</span>
         </button>
         <button onclick={onNewFolder} tabindex={-1} aria-label="New folder (F7)">

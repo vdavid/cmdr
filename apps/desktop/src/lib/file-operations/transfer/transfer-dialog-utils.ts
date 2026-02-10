@@ -1,14 +1,20 @@
 /**
- * Utility functions for the copy dialog
+ * Utility functions for the transfer (copy/move) dialog
  */
+
+import type { TransferOperationType } from '$lib/file-explorer/types'
+
+const operationLabelMap: Record<TransferOperationType, string> = {
+    copy: 'Copy',
+    move: 'Move',
+}
 
 /**
  * Generates a dialog title with proper pluralization for files and folders.
- * @param files - Number of files being copied
- * @param folders - Number of folders being copied
- * @returns Formatted title string like "Copy 1 file", "Copy 2 files and 3 folders"
+ * @returns Formatted title string like "Copy 1 file", "Move 2 files and 3 folders"
  */
-export function generateTitle(files: number, folders: number): string {
+export function generateTitle(operationType: TransferOperationType, files: number, folders: number): string {
+    const verb = operationLabelMap[operationType]
     const parts: string[] = []
     if (files > 0) {
         parts.push(`${String(files)} ${files === 1 ? 'file' : 'files'}`)
@@ -17,9 +23,9 @@ export function generateTitle(files: number, folders: number): string {
         parts.push(`${String(folders)} ${folders === 1 ? 'folder' : 'folders'}`)
     }
     if (parts.length === 0) {
-        return 'Copy'
+        return verb
     }
-    return `Copy ${parts.join(' and ')}`
+    return `${verb} ${parts.join(' and ')}`
 }
 
 /**

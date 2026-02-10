@@ -15,16 +15,23 @@
         type SourceItemInput,
         type UnlistenFn,
     } from '$lib/tauri-commands'
-    import type { VolumeInfo, SortColumn, SortOrder, ConflictResolution } from '$lib/file-explorer/types'
+    import type {
+        VolumeInfo,
+        SortColumn,
+        SortOrder,
+        ConflictResolution,
+        TransferOperationType,
+    } from '$lib/file-explorer/types'
     import { getSetting } from '$lib/settings'
     import DirectionIndicator from './DirectionIndicator.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
-    import { generateTitle } from './copy-dialog-utils'
+    import { generateTitle } from './transfer-dialog-utils'
     import { getAppLogger } from '$lib/logger'
 
-    const log = getAppLogger('copyDialog')
+    const log = getAppLogger('transferDialog')
 
     interface Props {
+        operationType: TransferOperationType
         sourcePaths: string[]
         destinationPath: string
         direction: 'left' | 'right'
@@ -51,6 +58,7 @@
     }
 
     const {
+        operationType,
         sourcePaths,
         destinationPath,
         direction,
@@ -96,7 +104,9 @@
     // Get selected volume info
     const selectedVolume = $derived(actualVolumes.find((v) => v.id === selectedVolumeId))
 
-    const dialogTitle = $derived(generateTitle(fileCount, folderCount))
+    const dialogTitle = $derived(generateTitle(operationType, fileCount, folderCount))
+
+    const confirmLabel = $derived(operationType === 'copy' ? 'Copy' : 'Move')
 
     // Format space info for display
     function formatSpaceInfo(space: VolumeSpaceInfo | null): string {
@@ -166,7 +176,7 @@
             }
         } catch (err) {
             log.error('Failed to check for conflicts: {error}', { error: err })
-            // Don't block the copy operation on conflict check failure
+            // Don't block the operation on conflict check failure
             conflictCheckComplete = true
         } finally {
             isCheckingConflicts = false
@@ -239,7 +249,7 @@
     })
 
     function handleConfirm() {
-        // Pass the previewId and conflict policy so copy operation can reuse scan results
+        // Pass the previewId and conflict policy so the operation can reuse scan results
         onConfirm(editedPath, selectedVolumeId, previewId, conflictPolicy)
     }
 
@@ -270,7 +280,7 @@
 <ModalDialog
     titleId="dialog-title"
     onkeydown={handleKeydown}
-    dialogId="copy-confirmation"
+    dialogId="transfer-confirmation"
     onclose={handleCancel}
     containerStyle="min-width: 420px; max-width: 500px"
 >
@@ -359,7 +369,7 @@
     <!-- Buttons (centered) -->
     <div class="button-row">
         <button class="secondary" onclick={handleCancel}>Cancel</button>
-        <button class="primary" onclick={handleConfirm}>Copy</button>
+        <button class="primary" onclick={handleConfirm}>{confirmLabel}</button>
     </div>
 </ModalDialog>
 

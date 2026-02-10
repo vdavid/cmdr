@@ -230,6 +230,11 @@ Key implementation details:
 
 ### Frontend
 
+Copy (F5) and Move (F6) share a unified transfer UI in `src/lib/file-operations/transfer/`. The three dialog components
+(`TransferDialog`, `TransferProgressDialog`, `TransferErrorDialog`) accept an `operationType` prop (`'copy'` or
+`'move'`) that controls labels, which Tauri command to invoke, and post-completion behavior (move refreshes both panes
+since source files disappear). MTP cross-volume move isn't supported yet — the UI shows an alert when attempted.
+
 Events can be listened to using Tauri's event system:
 
 ```typescript

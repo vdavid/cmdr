@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
     getDestinationVolumeInfo,
     getSelectedFilePaths,
-    buildCopyPropsFromSelection,
-    type CopyContext,
-} from './copy-operations'
+    buildTransferPropsFromSelection,
+    type TransferContext,
+} from './transfer-operations'
 import type { FileEntry, VolumeInfo } from '../types'
 
 vi.mock('$lib/tauri-commands', () => ({
@@ -106,8 +106,8 @@ describe('getSelectedFilePaths', () => {
     })
 })
 
-describe('buildCopyPropsFromSelection', () => {
-    const context: CopyContext = {
+describe('buildTransferPropsFromSelection', () => {
+    const context: TransferContext = {
         showHiddenFiles: false,
         sourcePath: '/source',
         destPath: '/dest',
@@ -120,10 +120,10 @@ describe('buildCopyPropsFromSelection', () => {
     beforeEach(() => vi.clearAllMocks())
 
     it('returns null for empty indices', async () => {
-        expect(await buildCopyPropsFromSelection('listing-1', [], false, true, context)).toBeNull()
+        expect(await buildTransferPropsFromSelection('copy', 'listing-1', [], false, true, context)).toBeNull()
     })
 
-    it('returns correct props for valid selection', async () => {
+    it('returns correct props for copy selection', async () => {
         vi.mocked(getListingStats).mockResolvedValueOnce({
             totalFiles: 2,
             totalDirs: 1,
@@ -138,8 +138,9 @@ describe('buildCopyPropsFromSelection', () => {
             mockFileEntry({ name: 'folder', path: '/source/folder', isDirectory: true }),
         )
 
-        const result = await buildCopyPropsFromSelection('listing-1', [0, 1], false, true, context)
+        const result = await buildTransferPropsFromSelection('copy', 'listing-1', [0, 1], false, true, context)
         expect(result).toEqual({
+            operationType: 'copy',
             sourcePaths: ['/source/file1.txt', '/source/folder'],
             destinationPath: '/dest',
             direction: 'right',
@@ -152,5 +153,21 @@ describe('buildCopyPropsFromSelection', () => {
             sourceVolumeId: 'vol-src',
             destVolumeId: 'vol-dest',
         })
+    })
+
+    it('returns correct props for move selection', async () => {
+        vi.mocked(getListingStats).mockResolvedValueOnce({
+            totalFiles: 1,
+            totalDirs: 0,
+            totalFileSize: 500,
+            selectedFiles: 1,
+            selectedDirs: 0,
+        })
+        vi.mocked(getFileAt).mockResolvedValueOnce(
+            mockFileEntry({ name: 'file.txt', path: '/source/file.txt', isDirectory: false }),
+        )
+
+        const result = await buildTransferPropsFromSelection('move', 'listing-1', [0], false, true, context)
+        expect(result?.operationType).toBe('move')
     })
 })

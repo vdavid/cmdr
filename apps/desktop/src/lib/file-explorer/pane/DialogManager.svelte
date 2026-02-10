@@ -1,39 +1,47 @@
 <script lang="ts">
-    import CopyDialog from '../../file-operations/copy/CopyDialog.svelte'
-    import CopyProgressDialog from '../../file-operations/copy/CopyProgressDialog.svelte'
-    import CopyErrorDialog from '../../file-operations/copy/CopyErrorDialog.svelte'
+    import TransferDialog from '../../file-operations/transfer/TransferDialog.svelte'
+    import TransferProgressDialog from '../../file-operations/transfer/TransferProgressDialog.svelte'
+    import TransferErrorDialog from '../../file-operations/transfer/TransferErrorDialog.svelte'
     import NewFolderDialog from '$lib/file-operations/mkdir/NewFolderDialog.svelte'
     import AlertDialog from '$lib/ui/AlertDialog.svelte'
-    import type { CopyDialogPropsData } from './copy-operations'
-    import type { SortColumn, SortOrder, VolumeInfo, ConflictResolution, WriteOperationError } from '../types'
+    import type { TransferDialogPropsData } from './transfer-operations'
+    import type {
+        TransferOperationType,
+        SortColumn,
+        SortOrder,
+        VolumeInfo,
+        ConflictResolution,
+        WriteOperationError,
+    } from '../types'
 
     const {
-        showCopyDialog,
-        copyDialogProps,
+        showTransferDialog,
+        transferDialogProps,
         volumes,
-        showCopyProgressDialog,
-        copyProgressProps,
+        showTransferProgressDialog,
+        transferProgressProps,
         showNewFolderDialog,
         newFolderDialogProps,
         showAlertDialog,
         alertDialogProps,
-        showCopyErrorDialog,
-        copyErrorProps,
-        onCopyConfirm,
-        onCopyCancel,
-        onCopyComplete,
-        onCopyCancelled,
-        onCopyError,
-        onCopyErrorClose,
+        showTransferErrorDialog,
+        transferErrorProps,
+        onTransferConfirm,
+        onTransferCancel,
+        onTransferComplete,
+        onTransferCancelled,
+        onTransferError,
+        onTransferErrorClose,
         onNewFolderCreated,
         onNewFolderCancel,
         onAlertClose,
     }: {
-        showCopyDialog: boolean
-        copyDialogProps: CopyDialogPropsData | null
+        showTransferDialog: boolean
+        transferDialogProps: TransferDialogPropsData | null
         volumes: VolumeInfo[]
-        showCopyProgressDialog: boolean
-        copyProgressProps: {
+        showTransferProgressDialog: boolean
+        transferProgressProps: {
+            operationType: TransferOperationType
             sourcePaths: string[]
             sourceFolderPath: string
             destinationPath: string
@@ -55,59 +63,61 @@
         } | null
         showAlertDialog: boolean
         alertDialogProps: { title: string; message: string } | null
-        showCopyErrorDialog: boolean
-        copyErrorProps: { error: WriteOperationError } | null
-        onCopyConfirm: (
+        showTransferErrorDialog: boolean
+        transferErrorProps: { operationType: TransferOperationType; error: WriteOperationError } | null
+        onTransferConfirm: (
             destination: string,
             volumeId: string,
             previewId: string | null,
             conflictResolution: ConflictResolution,
         ) => void
-        onCopyCancel: () => void
-        onCopyComplete: (filesProcessed: number, bytesProcessed: number) => void
-        onCopyCancelled: (filesProcessed: number) => void
-        onCopyError: (error: WriteOperationError) => void
-        onCopyErrorClose: () => void
+        onTransferCancel: () => void
+        onTransferComplete: (filesProcessed: number, bytesProcessed: number) => void
+        onTransferCancelled: (filesProcessed: number) => void
+        onTransferError: (error: WriteOperationError) => void
+        onTransferErrorClose: () => void
         onNewFolderCreated: (folderName: string) => void
         onNewFolderCancel: () => void
         onAlertClose: () => void
     } = $props()
 </script>
 
-{#if showCopyDialog && copyDialogProps}
-    <CopyDialog
-        sourcePaths={copyDialogProps.sourcePaths}
-        destinationPath={copyDialogProps.destinationPath}
-        direction={copyDialogProps.direction}
+{#if showTransferDialog && transferDialogProps}
+    <TransferDialog
+        operationType={transferDialogProps.operationType}
+        sourcePaths={transferDialogProps.sourcePaths}
+        destinationPath={transferDialogProps.destinationPath}
+        direction={transferDialogProps.direction}
         {volumes}
-        currentVolumeId={copyDialogProps.currentVolumeId}
-        fileCount={copyDialogProps.fileCount}
-        folderCount={copyDialogProps.folderCount}
-        sourceFolderPath={copyDialogProps.sourceFolderPath}
-        sortColumn={copyDialogProps.sortColumn}
-        sortOrder={copyDialogProps.sortOrder}
-        sourceVolumeId={copyDialogProps.sourceVolumeId}
-        destVolumeId={copyDialogProps.destVolumeId}
-        onConfirm={onCopyConfirm}
-        onCancel={onCopyCancel}
+        currentVolumeId={transferDialogProps.currentVolumeId}
+        fileCount={transferDialogProps.fileCount}
+        folderCount={transferDialogProps.folderCount}
+        sourceFolderPath={transferDialogProps.sourceFolderPath}
+        sortColumn={transferDialogProps.sortColumn}
+        sortOrder={transferDialogProps.sortOrder}
+        sourceVolumeId={transferDialogProps.sourceVolumeId}
+        destVolumeId={transferDialogProps.destVolumeId}
+        onConfirm={onTransferConfirm}
+        onCancel={onTransferCancel}
     />
 {/if}
 
-{#if showCopyProgressDialog && copyProgressProps}
-    <CopyProgressDialog
-        sourcePaths={copyProgressProps.sourcePaths}
-        sourceFolderPath={copyProgressProps.sourceFolderPath}
-        destinationPath={copyProgressProps.destinationPath}
-        direction={copyProgressProps.direction}
-        sortColumn={copyProgressProps.sortColumn}
-        sortOrder={copyProgressProps.sortOrder}
-        previewId={copyProgressProps.previewId}
-        sourceVolumeId={copyProgressProps.sourceVolumeId}
-        destVolumeId={copyProgressProps.destVolumeId}
-        conflictResolution={copyProgressProps.conflictResolution}
-        onComplete={onCopyComplete}
-        onCancelled={onCopyCancelled}
-        onError={onCopyError}
+{#if showTransferProgressDialog && transferProgressProps}
+    <TransferProgressDialog
+        operationType={transferProgressProps.operationType}
+        sourcePaths={transferProgressProps.sourcePaths}
+        sourceFolderPath={transferProgressProps.sourceFolderPath}
+        destinationPath={transferProgressProps.destinationPath}
+        direction={transferProgressProps.direction}
+        sortColumn={transferProgressProps.sortColumn}
+        sortOrder={transferProgressProps.sortOrder}
+        previewId={transferProgressProps.previewId}
+        sourceVolumeId={transferProgressProps.sourceVolumeId}
+        destVolumeId={transferProgressProps.destVolumeId}
+        conflictResolution={transferProgressProps.conflictResolution}
+        onComplete={onTransferComplete}
+        onCancelled={onTransferCancelled}
+        onError={onTransferError}
     />
 {/if}
 
@@ -127,6 +137,10 @@
     <AlertDialog title={alertDialogProps.title} message={alertDialogProps.message} onClose={onAlertClose} />
 {/if}
 
-{#if showCopyErrorDialog && copyErrorProps}
-    <CopyErrorDialog error={copyErrorProps.error} onClose={onCopyErrorClose} />
+{#if showTransferErrorDialog && transferErrorProps}
+    <TransferErrorDialog
+        operationType={transferErrorProps.operationType}
+        error={transferErrorProps.error}
+        onClose={onTransferErrorClose}
+    />
 {/if}

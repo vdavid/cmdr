@@ -4,7 +4,7 @@
     import PaneResizer from './PaneResizer.svelte'
     import LoadingIcon from '$lib/ui/LoadingIcon.svelte'
     import DialogManager from './DialogManager.svelte'
-    import { toBackendCursorIndex } from '$lib/file-operations/copy/copy-dialog-utils'
+    import { toBackendCursorIndex } from '$lib/file-operations/transfer/transfer-dialog-utils'
     import { formatBytes, getFileAt } from '$lib/tauri-commands'
     import {
         loadAppStatus,
@@ -55,12 +55,13 @@
     import { getMtpVolumes } from '$lib/mtp'
     import { getNewSortOrder, applySortResult, collectSortState } from './sorting-handlers'
     import {
-        type CopyDialogPropsData,
-        type CopyContext,
-        buildCopyPropsFromSelection,
-        buildCopyPropsFromCursor,
+        type TransferDialogPropsData,
+        type TransferContext,
+        buildTransferPropsFromSelection,
+        buildTransferPropsFromCursor,
         getDestinationVolumeInfo,
-    } from './copy-operations'
+    } from './transfer-operations'
+    import type { TransferOperationType } from '../types'
     import { getInitialFolderName, moveCursorToNewFolder } from '$lib/file-operations/mkdir/new-folder-operations'
 
     const log = getAppLogger('fileExplorer')
@@ -92,13 +93,14 @@
     let unlistenVolumeUnmount: UnlistenFn | undefined
     let unlistenNavigation: UnlistenFn | undefined
 
-    // Copy dialog state
-    let showCopyDialog = $state(false)
-    let copyDialogProps = $state<CopyDialogPropsData | null>(null)
+    // Transfer dialog state (copy/move)
+    let showTransferDialog = $state(false)
+    let transferDialogProps = $state<TransferDialogPropsData | null>(null)
 
-    // Copy progress dialog state
-    let showCopyProgressDialog = $state(false)
-    let copyProgressProps = $state<{
+    // Transfer progress dialog state
+    let showTransferProgressDialog = $state(false)
+    let transferProgressProps = $state<{
+        operationType: TransferOperationType
         sourcePaths: string[]
         sourceFolderPath: string
         destinationPath: string
@@ -128,9 +130,10 @@
         message: string
     } | null>(null)
 
-    // Copy error dialog state
-    let showCopyErrorDialog = $state(false)
-    let copyErrorProps = $state<{
+    // Transfer error dialog state
+    let showTransferErrorDialog = $state(false)
+    let transferErrorProps = $state<{
+        operationType: TransferOperationType
         error: WriteOperationError
     } | null>(null)
 
@@ -418,7 +421,10 @@
                 void openViewerForCursor()
                 return true
             case 'F5':
-                void openCopyDialog()
+                void openTransferDialog('copy')
+                return true
+            case 'F6':
+                void openTransferDialog('move')
                 return true
             case 'F7':
                 void openNewFolderDialog()
@@ -725,23 +731,23 @@
         containerElement?.focus()
     }
 
-    /** Closes any confirmation dialog (new folder or copy) if open (for MCP). */
+    /** Closes any confirmation dialog (new folder or transfer) if open (for MCP). */
     export function closeConfirmationDialog() {
         if (showNewFolderDialog) {
             showNewFolderDialog = false
             newFolderDialogProps = null
             containerElement?.focus()
         }
-        if (showCopyDialog) {
-            showCopyDialog = false
-            copyDialogProps = null
+        if (showTransferDialog) {
+            showTransferDialog = false
+            transferDialogProps = null
             containerElement?.focus()
         }
     }
 
     /** Returns whether any confirmation dialog is currently open. */
     export function isConfirmationDialogOpen(): boolean {
-        return showNewFolderDialog || showCopyDialog
+        return showNewFolderDialog || showTransferDialog
     }
 
     /** Opens the file viewer for the file under the cursor. */
@@ -763,8 +769,8 @@
         void openFileViewer(file.path)
     }
 
-    /** Builds a CopyContext from pane state. */
-    function buildCopyContext(pane: 'left' | 'right'): CopyContext {
+    /** Builds a TransferContext from pane state. */
+    function buildTransferContext(pane: 'left' | 'right'): TransferContext {
         const other = otherPane(pane)
         const { sortBy, sortOrder } = getPaneSort(pane)
         return {
@@ -778,8 +784,12 @@
         }
     }
 
-    /** Opens the unified copy dialog for all volume types (local, MTP, etc.). */
-    async function openUnifiedCopyDialog(sourcePaneRef: FilePane | undefined, pane: 'left' | 'right') {
+    /** Opens the unified transfer dialog for all volume types (local, MTP, etc.). */
+    async function openUnifiedTransferDialog(
+        operationType: TransferOperationType,
+        sourcePaneRef: FilePane | undefined,
+        pane: 'left' | 'right',
+    ) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         const listingId = sourcePaneRef?.getListingId?.() as string | undefined
         if (!listingId) return
@@ -790,21 +800,35 @@
         const selectedIndices = sourcePaneRef?.getSelectedIndices?.() as number[] | undefined
         const hasSelection = selectedIndices && selectedIndices.length > 0
 
-        const context = buildCopyContext(pane)
+        const context = buildTransferContext(pane)
         const isLeft = pane === 'left'
 
         const props = hasSelection
-            ? await buildCopyPropsFromSelection(listingId, selectedIndices, hasParent ?? false, isLeft, context)
-            : await buildCopyPropsFromCursor(listingId, sourcePaneRef, hasParent ?? false, isLeft, context)
+            ? await buildTransferPropsFromSelection(
+                  operationType,
+                  listingId,
+                  selectedIndices,
+                  hasParent ?? false,
+                  isLeft,
+                  context,
+              )
+            : await buildTransferPropsFromCursor(
+                  operationType,
+                  listingId,
+                  sourcePaneRef,
+                  hasParent ?? false,
+                  isLeft,
+                  context,
+              )
 
         if (props) {
-            copyDialogProps = props
-            showCopyDialog = true
+            transferDialogProps = props
+            showTransferDialog = true
         }
     }
 
-    /** Opens the copy dialog with the current selection info. */
-    export async function openCopyDialog() {
+    /** Opens the transfer dialog with the current selection info. */
+    export async function openTransferDialog(operationType: TransferOperationType) {
         const sourcePaneRef = getPaneRef(focusedPane)
         const destVolId = getPaneVolumeId(otherPane(focusedPane))
 
@@ -818,89 +842,121 @@
             return
         }
 
-        await openUnifiedCopyDialog(sourcePaneRef, focusedPane)
+        // MTP move guard: move to/from MTP not yet supported
+        if (operationType === 'move') {
+            const sourceVolId = getPaneVolumeId(focusedPane)
+            if (sourceVolId.startsWith('mtp-') || destVolId.startsWith('mtp-')) {
+                alertDialogProps = {
+                    title: 'Not supported yet',
+                    message: "Move between MTP devices isn't supported yet. You can use copy instead.",
+                }
+                showAlertDialog = true
+                return
+            }
+        }
+
+        await openUnifiedTransferDialog(operationType, sourcePaneRef, focusedPane)
     }
 
-    function handleCopyConfirm(
+    /** Opens the copy dialog (convenience wrapper for MCP/key binding). */
+    export async function openCopyDialog() {
+        await openTransferDialog('copy')
+    }
+
+    /** Opens the move dialog (convenience wrapper for MCP/key binding). */
+    export async function openMoveDialog() {
+        await openTransferDialog('move')
+    }
+
+    function handleTransferConfirm(
         destination: string,
         _volumeId: string,
         previewId: string | null,
         conflictResolution: ConflictResolution,
     ) {
-        if (!copyDialogProps) return
+        if (!transferDialogProps) return
 
         // Store the props needed for the progress dialog
-        // Sort settings now come from copyDialogProps (captured at dialog open time)
-        copyProgressProps = {
-            sourcePaths: copyDialogProps.sourcePaths,
-            sourceFolderPath: copyDialogProps.sourceFolderPath,
+        transferProgressProps = {
+            operationType: transferDialogProps.operationType,
+            sourcePaths: transferDialogProps.sourcePaths,
+            sourceFolderPath: transferDialogProps.sourceFolderPath,
             destinationPath: destination,
-            direction: copyDialogProps.direction,
-            sortColumn: copyDialogProps.sortColumn,
-            sortOrder: copyDialogProps.sortOrder,
+            direction: transferDialogProps.direction,
+            sortColumn: transferDialogProps.sortColumn,
+            sortOrder: transferDialogProps.sortOrder,
             previewId,
-            sourceVolumeId: copyDialogProps.sourceVolumeId,
-            destVolumeId: copyDialogProps.destVolumeId,
+            sourceVolumeId: transferDialogProps.sourceVolumeId,
+            destVolumeId: transferDialogProps.destVolumeId,
             conflictResolution,
         }
 
-        // Close copy dialog and open progress dialog
-        showCopyDialog = false
-        copyDialogProps = null
-        showCopyProgressDialog = true
+        // Close transfer dialog and open progress dialog
+        showTransferDialog = false
+        transferDialogProps = null
+        showTransferProgressDialog = true
     }
 
-    function handleCopyCancel() {
-        showCopyDialog = false
-        copyDialogProps = null
+    function handleTransferCancel() {
+        showTransferDialog = false
+        transferDialogProps = null
         containerElement?.focus()
     }
 
-    function handleCopyComplete(filesProcessed: number, bytesProcessed: number) {
-        log.info(`Copy complete: ${String(filesProcessed)} files (${formatBytes(bytesProcessed)})`)
-
-        // Refresh the destination pane to show the new files
-        const destPaneRef = copyProgressProps?.direction === 'right' ? rightPaneRef : leftPaneRef
+    /** Refreshes panes after a transfer completes — for move, refresh both panes. */
+    function refreshPanesAfterTransfer() {
+        const destPaneRef = transferProgressProps?.direction === 'right' ? rightPaneRef : leftPaneRef
+        const sourcePaneRef = transferProgressProps?.direction === 'right' ? leftPaneRef : rightPaneRef
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         destPaneRef?.refreshView?.()
+        // For move, source files disappeared — refresh source pane too
+        if (transferProgressProps?.operationType === 'move') {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            sourcePaneRef?.refreshView?.()
+        }
+    }
 
-        showCopyProgressDialog = false
-        copyProgressProps = null
+    function handleTransferComplete(filesProcessed: number, bytesProcessed: number) {
+        const op = transferProgressProps?.operationType ?? 'copy'
+        log.info(
+            `${op === 'copy' ? 'Copy' : 'Move'} complete: ${String(filesProcessed)} files (${formatBytes(bytesProcessed)})`,
+        )
+
+        refreshPanesAfterTransfer()
+
+        showTransferProgressDialog = false
+        transferProgressProps = null
         containerElement?.focus()
     }
 
-    function handleCopyCancelled(filesProcessed: number) {
-        log.info(`Copy cancelled after ${String(filesProcessed)} files`)
+    function handleTransferCancelled(filesProcessed: number) {
+        const op = transferProgressProps?.operationType ?? 'copy'
+        log.info(`${op === 'copy' ? 'Copy' : 'Move'} cancelled after ${String(filesProcessed)} files`)
 
-        // Refresh the destination pane to show any files that were copied
-        const destPaneRef = copyProgressProps?.direction === 'right' ? rightPaneRef : leftPaneRef
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        destPaneRef?.refreshView?.()
+        refreshPanesAfterTransfer()
 
-        showCopyProgressDialog = false
-        copyProgressProps = null
+        showTransferProgressDialog = false
+        transferProgressProps = null
         containerElement?.focus()
     }
 
-    function handleCopyError(error: WriteOperationError) {
-        log.error('Copy failed: {errorType}', { errorType: error.type, error })
+    function handleTransferError(error: WriteOperationError) {
+        const op = transferProgressProps?.operationType ?? 'copy'
+        log.error('{op} failed: {errorType}', { op: op === 'copy' ? 'Copy' : 'Move', errorType: error.type, error })
 
-        // Refresh the destination pane to show any files that were partially copied
-        const destPaneRef = copyProgressProps?.direction === 'right' ? rightPaneRef : leftPaneRef
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        destPaneRef?.refreshView?.()
+        refreshPanesAfterTransfer()
 
-        showCopyProgressDialog = false
-        copyProgressProps = null
+        showTransferProgressDialog = false
+        transferProgressProps = null
 
         // Show the error dialog
-        copyErrorProps = { error }
-        showCopyErrorDialog = true
+        transferErrorProps = { operationType: op, error }
+        showTransferErrorDialog = true
     }
 
-    function handleCopyErrorClose() {
-        showCopyErrorDialog = false
-        copyErrorProps = null
+    function handleTransferErrorClose() {
+        showTransferErrorDialog = false
+        transferErrorProps = null
         containerElement?.focus()
     }
 
@@ -1398,23 +1454,23 @@
 </div>
 
 <DialogManager
-    {showCopyDialog}
-    {copyDialogProps}
+    {showTransferDialog}
+    {transferDialogProps}
     {volumes}
-    {showCopyProgressDialog}
-    {copyProgressProps}
+    {showTransferProgressDialog}
+    {transferProgressProps}
     {showNewFolderDialog}
     {newFolderDialogProps}
     {showAlertDialog}
     {alertDialogProps}
-    {showCopyErrorDialog}
-    {copyErrorProps}
-    onCopyConfirm={handleCopyConfirm}
-    onCopyCancel={handleCopyCancel}
-    onCopyComplete={handleCopyComplete}
-    onCopyCancelled={handleCopyCancelled}
-    onCopyError={handleCopyError}
-    onCopyErrorClose={handleCopyErrorClose}
+    {showTransferErrorDialog}
+    {transferErrorProps}
+    onTransferConfirm={handleTransferConfirm}
+    onTransferCancel={handleTransferCancel}
+    onTransferComplete={handleTransferComplete}
+    onTransferCancelled={handleTransferCancelled}
+    onTransferError={handleTransferError}
+    onTransferErrorClose={handleTransferErrorClose}
     onNewFolderCreated={handleNewFolderCreated}
     onNewFolderCancel={handleNewFolderCancel}
     onAlertClose={handleAlertClose}
