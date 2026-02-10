@@ -116,8 +116,8 @@
         --color-selection-fg: #d4a82a;
 
         /* === Search Highlight === */
-        --color-highlight: rgba(255, 213, 0, 0.35);
-        --color-highlight-active: rgba(255, 130, 0, 0.6);
+        --color-highlight: rgba(255, 213, 100, 0.9);
+        --color-highlight-active: rgba(255, 150, 100, 0.9);
     }
 }
 

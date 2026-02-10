@@ -380,7 +380,7 @@
         if (query && searchVisible) {
             searchDebounceTimer = setTimeout(() => {
                 void startSearch(query)
-            }, 300)
+            }, 100)
         } else {
             void cancelSearch()
             searchMatches = []
@@ -659,6 +659,9 @@
                 placeholder="Find in file..."
                 aria-label="Search text"
                 class="search-input"
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
             />
             <span class="match-count" aria-live="polite">
                 {#if searchMatches.length > 0}
@@ -873,6 +876,7 @@
         background: var(--color-highlight);
         border-radius: 2px;
         padding: 0 1px;
+        margin: 0 -1px;
     }
 
     mark.active {

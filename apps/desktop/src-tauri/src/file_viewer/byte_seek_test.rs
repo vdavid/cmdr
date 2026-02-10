@@ -238,6 +238,53 @@ fn search_no_matches() {
 }
 
 #[test]
+fn search_with_multibyte_chars() {
+    let dir = create_test_dir("search_multibyte");
+    // "café" has a multi-byte 'é' (2 bytes in UTF-8, 1 character)
+    let file = write_test_file(&dir, "test.txt", "café latte\nplain text\n");
+
+    let backend = ByteSeekBackend::open(&file).unwrap();
+    let cancel = AtomicBool::new(false);
+    let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+
+    backend.search("latte", &cancel, &results).unwrap();
+    let matches = results.lock().unwrap();
+
+    assert_eq!(matches.len(), 1);
+    assert_eq!(matches[0].line, 0);
+    // "café " is 5 characters, not 6 bytes
+    assert_eq!(matches[0].column, 5);
+    assert_eq!(matches[0].length, 5);
+
+    cleanup(&dir);
+}
+
+#[test]
+fn search_with_replacement_chars() {
+    let dir = create_test_dir("search_replacement");
+    // Write raw bytes: invalid UTF-8 byte followed by "PNG header\n"
+    let mut content = vec![0x89u8]; // Invalid UTF-8 start byte
+    content.extend_from_slice(b"PNG header\nmore data\n");
+    let file = dir.join("test.bin");
+    fs::write(&file, &content).unwrap();
+
+    let backend = ByteSeekBackend::open(&file).unwrap();
+    let cancel = AtomicBool::new(false);
+    let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+
+    backend.search("png", &cancel, &results).unwrap();
+    let matches = results.lock().unwrap();
+
+    assert_eq!(matches.len(), 1);
+    assert_eq!(matches[0].line, 0);
+    // Column should be 1 (after replacement char), not 3 (byte offset of U+FFFD)
+    assert_eq!(matches[0].column, 1);
+    assert_eq!(matches[0].length, 3);
+
+    cleanup(&dir);
+}
+
+#[test]
 fn capabilities_correct() {
     let dir = create_test_dir("caps");
     let file = write_test_file(&dir, "test.txt", "test\n");

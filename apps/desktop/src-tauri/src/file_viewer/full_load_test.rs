@@ -167,10 +167,10 @@ fn search_multiple_per_line() {
     backend.search("aa", &cancel, &results).unwrap();
     let matches = results.lock().unwrap();
 
-    // "aaa" contains "aa" at positions 0 and 1
-    assert_eq!(matches.len(), 2);
+    // Non-overlapping: "aaa" contains "aa" once at position 0, then only "a" remains
+    assert_eq!(matches.len(), 1);
     assert_eq!(matches[0].column, 0);
-    assert_eq!(matches[1].column, 1);
+    assert_eq!(matches[0].length, 2);
 }
 
 #[test]
@@ -226,6 +226,59 @@ fn binary_content_handled() {
     assert!(chunk.lines[0].contains('\u{FFFD}'));
 
     cleanup(&dir);
+}
+
+#[test]
+fn search_with_multibyte_chars() {
+    // "café" has a multi-byte 'é' (2 bytes in UTF-8, 1 character)
+    let backend = FullLoadBackend::from_content("café latte\nplain text", "test.txt");
+
+    let cancel = AtomicBool::new(false);
+    let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+
+    backend.search("latte", &cancel, &results).unwrap();
+    let matches = results.lock().unwrap();
+
+    assert_eq!(matches.len(), 1);
+    assert_eq!(matches[0].line, 0);
+    // "café " is 5 characters (c-a-f-é-space), not 6 bytes
+    assert_eq!(matches[0].column, 5);
+    assert_eq!(matches[0].length, 5);
+}
+
+#[test]
+fn search_with_replacement_chars() {
+    // Simulate what from_utf8_lossy does: U+FFFD is 3 bytes in UTF-8 but 1 char
+    let content = "\u{FFFD}PNG header\nmore data";
+    let backend = FullLoadBackend::from_content(content, "test.txt");
+
+    let cancel = AtomicBool::new(false);
+    let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+
+    backend.search("png", &cancel, &results).unwrap();
+    let matches = results.lock().unwrap();
+
+    assert_eq!(matches.len(), 1);
+    assert_eq!(matches[0].line, 0);
+    // Column should be 1 (after the single replacement char), not 3 (byte offset)
+    assert_eq!(matches[0].column, 1);
+    assert_eq!(matches[0].length, 3);
+}
+
+#[test]
+fn search_with_emoji() {
+    // '🦀' is 4 bytes in UTF-8, 1 Rust char, but 2 UTF-16 code units (surrogate pair in JS)
+    let backend = FullLoadBackend::from_content("🦀rust is great", "test.txt");
+
+    let cancel = AtomicBool::new(false);
+    let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+
+    backend.search("rust", &cancel, &results).unwrap();
+    let matches = results.lock().unwrap();
+
+    assert_eq!(matches.len(), 1);
+    assert_eq!(matches[0].column, 2); // 🦀 = 2 UTF-16 code units
+    assert_eq!(matches[0].length, 4); // "rust" = 4 UTF-16 code units (all ASCII)
 }
 
 #[test]

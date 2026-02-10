@@ -65,9 +65,9 @@ pub struct LineChunk {
 pub struct SearchMatch {
     /// 0-based.
     pub line: usize,
-    /// Byte offset within the line.
+    /// UTF-16 code unit offset within the line (matches JS string indexing).
     pub column: usize,
-    /// In bytes.
+    /// Length in UTF-16 code units (matches JS string indexing).
     pub length: usize,
 }
 
