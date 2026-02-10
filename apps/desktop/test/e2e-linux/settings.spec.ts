@@ -52,7 +52,7 @@ async function switchToNewWindow(handlesBefore?: string[]): Promise<string> {
  * Helper to ensure the main app is ready for settings tests.
  */
 async function ensureMainAppReady(): Promise<void> {
-    const fileEntry = await browser.$('.file-entry')
+    const fileEntry = browser.$('.file-entry')
     await fileEntry.waitForExist({ timeout: 10000 })
     await browser.pause(300)
 }
@@ -117,7 +117,7 @@ describe('Settings window', () => {
             await switchToNewWindow(handlesBefore)
 
             // Verify settings window content
-            const settingsWindow = await browser.$('.settings-window')
+            const settingsWindow = browser.$('.settings-window')
             await settingsWindow.waitForExist({ timeout: 5000 })
             expect(await settingsWindow.isExisting()).toBe(true)
         } else {
@@ -140,7 +140,7 @@ describe('Settings window', () => {
         await switchToNewWindow(handlesBefore)
 
         // Wait for settings to load
-        const sidebar = await browser.$('.settings-sidebar')
+        const sidebar = browser.$('.settings-sidebar')
         await sidebar.waitForExist({ timeout: 5000 })
 
         // Verify sidebar sections exist
@@ -172,7 +172,7 @@ describe('Settings window', () => {
         await switchToNewWindow(handlesBefore)
 
         // Find and interact with search input
-        const searchInput = await browser.$('.search-input')
+        const searchInput = browser.$('.search-input')
         await searchInput.waitForExist({ timeout: 5000 })
 
         // Type a search query
@@ -198,7 +198,7 @@ describe('Settings window', () => {
         await switchToNewWindow(handlesBefore)
 
         // Wait for sidebar
-        const sidebar = await browser.$('.settings-sidebar')
+        const sidebar = browser.$('.settings-sidebar')
         await sidebar.waitForExist({ timeout: 5000 })
 
         // Find and click on a section
@@ -228,7 +228,7 @@ describe('Settings window', () => {
         const originalWindow = await switchToNewWindow(handlesBefore)
 
         // Verify settings window is open
-        const settingsWindow = await browser.$('.settings-window')
+        const settingsWindow = browser.$('.settings-window')
         await settingsWindow.waitForExist({ timeout: 5000 })
 
         // Press Escape to close
@@ -263,17 +263,17 @@ describe('Settings page (direct navigation)', () => {
         await browser.pause(1000)
 
         // Check for settings window class
-        const settingsWindow = await browser.$('.settings-window')
+        const settingsWindow = browser.$('.settings-window')
 
         if (await settingsWindow.isExisting()) {
             expect(await settingsWindow.isDisplayed()).toBe(true)
 
             // Verify sidebar exists
-            const sidebar = await browser.$('.settings-sidebar')
+            const sidebar = browser.$('.settings-sidebar')
             expect(await sidebar.isExisting()).toBe(true)
 
             // Verify content wrapper exists
-            const content = await browser.$('.settings-content-wrapper')
+            const content = browser.$('.settings-content-wrapper')
             expect(await content.isExisting()).toBe(true)
         } else {
             // The route might not work in this test context

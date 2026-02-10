@@ -118,7 +118,7 @@ Tests in `test/e2e-linux/app.spec.ts` can test full application functionality:
 ```typescript
 describe('Navigation', () => {
     it('should navigate into directories with Enter', async () => {
-        const dirEntry = await browser.$('.file-entry:has(.size-dir)')
+        const dirEntry = browser.$('.file-entry:has(.size-dir)')
         await dirEntry.click()
         await browser.keys('Enter')
         // ... verify navigation occurred

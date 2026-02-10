@@ -25,12 +25,12 @@
  */
 async function getEntryName(entry: WebdriverIO.Element): Promise<string> {
     // Try Full view mode selector first
-    const colName = await entry.$('.col-name')
+    const colName = entry.$('.col-name')
     if (await colName.isExisting()) {
         return colName.getText()
     }
     // Fall back to Brief view mode selector
-    const name = await entry.$('.name')
+    const name = entry.$('.name')
     if (await name.isExisting()) {
         return name.getText()
     }
@@ -45,11 +45,11 @@ async function getEntryName(entry: WebdriverIO.Element): Promise<string> {
  */
 async function ensureAppReadyWithFocus(): Promise<void> {
     // Wait for file entries to be visible (confirms app is fully loaded)
-    const fileEntry = await browser.$('.file-entry')
+    const fileEntry = browser.$('.file-entry')
     await fileEntry.waitForDisplayed({ timeout: 10000 })
 
     // Wait for the HTML loading screen to be gone
-    const loadingScreen = await browser.$('#loading-screen')
+    const loadingScreen = browser.$('#loading-screen')
     if (await loadingScreen.isExisting()) {
         await browser.waitUntil(async () => !(await loadingScreen.isDisplayed()), {
             timeout: 5000,
@@ -119,7 +119,7 @@ describe('Basic rendering', () => {
 
     it('displays the dual pane interface', async () => {
         // Wait for the dual pane explorer to render
-        const explorer = await browser.$('.dual-pane-explorer')
+        const explorer = browser.$('.dual-pane-explorer')
         await explorer.waitForExist({ timeout: 10000 })
 
         // Verify both panes are present
@@ -129,7 +129,7 @@ describe('Basic rendering', () => {
 
     it('shows file entries in the panes', async () => {
         // Wait for file entries to load
-        const fileEntry = await browser.$('.file-entry')
+        const fileEntry = browser.$('.file-entry')
         await fileEntry.waitForExist({ timeout: 10000 })
 
         // Should have file entries
@@ -223,14 +223,14 @@ describe('Keyboard navigation', () => {
         await ensureAppReadyWithFocus()
 
         // Get cursor entry (cast needed due to WDIO ChainablePromiseElement type quirk)
-        let cursorEntry = (await browser.$('.file-entry.is-under-cursor')) as unknown as WebdriverIO.Element
+        let cursorEntry = browser.$('.file-entry.is-under-cursor') as unknown as WebdriverIO.Element
         const cursorText = await getEntryName(cursorEntry)
 
         // Skip ".." entry if that's where cursor is
         if (cursorText === '..') {
             await browser.keys('ArrowDown')
             await browser.pause(300)
-            cursorEntry = (await browser.$('.file-entry.is-under-cursor')) as unknown as WebdriverIO.Element
+            cursorEntry = browser.$('.file-entry.is-under-cursor') as unknown as WebdriverIO.Element
         }
 
         // Verify not selected initially
@@ -242,7 +242,7 @@ describe('Keyboard navigation', () => {
         await pressSpaceKey()
 
         // Verify now selected - re-query the cursor entry
-        cursorEntry = (await browser.$('.file-entry.is-under-cursor')) as unknown as WebdriverIO.Element
+        cursorEntry = browser.$('.file-entry.is-under-cursor') as unknown as WebdriverIO.Element
         cursorClass = await cursorEntry.getAttribute('class')
         expect(cursorClass).toContain('is-selected')
 
@@ -250,7 +250,7 @@ describe('Keyboard navigation', () => {
         await pressSpaceKey()
 
         // Verify now deselected
-        cursorEntry = (await browser.$('.file-entry.is-under-cursor')) as unknown as WebdriverIO.Element
+        cursorEntry = browser.$('.file-entry.is-under-cursor') as unknown as WebdriverIO.Element
         cursorClass = await cursorEntry.getAttribute('class')
         expect(cursorClass).not.toContain('is-selected')
     })
@@ -311,13 +311,13 @@ describe('Navigation', () => {
         await ensureAppReadyWithFocus()
 
         // Get current path from the focused pane's header
-        let pathElement = await browser.$('.file-pane.is-focused .header .path')
+        let pathElement = browser.$('.file-pane.is-focused .header .path')
         const initialPath = await pathElement.getText()
 
         // Find a directory entry (has .size-dir class which shows "<dir>")
-        const dirEntry = (await browser.$(
+        const dirEntry = browser.$(
             '.file-pane.is-focused .file-entry:has(.size-dir)',
-        )) as unknown as WebdriverIO.Element
+        ) as unknown as WebdriverIO.Element
 
         if (!(await dirEntry.isExisting())) {
             // No directories to navigate into, skip test
@@ -333,7 +333,7 @@ describe('Navigation', () => {
         await browser.pause(1000)
 
         // Re-query and verify path changed
-        pathElement = await browser.$('.file-pane.is-focused .header .path')
+        pathElement = browser.$('.file-pane.is-focused .header .path')
         const newPath = await pathElement.getText()
         expect(newPath).not.toBe(initialPath)
     })
@@ -342,9 +342,9 @@ describe('Navigation', () => {
         await ensureAppReadyWithFocus()
 
         // First, navigate into a directory so we can go back
-        const dirEntry = (await browser.$(
+        const dirEntry = browser.$(
             '.file-pane.is-focused .file-entry:has(.size-dir)',
-        )) as unknown as WebdriverIO.Element
+        ) as unknown as WebdriverIO.Element
 
         if (!(await dirEntry.isExisting())) {
             // No directories, skip test
@@ -359,7 +359,7 @@ describe('Navigation', () => {
         await browser.pause(1000)
 
         // Get current path
-        let pathElement = await browser.$('.file-pane.is-focused .header .path')
+        let pathElement = browser.$('.file-pane.is-focused .header .path')
         const currentPath = await pathElement.getText()
 
         // Press Backspace to go to parent
@@ -367,7 +367,7 @@ describe('Navigation', () => {
         await browser.pause(1000)
 
         // Re-query and verify path changed
-        pathElement = await browser.$('.file-pane.is-focused .header .path')
+        pathElement = browser.$('.file-pane.is-focused .header .path')
         const newPath = await pathElement.getText()
         expect(newPath).not.toBe(currentPath)
     })
@@ -381,25 +381,25 @@ describe('New folder dialog', () => {
         await browser.keys('F7')
 
         // Verify new folder dialog appears
-        const dialog = await browser.$(MKDIR_DIALOG)
+        const dialog = browser.$(MKDIR_DIALOG)
         await dialog.waitForExist({ timeout: 5000 })
 
         // Verify title says "New folder"
-        const title = await browser.$(`${MKDIR_DIALOG} h2`)
+        const title = browser.$(`${MKDIR_DIALOG} h2`)
         expect(await title.getText()).toBe('New folder')
 
         // Verify subtitle contains "Create folder in"
-        const subtitle = await browser.$(`${MKDIR_DIALOG} .subtitle`)
+        const subtitle = browser.$(`${MKDIR_DIALOG} .subtitle`)
         const subtitleText = await subtitle.getText()
         expect(subtitleText).toContain('Create folder in')
 
         // Verify dialog has a name input
-        const nameInput = await browser.$(`${MKDIR_DIALOG} .name-input`)
+        const nameInput = browser.$(`${MKDIR_DIALOG} .name-input`)
         expect(await nameInput.isExisting()).toBe(true)
 
         // Verify OK and Cancel buttons exist
-        const okButton = await browser.$(`${MKDIR_DIALOG} button.primary`)
-        const cancelButton = await browser.$(`${MKDIR_DIALOG} button.secondary`)
+        const okButton = browser.$(`${MKDIR_DIALOG} button.primary`)
+        const cancelButton = browser.$(`${MKDIR_DIALOG} button.secondary`)
         expect(await okButton.isExisting()).toBe(true)
         expect(await cancelButton.isExisting()).toBe(true)
         expect(await okButton.getText()).toBe('OK')
@@ -409,7 +409,7 @@ describe('New folder dialog', () => {
         await browser.keys('Escape')
 
         // Wait for dialog to close
-        const modalOverlay = await browser.$('.modal-overlay')
+        const modalOverlay = browser.$('.modal-overlay')
         await modalOverlay.waitForExist({ timeout: 3000, reverse: true })
     })
 
@@ -420,12 +420,12 @@ describe('New folder dialog', () => {
         await browser.keys('F7')
 
         // Wait for dialog to appear
-        const dialog = await browser.$(MKDIR_DIALOG)
+        const dialog = browser.$(MKDIR_DIALOG)
         await dialog.waitForExist({ timeout: 5000 })
 
         // Type a unique folder name
         const folderName = `test-folder-${Date.now()}`
-        const nameInput = await browser.$(`${MKDIR_DIALOG} .name-input`)
+        const nameInput = browser.$(`${MKDIR_DIALOG} .name-input`)
         await nameInput.waitForExist({ timeout: 3000 })
         await nameInput.setValue(folderName)
         await browser.pause(200)
@@ -438,7 +438,7 @@ describe('New folder dialog', () => {
         await jsClick(okButton)
 
         // Wait for dialog to close (confirms create_directory succeeded)
-        const modalOverlay = await browser.$('.modal-overlay')
+        const modalOverlay = browser.$('.modal-overlay')
         await modalOverlay.waitForExist({ timeout: 5000, reverse: true })
     })
 })
@@ -448,7 +448,7 @@ describe('Transfer dialogs', () => {
         await ensureAppReadyWithFocus()
 
         // Move cursor to a file (skip ".." entry)
-        const cursorEntry = (await browser.$('.file-entry.is-under-cursor')) as unknown as WebdriverIO.Element
+        const cursorEntry = browser.$('.file-entry.is-under-cursor') as unknown as WebdriverIO.Element
         const cursorText = await getEntryName(cursorEntry)
 
         if (cursorText === '..') {
@@ -460,23 +460,23 @@ describe('Transfer dialogs', () => {
         await browser.keys('F5')
 
         // Wait for transfer dialog to appear
-        const modalOverlay = await browser.$('.modal-overlay')
+        const modalOverlay = browser.$('.modal-overlay')
         await modalOverlay.waitForExist({ timeout: 5000 })
 
-        const dialog = await browser.$(TRANSFER_DIALOG)
+        const dialog = browser.$(TRANSFER_DIALOG)
         await dialog.waitForExist({ timeout: 5000 })
 
         // Verify title contains "Copy"
-        const title = await browser.$(`${TRANSFER_DIALOG} h2`)
+        const title = browser.$(`${TRANSFER_DIALOG} h2`)
         expect(await title.getText()).toContain('Copy')
 
         // Verify dialog has path input
-        const pathInput = await browser.$(`${TRANSFER_DIALOG} .path-input`)
+        const pathInput = browser.$(`${TRANSFER_DIALOG} .path-input`)
         expect(await pathInput.isExisting()).toBe(true)
 
         // Verify primary button says "Copy"
-        const copyButton = await browser.$(`${TRANSFER_DIALOG} button.primary`)
-        const cancelButton = await browser.$(`${TRANSFER_DIALOG} button.secondary`)
+        const copyButton = browser.$(`${TRANSFER_DIALOG} button.primary`)
+        const cancelButton = browser.$(`${TRANSFER_DIALOG} button.secondary`)
         expect(await copyButton.isExisting()).toBe(true)
         expect(await copyButton.getText()).toBe('Copy')
         expect(await cancelButton.isExisting()).toBe(true)
@@ -486,7 +486,7 @@ describe('Transfer dialogs', () => {
         await browser.pause(300)
 
         // Verify dialog is closed
-        const modalAfter = await browser.$('.modal-overlay')
+        const modalAfter = browser.$('.modal-overlay')
         expect(await modalAfter.isExisting()).toBe(false)
     })
 
@@ -494,7 +494,7 @@ describe('Transfer dialogs', () => {
         await ensureAppReadyWithFocus()
 
         // Move cursor to a file (skip ".." entry)
-        const cursorEntry = (await browser.$('.file-entry.is-under-cursor')) as unknown as WebdriverIO.Element
+        const cursorEntry = browser.$('.file-entry.is-under-cursor') as unknown as WebdriverIO.Element
         const cursorText = await getEntryName(cursorEntry)
 
         if (cursorText === '..') {
@@ -506,25 +506,25 @@ describe('Transfer dialogs', () => {
         await browser.keys('F6')
 
         // Wait for transfer dialog to appear
-        const modalOverlay = await browser.$('.modal-overlay')
+        const modalOverlay = browser.$('.modal-overlay')
         await modalOverlay.waitForExist({ timeout: 5000 })
 
-        const dialog = await browser.$(TRANSFER_DIALOG)
+        const dialog = browser.$(TRANSFER_DIALOG)
         await dialog.waitForExist({ timeout: 5000 })
 
         // Verify title contains "Move" (not "Copy")
-        const title = await browser.$(`${TRANSFER_DIALOG} h2`)
+        const title = browser.$(`${TRANSFER_DIALOG} h2`)
         const titleText = await title.getText()
         expect(titleText).toContain('Move')
         expect(titleText).not.toContain('Copy')
 
         // Verify dialog has path input
-        const pathInput = await browser.$(`${TRANSFER_DIALOG} .path-input`)
+        const pathInput = browser.$(`${TRANSFER_DIALOG} .path-input`)
         expect(await pathInput.isExisting()).toBe(true)
 
         // Verify primary button says "Move"
-        const moveButton = await browser.$(`${TRANSFER_DIALOG} button.primary`)
-        const cancelButton = await browser.$(`${TRANSFER_DIALOG} button.secondary`)
+        const moveButton = browser.$(`${TRANSFER_DIALOG} button.primary`)
+        const cancelButton = browser.$(`${TRANSFER_DIALOG} button.secondary`)
         expect(await moveButton.isExisting()).toBe(true)
         expect(await moveButton.getText()).toBe('Move')
         expect(await cancelButton.isExisting()).toBe(true)
@@ -534,7 +534,7 @@ describe('Transfer dialogs', () => {
         await browser.pause(300)
 
         // Verify dialog is closed
-        const modalAfter = await browser.$('.modal-overlay')
+        const modalAfter = browser.$('.modal-overlay')
         expect(await modalAfter.isExisting()).toBe(false)
     })
 })
