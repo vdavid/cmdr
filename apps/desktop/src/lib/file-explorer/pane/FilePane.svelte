@@ -946,15 +946,27 @@
         }
     }
 
-    // When includeHidden changes, refetch total count
+    // When includeHidden changes, refetch total count and follow cursor file
     $effect(() => {
         if (listingId && !loading) {
-            void getTotalCount(listingId, includeHidden).then((count) => {
+            // Read cursor state without tracking to avoid infinite re-triggers
+            const nameToFollow = untrack(() => entryUnderCursor?.name)
+            const currentCursor = untrack(() => cursorIndex)
+            void getTotalCount(listingId, includeHidden).then(async (count) => {
                 totalCount = count
-                // Reset cursor index if out of bounds
-                if (cursorIndex >= effectiveTotalCount) {
-                    cursorIndex = 0
-                    void fetchEntryUnderCursor()
+                const total = hasParent ? count + 1 : count
+                // Try to keep cursor on the same file
+                if (nameToFollow) {
+                    const foundIndex = await findFileIndex(listingId, nameToFollow, includeHidden)
+                    if (foundIndex !== null) {
+                        const adjustedIndex = hasParent ? foundIndex + 1 : foundIndex
+                        await setCursorIndex(adjustedIndex)
+                        return
+                    }
+                }
+                // File not found (was hidden) or no file — clamp cursor
+                if (currentCursor >= total) {
+                    await setCursorIndex(Math.max(0, total - 1))
                 }
             })
         }
