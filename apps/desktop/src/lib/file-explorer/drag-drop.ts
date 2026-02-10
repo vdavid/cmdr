@@ -50,6 +50,11 @@ export function getIsDraggingFromSelf(): boolean {
     return draggingFromSelf
 }
 
+/** Resets the self-drag flag. Call from the drop event handler after processing. */
+export function resetDraggingFromSelf(): void {
+    draggingFromSelf = false
+}
+
 /** Global state for active drag operation */
 let activeDrag: {
     startX: number
@@ -219,7 +224,9 @@ async function performSingleFileDrag(filePath: string, iconId: string, mode: 'co
             mode,
         })
     } finally {
-        draggingFromSelf = false
+        // Don't reset draggingFromSelf here — startDrag may resolve before
+        // the OS delivers drop/leave events. The flag is cleared by the
+        // drop event handler via resetDraggingFromSelf().
         void cleanupTempIcon()
     }
 }
@@ -257,7 +264,7 @@ async function performSelectionDrag(context: SelectionDragContext, mode: 'copy' 
             iconPath,
         )
     } finally {
-        draggingFromSelf = false
+        // Don't reset draggingFromSelf here — see performSingleFileDrag comment.
         void cleanupTempIcon()
     }
 }

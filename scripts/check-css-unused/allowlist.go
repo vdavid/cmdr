@@ -15,6 +15,8 @@ var allowedUnusedClasses = map[string]bool{
 	// SettingSelect.svelte - classes used with :global() for Ark UI Select component styling
 	"custom-highlighted": true,
 	"select-content":     true,
+	// DualPaneExplorer.svelte - applied imperatively via classList.add during drag-and-drop
+	"folder-drop-target": true,
 }
 
 // allowedUnusedVariables lists CSS custom properties that are defined but used dynamically,

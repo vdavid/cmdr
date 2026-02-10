@@ -65,7 +65,8 @@
     import type { TransferOperationType } from '../types'
     import { getInitialFolderName, moveCursorToNewFolder } from '$lib/file-operations/mkdir/new-folder-operations'
     import { getCurrentWebview } from '@tauri-apps/api/webview'
-    import { getIsDraggingFromSelf } from '../drag-drop'
+    import { getIsDraggingFromSelf, resetDraggingFromSelf } from '../drag-drop'
+    import { resolveDropTarget } from '../drop-target-hit-testing'
 
     const log = getAppLogger('fileExplorer')
 
@@ -99,6 +100,10 @@
 
     // Drop target highlight state: which pane (if any) is the active drop target
     let dropTargetPane = $state<'left' | 'right' | null>(null)
+
+    // Folder-level drop target state: when hovering over a directory row
+    let dropTargetFolderPath = $state<string | null>(null)
+    let dropTargetFolderEl = $state<HTMLElement | null>(null)
 
     // Refs for pane wrapper elements (used for hit-testing drop targets)
     let leftPaneWrapperEl: HTMLDivElement | undefined = $state()
@@ -483,20 +488,12 @@
         activePaneRef?.handleKeyUp(e)
     }
 
-    /** Resolves cursor position to a target pane using the browser's own hit-testing. */
-    function resolveDropTargetPane(x: number, y: number): 'left' | 'right' | null {
-        const el = document.elementFromPoint(x, y)
-        if (el && leftPaneWrapperEl?.contains(el)) return 'left'
-        if (el && rightPaneWrapperEl?.contains(el)) return 'right'
-        return null
-    }
-
     /** Handles a file drop onto a target pane by opening the transfer confirmation dialog. */
-    function handleFileDrop(paths: string[], targetPane: 'left' | 'right') {
+    function handleFileDrop(paths: string[], targetPane: 'left' | 'right', targetFolderPath?: string) {
         if (paths.length === 0) return
 
         const { sortBy, sortOrder } = getPaneSort(targetPane)
-        const destPath = getPanePath(targetPane)
+        const destPath = targetFolderPath ?? getPanePath(targetPane)
         const destVolId = getPaneVolumeId(targetPane)
 
         transferDialogProps = {
@@ -504,6 +501,45 @@
             allowOperationToggle: true,
         }
         showTransferDialog = true
+    }
+
+    /** Updates drop-target highlights as the cursor moves during a drag. */
+    function handleDragOver(position: { x: number; y: number }) {
+        const resolved = resolveDropTarget(position.x, position.y, leftPaneWrapperEl, rightPaneWrapperEl)
+
+        if (resolved?.type === 'folder') {
+            dropTargetPane = null
+            dropTargetFolderPath = resolved.path
+            dropTargetFolderEl = resolved.element
+        } else if (resolved?.type === 'pane') {
+            // Suppress highlight when self-drag targets the source pane (no-op)
+            const suppress = getIsDraggingFromSelf() && resolved.paneId === focusedPane
+            dropTargetPane = suppress ? null : resolved.paneId
+            dropTargetFolderPath = null
+            dropTargetFolderEl = null
+        } else {
+            clearDropTargets()
+        }
+    }
+
+    /** Handles the drop event: resolves the target and opens the transfer dialog. */
+    function handleDrop(paths: string[], position: { x: number; y: number }) {
+        const resolved = resolveDropTarget(position.x, position.y, leftPaneWrapperEl, rightPaneWrapperEl)
+        const folderPath = dropTargetFolderPath
+        clearDropTargets()
+
+        if (!resolved) return
+        const targetPane = resolved.paneId
+        // For same-pane pane-level drops (not folder), suppress (no-op)
+        if (resolved.type === 'pane' && getIsDraggingFromSelf() && targetPane === focusedPane) return
+        handleFileDrop(paths, targetPane, resolved.type === 'folder' ? (folderPath ?? undefined) : undefined)
+    }
+
+    /** Clears all drop target highlight state. */
+    function clearDropTargets() {
+        dropTargetPane = null
+        dropTargetFolderPath = null
+        dropTargetFolderEl = null
     }
 
     onMount(async () => {
@@ -615,20 +651,14 @@
         unlistenDragDrop = await getCurrentWebview().onDragDropEvent((event) => {
             const { type } = event.payload
             if (type === 'enter' || type === 'over') {
-                const { position } = event.payload
-                const resolved = resolveDropTargetPane(position.x, position.y)
-                // Suppress highlight on the source pane during a self-drag (no-op target)
-                dropTargetPane = getIsDraggingFromSelf() && resolved === focusedPane ? null : resolved
+                handleDragOver(event.payload.position)
             } else if (type === 'drop') {
-                const { paths, position } = event.payload
-                const targetPane = resolveDropTargetPane(position.x, position.y)
-                dropTargetPane = null
-                if (targetPane) {
-                    handleFileDrop(paths, targetPane)
-                }
+                handleDrop(event.payload.paths, event.payload.position)
+                resetDraggingFromSelf()
             } else {
                 // 'leave' — cursor left the window or drag was cancelled
-                dropTargetPane = null
+                clearDropTargets()
+                resetDraggingFromSelf()
             }
         })
     })
@@ -1027,6 +1057,17 @@
     $effect(() => {
         if (initialized) {
             containerElement?.focus()
+        }
+    })
+
+    // Manage folder drop-target highlight class imperatively (elements live in child components)
+    $effect(() => {
+        const el = dropTargetFolderEl
+        if (el) {
+            el.classList.add('folder-drop-target')
+            return () => {
+                el.classList.remove('folder-drop-target')
+            }
         }
     })
 
@@ -1567,5 +1608,12 @@
         border: 2px solid var(--color-accent);
         pointer-events: none;
         z-index: 1;
+    }
+
+    /* Folder-level drop target highlight (class managed imperatively, elements in child components) */
+    :global(.file-entry.folder-drop-target) {
+        outline: 2px solid var(--color-accent);
+        outline-offset: -2px;
+        background-color: var(--color-bg-hover);
     }
 </style>

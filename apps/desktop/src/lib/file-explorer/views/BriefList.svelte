@@ -444,6 +444,7 @@
                                 class="file-entry"
                                 class:is-under-cursor={globalIndex === cursorIndex}
                                 class:is-selected={selectedIndices.has(globalIndex)}
+                                data-drop-target-path={file.isDirectory && file.name !== '..' ? file.path : undefined}
                                 style="height: {rowHeight}px;"
                                 onmousedown={(e: MouseEvent) => {
                                     handleMouseDown(e, globalIndex)
