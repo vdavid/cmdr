@@ -103,7 +103,7 @@ async function pressSpaceKey(): Promise<void> {
 // ModalDialog renders as .modal-overlay[data-dialog-id] > .modal-dialog,
 // with no dialog-specific CSS class. Use data-dialog-id to target each dialog.
 const MKDIR_DIALOG = '[data-dialog-id="mkdir-confirmation"]'
-const COPY_DIALOG = '[data-dialog-id="copy-confirmation"]'
+const TRANSFER_DIALOG = '[data-dialog-id="transfer-confirmation"]'
 
 // ─── Tests ──────────────────────────────────────────────────────────────────
 
@@ -443,7 +443,7 @@ describe('New folder dialog', () => {
     })
 })
 
-describe('Copy dialog', () => {
+describe('Transfer dialogs', () => {
     it('opens copy dialog with F5', async () => {
         await ensureAppReadyWithFocus()
 
@@ -459,21 +459,74 @@ describe('Copy dialog', () => {
         // Press F5 to open copy dialog
         await browser.keys('F5')
 
-        // Wait for copy dialog to appear
+        // Wait for transfer dialog to appear
         const modalOverlay = await browser.$('.modal-overlay')
         await modalOverlay.waitForExist({ timeout: 5000 })
 
-        const copyDialog = await browser.$(COPY_DIALOG)
-        await copyDialog.waitForExist({ timeout: 5000 })
+        const dialog = await browser.$(TRANSFER_DIALOG)
+        await dialog.waitForExist({ timeout: 5000 })
+
+        // Verify title contains "Copy"
+        const title = await browser.$(`${TRANSFER_DIALOG} h2`)
+        expect(await title.getText()).toContain('Copy')
 
         // Verify dialog has path input
-        const pathInput = await browser.$(`${COPY_DIALOG} .path-input`)
+        const pathInput = await browser.$(`${TRANSFER_DIALOG} .path-input`)
         expect(await pathInput.isExisting()).toBe(true)
 
-        // Verify dialog has Copy and Cancel buttons
-        const copyButton = await browser.$(`${COPY_DIALOG} button.primary`)
-        const cancelButton = await browser.$(`${COPY_DIALOG} button.secondary`)
+        // Verify primary button says "Copy"
+        const copyButton = await browser.$(`${TRANSFER_DIALOG} button.primary`)
+        const cancelButton = await browser.$(`${TRANSFER_DIALOG} button.secondary`)
         expect(await copyButton.isExisting()).toBe(true)
+        expect(await copyButton.getText()).toBe('Copy')
+        expect(await cancelButton.isExisting()).toBe(true)
+
+        // Close dialog with Escape
+        await browser.keys('Escape')
+        await browser.pause(300)
+
+        // Verify dialog is closed
+        const modalAfter = await browser.$('.modal-overlay')
+        expect(await modalAfter.isExisting()).toBe(false)
+    })
+
+    it('opens move dialog with F6', async () => {
+        await ensureAppReadyWithFocus()
+
+        // Move cursor to a file (skip ".." entry)
+        const cursorEntry = (await browser.$('.file-entry.is-under-cursor')) as unknown as WebdriverIO.Element
+        const cursorText = await getEntryName(cursorEntry)
+
+        if (cursorText === '..') {
+            await browser.keys('ArrowDown')
+            await browser.pause(300)
+        }
+
+        // Press F6 to open move dialog
+        await browser.keys('F6')
+
+        // Wait for transfer dialog to appear
+        const modalOverlay = await browser.$('.modal-overlay')
+        await modalOverlay.waitForExist({ timeout: 5000 })
+
+        const dialog = await browser.$(TRANSFER_DIALOG)
+        await dialog.waitForExist({ timeout: 5000 })
+
+        // Verify title contains "Move" (not "Copy")
+        const title = await browser.$(`${TRANSFER_DIALOG} h2`)
+        const titleText = await title.getText()
+        expect(titleText).toContain('Move')
+        expect(titleText).not.toContain('Copy')
+
+        // Verify dialog has path input
+        const pathInput = await browser.$(`${TRANSFER_DIALOG} .path-input`)
+        expect(await pathInput.isExisting()).toBe(true)
+
+        // Verify primary button says "Move"
+        const moveButton = await browser.$(`${TRANSFER_DIALOG} button.primary`)
+        const cancelButton = await browser.$(`${TRANSFER_DIALOG} button.secondary`)
+        expect(await moveButton.isExisting()).toBe(true)
+        expect(await moveButton.getText()).toBe('Move')
         expect(await cancelButton.isExisting()).toBe(true)
 
         // Close dialog with Escape
