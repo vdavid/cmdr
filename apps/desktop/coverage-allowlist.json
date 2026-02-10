@@ -8,6 +8,14 @@
         "app-status-store.ts": { "reason": "Depends on Tauri APIs" },
         "benchmark.ts": { "reason": "Dev tooling, not critical path" },
         "file-explorer/drag-drop.ts": { "reason": "Needs integration testing with Tauri" },
+        "file-explorer/drag-image-renderer.ts": { "reason": "Canvas API dependent, pure logic tested separately" },
+        "file-explorer/DragOverlay.svelte": { "reason": "UI overlay component, state tested in drag-overlay tests" },
+        "file-explorer/drag-overlay.svelte.ts": {
+            "reason": "Reactive Svelte state, pure logic tested in drag-overlay tests"
+        },
+        "file-explorer/modifier-key-tracker.svelte.ts": {
+            "reason": "Document event listeners, reactive Svelte state"
+        },
         "file-explorer/views/BriefList.svelte": {
             "reason": "Logic tested in brief-list-utils.ts, component mounting heavy"
         },

@@ -143,11 +143,6 @@ Implementation: track Alt key state via `keydown`/`keyup` listeners on `document
 When the cursor is over non-droppable areas (toolbar, status bar):
 - Show a dimmed overlay or "no drop" icon in the floating label. Tauri doesn't give cursor control during native drags, so all feedback must be in-app.
 
-### Internal drag refinements
-
-- For internal pane-to-pane drags: show directional context in the floating label (for example, "Copy 3 files →" or "← Move to Documents").
-- Skip the scan step in the confirmation dialog when dragging internally (we already know the files).
-
 ### Testing
 
 - Manual test: verify floating label tracks cursor, updates text on target change, fades on leave.

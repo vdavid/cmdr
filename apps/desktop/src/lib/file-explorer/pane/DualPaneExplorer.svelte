@@ -65,8 +65,20 @@
     import type { TransferOperationType } from '../types'
     import { getInitialFolderName, moveCursorToNewFolder } from '$lib/file-operations/mkdir/new-folder-operations'
     import { getCurrentWebview } from '@tauri-apps/api/webview'
-    import { getIsDraggingFromSelf, resetDraggingFromSelf } from '../drag-drop'
+    import {
+        getIsDraggingFromSelf,
+        resetDraggingFromSelf,
+        matchesSelfDragFingerprint,
+        markAsSelfDrag,
+        storeSelfDragFingerprint,
+        clearSelfDragFingerprint,
+        getSelfDragFileInfos,
+    } from '../drag-drop'
     import { resolveDropTarget } from '../drop-target-hit-testing'
+    import DragOverlay from '../DragOverlay.svelte'
+    import { showOverlay, updateOverlay, hideOverlay, type OverlayFileInfo } from '../drag-overlay.svelte'
+    import { getCachedIcon } from '$lib/icon-cache'
+    import { startModifierTracking, stopModifierTracking, getIsAltHeld } from '../modifier-key-tracker.svelte'
 
     const log = getAppLogger('fileExplorer')
 
@@ -489,7 +501,12 @@
     }
 
     /** Handles a file drop onto a target pane by opening the transfer confirmation dialog. */
-    function handleFileDrop(paths: string[], targetPane: 'left' | 'right', targetFolderPath?: string) {
+    function handleFileDrop(
+        paths: string[],
+        targetPane: 'left' | 'right',
+        targetFolderPath?: string,
+        operation: TransferOperationType = 'copy',
+    ) {
         if (paths.length === 0) return
 
         const { sortBy, sortOrder } = getPaneSort(targetPane)
@@ -497,13 +514,63 @@
         const destVolId = getPaneVolumeId(targetPane)
 
         transferDialogProps = {
-            ...buildTransferPropsFromDroppedPaths('copy', paths, destPath, targetPane, destVolId, sortBy, sortOrder),
+            ...buildTransferPropsFromDroppedPaths(operation, paths, destPath, targetPane, destVolId, sortBy, sortOrder),
             allowOperationToggle: true,
         }
         showTransferDialog = true
     }
 
-    /** Updates drop-target highlights as the cursor moves during a drag. */
+    /** Extracts the last path component as a display name. */
+    function extractFolderName(path: string): string {
+        const segments = path.split('/')
+        return segments[segments.length - 1] || path
+    }
+
+    /** Builds overlay file infos from drag paths, using self-drag data when available for proper icons. */
+    function buildOverlayFileInfos(paths: string[]): OverlayFileInfo[] {
+        // For self-drags, use stored file infos with proper icon IDs
+        const selfInfos = getIsDraggingFromSelf() ? getSelfDragFileInfos() : null
+        if (selfInfos && selfInfos.length > 0) {
+            return selfInfos.map((info) => ({
+                name: info.name,
+                iconUrl: getCachedIcon(info.iconId),
+                isDirectory: info.isDirectory,
+            }))
+        }
+
+        // For external drags, extract names and try extension-based icon lookup
+        return paths.slice(0, 20).map((p) => {
+            const name = p.split('/').pop() || p
+            const ext = name.includes('.') ? name.split('.').pop() || '' : ''
+            const iconUrl = ext ? getCachedIcon(`ext:${ext}`) : undefined
+            return { name, iconUrl, isDirectory: false }
+        })
+    }
+
+    /** Resolves the target display name for the overlay action line. */
+    function resolveTargetDisplayName(
+        resolved: ReturnType<typeof resolveDropTarget>,
+        folderPath: string | null,
+    ): string | null {
+        if (!resolved) return null
+        if (resolved.type === 'folder' && folderPath) {
+            return extractFolderName(folderPath)
+        }
+        if (resolved.type === 'pane') {
+            return extractFolderName(getPanePath(resolved.paneId))
+        }
+        return null
+    }
+
+    /** Called on drag enter to initialize the overlay with file infos. */
+    function handleDragEnter(paths: string[], position: { x: number; y: number }) {
+        const overlayInfos = buildOverlayFileInfos(paths)
+        showOverlay(overlayInfos, paths.length)
+        startModifierTracking()
+        handleDragOver(position)
+    }
+
+    /** Updates drop-target highlights and overlay as the cursor moves during a drag. */
     function handleDragOver(position: { x: number; y: number }) {
         const resolved = resolveDropTarget(position.x, position.y, leftPaneWrapperEl, rightPaneWrapperEl)
 
@@ -520,6 +587,14 @@
         } else {
             clearDropTargets()
         }
+
+        // Determine if dropping is allowed
+        const isSelfNoOp = resolved?.type === 'pane' && getIsDraggingFromSelf() && resolved.paneId === focusedPane
+        const canDrop = resolved !== null && !isSelfNoOp
+        const targetName = resolveTargetDisplayName(resolved, dropTargetFolderPath)
+        const operation = getIsAltHeld() ? 'move' : 'copy'
+
+        updateOverlay(position.x, position.y, targetName, canDrop, operation)
     }
 
     /** Handles the drop event: resolves the target and opens the transfer dialog. */
@@ -527,15 +602,20 @@
         const resolved = resolveDropTarget(position.x, position.y, leftPaneWrapperEl, rightPaneWrapperEl)
         const folderPath = dropTargetFolderPath
         clearDropTargets()
+        hideOverlay()
+        stopModifierTracking()
 
         if (!resolved) return
         const targetPane = resolved.paneId
         // For same-pane pane-level drops (not folder), suppress (no-op)
         if (resolved.type === 'pane' && getIsDraggingFromSelf() && targetPane === focusedPane) return
-        handleFileDrop(paths, targetPane, resolved.type === 'folder' ? (folderPath ?? undefined) : undefined)
+
+        // Use Alt modifier to determine default operation
+        const operation = getIsAltHeld() ? 'move' : 'copy'
+        handleFileDrop(paths, targetPane, resolved.type === 'folder' ? (folderPath ?? undefined) : undefined, operation)
     }
 
-    /** Clears all drop target highlight state. */
+    /** Clears all drop target highlight state and hides overlay. */
     function clearDropTargets() {
         dropTargetPane = null
         dropTargetFolderPath = null
@@ -650,15 +730,31 @@
         // Register drag-and-drop target handler for external and pane-to-pane drops
         unlistenDragDrop = await getCurrentWebview().onDragDropEvent((event) => {
             const { type } = event.payload
-            if (type === 'enter' || type === 'over') {
+            if (type === 'enter') {
+                const paths = event.payload.paths
+                // Re-entry detection: if not currently flagged as self-drag but
+                // fingerprint matches, restore the flag before any highlight logic
+                if (!getIsDraggingFromSelf() && matchesSelfDragFingerprint(paths)) {
+                    markAsSelfDrag()
+                }
+                // On first entry of a self-drag, store fingerprint for re-entry detection
+                if (getIsDraggingFromSelf() && !matchesSelfDragFingerprint(paths)) {
+                    storeSelfDragFingerprint(paths)
+                }
+                handleDragEnter(paths, event.payload.position)
+            } else if (type === 'over') {
                 handleDragOver(event.payload.position)
             } else if (type === 'drop') {
                 handleDrop(event.payload.paths, event.payload.position)
                 resetDraggingFromSelf()
+                clearSelfDragFingerprint()
             } else {
                 // 'leave' — cursor left the window or drag was cancelled
                 clearDropTargets()
+                hideOverlay()
+                stopModifierTracking()
                 resetDraggingFromSelf()
+                // Do NOT clear the fingerprint here — that's the key to re-entry detection
             }
         })
     })
@@ -751,6 +847,7 @@
         unlistenNavigation?.()
         unlistenDragDrop?.()
         cleanupNetworkDiscovery()
+        stopModifierTracking()
     })
 
     function handlePaneResize(widthPercent: number) {
@@ -1561,6 +1658,8 @@
     {/if}
 </div>
 
+<DragOverlay />
+
 <DialogManager
     {showTransferDialog}
     {transferDialogProps}
@@ -1611,6 +1710,7 @@
     }
 
     /* Folder-level drop target highlight (class managed imperatively, elements in child components) */
+    /*noinspection CssUnusedSymbol*/
     :global(.file-entry.folder-drop-target) {
         outline: 2px solid var(--color-accent);
         outline-offset: -2px;

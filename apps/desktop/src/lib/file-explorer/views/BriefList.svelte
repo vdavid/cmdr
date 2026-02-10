@@ -2,7 +2,7 @@
     import type { FileEntry, SortColumn, SortOrder, SyncStatus } from '../types'
     import { calculateVirtualWindow, getScrollToPosition } from './virtual-scroll'
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
-    import { startSelectionDragTracking } from '../drag-drop'
+    import { startSelectionDragTracking, type DragFileInfo } from '../drag-drop'
     import SortableHeader from '../selection/SortableHeader.svelte'
     import FileIcon from '../selection/FileIcon.svelte'
     import {
@@ -218,9 +218,10 @@
 
         if (!hasSelection) {
             // No selection: defer selection until drag threshold is crossed
+            const fileInfo: DragFileInfo = { name: entry.name, isDirectory: entry.isDirectory, iconId: entry.iconId }
             startSelectionDragTracking(
                 event,
-                { type: 'single', path: entry.path, iconId: entry.iconId, index },
+                { type: 'single', path: entry.path, iconId: entry.iconId, index, fileInfo },
                 {
                     onDragStart: () => {
                         onSelect(index, event.shiftKey)
@@ -241,6 +242,13 @@
             const firstSelectedEntry = getEntryAt(firstSelectedIndex)
             const iconId = firstSelectedEntry?.iconId ?? entry.iconId
 
+            // Collect file info for the drag image (only from cached/visible entries)
+            const fileInfos: DragFileInfo[] = []
+            for (const idx of selectedIndices) {
+                const e = getEntryAt(idx)
+                if (e) fileInfos.push({ name: e.name, isDirectory: e.isDirectory, iconId: e.iconId })
+            }
+
             startSelectionDragTracking(
                 event,
                 {
@@ -250,6 +258,7 @@
                     includeHidden,
                     hasParent,
                     iconId,
+                    fileInfos,
                 },
                 {},
             )
