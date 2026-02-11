@@ -25,6 +25,9 @@ pub const COMMAND_PALETTE_ID: &str = "command_palette";
 /// Menu item ID for Switch Pane.
 pub const SWITCH_PANE_ID: &str = "switch_pane";
 
+/// Menu item ID for Swap Panes.
+pub const SWAP_PANES_ID: &str = "swap_panes";
+
 /// Menu item IDs for navigation (Go menu).
 pub const GO_BACK_ID: &str = "go_back";
 pub const GO_FORWARD_ID: &str = "go_forward";
@@ -271,6 +274,8 @@ pub fn build_menu<R: Runtime>(
             submenu.append(&command_palette_item)?;
             let switch_pane_item = MenuItem::with_id(app, SWITCH_PANE_ID, "Switch pane", true, Some("Tab"))?;
             submenu.append(&switch_pane_item)?;
+            let swap_panes_item = MenuItem::with_id(app, SWAP_PANES_ID, "Swap panes", true, Some("Cmd+U"))?;
+            submenu.append(&swap_panes_item)?;
 
             found_view_submenu = Some(submenu);
             break;

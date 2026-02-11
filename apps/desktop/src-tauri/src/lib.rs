@@ -83,8 +83,8 @@ mod stubs;
 use menu::{
     ABOUT_ID, COMMAND_PALETTE_ID, ENTER_LICENSE_KEY_ID, GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID, MenuState,
     SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID,
-    SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SORT_DESCENDING_ID, SWITCH_PANE_ID, VIEW_MODE_BRIEF_ID,
-    VIEW_MODE_FULL_ID, VIEWER_WORD_WRAP_ID, ViewMode,
+    SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SORT_DESCENDING_ID, SWAP_PANES_ID, SWITCH_PANE_ID,
+    VIEW_MODE_BRIEF_ID, VIEW_MODE_FULL_ID, VIEWER_WORD_WRAP_ID, ViewMode,
 };
 use tauri::{Emitter, Manager};
 
@@ -276,6 +276,9 @@ pub fn run() {
             } else if id == SWITCH_PANE_ID {
                 // Emit event to switch pane (main window only)
                 let _ = app.emit_to("main", "switch-pane", ());
+            } else if id == SWAP_PANES_ID {
+                // Emit event to swap panes (main window only)
+                let _ = app.emit_to("main", "swap-panes", ());
             } else if id == SORT_BY_NAME_ID
                 || id == SORT_BY_EXTENSION_ID
                 || id == SORT_BY_SIZE_ID

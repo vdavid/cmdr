@@ -68,6 +68,7 @@ export const commands: Command[] = [
     // Main window - Pane commands
     // ============================================================================
     { id: 'pane.switch', name: 'Switch pane', scope: 'Main window', showInPalette: true, shortcuts: ['Tab'] },
+    { id: 'pane.swap', name: 'Swap panes', scope: 'Main window', showInPalette: true, shortcuts: ['⌘U'] },
     {
         id: 'pane.leftVolumeChooser',
         name: 'Open left volume chooser',

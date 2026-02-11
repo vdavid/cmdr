@@ -50,6 +50,7 @@ pub fn execute_tool<R: Runtime>(app: &AppHandle<R>, name: &str, params: &Value) 
         // App commands
         "quit" => execute_quit(app),
         "switch_pane" => execute_switch_pane(app),
+        "swap_panes" => execute_swap_panes(app),
         // View commands
         "toggle_hidden" => execute_toggle_hidden(app),
         "set_view_mode" => execute_set_view_mode(app, params),
@@ -89,6 +90,19 @@ fn execute_switch_pane<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
     }
     app.emit("switch-pane", ())?;
     Ok(json!("OK: Switched focus to other pane"))
+}
+
+/// Execute swap_panes command.
+fn execute_swap_panes<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
+    // Swap MCP pane state immediately so reads reflect the new layout
+    if let Some(store) = app.try_state::<PaneStateStore>() {
+        let left = store.get_left();
+        let right = store.get_right();
+        store.set_left(right);
+        store.set_right(left);
+    }
+    app.emit("swap-panes", ())?;
+    Ok(json!("OK: Swapped left and right panes"))
 }
 
 /// Execute toggle_hidden command.

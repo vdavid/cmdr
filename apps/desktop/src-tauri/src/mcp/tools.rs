@@ -36,6 +36,10 @@ fn get_app_tools() -> Vec<Tool> {
     vec![
         Tool::no_params("quit", "Quit the application"),
         Tool::no_params("switch_pane", "Switch focus to the other pane"),
+        Tool::no_params(
+            "swap_panes",
+            "Swap left and right pane directories, view modes, sort orders, and selections",
+        ),
     ]
 }
 
@@ -292,8 +296,8 @@ mod tests {
     #[test]
     fn test_app_tools_count() {
         let tools = get_app_tools();
-        // quit, switch_pane
-        assert_eq!(tools.len(), 2);
+        // quit, switch_pane, swap_panes
+        assert_eq!(tools.len(), 3);
     }
 
     #[test]
@@ -327,8 +331,8 @@ mod tests {
     #[test]
     fn test_all_tools_count() {
         let tools = get_all_tools();
-        // 6 nav + 2 cursor + 1 selection + 3 file_op + 3 view + 1 dialog + 2 app = 18
-        assert_eq!(tools.len(), 18);
+        // 6 nav + 2 cursor + 1 selection + 3 file_op + 3 view + 1 dialog + 3 app = 19
+        assert_eq!(tools.len(), 19);
     }
 
     #[test]

@@ -40,6 +40,17 @@
         type PaneFileEntry,
     } from '$lib/tauri-commands'
     import type { ViewMode } from '$lib/app-status-store'
+
+    /** State snapshot for swapping panes without backend calls. */
+    export interface SwapState {
+        currentPath: string
+        listingId: string
+        totalCount: number
+        maxFilenameWidth: number | undefined
+        cursorIndex: number
+        selectedIndices: number[]
+        lastSequence: number
+    }
     import FullList from '../views/FullList.svelte'
     import BriefList from '../views/BriefList.svelte'
     import SelectionInfo from '../selection/SelectionInfo.svelte'
@@ -248,6 +259,57 @@
 
     export function refreshView(): void {
         cacheGeneration++
+    }
+
+    export function getSwapState(): SwapState {
+        return {
+            currentPath,
+            listingId,
+            totalCount,
+            maxFilenameWidth,
+            cursorIndex,
+            selectedIndices: selection.getSelectedIndices(),
+            lastSequence,
+        }
+    }
+
+    export function adoptListing(state: SwapState): void {
+        // Cancel any in-flight loads
+        loadGeneration++
+
+        // Set currentPath first so the initialPath $effect sees newPath === curPath and skips reload
+        currentPath = state.currentPath
+
+        // Adopt the listing identity
+        listingId = state.listingId
+        totalCount = state.totalCount
+        maxFilenameWidth = state.maxFilenameWidth
+        lastSequence = state.lastSequence
+
+        // Restore cursor and selection
+        cursorIndex = state.cursorIndex
+        selection.setSelectedIndices(state.selectedIndices)
+
+        // Force virtual list to re-fetch visible range from (now-swapped) cache
+        cacheGeneration++
+
+        // Clear loading/error state
+        loading = false
+        error = null
+
+        // Re-fetch entry under cursor and listing stats for SelectionInfo
+        void fetchEntryUnderCursor()
+        void fetchListingStats()
+
+        // Sync state to MCP
+        void syncPaneStateToMcp()
+
+        // Scroll to cursor position
+        void tick().then(() => {
+            const listRef = viewMode === 'brief' ? briefListRef : fullListRef
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            listRef?.scrollToIndex(cursorIndex)
+        })
     }
 
     export function isMtp(): boolean {

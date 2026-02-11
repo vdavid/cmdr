@@ -105,11 +105,11 @@ fn test_tool_input_schemas_are_valid() {
 #[test]
 fn test_total_tool_count() {
     let tools = get_all_tools();
-    // 6 nav + 2 cursor + 1 select + 3 file_op + 3 view + 1 dialog + 2 app = 18
+    // 6 nav + 2 cursor + 1 select + 3 file_op + 3 view + 1 dialog + 3 app = 19
     assert_eq!(
         tools.len(),
-        18,
-        "Expected 18 tools, got {}. Did you add/remove tools?",
+        19,
+        "Expected 19 tools, got {}. Did you add/remove tools?",
         tools.len()
     );
 }
@@ -194,8 +194,8 @@ fn test_all_resources_have_yaml_mime_type() {
 fn test_app_tools_exist() {
     let tools = get_all_tools();
 
-    // App tools: quit, switch_pane
-    let expected = ["quit", "switch_pane"];
+    // App tools: quit, switch_pane, swap_panes
+    let expected = ["quit", "switch_pane", "swap_panes"];
     for name in expected {
         assert!(tools.iter().any(|t| t.name == name), "Missing app tool: {}", name);
     }

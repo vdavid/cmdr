@@ -39,6 +39,7 @@
     interface ExplorerAPI {
         refocus: () => void
         switchPane: () => void
+        swapPanes: () => void
         toggleVolumeChooser: (pane: 'left' | 'right') => void
         openVolumeChooser: () => void
         closeVolumeChooser: () => void
@@ -93,6 +94,7 @@
     let unlistenLicenseKeyDialog: UnlistenFn | undefined
     let unlistenCommandPalette: UnlistenFn | undefined
     let unlistenSwitchPane: UnlistenFn | undefined
+    let unlistenSwapPanes: UnlistenFn | undefined
 
     /** Opens the debug window (dev mode only) */
     async function openDebugWindow() {
@@ -243,6 +245,9 @@
         })
         unlistenSwitchPane = await safeListenTauri('switch-pane', () => {
             explorerRef?.switchPane()
+        })
+        unlistenSwapPanes = await safeListenTauri('swap-panes', () => {
+            explorerRef?.swapPanes()
         })
     }
 
@@ -521,6 +526,9 @@
         if (unlistenSwitchPane) {
             unlistenSwitchPane()
         }
+        if (unlistenSwapPanes) {
+            unlistenSwapPanes()
+        }
     })
 
     function handleFdaComplete() {
@@ -642,6 +650,10 @@
             // === Pane commands ===
             case 'pane.switch':
                 explorerRef?.switchPane()
+                return
+
+            case 'pane.swap':
+                explorerRef?.swapPanes()
                 return
 
             case 'pane.leftVolumeChooser':

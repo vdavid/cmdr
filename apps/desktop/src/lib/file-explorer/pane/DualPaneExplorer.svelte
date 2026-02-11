@@ -1224,6 +1224,69 @@
         containerElement?.focus()
     }
 
+    /** Returns true if pane swap is safe (both panes ready, no dialogs open). */
+    function canSwapPanes(): boolean {
+        const leftRef = getPaneRef('left')
+        const rightRef = getPaneRef('right')
+        if (!leftRef || !rightRef) return false
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        if (leftRef.isLoading?.() || rightRef.isLoading?.()) return false
+        if (showTransferDialog || showTransferProgressDialog) return false
+        return true
+    }
+
+    /** Swaps all DualPaneExplorer-level state variables between left and right. */
+    function swapDualPaneState(): void {
+        ;[leftPath, rightPath] = [rightPath, leftPath]
+        ;[leftVolumeId, rightVolumeId] = [rightVolumeId, leftVolumeId]
+        ;[leftHistory, rightHistory] = [rightHistory, leftHistory]
+        ;[leftViewMode, rightViewMode] = [rightViewMode, leftViewMode]
+        ;[leftSortBy, rightSortBy] = [rightSortBy, leftSortBy]
+        ;[leftSortOrder, rightSortOrder] = [rightSortOrder, leftSortOrder]
+    }
+
+    /**
+     * Swap left and right panes entirely (paths, volumes, history, sort, view mode, listing state).
+     * Zero backend calls — we just swap listing ownership on the frontend.
+     */
+    export function swapPanes(): void {
+        if (!canSwapPanes()) return
+
+        const leftRef = getPaneRef('left')
+        const rightRef = getPaneRef('right')
+        if (!leftRef || !rightRef) return
+
+        // 1. Snapshot both panes' listing state
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
+        const leftSwap = leftRef.getSwapState?.()
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
+        const rightSwap = rightRef.getSwapState?.()
+        if (!leftSwap || !rightSwap) return
+
+        // 2. Swap DualPaneExplorer state variables
+        swapDualPaneState()
+
+        // 3. Each pane adopts the other's listing (no backend calls)
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        leftRef.adoptListing?.(rightSwap)
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        rightRef.adoptListing?.(leftSwap)
+
+        // 4. Persist
+        void saveAppStatus({
+            leftPath,
+            rightPath,
+            leftVolumeId,
+            rightVolumeId,
+            leftViewMode,
+            rightViewMode,
+            leftSortBy,
+            rightSortBy,
+        })
+
+        containerElement?.focus()
+    }
+
     /**
      * Open/toggle volume chooser for the specified pane.
      * Closes the other pane's volume chooser to ensure only one is open at a time.
