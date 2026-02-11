@@ -114,6 +114,33 @@
 
     const confirmLabel = $derived(activeOperationType === 'copy' ? 'Copy' : 'Move')
 
+    /** Checks whether the destination path is invalid relative to the source paths. */
+    function getPathValidationError(sources: string[], destination: string): string | null {
+        const normDest = destination.replace(/\/+$/, '')
+        const verb = activeOperationType === 'copy' ? 'copy' : 'move'
+
+        for (const source of sources) {
+            const normSource = source.replace(/\/+$/, '')
+            if (normDest === normSource || normDest.startsWith(normSource + '/')) {
+                const folderName = normSource.split('/').pop() ?? normSource
+                return `Can't ${verb} "${folderName}" into its own subfolder`
+            }
+        }
+
+        for (const source of sources) {
+            const normSource = source.replace(/\/+$/, '')
+            const sourceParent = normSource.substring(0, normSource.lastIndexOf('/'))
+            if (normDest === sourceParent) {
+                const fileName = normSource.split('/').pop() ?? normSource
+                return `"${fileName}" is already in this location`
+            }
+        }
+
+        return null
+    }
+
+    const pathError = $derived(getPathValidationError(sourcePaths, editedPath))
+
     // Format space info for display
     function formatSpaceInfo(space: VolumeSpaceInfo | null): string {
         if (!space) return ''
@@ -263,6 +290,7 @@
     })
 
     function handleConfirm() {
+        if (pathError) return
         // Pass the previewId, conflict policy, and (possibly toggled) operation type
         onConfirm(editedPath, selectedVolumeId, previewId, conflictPolicy, activeOperationType)
     }
@@ -338,11 +366,17 @@
             bind:value={editedPath}
             type="text"
             class="path-input"
+            class:has-error={!!pathError}
             aria-label="Destination path"
+            aria-describedby={pathError ? 'transfer-path-error' : undefined}
+            aria-invalid={!!pathError}
             spellcheck="false"
             autocomplete="off"
             onkeydown={handleInputKeydown}
         />
+        {#if pathError}
+            <p id="transfer-path-error" class="path-error" role="alert">{pathError}</p>
+        {/if}
     </div>
 
     <!-- Scan stats (live counting) -->
@@ -399,7 +433,7 @@
     <!-- Buttons (centered) -->
     <div class="button-row">
         <button class="secondary" onclick={handleCancel}>Cancel</button>
-        <button class="primary" onclick={handleConfirm}>{confirmLabel}</button>
+        <button class="primary" onclick={handleConfirm} disabled={!!pathError}>{confirmLabel}</button>
     </div>
 </ModalDialog>
 
@@ -458,6 +492,20 @@
     .path-input:focus {
         outline: none;
         box-shadow: 0 0 0 2px rgba(77, 163, 255, 0.2);
+    }
+
+    .path-input.has-error {
+        border-color: var(--color-error);
+    }
+
+    .path-input.has-error:focus {
+        box-shadow: 0 0 0 2px rgba(211, 47, 47, 0.2);
+    }
+
+    .path-error {
+        margin: 6px 0 0;
+        font-size: 12px;
+        color: var(--color-error);
     }
 
     .button-row {

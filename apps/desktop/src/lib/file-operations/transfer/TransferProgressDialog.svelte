@@ -336,15 +336,20 @@
                 operationId,
             })
             replayBufferedEvents()
-        } catch (err) {
+        } catch (err: unknown) {
             log.error('Failed to start {op} operation: {error}', { op: operationType, error: err })
             cleanup()
-            // Create an io_error type for startup failures
-            onError({
-                type: 'io_error',
-                path: sourcePaths[0] ?? '',
-                message: `Failed to start ${operationType}: ${String(err)}`,
-            })
+            // Tauri commands return structured WriteOperationError objects on validation failure
+            // (e.g. destination_inside_source). Pass them through to preserve the specific error type.
+            if (typeof err === 'object' && err !== null && 'type' in err) {
+                onError(err as WriteOperationError)
+            } else {
+                onError({
+                    type: 'io_error',
+                    path: sourcePaths[0] ?? '',
+                    message: `Failed to start ${operationType}: ${String(err)}`,
+                })
+            }
         }
     }
 
