@@ -204,9 +204,7 @@ async function resolveDragIconPath(
     // Try rich canvas image first
     if (fileInfos && fileInfos.length > 0) {
         try {
-            const names = fileInfos.map((f) => f.name)
-            const dirFlags = fileInfos.map((f) => f.isDirectory)
-            const canvas = renderDragImage(names, dirFlags)
+            const canvas = await renderDragImage(fileInfos)
             const path = await writeDragImageToTemp(canvas)
             return { path, usedCanvas: true }
         } catch {
