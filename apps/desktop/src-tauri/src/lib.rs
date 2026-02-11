@@ -47,14 +47,6 @@ use mtp_rs as _;
 // nusb is used in mtp/watcher.rs for USB hotplug detection
 #[cfg(target_os = "macos")]
 use nusb as _;
-//noinspection ALL
-// objc2-app-kit is used in volumes/mod.rs for NSRunningApplication
-#[cfg(target_os = "macos")]
-use objc2_app_kit as _;
-//noinspection ALL
-// block2 is used in drag_image_detection.rs for ObjC block closures
-#[cfg(target_os = "macos")]
-use block2 as _;
 
 mod ignore_poison;
 pub use ignore_poison::IgnorePoison;
