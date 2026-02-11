@@ -15,6 +15,8 @@ export {
     listDirectoryEnd,
     getListingStats,
     startSelectionDrag,
+    prepareSelfDragOverlay,
+    clearSelfDragOverlay,
     pathExists,
     createDirectory,
 } from './file-listing'

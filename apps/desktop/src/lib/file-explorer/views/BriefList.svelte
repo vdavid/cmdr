@@ -2,7 +2,7 @@
     import type { FileEntry, SortColumn, SortOrder, SyncStatus } from '../types'
     import { calculateVirtualWindow, getScrollToPosition } from './virtual-scroll'
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
-    import { startSelectionDragTracking, type DragFileInfo } from '../drag-drop'
+    import { startSelectionDragTracking, type DragFileInfo } from '../drag/drag-drop'
     import SortableHeader from '../selection/SortableHeader.svelte'
     import FileIcon from '../selection/FileIcon.svelte'
     import {

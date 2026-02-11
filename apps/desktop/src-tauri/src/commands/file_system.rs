@@ -533,6 +533,36 @@ pub struct SourceItemInput {
     pub modified: Option<i64>,
 }
 
+// ============================================================================
+// Self-drag overlay (dynamic drag image swapping)
+// ============================================================================
+
+/// Marks a self-drag as active and stores the rich image path so the native swizzle can:
+/// - Hide the OS drag image over our window (swap to transparent in `draggingEntered:`)
+/// - Show the rich image outside the window (swap back in `draggingExited:`)
+#[cfg(target_os = "macos")]
+#[tauri::command]
+pub fn prepare_self_drag_overlay(rich_image_path: String) {
+    crate::drag_image_swap::set_self_drag_active(rich_image_path);
+}
+
+/// No-op on non-macOS platforms.
+#[cfg(not(target_os = "macos"))]
+#[tauri::command]
+pub fn prepare_self_drag_overlay(_rich_image_path: String) {}
+
+/// Clears self-drag state after drop or cancellation.
+#[cfg(target_os = "macos")]
+#[tauri::command]
+pub fn clear_self_drag_overlay() {
+    crate::drag_image_swap::clear_self_drag_state();
+}
+
+/// No-op on non-macOS platforms.
+#[cfg(not(target_os = "macos"))]
+#[tauri::command]
+pub fn clear_self_drag_overlay() {}
+
 /// Expands tilde (~) to the user's home directory.
 fn expand_tilde(path: &str) -> String {
     if (path.starts_with("~/") || path == "~")

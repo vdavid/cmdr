@@ -57,6 +57,8 @@ mod commands;
 pub mod config;
 #[cfg(target_os = "macos")]
 mod drag_image_detection;
+#[cfg(target_os = "macos")]
+mod drag_image_swap;
 mod file_system;
 pub(crate) mod file_viewer;
 mod font_metrics;
@@ -350,6 +352,8 @@ pub fn run() {
             commands::file_system::scan_volume_for_conflicts,
             commands::file_system::get_listing_stats,
             commands::file_system::start_selection_drag,
+            commands::file_system::prepare_self_drag_overlay,
+            commands::file_system::clear_self_drag_overlay,
             commands::file_viewer::viewer_open,
             commands::file_viewer::viewer_get_lines,
             commands::file_viewer::viewer_get_status,

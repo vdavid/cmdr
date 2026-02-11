@@ -1,8 +1,9 @@
 //! Native drag interception for macOS via method swizzling on WryWebView.
 //!
-//! Swizzles `draggingEntered:` and `draggingUpdated:` to:
+//! Swizzles `draggingEntered:`, `draggingUpdated:`, and `draggingExited:` to:
 //! 1. Read drag image dimensions via `enumerateDraggingItems` (for overlay suppression)
 //! 2. Read modifier key state via `[NSEvent modifierFlags]` (for copy/move detection)
+//! 3. Swap the OS drag image for self-drags (delegated to `drag_image_swap`)
 //!
 //! Events emitted:
 //! - `drag-image-size` `{ width, height }` — on drag enter
@@ -14,6 +15,7 @@
 //! internal webview class or macOS deprecates APIs we rely on, the swizzle degrades gracefully:
 //! - Drag image detection disabled → the DOM overlay is always shown (redundant but functional)
 //! - Modifier key detection disabled → falls back to JS keydown/keyup (works when webview has focus)
+//! - Image swapping disabled → self-drags show the OS drag image over the window (functional)
 //!
 //! Rust panics inside swizzled functions are caught via `catch_unwind` to prevent crashes
 //! across the FFI boundary. Warning messages include actionable guidance for future maintainers.
@@ -26,9 +28,11 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use objc2::runtime::{AnyClass, AnyObject, Bool, Imp, Sel};
 use objc2::{msg_send, sel};
 use objc2_app_kit::{NSDragOperation, NSDraggingItem, NSDraggingItemEnumerationOptions};
-use objc2_foundation::{NSDictionary, NSInteger, NSRect};
+use objc2_foundation::{NSDictionary, NSInteger, NSRect, NSSize};
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
+
+use crate::drag_image_swap;
 
 /// NSEventModifierFlagOption = 1 << 19 (Option/Alt key)
 const NS_EVENT_MODIFIER_FLAG_OPTION: usize = 1 << 19;
@@ -47,6 +51,7 @@ struct DragModifiers {
 
 static ORIGINAL_ENTERED_IMP: OnceLock<Imp> = OnceLock::new();
 static ORIGINAL_UPDATED_IMP: OnceLock<Imp> = OnceLock::new();
+static ORIGINAL_EXITED_IMP: OnceLock<Imp> = OnceLock::new();
 static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
 
 /// Tracks previous alt state so we only emit `drag-modifiers` when it changes.
@@ -56,11 +61,12 @@ static LAST_ALT_HELD: AtomicBool = AtomicBool::new(false);
 static WARNED_NSEVENT_MISSING: AtomicBool = AtomicBool::new(false);
 static WARNED_ENTERED_PANIC: AtomicBool = AtomicBool::new(false);
 static WARNED_UPDATED_PANIC: AtomicBool = AtomicBool::new(false);
+static WARNED_EXITED_PANIC: AtomicBool = AtomicBool::new(false);
 static WARNED_NSARRAY_MISSING: AtomicBool = AtomicBool::new(false);
 static WARNED_DRAGGED_IMAGE_REMOVED: AtomicBool = AtomicBool::new(false);
 
 /// Logs a warning message at most once per app session.
-fn warn_once(flag: &AtomicBool, msg: &str) {
+pub(crate) fn warn_once(flag: &AtomicBool, msg: &str) {
     if !flag.swap(true, Ordering::Relaxed) {
         log::warn!("{msg}");
     }
@@ -112,9 +118,26 @@ pub fn install(app_handle: AppHandle) {
             );
         }
 
+        // Swizzle draggingExited: for self-drag image swapping (transparent → rich on window exit)
+        if let Some(method) = cls.instance_method(sel!(draggingExited:)) {
+            ORIGINAL_EXITED_IMP.set(method.implementation()).ok();
+            method.set_implementation(std::mem::transmute::<*const (), Imp>(
+                swizzled_dragging_exited as *const (),
+            ));
+        } else {
+            log::warn!(
+                "drag_image_detection: draggingExited: not found on WryWebView — \
+                 drag image swapping on window exit is disabled. \
+                 Wry may have changed how it implements NSDraggingDestination; \
+                 check wry's drag-and-drop event handling in its ObjC layer."
+            );
+        }
+
         log::info!("drag_image_detection: swizzles installed on WryWebView");
     }
 }
+
+// --- Modifier key detection ---
 
 /// Reads the current Option/Alt key state from `[NSEvent modifierFlags]`.
 /// This is a class method that reads hardware state — works even when the webview isn't focused.
@@ -158,29 +181,46 @@ fn emit_modifiers_forced() {
 
 /// Forwards to wry's original `draggingEntered:`. Always safe to call — returns
 /// `NSDragOperation::Copy` if the original wasn't saved (shouldn't happen in practice).
-unsafe fn call_original_entered(this: &AnyObject, cmd: Sel, drag_info: &AnyObject) -> usize { unsafe {
-    if let Some(&original) = ORIGINAL_ENTERED_IMP.get() {
-        let f = std::mem::transmute::<Imp, unsafe extern "C-unwind" fn(&AnyObject, Sel, &AnyObject) -> usize>(original);
-        f(this, cmd, drag_info)
-    } else {
-        NSDragOperation::Copy.0
+unsafe fn call_original_entered(this: &AnyObject, cmd: Sel, drag_info: &AnyObject) -> usize {
+    unsafe {
+        if let Some(&original) = ORIGINAL_ENTERED_IMP.get() {
+            let f =
+                std::mem::transmute::<Imp, unsafe extern "C-unwind" fn(&AnyObject, Sel, &AnyObject) -> usize>(original);
+            f(this, cmd, drag_info)
+        } else {
+            NSDragOperation::Copy.0
+        }
     }
-}}
+}
 
 /// Forwards to wry's original `draggingUpdated:`. Same fallback as above.
-unsafe fn call_original_updated(this: &AnyObject, cmd: Sel, drag_info: &AnyObject) -> usize { unsafe {
-    if let Some(&original) = ORIGINAL_UPDATED_IMP.get() {
-        let f = std::mem::transmute::<Imp, unsafe extern "C-unwind" fn(&AnyObject, Sel, &AnyObject) -> usize>(original);
-        f(this, cmd, drag_info)
-    } else {
-        NSDragOperation::Copy.0
+unsafe fn call_original_updated(this: &AnyObject, cmd: Sel, drag_info: &AnyObject) -> usize {
+    unsafe {
+        if let Some(&original) = ORIGINAL_UPDATED_IMP.get() {
+            let f =
+                std::mem::transmute::<Imp, unsafe extern "C-unwind" fn(&AnyObject, Sel, &AnyObject) -> usize>(original);
+            f(this, cmd, drag_info)
+        } else {
+            NSDragOperation::Copy.0
+        }
     }
-}}
+}
+
+/// Forwards to wry's original `draggingExited:`. Returns void.
+/// If the original wasn't saved, this is a no-op (drag exit still works, wry just won't fire its handler).
+unsafe fn call_original_exited(this: &AnyObject, cmd: Sel, drag_info: &AnyObject) {
+    unsafe {
+        if let Some(&original) = ORIGINAL_EXITED_IMP.get() {
+            let f = std::mem::transmute::<Imp, unsafe extern "C-unwind" fn(&AnyObject, Sel, &AnyObject)>(original);
+            f(this, cmd, drag_info)
+        }
+    }
+}
 
 // --- draggingEntered: swizzle ---
 
 unsafe extern "C-unwind" fn swizzled_dragging_entered(this: &AnyObject, cmd: Sel, drag_info: &AnyObject) -> usize {
-    // Our custom logic: read drag image size and emit modifier events.
+    // Our custom logic: read drag image size, emit modifier events, and swap image for self-drags.
     // Wrapped in catch_unwind to prevent any unexpected Rust panic from crossing the FFI boundary
     // and crashing the app mid-drag.
     let result = catch_unwind(AssertUnwindSafe(|| {
@@ -198,6 +238,11 @@ unsafe extern "C-unwind" fn swizzled_dragging_entered(this: &AnyObject, cmd: Sel
 
         // Always emit modifiers on enter (initial state for this drag session)
         emit_modifiers_forced();
+
+        // For self-drags, swap the OS drag image to transparent so it's invisible inside the window.
+        // The rich PNG (set at drag start) remains as the session image shown outside the window.
+        // The DOM overlay handles the visual feedback inside.
+        unsafe { drag_image_swap::on_drag_entered(drag_info) };
     }));
 
     if result.is_err() {
@@ -236,6 +281,29 @@ unsafe extern "C-unwind" fn swizzled_dragging_updated(this: &AnyObject, cmd: Sel
     unsafe { call_original_updated(this, cmd, drag_info) }
 }
 
+// --- draggingExited: swizzle ---
+
+unsafe extern "C-unwind" fn swizzled_dragging_exited(this: &AnyObject, cmd: Sel, drag_info: &AnyObject) {
+    // Swap back to the rich image so it's visible outside the window.
+    // setDraggingFrame:contents: modifications persist globally, so the transparent image
+    // from draggingEntered: would remain visible outside without this swap-back.
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        unsafe { drag_image_swap::on_drag_exited(drag_info) };
+    }));
+
+    if result.is_err() {
+        warn_once(
+            &WARNED_EXITED_PANIC,
+            "drag_image_detection: panic in draggingExited swizzle — drag image swap-back \
+             to rich preview is disabled for this session. \
+             Check NSImage and NSDraggingItem usage in drag_image_detection.rs.",
+        );
+    }
+
+    // Always forward to wry's original implementation.
+    unsafe { call_original_exited(this, cmd, drag_info) }
+}
+
 // --- Drag image size reading ---
 
 unsafe fn read_drag_image_size(drag_info: &AnyObject) -> (f64, f64) {
@@ -262,7 +330,7 @@ unsafe fn read_drag_image_size(drag_info: &AnyObject) -> (f64, f64) {
 
     let image: *const AnyObject = unsafe { msg_send![drag_info, draggedImage] };
     if !image.is_null() {
-        let ns_size: objc2_foundation::NSSize = unsafe { msg_send![image, size] };
+        let ns_size: NSSize = unsafe { msg_send![image, size] };
         if ns_size.width > 0.0 || ns_size.height > 0.0 {
             return (ns_size.width, ns_size.height);
         }

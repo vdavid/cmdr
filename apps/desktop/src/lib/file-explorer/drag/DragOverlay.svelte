@@ -10,7 +10,7 @@
         getOverlayCanDrop,
         buildOverlayNameLines,
         formatActionLine,
-    } from './drag-overlay.svelte'
+    } from './drag-overlay.svelte.js'
 
     const cursorOffset = 16
 

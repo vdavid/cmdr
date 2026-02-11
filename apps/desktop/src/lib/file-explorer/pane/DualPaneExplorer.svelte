@@ -73,10 +73,11 @@
         storeSelfDragFingerprint,
         clearSelfDragFingerprint,
         getSelfDragFileInfos,
-    } from '../drag-drop'
-    import { resolveDropTarget } from '../drop-target-hit-testing'
-    import DragOverlay from '../DragOverlay.svelte'
-    import { showOverlay, updateOverlay, hideOverlay, type OverlayFileInfo } from '../drag-overlay.svelte'
+        endSelfDragSession,
+    } from '../drag/drag-drop'
+    import { resolveDropTarget } from '../drag/drop-target-hit-testing'
+    import DragOverlay from '../drag/DragOverlay.svelte'
+    import { showOverlay, updateOverlay, hideOverlay, type OverlayFileInfo } from '../drag/drag-overlay.svelte.js'
     import { getCachedIcon } from '$lib/icon-cache'
     import {
         startModifierTracking,
@@ -576,10 +577,9 @@
 
     /** Called on drag enter to initialize the overlay with file infos. */
     function handleDragEnter(paths: string[], position: { x: number; y: number }) {
-        // Skip the overlay when:
-        // - Self-drag: Cmdr already renders a native drag image via canvas
-        // - External drag with large source image: the OS drag preview is informative (like Finder)
-        const suppressOverlay = getIsDraggingFromSelf() || externalDragHasLargeImage
+        // Skip the overlay when an external drag has a large source image (like Finder's preview).
+        // Self-drags always show the overlay (the OS drag image is transparent inside the window).
+        const suppressOverlay = externalDragHasLargeImage && !getIsDraggingFromSelf()
         if (!suppressOverlay) {
             const overlayInfos = buildOverlayFileInfos(paths)
             showOverlay(overlayInfos, paths.length)
@@ -781,6 +781,7 @@
                 handleDrop(event.payload.paths, event.payload.position)
                 resetDraggingFromSelf()
                 clearSelfDragFingerprint()
+                void endSelfDragSession()
                 externalDragHasLargeImage = false
             } else {
                 // 'leave' — cursor left the window or drag was cancelled
@@ -788,6 +789,9 @@
                 hideOverlay()
                 stopModifierTracking()
                 resetDraggingFromSelf()
+                // Do NOT call endSelfDragSession() here — the native swizzle needs
+                // SELF_DRAG_ACTIVE + rich image path to swap images on window exit.
+                // State is cleaned up when startDrag resolves (finally block) or on drop.
                 externalDragHasLargeImage = false
                 // Do NOT clear the fingerprint here — that's the key to re-entry detection
             }

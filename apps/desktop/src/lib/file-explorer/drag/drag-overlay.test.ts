@@ -14,7 +14,7 @@ import {
     buildOverlayNameLines,
     formatActionLine,
     type OverlayFileInfo,
-} from './drag-overlay.svelte'
+} from './drag-overlay.svelte.js'
 
 function fileInfo(name: string, isDirectory = false, iconUrl?: string): OverlayFileInfo {
     return { name, isDirectory, iconUrl }

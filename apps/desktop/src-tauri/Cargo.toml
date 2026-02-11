@@ -87,7 +87,7 @@ objc2-foundation = { version = "0.3", features = [
     "NSFileManager",
 ] }
 mdns-sd = { version = "0.17", features = ["logging"] }
-objc2-app-kit = { version = "0.3", features = ["NSDragging", "NSDraggingItem"] }
+objc2-app-kit = { version = "0.3", features = ["NSDragging", "NSDraggingItem", "NSImage"] }
 block2 = "0.6"
 smb = "0.11.1"
 smb-rpc = "=0.11.1"

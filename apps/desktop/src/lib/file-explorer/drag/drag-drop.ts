@@ -1,10 +1,18 @@
 // Drag and drop utilities for file items
 // Handles both single-file drag and selection-based multi-file drag
+//
+// ## macOS timing invariant
+//
+// `startDrag()` (from @crabnebula/tauri-plugin-drag) resolves BEFORE macOS delivers
+// `draggingEntered:`/`draggingExited:` events to the webview. Any state that the native
+// swizzle reads (SELF_DRAG_ACTIVE, rich image path) must NOT be cleared from JS code
+// that runs after `startDrag` resolves — it would race with the AppKit callbacks.
+// Self-drag state is only cleared on drop (via endSelfDragSession from the drop handler).
 
 import { startDrag } from '@crabnebula/tauri-plugin-drag'
 import { tempDir, join } from '@tauri-apps/api/path'
 import { getCachedIcon } from '$lib/icon-cache'
-import { startSelectionDrag } from '$lib/tauri-commands'
+import { startSelectionDrag, prepareSelfDragOverlay, clearSelfDragOverlay } from '$lib/tauri-commands'
 import { getSetting } from '$lib/settings/settings-store'
 import { renderDragImage } from './drag-image-renderer'
 
@@ -112,6 +120,20 @@ export function getSelfDragFileInfos(): DragFileInfo[] | null {
 export function clearSelfDragFingerprint(): void {
     selfDragFingerprint = null
     selfDragFileInfos = null
+}
+
+/** Pending temp file cleanup — stored during drag, executed when session ends. */
+let pendingImageCleanup: (() => Promise<void>) | null = null
+
+/**
+ * Ends the self-drag session: clears Rust state and deletes the temp drag image.
+ * Idempotent — safe to call from both the drop handler and the startDrag finally block.
+ */
+export async function endSelfDragSession(): Promise<void> {
+    const cleanup = pendingImageCleanup
+    pendingImageCleanup = null
+    await clearSelfDragOverlay()
+    if (cleanup) await cleanup()
 }
 
 /** Global state for active drag operation */
@@ -318,6 +340,8 @@ export function cancelDragTracking(): void {
 
 /**
  * Performs a single-file native drag operation.
+ * Uses the rich PNG as the OS drag image (visible outside the window).
+ * The native swizzle hides it over our window so the DOM overlay takes over.
  */
 async function performSingleFileDrag(
     filePath: string,
@@ -329,44 +353,46 @@ async function performSingleFileDrag(
     const resolved = await resolveDragIconPath(iconId, fileInfos)
     if (!resolved) return
 
+    // Store cleanup for later — the temp file must survive the entire drag session
+    // because the native swizzle reads it from disk on every window exit.
+    pendingImageCleanup = resolved.usedCanvas ? cleanupTempDragImage : cleanupTempIcon
+
+    // Store rich image path so native swizzle can swap to it on window exit
+    await prepareSelfDragOverlay(resolved.path)
+
+    // Don't reset draggingFromSelf after startDrag — it resolves before the OS
+    // delivers drop/leave events. The flag is cleared by the drop handler.
     draggingFromSelf = true
-    try {
-        await startDrag({
-            item: [filePath],
-            icon: resolved.path,
-            mode,
-        })
-    } finally {
-        // Don't reset draggingFromSelf here — startDrag may resolve before
-        // the OS delivers drop/leave events. The flag is cleared by the
-        // drop event handler via resetDraggingFromSelf().
-        if (resolved.usedCanvas) void cleanupTempDragImage()
-        else void cleanupTempIcon()
-    }
+    await startDrag({
+        item: [filePath],
+        icon: resolved.path,
+        mode,
+    })
 }
 
 /**
  * Performs a selection-based drag operation via the backend.
  * This avoids transferring file paths over IPC for large selections.
+ * Uses the rich PNG as the OS drag image (visible outside, hidden inside by native swizzle).
  */
 async function performSelectionDrag(context: SelectionDragContext, mode: 'copy' | 'move'): Promise<void> {
     const resolved = await resolveDragIconPath(context.iconId, context.fileInfos)
     if (!resolved) return
 
+    // Store cleanup for later — the temp file must survive the entire drag session
+    pendingImageCleanup = resolved.usedCanvas ? cleanupTempDragImage : cleanupTempIcon
+
+    // Store rich image path so native swizzle can swap to it on window exit
+    await prepareSelfDragOverlay(resolved.path)
+
+    // Don't reset draggingFromSelf after startDrag — see performSingleFileDrag comment.
     draggingFromSelf = true
-    try {
-        // Start the drag via backend (paths are looked up from cache)
-        await startSelectionDrag(
-            context.listingId,
-            context.indices,
-            context.includeHidden,
-            context.hasParent,
-            mode,
-            resolved.path,
-        )
-    } finally {
-        // Don't reset draggingFromSelf here — see performSingleFileDrag comment.
-        if (resolved.usedCanvas) void cleanupTempDragImage()
-        else void cleanupTempIcon()
-    }
+    await startSelectionDrag(
+        context.listingId,
+        context.indices,
+        context.includeHidden,
+        context.hasParent,
+        mode,
+        resolved.path,
+    )
 }

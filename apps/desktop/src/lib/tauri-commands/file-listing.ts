@@ -202,6 +202,23 @@ export async function startSelectionDrag(
 }
 
 /**
+ * Marks a self-drag as active and stores the rich image path. The native swizzle will:
+ * - Hide the OS drag image over our window (swap to transparent in `draggingEntered:`)
+ * - Show the rich image outside the window (swap back in `draggingExited:`)
+ * @param richImagePath - Path to the rich canvas-rendered drag image.
+ */
+export async function prepareSelfDragOverlay(richImagePath: string): Promise<void> {
+    await invoke('prepare_self_drag_overlay', { richImagePath })
+}
+
+/**
+ * Clears self-drag state after drop or cancellation.
+ */
+export async function clearSelfDragOverlay(): Promise<void> {
+    await invoke('clear_self_drag_overlay')
+}
+
+/**
  * Checks if a path exists.
  * @param path - Path to check.
  * @param volumeId - Optional volume ID. Defaults to "root" for local filesystem.
