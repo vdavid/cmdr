@@ -94,6 +94,7 @@ pub struct ServerCapabilities {
     pub protocol_version: String,
     pub capabilities: Capabilities,
     pub server_info: ServerInfo,
+    pub instructions: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -136,6 +137,20 @@ impl Default for ServerCapabilities {
                 name: "cmdr".to_string(),
                 version: env!("CARGO_PKG_VERSION").to_string(),
             },
+            instructions: concat!(
+                "Controls a running Cmdr file manager instance — a keyboard-driven, two-pane file ",
+                "explorer for macOS. Use these tools when the user asks to navigate directories, browse ",
+                "files, manage selections, copy files, change view settings, or interact with dialogs in ",
+                "Cmdr.\n\n",
+                "Start by reading the cmdr://state resource to understand current pane paths, cursor ",
+                "positions, and selections before taking actions. Most tools target a specific pane (left ",
+                "or right); the state resource tells you which pane is focused. Navigation tools ",
+                "(nav_to_path, nav_to_parent, nav_back, nav_forward) and view tools (sort, set_view_mode, ",
+                "toggle_hidden) affect one pane at a time. File operations like copy work on the current ",
+                "selection and target the opposite pane. The dialog tool manages modal dialogs (settings, ",
+                "file viewer, about) — only one instance of each type can be open.",
+            )
+            .to_string(),
         }
     }
 }
