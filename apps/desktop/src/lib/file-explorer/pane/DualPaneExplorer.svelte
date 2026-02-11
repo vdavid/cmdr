@@ -78,7 +78,12 @@
     import DragOverlay from '../DragOverlay.svelte'
     import { showOverlay, updateOverlay, hideOverlay, type OverlayFileInfo } from '../drag-overlay.svelte'
     import { getCachedIcon } from '$lib/icon-cache'
-    import { startModifierTracking, stopModifierTracking, getIsAltHeld } from '../modifier-key-tracker.svelte'
+    import {
+        startModifierTracking,
+        stopModifierTracking,
+        getIsAltHeld,
+        setAltHeld,
+    } from '../modifier-key-tracker.svelte'
 
     const log = getAppLogger('fileExplorer')
 
@@ -109,6 +114,13 @@
     let unlistenVolumeUnmount: UnlistenFn | undefined
     let unlistenNavigation: UnlistenFn | undefined
     let unlistenDragDrop: UnlistenFn | undefined
+    let unlistenDragImageSize: UnlistenFn | undefined
+    let unlistenDragModifiers: UnlistenFn | undefined
+
+    // Drag image size from the source app (macOS only, via swizzle).
+    // If the source provides a large preview (like Finder), we suppress our overlay.
+    const smallDragImageThreshold = 32
+    let externalDragHasLargeImage = false
 
     // Drop target highlight state: which pane (if any) is the active drop target
     let dropTargetPane = $state<'left' | 'right' | null>(null)
@@ -564,8 +576,14 @@
 
     /** Called on drag enter to initialize the overlay with file infos. */
     function handleDragEnter(paths: string[], position: { x: number; y: number }) {
-        const overlayInfos = buildOverlayFileInfos(paths)
-        showOverlay(overlayInfos, paths.length)
+        // Skip the overlay when:
+        // - Self-drag: Cmdr already renders a native drag image via canvas
+        // - External drag with large source image: the OS drag preview is informative (like Finder)
+        const suppressOverlay = getIsDraggingFromSelf() || externalDragHasLargeImage
+        if (!suppressOverlay) {
+            const overlayInfos = buildOverlayFileInfos(paths)
+            showOverlay(overlayInfos, paths.length)
+        }
         startModifierTracking()
         handleDragOver(position)
     }
@@ -601,6 +619,10 @@
     function handleDrop(paths: string[], position: { x: number; y: number }) {
         const resolved = resolveDropTarget(position.x, position.y, leftPaneWrapperEl, rightPaneWrapperEl)
         const folderPath = dropTargetFolderPath
+
+        // Read the modifier BEFORE stopping the tracker (which resets altKeyHeld)
+        const operation = getIsAltHeld() ? 'move' : 'copy'
+
         clearDropTargets()
         hideOverlay()
         stopModifierTracking()
@@ -610,8 +632,6 @@
         // For same-pane pane-level drops (not folder), suppress (no-op)
         if (resolved.type === 'pane' && getIsDraggingFromSelf() && targetPane === focusedPane) return
 
-        // Use Alt modifier to determine default operation
-        const operation = getIsAltHeld() ? 'move' : 'copy'
         handleFileDrop(paths, targetPane, resolved.type === 'folder' ? (folderPath ?? undefined) : undefined, operation)
     }
 
@@ -727,6 +747,19 @@
             void handleNavigationAction(event.payload.action)
         })
 
+        // Listen for drag image size from native swizzle (macOS).
+        // Fires before the Tauri drag enter event, so the flag is ready when handleDragEnter runs.
+        unlistenDragImageSize = await listen<{ width: number; height: number }>('drag-image-size', (event) => {
+            const { width, height } = event.payload
+            externalDragHasLargeImage = width > smallDragImageThreshold || height > smallDragImageThreshold
+        })
+
+        // Listen for native modifier key state during drags (macOS).
+        // [NSEvent modifierFlags] works even when the webview doesn't have keyboard focus.
+        unlistenDragModifiers = await listen<{ altHeld: boolean }>('drag-modifiers', (event) => {
+            setAltHeld(event.payload.altHeld)
+        })
+
         // Register drag-and-drop target handler for external and pane-to-pane drops
         unlistenDragDrop = await getCurrentWebview().onDragDropEvent((event) => {
             const { type } = event.payload
@@ -748,12 +781,14 @@
                 handleDrop(event.payload.paths, event.payload.position)
                 resetDraggingFromSelf()
                 clearSelfDragFingerprint()
+                externalDragHasLargeImage = false
             } else {
                 // 'leave' — cursor left the window or drag was cancelled
                 clearDropTargets()
                 hideOverlay()
                 stopModifierTracking()
                 resetDraggingFromSelf()
+                externalDragHasLargeImage = false
                 // Do NOT clear the fingerprint here — that's the key to re-entry detection
             }
         })
@@ -845,6 +880,8 @@
         unlistenVolumeMount?.()
         unlistenVolumeUnmount?.()
         unlistenNavigation?.()
+        unlistenDragImageSize?.()
+        unlistenDragModifiers?.()
         unlistenDragDrop?.()
         cleanupNetworkDiscovery()
         stopModifierTracking()

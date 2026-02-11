@@ -51,6 +51,10 @@ use nusb as _;
 // objc2-app-kit is used in volumes/mod.rs for NSRunningApplication
 #[cfg(target_os = "macos")]
 use objc2_app_kit as _;
+//noinspection ALL
+// block2 is used in drag_image_detection.rs for ObjC block closures
+#[cfg(target_os = "macos")]
+use block2 as _;
 
 mod ignore_poison;
 pub use ignore_poison::IgnorePoison;
@@ -59,6 +63,8 @@ mod ai;
 pub mod benchmark;
 mod commands;
 pub mod config;
+#[cfg(target_os = "macos")]
+mod drag_image_detection;
 mod file_system;
 pub(crate) mod file_viewer;
 mod font_metrics;
@@ -147,6 +153,10 @@ pub fn run() {
             // Load known network shares from disk
             #[cfg(target_os = "macos")]
             network::known_shares::load_known_shares(app.handle());
+
+            // Install drag image detection swizzle (macOS only)
+            #[cfg(target_os = "macos")]
+            drag_image_detection::install(app.handle().clone());
 
             // Initialize font metrics for default font (system font at 12px)
             font_metrics::init_font_metrics(app.handle(), "system-400-12");

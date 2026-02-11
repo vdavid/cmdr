@@ -1,6 +1,11 @@
 // Tracks Alt/Option modifier key state during drag operations.
 // Alt held = "Move" operation, no modifier = "Copy" (default).
-// Uses Svelte 5 reactive state ($state) for live UI updates.
+//
+// Two sources feed this state:
+// 1. Document keydown/keyup events (works when webview is focused)
+// 2. Native `drag-modifiers` Tauri event from the swizzled WryWebView
+//    (reads [NSEvent modifierFlags] — works during OS-level drags when
+//    the webview doesn't receive keyboard events)
 
 let altKeyHeld = $state(false)
 let listenerAttached = false
@@ -37,4 +42,9 @@ export function stopModifierTracking(): void {
 /** Returns whether the Alt/Option key is currently held. */
 export function getIsAltHeld(): boolean {
     return altKeyHeld
+}
+
+/** Sets the Alt state from an external source (native drag-modifiers event). */
+export function setAltHeld(held: boolean): void {
+    altKeyHeld = held
 }
