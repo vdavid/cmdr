@@ -1247,8 +1247,8 @@
         if (!leftRef || !rightRef) return false
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         if (leftRef.isLoading?.() || rightRef.isLoading?.()) return false
-        if (showTransferDialog || showTransferProgressDialog) return false
-        return true
+        return !(showTransferDialog || showTransferProgressDialog);
+
     }
 
     /** Swaps all DualPaneExplorer-level state variables between left and right. */
