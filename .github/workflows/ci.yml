@@ -50,6 +50,8 @@ jobs:
                         - 'apps/desktop/**'
                       website:
                         - 'apps/website/**'
+                        - '.dockerignore'
+                        - 'CHANGELOG.md'
                       license-server:
                         - 'apps/license-server/**'
                       scripts:
