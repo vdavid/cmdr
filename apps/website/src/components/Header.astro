@@ -1,5 +1,6 @@
 ---
 import { dmgUrl } from '../lib/release'
+import NewsletterForm from './NewsletterForm.astro'
 
 const navLinks = [
     { href: '/#features', label: 'Features' },
@@ -27,6 +28,17 @@ const navLinks = [
 
         <!-- Navigation -->
         <div class="flex items-center gap-8">
+            <!-- Newsletter toggle -->
+            <button
+                type="button"
+                class="cursor-pointer text-sm text-[var(--color-text-secondary)] transition-colors duration-200 hover:text-[var(--color-text-primary)]"
+                aria-expanded="false"
+                aria-controls="newsletter-panel"
+                data-newsletter-toggle
+            >
+                Newsletter
+            </button>
+
             {
                 navLinks.map((link) => (
                     <a
@@ -55,4 +67,74 @@ const navLinks = [
             </a>
         </div>
     </nav>
+
+    <!-- Newsletter slide-open panel -->
+    <div id="newsletter-panel" class="newsletter-panel" aria-hidden="true">
+        <div class="mx-auto flex max-w-2xl flex-col items-center gap-3 px-6 py-5">
+            <p class="text-sm text-[var(--color-text-secondary)]">
+                How cool that you want to hear about Cmdr news! We promise we won't spam you. ❤️
+            </p>
+            <div class="w-full max-w-md">
+                <NewsletterForm variant="inline" />
+            </div>
+        </div>
+    </div>
 </header>
+
+<style>
+    .newsletter-panel {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height var(--duration-slow) var(--ease-out-expo);
+        border-top: 1px solid transparent;
+    }
+
+    .newsletter-panel[aria-hidden='false'] {
+        max-height: 200px;
+        border-top-color: var(--color-border-subtle);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .newsletter-panel {
+            transition: none;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('astro:page-load', () => {
+        const toggle = document.querySelector<HTMLButtonElement>('[data-newsletter-toggle]')
+        const panel = document.getElementById('newsletter-panel')
+        if (!toggle || !panel) return
+
+        // Skip if already bound (view transition re-runs)
+        if (toggle.dataset.bound) return
+        toggle.dataset.bound = 'true'
+
+        function open() {
+            panel!.setAttribute('aria-hidden', 'false')
+            toggle!.setAttribute('aria-expanded', 'true')
+            const emailInput = panel!.querySelector<HTMLInputElement>('input[type="email"]')
+            // Delay focus until the panel animation starts
+            setTimeout(() => emailInput?.focus(), 50)
+        }
+
+        function close() {
+            panel!.setAttribute('aria-hidden', 'true')
+            toggle!.setAttribute('aria-expanded', 'false')
+        }
+
+        toggle.addEventListener('click', () => {
+            const isOpen = panel.getAttribute('aria-hidden') === 'false'
+            if (isOpen) close()
+            else open()
+        })
+
+        document.addEventListener('keydown', (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && panel.getAttribute('aria-hidden') === 'false') {
+                close()
+                toggle.focus()
+            }
+        })
+    })
+</script>

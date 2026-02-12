@@ -1,5 +1,6 @@
 ---
 import { version, dmgUrl } from '../lib/release'
+import NewsletterForm from './NewsletterForm.astro'
 ---
 
 <section id="download" class="relative px-6 py-32">
@@ -66,15 +67,13 @@ import { version, dmgUrl } from '../lib/release'
         </div>
 
         <!-- Other platforms -->
-        <p class="mt-8 text-[var(--color-text-tertiary)]">
-            Windows and Linux coming soon.
-            <a
-                href="https://github.com/vdavid/cmdr"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="text-[var(--color-accent)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]"
-                >Star on GitHub<span class="ml-1 text-xs">↗</span></a
-            > to get notified.
-        </p>
+        <div class="mt-8 text-center">
+            <p class="mb-3 text-[var(--color-text-tertiary)]">
+                Windows and Linux coming soon. Get notified when they're ready:
+            </p>
+            <div class="mx-auto max-w-sm">
+                <NewsletterForm variant="inline" />
+            </div>
+        </div>
     </div>
 </section>

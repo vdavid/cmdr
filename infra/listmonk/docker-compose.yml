@@ -1,0 +1,39 @@
+services:
+  listmonk-db:
+    image: postgres:17-alpine
+    container_name: listmonk-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: listmonk
+      POSTGRES_USER: listmonk
+      POSTGRES_PASSWORD: ${LISTMONK_DB_PASSWORD}
+    volumes:
+      - listmonk-data:/var/lib/postgresql/data
+    networks:
+      - listmonk-internal
+
+  listmonk:
+    image: listmonk/listmonk:latest
+    container_name: listmonk
+    restart: unless-stopped
+    depends_on:
+      - listmonk-db
+    command: >
+      sh -c "./listmonk
+      --db.host=listmonk-db --db.port=5432
+      --db.user=listmonk --db.password=$${LISTMONK_DB_PASSWORD} --db.database=listmonk
+      --app.address=0.0.0.0:9000"
+    environment:
+      - TZ=Europe/Stockholm
+      - LISTMONK_DB_PASSWORD=${LISTMONK_DB_PASSWORD}
+    networks:
+      - listmonk-internal
+      - proxy-net
+
+volumes:
+  listmonk-data:
+
+networks:
+  listmonk-internal:
+  proxy-net:
+    external: true

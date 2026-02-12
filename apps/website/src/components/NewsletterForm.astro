@@ -1,0 +1,188 @@
+---
+interface Props {
+    variant: 'inline' | 'stacked'
+    message?: string
+    class?: string
+}
+
+const { variant, message, class: className } = Astro.props
+const listUuid = import.meta.env.PUBLIC_LISTMONK_LIST_UUID
+const uniqueId = `newsletter-${variant}-${Math.random().toString(36).slice(2, 8)}`
+---
+
+<form
+    class:list={['newsletter-form', `newsletter-form--${variant}`, className]}
+    data-list-uuid={listUuid}
+    data-newsletter-form
+    novalidate
+>
+    <label for={uniqueId} class="sr-only">Email address</label>
+    <input
+        id={uniqueId}
+        type="email"
+        name="newsletter-email"
+        placeholder="name@example.com"
+        required
+        autocomplete="email"
+        data-1p-ignore
+        data-bwignore="true"
+        data-lpignore="true"
+        class="newsletter-form__input"
+    />
+
+    {/* Honeypot — hidden from humans, filled by bots */}
+    <div aria-hidden="true" style="position:absolute;left:-9999px;top:-9999px;">
+        <label>
+            Leave this empty
+            <input type="text" name="hp" tabindex="-1" autocomplete="off" />
+        </label>
+    </div>
+
+    <button type="submit" class="newsletter-form__button"> Sign up </button>
+
+    <div class="newsletter-form__feedback" aria-live="polite"></div>
+
+    {message && <p class="newsletter-form__message">{message}</p>}
+</form>
+
+<style>
+    .newsletter-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: flex-start;
+    }
+
+    .newsletter-form--inline {
+        flex-direction: row;
+    }
+
+    .newsletter-form--stacked {
+        flex-direction: column;
+    }
+
+    .newsletter-form__input {
+        flex: 1 1 200px;
+        min-width: 0;
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.5rem;
+        border: 1px solid var(--color-border);
+        background: var(--color-surface);
+        color: var(--color-text-primary);
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+        transition: border-color 200ms;
+    }
+
+    .newsletter-form__input::placeholder {
+        color: var(--color-text-tertiary);
+    }
+
+    .newsletter-form__input:focus {
+        outline: none;
+        border-color: var(--color-accent);
+    }
+
+    .newsletter-form__button {
+        flex-shrink: 0;
+        padding: 0.5rem 1.25rem;
+        border-radius: 0.5rem;
+        border: none;
+        background: var(--color-accent);
+        color: var(--color-background);
+        font-size: 0.875rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition:
+            background-color 200ms,
+            opacity 200ms;
+    }
+
+    .newsletter-form__button:hover {
+        background: var(--color-accent-hover);
+    }
+
+    .newsletter-form__button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .newsletter-form__feedback {
+        flex-basis: 100%;
+        font-size: 0.8125rem;
+        line-height: 1.25rem;
+        min-height: 1.25rem;
+    }
+
+    .newsletter-form__feedback:empty {
+        display: none;
+    }
+
+    .newsletter-form__message {
+        flex-basis: 100%;
+        font-size: 0.8125rem;
+        color: var(--color-text-tertiary);
+        margin: 0;
+    }
+</style>
+
+<script>
+    document.addEventListener('astro:page-load', () => {
+        document.querySelectorAll<HTMLFormElement>('[data-newsletter-form]').forEach((form) => {
+            // Skip forms that already have a listener attached
+            if (form.dataset.newsletterBound) return
+            form.dataset.newsletterBound = 'true'
+
+            const emailInput = form.querySelector<HTMLInputElement>('input[type="email"]')!
+            const honeypot = form.querySelector<HTMLInputElement>('input[name="hp"]')!
+            const button = form.querySelector<HTMLButtonElement>('button[type="submit"]')!
+            const feedback = form.querySelector<HTMLDivElement>('.newsletter-form__feedback')!
+            const listUuid = form.dataset.listUuid
+
+            function showFeedback(text: string, type: 'success' | 'error') {
+                feedback.textContent = text
+                feedback.style.color = type === 'success' ? 'var(--color-accent)' : 'var(--color-warning)'
+            }
+
+            form.addEventListener('submit', async (e: SubmitEvent) => {
+                e.preventDefault()
+                feedback.textContent = ''
+
+                // Honeypot check — silently discard
+                if (honeypot.value) return
+
+                const email = emailInput.value.trim()
+                if (!email || !emailInput.validity.valid) {
+                    showFeedback('Enter a valid email address.', 'error')
+                    emailInput.focus()
+                    return
+                }
+
+                button.disabled = true
+                button.textContent = 'Signing up...'
+
+                try {
+                    const res = await fetch('/api/newsletter/subscribe', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, name: '', list_uuids: [listUuid] }),
+                    })
+
+                    if (res.ok) {
+                        showFeedback('Check your inbox to confirm your subscription!', 'success')
+                        emailInput.value = ''
+                    } else {
+                        const data = await res.json().catch(() => null)
+                        const message = data?.message || 'Something went wrong. Try again?'
+                        showFeedback(message, 'error')
+                    }
+                } catch {
+                    showFeedback('Network error. Check your connection and try again.', 'error')
+                } finally {
+                    button.disabled = false
+                    button.textContent = 'Sign up'
+                }
+            })
+        })
+    })
+</script>
