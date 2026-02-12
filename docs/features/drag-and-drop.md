@@ -94,6 +94,10 @@ which directory entry the cursor is over.
   include modifier state).
 - `transfer-operations.ts` — `buildTransferPropsFromDroppedPaths()` builds transfer dialog props from dropped file
   paths.
+- `drag-position.ts` — Corrects Tauri `DragDropEvent` coordinates for the viewport. Tauri reports positions relative to
+  the full window frame, but when the Web Inspector (DevTools) is docked, the viewport is smaller. Uses
+  `getCurrentWindow().outerSize()` (full window, stable) vs `window.innerHeight` (viewport, shrinks with DevTools) to
+  compute and apply the offset. Without DevTools, the offset is zero.
 
 ### Drag image detection (hack — wry swizzle)
 

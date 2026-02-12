@@ -65,6 +65,7 @@
     import type { TransferOperationType } from '../types'
     import { getInitialFolderName, moveCursorToNewFolder } from '$lib/file-operations/mkdir/new-folder-operations'
     import { getCurrentWebview } from '@tauri-apps/api/webview'
+    import { recalculateWebviewOffset, toViewportPosition } from '../drag/drag-position'
     import {
         getIsDraggingFromSelf,
         resetDraggingFromSelf,
@@ -642,6 +643,10 @@
         dropTargetFolderEl = null
     }
 
+    function handleResizeForDevTools() {
+        void recalculateWebviewOffset()
+    }
+
     onMount(async () => {
         // Start font metrics measurement in background (non-blocking)
         void ensureFontMetricsLoaded()
@@ -694,6 +699,12 @@
         rightHistory = createHistory(rightVolumeId, status.rightPath)
 
         initialized = true
+
+        // Dev-only: correct drag coordinates when Web Inspector is docked.
+        if (import.meta.env.DEV) {
+            void recalculateWebviewOffset()
+            window.addEventListener('resize', handleResizeForDevTools)
+        }
 
         // Subscribe to settings changes from the backend menu
         unlistenSettings = await subscribeToSettingsChanges((newSettings) => {
@@ -774,11 +785,11 @@
                 if (getIsDraggingFromSelf() && !matchesSelfDragFingerprint(paths)) {
                     storeSelfDragFingerprint(paths)
                 }
-                handleDragEnter(paths, event.payload.position)
+                handleDragEnter(paths, toViewportPosition(event.payload.position))
             } else if (type === 'over') {
-                handleDragOver(event.payload.position)
+                handleDragOver(toViewportPosition(event.payload.position))
             } else if (type === 'drop') {
-                handleDrop(event.payload.paths, event.payload.position)
+                handleDrop(event.payload.paths, toViewportPosition(event.payload.position))
                 resetDraggingFromSelf()
                 clearSelfDragFingerprint()
                 void endSelfDragSession()
@@ -889,6 +900,7 @@
         unlistenDragDrop?.()
         cleanupNetworkDiscovery()
         stopModifierTracking()
+        window.removeEventListener('resize', handleResizeForDevTools) // No-op in non-dev, safe to always call
     })
 
     function handlePaneResize(widthPercent: number) {
