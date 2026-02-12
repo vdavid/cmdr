@@ -19,13 +19,18 @@ services:
     depends_on:
       - listmonk-db
     command: >
-      sh -c "./listmonk
-      --db.host=listmonk-db --db.port=5432
-      --db.user=listmonk --db.password=$${LISTMONK_DB_PASSWORD} --db.database=listmonk
-      --app.address=0.0.0.0:9000"
+      sh -c "./listmonk --install --idempotent --yes --config '' &&
+      ./listmonk --upgrade --yes --config '' &&
+      ./listmonk --config ''"
     environment:
-      - TZ=Europe/Stockholm
-      - LISTMONK_DB_PASSWORD=${LISTMONK_DB_PASSWORD}
+      TZ: Europe/Stockholm
+      LISTMONK_db__host: listmonk-db
+      LISTMONK_db__port: 5432
+      LISTMONK_db__user: listmonk
+      LISTMONK_db__password: ${LISTMONK_DB_PASSWORD}
+      LISTMONK_db__database: listmonk
+      LISTMONK_db__ssl_mode: disable
+      LISTMONK_app__address: 0.0.0.0:9000
     networks:
       - listmonk-internal
       - proxy-net

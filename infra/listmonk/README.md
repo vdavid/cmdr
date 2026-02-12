@@ -102,10 +102,9 @@ cd /opt/cmdr/infra/listmonk
 cp .env.example .env
 # Edit .env with a strong password
 docker compose up -d
-docker exec -it listmonk ./listmonk --install
 ```
 
-The `--install` command creates the database schema and default admin credentials (`admin` / `admin`).
+On the first start, Listmonk automatically creates the database schema (`--install --idempotent`), runs any migrations (`--upgrade`), and then starts the app. Check `docker compose logs -f listmonk` to confirm it's healthy.
 
 ### 6. Caddy config (do while waiting for DNS)
 
