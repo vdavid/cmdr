@@ -141,14 +141,55 @@ fn test_write_operations() {
     assert!(result.is_ok());
     assert!(!test_dir.join("subdir").exists());
 
-    // Test rename
+    // Test rename (force=false, no conflict)
     volume.create_file(Path::new("old.txt"), b"content").unwrap();
-    let result = volume.rename(Path::new("old.txt"), Path::new("new.txt"));
+    let result = volume.rename(Path::new("old.txt"), Path::new("new.txt"), false);
     assert!(result.is_ok());
     assert!(!test_dir.join("old.txt").exists());
     assert!(test_dir.join("new.txt").exists());
 
     // Cleanup
+    let _ = fs::remove_dir_all(&test_dir);
+}
+
+#[test]
+fn test_rename_conflict_no_force() {
+    use std::fs;
+
+    let test_dir = std::env::temp_dir().join("cmdr_rename_conflict_test");
+    let _ = fs::remove_dir_all(&test_dir);
+    fs::create_dir_all(&test_dir).unwrap();
+
+    let volume = LocalPosixVolume::new("Test", &test_dir);
+    volume.create_file(Path::new("source.txt"), b"source").unwrap();
+    volume.create_file(Path::new("target.txt"), b"target").unwrap();
+
+    let result = volume.rename(Path::new("source.txt"), Path::new("target.txt"), false);
+    assert!(matches!(result, Err(VolumeError::AlreadyExists(_))));
+    // Both files still intact
+    assert!(test_dir.join("source.txt").exists());
+    assert!(test_dir.join("target.txt").exists());
+
+    let _ = fs::remove_dir_all(&test_dir);
+}
+
+#[test]
+fn test_rename_force_overwrites() {
+    use std::fs;
+
+    let test_dir = std::env::temp_dir().join("cmdr_rename_force_test");
+    let _ = fs::remove_dir_all(&test_dir);
+    fs::create_dir_all(&test_dir).unwrap();
+
+    let volume = LocalPosixVolume::new("Test", &test_dir);
+    volume.create_file(Path::new("source.txt"), b"new content").unwrap();
+    volume.create_file(Path::new("target.txt"), b"old content").unwrap();
+
+    let result = volume.rename(Path::new("source.txt"), Path::new("target.txt"), true);
+    assert!(result.is_ok());
+    assert!(!test_dir.join("source.txt").exists());
+    assert_eq!(fs::read_to_string(test_dir.join("target.txt")).unwrap(), "new content");
+
     let _ = fs::remove_dir_all(&test_dir);
 }
 

@@ -564,7 +564,7 @@ pub fn clear_self_drag_overlay() {
 pub fn clear_self_drag_overlay() {}
 
 /// Expands tilde (~) to the user's home directory.
-fn expand_tilde(path: &str) -> String {
+pub(crate) fn expand_tilde(path: &str) -> String {
     if (path.starts_with("~/") || path == "~")
         && let Some(home) = dirs::home_dir()
     {

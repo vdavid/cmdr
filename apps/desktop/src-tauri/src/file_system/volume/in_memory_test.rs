@@ -347,6 +347,60 @@ fn test_supports_watching_returns_false() {
 }
 
 // ============================================================================
+// Rename tests
+// ============================================================================
+
+#[test]
+fn test_rename_success() {
+    let volume = InMemoryVolume::new("Test");
+    volume.create_file(Path::new("/old.txt"), b"content").unwrap();
+
+    let result = volume.rename(Path::new("/old.txt"), Path::new("/new.txt"), false);
+    assert!(result.is_ok());
+    assert!(!volume.exists(Path::new("/old.txt")));
+    assert!(volume.exists(Path::new("/new.txt")));
+
+    let metadata = volume.get_metadata(Path::new("/new.txt")).unwrap();
+    assert_eq!(metadata.name, "new.txt");
+    assert_eq!(metadata.path, "/new.txt");
+}
+
+#[test]
+fn test_rename_conflict_no_force() {
+    let volume = InMemoryVolume::new("Test");
+    volume.create_file(Path::new("/source.txt"), b"source").unwrap();
+    volume.create_file(Path::new("/target.txt"), b"target").unwrap();
+
+    let result = volume.rename(Path::new("/source.txt"), Path::new("/target.txt"), false);
+    assert!(matches!(result, Err(VolumeError::AlreadyExists(_))));
+    // Both entries still exist
+    assert!(volume.exists(Path::new("/source.txt")));
+    assert!(volume.exists(Path::new("/target.txt")));
+}
+
+#[test]
+fn test_rename_force_overwrites() {
+    let volume = InMemoryVolume::new("Test");
+    volume.create_file(Path::new("/source.txt"), b"new").unwrap();
+    volume.create_file(Path::new("/target.txt"), b"old").unwrap();
+
+    let result = volume.rename(Path::new("/source.txt"), Path::new("/target.txt"), true);
+    assert!(result.is_ok());
+    assert!(!volume.exists(Path::new("/source.txt")));
+    assert!(volume.exists(Path::new("/target.txt")));
+
+    let metadata = volume.get_metadata(Path::new("/target.txt")).unwrap();
+    assert_eq!(metadata.name, "target.txt");
+}
+
+#[test]
+fn test_rename_nonexistent_source() {
+    let volume = InMemoryVolume::new("Test");
+    let result = volume.rename(Path::new("/missing.txt"), Path::new("/new.txt"), false);
+    assert!(matches!(result, Err(VolumeError::NotFound(_))));
+}
+
+// ============================================================================
 // Concurrency tests
 // ============================================================================
 

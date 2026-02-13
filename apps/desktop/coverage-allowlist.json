@@ -120,6 +120,28 @@
         "file-operations/transfer/TransferProgressDialog.svelte": { "reason": "UI dialog, depends on Tauri events" },
         "file-operations/transfer/TransferErrorDialog.svelte": {
             "reason": "UI modal, logic tested in transfer-error-messages.test.ts"
+        },
+        "file-explorer/rename/ExtensionChangeDialog.svelte": {
+            "reason": "UI modal, logic tested in rename-dialogs.test.ts"
+        },
+        "file-explorer/rename/RenameConflictDialog.svelte": {
+            "reason": "UI modal, logic tested in rename-dialogs.test.ts"
+        },
+        "ui/Notification.svelte": { "reason": "UI component, depends on Tauri event API" },
+        "file-explorer/rename/InlineRenameEditor.svelte": {
+            "reason": "UI component, depends on DOM focus/selection APIs"
+        },
+        "file-explorer/rename/rename-state.svelte.ts": {
+            "reason": "Reactive Svelte state, tested in rename-state.test.ts"
+        },
+        "file-explorer/rename/rename-activation.ts": {
+            "reason": "Depends on document event listeners and timers"
+        },
+        "file-explorer/rename/rename-operations.ts": {
+            "reason": "Depends on Tauri commands and FilePane integration"
+        },
+        "tauri-commands/rename.ts": {
+            "reason": "Tauri command wrappers, tested via integration"
         }
     }
 }

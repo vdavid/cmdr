@@ -295,6 +295,10 @@
     }
 
     async function handleSortChange(pane: 'left' | 'right', newColumn: SortColumn) {
+        // Cancel any active rename on the affected pane (sort invalidates indices)
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        getPaneRef(pane)?.cancelRename?.()
+
         const paneRef = getPaneRef(pane)
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         const listingId = paneRef?.getListingId?.() as string | undefined
@@ -357,6 +361,8 @@
             void saveAppStatus({ focusedPane: pane })
             void updateFocusedPane(pane)
         }
+        // Always restore DOM focus (needed after inline rename or dialog close within a pane)
+        containerElement?.focus()
     }
 
     function handleCancelLoading(pane: 'left' | 'right', selectName?: string) {
@@ -454,10 +460,7 @@
                 leftPaneRef?.toggleVolumeChooser()
                 return true
             case 'F2':
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                leftPaneRef?.closeVolumeChooser()
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                rightPaneRef?.toggleVolumeChooser()
+                startRename()
                 return true
             case 'F3':
                 void openViewerForCursor()
@@ -466,7 +469,13 @@
                 void openTransferDialog('copy')
                 return true
             case 'F6':
-                void openTransferDialog('move')
+                if (e.shiftKey) {
+                    // Shift+F6 = Rename
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+                    getPaneRef(focusedPane)?.startRename()
+                } else {
+                    void openTransferDialog('move')
+                }
                 return true
             case 'F7':
                 void openNewFolderDialog()
@@ -916,6 +925,39 @@
         void saveAppStatus({ leftPaneWidthPercent: 50 })
     }
 
+    /** Activates inline rename on the focused pane's cursor item. */
+    export function startRename() {
+        // Check if the volume is read-only before starting rename
+        const volId = getPaneVolumeId(focusedPane)
+        const volumeInfo = getDestinationVolumeInfo(volId, volumes, getMtpVolumes())
+        if (volumeInfo?.isReadOnly) {
+            alertDialogProps = {
+                title: 'Read-only volume',
+                message: "This is a read-only volume. Renaming isn't possible here.",
+            }
+            showAlertDialog = true
+            return
+        }
+
+        const paneRef = getPaneRef(focusedPane)
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        paneRef?.startRename()
+    }
+
+    /** Cancels any active inline rename on either pane. */
+    export function cancelRename() {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        leftPaneRef?.cancelRename?.()
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        rightPaneRef?.cancelRename?.()
+    }
+
+    /** Returns whether inline rename is active on either pane. */
+    export function isRenaming(): boolean {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        return (leftPaneRef?.isRenaming?.() as boolean) || (rightPaneRef?.isRenaming?.() as boolean) || false
+    }
+
     /** Opens the new folder dialog. Pre-fills with the entry name under cursor. */
     export async function openNewFolderDialog() {
         const paneRef = getPaneRef(focusedPane)
@@ -1247,8 +1289,7 @@
         if (!leftRef || !rightRef) return false
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         if (leftRef.isLoading?.() || rightRef.isLoading?.()) return false
-        return !(showTransferDialog || showTransferProgressDialog);
-
+        return !(showTransferDialog || showTransferProgressDialog)
     }
 
     /** Swaps all DualPaneExplorer-level state variables between left and right. */

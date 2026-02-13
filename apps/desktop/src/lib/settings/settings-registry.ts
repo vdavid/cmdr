@@ -116,6 +116,23 @@ export const settingsRegistry: SettingDefinition[] = [
         disabledReason: 'Coming soon',
     },
     {
+        id: 'fileOperations.allowFileExtensionChanges',
+        section: ['General', 'File operations'],
+        label: 'Allow file extension changes',
+        description: 'What to do when you rename a file and the extension changes.',
+        keywords: ['extension', 'rename', 'file', 'change', 'ask', 'confirm'],
+        type: 'enum',
+        default: 'ask',
+        component: 'radio',
+        constraints: {
+            options: [
+                { value: 'yes', label: 'Always allow' },
+                { value: 'no', label: 'Never allow' },
+                { value: 'ask', label: 'Always ask' },
+            ],
+        },
+    },
+    {
         id: 'fileOperations.progressUpdateInterval',
         section: ['General', 'File operations'],
         label: 'Progress update interval',

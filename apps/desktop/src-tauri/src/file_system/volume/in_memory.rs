@@ -294,4 +294,33 @@ impl Volume for InMemoryVolume {
             .map(|_| ())
             .ok_or_else(|| VolumeError::NotFound(normalized.display().to_string()))
     }
+
+    fn rename(&self, from: &Path, to: &Path, force: bool) -> Result<(), VolumeError> {
+        let mut entries = self
+            .entries
+            .write()
+            .map_err(|_| VolumeError::IoError("Lock poisoned".into()))?;
+
+        let from_normalized = self.normalize(from);
+        let to_normalized = self.normalize(to);
+
+        if !force && from_normalized != to_normalized && entries.contains_key(&to_normalized) {
+            return Err(VolumeError::AlreadyExists(to_normalized.display().to_string()));
+        }
+
+        let mut entry = entries
+            .remove(&from_normalized)
+            .ok_or_else(|| VolumeError::NotFound(from_normalized.display().to_string()))?;
+
+        // Update the metadata to reflect the new name and path
+        let new_name = to_normalized
+            .file_name()
+            .map(|s| s.to_string_lossy().to_string())
+            .unwrap_or_default();
+        entry.metadata.name = new_name;
+        entry.metadata.path = to_normalized.display().to_string();
+
+        entries.insert(to_normalized, entry);
+        Ok(())
+    }
 }

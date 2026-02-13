@@ -169,8 +169,11 @@ pub trait Volume: Send + Sync {
     /// Renames/moves a file or directory within this volume.
     ///
     /// Both source and destination paths are relative to the volume root.
-    fn rename(&self, from: &Path, to: &Path) -> Result<(), VolumeError> {
-        let _ = (from, to);
+    /// When `force` is false, returns `AlreadyExists` if the destination exists.
+    /// When `force` is true, proceeds even if the destination exists (POSIX rename
+    /// silently overwrites).
+    fn rename(&self, from: &Path, to: &Path, force: bool) -> Result<(), VolumeError> {
+        let _ = (from, to, force);
         Err(VolumeError::NotSupported)
     }
 

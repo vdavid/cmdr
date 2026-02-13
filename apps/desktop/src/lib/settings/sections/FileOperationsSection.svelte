@@ -3,6 +3,7 @@
     import SettingSwitch from '../components/SettingSwitch.svelte'
     import SettingSelect from '../components/SettingSelect.svelte'
     import SettingSlider from '../components/SettingSlider.svelte'
+    import SettingRadioGroup from '../components/SettingRadioGroup.svelte'
     import { getSettingDefinition } from '$lib/settings'
     import { getMatchingSettingIds } from '$lib/settings/settings-search'
 
@@ -24,6 +25,7 @@
     const defaultDef = { label: '', description: '', disabled: false, disabledReason: '' }
     const confirmDeleteDef = getSettingDefinition('fileOperations.confirmBeforeDelete') ?? defaultDef
     const deletePermanentlyDef = getSettingDefinition('fileOperations.deletePermanently') ?? defaultDef
+    const extensionChangesDef = getSettingDefinition('fileOperations.allowFileExtensionChanges') ?? defaultDef
     const progressIntervalDef = getSettingDefinition('fileOperations.progressUpdateInterval') ?? defaultDef
     const maxConflictsDef = getSettingDefinition('fileOperations.maxConflictsToShow') ?? defaultDef
 </script>
@@ -54,6 +56,17 @@
             {searchQuery}
         >
             <SettingSwitch id="fileOperations.deletePermanently" disabled={deletePermanentlyDef.disabled} />
+        </SettingRow>
+    {/if}
+
+    {#if shouldShow('fileOperations.allowFileExtensionChanges')}
+        <SettingRow
+            id="fileOperations.allowFileExtensionChanges"
+            label={extensionChangesDef.label}
+            description={extensionChangesDef.description}
+            {searchQuery}
+        >
+            <SettingRadioGroup id="fileOperations.allowFileExtensionChanges" />
         </SettingRow>
     {/if}
 

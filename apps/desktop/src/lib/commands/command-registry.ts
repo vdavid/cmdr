@@ -81,7 +81,7 @@ export const commands: Command[] = [
         name: 'Open right volume chooser',
         scope: 'Main window',
         showInPalette: true,
-        shortcuts: ['F2'],
+        shortcuts: [],
     },
 
     // ============================================================================
@@ -185,6 +185,13 @@ export const commands: Command[] = [
     // ============================================================================
     // File list - File action commands
     // ============================================================================
+    {
+        id: 'file.rename',
+        name: 'Rename',
+        scope: 'Main window/File list',
+        showInPalette: true,
+        shortcuts: ['F2', '⇧F6'],
+    },
     {
         id: 'file.edit',
         name: 'Edit in default editor',

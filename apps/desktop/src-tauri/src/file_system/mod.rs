@@ -11,6 +11,7 @@ mod provider;
 mod real_provider;
 #[cfg(target_os = "macos")]
 pub mod sync_status;
+pub mod validation;
 pub mod volume;
 pub(crate) mod watcher;
 pub(crate) mod write_operations;

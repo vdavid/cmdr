@@ -9,6 +9,7 @@ pub mod licensing;
 pub mod mtp;
 #[cfg(target_os = "macos")]
 pub mod network;
+pub mod rename;
 pub mod settings;
 pub mod sync_status; // Has both macOS and non-macOS implementations
 pub mod ui;

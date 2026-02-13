@@ -18,6 +18,7 @@ pub const COPY_PATH_ID: &str = "copy_path";
 pub const COPY_FILENAME_ID: &str = "copy_filename";
 pub const GET_INFO_ID: &str = "get_info";
 pub const QUICK_LOOK_ID: &str = "quick_look";
+pub const RENAME_ID: &str = "rename";
 
 /// Menu item ID for command palette.
 pub const COMMAND_PALETTE_ID: &str = "command_palette";
@@ -185,6 +186,18 @@ pub fn build_menu<R: Runtime>(
             submenu.prepend(&show_in_finder_item)?;
             submenu.prepend(&edit_item)?;
             submenu.prepend(&open_item)?;
+            break;
+        }
+    }
+
+    // Add Rename to the Edit submenu
+    let rename_item = MenuItem::with_id(app, RENAME_ID, "Rename", true, Some("F2"))?;
+    for item in menu.items()? {
+        if let MenuItemKind::Submenu(submenu) = item
+            && submenu.text()? == "Edit"
+        {
+            submenu.append(&PredefinedMenuItem::separator(app)?)?;
+            submenu.append(&rename_item)?;
             break;
         }
     }
@@ -368,6 +381,7 @@ pub fn build_context_menu<R: Runtime>(
         true,
         Some("Cmd+C"),
     )?;
+    let rename_item = MenuItem::with_id(app, RENAME_ID, "Rename", true, Some("F2"))?;
     let get_info_item = MenuItem::with_id(app, GET_INFO_ID, "Get info", true, Some("Cmd+I"))?;
     let quick_look_item = MenuItem::with_id(app, QUICK_LOOK_ID, "Quick look", true, None::<&str>)?;
 
@@ -377,6 +391,7 @@ pub fn build_context_menu<R: Runtime>(
         menu.append(&edit_item)?;
     }
     menu.append(&show_in_finder_item)?;
+    menu.append(&rename_item)?;
     menu.append(&PredefinedMenuItem::separator(app)?)?;
     menu.append(&copy_filename_item)?;
     menu.append(&copy_path_item)?;

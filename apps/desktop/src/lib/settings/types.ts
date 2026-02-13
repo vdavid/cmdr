@@ -70,6 +70,7 @@ export type FileSizeFormat = 'binary' | 'si'
 export type DateTimeFormat = 'system' | 'iso' | 'short' | 'custom'
 export type NetworkTimeoutMode = 'normal' | 'slow' | 'custom'
 export type ThemeMode = 'light' | 'dark' | 'system'
+export type ExtensionChangePolicy = 'yes' | 'no' | 'ask'
 
 export interface SettingsValues {
     // Appearance
@@ -82,6 +83,7 @@ export interface SettingsValues {
     // File operations
     'fileOperations.confirmBeforeDelete': boolean
     'fileOperations.deletePermanently': boolean
+    'fileOperations.allowFileExtensionChanges': ExtensionChangePolicy
     'fileOperations.progressUpdateInterval': number
     'fileOperations.maxConflictsToShow': number
 

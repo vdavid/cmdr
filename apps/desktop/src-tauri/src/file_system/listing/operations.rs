@@ -407,10 +407,13 @@ pub(crate) fn get_listing_entries(listing_id: &str) -> Option<(PathBuf, Vec<File
 }
 
 /// Updates the entries in the listing cache (after watcher detects changes).
+/// Re-sorts using the stored sort parameters so the cache stays consistent.
 pub(crate) fn update_listing_entries(listing_id: &str, entries: Vec<FileEntry>) {
     if let Ok(mut cache) = LISTING_CACHE.write()
         && let Some(listing) = cache.get_mut(listing_id)
     {
+        let mut entries = entries;
+        sort_entries(&mut entries, listing.sort_by, listing.sort_order);
         listing.entries = entries;
     }
 }

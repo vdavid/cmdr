@@ -61,6 +61,7 @@
         selectVolumeByName: (pane: 'left' | 'right', name: string) => Promise<boolean>
         handleSelectionAction: (action: string, startIndex?: number, endIndex?: number) => void
         handleMcpSelect: (pane: 'left' | 'right', start: number, count: number | 'all', mode: string) => void
+        startRename: () => void
         openCopyDialog: () => Promise<void>
         openMoveDialog: () => Promise<void>
         openNewFolderDialog: () => Promise<void>
@@ -95,6 +96,7 @@
     let unlistenCommandPalette: UnlistenFn | undefined
     let unlistenSwitchPane: UnlistenFn | undefined
     let unlistenSwapPanes: UnlistenFn | undefined
+    let unlistenStartRename: UnlistenFn | undefined
 
     /** Opens the debug window (dev mode only) */
     async function openDebugWindow() {
@@ -248,6 +250,9 @@
         })
         unlistenSwapPanes = await safeListenTauri('swap-panes', () => {
             explorerRef?.swapPanes()
+        })
+        unlistenStartRename = await safeListenTauri('start-rename', () => {
+            explorerRef?.startRename()
         })
     }
 
@@ -529,6 +534,9 @@
         if (unlistenSwapPanes) {
             unlistenSwapPanes()
         }
+        if (unlistenStartRename) {
+            unlistenStartRename()
+        }
     })
 
     function handleFdaComplete() {
@@ -590,6 +598,11 @@
 
     function handleFnMove() {
         void explorerRef?.openMoveDialog()
+        explorerRef?.refocus()
+    }
+
+    function handleFnRename() {
+        explorerRef?.startRename()
         explorerRef?.refocus()
     }
 
@@ -749,6 +762,11 @@
                 return
 
             // === File action commands ===
+            case 'file.rename':
+                explorerRef?.startRename()
+                explorerRef?.refocus()
+                return
+
             case 'file.edit': {
                 const entryUnderCursor = explorerRef?.getFileAndPathUnderCursor()
                 if (entryUnderCursor) {
@@ -863,6 +881,7 @@
     {#if showApp}
         <FunctionKeyBar
             visible={showFunctionKeyBar}
+            onRename={handleFnRename}
             onView={handleFnView}
             onEdit={() => void handleFnEdit()}
             onCopy={handleFnCopy}

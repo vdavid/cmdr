@@ -83,7 +83,7 @@ mod volumes;
 mod stubs;
 
 use menu::{
-    ABOUT_ID, COMMAND_PALETTE_ID, ENTER_LICENSE_KEY_ID, GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID, MenuState,
+    ABOUT_ID, COMMAND_PALETTE_ID, ENTER_LICENSE_KEY_ID, GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID, MenuState, RENAME_ID,
     SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID,
     SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SORT_DESCENDING_ID, SWAP_PANES_ID, SWITCH_PANE_ID,
     VIEW_MODE_BRIEF_ID, VIEW_MODE_FULL_ID, VIEWER_WORD_WRAP_ID, ViewMode,
@@ -278,6 +278,13 @@ pub fn run() {
             } else if id == SWITCH_PANE_ID {
                 // Emit event to switch pane (main window only)
                 let _ = app.emit_to("main", "switch-pane", ());
+            } else if id == RENAME_ID {
+                // Emit event to start rename (main window only, when focused)
+                if let Some(main_window) = app.get_webview_window("main")
+                    && main_window.is_focused().unwrap_or(false)
+                {
+                    let _ = app.emit_to("main", "start-rename", ());
+                }
             } else if id == SWAP_PANES_ID {
                 // Emit event to swap panes (main window only)
                 let _ = app.emit_to("main", "swap-panes", ());
@@ -354,6 +361,11 @@ pub fn run() {
             commands::file_system::start_selection_drag,
             commands::file_system::prepare_self_drag_overlay,
             commands::file_system::clear_self_drag_overlay,
+            // Rename operations
+            commands::rename::check_rename_permission,
+            commands::rename::check_rename_validity,
+            commands::rename::rename_file,
+            commands::rename::move_to_trash,
             commands::file_viewer::viewer_open,
             commands::file_viewer::viewer_get_lines,
             commands::file_viewer::viewer_get_status,

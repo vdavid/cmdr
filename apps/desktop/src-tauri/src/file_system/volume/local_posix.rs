@@ -129,9 +129,12 @@ impl Volume for LocalPosixVolume {
         Ok(())
     }
 
-    fn rename(&self, from: &Path, to: &Path) -> Result<(), VolumeError> {
+    fn rename(&self, from: &Path, to: &Path, force: bool) -> Result<(), VolumeError> {
         let from_abs = self.resolve(from);
         let to_abs = self.resolve(to);
+        if !force && from_abs != to_abs && std::fs::symlink_metadata(&to_abs).is_ok() {
+            return Err(VolumeError::AlreadyExists(to_abs.display().to_string()));
+        }
         std::fs::rename(&from_abs, &to_abs)?;
         Ok(())
     }

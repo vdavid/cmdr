@@ -244,7 +244,12 @@ impl Volume for MtpVolume {
             .map_err(map_mtp_error)
     }
 
-    fn rename(&self, from: &Path, to: &Path) -> Result<(), VolumeError> {
+    fn rename(&self, from: &Path, to: &Path, force: bool) -> Result<(), VolumeError> {
+        // MTP doesn't support atomic overwrite, so check for conflicts when not forced.
+        if !force && self.exists(to) {
+            return Err(VolumeError::AlreadyExists(to.display().to_string()));
+        }
+
         let mtp_path = self.to_mtp_path(from);
         // Extract the new name from the destination path
         let new_name = to

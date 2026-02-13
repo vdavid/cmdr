@@ -225,6 +225,10 @@ export type {
     SourceItemInput,
 } from './mtp'
 
+// Rename
+export { checkRenamePermission, checkRenameValidity, moveToTrash, renameFile } from './rename'
+export type { RenameConflictFileInfo, RenameValidityResult } from './rename'
+
 // Settings and AI
 export {
     checkPortAvailable,

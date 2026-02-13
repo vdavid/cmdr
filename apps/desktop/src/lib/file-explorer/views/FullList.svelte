@@ -2,8 +2,10 @@
     import type { FileEntry, SortColumn, SortOrder, SyncStatus } from '../types'
     import { calculateVirtualWindow, getScrollToPosition } from './virtual-scroll'
     import { startSelectionDragTracking, type DragFileInfo } from '../drag/drag-drop'
+    import { startClickToRename, cancelClickToRename } from '../rename/rename-activation'
     import SortableHeader from '../selection/SortableHeader.svelte'
     import FileIcon from '../selection/FileIcon.svelte'
+    import InlineRenameEditor from '../rename/InlineRenameEditor.svelte'
     import {
         getSyncIconPath,
         createParentEntry,
@@ -27,6 +29,7 @@
         formatFileSize,
     } from '$lib/settings/reactive-settings.svelte'
     import { extensionCacheCleared } from '$lib/icon-cache'
+    import type { RenameState } from '../rename/rename-state.svelte'
 
     interface Props {
         listingId: string
@@ -41,12 +44,24 @@
         parentPath: string
         sortBy: SortColumn
         sortOrder: SortOrder
+        /** Rename state for inline editing */
+        renameState?: RenameState | null
         onSelect: (index: number, shiftKey?: boolean) => void
         onNavigate: (entry: FileEntry) => void
         onContextMenu?: (entry: FileEntry) => void
         onSyncStatusRequest?: (paths: string[]) => void
         onSortChange?: (column: SortColumn) => void
         onVisibleRangeChange?: (start: number, end: number) => void
+        /** Called when rename input value changes */
+        onRenameInput?: (value: string) => void
+        /** Called when rename is submitted (Enter) */
+        onRenameSubmit?: () => void
+        /** Called when rename is cancelled */
+        onRenameCancel?: () => void
+        /** Called when shake animation ends */
+        onRenameShakeEnd?: () => void
+        /** Called when click-to-rename timer fires (user held click on cursor entry) */
+        onStartRename?: () => void
     }
 
     const {
@@ -62,12 +77,18 @@
         parentPath,
         sortBy,
         sortOrder,
+        renameState = null,
         onSelect,
         onNavigate,
         onContextMenu,
         onSyncStatusRequest,
         onSortChange,
         onVisibleRangeChange,
+        onRenameInput,
+        onRenameSubmit,
+        onRenameCancel,
+        onRenameShakeEnd,
+        onStartRename,
     }: Props = $props()
 
     // ==== Cached entries (prefetch buffer) ====
@@ -175,6 +196,7 @@
     })
 
     function handleScroll(e: Event) {
+        cancelClickToRename()
         const target = e.target as HTMLDivElement
         scrollTop = target.scrollTop
         void fetchVisibleRange()
@@ -183,6 +205,12 @@
     // Handle file mousedown - selects and initiates drag tracking
     function handleMouseDown(event: MouseEvent, index: number) {
         if (event.button !== 0) return
+
+        // Let clicks inside the inline rename input pass through without
+        // triggering selection/drag — the input handles its own focus.
+        const target = event.target as HTMLElement
+        if (target.closest('.rename-input')) return
+
         const entry = getEntryAt(index)
         if (!entry) return
 
@@ -191,6 +219,17 @@
             onSelect(index, event.shiftKey)
             return
         }
+
+        // Click-to-rename: if clicking the entry already under the cursor
+        // (without Shift), start a timer that activates rename after 800ms.
+        // Skip when rename is already active.
+        if (index === cursorIndex && !event.shiftKey && !renameState?.active && onStartRename) {
+            startClickToRename(event, onStartRename)
+            return
+        }
+
+        // Clicking a different entry cancels any pending click-to-rename timer
+        cancelClickToRename()
 
         const hasSelection = selectedIndices.size > 0
 
@@ -244,6 +283,7 @@
     }
 
     function handleDoubleClick(actualIndex: number) {
+        cancelClickToRename()
         const entry = getEntryAt(actualIndex)
         if (entry) onNavigate(entry)
     }
@@ -368,7 +408,23 @@
                         aria-selected={globalIndex === cursorIndex}
                     >
                         <FileIcon {file} {syncIcon} />
-                        <span class="col-name">{file.name}</span>
+                        {#if renameState?.active && renameState.target?.index === globalIndex}
+                            <InlineRenameEditor
+                                value={renameState.currentName}
+                                severity={renameState.validation.severity}
+                                shaking={renameState.shaking}
+                                ariaLabel={`Rename ${renameState.target.originalName}`}
+                                ariaInvalid={renameState.validation.severity === 'error'}
+                                validationMessage={renameState.validation.message}
+                                focusTrigger={renameState.focusTrigger}
+                                onInput={(v: string) => onRenameInput?.(v)}
+                                onSubmit={() => onRenameSubmit?.()}
+                                onCancel={() => onRenameCancel?.()}
+                                onShakeEnd={() => onRenameShakeEnd?.()}
+                            />
+                        {:else}
+                            <span class="col-name">{file.name}</span>
+                        {/if}
                         <span class="col-size" title={file.size !== undefined ? formatFileSize(file.size) : ''}>
                             {#if file.isDirectory}
                                 <span class="size-dir">&lt;dir&gt;</span>

@@ -16,6 +16,8 @@ export const SOFT_DIALOG_REGISTRY = [
     { id: 'license', description: 'License key entry and viewing' },
     { id: 'mkdir-confirmation', description: 'Opened by the mkdir tool, not directly' },
     { id: 'ptpcamerad', description: 'MTP device connection troubleshooting' },
+    { id: 'rename-conflict', description: 'Shown when renaming would overwrite an existing file' },
+    { id: 'extension-change', description: 'Shown when a rename changes the file extension' },
 ] as const satisfies readonly { id: string; description?: string }[]
 
 export type SoftDialogId = (typeof SOFT_DIALOG_REGISTRY)[number]['id']
