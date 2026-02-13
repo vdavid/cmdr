@@ -25,6 +25,10 @@ export XDG_RUNTIME_DIR=/tmp/runtime-root
 mkdir -p "$XDG_RUNTIME_DIR"
 chmod 700 "$XDG_RUNTIME_DIR"
 
+# Create test fixture directories so navigation tests have something to work with
+mkdir -p /root/test-dir/sub-dir
+echo "test content" > /root/test-dir/test-file.txt
+
 # Verify environment
 echo "Environment:"
 echo "  DISPLAY=$DISPLAY"

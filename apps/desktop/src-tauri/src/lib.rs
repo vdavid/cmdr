@@ -108,13 +108,19 @@ pub fn run() {
     #[cfg(debug_assertions)]
     let builder = builder.plugin(tauri_plugin_mcp_bridge::init());
 
+    // Skip updater plugin in CI to avoid network dependency and latency during E2E tests
+    let builder = if std::env::var("CI").is_ok() {
+        builder
+    } else {
+        builder.plugin(tauri_plugin_updater::Builder::new().build())
+    };
+
     builder
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_drag::init())
         .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {

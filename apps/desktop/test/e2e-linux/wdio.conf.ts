@@ -94,7 +94,7 @@ export const config: Options.Testrunner & { capabilities: Capabilities.Testrunne
             stdio: ['ignore', 'pipe', 'pipe'],
             env: {
                 ...process.env,
-                RUST_LOG: 'debug', // Enable debug logging
+                RUST_LOG: process.env.CI ? 'warn' : 'debug',
             },
         })
 

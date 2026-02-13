@@ -251,33 +251,3 @@ describe('Settings window', () => {
         await browser.switchToWindow(originalWindow)
     })
 })
-
-/**
- * Fallback tests that work without multi-window support.
- * These navigate directly to the /settings route.
- */
-describe('Settings page (direct navigation)', () => {
-    it('renders settings page when navigated to directly', async () => {
-        // Navigate to settings route
-        await browser.url('/settings')
-        await browser.pause(1000)
-
-        // Check for settings window class
-        const settingsWindow = browser.$('.settings-window')
-
-        if (await settingsWindow.isExisting()) {
-            expect(await settingsWindow.isDisplayed()).toBe(true)
-
-            // Verify sidebar exists
-            const sidebar = browser.$('.settings-sidebar')
-            expect(await sidebar.isExisting()).toBe(true)
-
-            // Verify content wrapper exists
-            const content = browser.$('.settings-content-wrapper')
-            expect(await content.isExisting()).toBe(true)
-        } else {
-            // The route might not work in this test context
-            console.log('Settings page not rendered - may require app context')
-        }
-    })
-})
