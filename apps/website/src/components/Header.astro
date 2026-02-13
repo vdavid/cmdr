@@ -26,9 +26,9 @@ const navLinks = [
             <span>Cmdr</span>
         </a>
 
-        <!-- Navigation -->
-        <div class="flex items-center gap-8">
-            <!-- Newsletter toggle -->
+        <!-- Desktop navigation -->
+        <div class="hidden items-center gap-8 md:flex">
+            <!-- Newsletter toggle (desktop) -->
             <button
                 type="button"
                 class="cursor-pointer text-sm text-[var(--color-text-secondary)] transition-colors duration-200 hover:text-[var(--color-text-primary)]"
@@ -48,7 +48,11 @@ const navLinks = [
                         class="text-sm text-[var(--color-text-secondary)] transition-colors duration-200 hover:text-[var(--color-text-primary)]"
                     >
                         {link.label}
-                        {link.external && <span class="ml-1 text-xs">↗</span>}
+                        {link.external && (
+                            <span class="ml-1 text-xs" aria-hidden="true">
+                                ↗
+                            </span>
+                        )}
                     </a>
                 ))
             }
@@ -66,10 +70,84 @@ const navLinks = [
                 Download
             </a>
         </div>
+
+        <!-- Hamburger button (mobile) -->
+        <button
+            type="button"
+            class="mobile-menu-toggle flex items-center justify-center md:hidden"
+            aria-label="Open menu"
+            aria-expanded="false"
+            aria-controls="mobile-menu"
+            data-mobile-menu-toggle
+        >
+            <svg
+                class="hamburger-icon"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+            >
+                <line class="hamburger-line hamburger-line--top" x1="3" y1="6" x2="21" y2="6"></line>
+                <line class="hamburger-line hamburger-line--middle" x1="3" y1="12" x2="21" y2="12"></line>
+                <line class="hamburger-line hamburger-line--bottom" x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+        </button>
     </nav>
 
-    <!-- Newsletter slide-open panel -->
-    <div id="newsletter-panel" class="newsletter-panel" aria-hidden="true">
+    <!-- Mobile menu -->
+    <div
+        id="mobile-menu"
+        class="mobile-menu md:hidden"
+        aria-hidden="true"
+        role="navigation"
+        aria-label="Mobile navigation"
+    >
+        <div class="mobile-menu__content">
+            {
+                navLinks.map((link) => (
+                    <a
+                        href={link.href}
+                        target={link.external ? '_blank' : undefined}
+                        rel={link.external ? 'noopener noreferrer' : undefined}
+                        class="mobile-menu__link"
+                        data-mobile-nav-link
+                    >
+                        {link.label}
+                        {link.external && (
+                            <span class="ml-1 text-xs" aria-hidden="true">
+                                ↗
+                            </span>
+                        )}
+                    </a>
+                ))
+            }
+
+            <!-- Download CTA (mobile) -->
+            <a href={dmgUrl} class="mobile-menu__download" data-mobile-nav-link>
+                <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                        d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"
+                    ></path>
+                </svg>
+                Download for macOS
+            </a>
+
+            <!-- Newsletter section (mobile) -->
+            <div class="mobile-menu__newsletter">
+                <p class="mobile-menu__newsletter-label">Newsletter</p>
+                <p class="mobile-menu__newsletter-desc">Get Cmdr news in your inbox. No spam, we promise.</p>
+                <NewsletterForm variant="inline" />
+            </div>
+        </div>
+    </div>
+
+    <!-- Newsletter slide-open panel (desktop) -->
+    <div id="newsletter-panel" class="newsletter-panel hidden md:block" aria-hidden="true">
         <div class="mx-auto flex max-w-2xl flex-col items-center gap-3 px-6 py-5">
             <p class="text-sm text-[var(--color-text-secondary)]">
                 How cool that you want to hear about Cmdr news! We promise we won't spam you. ❤️
@@ -82,58 +160,265 @@ const navLinks = [
 </header>
 
 <style>
+    /* Hamburger button */
+    .mobile-menu-toggle {
+        width: 44px;
+        height: 44px;
+        padding: 10px;
+        color: var(--color-text-primary);
+        background: none;
+        border: none;
+        cursor: pointer;
+        border-radius: 0.5rem;
+        transition: background-color var(--duration-normal);
+    }
+
+    .mobile-menu-toggle:hover {
+        background-color: var(--color-surface-elevated);
+    }
+
+    .mobile-menu-toggle:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+    }
+
+    /* Hamburger line animations */
+    .hamburger-line {
+        transition:
+            transform var(--duration-normal) var(--ease-out-expo),
+            opacity var(--duration-normal) var(--ease-out-expo);
+        transform-box: fill-box;
+        transform-origin: center;
+    }
+
+    .mobile-menu-toggle[aria-expanded='true'] .hamburger-line--top {
+        transform: translateY(6px) rotate(45deg);
+    }
+
+    .mobile-menu-toggle[aria-expanded='true'] .hamburger-line--middle {
+        opacity: 0;
+    }
+
+    .mobile-menu-toggle[aria-expanded='true'] .hamburger-line--bottom {
+        transform: translateY(-6px) rotate(-45deg);
+    }
+
+    /* Mobile menu */
+    .mobile-menu {
+        max-height: 0;
+        overflow: hidden;
+        border-top: 1px solid transparent;
+        visibility: hidden;
+        transition:
+            max-height var(--duration-slow) var(--ease-out-expo),
+            visibility 0s var(--duration-slow);
+    }
+
+    .mobile-menu[aria-hidden='false'] {
+        max-height: 600px;
+        border-top-color: var(--color-border-subtle);
+        visibility: visible;
+        transition:
+            max-height var(--duration-slow) var(--ease-out-expo),
+            visibility 0s;
+    }
+
+    .mobile-menu__content {
+        display: flex;
+        flex-direction: column;
+        padding: 8px 24px 24px;
+        gap: 4px;
+    }
+
+    .mobile-menu__link {
+        display: flex;
+        align-items: center;
+        padding: 12px 16px;
+        font-size: 0.9375rem;
+        color: var(--color-text-secondary);
+        text-decoration: none;
+        border-radius: 0.5rem;
+        min-height: 44px;
+        transition:
+            background-color var(--duration-normal),
+            color var(--duration-normal);
+    }
+
+    .mobile-menu__link:hover {
+        background-color: var(--color-surface-elevated);
+        color: var(--color-text-primary);
+    }
+
+    .mobile-menu__link:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: -2px;
+    }
+
+    .mobile-menu__download {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 8px;
+        padding: 12px 16px;
+        min-height: 44px;
+        border-radius: 0.5rem;
+        background: var(--color-accent);
+        color: var(--color-background);
+        font-size: 0.9375rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition:
+            background-color var(--duration-normal),
+            box-shadow var(--duration-normal);
+    }
+
+    .mobile-menu__download:hover {
+        background: var(--color-accent-hover);
+        box-shadow: 0 0 20px var(--color-accent-glow);
+    }
+
+    .mobile-menu__download:focus-visible {
+        outline: 2px solid var(--color-text-primary);
+        outline-offset: 2px;
+    }
+
+    .mobile-menu__newsletter {
+        margin-top: 12px;
+        padding: 16px;
+        border-radius: 0.5rem;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border-subtle);
+    }
+
+    .mobile-menu__newsletter-label {
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: var(--color-text-primary);
+        margin: 0 0 4px;
+    }
+
+    .mobile-menu__newsletter-desc {
+        font-size: 0.8125rem;
+        color: var(--color-text-tertiary);
+        margin: 0 0 12px;
+    }
+
+    /* Desktop newsletter panel */
     .newsletter-panel {
         max-height: 0;
         overflow: hidden;
-        transition: max-height var(--duration-slow) var(--ease-out-expo);
+        visibility: hidden;
+        transition:
+            max-height var(--duration-slow) var(--ease-out-expo),
+            visibility 0s var(--duration-slow);
         border-top: 1px solid transparent;
     }
 
     .newsletter-panel[aria-hidden='false'] {
         max-height: 200px;
         border-top-color: var(--color-border-subtle);
+        visibility: visible;
+        transition:
+            max-height var(--duration-slow) var(--ease-out-expo),
+            visibility 0s;
     }
 
     @media (prefers-reduced-motion: reduce) {
-        .newsletter-panel {
-            transition: none;
+        .mobile-menu,
+        .newsletter-panel,
+        .hamburger-line {
+            transition: none !important;
         }
     }
 </style>
 
 <script>
     document.addEventListener('astro:page-load', () => {
-        const toggle = document.querySelector<HTMLButtonElement>('[data-newsletter-toggle]')
-        const panel = document.getElementById('newsletter-panel')
-        if (!toggle || !panel) return
+        // Desktop newsletter toggle
+        const desktopToggle = document.querySelector<HTMLButtonElement>('[data-newsletter-toggle]')
+        const newsletterPanel = document.getElementById('newsletter-panel')
 
-        // Skip if already bound (view transition re-runs)
-        if (toggle.dataset.bound) return
-        toggle.dataset.bound = 'true'
+        if (desktopToggle && newsletterPanel) {
+            if (!desktopToggle.dataset.bound) {
+                desktopToggle.dataset.bound = 'true'
 
-        function open() {
-            panel!.setAttribute('aria-hidden', 'false')
-            toggle!.setAttribute('aria-expanded', 'true')
-            const emailInput = panel!.querySelector<HTMLInputElement>('input[type="email"]')
-            // Delay focus until the panel animation starts
-            setTimeout(() => emailInput?.focus(), 50)
+                const openNewsletter = () => {
+                    newsletterPanel.setAttribute('aria-hidden', 'false')
+                    desktopToggle.setAttribute('aria-expanded', 'true')
+                    const emailInput = newsletterPanel.querySelector<HTMLInputElement>('input[type="email"]')
+                    setTimeout(() => emailInput?.focus(), 50)
+                }
+
+                const closeNewsletter = () => {
+                    newsletterPanel.setAttribute('aria-hidden', 'true')
+                    desktopToggle.setAttribute('aria-expanded', 'false')
+                }
+
+                desktopToggle.addEventListener('click', () => {
+                    const isOpen = newsletterPanel.getAttribute('aria-hidden') === 'false'
+                    if (isOpen) closeNewsletter()
+                    else openNewsletter()
+                })
+
+                document.addEventListener('keydown', (e: KeyboardEvent) => {
+                    if (e.key === 'Escape' && newsletterPanel.getAttribute('aria-hidden') === 'false') {
+                        closeNewsletter()
+                        desktopToggle.focus()
+                    }
+                })
+            }
         }
 
-        function close() {
-            panel!.setAttribute('aria-hidden', 'true')
-            toggle!.setAttribute('aria-expanded', 'false')
+        // Mobile menu
+        const menuToggle = document.querySelector<HTMLButtonElement>('[data-mobile-menu-toggle]')
+        const mobileMenu = document.getElementById('mobile-menu')
+
+        if (!menuToggle || !mobileMenu) return
+        if (menuToggle.dataset.bound) return
+        menuToggle.dataset.bound = 'true'
+
+        const openMobileMenu = () => {
+            mobileMenu.setAttribute('aria-hidden', 'false')
+            menuToggle.setAttribute('aria-expanded', 'true')
+            menuToggle.setAttribute('aria-label', 'Close menu')
+            // Focus first link after animation starts
+            const firstLink = mobileMenu.querySelector<HTMLElement>('[data-mobile-nav-link]')
+            setTimeout(() => firstLink?.focus(), 50)
         }
 
-        toggle.addEventListener('click', () => {
-            const isOpen = panel.getAttribute('aria-hidden') === 'false'
-            if (isOpen) close()
-            else open()
+        const closeMobileMenu = () => {
+            mobileMenu.setAttribute('aria-hidden', 'true')
+            menuToggle.setAttribute('aria-expanded', 'false')
+            menuToggle.setAttribute('aria-label', 'Open menu')
+        }
+
+        menuToggle.addEventListener('click', () => {
+            const isOpen = mobileMenu.getAttribute('aria-hidden') === 'false'
+            if (isOpen) closeMobileMenu()
+            else openMobileMenu()
         })
 
+        // Close on nav link click
+        mobileMenu.querySelectorAll('[data-mobile-nav-link]').forEach((link) => {
+            link.addEventListener('click', () => closeMobileMenu())
+        })
+
+        // Close on Escape
         document.addEventListener('keydown', (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && panel.getAttribute('aria-hidden') === 'false') {
-                close()
-                toggle.focus()
+            if (e.key === 'Escape' && mobileMenu.getAttribute('aria-hidden') === 'false') {
+                closeMobileMenu()
+                menuToggle.focus()
+            }
+        })
+
+        // Close on outside click
+        document.addEventListener('click', (e: MouseEvent) => {
+            if (mobileMenu.getAttribute('aria-hidden') === 'false') {
+                const header = menuToggle.closest('header')
+                if (header && !header.contains(e.target as Node)) {
+                    closeMobileMenu()
+                }
             }
         })
     })

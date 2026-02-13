@@ -22,7 +22,7 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
     <main class="mx-auto max-w-5xl px-6 pt-32 pb-24">
         <!-- Hero -->
         <header class="mb-16 text-center">
-            <h1 class="mb-4 text-4xl font-bold tracking-tight text-[var(--color-text-primary)] md:text-5xl">
+            <h1 class="mb-4 text-3xl font-bold tracking-tight text-[var(--color-text-primary)] md:text-4xl lg:text-5xl">
                 Free forever for personal use
             </h1>
             <p class="text-lg text-[var(--color-text-secondary)]">
@@ -114,7 +114,7 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
                     type="button"
                     data-paddle-price="supporter"
                     disabled={!isPaddleConfigured}
-                    class="block w-full cursor-pointer rounded-lg border border-[var(--color-border)] py-2 text-center text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+                    class="block w-full cursor-pointer rounded-lg border border-[var(--color-border)] py-2 text-center text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                     Buy supporter pack
                 </button>
@@ -122,7 +122,7 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
 
             <!-- Commercial Subscription -->
             <div
-                class="relative rounded-2xl border-2 border-[var(--color-accent)] bg-[var(--color-surface)] p-6 shadow-lg"
+                class="relative mt-4 rounded-2xl border-2 border-[var(--color-accent)] bg-[var(--color-surface)] p-6 shadow-lg md:mt-0"
             >
                 <div
                     class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[var(--color-accent)] px-3 py-1 text-xs font-medium text-[var(--color-background)]"
@@ -161,7 +161,7 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
                     type="button"
                     data-paddle-price="commercialSubscription"
                     disabled={!isPaddleConfigured}
-                    class="block w-full cursor-pointer rounded-lg bg-[var(--color-accent)] py-2 text-center text-sm font-medium text-[var(--color-background)] transition-all duration-200 hover:bg-[var(--color-accent-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+                    class="block w-full cursor-pointer rounded-lg bg-[var(--color-accent)] py-2 text-center text-sm font-medium text-[var(--color-background)] transition-all duration-200 hover:bg-[var(--color-accent-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                     Buy commercial license
                 </button>
@@ -199,7 +199,7 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
                     type="button"
                     data-paddle-price="commercialPerpetual"
                     disabled={!isPaddleConfigured}
-                    class="block w-full cursor-pointer rounded-lg border border-[var(--color-border)] py-2 text-center text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+                    class="block w-full cursor-pointer rounded-lg border border-[var(--color-border)] py-2 text-center text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                     Buy perpetual license
                 </button>
@@ -286,15 +286,15 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
     <Footer />
 
     {/* Organization name modal for commercial checkouts */}
-    <div id="org-name-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div id="org-name-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="org-modal-title">
         <div class="relative mx-4 w-full max-w-md rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-2xl">
             <button
                 type="button"
                 id="org-modal-close"
-                class="absolute right-4 top-4 text-[var(--color-text-tertiary)] transition-colors hover:text-[var(--color-text-primary)]"
+                class="absolute right-4 top-4 rounded text-[var(--color-text-tertiary)] transition-colors hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
                 aria-label="Close"
             >
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
@@ -302,7 +302,7 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
             <div class="mb-1 text-xs font-medium uppercase tracking-wide text-[var(--color-accent)]">
                 Step 1 of 2
             </div>
-            <h2 class="mb-2 text-xl font-semibold text-[var(--color-text-primary)]">
+            <h2 id="org-modal-title" class="mb-2 text-xl font-semibold text-[var(--color-text-primary)]">
                 Company details
             </h2>
             <p class="mb-6 text-sm text-[var(--color-text-secondary)]">
@@ -317,7 +317,7 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
                     type="text"
                     id="org-name-input"
                     placeholder="Example: Acme Inc."
-                    class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] transition-colors focus:border-[var(--color-accent)] focus:outline-none"
+                    class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] transition-colors focus:border-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
                 />
             </div>
 
@@ -329,14 +329,14 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
                     type="email"
                     id="org-email-input"
                     placeholder="Example: you@acme.com"
-                    class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] transition-colors focus:border-[var(--color-accent)] focus:outline-none"
+                    class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] transition-colors focus:border-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
                 />
             </div>
 
             <button
                 type="button"
                 id="org-modal-continue"
-                class="w-full cursor-pointer rounded-lg bg-[var(--color-accent)] py-3 text-center font-medium text-[var(--color-background)] transition-all duration-200 hover:bg-[var(--color-accent-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+                class="w-full cursor-pointer rounded-lg bg-[var(--color-accent)] py-3 text-center font-medium text-[var(--color-background)] transition-all duration-200 hover:bg-[var(--color-accent-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
             >
                 Continue to payment
             </button>
@@ -377,9 +377,31 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
 
                     // Track which price is being purchased
                     let pendingPriceId = null
+                    let triggerButton = null
 
                     // Commercial price keys that require org name
                     const commercialPriceKeys = ['commercialSubscription', 'commercialPerpetual']
+
+                    // Focus trap for modal
+                    var focusableSelector = 'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
+                    function trapFocus(e) {
+                        if (e.key !== 'Tab' || modal.classList.contains('hidden')) return
+                        var focusable = modal.querySelectorAll(focusableSelector)
+                        var first = focusable[0]
+                        var last = focusable[focusable.length - 1]
+                        if (e.shiftKey) {
+                            if (document.activeElement === first) {
+                                e.preventDefault()
+                                last.focus()
+                            }
+                        } else {
+                            if (document.activeElement === last) {
+                                e.preventDefault()
+                                first.focus()
+                            }
+                        }
+                    }
 
                     function showModal() {
                         modal.classList.remove('hidden')
@@ -388,6 +410,7 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
                         modalEmailInput.value = ''
                         modalNameInput.focus()
                         updateContinueButton()
+                        document.addEventListener('keydown', trapFocus)
                     }
 
                     function updateContinueButton() {
@@ -399,7 +422,10 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
                     function hideModal() {
                         modal.classList.add('hidden')
                         modal.classList.remove('flex')
+                        document.removeEventListener('keydown', trapFocus)
+                        if (triggerButton) triggerButton.focus()
                         pendingPriceId = null
+                        triggerButton = null
                     }
 
                     function openPaddleCheckout(priceId, businessName, email) {
@@ -434,6 +460,7 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
                             // Commercial plans need org name first
                             if (commercialPriceKeys.includes(priceKey)) {
                                 pendingPriceId = priceId
+                                triggerButton = button
                                 showModal()
                             } else {
                                 // Personal/supporter plans open Paddle directly
