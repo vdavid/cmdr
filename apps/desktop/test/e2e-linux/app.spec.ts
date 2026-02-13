@@ -313,18 +313,38 @@ describe('Navigation', () => {
      * tracking, causing browser.keys('Enter') to miss the handler on first try.
      */
     async function moveCursorToTestDir(): Promise<boolean> {
-        const maxAttempts = 20
-        for (let i = 0; i < maxAttempts; i++) {
-            const cursorEntry = browser.$(
-                '.file-pane.is-focused .file-entry.is-under-cursor',
-            ) as unknown as WebdriverIO.Element
-            if (!(await cursorEntry.isExisting())) return false
-            const name = await getEntryName(cursorEntry)
-            if (name === 'test-dir') return true
-            await browser.keys('ArrowDown')
-            await browser.pause(100)
+        // Use browser.execute() only for reading (no clicks) to find test-dir's
+        // position, then navigate there with keyboard to preserve WebDriver focus.
+        const info = await browser.execute(() => {
+            const pane = document.querySelector('.file-pane.is-focused')
+            if (!pane) return { error: 'no focused pane' }
+            const entries = pane.querySelectorAll('.file-entry')
+            const names: string[] = []
+            let testDirIndex = -1
+            for (let i = 0; i < entries.length; i++) {
+                const name =
+                    entries[i].querySelector('.col-name')?.textContent ??
+                    entries[i].querySelector('.name')?.textContent ??
+                    ''
+                names.push(name)
+                if (name === 'test-dir') testDirIndex = i
+            }
+            return { testDirIndex, names, total: entries.length }
+        })
+
+        if ('error' in info || info.testDirIndex < 0) {
+            return false
         }
-        return false
+
+        // Navigate: Home to reset to first entry, then ArrowDown to target
+        await browser.keys('Home')
+        await browser.pause(100)
+        for (let i = 0; i < info.testDirIndex; i++) {
+            await browser.keys('ArrowDown')
+            await browser.pause(50)
+        }
+        await browser.pause(100)
+        return true
     }
 
     it('navigates into directories with Enter', async () => {
@@ -357,26 +377,34 @@ describe('Navigation', () => {
     it('navigates to parent with Backspace', async () => {
         await ensureAppReadyWithFocus()
 
-        if (!(await moveCursorToTestDir())) {
-            console.log('Skipping backspace test: test-dir fixture not found')
-            return
-        }
+        // Ensure we're inside test-dir. The Enter test may have already
+        // navigated there (tests share the same app instance).
+        const alreadyInside = await browser.execute(() => {
+            const pane = document.querySelector('.file-pane.is-focused')
+            if (!pane) return false
+            const entries = pane.querySelectorAll('.file-entry')
+            return Array.from(entries).some((e) => e.querySelector('.name')?.textContent === 'sub-dir')
+        })
 
-        // Navigate into test-dir first, wait for sub-dir to appear
-        await browser.keys('Enter')
-        await browser.waitUntil(
-            async () =>
-                browser.execute(() => {
-                    const pane = document.querySelector('.file-pane.is-focused')
-                    if (!pane) return false
-                    const entries = pane.querySelectorAll('.file-entry')
-                    for (const entry of entries) {
-                        if (entry.querySelector('.name')?.textContent === 'sub-dir') return true
-                    }
-                    return false
-                }),
-            { timeout: 5000, timeoutMsg: 'sub-dir did not appear after navigating into test-dir' },
-        )
+        if (!alreadyInside) {
+            if (!(await moveCursorToTestDir())) {
+                console.log('Skipping backspace test: test-dir fixture not found')
+                return
+            }
+            await browser.keys('Enter')
+            await browser.waitUntil(
+                async () =>
+                    browser.execute(() => {
+                        const pane = document.querySelector('.file-pane.is-focused')
+                        if (!pane) return false
+                        const entries = pane.querySelectorAll('.file-entry')
+                        return Array.from(entries).some(
+                            (e) => e.querySelector('.name')?.textContent === 'sub-dir',
+                        )
+                    }),
+                { timeout: 5000, timeoutMsg: 'sub-dir did not appear after navigating into test-dir' },
+            )
+        }
 
         // Press Backspace to go to parent
         await browser.keys('Backspace')
@@ -388,10 +416,9 @@ describe('Navigation', () => {
                     const pane = document.querySelector('.file-pane.is-focused')
                     if (!pane) return false
                     const entries = pane.querySelectorAll('.file-entry')
-                    for (const entry of entries) {
-                        if (entry.querySelector('.name')?.textContent === 'test-dir') return true
-                    }
-                    return false
+                    return Array.from(entries).some(
+                        (e) => e.querySelector('.name')?.textContent === 'test-dir',
+                    )
                 }),
             { timeout: 5000, timeoutMsg: 'test-dir did not reappear after Backspace' },
         )
