@@ -41,7 +41,7 @@ See [host-discovery.md](./host-discovery.md) for details.
 
 ## 2. Share listing
 
-See [share-listing.md](./share-listing.md) for details. Decision: [ADR 013](../../artifacts/adr/013-smb-rs-share-listing.md).
+See [share-listing.md](./share-listing.md) for details. Decision: [ADR 013](../../adr/013-smb-rs-share-listing.md).
 
 ### Validation spike
 

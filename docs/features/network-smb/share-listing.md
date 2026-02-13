@@ -2,7 +2,7 @@
 
 How Cmdr lists available shares on a network host.
 
-**Related ADR**: [ADR 013: Use smb-rs for SMB share enumeration](../../artifacts/adr/013-smb-rs-share-listing.md)
+**Related ADR**: [ADR 013: Use smb-rs for SMB share enumeration](../../adr/013-smb-rs-share-listing.md)
 
 ## Overview
 

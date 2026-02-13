@@ -207,7 +207,7 @@ export function scrollToIndex(index: number) {
 - src/lib/file-explorer/FileList.svelte - Current implementation
 - [src/lib/file-explorer/FilePane.svelte](../../../apps/desktop/src/lib/file-explorer/FilePane.svelte) - Parent component
 - [src/lib/file-explorer/apply-diff.ts](../../../apps/desktop/src/lib/file-explorer/apply-diff.ts) - Cursor preservation logic
-- [src/lib/file-explorer/types.ts](../../../apps/desktop/src/lib/file-explorer/types.ts) - FileEntry type
+- [src/lib/file-explorer/types.ts](../../apps/desktop/src/lib/file-explorer/types.ts) - FileEntry type
 
 ## Commands
 

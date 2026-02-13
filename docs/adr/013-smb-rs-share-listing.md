@@ -56,4 +56,4 @@ Use the `smb` crate (smb-rs) for SMB share enumeration.
 
 - Fallback to `smbutil` available for edge cases where smb-rs fails
 - Validation spike recommended before full implementation to test with real servers
-- See [share-listing.md](../../features/network-smb/share-listing.md) for implementation details
+- See [share-listing.md](../features/network-smb/share-listing.md) for implementation details

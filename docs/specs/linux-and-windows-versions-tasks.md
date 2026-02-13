@@ -1,6 +1,6 @@
 # Linux and Windows versions—tasks
 
-This tasklist accompanies [the spec](./linux-and-windows-versions.md).
+This tasklist accompanies [the spec](linux-and-windows-versions.md).
 
 ## Summary
 
@@ -278,7 +278,7 @@ These are small tasks that improve cross-platform support without major effort:
 
 ## References
 
-- [Linux spec](./linux-and-windows-versions.md)
+- [Linux spec](linux-and-windows-versions.md)
 - [Tauri cross-platform guide](https://tauri.app/develop/)
 - [freedesktop-icons](https://crates.io/crates/freedesktop-icons)
 - [keyring crate](https://crates.io/crates/keyring)

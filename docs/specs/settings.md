@@ -1,7 +1,7 @@
 # Settings system specification
 
 This document specifies the complete settings system for Cmdr, including window structure, UI components, registry
-architecture, and persistence. See [ADR 018](../artifacts/adr/018-settings-architecture.md) for architectural decisions.
+architecture, and persistence. See [ADR 018](../adr/018-settings-architecture.md) for architectural decisions.
 
 ## Table of contents
 

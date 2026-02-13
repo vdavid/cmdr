@@ -113,6 +113,6 @@ Then open http://localhost:3333 and click "Buy Cmdr".
 
 ## Architecture decisions
 
-- See [ADR 014: Payment provider choice](../../docs/artifacts/adr/014-payment-provider-paddle.md) for why Paddle
-- See [ADR 016: License model](../../docs/artifacts/adr/016-license-model-bsl.md) for the BSL license approach
+- See [ADR 014: Payment provider choice](../../docs/adr/014-payment-provider-paddle.md) for why Paddle
+- See [ADR 016: License model](../../docs/adr/016-license-model-bsl.md) for the BSL license approach
 - See [Licensing feature docs](../../docs/features/licensing.md) for the full feature overview

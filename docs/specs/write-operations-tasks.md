@@ -231,7 +231,7 @@ Only after all above is complete and measured.
   - [ ] 1000 small files copy
   - [ ] 1GB file copy
   - [ ] Same-FS move of 10,000 files
-- [ ] Document results in `docs/artifacts/notes/write-operations-benchmarks.md`
+- [ ] Document results in `docs/notes/write-operations-benchmarks.md`
 
 ### 6.2 Parallel delete (spec R8.1)
 

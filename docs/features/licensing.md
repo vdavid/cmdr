@@ -48,8 +48,8 @@ Cmdr uses a **BSL 1.1 license with free personal use**:
 
 ## Related documentation
 
-- [ADR 014: Payment provider choice](../artifacts/adr/014-payment-provider-paddle.md) — Why we chose Paddle
-- [ADR 016: License model](../artifacts/adr/016-license-model-bsl.md) — Why BSL + free personal use
+- [ADR 014: Payment provider choice](../adr/014-payment-provider-paddle.md) — Why we chose Paddle
+- [ADR 016: License model](../adr/016-license-model-bsl.md) — Why BSL + free personal use
 - [License server README](../../apps/license-server/README.md) — Server setup and deployment
 
 ## User flow

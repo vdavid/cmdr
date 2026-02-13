@@ -1,6 +1,6 @@
 # Auto-updater tasks
 
-This tasklist accompanies [this spec](./auto-updater-spec.md).
+This tasklist accompanies [this spec](auto-updater-spec.md).
 
 ## Implementation checklist
 

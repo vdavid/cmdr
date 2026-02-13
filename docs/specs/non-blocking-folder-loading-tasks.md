@@ -1,6 +1,6 @@
 # Non-blocking folder loading: Implementation tasks
 
-**Spec**: [non-blocking-folder-loading.md](./non-blocking-folder-loading.md)
+**Spec**: [non-blocking-folder-loading.md](non-blocking-folder-loading.md)
 
 ---
 
