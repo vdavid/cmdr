@@ -5,7 +5,7 @@
 set -e
 
 echo "Starting Xvfb on display :99..."
-Xvfb :99 -screen 0 1920x1080x24 &
+Xvfb :99 -screen 0 1920x1080x24 2>/dev/null &
 XVFB_PID=$!
 
 # Wait for Xvfb to start
@@ -61,5 +61,5 @@ if [ -d "/app/apps/desktop" ] && [ "${VNC:-}" != "1" ]; then
     cd /app/apps/desktop
 fi
 
-echo "Running command: $@"
+echo "Running command: $*"
 exec "$@"

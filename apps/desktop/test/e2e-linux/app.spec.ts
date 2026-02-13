@@ -307,65 +307,94 @@ describe('Mouse interactions', () => {
 })
 
 describe('Navigation', () => {
+    /**
+     * Moves the cursor to "test-dir" using only WebDriver keyboard commands.
+     * Using browser.execute() JS clicks here would break WebDriver's focus
+     * tracking, causing browser.keys('Enter') to miss the handler on first try.
+     */
+    async function moveCursorToTestDir(): Promise<boolean> {
+        const maxAttempts = 20
+        for (let i = 0; i < maxAttempts; i++) {
+            const cursorEntry = browser.$(
+                '.file-pane.is-focused .file-entry.is-under-cursor',
+            ) as unknown as WebdriverIO.Element
+            if (!(await cursorEntry.isExisting())) return false
+            const name = await getEntryName(cursorEntry)
+            if (name === 'test-dir') return true
+            await browser.keys('ArrowDown')
+            await browser.pause(100)
+        }
+        return false
+    }
+
     it('navigates into directories with Enter', async () => {
         await ensureAppReadyWithFocus()
 
-        // Get current path from the focused pane's header
-        let pathElement = browser.$('.file-pane.is-focused .header .path')
-        const initialPath = await pathElement.getText()
-
-        // Find a directory entry (has .size-dir class which shows "<dir>")
-        const dirEntry = browser.$('.file-pane.is-focused .file-entry:has(.size-dir)') as unknown as WebdriverIO.Element
-
-        if (!(await dirEntry.isExisting())) {
-            // No directories to navigate into, skip test
-            console.log('Skipping navigation test: no directories found')
+        if (!(await moveCursorToTestDir())) {
+            console.log('Skipping navigation test: test-dir fixture not found')
             return
         }
 
-        await jsClick(dirEntry)
-        await browser.pause(300)
-
-        // Press Enter to navigate
+        // Press Enter to navigate into test-dir
         await browser.keys('Enter')
-        await browser.pause(1000)
 
-        // Re-query and verify path changed
-        pathElement = browser.$('.file-pane.is-focused .header .path')
-        const newPath = await pathElement.getText()
-        expect(newPath).not.toBe(initialPath)
+        // Wait for navigation: sub-dir should appear in the listing
+        await browser.waitUntil(
+            async () =>
+                browser.execute(() => {
+                    const pane = document.querySelector('.file-pane.is-focused')
+                    if (!pane) return false
+                    const entries = pane.querySelectorAll('.file-entry')
+                    for (const entry of entries) {
+                        if (entry.querySelector('.name')?.textContent === 'sub-dir') return true
+                    }
+                    return false
+                }),
+            { timeout: 5000, timeoutMsg: 'sub-dir did not appear after navigating into test-dir' },
+        )
     })
 
     it('navigates to parent with Backspace', async () => {
         await ensureAppReadyWithFocus()
 
-        // First, navigate into a directory so we can go back
-        const dirEntry = browser.$('.file-pane.is-focused .file-entry:has(.size-dir)') as unknown as WebdriverIO.Element
-
-        if (!(await dirEntry.isExisting())) {
-            // No directories, skip test
-            console.log('Skipping backspace test: no directories found')
+        if (!(await moveCursorToTestDir())) {
+            console.log('Skipping backspace test: test-dir fixture not found')
             return
         }
 
-        // Navigate into a directory first
-        await jsClick(dirEntry)
-        await browser.pause(300)
+        // Navigate into test-dir first, wait for sub-dir to appear
         await browser.keys('Enter')
-        await browser.pause(1000)
-
-        // Get current path
-        let pathElement = browser.$('.file-pane.is-focused .header .path')
-        const currentPath = await pathElement.getText()
+        await browser.waitUntil(
+            async () =>
+                browser.execute(() => {
+                    const pane = document.querySelector('.file-pane.is-focused')
+                    if (!pane) return false
+                    const entries = pane.querySelectorAll('.file-entry')
+                    for (const entry of entries) {
+                        if (entry.querySelector('.name')?.textContent === 'sub-dir') return true
+                    }
+                    return false
+                }),
+            { timeout: 5000, timeoutMsg: 'sub-dir did not appear after navigating into test-dir' },
+        )
 
         // Press Backspace to go to parent
         await browser.keys('Backspace')
-        await browser.pause(1000)
 
-        // Re-query and verify path changed
-        pathElement = browser.$('.file-pane.is-focused .header .path')
-        const newPath = await pathElement.getText()
-        expect(newPath).not.toBe(currentPath)
+        // Wait for test-dir to reappear in the listing
+        await browser.waitUntil(
+            async () =>
+                browser.execute(() => {
+                    const pane = document.querySelector('.file-pane.is-focused')
+                    if (!pane) return false
+                    const entries = pane.querySelectorAll('.file-entry')
+                    for (const entry of entries) {
+                        if (entry.querySelector('.name')?.textContent === 'test-dir') return true
+                    }
+                    return false
+                }),
+            { timeout: 5000, timeoutMsg: 'test-dir did not reappear after Backspace' },
+        )
     })
 })
 
