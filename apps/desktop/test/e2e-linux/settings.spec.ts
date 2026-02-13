@@ -91,10 +91,10 @@ describe('Settings page', () => {
 
         // Wait for section items to fully render (search clear in previous test
         // must complete for all sections to reappear)
-        await browser.waitUntil(
-            async () => [...(await browser.$$('.section-item'))].length >= 2,
-            { timeout: 10000, timeoutMsg: 'Expected at least 2 section items in sidebar' },
-        )
+        await browser.waitUntil(async () => [...(await browser.$$('.section-item'))].length >= 2, {
+            timeout: 10000,
+            timeoutMsg: 'Expected at least 2 section items in sidebar',
+        })
         const sectionItems = [...(await browser.$$('.section-item'))]
 
         // Click second section via JS (WebKitGTK may reject native clicks on non-form elements)

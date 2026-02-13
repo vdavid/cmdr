@@ -398,9 +398,7 @@ describe('Navigation', () => {
                         const pane = document.querySelector('.file-pane.is-focused')
                         if (!pane) return false
                         const entries = pane.querySelectorAll('.file-entry')
-                        return Array.from(entries).some(
-                            (e) => e.querySelector('.name')?.textContent === 'sub-dir',
-                        )
+                        return Array.from(entries).some((e) => e.querySelector('.name')?.textContent === 'sub-dir')
                     }),
                 { timeout: 5000, timeoutMsg: 'sub-dir did not appear after navigating into test-dir' },
             )
@@ -416,9 +414,7 @@ describe('Navigation', () => {
                     const pane = document.querySelector('.file-pane.is-focused')
                     if (!pane) return false
                     const entries = pane.querySelectorAll('.file-entry')
-                    return Array.from(entries).some(
-                        (e) => e.querySelector('.name')?.textContent === 'test-dir',
-                    )
+                    return Array.from(entries).some((e) => e.querySelector('.name')?.textContent === 'test-dir')
                 }),
             { timeout: 5000, timeoutMsg: 'test-dir did not reappear after Backspace' },
         )
