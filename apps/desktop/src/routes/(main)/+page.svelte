@@ -197,14 +197,24 @@
             await emitToFileViewers('mcp-viewer-close', { path })
         } else {
             // Close the most recent viewer directly
-            await viewers[0].close()
+            try {
+                await viewers[0].close()
+            } catch {
+                // Window may already be closed
+            }
         }
     }
 
-    /** Close all file viewer windows */
+    /** Close all file viewer windows sequentially to avoid concurrent destruction races */
     async function closeAllFileViewers() {
         const viewers = await getFileViewerWindows()
-        await Promise.all(viewers.map((v) => v.close()))
+        for (const viewer of viewers) {
+            try {
+                await viewer.close()
+            } catch {
+                // Window may already be closed
+            }
+        }
     }
 
     /** Focus a file viewer window. If path is provided, focuses the viewer with that path. Otherwise focuses the most recent. */
@@ -216,8 +226,11 @@
             // Emit event with path - the viewer with that path will focus itself
             await emitToFileViewers('mcp-viewer-focus', { path })
         } else {
-            // Focus the most recent viewer directly
-            await viewers[0].setFocus()
+            try {
+                await viewers[0].setFocus()
+            } catch {
+                // Window may already be closed
+            }
         }
     }
 

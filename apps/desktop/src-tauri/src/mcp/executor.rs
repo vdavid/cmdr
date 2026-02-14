@@ -543,7 +543,9 @@ fn execute_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_type: &str, path:
 
     match dialog_type {
         "settings" => {
-            app.emit_to("settings", "mcp-settings-close", ())?;
+            if app.webview_windows().contains_key("settings") {
+                app.emit_to("settings", "mcp-settings-close", ())?;
+            }
             Ok(json!("OK: Closed settings"))
         }
         "file-viewer" => {

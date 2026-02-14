@@ -96,6 +96,7 @@
     // Window lifecycle state: prevents closing before WebKit is fully initialized
     let windowReady = $state(false)
     let closeRequested = $state(false)
+    let closing = false
 
     // Event listener cleanup functions
     let unlistenMcpClose: UnlistenFn | undefined
@@ -437,12 +438,14 @@
     })
 
     function closeWindow() {
+        if (closing) return
         // If window isn't ready yet, queue the close for when it is
         if (!windowReady) {
             feLog('[viewer] closeWindow: window not ready, queueing close')
             closeRequested = true
             return
         }
+        closing = true
 
         const start = performance.now()
         feLog('[viewer] closeWindow: starting')

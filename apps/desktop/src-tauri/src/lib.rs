@@ -323,7 +323,8 @@ pub fn run() {
                     serde_json::json!({ "action": "sortOrder", "value": order }),
                 );
             } else if id == VIEWER_WORD_WRAP_ID {
-                // Find the focused viewer window and emit toggle event to it
+                // Toggle word wrap on the focused viewer window (if any).
+                // Safe: unwrap_or(false) handles destroyed windows, `let _ =` ignores emit errors.
                 for (label, window) in app.webview_windows() {
                     if label.starts_with("viewer-") && window.is_focused().unwrap_or(false) {
                         let _ = app.emit_to(&label, "viewer-word-wrap-toggled", ());
@@ -598,8 +599,10 @@ pub fn run() {
                 network::mdns_discovery::stop_discovery();
                 window.app_handle().exit(0);
             }
-            // Also handle window destruction for cleanup
-            if let tauri::WindowEvent::Destroyed = event {
+            // Clean up app-wide resources only when the main window is destroyed
+            if let tauri::WindowEvent::Destroyed = event
+                && window.label() == "main"
+            {
                 ai::manager::shutdown();
                 #[cfg(target_os = "macos")]
                 network::mdns_discovery::stop_discovery();
