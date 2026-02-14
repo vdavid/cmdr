@@ -170,8 +170,7 @@ async function migrateSettings(store: Store, fromVersion: number): Promise<void>
  */
 export function getSetting<K extends SettingId>(id: K): SettingsValues[K] {
     if (!initialized) {
-        // eslint-disable-next-line no-console
-        console.warn('Settings not initialized, returning default for', id)
+        log.warn('Settings not initialized, returning default for {id}', { id })
         return getDefaultValue(id)
     }
 
@@ -352,8 +351,7 @@ function notifyListeners<K extends SettingId>(id: K, value: SettingsValues[K]): 
         try {
             listener(id, value)
         } catch (error) {
-            // eslint-disable-next-line no-console
-            console.error('Setting change listener error:', error)
+            log.error('Setting change listener error: {error}', { error })
         }
     }
 
@@ -364,8 +362,7 @@ function notifyListeners<K extends SettingId>(id: K, value: SettingsValues[K]): 
             try {
                 listener(id, value)
             } catch (error) {
-                // eslint-disable-next-line no-console
-                console.error('Setting change listener error:', error)
+                log.error('Setting change listener error: {error}', { error })
             }
         }
     }

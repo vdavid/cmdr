@@ -19,7 +19,7 @@ const SCHEMA_VERSION = 1
 let storeInstance: Store | null = null
 
 // In-memory cache of custom shortcuts
-const customShortcuts: Record<string, string[]> = {}
+const customShortcuts = new Map<string, string[]>()
 let initialized = false
 
 // ============================================================================
@@ -57,10 +57,7 @@ export async function initializeShortcuts(): Promise<void> {
     }
 
     // Clear in-memory cache and load fresh from store
-    for (const key of Object.keys(customShortcuts)) {
-        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-        delete customShortcuts[key]
-    }
+    customShortcuts.clear()
 
     // Load custom shortcuts from top-level keys (format: shortcut:commandId)
     // This is similar to how settings-store stores values
@@ -71,14 +68,14 @@ export async function initializeShortcuts(): Promise<void> {
         const commandId = key.replace('shortcut:', '')
         const shortcuts = await store.get<string[]>(key)
         if (shortcuts && shortcuts.length > 0) {
-            customShortcuts[commandId] = shortcuts
+            customShortcuts.set(commandId, shortcuts)
         }
     }
 
-    if (Object.keys(customShortcuts).length > 0) {
+    if (customShortcuts.size > 0) {
         log.info('Loaded {count} custom shortcuts: {ids}', {
-            count: Object.keys(customShortcuts).length,
-            ids: Object.keys(customShortcuts).join(', '),
+            count: customShortcuts.size,
+            ids: [...customShortcuts.keys()].join(', '),
         })
     } else {
         log.debug('No custom shortcuts found in store')
@@ -100,7 +97,7 @@ async function syncMenuAccelerators(): Promise<void> {
 
     for (const commandId of menuCommands) {
         // Only update if there's a custom shortcut
-        if (commandId in customShortcuts) {
+        if (customShortcuts.has(commandId)) {
             log.debug('Syncing menu accelerator for {commandId}', { commandId })
             await updateMenuAccelerator(commandId)
         }
@@ -139,7 +136,7 @@ async function migrateShortcuts(store: Store, fromVersion: number): Promise<void
  * Get all custom shortcuts as a record.
  */
 export function getCustomShortcuts(): Record<string, string[]> {
-    return { ...customShortcuts }
+    return Object.fromEntries(customShortcuts)
 }
 
 /**
@@ -147,8 +144,9 @@ export function getCustomShortcuts(): Record<string, string[]> {
  * Always returns a copy to prevent mutation of the original arrays.
  */
 export function getEffectiveShortcuts(commandId: string): string[] {
-    if (commandId in customShortcuts) {
-        return [...customShortcuts[commandId]]
+    const custom = customShortcuts.get(commandId)
+    if (custom) {
+        return [...custom]
     }
 
     const command = commands.find((c) => c.id === commandId)
@@ -168,24 +166,23 @@ export function getDefaultShortcuts(commandId: string): string[] {
  * Check if a command's shortcuts have been modified from defaults.
  */
 export function isShortcutModified(commandId: string): boolean {
-    return commandId in customShortcuts
+    return customShortcuts.has(commandId)
 }
 
 /**
  * Check if shortcuts array matches defaults and clean up if so.
  */
 function cleanupIfMatchesDefaults(commandId: string): void {
-    if (!(commandId in customShortcuts)) return
+    const current = customShortcuts.get(commandId)
+    if (!current) return
 
     const defaults = getDefaultShortcuts(commandId)
-    const current = customShortcuts[commandId]
 
     // Check if they match (same length and same values in same order)
     const matches = current.length === defaults.length && current.every((shortcut, i) => shortcut === defaults[i])
 
     if (matches) {
-        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-        delete customShortcuts[commandId]
+        customShortcuts.delete(commandId)
     }
 }
 
@@ -202,7 +199,7 @@ export function setShortcut(commandId: string, index: number, shortcut: string):
         current.push(shortcut)
     }
 
-    customShortcuts[commandId] = current
+    customShortcuts.set(commandId, current)
     cleanupIfMatchesDefaults(commandId)
     // Save immediately (no debounce) since shortcut changes are rare user actions
     // and we need persistence before the Settings window might close
@@ -216,7 +213,7 @@ export function setShortcut(commandId: string, index: number, shortcut: string):
 export function addShortcut(commandId: string, shortcut: string): void {
     const current = getEffectiveShortcuts(commandId)
     current.push(shortcut)
-    customShortcuts[commandId] = current
+    customShortcuts.set(commandId, current)
     cleanupIfMatchesDefaults(commandId)
     // Save immediately for reliable persistence
     void saveToStore()
@@ -231,7 +228,7 @@ export function removeShortcut(commandId: string, index: number): void {
 
     if (index >= 0 && index < current.length) {
         current.splice(index, 1)
-        customShortcuts[commandId] = current
+        customShortcuts.set(commandId, current)
         cleanupIfMatchesDefaults(commandId)
         // Save immediately for reliable persistence
         void saveToStore()
@@ -243,9 +240,8 @@ export function removeShortcut(commandId: string, index: number): void {
  * Reset a command's shortcuts to defaults.
  */
 export function resetShortcut(commandId: string): void {
-    if (commandId in customShortcuts) {
-        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-        delete customShortcuts[commandId]
+    if (customShortcuts.has(commandId)) {
+        customShortcuts.delete(commandId)
         // Save immediately for reliable persistence
         void saveToStore()
         notifyListeners(commandId)
@@ -256,13 +252,10 @@ export function resetShortcut(commandId: string): void {
  * Reset all shortcuts to defaults.
  */
 export async function resetAllShortcuts(): Promise<void> {
-    const modifiedIds = Object.keys(customShortcuts)
+    const modifiedIds = [...customShortcuts.keys()]
 
     // Clear all customizations
-    for (const key of Object.keys(customShortcuts)) {
-        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-        delete customShortcuts[key]
-    }
+    customShortcuts.clear()
 
     // Delete all shortcut keys from store
     const store = await getStore()
@@ -288,11 +281,11 @@ export async function resetAllShortcuts(): Promise<void> {
 async function saveToStore(): Promise<void> {
     try {
         const store = await getStore()
-        log.debug('Saving shortcuts: {shortcuts}', { shortcuts: JSON.stringify(customShortcuts) })
+        log.debug('Saving shortcuts: {shortcuts}', { shortcuts: JSON.stringify(Object.fromEntries(customShortcuts)) })
 
         // Store each command's shortcuts at top level (like settings-store does)
         // This avoids potential issues with nested objects
-        for (const [commandId, shortcuts] of Object.entries(customShortcuts)) {
+        for (const [commandId, shortcuts] of customShortcuts) {
             await store.set(`shortcut:${commandId}`, shortcuts)
         }
         await store.set('_schemaVersion', SCHEMA_VERSION)
@@ -324,8 +317,7 @@ function notifyListeners(commandId: string): void {
         try {
             listener(commandId)
         } catch (error) {
-            // eslint-disable-next-line no-console
-            console.error('Shortcut change listener error:', error)
+            log.error('Shortcut change listener error: {error}', { error })
         }
     }
 
@@ -349,8 +341,7 @@ async function updateMenuAccelerator(commandId: string): Promise<void> {
         const shortcut = shortcuts[0] ?? ''
         await invoke('update_menu_accelerator', { commandId, shortcut })
     } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('Failed to update menu accelerator:', error)
+        log.error('Failed to update menu accelerator: {error}', { error })
     }
 }
 
