@@ -1,7 +1,5 @@
 /* 
- * Tailwind CSS removed - we use semantic CSS classes with CSS custom properties instead.
- * This improves dev startup by ~15 seconds by avoiding Tailwind's JIT scanning.
- * See docs/notes/2026-01-01-debugging-startup-time.md for details.
+ * We use semantic CSS classes with CSS custom properties instead.
  */
 
 /* =============================================================================

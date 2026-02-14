@@ -51,30 +51,9 @@ Only add JSDoc that actually adds info. No tautologies.
 
 - ✅ Add meaningful comments for public functions, methods, and types to help the next dev.
 - ❌ BUT DO NOT use JSDoc for stuff like `Gets the name` for a function called `getName` :D
+- ⚠️ Before adding JSDoc, try using a more descriptive name for the function/param/variable.
 - ❌ DO NOT repeat TypeScript types in `@param`/`@returns`.
 - ✅ USE JSDoc to mark caveats, tricky/unusual solutions, formats (`YYYY-MM-DD`), and constraints (`must end with /`)
-- ⚠️ Before adding JSDoc, try using a more descriptive name for the function/param/variable.
-
-### TypeScript
-
-- Only functional components and modules. No classes.
-- Prefer functional programming (map, reduce, some, forEach) and pure functions wherever it makes sense.
-- Use `const` for everything, unless it makes the code unnecessarily verbose.
-- Start function names with a verb, unless unidiomatic in the specific case.
-- Use `camelCase` for variable and constant names, including module-level constants.
-- Put constants closest to where they are used. If a constant is only used in one function, put it in that function.
-- For maps, try to name them like `somethingToSomeethingElseMap`. That avoids unnecessary comments.
-- Keep interfaces minimal: only export what you must export.
-
-### Rust
-
-- Max 120 char lines, 4-space indent, cognitive complexity threshold: 15, enforced by clippy.
-
-### CSS
-
-- `html { font-size: 16px; }` is set so `1rem = 16px`. Use `px` by default but can use `rem` if it's more descriptive.
-- Use variables for colors, spacing, and the such, in `app.css`.
-- Always think about accessibility when designing, and dark+light modes.
 
 ## Git
 

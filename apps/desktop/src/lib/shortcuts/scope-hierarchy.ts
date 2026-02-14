@@ -1,7 +1,6 @@
 /**
  * Scope hierarchy for keyboard shortcuts.
  * Determines which scopes' shortcuts are active in a given context.
- * See docs/specs/shortcut-settings.md §2 for specification.
  */
 
 /** All available command scopes */

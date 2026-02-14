@@ -1,7 +1,6 @@
 /**
  * Key capture and formatting utilities.
  * Platform-specific - stores shortcuts as display strings.
- * See docs/specs/shortcut-settings.md §4 for specification.
  */
 
 import type { KeyCombo } from './types'

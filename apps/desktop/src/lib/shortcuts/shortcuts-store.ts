@@ -1,6 +1,5 @@
 /**
  * Shortcuts persistence layer - stores custom keyboard shortcuts.
- * See docs/specs/shortcut-settings.md §6 for specification.
  */
 
 import { load, type Store } from '@tauri-apps/plugin-store'

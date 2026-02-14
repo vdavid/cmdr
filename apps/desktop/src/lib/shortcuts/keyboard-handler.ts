@@ -1,6 +1,5 @@
 /**
  * Keyboard handler for shortcut matching.
- * See docs/specs/shortcut-settings.md §8 for specification.
  */
 
 import { commands } from '$lib/commands/command-registry'

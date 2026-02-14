@@ -1,6 +1,5 @@
 /**
  * Types for the keyboard shortcut customization system.
- * See docs/specs/shortcut-settings.md for full specification.
  */
 
 /** Represents a parsed key combination */

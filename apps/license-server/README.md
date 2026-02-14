@@ -8,25 +8,25 @@ This server receives purchase notifications from Paddle, generates cryptographic
 them to customers via Resend.
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         Purchase flow                                │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│  1. User clicks "Buy" on getcmdr.com                                │
-│           ↓                                                          │
-│  2. Redirect to Paddle checkout (paddle.com/checkout/...)           │
-│           ↓                                                          │
-│  3. User pays → Paddle sends webhook to this server                 │
-│           ↓                                                          │
-│  4. Server generates Ed25519-signed license key                     │
-│           ↓                                                          │
-│  5. Server emails license key to user via Resend                    │
-│           ↓                                                          │
-│  6. User enters key in Cmdr app                                     │
-│           ↓                                                          │
-│  7. App validates signature locally (no server call needed)         │
-│                                                                      │
-└─────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                         Purchase flow                           │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  1. User clicks "Buy" on getcmdr.com                            │
+│           ↓                                                     │
+│  2. Redirect to Paddle checkout (paddle.com/checkout/...)       │
+│           ↓                                                     │
+│  3. User pays → Paddle sends webhook to this server             │
+│           ↓                                                     │
+│  4. Server generates Ed25519-signed license key                 │
+│           ↓                                                     │
+│  5. Server emails license key to user via Resend                │
+│           ↓                                                     │
+│  6. User enters key in Cmdr app                                 │
+│           ↓                                                     │
+│  7. App validates signature locally (no server call needed)     │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ## Setup
@@ -115,4 +115,4 @@ Then open http://localhost:3333 and click "Buy Cmdr".
 
 - See [ADR 014: Payment provider choice](../../docs/adr/014-payment-provider-paddle.md) for why Paddle
 - See [ADR 016: License model](../../docs/adr/016-license-model-bsl.md) for the BSL license approach
-- See [Licensing feature docs](../../docs/features/licensing.md) for the full feature overview
+- See `apps/desktop/src/lib/licensing/CLAUDE.md` for the full feature overview

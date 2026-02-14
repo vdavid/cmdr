@@ -1,6 +1,5 @@
 /**
  * Conflict detection for keyboard shortcuts.
- * See docs/specs/shortcut-settings.md §5 for specification.
  */
 
 import { commands } from '$lib/commands/command-registry'

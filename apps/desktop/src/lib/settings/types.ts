@@ -1,6 +1,5 @@
 /**
  * Settings system type definitions.
- * See docs/specs/settings.md for full specification.
  */
 
 // ============================================================================

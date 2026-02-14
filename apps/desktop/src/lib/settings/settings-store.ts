@@ -1,6 +1,5 @@
 /**
  * Settings persistence layer - stores and loads settings from disk.
- * See docs/specs/settings.md for full specification.
  */
 
 import { load, type Store } from '@tauri-apps/plugin-store'

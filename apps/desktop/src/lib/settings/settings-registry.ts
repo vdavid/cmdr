@@ -1,6 +1,5 @@
 /**
  * Settings registry - single source of truth for all settings.
- * See docs/specs/settings.md for full specification.
  */
 
 import type { SettingDefinition, SettingId, SettingsValues } from './types'

@@ -31,15 +31,15 @@ Core structure:
     - `license-server/` - Cloudflare Worker (Hono). Receives Paddle webhooks, generates&validates Ed25519-signed keys.
     - `website/` - Marketing website (getcmdr.com)
 - `/scripts/check/` - Go-based unified check runner (replaces individual scripts)
-- `/docs/` - Docs including `style-guide.md`
-    - `artifacts/` - Development byproducts kept for reference. They describe the history of the system, not its state.
-      - `adr/` - Architecture decisions
-      - `notes/` - Other notes
-      - `specs/` - Temporary spec docs and task lists kept during development
-    - `features/` - Description of each major feature of the system
+- `/docs/` - Dev docs
+    - `adr/` - Architecture decision records
     - `guides/` - How-to guides
-    - `tooling/` - Like "features", but for internal tooling
-    - `user-docs/` - The rest of `/docs` are all dev docs. These are user-facing, written with that audience in mind. 
+    - `tooling/` - Internal tooling docs
+    - `architecture.md` - Map of all subsystems with pointers to colocated `CLAUDE.md` files
+    - `style-guide.md` - Writing and code style rules
+    - `security.md` - Security policies
+- Feature-level docs live in **colocated `CLAUDE.md` files** next to the code (for example,
+  `src/lib/settings/CLAUDE.md`). Claude Code auto-discovers these. See `docs/architecture.md` for the full map.
 
 ## Testing & checking
 
@@ -108,15 +108,39 @@ There are two MCP servers available to you:
 ## Things to avoid
 
 - ❌ Don't touch git, user handles commits manually. Unless explicitly asked to.
-- ❌ Don't use classes in TypeScript (use functional components/modules)
 - ❌ Don't add JSDoc that just repeats types or obvious function names
-- ❌ Don't use `any` type (ESLint will error)
 - ❌ Don't ignore linter warnings (fix them or justify with a comment)
 - ❌ Don't add dependencies without checking license compatibility (`cargo deny check`)
 
+### TypeScript
+
+- Only functional components and modules. No classes.
+- Don't use classes. Use functional components/modules.
+- Don't use `any` type. ESLint will error.
+- Prefer functional programming (map, reduce, some, forEach) and pure functions wherever it makes sense.
+- Use `const` for everything, unless it makes the code unnecessarily verbose.
+- Start function names with a verb, unless unidiomatic in the specific case.
+- Use `camelCase` for variable and constant names, including module-level constants.
+- Put constants closest to where they are used. If a constant is only used in one function, put it in that function.
+- For maps, try to name them like `somethingToSomeethingElseMap`. That avoids unnecessary comments.
+- Keep interfaces minimal: only export what you must export.
+
+### Rust
+
+- Max 120 char lines, 4-space indent, cognitive complexity threshold: 15, enforced by clippy.
+
+### CSS
+
+- `html { font-size: 16px; }` is set so `1rem = 16px`. Use `px` by default but can use `rem` if it's more descriptive.
+- Use variables for colors, spacing, and the such, in `app.css`.
+- Always think about accessibility when designing, and dark+light modes.
+
 ## Planning
-- When coming up with a plan for a development, save it to `docs/specs/{feature}-plan.md in this repo.
-- Also create an  accompanying task list that fully covers but doesn't duplicate the plan on a high level.
+
+- When getting oriented, consider the docs: `docs` folder and `CLAUDE.md` files in each directory.
+- When coming up with a plan for a development, save it to `docs/specs/{feature}-plan.md` in this repo (we clean out old
+  plans every few weeks/months, git history remembers them).
+- Also create an accompanying task list that fully covers but doesn't duplicate the plan on a high level.
   If all items on the task list are honestly marked as done, the plan is fully implemented in great quality.
   Tasks should be one-liners, grouped by milestones. Include docs, testing, and running all necessary checks.
 
@@ -126,6 +150,10 @@ There are two MCP servers available to you:
 - When testing, consider using Rust/Go tests, Vitest, Playwright, and manual tests with the MCP servers, whatever is
   needed to feel confident about the development. Do this per milestone. Don't go overboard with unit tests. Test
   exactly so that you feel confident.
+- **Keep docs alive**: When modifying a feature directory that has a `CLAUDE.md`, check if the doc still matches the
+  code. Update it if your changes affect architecture, key decisions, or gotchas. Don't update for trivial changes.
+  If there is no `CLAUDE.md` file yet, but you want to capture high-level info about a module or feature, create one.
+  Make it faster for the next person or agent to get oriented. 
 
 Always do a last round of checks before wrapping up:
 
