@@ -272,6 +272,13 @@ jobs:
               run: pnpm tauri build --no-bundle
               working-directory: ./apps/desktop
 
+            - name: Create E2E test fixtures
+              run: |
+                  sudo mkdir -p /root/test-dir/sub-dir
+                  echo "test content" | sudo tee /root/test-dir/test-file.txt > /dev/null
+                  sudo chmod -R a+rX /root/test-dir
+                  sudo chmod a+x /root
+
             - name: Run Tauri E2E tests
               run: xvfb-run --auto-servernum pnpm test:e2e:linux:native
               working-directory: ./apps/desktop
