@@ -111,14 +111,16 @@ Run the [SES onboarding wizard](https://eu-north-1.console.aws.amazon.com/ses/ho
    git log --oneline origin/main..HEAD # Optional, to check what extra release commits we have. Usually there are three.
    git pull --rebase # This keeps the extra commits on top of latest main
    ```
-3. Once we have the latest infra, deploy Listmonk: 
+3. Once we have the latest infra, deploy Listmonk:
    ```bash
    cd /opt/cmdr/infra/listmonk
    cp .env.example .env
    # TODO: Edit .env with a strong password
-   docker compose up -d
+   docker compose up -d --build
    ```
-4. On the first start, Listmonk automatically creates the database schema (`--install --idempotent`), runs any migrations (`--upgrade`), and then starts the app. Check `docker compose logs -f listmonk` to confirm it's healthy.
+4. On the first start, the Dockerfile fetches listmonk's default static files and overlays our branded email templates
+   (`email-templates/`). Listmonk then creates the database schema (`--install --idempotent`), runs migrations
+   (`--upgrade`), and starts the app. Check `docker compose logs -f listmonk` to confirm it's healthy.
 
 ### 6. Caddy config (do while waiting for DNS)
 
@@ -134,6 +136,11 @@ And inside the existing `getcmdr.com` block:
 
 ```caddy
 getcmdr.com {
+    # Listmonk public pages (opt-in confirmation, subscription management, archive)
+    handle /subscription/* {
+        reverse_proxy listmonk:9000
+    }
+
     # Newsletter subscription API (proxied to Listmonk)
     handle /api/newsletter/subscribe {
         rewrite * /api/public/subscription
@@ -187,23 +194,12 @@ Reload Caddy: `docker compose restart caddy` in Caddy's folder.
    - **Opt-in**: Double opt-in
    - No tags, and write a friendly description.
    - Save, then open the list and note the **UUID** shown on the list page (you'll need it in step 9)
-5. **Double opt-in template** (optional): The opt-in confirmation email is a system template, not editable from the admin UI.
-   To customize it:
-   ```bash
-   docker cp listmonk:/static /opt/cmdr/infra/listmonk/static
-   ```
-   Edit `static/email-templates/subscriber-optin.html` to match Cmdr branding (logo, colors, tone).
-   The `{{ .SubscriptionURL }}` placeholder is the confirmation link.
-   Then add a volume mount and `--static-dir` flag to `docker-compose.yml`:
-   ```yaml
-   # In the listmonk service:
-   volumes:
-     - ./static:/static
-   command: >
-     sh -c "./listmonk --static-dir=/static
-     --db.host=listmonk-db ..."
-   ```
-   Restart: `docker compose up -d`
+5. **System email templates**: The opt-in confirmation and other system emails are branded to match Cmdr. The templates
+   live in `email-templates/` and get baked into the Docker image at build time via `--static-dir`. To edit:
+   - `email-templates/base.html` — shared header/footer wrapper (dark theme, logo, accent bar)
+   - `email-templates/subscriber-optin.html` — the double opt-in confirmation email
+   - Preview locally: `cd infra/listmonk/preview && go run .` → [localhost:9900](http://localhost:9900)
+   - After editing, rebuild and redeploy: `docker compose up -d --build`
 6. **Campaign template** (optional): Campaigns > Templates (in the sidebar) lets you edit the HTML wrapper
    used around newsletter content. The default works fine but you can brand it here too.
    Campaign templates must include `{{ template "content" . }}` exactly once.
@@ -248,9 +244,10 @@ docker exec listmonk-db pg_dump -U listmonk listmonk > listmonk-backup.sql
 
 ### Updates
 
+Update the `LISTMONK_VERSION` ARG in the `Dockerfile`, then:
+
 ```bash
-docker compose pull
-docker compose up -d
+docker compose up -d --build
 ```
 
 Listmonk runs database migrations automatically on startup.

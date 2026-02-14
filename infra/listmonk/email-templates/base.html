@@ -1,0 +1,194 @@
+{{ define "header" }}
+<!doctype html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="supported-color-schemes" content="light dark">
+    <base target="_blank">
+    <!--[if mso]>
+    <noscript>
+        <xml>
+            <o:OfficeDocumentSettings>
+                <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+        </xml>
+    </noscript>
+    <![endif]-->
+    <style>
+        :root {
+            color-scheme: light dark;
+            supported-color-schemes: light dark;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+
+        table {
+            border-spacing: 0;
+            border-collapse: collapse;
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+        }
+
+        img {
+            border: 0;
+            height: auto;
+            max-width: 100%;
+            outline: none;
+            text-decoration: none;
+            -ms-interpolation-mode: bicubic;
+        }
+
+        h2 {
+            color: #fafafa;
+            font-weight: 600;
+            font-size: 20px;
+            line-height: 28px;
+            margin: 0 0 12px;
+        }
+
+        p { margin: 0 0 16px; }
+        a { color: #ffc206; }
+        a:hover { color: #ffd23f; }
+
+        ul { padding-left: 20px; margin: 0 0 16px; }
+        li { margin-bottom: 6px; }
+
+        .button {
+            background-color: #ffc206;
+            border-radius: 8px;
+            text-decoration: none !important;
+            color: #0a0a0b !important;
+            font-weight: 600;
+            padding: 12px 28px;
+            display: inline-block;
+            font-size: 15px;
+            line-height: 22px;
+            mso-padding-alt: 0;
+        }
+        .button:hover {
+            background-color: #ffd23f;
+        }
+        /*[if mso]>
+        .button { padding: 12px 28px !important; }
+        <![endif]*/
+
+        /* Tables inside system email content */
+        table.data { width: 100%; border: 1px solid #27272a; }
+        table.data td,
+        table.data th {
+            border: 1px solid #27272a;
+            padding: 8px 12px;
+            color: #d4d4d8;
+            text-align: left;
+        }
+        table.data th {
+            background: #111113;
+            color: #fafafa;
+            font-weight: 600;
+        }
+
+        @media screen and (max-width: 600px) {
+            .content-cell { padding: 28px 20px !important; }
+            .outer-gutter { padding-left: 12px !important; padding-right: 12px !important; }
+            .footer-cell { padding-left: 20px !important; padding-right: 20px !important; }
+        }
+    </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #0a0a0b; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, sans-serif; font-size: 15px; line-height: 26px; color: #d4d4d8; -webkit-text-size-adjust: 100%;">
+
+    <!-- Full-width mustard accent bar -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #ffc206;">
+        <tr>
+            <td style="height: 3px; font-size: 0; line-height: 0;">&nbsp;</td>
+        </tr>
+    </table>
+
+    <!-- Outer wrapper -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a0a0b;">
+
+        <!-- Header: logo + wordmark -->
+        <tr>
+            <td class="outer-gutter" align="center" style="padding: 36px 16px 0;">
+                <table role="presentation" cellpadding="0" cellspacing="0" style="max-width: 560px; width: 100%;">
+                    <tr>
+                        <td align="center" style="padding-bottom: 28px;">
+                            <a href="https://getcmdr.com" style="text-decoration: none; display: inline-block;">
+                                <table role="presentation" cellpadding="0" cellspacing="0">
+                                    <tr>
+                                        <td style="vertical-align: middle; padding-right: 10px;">
+                                            <img src="https://getcmdr.com/logo-512.png" alt="" width="36" height="36" style="display: block; border-radius: 8px;" />
+                                        </td>
+                                        <td style="vertical-align: middle; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, sans-serif; font-size: 20px; font-weight: 600; color: #fafafa; letter-spacing: -0.02em;">
+                                            Cmdr
+                                        </td>
+                                    </tr>
+                                </table>
+                            </a>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+
+        <!-- Content card -->
+        <tr>
+            <td class="outer-gutter" align="center" style="padding: 0 16px;">
+                <table role="presentation" cellpadding="0" cellspacing="0" style="max-width: 560px; width: 100%;">
+                    <tr>
+                        <td>
+                            <!--[if mso]>
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #18181b;">
+                            <tr><td style="padding: 36px 32px;">
+                            <![endif]-->
+                            <!--[if !mso]><!-->
+                            <div style="background-color: #18181b; border: 1px solid #27272a; border-radius: 12px; overflow: hidden;">
+                            <!--<![endif]-->
+                                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                                    <tr>
+                                        <td class="content-cell" style="padding: 36px 32px; color: #d4d4d8; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, sans-serif; font-size: 15px; line-height: 26px;">
+{{ end }}
+
+{{ define "footer" }}
+                                        </td>
+                                    </tr>
+                                </table>
+                            <!--[if !mso]><!-->
+                            </div>
+                            <!--<![endif]-->
+                            <!--[if mso]>
+                            </td></tr></table>
+                            <![endif]-->
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+            <td class="outer-gutter" align="center" style="padding: 28px 16px 48px;">
+                <table role="presentation" cellpadding="0" cellspacing="0" style="max-width: 560px; width: 100%;">
+                    <tr>
+                        <td class="footer-cell" align="center" style="padding: 0 32px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, sans-serif; font-size: 13px; line-height: 22px; color: #71717a;">
+                            <p style="margin: 0 0 10px;">
+                                <a href="https://getcmdr.com" style="color: #a1a1aa; text-decoration: underline; text-underline-offset: 2px;">getcmdr.com</a>
+                            </p>
+                            <p style="margin: 0; color: #52525b;">
+                                Cmdr &middot; Made with &#10084;&#65039; in Sweden
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+{{ end }}

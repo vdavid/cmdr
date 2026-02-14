@@ -1,0 +1,23 @@
+{{ define "subscriber-optin" }}
+{{ template "header" . }}
+            <h2>{{ L.Ts "email.optin.confirmSubTitle" }}</h2>
+            <p>{{ L.Ts "email.optin.confirmSubWelcome" }} {{ .Subscriber.FirstName }}</p>
+            <p>{{ L.Ts "email.optin.confirmSubInfo" }}</p>
+            <ul>
+                {{ range $i, $l := .Lists }}
+                    {{ if eq .Type "public" }}
+                        <li>{{ .Name }}</li>
+                    {{ else }}
+                        <li>{{ L.Ts "email.optin.privateList" }}</li>
+                    {{ end }}
+                {{ end }}
+            </ul>
+            <p>{{ L.Ts "email.optin.confirmSubHelp" }}</p>
+            <p style="padding-top: 8px;">
+                <a href="{{ .OptinURL }}" class="button">{{ L.Ts "email.optin.confirmSub" }}</a>
+            </p>
+            <p style="margin-top: 8px;">
+                <a href="{{ .UnsubURL }}?manage=true" style="color: #a1a1aa; text-decoration: underline; text-underline-offset: 2px; font-size: 13px;">{{ L.T "email.unsub" }}</a>
+            </p>
+{{ template "footer" }}
+{{ end }}
