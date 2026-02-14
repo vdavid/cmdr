@@ -4,7 +4,7 @@
  */
 
 // Types
-export type { KeyCombo, ShortcutConflict, CustomShortcutsData, SetShortcutResult } from './types'
+export type { ShortcutConflict } from './types'
 
 // Scope hierarchy
 export { getActiveScopes, scopesOverlap, getAllScopes, type CommandScope } from './scope-hierarchy'
@@ -12,7 +12,6 @@ export { getActiveScopes, scopesOverlap, getAllScopes, type CommandScope } from 
 // Key capture
 export {
     formatKeyCombo,
-    parseKeyCombo,
     normalizeKeyName,
     matchesShortcut,
     isModifierKey,
@@ -23,7 +22,6 @@ export {
 // Shortcuts store
 export {
     initializeShortcuts,
-    getCustomShortcuts,
     getEffectiveShortcuts,
     getDefaultShortcuts,
     isShortcutModified,
@@ -33,21 +31,16 @@ export {
     resetShortcut,
     resetAllShortcuts,
     onShortcutChange,
-    forceSave,
     flushPendingSave,
 } from './shortcuts-store'
 
 // Conflict detection
 export {
     findConflictsForShortcut,
-    hasConflicts,
     getAllConflicts,
     getConflictCount,
     getConflictingCommandIds,
 } from './conflict-detector'
-
-// Keyboard handler
-export { handleKeyDown, findCommandsWithShortcut } from './keyboard-handler'
 
 // MCP shortcuts listener
 export { setupMcpShortcutsListener, cleanupMcpShortcutsListener } from './mcp-shortcuts-listener'

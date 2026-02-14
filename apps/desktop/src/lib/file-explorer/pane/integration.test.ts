@@ -19,9 +19,9 @@ let mockEntry: FileEntry | null = null
 vi.mock('$lib/tauri-commands', () => ({
     listDirectoryStart: vi.fn().mockResolvedValue({
         listingId: 'mock-listing',
-        totalCount: 10,
-        maxFilenameWidth: 150,
+        status: 'ready',
     }),
+    cancelListing: vi.fn().mockResolvedValue(undefined),
     listDirectoryEnd: vi.fn().mockResolvedValue(undefined),
     getFileRange: vi.fn().mockResolvedValue([]),
     getFileAt: vi.fn().mockImplementation((_listingId: string, index: number) => {

@@ -30,24 +30,6 @@ export function findConflictsForShortcut(shortcut: string, scope: CommandScope, 
 }
 
 /**
- * Check if a command has any conflicts with other commands.
- */
-export function hasConflicts(commandId: string): boolean {
-    const command = commands.find((c) => c.id === commandId)
-    if (!command) return false
-
-    const shortcuts = getEffectiveShortcuts(commandId)
-    const scope = command.scope as CommandScope
-
-    for (const shortcut of shortcuts) {
-        const conflicts = findConflictsForShortcut(shortcut, scope, commandId)
-        if (conflicts.length > 0) return true
-    }
-
-    return false
-}
-
-/**
  * Get all conflicts in the system.
  * Returns a list of shortcuts that are bound to multiple overlapping commands.
  */

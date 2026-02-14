@@ -19,8 +19,8 @@ Backend directory reading, caching, sorting, and streaming for the file explorer
 ```
 Frontend                          Backend
    |                                   |
-   |-- listDirectoryStartStreaming -->| (returns immediately)
-   |<-- { listingId, status: loading }|
+   |--- listDirectoryStart ----------->| (returns immediately)
+   |<-- { listingId, status: loading } |
    |                                   |
    |                            [background task spawns]
    |                                   |

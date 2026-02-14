@@ -21,7 +21,7 @@ export type {
     UiDensity,
 } from './types'
 
-export { densityMappings, formatDuration, fromMilliseconds, SettingValidationError, toMilliseconds } from './types'
+export { densityMappings, formatDuration, SettingValidationError } from './types'
 
 // Registry
 export {
@@ -39,13 +39,11 @@ export type { SettingsSection } from './settings-registry'
 // Store
 export {
     forceSave,
-    getAllSettings,
     getSetting,
     initializeSettings,
     isModified,
     onSettingChange,
     onSpecificSettingChange,
-    resetAllSettings,
     resetSetting,
     setSetting,
 } from './settings-store'

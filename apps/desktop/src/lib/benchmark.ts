@@ -41,6 +41,7 @@ function sendToRust(message: string): void {
 
 /**
  * Reset the epoch (call when user navigates to a folder)
+ * @public
  */
 export function resetEpoch(): void {
     epochMs = performance.now()
@@ -58,6 +59,7 @@ function nowMicros(): number {
 
 /**
  * Log a benchmark event
+ * @public
  */
 export function logEvent(event: string): void {
     if (!isBenchmarkEnabled()) return
@@ -67,6 +69,7 @@ export function logEvent(event: string): void {
 
 /**
  * Log a benchmark event with a value
+ * @public
  */
 export function logEventValue(event: string, value: unknown): void {
     if (!isBenchmarkEnabled()) return

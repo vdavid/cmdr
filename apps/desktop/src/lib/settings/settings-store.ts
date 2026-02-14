@@ -215,39 +215,12 @@ export function resetSetting(id: SettingId): void {
 }
 
 /**
- * Reset all settings to their default values.
- */
-export async function resetAllSettings(): Promise<void> {
-    for (const def of settingsRegistry) {
-        settingsCache[def.id] = def.default
-    }
-
-    // Clear the store
-    const store = await getStore()
-    await store.clear()
-    await store.set('_schemaVersion', SCHEMA_VERSION)
-    await store.save()
-
-    // Notify all listeners
-    for (const def of settingsRegistry) {
-        notifyListeners(def.id as SettingId, def.default as SettingsValues[SettingId])
-    }
-}
-
-/**
  * Check if a setting has been modified from its default value.
  */
 export function isModified(id: SettingId): boolean {
     const current = getSetting(id)
     const defaultVal = getDefaultValue(id)
     return current !== defaultVal
-}
-
-/**
- * Get all setting values as a plain object.
- */
-export function getAllSettings(): Partial<SettingsValues> {
-    return { ...settingsCache } as Partial<SettingsValues>
 }
 
 // ============================================================================

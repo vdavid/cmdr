@@ -133,13 +133,6 @@ async function migrateShortcuts(store: Store, fromVersion: number): Promise<void
 // ============================================================================
 
 /**
- * Get all custom shortcuts as a record.
- */
-export function getCustomShortcuts(): Record<string, string[]> {
-    return Object.fromEntries(customShortcuts)
-}
-
-/**
  * Get effective shortcuts for a command (custom if set, otherwise defaults).
  * Always returns a copy to prevent mutation of the original arrays.
  */
@@ -343,15 +336,4 @@ async function updateMenuAccelerator(commandId: string): Promise<void> {
     } catch (error) {
         log.error('Failed to update menu accelerator: {error}', { error })
     }
-}
-
-// ============================================================================
-// Utility: Force save (for testing)
-// ============================================================================
-
-/**
- * Force an immediate save to disk. Used for testing.
- */
-export async function forceSave(): Promise<void> {
-    await saveToStore()
 }

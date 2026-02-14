@@ -1,21 +1,7 @@
 {
     "$schema": "https://unpkg.com/knip@5/schema.json",
     "ignoreBinaries": ["only-allow"],
-    "ignore": [
-        "src/lib/icon-cache.ts",
-        "src/routes/+layout.ts",
-        "src/lib/benchmark.ts",
-        "src/lib/tauri-commands.ts",
-        "src/lib/tauri-commands/**",
-        "src/lib/licensing-store.svelte.ts",
-        "src/lib/settings/settings-store.ts",
-        "src/lib/settings/settings-window.ts",
-        "src/lib/settings/types.ts",
-        "src/lib/shortcuts/**",
-        "src/lib/mtp/mtp-store.svelte.ts",
-        "src/lib/file-explorer/rename/**",
-        "src/lib/ui/Notification.svelte"
-    ],
+    "ignore": ["src/routes/+layout.ts", "src/lib/tauri-commands/**"],
     "ignoreDependencies": [
         "@tauri-apps/cli",
         "@testing-library/svelte",

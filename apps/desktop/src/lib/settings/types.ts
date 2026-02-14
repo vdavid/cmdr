@@ -162,22 +162,6 @@ export const densityMappings: Record<UiDensity, DensityValues> = {
 // Duration Conversion Helpers
 // ============================================================================
 
-const MS_PER_UNIT: Record<DurationUnit, number> = {
-    ms: 1,
-    s: 1000,
-    min: 60 * 1000,
-    h: 60 * 60 * 1000,
-    d: 24 * 60 * 60 * 1000,
-}
-
-export function toMilliseconds(value: number, unit: DurationUnit): number {
-    return value * MS_PER_UNIT[unit]
-}
-
-export function fromMilliseconds(ms: number, unit: DurationUnit): number {
-    return ms / MS_PER_UNIT[unit]
-}
-
 export function formatDuration(ms: number): string {
     if (ms < 1000) return ms.toString() + 'ms'
     if (ms < 60000) return (ms / 1000).toString() + 's'

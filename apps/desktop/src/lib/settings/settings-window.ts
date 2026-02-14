@@ -70,29 +70,3 @@ export async function openSettingsWindow(): Promise<void> {
         settingsWindow = null
     })
 }
-
-/**
- * Closes the settings window if it's open.
- */
-export async function closeSettingsWindow(): Promise<void> {
-    log.debug('closeSettingsWindow called, windowExists={exists}', { exists: settingsWindow !== null })
-
-    if (settingsWindow) {
-        try {
-            await settingsWindow.close()
-            log.info('Settings window closed')
-        } catch (error) {
-            log.debug('Failed to close settings window (likely already closed): {error}', { error })
-        }
-        settingsWindow = null
-    }
-}
-
-/**
- * Checks if the settings window is currently open.
- */
-export function isSettingsWindowOpen(): boolean {
-    const isOpen = settingsWindow !== null
-    log.debug('isSettingsWindowOpen() = {isOpen}', { isOpen })
-    return isOpen
-}

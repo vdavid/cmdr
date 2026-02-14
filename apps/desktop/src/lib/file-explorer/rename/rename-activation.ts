@@ -72,7 +72,7 @@ export function startClickToRename(event: MouseEvent, onActivate: () => void): v
     current = state
 }
 
-/** Returns whether a click-to-rename timer is currently pending. */
+/** @public */
 export function isClickToRenamePending(): boolean {
     return current !== null && current.timer !== null
 }

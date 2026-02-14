@@ -2,7 +2,6 @@
 
 import { invoke } from '@tauri-apps/api/core'
 import type {
-    AuthMode,
     AuthOptions,
     ConnectionMode,
     DiscoveryState,
@@ -118,20 +117,6 @@ export async function prefetchShares(
     }
 }
 
-/**
- * Gets the cached authentication mode for a host.
- * Returns 'unknown' if no cached data is available.
- * @param hostId The host ID to check
- * @returns Cached AuthMode or 'unknown'
- */
-export async function getHostAuthMode(hostId: string): Promise<AuthMode> {
-    try {
-        return await invoke<AuthMode>('get_host_auth_mode', { hostId })
-    } catch {
-        return 'unknown'
-    }
-}
-
 // noinspection JSUnusedGlobalSymbols -- This is a utility mechanism for debugging
 /**
  * Logs a message through the backend for unified timestamp tracking.
@@ -148,20 +133,6 @@ export function feLog(message: string): void {
 // ============================================================================
 // Known shares store (macOS only)
 // ============================================================================
-
-/**
- * Gets all known network shares (previously connected).
- * Only available on macOS.
- * @returns Array of KnownNetworkShare objects
- */
-export async function getKnownShares(): Promise<KnownNetworkShare[]> {
-    try {
-        return await invoke<KnownNetworkShare[]>('get_known_shares')
-    } catch {
-        // Command not available (non-macOS) - return empty array
-        return []
-    }
-}
 
 /**
  * Gets a specific known share by server and share name.
@@ -253,20 +224,6 @@ export async function saveSmbCredentials(
  */
 export async function getSmbCredentials(server: string, share: string | null): Promise<SmbCredentials> {
     return invoke<SmbCredentials>('get_smb_credentials', { server, share })
-}
-
-/**
- * Checks if credentials exist in the Keychain for a server/share.
- * @param server Server hostname or IP
- * @param share Optional share name
- * @returns True if credentials are stored
- */
-export async function hasSmbCredentials(server: string, share: string | null): Promise<boolean> {
-    try {
-        return await invoke<boolean>('has_smb_credentials', { server, share })
-    } catch {
-        return false
-    }
 }
 
 /**

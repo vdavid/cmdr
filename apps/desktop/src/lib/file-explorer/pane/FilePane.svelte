@@ -27,7 +27,7 @@
         getSyncStatus,
         getTotalCount,
         listDirectoryEnd,
-        listDirectoryStartStreaming,
+        listDirectoryStart,
         listen,
         onMtpDeviceRemoved,
         openFile,
@@ -960,21 +960,14 @@
             })
 
             // Now start streaming listing - listeners are already set up
-            benchmark.logEvent('IPC listDirectoryStartStreaming CALL')
+            benchmark.logEvent('IPC listDirectoryStart CALL')
             log.debug(
-                '[FilePane] calling listDirectoryStartStreaming: volumeId={volumeId}, path={loadPath}, listingId={listingId}',
+                '[FilePane] calling listDirectoryStart: volumeId={volumeId}, path={loadPath}, listingId={listingId}',
                 { volumeId, loadPath, listingId: newListingId },
             )
-            const result = await listDirectoryStartStreaming(
-                volumeId,
-                path,
-                includeHidden,
-                sortBy,
-                sortOrder,
-                newListingId,
-            )
-            benchmark.logEventValue('IPC listDirectoryStartStreaming RETURNED', result.listingId)
-            log.debug('[FilePane] listDirectoryStartStreaming returned: status={status}', {
+            const result = await listDirectoryStart(volumeId, path, includeHidden, sortBy, sortOrder, newListingId)
+            benchmark.logEventValue('IPC listDirectoryStart RETURNED', result.listingId)
+            log.debug('[FilePane] listDirectoryStart returned: status={status}', {
                 status: JSON.stringify(result.status),
             })
 

@@ -3,7 +3,6 @@
 import { invoke } from '@tauri-apps/api/core'
 import type {
     FileEntry,
-    ListingStartResult,
     ListingStats,
     ResortResult,
     SortColumn,
@@ -12,27 +11,7 @@ import type {
 } from '../file-explorer/types'
 
 /**
- * Starts a new directory listing (synchronous version).
- * Reads the directory once, caches on backend, returns listing ID + total count.
- * Frontend then fetches visible ranges on demand via getFileRange.
- * NOTE: This blocks until the directory is fully read. For non-blocking operation,
- * use listDirectoryStartStreaming instead.
- * @param path - Directory path to list. Supports tilde expansion (~).
- * @param includeHidden - Whether to include hidden files in total count.
- * @param sortBy - Column to sort by.
- * @param sortOrder - Ascending or descending.
- */
-export async function listDirectoryStart(
-    path: string,
-    includeHidden: boolean,
-    sortBy: SortColumn,
-    sortOrder: SortOrder,
-): Promise<ListingStartResult> {
-    return invoke<ListingStartResult>('list_directory_start', { path, includeHidden, sortBy, sortOrder })
-}
-
-/**
- * Starts a new streaming directory listing (async version).
+ * Starts a new streaming directory listing.
  * Returns immediately with listing ID and "loading" status.
  * Progress is reported via events: listing-progress, listing-complete, listing-error, listing-cancelled.
  * @param volumeId - Volume ID (like "root", "mtp-336592896:65537").
@@ -42,7 +21,7 @@ export async function listDirectoryStart(
  * @param sortOrder - Ascending or descending.
  * @param listingId - Unique identifier for the listing (used for cancellation)
  */
-export async function listDirectoryStartStreaming(
+export async function listDirectoryStart(
     volumeId: string,
     path: string,
     includeHidden: boolean,

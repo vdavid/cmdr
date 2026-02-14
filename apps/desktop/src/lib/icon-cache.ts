@@ -105,7 +105,7 @@ export function getCachedIcon(iconId: string): string | undefined {
  * @param directoryPaths - Array of directory paths to fetch icons for
  * @param extensions - Array of file extensions (without dot)
  * @param useAppIconsForDocuments - Whether to use app icons as fallback for documents
- * @knipignore Used via dynamic import in FilePane.svelte
+ * @public
  */
 export async function refreshDirectoryIcons(
     directoryPaths: string[],

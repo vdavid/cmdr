@@ -4,7 +4,6 @@
 // File listing (on-demand virtual scrolling API)
 export {
     listDirectoryStart,
-    listDirectoryStartStreaming,
     cancelListing,
     resortListing,
     getFileRange,
@@ -87,15 +86,12 @@ export {
     resolveNetworkHost,
     listSharesOnHost,
     prefetchShares,
-    getHostAuthMode,
     feLog,
-    getKnownShares,
     getKnownShareByName,
     updateKnownShare,
     getUsernameHints,
     saveSmbCredentials,
     getSmbCredentials,
-    hasSmbCredentials,
     deleteSmbCredentials,
     listSharesWithCredentials,
     isKeychainError,
@@ -114,26 +110,17 @@ export {
     onScanPreviewCancelled,
     copyFiles,
     moveFiles,
-    deleteFiles,
     cancelWriteOperation,
     resolveWriteConflict,
-    listActiveOperations,
-    getOperationStatus,
-    isWriteOperationError,
     onWriteProgress,
     onWriteComplete,
     onWriteError,
     onWriteCancelled,
     onWriteConflict,
-    onScanProgress,
-    onScanConflict,
-    onDryRunComplete,
-    onOperationEvents,
-    calculateOperationStats,
     formatBytes,
     formatDuration,
 } from './write-operations'
-export type { Event, UnlistenFn, WriteOperationHandlers, WriteOperationStats } from './write-operations'
+export type { Event, UnlistenFn } from './write-operations'
 
 // Re-export types from write-operations (originally from file-explorer/types)
 export type {

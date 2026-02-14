@@ -3,8 +3,6 @@
  * Platform-specific - stores shortcuts as display strings.
  */
 
-import type { KeyCombo } from './types'
-
 /** Check if running on macOS */
 export function isMacOS(): boolean {
     if (typeof navigator === 'undefined') return false
@@ -96,19 +94,6 @@ export function formatKeyCombo(event: KeyboardEvent): string {
     }
 
     return isMacOS() ? parts.join('') : parts.join('+')
-}
-
-/**
- * Parse a KeyCombo from a keyboard event.
- */
-export function parseKeyCombo(event: KeyboardEvent): KeyCombo {
-    return {
-        meta: event.metaKey,
-        ctrl: event.ctrlKey,
-        alt: event.altKey,
-        shift: event.shiftKey,
-        key: isModifierKey(event.key) ? '' : normalizeKeyName(event.key),
-    }
 }
 
 /**

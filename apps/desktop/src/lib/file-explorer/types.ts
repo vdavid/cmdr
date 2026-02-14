@@ -22,19 +22,6 @@ export interface FileEntry {
 export type SyncStatus = 'synced' | 'online_only' | 'uploading' | 'downloading' | 'unknown'
 
 /**
- * Result of starting a new directory listing (synchronous).
- * The listing caches entries on the backend for on-demand fetching.
- */
-export interface ListingStartResult {
-    /** Unique listing ID for subsequent API calls */
-    listingId: string
-    /** Total number of visible entries in the directory */
-    totalCount: number
-    /** Maximum filename width in pixels (for Brief mode columns). None if font metrics not available. */
-    maxFilenameWidth?: number
-}
-
-/**
  * Status of a streaming directory listing.
  */
 export type ListingStatus = 'loading' | 'ready' | 'cancelled' | { error: string }
