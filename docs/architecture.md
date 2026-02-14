@@ -1,6 +1,6 @@
 # Architecture
 
-Map of Cmdr's major subsystems. Each directory with a `CLAUDE.md` has detailed docs auto-discovered by Claude Code.
+Map of Cmdr's major subsystems. Each directory has detailed docs in their `CLAUDE.md` file!
 
 ## Frontend (Svelte 5 + TypeScript)
 

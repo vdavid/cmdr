@@ -35,7 +35,7 @@ Core structure:
     - `adr/` - Architecture decision records
     - `guides/` - How-to guides
     - `tooling/` - Internal tooling docs
-    - `architecture.md` - Map of all subsystems with pointers to colocated `CLAUDE.md` files
+    - `architecture.md` - Map of all subsystems with links to their `CLAUDE.md` files ← You probably want to know this!
     - `style-guide.md` - Writing and code style rules
     - `security.md` - Security policies
 - Feature-level docs live in **colocated `CLAUDE.md` files** next to the code (for example,

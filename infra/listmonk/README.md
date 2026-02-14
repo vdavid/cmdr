@@ -136,24 +136,23 @@ And inside the existing `getcmdr.com` block:
 
 ```caddy
 getcmdr.com {
-    # Listmonk public pages (opt-in confirmation, subscription management, archive)
-    handle /subscription/* {
+    # Listmonk: rewrite our custom paths to listmonk's expected paths
+    handle /webhooks/ses {
+        rewrite * /webhooks/service/ses
         reverse_proxy listmonk:9000
     }
-
-    # Newsletter subscription API (proxied to Listmonk)
     handle /api/newsletter/subscribe {
         rewrite * /api/public/subscription
         reverse_proxy listmonk:9000
     }
 
-    # SES bounce webhook (proxied to Listmonk)
-    handle /webhooks/ses {
-        rewrite * /webhooks/service/ses
+    # Listmonk: all public routes (pages, assets, campaign links, archive)
+    @listmonk path /subscription/* /public/* /campaign/* /link/* /archive /archive/* /archive.xml /api/public/*
+    handle @listmonk {
         reverse_proxy listmonk:9000
     }
 
-    # ... existing rules unchanged
+    # ... existing website rules unchanged
 }
 ```
 
