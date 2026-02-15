@@ -7,6 +7,54 @@ and we use [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Add file viewer (F3) with three-backend architecture for files of any size, virtual scrolling, search with multibyte support, word wrap, horizontal scrolling, and keyboard shortcuts ([79268a4](https://github.com/vdavid/cmdr/commit/79268a4), [9f91bce](https://github.com/vdavid/cmdr/commit/9f91bce), [b10002a](https://github.com/vdavid/cmdr/commit/b10002a), [2ad2521](https://github.com/vdavid/cmdr/commit/2ad2521), [b65c422](https://github.com/vdavid/cmdr/commit/b65c422), [43adc86](https://github.com/vdavid/cmdr/commit/43adc86))
+- Add drag-and-drop into Cmdr: pane and folder-level targeting, canvas overlay with file names and icons, Alt to switch copy/move, smart overlay suppression for large source images ([1ad1493](https://github.com/vdavid/cmdr/commit/1ad1493), [6207d8e](https://github.com/vdavid/cmdr/commit/6207d8e), [a89f18f](https://github.com/vdavid/cmdr/commit/a89f18f), [371746b](https://github.com/vdavid/cmdr/commit/371746b), [a3eae1c](https://github.com/vdavid/cmdr/commit/a3eae1c), [c776eed](https://github.com/vdavid/cmdr/commit/c776eed), [e97d3db](https://github.com/vdavid/cmdr/commit/e97d3db))
+- Add settings window (⌘,) with declarative registry, fuzzy search, persistence, keyboard shortcut customization with conflict detection, and cross-window sync ([db121f6](https://github.com/vdavid/cmdr/commit/db121f6), [418f790](https://github.com/vdavid/cmdr/commit/418f790), [8f78596](https://github.com/vdavid/cmdr/commit/8f78596), [218b79b](https://github.com/vdavid/cmdr/commit/218b79b), [9c39db3](https://github.com/vdavid/cmdr/commit/9c39db3), [4e90137](https://github.com/vdavid/cmdr/commit/4e90137))
+- Add MTP (Android device) support: browsing, file operations (copy, delete, rename, new folder), USB hotplug, multi-storage, MTP-to-MTP transfers ([938e87c](https://github.com/vdavid/cmdr/commit/938e87c), [672fa6e](https://github.com/vdavid/cmdr/commit/672fa6e), [d1e9f80](https://github.com/vdavid/cmdr/commit/d1e9f80), [7ac1528](https://github.com/vdavid/cmdr/commit/7ac1528), [b08af36](https://github.com/vdavid/cmdr/commit/b08af36), [ea845a6](https://github.com/vdavid/cmdr/commit/ea845a6), [fd8dad6](https://github.com/vdavid/cmdr/commit/fd8dad6))
+- Add move feature (F6) reusing the copy UI as a unified transfer abstraction ([682d33a](https://github.com/vdavid/cmdr/commit/682d33a), [cb9e047](https://github.com/vdavid/cmdr/commit/cb9e047))
+- Add rename feature with edge-case handling ([62799c6](https://github.com/vdavid/cmdr/commit/62799c6))
+- Add swap panes feature with ⌘U shortcut ([2a1b329](https://github.com/vdavid/cmdr/commit/2a1b329))
+- Add local AI for folder name suggestions in New Folder dialog, optional download ([b9a112e](https://github.com/vdavid/cmdr/commit/b9a112e), [3dc19c0](https://github.com/vdavid/cmdr/commit/3dc19c0))
+- Add chunked copy with cancellation and pause support on network drives ([ba5409e](https://github.com/vdavid/cmdr/commit/ba5409e))
+- Add 6 copy/move safety checks: path canonicalization, writability, disk space, inode identity, name length, special file filtering ([9548022](https://github.com/vdavid/cmdr/commit/9548022))
+- Add sync status polling so iCloud/Dropbox icons update in real time ([ed36158](https://github.com/vdavid/cmdr/commit/ed36158), [6296412](https://github.com/vdavid/cmdr/commit/6296412))
+- Add CSP to Tauri webview for XSS protection ([68bd510](https://github.com/vdavid/cmdr/commit/68bd510))
+- Add copy/move folder-into-subfolder warning with clear error message ([521ab5e](https://github.com/vdavid/cmdr/commit/521ab5e))
+
+### Fixed
+
+- Fix panes getting stale when current directory or its parents are deleted ([1b5ad52](https://github.com/vdavid/cmdr/commit/1b5ad52))
+- Fix multi-window race conditions that could crash the app ([9a33e24](https://github.com/vdavid/cmdr/commit/9a33e24))
+- Fix recovering from poisoned mutexes instead of crashing (56 lock sites) ([62fd685](https://github.com/vdavid/cmdr/commit/62fd685))
+- Fix wrong cursor position after show/hide hidden files ([223b041](https://github.com/vdavid/cmdr/commit/223b041))
+- Fix selection and cursor position breaking on sort change ([36d61d0](https://github.com/vdavid/cmdr/commit/36d61d0))
+- Fix panel unresponsive after Brief/Full view change ([2b6d513](https://github.com/vdavid/cmdr/commit/2b6d513))
+- Fix copy operationId capture race condition ([9b5c57c](https://github.com/vdavid/cmdr/commit/9b5c57c))
+- Fix $effect listener cleanup race in FilePane ([e2c6ee1](https://github.com/vdavid/cmdr/commit/e2c6ee1))
+- Fix condvar hang on unresolved conflict dialog ([2975c45](https://github.com/vdavid/cmdr/commit/2975c45))
+- Fix first click on main window not changing file focus ([59c5da4](https://github.com/vdavid/cmdr/commit/59c5da4))
+- Fix AppleScript injection in get_info command ([e3378c3](https://github.com/vdavid/cmdr/commit/e3378c3))
+- Fix URL-encoding of SMB username in smbutil URLs ([f908a74](https://github.com/vdavid/cmdr/commit/f908a74))
+- Fix mouse/keyboard interaction bug for volume picker ([8afd0de](https://github.com/vdavid/cmdr/commit/8afd0de))
+- Fix drop coordinates when DevTools is docked ([a9a041f](https://github.com/vdavid/cmdr/commit/a9a041f))
+- Fix MCP server always returning left pane as selected ([2f9160a](https://github.com/vdavid/cmdr/commit/2f9160a))
+- Redact PII from production log statements ([fe31316](https://github.com/vdavid/cmdr/commit/fe31316))
+
+### Non-app
+
+- Migrate network discovery from NSNetServiceBrowser to mdns-sd: 68% code reduction, no unsafe code ([3d44cf1](https://github.com/vdavid/cmdr/commit/3d44cf1))
+- Rewrite MCP server with fewer tools but more capabilities, auto-reconnect, and instructions field ([1061fad](https://github.com/vdavid/cmdr/commit/1061fad), [ede6463](https://github.com/vdavid/cmdr/commit/ede6463), [82345d1](https://github.com/vdavid/cmdr/commit/82345d1))
+- Introduce ModalDialog component for all soft modals with drag support ([ffbf14a](https://github.com/vdavid/cmdr/commit/ffbf14a))
+- Major refactors: split DualPaneExplorer, FilePane, volume_copy, listing/operations, connection modules ([04dc3de](https://github.com/vdavid/cmdr/commit/04dc3de), [e14c289](https://github.com/vdavid/cmdr/commit/e14c289), [2da8e6d](https://github.com/vdavid/cmdr/commit/2da8e6d), [c0bd500](https://github.com/vdavid/cmdr/commit/c0bd500), [707a96a](https://github.com/vdavid/cmdr/commit/707a96a))
+- Security: pin GitHub Actions to commit SHAs, fix Paddle webhook timing attack, use crypto.getRandomValues for license codes, HTML-escape license emails, add webhook idempotency, constant-time admin auth ([c0d8cc3](https://github.com/vdavid/cmdr/commit/c0d8cc3), [70bc594](https://github.com/vdavid/cmdr/commit/70bc594), [51cd0b5](https://github.com/vdavid/cmdr/commit/51cd0b5), [bea3b2a](https://github.com/vdavid/cmdr/commit/bea3b2a), [9db450b](https://github.com/vdavid/cmdr/commit/9db450b), [b82f857](https://github.com/vdavid/cmdr/commit/b82f857))
+- Docs overhaul: add colocated CLAUDE.md files throughout repo, architecture.md, branding guide ([eac9e61](https://github.com/vdavid/cmdr/commit/eac9e61), [dd91c78](https://github.com/vdavid/cmdr/commit/dd91c78))
+- Website: add changelog, roadmap, newsletter signup with Listmonk + AWS SES, mobile responsiveness fixes, 512px logo ([643de6a](https://github.com/vdavid/cmdr/commit/643de6a), [07936d1](https://github.com/vdavid/cmdr/commit/07936d1), [ba4812d](https://github.com/vdavid/cmdr/commit/ba4812d), [aa661cf](https://github.com/vdavid/cmdr/commit/aa661cf))
+- Add dead code check, manual CI trigger, pnpm security audit, LoC counter, summary job for branch protection ([9876600](https://github.com/vdavid/cmdr/commit/9876600), [3b20e66](https://github.com/vdavid/cmdr/commit/3b20e66), [ad22eba](https://github.com/vdavid/cmdr/commit/ad22eba))
+- Tooling: extract shared Go check helpers, add VNC mode for Linux testing, fix Linux E2E environment ([550c353](https://github.com/vdavid/cmdr/commit/550c353), [6aa5ff7](https://github.com/vdavid/cmdr/commit/6aa5ff7), [fa907b6](https://github.com/vdavid/cmdr/commit/fa907b6))
+- License server: add input validation, webhook idempotency, and security hardening ([4363a32](https://github.com/vdavid/cmdr/commit/4363a32), [9db450b](https://github.com/vdavid/cmdr/commit/9db450b), [7398965](https://github.com/vdavid/cmdr/commit/7398965))
+
 ## [0.4.0] - 2026-01-27
 
 ### Added

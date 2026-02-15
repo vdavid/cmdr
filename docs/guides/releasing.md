@@ -10,7 +10,7 @@ How to release a new version of Cmdr.
 
 1. Ask an agent to update the changelog with this prompt:
    ```
-   Read @AGENTS.md and @docs/style-guide.md, then update CHANGELOG.md based on git commits since last release.
+   I'm doing a release based on @docs/guides/releasing.md. Update CHANGELOG.md based on git commits since last release.
    Read the existing changelog to match its style. Note: commits have title + body – read all!
    You can link multiple commits for changelog items if needed. List major but non-app changes in a "Non-app" section.
    ```
