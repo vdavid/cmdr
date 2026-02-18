@@ -86,6 +86,47 @@ point, all sizes are accurate anyway.
 **Deduplication**: If a micro-scan is already running or completed for a path, skip it. If the full scan has already
 computed stats for a path (post-completion), skip micro-scans for it.
 
+### Single-writer architecture
+
+All SQLite writes go through a dedicated writer thread. This eliminates contention between the full scan, micro-scans,
+and watcher updates. Reads happen on separate connections (WAL mode allows concurrent reads).
+
+```
+                          ┌─────────────────────────────────┐
+Full scan ──WriteBatch──► │                                 │
+                          │  Writer thread (owns connection) │──► SQLite DB
+Micro-scans ─WriteDirStats│  Processes messages in order     │      (WAL mode)
+              (priority)  │  Prioritizes DirStats over Batch │
+                          │                                 │
+Watcher ───WriteDeltas──► │                                 │
+                          └─────────────────────────────────┘
+
+Read connections (any thread):
+  Listing enrichment ──► SELECT dir_stats ──► SQLite DB (WAL: concurrent reads OK)
+  Debug UI status    ──► SELECT meta      ──►
+```
+
+**Write message types** (mpsc channel):
+
+```rust
+enum WriteMessage {
+    /// Full scan: batch of entries. Lowest priority.
+    InsertEntries(Vec<ScannedEntry>),
+    /// Micro-scan or watcher: dir_stats updates. Highest priority — processed before pending batches.
+    UpdateDirStats(Vec<DirStatsUpdate>),
+    /// Full scan complete: trigger bottom-up aggregation.
+    ComputeAllAggregates,
+    /// Watcher: incremental delta propagation for a single file change.
+    PropagateDelta { path: PathBuf, size_delta: i64, file_count_delta: i32, dir_count_delta: i32 },
+    /// Shutdown.
+    Shutdown,
+}
+```
+
+**Priority handling**: The writer thread checks for `UpdateDirStats` messages first (via `try_recv` loop draining
+those), then processes one `InsertEntries` batch, then checks again. This ensures micro-scan results are written
+promptly even while the full scan is pushing large batches.
+
 ### SQLite schema
 
 ```sql
@@ -231,10 +272,11 @@ src-tauri/src/indexing/
 ├── mod.rs              -- Public API: init(), start_scan(), get_dir_stats(), prioritize_dir(), etc.
 ├── scanner.rs          -- jwalk-based parallel directory walker (full scan + subtree scan)
 ├── micro_scan.rs       -- MicroScanManager: priority queue, task pool, dedup, cancellation
-├── store.rs            -- SQLite operations: insert, query, aggregate computation
+├── writer.rs           -- Single writer thread: owns DB write connection, processes WriteMessage channel
+├── store.rs            -- SQLite schema, read queries (get_dir_stats, get_status), DB open/migrate
 ├── watcher.rs          -- Drive-level FSEvents watcher (root "/" recursive)
 ├── reconciler.rs       -- Buffer events during scan, replay after scan completes
-└── aggregator.rs       -- Dir stats computation (bottom-up + incremental propagation)
+└── aggregator.rs       -- Dir stats computation (bottom-up + incremental propagation), runs on writer thread
 
 src-tauri/src/commands/indexing.rs -- Tauri IPC command definitions
 
