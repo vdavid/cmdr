@@ -381,6 +381,7 @@ pub fn get_window_title(status: &AppStatus) -> String {
 /// Reset license data (for testing only).
 #[cfg(debug_assertions)]
 pub fn reset_license(app: &tauri::AppHandle) {
+    crate::licensing::verification::clear_license_cache();
     if let Ok(store) = app.store("license.json") {
         store.delete("license_key");
         store.delete(STORE_KEY_CACHED_STATUS);

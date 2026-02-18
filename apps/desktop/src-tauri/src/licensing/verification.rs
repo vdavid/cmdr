@@ -6,7 +6,12 @@ use crate::licensing::validation_client::{activate_short_code, is_short_code};
 use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
 use ed25519_dalek::{Signature, Verifier, VerifyingKey};
 use serde::{Deserialize, Serialize};
+use std::sync::Mutex;
 use tauri_plugin_store::StoreExt;
+
+/// In-memory cache for verified license info. Avoids re-parsing and re-verifying
+/// the Ed25519 signature on every call to `get_license_info`.
+static LICENSE_CACHE: Mutex<Option<LicenseInfo>> = Mutex::new(None);
 
 // Ed25519 public key (32 bytes, hex-encoded).
 // Generate this with: cd apps/license-server && pnpm run generate-keys
@@ -49,13 +54,20 @@ fn activate_license_internal(
         store.set(STORE_KEY_SHORT_CODE, serde_json::json!(code));
     }
 
-    Ok(LicenseInfo {
+    let info = LicenseInfo {
         email: data.email,
         transaction_id: data.transaction_id,
         issued_at: data.issued_at,
         organization_name: data.organization_name,
         short_code: short_code.map(|s| s.to_string()),
-    })
+    };
+
+    // Update the in-memory cache with the newly activated license
+    if let Ok(mut cache) = LICENSE_CACHE.lock() {
+        *cache = Some(info.clone());
+    }
+
+    Ok(info)
 }
 
 /// Activate a license key (full key, not short code). Returns the license info if valid.
@@ -79,21 +91,43 @@ pub async fn activate_license_async(app: &tauri::AppHandle, input: &str) -> Resu
     activate_license_internal(app, &full_key, short_code)
 }
 
-/// Get stored license info, if any.
+/// Get stored license info, if any. Returns a cached result after the first successful verification.
 pub fn get_license_info(app: &tauri::AppHandle) -> Option<LicenseInfo> {
+    // Fast path: return cached info if available
+    if let Ok(cache) = LICENSE_CACHE.lock()
+        && let Some(ref info) = *cache
+    {
+        return Some(info.clone());
+    }
+
+    // Slow path: read from store and verify Ed25519 signature
     let store = app.store("license.json").ok()?;
     let license_key = store.get(STORE_KEY_LICENSE)?.as_str()?.to_string();
     let short_code = store
         .get(STORE_KEY_SHORT_CODE)
         .and_then(|v| v.as_str().map(|s| s.to_string()));
 
-    validate_license_key(&license_key).ok().map(|data| LicenseInfo {
+    let info = validate_license_key(&license_key).ok().map(|data| LicenseInfo {
         email: data.email,
         transaction_id: data.transaction_id,
         issued_at: data.issued_at,
         organization_name: data.organization_name,
         short_code,
-    })
+    })?;
+
+    // Populate cache for subsequent calls
+    if let Ok(mut cache) = LICENSE_CACHE.lock() {
+        *cache = Some(info.clone());
+    }
+
+    Some(info)
+}
+
+/// Clear the in-memory license cache. Called when the license is reset.
+pub fn clear_license_cache() {
+    if let Ok(mut cache) = LICENSE_CACHE.lock() {
+        *cache = None;
+    }
 }
 
 /// Validate a license key and extract the data.

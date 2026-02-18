@@ -444,15 +444,13 @@
         // Register known dialog types with backend (for MCP "available dialogs" resource)
         void registerKnownDialogs(SOFT_DIALOG_REGISTRY)
 
-        // Load license status first (non-blocking - don't prevent app load on failure)
+        // Load license status from cache (fast, no network)
         try {
-            let licenseStatus = await loadLicenseStatus()
+            const licenseStatus = await loadLicenseStatus()
 
-            // Trigger background validation if needed
-            const validatedStatus = await triggerValidationIfNeeded()
-            if (validatedStatus) {
-                licenseStatus = validatedStatus
-            }
+            // Fire-and-forget: validate with server in background if needed.
+            // Updates the cache silently; next launch picks up the result.
+            void triggerValidationIfNeeded()
 
             // Check if we need to show expiration modal
             if (licenseStatus.type === 'expired' && licenseStatus.showModal) {
