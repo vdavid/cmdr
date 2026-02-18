@@ -15,8 +15,8 @@ scanned the _entire drive_ on startup, and then watched for changes? Then we'd h
 system, sitting in memory or a small DB.
 
 I thought there _obviously_ had to be some technical limitations that prevent this. But I asked the robots anyway
-whether we could do it, and waited for the results half-asleep. Then they came back saying _yessir, we can actually
-do this!_
+whether we could do it, and waited for the results half-asleep. Then they came back saying _yessir, we can actually do
+this!_
 
 <!-- more -->
 
