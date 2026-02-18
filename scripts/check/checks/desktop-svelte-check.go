@@ -21,7 +21,8 @@ func RunSvelteCheck(ctx *CheckContext) (CheckResult, error) {
 	}
 
 	// Check for warnings in output
-	if strings.Contains(output, " warning") && !strings.Contains(output, "0 warnings") {
+	lower := strings.ToLower(output)
+	if strings.Contains(lower, " warning") && !strings.Contains(lower, "0 warnings") {
 		return CheckResult{}, fmt.Errorf("svelte-check found warnings\n%s", indentOutput(output))
 	}
 
