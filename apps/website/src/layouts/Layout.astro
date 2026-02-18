@@ -4,11 +4,13 @@ import { ClientRouter } from 'astro:transitions'
 interface Props {
     title: string
     description?: string
+    ogImage?: string
 }
 
 const {
     title,
     description = 'The AI-native file manager. Rename files with natural language, search by describing what you need, and navigate with keyboard-first controls.',
+    ogImage,
 } = Astro.props
 ---
 
@@ -25,17 +27,22 @@ const {
         <meta property="og:title" content={title} />
         <meta property="og:description" content={description} />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://getcmdr.com" />
+        <meta property="og:url" content={Astro.url.href} />
+        {ogImage && <meta property="og:image" content={new URL(ogImage, Astro.site).href} />}
 
         <!-- Twitter -->
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={title} />
         <meta name="twitter:description" content={description} />
+        {ogImage && <meta name="twitter:image" content={new URL(ogImage, Astro.site).href} />}
 
         <!-- Favicon -->
         <link rel="icon" href="/favicon.ico" sizes="32x32" />
         <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+        <!-- RSS autodiscovery -->
+        <link rel="alternate" type="application/rss+xml" title="Cmdr blog" href="/rss.xml" />
 
         <!-- Preload self-hosted font for faster FCP -->
         <link rel="preload" as="font" type="font/woff2" href="/fonts/inter-latin-variable.woff2" crossorigin />

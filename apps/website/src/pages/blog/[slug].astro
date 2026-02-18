@@ -1,0 +1,26 @@
+---
+import BlogLayout from '../../layouts/BlogLayout.astro'
+import Remark42Comments from '../../components/Remark42Comments.astro'
+import { getCollection, render } from 'astro:content'
+
+export async function getStaticPaths() {
+    const posts = await getCollection('blog')
+    return posts.map((post) => ({
+        params: { slug: post.id },
+        props: { post },
+    }))
+}
+
+const { post } = Astro.props
+const { Content } = await render(post)
+---
+
+<BlogLayout
+    title={post.data.title}
+    description={post.data.description}
+    date={post.data.date.toISOString().slice(0, 10)}
+    ogImage={`/og/${post.id}.png`}
+>
+    <Content />
+    <Remark42Comments />
+</BlogLayout>

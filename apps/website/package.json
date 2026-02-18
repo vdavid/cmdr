@@ -18,9 +18,14 @@
         "test:lighthouse": "lhci autorun"
     },
     "dependencies": {
+        "@astrojs/rss": "4.0.15",
+        "@resvg/resvg-js": "2.6.2",
         "@tailwindcss/vite": "^4.1.18",
         "astro": "^5.17.1",
         "marked": "^17.0.1",
+        "rehype-external-links": "3.0.0",
+        "satori": "0.19.2",
+        "sharp": "^0.34.5",
         "tailwindcss": "^4.1.18"
     },
     "devDependencies": {

@@ -1,0 +1,49 @@
+---
+import Layout from './Layout.astro'
+import Header from '../components/Header.astro'
+import Footer from '../components/Footer.astro'
+import BlogImageClick from '../components/BlogImageClick.astro'
+
+interface Props {
+    title: string
+    description: string
+    date: string
+    ogImage?: string
+}
+
+const { title, description, date, ogImage } = Astro.props
+
+const formattedDate = new Date(date).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+})
+---
+
+<Layout title={`${title} — Cmdr blog`} description={description} ogImage={ogImage}>
+    <Header />
+    <main class="mx-auto max-w-3xl px-6 pt-32 pb-24">
+        <header class="mb-12">
+            <time class="text-sm text-[var(--color-text-tertiary)]" datetime={date}>
+                {formattedDate}
+            </time>
+            <h1 class="mt-2 mb-4 text-4xl font-bold tracking-tight text-[var(--color-text-primary)]">
+                {title}
+            </h1>
+            <p class="text-lg text-[var(--color-text-secondary)]">
+                {description}
+            </p>
+        </header>
+
+        <article class="blog-content">
+            <slot />
+        </article>
+    </main>
+    <Footer />
+</Layout>
+
+<BlogImageClick />
+
+<style>
+    @import '../styles/blog-prose.css';
+</style>

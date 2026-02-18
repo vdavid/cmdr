@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="800" viewBox="0 0 1500 800">
+  <rect width="1500" height="800" fill="#0a0a0b"/>
+  <rect x="50" y="50" width="1400" height="700" rx="24" fill="#141416"/>
+  <text x="750" y="380" text-anchor="middle" font-family="system-ui, sans-serif" font-size="64" font-weight="700" fill="#e5e5e7">Hello, world</text>
+  <text x="750" y="440" text-anchor="middle" font-family="system-ui, sans-serif" font-size="24" fill="#8b8b8e">The Cmdr blog is live</text>
+</svg>

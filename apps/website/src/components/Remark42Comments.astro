@@ -1,0 +1,60 @@
+---
+const isDev = import.meta.env.DEV
+const remark42Host = 'https://comments.getcmdr.com'
+---
+
+<section class="comments-section">
+    <h2 class="comments-heading">Comments</h2>
+    {
+        isDev ? (
+            <div class="comments-placeholder">
+                <p>Comments are disabled in dev mode</p>
+            </div>
+        ) : (
+            <div id="remark42" />
+        )
+    }
+</section>
+
+<script is:inline define:vars={{ remark42Host, isDev }}>
+    if (!isDev) {
+        window.remark_config = {
+            host: remark42Host,
+            site_id: 'getcmdr',
+            theme: 'dark',
+            max_shown_comments: 25,
+        }
+        const script = document.createElement('script')
+        script.src = `${remark42Host}/web/embed.js`
+        script.defer = true
+        document.head.appendChild(script)
+    }
+</script>
+
+<style>
+    .comments-section {
+        margin-top: 3rem;
+        padding-top: 2rem;
+        border-top: 1px solid var(--color-border);
+    }
+
+    .comments-heading {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--color-text-primary);
+        margin-bottom: 1.5rem;
+    }
+
+    .comments-placeholder {
+        padding: 2rem;
+        border-radius: 0.75rem;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        text-align: center;
+    }
+
+    .comments-placeholder p {
+        color: var(--color-text-tertiary);
+        font-size: 0.875rem;
+    }
+</style>

@@ -1,7 +1,7 @@
 {
     "name": "cmdr",
     "private": true,
-    "packageManager": "pnpm@10.27.0",
+    "packageManager": "pnpm@10.30.0",
     "scripts": {
         "preinstall": "npx only-allow pnpm",
         "dev": "RUST_LOG=${RUST_LOG:-smb=warn,sspi=warn,info} pnpm --filter @cmdr/desktop tauri dev",

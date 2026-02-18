@@ -1,0 +1,10 @@
+<!-- Adds click-to-open-fullsize behavior to all images inside `.blog-content` containers -->
+<script>
+    document.addEventListener('astro:page-load', () => {
+        document.querySelectorAll<HTMLImageElement>('.blog-content img').forEach((img) => {
+            img.addEventListener('click', () => {
+                if (img.src) window.open(img.src, '_blank')
+            })
+        })
+    })
+</script>

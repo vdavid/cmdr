@@ -24,6 +24,7 @@ export default tseslint.config(
             prettier,
         },
         languageOptions: {
+            parser: tseslint.parser,
             ecmaVersion: 'latest',
             sourceType: 'module',
             globals: {

@@ -8,6 +8,27 @@ services:
         networks:
             - proxy-net
 
+    # Caddy route needed: comments.getcmdr.com -> remark42:8080
+    remark42:
+        image: umputun/remark42:latest
+        container_name: remark42
+        restart: unless-stopped
+        volumes:
+            - remark42-data:/srv/var
+        environment:
+            - REMARK_URL=https://comments.getcmdr.com
+            - SECRET=${REMARK42_SECRET}
+            - SITE=getcmdr
+            - AUTH_GOOGLE_CID=${AUTH_GOOGLE_CID}
+            - AUTH_GOOGLE_CSEC=${AUTH_GOOGLE_CSEC}
+            - AUTH_GITHUB_CID=${AUTH_GITHUB_CID}
+            - AUTH_GITHUB_CSEC=${AUTH_GITHUB_CSEC}
+        networks:
+            - proxy-net
+
 networks:
     proxy-net:
         external: true
+
+volumes:
+    remark42-data:

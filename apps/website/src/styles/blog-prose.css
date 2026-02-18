@@ -1,0 +1,116 @@
+/* Blog prose styles — scoped under .blog-content for Astro component isolation */
+
+.blog-content :global(h2) {
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.blog-content :global(h3) {
+    margin-top: 1.75rem;
+    margin-bottom: 0.75rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.blog-content :global(p) {
+    margin-bottom: 1rem;
+    line-height: 1.75;
+    color: var(--color-text-secondary);
+}
+
+.blog-content :global(ul) {
+    margin-bottom: 1rem;
+    padding-left: 1.5rem;
+    list-style-type: disc;
+}
+
+.blog-content :global(ol) {
+    margin-bottom: 1rem;
+    padding-left: 1.5rem;
+    list-style-type: decimal;
+}
+
+.blog-content :global(li) {
+    margin-bottom: 0.5rem;
+    line-height: 1.75;
+    color: var(--color-text-secondary);
+}
+
+.blog-content :global(a) {
+    color: var(--color-accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: color 0.2s;
+}
+
+.blog-content :global(a:hover) {
+    color: var(--color-accent-hover);
+}
+
+.blog-content :global(a[target='_blank'])::after {
+    content: ' ↗';
+    font-size: 0.75em;
+}
+
+.blog-content :global(code:not(pre code)) {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 0.25rem;
+    padding: 0.125rem 0.375rem;
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+}
+
+.blog-content :global(pre) {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    padding: 1rem 1.25rem;
+    overflow-x: auto;
+    margin-bottom: 1.5rem;
+}
+
+.blog-content :global(pre code) {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: inherit;
+}
+
+.blog-content :global(blockquote) {
+    border-left: 3px solid var(--color-accent);
+    background: var(--color-surface);
+    padding: 1rem 1.25rem;
+    margin: 1.5rem 0;
+    border-radius: 0 0.5rem 0.5rem 0;
+    font-style: italic;
+}
+
+.blog-content :global(blockquote p:last-child) {
+    margin-bottom: 0;
+}
+
+.blog-content :global(img) {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    border: 1px solid var(--color-border-subtle);
+    margin: 1.5rem 0;
+    display: block;
+}
+
+.blog-content :global(hr) {
+    border: none;
+    border-top: 1px solid var(--color-border);
+    margin: 2rem 0;
+}
+
+.blog-content :global(strong) {
+    color: var(--color-text-primary);
+    font-weight: 600;
+}
