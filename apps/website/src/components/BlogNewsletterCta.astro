@@ -1,0 +1,183 @@
+---
+import NewsletterForm from './NewsletterForm.astro'
+---
+
+<aside class="newsletter-cta" data-newsletter-cta aria-label="Newsletter signup">
+    <div data-newsletter-cta-content>
+        <p class="newsletter-cta__headline">Enjoying this? Get Cmdr updates in your inbox.</p>
+        <p class="newsletter-cta__subline">Product news, tips, and behind-the-scenes stories. No spam, ever.</p>
+
+        <div class="newsletter-cta__form">
+            <NewsletterForm variant="inline" />
+        </div>
+
+        <div class="newsletter-cta__dismiss-row">
+            <button type="button" class="newsletter-cta__not-interested" data-newsletter-cta-dismiss>
+                Not interested
+            </button>
+        </div>
+    </div>
+
+    <p class="newsletter-cta__confirmation" data-newsletter-cta-confirmation>
+        Hidden across the site. Changed your mind? There's a signup in the footer.
+    </p>
+</aside>
+
+<style>
+    .newsletter-cta {
+        position: relative;
+        margin: 2rem 0;
+        padding: 1.5rem;
+        border-radius: 0.75rem;
+        border: 1px solid var(--color-border);
+        border-top: 2px solid var(--color-accent);
+        background: var(--color-surface);
+    }
+
+    .newsletter-cta[data-dismissed] {
+        display: none;
+    }
+
+    .newsletter-cta__headline {
+        margin: 0 0 0.25rem;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--color-text-primary);
+    }
+
+    .newsletter-cta__subline {
+        margin: 0 0 1rem;
+        font-size: 0.875rem;
+        color: var(--color-text-secondary);
+    }
+
+    .newsletter-cta__form {
+        max-width: 28rem;
+    }
+
+    .newsletter-cta__dismiss-row {
+        margin-top: 0.75rem;
+        text-align: right;
+    }
+
+    .newsletter-cta__not-interested {
+        background: none;
+        border: none;
+        color: var(--color-text-tertiary);
+        font-size: 0.8125rem;
+        cursor: pointer;
+        padding: 0.25rem 0.5rem;
+        text-decoration: none;
+        transition: text-decoration var(--duration-normal);
+    }
+
+    .newsletter-cta__not-interested:hover {
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
+    .newsletter-cta__not-interested:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+    }
+
+    .newsletter-cta__confirmation {
+        display: none;
+        font-size: 0.8125rem;
+        color: var(--color-text-secondary);
+        margin: 0;
+        transition: opacity var(--duration-slow);
+    }
+
+    .newsletter-cta__confirmation[data-visible] {
+        display: block;
+    }
+
+    .newsletter-cta__confirmation[data-fading] {
+        opacity: 0;
+    }
+
+    [data-newsletter-cta-content][data-hidden] {
+        display: none;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .newsletter-cta,
+        .newsletter-cta__confirmation {
+            transition: none !important;
+        }
+    }
+</style>
+
+<script>
+    function isNewsletterHidden(): boolean {
+        return (
+            localStorage.getItem('newsletter-subscribed') === 'true' ||
+            localStorage.getItem('newsletter-dismissed') === 'true' ||
+            localStorage.getItem('newsletter-cta-dismissed') === 'true'
+        )
+    }
+
+    function hideConfirmationAfterDelay(confirmation: HTMLElement) {
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        if (prefersReducedMotion) {
+            confirmation.removeAttribute('data-visible')
+            return
+        }
+
+        setTimeout(() => {
+            confirmation.setAttribute('data-fading', '')
+            setTimeout(() => {
+                confirmation.removeAttribute('data-visible')
+                confirmation.removeAttribute('data-fading')
+            }, 500)
+        }, 3000)
+    }
+
+    document.addEventListener('astro:page-load', () => {
+        const ctas = document.querySelectorAll<HTMLElement>('[data-newsletter-cta]')
+
+        if (isNewsletterHidden()) {
+            ctas.forEach((cta) => {
+                cta.dataset.dismissed = ''
+            })
+            return
+        }
+
+        ctas.forEach((cta) => {
+            const dismissButton = cta.querySelector<HTMLButtonElement>('[data-newsletter-cta-dismiss]')
+            if (!dismissButton || dismissButton.dataset.bound) return
+            dismissButton.dataset.bound = 'true'
+
+            dismissButton.addEventListener('click', () => {
+                localStorage.setItem('newsletter-dismissed', 'true')
+
+                // Hide content, show confirmation in this CTA
+                const content = cta.querySelector<HTMLElement>('[data-newsletter-cta-content]')
+                const confirmation = cta.querySelector<HTMLElement>('[data-newsletter-cta-confirmation]')
+                if (content) content.setAttribute('data-hidden', '')
+                if (confirmation) {
+                    confirmation.setAttribute('data-visible', '')
+                    hideConfirmationAfterDelay(confirmation)
+                }
+
+                // Hide all other CTAs on the page immediately
+                const allCtas = document.querySelectorAll<HTMLElement>('[data-newsletter-cta]')
+                allCtas.forEach((el) => {
+                    if (el !== cta) {
+                        el.dataset.dismissed = ''
+                    }
+                })
+
+                // Also hide any inline newsletter wrappers and header nav items
+                document.querySelectorAll<HTMLElement>('[data-newsletter-inline]').forEach((el) => {
+                    const otherContent = el.querySelector<HTMLElement>('[data-newsletter-inline-content]')
+                    if (otherContent) otherContent.setAttribute('data-hidden', '')
+                })
+                document.querySelectorAll<HTMLElement>('[data-newsletter-nav]').forEach((el) => {
+                    el.style.display = 'none'
+                })
+            })
+        })
+    })
+</script>

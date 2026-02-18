@@ -2,7 +2,7 @@
 import Layout from '../layouts/Layout.astro'
 import Header from '../components/Header.astro'
 import Footer from '../components/Footer.astro'
-import NewsletterForm from '../components/NewsletterForm.astro'
+import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro'
 import { marked } from 'marked'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -34,11 +34,8 @@ const htmlContent = await marked.parse(changelogContent)
 
         <article class="changelog-content" set:html={htmlContent} />
 
-        <div class="mt-16 text-center">
-            <p class="mb-3 text-[var(--color-text-secondary)]">Want to know when new versions drop?</p>
-            <div class="mx-auto max-w-sm">
-                <NewsletterForm variant="inline" />
-            </div>
+        <div class="mt-16">
+            <NewsletterInlineWrapper label="Want to know when new versions drop?" />
         </div>
     </main>
     <Footer />

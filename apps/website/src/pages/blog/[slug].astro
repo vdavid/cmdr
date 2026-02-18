@@ -1,5 +1,6 @@
 ---
 import BlogLayout from '../../layouts/BlogLayout.astro'
+import BlogNewsletterCta from '../../components/BlogNewsletterCta.astro'
 import Remark42Comments from '../../components/Remark42Comments.astro'
 import { getCollection, render } from 'astro:content'
 
@@ -22,5 +23,6 @@ const { Content } = await render(post)
     ogImage={`/og/${post.id}.png`}
 >
     <Content />
+    <BlogNewsletterCta />
     <Remark42Comments />
 </BlogLayout>

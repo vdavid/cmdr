@@ -36,6 +36,7 @@ const navLinks = [
                 aria-expanded="false"
                 aria-controls="newsletter-panel"
                 data-newsletter-toggle
+                data-newsletter-nav
             >
                 Newsletter
             </button>
@@ -139,7 +140,7 @@ const navLinks = [
             </a>
 
             <!-- Newsletter section (mobile) -->
-            <div class="mobile-menu__newsletter">
+            <div class="mobile-menu__newsletter" data-newsletter-nav>
                 <p class="mobile-menu__newsletter-label">Newsletter</p>
                 <p class="mobile-menu__newsletter-desc">Get Cmdr news in your inbox. No spam, we promise.</p>
                 <NewsletterForm variant="inline" />
@@ -336,11 +337,29 @@ const navLinks = [
 
 <script>
     document.addEventListener('astro:page-load', () => {
+        // Check if newsletter should be hidden site-wide
+        const newsletterHidden =
+            localStorage.getItem('newsletter-subscribed') === 'true' ||
+            localStorage.getItem('newsletter-dismissed') === 'true' ||
+            localStorage.getItem('newsletter-cta-dismissed') === 'true'
+
         // Desktop newsletter toggle
         const desktopToggle = document.querySelector<HTMLButtonElement>('[data-newsletter-toggle]')
         const newsletterPanel = document.getElementById('newsletter-panel')
 
-        if (desktopToggle && newsletterPanel) {
+        if (newsletterHidden) {
+            // Hide all newsletter nav elements
+            document.querySelectorAll<HTMLElement>('[data-newsletter-nav]').forEach((el) => {
+                el.style.display = 'none'
+            })
+            // Close the panel if it's open
+            if (newsletterPanel && newsletterPanel.getAttribute('aria-hidden') === 'false') {
+                newsletterPanel.setAttribute('aria-hidden', 'true')
+                if (desktopToggle) desktopToggle.setAttribute('aria-expanded', 'false')
+            }
+        }
+
+        if (desktopToggle && newsletterPanel && !newsletterHidden) {
             if (!desktopToggle.dataset.bound) {
                 desktopToggle.dataset.bound = 'true'
 

@@ -3,6 +3,7 @@ import Layout from '../../layouts/Layout.astro'
 import Header from '../../components/Header.astro'
 import Footer from '../../components/Footer.astro'
 import BlogImageClick from '../../components/BlogImageClick.astro'
+import BlogNewsletterCta from '../../components/BlogNewsletterCta.astro'
 import { getCollection, render } from 'astro:content'
 import { marked } from 'marked'
 
@@ -32,43 +33,46 @@ const postsWithExcerpts = await Promise.all(
         <h1 class="mb-12 text-4xl font-bold tracking-tight text-[var(--color-text-primary)]">Blog</h1>
 
         {
-            postsWithExcerpts.map(async ({ post, hasExcerpt, excerptHtml, formattedDate }) => {
+            postsWithExcerpts.map(async ({ post, hasExcerpt, excerptHtml, formattedDate }, index) => {
                 return (
-                    <article class="mb-16">
-                        <header class="mb-6">
-                            <time
-                                class="text-sm text-[var(--color-text-tertiary)]"
-                                datetime={post.data.date.toISOString().slice(0, 10)}
-                            >
-                                {formattedDate}
-                            </time>
-                            <h2 class="mt-1 text-2xl font-bold tracking-tight">
-                                <a
-                                    href={`/blog/${post.id}`}
-                                    class="text-[var(--color-text-primary)] no-underline transition-colors hover:text-[var(--color-accent)]"
+                    <>
+                        <article class="mb-16">
+                            <header class="mb-6">
+                                <time
+                                    class="text-sm text-[var(--color-text-tertiary)]"
+                                    datetime={post.data.date.toISOString().slice(0, 10)}
                                 >
-                                    {post.data.title}
-                                </a>
-                            </h2>
-                        </header>
-                        {hasExcerpt ? (
-                            <div class="blog-content">
-                                <Fragment set:html={excerptHtml} />
-                                <a href={`/blog/${post.id}`} class="read-more-link">
-                                    Read more &rarr;
-                                </a>
-                            </div>
-                        ) : (
-                            async () => {
-                                const { Content } = await render(post)
-                                return (
-                                    <div class="blog-content">
-                                        <Content />
-                                    </div>
-                                )
-                            }
-                        )}
-                    </article>
+                                    {formattedDate}
+                                </time>
+                                <h2 class="mt-1 text-2xl font-bold tracking-tight">
+                                    <a
+                                        href={`/blog/${post.id}`}
+                                        class="text-[var(--color-text-primary)] no-underline transition-colors hover:text-[var(--color-accent)]"
+                                    >
+                                        {post.data.title}
+                                    </a>
+                                </h2>
+                            </header>
+                            {hasExcerpt ? (
+                                <div class="blog-content">
+                                    <Fragment set:html={excerptHtml} />
+                                    <a href={`/blog/${post.id}`} class="read-more-link">
+                                        Read more &rarr;
+                                    </a>
+                                </div>
+                            ) : (
+                                async () => {
+                                    const { Content } = await render(post)
+                                    return (
+                                        <div class="blog-content">
+                                            <Content />
+                                        </div>
+                                    )
+                                }
+                            )}
+                        </article>
+                        {index === 0 && postsWithExcerpts.length >= 2 && <BlogNewsletterCta />}
+                    </>
                 )
             })
         }

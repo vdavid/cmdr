@@ -193,6 +193,7 @@ const uniqueId = `newsletter-${variant}-${Math.random().toString(36).slice(2, 8)
                     })
 
                     if (res.ok) {
+                        localStorage.setItem('newsletter-subscribed', 'true')
                         showFeedback('Check your inbox to confirm your subscription!', 'success')
                         emailInput.value = ''
                     } else {

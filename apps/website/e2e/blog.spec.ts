@@ -105,4 +105,51 @@ test.describe('Blog', () => {
         const blogLink = page.getByRole('navigation').getByRole('link', { name: 'Blog' })
         await expect(blogLink).toBeVisible()
     })
+
+    test('individual post shows newsletter CTA with signup form', async ({ page }) => {
+        await page.goto(`/blog/${slug}`)
+        const cta = page.locator('[data-newsletter-cta]')
+        await expect(cta).toBeVisible()
+        await expect(cta.locator('form[data-newsletter-form]')).toBeVisible()
+        await expect(cta.locator('input[type="email"]')).toBeVisible()
+        await expect(cta.locator('button[type="submit"]')).toBeVisible()
+    })
+
+    test('newsletter CTA "Not interested" hides it and persists across reload', async ({ page }) => {
+        await page.goto(`/blog/${slug}`)
+        const cta = page.locator('[data-newsletter-cta]')
+        await expect(cta).toBeVisible()
+
+        // Click "Not interested"
+        await page.locator('[data-newsletter-cta-dismiss]').click()
+
+        // Content should be hidden, confirmation should show
+        await expect(page.locator('[data-newsletter-cta-content]')).toBeHidden()
+        await expect(page.locator('[data-newsletter-cta-confirmation]')).toBeVisible()
+
+        // Verify localStorage was set with new key
+        const dismissed = await page.evaluate(() => localStorage.getItem('newsletter-dismissed'))
+        expect(dismissed).toBe('true')
+
+        // Reload and verify CTA is completely hidden
+        await page.reload()
+        await expect(page.locator('[data-newsletter-cta]')).toBeHidden()
+    })
+
+    test('newsletter CTA is hidden when newsletter-subscribed is set', async ({ page }) => {
+        // Set state before navigating
+        await page.goto(`/blog/${slug}`)
+        await page.evaluate(() => localStorage.setItem('newsletter-subscribed', 'true'))
+        await page.reload()
+        await page.waitForLoadState('domcontentloaded')
+        await expect(page.locator('[data-newsletter-cta]')).toBeHidden()
+    })
+
+    test('newsletter CTA respects legacy newsletter-cta-dismissed key', async ({ page }) => {
+        await page.goto(`/blog/${slug}`)
+        await page.evaluate(() => localStorage.setItem('newsletter-cta-dismissed', 'true'))
+        await page.reload()
+        await page.waitForLoadState('domcontentloaded')
+        await expect(page.locator('[data-newsletter-cta]')).toBeHidden()
+    })
 })

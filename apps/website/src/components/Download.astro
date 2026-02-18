@@ -1,6 +1,6 @@
 ---
 import { version, dmgUrl } from '../lib/release'
-import NewsletterForm from './NewsletterForm.astro'
+import NewsletterInlineWrapper from './NewsletterInlineWrapper.astro'
 ---
 
 <section id="download" class="relative px-6 py-32">
@@ -67,13 +67,8 @@ import NewsletterForm from './NewsletterForm.astro'
         </div>
 
         <!-- Other platforms -->
-        <div class="mt-8 text-center">
-            <p class="mb-3 text-[var(--color-text-tertiary)]">
-                Windows and Linux coming soon. Get notified when they're ready:
-            </p>
-            <div class="mx-auto max-w-sm">
-                <NewsletterForm variant="inline" />
-            </div>
+        <div class="mt-8">
+            <NewsletterInlineWrapper label="Windows and Linux coming soon. Get notified when they're ready:" />
         </div>
     </div>
 </section>

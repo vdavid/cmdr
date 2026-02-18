@@ -45,6 +45,33 @@ test.describe('Newsletter signup', () => {
             await expect(panel.locator('input[type="email"]')).toBeVisible()
             await expect(panel.getByRole('button', { name: 'Sign up' })).toBeVisible()
         })
+
+        test('Newsletter button is hidden when dismissed', async ({ page }) => {
+            await page.goto('/')
+            await page.evaluate(() => localStorage.setItem('newsletter-dismissed', 'true'))
+            await page.reload()
+
+            const toggle = page.locator('[data-newsletter-toggle]')
+            await expect(toggle).toBeHidden()
+        })
+
+        test('Newsletter button is hidden when subscribed', async ({ page }) => {
+            await page.goto('/')
+            await page.evaluate(() => localStorage.setItem('newsletter-subscribed', 'true'))
+            await page.reload()
+
+            const toggle = page.locator('[data-newsletter-toggle]')
+            await expect(toggle).toBeHidden()
+        })
+
+        test('Newsletter button is hidden with legacy dismissed key', async ({ page }) => {
+            await page.goto('/')
+            await page.evaluate(() => localStorage.setItem('newsletter-cta-dismissed', 'true'))
+            await page.reload()
+
+            const toggle = page.locator('[data-newsletter-toggle]')
+            await expect(toggle).toBeHidden()
+        })
     })
 
     test.describe('Footer form', () => {
@@ -56,6 +83,16 @@ test.describe('Newsletter signup', () => {
             await expect(footer.locator('input[type="email"]')).toBeVisible()
             await expect(footer.getByRole('button', { name: 'Sign up' })).toBeVisible()
         })
+
+        test('footer newsletter is visible even when dismissed', async ({ page }) => {
+            await page.goto('/')
+            await page.evaluate(() => localStorage.setItem('newsletter-dismissed', 'true'))
+            await page.reload()
+
+            const footer = page.locator('footer')
+            await expect(footer.getByText('Stay in the loop')).toBeVisible()
+            await expect(footer.locator('input[type="email"]')).toBeVisible()
+        })
     })
 
     test.describe('Download section form', () => {
@@ -66,6 +103,35 @@ test.describe('Newsletter signup', () => {
             await expect(download.getByText(/get notified when they're ready/i)).toBeVisible()
             await expect(download.locator('input[type="email"]')).toBeVisible()
             await expect(download.getByRole('button', { name: 'Sign up' })).toBeVisible()
+        })
+
+        test('download section has "Not interested" dismiss link', async ({ page }) => {
+            await page.goto('/')
+
+            const download = page.locator('#download')
+            const dismissBtn = download.locator('[data-newsletter-inline-dismiss]')
+            await expect(dismissBtn).toBeVisible()
+            await expect(dismissBtn).toHaveText('Not interested')
+        })
+
+        test('download section hides when dismissed', async ({ page }) => {
+            await page.goto('/')
+            await page.evaluate(() => localStorage.setItem('newsletter-dismissed', 'true'))
+            await page.reload()
+
+            const download = page.locator('#download')
+            const content = download.locator('[data-newsletter-inline-content]')
+            await expect(content).toBeHidden()
+        })
+
+        test('download section shows "You\'re on the list" when subscribed', async ({ page }) => {
+            await page.goto('/')
+            await page.evaluate(() => localStorage.setItem('newsletter-subscribed', 'true'))
+            await page.reload()
+
+            const download = page.locator('#download')
+            await expect(download.locator('[data-newsletter-inline-subscribed]')).toBeVisible()
+            await expect(download.locator('[data-newsletter-inline-content]')).toBeHidden()
         })
     })
 

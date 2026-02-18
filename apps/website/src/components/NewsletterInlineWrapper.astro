@@ -1,0 +1,187 @@
+---
+import NewsletterForm from './NewsletterForm.astro'
+
+interface Props {
+    label: string
+    subscribedMessage?: string
+}
+
+const { label, subscribedMessage = "You're on the list" } = Astro.props
+---
+
+<div data-newsletter-inline>
+    <div data-newsletter-inline-content>
+        <p class="newsletter-inline__label">{label}</p>
+        <div class="newsletter-inline__form">
+            <NewsletterForm variant="inline" />
+        </div>
+        <div class="newsletter-inline__dismiss-row">
+            <button type="button" class="newsletter-inline__not-interested" data-newsletter-inline-dismiss>
+                Not interested
+            </button>
+        </div>
+    </div>
+    <p class="newsletter-inline__confirmation" data-newsletter-inline-confirmation>
+        Hidden across the site. Changed your mind? There's a signup in the footer.
+    </p>
+    <p class="newsletter-inline__subscribed" data-newsletter-inline-subscribed>
+        &#10003; {subscribedMessage}
+    </p>
+</div>
+
+<style>
+    [data-newsletter-inline] {
+        text-align: center;
+    }
+
+    .newsletter-inline__label {
+        margin-bottom: 0.75rem;
+        color: var(--color-text-secondary);
+    }
+
+    .newsletter-inline__form {
+        margin: 0 auto;
+        max-width: 24rem;
+    }
+
+    .newsletter-inline__dismiss-row {
+        margin-top: 0.75rem;
+    }
+
+    .newsletter-inline__not-interested {
+        background: none;
+        border: none;
+        color: var(--color-text-tertiary);
+        font-size: 0.8125rem;
+        cursor: pointer;
+        padding: 0.25rem 0.5rem;
+        text-decoration: none;
+        transition: text-decoration var(--duration-normal);
+    }
+
+    .newsletter-inline__not-interested:hover {
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
+    .newsletter-inline__not-interested:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+    }
+
+    .newsletter-inline__confirmation {
+        display: none;
+        font-size: 0.8125rem;
+        color: var(--color-text-secondary);
+        margin: 0;
+        transition: opacity var(--duration-slow);
+    }
+
+    .newsletter-inline__confirmation[data-visible] {
+        display: block;
+    }
+
+    .newsletter-inline__confirmation[data-fading] {
+        opacity: 0;
+    }
+
+    .newsletter-inline__subscribed {
+        display: none;
+        font-size: 0.875rem;
+        color: var(--color-accent);
+        margin: 0;
+    }
+
+    .newsletter-inline__subscribed[data-visible] {
+        display: block;
+    }
+
+    [data-newsletter-inline-content][data-hidden] {
+        display: none;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .newsletter-inline__confirmation {
+            transition: none;
+        }
+    }
+</style>
+
+<script>
+    function isNewsletterDismissedOrSubscribed(): { subscribed: boolean; dismissed: boolean } {
+        const subscribed = localStorage.getItem('newsletter-subscribed') === 'true'
+        const dismissed =
+            localStorage.getItem('newsletter-dismissed') === 'true' ||
+            localStorage.getItem('newsletter-cta-dismissed') === 'true'
+        return { subscribed, dismissed }
+    }
+
+    function hideConfirmationAfterDelay(confirmation: HTMLElement) {
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        if (prefersReducedMotion) {
+            confirmation.removeAttribute('data-visible')
+            return
+        }
+
+        setTimeout(() => {
+            confirmation.setAttribute('data-fading', '')
+            setTimeout(() => {
+                confirmation.removeAttribute('data-visible')
+                confirmation.removeAttribute('data-fading')
+            }, 500)
+        }, 3000)
+    }
+
+    document.addEventListener('astro:page-load', () => {
+        const wrappers = document.querySelectorAll<HTMLElement>('[data-newsletter-inline]')
+
+        wrappers.forEach((wrapper) => {
+            const content = wrapper.querySelector<HTMLElement>('[data-newsletter-inline-content]')
+            const dismissBtn = wrapper.querySelector<HTMLButtonElement>('[data-newsletter-inline-dismiss]')
+            const confirmation = wrapper.querySelector<HTMLElement>('[data-newsletter-inline-confirmation]')
+            const subscribedEl = wrapper.querySelector<HTMLElement>('[data-newsletter-inline-subscribed]')
+
+            if (!content || !dismissBtn || !confirmation || !subscribedEl) return
+
+            // Skip already-bound wrappers
+            if (wrapper.dataset.newsletterInlineBound) return
+            wrapper.dataset.newsletterInlineBound = 'true'
+
+            const { subscribed, dismissed } = isNewsletterDismissedOrSubscribed()
+
+            if (subscribed) {
+                content.setAttribute('data-hidden', '')
+                subscribedEl.setAttribute('data-visible', '')
+                return
+            }
+
+            if (dismissed) {
+                content.setAttribute('data-hidden', '')
+                return
+            }
+
+            dismissBtn.addEventListener('click', () => {
+                localStorage.setItem('newsletter-dismissed', 'true')
+
+                // Hide content, show confirmation
+                content.setAttribute('data-hidden', '')
+                confirmation.setAttribute('data-visible', '')
+                hideConfirmationAfterDelay(confirmation)
+
+                // Also hide all other inline wrappers, blog CTAs, and header nav items
+                document.querySelectorAll<HTMLElement>('[data-newsletter-inline]').forEach((el) => {
+                    if (el !== wrapper) {
+                        const otherContent = el.querySelector<HTMLElement>('[data-newsletter-inline-content]')
+                        if (otherContent) otherContent.setAttribute('data-hidden', '')
+                    }
+                })
+                document.querySelectorAll<HTMLElement>('[data-newsletter-cta]').forEach((el) => {
+                    el.dataset.dismissed = ''
+                })
+                document.querySelectorAll<HTMLElement>('[data-newsletter-nav]').forEach((el) => {
+                    el.style.display = 'none'
+                })
+            })
+        })
+    })
+</script>
