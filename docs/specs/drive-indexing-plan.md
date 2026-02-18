@@ -24,7 +24,7 @@ App start
   │
   ├─ Start FSEvents watcher on volume root (buffer events)
   │
-  └─ Start parallel scan (jwalk)
+  └─ Start full background scan (jwalk)
       ├─ Emit progress events (entries scanned, dirs found)
       ├─ Write entries to SQLite in batches (1000-5000 per transaction)
       └─ On complete:
@@ -32,7 +32,59 @@ App start
           ├─ Compute dir_stats bottom-up
           ├─ Emit index-ready event
           └─ Switch watcher to live mode
+
+Concurrently, on-demand micro-scans run for prioritized directories:
+
+User navigates to /Users/foo/
+  └─ Frontend sends prioritize_dir("/Users/foo/")
+      └─ Backend spawns micro-scan of /Users/foo/* subtrees
+          └─ Stores dir_stats for each child dir as it completes
+              └─ Emits index-dir-updated { paths } → frontend refreshes sizes
+
+User presses Space on "Documents"
+  └─ Frontend sends prioritize_dir("/Users/foo/Documents")
+      └─ Backend spawns micro-scan of that single subtree
+          └─ Stores dir_stats, emits update → size appears in seconds
 ```
+
+### Priority scanning (on-demand micro-scans)
+
+The full background scan takes 1-3 minutes. Users shouldn't have to wait. Instead, we run targeted subtree scans
+concurrently with the background scan, so sizes appear within seconds for directories the user cares about.
+
+**Priority levels** (highest first):
+1. **Space-selected directories** — user explicitly pressed Space on a dir. Even if later unselected, the scan
+   continues. These are single-subtree scans.
+2. **Current directory's children** — when the user navigates to a dir, all its subdirectories get micro-scanned.
+   Auto-triggered, auto-cancelled when navigating away.
+3. **Full background scan** — everything else, lowest priority.
+
+**Implementation**: A `MicroScanManager` with a bounded task pool (for example, 2-4 concurrent micro-scans):
+
+```rust
+struct MicroScanManager {
+    /// Active micro-scan tasks, keyed by path
+    active: HashMap<PathBuf, JoinHandle<()>>,
+    /// Pending requests, ordered by priority
+    queue: VecDeque<(ScanPriority, PathBuf)>,
+    /// Paths that have completed micro-scans (skip if full scan hasn't overwritten yet)
+    completed: HashSet<PathBuf>,
+    /// Cancellation tokens for current-directory scans (cancelled on navigate-away)
+    nav_tokens: HashMap<PathBuf, CancellationToken>,
+}
+
+enum ScanPriority {
+    UserSelected,    // Space key — never auto-cancelled
+    CurrentDir,      // Navigation — cancelled when leaving
+}
+```
+
+**Conflict with full scan**: Micro-scan results are written to the same `dir_stats` table. When the full scan
+completes and computes bottom-up aggregates, it overwrites everything with authoritative data. This is fine — by that
+point, all sizes are accurate anyway.
+
+**Deduplication**: If a micro-scan is already running or completed for a path, skip it. If the full scan has already
+computed stats for a path (post-completion), skip micro-scans for it.
 
 ### SQLite schema
 
@@ -126,14 +178,20 @@ fn enrich_with_index_data(entries: &mut [FileEntry]) {
 
 | State | Display | Tooltip |
 |---|---|---|
-| Index not available for this dir | `<dir>` (unchanged) | — |
-| Index scanning (scan in progress) | `⏳` (static hourglass) | "Scanning..." |
-| Index ready, size = 0 | `0` (formatted) | "0 bytes, 0 files" |
-| Index ready, size > 0 | Formatted size (same triads as files) | "1.23 GB, 4,521 files, 312 folders" |
+| Indexing disabled / no index | `<dir>` (unchanged) | — |
+| Full scan running, no micro-scan yet | `⏳` (static hourglass) | "Scanning..." |
+| Micro-scan completed for this dir | Formatted size (triads) | "1.23 GB, 4,521 files, 312 folders" |
+| Full scan complete | Formatted size (triads) | "1.23 GB, 4,521 files, 312 folders" |
+| Size = 0 (empty dir) | `0` (formatted) | "0 bytes, 0 files" |
+
+When the user presses Space on a directory in the listing, a micro-scan is triggered for that directory. The hourglass
+is replaced by the actual size within seconds. Pressing Space on more directories queues them for scanning. The
+current directory's child dirs are also auto-prioritized on navigation.
 
 **Brief mode** (BriefList.svelte): No size column exists. New behavior:
 - When cursor is on a directory and index data is available, show tooltip with size info
 - When cursor is on a directory and scan in progress, tooltip shows "Scanning..."
+- Pressing Space on a directory triggers a micro-scan (same as Full mode), tooltip updates when done
 
 ### Dev mode
 
@@ -149,37 +207,41 @@ fn enrich_with_index_data(entries: &mut [FileEntry]) {
 
 | Event | Payload | When |
 |---|---|---|
-| `index-scan-started` | `{ volumeId }` | Scan begins |
+| `index-scan-started` | `{ volumeId }` | Full background scan begins |
 | `index-scan-progress` | `{ volumeId, entriesScanned, dirsFound }` | Every 500ms during scan |
 | `index-scan-complete` | `{ volumeId, totalEntries, totalDirs, durationMs }` | Scan + aggregation done |
-| `index-dir-updated` | `{ paths: string[] }` | Watcher updated dir_stats for these dirs |
+| `index-dir-updated` | `{ paths: string[] }` | Micro-scan or watcher updated dir_stats for these dirs |
 
 ### IPC commands (Frontend → Rust)
 
 | Command | Args | Returns | Purpose |
 |---|---|---|---|
-| `start_drive_index` | `volumeId` | `Result<(), String>` | Trigger manual scan |
+| `start_drive_index` | `volumeId` | `Result<(), String>` | Trigger full background scan |
 | `stop_drive_index` | `volumeId` | `()` | Cancel running scan |
 | `get_index_status` | `volumeId?` | `IndexStatus` | Status for debug UI |
 | `get_dir_stats` | `path` | `Option<DirStats>` | Single dir lookup |
 | `get_dir_stats_batch` | `paths: Vec<String>` | `Vec<Option<DirStats>>` | Batch lookup for listing |
+| `prioritize_dir` | `path, priority` | `()` | Queue on-demand micro-scan (Space or navigation) |
+| `cancel_nav_priority` | `path` | `()` | Cancel current-dir micro-scans on navigate-away |
 
 ### Module structure
 
 ```
 src-tauri/src/indexing/
-├── mod.rs          -- Public API: init(), start_scan(), get_dir_stats(), etc.
-├── scanner.rs      -- jwalk-based parallel directory walker
-├── store.rs        -- SQLite operations: insert, query, aggregate computation
-├── watcher.rs      -- Drive-level FSEvents watcher (root "/" recursive)
-├── reconciler.rs   -- Buffer events during scan, replay after scan completes
-└── aggregator.rs   -- Dir stats computation (bottom-up + incremental propagation)
+├── mod.rs              -- Public API: init(), start_scan(), get_dir_stats(), prioritize_dir(), etc.
+├── scanner.rs          -- jwalk-based parallel directory walker (full scan + subtree scan)
+├── micro_scan.rs       -- MicroScanManager: priority queue, task pool, dedup, cancellation
+├── store.rs            -- SQLite operations: insert, query, aggregate computation
+├── watcher.rs          -- Drive-level FSEvents watcher (root "/" recursive)
+├── reconciler.rs       -- Buffer events during scan, replay after scan completes
+└── aggregator.rs       -- Dir stats computation (bottom-up + incremental propagation)
 
 src-tauri/src/commands/indexing.rs -- Tauri IPC command definitions
 
 src/lib/indexing/
-├── index-state.svelte.ts  -- Svelte 5 reactive state ($state) for index status
-└── index-events.ts        -- Event listeners for index progress/completion
+├── index-state.svelte.ts  -- Svelte 5 reactive state ($state) for index status per volume
+├── index-events.ts        -- Event listeners for index progress/completion/dir-updated
+└── index-priority.ts      -- Calls prioritize_dir on Space/navigate, cancel_nav_priority on leave
 ```
 
 ## Scan exclusions
@@ -200,13 +262,15 @@ Skip these paths by default (configurable later):
 
 - New `indexing` module with SQLite store (`rusqlite` with `bundled` feature)
 - `jwalk` dependency for parallel scanning
-- Scanner: walk a volume, write entries to SQLite in batches
-- Aggregator: bottom-up dir_stats computation after scan
+- Scanner: `scan_volume()` for full walk + `scan_subtree()` for targeted subtree (shared core)
+- Aggregator: bottom-up dir_stats computation after full scan, and per-subtree after micro-scan
+- `MicroScanManager`: priority queue with bounded task pool (2-4 concurrent), deduplication, cancellation
 - Progress events during scan
-- IPC commands: `start_drive_index`, `stop_drive_index`, `get_index_status`, `get_dir_stats_batch`
-- Scan cancellation via `CancellationToken`
+- IPC commands: `start_drive_index`, `stop_drive_index`, `get_index_status`, `get_dir_stats_batch`,
+  `prioritize_dir`, `cancel_nav_priority`
+- Scan cancellation via `CancellationToken` (both full scan and micro-scans)
 - Default exclusion paths
-- Rust tests for store, aggregator, and scanner (with temp dirs)
+- Rust tests for store, aggregator, scanner, and micro-scan manager (with temp dirs)
 
 ### Milestone 2: Frontend display — directory sizes
 
@@ -215,7 +279,11 @@ Skip these paths by default (configurable later):
 - FullList.svelte: show hourglass during scan, formatted size after
 - FullList.svelte: tooltip with "X files, Y folders" detail
 - BriefList.svelte: tooltip on directory hover with size info
-- Reactive state: listen to `index-scan-complete` and `index-dir-updated` events to refresh
+- **Priority triggers**: on Space for a directory → call `prioritize_dir(path, "user_selected")`;
+  on navigation → call `prioritize_dir(parentPath, "current_dir")` for child dirs;
+  on navigate-away → call `cancel_nav_priority(oldPath)`
+- Reactive state: listen to `index-scan-complete` and `index-dir-updated` events to refresh sizes
+  in the current listing (re-fetch affected entries or patch in-place)
 - Svelte tests for new display logic
 
 ### Milestone 3: Dev mode + debug window
