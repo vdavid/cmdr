@@ -3,7 +3,12 @@
     document.addEventListener('astro:page-load', () => {
         document.querySelectorAll<HTMLImageElement>('.blog-content img').forEach((img) => {
             img.addEventListener('click', () => {
-                if (img.src) window.open(img.src, '_blank')
+                if (
+                    img.src &&
+                    (img.src.startsWith('https://') || img.src.startsWith('http://') || img.src.startsWith('/'))
+                ) {
+                    window.open(img.src, '_blank', 'noopener')
+                }
             })
         })
     })

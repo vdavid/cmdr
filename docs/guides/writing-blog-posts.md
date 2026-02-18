@@ -13,7 +13,6 @@ images.
 title: Your title here
 date: 2026-02-18
 description: A one- or two-sentence summary for SEO and social sharing.
-cover: ./cover.jpg  # Optional. Relative path to a colocated image.
 ---
 ```
 

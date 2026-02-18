@@ -10,7 +10,7 @@ services:
 
     # Caddy route needed: comments.getcmdr.com -> remark42:8080
     remark42:
-        image: umputun/remark42:latest
+        image: umputun/remark42:v1.15.0
         container_name: remark42
         restart: unless-stopped
         volumes:
