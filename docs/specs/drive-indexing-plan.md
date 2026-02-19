@@ -54,9 +54,11 @@ concurrently with the background scan, so sizes appear within seconds for direct
 
 **Priority levels** (highest first):
 1. **Space-selected directories** — user explicitly pressed Space on a dir. Even if later unselected, the scan
-   continues. These are single-subtree scans.
-2. **Current directory's children** — when the user navigates to a dir, all its subdirectories get micro-scanned.
-   Auto-triggered, auto-cancelled when navigating away.
+   continues. These are single-subtree scans (one task per selected dir).
+2. **Current directory's children** — when the user navigates to a dir, a single "scan children" task walks the parent
+   directory depth-first, computing and writing `dir_stats` for each child directory as it completes. Results trickle in
+   one at a time (emitting `index-dir-updated` per batch). One task to spawn, one task to cancel on navigate-away.
+   Much simpler than queuing N individual micro-scans for N subdirectories.
 3. **Full background scan** — everything else, lowest priority.
 
 **Implementation**: A `MicroScanManager` with a bounded task pool (for example, 2-4 concurrent micro-scans):
@@ -161,7 +163,8 @@ CREATE TABLE meta (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
 ) WITHOUT ROWID;
--- Keys: 'volume_path', 'scan_completed_at', 'scan_duration_ms', 'total_entries'
+-- Keys: 'schema_version' (currently '1'), 'volume_path', 'scan_completed_at', 'scan_duration_ms', 'total_entries'
+-- On startup, if schema_version doesn't match what the code expects, drop and rebuild the DB.
 ```
 
 ### Dir stats computation
@@ -199,12 +202,20 @@ pub struct FileEntry {
 }
 ```
 
-**Enrichment**: After `list_directory_core()` returns entries and before caching, enrich directory entries:
+**Enrichment at read time, not cache time**: The `recursive_size`/`recursive_file_count`/`recursive_dir_count` fields
+are NOT stored in `LISTING_CACHE`. Instead, they are populated on every `get_file_range` call by doing a batch SQLite
+read from `dir_stats`. This avoids stale cache entries when micro-scans complete — the next `get_file_range` call
+automatically picks up new data. The `index-dir-updated` event tells the frontend "re-fetch your visible range."
 
 ```rust
 fn enrich_with_index_data(entries: &mut [FileEntry]) {
+    let dir_paths: Vec<&str> = entries.iter()
+        .filter(|e| e.is_directory && !e.is_symlink)
+        .map(|e| e.path.as_str())
+        .collect();
+    let stats_map = indexing::get_dir_stats_batch(&dir_paths); // single batch query
     for entry in entries.iter_mut().filter(|e| e.is_directory && !e.is_symlink) {
-        if let Some(stats) = indexing::get_dir_stats(&entry.path) {
+        if let Some(stats) = stats_map.get(entry.path.as_str()) {
             entry.recursive_size = Some(stats.recursive_size);
             entry.recursive_file_count = Some(stats.recursive_file_count);
             entry.recursive_dir_count = Some(stats.recursive_dir_count);
@@ -212,6 +223,9 @@ fn enrich_with_index_data(entries: &mut [FileEntry]) {
     }
 }
 ```
+
+This runs in `get_file_range`, not in `list_directory_core`. The cost is a batch SQLite read per page — microseconds on
+a WAL connection, negligible.
 
 ### Frontend display
 
@@ -302,7 +316,7 @@ Skip these paths by default (configurable later):
 
 ### Milestone 1: Core index infrastructure
 
-- New `indexing` module with SQLite store (`rusqlite` with `bundled` feature)
+- New `indexing` module with SQLite store (`rusqlite` with `bundled` feature), schema versioning (drop + rebuild on mismatch)
 - `jwalk` dependency for parallel scanning
 - Scanner: `scan_volume()` for full walk + `scan_subtree()` for targeted subtree (shared core)
 - Aggregator: bottom-up dir_stats computation after full scan, and per-subtree after micro-scan
@@ -317,7 +331,7 @@ Skip these paths by default (configurable later):
 ### Milestone 2: Frontend display — directory sizes
 
 - Add `recursiveSize`, `recursiveFileCount`, `recursiveDirCount` to FileEntry (Rust + TypeScript)
-- Enrich directory entries with index data during listing
+- Enrich directory entries at read time (`get_file_range`), not cache time — batch `dir_stats` lookup per page
 - FullList.svelte: show hourglass during scan, formatted size after
 - FullList.svelte: tooltip with "X files, Y folders" detail
 - BriefList.svelte: tooltip on directory hover with size info
