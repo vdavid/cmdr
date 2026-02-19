@@ -1,5 +1,5 @@
 ---
-title: Cmdr will track your entire file system!
+title: Cmdr will track your entire file system
 date: 2026-02-18
 description:
     Cmdr will soon scan your drive on startup and watch for changes, keeping a complete live index. This unlocks instant

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 
 const slug = 'cmdr-will-track-your-entire-file-system'
-const title = 'Cmdr will track your entire file system!'
+const title = 'Cmdr will track your entire file system'
 
 test.describe('Blog', () => {
     test('blog index loads with correct title', async ({ page }) => {
