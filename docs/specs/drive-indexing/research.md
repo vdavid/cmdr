@@ -148,8 +148,11 @@ These were resolved during planning (2026-02-21). See [plan.md](plan.md) for det
 
 - ~~Exact SQLite schema design~~ --- path as primary key, `WITHOUT ROWID`, index on `parent_path` for DB-first listings
 - ~~How to handle APFS firmlinks~~ --- scan from `/`, skip `/System/Volumes/Data/` entirely, firmlinks cover it
-- Whether to expose "indexing" as a user-visible feature or make it invisible
-- Disk space budget: warn users? Let them configure max index size?
+- ~~Whether to expose "indexing" as a user-visible feature or make it invisible~~ --- visible but subtle: animated
+  spinner + "Scanning..." in size column during scan, ⚠️ on stale sizes, top-right overlay during full scan, setting
+  to enable/disable under "Settings > General > File system sync"
+- ~~Disk space budget: warn users? Let them configure max index size?~~ --- show current index size in Settings next to
+  the enable/disable toggle. No max size limit; user can disable indexing if space is a concern.
 - ~~Index granularity~~ --- every file (enables DB-first listings, not only size aggregation)
 - ~~File watching library~~ --- `fsevent-stream` (event IDs, sinceWhen, MustScanSubDirs, async)
 - ~~Periodic rescans~~ --- not needed; sinceWhen replay + per-navigation verification + MustScanSubDirs handling

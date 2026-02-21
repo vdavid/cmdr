@@ -10,14 +10,59 @@ Date: 2026-02-18. Updated: 2026-02-21.
 Index every file on local volumes at app startup (background, non-blocking). Track recursive size, file count, and
 directory count per folder. Display directory sizes in file listings. Keep the index updated via FSEvents watching.
 
-Once the index is populated, use it as the **primary source for directory listings** (sub-millisecond), with background
-filesystem verification on each navigation to catch any missed events.
+Once the index is populated, use it to **enrich directory listings with recursive sizes** — the key UX differentiator.
+Listings continue to come from `readdir` + `stat` (fast enough at 2-50ms). DB-first listings (sub-millisecond) are a
+future optimization once the index is proven reliable (see "Future" milestone).
 
 Symlink strategy: no follow. Symlinks are stored but not traversed. This prevents double-counting and infinite loops.
 
 APFS firmlinks: scan from `/` only; skip `/System/Volumes/Data` entirely. The firmlinks at `/` (for example, `/Users`
 pointing to `/System/Volumes/Data/Users`) ensure full coverage without double-counting. This matches what
 `getattrlistbulk` does naturally in the benchmarks.
+
+Firmlink path normalization: macOS has 18 fixed firmlinks defined in `/usr/share/firmlinks` (users cannot create custom
+firmlinks). When the user navigates to a path under `/System/Volumes/Data/` that maps to a firmlinked path (for example,
+`/System/Volumes/Data/Users/foo/` → `/Users/foo/`), normalize the path before any DB lookup. Implementation: parse
+`/usr/share/firmlinks` at startup, build a prefix-replacement map, apply on every DB query and watcher event path. This
+ensures the index works transparently regardless of how the user reached a directory. Since scanning from `/` naturally
+follows firmlinks, all DB entries are stored under the firmlinked canonical paths (for example, `/Users/foo/`, not
+`/System/Volumes/Data/Users/foo/`).
+
+<details>
+<summary>Complete firmlink list (macOS, from <code>/usr/share/firmlinks</code>)</summary>
+
+All 18 entries. Format: root path → `/System/Volumes/Data/{relative path}`.
+
+| Root path | Data volume relative path |
+|---|---|
+| `/Applications` | `Applications` |
+| `/Library` | `Library` |
+| `/System/Library/Caches` | `System/Library/Caches` |
+| `/System/Library/Assets` | `System/Library/Assets` |
+| `/System/Library/PreinstalledAssets` | `System/Library/PreinstalledAssets` |
+| `/System/Library/AssetsV2` | `System/Library/AssetsV2` |
+| `/System/Library/PreinstalledAssetsV2` | `System/Library/PreinstalledAssetsV2` |
+| `/System/Library/CoreServices/CoreTypes.bundle/Contents/Library` | `System/Library/CoreServices/CoreTypes.bundle/Contents/Library` |
+| `/System/Library/Speech` | `System/Library/Speech` |
+| `/Users` | `Users` |
+| `/Volumes` | `Volumes` |
+| `/cores` | `cores` |
+| `/opt` | `opt` |
+| `/private` | `private` |
+| `/usr/local` | `usr/local` |
+| `/usr/libexec/cups` | `usr/libexec/cups` |
+| `/usr/share/snmp` | `usr/share/snmp` |
+| `/AppleInternal` | `AppleInternal` (Apple-internal machines only) |
+
+Note: `/tmp`, `/var`, `/etc` are traditional **symlinks** to `/private/{tmp,var,etc}`, not firmlinks. But since
+`/private` itself is a firmlink, they transitively resolve through the Data volume.
+
+</details>
+
+Size semantics: all file sizes stored in the index are **physical sizes** (`st_blocks * 512` from `stat()`, equivalent
+to `DATAALLOCSIZE` from `getattrlistbulk`). Physical size reflects actual disk allocation and is more meaningful than
+logical size for disk usage analysis. Note: per-file physical sizes may overcount by ~10-20% due to APFS clone
+block-sharing (see benchmarks.md). For the volume usage bar, always use `statfs()` which reports true block-level usage.
 
 ## Architecture
 
@@ -108,7 +153,9 @@ Instead, freshness comes from four mechanisms:
 2. **sinceWhen replay** on startup/wake: FSEvents maintains an on-disk journal (`.fseventsd/`) covering days to weeks.
    On app restart or wake from sleep, replay events since the last stored event ID. Cost: seconds, not minutes.
 3. **MustScanSubDirs** handling: when the kernel buffer overflows (4,096 event queue, triggers at >75% capacity), FSEvents
-   sends this flag. Immediately queue a subtree rescan for the affected directory via `scan_subtree()`.
+   sends this flag. Queue a subtree rescan for the affected directory via `scan_subtree()`. Throttled: max 1 concurrent
+   MustScanSubDirs rescan at a time; additional events are queued and deduplicated by path. If a rescan takes >10s, emit
+   a progress event so the UI can show status. This prevents a burst of MustScanSubDirs events from saturating I/O.
 4. **Per-navigation verification**: every time the user navigates to a directory, the background `readdir` diff catches
    any silent misses for that specific directory. This covers the hot path — users only care about directories they visit.
 
@@ -290,7 +337,7 @@ CREATE TABLE entries
     name         TEXT    NOT NULL,
     is_directory INTEGER NOT NULL DEFAULT 0,
     is_symlink   INTEGER NOT NULL DEFAULT 0,
-    size         INTEGER, -- file size in bytes (NULL for dirs)
+    size         INTEGER, -- physical size in bytes, st_blocks * 512 (NULL for dirs)
     modified_at  INTEGER  -- unix timestamp seconds
 ) WITHOUT ROWID; -- path is the key, skip rowid overhead
 
@@ -382,23 +429,53 @@ a WAL connection, negligible.
 
 **Full mode** (FullList.svelte): Size column currently shows `<dir>` for directories. New behavior:
 
-| State                                | Display                 | Tooltip                             |
-|--------------------------------------|-------------------------|-------------------------------------|
-| Indexing disabled / no index         | `<dir>` (unchanged)     | ---                                 |
-| Full scan running, no micro-scan yet | hourglass (static)      | "Scanning..."                       |
-| Micro-scan completed for this dir    | Formatted size (triads) | "1.23 GB, 4,521 files, 312 folders" |
-| Full scan complete                   | Formatted size (triads) | "1.23 GB, 4,521 files, 312 folders" |
-| Size = 0 (empty dir)                 | `0` (formatted)         | "0 bytes, 0 files"                  |
+| State                                       | Size column display           | Tooltip                                             |
+|---------------------------------------------|-------------------------------|-----------------------------------------------------|
+| Indexing disabled / no index                 | `<dir>` (unchanged)           | ---                                                 |
+| Scanning, no data yet for this dir           | {small spinner} Scanning...   | "Scanning..."                                       |
+| Has stale data, currently rescanning this dir | Formatted size (triads) ⚠️   | "Might be outdated. Currently scanning..."          |
+| Size available (fresh)                       | Formatted size (triads)       | "1.23 GB · 4,521 files · 312 folders"               |
+| Size = 0 (empty dir)                         | `0` (formatted)               | "0 bytes, 0 files"                                  |
 
-When the user presses Space on a directory in the listing, a micro-scan is triggered for that directory. The hourglass
+When the user presses Space on a directory in the listing, a micro-scan is triggered for that directory. The spinner
 is replaced by the actual size within seconds. Pressing Space on more directories queues them for scanning. The
 current directory's child dirs are also auto-prioritized on navigation.
 
 **Brief mode** (BriefList.svelte): No size column exists. New behavior:
 
-- When cursor is on a directory and index data is available, show tooltip with size info
-- When cursor is on a directory and scan in progress, tooltip shows "Scanning..."
+- When cursor is on a directory and index data is available, show size in tooltip
+- When cursor is on a directory and scan in progress, tooltip shows "{spinner} Scanning..."
+- When data is stale, tooltip shows size + "⚠️ Might be outdated. Currently scanning..."
 - Pressing Space on a directory triggers a micro-scan (same as Full mode), tooltip updates when done
+
+**SelectionInfo** (both modes, bottom bar): When the selection includes directories, reuse the same spinner/⚠️ logic:
+
+- If any selected directory is being scanned with no data yet, show "{spinner} Scanning..." in the size area
+- If any selected directory has stale data, show the summed size with ⚠️ and tooltip "Might be outdated"
+- Otherwise, show the total size (files + recursive dir sizes) as normal
+
+**Scan status overlay** (top-right corner of window, both panes): A small, non-intrusive notification:
+
+| State                                 | Display                                              |
+|---------------------------------------|------------------------------------------------------|
+| Full scan running                     | {~32px animated spinner} "Scanning..."               |
+| FSEvents replay on cold start         | {~32px animated spinner} "Catching up, ~12,345 events processed..." |
+| Idle / scan complete                  | Hidden                                               |
+
+The overlay is visible whenever a full background scan or a large sinceWhen replay is in progress. For FSEvents replay,
+show the number of events processed (event count increments as events are applied). If the event ID gap is known
+(current device event ID minus last stored event ID), show as "{processed} / ~{estimated total}" for a rough progress
+indicator — the estimate is approximate because not all event IDs in the range belong to our volume.
+
+### Settings
+
+Add "File system sync" subsection under "Settings > General":
+
+- **Toggle**: enable/disable file system sync (default: enabled). When disabled, no scanning or watching runs; directory
+  sizes show `<dir>` as before.
+- **Index size display**: show current index size (SQLite DB file size on disk), for example, "Index size: 1.2 GB".
+  Updated live when visible.
+- **Clear index** action: drops the SQLite DB and resets state. Next time sync is enabled, starts a fresh full scan.
 
 ### Dev mode
 
@@ -418,6 +495,7 @@ current directory's child dirs are also auto-prioritized on navigation.
 | `index-scan-progress` | `{ volumeId, entriesScanned, dirsFound }`           | Every 500ms during scan                                |
 | `index-scan-complete` | `{ volumeId, totalEntries, totalDirs, durationMs }` | Scan + aggregation done                                |
 | `index-dir-updated`   | `{ paths: string[] }`                               | Micro-scan or watcher updated dir_stats for these dirs |
+| `index-replay-progress` | `{ volumeId, eventsProcessed, estimatedTotal? }`  | Every 500ms during sinceWhen replay                  |
 
 ### IPC commands (Frontend -> Rust)
 
@@ -443,6 +521,7 @@ src-tauri/src/indexing/
 +-- watcher.rs          -- Drive-level FSEvents watcher via fsevent-stream (root "/" recursive)
 +-- reconciler.rs       -- Buffer events during scan, replay after scan completes (using event IDs)
 +-- aggregator.rs       -- Dir stats computation (bottom-up + incremental propagation), runs on writer thread
++-- firmlinks.rs        -- Parse /usr/share/firmlinks, build prefix map, normalize paths (macOS-specific)
 +-- verifier.rs         -- Per-navigation background readdir diff against DB
 
 src-tauri/src/commands/indexing.rs -- Tauri IPC command definitions
@@ -474,7 +553,13 @@ Without Full Disk Access, the scanner can't read TCC-protected directories (`~/D
 Skip these paths by default (configurable later):
 
 - `/System/Volumes/Data/` --- skip entirely; firmlinks from `/` provide coverage without double-counting
-- `/System/` --- immutable system volume
+- `/System/Volumes/VM/` --- VM swap
+- `/System/Volumes/Preboot/` --- boot volume
+- `/System/Volumes/Update/` --- OS updates
+- `/System/Volumes/xarts/` --- security
+- `/System/Volumes/iSCPreboot/` --- security
+- `/System/Volumes/Hardware/` --- hardware
+- `/System/` (except paths reached via firmlinks) --- immutable system volume
 - `/private/var/` --- system temp/cache
 - `/Library/Caches/` --- system caches
 - `/.Spotlight-V100/` --- Spotlight index
@@ -482,6 +567,23 @@ Skip these paths by default (configurable later):
 - `/dev/`, `/proc/` --- virtual filesystems
 - `node_modules/` --- (maybe, configurable)
 - `.git/objects/` --- git internals (maybe, configurable)
+
+## Per-volume indexing
+
+One SQLite DB file per indexed volume: `~/Library/Application Support/com.veszelovszki.cmdr/index-{volume_id}.db`.
+Volume ID is derived from the mount point (for example, `root` for `/`, `naspi` for `/Volumes/naspi`).
+
+On a typical macOS laptop, only the root volume is indexed automatically:
+
+| Volume | Indexed? | DB file |
+|---|---|---|
+| `/` (APFS root + Data via firmlinks) | Yes, automatic | `index-root.db` |
+| `/System/Volumes/{VM,Preboot,Update,...}` | No | Excluded (system internals) |
+| `/Volumes/naspi` (SMB network share) | Future, opt-in | `index-naspi.db` |
+
+On Windows (future): one DB per drive letter (`index-C.db`, `index-D.db`, etc.). The `Volume` trait already abstracts
+mount points, so the indexing module doesn't need platform-specific logic — it receives a volume with a root path and
+indexes from there.
 
 ## Key decisions
 
@@ -501,9 +603,30 @@ Decisions made during planning (2026-02-21):
    lifecycles and per-volume-type support. Accessed via `volume.scanner()` and `volume.watcher()` optional methods.
 
 5. **APFS firmlinks**: Scan from `/` only, skip `/System/Volumes/Data`. Firmlinks provide full coverage naturally.
+   Normalize paths via `/usr/share/firmlinks` prefix map on every DB lookup and watcher event.
 
-6. **Self-contained indexing module**: Narrow public API, one-way dependency (listing depends on indexing, never the
+6. **Physical sizes**: Store `st_blocks * 512` (physical allocation), not logical size. More meaningful for disk usage.
+   May overcount ~10-20% for APFS clones (shared blocks). Volume usage bar always uses `statfs()` for true totals.
+
+7. **Scan cancellation**: Partial data left as-is in DB. `scan_completed_at` not set in meta table, so next startup
+   detects an incomplete scan and runs a fresh full scan. No cleanup or rollback needed — the DB is a cache.
+
+8. **Self-contained indexing module**: Narrow public API, one-way dependency (listing depends on indexing, never the
    reverse). Testable in isolation with temp dirs and in-memory SQLite.
+
+## Performance targets
+
+Rough targets for validation, not hard SLAs:
+
+| Operation                                   | Target              | Notes                                      |
+|---------------------------------------------|---------------------|--------------------------------------------|
+| DB listing query (`parent_path` index)      | <1ms for <10K entries | SQLite WAL read, indexed                 |
+| Full scan (5M files, SSD)                   | <3 min              | jwalk parallel, batched writes             |
+| Micro-scan (single subtree, <100K files)    | <5s                 | Priority scan, immediate write             |
+| Enrichment per `get_file_range` call        | <500µs              | Batch `dir_stats` read, ~50 dirs per page  |
+| Watcher event processing (single file change) | <10ms            | Delta propagation up ancestor chain        |
+| Cold start with sinceWhen replay            | <10s                | Depends on event gap; full scan if unavailable |
+| Index DB size on disk (5M files)            | ~1-2 GB             | SQLite with WAL, physical sizes stored     |
 
 ## Milestones
 
@@ -511,60 +634,75 @@ Decisions made during planning (2026-02-21):
 
 - New `indexing` module with SQLite store (`rusqlite` with `bundled` feature), schema versioning (drop + rebuild on
   mismatch)
-- `jwalk` dependency for parallel scanning
+- `jwalk` dependency for parallel scanning; collect physical sizes (`st_blocks * 512`)
 - Scanner: `scan_volume()` for full walk + `scan_subtree()` for targeted subtree (shared core)
 - Aggregator: bottom-up dir_stats computation after full scan, and per-subtree after micro-scan
 - `MicroScanManager`: priority queue with bounded task pool (2-4 concurrent), deduplication, cancellation
+- Firmlink normalization: parse `/usr/share/firmlinks` at startup, normalize paths on all DB queries and watcher events
 - Progress events during scan
 - IPC commands: `start_drive_index`, `stop_drive_index`, `get_index_status`, `get_dir_stats_batch`,
   `prioritize_dir`, `cancel_nav_priority`
-- Scan cancellation via `CancellationToken` (both full scan and micro-scans)
+- Scan cancellation via `CancellationToken` (both full scan and micro-scans). Partial data left as-is in DB;
+  `scan_completed_at` not set, so next startup runs a fresh full scan.
 - Default exclusion paths (including `/System/Volumes/Data/` for firmlink dedup)
-- Rust tests for store, aggregator, scanner, and micro-scan manager (with temp dirs)
+- Rust tests for store, aggregator, scanner, firmlink normalization, and micro-scan manager (with temp dirs)
 
-### Milestone 2: Frontend display --- directory sizes
+### Milestone 2: Dev mode + debug window
+
+- `CMDR_DRIVE_INDEX=1` env var gating in production auto-start
+- Debug window: "Drive index" section with status display, start/clear buttons, last event ID
+- Debug window: volume selector (if multiple volumes), last scan timestamp, duration
+- Debug window: listen to and display index events in real time
+- Having this early provides visibility and debugging tools for all subsequent milestones
+
+### Milestone 3: Frontend display — directory sizes
 
 - Add `recursiveSize`, `recursiveFileCount`, `recursiveDirCount` to FileEntry (Rust + TypeScript)
-- Enrich directory entries at read time (`get_file_range`), not cache time --- batch `dir_stats` lookup per page
-- FullList.svelte: show hourglass during scan, formatted size after
-- FullList.svelte: tooltip with "X files, Y folders" detail
-- BriefList.svelte: tooltip on directory hover with size info
-- **Priority triggers**: on Space for a directory -> call `prioritize_dir(path, "user_selected")`;
-  on navigation -> call `prioritize_dir(parentPath, "current_dir")` for child dirs;
-  on navigate-away -> call `cancel_nav_priority(oldPath)`
+- Enrich directory entries at read time (`get_file_range`), not cache time — batch `dir_stats` lookup per page
+- FullList.svelte: animated spinner + "Scanning..." during scan, formatted size (triads) after
+- FullList.svelte: ⚠️ indicator on stale sizes with tooltip "Might be outdated. Currently scanning..."
+- FullList.svelte: tooltip with "1.23 GB · 4,521 files · 312 folders" detail
+- BriefList.svelte: tooltip on directory hover/cursor with size info, spinner/⚠️ when scanning/stale
+- SelectionInfo: reuse same spinner/⚠️ logic when selected directories are scanning or stale
+- Scan status overlay: top-right corner, ~32px animated spinner + "Scanning..." during full scan;
+  show event count during FSEvents replay on cold start
+- **Priority triggers**: on Space for a directory → call `prioritize_dir(path, "user_selected")`;
+  on navigation → call `prioritize_dir(parentPath, "current_dir")` for child dirs;
+  on navigate-away → call `cancel_nav_priority(oldPath)`
 - Reactive state: listen to `index-scan-complete` and `index-dir-updated` events to refresh sizes
   in the current listing (re-fetch affected entries or patch in-place)
 - Svelte tests for new display logic
 
-### Milestone 3: FSEvents watcher + reconciliation
+### Milestone 4: FSEvents watcher + reconciliation
 
 - `fsevent-stream` dependency; recursive watcher on volume root with file-level events
 - Event buffering during scan, reconciliation after scan completes (using event IDs)
 - Incremental aggregate propagation (delta up ancestor chain) on file changes
-- `MustScanSubDirs` handling: queue immediate subtree rescan via `scan_subtree()`
+- `MustScanSubDirs` handling: queue subtree rescan via `scan_subtree()`, max 1 concurrent rescan
+  (additional events queued, deduplicated by path). Emit progress event if rescan takes >10s.
 - Store last processed event ID in meta table on every write batch
 - Update enriched FileEntry data when dir_stats change for visible directories
 - Rust tests for reconciler and incremental propagation
 
-### Milestone 4: Persistence + cold start (sinceWhen replay)
+### Milestone 5: Persistence + cold start (sinceWhen replay)
 
 - On startup: read `last_event_id` from meta table, start FSEvents with `sinceWhen`
-- FSEvents replays journal events since that ID -> apply to DB (same as live mode)
+- FSEvents replays journal events since that ID → apply to DB (same as live mode)
 - If journal unavailable (sinceWhen too old): fall back to full background scan
 - Show existing index data immediately on startup (no "stale" indicator needed if sinceWhen replay works)
-- On wake from sleep: replay events since last event ID (not a full rescan)
+- Wake from sleep: FSEvents stream stays alive; kernel buffers events during sleep and delivers on wake.
+  If buffer overflows (long sleep, many changes), `MustScanSubDirs` fires automatically (handled by Milestone 4).
 - Store scan metadata (timestamp, duration, entry count) in `meta` table
 - Handle index from a different macOS version / drive layout (detect schema mismatch and rebuild)
 
-### Milestone 5: DB-first directory listings
+### Milestone 6: Settings + user controls
 
-- `verifier.rs`: background `readdir` + diff against DB on each navigation
-- Integrate DB-first path into `get_file_range`: if index has entries for this parent_path, serve from DB
-- Lazy-load extended metadata (owner, group, permissions, icon_id) in background
-- Fall back to `readdir` when index not yet populated for a directory
-- Performance validation: benchmark DB listing vs. `readdir` for directories with 100, 1K, 10K, 100K files
+- Add "File system sync" subsection under "Settings > General"
+- Toggle to enable/disable file system sync (default: enabled)
+- Display current index size (read from SQLite DB file size on disk)
+- "Clear index" action (drops DB, resets state)
 
-### Milestone 6: Volume scanner/watcher traits
+### Milestone 7: Volume scanner/watcher traits
 
 - Add `VolumeScanner` and `VolumeWatcher` traits
 - Add `scanner()` and `watcher()` optional methods to `Volume` trait
@@ -573,15 +711,21 @@ Decisions made during planning (2026-02-21):
 - Refactor indexing module to use traits instead of direct jwalk/fsevent-stream calls
 - Verify existing volume types still work (MTP, InMemory)
 
-### Milestone 7: Dev mode + debug window
-
-- `CMDR_DRIVE_INDEX=1` env var gating in production auto-start
-- Debug window: "Drive index" section with status, start/clear buttons, last event ID
-- Debug window: emit/listen to index events
-
 ### Milestone 8: Polish + checks
 
 - Run all checks: clippy, rustfmt, eslint, prettier, svelte-check, knip, stylelint
 - Run Rust tests and Svelte tests
 - Update CLAUDE.md for the indexing module
 - Update architecture.md with new module
+
+### Future: DB-first directory listings
+
+Deferred. The current `readdir` + `stat` path is already fast enough (2-50ms), and the index enrichment approach
+(Milestone 3) delivers the key UX win (directory sizes) without changing the listing pipeline. Once the index is mature
+and proven reliable, it can become the primary listing source for sub-ms response times.
+
+- `verifier.rs`: background `readdir` + diff against DB on each navigation
+- Integrate DB-first path into `get_file_range`: if index has entries for this parent_path, serve from DB
+- Lazy-load extended metadata (owner, group, permissions, icon_id) in background
+- Fall back to `readdir` when index not yet populated for a directory
+- Performance validation: benchmark DB listing vs. `readdir` for directories with 100, 1K, 10K, 100K files
