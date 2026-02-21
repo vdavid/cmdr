@@ -87,12 +87,12 @@
         height: 16px;
         min-width: 16px;
         min-height: 16px;
-        border: 2px solid var(--color-border-primary);
-        border-radius: 50%;
+        border: 2px solid var(--color-border-strong);
+        border-radius: var(--radius-full);
         background: var(--color-bg-primary);
         flex-shrink: 0;
         margin-top: 2px;
-        transition: all 0.15s;
+        transition: all var(--transition-base);
     }
 
     :global(.radio-control[data-state='checked']) {
@@ -105,8 +105,8 @@
     :global(.radio-item[data-focus]) {
         outline: 2px solid color-mix(in srgb, var(--color-accent) 70%, black);
         outline-offset: 2px;
-        border-radius: 4px;
-        box-shadow: 0 0 0 4px rgba(77, 163, 255, 0.3);
+        border-radius: var(--radius-sm);
+        box-shadow: var(--shadow-focus);
     }
 
     :global(.radio-text) {
@@ -121,8 +121,8 @@
     }
 
     .radio-description {
-        color: var(--color-text-muted);
-        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-sm);
     }
 
     .custom-content {

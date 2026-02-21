@@ -39,11 +39,11 @@
 
 <style>
     .section {
-        margin-bottom: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
     }
 
     .section-title {
-        font-size: 16px;
+        font-size: var(--font-size-lg);
         font-weight: 600;
         color: var(--color-text-primary);
         margin: 0 0 var(--spacing-sm);

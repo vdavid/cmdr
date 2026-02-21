@@ -502,11 +502,11 @@
 
 <style>
     .section {
-        margin-bottom: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
     }
 
     .section-title {
-        font-size: 16px;
+        font-size: var(--font-size-lg);
         font-weight: 600;
         color: var(--color-text-primary);
         margin: 0 0 var(--spacing-sm);
@@ -518,7 +518,7 @@
         display: flex;
         flex-direction: column;
         gap: var(--spacing-sm);
-        margin-bottom: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
     }
 
     .search-fields {
@@ -530,7 +530,7 @@
         flex: 1;
         padding: var(--spacing-xs) var(--spacing-sm);
         border: 1px solid var(--color-border);
-        border-radius: 4px;
+        border-radius: var(--radius-sm);
         background: var(--color-bg-primary);
         color: var(--color-text-primary);
         font-size: var(--font-size-sm);
@@ -572,18 +572,18 @@
     .conflict-badge {
         background: var(--color-warning);
         color: white;
-        font-size: 10px;
+        font-size: var(--font-size-xs);
         padding: 1px 5px;
-        border-radius: 8px;
+        border-radius: var(--radius-lg);
         font-weight: 600;
     }
 
     .conflict-warning {
         background: var(--color-warning-bg);
         border: 1px solid var(--color-warning);
-        border-radius: 4px;
+        border-radius: var(--radius-sm);
         padding: var(--spacing-sm);
-        margin-bottom: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
         display: flex;
         flex-wrap: wrap;
         align-items: center;
@@ -591,7 +591,7 @@
     }
 
     .warning-icon {
-        font-size: 16px;
+        font-size: var(--font-size-lg);
     }
 
     .warning-text {
@@ -607,10 +607,10 @@
     .warning-btn {
         padding: var(--spacing-xs) var(--spacing-sm);
         border: 1px solid var(--color-border);
-        border-radius: 4px;
+        border-radius: var(--radius-sm);
         background: var(--color-bg-primary);
         color: var(--color-text-primary);
-        font-size: var(--font-size-xs);
+        font-size: var(--font-size-sm);
         cursor: default;
     }
 
@@ -624,13 +624,13 @@
     }
 
     .scope-group {
-        margin-bottom: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
     }
 
     .scope-title {
         font-size: var(--font-size-sm);
         font-weight: 600;
-        color: var(--color-text-muted);
+        color: var(--color-text-tertiary);
         margin: 0 0 var(--spacing-xs);
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -641,7 +641,7 @@
         align-items: center;
         justify-content: space-between;
         padding: var(--spacing-xs) 0;
-        border-bottom: 1px solid var(--color-border-secondary);
+        border-bottom: 1px solid var(--color-border-subtle);
     }
 
     .command-row:last-child {
@@ -662,12 +662,12 @@
     .modified-dot {
         width: 6px;
         height: 6px;
-        border-radius: 50%;
+        border-radius: var(--radius-full);
         background: var(--color-accent);
     }
 
     .conflict-icon {
-        font-size: 12px;
+        font-size: var(--font-size-sm);
     }
 
     .command-name {
@@ -688,7 +688,7 @@
         padding: 2px 8px;
         background: var(--color-bg-tertiary);
         border: 1px solid var(--color-border);
-        border-radius: 4px;
+        border-radius: var(--radius-sm);
         font-size: var(--font-size-xs);
         font-family: var(--font-system) sans-serif;
         color: var(--color-text-primary);
@@ -704,17 +704,17 @@
     }
 
     .shortcut-pill.empty {
-        color: var(--color-text-muted);
+        color: var(--color-text-tertiary);
         border-style: dashed;
     }
 
     .remove-shortcut {
         width: 12px;
         height: 12px;
-        border-radius: 50%;
-        background: var(--color-text-muted);
+        border-radius: var(--radius-full);
+        background: var(--color-text-tertiary);
         color: var(--color-bg-primary);
-        font-size: 10px;
+        font-size: var(--font-size-xs);
         font-weight: bold;
         cursor: default;
         display: none;
@@ -729,7 +729,7 @@
     }
 
     .no-shortcut {
-        color: var(--color-text-muted);
+        color: var(--color-text-tertiary);
         font-size: var(--font-size-sm);
     }
 
@@ -739,10 +739,10 @@
         height: 20px;
         padding: 0;
         border: 1px dashed var(--color-border);
-        border-radius: 4px;
+        border-radius: var(--radius-sm);
         background: transparent;
-        color: var(--color-text-muted);
-        font-size: 14px;
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-md);
         cursor: default;
         display: flex;
         align-items: center;
@@ -750,7 +750,7 @@
     }
 
     .reset-shortcut {
-        font-size: 12px;
+        font-size: var(--font-size-sm);
     }
 
     .reset-shortcut:hover {
@@ -759,7 +759,7 @@
     }
 
     .shortcuts-footer {
-        margin-top: var(--spacing-md);
+        margin-top: var(--spacing-lg);
         padding-top: var(--spacing-sm);
         border-top: 1px solid var(--color-border);
     }
@@ -767,7 +767,7 @@
     .reset-button {
         padding: var(--spacing-xs) var(--spacing-sm);
         border: 1px solid var(--color-border);
-        border-radius: 4px;
+        border-radius: var(--radius-sm);
         background: var(--color-bg-secondary);
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);

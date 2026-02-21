@@ -50,7 +50,7 @@
     :global([data-scope='toggle-group'][data-part='root']) {
         display: inline-flex;
         border: 1px solid var(--color-border);
-        border-radius: 6px;
+        border-radius: var(--radius-md);
         overflow: hidden;
     }
 
@@ -61,7 +61,7 @@
         color: var(--color-text-primary);
         font-size: var(--font-size-sm);
         cursor: default;
-        transition: all 0.15s;
+        transition: all var(--transition-base);
         border-right: 1px solid var(--color-border);
     }
 

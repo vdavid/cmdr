@@ -11,7 +11,13 @@ export default defineConfig({
         port: parseInt(process.env.PORT || '4321'),
     },
     markdown: {
-        shikiConfig: { theme: 'github-dark' },
+        shikiConfig: {
+            themes: {
+                dark: 'github-dark',
+                light: 'github-light',
+            },
+            defaultColor: false,
+        },
         rehypePlugins: [[rehypeExternalLinks, { target: '_blank', rel: ['noopener', 'noreferrer'] }]],
     },
     vite: {

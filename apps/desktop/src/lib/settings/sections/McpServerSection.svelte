@@ -106,11 +106,11 @@
 
 <style>
     .section {
-        margin-bottom: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
     }
 
     .section-title {
-        font-size: 16px;
+        font-size: var(--font-size-lg);
         font-weight: 600;
         color: var(--color-text-primary);
         margin: 0 0 var(--spacing-sm);
@@ -127,7 +127,7 @@
     .check-port-btn {
         padding: var(--spacing-xs) var(--spacing-sm);
         border: 1px solid var(--color-border);
-        border-radius: 4px;
+        border-radius: var(--radius-sm);
         background: var(--color-bg-secondary);
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
@@ -142,14 +142,14 @@
 
     .port-status {
         padding: var(--spacing-xs) var(--spacing-sm);
-        border-radius: 4px;
+        border-radius: var(--radius-sm);
         font-size: var(--font-size-sm);
         margin-top: var(--spacing-xs);
     }
 
     .port-status.checking {
         background: var(--color-bg-secondary);
-        color: var(--color-text-muted);
+        color: var(--color-text-tertiary);
     }
 
     .port-status.available {
@@ -168,10 +168,10 @@
     .use-suggested {
         padding: 2px 8px;
         border: 1px solid var(--color-accent);
-        border-radius: 4px;
+        border-radius: var(--radius-sm);
         background: var(--color-accent);
         color: white;
-        font-size: var(--font-size-xs);
+        font-size: var(--font-size-sm);
         cursor: default;
     }
 </style>

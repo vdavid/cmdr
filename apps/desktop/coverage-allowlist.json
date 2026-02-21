@@ -1,6 +1,7 @@
 {
     "$comment": "Files listed here are exempt from coverage thresholds. Each entry should include a reason. Remove entries as you add tests.",
     "files": {
+        "accent-color.ts": { "reason": "Depends on Tauri invoke and listen APIs" },
         "ui/AlertDialog.svelte": { "reason": "Simple UI modal for informational messages" },
         "ui/dialog-registry.ts": { "reason": "Pure constant and type definition, no logic to test" },
         "ui/ModalDialog.svelte": { "reason": "Shared modal dialog wrapper, depends on DOM APIs and Tauri commands" },

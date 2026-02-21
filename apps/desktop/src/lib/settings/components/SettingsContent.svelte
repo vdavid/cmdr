@@ -141,7 +141,7 @@
     }
 
     section {
-        margin-bottom: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
     }
 
     section:last-child {

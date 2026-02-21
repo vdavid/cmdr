@@ -60,7 +60,7 @@
     .loader:before,
     .loader:after {
         content: '';
-        border-radius: 50%;
+        border-radius: var(--radius-full);
         position: absolute;
         inset: 0;
         box-shadow: 0 0 10px 2px rgba(0, 0, 0, 0.3) inset;

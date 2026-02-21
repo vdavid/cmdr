@@ -54,35 +54,35 @@
 
 <style>
     .section-summary {
-        padding: var(--spacing-md);
+        padding: var(--spacing-lg);
     }
 
     .summary-title {
-        font-size: 20px;
+        font-size: var(--font-size-xl);
         font-weight: 600;
         color: var(--color-text-primary);
-        margin: 0 0 var(--spacing-md);
+        margin: 0 0 var(--spacing-lg);
     }
 
     .subsection-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-        gap: var(--spacing-md);
+        gap: var(--spacing-lg);
     }
 
     .subsection-card {
         display: flex;
         flex-direction: column;
         align-items: flex-start;
-        padding: var(--spacing-md);
+        padding: var(--spacing-lg);
         background: var(--color-bg-secondary);
         border: 1px solid var(--color-border);
-        border-radius: 8px;
+        border-radius: var(--radius-lg);
         cursor: default;
         text-align: left;
         transition:
-            background-color 0.15s,
-            border-color 0.15s;
+            background-color var(--transition-base),
+            border-color var(--transition-base);
     }
 
     .subsection-card:focus-visible {
@@ -91,7 +91,7 @@
     }
 
     .subsection-name {
-        font-size: 14px;
+        font-size: var(--font-size-md);
         font-weight: 600;
         color: var(--color-text-primary);
         margin: 0 0 var(--spacing-xs);
@@ -105,7 +105,7 @@
     }
 
     .no-subsections {
-        color: var(--color-text-muted);
+        color: var(--color-text-tertiary);
         font-size: var(--font-size-sm);
     }
 </style>

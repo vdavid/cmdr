@@ -538,6 +538,9 @@
             </div>
         </div>
     </div>
+    {#if (hasParent ? totalCount - 1 : totalCount) === 0}
+        <div class="empty-folder-overlay">Empty folder</div>
+    {/if}
 </div>
 
 <style>
@@ -546,6 +549,7 @@
         flex-direction: column;
         height: 100%;
         width: 100%;
+        position: relative;
     }
 
     .header-row {
@@ -603,11 +607,11 @@
     }
 
     .file-entry.is-under-cursor {
-        background-color: var(--color-cursor-unfocused-bg);
+        background-color: var(--color-bg-tertiary);
     }
 
     .brief-list-container.is-focused .file-entry.is-under-cursor {
-        background-color: var(--color-cursor-focused-bg);
+        background-color: var(--color-accent-subtle);
     }
 
     .name {
@@ -623,5 +627,19 @@
     /* Selection color is preserved even under cursor */
     .brief-list-container.is-focused .file-entry.is-under-cursor.is-selected .name {
         color: var(--color-selection-fg);
+    }
+
+    .empty-folder-overlay {
+        position: absolute;
+        top: 22px; /* Below the header row */
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-sm);
+        pointer-events: none;
     }
 </style>

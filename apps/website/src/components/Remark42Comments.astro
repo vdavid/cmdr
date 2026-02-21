@@ -18,16 +18,19 @@ const remark42Host = 'https://comments.getcmdr.com'
 
 <script is:inline define:vars={{ remark42Host, isDev }}>
     if (!isDev) {
+        // Detect color scheme, respecting the force-dark override on the landing page
+        var forceDark = document.documentElement.hasAttribute('data-force-dark')
+        var prefersDark = forceDark || window.matchMedia('(prefers-color-scheme: dark)').matches
         window.remark_config = {
             host: remark42Host,
             site_id: 'getcmdr',
-            theme: 'dark',
+            theme: prefersDark ? 'dark' : 'light',
             max_shown_comments: 25,
         }
-        const script = document.createElement('script')
-        script.src = `${remark42Host}/web/embed.js`
-        script.defer = true
-        document.head.appendChild(script)
+        var embedScript = document.createElement('script')
+        embedScript.src = remark42Host + '/web/embed.js'
+        embedScript.defer = true
+        document.head.appendChild(embedScript)
     }
 </script>
 

@@ -3,6 +3,7 @@
     import { activateLicense, validateLicenseWithServer, getLicenseInfo, type LicenseInfo } from '$lib/tauri-commands'
     import { loadLicenseStatus, getCachedStatus } from './licensing-store.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
+    import Button from '$lib/ui/Button.svelte'
 
     interface Props {
         onClose: () => void
@@ -174,7 +175,7 @@
             </p>
 
             <div class="actions">
-                <button class="primary" onclick={onClose}>Close</button>
+                <Button variant="primary" onclick={onClose}>Close</Button>
             </div>
         {:else if !isLoading}
             <p class="description">Paste your license key from the email you received after purchase.</p>
@@ -205,10 +206,10 @@
             {/if}
 
             <div class="actions">
-                <button class="secondary" onclick={onClose} disabled={isActivating}>Cancel</button>
-                <button class="primary" onclick={handleActivate} disabled={isActivating || !licenseKey.trim()}>
+                <Button variant="secondary" onclick={onClose} disabled={isActivating}>Cancel</Button>
+                <Button variant="primary" onclick={handleActivate} disabled={isActivating || !licenseKey.trim()}>
                     {isActivating ? 'Activating...' : hasError ? 'Try again' : 'Activate'}
-                </button>
+                </Button>
             </div>
         {/if}
     </div>
@@ -216,12 +217,12 @@
 
 <style>
     .dialog-body {
-        padding: 0 32px 24px;
+        padding: 0 var(--spacing-2xl) var(--spacing-xl);
     }
 
     .description {
-        margin: 0 0 16px;
-        font-size: 14px;
+        margin: 0 0 var(--spacing-lg);
+        font-size: var(--font-size-md);
         color: var(--color-text-secondary);
         line-height: 1.5;
     }
@@ -232,24 +233,24 @@
 
     .license-input {
         width: 100%;
-        padding: 12px 14px;
-        font-size: 14px;
+        padding: var(--spacing-md) 14px;
+        font-size: var(--font-size-md);
         font-family: var(--font-system) sans-serif;
         background: var(--color-bg-primary);
-        border: 1px solid var(--color-border-primary);
-        border-radius: 8px;
+        border: 1px solid var(--color-border-strong);
+        border-radius: var(--radius-lg);
         color: var(--color-text-primary);
         box-sizing: border-box;
     }
 
     .license-input::placeholder {
-        color: var(--color-text-muted);
+        color: var(--color-text-tertiary);
     }
 
     .license-input:focus {
         outline: none;
         border-color: var(--color-accent);
-        box-shadow: 0 0 0 2px rgba(77, 163, 255, 0.2);
+        box-shadow: var(--shadow-focus);
     }
 
     .license-input.has-error {
@@ -262,8 +263,8 @@
     }
 
     .error-message {
-        margin: 0 0 16px;
-        font-size: 13px;
+        margin: 0 0 var(--spacing-lg);
+        font-size: var(--font-size-md);
         color: var(--color-error);
         line-height: 1.5;
         white-space: pre-wrap;
@@ -279,8 +280,8 @@
     }
 
     .license-validity {
-        margin: 0 0 16px;
-        font-size: 14px;
+        margin: 0 0 var(--spacing-lg);
+        font-size: var(--font-size-md);
         color: var(--color-text-secondary);
         line-height: 1.6;
     }
@@ -289,40 +290,5 @@
         display: flex;
         gap: 12px;
         justify-content: flex-end;
-    }
-
-    button {
-        padding: 10px 18px;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.15s ease;
-    }
-
-    button:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .primary {
-        background: var(--color-accent);
-        color: white;
-        border: none;
-    }
-
-    .primary:hover:not(:disabled) {
-        filter: brightness(1.1);
-    }
-
-    .secondary {
-        background: transparent;
-        color: var(--color-text-secondary);
-        border: 1px solid var(--color-border-primary);
-    }
-
-    .secondary:hover:not(:disabled) {
-        background: var(--color-bg-tertiary);
-        color: var(--color-text-primary);
     }
 </style>

@@ -1871,6 +1871,6 @@
     :global(.file-entry.folder-drop-target) {
         outline: 2px solid var(--color-accent);
         outline-offset: -2px;
-        background-color: var(--color-bg-hover);
+        background-color: var(--color-accent-subtle);
     }
 </style>

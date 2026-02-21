@@ -42,7 +42,7 @@
         border-radius: 10px;
         padding: 2px;
         cursor: default;
-        transition: background-color 0.15s;
+        transition: background-color var(--transition-base);
     }
 
     :global(.switch-control[data-state='checked']) {
@@ -58,9 +58,9 @@
         width: 16px;
         height: 16px;
         background: white;
-        border-radius: 50%;
-        transition: transform 0.15s;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        border-radius: var(--radius-full);
+        transition: transform var(--transition-base);
+        box-shadow: var(--shadow-sm);
     }
 
     :global(.switch-control[data-state='checked'] .switch-thumb) {
@@ -71,6 +71,6 @@
     :global(.switch-control[data-focus]) {
         outline: 2px solid color-mix(in srgb, var(--color-accent) 70%, black);
         outline-offset: 2px;
-        box-shadow: 0 0 0 4px rgba(77, 163, 255, 0.3);
+        box-shadow: var(--shadow-focus);
     }
 </style>

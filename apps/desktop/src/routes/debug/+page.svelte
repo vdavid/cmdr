@@ -195,14 +195,14 @@
         justify-content: space-between;
         padding: 12px 16px;
         background: var(--color-bg-secondary);
-        border-bottom: 1px solid var(--color-border-primary);
+        border-bottom: 1px solid var(--color-border-strong);
         /* Allow dragging the window from header */
         -webkit-app-region: drag;
     }
 
     .debug-header h1 {
         margin: 0;
-        font-size: 14px;
+        font-size: var(--font-size-md);
         font-weight: 600;
         color: var(--color-text-primary);
     }
@@ -212,15 +212,15 @@
         background: none;
         border: none;
         color: var(--color-text-secondary);
-        font-size: 20px;
+        font-size: var(--font-size-xl);
         cursor: pointer;
         padding: 2px 8px;
         line-height: 1;
-        border-radius: 4px;
+        border-radius: var(--radius-sm);
     }
 
     .close-button:hover {
-        background: var(--color-button-hover);
+        background: var(--color-bg-tertiary);
         color: var(--color-text-primary);
     }
 
@@ -235,8 +235,8 @@
     }
 
     .debug-section h2 {
-        margin: 0 0 12px;
-        font-size: 12px;
+        margin: 0 0 var(--spacing-md);
+        font-size: var(--font-size-sm);
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -249,7 +249,7 @@
         justify-content: space-between;
         padding: 8px 12px;
         background: var(--color-bg-secondary);
-        border-radius: 6px;
+        border-radius: var(--radius-md);
         cursor: pointer;
     }
 
@@ -258,7 +258,7 @@
     }
 
     .toggle-row span {
-        font-size: 13px;
+        font-size: var(--font-size-md);
         color: var(--color-text-primary);
     }
 
@@ -278,7 +278,7 @@
     .history-pane {
         flex: 1;
         background: var(--color-bg-secondary);
-        border-radius: 6px;
+        border-radius: var(--radius-md);
         padding: 8px;
         min-width: 0;
     }
@@ -288,8 +288,8 @@
     }
 
     .history-pane h3 {
-        margin: 0 0 8px;
-        font-size: 11px;
+        margin: 0 0 var(--spacing-sm);
+        font-size: var(--font-size-sm);
         font-weight: 600;
         color: var(--color-text-secondary);
         text-transform: uppercase;
@@ -299,16 +299,16 @@
         list-style: none;
         margin: 0;
         padding: 0;
-        font-size: 11px;
+        font-size: var(--font-size-sm);
         font-family: var(--font-mono);
     }
 
     .history-list li {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: var(--spacing-xs);
         padding: 3px 4px;
-        border-radius: 3px;
+        border-radius: var(--radius-sm);
         color: var(--color-text-secondary);
     }
 
@@ -336,8 +336,8 @@
 
     .no-history {
         margin: 0;
-        font-size: 11px;
-        color: var(--color-text-muted);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
         font-style: italic;
     }
 </style>

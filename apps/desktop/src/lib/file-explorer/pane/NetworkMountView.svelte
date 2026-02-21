@@ -205,9 +205,9 @@
     .mounting-state .spinner {
         width: 24px;
         height: 24px;
-        border: 3px solid var(--color-border-primary);
+        border: 3px solid var(--color-border-strong);
         border-top-color: var(--color-accent);
-        border-radius: 50%;
+        border-radius: var(--radius-full);
         animation: spin 1s linear infinite;
     }
 
@@ -237,7 +237,7 @@
     }
 
     .mount-error-state .error-title {
-        font-size: 16px;
+        font-size: var(--font-size-lg);
         font-weight: 500;
         color: var(--color-text-primary);
     }
@@ -258,16 +258,16 @@
 
     .mount-error-state .btn {
         padding: 8px 16px;
-        border: 1px solid var(--color-border-primary);
-        border-radius: 6px;
+        border: 1px solid var(--color-border-strong);
+        border-radius: var(--radius-md);
         background-color: var(--color-bg-secondary);
         color: var(--color-text-primary);
         font-size: var(--font-size-sm);
         cursor: pointer;
-        transition: background-color 0.15s ease;
+        transition: background-color var(--transition-base);
     }
 
     .mount-error-state .btn:hover {
-        background-color: var(--color-bg-hover);
+        background-color: var(--color-bg-tertiary);
     }
 </style>

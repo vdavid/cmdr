@@ -36,10 +36,10 @@ export function formatDateShort(timestamp: number | undefined): string {
 // ============================================================================
 
 /**
- * The date column font specification matching CSS: var(--font-size-xs) = 12px, system font.
+ * The date column font specification matching CSS: var(--font-size-sm) = 12px, system font.
  * Used for accurate text width measurement via Canvas API.
  */
-const DATE_COLUMN_FONT = '12px -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif'
+const DATE_COLUMN_FONT = '12px -apple-system, BlinkMacSystemFont, system-ui, sans-serif'
 
 /** Extra padding for the date column width (accounts for rounding and breathing room) */
 const DATE_COLUMN_PADDING = 8

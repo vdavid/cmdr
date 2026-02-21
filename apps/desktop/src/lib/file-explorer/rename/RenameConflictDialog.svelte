@@ -1,5 +1,6 @@
 <script lang="ts">
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
+    import Button from '$lib/ui/Button.svelte'
     import { formatDateTime, formatFileSize } from '$lib/settings/reactive-settings.svelte'
 
     export interface ConflictFileInfo {
@@ -91,31 +92,31 @@
     </div>
 
     <div class="button-row">
-        <button
-            class="primary"
+        <Button
+            variant="primary"
             onclick={() => {
                 onResolve('overwrite-trash')
-            }}>Overwrite and trash old file</button
+            }}>Overwrite and trash old file</Button
         >
-        <button
-            class="danger"
+        <Button
+            variant="danger"
             onclick={() => {
                 onResolve('overwrite-delete')
-            }}>Overwrite and delete old file</button
+            }}>Overwrite and delete old file</Button
         >
     </div>
     <div class="button-row secondary-row">
-        <button
-            class="secondary"
+        <Button
+            variant="secondary"
             onclick={() => {
                 onResolve('cancel')
-            }}>Cancel</button
+            }}>Cancel</Button
         >
-        <button
-            class="secondary"
+        <Button
+            variant="secondary"
             onclick={() => {
                 onResolve('continue')
-            }}>Continue renaming</button
+            }}>Continue renaming</Button
         >
     </div>
 </ModalDialog>
@@ -123,8 +124,8 @@
 <style>
     .description {
         margin: 0;
-        padding: 0 24px 16px;
-        font-size: 13px;
+        padding: 0 var(--spacing-xl) var(--spacing-lg);
+        font-size: var(--font-size-md);
         color: var(--color-text-secondary);
         line-height: 1.5;
     }
@@ -137,14 +138,14 @@
 
     .file-card {
         flex: 1;
-        border: 1px solid var(--color-border-primary);
-        border-radius: 8px;
+        border: 1px solid var(--color-border-strong);
+        border-radius: var(--radius-lg);
         overflow: hidden;
     }
 
     .file-card-header {
-        padding: 8px 12px;
-        font-size: 11px;
+        padding: var(--spacing-sm) var(--spacing-md);
+        font-size: var(--font-size-sm);
         font-weight: 600;
         color: var(--color-text-secondary);
         background: var(--color-bg-tertiary);
@@ -153,10 +154,10 @@
     }
 
     .file-card-body {
-        padding: 8px 12px;
+        padding: var(--spacing-sm) var(--spacing-md);
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: var(--spacing-xs);
     }
 
     .file-meta {
@@ -167,12 +168,12 @@
     }
 
     .meta-label {
-        font-size: 11px;
-        color: var(--color-text-muted);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
     }
 
     .meta-value {
-        font-size: 12px;
+        font-size: var(--font-size-sm);
         color: var(--color-text-primary);
         font-variant-numeric: tabular-nums;
     }
@@ -191,45 +192,5 @@
 
     .secondary-row {
         padding-bottom: 20px;
-    }
-
-    button {
-        padding: 8px 16px;
-        border-radius: 6px;
-        font-size: 13px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.15s ease;
-    }
-
-    .primary {
-        background: var(--color-accent);
-        color: white;
-        border: none;
-    }
-
-    .primary:hover {
-        filter: brightness(1.1);
-    }
-
-    .danger {
-        background: transparent;
-        color: var(--color-error);
-        border: 1px solid var(--color-error);
-    }
-
-    .danger:hover {
-        background: var(--color-error-bg);
-    }
-
-    .secondary {
-        background: transparent;
-        color: var(--color-text-secondary);
-        border: 1px solid var(--color-border-primary);
-    }
-
-    .secondary:hover {
-        background: var(--color-bg-tertiary);
-        color: var(--color-text-primary);
     }
 </style>

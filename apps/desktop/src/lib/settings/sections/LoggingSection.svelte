@@ -81,11 +81,11 @@ Timestamp: ${info.timestamp}
 
 <style>
     .section {
-        margin-bottom: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
     }
 
     .section-title {
-        font-size: 16px;
+        font-size: var(--font-size-lg);
         font-weight: 600;
         color: var(--color-text-primary);
         margin: 0 0 var(--spacing-sm);
@@ -96,13 +96,13 @@ Timestamp: ${info.timestamp}
     .logging-actions {
         display: flex;
         gap: var(--spacing-sm);
-        margin-top: var(--spacing-md);
+        margin-top: var(--spacing-lg);
     }
 
     .action-btn {
         padding: var(--spacing-xs) var(--spacing-sm);
         border: 1px solid var(--color-border);
-        border-radius: 4px;
+        border-radius: var(--radius-sm);
         background: var(--color-bg-secondary);
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);

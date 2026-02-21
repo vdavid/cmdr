@@ -8,6 +8,7 @@
     import { startUpdateChecker } from '$lib/updates/updater.svelte'
     import { initSettingsApplier, cleanupSettingsApplier } from '$lib/settings/settings-applier'
     import { initReactiveSettings, cleanupReactiveSettings } from '$lib/settings/reactive-settings.svelte'
+    import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
     import { initializeShortcuts, setupMcpShortcutsListener, cleanupMcpShortcutsListener } from '$lib/shortcuts'
     import { onMtpExclusiveAccessError, connectMtpDevice, type MtpExclusiveAccessErrorEvent } from '$lib/tauri-commands'
     import AiNotification from '$lib/ai/AiNotification.svelte'
@@ -63,6 +64,9 @@
             // Initialize settings and apply them to CSS variables
             await initSettingsApplier()
 
+            // Read system accent color from macOS and listen for changes
+            await initAccentColor()
+
             // Initialize keyboard shortcuts store (loads custom shortcuts from disk)
             await initializeShortcuts()
 
@@ -89,6 +93,7 @@
         // Cleanup update checker
         updateCleanup?.()
         // Cleanup other modules
+        cleanupAccentColor()
         cleanupReactiveSettings()
         cleanupSettingsApplier()
         cleanupMcpShortcutsListener()

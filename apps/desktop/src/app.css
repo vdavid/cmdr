@@ -1,15 +1,10 @@
-/* 
- * We use semantic CSS classes with CSS custom properties instead.
- */
-
-/* =============================================================================
-   Design tokens - CSS Custom Properties
-   
-   These variables serve as the single source of truth for all colors, spacing,
-   and typography. They can be used in both scoped CSS and Tailwind classes.
-   
-   Future: Can be modified at runtime for user theme customization.
-   ============================================================================= */
+/* Design tokens for the Cmdr desktop app.
+ * See /.interface-design/system.md for the design system specification.
+ *
+ * These variables serve as the single source of truth for all colors, spacing,
+ * and typography. They can be used in both scoped CSS and Tailwind classes.
+ *
+ * Future: Can be modified at runtime for user theme customization. */
 
 :root {
     /* === Backgrounds === */
@@ -19,24 +14,19 @@
     --color-bg-header: #f0f0f0;
 
     /* === Borders === */
-    --color-border-primary: #ccc;
+    --color-border-strong: #bbb;
     --color-border: #ddd;
-    --color-border-secondary: #e0e0e0;
+    --color-border-subtle: #e8e8e8;
 
     /* === Text === */
-    --color-text-primary: #000000;
+    --color-text-primary: #1a1a1a;
     --color-text-secondary: #666666;
     --color-text-tertiary: #888888;
-    --color-text-muted: #999999;
 
     /* === Interactive States === */
-    --color-button-hover: rgba(0, 120, 215, 0.08);
-    --color-bg-hover: rgba(0, 120, 215, 0.08);
-    --color-cursor-focused-bg: #88cbff;
-    --color-cursor-focused-fg: #ffffff;
-    --color-cursor-unfocused-bg: rgba(104, 128, 147, 0.1);
-    --color-accent: #0078d4;
-    --color-accent-hover: #005a9e;
+    --color-accent: #007aff;
+    --color-accent-hover: color-mix(in oklch, var(--color-accent), white 15%);
+    --color-accent-subtle: color-mix(in oklch, var(--color-accent), transparent 85%);
 
     /* === Semantic Colors === */
     --color-allow: #2e7d32;
@@ -63,14 +53,44 @@
     --spacing-xxs: 2px;
     --spacing-xs: 4px;
     --spacing-sm: 8px;
-    --spacing-md: 16px;
+    --spacing-md: 12px;
+    --spacing-lg: 16px;
+    --spacing-xl: 24px;
+    --spacing-2xl: 32px;
 
     /* === Typography === */
-    --font-system: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --font-system: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    --font-size-xs: 12px;
+    --font-size-xs: 10px;
     --font-size-sm: 12px;
-    --font-size-base: 16px;
+    --font-size-md: 14px;
+    --font-size-lg: 16px;
+    --font-size-xl: 20px;
+
+    /* === Border radius === */
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+    --radius-full: 9999px;
+
+    /* === Shadows (light) === */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.15);
+    --shadow-focus: 0 0 0 3px var(--color-accent-subtle);
+
+    /* === Transitions === */
+    --transition-fast: 100ms ease;
+    --transition-base: 150ms ease;
+    --transition-slow: 200ms ease;
+
+    /* === Z-index scale === */
+    --z-base: 0;
+    --z-sticky: 10;
+    --z-dropdown: 100;
+    --z-overlay: 200;
+    --z-modal: 300;
+    --z-notification: 400;
 }
 
 /* Dark Mode - automatically applied when user's system prefers dark mode */
@@ -83,24 +103,19 @@
         --color-bg-header: #252525;
 
         /* === Borders === */
-        --color-border-primary: #444444;
-        --color-border: #555555;
-        --color-border-secondary: #3a3a3a;
+        --color-border-strong: #555555;
+        --color-border: #444444;
+        --color-border-subtle: #333333;
 
         /* === Text === */
-        --color-text-primary: #ffffff;
+        --color-text-primary: #e8e8e8;
         --color-text-secondary: #aaaaaa;
         --color-text-tertiary: #888888;
-        --color-text-muted: #808080;
 
         /* === Interactive States === */
-        --color-button-hover: rgba(100, 180, 255, 0.12);
-        --color-bg-hover: rgba(100, 180, 255, 0.12);
-        --color-cursor-focused-bg: #0a50d0;
-        --color-cursor-focused-fg: #ffffff;
-        --color-cursor-unfocused-bg: rgba(10, 80, 208, 0.1);
-        --color-accent: #4da3ff;
-        --color-accent-hover: #6eb5ff;
+        --color-accent: #0a84ff;
+        --color-accent-hover: color-mix(in oklch, var(--color-accent), white 10%);
+        --color-accent-subtle: color-mix(in oklch, var(--color-accent), transparent 85%);
 
         /* === Semantic Colors === */
         --color-allow: #66bb6a;
@@ -116,6 +131,11 @@
         /* === Search Highlight === */
         --color-highlight: rgba(255, 213, 100, 0.9);
         --color-highlight-active: rgba(255, 150, 100, 0.9);
+
+        /* === Shadows (dark) === */
+        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
+        --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.5);
     }
 }
 
@@ -353,7 +373,6 @@ body {
     -webkit-user-select: none;
     /* Force default cursor everywhere */
     cursor: default;
-    font-size: var(--font-size-base);
 }
 
 body {

@@ -18,25 +18,19 @@
 <style>
     .notification {
         position: fixed;
-        top: var(--spacing-md);
-        right: var(--spacing-md);
+        top: var(--spacing-lg);
+        right: var(--spacing-lg);
         background: var(--color-bg-secondary);
         border: 1px solid var(--color-border);
-        border-radius: 8px;
+        border-radius: var(--radius-lg);
         padding: var(--spacing-sm) var(--spacing-md);
         display: flex;
         align-items: center;
         gap: var(--spacing-sm);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        z-index: 9998;
+        box-shadow: var(--shadow-md);
+        z-index: var(--z-notification);
         max-width: 360px;
         animation: slide-in 0.2s ease-out;
-    }
-
-    @media (prefers-color-scheme: dark) {
-        .notification {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-        }
     }
 
     .notification.error {
@@ -69,16 +63,16 @@
         flex-shrink: 0;
         background: none;
         border: none;
-        color: var(--color-text-muted);
-        font-size: 14px;
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-md);
         cursor: pointer;
-        padding: 2px 6px;
-        border-radius: 4px;
+        padding: 2px var(--spacing-xs);
+        border-radius: var(--radius-sm);
         line-height: 1;
     }
 
     .notification-close:hover {
-        background: var(--color-button-hover);
+        background: var(--color-bg-tertiary);
         color: var(--color-text-primary);
     }
 </style>

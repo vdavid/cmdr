@@ -217,7 +217,7 @@
         align-items: center;
         justify-content: center;
         height: 100%;
-        padding: var(--spacing-md);
+        padding: var(--spacing-lg);
         background-color: var(--color-bg-primary);
     }
 
@@ -226,9 +226,9 @@
         width: 100%;
         padding: 24px;
         background-color: var(--color-bg-secondary);
-        border: 1px solid var(--color-border-primary);
+        border: 1px solid var(--color-border-strong);
         border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        box-shadow: var(--shadow-md);
     }
 
     .login-title {
@@ -236,13 +236,13 @@
         align-items: center;
         gap: 8px;
         margin-bottom: 16px;
-        font-size: 18px;
+        font-size: var(--font-size-xl);
         font-weight: 600;
         color: var(--color-text-primary);
     }
 
     .lock-icon {
-        font-size: 20px;
+        font-size: var(--font-size-xl);
     }
 
     .auth-changed-message {
@@ -253,7 +253,7 @@
         margin-bottom: 16px;
         background-color: color-mix(in srgb, var(--color-accent) 15%, transparent);
         border: 1px solid var(--color-accent);
-        border-radius: 8px;
+        border-radius: var(--radius-lg);
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
     }
@@ -270,7 +270,7 @@
         margin-bottom: 16px;
         background-color: color-mix(in srgb, var(--color-error) 15%, transparent);
         border: 1px solid var(--color-error);
-        border-radius: 8px;
+        border-radius: var(--radius-lg);
         font-size: var(--font-size-sm);
         color: var(--color-error);
     }
@@ -306,7 +306,7 @@
     }
 
     .credentials-fields {
-        transition: opacity 0.2s ease;
+        transition: opacity var(--transition-slow);
     }
 
     .credentials-fields.disabled {
@@ -329,14 +329,14 @@
     .field-input {
         width: 100%;
         padding: 10px 12px;
-        border: 1px solid var(--color-border-primary);
-        border-radius: 6px;
+        border: 1px solid var(--color-border-strong);
+        border-radius: var(--radius-md);
         background-color: var(--color-bg-primary);
         color: var(--color-text-primary);
         font-size: var(--font-size-sm);
         transition:
-            border-color 0.15s ease,
-            box-shadow 0.15s ease;
+            border-color var(--transition-base),
+            box-shadow var(--transition-base);
     }
 
     .field-input:focus {
@@ -346,7 +346,7 @@
     }
 
     .field-input::placeholder {
-        color: var(--color-text-muted);
+        color: var(--color-text-tertiary);
     }
 
     .field-input:disabled {
@@ -383,13 +383,13 @@
 
     .btn {
         padding: 10px 20px;
-        border-radius: 6px;
+        border-radius: var(--radius-md);
         font-size: var(--font-size-sm);
         font-weight: 500;
         cursor: pointer;
         transition:
-            background-color 0.15s ease,
-            opacity 0.15s ease;
+            background-color var(--transition-base),
+            opacity var(--transition-base);
     }
 
     .btn:disabled {
@@ -399,12 +399,12 @@
 
     .btn-secondary {
         background-color: var(--color-bg-tertiary);
-        border: 1px solid var(--color-border-primary);
+        border: 1px solid var(--color-border-strong);
         color: var(--color-text-primary);
     }
 
     .btn-secondary:hover:not(:disabled) {
-        background-color: var(--color-button-hover);
+        background-color: var(--color-bg-tertiary);
     }
 
     .btn-primary {
@@ -413,7 +413,7 @@
         gap: 8px;
         background-color: var(--color-accent);
         border: none;
-        color: #ffffff;
+        color: white;
     }
 
     .btn-primary:hover:not(:disabled) {
@@ -424,8 +424,8 @@
         width: 14px;
         height: 14px;
         border: 2px solid rgba(255, 255, 255, 0.3);
-        border-top-color: #ffffff;
-        border-radius: 50%;
+        border-top-color: white;
+        border-radius: var(--radius-full);
         animation: spin 0.8s linear infinite;
     }
 

@@ -254,7 +254,7 @@ export async function renderDragImage(fileInfos: DragFileInfo[]): Promise<HTMLCa
     drawTopGlow(ctx, logicalWidth, cornerRadius)
 
     // Draw text and icon lines
-    const font = `${String(fontSize)}px -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif`
+    const font = `${String(fontSize)}px -apple-system, BlinkMacSystemFont, system-ui, sans-serif`
     ctx.textBaseline = 'middle'
 
     let yOffset = 0
@@ -278,7 +278,7 @@ export async function renderDragImage(fileInfos: DragFileInfo[]): Promise<HTMLCa
             ctx.fillText(line.text, textLeft, y)
         } else if (line.isSummary) {
             // "and N more" line: lighter color, slightly smaller for visual distinction
-            const smallerFont = `${String(fontSize - 0.5)}px -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif`
+            const smallerFont = `${String(fontSize - 0.5)}px -apple-system, BlinkMacSystemFont, system-ui, sans-serif`
             ctx.font = smallerFont
             ctx.fillStyle = mutedTextColor
             ctx.fillText(line.text, textLeft, y)

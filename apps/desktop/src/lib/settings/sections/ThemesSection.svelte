@@ -85,11 +85,11 @@
 
 <style>
     .section {
-        margin-bottom: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
     }
 
     .section-title {
-        font-size: 16px;
+        font-size: var(--font-size-lg);
         font-weight: 600;
         color: var(--color-text-primary);
         margin: 0 0 var(--spacing-sm);
@@ -98,14 +98,14 @@
     }
 
     .coming-soon {
-        padding: var(--spacing-md);
+        padding: var(--spacing-lg);
         background: var(--color-bg-secondary);
-        border-radius: 6px;
-        margin-top: var(--spacing-md);
+        border-radius: var(--radius-md);
+        margin-top: var(--spacing-lg);
     }
 
     .coming-soon h3 {
-        font-size: 14px;
+        font-size: var(--font-size-md);
         font-weight: 600;
         color: var(--color-text-secondary);
         margin: 0 0 var(--spacing-xs);
@@ -113,7 +113,7 @@
 
     .coming-soon p {
         font-size: var(--font-size-sm);
-        color: var(--color-text-muted);
+        color: var(--color-text-tertiary);
         margin: 0;
     }
 </style>

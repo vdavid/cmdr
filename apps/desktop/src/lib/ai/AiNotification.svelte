@@ -89,24 +89,18 @@
 <style>
     .ai-notification {
         position: fixed;
-        top: var(--spacing-md);
-        right: var(--spacing-md);
+        top: var(--spacing-lg);
+        right: var(--spacing-lg);
         background: var(--color-bg-secondary);
         border: 1px solid var(--color-border);
-        border-radius: 8px;
+        border-radius: var(--radius-lg);
         padding: var(--spacing-sm) var(--spacing-md);
         display: flex;
         flex-direction: column;
         gap: var(--spacing-sm);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        z-index: 9998;
+        box-shadow: var(--shadow-md);
+        z-index: var(--z-notification);
         max-width: 320px;
-    }
-
-    @media (prefers-color-scheme: dark) {
-        .ai-notification {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-        }
     }
 
     .ai-content {
@@ -122,7 +116,7 @@
     }
 
     .ai-description {
-        font-size: var(--font-size-xs);
+        font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
         line-height: 1.4;
     }
@@ -152,7 +146,7 @@
         height: 100%;
         background: var(--color-accent);
         border-radius: 2px;
-        transition: width 0.2s ease;
+        transition: width var(--transition-slow);
     }
 
     .ai-actions {
@@ -163,7 +157,7 @@
 
     .ai-button {
         padding: var(--spacing-xs) var(--spacing-sm);
-        border-radius: 6px;
+        border-radius: var(--radius-md);
         font-size: var(--font-size-sm);
         cursor: pointer;
         border: none;
@@ -184,7 +178,7 @@
     }
 
     .ai-button.secondary:hover {
-        background: var(--color-button-hover);
+        background: var(--color-bg-tertiary);
     }
 
     .ai-button.tertiary {

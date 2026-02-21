@@ -25,6 +25,7 @@
     import { getSetting } from '$lib/settings'
     import DirectionIndicator from './DirectionIndicator.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
+    import Button from '$lib/ui/Button.svelte'
     import { generateTitle } from './transfer-dialog-utils'
     import { getAppLogger } from '$lib/logger'
 
@@ -432,8 +433,8 @@
 
     <!-- Buttons (centered) -->
     <div class="button-row">
-        <button class="secondary" onclick={handleCancel}>Cancel</button>
-        <button class="primary" onclick={handleConfirm} disabled={!!pathError}>{confirmLabel}</button>
+        <Button variant="secondary" onclick={handleCancel}>Cancel</Button>
+        <Button variant="primary" onclick={handleConfirm} disabled={!!pathError}>{confirmLabel}</Button>
     </div>
 </ModalDialog>
 
@@ -448,12 +449,12 @@
 
     .volume-select {
         flex: 0 0 auto;
-        padding: 8px 12px;
-        font-size: 13px;
+        padding: var(--spacing-sm) var(--spacing-md);
+        font-size: var(--font-size-md);
         font-family: var(--font-system) sans-serif;
         background: var(--color-bg-primary);
-        border: 1px solid var(--color-border-primary);
-        border-radius: 6px;
+        border: 1px solid var(--color-border-strong);
+        border-radius: var(--radius-md);
         color: var(--color-text-primary);
         cursor: pointer;
     }
@@ -464,8 +465,8 @@
     }
 
     .space-info {
-        font-size: 12px;
-        color: var(--color-text-muted);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
     }
 
     .path-input-group {
@@ -475,23 +476,23 @@
 
     .path-input {
         width: 100%;
-        padding: 10px 12px;
-        font-size: 13px;
+        padding: 10px var(--spacing-md);
+        font-size: var(--font-size-md);
         font-family: var(--font-system) sans-serif;
         background: var(--color-bg-primary);
         border: 2px solid var(--color-accent);
-        border-radius: 6px;
+        border-radius: var(--radius-md);
         color: var(--color-text-primary);
         box-sizing: border-box;
     }
 
     .path-input::placeholder {
-        color: var(--color-text-muted);
+        color: var(--color-text-tertiary);
     }
 
     .path-input:focus {
         outline: none;
-        box-shadow: 0 0 0 2px rgba(77, 163, 255, 0.2);
+        box-shadow: var(--shadow-focus);
     }
 
     .path-input.has-error {
@@ -499,12 +500,12 @@
     }
 
     .path-input.has-error:focus {
-        box-shadow: 0 0 0 2px rgba(211, 47, 47, 0.2);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-error), transparent 85%);
     }
 
     .path-error {
-        margin: 6px 0 0;
-        font-size: 12px;
+        margin: var(--spacing-sm) 0 0;
+        font-size: var(--font-size-sm);
         color: var(--color-error);
     }
 
@@ -515,42 +516,6 @@
         padding: 0 24px 20px;
     }
 
-    button {
-        padding: 8px 20px;
-        border-radius: 6px;
-        font-size: 13px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.15s ease;
-        min-width: 80px;
-    }
-
-    button:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .primary {
-        background: var(--color-accent);
-        color: white;
-        border: none;
-    }
-
-    .primary:hover:not(:disabled) {
-        filter: brightness(1.1);
-    }
-
-    .secondary {
-        background: transparent;
-        color: var(--color-text-secondary);
-        border: 1px solid var(--color-border-primary);
-    }
-
-    .secondary:hover:not(:disabled) {
-        background: var(--color-bg-tertiary);
-        color: var(--color-text-primary);
-    }
-
     /* Scan stats */
     .scan-stats {
         display: flex;
@@ -558,7 +523,7 @@
         justify-content: center;
         gap: 8px;
         padding: 0 24px 16px;
-        font-size: 12px;
+        font-size: var(--font-size-sm);
     }
 
     .scan-stat {
@@ -574,11 +539,11 @@
     }
 
     .scan-label {
-        color: var(--color-text-muted);
+        color: var(--color-text-tertiary);
     }
 
     .scan-divider {
-        color: var(--color-text-muted);
+        color: var(--color-text-tertiary);
     }
 
     .scan-spinner {
@@ -586,7 +551,7 @@
         height: 12px;
         border: 2px solid var(--color-accent);
         border-top-color: transparent;
-        border-radius: 50%;
+        border-radius: var(--radius-full);
         animation: spin 0.8s linear infinite;
         margin-left: 4px;
     }
@@ -599,7 +564,7 @@
 
     .scan-checkmark {
         color: var(--color-allow);
-        font-size: 14px;
+        font-size: var(--font-size-md);
         font-weight: bold;
         margin-left: 4px;
     }
@@ -609,26 +574,26 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 8px;
-        padding: 0 24px 12px;
-        font-size: 12px;
+        gap: var(--spacing-sm);
+        padding: 0 var(--spacing-xl) var(--spacing-md);
+        font-size: var(--font-size-sm);
     }
 
     .conflicts-checking-text {
-        color: var(--color-text-muted);
+        color: var(--color-text-tertiary);
     }
 
     /* Conflicts section */
     .conflicts-section {
         padding: 0 24px 12px;
-        border-top: 1px solid var(--color-border-primary);
+        border-top: 1px solid var(--color-border-strong);
         margin-top: 4px;
         padding-top: 12px;
     }
 
     .conflicts-summary {
-        margin: 0 0 12px;
-        font-size: 13px;
+        margin: 0 0 var(--spacing-md);
+        font-size: var(--font-size-md);
         color: var(--color-warning);
         text-align: center;
         font-weight: 500;
@@ -643,8 +608,8 @@
     .policy-option {
         display: flex;
         align-items: center;
-        gap: 6px;
-        font-size: 12px;
+        gap: var(--spacing-sm);
+        font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
         cursor: pointer;
     }
@@ -667,24 +632,24 @@
     }
 
     .toggle-option {
-        padding: 5px 16px;
-        font-size: 12px;
+        padding: 5px var(--spacing-lg);
+        font-size: var(--font-size-sm);
         font-weight: 500;
         cursor: pointer;
-        border: 1px solid var(--color-border-primary);
+        border: 1px solid var(--color-border-strong);
         background: transparent;
         color: var(--color-text-secondary);
-        transition: all 0.15s ease;
+        transition: all var(--transition-base);
         min-width: 60px;
     }
 
     .toggle-option:first-child {
-        border-radius: 6px 0 0 6px;
+        border-radius: var(--radius-md) 0 0 var(--radius-md);
         border-right: none;
     }
 
     .toggle-option:last-child {
-        border-radius: 0 6px 6px 0;
+        border-radius: 0 var(--radius-md) var(--radius-md) 0;
     }
 
     .toggle-option.active {

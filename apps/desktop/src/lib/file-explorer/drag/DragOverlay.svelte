@@ -57,11 +57,11 @@
 <style>
     .drag-overlay {
         position: fixed;
-        z-index: 10000;
+        z-index: var(--z-notification);
         pointer-events: none;
         max-width: 320px;
         padding: 10px 14px;
-        border-radius: 8px;
+        border-radius: var(--radius-lg);
         background: rgba(30, 30, 30, 0.9);
         color: rgba(255, 255, 255, 0.92);
         font-family: var(--font-system), sans-serif;
@@ -102,7 +102,7 @@
     }
 
     .name-icon-emoji {
-        font-size: 10px;
+        font-size: var(--font-size-xs);
         width: 12px;
         text-align: center;
         flex-shrink: 0;
@@ -119,8 +119,8 @@
     }
 
     .action-line {
-        margin-top: 6px;
-        padding-top: 6px;
+        margin-top: var(--spacing-sm);
+        padding-top: var(--spacing-sm);
         border-top: 1px solid rgba(255, 255, 255, 0.15);
         font-weight: 500;
         color: var(--color-accent);

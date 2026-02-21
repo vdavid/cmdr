@@ -464,9 +464,9 @@
     .spinner {
         width: 24px;
         height: 24px;
-        border: 3px solid var(--color-border-primary);
+        border: 3px solid var(--color-border-strong);
         border-top-color: var(--color-accent);
-        border-radius: 50%;
+        border-radius: var(--radius-full);
         animation: spin 1s linear infinite;
     }
 
@@ -483,7 +483,7 @@
 
     .error-title,
     .empty-title {
-        font-size: 16px;
+        font-size: var(--font-size-lg);
         font-weight: 500;
         color: var(--color-text-primary);
     }
@@ -503,17 +503,17 @@
 
     .btn {
         padding: 8px 16px;
-        border: 1px solid var(--color-border-primary);
-        border-radius: 6px;
+        border: 1px solid var(--color-border-strong);
+        border-radius: var(--radius-md);
         background-color: var(--color-bg-secondary);
         color: var(--color-text-primary);
         font-size: var(--font-size-sm);
         cursor: pointer;
-        transition: background-color 0.15s ease;
+        transition: background-color var(--transition-base);
     }
 
     .btn:hover {
-        background-color: var(--color-button-hover);
+        background-color: var(--color-bg-tertiary);
     }
 
     .header-row {
@@ -522,13 +522,13 @@
         gap: 12px;
         padding: 8px 12px;
         background-color: var(--color-bg-secondary);
-        border-bottom: 1px solid var(--color-border-primary);
+        border-bottom: 1px solid var(--color-border-strong);
     }
 
     .back-button {
         padding: 4px 8px;
-        border: 1px solid var(--color-border-primary);
-        border-radius: 4px;
+        border: 1px solid var(--color-border-strong);
+        border-radius: var(--radius-sm);
         background-color: transparent;
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
@@ -536,7 +536,7 @@
     }
 
     .back-button:hover {
-        background-color: var(--color-button-hover);
+        background-color: var(--color-bg-tertiary);
     }
 
     .host-name {
@@ -545,7 +545,7 @@
     }
 
     .share-count {
-        color: var(--color-text-muted);
+        color: var(--color-text-tertiary);
         margin-left: auto;
     }
 
@@ -564,16 +564,15 @@
     }
 
     .share-row.is-under-cursor {
-        background-color: var(--color-cursor-unfocused-bg);
+        background-color: var(--color-bg-tertiary);
     }
 
     .share-row.is-focused-and-under-cursor {
-        background-color: var(--color-cursor-focused-bg);
-        color: var(--color-cursor-focused-fg);
+        background-color: var(--color-accent-subtle);
     }
 
     .share-icon {
-        font-size: 16px;
+        font-size: var(--font-size-lg);
     }
 
     .share-name {
@@ -583,11 +582,10 @@
     .share-comment {
         color: var(--color-text-tertiary);
         margin-left: auto;
-        font-size: var(--font-size-xs);
+        font-size: var(--font-size-sm);
     }
 
     .share-row.is-focused-and-under-cursor .share-comment {
-        color: var(--color-cursor-focused-fg);
-        opacity: 0.8;
+        color: var(--color-text-secondary);
     }
 </style>

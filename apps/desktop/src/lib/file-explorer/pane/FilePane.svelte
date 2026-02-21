@@ -1828,14 +1828,14 @@
         display: flex;
         flex-direction: column;
         overflow: hidden;
-        border: 1px solid var(--color-border-primary);
+        border: 1px solid var(--color-border-strong);
     }
 
     .header {
         padding: 2px var(--spacing-sm);
         background-color: var(--color-bg-secondary);
-        border-bottom: 1px solid var(--color-border-primary);
-        font-size: var(--font-size-xs);
+        border-bottom: 1px solid var(--color-border-strong);
+        font-size: var(--font-size-sm);
         white-space: nowrap;
         display: flex;
         align-items: center;
@@ -1864,6 +1864,6 @@
         height: 100%;
         color: var(--color-error);
         text-align: center;
-        padding: var(--spacing-md);
+        padding: var(--spacing-lg);
     }
 </style>

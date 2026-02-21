@@ -206,25 +206,25 @@
         justify-content: center;
         align-items: flex-start;
         padding-top: 15vh;
-        z-index: 10000;
+        z-index: var(--z-modal);
     }
 
     .palette-modal {
         background: var(--color-bg-secondary);
-        border: 1px solid var(--color-border-primary);
-        border-radius: 8px;
+        border: 1px solid var(--color-border-strong);
+        border-radius: var(--radius-lg);
         width: 500px;
         display: flex;
         flex-direction: column;
-        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+        box-shadow: var(--shadow-lg);
         overflow: hidden;
     }
 
     .search-input {
         padding: 12px 16px;
-        font-size: 16px;
+        font-size: var(--font-size-lg);
         border: none;
-        border-bottom: 1px solid var(--color-border-primary);
+        border-bottom: 1px solid var(--color-border-strong);
         background: var(--color-bg-primary);
         color: var(--color-text-primary);
         outline: none;
@@ -232,7 +232,7 @@
     }
 
     .search-input::placeholder {
-        color: var(--color-text-muted);
+        color: var(--color-text-tertiary);
     }
 
     .results-container {
@@ -243,8 +243,8 @@
     .no-results {
         padding: 16px;
         text-align: center;
-        color: var(--color-text-muted);
-        font-size: 14px;
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-md);
     }
 
     .result-item {
@@ -253,7 +253,7 @@
         align-items: center;
         padding: 8px 16px;
         cursor: pointer;
-        font-size: 14px;
+        font-size: var(--font-size-md);
         color: var(--color-text-primary);
     }
 
@@ -262,15 +262,13 @@
         background: rgba(255, 255, 255, 0.06);
     }
 
-    /* Cursor state - a full-on highlight */
+    /* Cursor state - accent-tinted highlight */
     .result-item.is-under-cursor {
-        background: var(--color-cursor-focused-bg);
-        color: var(--color-cursor-focused-fg);
+        background: var(--color-accent-subtle);
     }
 
     .result-item.is-under-cursor .shortcuts {
-        color: var(--color-cursor-focused-fg);
-        opacity: 0.8;
+        color: var(--color-text-secondary);
     }
 
     .command-name {
@@ -284,7 +282,7 @@
     .match-highlight {
         background: rgba(255, 255, 255, 0.25);
         color: inherit;
-        border-radius: 3px;
+        border-radius: var(--radius-sm);
         padding: 1px 2px;
         margin: 0 -2px;
     }
@@ -296,8 +294,8 @@
 
     .shortcuts {
         margin-left: 16px;
-        font-size: 12px;
-        color: var(--color-text-muted);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
         flex-shrink: 0;
     }
 

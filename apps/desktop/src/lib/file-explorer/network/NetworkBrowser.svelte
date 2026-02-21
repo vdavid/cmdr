@@ -415,7 +415,7 @@
         display: flex;
         padding: 4px 8px;
         background-color: var(--color-bg-secondary);
-        border-bottom: 1px solid var(--color-border-primary);
+        border-bottom: 1px solid var(--color-border-strong);
         font-weight: 500;
         color: var(--color-text-secondary);
     }
@@ -433,19 +433,18 @@
     }
 
     .host-row.is-under-cursor {
-        background-color: var(--color-cursor-unfocused-bg);
+        background-color: var(--color-bg-tertiary);
     }
 
     .host-row.is-focused-and-under-cursor {
-        background-color: var(--color-cursor-focused-bg);
-        color: var(--color-cursor-focused-fg);
+        background-color: var(--color-accent-subtle);
     }
 
     .col-name {
         flex: 2;
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: var(--spacing-sm);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -463,7 +462,7 @@
     .col-ip.is-fetching,
     .col-hostname.is-fetching {
         font-style: italic;
-        color: var(--color-text-muted);
+        color: var(--color-text-tertiary);
     }
 
     .col-shares {
@@ -479,7 +478,7 @@
     }
 
     .host-icon {
-        font-size: 14px;
+        font-size: var(--font-size-md);
     }
 
     .searching-indicator {
@@ -494,9 +493,9 @@
     .searching-spinner {
         width: 12px;
         height: 12px;
-        border: 2px solid var(--color-border-primary);
+        border: 2px solid var(--color-border-strong);
         border-top-color: var(--color-accent);
-        border-radius: 50%;
+        border-radius: var(--radius-full);
         animation: spin 1s linear infinite;
     }
 
@@ -517,11 +516,11 @@
 
     .col-shares.is-fetching {
         font-style: italic;
-        color: var(--color-text-muted);
+        color: var(--color-text-tertiary);
     }
 
     .col-shares.is-stale {
-        color: var(--color-text-muted);
+        color: var(--color-text-tertiary);
     }
 
     .col-status.is-error {
@@ -538,25 +537,25 @@
         display: flex;
         justify-content: center;
         padding: 16px 8px;
-        border-top: 1px solid var(--color-border-secondary);
+        border-top: 1px solid var(--color-border-subtle);
     }
 
     .refresh-button {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: var(--spacing-sm);
         padding: 8px 16px;
-        border: 1px solid var(--color-border-primary);
-        border-radius: 6px;
+        border: 1px solid var(--color-border-strong);
+        border-radius: var(--radius-md);
         background-color: var(--color-bg-secondary);
         color: var(--color-text-primary);
         font-size: var(--font-size-sm);
         cursor: pointer;
-        transition: background-color 0.15s ease;
+        transition: background-color var(--transition-base);
     }
 
     .refresh-button:hover {
-        background-color: var(--color-button-hover);
+        background-color: var(--color-bg-tertiary);
     }
 
     .refresh-button:active {

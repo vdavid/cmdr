@@ -33,7 +33,7 @@
         justify-content: center;
         gap: 12px;
         padding: 8px 16px;
-        font-size: 13px;
+        font-size: var(--font-size-md);
         color: var(--color-text-secondary);
     }
 
@@ -66,7 +66,7 @@
 
     .arrow {
         flex-shrink: 0;
-        font-size: 18px;
-        color: var(--color-text-muted);
+        font-size: var(--font-size-xl);
+        color: var(--color-text-tertiary);
     }
 </style>

@@ -118,16 +118,16 @@
     }
 
     .message {
-        margin: 0 0 8px;
-        font-size: 13px;
+        margin: 0 0 var(--spacing-sm);
+        font-size: var(--font-size-md);
         color: var(--color-text-secondary);
         line-height: 1.5;
     }
 
     .suggestion {
         margin: 0;
-        font-size: 12px;
-        color: var(--color-text-muted);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
         line-height: 1.5;
     }
 
@@ -140,7 +140,7 @@
 
     .details-section {
         padding: 0 24px 16px;
-        border-top: 1px solid var(--color-border-primary);
+        border-top: 1px solid var(--color-border-strong);
         margin-top: 4px;
         padding-top: 12px;
     }
@@ -148,14 +148,14 @@
     .details-toggle {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: var(--spacing-sm);
         padding: 4px 0;
-        font-size: 12px;
-        color: var(--color-text-muted);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
         background: none;
         border: none;
         cursor: pointer;
-        transition: color 0.15s ease;
+        transition: color var(--transition-base);
     }
 
     .details-toggle:hover {
@@ -166,7 +166,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: transform 0.15s ease;
+        transition: transform var(--transition-base);
     }
 
     .toggle-icon.expanded {
@@ -180,12 +180,12 @@
     .details-text {
         width: 100%;
         padding: 8px 10px;
-        font-size: 11px;
+        font-size: var(--font-size-sm);
         font-family: var(--font-mono);
         color: var(--color-text-secondary);
         background: var(--color-bg-tertiary);
-        border: 1px solid var(--color-border-primary);
-        border-radius: 6px;
+        border: 1px solid var(--color-border-strong);
+        border-radius: var(--radius-md);
         resize: none;
         user-select: text;
         -webkit-user-select: text;
@@ -206,12 +206,12 @@
     }
 
     button {
-        padding: 8px 20px;
-        border-radius: 6px;
-        font-size: 13px;
+        padding: var(--spacing-sm) 20px;
+        border-radius: var(--radius-md);
+        font-size: var(--font-size-md);
         font-weight: 500;
         cursor: pointer;
-        transition: all 0.15s ease;
+        transition: all var(--transition-base);
         min-width: 80px;
     }
 
@@ -228,7 +228,7 @@
     .secondary {
         background: transparent;
         color: var(--color-text-secondary);
-        border: 1px solid var(--color-border-primary);
+        border: 1px solid var(--color-border-strong);
     }
 
     .secondary:hover {

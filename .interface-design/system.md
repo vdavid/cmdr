@@ -33,12 +33,6 @@ The folder color setting (System Settings > Appearance > Folder color) is separa
 accent (theme) color for interactive UI chrome. This matches macOS intent: accent is for controls, folder tint is
 cosmetic.
 
-**Migration note:** The existing `--color-button-hover` and `--color-bg-hover` tokens (hardcoded blue-tinted rgba
-values) will be removed. Interactive hover states migrate to `--color-accent-subtle` (accent-derived). Neutral hover
-states (non-interactive surfaces) migrate to `--color-bg-tertiary`. Affected components: ModalDialog, Notification,
-DualPaneExplorer, SortableHeader, ShareBrowser, NetworkBrowser, viewer page, CommandPalette, and settings components
-(9 files, ~17 occurrences).
-
 **Website:** Mustard yellow `#ffc206` is the brand accent. Used for CTAs, links, and emphasis. Hover: `#ffd23f`. Glow:
 `rgba(255, 194, 6, 0.4)`.
 
@@ -164,9 +158,6 @@ to anchor the file list below them. Kept as a separate token rather than reusing
 --font-system: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 ```
-
-**Migration note:** The current code includes `'Segoe UI'` in the font stack (a Windows font). Remove it — Cmdr is
-macOS-only.
 
 **Type scale.** Fixed `px`, not `rem` — the app scales with macOS display settings, not browser font preferences.
 `html { font-size: 16px }` is hardcoded to establish `1rem = 16px`. The body inherits this. The tokens below are for
@@ -493,9 +484,9 @@ both the UI indicator and the background process.
 
 ### Empty states (app)
 
-Currently missing — no visual feedback when a folder is empty. Should show a centered, single-line message in
-`--color-text-tertiary` at `--font-size-sm`: "Empty folder". No icon, no illustration — keep it as quiet as the rest of
-the chrome.
+Centered, single-line message in `--color-text-tertiary` at `--font-size-sm`: "Empty folder". No icon, no
+illustration — keep it as quiet as the rest of the chrome. Shown when a directory exists and has loaded successfully but
+contains no entries.
 
 ### Notifications/toasts (app)
 
@@ -533,7 +524,3 @@ Not shared tokens — shared _decisions_:
 - Fast enough to feel mechanical. Transitions serve confirmation ("I heard your click"), not decoration.
 - Dark mode is the assumed default, not a bolt-on. Light mode is tuned independently, not auto-inverted.
 
----
-
-_This document contains "Migration note" annotations that reference the pre-migration state. Remove them once the
-migration plan is fully executed — this file should be a clean reference, not a changelog._

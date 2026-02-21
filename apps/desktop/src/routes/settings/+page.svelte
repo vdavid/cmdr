@@ -197,7 +197,7 @@
     .settings-content-wrapper {
         flex: 1;
         overflow-y: auto;
-        padding: var(--spacing-md);
+        padding: var(--spacing-lg);
         outline: none;
     }
 
@@ -206,6 +206,6 @@
         align-items: center;
         justify-content: center;
         height: 100%;
-        color: var(--color-text-muted);
+        color: var(--color-text-tertiary);
     }
 </style>

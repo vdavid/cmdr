@@ -259,7 +259,7 @@
         font-size: calc(var(--font-size-sm) * 0.95);
         color: var(--color-text-secondary);
         background-color: var(--color-bg-secondary);
-        border-top: 1px solid var(--color-border-primary);
+        border-top: 1px solid var(--color-border-strong);
         min-height: 1.5em;
     }
 

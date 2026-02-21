@@ -46,9 +46,9 @@
     }
 
     h2 {
-        font-size: 18px;
+        font-size: var(--font-size-xl);
         font-weight: 600;
-        margin: 0 0 32px 0;
+        margin: 0 0 var(--spacing-2xl) 0;
         text-align: center;
     }
 
@@ -62,14 +62,14 @@
 
     button {
         padding: 10px 20px;
-        border-radius: 8px;
+        border-radius: var(--radius-lg);
         font-weight: 500;
         cursor: pointer;
         background: var(--color-allow);
         color: white;
         border: none;
         display: block;
-        margin: 32px auto 0;
+        margin: var(--spacing-2xl) auto 0;
     }
 
     button:hover {

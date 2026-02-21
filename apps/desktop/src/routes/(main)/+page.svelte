@@ -921,7 +921,7 @@
     }
 
     .title-text {
-        font-size: var(--font-size-xs);
+        font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
         font-weight: 500;
     }

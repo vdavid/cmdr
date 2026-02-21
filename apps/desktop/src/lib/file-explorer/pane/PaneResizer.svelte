@@ -60,9 +60,9 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: var(--color-border-primary);
+        background: var(--color-border-strong);
         flex-shrink: 0;
-        transition: background-color 0.15s;
+        transition: background-color var(--transition-base);
     }
 
     .pane-resizer:hover,
@@ -74,14 +74,14 @@
         width: 3px;
         height: 24px;
         border-radius: 2px;
-        background: var(--color-text-muted);
+        background: var(--color-text-tertiary);
         opacity: 0;
-        transition: opacity 0.15s;
+        transition: opacity var(--transition-base);
     }
 
     .pane-resizer:hover .handle,
     .pane-resizer.dragging .handle {
         opacity: 1;
-        background: var(--color-cursor-focused-fg);
+        background: white;
     }
 </style>

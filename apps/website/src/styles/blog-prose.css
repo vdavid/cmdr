@@ -63,15 +63,26 @@
     padding: 0.125rem 0.375rem;
     font-family: var(--font-mono);
     font-size: 0.875em;
+    color: var(--color-text-primary);
 }
 
+/* Blog code blocks always use dark theme regardless of color scheme */
 .blog-content :global(pre) {
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
+    background: #1a1917;
+    border: 1px solid #2e2d2a;
     border-radius: 0.75rem;
     padding: 1rem 1.25rem;
     overflow-x: auto;
     margin-bottom: 1.5rem;
+}
+
+.blog-content :global(pre.astro-code),
+.blog-content :global(pre.astro-code) :global(span) {
+    color: var(--shiki-dark) !important;
+    background-color: var(--shiki-dark-bg) !important;
+    font-style: var(--shiki-dark-font-style) !important;
+    font-weight: var(--shiki-dark-font-weight) !important;
+    text-decoration: var(--shiki-dark-text-decoration) !important;
 }
 
 .blog-content :global(pre code) {

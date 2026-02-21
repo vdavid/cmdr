@@ -11,6 +11,7 @@
     } from '$lib/tauri-commands'
     import type { DirectoryDiff } from '$lib/file-explorer/types'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
+    import Button from '$lib/ui/Button.svelte'
 
     interface Props {
         /** The directory in which to create the new folder */
@@ -227,8 +228,8 @@
         {/if}
 
         <div class="button-row">
-            <button class="secondary" onclick={onCancel}>Cancel</button>
-            <button class="primary" onclick={() => void handleConfirm()} disabled={!isValid || isChecking}>OK</button>
+            <Button variant="secondary" onclick={onCancel}>Cancel</Button>
+            <Button variant="primary" onclick={() => void handleConfirm()} disabled={!isValid || isChecking}>OK</Button>
         </div>
     </div>
 </ModalDialog>
@@ -239,8 +240,8 @@
     }
 
     .subtitle {
-        margin: 0 0 16px;
-        font-size: 13px;
+        margin: 0 0 var(--spacing-lg);
+        font-size: var(--font-size-md);
         color: var(--color-text-secondary);
         text-align: center;
     }
@@ -257,11 +258,11 @@
     .name-input {
         width: 100%;
         padding: 10px 12px;
-        font-size: 13px;
+        font-size: var(--font-size-md);
         font-family: var(--font-system) sans-serif;
         background: var(--color-bg-primary);
         border: 2px solid var(--color-accent);
-        border-radius: 6px;
+        border-radius: var(--radius-md);
         color: var(--color-text-primary);
         box-sizing: border-box;
     }
@@ -271,21 +272,21 @@
     }
 
     .name-input::placeholder {
-        color: var(--color-text-muted);
+        color: var(--color-text-tertiary);
     }
 
     .name-input:focus {
         outline: none;
-        box-shadow: 0 0 0 2px rgba(77, 163, 255, 0.2);
+        box-shadow: var(--shadow-focus);
     }
 
     .name-input.has-error:focus {
-        box-shadow: 0 0 0 2px rgba(211, 47, 47, 0.2);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-error), transparent 85%);
     }
 
     .error-message {
-        margin: 6px 0 0;
-        font-size: 12px;
+        margin: var(--spacing-sm) 0 0;
+        font-size: var(--font-size-sm);
         color: var(--color-error);
     }
 
@@ -293,42 +294,6 @@
         display: flex;
         gap: 12px;
         justify-content: center;
-    }
-
-    button {
-        padding: 8px 20px;
-        border-radius: 6px;
-        font-size: 13px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.15s ease;
-        min-width: 80px;
-    }
-
-    button:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .primary {
-        background: var(--color-accent);
-        color: white;
-        border: none;
-    }
-
-    .primary:hover:not(:disabled) {
-        filter: brightness(1.1);
-    }
-
-    .secondary {
-        background: transparent;
-        color: var(--color-text-secondary);
-        border: 1px solid var(--color-border-primary);
-    }
-
-    .secondary:hover:not(:disabled) {
-        background: var(--color-bg-tertiary);
-        color: var(--color-text-primary);
     }
 
     .ai-suggestions {
@@ -339,16 +304,16 @@
 
     .ai-suggestions-header {
         display: block;
-        font-size: 12px;
+        font-size: var(--font-size-sm);
         font-weight: 500;
         color: var(--color-text-secondary);
-        margin-bottom: 6px;
+        margin-bottom: var(--spacing-sm);
     }
 
     .ai-suggestions-loading,
     .ai-suggestions-empty {
-        font-size: 12px;
-        color: var(--color-text-muted);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
         font-style: italic;
     }
 
@@ -359,16 +324,16 @@
         display: flex;
         flex-wrap: wrap;
         justify-content: center;
-        gap: 6px;
+        gap: var(--spacing-sm);
     }
 
     .suggestion-item {
-        padding: 4px 10px;
-        font-size: 12px;
+        padding: var(--spacing-xs) 10px;
+        font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
         background: var(--color-bg-tertiary);
-        border: 1px solid var(--color-border-primary);
-        border-radius: 4px;
+        border: 1px solid var(--color-border-strong);
+        border-radius: var(--radius-sm);
         cursor: pointer;
         max-width: 100%;
         overflow: hidden;

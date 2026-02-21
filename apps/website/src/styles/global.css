@@ -14,12 +14,12 @@
 
 /* CSS-first Tailwind v4 configuration */
 @theme {
-    /* Colors - Dark palette for hero image */
-    --color-background: #0a0a0b;
-    --color-surface: #111113;
-    --color-surface-elevated: #18181b;
-    --color-border: #27272a;
-    --color-border-subtle: #1c1c1f;
+    /* Colors - Warm dark palette */
+    --color-background: #14130f;
+    --color-surface: #1a1917;
+    --color-surface-elevated: #222120;
+    --color-border: #2e2d2a;
+    --color-border-subtle: #24231f;
 
     --color-text-primary: #fafafa;
     --color-text-secondary: #a1a1aa;
@@ -29,6 +29,7 @@
     --color-accent: #ffc206;
     --color-accent-hover: #ffd23f;
     --color-accent-glow: rgba(255, 194, 6, 0.4);
+    --color-accent-contrast: #14130f;
 
     /* Semantic colors */
     --color-warning: #ff4d6d;
@@ -63,7 +64,7 @@ body {
 /* Selection */
 ::selection {
     background-color: var(--color-accent);
-    color: white;
+    color: var(--color-accent-contrast);
 }
 
 /* Gradient text utility */
@@ -72,6 +73,28 @@ body {
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
+}
+
+/* Shiki dual theme: default to dark, switch to light via prefers-color-scheme.
+   Blog code blocks override this to stay dark (see blog-prose.css). */
+.astro-code,
+.astro-code span {
+    color: var(--shiki-dark) !important;
+    background-color: var(--shiki-dark-bg) !important;
+    font-style: var(--shiki-dark-font-style) !important;
+    font-weight: var(--shiki-dark-font-weight) !important;
+    text-decoration: var(--shiki-dark-text-decoration) !important;
+}
+
+@media (prefers-color-scheme: light) {
+    :root:not([data-force-dark]) .astro-code,
+    :root:not([data-force-dark]) .astro-code span {
+        color: var(--shiki-light) !important;
+        background-color: var(--shiki-light-bg) !important;
+        font-style: var(--shiki-light-font-style) !important;
+        font-weight: var(--shiki-light-font-weight) !important;
+        text-decoration: var(--shiki-light-text-decoration) !important;
+    }
 }
 
 /* Glow effect */
@@ -132,4 +155,39 @@ body {
 
 .delay-400 {
     animation-delay: 400ms;
+}
+
+/* Light mode tokens for sub-pages (landing page overrides to stay dark) */
+@media (prefers-color-scheme: light) {
+    :root:not([data-force-dark]) {
+        --color-background: #fafaf8;
+        --color-surface: #f0efec;
+        --color-surface-elevated: #e8e7e3;
+        --color-border: #d8d7d3;
+        --color-border-subtle: #e2e1dd;
+
+        --color-text-primary: #1a1917;
+        --color-text-secondary: #5c5c66;
+        --color-text-tertiary: #84848e;
+
+        --color-accent: #d4a006;
+        --color-accent-hover: #b8900a;
+        --color-accent-glow: rgba(212, 160, 6, 0.25);
+        --color-accent-contrast: #14130f;
+
+        --color-warning: #d4365c;
+    }
+}
+
+/* Reduced motion: disable decorative hover scale effects, keep color transitions */
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    .animate-fade-in-up {
+        animation: none;
+        opacity: 1;
+        transform: none;
+    }
 }

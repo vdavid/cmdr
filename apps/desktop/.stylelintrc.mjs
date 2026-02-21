@@ -20,7 +20,7 @@ export default {
         'declaration-property-value-disallowed-list': {
             '/.*/': ['/var\\(--[\\w-]+\\s*,/'],
         },
-        'custom-property-pattern': '^(color|spacing|font)-.+',
+        'custom-property-pattern': '^(color|spacing|font|radius|shadow|transition|z)-.+',
         'declaration-block-no-duplicate-custom-properties': true,
         'selector-class-pattern': null,
         'no-descending-specificity': null,

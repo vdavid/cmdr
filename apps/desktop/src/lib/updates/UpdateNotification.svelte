@@ -27,23 +27,17 @@
 <style>
     .update-notification {
         position: fixed;
-        top: var(--spacing-md);
-        right: var(--spacing-md);
+        top: var(--spacing-lg);
+        right: var(--spacing-lg);
         background: var(--color-bg-secondary);
         border: 1px solid var(--color-border);
-        border-radius: 8px;
+        border-radius: var(--radius-lg);
         padding: var(--spacing-sm) var(--spacing-md);
         display: flex;
         align-items: center;
-        gap: var(--spacing-md);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        z-index: 9999;
-    }
-
-    @media (prefers-color-scheme: dark) {
-        .update-notification {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-        }
+        gap: var(--spacing-lg);
+        box-shadow: var(--shadow-md);
+        z-index: var(--z-notification);
     }
 
     .update-text {
@@ -58,7 +52,7 @@
 
     .update-button {
         padding: var(--spacing-xs) var(--spacing-sm);
-        border-radius: 6px;
+        border-radius: var(--radius-md);
         font-size: var(--font-size-sm);
         cursor: pointer;
         border: none;
@@ -79,6 +73,6 @@
     }
 
     .update-button.later:hover {
-        background: var(--color-button-hover);
+        background: var(--color-bg-tertiary);
     }
 </style>

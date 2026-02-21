@@ -51,6 +51,8 @@ use nusb as _;
 mod ignore_poison;
 pub use ignore_poison::IgnorePoison;
 
+#[cfg(target_os = "macos")]
+mod accent_color;
 mod ai;
 pub mod benchmark;
 mod commands;
@@ -157,6 +159,10 @@ pub fn run() {
             // Install drag image detection swizzle (macOS only)
             #[cfg(target_os = "macos")]
             drag_image_detection::install(app.handle().clone());
+
+            // Observe system accent color changes and emit events to frontend
+            #[cfg(target_os = "macos")]
+            accent_color::observe_accent_color_changes(app.handle().clone());
 
             // Initialize font metrics for default font (system font at 12px)
             font_metrics::init_font_metrics(app.handle(), "system-400-12");
@@ -552,6 +558,11 @@ pub fn run() {
             stubs::network::list_shares_with_credentials,
             #[cfg(not(target_os = "macos"))]
             stubs::network::mount_network_share,
+            // Accent color command (macOS reads system color, others return fallback)
+            #[cfg(target_os = "macos")]
+            accent_color::get_accent_color,
+            #[cfg(not(target_os = "macos"))]
+            stubs::accent_color::get_accent_color,
             // Permission commands (platform-specific)
             #[cfg(target_os = "macos")]
             permissions::check_full_disk_access,

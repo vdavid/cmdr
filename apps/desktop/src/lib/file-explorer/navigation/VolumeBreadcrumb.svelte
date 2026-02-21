@@ -476,7 +476,7 @@
         font-weight: 500;
         color: var(--color-text-primary);
         padding: 2px 4px;
-        border-radius: 4px;
+        border-radius: var(--radius-sm);
         display: inline-flex;
         align-items: center;
         gap: 4px;
@@ -497,19 +497,19 @@
     }
 
     .icon-emoji {
-        font-size: 14px;
+        font-size: var(--font-size-md);
         line-height: 1;
     }
 
     .chevron {
-        font-size: 10px;
+        font-size: var(--font-size-xs);
         opacity: 0.7;
     }
 
     .path-separator {
-        color: var(--color-text-muted);
+        color: var(--color-text-tertiary);
         margin: 0 4px;
-        font-size: 10px;
+        font-size: var(--font-size-xs);
     }
 
     .volume-dropdown {
@@ -521,17 +521,17 @@
         max-height: calc(100vh - 30px);
         overflow-y: auto;
         background-color: var(--color-bg-secondary);
-        border: 1px solid var(--color-border-primary);
-        border-radius: 6px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        z-index: 1000;
+        border: 1px solid var(--color-border-strong);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-md);
+        z-index: var(--z-dropdown);
         padding: 4px 0;
     }
 
     .category-label {
-        font-size: 11px;
+        font-size: var(--font-size-sm);
         font-weight: 500;
-        color: var(--color-text-muted);
+        color: var(--color-text-tertiary);
         padding: 8px 12px 4px;
         text-transform: uppercase;
         /*noinspection CssNonIntegerLengthInPixels*/
@@ -540,7 +540,7 @@
 
     .category-separator {
         height: 1px;
-        background-color: var(--color-border-primary);
+        background-color: var(--color-border-strong);
         margin: 4px 8px;
     }
 
@@ -548,7 +548,7 @@
         display: flex;
         align-items: center;
         gap: 8px;
-        padding: 6px 12px;
+        padding: var(--spacing-sm) var(--spacing-md);
         cursor: default;
     }
 
@@ -556,7 +556,7 @@
     /*noinspection CssUnusedSymbol*/
     .volume-dropdown:not(.keyboard-mode) .volume-item:hover,
     .volume-item.is-focused-and-under-cursor {
-        background-color: var(--color-cursor-focused-bg);
+        background-color: var(--color-accent-subtle);
     }
 
     .volume-icon {
@@ -567,7 +567,7 @@
     }
 
     .volume-icon-placeholder {
-        font-size: 14px;
+        font-size: var(--font-size-md);
         width: 16px;
         text-align: center;
         flex-shrink: 0;
@@ -582,7 +582,7 @@
 
     .checkmark {
         width: 14px;
-        font-size: 12px;
+        font-size: var(--font-size-sm);
         flex-shrink: 0;
     }
 
@@ -592,7 +592,7 @@
     }
 
     .read-only-indicator {
-        font-size: 12px;
+        font-size: var(--font-size-sm);
         margin-left: auto;
         opacity: 0.7;
     }

@@ -5,23 +5,39 @@ interface Props {
     title: string
     description?: string
     ogImage?: string
+    /** Force dark mode regardless of system preference (used by landing page) */
+    forceDark?: boolean
 }
 
 const {
     title,
     description = 'The AI-native file manager. Rename files with natural language, search by describing what you need, and navigate with keyboard-first controls.',
     ogImage,
+    forceDark = false,
 } = Astro.props
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" {...forceDark ? { 'data-force-dark': '' } : {}}>
     <head>
         <ClientRouter />
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="description" content={description} />
-        <meta name="theme-color" content="#0a0a0b" />
+        {
+            forceDark ? (
+                <>
+                    <meta name="theme-color" content="#14130f" />
+                    <meta name="color-scheme" content="dark" />
+                </>
+            ) : (
+                <>
+                    <meta name="theme-color" content="#14130f" media="(prefers-color-scheme: dark)" />
+                    <meta name="theme-color" content="#fafaf8" media="(prefers-color-scheme: light)" />
+                    <meta name="color-scheme" content="dark light" />
+                </>
+            )
+        }
 
         <!-- Open Graph -->
         <meta property="og:title" content={title} />

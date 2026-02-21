@@ -51,7 +51,7 @@
         border: none;
         cursor: pointer;
         font: inherit;
-        font-size: var(--font-size-xs);
+        font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
         white-space: nowrap;
         text-align: left;
@@ -60,7 +60,7 @@
 
     .sortable-header:hover {
         color: var(--color-text-primary);
-        background: var(--color-bg-hover);
+        background: var(--color-bg-tertiary);
     }
 
     .sortable-header.is-active {

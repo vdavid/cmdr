@@ -81,7 +81,7 @@
 <style>
     .setting-row {
         padding: var(--spacing-sm) 0;
-        border-bottom: 1px solid var(--color-border-secondary);
+        border-bottom: 1px solid var(--color-border-subtle);
     }
 
     .setting-row:last-child {
@@ -107,7 +107,7 @@
 
     .modified-indicator {
         color: var(--color-accent);
-        font-size: 10px;
+        font-size: var(--font-size-xs);
     }
 
     .setting-label {
@@ -117,15 +117,15 @@
 
     .disabled-badge,
     .restart-badge {
-        font-size: 10px;
-        padding: 2px 6px;
-        border-radius: 3px;
+        font-size: var(--font-size-xs);
+        padding: 2px var(--spacing-xs);
+        border-radius: var(--radius-sm);
         font-weight: 500;
     }
 
     .disabled-badge {
         background: var(--color-bg-tertiary);
-        color: var(--color-text-muted);
+        color: var(--color-text-tertiary);
     }
 
     .restart-badge {
@@ -140,7 +140,7 @@
     .setting-description {
         margin: var(--spacing-xs) 0 0;
         color: var(--color-text-secondary);
-        font-size: var(--font-size-xs);
+        font-size: var(--font-size-sm);
         line-height: 1.4;
     }
 
@@ -150,7 +150,7 @@
         background: none;
         border: none;
         color: var(--color-accent);
-        font-size: var(--font-size-xs);
+        font-size: var(--font-size-sm);
         cursor: default;
         text-decoration: underline;
     }

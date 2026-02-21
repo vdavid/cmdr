@@ -94,7 +94,7 @@ apps/website/
 
 The design is inspired by [linear.app](https://linear.app):
 
-- Dark background (`#0a0a0b`)
+- Warm dark background (`#14130f`)
 - Subtle gradients and grid patterns
 - Accent color: Indigo (`#6366f1`)
 - `Inter` font family

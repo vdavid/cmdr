@@ -17,12 +17,19 @@ var allowedUnusedClasses = map[string]bool{
 	"select-content":     true,
 	// DualPaneExplorer.svelte - applied imperatively via classList.add during drag-and-drop
 	"folder-drop-target": true,
+	// Button.svelte - classes constructed dynamically via template strings (btn-{variant}, btn-{size})
+	"btn-danger":  true,
+	"btn-mini":    true,
+	"btn-regular": true,
 }
 
 // allowedUnusedVariables lists CSS custom properties that are defined but used dynamically,
 // or defined for future use / theming purposes.
 var allowedUnusedVariables = map[string]bool{
-	// Example: "color-future-feature": true, // Reserved for upcoming feature X
+	// Design system tokens defined but not yet consumed by components
+	"z-base":    true,
+	"z-overlay": true,
+	"z-sticky":  true,
 }
 
 // allowedUndefinedClasses lists classes used in templates that don't need CSS definitions

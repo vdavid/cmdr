@@ -1,6 +1,8 @@
 <script lang="ts">
     import { openPrivacySettings } from '$lib/tauri-commands'
     import { saveSettings } from '$lib/settings-store'
+    import ModalDialog from '$lib/ui/ModalDialog.svelte'
+    import Button from '$lib/ui/Button.svelte'
 
     interface Props {
         onComplete: () => void
@@ -22,10 +24,10 @@
     }
 </script>
 
-<div class="fda-prompt">
-    <div class="content">
-        <h1>Full disk access</h1>
+<ModalDialog titleId="fda-prompt-title" dialogId="full-disk-access" containerStyle="max-width: 480px">
+    {#snippet title()}Full disk access{/snippet}
 
+    <div class="fda-body">
         {#if wasRevoked}
             <p>It looks like you accepted full disk access before but then revoked it.</p>
             <p><strong>The app currently has no full disk access.</strong></p>
@@ -58,42 +60,26 @@
         </ol>
 
         <div class="buttons">
-            <button class="allow" onclick={handleOpenSettings}>Open System Settings</button>
-            <button class="deny" onclick={handleDeny}>Deny</button>
+            <Button variant="primary" onclick={handleOpenSettings}>Open System Settings</Button>
+            <Button variant="danger" onclick={handleDeny}>Deny</Button>
         </div>
         {#if hasClickedOpenSettings}
             <p class="post-allow-instructions">Great! Make sure to restart the app after you've enabled the access.</p>
             <p>If you change your mind, you can still click "Deny" above.</p>
         {/if}
     </div>
-</div>
+</ModalDialog>
 
 <style>
-    .fda-prompt {
-        position: fixed;
-        inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        line-height: 24px;
+    .fda-body {
+        padding: 0 var(--spacing-xl) var(--spacing-xl);
+        font-size: var(--font-size-md);
         color: var(--color-text-primary);
-    }
-
-    .content {
-        width: 480px;
-        font-size: 14px;
-    }
-
-    h1 {
-        font-size: 24px;
-        font-weight: 600;
-        margin: 0 0 24px 0;
-        color: var(--color-text-primary);
-    }
-
-    p {
         line-height: 1.6;
-        margin: 0 0 12px 0;
+    }
+
+    .fda-body p {
+        margin: 0 0 var(--spacing-md) 0;
     }
 
     .post-allow-instructions {
@@ -101,40 +87,17 @@
     }
 
     .pros-cons {
-        margin: 16px 0;
+        margin: var(--spacing-lg) 0;
     }
 
     .pros-cons li {
-        margin-bottom: 12px;
+        margin-bottom: var(--spacing-md);
     }
 
     .buttons {
         display: flex;
-        gap: 24px;
+        gap: var(--spacing-md);
         justify-content: center;
-        margin: 24px 0;
-    }
-
-    button {
-        padding: 10px 24px;
-        border-radius: 8px;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        border: none;
-    }
-
-    button:hover {
-        filter: brightness(1.1);
-    }
-
-    button.allow {
-        background: var(--color-allow);
-        color: white;
-    }
-
-    button.deny {
-        background: var(--color-error);
-        color: white;
+        margin: var(--spacing-xl) 0;
     }
 </style>

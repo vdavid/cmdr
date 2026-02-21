@@ -1,6 +1,7 @@
 <script lang="ts">
     import { markCommercialReminderDismissed, openExternalUrl } from '$lib/tauri-commands'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
+    import Button from '$lib/ui/Button.svelte'
 
     interface Props {
         onClose: () => void
@@ -38,27 +39,27 @@
         <p class="info">Commercial licenses are $59/year/user and support continued development.</p>
 
         <div class="actions">
-            <button class="primary" onclick={handleGetCommercial}>Get commercial license</button>
-            <button class="secondary" onclick={handleDismiss}>Remind me in 30 days</button>
+            <Button variant="primary" onclick={handleGetCommercial}>Get commercial license</Button>
+            <Button variant="secondary" onclick={handleDismiss}>Remind me in 30 days</Button>
         </div>
     </div>
 </ModalDialog>
 
 <style>
     .modal-body {
-        padding: 0 32px 24px;
+        padding: 0 var(--spacing-2xl) var(--spacing-xl);
     }
 
     .message {
-        margin: 0 0 8px;
-        font-size: 14px;
+        margin: 0 0 var(--spacing-sm);
+        font-size: var(--font-size-md);
         color: var(--color-text-secondary);
         line-height: 1.5;
     }
 
     .info {
         margin: 0 0 20px;
-        font-size: 13px;
+        font-size: var(--font-size-md);
         color: var(--color-text-tertiary);
         line-height: 1.5;
     }
@@ -67,35 +68,5 @@
         display: flex;
         gap: 12px;
         justify-content: flex-end;
-    }
-
-    button {
-        padding: 8px 16px;
-        border-radius: 6px;
-        font-size: 13px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.15s ease;
-    }
-
-    .primary {
-        background: var(--color-accent);
-        color: white;
-        border: none;
-    }
-
-    .primary:hover {
-        background: var(--color-accent-hover);
-    }
-
-    .secondary {
-        background: transparent;
-        color: var(--color-text-secondary);
-        border: 1px solid var(--color-border);
-    }
-
-    .secondary:hover {
-        background: var(--color-bg-secondary);
-        color: var(--color-text-primary);
     }
 </style>

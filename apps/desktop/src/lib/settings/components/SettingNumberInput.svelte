@@ -64,7 +64,7 @@
         display: flex;
         align-items: center;
         border: 1px solid var(--color-border);
-        border-radius: 4px;
+        border-radius: var(--radius-sm);
         overflow: hidden;
     }
 
@@ -78,7 +78,7 @@
         border: none;
         color: var(--color-text-primary);
         cursor: default;
-        font-size: 14px;
+        font-size: var(--font-size-md);
         font-weight: 500;
     }
 
@@ -120,7 +120,7 @@
     }
 
     .unit {
-        color: var(--color-text-muted);
+        color: var(--color-text-tertiary);
         font-size: var(--font-size-sm);
     }
 </style>

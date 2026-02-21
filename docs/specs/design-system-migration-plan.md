@@ -309,67 +309,67 @@ Not part of this migration, but tracked as a future effort.
 ## Task list
 
 ### Milestone 1a: Add new design tokens
-- [ ] Add radius tokens (`--radius-sm/md/lg/full`) to app.css
-- [ ] Add shadow tokens (`--shadow-sm/md/lg/focus`) with light/dark values
-- [ ] Add transition tokens (`--transition-fast/base/slow`)
-- [ ] Add z-index tokens (`--z-base/sticky/dropdown/overlay/modal/notification`)
-- [ ] Add `--color-accent-subtle`, `--color-border-subtle`
-- [ ] Add `--spacing-lg: 16px`, `--spacing-xl: 24px`, `--spacing-2xl: 32px`
-- [ ] Add `--font-size-md: 14px`, `--font-size-lg: 16px`, `--font-size-xl: 20px`
-- [ ] Update accent fallback to macOS blue (`#007aff`/`#0a84ff`), derive `--color-accent-hover` via `color-mix`
-- [ ] Run `./scripts/check.sh --svelte` and fix issues
+- [x] Add radius tokens (`--radius-sm/md/lg/full`) to app.css
+- [x] Add shadow tokens (`--shadow-sm/md/lg/focus`) with light/dark values
+- [x] Add transition tokens (`--transition-fast/base/slow`)
+- [x] Add z-index tokens (`--z-base/sticky/dropdown/overlay/modal/notification`)
+- [x] Add `--color-accent-subtle`, `--color-border-subtle`
+- [x] Add `--spacing-lg: 16px`, `--spacing-xl: 24px`, `--spacing-2xl: 32px`
+- [x] Add `--font-size-md: 14px`, `--font-size-lg: 16px`, `--font-size-xl: 20px`
+- [x] Update accent fallback to macOS blue (`#007aff`/`#0a84ff`), derive `--color-accent-hover` via `color-mix`
+- [x] Run `./scripts/check.sh --svelte` and fix issues
 
 ### Milestone 1b: Rename and remove tokens
-- [ ] Rename `--color-border-primary` → `--color-border-strong` in app.css and all components
-- [ ] Rename `--color-border-secondary` → `--color-border-subtle` across components
-- [ ] Update `--color-text-primary` to `#1a1a1a`/`#e8e8e8` — take before/after screenshots for comparison
-- [ ] Consolidate `--color-text-muted` → `--color-text-tertiary`, remove `--color-text-muted`
-- [ ] Change `--font-size-xs` to `10px` — audit each consumer individually, screenshot affected components
-- [ ] Remove `--font-size-base`, let body inherit from html's 16px
-- [ ] Remove `'Segoe UI'` from `--font-system` stack
-- [ ] Safe-migrate `--spacing-md`: move 16px-intent consumers to `--spacing-lg`, then redefine to `12px`
-- [ ] Run `./scripts/check.sh --svelte`, visual spot-check light + dark
+- [x] Rename `--color-border-primary` → `--color-border-strong` in app.css and all components
+- [x] Rename `--color-border-secondary` → `--color-border-subtle` across components
+- [x] Update `--color-text-primary` to `#1a1a1a`/`#e8e8e8` — take before/after screenshots for comparison
+- [x] Consolidate `--color-text-muted` → `--color-text-tertiary`, remove `--color-text-muted`
+- [x] Change `--font-size-xs` to `10px` — audit each consumer individually, screenshot affected components
+- [x] Remove `--font-size-base`, let body inherit from html's 16px
+- [x] Remove `'Segoe UI'` from `--font-system` stack
+- [x] Safe-migrate `--spacing-md`: move 16px-intent consumers to `--spacing-lg`, then redefine to `12px`
+- [x] Run `./scripts/check.sh --svelte`, visual spot-check light + dark
 
 ### Milestone 2a: macOS accent color — read and inject
-- [ ] Enable `NSColor` feature on `objc2-app-kit` in Cargo.toml
-- [ ] Implement `get_accent_color` Tauri command
-- [ ] Observe `NSSystemColorsDidChangeNotification`, emit Tauri event
-- [ ] Frontend: call command on startup, set `--color-accent`, listen for changes
-- [ ] Run `./scripts/check.sh --rust` and fix issues
+- [x] Enable `NSColor` feature on `objc2-app-kit` in Cargo.toml
+- [x] Implement `get_accent_color` Tauri command
+- [x] Observe `NSSystemColorsDidChangeNotification`, emit Tauri event
+- [x] Frontend: call command on startup, set `--color-accent`, listen for changes
+- [x] Run `./scripts/check.sh --rust` and fix issues
 - [ ] Manual test: change accent color live, verify all 8 macOS options (especially yellow and graphite)
 
 ### Milestone 2b: macOS accent color — migrate consumers
-- [ ] Update cursor highlight to use `--color-accent-subtle`
-- [ ] Remove `--color-cursor-focused-bg/fg`, replace `--color-cursor-unfocused-bg` with `--color-bg-tertiary`
+- [x] Update cursor highlight to use `--color-accent-subtle`
+- [x] Remove `--color-cursor-focused-bg/fg`, replace `--color-cursor-unfocused-bg` with `--color-bg-tertiary`
 - [ ] Manual test with all 8 accent colors, verify cursor, buttons, focus rings, switches
 
 ### Milestone 3: Shared button component
-- [ ] Create `Button.svelte` with primary/secondary/danger/mini variants
-- [ ] Include focus ring, disabled state, hover transitions
-- [ ] Add Vitest tests for variant rendering
-- [ ] Add to `coverage-allowlist.json` if needed
+- [x] Create `Button.svelte` with primary/secondary/danger/mini variants
+- [x] Include focus ring, disabled state, hover transitions
+- [x] Add Vitest tests for variant rendering
+- [x] Add to `coverage-allowlist.json` if needed
 
 ### Milestone 4a: Mechanical token replacements
-- [ ] Migrate border-radius to `--radius-*` tokens across all components
-- [ ] Migrate box-shadows to `--shadow-*` tokens
-- [ ] Migrate transitions to `--transition-*` tokens
-- [ ] Migrate raw z-index values to `--z-*` tokens
-- [ ] Run `./scripts/check.sh --svelte`, visual spot-check light + dark
+- [x] Migrate border-radius to `--radius-*` tokens across all components
+- [x] Migrate box-shadows to `--shadow-*` tokens
+- [x] Migrate transitions to `--transition-*` tokens
+- [x] Migrate raw z-index values to `--z-*` tokens
+- [x] Run `./scripts/check.sh --svelte`, visual spot-check light + dark
 
 ### Milestone 4b: Spacing and font-size migration
-- [ ] Migrate off-scale 6px values to `--spacing-xs` or `--spacing-sm`
-- [ ] Consolidate font-size (11px → 12px, 18px → 16/20px)
-- [ ] Replace remaining hardcoded spacing with `--spacing-*` tokens
-- [ ] Run checks, visual spot-check
+- [x] Migrate off-scale 6px values to `--spacing-xs` or `--spacing-sm`
+- [x] Consolidate font-size (11px → 12px, 18px → 16/20px)
+- [x] Replace remaining hardcoded spacing with `--spacing-*` tokens
+- [x] Run checks, visual spot-check
 
 ### Milestone 4c: Button rollout, dialog restyle, and color cleanup
-- [ ] Replace inline button styles with `<Button>` in all 9 dialogs
-- [ ] Restyle FullDiskAccessPrompt to use ModalDialog and Button component
-- [ ] Remove `--color-button-hover`/`--color-bg-hover`, replace in 9 consuming files
-- [ ] Replace hardcoded hex colors with CSS variables (`#4caf50` → `--color-allow`, etc.)
-- [ ] Replace hardcoded focus ring rgba with `var(--shadow-focus)`
+- [x] Replace inline button styles with `<Button>` in all 9 dialogs
+- [x] Restyle FullDiskAccessPrompt to use ModalDialog and Button component
+- [x] Remove `--color-button-hover`/`--color-bg-hover`, replace in 9 consuming files
+- [x] Replace hardcoded hex colors with CSS variables (`#4caf50` → `--color-allow`, etc.)
+- [x] Replace hardcoded focus ring rgba with `var(--shadow-focus)`
 - [ ] Manual test: open every dialog, verify all states
-- [ ] Run `./scripts/check.sh --svelte`
+- [x] Run `./scripts/check.sh --svelte`
 
 ### Milestone 5: Website font swap
 - [ ] Download and self-host Geist Sans variable font
@@ -378,24 +378,24 @@ Not part of this migration, but tracked as a future effort.
 - [ ] Visual check all website pages
 
 ### Milestone 6a: Website dark palette warmup
-- [ ] Update dark palette tokens to warmer values
-- [ ] Refine CTA hover scale to 1.02
-- [ ] Verify `prefers-reduced-motion` handling
-- [ ] Run `./scripts/check.sh --check website-build --check website-e2e`
+- [x] Update dark palette tokens to warmer values
+- [x] Refine CTA hover scale to 1.02
+- [x] Verify `prefers-reduced-motion` handling
+- [x] Run `./scripts/check.sh --check website-build --check website-e2e`
 
 ### Milestone 6b: Website light mode for sub-pages
-- [ ] Add light mode tokens via `@media (prefers-color-scheme: light)` in global.css
-- [ ] Keep landing page dark-only, scope light mode to sub-page layouts
-- [ ] Handle blog code blocks (keep dark in light mode) and blog-prose.css
-- [ ] Add Shiki `github-light` theme, switch based on color scheme
-- [ ] Update Remark42 to pass correct theme
-- [ ] Visual check every sub-page in both light and dark mode
-- [ ] Run `./scripts/check.sh --check website-build --check website-e2e`
+- [x] Add light mode tokens via `@media (prefers-color-scheme: light)` in global.css
+- [x] Keep landing page dark-only, scope light mode to sub-page layouts
+- [x] Handle blog code blocks (keep dark in light mode) and blog-prose.css
+- [x] Add Shiki `github-light` theme, switch based on color scheme
+- [x] Update Remark42 to pass correct theme
+- [x] Visual check every sub-page in both light and dark mode
+- [x] Run `./scripts/check.sh --check website-build --check website-e2e`
 
 ### Milestone 7: Polish
-- [ ] Add empty folder state to file list
+- [x] Add empty folder state to file list
 - [ ] Run full check suite (`./scripts/check.sh`)
 - [ ] Manual test: app in light/dark with various accent colors
 - [ ] Manual test: all website pages in light/dark
-- [ ] Update app.css header comment to reference design system doc
-- [ ] Remove all "Migration note" annotations from system.md
+- [x] Update app.css header comment to reference design system doc
+- [x] Remove all "Migration note" annotations from system.md

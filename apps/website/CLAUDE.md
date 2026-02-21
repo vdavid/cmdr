@@ -48,9 +48,29 @@ See `docs/guides/writing-blog-posts.md`.
 - **External links**: `rehype-external-links` auto-adds `target="_blank" rel="noopener noreferrer"`
 - **RSS autodiscovery**: `<link>` tag in `Layout.astro`
 
+## Color scheme (light/dark mode)
+
+Sub-pages (blog, legal, pricing, changelog, roadmap) support both light and dark mode via `prefers-color-scheme`. The
+landing page is dark-only.
+
+**How it works:**
+
+- `global.css` defines dark tokens in `@theme` (the default) and light tokens in `@media (prefers-color-scheme: light)`
+  scoped to `:root:not([data-force-dark])`.
+- `Layout.astro` accepts a `forceDark` prop. When true, it adds `data-force-dark` to `<html>`, which blocks the light
+  media query from applying. Only `index.astro` passes `forceDark`.
+- On accent-colored buttons, use `--color-accent-contrast` for text (not `--color-background`), because the background
+  color changes between modes but button text on accent should always be dark.
+- Blog code blocks stay dark in light mode: `blog-prose.css` forces Shiki's `--shiki-dark` variables on `pre` elements,
+  and uses hardcoded dark surface/border colors.
+- Shiki is configured with dual themes (`github-dark` + `github-light`) and `defaultColor: false` in `astro.config.mjs`.
+  The theme switching CSS is in `global.css`.
+- Remark42 comments detect the user's color scheme preference at load time.
+
 ## Gotchas
 
 - The `@ts-expect-error` in `astro.config.mjs` is for a Vite version mismatch between Astro and Tailwind. It doesn't
   affect the build.
 - `site` must be set in `astro.config.mjs` for RSS and OG image URLs to work.
 - Font files for OG image generation (`inter-400.ttf`, `inter-700.ttf`) live in `public/fonts/`.
+- When adding new pages, don't pass `forceDark` to `Layout` unless the page should be dark-only like the landing page.

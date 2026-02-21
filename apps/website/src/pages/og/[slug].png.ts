@@ -38,7 +38,7 @@ export const GET: APIRoute = async ({ props }) => {
                     flexDirection: 'column',
                     justifyContent: 'space-between',
                     padding: '60px',
-                    background: 'linear-gradient(135deg, #0a0a0b 0%, #18181b 100%)',
+                    background: 'linear-gradient(135deg, #14130f 0%, #222120 100%)',
                     fontFamily: 'Inter',
                 },
                 children: [

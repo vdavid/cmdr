@@ -155,7 +155,7 @@
     }
 
     .about-body {
-        padding: 0 32px 32px;
+        padding: 0 var(--spacing-2xl) var(--spacing-2xl);
     }
 
     .about-content {
@@ -187,8 +187,8 @@
 
     .app-tagline {
         color: var(--color-text-secondary);
-        margin: 0 0 16px;
-        font-size: 14px;
+        margin: 0 0 var(--spacing-lg);
+        font-size: var(--font-size-md);
     }
 
     .version-info {
@@ -197,26 +197,26 @@
 
     .version {
         color: var(--color-text-secondary);
-        font-size: 13px;
+        font-size: var(--font-size-md);
     }
 
     .license-info {
         background: var(--color-bg-tertiary);
-        border-radius: 8px;
+        border-radius: var(--radius-lg);
         padding: 16px 20px;
         margin-bottom: 20px;
     }
 
     .license-description {
         color: var(--color-text-primary);
-        font-size: 14px;
+        font-size: var(--font-size-md);
         line-height: 1.5;
         margin: 0;
     }
 
     .commercial-prompt {
         color: var(--color-text-secondary);
-        font-size: 13px;
+        font-size: var(--font-size-md);
         line-height: 1.5;
         margin: 12px 0 0;
     }
@@ -231,8 +231,8 @@
     }
 
     .ai-attribution {
-        color: var(--color-text-muted);
-        font-size: 11px;
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-sm);
         margin: 0 0 16px;
     }
 
@@ -243,7 +243,7 @@
     .links a {
         color: var(--color-accent);
         text-decoration: none;
-        font-size: 13px;
+        font-size: var(--font-size-md);
     }
 
     .links a:hover {
@@ -256,8 +256,8 @@
     }
 
     .copyright {
-        color: var(--color-text-muted);
-        font-size: 12px;
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-sm);
         margin: 0;
     }
 </style>

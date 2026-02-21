@@ -13,6 +13,7 @@ export const SOFT_DIALOG_REGISTRY = [
     { id: 'transfer-error', description: 'Shown after a copy/move failure' },
     { id: 'transfer-progress', description: 'Active during a copy/move operation' },
     { id: 'expiration', description: 'Shown when a commercial license expires' },
+    { id: 'full-disk-access', description: 'Onboarding prompt for full disk access permission' },
     { id: 'license', description: 'License key entry and viewing' },
     { id: 'mkdir-confirmation', description: 'Opened by the mkdir tool, not directly' },
     { id: 'ptpcamerad', description: 'MTP device connection troubleshooting' },

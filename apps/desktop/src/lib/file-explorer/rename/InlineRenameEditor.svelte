@@ -55,7 +55,7 @@
     function getSeverityColor(): string {
         if (severity === 'error') return 'var(--color-error)'
         if (severity === 'warning') return 'var(--color-warning)'
-        return '#4caf50'
+        return 'var(--color-allow)'
     }
 
     /** Inline style: border color + box-shadow (avoids stylelint custom property restrictions) */
@@ -159,7 +159,7 @@
         color: var(--color-text-primary);
         background: var(--color-bg-primary);
         border: 2px solid;
-        border-radius: 3px;
+        border-radius: var(--radius-sm);
         outline: none;
         box-sizing: border-box;
         user-select: text;

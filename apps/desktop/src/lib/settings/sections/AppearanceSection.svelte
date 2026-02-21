@@ -144,11 +144,11 @@
 
 <style>
     .section {
-        margin-bottom: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
     }
 
     .section-title {
-        font-size: 16px;
+        font-size: var(--font-size-lg);
         font-weight: 600;
         color: var(--color-text-primary);
         margin: 0 0 var(--spacing-sm);
@@ -171,7 +171,7 @@
         width: 180px;
         padding: var(--spacing-xs) var(--spacing-sm);
         border: 1px solid var(--color-border);
-        border-radius: 4px;
+        border-radius: var(--radius-sm);
         background: var(--color-bg-primary);
         color: var(--color-text-primary);
         font-size: var(--font-size-sm);
@@ -184,7 +184,7 @@
     }
 
     .format-preview {
-        font-size: var(--font-size-xs);
+        font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
     }
 
@@ -198,16 +198,16 @@
         background: none;
         border: none;
         color: var(--color-accent);
-        font-size: var(--font-size-xs);
+        font-size: var(--font-size-sm);
         cursor: pointer;
         text-decoration: underline;
     }
 
     .format-help {
         background: var(--color-bg-secondary);
-        border-radius: 4px;
+        border-radius: var(--radius-sm);
         padding: var(--spacing-sm);
-        font-size: var(--font-size-xs);
+        font-size: var(--font-size-sm);
     }
 
     .format-help h4 {

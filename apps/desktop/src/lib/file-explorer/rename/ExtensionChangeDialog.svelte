@@ -58,8 +58,8 @@
 <style>
     .description {
         margin: 0;
-        padding: 0 24px 16px;
-        font-size: 13px;
+        padding: 0 var(--spacing-xl) var(--spacing-lg);
+        font-size: var(--font-size-md);
         color: var(--color-text-secondary);
         line-height: 1.5;
     }
@@ -69,7 +69,7 @@
         align-items: center;
         gap: 8px;
         padding: 0 24px 16px;
-        font-size: 12px;
+        font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
         cursor: default;
     }
@@ -87,12 +87,12 @@
     }
 
     button {
-        padding: 8px 20px;
-        border-radius: 6px;
-        font-size: 13px;
+        padding: var(--spacing-sm) 20px;
+        border-radius: var(--radius-md);
+        font-size: var(--font-size-md);
         font-weight: 500;
         cursor: pointer;
-        transition: all 0.15s ease;
+        transition: all var(--transition-base);
         min-width: 80px;
     }
 
@@ -109,7 +109,7 @@
     .secondary {
         background: transparent;
         color: var(--color-text-secondary);
-        border: 1px solid var(--color-border-primary);
+        border: 1px solid var(--color-border-strong);
     }
 
     .secondary:hover {

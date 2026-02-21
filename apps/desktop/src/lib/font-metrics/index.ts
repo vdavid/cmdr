@@ -61,9 +61,7 @@ export async function ensureFontMetricsLoaded(): Promise<void> {
             // Resolve system font to actual font family for measurement
             // The actual font used by the browser for "system" is the system default
             const actualFontFamily =
-                fontFamily === 'system'
-                    ? '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif'
-                    : fontFamily
+                fontFamily === 'system' ? '-apple-system, BlinkMacSystemFont, system-ui, sans-serif' : fontFamily
 
             // Measure character widths
             const widths = measureCharWidths(actualFontFamily, fontSize, fontWeight)

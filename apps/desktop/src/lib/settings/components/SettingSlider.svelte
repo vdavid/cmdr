@@ -151,9 +151,9 @@
         height: 16px;
         background: white;
         border: 2px solid var(--color-accent);
-        border-radius: 50%;
+        border-radius: var(--radius-full);
         cursor: default;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        box-shadow: var(--shadow-sm);
         /* Ensure thumb is above tick marks */
         z-index: 2;
         position: relative;
@@ -202,7 +202,7 @@
         width: 70px;
         padding: var(--spacing-xs) var(--spacing-sm);
         border: 1px solid var(--color-border);
-        border-radius: 4px;
+        border-radius: var(--radius-sm);
         background: var(--color-bg-primary);
         color: var(--color-text-primary);
         font-size: var(--font-size-sm);
@@ -220,7 +220,7 @@
     }
 
     .unit {
-        color: var(--color-text-muted);
+        color: var(--color-text-tertiary);
         font-size: var(--font-size-sm);
     }
 </style>

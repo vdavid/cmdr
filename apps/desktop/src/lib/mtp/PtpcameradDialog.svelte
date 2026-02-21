@@ -2,6 +2,7 @@
     import { onMount } from 'svelte'
     import { copyToClipboard, getPtpcameradWorkaroundCommand } from '$lib/tauri-commands'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
+    import Button from '$lib/ui/Button.svelte'
 
     interface Props {
         /** The process name that's blocking (like "pid 45145, ptpcamerad"). */
@@ -89,20 +90,20 @@
         </p>
 
         <div class="actions">
-            <button class="secondary" onclick={onClose}>Close</button>
-            <button class="primary" onclick={onRetry}>Retry connection</button>
+            <Button variant="secondary" onclick={onClose}>Close</Button>
+            <Button variant="primary" onclick={onRetry}>Retry connection</Button>
         </div>
     </div>
 </ModalDialog>
 
 <style>
     .dialog-body {
-        padding: 0 32px 24px;
+        padding: 0 var(--spacing-2xl) var(--spacing-xl);
     }
 
     .description {
-        margin: 0 0 12px;
-        font-size: 14px;
+        margin: 0 0 var(--spacing-md);
+        font-size: var(--font-size-md);
         color: var(--color-text-secondary);
         line-height: 1.5;
     }
@@ -113,18 +114,18 @@
     }
 
     .explanation {
-        margin: 0 0 16px;
-        font-size: 13px;
-        color: var(--color-text-muted);
+        margin: 0 0 var(--spacing-lg);
+        font-size: var(--font-size-md);
+        color: var(--color-text-tertiary);
         line-height: 1.6;
     }
 
     .explanation code {
         background: var(--color-bg-tertiary);
-        padding: 2px 6px;
-        border-radius: 4px;
+        padding: 2px var(--spacing-xs);
+        border-radius: var(--radius-sm);
         font-family: var(--font-mono);
-        font-size: 12px;
+        font-size: var(--font-size-sm);
     }
 
     .command-box {
@@ -133,15 +134,15 @@
         gap: 8px;
         margin-bottom: 12px;
         background: var(--color-bg-primary);
-        border: 1px solid var(--color-border-primary);
-        border-radius: 8px;
+        border: 1px solid var(--color-border-strong);
+        border-radius: var(--radius-lg);
         padding: 12px;
     }
 
     .command {
         flex: 1;
         font-family: var(--font-mono);
-        font-size: 12px;
+        font-size: var(--font-size-sm);
         color: var(--color-text-primary);
         word-break: break-all;
         line-height: 1.5;
@@ -151,19 +152,19 @@
 
     .copy-button {
         flex-shrink: 0;
-        padding: 6px 12px;
-        font-size: 12px;
+        padding: var(--spacing-sm) var(--spacing-md);
+        font-size: var(--font-size-sm);
         font-weight: 500;
-        border-radius: 4px;
+        border-radius: var(--radius-sm);
         cursor: pointer;
-        transition: all 0.15s ease;
+        transition: all var(--transition-base);
         background: var(--color-bg-tertiary);
         color: var(--color-text-secondary);
-        border: 1px solid var(--color-border-primary);
+        border: 1px solid var(--color-border-strong);
     }
 
     .copy-button:hover:not(:disabled) {
-        background: var(--color-button-hover);
+        background: var(--color-accent-subtle);
         color: var(--color-text-primary);
     }
 
@@ -174,58 +175,23 @@
 
     .help-text {
         margin: 0 0 20px;
-        font-size: 12px;
-        color: var(--color-text-muted);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
         line-height: 1.5;
     }
 
     .help-text kbd {
         background: var(--color-bg-tertiary);
-        padding: 2px 6px;
-        border-radius: 4px;
+        padding: 2px var(--spacing-xs);
+        border-radius: var(--radius-sm);
         font-family: var(--font-system);
-        font-size: 11px;
-        border: 1px solid var(--color-border-primary);
+        font-size: var(--font-size-sm);
+        border: 1px solid var(--color-border-strong);
     }
 
     .actions {
         display: flex;
         gap: 12px;
         justify-content: flex-end;
-    }
-
-    button {
-        padding: 10px 18px;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.15s ease;
-    }
-
-    button:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .primary {
-        background: var(--color-accent);
-        color: white;
-        border: none;
-    }
-
-    .primary:hover:not(:disabled) {
-        filter: brightness(1.1);
-    }
-
-    .secondary {
-        background: transparent;
-        color: var(--color-text-secondary);
-        border: 1px solid var(--color-border-primary);
-    }
-
-    .secondary:hover:not(:disabled) {
-        background: var(--color-bg-tertiary);
-        color: var(--color-text-primary);
     }
 </style>

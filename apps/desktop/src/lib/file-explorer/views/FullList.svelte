@@ -439,6 +439,11 @@
                 {/each}
             </div>
         </div>
+        {#if (hasParent ? totalCount - 1 : totalCount) === 0}
+            <div class="empty-folder-message" style="height: {containerHeight - (hasParent ? rowHeight : 0)}px;">
+                Empty folder
+            </div>
+        {/if}
     </div>
 </div>
 
@@ -498,11 +503,11 @@
     }
 
     .file-entry.is-under-cursor {
-        background-color: var(--color-cursor-unfocused-bg);
+        background-color: var(--color-bg-tertiary);
     }
 
     .full-list-container.is-focused .file-entry.is-under-cursor {
-        background-color: var(--color-cursor-focused-bg);
+        background-color: var(--color-accent-subtle);
     }
 
     .col-name {
@@ -513,7 +518,7 @@
 
     .col-size {
         text-align: right;
-        font-size: var(--font-size-xs);
+        font-size: var(--font-size-sm);
     }
 
     .size-dir {
@@ -521,7 +526,7 @@
     }
 
     .col-date {
-        font-size: var(--font-size-xs);
+        font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
     }
 
@@ -532,5 +537,14 @@
     /* Selection color is preserved even under cursor */
     .full-list-container.is-focused .file-entry.is-under-cursor.is-selected .col-name {
         color: var(--color-selection-fg);
+    }
+
+    .empty-folder-message {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex: 1;
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-sm);
     }
 </style>

@@ -648,10 +648,10 @@
     .stage {
         display: flex;
         align-items: center;
-        gap: 6px;
-        color: var(--color-text-muted);
-        font-size: 12px;
-        transition: color 0.2s ease;
+        gap: var(--spacing-xs);
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-sm);
+        transition: color var(--transition-slow);
     }
 
     .stage.active {
@@ -671,15 +671,15 @@
     }
 
     .checkmark {
-        font-size: 14px;
+        font-size: var(--font-size-md);
         font-weight: bold;
     }
 
     .dot {
         width: 8px;
         height: 8px;
-        border-radius: 50%;
-        background: var(--color-text-muted);
+        border-radius: var(--radius-full);
+        background: var(--color-text-tertiary);
     }
 
     .spinner {
@@ -687,7 +687,7 @@
         height: 14px;
         border: 2px solid var(--color-accent);
         border-top-color: transparent;
-        border-radius: 50%;
+        border-radius: var(--radius-full);
         animation: spin 0.8s linear infinite;
     }
 
@@ -700,8 +700,8 @@
     .stage-connector {
         width: 24px;
         height: 2px;
-        background: var(--color-border-primary);
-        transition: background 0.2s ease;
+        background: var(--color-border-strong);
+        transition: background var(--transition-slow);
     }
 
     .stage-connector.done {
@@ -718,22 +718,22 @@
         width: 100%;
         height: 8px;
         background: var(--color-bg-tertiary);
-        border-radius: 4px;
+        border-radius: var(--radius-sm);
         overflow: hidden;
     }
 
     .progress-bar {
         height: 100%;
         background: var(--color-accent);
-        border-radius: 4px;
+        border-radius: var(--radius-sm);
         transition: width 0.1s ease-out;
     }
 
     .progress-info {
         display: flex;
         justify-content: space-between;
-        margin-top: 6px;
-        font-size: 12px;
+        margin-top: var(--spacing-xs);
+        font-size: var(--font-size-sm);
     }
 
     .progress-percent {
@@ -742,7 +742,7 @@
     }
 
     .eta {
-        color: var(--color-text-muted);
+        color: var(--color-text-tertiary);
     }
 
     /* Stats */
@@ -754,12 +754,12 @@
     .stat-row {
         display: flex;
         justify-content: space-between;
-        font-size: 12px;
+        font-size: var(--font-size-sm);
         padding: 2px 0;
     }
 
     .stat-label {
-        color: var(--color-text-muted);
+        color: var(--color-text-tertiary);
     }
 
     .stat-value {
@@ -770,14 +770,14 @@
     /* Current file */
     .current-file {
         padding: 8px 24px;
-        font-size: 11px;
-        color: var(--color-text-muted);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
         background: var(--color-bg-tertiary);
         margin: 0 16px;
-        border-radius: 4px;
+        border-radius: var(--radius-sm);
     }
 
     /* Buttons */
@@ -789,12 +789,12 @@
     }
 
     button {
-        padding: 8px 20px;
-        border-radius: 6px;
-        font-size: 13px;
+        padding: var(--spacing-sm) 20px;
+        border-radius: var(--radius-md);
+        font-size: var(--font-size-md);
         font-weight: 500;
         cursor: pointer;
-        transition: all 0.15s ease;
+        transition: all var(--transition-base);
         min-width: 80px;
     }
 
@@ -806,7 +806,7 @@
     .secondary {
         background: transparent;
         color: var(--color-text-secondary);
-        border: 1px solid var(--color-border-primary);
+        border: 1px solid var(--color-border-strong);
     }
 
     .secondary:hover:not(:disabled) {
@@ -831,7 +831,7 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 32px 24px;
+        padding: var(--spacing-2xl) var(--spacing-xl);
         gap: 16px;
     }
 
@@ -848,13 +848,13 @@
         height: 24px;
         border: 3px solid var(--color-error);
         border-top-color: transparent;
-        border-radius: 50%;
+        border-radius: var(--radius-full);
         animation: spin 0.8s linear infinite;
     }
 
     .rollback-message {
         margin: 0;
-        font-size: 13px;
+        font-size: var(--font-size-md);
         color: var(--color-text-secondary);
         text-align: center;
     }
@@ -865,8 +865,8 @@
     }
 
     .conflict-filename {
-        margin: 0 0 12px;
-        font-size: 14px;
+        margin: 0 0 var(--spacing-md);
+        font-size: var(--font-size-md);
         font-weight: 600;
         color: var(--color-text-primary);
         text-align: center;
@@ -878,9 +878,9 @@
     .conflict-comparison {
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: var(--spacing-xs);
         margin-bottom: 16px;
-        font-size: 12px;
+        font-size: var(--font-size-sm);
     }
 
     .conflict-file {
@@ -892,7 +892,7 @@
     }
 
     .conflict-file-label {
-        color: var(--color-text-muted);
+        color: var(--color-text-tertiary);
         min-width: 55px;
         text-align: right;
     }
@@ -904,11 +904,11 @@
 
     .conflict-file-date {
         color: var(--color-text-secondary);
-        font-size: 11px;
+        font-size: var(--font-size-sm);
     }
 
     .conflict-annotation {
-        font-size: 11px;
+        font-size: var(--font-size-sm);
         font-weight: 500;
     }
 
@@ -921,9 +921,9 @@
     }
 
     .conflict-question {
-        margin: 0 0 16px;
-        font-size: 12px;
-        color: var(--color-text-muted);
+        margin: 0 0 var(--spacing-lg);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
         text-align: center;
     }
 
@@ -949,7 +949,7 @@
         display: flex;
         justify-content: center;
         padding-top: 12px;
-        border-top: 1px solid var(--color-border-primary);
+        border-top: 1px solid var(--color-border-strong);
     }
 
     /* Text-only danger button (for less prominent cancel) */
@@ -957,8 +957,8 @@
         background: transparent;
         color: var(--color-error);
         border: none;
-        font-size: 12px;
-        padding: 6px 16px;
+        font-size: var(--font-size-sm);
+        padding: var(--spacing-sm) var(--spacing-lg);
     }
 
     .danger-text:hover:not(:disabled) {

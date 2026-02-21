@@ -220,7 +220,7 @@
         width: 100px;
         padding: var(--spacing-xs) var(--spacing-sm);
         border: 1px solid var(--color-border);
-        border-radius: 4px;
+        border-radius: var(--radius-sm);
         background: var(--color-bg-primary);
         color: var(--color-text-primary);
         font-size: var(--font-size-sm);
@@ -246,7 +246,7 @@
     .back-to-select {
         padding: var(--spacing-xs) var(--spacing-sm);
         border: 1px solid var(--color-border);
-        border-radius: 4px;
+        border-radius: var(--radius-sm);
         background: var(--color-bg-secondary);
         color: var(--color-text-secondary);
         cursor: default;
@@ -260,7 +260,7 @@
         padding: var(--spacing-xs) var(--spacing-sm);
         min-width: 180px;
         border: 1px solid var(--color-border);
-        border-radius: 4px;
+        border-radius: var(--radius-sm);
         background: var(--color-bg-primary);
         color: var(--color-text-primary);
         font-size: var(--font-size-sm);
@@ -278,17 +278,17 @@
     }
 
     :global(.select-indicator) {
-        font-size: 10px;
-        color: var(--color-text-muted);
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
     }
 
     :global(.select-content) {
         background: var(--color-bg-primary);
         border: 1px solid var(--color-border);
-        border-radius: 4px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        border-radius: var(--radius-sm);
+        box-shadow: var(--shadow-md);
         padding: var(--spacing-xs) 0;
-        z-index: 100;
+        z-index: var(--z-dropdown);
         max-height: 300px;
         overflow-y: auto;
         /* Ensure consistent width regardless of content */
@@ -362,7 +362,7 @@
     }
 
     .option-description {
-        color: var(--color-text-muted);
-        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-sm);
     }
 </style>

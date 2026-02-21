@@ -195,9 +195,9 @@
     .connecting-spinner .spinner {
         width: 24px;
         height: 24px;
-        border: 2px solid var(--color-border-primary);
+        border: 2px solid var(--color-border-strong);
         border-top-color: var(--color-accent);
-        border-radius: 50%;
+        border-radius: var(--radius-full);
         animation: spin 0.8s linear infinite;
     }
 
@@ -228,16 +228,16 @@
 
     .mtp-error .btn {
         padding: 8px 16px;
-        border: 1px solid var(--color-border-primary);
-        border-radius: 6px;
+        border: 1px solid var(--color-border-strong);
+        border-radius: var(--radius-md);
         background-color: var(--color-bg-secondary);
         color: var(--color-text-primary);
         font-size: var(--font-size-sm);
         cursor: pointer;
-        transition: background-color 0.15s ease;
+        transition: background-color var(--transition-base);
     }
 
     .mtp-error .btn:hover {
-        background-color: var(--color-bg-hover);
+        background-color: var(--color-bg-tertiary);
     }
 </style>
