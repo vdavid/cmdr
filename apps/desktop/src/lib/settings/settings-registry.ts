@@ -275,6 +275,20 @@ export const settingsRegistry: SettingDefinition[] = [
     },
 
     // ========================================================================
+    // General > Drive indexing
+    // ========================================================================
+    {
+        id: 'indexing.enabled',
+        section: ['General', 'Drive indexing'],
+        label: 'Drive indexing',
+        description: 'Index your drive in the background for instant directory sizes.',
+        keywords: ['index', 'drive', 'scan', 'size', 'directory', 'folder', 'background'],
+        type: 'boolean',
+        default: true,
+        component: 'switch',
+    },
+
+    // ========================================================================
     // Viewer
     // ========================================================================
     {

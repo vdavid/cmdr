@@ -27,6 +27,9 @@ fn make_entry(name: &str, is_dir: bool) -> FileEntry {
         group: "staff".to_string(),
         icon_id: if is_dir { "dir".to_string() } else { "file".to_string() },
         extended_metadata_loaded: true,
+        recursive_size: None,
+        recursive_file_count: None,
+        recursive_dir_count: None,
     }
 }
 

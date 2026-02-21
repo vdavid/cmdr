@@ -34,6 +34,8 @@ pub struct Settings {
     pub developer_mcp_enabled: Option<bool>,
     #[serde(alias = "developer.mcpPort", default)]
     pub developer_mcp_port: Option<u16>,
+    #[serde(alias = "indexing.enabled", default)]
+    pub indexing_enabled: Option<bool>,
 }
 
 fn default_show_hidden() -> bool {
@@ -47,6 +49,7 @@ impl Default for Settings {
             full_disk_access_choice: FullDiskAccessChoice::NotAskedYet,
             developer_mcp_enabled: None,
             developer_mcp_port: None,
+            indexing_enabled: None,
         }
     }
 }
@@ -97,10 +100,13 @@ fn parse_settings_v2(contents: &str) -> Result<Settings, serde_json::Error> {
         .and_then(|v| v.as_u64())
         .and_then(|v| u16::try_from(v).ok());
 
+    let indexing_enabled = json.get("indexing.enabled").and_then(|v| v.as_bool());
+
     Ok(Settings {
         show_hidden_files,
         full_disk_access_choice,
         developer_mcp_enabled,
         developer_mcp_port,
+        indexing_enabled,
     })
 }

@@ -310,6 +310,9 @@ mod tests {
             group: "group".to_string(),
             icon_id: "ext:txt".to_string(),
             extended_metadata_loaded: true,
+            recursive_size: None,
+            recursive_file_count: None,
+            recursive_dir_count: None,
         }
     }
 

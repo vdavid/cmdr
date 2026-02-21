@@ -91,6 +91,9 @@ impl InMemoryVolume {
                         "ext:txt".to_string()
                     },
                     extended_metadata_loaded: true,
+                    recursive_size: None,
+                    recursive_file_count: None,
+                    recursive_dir_count: None,
                 }
             })
             .collect();
@@ -227,6 +230,9 @@ impl Volume for InMemoryVolume {
             group: "staff".to_string(),
             icon_id: "file".to_string(),
             extended_metadata_loaded: true,
+            recursive_size: None,
+            recursive_file_count: None,
+            recursive_dir_count: None,
         };
 
         entries.insert(
@@ -268,6 +274,9 @@ impl Volume for InMemoryVolume {
             group: "staff".to_string(),
             icon_id: "dir".to_string(),
             extended_metadata_loaded: true,
+            recursive_size: None,
+            recursive_file_count: None,
+            recursive_dir_count: None,
         };
 
         entries.insert(

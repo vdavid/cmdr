@@ -262,6 +262,9 @@ impl MtpConnectionManager {
                 group: String::new(),
                 icon_id: get_mtp_icon_id(is_dir, &info.filename),
                 extended_metadata_loaded: true,
+                recursive_size: None,
+                recursive_file_count: None,
+                recursive_dir_count: None,
             });
         }
 

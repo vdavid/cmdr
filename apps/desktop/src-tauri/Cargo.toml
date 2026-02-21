@@ -64,6 +64,9 @@ tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
 memchr = "2"
 walkdir = "2"
+# Drive indexing: parallel directory walker, SQLite store, and macOS FSEvents watcher
+jwalk = "0.8"
+rusqlite = { version = "0.32", features = ["bundled"] }
 # For chunked copy metadata preservation (network filesystems)
 xattr = "1"
 filetime = "0.2"
@@ -100,11 +103,14 @@ mtp-rs = "0.1.0"
 # USB hotplug detection for MTP device watcher
 nusb = "0.2.2"
 bytes = "1"
+# Drive indexing: macOS FSEvents watcher with event IDs and sinceWhen replay
+cmdr-fsevent-stream = { git = "https://github.com/vdavid/cmdr-fsevent-stream" }
 
 [dev-dependencies]
 criterion = { version = "0.8.1", features = ["html_reports"] }
 # For test-only cryptographic key generation (compatible with ed25519-dalek's rand_core 0.6)
 rand_core = { version = "0.6", features = ["getrandom"] }
+tempfile = "3"
 
 [[bench]]
 name = "icon_benchmarks"

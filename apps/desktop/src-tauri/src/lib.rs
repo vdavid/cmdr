@@ -65,6 +65,7 @@ mod file_system;
 pub(crate) mod file_viewer;
 mod font_metrics;
 pub mod icons;
+mod indexing;
 pub mod licensing;
 #[cfg(target_os = "macos")]
 mod macos_icons;
@@ -219,6 +220,23 @@ pub fn run() {
 
             // Initialize AI manager (starts llama-server if model is installed)
             ai::manager::init(app.handle());
+
+            // Register indexing state (does not start scanning; controlled by settings + env var)
+            indexing::init(app.handle());
+
+            // Auto-start indexing if conditions are met (settings + dev env var)
+            if indexing::should_auto_start(saved_settings.indexing_enabled) {
+                let app_handle = app.handle().clone();
+                // Use tauri's runtime spawn instead of tokio::spawn since setup()
+                // runs synchronously before the Tokio runtime is fully available
+                tauri::async_runtime::spawn(async move {
+                    if let Err(e) = indexing::start_indexing(&app_handle) {
+                        log::warn!("Failed to auto-start indexing: {e}");
+                    }
+                });
+            } else {
+                log::info!("Drive indexing auto-start skipped (disabled in settings or set CMDR_DRIVE_INDEX=1 in dev)");
+            }
 
             Ok(())
         })
@@ -598,7 +616,17 @@ pub fn run() {
             commands::settings::find_available_port,
             commands::settings::update_file_watcher_debounce,
             commands::settings::update_service_resolve_timeout,
-            commands::settings::update_menu_accelerator
+            commands::settings::update_menu_accelerator,
+            // Drive indexing commands
+            commands::indexing::start_drive_index,
+            commands::indexing::stop_drive_index,
+            commands::indexing::get_index_status,
+            commands::indexing::get_dir_stats,
+            commands::indexing::get_dir_stats_batch,
+            commands::indexing::prioritize_dir,
+            commands::indexing::cancel_nav_priority,
+            commands::indexing::clear_drive_index,
+            commands::indexing::set_indexing_enabled,
         ])
         .on_window_event(|window, event| {
             // When the main window is closed, quit the entire app (including settings/debug/viewer windows)

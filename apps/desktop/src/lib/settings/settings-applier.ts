@@ -5,7 +5,7 @@
 
 import { getSetting, onSettingChange, initializeSettings, type UiDensity, densityMappings } from '$lib/settings'
 import { getAppLogger, setVerboseLogging } from '$lib/logger'
-import { updateFileWatcherDebounce, updateServiceResolveTimeout } from '$lib/tauri-commands'
+import { updateFileWatcherDebounce, updateServiceResolveTimeout, setIndexingEnabled } from '$lib/tauri-commands'
 
 const log = getAppLogger('settings-applier')
 
@@ -76,6 +76,10 @@ function handleSettingChange(id: string, value: unknown): void {
         case 'advanced.serviceResolveTimeout':
             // Update Rust backend Bonjour resolve timeout
             void updateServiceResolveTimeout(value as number)
+            break
+        case 'indexing.enabled':
+            // Start or stop drive indexing
+            void setIndexingEnabled(value as boolean)
             break
         // Other settings that need immediate UI updates can be added here
         // Date/time format and file size format are read on-demand when rendering,

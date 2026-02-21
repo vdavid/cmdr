@@ -222,6 +222,7 @@ export {
     findAvailablePort,
     updateFileWatcherDebounce,
     updateServiceResolveTimeout,
+    setIndexingEnabled,
     getAiStatus,
     getAiModelInfo,
     startAiDownload,

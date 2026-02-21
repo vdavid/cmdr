@@ -8,6 +8,8 @@
     import AboutWindow from '$lib/licensing/AboutWindow.svelte'
     import LicenseKeyDialog from '$lib/licensing/LicenseKeyDialog.svelte'
     import CommandPalette from '$lib/command-palette/CommandPalette.svelte'
+    import ScanStatusOverlay from '$lib/indexing/ScanStatusOverlay.svelte'
+    import { initIndexState, destroyIndexState } from '$lib/indexing/index'
     import {
         showMainWindow,
         checkFullDiskAccess,
@@ -521,9 +523,11 @@
         await setupMenuListeners()
         await setupDialogListeners()
         await setupMcpListeners()
+        await initIndexState()
     }
 
     onDestroy(() => {
+        destroyIndexState()
         if (handleKeyDown) {
             document.removeEventListener('keydown', handleKeyDown)
         }
@@ -886,6 +890,7 @@
             <FullDiskAccessPrompt onComplete={handleFdaComplete} wasRevoked={fdaWasRevoked} />
         {:else if showApp}
             <DualPaneExplorer bind:this={explorerRef} />
+            <ScanStatusOverlay />
         {/if}
     </div>
 

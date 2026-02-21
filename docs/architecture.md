@@ -22,6 +22,7 @@ All under `apps/desktop/src/lib/`.
 | `command-palette/` | Fuzzy command search (~45 commands) |
 | `licensing/` | License validation, commercial reminders, expiration modals |
 | `ai/` | Local LLM features (folder suggestions), download flow |
+| `indexing/` | Drive index state, events, priority triggers, scan status overlay |
 | `mtp/` | MTP (Android device) file browsing UI |
 | `updates/` | Auto-updater UI |
 | `font-metrics/` | Character width measurement for accurate Brief mode column sizing |
@@ -41,8 +42,9 @@ All under `apps/desktop/src-tauri/src/`.
 | `ai/` | llama-server lifecycle, model download, inference client |
 | `licensing/` | Ed25519 license verification, server validation |
 | `settings/` | Settings persistence (tauri-plugin-store) |
+| `indexing/` | Background drive indexing (SQLite, jwalk, FSEvents), recursive directory sizes |
 | `font_metrics/` | Binary font metrics cache, per-directory width calculation |
-| `volumes/` | Volume abstraction (local, network, MTP) |
+| `volumes/` | Volume abstraction (local, network, MTP), scanner/watcher traits |
 | `drag_image_detection.rs` | macOS method swizzle for drag image size detection |
 | `drag_image_swap.rs` | Rich/transparent drag image swap for self-drags |
 | `commands/` | Tauri command definitions (IPC entry points) |
@@ -82,6 +84,7 @@ Philosophy: status is "where you are" (ephemeral), settings are "how you like it
 
 - `pnpm dev` at repo root for hot-reloading Tauri app
 - AI disabled unless `CMDR_REAL_AI=1` (prevents large downloads)
+- Drive indexing disabled unless `CMDR_DRIVE_INDEX=1` (prevents full-disk scans)
 - License mock via `CMDR_MOCK_LICENSE=commercial`
 - MCP server available at `localhost:9224` for agent testing
 - `withGlobalTauri: true` in dev mode — security risk if loading remote content

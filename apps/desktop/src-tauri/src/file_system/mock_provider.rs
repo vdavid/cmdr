@@ -41,6 +41,9 @@ impl MockFileSystemProvider {
                         "ext:txt".to_string()
                     },
                     extended_metadata_loaded: true,
+                    recursive_size: None,
+                    recursive_file_count: None,
+                    recursive_dir_count: None,
                 }
             })
             .collect();
@@ -77,6 +80,9 @@ mod tests {
                 group: "staff".to_string(),
                 icon_id: "ext:txt".to_string(),
                 extended_metadata_loaded: true,
+                recursive_size: None,
+                recursive_file_count: None,
+                recursive_dir_count: None,
             },
             FileEntry {
                 name: "folder".to_string(),
@@ -93,6 +99,9 @@ mod tests {
                 group: "staff".to_string(),
                 icon_id: "dir".to_string(),
                 extended_metadata_loaded: true,
+                recursive_size: None,
+                recursive_file_count: None,
+                recursive_dir_count: None,
             },
         ];
 

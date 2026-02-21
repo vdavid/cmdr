@@ -4,6 +4,7 @@ pub mod file_system;
 pub mod file_viewer;
 pub mod font_metrics;
 pub mod icons;
+pub mod indexing;
 pub mod licensing;
 #[cfg(target_os = "macos")]
 pub mod mtp;

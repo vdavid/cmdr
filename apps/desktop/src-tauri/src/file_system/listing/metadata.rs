@@ -88,6 +88,15 @@ pub struct FileEntry {
     /// Always true for legacy list_directory(), false for list_directory_core()
     #[serde(default = "default_extended_loaded")]
     pub extended_metadata_loaded: bool,
+    /// Recursive size in bytes (from drive index, None if not indexed)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub recursive_size: Option<u64>,
+    /// Recursive file count (from drive index, None if not indexed)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub recursive_file_count: Option<u64>,
+    /// Recursive dir count (from drive index, None if not indexed)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub recursive_dir_count: Option<u64>,
 }
 
 /// Default value for extended_metadata_loaded (for backwards compatibility)

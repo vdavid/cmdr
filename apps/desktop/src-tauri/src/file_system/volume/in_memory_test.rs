@@ -31,6 +31,9 @@ fn test_with_entries_populates_volume() {
             group: "staff".to_string(),
             icon_id: "ext:txt".to_string(),
             extended_metadata_loaded: true,
+            recursive_size: None,
+            recursive_file_count: None,
+            recursive_dir_count: None,
         },
         FileEntry {
             name: "folder".to_string(),
@@ -47,6 +50,9 @@ fn test_with_entries_populates_volume() {
             group: "staff".to_string(),
             icon_id: "dir".to_string(),
             extended_metadata_loaded: true,
+            recursive_size: None,
+            recursive_file_count: None,
+            recursive_dir_count: None,
         },
     ];
 
@@ -96,6 +102,9 @@ fn test_exists_returns_true_for_existing() {
         group: "group".to_string(),
         icon_id: "file".to_string(),
         extended_metadata_loaded: true,
+        recursive_size: None,
+        recursive_file_count: None,
+        recursive_dir_count: None,
     }];
 
     let volume = InMemoryVolume::with_entries("Test", entries);
@@ -127,6 +136,9 @@ fn test_get_metadata_returns_correct_entry() {
         group: "group".to_string(),
         icon_id: "file".to_string(),
         extended_metadata_loaded: true,
+        recursive_size: None,
+        recursive_file_count: None,
+        recursive_dir_count: None,
     }];
 
     let volume = InMemoryVolume::with_entries("Test", entries);
@@ -210,6 +222,9 @@ fn test_list_directory_sorts_correctly() {
             group: "group".to_string(),
             icon_id: "file".to_string(),
             extended_metadata_loaded: true,
+            recursive_size: None,
+            recursive_file_count: None,
+            recursive_dir_count: None,
         },
         FileEntry {
             name: "alpha".to_string(),
@@ -226,6 +241,9 @@ fn test_list_directory_sorts_correctly() {
             group: "group".to_string(),
             icon_id: "dir".to_string(),
             extended_metadata_loaded: true,
+            recursive_size: None,
+            recursive_file_count: None,
+            recursive_dir_count: None,
         },
         FileEntry {
             name: "apple.txt".to_string(),
@@ -242,6 +260,9 @@ fn test_list_directory_sorts_correctly() {
             group: "group".to_string(),
             icon_id: "file".to_string(),
             extended_metadata_loaded: true,
+            recursive_size: None,
+            recursive_file_count: None,
+            recursive_dir_count: None,
         },
         FileEntry {
             name: "beta".to_string(),
@@ -258,6 +279,9 @@ fn test_list_directory_sorts_correctly() {
             group: "group".to_string(),
             icon_id: "dir".to_string(),
             extended_metadata_loaded: true,
+            recursive_size: None,
+            recursive_file_count: None,
+            recursive_dir_count: None,
         },
     ];
 
@@ -293,6 +317,9 @@ fn test_list_subdirectory() {
             group: "group".to_string(),
             icon_id: "dir".to_string(),
             extended_metadata_loaded: true,
+            recursive_size: None,
+            recursive_file_count: None,
+            recursive_dir_count: None,
         },
         FileEntry {
             name: "file_in_subdir.txt".to_string(),
@@ -309,6 +336,9 @@ fn test_list_subdirectory() {
             group: "group".to_string(),
             icon_id: "file".to_string(),
             extended_metadata_loaded: true,
+            recursive_size: None,
+            recursive_file_count: None,
+            recursive_dir_count: None,
         },
         FileEntry {
             name: "root_file.txt".to_string(),
@@ -325,6 +355,9 @@ fn test_list_subdirectory() {
             group: "group".to_string(),
             icon_id: "file".to_string(),
             extended_metadata_loaded: true,
+            recursive_size: None,
+            recursive_file_count: None,
+            recursive_dir_count: None,
         },
     ];
 

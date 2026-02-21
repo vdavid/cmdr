@@ -101,6 +101,9 @@ pub fn list_directory_core(path: &Path) -> Result<Vec<FileEntry>, std::io::Error
                         "file".to_string()
                     },
                     extended_metadata_loaded: true, // Nothing to load for broken entries
+                    recursive_size: None,
+                    recursive_file_count: None,
+                    recursive_dir_count: None,
                 });
             }
         }
@@ -179,6 +182,9 @@ pub fn get_single_entry(path: &Path) -> Result<FileEntry, std::io::Error> {
         group,
         icon_id: get_icon_id(is_dir, is_symlink, &name),
         extended_metadata_loaded: false,
+        recursive_size: None,
+        recursive_file_count: None,
+        recursive_dir_count: None,
     })
 }
 
@@ -235,6 +241,9 @@ pub(crate) fn process_dir_entry(entry: &fs::DirEntry) -> Option<FileEntry> {
         group,
         icon_id: get_icon_id(is_dir, is_symlink, &name),
         extended_metadata_loaded: false,
+        recursive_size: None,
+        recursive_file_count: None,
+        recursive_dir_count: None,
     })
 }
 

@@ -23,6 +23,9 @@ fn make_entry(name: &str, is_dir: bool, size: Option<u64>, modified: Option<u64>
         group: "staff".to_string(),
         icon_id: if is_dir { "dir".to_string() } else { "file".to_string() },
         extended_metadata_loaded: true,
+        recursive_size: None,
+        recursive_file_count: None,
+        recursive_dir_count: None,
     }
 }
 
@@ -322,6 +325,9 @@ fn make_symlink(name: &str, size: Option<u64>) -> FileEntry {
         group: "staff".to_string(),
         icon_id: "symlink".to_string(),
         extended_metadata_loaded: true,
+        recursive_size: None,
+        recursive_file_count: None,
+        recursive_dir_count: None,
     }
 }
 

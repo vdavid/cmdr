@@ -7,8 +7,13 @@
 #![allow(dead_code, reason = "Volume abstraction not yet integrated into operations.rs")]
 
 use crate::file_system::listing::FileEntry;
+use crate::indexing::scanner::{ScanConfig, ScanError, ScanHandle, ScanSummary};
+use crate::indexing::watcher::{DriveWatcher, FsChangeEvent, WatcherError};
+use crate::indexing::writer::IndexWriter;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
+use std::sync::atomic::AtomicBool;
+use tokio::sync::mpsc;
 
 /// Result of scanning a path for copy operation.
 #[derive(Debug, Clone)]
@@ -99,6 +104,48 @@ pub trait VolumeReadStream: Send {
     fn bytes_read(&self) -> u64;
 }
 
+/// Bulk enumeration for drive indexing. Each volume type implements its optimal strategy.
+///
+/// `LocalPosixVolume` uses jwalk for fast parallel traversal. Future volume types
+/// (SMB, MTP, S3, etc.) will implement their own scanning strategies.
+pub trait VolumeScanner: Send + Sync {
+    /// Start a full-volume scan on a background thread.
+    ///
+    /// Returns a [`ScanHandle`] for progress tracking and cancellation, plus a
+    /// [`std::thread::JoinHandle`] for the scan result.
+    fn scan_volume(
+        &self,
+        config: ScanConfig,
+        writer: &IndexWriter,
+    ) -> Result<(ScanHandle, std::thread::JoinHandle<Result<ScanSummary, ScanError>>), ScanError>;
+
+    /// Synchronous subtree scan. Runs in the caller's thread.
+    ///
+    /// Used by micro-scans and `MustScanSubDirs` handling.
+    fn scan_subtree(&self, root: &Path, writer: &IndexWriter, cancelled: &AtomicBool)
+    -> Result<ScanSummary, ScanError>;
+}
+
+/// Real-time filesystem change notification for drive indexing.
+///
+/// Each volume type implements its own mechanism: FSEvents for local POSIX,
+/// kqueue for SMB, polling for NFS/AFP, etc.
+pub trait VolumeWatcher: Send + Sync {
+    /// Start watching the volume root for filesystem changes.
+    ///
+    /// - `root`: path to watch (typically the volume root).
+    /// - `since_when`: FSEvents event ID to replay from. Use `0` for "since now".
+    /// - `event_sender`: channel to receive parsed change events.
+    ///
+    /// Returns a [`DriveWatcher`] handle for stopping and querying state.
+    fn watch(
+        &self,
+        root: &Path,
+        since_when: u64,
+        event_sender: mpsc::UnboundedSender<FsChangeEvent>,
+    ) -> Result<DriveWatcher, WatcherError>;
+}
+
 impl From<std::io::Error> for VolumeError {
     fn from(err: std::io::Error) -> Self {
         match err.kind() {
@@ -184,6 +231,26 @@ pub trait Volume: Send + Sync {
     /// Returns true if this volume supports file watching.
     fn supports_watching(&self) -> bool {
         false
+    }
+
+    // ========================================
+    // Indexing: Optional, default None
+    // ========================================
+
+    /// Returns a scanner for bulk enumeration during drive indexing.
+    ///
+    /// Only volume types that support efficient bulk traversal return `Some`.
+    /// Currently: `LocalPosixVolume` (via jwalk). Returns `None` by default.
+    fn scanner(&self) -> Option<Box<dyn VolumeScanner>> {
+        None
+    }
+
+    /// Returns a watcher for real-time change notification during drive indexing.
+    ///
+    /// Only volume types with native change notification return `Some`.
+    /// Currently: `LocalPosixVolume` (via FSEvents). Returns `None` by default.
+    fn watcher(&self) -> Option<Box<dyn VolumeWatcher>> {
+        None
     }
 
     // ========================================

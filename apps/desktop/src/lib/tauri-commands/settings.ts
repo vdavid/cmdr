@@ -44,6 +44,19 @@ export async function updateServiceResolveTimeout(timeoutMs: number): Promise<vo
 }
 
 // ============================================================================
+// Indexing commands
+// ============================================================================
+
+/**
+ * Toggles drive indexing on or off.
+ * When enabled: starts scanning (resumes from existing DB if available).
+ * When disabled: stops all scans and watchers; DB stays on disk.
+ */
+export async function setIndexingEnabled(enabled: boolean): Promise<void> {
+    await invoke('set_indexing_enabled', { enabled })
+}
+
+// ============================================================================
 // AI commands
 // ============================================================================
 

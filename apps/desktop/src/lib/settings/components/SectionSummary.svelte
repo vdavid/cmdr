@@ -21,6 +21,7 @@
         const descriptions: Record<string, string> = {
             Appearance: 'Customize fonts, density, and visual display options.',
             'File operations': 'Configure copy, move, delete, and progress display settings.',
+            'Drive indexing': 'Background indexing for directory sizes. Manage index storage.',
             Updates: 'Manage automatic update checks and notifications.',
             'SMB/Network shares': 'Configure network timeouts and connection settings.',
             'MCP server': 'Configure the Model Context Protocol server for AI integrations.',

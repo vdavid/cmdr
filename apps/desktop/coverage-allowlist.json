@@ -93,6 +93,7 @@
         "settings/sections/McpServerSection.svelte": { "reason": "UI section, depends on Tauri APIs" },
         "settings/sections/NetworkSection.svelte": { "reason": "UI section, simple rendering" },
         "settings/sections/ThemesSection.svelte": { "reason": "UI section, simple rendering" },
+        "settings/sections/DriveIndexingSection.svelte": { "reason": "UI section, depends on Tauri invoke" },
         "settings/sections/UpdatesSection.svelte": { "reason": "UI section, simple rendering" },
         "settings/settings-store.ts": { "reason": "Depends on Tauri store APIs" },
         "settings/settings-window.ts": { "reason": "Depends on Tauri window APIs" },
@@ -143,6 +144,18 @@
         },
         "tauri-commands/rename.ts": {
             "reason": "Tauri command wrappers, tested via integration"
+        },
+        "indexing/ScanStatusOverlay.svelte": {
+            "reason": "UI overlay component, depends on Tauri event listeners"
+        },
+        "indexing/index-events.ts": {
+            "reason": "Thin wrapper over Tauri listen API"
+        },
+        "indexing/index-priority.ts": {
+            "reason": "Thin wrapper over Tauri invoke API"
+        },
+        "indexing/index-state.svelte.ts": {
+            "reason": "Reactive Svelte state, depends on Tauri event listeners"
         }
     }
 }

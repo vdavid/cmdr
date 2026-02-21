@@ -97,6 +97,9 @@ export interface SettingsValues {
     // Theme
     'theme.mode': ThemeMode
 
+    // Indexing
+    'indexing.enabled': boolean
+
     // Viewer
     'viewer.wordWrap': boolean
 

@@ -1,6 +1,7 @@
 <script lang="ts">
     import AppearanceSection from '$lib/settings/sections/AppearanceSection.svelte'
     import FileOperationsSection from '$lib/settings/sections/FileOperationsSection.svelte'
+    import DriveIndexingSection from '$lib/settings/sections/DriveIndexingSection.svelte'
     import UpdatesSection from '$lib/settings/sections/UpdatesSection.svelte'
     import NetworkSection from '$lib/settings/sections/NetworkSection.svelte'
     import KeyboardShortcutsSection from '$lib/settings/sections/KeyboardShortcutsSection.svelte'
@@ -84,6 +85,12 @@
         {#if shouldShowSection(['General', 'File operations'])}
             <section data-section-id="general-file-operations">
                 <FileOperationsSection {searchQuery} />
+            </section>
+        {/if}
+
+        {#if shouldShowSection(['General', 'Drive indexing'])}
+            <section data-section-id="general-drive-indexing">
+                <DriveIndexingSection {searchQuery} />
             </section>
         {/if}
 

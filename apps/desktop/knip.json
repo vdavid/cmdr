@@ -1,7 +1,12 @@
 {
     "$schema": "https://unpkg.com/knip@5/schema.json",
     "ignoreBinaries": ["only-allow"],
-    "ignore": ["src/routes/+layout.ts", "src/lib/tauri-commands/**"],
+    "ignore": [
+        "src/routes/+layout.ts",
+        "src/lib/tauri-commands/**",
+        "src/lib/indexing/index-events.ts",
+        "src/lib/indexing/index-priority.ts"
+    ],
     "ignoreDependencies": [
         "@tauri-apps/cli",
         "@testing-library/svelte",
