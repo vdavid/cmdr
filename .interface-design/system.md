@@ -118,6 +118,10 @@ Note: blog code blocks use a dark syntax theme regardless of page mode — they 
 The selection gold is intentional: it must be distinct from the accent color (which can be _any_ hue the user picks).
 Gold was chosen because it reads as "marked" rather than "active," and contrasts with every macOS accent option.
 
+**Contrast note:** `#c9a227` on `#ffffff` gives ~3.5:1 — passes WCAG AA for large text but not normal text. At 12px
+(`--font-size-sm`) this is borderline. Acceptable because selected file names are always accompanied by a secondary cue
+(the gold is applied only to names, never to standalone labels), but worth revisiting if we get accessibility complaints.
+
 ### Search highlight colors
 
 | Token | Light | Dark | Role |
@@ -160,6 +164,9 @@ to anchor the file list below them. Kept as a separate token rather than reusing
 --font-system: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 ```
+
+**Migration note:** The current code includes `'Segoe UI'` in the font stack (a Windows font). Remove it — Cmdr is
+macOS-only.
 
 **Type scale.** Fixed `px`, not `rem` — the app scales with macOS display settings, not browser font preferences.
 `html { font-size: 16px }` is hardcoded to establish `1rem = 16px`. The body inherits this. The tokens below are for
@@ -282,6 +289,20 @@ box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1); /* contrast backup in light mode */
 ```
 
 In dark mode, the backup shadow uses `rgba(255, 255, 255, 0.08)` instead.
+
+### Z-index scale (app)
+
+| Token | Value | Role |
+|-------|-------|------|
+| `--z-base` | `0` | Default stacking context |
+| `--z-sticky` | `10` | Sticky headers, column headers |
+| `--z-dropdown` | `100` | Dropdowns, popovers, command palette |
+| `--z-overlay` | `200` | Modal overlays (dim background) |
+| `--z-modal` | `300` | Modal dialogs |
+| `--z-notification` | `400` | Toasts, notifications (always on top) |
+
+Keep gaps between tiers so intermediate values are available without reshuffling. Never use raw numbers — always
+reference the token.
 
 ### Website
 
@@ -440,6 +461,36 @@ Native `title` attribute. No custom tooltip component. This is intentional — n
 require hover-timing logic. If custom tooltips become necessary later, they should use `--shadow-sm`, `--radius-sm`,
 `--font-size-sm`, and `--color-bg-secondary` background.
 
+### Keyboard shortcut hints (app)
+
+Shortcut hints appear in tooltips (via native `title`) and in the command palette. When displayed inline (for example,
+beside a menu item or in a settings label):
+
+```css
+font-size: var(--font-size-xs);    /* 10px */
+font-family: var(--font-mono);
+color: var(--color-text-tertiary);
+background: var(--color-bg-tertiary);
+padding: 1px 4px;
+border-radius: var(--radius-sm);
+line-height: 1.0;
+```
+
+Keep them visually quiet — they're reference, not action. Monospace so key combinations (`Cmd+Shift+N`) align neatly.
+
+### Loading states (app)
+
+For operations under ~1 second, no indicator needed. For longer operations, follow the progressive disclosure from the
+design guidelines in AGENTS.md:
+
+1. **Spinner** — immediately on start. Use the existing LoadingIcon component.
+2. **Progress bar + counter** — when the total is known (for example, "Loading 42 of 318 files"). Use
+   `--color-accent` for the filled portion, `--color-bg-tertiary` for the track.
+3. **Time estimate** — when we can extrapolate. Show in `--color-text-tertiary` below the progress bar.
+
+All long operations must be cancelable. The cancel action should be a secondary button or `Escape` key, and must stop
+both the UI indicator and the background process.
+
 ### Empty states (app)
 
 Currently missing — no visual feedback when a folder is empty. Should show a centered, single-line message in
@@ -481,3 +532,8 @@ Not shared tokens — shared _decisions_:
 - One accent hue at a time. Everything else is neutral. No gratuitous color.
 - Fast enough to feel mechanical. Transitions serve confirmation ("I heard your click"), not decoration.
 - Dark mode is the assumed default, not a bolt-on. Light mode is tuned independently, not auto-inverted.
+
+---
+
+_This document contains "Migration note" annotations that reference the pre-migration state. Remove them once the
+migration plan is fully executed — this file should be a clean reference, not a changelog._

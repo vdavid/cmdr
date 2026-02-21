@@ -18,6 +18,10 @@ working, new tokens are available for use.
 - `--shadow-sm`, `--shadow-md`, `--shadow-lg`, `--shadow-focus` (with separate light/dark values per system.md)
 - `--transition-fast: 100ms ease`, `--transition-base: 150ms ease`, `--transition-slow: 200ms ease`
 
+**New z-index tokens:**
+- `--z-base: 0`, `--z-sticky: 10`, `--z-dropdown: 100`, `--z-overlay: 200`, `--z-modal: 300`,
+  `--z-notification: 400`
+
 **New color tokens:**
 - `--color-accent-subtle` as `color-mix(in oklch, var(--color-accent), transparent 85%)`
 - `--color-border-subtle` (light: `#e8e8e8`, dark: `#333333`)
@@ -55,16 +59,24 @@ codebase followed by a check run.
 
 **Text color changes:**
 - Update `--color-text-primary` from `#000000` → `#1a1a1a` (light) and `#ffffff` → `#e8e8e8` (dark)
+- This is a global change affecting every text element — take before/after screenshots of the file list, settings, and
+  a dialog for side-by-side comparison
 - Consolidate `--color-text-muted` → `--color-text-tertiary` across 24 files (~58 occurrences), then remove
   `--color-text-muted` from app.css
 
 **Font-size cleanup:**
 - Current state: `--font-size-xs: 12px` and `--font-size-sm: 12px` are identical
 - Change `--font-size-xs` to `10px` (the system's intended value)
-- Audit all `--font-size-xs` consumers — if they need 12px, switch them to `--font-size-sm`
+- **This is high-risk** — every current `--font-size-xs` consumer was written expecting 12px. 10px is genuinely small.
+  Audit each consumer individually: grep for `--font-size-xs`, list every file, and for each usage decide whether 10px
+  is appropriate or the consumer should switch to `--font-size-sm` (12px). Expected volume: check how many usages exist
+  before starting. Take screenshots of affected components at 10px to verify legibility
 - Remove `--font-size-base: 16px` — the revised system drops this token name (the 5-step scale is xs/sm/md/lg/xl).
   The body element (`font-size: var(--font-size-base)`) should just inherit from `html { font-size: 16px }` — remove
   the `font-size` declaration from the `html, body` rule
+
+**Font stack cleanup:**
+- Remove `'Segoe UI'` from `--font-system` in app.css (Windows font, Cmdr is macOS-only)
 
 **Spacing-md safe migration (critical — do in this exact order):**
 1. `--spacing-lg: 16px` already added in M1a
@@ -75,9 +87,10 @@ codebase followed by a check run.
 **Verification:** Run `./scripts/check.sh --svelte`. Open app in light + dark mode, visually compare main file list,
 settings, and one dialog. For the `--spacing-md` change specifically, screenshot before and after.
 
-## Milestone 2: macOS accent color
+## Milestone 2a: macOS accent color — read and inject
 
-Read the user's system accent color on the Rust side and inject it into the webview.
+Read the user's system accent color on the Rust side and inject it into the webview. Keep existing cursor tokens as
+fallback until verified.
 
 **Rust side** (`src-tauri/`):
 - Enable the `NSColor` feature on `objc2-app-kit` in `Cargo.toml`
@@ -90,16 +103,30 @@ Read the user's system accent color on the Rust side and inject it into the webv
   `--color-accent` on `document.documentElement`
 - Derive `--color-accent-hover` and `--color-accent-subtle` via `color-mix()` in CSS (no JS needed for derivation)
 - Listen for the `accent-color-changed` event and update `--color-accent` live
-- Fallback: if the command fails, keep the CSS default from `app.css` (`#007aff` light / `#0a84ff` dark)
+- Fallback: if the command fails (or on unsupported macOS versions), keep the CSS default from `app.css`
+  (`#007aff` light / `#0a84ff` dark). Log the failure at `warn` level
+
+**Verification:** Run `./scripts/check.sh --rust`. Manual test: change macOS accent color in System Settings while the
+app is running — verify `--color-accent` updates live. Test with all 8 macOS accent options (blue, purple, pink, red,
+orange, yellow, green, graphite). Pay special attention to yellow and graphite on light backgrounds — these have the
+lowest contrast against white.
+
+**Rollback:** If accent reading is unreliable, the CSS fallback in `app.css` still works. The old cursor tokens still
+exist at this point, so the app looks the same as before.
+
+## Milestone 2b: macOS accent color — migrate consumers
+
+Now that accent injection is verified, migrate cursor and interactive tokens to use it.
+
 - Update cursor highlight in file list to use `--color-accent-subtle` instead of hardcoded blue
 - Remove `--color-cursor-focused-bg` and `--color-cursor-focused-fg` — the accent-subtle tint is translucent, so text
   keeps its normal color (no need for a special foreground token)
 - Replace `--color-cursor-unfocused-bg` with `var(--color-bg-tertiary)` in all 6 consuming components (FullList,
   BriefList, ShareBrowser, NetworkBrowser, PaneResizer, CommandPalette)
 
-**Verification:** Run `./scripts/check.sh --rust`. Manual test with multiple macOS accent colors (blue, purple, pink,
-red, orange, yellow, green, graphite). Verify cursor highlight, buttons, focus rings, and switches all follow the
-accent.
+**Verification:** Manual test with all 8 macOS accent colors. Verify cursor highlight, buttons, focus rings, and
+switches all follow the accent. Specifically check that yellow accent cursor is visible on `--color-bg-primary` in light
+mode.
 
 ## Milestone 3: Shared button component
 
@@ -211,9 +238,9 @@ Replace Inter with Geist Sans.
 
 **Verification:** Visual check all website pages for layout shifts from the font change.
 
-## Milestone 6: Website color and light mode
+## Milestone 6a: Website dark palette warmup
 
-Warm up the dark palette and add light mode for sub-pages.
+Warm up the dark palette and refine interactions. No layout or mode changes — just token value updates.
 
 **Dark palette update:**
 - Change `--color-background` from `#0a0a0b` → `#14130f`
@@ -224,15 +251,6 @@ Warm up the dark palette and add light mode for sub-pages.
 - Update `meta theme-color` in `Layout.astro`
 - Update Remark42 comments background to match (if applicable)
 
-**Light mode (sub-pages):**
-- Add `@media (prefers-color-scheme: light)` block to `global.css` with light tokens
-- Scope it to sub-page layouts: LegalLayout, BlogLayout, and individual pages (pricing, changelog, roadmap)
-- Landing page (`index.astro`) stays dark-only — explicitly override to keep dark tokens
-- Blog code blocks: wrap in a `[data-theme="dark"]` scope so they keep dark tokens in light mode
-- Update blog-prose.css to reference theme-aware tokens
-- Update Shiki syntax highlighting: add `github-light` theme alongside `github-dark`, switch based on color scheme
-- Update Remark42 comments to detect and pass `theme: 'light'` or `'dark'`
-
 **CTA hover refinement:**
 - Change `hover:scale-105` → `hover:scale-[1.02]` on primary CTAs
 - Keep glow effect on primary CTA only
@@ -242,7 +260,29 @@ Warm up the dark palette and add light mode for sub-pages.
 - Check all `transition-all` usages respect the media query
 
 **Verification:** Run `./scripts/check.sh --check website-build --check website-e2e`. Visual check all website pages in
-both light and dark mode. Verify blog code blocks stay dark in light mode.
+dark mode.
+
+## Milestone 6b: Website light mode for sub-pages
+
+Add light mode support. This is the most visually impactful website change — every component on affected pages needs to
+render correctly in both modes.
+
+**Light mode tokens:**
+- Add `@media (prefers-color-scheme: light)` block to `global.css` with light tokens per system.md
+- Scope it to sub-page layouts: LegalLayout, BlogLayout, and individual pages (pricing, changelog, roadmap)
+- Landing page (`index.astro`) stays dark-only — explicitly override to keep dark tokens
+
+**Blog-specific handling:**
+- Blog code blocks: wrap in a `[data-theme="dark"]` scope so they keep dark tokens in light mode
+- Update blog-prose.css to reference theme-aware tokens
+- Update Shiki syntax highlighting: add `github-light` theme alongside `github-dark`, switch based on color scheme
+
+**Third-party integration:**
+- Update Remark42 comments to detect and pass `theme: 'light'` or `'dark'`
+
+**Verification:** Run `./scripts/check.sh --check website-build --check website-e2e`. Visual check every sub-page (blog
+index, blog post, legal, pricing, changelog, roadmap) in both light and dark mode. Verify blog code blocks stay dark in
+light mode. Verify landing page stays dark regardless of system preference.
 
 ## Milestone 7: Empty state and polish
 
@@ -252,6 +292,7 @@ both light and dark mode. Verify blog code blocks stay dark in light mode.
 - Manual visual check: open the app in light mode, dark mode, with different macOS accent colors
 - Manual visual check: browse all website pages in light and dark mode
 - Update `apps/desktop/src/app.css` header comment to reference `/.interface-design/system.md`
+- Remove all "Migration note" annotations from `/.interface-design/system.md` — it should be a clean reference
 
 ## Future: System font size support
 
@@ -271,6 +312,7 @@ Not part of this migration, but tracked as a future effort.
 - [ ] Add radius tokens (`--radius-sm/md/lg/full`) to app.css
 - [ ] Add shadow tokens (`--shadow-sm/md/lg/focus`) with light/dark values
 - [ ] Add transition tokens (`--transition-fast/base/slow`)
+- [ ] Add z-index tokens (`--z-base/sticky/dropdown/overlay/modal/notification`)
 - [ ] Add `--color-accent-subtle`, `--color-border-subtle`
 - [ ] Add `--spacing-lg: 16px`, `--spacing-xl: 24px`, `--spacing-2xl: 32px`
 - [ ] Add `--font-size-md: 14px`, `--font-size-lg: 16px`, `--font-size-xl: 20px`
@@ -280,22 +322,26 @@ Not part of this migration, but tracked as a future effort.
 ### Milestone 1b: Rename and remove tokens
 - [ ] Rename `--color-border-primary` → `--color-border-strong` in app.css and all components
 - [ ] Rename `--color-border-secondary` → `--color-border-subtle` across components
-- [ ] Update `--color-text-primary` to `#1a1a1a`/`#e8e8e8`
+- [ ] Update `--color-text-primary` to `#1a1a1a`/`#e8e8e8` — take before/after screenshots for comparison
 - [ ] Consolidate `--color-text-muted` → `--color-text-tertiary`, remove `--color-text-muted`
-- [ ] Change `--font-size-xs` to `10px`, audit consumers
+- [ ] Change `--font-size-xs` to `10px` — audit each consumer individually, screenshot affected components
 - [ ] Remove `--font-size-base`, let body inherit from html's 16px
+- [ ] Remove `'Segoe UI'` from `--font-system` stack
 - [ ] Safe-migrate `--spacing-md`: move 16px-intent consumers to `--spacing-lg`, then redefine to `12px`
 - [ ] Run `./scripts/check.sh --svelte`, visual spot-check light + dark
 
-### Milestone 2: macOS accent color
+### Milestone 2a: macOS accent color — read and inject
 - [ ] Enable `NSColor` feature on `objc2-app-kit` in Cargo.toml
 - [ ] Implement `get_accent_color` Tauri command
 - [ ] Observe `NSSystemColorsDidChangeNotification`, emit Tauri event
 - [ ] Frontend: call command on startup, set `--color-accent`, listen for changes
+- [ ] Run `./scripts/check.sh --rust` and fix issues
+- [ ] Manual test: change accent color live, verify all 8 macOS options (especially yellow and graphite)
+
+### Milestone 2b: macOS accent color — migrate consumers
 - [ ] Update cursor highlight to use `--color-accent-subtle`
 - [ ] Remove `--color-cursor-focused-bg/fg`, replace `--color-cursor-unfocused-bg` with `--color-bg-tertiary`
-- [ ] Run `./scripts/check.sh --rust` and fix issues
-- [ ] Manual test with multiple macOS accent colors
+- [ ] Manual test with all 8 accent colors, verify cursor, buttons, focus rings, switches
 
 ### Milestone 3: Shared button component
 - [ ] Create `Button.svelte` with primary/secondary/danger/mini variants
@@ -307,6 +353,7 @@ Not part of this migration, but tracked as a future effort.
 - [ ] Migrate border-radius to `--radius-*` tokens across all components
 - [ ] Migrate box-shadows to `--shadow-*` tokens
 - [ ] Migrate transitions to `--transition-*` tokens
+- [ ] Migrate raw z-index values to `--z-*` tokens
 - [ ] Run `./scripts/check.sh --svelte`, visual spot-check light + dark
 
 ### Milestone 4b: Spacing and font-size migration
@@ -330,13 +377,19 @@ Not part of this migration, but tracked as a future effort.
 - [ ] Update OG image font files and generation code
 - [ ] Visual check all website pages
 
-### Milestone 6: Website color and light mode
+### Milestone 6a: Website dark palette warmup
 - [ ] Update dark palette tokens to warmer values
-- [ ] Add light mode tokens via `@media (prefers-color-scheme: light)`
-- [ ] Keep landing page dark-only, scope light mode to sub-pages
-- [ ] Handle blog code blocks and Remark42 in light mode
 - [ ] Refine CTA hover scale to 1.02
 - [ ] Verify `prefers-reduced-motion` handling
+- [ ] Run `./scripts/check.sh --check website-build --check website-e2e`
+
+### Milestone 6b: Website light mode for sub-pages
+- [ ] Add light mode tokens via `@media (prefers-color-scheme: light)` in global.css
+- [ ] Keep landing page dark-only, scope light mode to sub-page layouts
+- [ ] Handle blog code blocks (keep dark in light mode) and blog-prose.css
+- [ ] Add Shiki `github-light` theme, switch based on color scheme
+- [ ] Update Remark42 to pass correct theme
+- [ ] Visual check every sub-page in both light and dark mode
 - [ ] Run `./scripts/check.sh --check website-build --check website-e2e`
 
 ### Milestone 7: Polish
@@ -345,3 +398,4 @@ Not part of this migration, but tracked as a future effort.
 - [ ] Manual test: app in light/dark with various accent colors
 - [ ] Manual test: all website pages in light/dark
 - [ ] Update app.css header comment to reference design system doc
+- [ ] Remove all "Migration note" annotations from system.md
