@@ -22,16 +22,16 @@
     const { searchQuery }: Props = $props()
 
     const allAdvancedSettings = getAdvancedSettings()
+    const toSettingId = (id: string) => id as SettingId
 
     // Reactivity trigger for settings changes
     let settingsChangeCounter = $state(0)
 
     // Subscribe to setting changes to trigger re-renders
     $effect(() => {
-        const unsubscribe = onSettingChange(() => {
+        return onSettingChange(() => {
             settingsChangeCounter++
         })
-        return unsubscribe
     })
 
     // Filter by search
@@ -95,7 +95,7 @@
 
     <div class="advanced-settings">
         {#each filteredSettings as setting (`${setting.id}-${String(settingsChangeCounter)}`)}
-            {@const id = setting.id as SettingId}
+            {@const id = toSettingId(setting.id)}
             {@const modified = isModified(id)}
             <div class="advanced-setting-row">
                 <div class="setting-info">
@@ -110,7 +110,7 @@
                     <div class="setting-description">{setting.description}</div>
                     <div class="setting-default">
                         Default: {setting.type === 'duration'
-                            ? formatDuration(setting.default as number)
+                            ? formatDuration(Number(setting.default))
                             : String(setting.default)}
                         {#if modified}
                             <button
@@ -126,7 +126,7 @@
                 <div class="setting-control">
                     {#if setting.type === 'boolean'}
                         <Switch.Root
-                            checked={getSetting(id) as boolean}
+                            checked={Boolean(getSetting(id))}
                             onCheckedChange={(d) => {
                                 handleBooleanChange(id, d.checked)
                             }}

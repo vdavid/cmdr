@@ -186,10 +186,8 @@
                         </Select.Item>
                     {/each}
                     {#if allowCustom && isCustomValue}
-                        <Select.Item
-                            item={{ value: value as string | number, label: `Custom: ${String(value)}` }}
-                            class="select-item"
-                        >
+                        {@const customItem = { value: String(value), label: `Custom: ${String(value)}` }}
+                        <Select.Item item={customItem} class="select-item">
                             <Select.ItemText>Custom: {String(value)}</Select.ItemText>
                             <Select.ItemIndicator class="item-indicator">✓</Select.ItemIndicator>
                         </Select.Item>

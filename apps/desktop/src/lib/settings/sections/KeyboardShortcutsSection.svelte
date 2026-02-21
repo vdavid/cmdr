@@ -53,10 +53,9 @@
 
     // Subscribe to shortcut changes
     $effect(() => {
-        const unsubscribe = onShortcutChange(() => {
+        return onShortcutChange(() => {
             shortcutChangeCounter++
         })
-        return unsubscribe
     })
 
     // Group commands by scope
@@ -345,7 +344,10 @@
                 class="search-input"
                 placeholder="Search by action name..."
                 value={searchQuery.trim() ? searchQuery : localNameSearchQuery}
-                oninput={(e) => (localNameSearchQuery = (e.target as HTMLInputElement).value)}
+                oninput={(e) => {
+                    const target = e.target
+                    if (target instanceof HTMLInputElement) localNameSearchQuery = target.value
+                }}
                 disabled={!!searchQuery.trim()}
                 autocomplete="off"
                 autocapitalize="off"
