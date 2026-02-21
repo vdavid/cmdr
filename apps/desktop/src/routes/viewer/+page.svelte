@@ -34,6 +34,7 @@
     import { getCurrentWindow } from '@tauri-apps/api/window'
     import { listen, type UnlistenFn } from '@tauri-apps/api/event'
     import { initializeSettings, getSetting, setSetting } from '$lib/settings'
+    import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
 
     let fileName = $state('')
     let totalLines = $state<number | null>(null)
@@ -643,6 +644,8 @@
             loadingScreen.style.display = 'none'
         }
 
+        await initAccentColor()
+
         // Restore word wrap setting (best-effort — viewer works without it)
         try {
             await initializeSettings()
@@ -732,6 +735,7 @@
     })
 
     onDestroy(() => {
+        cleanupAccentColor()
         cleanupListeners()
         stopSearchPoll()
         stopIndexingPoll()

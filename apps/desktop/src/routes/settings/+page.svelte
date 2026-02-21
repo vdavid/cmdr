@@ -5,6 +5,7 @@
     import SettingsContent from '$lib/settings/components/SettingsContent.svelte'
     import { initializeSettings, forceSave as forceSettingsSave } from '$lib/settings'
     import { initializeShortcuts, flushPendingSave as flushShortcutsSave } from '$lib/shortcuts'
+    import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
     import { getMatchingSections } from '$lib/settings/settings-search'
     import { loadLastSettingsSection, saveLastSettingsSection } from '$lib/app-status-store'
     import {
@@ -113,6 +114,9 @@
             await Promise.all([initializeSettings(), initializeShortcuts()])
             log.info('Settings and shortcuts initialization complete')
 
+            // Read system accent color from macOS and listen for changes
+            await initAccentColor()
+
             // Load last viewed section
             const lastSection = await loadLastSettingsSection()
             selectedSection = lastSection
@@ -141,6 +145,7 @@
         void Promise.all([forceSettingsSave(), flushShortcutsSave()])
         // Clean up MCP event listeners and notify backend
         cleanupMcpEventListeners()
+        cleanupAccentColor()
         void notifySettingsWindowOpen(false)
     })
 
