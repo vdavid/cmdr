@@ -29,6 +29,7 @@ const EXCLUDED_PREFIXES: &[&str] = &[
     "/System/Volumes/xarts/",
     "/System/Volumes/iSCPreboot/",
     "/System/Volumes/Hardware/",
+    "/Volumes/",  // Skip mounted volumes (network shares, external drives) -- index boot volume only
     "/private/var/",
     "/Library/Caches/",
     "/.Spotlight-V100/",

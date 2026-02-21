@@ -139,30 +139,56 @@ fn compute_root_stats(conn: &Connection) -> Result<(), IndexStoreError> {
 
 /// Sort directories by depth (deepest first), compute stats bottom-up using
 /// an in-memory map, then batch-write results.
+///
+/// Uses two bulk SQL queries upfront (direct children stats + child directory
+/// relationships) instead of per-directory queries, making this O(2) SQL queries
+/// regardless of how many directories exist.
 fn compute_aggregates_for_dirs(conn: &Connection, dirs: &[String]) -> Result<u64, IndexStoreError> {
-    // Sort by depth descending (most '/' characters first)
+    let start = std::time::Instant::now();
+    let dir_count = dirs.len();
+    log::info!("Aggregation: starting bottom-up computation for {dir_count} directories");
+
+    // Phase 1: Bulk-load direct children stats for ALL parent paths in two SQL queries.
+    // This replaces N individual get_children_stats + get_child_directory_paths calls.
+    log::info!("Aggregation: loading direct children stats (bulk query)...");
+    let direct_stats = bulk_get_children_stats(conn)?;
+    log::info!(
+        "Aggregation: loaded stats for {} parent paths in {:.1}s",
+        direct_stats.len(),
+        start.elapsed().as_secs_f64()
+    );
+
+    log::info!("Aggregation: loading child directory relationships (bulk query)...");
+    let child_dirs_map = bulk_get_child_directory_paths(conn)?;
+    log::info!(
+        "Aggregation: loaded child dirs for {} parent paths in {:.1}s",
+        child_dirs_map.len(),
+        start.elapsed().as_secs_f64()
+    );
+
+    // Phase 2: Sort by depth descending and compute bottom-up in memory
     let mut sorted: Vec<&str> = dirs.iter().map(String::as_str).collect();
     sorted.sort_by_key(|p| Reverse(depth(p)));
 
-    // In-memory map of computed stats: avoids re-reading child dir stats from DB
     let mut computed: HashMap<&str, DirStats> = HashMap::with_capacity(sorted.len());
 
-    for dir_path in &sorted {
-        // Get direct children stats (file sizes, file count, subdir count)
-        let (file_size_sum, file_count, child_dir_count) = IndexStore::get_children_stats(conn, dir_path)?;
-
-        // Get child directory paths so we can look up their computed recursive stats
-        let child_dirs = get_child_directory_paths(conn, dir_path)?;
+    for (i, dir_path) in sorted.iter().enumerate() {
+        // Look up pre-computed direct children stats
+        let (file_size_sum, file_count, child_dir_count) =
+            direct_stats.get(*dir_path).copied().unwrap_or((0, 0, 0));
 
         let mut recursive_size = file_size_sum;
         let mut recursive_file_count = file_count;
         let mut recursive_dir_count = child_dir_count;
 
-        for child_dir in &child_dirs {
-            if let Some(child_stats) = computed.get(child_dir.as_str()) {
-                recursive_size += child_stats.recursive_size;
-                recursive_file_count += child_stats.recursive_file_count;
-                recursive_dir_count += child_stats.recursive_dir_count;
+        // Add already-computed recursive stats from child directories
+        if let Some(children) = child_dirs_map.get(*dir_path) {
+            for child_dir in children {
+                if let Some(child_stats) = computed.get(child_dir.as_str()) {
+                    recursive_size += child_stats.recursive_size;
+                    recursive_file_count += child_stats.recursive_file_count;
+                    recursive_dir_count += child_stats.recursive_dir_count;
+                }
             }
         }
 
@@ -175,9 +201,18 @@ fn compute_aggregates_for_dirs(conn: &Connection, dirs: &[String]) -> Result<u64
                 recursive_dir_count,
             },
         );
+
+        if (i + 1) % 100_000 == 0 {
+            log::info!(
+                "Aggregation: processed {}/{dir_count} directories ({:.1}s)",
+                i + 1,
+                start.elapsed().as_secs_f64()
+            );
+        }
     }
 
-    // Batch-write all computed stats in chunks of 1000
+    // Phase 3: Batch-write all computed stats in chunks of 1000
+    log::info!("Aggregation: writing {} dir_stats rows to DB...", computed.len());
     let all_stats: Vec<DirStats> = computed.into_values().collect();
     let count = all_stats.len() as u64;
 
@@ -185,14 +220,65 @@ fn compute_aggregates_for_dirs(conn: &Connection, dirs: &[String]) -> Result<u64
         IndexStore::upsert_dir_stats(conn, chunk)?;
     }
 
+    log::info!(
+        "Aggregation: complete. {count} directories processed in {:.1}s",
+        start.elapsed().as_secs_f64()
+    );
+
     Ok(count)
 }
 
-/// Get paths of direct child directories for a parent path.
+/// Get paths of direct child directories for a parent path (single-directory variant for subtree scans).
 fn get_child_directory_paths(conn: &Connection, parent: &str) -> Result<Vec<String>, IndexStoreError> {
     let mut stmt = conn.prepare_cached("SELECT path FROM entries WHERE parent_path = ?1 AND is_directory = 1")?;
     let rows = stmt.query_map(params![parent], |row| row.get(0))?;
     rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+}
+
+/// Bulk-load direct children stats for ALL parent paths in a single SQL query.
+///
+/// Returns a map: `parent_path -> (total_file_size, file_count, dir_count)`.
+/// Replaces N individual `get_children_stats` calls with one `GROUP BY` query.
+fn bulk_get_children_stats(conn: &Connection) -> Result<HashMap<String, (u64, u64, u64)>, IndexStoreError> {
+    let mut stmt = conn.prepare(
+        "SELECT parent_path,
+                COALESCE(SUM(CASE WHEN is_directory = 0 THEN size ELSE 0 END), 0),
+                COALESCE(SUM(CASE WHEN is_directory = 0 THEN 1 ELSE 0 END), 0),
+                COALESCE(SUM(CASE WHEN is_directory = 1 THEN 1 ELSE 0 END), 0)
+         FROM entries
+         GROUP BY parent_path",
+    )?;
+    let rows = stmt.query_map([], |row| {
+        Ok((
+            row.get::<_, String>(0)?,
+            row.get::<_, u64>(1)?,
+            row.get::<_, u64>(2)?,
+            row.get::<_, u64>(3)?,
+        ))
+    })?;
+
+    let mut map = HashMap::new();
+    for row in rows {
+        let (parent, size, files, dirs) = row?;
+        map.insert(parent, (size, files, dirs));
+    }
+    Ok(map)
+}
+
+/// Bulk-load child directory paths for ALL parent paths in a single SQL query.
+///
+/// Returns a map: `parent_path -> Vec<child_directory_path>`.
+/// Replaces N individual `get_child_directory_paths` calls with one query.
+fn bulk_get_child_directory_paths(conn: &Connection) -> Result<HashMap<String, Vec<String>>, IndexStoreError> {
+    let mut stmt = conn.prepare("SELECT parent_path, path FROM entries WHERE is_directory = 1")?;
+    let rows = stmt.query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)))?;
+
+    let mut map: HashMap<String, Vec<String>> = HashMap::new();
+    for row in rows {
+        let (parent, path) = row?;
+        map.entry(parent).or_default().push(path);
+    }
+    Ok(map)
 }
 
 /// Count the depth of a path (number of '/' characters).
