@@ -1,7 +1,7 @@
 # Drive indexing plan
 
 Implementation plan for full-drive background indexing with directory size display.
-See also: [research.md](research.md), [benchmarks.md](benchmarks.md)
+See also: [tasks.md](tasks.md), [research.md](research.md), [benchmarks.md](benchmarks.md)
 
 Date: 2026-02-18. Updated: 2026-02-21.
 
@@ -119,29 +119,6 @@ User presses Space on "Documents"
           └─ Stores dir_stats, emits update → size appears in seconds
 ```
 
-### DB-first directory listings
-
-Once indexed, the DB becomes the primary source for directory listings. This is the key UX differentiator: listings
-appear in **sub-millisecond** instead of the 2-50ms a `readdir` + `stat` takes.
-
-**Flow on navigation:**
-
-1. Query `SELECT * FROM entries WHERE parent_path = ?` with index on `parent_path` → display instantly
-2. Spawn background task: `readdir` + `stat` the same directory on the real filesystem
-3. Diff the filesystem result against DB. If identical (common case), done.
-4. If different, update DB and emit a diff to the frontend (listing updates seamlessly).
-
-**What the DB stores vs. what needs lazy loading:**
-
-- **From scan (instant):** path, name, is_directory, is_symlink, size, modified_at
-- **Lazy-loaded (background):** owner, group, permissions, icon_id, created_at, added_at, opened_at
-
-This matches the existing `extended_metadata_loaded` pattern — first paint shows name/size/date from DB, extended
-metadata fills in asynchronously.
-
-**When the index isn't ready yet** (first launch, scan in progress): fall back to the current `readdir` + `stat` path.
-The DB-first path activates per-directory as entries become available.
-
 ### Keeping the index fresh (no periodic full rescans)
 
 FSEvents is advisory but reliable enough (~95-98% per-file, ~99%+ per-directory) that periodic full rescans are
@@ -168,16 +145,20 @@ parent received an event (which happens at ~99%+ directory-level reliability).
 (app not opened in weeks, or `.fseventsd/` was cleaned). Detected on startup: if `sinceWhen` replay returns
 `kFSEventStreamEventIdSinceNow` or historical events aren't available, fall back to full scan.
 
-### File watching: fsevent-stream
+### File watching: cmdr-fsevent-stream
 
-Use the [`fsevent-stream`](https://github.com/photonquantum/fsevent-stream) crate for the indexing watcher. This is a
-safe Rust wrapper over the FSEvents C API that exposes what `notify` hides:
+Use [`cmdr-fsevent-stream`](https://github.com/vdavid/cmdr-fsevent-stream) (our fork of `fsevent-stream`) for the
+indexing watcher. This is a safe Rust wrapper over the FSEvents C API that exposes what `notify` hides:
 
 - **Event IDs** (`event.id`) — monotonically increasing, used for scan/watch reconciliation and sinceWhen replay
 - **`sinceWhen` parameter** — replay events from a stored event ID on cold start (no full rescan needed)
 - **`MustScanSubDirs` flag** — typed in `StreamFlags`, triggers immediate subtree rescan
 - **File-level events** — via `kFSEventStreamCreateFlagFileEvents`
 - **Async (tokio)** — returns a `Stream` of events
+
+The fork (v0.3.0) bumps `core-foundation` to 0.10, `bitflags` to 2.6, fixes clippy lints, and fixes tests for macOS
+Sequoia (event coalescing behavior changed). All tests pass on Sequoia + Apple Silicon, Rust 1.93. ~1,200 LOC, MIT
+license. Depend on it via git: `cmdr-fsevent-stream = { git = "https://github.com/vdavid/cmdr-fsevent-stream" }`.
 
 The existing `notify` crate stays for the per-directory file watchers in `file_system/watcher.rs` (different use case,
 cross-platform, non-recursive). The indexing watcher is a separate, macOS-specific, volume-root recursive watcher.
@@ -188,7 +169,7 @@ Scanning and watching are separate capabilities with different lifecycles, error
 
 | Volume type | Can scan? | How?                            | Can watch? | How?                                              |
 |-------------|-----------|---------------------------------|------------|----------------------------------------------------|
-| Local POSIX | Yes       | jwalk (raw syscalls, parallel)  | Yes        | FSEvents (fsevent-stream)                          |
+| Local POSIX | Yes       | jwalk (raw syscalls, parallel)  | Yes        | FSEvents (cmdr-fsevent-stream)                     |
 | SMB         | Yes       | Recursive list_directory (slow) | Yes        | kqueue (macOS smbfs translates SMB2 CHANGE_NOTIFY) |
 | NFS/AFP     | Yes       | Recursive list_directory (slow) | No         | Polling only (no kernel change notification)       |
 | FTP         | Yes       | Recursive LIST                  | No         | Polling                                            |
@@ -277,6 +258,9 @@ point, all sizes are accurate anyway.
 **Deduplication**: If a micro-scan is already running or completed for a path, skip it. If the full scan has already
 computed stats for a path (post-completion), skip micro-scans for it.
 
+**App quit**: On shutdown, cancel all scans (including `UserSelected` micro-scans). Data written so far persists in the
+DB. Don't block the quit process.
+
 ### Single-writer architecture
 
 All SQLite writes go through a dedicated writer thread. This eliminates contention between the full scan, micro-scans,
@@ -362,6 +346,12 @@ CREATE TABLE meta
 --        'total_entries', 'last_event_id'
 -- On startup, if schema_version doesn't match what the code expects, drop and rebuild the DB.
 ```
+
+### Error handling
+
+The index DB is a disposable cache, not a source of truth. On any corruption, open failure, or unrecoverable error
+(disk full, locked file, schema mismatch), delete the DB file and rebuild from scratch on next startup. Log the event at
+warn level. Never surface DB errors to the user — silently degrade to no-index mode until the rebuild completes.
 
 ### Dir stats computation
 
@@ -469,13 +459,13 @@ indicator — the estimate is approximate because not all event IDs in the range
 
 ### Settings
 
-Add "File system sync" subsection under "Settings > General":
+Add "Drive indexing" subsection under "Settings > General":
 
-- **Toggle**: enable/disable file system sync (default: enabled). When disabled, no scanning or watching runs; directory
+- **Toggle**: enable/disable drive indexing (default: enabled). When disabled, no scanning or watching runs; directory
   sizes show `<dir>` as before.
 - **Index size display**: show current index size (SQLite DB file size on disk), for example, "Index size: 1.2 GB".
   Updated live when visible.
-- **Clear index** action: drops the SQLite DB and resets state. Next time sync is enabled, starts a fresh full scan.
+- **Clear index** action: drops the SQLite DB and resets state. Next time indexing is enabled, starts a fresh full scan.
 
 ### Dev mode
 
@@ -494,7 +484,7 @@ Add "File system sync" subsection under "Settings > General":
 | `index-scan-started`  | `{ volumeId }`                                      | Full background scan begins                            |
 | `index-scan-progress` | `{ volumeId, entriesScanned, dirsFound }`           | Every 500ms during scan                                |
 | `index-scan-complete` | `{ volumeId, totalEntries, totalDirs, durationMs }` | Scan + aggregation done                                |
-| `index-dir-updated`   | `{ paths: string[] }`                               | Micro-scan or watcher updated dir_stats for these dirs |
+| `index-dir-updated`   | `{ paths: string[] }`                               | Micro-scan or watcher updated dir_stats for these dirs. Each pane's event listener checks if any path is a child of its current directory (string prefix match on `parentPath`). If yes, re-fetch the visible range. No per-pane targeting needed — both panes listen, both filter locally. |
 | `index-replay-progress` | `{ volumeId, eventsProcessed, estimatedTotal? }`  | Every 500ms during sinceWhen replay                  |
 
 ### IPC commands (Frontend -> Rust)
@@ -518,7 +508,7 @@ src-tauri/src/indexing/
 +-- micro_scan.rs       -- MicroScanManager: priority queue, task pool, dedup, cancellation
 +-- writer.rs           -- Single writer thread: owns DB write connection, processes WriteMessage channel
 +-- store.rs            -- SQLite schema, read queries (get_dir_stats, get_status, list_entries), DB open/migrate
-+-- watcher.rs          -- Drive-level FSEvents watcher via fsevent-stream (root "/" recursive)
++-- watcher.rs          -- Drive-level FSEvents watcher via cmdr-fsevent-stream (root "/" recursive)
 +-- reconciler.rs       -- Buffer events during scan, replay after scan completes (using event IDs)
 +-- aggregator.rs       -- Dir stats computation (bottom-up + incremental propagation), runs on writer thread
 +-- firmlinks.rs        -- Parse /usr/share/firmlinks, build prefix map, normalize paths (macOS-specific)
@@ -550,9 +540,11 @@ Without Full Disk Access, the scanner can't read TCC-protected directories (`~/D
 
 ## Scan exclusions
 
-Skip these paths by default (configurable later):
+Skip these paths by default. All matches are by **absolute path prefix** — no directory-name matching anywhere in the
+tree. User-created content (`node_modules/`, `.git/objects/`, etc.) is always indexed; configurable exclusions are a
+future feature.
 
-- `/System/Volumes/Data/` --- skip entirely; firmlinks from `/` provide coverage without double-counting
+- `/System/Volumes/Data/` --- firmlinks from `/` provide coverage without double-counting
 - `/System/Volumes/VM/` --- VM swap
 - `/System/Volumes/Preboot/` --- boot volume
 - `/System/Volumes/Update/` --- OS updates
@@ -564,9 +556,8 @@ Skip these paths by default (configurable later):
 - `/Library/Caches/` --- system caches
 - `/.Spotlight-V100/` --- Spotlight index
 - `/.fseventsd/` --- FSEvents log
-- `/dev/`, `/proc/` --- virtual filesystems
-- `node_modules/` --- (maybe, configurable)
-- `.git/objects/` --- git internals (maybe, configurable)
+- `/dev/` --- virtual filesystem
+- `/proc/` --- virtual filesystem
 
 ## Per-volume indexing
 
@@ -589,15 +580,20 @@ indexes from there.
 
 Decisions made during planning (2026-02-21):
 
-1. **fsevent-stream over notify**: The indexing watcher uses `fsevent-stream` for direct FSEvents access (event IDs,
-   sinceWhen, MustScanSubDirs). The existing per-directory watchers in `file_system/watcher.rs` keep using `notify`.
+1. **cmdr-fsevent-stream over notify**: The indexing watcher uses our fork
+   [`cmdr-fsevent-stream`](https://github.com/vdavid/cmdr-fsevent-stream) (v0.3.0) for direct FSEvents access (event
+   IDs, sinceWhen, MustScanSubDirs). Forked from `fsevent-stream`, bumped deps (`core-foundation` 0.10, `bitflags`
+   2.6), fixed clippy, fixed tests for Sequoia (event coalescing). All tests pass on Sequoia + Apple Silicon. ~1,200
+   LOC, MIT license. The existing per-directory watchers in `file_system/watcher.rs` keep using `notify`. Fallback if
+   issues arise: thin FFI wrapper over FSEvents C API directly (~300 LOC).
 
 2. **No periodic full rescans**: Full drive rescans are expensive (2 min SSD, 15-30+ min HDD) and unnecessary. Instead:
    sinceWhen replay on startup/wake, live FSEvents during operation, MustScanSubDirs-triggered subtree rescans, and
    per-navigation filesystem verification. Full rescan only as a fallback when the FSEvents journal is unavailable.
 
-3. **DB-first directory listings**: Once indexed, the SQLite DB is the primary listing source (sub-ms). Background
-   `readdir` verification on each navigation catches any drift. Falls back to `readdir` when the index isn't ready.
+3. **DB-first directory listings (future)**: Deferred. The index enriches `readdir`-based listings with recursive sizes
+   (the key UX win). DB-first listings (sub-ms, replacing `readdir` as primary source) are a future optimization once
+   the index is proven reliable. See "Future: DB-first directory listings" milestone.
 
 4. **Separate VolumeScanner and VolumeWatcher traits**: Scanning and watching are independent capabilities with different
    lifecycles and per-volume-type support. Accessed via `volume.scanner()` and `volume.watcher()` optional methods.
@@ -675,7 +671,7 @@ Rough targets for validation, not hard SLAs:
 
 ### Milestone 4: FSEvents watcher + reconciliation
 
-- `fsevent-stream` dependency; recursive watcher on volume root with file-level events
+- `cmdr-fsevent-stream` dependency (git); recursive watcher on volume root with file-level events
 - Event buffering during scan, reconciliation after scan completes (using event IDs)
 - Incremental aggregate propagation (delta up ancestor chain) on file changes
 - `MustScanSubDirs` handling: queue subtree rescan via `scan_subtree()`, max 1 concurrent rescan
@@ -697,8 +693,8 @@ Rough targets for validation, not hard SLAs:
 
 ### Milestone 6: Settings + user controls
 
-- Add "File system sync" subsection under "Settings > General"
-- Toggle to enable/disable file system sync (default: enabled)
+- Add "Drive indexing" subsection under "Settings > General"
+- Toggle to enable/disable drive indexing (default: enabled)
 - Display current index size (read from SQLite DB file size on disk)
 - "Clear index" action (drops DB, resets state)
 
@@ -707,8 +703,8 @@ Rough targets for validation, not hard SLAs:
 - Add `VolumeScanner` and `VolumeWatcher` traits
 - Add `scanner()` and `watcher()` optional methods to `Volume` trait
 - Implement `VolumeScanner` for `LocalPosixVolume` (wraps jwalk)
-- Implement `VolumeWatcher` for `LocalPosixVolume` (wraps fsevent-stream)
-- Refactor indexing module to use traits instead of direct jwalk/fsevent-stream calls
+- Implement `VolumeWatcher` for `LocalPosixVolume` (wraps cmdr-fsevent-stream)
+- Refactor indexing module to use traits instead of direct jwalk/cmdr-fsevent-stream calls
 - Verify existing volume types still work (MTP, InMemory)
 
 ### Milestone 8: Polish + checks
@@ -724,8 +720,34 @@ Deferred. The current `readdir` + `stat` path is already fast enough (2-50ms), a
 (Milestone 3) delivers the key UX win (directory sizes) without changing the listing pipeline. Once the index is mature
 and proven reliable, it can become the primary listing source for sub-ms response times.
 
+**Design** (for when this is picked up):
+
+Once indexed, the DB becomes the primary source for directory listings — sub-millisecond instead of 2-50ms.
+
+Flow on navigation:
+
+1. Query `SELECT * FROM entries WHERE parent_path = ?` with index on `parent_path` → display instantly
+2. Spawn background task: `readdir` + `stat` the same directory on the real filesystem
+3. Diff the filesystem result against DB. If identical (common case), done.
+4. If different, update DB and emit a diff to the frontend (listing updates seamlessly).
+
+What the DB stores vs. what needs lazy loading:
+
+- **From scan (instant):** path, name, is_directory, is_symlink, size, modified_at
+- **Lazy-loaded (background):** owner, group, permissions, icon_id, created_at, added_at, opened_at
+
+This matches the existing `extended_metadata_loaded` pattern — first paint shows name/size/date from DB, extended
+metadata fills in asynchronously. When the index isn't ready yet (first launch, scan in progress), fall back to the
+current `readdir` + `stat` path. The DB-first path activates per-directory as entries become available.
+
+**Tasks:**
+
 - `verifier.rs`: background `readdir` + diff against DB on each navigation
 - Integrate DB-first path into `get_file_range`: if index has entries for this parent_path, serve from DB
 - Lazy-load extended metadata (owner, group, permissions, icon_id) in background
 - Fall back to `readdir` when index not yet populated for a directory
 - Performance validation: benchmark DB listing vs. `readdir` for directories with 100, 1K, 10K, 100K files
+
+---
+
+Task list: [tasks.md](tasks.md)

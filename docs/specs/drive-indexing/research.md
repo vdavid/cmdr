@@ -133,7 +133,7 @@ On quit and restart:
 | Component       | Choice                                                | Crate                                             |
 |-----------------|-------------------------------------------------------|---------------------------------------------------|
 | Initial scan    | Parallel directory walk                               | `jwalk = "0.8"` (replaces `walkdir` for indexing) |
-| File watching   | Raw FSEvents with event IDs, sinceWhen, file-level    | `fsevent-stream` (safe Rust wrapper over FSEvents) |
+| File watching   | Raw FSEvents with event IDs, sinceWhen, file-level    | [`cmdr-fsevent-stream`](https://github.com/vdavid/cmdr-fsevent-stream) v0.3.0 (our fork, MIT) |
 | Persistent index | SQLite, WAL mode, path index                         | `rusqlite` with `bundled` feature                 |
 | Freshness       | sinceWhen replay + MustScanSubDirs rescan + per-nav verify | No periodic full rescans                     |
 | File search     | Hybrid: SQLite for sizes, `mdfind` for content search | `std::process::Command`                           |
@@ -150,7 +150,7 @@ These were resolved during planning (2026-02-21). See [plan.md](plan.md) for det
 - ~~How to handle APFS firmlinks~~ --- scan from `/`, skip `/System/Volumes/Data/` entirely, firmlinks cover it
 - ~~Whether to expose "indexing" as a user-visible feature or make it invisible~~ --- visible but subtle: animated
   spinner + "Scanning..." in size column during scan, ⚠️ on stale sizes, top-right overlay during full scan, setting
-  to enable/disable under "Settings > General > File system sync"
+  to enable/disable under "Settings > General > Drive indexing"
 - ~~Disk space budget: warn users? Let them configure max index size?~~ --- show current index size in Settings next to
   the enable/disable toggle. No max size limit; user can disable indexing if space is a concern.
 - ~~Index granularity~~ --- every file (enables DB-first listings, not only size aggregation)
@@ -171,6 +171,6 @@ Key references used in this research:
 - [SQLite: 35% Faster Than The Filesystem](https://sqlite.org/fasterthanfs.html)
 - [Cling](https://lowtechguys.com/cling/)
 - [Everything by Voidtools](https://www.voidtools.com/faq/)
-- [fsevent-stream](https://github.com/photonquantum/fsevent-stream) --- safe Rust FSEvents wrapper with event IDs
+- [cmdr-fsevent-stream](https://github.com/vdavid/cmdr-fsevent-stream) --- our fork of fsevent-stream; bumped deps, fixed for Sequoia
 - [XNU kernel source - vfs_fsevents.c](https://github.com/apple/darwin-xnu/blob/main/bsd/vfs/vfs_fsevents.c)
 - [Watchexec FSEvents limitations](https://watchexec.github.io/docs/macos-fsevents.html)
