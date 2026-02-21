@@ -31,7 +31,7 @@
     },
     "license": "SEE LICENSE IN LICENSE",
     "dependencies": {
-        "@ark-ui/svelte": "^5.15.0",
+        "@ark-ui/svelte": "^5.16.0",
         "@crabnebula/tauri-plugin-drag": "^2.1.0",
         "@leeoniya/ufuzzy": "^1.0.19",
         "@logtape/logtape": "^2.0.0",
@@ -74,7 +74,7 @@
         "stylelint": "^16.26.1",
         "stylelint-config-standard": "^39.0.1",
         "stylelint-value-no-unknown-custom-properties": "^6.1.0",
-        "svelte": "^5.49.1",
+        "svelte": "^5.53.1",
         "svelte-check": "^4.3.5",
         "svelte-eslint-parser": "^1.4.1",
         "tsx": "^4.20.3",
