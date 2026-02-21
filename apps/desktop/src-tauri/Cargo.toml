@@ -96,7 +96,7 @@ security-framework = "3.2"
 # MTP (Android device) support via pure Rust implementation
 mtp-rs = "0.1.0"
 # USB hotplug detection for MTP device watcher
-nusb = "0.1"
+nusb = "0.2.2"
 bytes = "1"
 
 [dev-dependencies]

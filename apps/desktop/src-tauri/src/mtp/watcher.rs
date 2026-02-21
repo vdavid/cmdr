@@ -172,7 +172,7 @@ async fn run_hotplug_watcher(_app: AppHandle) {
                     "USB device connected: {:04x}:{:04x} at {}:{}",
                     device_info.vendor_id(),
                     device_info.product_id(),
-                    device_info.bus_number(),
+                    device_info.bus_id(),
                     device_info.device_address()
                 );
                 // Give the device a moment to initialize
