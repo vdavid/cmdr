@@ -227,8 +227,8 @@
         align-items: center;
         justify-content: center;
         height: 100%;
-        padding: 24px;
-        gap: 12px;
+        padding: var(--spacing-xl);
+        gap: var(--spacing-md);
         color: var(--color-text-secondary);
     }
 
@@ -252,12 +252,12 @@
 
     .mount-error-state .error-actions {
         display: flex;
-        gap: 8px;
-        margin-top: 8px;
+        gap: var(--spacing-sm);
+        margin-top: var(--spacing-sm);
     }
 
     .mount-error-state .btn {
-        padding: 8px 16px;
+        padding: var(--spacing-sm) var(--spacing-lg);
         border: 1px solid var(--color-border-strong);
         border-radius: var(--radius-md);
         background-color: var(--color-bg-secondary);

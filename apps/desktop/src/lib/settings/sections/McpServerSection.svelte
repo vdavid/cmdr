@@ -153,12 +153,12 @@
     }
 
     .port-status.available {
-        background: rgba(46, 125, 50, 0.1);
+        background: color-mix(in srgb, var(--color-allow) 10%, transparent);
         color: var(--color-allow);
     }
 
     .port-status.unavailable {
-        background: rgba(211, 47, 47, 0.1);
+        background: color-mix(in srgb, var(--color-error) 10%, transparent);
         color: var(--color-error);
         display: flex;
         align-items: center;
@@ -173,5 +173,11 @@
         color: white;
         font-size: var(--font-size-sm);
         cursor: default;
+        transition: background-color var(--transition-base);
+    }
+
+    .use-suggested:hover {
+        background: var(--color-accent-hover);
+        border-color: var(--color-accent-hover);
     }
 </style>

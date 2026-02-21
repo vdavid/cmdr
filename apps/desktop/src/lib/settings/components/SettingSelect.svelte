@@ -241,6 +241,7 @@
     .custom-input:focus {
         outline: none;
         border-color: var(--color-accent);
+        box-shadow: var(--shadow-focus);
     }
 
     .back-to-select {
@@ -275,6 +276,7 @@
     :global(.select-trigger:focus-visible) {
         outline: 2px solid var(--color-accent);
         outline-offset: -2px;
+        box-shadow: var(--shadow-focus);
     }
 
     :global(.select-indicator) {
@@ -329,6 +331,11 @@
     :global(.select-item[data-state='checked']) {
         background: var(--color-accent);
         color: white;
+    }
+
+    :global(.select-item[data-state='checked']:hover),
+    :global(.select-item[data-highlighted]:hover) {
+        background: var(--color-accent-hover);
     }
 
     /* Remove any focus outline from items */

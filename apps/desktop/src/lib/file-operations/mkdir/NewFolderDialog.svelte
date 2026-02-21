@@ -252,7 +252,7 @@
     }
 
     .input-group {
-        margin-bottom: 16px;
+        margin-bottom: var(--spacing-lg);
     }
 
     .name-input {

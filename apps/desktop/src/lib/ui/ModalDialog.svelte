@@ -149,8 +149,8 @@
 
     .modal-close-button {
         position: absolute;
-        top: 12px;
-        right: 12px;
+        top: var(--spacing-md);
+        right: var(--spacing-md);
         z-index: 1;
         background: none;
         border: none;
@@ -172,7 +172,7 @@
     }
 
     .dialog-title-bar {
-        padding: 16px 24px 8px;
+        padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-sm);
         user-select: none;
     }
 

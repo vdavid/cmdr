@@ -139,10 +139,10 @@
     }
 
     .details-section {
-        padding: 0 24px 16px;
+        padding: 0 var(--spacing-xl) var(--spacing-lg);
         border-top: 1px solid var(--color-border-strong);
-        margin-top: 4px;
-        padding-top: 12px;
+        margin-top: var(--spacing-xs);
+        padding-top: var(--spacing-md);
     }
 
     .details-toggle {
@@ -174,12 +174,12 @@
     }
 
     .details-content {
-        margin-top: 8px;
+        margin-top: var(--spacing-sm);
     }
 
     .details-text {
         width: 100%;
-        padding: 8px 10px;
+        padding: var(--spacing-sm) 10px;
         font-size: var(--font-size-sm);
         font-family: var(--font-mono);
         color: var(--color-text-secondary);

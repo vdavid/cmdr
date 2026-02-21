@@ -470,8 +470,8 @@
     }
 
     .path-input-group {
-        padding: 0 24px;
-        margin-bottom: 16px;
+        padding: 0 var(--spacing-xl);
+        margin-bottom: var(--spacing-lg);
     }
 
     .path-input {
@@ -511,9 +511,9 @@
 
     .button-row {
         display: flex;
-        gap: 12px;
+        gap: var(--spacing-md);
         justify-content: center;
-        padding: 0 24px 20px;
+        padding: 0 var(--spacing-xl) 20px;
     }
 
     /* Scan stats */
@@ -521,8 +521,8 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 8px;
-        padding: 0 24px 16px;
+        gap: var(--spacing-sm);
+        padding: 0 var(--spacing-xl) var(--spacing-lg);
         font-size: var(--font-size-sm);
     }
 
@@ -585,10 +585,10 @@
 
     /* Conflicts section */
     .conflicts-section {
-        padding: 0 24px 12px;
+        padding: 0 var(--spacing-xl) var(--spacing-md);
         border-top: 1px solid var(--color-border-strong);
-        margin-top: 4px;
-        padding-top: 12px;
+        margin-top: var(--spacing-xs);
+        padding-top: var(--spacing-md);
     }
 
     .conflicts-summary {
@@ -602,7 +602,7 @@
     .conflict-policy {
         display: flex;
         justify-content: center;
-        gap: 16px;
+        gap: var(--spacing-lg);
     }
 
     .policy-option {
@@ -628,7 +628,7 @@
         display: flex;
         justify-content: center;
         gap: 0;
-        padding: 0 24px 12px;
+        padding: 0 var(--spacing-xl) var(--spacing-md);
     }
 
     .toggle-option {

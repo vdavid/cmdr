@@ -185,7 +185,7 @@
         align-items: flex-start;
         gap: var(--spacing-sm);
         padding: var(--spacing-sm);
-        background: rgba(230, 81, 0, 0.1);
+        background: var(--color-warning-bg);
         border: 1px solid var(--color-warning);
         border-radius: var(--radius-md);
         color: var(--color-warning);
@@ -302,7 +302,7 @@
         width: 36px;
         height: 20px;
         background: var(--color-bg-tertiary);
-        border-radius: 10px;
+        border-radius: var(--radius-full);
         padding: 2px;
         cursor: default;
         transition: background-color var(--transition-base);
@@ -310,6 +310,10 @@
 
     :global(.switch-control[data-state='checked']) {
         background: var(--color-accent);
+    }
+
+    :global(.switch-control[data-state='checked']:hover) {
+        background: var(--color-accent-hover);
     }
 
     :global(.switch-thumb) {
@@ -360,5 +364,11 @@
 
     :global(.number-input:focus) {
         outline: none;
+    }
+
+    :global(.number-control:focus-within) {
+        outline: 2px solid var(--color-accent);
+        outline-offset: -2px;
+        box-shadow: var(--shadow-focus);
     }
 </style>

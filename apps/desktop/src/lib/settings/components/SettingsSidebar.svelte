@@ -309,6 +309,10 @@
         color: white;
     }
 
+    .section-item.selected:hover {
+        background: var(--color-accent-hover);
+    }
+
     .section-item.subsection {
         padding-left: calc(var(--spacing-sm) + var(--spacing-lg));
         color: var(--color-text-secondary);

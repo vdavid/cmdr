@@ -181,6 +181,7 @@
     .format-input:focus {
         outline: none;
         border-color: var(--color-accent);
+        box-shadow: var(--shadow-focus);
     }
 
     .format-preview {

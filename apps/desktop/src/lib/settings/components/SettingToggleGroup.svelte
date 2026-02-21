@@ -74,6 +74,10 @@
         color: white;
     }
 
+    :global(.toggle-item[data-state='on']:hover) {
+        background: var(--color-accent-hover);
+    }
+
     :global(.toggle-item[data-disabled]) {
         cursor: not-allowed;
         opacity: 0.5;
@@ -82,6 +86,7 @@
     :global(.toggle-item:focus-visible) {
         outline: 2px solid var(--color-accent);
         outline-offset: -2px;
+        box-shadow: var(--shadow-focus);
         z-index: 1;
     }
 </style>

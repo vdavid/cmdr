@@ -7,6 +7,10 @@
  * Future: Can be modified at runtime for user theme customization. */
 
 :root {
+    /* Declare support for both color schemes so WKWebView adapts native
+     * elements (scrollbars, form controls) to the current system appearance. */
+    color-scheme: light dark;
+
     /* === Backgrounds === */
     --color-bg-primary: #ffffff;
     --color-bg-secondary: #f5f5f5;

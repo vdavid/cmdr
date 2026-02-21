@@ -101,9 +101,14 @@
         box-shadow: inset 0 0 0 3px var(--color-bg-primary);
     }
 
+    :global(.radio-item:hover .radio-control[data-state='checked']) {
+        border-color: var(--color-accent-hover);
+        background: var(--color-accent-hover);
+    }
+
     /* Ark UI uses data-focus attribute when the hidden input is focused */
     :global(.radio-item[data-focus]) {
-        outline: 2px solid color-mix(in srgb, var(--color-accent) 70%, black);
+        outline: 2px solid var(--color-accent);
         outline-offset: 2px;
         border-radius: var(--radius-sm);
         box-shadow: var(--shadow-focus);

@@ -35,7 +35,7 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 20px;
+        gap: var(--spacing-xl);
         width: 100%;
         height: 100%;
         animation: fadeIn 400ms ease-in;

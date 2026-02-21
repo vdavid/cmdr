@@ -165,9 +165,9 @@
     .app-icon {
         width: 80px;
         height: 80px;
-        margin: 0 auto 16px;
+        margin: 0 auto var(--spacing-lg);
         background: linear-gradient(135deg, #4a9eff, #7c3aed);
-        border-radius: 16px;
+        border-radius: var(--radius-lg);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -181,7 +181,7 @@
     .app-name {
         font-size: 28px;
         font-weight: 600;
-        margin: 0 0 4px;
+        margin: 0 0 var(--spacing-xs);
         color: var(--color-text-primary);
     }
 
@@ -203,7 +203,7 @@
     .license-info {
         background: var(--color-bg-tertiary);
         border-radius: var(--radius-lg);
-        padding: 16px 20px;
+        padding: var(--spacing-lg) 20px;
         margin-bottom: 20px;
     }
 
@@ -218,7 +218,7 @@
         color: var(--color-text-secondary);
         font-size: var(--font-size-md);
         line-height: 1.5;
-        margin: 12px 0 0;
+        margin: var(--spacing-md) 0 0;
     }
 
     .commercial-prompt a {
@@ -233,7 +233,7 @@
     .ai-attribution {
         color: var(--color-text-tertiary);
         font-size: var(--font-size-sm);
-        margin: 0 0 16px;
+        margin: 0 0 var(--spacing-lg);
     }
 
     .links {

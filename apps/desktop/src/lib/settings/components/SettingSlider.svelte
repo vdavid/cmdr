@@ -159,13 +159,18 @@
         position: relative;
     }
 
+    :global(.slider-thumb:hover) {
+        border-color: var(--color-accent-hover);
+    }
+
     :global(.slider-thumb[data-disabled]) {
         cursor: not-allowed;
     }
 
     :global(.slider-thumb:focus-visible) {
-        outline: 2px solid color-mix(in srgb, var(--color-accent) 80%, black);
+        outline: 2px solid var(--color-accent);
         outline-offset: 2px;
+        box-shadow: var(--shadow-focus);
     }
 
     .slider-ticks {
@@ -212,6 +217,7 @@
     :global(.number-input:focus) {
         outline: none;
         border-color: var(--color-accent);
+        box-shadow: var(--shadow-focus);
     }
 
     :global(.number-input[data-disabled]) {

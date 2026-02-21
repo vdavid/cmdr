@@ -31,8 +31,8 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 12px;
-        padding: 8px 16px;
+        gap: var(--spacing-md);
+        padding: var(--spacing-sm) var(--spacing-lg);
         font-size: var(--font-size-md);
         color: var(--color-text-secondary);
     }

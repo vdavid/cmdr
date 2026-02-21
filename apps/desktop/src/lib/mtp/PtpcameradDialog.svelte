@@ -131,12 +131,12 @@
     .command-box {
         display: flex;
         align-items: stretch;
-        gap: 8px;
-        margin-bottom: 12px;
+        gap: var(--spacing-sm);
+        margin-bottom: var(--spacing-md);
         background: var(--color-bg-primary);
         border: 1px solid var(--color-border-strong);
         border-radius: var(--radius-lg);
-        padding: 12px;
+        padding: var(--spacing-md);
     }
 
     .command {
@@ -191,7 +191,7 @@
 
     .actions {
         display: flex;
-        gap: 12px;
+        gap: var(--spacing-md);
         justify-content: flex-end;
     }
 </style>

@@ -456,8 +456,8 @@
         align-items: center;
         justify-content: center;
         height: 100%;
-        padding: 24px;
-        gap: 12px;
+        padding: var(--spacing-xl);
+        gap: var(--spacing-md);
         color: var(--color-text-secondary);
     }
 
@@ -497,12 +497,12 @@
 
     .error-actions {
         display: flex;
-        gap: 8px;
-        margin-top: 8px;
+        gap: var(--spacing-sm);
+        margin-top: var(--spacing-sm);
     }
 
     .btn {
-        padding: 8px 16px;
+        padding: var(--spacing-sm) var(--spacing-lg);
         border: 1px solid var(--color-border-strong);
         border-radius: var(--radius-md);
         background-color: var(--color-bg-secondary);
@@ -519,14 +519,14 @@
     .header-row {
         display: flex;
         align-items: center;
-        gap: 12px;
-        padding: 8px 12px;
+        gap: var(--spacing-md);
+        padding: var(--spacing-sm) var(--spacing-md);
         background-color: var(--color-bg-secondary);
         border-bottom: 1px solid var(--color-border-strong);
     }
 
     .back-button {
-        padding: 4px 8px;
+        padding: var(--spacing-xs) var(--spacing-sm);
         border: 1px solid var(--color-border-strong);
         border-radius: var(--radius-sm);
         background-color: transparent;

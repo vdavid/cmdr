@@ -221,7 +221,7 @@
     }
 
     .search-input {
-        padding: 12px 16px;
+        padding: var(--spacing-md) var(--spacing-lg);
         font-size: var(--font-size-lg);
         border: none;
         border-bottom: 1px solid var(--color-border-strong);
@@ -241,7 +241,7 @@
     }
 
     .no-results {
-        padding: 16px;
+        padding: var(--spacing-lg);
         text-align: center;
         color: var(--color-text-tertiary);
         font-size: var(--font-size-md);
@@ -251,7 +251,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 8px 16px;
+        padding: var(--spacing-sm) var(--spacing-lg);
         cursor: pointer;
         font-size: var(--font-size-md);
         color: var(--color-text-primary);
@@ -293,7 +293,7 @@
     }
 
     .shortcuts {
-        margin-left: 16px;
+        margin-left: var(--spacing-lg);
         font-size: var(--font-size-sm);
         color: var(--color-text-tertiary);
         flex-shrink: 0;

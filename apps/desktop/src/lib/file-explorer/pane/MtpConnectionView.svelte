@@ -179,15 +179,15 @@
         align-items: center;
         justify-content: center;
         flex: 1;
-        gap: 12px;
-        padding: 24px;
+        gap: var(--spacing-md);
+        padding: var(--spacing-xl);
     }
 
     .connecting-spinner {
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 12px;
+        gap: var(--spacing-md);
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
     }
@@ -211,7 +211,7 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 12px;
+        gap: var(--spacing-md);
         text-align: center;
     }
 
@@ -227,7 +227,7 @@
     }
 
     .mtp-error .btn {
-        padding: 8px 16px;
+        padding: var(--spacing-sm) var(--spacing-lg);
         border: 1px solid var(--color-border-strong);
         border-radius: var(--radius-md);
         background-color: var(--color-bg-secondary);

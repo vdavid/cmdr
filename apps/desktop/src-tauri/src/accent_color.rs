@@ -2,12 +2,23 @@
 //!
 //! Reads the user's system accent color via `NSColor.controlAccentColor()` and
 //! observes `NSSystemColorsDidChangeNotification` to emit live updates.
+//!
+//! ## Edge cases
+//!
+//! - **Multicolor** (default macOS option): `controlAccentColor` returns blue.
+//! - **Graphite**: Returns a desaturated gray (~`#8c8c8c`). The CSS `color-mix()`
+//!   derivations still work but produce muted hover/subtle variants. This matches
+//!   the user's intent for a neutral interface.
+//! - **Light/dark mode switching**: `NSSystemColorsDidChangeNotification` fires on
+//!   appearance changes too, so we re-read and emit the mode-appropriate color.
+//!   WKWebView separately handles `prefers-color-scheme` media queries — our
+//!   observer only needs to update the accent color.
 
 use std::ptr::NonNull;
 
 use log::{info, warn};
-use objc2_app_kit::{NSColor, NSColorSpace};
-use objc2_foundation::{NSNotification, NSNotificationCenter, NSString};
+use objc2_app_kit::{NSColor, NSColorSpace, NSSystemColorsDidChangeNotification};
+use objc2_foundation::{NSNotification, NSNotificationCenter};
 use tauri::{AppHandle, Emitter, Runtime};
 
 /// macOS default blue accent (light mode fallback).
@@ -45,13 +56,12 @@ pub fn get_accent_color() -> String {
 
 /// Starts observing `NSSystemColorsDidChangeNotification`.
 /// Emits `accent-color-changed` with the new hex value whenever the user
-/// changes their accent color in System Settings.
+/// changes their accent color in System Settings or switches light/dark mode.
 pub fn observe_accent_color_changes<R: Runtime>(app_handle: AppHandle<R>) {
     let initial = read_accent_color();
     info!("System accent color: {initial}");
 
     let center = NSNotificationCenter::defaultCenter();
-    let name = NSString::from_str("NSSystemColorsDidChangeNotification");
 
     // Use block-based observer so we don't need a selector or ObjC class.
     // The block captures the app handle to emit Tauri events.
@@ -63,10 +73,15 @@ pub fn observe_accent_color_changes<R: Runtime>(app_handle: AppHandle<R>) {
         }
     });
 
-    unsafe {
-        center.addObserverForName_object_queue_usingBlock(Some(&name), None, None, &block);
-    }
-
+    // Safety: NSSystemColorsDidChangeNotification is a valid notification name constant.
     // The observer is retained by NSNotificationCenter for the lifetime of the app.
     // We intentionally never remove it because we want updates for the entire session.
+    unsafe {
+        center.addObserverForName_object_queue_usingBlock(
+            Some(NSSystemColorsDidChangeNotification),
+            None,
+            None,
+            &block,
+        );
+    }
 }

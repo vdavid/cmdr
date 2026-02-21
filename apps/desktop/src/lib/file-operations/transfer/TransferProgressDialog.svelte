@@ -641,8 +641,8 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 12px 24px;
-        gap: 8px;
+        padding: var(--spacing-md) var(--spacing-xl);
+        gap: var(--spacing-sm);
     }
 
     .stage {
@@ -710,8 +710,8 @@
 
     /* Progress bar */
     .progress-section {
-        padding: 0 24px;
-        margin-bottom: 12px;
+        padding: 0 var(--spacing-xl);
+        margin-bottom: var(--spacing-md);
     }
 
     .progress-bar-container {
@@ -747,8 +747,8 @@
 
     /* Stats */
     .stats-section {
-        padding: 0 24px;
-        margin-bottom: 12px;
+        padding: 0 var(--spacing-xl);
+        margin-bottom: var(--spacing-md);
     }
 
     .stat-row {
@@ -769,23 +769,23 @@
 
     /* Current file */
     .current-file {
-        padding: 8px 24px;
+        padding: var(--spacing-sm) var(--spacing-xl);
         font-size: var(--font-size-sm);
         color: var(--color-text-tertiary);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
         background: var(--color-bg-tertiary);
-        margin: 0 16px;
+        margin: 0 var(--spacing-lg);
         border-radius: var(--radius-sm);
     }
 
     /* Buttons */
     .button-row {
         display: flex;
-        gap: 12px;
+        gap: var(--spacing-md);
         justify-content: center;
-        padding: 16px 24px 20px;
+        padding: var(--spacing-lg) var(--spacing-xl) 20px;
     }
 
     button {
@@ -832,7 +832,7 @@
         align-items: center;
         justify-content: center;
         padding: var(--spacing-2xl) var(--spacing-xl);
-        gap: 16px;
+        gap: var(--spacing-lg);
     }
 
     .rollback-indicator {
@@ -861,7 +861,7 @@
 
     /* Conflict section */
     .conflict-section {
-        padding: 12px 24px 20px;
+        padding: var(--spacing-md) var(--spacing-xl) 20px;
     }
 
     .conflict-filename {
@@ -879,14 +879,14 @@
         display: flex;
         flex-direction: column;
         gap: var(--spacing-xs);
-        margin-bottom: 16px;
+        margin-bottom: var(--spacing-lg);
         font-size: var(--font-size-sm);
     }
 
     .conflict-file {
         display: flex;
         align-items: baseline;
-        gap: 8px;
+        gap: var(--spacing-sm);
         justify-content: center;
         flex-wrap: wrap;
     }

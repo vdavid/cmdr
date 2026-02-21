@@ -31,7 +31,7 @@
         align-items: center;
         justify-content: center;
         height: 100%;
-        padding: 24px;
+        padding: var(--spacing-xl);
         line-height: 24px;
     }
 
@@ -42,7 +42,7 @@
     .icon {
         width: 96px;
         height: 96px;
-        margin: 0 auto 16px;
+        margin: 0 auto var(--spacing-lg);
     }
 
     h2 {

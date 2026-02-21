@@ -539,6 +539,7 @@
     .search-input:focus {
         outline: none;
         border-color: var(--color-accent);
+        box-shadow: var(--shadow-focus);
     }
 
     .key-search {
@@ -553,7 +554,7 @@
     .filter-chip {
         padding: var(--spacing-xs) var(--spacing-sm);
         border: 1px solid var(--color-border);
-        border-radius: 12px;
+        border-radius: var(--radius-full);
         background: var(--color-bg-primary);
         color: var(--color-text-secondary);
         font-size: var(--font-size-xs);
@@ -567,6 +568,11 @@
         background: var(--color-accent);
         color: white;
         border-color: var(--color-accent);
+    }
+
+    .filter-chip.active:hover {
+        background: var(--color-accent-hover);
+        border-color: var(--color-accent-hover);
     }
 
     .conflict-badge {
@@ -701,6 +707,11 @@
         background: var(--color-accent);
         color: white;
         border-color: var(--color-accent);
+    }
+
+    .shortcut-pill.editing:hover {
+        background: var(--color-accent-hover);
+        border-color: var(--color-accent-hover);
     }
 
     .shortcut-pill.empty {

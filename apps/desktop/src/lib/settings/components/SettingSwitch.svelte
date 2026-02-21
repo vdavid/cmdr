@@ -39,7 +39,7 @@
         width: 36px;
         height: 20px;
         background: var(--color-bg-tertiary);
-        border-radius: 10px;
+        border-radius: var(--radius-full);
         padding: 2px;
         cursor: default;
         transition: background-color var(--transition-base);
@@ -67,9 +67,13 @@
         transform: translateX(16px);
     }
 
+    :global(.switch-control[data-state='checked']:hover) {
+        background: var(--color-accent-hover);
+    }
+
     /* Ark UI uses data-focus attribute when the hidden input is focused */
     :global(.switch-control[data-focus]) {
-        outline: 2px solid color-mix(in srgb, var(--color-accent) 70%, black);
+        outline: 2px solid var(--color-accent);
         outline-offset: 2px;
         box-shadow: var(--shadow-focus);
     }

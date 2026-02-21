@@ -106,11 +106,13 @@
     :global(.number-control:focus-within) {
         outline: 2px solid var(--color-accent);
         outline-offset: -2px;
+        box-shadow: var(--shadow-focus);
     }
 
     :global(.number-btn:focus-visible) {
         outline: 2px solid var(--color-accent);
         outline-offset: -2px;
+        box-shadow: var(--shadow-focus);
         z-index: 1;
     }
 

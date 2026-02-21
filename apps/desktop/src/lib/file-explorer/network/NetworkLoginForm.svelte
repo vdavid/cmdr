@@ -224,18 +224,18 @@
     .login-card {
         max-width: 400px;
         width: 100%;
-        padding: 24px;
+        padding: var(--spacing-xl);
         background-color: var(--color-bg-secondary);
         border: 1px solid var(--color-border-strong);
-        border-radius: 12px;
+        border-radius: var(--radius-lg);
         box-shadow: var(--shadow-md);
     }
 
     .login-title {
         display: flex;
         align-items: center;
-        gap: 8px;
-        margin-bottom: 16px;
+        gap: var(--spacing-sm);
+        margin-bottom: var(--spacing-lg);
         font-size: var(--font-size-xl);
         font-weight: 600;
         color: var(--color-text-primary);
@@ -248,9 +248,9 @@
     .auth-changed-message {
         display: flex;
         align-items: flex-start;
-        gap: 8px;
-        padding: 12px;
-        margin-bottom: 16px;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
         background-color: color-mix(in srgb, var(--color-accent) 15%, transparent);
         border: 1px solid var(--color-accent);
         border-radius: var(--radius-lg);
@@ -265,9 +265,9 @@
     .error-message {
         display: flex;
         align-items: flex-start;
-        gap: 8px;
-        padding: 12px;
-        margin-bottom: 16px;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
         background-color: color-mix(in srgb, var(--color-error) 15%, transparent);
         border: 1px solid var(--color-error);
         border-radius: var(--radius-lg);
@@ -281,15 +281,15 @@
 
     .connection-mode {
         border: none;
-        margin-bottom: 16px;
+        margin-bottom: var(--spacing-lg);
         padding: 0;
     }
 
     .radio-option {
         display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 8px 0;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-sm) 0;
         cursor: pointer;
     }
 
@@ -315,12 +315,12 @@
     }
 
     .field {
-        margin-bottom: 12px;
+        margin-bottom: var(--spacing-md);
     }
 
     .field-label {
         display: block;
-        margin-bottom: 4px;
+        margin-bottom: var(--spacing-xs);
         font-size: var(--font-size-sm);
         font-weight: 500;
         color: var(--color-text-secondary);
@@ -357,8 +357,8 @@
     .checkbox-option {
         display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 8px 0;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-sm) 0;
         cursor: pointer;
     }
 
@@ -377,7 +377,7 @@
     .button-row {
         display: flex;
         justify-content: flex-end;
-        gap: 12px;
+        gap: var(--spacing-md);
         margin-top: 20px;
     }
 

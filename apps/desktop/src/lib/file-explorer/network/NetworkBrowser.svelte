@@ -413,7 +413,7 @@
 
     .header-row {
         display: flex;
-        padding: 4px 8px;
+        padding: var(--spacing-xs) var(--spacing-sm);
         background-color: var(--color-bg-secondary);
         border-bottom: 1px solid var(--color-border-strong);
         font-weight: 500;
@@ -484,8 +484,8 @@
     .searching-indicator {
         display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 12px 16px;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-md) var(--spacing-lg);
         color: var(--color-text-tertiary);
         font-style: italic;
     }
@@ -509,7 +509,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 48px 16px;
+        padding: 48px var(--spacing-lg);
         color: var(--color-text-tertiary);
         font-style: italic;
     }
@@ -536,7 +536,7 @@
     .refresh-section {
         display: flex;
         justify-content: center;
-        padding: 16px 8px;
+        padding: var(--spacing-lg) var(--spacing-sm);
         border-top: 1px solid var(--color-border-subtle);
     }
 
@@ -544,7 +544,7 @@
         display: flex;
         align-items: center;
         gap: var(--spacing-sm);
-        padding: 8px 16px;
+        padding: var(--spacing-sm) var(--spacing-lg);
         border: 1px solid var(--color-border-strong);
         border-radius: var(--radius-md);
         background-color: var(--color-bg-secondary);
