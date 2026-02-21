@@ -33,11 +33,8 @@ allow = [
 multiple-versions = "allow"
 wildcards = "deny"
 highlight = "all"
-# Allow mtp-rs local path dependency during development (will use git/crates.io later)
-allow-wildcard-paths = true
 
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
-allow-git = ["https://github.com/vdavid/mtp-rs"]
