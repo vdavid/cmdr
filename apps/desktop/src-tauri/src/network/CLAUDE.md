@@ -5,10 +5,16 @@ Discover, browse, and mount SMB network shares on macOS. Integrates mDNS discove
 ## Architecture
 
 - **Discovery**: `mdns_discovery.rs` — Pure Rust mDNS using `mdns-sd` crate. Replaced deprecated NSNetServiceBrowser.
-- **Share listing**: `smb_client.rs` — Uses `smb` crate (pure Rust SMB 2/3 client) with `smbutil` fallback for compatibility.
-- **Mounting**: `mount.rs` — macOS `NetFSMountURLAsync` for native `/Volumes/` mounts.
+- **Share listing**: Split across multiple files:
+  - `smb_client.rs` — Top-level share-listing entry point; orchestrates guest -> keychain -> prompt auth flow; tries smb-rs first, falls back to smbutil
+  - `smb_connection.rs` — TCP connection establishment and IPC-level share listing calls
+  - `smb_cache.rs` — 30-second in-memory cache for share lists, keyed by server address
+  - `smb_smbutil.rs` — `smbutil view -G` fallback for older Samba/NAS servers
+  - `smb_types.rs` — Shared types (`SmbShare`, `AuthMode`, `SmbError`, etc.)
+  - `smb_util.rs` — Helpers: hostname derivation, IP resolution, account-name normalization
+- **Mounting**: `mount.rs` — macOS `NetFSMountURLSync` for native `/Volumes/` mounts.
 - **Auth**: `keychain.rs` — macOS Keychain via `security-framework`. Credentials cached in-memory after first access.
-- **State**: `known_shares.rs` — Connection history in `settings.json` (usernames, last auth mode, timestamps).
+- **State**: `known_shares.rs` — Connection history in `known-shares.json` (usernames, last auth mode, timestamps).
 
 ## Key decisions
 
@@ -25,7 +31,7 @@ smb-rs doesn't resolve `.local` hostnames reliably (std lib DNS doesn't handle m
 
 ### smbutil fallback (macOS only)
 
-`smb` crate fails on older Samba servers with RPC incompatibility. Classify error as `ProtocolError`, then try `smbutil view -g` as fallback. This handles Linux Samba and old NAS devices gracefully.
+`smb` crate fails on older Samba servers with RPC incompatibility. Classify error as `ProtocolError`, then try `smbutil view -G` as fallback. This handles Linux Samba and old NAS devices gracefully.
 
 ### No persistent connection pool
 

@@ -19,7 +19,9 @@ share components parameterized by `operationType: 'copy' | 'move'`.
 
 2. **TransferProgressDialog** (operation execution)
     - Calls `copyFiles()` or `moveFiles()` based on operationType
-    - Subscribes to `write-progress`, `write-complete`, `write-error` events
+    - Subscribes via `onWriteProgress`, `onWriteComplete`, `onWriteError`, `onWriteCancelled`, `onWriteConflict`
+      callback wrappers (which internally listen to Tauri events). Uses a `BufferedEvent` discriminated union
+      (`{ type: 'progress'; event: WriteProgressEvent }`, etc.) to buffer events until the `operationId` is known.
     - Progress bar with ETA, speed (MB/s), current file
     - Dynamic stage indicator: "Scanning" → "Copying" (+ "Cleaning up" for cross-FS move)
     - Conflict resolution inline (if using `Stop` mode instead of dry-run)
@@ -28,17 +30,21 @@ share components parameterized by `operationType: 'copy' | 'move'`.
 3. **TransferErrorDialog** (error display)
     - Operation-specific error messaging via `transfer-error-messages.ts`
 
-### Shared utilities
+### Shared utilities (`transfer/`)
 
-- **transfer-dialog-utils.ts**: `generateTitle(operationType, files, folders)` → "Copy 3 files and 1 folder",
+- **transfer/transfer-dialog-utils.ts**: `generateTitle(operationType, files, folders)` → "Copy 3 files and 1 folder",
   `toBackendIndices()` / `toBackendCursorIndex()` for ".." offset handling
-- **DirectionIndicator.svelte**: Arrow graphic showing source → destination (operation-agnostic)
+- **transfer/DirectionIndicator.svelte**: Arrow graphic showing source → destination (operation-agnostic)
+- **transfer/TransferDialog.svelte**, **transfer/TransferProgressDialog.svelte**,
+  **transfer/TransferErrorDialog.svelte**: Transfer UI components
+- **transfer/transfer-error-messages.ts**: Operation-specific error strings
 
-### New folder
+### New folder (`mkdir/`)
 
-- **NewFolderDialog**: F7 opens dialog pre-filled with cursor item name (sans extension for files)
-- **new-folder-operations.ts**: `getInitialFolderName()` extracts from cursor, `moveCursorToNewFolder()` subscribes to
-  file watcher to track newly created folder
+- **mkdir/NewFolderDialog.svelte**: F7 opens dialog pre-filled with cursor item name (sans extension for files)
+- **mkdir/new-folder-operations.ts**: `getInitialFolderName()` extracts from cursor, `moveCursorToNewFolder()`
+  subscribes to file watcher to track newly created folder
+- **mkdir/new-folder-utils.ts**: Pure utility helpers for deriving the initial folder name from the cursor entry
 
 ## Key decisions
 
@@ -76,7 +82,7 @@ When directory has parent entry shown at index 0, frontend indices are offset by
   `moveFiles()` backend only works with local paths.
 - **Dry-run conflict sampling**: If >200 conflicts, `DryRunResult.conflicts` contains random sample. Check
   `conflictsSampled: true` and `conflictsTotal` for exact count.
-- **Progress dialog edge case**: Same-FS move completes so fast that `write-complete` may fire before dialog mounts.
+- **Progress dialog edge case**: Same-FS move completes so fast that the complete event may fire before dialog mounts.
   Handle by checking operation status on mount and showing toast if already done.
 - **Source pane refresh**: Move operations must refresh **both** panes post-completion (source files disappeared). Copy
   only refreshes destination.

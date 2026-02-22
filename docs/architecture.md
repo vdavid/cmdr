@@ -19,12 +19,17 @@ All under `apps/desktop/src/lib/`.
 | `file-viewer/` | Read-only file viewer (opens in separate window, virtual scrolling) |
 | `settings/` | Settings UI + registry-based architecture, reactive state |
 | `shortcuts/` | Keyboard shortcut customization, scope hierarchy, conflict detection |
+| `tauri-commands/` | Typed TypeScript wrappers for all Tauri IPC commands and events |
 | `command-palette/` | Fuzzy command search (~45 commands) |
+| `commands/` | Command registry (~50 commands), fuzzy search engine for command palette |
 | `licensing/` | License validation, commercial reminders, expiration modals |
 | `ai/` | Local LLM features (folder suggestions), download flow |
 | `indexing/` | Drive index state, events, priority triggers, scan status overlay |
 | `mtp/` | MTP (Android device) file browsing UI |
+| `onboarding/` | Full Disk Access prompt for first-launch onboarding |
+| `ui/` | Shared UI primitives: ModalDialog, Button, AlertDialog, LoadingIcon, Notification, dialog registry |
 | `updates/` | Auto-updater UI |
+| `utils/` | Filename validation, confirm dialog utilities |
 | `font-metrics/` | Character width measurement for accurate Brief mode column sizing |
 
 ## Backend (Rust + Tauri 2)
@@ -38,13 +43,14 @@ All under `apps/desktop/src-tauri/src/`.
 | `file_viewer/` | Three-backend file viewer (FullLoad, ByteSeek, LineIndex) |
 | `network/` | SMB: mDNS discovery, share listing (smb-rs + smbutil), mounting, Keychain |
 | `mtp/` | MTP device management, file ops, event-based watching |
-| `mcp/` | MCP server (18 tools, YAML resources, agent-centric API) |
+| `mcp/` | MCP server (19 tools, YAML resources, agent-centric API) |
 | `ai/` | llama-server lifecycle, model download, inference client |
 | `licensing/` | Ed25519 license verification, server validation |
 | `settings/` | Settings persistence (tauri-plugin-store) |
 | `indexing/` | Background drive indexing (SQLite, jwalk, FSEvents), recursive directory sizes |
 | `font_metrics/` | Binary font metrics cache, per-directory width calculation |
 | `volumes/` | Volume abstraction (local, network, MTP), scanner/watcher traits |
+| `stubs/` | Linux compilation stubs for macOS-only modules (used by Docker E2E pipeline) |
 | `drag_image_detection.rs` | macOS method swizzle for drag image size detection |
 | `drag_image_swap.rs` | Rich/transparent drag image swap for self-drags |
 | `commands/` | Tauri command definitions (IPC entry points) |
@@ -55,6 +61,7 @@ All under `apps/desktop/src-tauri/src/`.
 |-----------|---------|
 | `apps/license-server/` | Cloudflare Worker + Hono. Paddle webhooks, Ed25519 key generation |
 | `apps/website/` | getcmdr.com marketing site (Astro + Tailwind v4) |
+| `scripts/check/` | Go unified check runner (~40 checks, parallel with dependency graph) |
 
 ## Cross-cutting patterns
 

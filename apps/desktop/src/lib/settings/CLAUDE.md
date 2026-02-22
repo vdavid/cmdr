@@ -31,6 +31,28 @@ Single source of truth for all settings. Each `SettingDefinition` contains:
 - Subscribes to `onSettingChange()` and updates reactive values immediately
 - Provides derived getters like `getRowHeight()` based on current density
 
+### Sections (`sections/`)
+
+10 section components rendered inside the settings window: `AppearanceSection`, `FileOperationsSection`,
+`KeyboardShortcutsSection`, `NetworkSection`, `LoggingSection`, `McpServerSection`, `UpdatesSection`, `ThemesSection`,
+`AdvancedSection`, `DriveIndexingSection`.
+
+### Components (`components/`)
+
+9 reusable setting UI primitives used by section components: `SettingRow`, `SettingSwitch`, `SettingSelect`,
+`SettingSlider`, `SettingNumberInput`, `SettingRadioGroup`, `SettingToggleGroup`, `SettingsSidebar`, `SettingsContent`.
+Also `SectionSummary` for collapsed-section previews.
+
+### Other files
+
+- **settings-search.ts** — Fuzzy search over setting definitions; returns ranked matches with highlight ranges
+- **settings-applier.ts** — Applies a setting change (validates, calls `setSetting`, emits events)
+- **network-settings.ts** — Network-specific setting helpers (proxy config, SMB auth defaults)
+- **settings-window.ts** — Logic for opening/focusing/closing the settings window (Tauri window management)
+- **format-utils.ts** — Shared formatters used in settings UI (e.g., duration, file-size display strings)
+- **mcp-settings-bridge.ts** — MCP bridge functionality for settings; enables AI agents to query and modify settings
+  programmatically
+
 ### Shortcuts (separate subsystem)
 
 - Stored in separate `shortcuts.json` file

@@ -26,7 +26,8 @@ Key files:
 
 - `drop-target-hit-testing.ts` — Pure logic: `document.elementFromPoint()` + `data-drop-target-path` walk
 - `DragOverlay.svelte` + `drag-overlay.svelte.ts` — Floating label near cursor
-- `modifier-key-tracker.svelte.ts` — Alt/Option state (DragDropEvent doesn't include modifiers)
+- `../modifier-key-tracker.svelte.ts` — Alt/Option state (DragDropEvent doesn't include modifiers; lives in parent
+  `file-explorer/` directory)
 - `drag-position.ts` — Corrects Tauri coords for docked DevTools (dev-only, zero overhead in prod)
 - Integration in `DualPaneExplorer.svelte`
 

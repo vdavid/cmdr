@@ -12,6 +12,10 @@ without DOM performance issues.
 - **virtual-scroll.ts** – Pure math functions for calculating visible windows
 - **file-list-utils.ts** – Shared helpers: entry caching, icon prefetching, sync status
 - **brief-list-utils.ts** / **full-list-utils.ts** – Mode-specific rendering logic
+- **dir-size-display.test.ts** – Tests for `getDirSizeDisplayState` / `buildDirSizeTooltip` (functions in
+  `full-list-utils.ts`)
+- **view-modes.test.ts** – Integration tests for hidden-file filtering and directory listing structure (uses
+  `test-helpers.ts` from parent)
 
 ### Data flow
 
@@ -31,13 +35,14 @@ FilePane (parent)
 
 ### Virtual scrolling
 
-Uses **fixed row height** (20px, reactive via `getRowHeight()` from settings):
+Uses a configurable row height via `getRowHeight()` from `reactive-settings.svelte.ts` (varies by density setting:
+compact/comfortable/spacious). The virtual scroll uses an `itemSize` parameter from `VirtualScrollConfig`:
 
-1. Calculate visible window: `startIndex = floor(scrollTop / ROW_HEIGHT)`
+1. Calculate visible window: `startIndex = floor(scrollTop / itemSize)`
 2. Add buffer above/below viewport (20 items default, configurable)
 3. Render only `visibleFiles = entries.slice(startIndex, endIndex)`
-4. Position via `transform: translateY(startIndex * ROW_HEIGHT)`
-5. Spacer div maintains scrollbar accuracy: `height: totalCount * ROW_HEIGHT`
+4. Position via `transform: translateY(startIndex * itemSize)`
+5. Spacer div maintains scrollbar accuracy: `height: totalCount * itemSize`
 
 **Prefetch buffer**: ~500 items around current position, cached in `cachedEntries`. Reduces IPC calls during scroll.
 
@@ -46,8 +51,8 @@ Uses **fixed row height** (20px, reactive via `getRowHeight()` from settings):
 **Decision**: Virtual scroll in frontend, data in backend **Why**: Sending 50k entries over IPC = 17.4MB, ~4s transfer.
 Virtual scroll fetches only visible ~50 items on demand. Backend-driven caching eliminates serialization overhead.
 
-**Decision**: Fixed row height (no variable height) **Why**: Variable height requires measuring every row, defeating
-performance gains. Fixed 20px allows pure math: `scrollTop / ROW_HEIGHT = startIndex`.
+**Decision**: Uniform row height per density setting (no variable height) **Why**: Variable height requires measuring every
+row, defeating performance gains. Uniform height allows pure math: `scrollTop / itemSize = startIndex`.
 
 **Decision**: Prefetch buffer (~500 items) **Why**: Smooth scrolling requires data ready before user sees blank space.
 Buffer balances memory (small) vs. IPC latency (reduces fetches).
@@ -66,7 +71,7 @@ in `.svelte` or `.svelte.ts`. Math functions return plain objects consumed by `$
 **Gotcha**: File watcher diffs shift indices while scrolled **Why**: If 20 files added before cursor, visible range
 shifts by 20. Must recalculate virtual window when `totalCount` changes.
 
-**Gotcha**: `processPathsAtIndices()` uses 1-based indices when `hasParent = true` **Why**: Index 0 is ".." parent entry
+**Gotcha**: When `hasParent = true`, UI indices are 1-based **Why**: Index 0 is ".." parent entry
 (not in backend cache). Real files start at index 1. Adjust: `cache_index = ui_index - 1`.
 
 **Gotcha**: Scroll position must use `transform`, not absolute positioning **Why**: Absolute positioning causes full

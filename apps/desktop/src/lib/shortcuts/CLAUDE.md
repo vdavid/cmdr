@@ -7,16 +7,17 @@ Settings window. MCP tools can also modify shortcuts programmatically.
 
 ## Architecture
 
-### Command registry (`command-registry.ts`)
+### Command registry (`../commands/command-registry.ts`)
 
-Defines all commands with default shortcuts:
+Lives in the sibling `src/lib/commands/` directory (which has its own CLAUDE.md). Defines all commands with default
+shortcuts:
 
 ```typescript
 {
     id: 'nav.parent',
     name: 'Go to parent folder',
-    scope: 'Navigation',
-    shortcuts: ['⌘↑'],
+    scope: 'Main window/File list',
+    shortcuts: ['Backspace', '⌘↑'],
     showInPalette: true
 }
 ```
@@ -37,6 +38,10 @@ Defines which shortcuts are active in each context:
 - `File list` → inherits `Main window` → inherits `App`
 
 When "File list" is focused, shortcuts from all three scopes can trigger.
+
+Note: the command registry uses compound scopes like `'Main window/File list'`, `'Main window/Brief mode'`,
+`'Main window/Full mode'`, `'Main window/Network'` that are distinct from the simple scope hierarchy defined in
+`scope-hierarchy.ts`. These compound scopes represent specific UI contexts within the main window.
 
 ### Conflict detection (`conflict-detector.ts`)
 

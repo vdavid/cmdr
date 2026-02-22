@@ -11,7 +11,7 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 - Runs in a background tokio task spawned at app startup
 - Binds to `127.0.0.1:9224` (localhost only for security)
 - Streamable HTTP transport (MCP spec 2025-11-25)
-- Endpoints: `POST /mcp` (JSON-RPC), `GET /mcp/sse` (optional SSE), `GET /mcp/health`
+- Endpoints: `POST /mcp` (JSON-RPC), `GET /mcp` (optional SSE), `GET /mcp/health`
 
 ### Protocol (`protocol.rs`)
 
@@ -21,13 +21,13 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 
 ### Tools (`tools.rs`)
 
-18 semantic tools grouped by category:
+19 semantic tools grouped by category:
 - Navigation (6): `select_volume`, `nav_to_path`, `move_cursor`, etc.
 - Cursor/Selection (3): `move_cursor`, `open_under_cursor`, `select`
 - File operations (3): `copy`, `mkdir`, `refresh`
 - View (3): `sort`, `toggle_hidden`, `set_view_mode`
 - Dialogs (1): `dialog` (unified open/focus/close)
-- App (2): `switch_pane`, `quit`
+- App (3): `switch_pane`, `swap_panes`, `quit`
 
 ### Resources (`resources.rs`)
 
@@ -38,10 +38,18 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 
 Routes tool calls to implementations. Most tools emit Tauri events that trigger the same code paths as keyboard shortcuts or menu clicks.
 
+### Configuration (`config.rs`)
+
+Constants and configuration for the MCP server (port, bind address, transport settings).
+
+### Dialog state (`dialog_state.rs`)
+
+`SoftDialogTracker` implementation — tracks which dialogs MCP believes are open. Updated by MCP tool calls; not always in sync with actual Tauri window state (see gotchas).
+
 ### State stores
 
 - `PaneStateStore`: Current state of left/right panes (path, files, cursor, selection)
-- `SoftDialogTracker`: Which dialogs MCP thinks are open
+- `SoftDialogTracker`: Which dialogs MCP thinks are open (in `dialog_state.rs`)
 - `SettingsStateStore`: Current settings window state (section, settings, shortcuts)
 
 Frontend syncs state to these stores via Tauri commands (`update_left_pane_state`, `mcp_update_settings_sections`, etc.).
@@ -50,7 +58,7 @@ Frontend syncs state to these stores via Tauri commands (`update_left_pane_state
 
 ### Why agent-centric API?
 
-The original design mirrored keyboard shortcuts (43 tools like `nav_up`, `nav_down`). This forced agents to make dozens of calls to find a file. The agent-centric redesign (Jan 2026) consolidated to 18 semantic tools (`move_cursor(index=42)`, `nav_to_path("/Users")`). This reduced round-trips from 6+ reads to 1 (`cmdr://state` resource).
+The original design mirrored keyboard shortcuts (43 tools like `nav_up`, `nav_down`). This forced agents to make dozens of calls to find a file. The agent-centric redesign (Jan 2026) consolidated to 19 semantic tools (`move_cursor(index=42)`, `nav_to_path("/Users")`). This reduced round-trips from 6+ reads to 1 (`cmdr://state` resource).
 
 ### Why YAML over JSON for resources?
 
@@ -93,7 +101,7 @@ Frontend calls `update_left_pane_state()` after loading files, but there's no gu
 ### View mode affects resource detail
 
 `cmdr://state` shows file details differently based on view mode:
-- Full mode: all file info inline (`i:42 f package.json 1183b lm:2025-01-10`)
+- Full mode: all file info inline (`i:42 f package.json 1.2K 2025-01-10`)
 - Brief mode: only cursor file gets details, rest are just names (`i:42 f package.json`)
 
 This prevents overwhelming agents with data they can't see in the UI.
