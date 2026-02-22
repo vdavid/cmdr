@@ -12,12 +12,15 @@ import {
     shouldResetCache,
     getPrefetchBufferSize,
     fetchVisibleRange,
+    refetchIconsForEntries,
+    updateIndexSizesInPlace,
 } from './file-list-utils'
 import type { FileEntry } from '../types'
 
 // Mock dependencies
 vi.mock('$lib/tauri-commands', () => ({
     getFileRange: vi.fn(),
+    getDirStatsBatch: vi.fn(),
 }))
 vi.mock('$lib/icon-cache', () => ({
     prefetchIcons: vi.fn(),
@@ -29,7 +32,8 @@ vi.mock('$lib/settings/settings-store', () => ({
     getSetting: vi.fn().mockReturnValue(200),
 }))
 
-import { getFileRange } from '$lib/tauri-commands'
+import { getFileRange, getDirStatsBatch } from '$lib/tauri-commands'
+import { prefetchIcons } from '$lib/icon-cache'
 
 describe('getSyncIconPath', () => {
     it('returns undefined for undefined status', () => {
@@ -381,5 +385,149 @@ describe('fetchVisibleRange', () => {
         })
 
         expect(onSyncStatusRequest).toHaveBeenCalledWith(['/dir/file1.txt'])
+    })
+})
+
+describe('refetchIconsForEntries', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    it('does nothing for empty array', () => {
+        refetchIconsForEntries([])
+        expect(prefetchIcons).not.toHaveBeenCalled()
+    })
+
+    it('prefetches icons for entries', () => {
+        const entries: FileEntry[] = [
+            {
+                name: 'file1.txt',
+                path: '/dir/file1.txt',
+                isDirectory: false,
+                isSymlink: false,
+                permissions: 0o644,
+                owner: 'user',
+                group: 'group',
+                iconId: 'txt',
+                extendedMetadataLoaded: true,
+            },
+            {
+                name: 'file2.rs',
+                path: '/dir/file2.rs',
+                isDirectory: false,
+                isSymlink: false,
+                permissions: 0o644,
+                owner: 'user',
+                group: 'group',
+                iconId: 'rs',
+                extendedMetadataLoaded: true,
+            },
+        ]
+        refetchIconsForEntries(entries)
+        expect(prefetchIcons).toHaveBeenCalledWith(['txt', 'rs'], true)
+    })
+})
+
+describe('updateIndexSizesInPlace', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    it('does nothing when there are no directories', async () => {
+        const entries: FileEntry[] = [
+            {
+                name: 'file.txt',
+                path: '/dir/file.txt',
+                isDirectory: false,
+                isSymlink: false,
+                permissions: 0o644,
+                owner: 'user',
+                group: 'group',
+                iconId: 'txt',
+                extendedMetadataLoaded: true,
+            },
+        ]
+        await updateIndexSizesInPlace(entries)
+        expect(getDirStatsBatch).not.toHaveBeenCalled()
+    })
+
+    it('updates directory entries in place', async () => {
+        const entries: FileEntry[] = [
+            {
+                name: 'file.txt',
+                path: '/dir/file.txt',
+                isDirectory: false,
+                isSymlink: false,
+                permissions: 0o644,
+                owner: 'user',
+                group: 'group',
+                iconId: 'txt',
+                extendedMetadataLoaded: true,
+            },
+            {
+                name: 'subdir',
+                path: '/dir/subdir',
+                isDirectory: true,
+                isSymlink: false,
+                permissions: 0o755,
+                owner: 'user',
+                group: 'group',
+                iconId: 'dir',
+                extendedMetadataLoaded: true,
+            },
+        ]
+        vi.mocked(getDirStatsBatch).mockResolvedValue([
+            { recursiveSize: 1024, recursiveFileCount: 5, recursiveDirCount: 2 },
+        ])
+
+        await updateIndexSizesInPlace(entries)
+
+        expect(getDirStatsBatch).toHaveBeenCalledWith(['/dir/subdir'])
+        expect(entries[1].recursiveSize).toBe(1024)
+        expect(entries[1].recursiveFileCount).toBe(5)
+        expect(entries[1].recursiveDirCount).toBe(2)
+    })
+
+    it('handles null stats gracefully', async () => {
+        const entries: FileEntry[] = [
+            {
+                name: 'subdir',
+                path: '/dir/subdir',
+                isDirectory: true,
+                isSymlink: false,
+                permissions: 0o755,
+                owner: 'user',
+                group: 'group',
+                iconId: 'dir',
+                extendedMetadataLoaded: true,
+            },
+        ]
+        vi.mocked(getDirStatsBatch).mockResolvedValue([null])
+
+        await updateIndexSizesInPlace(entries)
+
+        expect(entries[0].recursiveSize).toBeUndefined()
+    })
+
+    it('silently ignores errors from getDirStatsBatch', async () => {
+        const entries: FileEntry[] = [
+            {
+                name: 'subdir',
+                path: '/dir/subdir',
+                isDirectory: true,
+                isSymlink: false,
+                permissions: 0o755,
+                owner: 'user',
+                group: 'group',
+                iconId: 'dir',
+                extendedMetadataLoaded: true,
+            },
+        ]
+        vi.mocked(getDirStatsBatch).mockRejectedValue(new Error('indexing not ready'))
+
+        await updateIndexSizesInPlace(entries)
+
+        // Should not throw, entries unchanged
+        expect(entries[0].recursiveSize).toBeUndefined()
     })
 })

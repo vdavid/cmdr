@@ -672,6 +672,14 @@
         return path.endsWith('/') ? path : path + '/'
     }
 
+    /** Returns true if any updated path is a descendant of `dir`. */
+    function hasDescendantUpdate(paths: string[], dir: string): boolean {
+        return paths.some((p) => {
+            const withSlash = ensureTrailingSlash(p)
+            return withSlash.startsWith(dir) && withSlash !== dir
+        })
+    }
+
     // Throttle state for index size refreshes (one per pane).
     // Throttle fires on the first event, then ignores subsequent events for the cooldown period.
     // This ensures updates appear promptly even when events fire continuously.
@@ -679,39 +687,28 @@
     let rightThrottleUntil = 0
     const indexRefreshCooldownMs = 2000
 
+    /** Throttled refresh: fires immediately on first relevant event, then skips for the cooldown period. */
+    function throttledRefresh(
+        shouldRefresh: boolean,
+        throttleUntil: number,
+        setThrottle: (v: number) => void,
+        paneRef: typeof leftPaneRef,
+    ) {
+        if (!shouldRefresh) return
+        const now = Date.now()
+        if (now < throttleUntil) return
+        setThrottle(now + indexRefreshCooldownMs)
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        paneRef?.refreshIndexSizes?.()
+    }
+
     /** Called when the drive index updates directory stats. Refreshes only index sizes (no full list rebuild). */
     function handleIndexDirUpdated(paths: string[]) {
-        const leftDir = ensureTrailingSlash(leftPath)
-        const rightDir = ensureTrailingSlash(rightPath)
+        const refreshLeft = hasDescendantUpdate(paths, ensureTrailingSlash(leftPath))
+        const refreshRight = hasDescendantUpdate(paths, ensureTrailingSlash(rightPath))
 
-        let refreshLeft = false
-        let refreshRight = false
-
-        for (const updatedPath of paths) {
-            // Refresh if the updated path is anywhere under the current directory.
-            // Debounce + in-place size mutation prevent flicker even for "/" where many paths match.
-            const updatedWithSlash = ensureTrailingSlash(updatedPath)
-            if (!refreshLeft && updatedWithSlash.startsWith(leftDir) && updatedWithSlash !== leftDir) {
-                refreshLeft = true
-            }
-            if (!refreshRight && updatedWithSlash.startsWith(rightDir) && updatedWithSlash !== rightDir) {
-                refreshRight = true
-            }
-            if (refreshLeft && refreshRight) break
-        }
-
-        // Throttle: fire immediately on first relevant event, then skip for the cooldown period
-        const now = Date.now()
-        if (refreshLeft && now >= leftThrottleUntil) {
-            leftThrottleUntil = now + indexRefreshCooldownMs
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            leftPaneRef?.refreshIndexSizes?.()
-        }
-        if (refreshRight && now >= rightThrottleUntil) {
-            rightThrottleUntil = now + indexRefreshCooldownMs
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            rightPaneRef?.refreshIndexSizes?.()
-        }
+        throttledRefresh(refreshLeft, leftThrottleUntil, (v) => (leftThrottleUntil = v), leftPaneRef)
+        throttledRefresh(refreshRight, rightThrottleUntil, (v) => (rightThrottleUntil = v), rightPaneRef)
     }
 
     function handleResizeForDevTools() {

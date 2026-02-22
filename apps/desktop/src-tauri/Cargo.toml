@@ -104,7 +104,7 @@ mtp-rs = "0.1.0"
 nusb = "0.2.2"
 bytes = "1"
 # Drive indexing: macOS FSEvents watcher with event IDs and sinceWhen replay
-cmdr-fsevent-stream = { git = "https://github.com/vdavid/cmdr-fsevent-stream" }
+cmdr-fsevent-stream = { git = "https://github.com/vdavid/cmdr-fsevent-stream", rev = "3a02f0d" }
 
 [dev-dependencies]
 criterion = { version = "0.8.1", features = ["html_reports"] }

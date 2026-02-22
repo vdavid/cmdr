@@ -565,7 +565,7 @@
     }
 
     .index-status-text.ready {
-        color: var(--color-success, var(--color-text-primary));
+        color: var(--color-text-primary);
     }
 
     .index-spinner {

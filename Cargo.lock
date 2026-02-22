@@ -1075,7 +1075,7 @@ dependencies = [
 [[package]]
 name = "cmdr-fsevent-stream"
 version = "0.3.0"
-source = "git+https://github.com/vdavid/cmdr-fsevent-stream#3a02f0da18992e8452a50b26f8b5b547a9c54925"
+source = "git+https://github.com/vdavid/cmdr-fsevent-stream?rev=3a02f0d#3a02f0da18992e8452a50b26f8b5b547a9c54925"
 dependencies = [
  "bitflags 2.11.0",
  "core-foundation 0.10.1",
@@ -3948,8 +3948,6 @@ dependencies = [
 [[package]]
 name = "mtp-rs"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "76ea08088efbf15cf5b8ced59e7890ff15e25b26780ed3bdca35b61e8a04d39e"
 dependencies = [
  "async-trait",
  "bytes",

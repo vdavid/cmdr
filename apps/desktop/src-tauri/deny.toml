@@ -33,8 +33,10 @@ allow = [
 multiple-versions = "allow"
 wildcards = "deny"
 highlight = "all"
+allow-wildcard-paths = true  # cmdr is private (BSL); git deps like cmdr-fsevent-stream are fine
 
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = ["https://github.com/vdavid/cmdr-fsevent-stream"]
