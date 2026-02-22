@@ -549,6 +549,13 @@
         cacheGeneration++
     }
 
+    /** Re-fetches index sizes (recursive_size, etc.) without a full list rebuild. */
+    export function refreshIndexSizes(): void {
+        const listRef = viewMode === 'brief' ? briefListRef : fullListRef
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        listRef?.refreshIndexSizes?.()
+    }
+
     export function getSwapState(): SwapState {
         return {
             currentPath,

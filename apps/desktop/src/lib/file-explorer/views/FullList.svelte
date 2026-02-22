@@ -15,6 +15,7 @@
         isRangeCached,
         shouldResetCache,
         refetchIconsForEntries,
+        updateIndexSizesInPlace,
     } from './file-list-utils'
     import { formatSizeTriads, formatNumber, pluralize } from '../selection/selection-info-utils'
     import { isScanning } from '$lib/indexing/index-state.svelte'
@@ -133,6 +134,12 @@
     // Get entry at global index (handling ".." entry)
     export function getEntryAt(globalIndex: number): FileEntry | undefined {
         return getEntryAtUtil(globalIndex, hasParent, parentPath, cachedEntries, cachedRange)
+    }
+
+    /** Updates only index size fields on cached directory entries, in-place. */
+    export function refreshIndexSizes(): void {
+        if (cachedEntries.length === 0) return
+        void updateIndexSizesInPlace(cachedEntries)
     }
 
     // Fetch entries for the visible range

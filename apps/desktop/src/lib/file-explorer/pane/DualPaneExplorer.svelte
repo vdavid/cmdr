@@ -672,7 +672,14 @@
         return path.endsWith('/') ? path : path + '/'
     }
 
-    /** Called when the drive index updates directory stats. Re-fetches panes whose visible entries changed. */
+    // Throttle state for index size refreshes (one per pane).
+    // Throttle fires on the first event, then ignores subsequent events for the cooldown period.
+    // This ensures updates appear promptly even when events fire continuously.
+    let leftThrottleUntil = 0
+    let rightThrottleUntil = 0
+    const indexRefreshCooldownMs = 2000
+
+    /** Called when the drive index updates directory stats. Refreshes only index sizes (no full list rebuild). */
     function handleIndexDirUpdated(paths: string[]) {
         const leftDir = ensureTrailingSlash(leftPath)
         const rightDir = ensureTrailingSlash(rightPath)
@@ -681,10 +688,8 @@
         let refreshRight = false
 
         for (const updatedPath of paths) {
-            // An updated path is relevant if it is a direct child or deeper descendant
-            // whose parent is displayed in the pane's current directory.
-            // We check if parentOf(updatedPath) === panePath (i.e. the updated path itself
-            // is a direct child entry visible in the listing).
+            // Refresh if the updated path is anywhere under the current directory.
+            // Debounce + in-place size mutation prevent flicker even for "/" where many paths match.
             const updatedWithSlash = ensureTrailingSlash(updatedPath)
             if (!refreshLeft && updatedWithSlash.startsWith(leftDir) && updatedWithSlash !== leftDir) {
                 refreshLeft = true
@@ -695,13 +700,17 @@
             if (refreshLeft && refreshRight) break
         }
 
-        if (refreshLeft) {
+        // Throttle: fire immediately on first relevant event, then skip for the cooldown period
+        const now = Date.now()
+        if (refreshLeft && now >= leftThrottleUntil) {
+            leftThrottleUntil = now + indexRefreshCooldownMs
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            leftPaneRef?.refreshView?.()
+            leftPaneRef?.refreshIndexSizes?.()
         }
-        if (refreshRight) {
+        if (refreshRight && now >= rightThrottleUntil) {
+            rightThrottleUntil = now + indexRefreshCooldownMs
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            rightPaneRef?.refreshView?.()
+            rightPaneRef?.refreshIndexSizes?.()
         }
     }
 
@@ -975,6 +984,7 @@
         unlistenDragModifiers?.()
         unlistenDragDrop?.()
         unlistenIndexEvents?.()
+        // No cleanup needed for throttle (no pending timers)
         cleanupNetworkDiscovery()
         stopModifierTracking()
         window.removeEventListener('resize', handleResizeForDevTools) // No-op in non-dev, safe to always call

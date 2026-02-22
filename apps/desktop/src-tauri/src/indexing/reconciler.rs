@@ -272,7 +272,7 @@ pub(super) fn process_fs_event(event: &FsChangeEvent, writer: &IndexWriter) -> O
     }
 
     let parent = compute_parent_path(&normalized);
-    let mut affected = vec![parent.clone()];
+    let mut affected = collect_ancestor_paths(&normalized);
 
     if event.flags.item_removed {
         return handle_removal(&normalized, &parent, event, writer, affected);
@@ -397,6 +397,26 @@ fn compute_parent_path(path: &str) -> String {
         Some(pos) => path[..pos].to_string(),
         None => String::new(),
     }
+}
+
+/// Collect all ancestor paths from the immediate parent up to "/".
+/// Used to notify the frontend that dir_stats changed along the entire ancestor chain
+/// (since propagate_delta updates all ancestors, not just the direct parent).
+fn collect_ancestor_paths(path: &str) -> Vec<String> {
+    let mut ancestors = Vec::new();
+    let mut current = path.to_string();
+    loop {
+        let parent = compute_parent_path(&current);
+        if parent.is_empty() || parent == current {
+            break;
+        }
+        ancestors.push(parent.clone());
+        if parent == "/" {
+            break;
+        }
+        current = parent;
+    }
+    ancestors
 }
 
 /// Get physical file size and modified time from metadata.

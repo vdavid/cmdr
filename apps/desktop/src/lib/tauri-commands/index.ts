@@ -223,6 +223,7 @@ export {
     updateFileWatcherDebounce,
     updateServiceResolveTimeout,
     setIndexingEnabled,
+    getDirStatsBatch,
     getAiStatus,
     getAiModelInfo,
     startAiDownload,
@@ -234,4 +235,4 @@ export {
     isAiOptedOut,
     getFolderSuggestions,
 } from './settings'
-export type { AiStatus, AiDownloadProgress, AiModelInfo } from './settings'
+export type { AiStatus, AiDownloadProgress, AiModelInfo, DirStats } from './settings'

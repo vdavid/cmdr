@@ -56,6 +56,22 @@ export async function setIndexingEnabled(enabled: boolean): Promise<void> {
     await invoke('set_indexing_enabled', { enabled })
 }
 
+/** Index directory stats returned by the batch lookup. */
+export interface DirStats {
+    path: string
+    recursiveSize: number
+    recursiveFileCount: number
+    recursiveDirCount: number
+}
+
+/**
+ * Fetches index stats for a batch of directory paths.
+ * Returns one entry per input path (null if the path has no index data yet).
+ */
+export async function getDirStatsBatch(paths: string[]): Promise<(DirStats | null)[]> {
+    return invoke<(DirStats | null)[]>('get_dir_stats_batch', { paths })
+}
+
 // ============================================================================
 // AI commands
 // ============================================================================

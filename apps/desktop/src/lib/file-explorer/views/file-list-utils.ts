@@ -3,7 +3,7 @@
  */
 
 import type { FileEntry, SyncStatus } from '../types'
-import { getFileRange } from '$lib/tauri-commands'
+import { getFileRange, getDirStatsBatch } from '$lib/tauri-commands'
 import { prefetchIcons } from '$lib/icon-cache'
 import { getUseAppIconsForDocuments } from '$lib/settings/reactive-settings.svelte'
 import { getSetting } from '$lib/settings/settings-store'
@@ -174,4 +174,40 @@ export function refetchIconsForEntries(entries: FileEntry[]): void {
     const iconIds = entries.map((e) => e.iconId).filter((id) => id)
     const useAppIcons = getUseAppIconsForDocuments()
     void prefetchIcons(iconIds, useAppIcons)
+}
+
+/**
+ * Updates index size fields (recursiveSize, recursiveFileCount, recursiveDirCount)
+ * in-place on cached entries. Only directory entries are queried.
+ * Mutates entries directly so Svelte 5 fine-grained reactivity updates only affected DOM nodes.
+ */
+export async function updateIndexSizesInPlace(cachedEntries: FileEntry[]): Promise<void> {
+    // Collect directory paths and their indices in the array
+    const dirIndices: number[] = []
+    const dirPaths: string[] = []
+    for (let i = 0; i < cachedEntries.length; i++) {
+        if (cachedEntries[i].isDirectory) {
+            dirIndices.push(i)
+            dirPaths.push(cachedEntries[i].path)
+        }
+    }
+    if (dirPaths.length === 0) return
+
+    let stats: ({ recursiveSize: number; recursiveFileCount: number; recursiveDirCount: number } | null)[]
+    try {
+        stats = await getDirStatsBatch(dirPaths)
+    } catch {
+        // Silently ignore -- indexing may not be initialized
+        return
+    }
+
+    for (let j = 0; j < dirIndices.length; j++) {
+        const entry = cachedEntries[dirIndices[j]]
+        const stat = stats[j]
+        if (stat) {
+            entry.recursiveSize = stat.recursiveSize
+            entry.recursiveFileCount = stat.recursiveFileCount
+            entry.recursiveDirCount = stat.recursiveDirCount
+        }
+    }
 }
