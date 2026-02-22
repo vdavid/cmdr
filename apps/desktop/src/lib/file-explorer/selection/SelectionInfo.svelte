@@ -12,6 +12,7 @@
     } from './selection-info-utils'
     import { measureDateColumnWidth } from '../views/full-list-utils'
     import { formatFileSize, formatDateTime } from '$lib/settings/reactive-settings.svelte'
+    import { isScanning } from '$lib/indexing/index-state.svelte'
 
     interface Props {
         /** View mode: 'brief' or 'full' */
@@ -183,6 +184,9 @@
     // Selection summary mode
     // ========================================================================
 
+    // Drive index scanning state — used for stale indicator when dirs are selected
+    const scanning = $derived(isScanning())
+
     // Computed values for selection summary
     const selectedFiles = $derived(stats?.selectedFiles ?? 0)
     const selectedDirs = $derived(stats?.selectedDirs ?? 0)
@@ -194,6 +198,9 @@
     const hasFiles = $derived(totalFiles > 0)
     const hasDirs = $derived(totalDirs > 0)
     const hasOnlyDirs = $derived(!hasFiles && hasDirs)
+
+    // When directories are selected during scanning, sizes might be incomplete
+    const showSelectionStale = $derived(scanning && selectedDirs > 0)
 
     const sizePercentage = $derived(calculatePercentage(selectedFileSize, totalFileSize))
     const filePercentage = $derived(calculatePercentage(selectedFiles, totalFiles))
@@ -232,9 +239,12 @@
         <!-- Selection summary -->
         <span class="summary-text" title={selectionSizeTooltip}>
             {#if hasOnlyDirs}
-                <!-- Only dirs, no files: can't show size -->
+                <!-- Only dirs, no files -->
                 {formatNumber(selectedDirs)} of {formatNumber(totalDirs)}
                 {pluralize(totalDirs, 'dir', 'dirs')} ({dirPercentage}%) selected.
+                {#if showSelectionStale}
+                    <span class="stale-indicator" title="Might be outdated. Currently scanning...">⚠️</span>
+                {/if}
             {:else if hasFiles}
                 <!-- Has files: show full summary -->
                 {#each selectedSizeTriads as triad, i (i)}<span class={triad.tierClass}>{triad.value}</span>{/each}
@@ -244,6 +254,9 @@
                 {pluralize(totalFiles, 'file', 'files')} ({filePercentage}%){#if hasDirs}
                     &nbsp;and {formatNumber(selectedDirs)} of {formatNumber(totalDirs)}
                     {pluralize(totalDirs, 'dir', 'dirs')} ({dirPercentage}%){/if}.
+                {#if showSelectionStale}
+                    <span class="stale-indicator" title="Might be outdated. Currently scanning...">⚠️</span>
+                {/if}
             {/if}
         </span>
     {/if}
@@ -290,5 +303,10 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+    }
+
+    .stale-indicator {
+        font-size: 10px;
+        cursor: help;
     }
 </style>

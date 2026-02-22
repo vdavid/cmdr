@@ -18,12 +18,41 @@
         focusedPane: 'left' | 'right'
     }
 
+    interface IndexStatus {
+        initialized: boolean
+        scanning: boolean
+        entriesScanned: number
+        dirsFound: number
+        indexStatus: {
+            schemaVersion: string | null
+            volumePath: string | null
+            scanCompletedAt: string | null
+            scanDurationMs: string | null
+            totalEntries: string | null
+            lastEventId: string | null
+        } | null
+        dbFileSize: number | null
+    }
+
+    interface IndexLogEntry {
+        time: string
+        event: string
+        detail: string
+    }
+
     let pageElement: HTMLDivElement | undefined = $state()
     let isDarkMode = $state(true)
     let leftHistory = $state<NavigationHistory | null>(null)
     let rightHistory = $state<NavigationHistory | null>(null)
     let focusedPane = $state<'left' | 'right'>('left')
     let unlisten: (() => void) | undefined
+
+    // Drive index state
+    let indexStatus = $state<IndexStatus | null>(null)
+    let indexLog = $state<IndexLogEntry[]>([])
+    let indexMessage = $state('')
+    let indexPollInterval: ReturnType<typeof setInterval> | undefined
+    let indexUnlisteners: (() => void)[] = []
 
     onMount(async () => {
         // Hide the loading screen
@@ -64,10 +93,38 @@
         } catch {
             // Not in Tauri environment
         }
+
+        // Drive index: poll status and set up event listeners
+        await pollIndexStatus()
+        indexPollInterval = setInterval(() => {
+            void pollIndexStatus()
+        }, 2000)
+
+        try {
+            const { listen: listenEvent } = await import('@tauri-apps/api/event')
+            const eventNames = [
+                'index-scan-started',
+                'index-scan-progress',
+                'index-scan-complete',
+                'index-dir-updated',
+                'index-replay-progress',
+            ]
+            for (const name of eventNames) {
+                const unsub = await listenEvent(name, (event: { payload: unknown }) => {
+                    appendIndexLog(name, JSON.stringify(event.payload))
+                })
+                indexUnlisteners.push(unsub)
+            }
+        } catch {
+            // Not in Tauri environment
+        }
     })
 
     onDestroy(() => {
         unlisten?.()
+        if (indexPollInterval) clearInterval(indexPollInterval)
+        for (const unsub of indexUnlisteners) unsub()
+        indexUnlisteners = []
     })
 
     async function handleThemeToggle() {
@@ -94,6 +151,63 @@
         } catch {
             // Not in Tauri environment
         }
+    }
+
+    // ==== Drive index helpers ====
+
+    async function pollIndexStatus() {
+        try {
+            const { invoke } = await import('@tauri-apps/api/core')
+            indexStatus = await invoke<IndexStatus>('get_index_status')
+        } catch {
+            // Indexing not available
+        }
+    }
+
+    function appendIndexLog(event: string, detail: string) {
+        const now = new Date()
+        const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}.${String(now.getMilliseconds()).padStart(3, '0')}`
+        indexLog = [...indexLog.slice(-49), { time, event, detail }]
+    }
+
+    async function handleStartScan() {
+        try {
+            const { invoke } = await import('@tauri-apps/api/core')
+            await invoke('start_drive_index', { volumeId: 'root' })
+            indexMessage = 'Scan started'
+        } catch (error) {
+            indexMessage = `Error: ${String(error)}`
+        }
+    }
+
+    async function handleClearIndex() {
+        try {
+            const { invoke } = await import('@tauri-apps/api/core')
+            await invoke('clear_drive_index')
+            indexMessage = 'Index cleared'
+            await pollIndexStatus()
+        } catch (error) {
+            indexMessage = `Error: ${String(error)}`
+        }
+    }
+
+    function formatDbSize(bytes: number | null): string {
+        if (bytes === null) return 'N/A'
+        if (bytes < 1024) return `${String(bytes)} B`
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+    }
+
+    function formatDuration(ms: string | null): string {
+        if (ms === null) return 'N/A'
+        const millis = parseInt(ms, 10)
+        if (isNaN(millis)) return ms
+        if (millis < 1000) return `${String(millis)} ms`
+        return `${(millis / 1000).toFixed(1)} s`
+    }
+
+    function formatEntryCount(n: number): string {
+        return n.toLocaleString('en-US')
     }
 
     /** Format a history entry for display */
@@ -132,6 +246,90 @@
                 <span>Dark mode</span>
                 <input type="checkbox" checked={isDarkMode} onchange={handleThemeToggle} class="toggle-checkbox" />
             </label>
+        </section>
+
+        <section class="debug-section">
+            <h2>Drive index</h2>
+            <div class="index-panel">
+                <!-- Status display -->
+                <div class="index-status">
+                    {#if indexStatus === null}
+                        <span class="index-status-text">Loading...</span>
+                    {:else if indexStatus.scanning}
+                        <span class="index-status-text scanning">
+                            <span class="index-spinner"></span>
+                            Scanning... {formatEntryCount(indexStatus.entriesScanned)} / ? entries
+                        </span>
+                    {:else if indexStatus.initialized}
+                        <span class="index-status-text ready">
+                            Ready: {formatEntryCount(indexStatus.entriesScanned)} entries, {formatEntryCount(
+                                indexStatus.dirsFound,
+                            )} folders
+                        </span>
+                    {:else}
+                        <span class="index-status-text">Not initialized</span>
+                    {/if}
+                </div>
+
+                <!-- Action buttons -->
+                <div class="index-actions">
+                    <button class="index-button" onclick={handleStartScan}>Start scan</button>
+                    <button class="index-button" onclick={handleClearIndex}>Clear index</button>
+                    {#if indexMessage}
+                        <span class="index-message">{indexMessage}</span>
+                    {/if}
+                </div>
+
+                <!-- Last scan info -->
+                {#if indexStatus?.indexStatus}
+                    <div class="index-meta">
+                        {#if indexStatus.indexStatus.scanCompletedAt}
+                            <div class="index-meta-row">
+                                <span class="index-meta-label">Last scan</span>
+                                <span class="index-meta-value">{indexStatus.indexStatus.scanCompletedAt}</span>
+                            </div>
+                        {/if}
+                        {#if indexStatus.indexStatus.scanDurationMs}
+                            <div class="index-meta-row">
+                                <span class="index-meta-label">Duration</span>
+                                <span class="index-meta-value"
+                                    >{formatDuration(indexStatus.indexStatus.scanDurationMs)}</span
+                                >
+                            </div>
+                        {/if}
+                        {#if indexStatus.indexStatus.totalEntries}
+                            <div class="index-meta-row">
+                                <span class="index-meta-label">Total entries</span>
+                                <span class="index-meta-value"
+                                    >{formatEntryCount(parseInt(indexStatus.indexStatus.totalEntries, 10))}</span
+                                >
+                            </div>
+                        {/if}
+                        {#if indexStatus.dbFileSize !== null}
+                            <div class="index-meta-row">
+                                <span class="index-meta-label">Database size</span>
+                                <span class="index-meta-value">{formatDbSize(indexStatus.dbFileSize)}</span>
+                            </div>
+                        {/if}
+                    </div>
+                {/if}
+
+                <!-- Live event log -->
+                <div class="index-log-header">Events</div>
+                <div class="index-log">
+                    {#if indexLog.length === 0}
+                        <p class="no-history">No events yet</p>
+                    {:else}
+                        {#each indexLog as entry (entry.time + entry.event)}
+                            <div class="index-log-entry">
+                                <span class="index-log-time">{entry.time}</span>
+                                <span class="index-log-event">{entry.event}</span>
+                                <span class="index-log-detail" title={entry.detail}>{entry.detail}</span>
+                            </div>
+                        {/each}
+                    {/if}
+                </div>
+            </div>
         </section>
 
         <section class="debug-section">
@@ -339,5 +537,141 @@
         font-size: var(--font-size-sm);
         color: var(--color-text-tertiary);
         font-style: italic;
+    }
+
+    /* Drive index styles */
+    .index-panel {
+        background: var(--color-bg-secondary);
+        border-radius: var(--radius-md);
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .index-status {
+        font-size: var(--font-size-sm);
+    }
+
+    .index-status-text {
+        color: var(--color-text-secondary);
+    }
+
+    .index-status-text.scanning {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--color-accent);
+    }
+
+    .index-status-text.ready {
+        color: var(--color-success, var(--color-text-primary));
+    }
+
+    .index-spinner {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border: 1.5px solid var(--color-border);
+        border-top-color: var(--color-accent);
+        border-radius: 50%;
+        animation: index-spin 0.8s linear infinite;
+        flex-shrink: 0;
+    }
+
+    @keyframes index-spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .index-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .index-button {
+        padding: 4px 12px;
+        font-size: var(--font-size-sm);
+        font-family: var(--font-system), sans-serif;
+        background: var(--color-bg-tertiary);
+        color: var(--color-text-primary);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+    }
+
+    .index-button:hover {
+        background: var(--color-bg-primary);
+    }
+
+    .index-message {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+    }
+
+    .index-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: var(--font-size-sm);
+    }
+
+    .index-meta-row {
+        display: flex;
+        gap: 8px;
+    }
+
+    .index-meta-label {
+        color: var(--color-text-tertiary);
+        min-width: 100px;
+    }
+
+    .index-meta-value {
+        color: var(--color-text-primary);
+        font-family: var(--font-mono);
+    }
+
+    .index-log-header {
+        font-size: var(--font-size-xs);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--color-text-tertiary);
+    }
+
+    .index-log {
+        max-height: 200px;
+        overflow-y: auto;
+        background: var(--color-bg-primary);
+        border-radius: var(--radius-sm);
+        padding: 6px;
+        font-size: var(--font-size-xs);
+        font-family: var(--font-mono);
+    }
+
+    .index-log-entry {
+        display: flex;
+        gap: 6px;
+        padding: 2px 0;
+        line-height: 1.4;
+    }
+
+    .index-log-time {
+        flex-shrink: 0;
+        color: var(--color-text-tertiary);
+    }
+
+    .index-log-event {
+        flex-shrink: 0;
+        color: var(--color-accent);
+    }
+
+    .index-log-detail {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: var(--color-text-secondary);
     }
 </style>

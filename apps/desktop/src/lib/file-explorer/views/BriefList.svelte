@@ -17,8 +17,10 @@
         shouldResetCache,
         refetchIconsForEntries,
     } from './file-list-utils'
-    import { getRowHeight } from '$lib/settings/reactive-settings.svelte'
+    import { getRowHeight, formatFileSize } from '$lib/settings/reactive-settings.svelte'
     import { getSetting } from '$lib/settings/settings-store'
+    import { formatNumber, pluralize } from '../selection/selection-info-utils'
+    import { isScanning } from '$lib/indexing/index-state.svelte'
     import { extensionCacheCleared } from '$lib/icon-cache'
     import type { RenameState } from '../rename/rename-state.svelte'
 
@@ -88,6 +90,9 @@
     let cachedEntries = $state<FileEntry[]>([])
     let cachedRange = $state({ start: 0, end: 0 })
     let isFetching = $state(false)
+
+    // Drive index scanning state — used for directory size tooltips
+    const scanning = $derived(isScanning())
 
     // ==== Layout constants ====
     // Row height is reactive based on UI density setting
@@ -418,6 +423,17 @@
         }
     })
 
+    /** Build tooltip for a directory entry showing recursive size info. */
+    function buildDirTooltip(file: FileEntry): string | undefined {
+        if (!file.isDirectory) return undefined
+        if (file.recursiveSize !== undefined) {
+            const sizeInfo = `${formatFileSize(file.recursiveSize)} · ${formatNumber(file.recursiveFileCount ?? 0)} ${pluralize(file.recursiveFileCount ?? 0, 'file', 'files')} · ${formatNumber(file.recursiveDirCount ?? 0)} ${pluralize(file.recursiveDirCount ?? 0, 'folder', 'folders')}`
+            return scanning ? `${sizeInfo} — Might be outdated` : sizeInfo
+        }
+        if (scanning) return 'Scanning...'
+        return undefined
+    }
+
     // Report visible range to parent for MCP state sync
     $effect(() => {
         // Calculate visible item range from column range
@@ -495,6 +511,7 @@
                                 class:is-under-cursor={globalIndex === cursorIndex}
                                 class:is-selected={selectedIndices.has(globalIndex)}
                                 data-drop-target-path={file.isDirectory && file.name !== '..' ? file.path : undefined}
+                                title={buildDirTooltip(file)}
                                 style="height: {rowHeight}px;"
                                 onmousedown={(e: MouseEvent) => {
                                     handleMouseDown(e, globalIndex)

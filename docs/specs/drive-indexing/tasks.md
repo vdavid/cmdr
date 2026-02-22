@@ -32,27 +32,27 @@ See also: [plan.md](plan.md), [research.md](research.md), [benchmarks.md](benchm
 ## Milestone 2: Dev mode + debug window
 
 - [x] `CMDR_DRIVE_INDEX=1` env var gating (no scan in dev mode without it; always runs in production)
-- [ ] Debug window: "Drive index" section with status display ("Scanning... N / ? entries" or "Ready: N entries, M dirs")
-- [ ] Debug window: "Start scan" and "Clear index" buttons
-- [ ] Debug window: volume selector, last scan timestamp, duration, last event ID
-- [ ] Debug window: live display of index events (listen to all `index-*` events)
+- [x] Debug window: "Drive index" section with status display ("Scanning... N / ? entries" or "Ready: N entries, M dirs")
+- [x] Debug window: "Start scan" and "Clear index" buttons
+- [x] Debug window: volume selector, last scan timestamp, duration, last event ID
+- [x] Debug window: live display of index events (listen to all `index-*` events)
 - [ ] Manual test: run scan via debug window, verify entries counted, clear and re-scan
 
 ## Milestone 3: Frontend display — directory sizes
 
-- [x] Add `recursiveSize`, `recursiveFileCount`, `recursiveDirCount` to `FileEntry` (Rust struct only; TypeScript not yet)
-- [ ] `enrich_with_index_data()` in `get_file_range`: batch `dir_stats` lookup, populate fields on directory entries
-- [x] `index-state.svelte.ts`: Svelte 5 reactive state for index status per volume
+- [x] Add `recursiveSize`, `recursiveFileCount`, `recursiveDirCount` to `FileEntry` (Rust + TypeScript)
+- [x] `enrich_with_index_data()` in `get_file_range`: batch `dir_stats` lookup, populate fields on directory entries
+- [x] `index-state.svelte.ts`: Svelte 5 reactive state for index status per volume (+ initial status query on mount)
 - [x] `index-events.ts`: event listeners for `index-scan-*` and `index-dir-updated`
 - [x] `index-priority.ts`: call `prioritize_dir` on Space/navigate, `cancel_nav_priority` on navigate-away
-- [ ] `index-dir-updated` handler: each pane checks if any updated path is a child of its current dir, re-fetches if so
-- [ ] FullList.svelte: size column shows spinner + "Scanning..." when no data, formatted size when available
-- [ ] FullList.svelte: ⚠️ on stale sizes, tooltip "Might be outdated. Currently scanning..."
-- [ ] FullList.svelte: tooltip with "1.23 GB · 4,521 files · 312 folders"
-- [ ] BriefList.svelte: tooltip on cursor directory with size info, spinner/⚠️ states
-- [ ] SelectionInfo: spinner/⚠️ logic when selected directories are scanning or stale
+- [x] `index-dir-updated` handler: each pane checks if any updated path is a child of its current dir, re-fetches if so
+- [x] FullList.svelte: size column shows spinner + "Scanning..." when no data, formatted size when available
+- [x] FullList.svelte: ⚠️ on stale sizes, tooltip "Might be outdated. Currently scanning..."
+- [x] FullList.svelte: tooltip with "1.23 GB · 4,521 files · 312 folders"
+- [x] BriefList.svelte: tooltip on cursor directory with size info, spinner/⚠️ states
+- [x] SelectionInfo: spinner/⚠️ logic when selected directories are scanning or stale
 - [x] Scan status overlay: top-right corner, spinner + "Scanning..." during full scan, event count during replay
-- [ ] Svelte tests for new display states (no data, scanning, stale, fresh, empty dir)
+- [x] Svelte tests for new display states (no data, scanning, stale, fresh, empty dir)
 
 ## Milestone 4: FSEvents watcher + reconciliation
 
@@ -62,7 +62,7 @@ See also: [plan.md](plan.md), [research.md](research.md), [benchmarks.md](benchm
 - [x] `aggregator.rs`: incremental delta propagation up ancestor chain on file add/remove/modify
 - [x] `watcher.rs`: `MustScanSubDirs` handling — queue subtree rescan, max 1 concurrent, dedup by path
 - [x] `writer.rs`: store last processed event ID in meta table on every write batch
-- [ ] Frontend: enriched FileEntry updates when dir_stats change for visible directories
+- [x] Frontend: enriched FileEntry updates when dir_stats change for visible directories
 - [x] Rust tests: reconciler (buffered events, event ID ordering, replay correctness)
 - [x] Rust tests: incremental propagation (add file, remove file, modify size, remove dir with subtree)
 
@@ -91,7 +91,7 @@ See also: [plan.md](plan.md), [research.md](research.md), [benchmarks.md](benchm
 - [x] Add `scanner()` and `watcher()` optional methods to `Volume` trait (default `None`)
 - [x] Implement `VolumeScanner` for `LocalPosixVolume` (wraps jwalk)
 - [x] Implement `VolumeWatcher` for `LocalPosixVolume` (wraps cmdr-fsevent-stream)
-- [ ] Refactor indexing module to use traits instead of direct crate calls
+- [ ] Refactor indexing module to use traits instead of direct crate calls (deferred: threading `Box<dyn VolumeScanner>` through `MicroScanManager`, `EventReconciler`, and `IndexManager` is medium-complexity for no immediate gain -- only `LocalPosixVolume` supports scanning. The traits exist and work; the indirection can be added when a second scannable volume type arrives.)
 - [x] Verify existing volume types still work (MTP, InMemory, SMB)
 
 ## Milestone 8: Polish + checks

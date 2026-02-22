@@ -78,6 +78,7 @@
     import * as benchmark from '$lib/benchmark'
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
     import { resolveValidPath } from '../navigation/path-navigation'
+    import { prioritizeDir } from '$lib/indexing/index'
 
     interface Props {
         initialPath: string
@@ -1247,6 +1248,13 @@
         if (e.key === ' ') {
             e.preventDefault()
             selection.toggleAt(cursorIndex, hasParent)
+
+            // Request index priority scan when selecting a directory
+            const entry = getEntryUnderCursor()
+            if (entry?.isDirectory && entry.name !== '..') {
+                void prioritizeDir(entry.path, 'user_selected')
+            }
+
             return true
         }
         // Cmd+A - select all (Cmd+Shift+A - deselect all)

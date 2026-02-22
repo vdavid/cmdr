@@ -16,6 +16,9 @@ export interface FileEntry {
     iconId: string
     /** Whether extended metadata (addedAt, openedAt) has been loaded */
     extendedMetadataLoaded: boolean
+    recursiveSize?: number
+    recursiveFileCount?: number
+    recursiveDirCount?: number
 }
 
 /** Cloud sync status for files in Dropbox/iCloud/etc. folders */

@@ -151,15 +151,19 @@ pub fn get_file_range(
         .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
 
     // Filter entries if not including hidden
-    if include_hidden {
+    let mut entries: Vec<FileEntry> = if include_hidden {
         let end = (start + count).min(listing.entries.len());
-        Ok(listing.entries[start..end].to_vec())
+        listing.entries[start..end].to_vec()
     } else {
         // Need to filter and then slice
         let visible: Vec<&FileEntry> = listing.entries.iter().filter(|e| is_visible(e)).collect();
         let end = (start + count).min(visible.len());
-        Ok(visible[start..end].iter().cloned().cloned().collect())
-    }
+        visible[start..end].iter().cloned().cloned().collect()
+    };
+
+    crate::indexing::enrich_entries_with_index(&mut entries);
+
+    Ok(entries)
 }
 
 /// Gets total count of entries in a cached listing.

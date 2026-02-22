@@ -3,6 +3,7 @@
  * Tracks whether a scan is running and provides progress info.
  */
 
+import { invoke } from '@tauri-apps/api/core'
 import { listen, type UnlistenFn } from '$lib/tauri-commands'
 
 // Scan state
@@ -61,6 +62,27 @@ export async function initIndexState(): Promise<void> {
         dirsFound = event.payload.totalDirs
     })
     unlistenHandles.push(unlistenComplete)
+
+    // Query current status to catch scans already in progress before the frontend loaded.
+    // The scan starts in Tauri's setup() hook, so the 'index-scan-started' event may fire
+    // before the frontend's event listeners are registered.
+    try {
+        const status = await invoke<{
+            initialized: boolean
+            scanning: boolean
+            entriesScanned: number
+            dirsFound: number
+            indexStatus: unknown
+            dbFileSize: number | null
+        }>('get_index_status')
+        if (status.scanning) {
+            scanning = true
+            entriesScanned = status.entriesScanned
+            dirsFound = status.dirsFound
+        }
+    } catch {
+        // Indexing not initialized or unavailable — no-op
+    }
 }
 
 /** Clean up all listeners. Call during app teardown. */

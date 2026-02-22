@@ -76,6 +76,7 @@
         getSelfDragFileInfos,
         endSelfDragSession,
     } from '../drag/drag-drop'
+    import { initIndexEvents, prioritizeDir, cancelNavPriority } from '$lib/indexing/index'
     import { resolveDropTarget } from '../drag/drop-target-hit-testing'
     import DragOverlay from '../drag/DragOverlay.svelte'
     import { showOverlay, updateOverlay, hideOverlay, type OverlayFileInfo } from '../drag/drag-overlay.svelte.js'
@@ -118,6 +119,7 @@
     let unlistenDragDrop: UnlistenFn | undefined
     let unlistenDragImageSize: UnlistenFn | undefined
     let unlistenDragModifiers: UnlistenFn | undefined
+    let unlistenIndexEvents: UnlistenFn | undefined
 
     // Drag image size from the source app (macOS only, via swizzle).
     // If the source provides a large preview (like Finder), we suppress our overlay.
@@ -275,10 +277,18 @@
     // --- Unified handler functions ---
 
     function handlePathChange(pane: 'left' | 'right', path: string) {
+        const oldPath = getPanePath(pane)
         setPanePath(pane, path)
         setPaneHistory(pane, pushPath(getPaneHistory(pane), path))
         void saveAppStatus({ [paneKey(pane, 'path')]: path })
         void saveLastUsedPathForVolume(getPaneVolumeId(pane), path)
+
+        // Update index priorities: cancel old dir, prioritize new dir
+        if (oldPath !== path) {
+            void cancelNavPriority(oldPath)
+            void prioritizeDir(path, 'current_dir')
+        }
+
         containerElement?.focus()
     }
 
@@ -331,7 +341,8 @@
         volumePath: string,
         targetPath: string,
     ) {
-        void saveLastUsedPathForVolume(getPaneVolumeId(pane), getPanePath(pane))
+        const oldPath = getPanePath(pane)
+        void saveLastUsedPathForVolume(getPaneVolumeId(pane), oldPath)
 
         if (!volumes.find((v) => v.id === volumeId)) {
             volumes = await listVolumes()
@@ -342,6 +353,10 @@
             otherPaneVolumeId: getPaneVolumeId(other),
             otherPanePath: getPanePath(other),
         })
+
+        // Update index priorities: cancel old dir, prioritize new dir
+        void cancelNavPriority(oldPath)
+        void prioritizeDir(pathToNavigate, 'current_dir')
 
         setPaneVolumeId(pane, volumeId)
         setPanePath(pane, pathToNavigate)
@@ -652,6 +667,44 @@
         dropTargetFolderEl = null
     }
 
+    /** Ensures a path ends with '/' for correct prefix matching. */
+    function ensureTrailingSlash(path: string): string {
+        return path.endsWith('/') ? path : path + '/'
+    }
+
+    /** Called when the drive index updates directory stats. Re-fetches panes whose visible entries changed. */
+    function handleIndexDirUpdated(paths: string[]) {
+        const leftDir = ensureTrailingSlash(leftPath)
+        const rightDir = ensureTrailingSlash(rightPath)
+
+        let refreshLeft = false
+        let refreshRight = false
+
+        for (const updatedPath of paths) {
+            // An updated path is relevant if it is a direct child or deeper descendant
+            // whose parent is displayed in the pane's current directory.
+            // We check if parentOf(updatedPath) === panePath (i.e. the updated path itself
+            // is a direct child entry visible in the listing).
+            const updatedWithSlash = ensureTrailingSlash(updatedPath)
+            if (!refreshLeft && updatedWithSlash.startsWith(leftDir) && updatedWithSlash !== leftDir) {
+                refreshLeft = true
+            }
+            if (!refreshRight && updatedWithSlash.startsWith(rightDir) && updatedWithSlash !== rightDir) {
+                refreshRight = true
+            }
+            if (refreshLeft && refreshRight) break
+        }
+
+        if (refreshLeft) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            leftPaneRef?.refreshView?.()
+        }
+        if (refreshRight) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            rightPaneRef?.refreshView?.()
+        }
+    }
+
     function handleResizeForDevTools() {
         void recalculateWebviewOffset()
     }
@@ -780,6 +833,13 @@
             setAltHeld(event.payload.altHeld)
         })
 
+        // Listen for index directory updates to refresh panes when sizes change
+        unlistenIndexEvents = await initIndexEvents(handleIndexDirUpdated)
+
+        // Prioritize scanning the initial directories of both panes
+        void prioritizeDir(leftPath, 'current_dir')
+        void prioritizeDir(rightPath, 'current_dir')
+
         // Register drag-and-drop target handler for external and pane-to-pane drops
         unlistenDragDrop = await getCurrentWebview().onDragDropEvent((event) => {
             const { type } = event.payload
@@ -844,8 +904,15 @@
         newHistory: NavigationHistory,
         targetPath: string,
     ) {
+        const oldPath = getPanePath(pane)
         const entry = getCurrentEntry(newHistory)
         const paneRef = getPaneRef(pane)
+
+        // Update index priorities: cancel old dir, prioritize new dir
+        if (oldPath !== targetPath) {
+            void cancelNavPriority(oldPath)
+            void prioritizeDir(targetPath, 'current_dir')
+        }
 
         setPaneHistory(pane, newHistory)
         setPanePath(pane, targetPath)
@@ -907,6 +974,7 @@
         unlistenDragImageSize?.()
         unlistenDragModifiers?.()
         unlistenDragDrop?.()
+        unlistenIndexEvents?.()
         cleanupNetworkDiscovery()
         stopModifierTracking()
         window.removeEventListener('resize', handleResizeForDevTools) // No-op in non-dev, safe to always call

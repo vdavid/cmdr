@@ -16,11 +16,13 @@
         shouldResetCache,
         refetchIconsForEntries,
     } from './file-list-utils'
-    import { formatSizeTriads } from '../selection/selection-info-utils'
+    import { formatSizeTriads, formatNumber, pluralize } from '../selection/selection-info-utils'
+    import { isScanning } from '$lib/indexing/index-state.svelte'
     import {
         getVisibleItemsCount as getVisibleItemsCountUtil,
         getVirtualizationBufferRows,
         measureDateColumnWidth,
+        buildDirSizeTooltip,
     } from './full-list-utils'
     import {
         getRowHeight,
@@ -107,6 +109,9 @@
     // Dynamic date column width based on measured text width using the actual font.
     // Measures multiple sample dates to find the maximum width needed.
     const dateColumnWidth = $derived(measureDateColumnWidth(formatDateTime))
+
+    // Drive index scanning state — used to show spinner in dir size column
+    const scanning = $derived(isScanning())
 
     // ==== Virtual scrolling state ====
     let scrollContainer: HTMLDivElement | undefined = $state()
@@ -344,7 +349,7 @@
 
 <div class="full-list-container" class:is-focused={isFocused} class:is-compact={isCompact}>
     <!-- Header row with sortable columns (outside scroll container for correct height calculation) -->
-    <div class="header-row" style="grid-template-columns: 16px 1fr 85px {dateColumnWidth}px;">
+    <div class="header-row" style="grid-template-columns: 16px 1fr 115px {dateColumnWidth}px;">
         <span class="header-icon"></span>
         <SortableHeader
             column="name"
@@ -392,7 +397,7 @@
                         class:is-under-cursor={globalIndex === cursorIndex}
                         class:is-selected={selectedIndices.has(globalIndex)}
                         data-drop-target-path={file.isDirectory && file.name !== '..' ? file.path : undefined}
-                        style="height: {rowHeight}px; grid-template-columns: 16px 1fr 85px {dateColumnWidth}px;"
+                        style="height: {rowHeight}px; grid-template-columns: 16px 1fr 115px {dateColumnWidth}px;"
                         onmousedown={(e: MouseEvent) => {
                             handleMouseDown(e, globalIndex)
                         }}
@@ -425,9 +430,40 @@
                         {:else}
                             <span class="col-name">{file.name}</span>
                         {/if}
-                        <span class="col-size" title={file.size !== undefined ? formatFileSize(file.size) : ''}>
+                        <span
+                            class="col-size"
+                            title={file.isDirectory
+                                ? buildDirSizeTooltip(
+                                      file.recursiveSize,
+                                      file.recursiveFileCount ?? 0,
+                                      file.recursiveDirCount ?? 0,
+                                      scanning,
+                                      formatFileSize,
+                                      formatNumber,
+                                      pluralize,
+                                  )
+                                : file.size !== undefined
+                                  ? formatFileSize(file.size)
+                                  : ''}
+                        >
                             {#if file.isDirectory}
-                                <span class="size-dir">&lt;dir&gt;</span>
+                                {#if file.recursiveSize !== undefined}
+                                    {#each formatSizeTriads(file.recursiveSize) as triad, i (i)}
+                                        <span class={triad.tierClass}>{triad.value}</span>
+                                    {/each}
+                                    {#if scanning}
+                                        <span class="size-stale" title="Might be outdated. Currently scanning..."
+                                            >⚠️</span
+                                        >
+                                    {/if}
+                                {:else if scanning}
+                                    <span class="size-scanning">
+                                        <span class="size-spinner"></span>
+                                        Scanning...
+                                    </span>
+                                {:else}
+                                    <span class="size-dir">&lt;dir&gt;</span>
+                                {/if}
                             {:else if file.size !== undefined}
                                 {#each formatSizeTriads(file.size) as triad, i (i)}
                                     <span class={triad.tierClass}>{triad.value}</span>
@@ -523,6 +559,39 @@
 
     .size-dir {
         color: var(--color-text-secondary);
+    }
+
+    .size-stale {
+        font-size: 10px;
+        line-height: 1;
+        margin-left: 2px;
+        cursor: help;
+    }
+
+    .size-scanning {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-xs);
+        white-space: nowrap;
+    }
+
+    .size-spinner {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border: 1.5px solid var(--color-border);
+        border-top-color: var(--color-accent);
+        border-radius: 50%;
+        animation: size-spin 0.8s linear infinite;
+        flex-shrink: 0;
+    }
+
+    @keyframes size-spin {
+        to {
+            transform: rotate(360deg);
+        }
     }
 
     .col-date {

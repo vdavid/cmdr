@@ -132,3 +132,56 @@ export function measureDateColumnWidth(formatFn: (timestamp: number) => string):
     // Use Math.ceil to avoid subpixel rendering issues
     return Math.max(DATE_COLUMN_MIN_WIDTH, Math.ceil(maxWidth) + DATE_COLUMN_PADDING)
 }
+
+// ============================================================================
+// Directory Size Display Helpers
+// ============================================================================
+
+/** Display state for a directory's size column in FullList. */
+export type DirSizeDisplayState = 'dir' | 'scanning' | 'size' | 'size-stale'
+
+/**
+ * Determine the display state for a directory's size column.
+ *
+ * Rules:
+ * - Has recursiveSize + scanning active -> 'size-stale' (show size with stale warning)
+ * - Has recursiveSize + not scanning   -> 'size' (show formatted size)
+ * - No recursiveSize + scanning active -> 'scanning' (show spinner)
+ * - No recursiveSize + not scanning    -> 'dir' (show <dir> placeholder)
+ */
+export function getDirSizeDisplayState(recursiveSize: number | undefined, scanning: boolean): DirSizeDisplayState {
+    if (recursiveSize !== undefined) {
+        return scanning ? 'size-stale' : 'size'
+    }
+    return scanning ? 'scanning' : 'dir'
+}
+
+/**
+ * Build the tooltip string for a directory's size column.
+ *
+ * @param recursiveSize - The recursive size in bytes, or undefined if not yet computed.
+ * @param recursiveFileCount - The recursive file count, or 0 if unknown.
+ * @param recursiveDirCount - The recursive folder count, or 0 if unknown.
+ * @param scanning - Whether a scan is currently active.
+ * @param formatSize - Function to format bytes as a human-readable string.
+ * @param formatNum - Function to format a number with locale separators.
+ * @param plural - Function to pick singular/plural form.
+ */
+export function buildDirSizeTooltip(
+    recursiveSize: number | undefined,
+    recursiveFileCount: number,
+    recursiveDirCount: number,
+    scanning: boolean,
+    formatSize: (bytes: number) => string,
+    formatNum: (n: number) => string,
+    plural: (count: number, singular: string, pluralForm: string) => string,
+): string {
+    if (recursiveSize !== undefined) {
+        const sizeStr = formatSize(recursiveSize)
+        const filesStr = `${formatNum(recursiveFileCount)} ${plural(recursiveFileCount, 'file', 'files')}`
+        const foldersStr = `${formatNum(recursiveDirCount)} ${plural(recursiveDirCount, 'folder', 'folders')}`
+        const base = `${sizeStr} \u00B7 ${filesStr} \u00B7 ${foldersStr}`
+        return scanning ? `${base} \u2014 Might be outdated. Currently scanning...` : base
+    }
+    return scanning ? 'Scanning...' : ''
+}
