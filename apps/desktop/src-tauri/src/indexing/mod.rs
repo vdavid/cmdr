@@ -1056,29 +1056,43 @@ async fn run_background_verification(
         // scan_subtree computes aggregates within the subtree but doesn't propagate
         // upward. Read the computed dir_stats and send PropagateDelta.
         if !verify_result.new_dir_paths.is_empty() {
-            // Scope the mutex guard so it's dropped before the .await below
-            {
+            // Brief lock: batch-read dir_stats, then release before sending writes
+            let dir_stats_snapshot: Vec<(String, Option<DirStats>)> = {
                 let guard = GLOBAL_INDEX_STORE.lock();
                 if let Ok(ref guard) = guard
                     && let Some(store) = guard.as_ref()
                 {
-                    for dir_path in &verify_result.new_dir_paths {
-                        if let Ok(Some(stats)) = store.get_dir_stats(dir_path) {
-                            let _ = writer.send(WriteMessage::PropagateDelta {
-                                path: PathBuf::from(dir_path),
-                                size_delta: stats.recursive_size as i64,
-                                file_count_delta: stats.recursive_file_count as i32,
-                                dir_count_delta: (stats.recursive_dir_count as i32) + 1,
-                            });
-                        } else {
-                            let _ = writer.send(WriteMessage::PropagateDelta {
-                                path: PathBuf::from(dir_path),
-                                size_delta: 0,
-                                file_count_delta: 0,
-                                dir_count_delta: 1,
-                            });
-                        }
+                    let refs: Vec<&str> = verify_result.new_dir_paths.iter().map(String::as_str).collect();
+                    match store.get_dir_stats_batch(&refs) {
+                        Ok(batch) => verify_result
+                            .new_dir_paths
+                            .iter()
+                            .cloned()
+                            .zip(batch)
+                            .collect(),
+                        Err(_) => Vec::new(),
                     }
+                } else {
+                    Vec::new()
+                }
+                // guard dropped here
+            };
+
+            for (dir_path, stats_opt) in &dir_stats_snapshot {
+                if let Some(stats) = stats_opt {
+                    let _ = writer.send(WriteMessage::PropagateDelta {
+                        path: PathBuf::from(dir_path),
+                        size_delta: stats.recursive_size as i64,
+                        file_count_delta: stats.recursive_file_count as i32,
+                        dir_count_delta: (stats.recursive_dir_count as i32) + 1,
+                    });
+                } else {
+                    let _ = writer.send(WriteMessage::PropagateDelta {
+                        path: PathBuf::from(dir_path),
+                        size_delta: 0,
+                        file_count_delta: 0,
+                        dir_count_delta: 1,
+                    });
                 }
             }
 
@@ -1117,49 +1131,72 @@ struct VerifyResult {
 /// "parent directory modified" without individual removal events. Similarly,
 /// new children may not get individual creation events.
 ///
-/// For each affected parent this function:
+/// Two-phase approach to minimize `GLOBAL_INDEX_STORE` lock hold time:
+///
+/// **Phase 1 (lock held briefly):** Read all DB children for every affected
+/// parent into an in-memory `HashMap`, then drop the lock. Only SQLite reads,
+/// no disk I/O.
+///
+/// **Phase 2 (no lock):** Walk the `HashMap`, check the filesystem
+/// (`Path::exists`, `read_dir`, `symlink_metadata`), and send corrections to
+/// the writer channel:
 /// 1. **Stale entries**: DB children that no longer exist on disk get
 ///    `DeleteEntry`/`DeleteSubtree` (auto-propagates deltas).
 /// 2. **Missing entries**: Disk children not in DB get `UpsertEntry`.
 ///    New files also get `PropagateDelta`. New directories are collected
 ///    in `new_dir_paths` for the caller to scan via `scan_subtree`.
 fn verify_affected_dirs(affected_paths: &std::collections::HashSet<String>, writer: &IndexWriter) -> VerifyResult {
-    let guard = match GLOBAL_INDEX_STORE.lock() {
-        Ok(g) => g,
-        Err(_) => {
-            return VerifyResult {
-                stale_count: 0,
-                new_file_count: 0,
-                new_dir_paths: Vec::new(),
-            };
+    // ── Phase 1: Bulk-read DB state under the lock ───────────────────
+    let db_snapshot: std::collections::HashMap<String, Vec<store::ScannedEntry>> = {
+        let guard = match GLOBAL_INDEX_STORE.lock() {
+            Ok(g) => g,
+            Err(_) => {
+                return VerifyResult {
+                    stale_count: 0,
+                    new_file_count: 0,
+                    new_dir_paths: Vec::new(),
+                };
+            }
+        };
+        let store = match guard.as_ref() {
+            Some(s) => s,
+            None => {
+                return VerifyResult {
+                    stale_count: 0,
+                    new_file_count: 0,
+                    new_dir_paths: Vec::new(),
+                };
+            }
+        };
+
+        let mut snapshot = std::collections::HashMap::with_capacity(affected_paths.len());
+        for parent_path in affected_paths {
+            match store.list_entries_by_parent(parent_path) {
+                Ok(entries) => {
+                    snapshot.insert(parent_path.clone(), entries);
+                }
+                Err(_) => {
+                    // Insert empty vec so Phase 2 still checks disk for new entries
+                    snapshot.insert(parent_path.clone(), Vec::new());
+                }
+            }
         }
-    };
-    let store = match guard.as_ref() {
-        Some(s) => s,
-        None => {
-            return VerifyResult {
-                stale_count: 0,
-                new_file_count: 0,
-                new_dir_paths: Vec::new(),
-            };
-        }
+        snapshot
+        // guard dropped here — lock released before any disk I/O
     };
 
+    // ── Phase 2: Filesystem checks without the lock ──────────────────
     let mut stale_count = 0u64;
     let mut new_file_count = 0u64;
     let mut new_dir_paths = Vec::<String>::new();
 
-    for parent_path in affected_paths {
-        let db_children = match store.list_entries_by_parent(parent_path) {
-            Ok(entries) => entries,
-            Err(_) => continue,
-        };
-
+    for (parent_path, db_children) in &db_snapshot {
         // Build a set of known DB child paths for fast lookup
-        let db_child_paths: std::collections::HashSet<&str> = db_children.iter().map(|c| c.path.as_str()).collect();
+        let db_child_paths: std::collections::HashSet<&str> =
+            db_children.iter().map(|c| c.path.as_str()).collect();
 
-        // Phase 1: detect stale entries (in DB but not on disk)
-        for child in &db_children {
+        // Detect stale entries (in DB but not on disk)
+        for child in db_children {
             if !Path::new(&child.path).exists() {
                 if child.is_directory {
                     let _ = writer.send(WriteMessage::DeleteSubtree(child.path.clone()));
@@ -1170,7 +1207,7 @@ fn verify_affected_dirs(affected_paths: &std::collections::HashSet<String>, writ
             }
         }
 
-        // Phase 2: detect missing entries (on disk but not in DB)
+        // Detect missing entries (on disk but not in DB)
         let read_dir = match std::fs::read_dir(parent_path) {
             Ok(rd) => rd,
             Err(_) => continue,
