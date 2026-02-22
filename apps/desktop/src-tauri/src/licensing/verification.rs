@@ -124,6 +124,7 @@ pub fn get_license_info(app: &tauri::AppHandle) -> Option<LicenseInfo> {
 }
 
 /// Clear the in-memory license cache. Called when the license is reset.
+#[cfg(debug_assertions)]
 pub fn clear_license_cache() {
     if let Ok(mut cache) = LICENSE_CACHE.lock() {
         *cache = None;
