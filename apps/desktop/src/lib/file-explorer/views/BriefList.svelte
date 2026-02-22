@@ -624,11 +624,11 @@
     }
 
     .file-entry.is-under-cursor {
-        background-color: var(--color-bg-tertiary);
+        background-color: var(--color-cursor-inactive);
     }
 
     .brief-list-container.is-focused .file-entry.is-under-cursor {
-        background-color: var(--color-accent-subtle);
+        background-color: var(--color-cursor-active);
     }
 
     .name {

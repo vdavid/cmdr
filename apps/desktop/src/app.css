@@ -32,6 +32,10 @@
     --color-accent-hover: color-mix(in oklch, var(--color-accent), white 15%);
     --color-accent-subtle: color-mix(in oklch, var(--color-accent), transparent 85%);
 
+    /* === Cursor (row highlight in file lists) === */
+    --color-cursor-inactive: color-mix(in srgb, var(--color-bg-tertiary), transparent 60%);
+    --color-cursor-active: color-mix(in oklch, var(--color-accent), transparent 80%);
+
     /* === Semantic Colors === */
     --color-allow: #2e7d32;
     --color-error: #d32f2f;
@@ -120,6 +124,10 @@
         --color-accent: #0a84ff;
         --color-accent-hover: color-mix(in oklch, var(--color-accent), white 10%);
         --color-accent-subtle: color-mix(in oklch, var(--color-accent), transparent 85%);
+
+        /* === Cursor (row highlight in file lists) === */
+        --color-cursor-inactive: color-mix(in srgb, var(--color-bg-tertiary), transparent 60%);
+        --color-cursor-active: color-mix(in oklch, var(--color-accent), transparent 80%);
 
         /* === Semantic Colors === */
         --color-allow: #66bb6a;
