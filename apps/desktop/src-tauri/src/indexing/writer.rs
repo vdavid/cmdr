@@ -197,11 +197,23 @@ impl WriterStats {
         let deltas: &[(&str, u64)] = &[
             ("inserts", self.current.insert_entries - self.previous.insert_entries),
             ("upserts", self.current.upsert_entry - self.previous.upsert_entry),
-            ("dir_stats", self.current.update_dir_stats - self.previous.update_dir_stats),
+            (
+                "dir_stats",
+                self.current.update_dir_stats - self.previous.update_dir_stats,
+            ),
             ("deletes", self.current.delete_entry - self.previous.delete_entry),
-            ("delete_subtrees", self.current.delete_subtree - self.previous.delete_subtree),
-            ("propagate", self.current.propagate_delta - self.previous.propagate_delta),
-            ("aggregates", self.current.compute_aggregates - self.previous.compute_aggregates),
+            (
+                "delete_subtrees",
+                self.current.delete_subtree - self.previous.delete_subtree,
+            ),
+            (
+                "propagate",
+                self.current.propagate_delta - self.previous.propagate_delta,
+            ),
+            (
+                "aggregates",
+                self.current.compute_aggregates - self.previous.compute_aggregates,
+            ),
             ("flushes", self.current.flush - self.previous.flush),
             ("other", self.current.other - self.previous.other),
         ];
@@ -251,10 +263,7 @@ fn writer_loop(conn: rusqlite::Connection, receiver: mpsc::Receiver<WriteMessage
                     stats.record(&other);
                     // Got a non-priority message; process it and move on
                     if process_message(&conn, other, &stats) {
-                        log::info!(
-                            "Writer: shutdown after processing {} messages",
-                            stats.current.total,
-                        );
+                        log::info!("Writer: shutdown after processing {} messages", stats.current.total,);
                         return;
                     }
                     stats.maybe_log_summary();
@@ -282,10 +291,7 @@ fn writer_loop(conn: rusqlite::Connection, receiver: mpsc::Receiver<WriteMessage
             Ok(msg) => {
                 stats.record(&msg);
                 if process_message(&conn, msg, &stats) {
-                    log::info!(
-                        "Writer: shutdown after processing {} messages",
-                        stats.current.total,
-                    );
+                    log::info!("Writer: shutdown after processing {} messages", stats.current.total,);
                     return;
                 }
                 stats.maybe_log_summary();

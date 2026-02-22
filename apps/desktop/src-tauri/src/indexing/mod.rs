@@ -1037,9 +1037,8 @@ async fn run_background_verification(
         }
     }
 
-    let has_changes = verify_result.stale_count > 0
-        || verify_result.new_file_count > 0
-        || !verify_result.new_dir_paths.is_empty();
+    let has_changes =
+        verify_result.stale_count > 0 || verify_result.new_file_count > 0 || !verify_result.new_dir_paths.is_empty();
 
     if has_changes {
         log::info!(
@@ -1064,12 +1063,7 @@ async fn run_background_verification(
                 {
                     let refs: Vec<&str> = verify_result.new_dir_paths.iter().map(String::as_str).collect();
                     match store.get_dir_stats_batch(&refs) {
-                        Ok(batch) => verify_result
-                            .new_dir_paths
-                            .iter()
-                            .cloned()
-                            .zip(batch)
-                            .collect(),
+                        Ok(batch) => verify_result.new_dir_paths.iter().cloned().zip(batch).collect(),
                         Err(_) => Vec::new(),
                     }
                 } else {
@@ -1192,8 +1186,7 @@ fn verify_affected_dirs(affected_paths: &std::collections::HashSet<String>, writ
 
     for (parent_path, db_children) in &db_snapshot {
         // Build a set of known DB child paths for fast lookup
-        let db_child_paths: std::collections::HashSet<&str> =
-            db_children.iter().map(|c| c.path.as_str()).collect();
+        let db_child_paths: std::collections::HashSet<&str> = db_children.iter().map(|c| c.path.as_str()).collect();
 
         // Detect stale entries (in DB but not on disk)
         for child in db_children {

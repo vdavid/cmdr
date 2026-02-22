@@ -70,8 +70,7 @@ pub fn compute_subtree_aggregates(conn: &Connection, root: &str) -> Result<u64, 
     let mut computed: HashMap<&str, DirStats> = HashMap::with_capacity(sorted.len());
 
     for dir_path in &sorted {
-        let (file_size_sum, file_count, child_dir_count) =
-            direct_stats.get(*dir_path).copied().unwrap_or((0, 0, 0));
+        let (file_size_sum, file_count, child_dir_count) = direct_stats.get(*dir_path).copied().unwrap_or((0, 0, 0));
 
         let mut recursive_size = file_size_sum;
         let mut recursive_file_count = file_count;
@@ -100,7 +99,10 @@ pub fn compute_subtree_aggregates(conn: &Connection, root: &str) -> Result<u64, 
     }
 
     // Phase 3: Batch-write all computed stats
-    log::debug!("Subtree aggregation: writing {} dir_stats rows to DB...", computed.len());
+    log::debug!(
+        "Subtree aggregation: writing {} dir_stats rows to DB...",
+        computed.len()
+    );
     let all_stats: Vec<DirStats> = computed.into_values().collect();
     let count = all_stats.len() as u64;
 
