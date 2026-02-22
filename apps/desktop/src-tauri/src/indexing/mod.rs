@@ -323,10 +323,15 @@ impl IndexManager {
             None
         };
 
+        // Suppress micro-scans during replay to avoid sending writes into the
+        // writer's active BEGIN IMMEDIATE transaction.
+        self.micro_scans.set_replay_active(true);
+
         // Spawn the replay event processing loop
         let writer = self.writer.clone();
         let app = self.app.clone();
         let volume_id = self.volume_id.clone();
+        let micro_scans = self.micro_scans.clone();
 
         // We need a way for the replay loop to signal "journal unavailable, need full scan".
         // Use a oneshot channel: if the replay detects a gap, it sends a signal.
@@ -339,10 +344,13 @@ impl IndexManager {
                 event_rx,
                 writer.clone(),
                 app.clone(),
-                volume_id.clone(),
-                since_event_id,
-                estimated_total,
+                ReplayConfig {
+                    volume_id: volume_id.clone(),
+                    since_event_id,
+                    estimated_total,
+                },
                 fallback_tx,
+                micro_scans,
             )
             .await;
 
@@ -666,7 +674,7 @@ impl IndexManager {
     }
 
     /// Return the DB file path for this index.
-    pub fn db_path(&self) -> &std::path::Path {
+    pub fn db_path(&self) -> &Path {
         self.store.db_path()
     }
 
@@ -684,7 +692,9 @@ impl IndexManager {
 /// Process FSEvents in real time after scan + reconciliation completes.
 ///
 /// Runs as a tokio task, reading events from the watcher channel and processing
-/// them through the reconciler. Exits when the channel closes (watcher stopped).
+/// them through the reconciler. Batches `index-dir-updated` notifications with
+/// a 300 ms flush interval to avoid UI flicker from rapid per-event emits.
+/// Exits when the channel closes (watcher stopped).
 async fn run_live_event_loop(
     mut event_rx: tokio::sync::mpsc::UnboundedReceiver<watcher::FsChangeEvent>,
     mut reconciler: EventReconciler,
@@ -693,13 +703,35 @@ async fn run_live_event_loop(
 ) {
     log::info!("Live event processing started");
     let mut event_count = 0u64;
+    let mut pending_paths = std::collections::HashSet::<String>::new();
+    let mut flush_interval = tokio::time::interval(Duration::from_millis(300));
+    flush_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
 
-    while let Some(event) = event_rx.recv().await {
-        reconciler.process_live_event(&event, &writer, &app);
-        event_count += 1;
-
-        if event_count.is_multiple_of(10_000) {
-            log::info!("Live event processing: {event_count} events processed so far");
+    loop {
+        tokio::select! {
+            event = event_rx.recv() => {
+                match event {
+                    Some(event) => {
+                        reconciler.process_live_event(&event, &writer, &mut pending_paths);
+                        event_count += 1;
+                        if event_count.is_multiple_of(10_000) {
+                            log::info!("Live event processing: {event_count} events processed so far");
+                        }
+                    }
+                    None => {
+                        // Channel closed: flush remaining paths before exit
+                        if !pending_paths.is_empty() {
+                            reconciler::emit_dir_updated(&app, pending_paths.drain().collect());
+                        }
+                        break;
+                    }
+                }
+            }
+            _ = flush_interval.tick() => {
+                if !pending_paths.is_empty() {
+                    reconciler::emit_dir_updated(&app, pending_paths.drain().collect());
+                }
+            }
         }
     }
 
@@ -713,33 +745,69 @@ async fn run_live_event_loop(
 /// the journal unavailable and fall back to a full scan.
 const JOURNAL_GAP_THRESHOLD: u64 = 1_000_000;
 
+/// Configuration for a replay event loop.
+struct ReplayConfig {
+    volume_id: String,
+    since_event_id: u64,
+    estimated_total: Option<u64>,
+}
+
 /// Process FSEvents replayed from the journal on cold start.
 ///
-/// Events are processed as live events (same as post-scan mode). If a journal
-/// gap is detected (first event ID >> stored last_event_id), sends a signal
-/// via `fallback_tx` to trigger a full scan. After the historical replay
-/// completes (`HistoryDone` flag), switches to live mode.
+/// Two-phase approach to avoid a race condition where `index-dir-updated`
+/// notifications fire before the writer commits replay data to SQLite:
+///
+/// **Phase 1 (replay):** Process events via `process_fs_event` directly,
+/// collecting affected parent paths in a `HashSet`. No per-event UI
+/// notification. `UpdateLastEventId` sent every 1000 events to reduce
+/// writer load.
+///
+/// **Phase 2 (after HistoryDone):** Send final `UpdateLastEventId`, flush
+/// the writer (wait for all prior messages to commit), then emit a single
+/// batched `index-dir-updated`. After that, continue processing live events
+/// with per-event emit (live events arrive slowly enough for the writer to
+/// keep up).
+///
+/// If a journal gap is detected (first event ID >> stored last_event_id),
+/// sends a signal via `fallback_tx` to trigger a full scan.
 async fn run_replay_event_loop(
     mut event_rx: tokio::sync::mpsc::UnboundedReceiver<watcher::FsChangeEvent>,
     writer: IndexWriter,
     app: AppHandle,
-    volume_id: String,
-    since_event_id: u64,
-    estimated_total: Option<u64>,
+    config: ReplayConfig,
     fallback_tx: tokio::sync::oneshot::Sender<()>,
+    micro_scans: MicroScanManager,
 ) -> Result<(), String> {
+    let ReplayConfig {
+        volume_id,
+        since_event_id,
+        estimated_total,
+    } = config;
     log::info!("Replay event processing started (since_event_id={since_event_id})");
-
-    let mut reconciler = EventReconciler::new();
-    reconciler.switch_to_live(); // Process events immediately (no buffering)
 
     let mut event_count = 0u64;
     let mut first_event_checked = false;
-    let mut history_done = false;
     let mut fallback_tx = Some(fallback_tx);
+    let mut last_event_id = since_event_id;
+
+    // Collect all affected parent paths during replay (deduplicated)
+    let mut affected_paths = std::collections::HashSet::<String>::new();
+
+    // MustScanSubDirs paths to queue after replay
+    let mut pending_rescans = Vec::<String>::new();
 
     // Progress reporting interval
     let mut last_progress = std::time::Instant::now();
+    let replay_start = std::time::Instant::now();
+
+    // Wrap all replay writes in a single SQLite transaction.
+    // Without this, each write is auto-committed (separate fsync), making
+    // 50K+ writes take minutes. With a transaction, it takes seconds.
+    if let Err(e) = writer.send(WriteMessage::BeginTransaction) {
+        log::warn!("Replay: BeginTransaction send failed: {e}");
+    }
+
+    // ── Phase 1: Replay (before HistoryDone) ─────────────────────────
 
     while let Some(event) = event_rx.recv().await {
         // Check for journal gap on the first event
@@ -752,7 +820,8 @@ async fn run_replay_event_loop(
                     event.event_id,
                     event.event_id - since_event_id,
                 );
-                // Signal the fallback task to start a full scan
+                // Re-enable micro-scans before falling back to full scan
+                micro_scans.set_replay_active(false);
                 if let Some(tx) = fallback_tx.take() {
                     let _ = tx.send(());
                 }
@@ -765,33 +834,46 @@ async fn run_replay_event_loop(
             );
         }
 
-        // Check for HistoryDone flag (marks end of historical replay)
+        // HistoryDone marks end of replay phase
         if event.flags.history_done {
-            history_done = true;
-            log::info!("Replay: HistoryDone received after {event_count} events, switching to live mode");
+            log::info!("Replay: HistoryDone received after {event_count} events");
 
-            // Emit final progress
-            let _ = app.emit(
-                "index-replay-progress",
-                IndexReplayProgressEvent {
-                    volume_id: volume_id.clone(),
-                    events_processed: event_count,
-                    estimated_total,
-                },
-            );
+            // Process the HistoryDone event itself (it may carry other flags)
+            if let Some(paths) = reconciler::process_fs_event(&event, &writer) {
+                affected_paths.extend(paths);
+            }
+            last_event_id = event.event_id;
+            event_count += 1;
 
-            // Continue processing: HistoryDone may have other flags set, and
-            // after this we process live events in the same loop.
-            reconciler.process_live_event(&event, &writer, &app);
+            break; // Exit Phase 1, enter Phase 2
+        }
+
+        // Handle MustScanSubDirs: queue for after replay (don't start during replay)
+        if event.flags.must_scan_sub_dirs {
+            let normalized = firmlinks::normalize_path(&event.path);
+            pending_rescans.push(normalized);
+            last_event_id = event.event_id;
             event_count += 1;
             continue;
         }
 
-        reconciler.process_live_event(&event, &writer, &app);
+        // Process event and collect affected paths
+        if let Some(paths) = reconciler::process_fs_event(&event, &writer) {
+            affected_paths.extend(paths);
+        }
+
+        last_event_id = event.event_id;
         event_count += 1;
 
-        // Emit progress every 500ms during historical replay
-        if !history_done && last_progress.elapsed() >= Duration::from_millis(500) {
+        // Batch UpdateLastEventId every 1000 events (reduces writer load ~10x)
+        if event_count.is_multiple_of(1000)
+            && let Err(e) = writer.send(WriteMessage::UpdateLastEventId(last_event_id))
+        {
+            log::warn!("Replay: UpdateLastEventId send failed: {e}");
+        }
+
+        // Emit progress every 500ms during replay
+        if last_progress.elapsed() >= Duration::from_millis(500) {
             let _ = app.emit(
                 "index-replay-progress",
                 IndexReplayProgressEvent {
@@ -805,12 +887,322 @@ async fn run_replay_event_loop(
 
         // Log milestone counts
         if event_count.is_multiple_of(10_000) {
-            log::info!("Replay event processing: {event_count} events processed (history_done={history_done})");
+            log::info!("Replay: {event_count} events processed so far");
         }
     }
 
-    log::info!("Replay event processing stopped after {event_count} events");
+    // ── Phase 2: After HistoryDone ───────────────────────────────────
+
+    // Send final UpdateLastEventId
+    if last_event_id > since_event_id
+        && let Err(e) = writer.send(WriteMessage::UpdateLastEventId(last_event_id))
+    {
+        log::warn!("Replay: final UpdateLastEventId send failed: {e}");
+    }
+
+    // Commit the replay transaction (all writes become visible in one fsync)
+    if let Err(e) = writer.send(WriteMessage::CommitTransaction) {
+        log::warn!("Replay: CommitTransaction send failed: {e}");
+    }
+
+    // Flush: wait for the writer to commit all replay data
+    let flush_start = std::time::Instant::now();
+    match writer.flush().await {
+        Ok(()) => {
+            let flush_ms = flush_start.elapsed().as_millis();
+            log::info!(
+                "Replay complete: {event_count} events, {} affected dirs, {flush_ms}ms writer flush, \
+                 {}ms total",
+                affected_paths.len(),
+                replay_start.elapsed().as_millis(),
+            );
+        }
+        Err(e) => {
+            log::warn!("Replay: flush failed (writer may have shut down): {e}");
+        }
+    }
+
+    // Verify affected directories: FSEvents journal replay coalesces events,
+    // so child deletions may only show as "parent dir modified," and new
+    // children may not get individual creation events. Readdir each affected
+    // parent and reconcile with DB.
+    // No wrapping transaction here: DeleteSubtree uses internal transactions.
+    let verify_result = verify_affected_dirs(&affected_paths, &writer);
+
+    // Scan newly discovered directories (inserts children + computes subtree aggregates)
+    if !verify_result.new_dir_paths.is_empty() {
+        let cancelled = AtomicBool::new(false);
+        for dir_path in &verify_result.new_dir_paths {
+            match scanner::scan_subtree(Path::new(dir_path), &writer, &cancelled) {
+                Ok(summary) => {
+                    log::debug!(
+                        "Replay verification: scanned new dir {dir_path} ({} entries, {}ms)",
+                        summary.total_entries,
+                        summary.duration_ms,
+                    );
+                }
+                Err(e) => {
+                    log::warn!("Replay verification: scan_subtree({dir_path}) failed: {e}");
+                }
+            }
+        }
+    }
+
+    let has_verification_changes =
+        verify_result.stale_count > 0 || verify_result.new_file_count > 0 || !verify_result.new_dir_paths.is_empty();
+
+    if has_verification_changes {
+        log::info!(
+            "Replay: verification found {} stale, {} new files, {} new dirs; flushing",
+            verify_result.stale_count,
+            verify_result.new_file_count,
+            verify_result.new_dir_paths.len(),
+        );
+        if let Err(e) = writer.flush().await {
+            log::warn!("Replay: verification flush failed: {e}");
+        }
+
+        // For new directories, propagate their subtree totals up the ancestor chain.
+        // scan_subtree computes aggregates within the subtree but doesn't propagate
+        // upward. Read the computed dir_stats and send PropagateDelta.
+        if !verify_result.new_dir_paths.is_empty() {
+            // Scope the mutex guard so it's dropped before the .await below
+            {
+                let guard = GLOBAL_INDEX_STORE.lock();
+                if let Ok(ref guard) = guard
+                    && let Some(store) = guard.as_ref()
+                {
+                    for dir_path in &verify_result.new_dir_paths {
+                        if let Ok(Some(stats)) = store.get_dir_stats(dir_path) {
+                            let _ = writer.send(WriteMessage::PropagateDelta {
+                                path: PathBuf::from(dir_path),
+                                size_delta: stats.recursive_size as i64,
+                                file_count_delta: stats.recursive_file_count as i32,
+                                dir_count_delta: (stats.recursive_dir_count as i32) + 1,
+                            });
+                        } else {
+                            let _ = writer.send(WriteMessage::PropagateDelta {
+                                path: PathBuf::from(dir_path),
+                                size_delta: 0,
+                                file_count_delta: 0,
+                                dir_count_delta: 1,
+                            });
+                        }
+                    }
+                }
+            }
+
+            if let Err(e) = writer.flush().await {
+                log::warn!("Replay: propagation flush failed: {e}");
+            }
+        }
+    }
+
+    // Emit final progress
+    let _ = app.emit(
+        "index-replay-progress",
+        IndexReplayProgressEvent {
+            volume_id: volume_id.clone(),
+            events_processed: event_count,
+            estimated_total,
+        },
+    );
+
+    // Emit a single batched index-dir-updated with all collected paths
+    if !affected_paths.is_empty() {
+        reconciler::emit_dir_updated(&app, affected_paths.into_iter().collect());
+    }
+
+    // ── Phase 3: Live mode (batched, same 300 ms window as run_live_event_loop) ──
+
+    log::info!("Replay: switching to live mode");
+    micro_scans.set_replay_active(false);
+    log::debug!("Replay: micro-scans re-enabled for live mode");
+    let mut reconciler = EventReconciler::new();
+    reconciler.switch_to_live();
+
+    // Queue any MustScanSubDirs rescans that were deferred during replay
+    for path in pending_rescans {
+        reconciler.queue_must_scan_sub_dirs(PathBuf::from(path), &writer);
+    }
+
+    let mut live_count = 0u64;
+    let mut live_pending_paths = std::collections::HashSet::<String>::new();
+    let mut flush_interval = tokio::time::interval(Duration::from_millis(300));
+    flush_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+
+    loop {
+        tokio::select! {
+            event = event_rx.recv() => {
+                match event {
+                    Some(event) => {
+                        reconciler.process_live_event(&event, &writer, &mut live_pending_paths);
+                        live_count += 1;
+                        if live_count.is_multiple_of(10_000) {
+                            log::info!("Live event processing (post-replay): {live_count} events");
+                        }
+                    }
+                    None => {
+                        if !live_pending_paths.is_empty() {
+                            reconciler::emit_dir_updated(&app, live_pending_paths.drain().collect());
+                        }
+                        break;
+                    }
+                }
+            }
+            _ = flush_interval.tick() => {
+                if !live_pending_paths.is_empty() {
+                    reconciler::emit_dir_updated(&app, live_pending_paths.drain().collect());
+                }
+            }
+        }
+    }
+
+    log::info!("Replay event loop stopped ({event_count} replay + {live_count} live events)");
     Ok(())
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────
+
+/// Result of `verify_affected_dirs`.
+struct VerifyResult {
+    /// Entries in DB but not on disk (deleted).
+    stale_count: u64,
+    /// Files on disk but not in DB (inserted with delta propagation).
+    new_file_count: u64,
+    /// Directories on disk but not in DB (inserted, need subtree scan by caller).
+    new_dir_paths: Vec<String>,
+}
+
+/// Verify that DB entries for affected directories match what's on disk.
+///
+/// FSEvents journal replay coalesces events: child deletions may appear as
+/// "parent directory modified" without individual removal events. Similarly,
+/// new children may not get individual creation events.
+///
+/// For each affected parent this function:
+/// 1. **Stale entries**: DB children that no longer exist on disk get
+///    `DeleteEntry`/`DeleteSubtree` (auto-propagates deltas).
+/// 2. **Missing entries**: Disk children not in DB get `UpsertEntry`.
+///    New files also get `PropagateDelta`. New directories are collected
+///    in `new_dir_paths` for the caller to scan via `scan_subtree`.
+fn verify_affected_dirs(affected_paths: &std::collections::HashSet<String>, writer: &IndexWriter) -> VerifyResult {
+    let guard = match GLOBAL_INDEX_STORE.lock() {
+        Ok(g) => g,
+        Err(_) => {
+            return VerifyResult {
+                stale_count: 0,
+                new_file_count: 0,
+                new_dir_paths: Vec::new(),
+            };
+        }
+    };
+    let store = match guard.as_ref() {
+        Some(s) => s,
+        None => {
+            return VerifyResult {
+                stale_count: 0,
+                new_file_count: 0,
+                new_dir_paths: Vec::new(),
+            };
+        }
+    };
+
+    let mut stale_count = 0u64;
+    let mut new_file_count = 0u64;
+    let mut new_dir_paths = Vec::<String>::new();
+
+    for parent_path in affected_paths {
+        let db_children = match store.list_entries_by_parent(parent_path) {
+            Ok(entries) => entries,
+            Err(_) => continue,
+        };
+
+        // Build a set of known DB child paths for fast lookup
+        let db_child_paths: std::collections::HashSet<&str> = db_children.iter().map(|c| c.path.as_str()).collect();
+
+        // Phase 1: detect stale entries (in DB but not on disk)
+        for child in &db_children {
+            if !Path::new(&child.path).exists() {
+                if child.is_directory {
+                    let _ = writer.send(WriteMessage::DeleteSubtree(child.path.clone()));
+                } else {
+                    let _ = writer.send(WriteMessage::DeleteEntry(child.path.clone()));
+                }
+                stale_count += 1;
+            }
+        }
+
+        // Phase 2: detect missing entries (on disk but not in DB)
+        let read_dir = match std::fs::read_dir(parent_path) {
+            Ok(rd) => rd,
+            Err(_) => continue,
+        };
+
+        for dir_entry in read_dir.flatten() {
+            let child_path = dir_entry.path();
+            let child_path_str = child_path.to_string_lossy().to_string();
+            let normalized = firmlinks::normalize_path(&child_path_str);
+
+            if db_child_paths.contains(normalized.as_str()) {
+                continue;
+            }
+
+            let metadata = match std::fs::symlink_metadata(&child_path) {
+                Ok(m) => m,
+                Err(_) => continue,
+            };
+
+            let is_dir = metadata.is_dir();
+            let is_symlink = metadata.is_symlink();
+            let name = dir_entry.file_name().to_string_lossy().to_string();
+
+            let (size, modified_at) = if is_dir || is_symlink {
+                (None, reconciler::entry_modified_at(&metadata))
+            } else {
+                reconciler::entry_size_and_mtime(&metadata)
+            };
+
+            let entry = store::ScannedEntry {
+                path: normalized.clone(),
+                parent_path: parent_path.clone(),
+                name,
+                is_directory: is_dir,
+                is_symlink,
+                size,
+                modified_at,
+            };
+
+            let _ = writer.send(WriteMessage::UpsertEntry(entry));
+
+            if is_dir {
+                new_dir_paths.push(normalized);
+            } else if let Some(sz) = size {
+                let _ = writer.send(WriteMessage::PropagateDelta {
+                    path: PathBuf::from(&normalized),
+                    size_delta: sz as i64,
+                    file_count_delta: 1,
+                    dir_count_delta: 0,
+                });
+                new_file_count += 1;
+            }
+        }
+    }
+
+    if stale_count > 0 || new_file_count > 0 || !new_dir_paths.is_empty() {
+        log::info!(
+            "Replay verification: {stale_count} stale, {new_file_count} new files, \
+             {} new dirs across {} affected dirs",
+            new_dir_paths.len(),
+            affected_paths.len(),
+        );
+    }
+
+    VerifyResult {
+        stale_count,
+        new_file_count,
+        new_dir_paths,
+    }
 }
 
 // ── Initialization ───────────────────────────────────────────────────

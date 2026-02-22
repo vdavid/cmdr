@@ -150,8 +150,15 @@ impl EventReconciler {
 
     /// Process a single event in live mode.
     ///
-    /// Returns affected directory paths for frontend notification, if any.
-    pub fn process_live_event(&mut self, event: &FsChangeEvent, writer: &IndexWriter, app: &AppHandle) -> Option<u64> {
+    /// Collects affected directory paths into `pending_paths` for batched
+    /// emission by the caller (300 ms flush interval). Returns the event ID
+    /// on success, or `None` if still buffering.
+    pub fn process_live_event(
+        &mut self,
+        event: &FsChangeEvent,
+        writer: &IndexWriter,
+        pending_paths: &mut HashSet<String>,
+    ) -> Option<u64> {
         if self.buffering {
             self.buffer_event(event.clone());
             return None;
@@ -164,10 +171,8 @@ impl EventReconciler {
             return Some(event.event_id);
         }
 
-        if let Some(affected_paths) = process_fs_event(event, writer)
-            && !affected_paths.is_empty()
-        {
-            emit_dir_updated(app, affected_paths);
+        if let Some(affected_paths) = process_fs_event(event, writer) {
+            pending_paths.extend(affected_paths);
         }
 
         // Periodically store last event ID (every event in live mode)
@@ -177,7 +182,7 @@ impl EventReconciler {
     }
 
     /// Queue a MustScanSubDirs rescan, throttled to max 1 concurrent.
-    fn queue_must_scan_sub_dirs(&mut self, path: PathBuf, writer: &IndexWriter) {
+    pub(super) fn queue_must_scan_sub_dirs(&mut self, path: PathBuf, writer: &IndexWriter) {
         self.pending_rescans.insert(path.clone());
 
         if self.rescan_active.load(Ordering::Relaxed) {
@@ -253,7 +258,7 @@ impl EventReconciler {
 ///
 /// Shared between replay and live mode. Normalizes paths, checks exclusions,
 /// stats the file, and sends appropriate write messages.
-fn process_fs_event(event: &FsChangeEvent, writer: &IndexWriter) -> Option<Vec<String>> {
+pub(super) fn process_fs_event(event: &FsChangeEvent, writer: &IndexWriter) -> Option<Vec<String>> {
     let normalized = firmlinks::normalize_path(&event.path);
 
     // Skip excluded paths
@@ -286,38 +291,20 @@ fn process_fs_event(event: &FsChangeEvent, writer: &IndexWriter) -> Option<Vec<S
 }
 
 /// Handle a file/directory removal event.
+///
+/// Sends `DeleteSubtree` (dirs) or `DeleteEntry` (files) to the writer.
+/// The writer auto-propagates accurate negative deltas after reading old data from the DB.
 fn handle_removal(
     normalized: &str,
-    parent: &str,
+    _parent: &str,
     event: &FsChangeEvent,
     writer: &IndexWriter,
     affected: Vec<String>,
 ) -> Option<Vec<String>> {
     if event.flags.item_is_dir {
-        // Directory removed: delete subtree and propagate negative delta.
-        // We don't know the recursive stats without reading DB, so we just delete
-        // and propagate a dir_count_delta of -1. The full stats correction
-        // will happen on next aggregation or navigation verification.
         let _ = writer.send(WriteMessage::DeleteSubtree(normalized.to_string()));
-        let _ = writer.send(WriteMessage::PropagateDelta {
-            path: normalized.into(),
-            size_delta: 0,
-            file_count_delta: 0,
-            dir_count_delta: -1,
-        });
     } else {
-        // File removed: we need the old size for delta propagation.
-        // Since we can't read from the DB on this thread (writer owns the write conn),
-        // we delete the entry and propagate a zero-size delta. The aggregation
-        // will correct totals on next recomputation.
-        // In practice, MustScanSubDirs or per-navigation verification catches drift.
         let _ = writer.send(WriteMessage::DeleteEntry(normalized.to_string()));
-        let _ = writer.send(WriteMessage::PropagateDelta {
-            path: normalized.into(),
-            size_delta: 0,
-            file_count_delta: -1,
-            dir_count_delta: 0,
-        });
     }
 
     Some(affected)
@@ -336,8 +323,15 @@ fn handle_creation_or_modification(
     let metadata = match std::fs::symlink_metadata(path) {
         Ok(m) => m,
         Err(_) => {
-            // File doesn't exist (was quickly deleted after creation). Treat as removal.
-            let _ = writer.send(WriteMessage::DeleteEntry(normalized.to_string()));
+            // Path doesn't exist (deleted since event was generated).
+            // Use DeleteSubtree for directories to also remove child entries;
+            // journal replay may coalesce child events into a parent dir event,
+            // leaving orphaned children without a subtree delete.
+            if event.flags.item_is_dir {
+                let _ = writer.send(WriteMessage::DeleteSubtree(normalized.to_string()));
+            } else {
+                let _ = writer.send(WriteMessage::DeleteEntry(normalized.to_string()));
+            }
             return Some(affected.clone());
         }
     };
@@ -407,7 +401,7 @@ fn compute_parent_path(path: &str) -> String {
 
 /// Get physical file size and modified time from metadata.
 #[cfg(unix)]
-fn entry_size_and_mtime(metadata: &std::fs::Metadata) -> (Option<u64>, Option<u64>) {
+pub(super) fn entry_size_and_mtime(metadata: &std::fs::Metadata) -> (Option<u64>, Option<u64>) {
     use std::os::unix::fs::MetadataExt;
     let blocks = metadata.blocks();
     let physical_size = if blocks > 0 { blocks * 512 } else { metadata.len() };
@@ -417,7 +411,7 @@ fn entry_size_and_mtime(metadata: &std::fs::Metadata) -> (Option<u64>, Option<u6
 }
 
 #[cfg(not(unix))]
-fn entry_size_and_mtime(metadata: &std::fs::Metadata) -> (Option<u64>, Option<u64>) {
+pub(super) fn entry_size_and_mtime(metadata: &std::fs::Metadata) -> (Option<u64>, Option<u64>) {
     let size = metadata.len();
     let mtime = metadata
         .modified()
@@ -429,14 +423,14 @@ fn entry_size_and_mtime(metadata: &std::fs::Metadata) -> (Option<u64>, Option<u6
 
 /// Get modified time from metadata.
 #[cfg(unix)]
-fn entry_modified_at(metadata: &std::fs::Metadata) -> Option<u64> {
+pub(super) fn entry_modified_at(metadata: &std::fs::Metadata) -> Option<u64> {
     use std::os::unix::fs::MetadataExt;
     let mtime = metadata.mtime();
     if mtime >= 0 { Some(mtime as u64) } else { None }
 }
 
 #[cfg(not(unix))]
-fn entry_modified_at(metadata: &std::fs::Metadata) -> Option<u64> {
+pub(super) fn entry_modified_at(metadata: &std::fs::Metadata) -> Option<u64> {
     metadata
         .modified()
         .ok()
@@ -445,7 +439,7 @@ fn entry_modified_at(metadata: &std::fs::Metadata) -> Option<u64> {
 }
 
 /// Emit an `index-dir-updated` event to the frontend.
-fn emit_dir_updated(app: &AppHandle, paths: Vec<String>) {
+pub(super) fn emit_dir_updated(app: &AppHandle, paths: Vec<String>) {
     let _ = app.emit("index-dir-updated", crate::indexing::IndexDirUpdatedEvent { paths });
 }
 

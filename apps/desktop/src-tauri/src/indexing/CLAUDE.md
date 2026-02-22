@@ -10,12 +10,12 @@ Full design: `docs/specs/drive-indexing/plan.md`
 
 - **mod.rs** -- Public API: `init()`, `start_indexing()`, `stop_indexing()`, `clear_index()`, `enrich_entries_with_index()`. `IndexManager` coordinates all subsystems. Global read-only store for enrichment.
 - **store.rs** -- SQLite schema (entries, dir_stats, meta), read queries (`get_dir_stats_batch`, `get_index_status`), DB open/migrate. Schema version check: mismatch triggers drop+rebuild.
-- **writer.rs** -- Single writer thread, owns the write connection, processes `WriteMessage` channel (bounded mpsc). Priority: `UpdateDirStats` before `InsertEntries`.
+- **writer.rs** -- Single writer thread, owns the write connection, processes `WriteMessage` channel (unbounded mpsc). Priority: `UpdateDirStats` before `InsertEntries`. `Flush` variant + async `flush()` method let callers wait for all prior writes to commit.
 - **scanner.rs** -- jwalk-based parallel directory walker. `scan_volume()` for full scan, `scan_subtree()` for micro-scans. Exclusion filter for macOS system paths. Physical sizes (`st_blocks * 512`).
 - **micro_scan.rs** -- `MicroScanManager`: bounded task pool (default 3 concurrent), priority queue (`UserSelected` > `CurrentDir`), deduplication, cancellation. Skips after full scan completes.
 - **aggregator.rs** -- Dir stats computation. Bottom-up after full scan (O(N) single pass), per-subtree after micro-scan, incremental delta propagation up ancestor chain for watcher events.
 - **watcher.rs** -- Drive-level FSEvents watcher via `cmdr-fsevent-stream`. File-level events with event IDs. Supports `sinceWhen` for cold-start replay.
-- **reconciler.rs** -- Buffers FSEvents during scan, replays after scan completes using event IDs to skip stale events. Processes live events for file creates/removes/modifies.
+- **reconciler.rs** -- Buffers FSEvents during scan, replays after scan completes using event IDs to skip stale events. Processes live events for file creates/removes/modifies. Key functions (`process_fs_event`, `emit_dir_updated`) are `pub(super)` so `mod.rs` can call them directly during cold-start replay.
 - **firmlinks.rs** -- Parses `/usr/share/firmlinks`, builds prefix map, normalizes paths. Converts `/System/Volumes/Data/Users/foo` to `/Users/foo`.
 - **verifier.rs** -- Placeholder for per-navigation background readdir diff (future milestone).
 
@@ -39,7 +39,8 @@ Full scan:
   |-- On complete: replay buffered events (reconciler), compute all aggregates, switch to live mode
   |
 Live mode:
-  |-- FSEvents -> reconciler -> UpsertEntry/DeleteEntry/PropagateDelta -> writer -> SQLite
+  |-- FSEvents -> reconciler -> UpsertEntry/DeleteEntry/DeleteSubtree -> writer (auto-propagates deltas) -> SQLite
+  |-- Affected paths batched in HashSet, flushed to frontend every 300 ms via index-dir-updated event
   |
 Enrichment (every get_file_range call):
   |-- enrich_entries_with_index() -> batch SELECT from dir_stats -> populate FileEntry fields
@@ -89,6 +90,14 @@ Key test files are alongside each module (test functions within `#[cfg(test)]` b
 **APFS firmlinks**: Scan from `/` only, skip `/System/Volumes/Data`. Normalize all paths via firmlink prefix map so DB lookups work regardless of how the user navigated to a path.
 
 ## Gotchas
+
+**Cold-start replay uses two-phase flush**: The `run_replay_event_loop` doesn't emit `index-dir-updated` during Phase 1 (replay). It collects affected paths, flushes the writer (ensuring all writes are committed), then emits a single batched notification. This prevents the frontend from reading stale data.
+
+**Live events are batched with a 300 ms window**: Both `run_live_event_loop` and the Phase 3 live loop in `run_replay_event_loop` use `tokio::select!` with a 300 ms `tokio::time::interval` to collect affected paths in a `HashSet` and emit a single `index-dir-updated` per flush. This prevents UI flicker from rapid per-event notifications (FSEvents can fire hundreds of events per second during bulk operations). `process_live_event` collects paths into the caller's `HashSet` instead of emitting directly.
+
+**Writer-side delete-with-propagation**: `DeleteEntry` and `DeleteSubtree` handlers in the writer automatically read old data before deleting and propagate accurate negative deltas. This means every deletion -- replay, live, verification -- gets correct dir_stats updates without callers needing to send separate `PropagateDelta` messages. `delete_subtree` and `propagate_delta` have no internal transactions, so they're safe inside the replay's `BEGIN IMMEDIATE` transaction.
+
+**Post-replay verification is bidirectional**: `verify_affected_dirs` checks both directions: (1) stale entries in DB but not on disk (sends `DeleteEntry`/`DeleteSubtree`), and (2) missing entries on disk but not in DB (sends `UpsertEntry` + `PropagateDelta` for files, collects directory paths for `scan_subtree`). New directories are scanned and their subtree totals propagated up the ancestor chain. The `GLOBAL_INDEX_STORE` mutex guard is scoped to avoid holding it across `.await` points (the guard is not `Send`).
 
 **Schema version mismatch drops the DB**: If `schema_version` in meta doesn't match what the code expects, the entire DB is deleted and rebuilt. No migration path (it's a cache, not user data).
 

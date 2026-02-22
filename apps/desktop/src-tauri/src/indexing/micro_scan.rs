@@ -50,6 +50,10 @@ struct MicroScanManagerInner {
 #[derive(Clone)]
 pub struct MicroScanManager {
     inner: Arc<tokio::sync::Mutex<MicroScanManagerInner>>,
+    /// When true, `request_scan` returns immediately without spawning any scan.
+    /// Set during cold-start replay to prevent micro-scans from sending writes
+    /// into the writer's active `BEGIN IMMEDIATE` transaction.
+    replay_active: Arc<AtomicBool>,
 }
 
 impl MicroScanManager {
@@ -67,7 +71,13 @@ impl MicroScanManager {
                 queue: VecDeque::new(),
                 writer,
             })),
+            replay_active: Arc::new(AtomicBool::new(false)),
         }
+    }
+
+    /// Suppress all micro-scans. Called before cold-start replay begins.
+    pub fn set_replay_active(&self, active: bool) {
+        self.replay_active.store(active, Ordering::SeqCst);
     }
 
     /// Request a micro-scan for `path` at the given priority.
@@ -78,6 +88,12 @@ impl MicroScanManager {
     /// - If active at a lower priority, the existing scan is cancelled and re-queued at
     ///   the higher priority.
     pub async fn request_scan(&self, path: PathBuf, priority: ScanPriority) {
+        // Suppress during cold-start replay to avoid sending writes into the
+        // writer's active BEGIN IMMEDIATE transaction.
+        if self.replay_active.load(Ordering::SeqCst) {
+            return;
+        }
+
         let mut inner = self.inner.lock().await;
 
         if inner.full_scan_complete || inner.completed.contains(&path) {

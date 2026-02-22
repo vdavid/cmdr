@@ -47,7 +47,10 @@ pub fn compute_subtree_aggregates(conn: &Connection, root: &str) -> Result<u64, 
 /// Propagate a size/count delta up the ancestor chain.
 ///
 /// Called when a file is added, removed, or modified. Walks from the parent of the
-/// given path up to the root, updating each ancestor's `dir_stats` in a single transaction.
+/// given path up to the root, updating each ancestor's `dir_stats`.
+///
+/// No internal transaction: safe to call inside an outer `BEGIN IMMEDIATE`
+/// (replay) or as standalone statements (live mode auto-commits).
 pub fn propagate_delta(
     conn: &Connection,
     path: &str,
@@ -55,12 +58,10 @@ pub fn propagate_delta(
     file_count_delta: i32,
     dir_count_delta: i32,
 ) -> Result<(), IndexStoreError> {
-    let tx = conn.unchecked_transaction()?;
-
     let mut current = parent_path(path);
     while let Some(ancestor) = current {
         // Try to read existing stats
-        let mut stmt = tx.prepare_cached(
+        let mut stmt = conn.prepare_cached(
             "SELECT recursive_size, recursive_file_count, recursive_dir_count
              FROM dir_stats WHERE path = ?1",
         )?;
@@ -83,7 +84,7 @@ pub fn propagate_delta(
             ),
         };
 
-        tx.execute(
+        conn.execute(
             "INSERT OR REPLACE INTO dir_stats
                  (path, recursive_size, recursive_file_count, recursive_dir_count)
              VALUES (?1, ?2, ?3, ?4)",
@@ -93,7 +94,6 @@ pub fn propagate_delta(
         current = parent_path(&ancestor);
     }
 
-    tx.commit()?;
     Ok(())
 }
 
@@ -174,8 +174,7 @@ fn compute_aggregates_for_dirs(conn: &Connection, dirs: &[String]) -> Result<u64
 
     for (i, dir_path) in sorted.iter().enumerate() {
         // Look up pre-computed direct children stats
-        let (file_size_sum, file_count, child_dir_count) =
-            direct_stats.get(*dir_path).copied().unwrap_or((0, 0, 0));
+        let (file_size_sum, file_count, child_dir_count) = direct_stats.get(*dir_path).copied().unwrap_or((0, 0, 0));
 
         let mut recursive_size = file_size_sum;
         let mut recursive_file_count = file_count;

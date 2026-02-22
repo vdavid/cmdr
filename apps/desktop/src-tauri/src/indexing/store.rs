@@ -484,19 +484,46 @@ impl IndexStore {
     }
 
     /// Delete all entries (and dir_stats) whose path starts with the given prefix.
+    ///
+    /// Uses a range query instead of LIKE so SQLite can use the primary key index.
+    /// `'0'` (ASCII 0x30) is the character immediately after `'/'` (ASCII 0x2F),
+    /// so `path > prefix || '/' AND path < prefix || '0'` matches exactly the
+    /// same rows as `path LIKE prefix || '/%'`.
+    ///
+    /// No internal transaction: safe to call inside an outer `BEGIN IMMEDIATE`
+    /// (replay) or as standalone statements (live mode auto-commits).
     pub fn delete_subtree(conn: &Connection, path_prefix: &str) -> Result<(), IndexStoreError> {
-        let tx = conn.unchecked_transaction()?;
-        // Delete the exact path and everything under it (prefix + '/')
-        tx.execute(
-            "DELETE FROM entries WHERE path = ?1 OR path LIKE ?2",
-            params![path_prefix, format!("{path_prefix}/%")],
+        let range_start = format!("{path_prefix}/");
+        let range_end = format!("{path_prefix}0");
+        conn.execute(
+            "DELETE FROM entries WHERE path = ?1 OR (path > ?2 AND path < ?3)",
+            params![path_prefix, range_start, range_end],
         )?;
-        tx.execute(
-            "DELETE FROM dir_stats WHERE path = ?1 OR path LIKE ?2",
-            params![path_prefix, format!("{path_prefix}/%")],
+        conn.execute(
+            "DELETE FROM dir_stats WHERE path = ?1 OR (path > ?2 AND path < ?3)",
+            params![path_prefix, range_start, range_end],
         )?;
-        tx.commit()?;
         Ok(())
+    }
+
+    /// Get total file size, file count, and directory count for a subtree.
+    ///
+    /// Used by the writer to compute accurate negative deltas before deleting a subtree.
+    /// Counts the root entry itself plus all descendants. Uses a range query for index usage.
+    pub fn get_subtree_totals(conn: &Connection, path_prefix: &str) -> Result<(u64, u64, u64), IndexStoreError> {
+        let range_start = format!("{path_prefix}/");
+        let range_end = format!("{path_prefix}0");
+        let mut stmt = conn.prepare_cached(
+            "SELECT
+                 COALESCE(SUM(CASE WHEN is_directory = 0 THEN size ELSE 0 END), 0),
+                 COALESCE(SUM(CASE WHEN is_directory = 0 THEN 1 ELSE 0 END), 0),
+                 COALESCE(SUM(CASE WHEN is_directory = 1 THEN 1 ELSE 0 END), 0)
+             FROM entries WHERE path = ?1 OR (path > ?2 AND path < ?3)",
+        )?;
+        let row = stmt.query_row(params![path_prefix, range_start, range_end], |row| {
+            Ok((row.get::<_, u64>(0)?, row.get::<_, u64>(1)?, row.get::<_, u64>(2)?))
+        })?;
+        Ok(row)
     }
 
     /// Count the total number of entries in the index.
@@ -508,13 +535,15 @@ impl IndexStore {
     /// Get all directory paths whose `parent_path` starts with the given root prefix.
     ///
     /// Used by subtree aggregation to limit computation to a specific subtree.
+    /// Uses a range query for index usage.
     pub fn get_directory_paths_under(conn: &Connection, root: &str) -> Result<Vec<String>, IndexStoreError> {
+        let range_start = format!("{root}/");
+        let range_end = format!("{root}0");
         let mut stmt = conn.prepare(
             "SELECT path FROM entries WHERE is_directory = 1
-             AND (path = ?1 OR path LIKE ?2)",
+             AND (path = ?1 OR (path > ?2 AND path < ?3))",
         )?;
-        let pattern = format!("{root}/%");
-        let rows = stmt.query_map(params![root, pattern], |row| row.get(0))?;
+        let rows = stmt.query_map(params![root, range_start, range_end], |row| row.get(0))?;
         rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
     }
 
