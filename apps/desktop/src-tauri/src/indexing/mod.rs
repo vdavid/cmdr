@@ -922,82 +922,6 @@ async fn run_replay_event_loop(
         }
     }
 
-    // Verify affected directories: FSEvents journal replay coalesces events,
-    // so child deletions may only show as "parent dir modified," and new
-    // children may not get individual creation events. Readdir each affected
-    // parent and reconcile with DB.
-    // No wrapping transaction here: DeleteSubtree uses internal transactions.
-    let verify_result = verify_affected_dirs(&affected_paths, &writer);
-
-    // Scan newly discovered directories (inserts children + computes subtree aggregates)
-    if !verify_result.new_dir_paths.is_empty() {
-        let cancelled = AtomicBool::new(false);
-        for dir_path in &verify_result.new_dir_paths {
-            match scanner::scan_subtree(Path::new(dir_path), &writer, &cancelled) {
-                Ok(summary) => {
-                    log::debug!(
-                        "Replay verification: scanned new dir {dir_path} ({} entries, {}ms)",
-                        summary.total_entries,
-                        summary.duration_ms,
-                    );
-                }
-                Err(e) => {
-                    log::warn!("Replay verification: scan_subtree({dir_path}) failed: {e}");
-                }
-            }
-        }
-    }
-
-    let has_verification_changes =
-        verify_result.stale_count > 0 || verify_result.new_file_count > 0 || !verify_result.new_dir_paths.is_empty();
-
-    if has_verification_changes {
-        log::info!(
-            "Replay: verification found {} stale, {} new files, {} new dirs; flushing",
-            verify_result.stale_count,
-            verify_result.new_file_count,
-            verify_result.new_dir_paths.len(),
-        );
-        if let Err(e) = writer.flush().await {
-            log::warn!("Replay: verification flush failed: {e}");
-        }
-
-        // For new directories, propagate their subtree totals up the ancestor chain.
-        // scan_subtree computes aggregates within the subtree but doesn't propagate
-        // upward. Read the computed dir_stats and send PropagateDelta.
-        if !verify_result.new_dir_paths.is_empty() {
-            // Scope the mutex guard so it's dropped before the .await below
-            {
-                let guard = GLOBAL_INDEX_STORE.lock();
-                if let Ok(ref guard) = guard
-                    && let Some(store) = guard.as_ref()
-                {
-                    for dir_path in &verify_result.new_dir_paths {
-                        if let Ok(Some(stats)) = store.get_dir_stats(dir_path) {
-                            let _ = writer.send(WriteMessage::PropagateDelta {
-                                path: PathBuf::from(dir_path),
-                                size_delta: stats.recursive_size as i64,
-                                file_count_delta: stats.recursive_file_count as i32,
-                                dir_count_delta: (stats.recursive_dir_count as i32) + 1,
-                            });
-                        } else {
-                            let _ = writer.send(WriteMessage::PropagateDelta {
-                                path: PathBuf::from(dir_path),
-                                size_delta: 0,
-                                file_count_delta: 0,
-                                dir_count_delta: 1,
-                            });
-                        }
-                    }
-                }
-            }
-
-            if let Err(e) = writer.flush().await {
-                log::warn!("Replay: propagation flush failed: {e}");
-            }
-        }
-    }
-
     // Emit final progress
     let _ = app.emit(
         "index-replay-progress",
@@ -1010,16 +934,24 @@ async fn run_replay_event_loop(
 
     // Emit a single batched index-dir-updated with all collected paths
     if !affected_paths.is_empty() {
-        reconciler::emit_dir_updated(&app, affected_paths.into_iter().collect());
+        reconciler::emit_dir_updated(&app, affected_paths.iter().cloned().collect());
     }
 
-    // ── Phase 3: Live mode (batched, same 300 ms window as run_live_event_loop) ──
+    // ── Switch to live mode immediately (before verification) ────────
 
     log::info!("Replay: switching to live mode");
     micro_scans.set_replay_active(false);
     log::debug!("Replay: micro-scans re-enabled for live mode");
     let mut reconciler = EventReconciler::new();
     reconciler.switch_to_live();
+
+    // Spawn background verification: runs concurrently with live events.
+    // The writer serializes all writes, so this is safe.
+    let verify_writer = writer.clone();
+    let verify_app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        run_background_verification(affected_paths, verify_writer, verify_app).await;
+    });
 
     // Queue any MustScanSubDirs rescans that were deferred during replay
     for path in pending_rescans {
@@ -1060,6 +992,111 @@ async fn run_replay_event_loop(
 
     log::info!("Replay event loop stopped ({event_count} replay + {live_count} live events)");
     Ok(())
+}
+
+// ── Background verification ──────────────────────────────────────────
+
+/// Run post-replay verification in the background.
+///
+/// Called after live mode starts so the app is responsive immediately.
+/// Corrections found by verification go through the writer channel,
+/// which serializes them with live writes.
+async fn run_background_verification(
+    affected_paths: std::collections::HashSet<String>,
+    writer: IndexWriter,
+    app: AppHandle,
+) {
+    let verify_start = std::time::Instant::now();
+    log::info!(
+        "Background verification started ({} affected dirs)",
+        affected_paths.len(),
+    );
+
+    // Verify affected directories: FSEvents journal replay coalesces events,
+    // so child deletions may only show as "parent dir modified," and new
+    // children may not get individual creation events. Readdir each affected
+    // parent and reconcile with DB.
+    let verify_result = verify_affected_dirs(&affected_paths, &writer);
+
+    // Scan newly discovered directories (inserts children + computes subtree aggregates)
+    if !verify_result.new_dir_paths.is_empty() {
+        let cancelled = AtomicBool::new(false);
+        for dir_path in &verify_result.new_dir_paths {
+            match scanner::scan_subtree(Path::new(dir_path), &writer, &cancelled) {
+                Ok(summary) => {
+                    log::debug!(
+                        "Background verification: scanned new dir {dir_path} ({} entries, {}ms)",
+                        summary.total_entries,
+                        summary.duration_ms,
+                    );
+                }
+                Err(e) => {
+                    log::warn!("Background verification: scan_subtree({dir_path}) failed: {e}");
+                }
+            }
+        }
+    }
+
+    let has_changes = verify_result.stale_count > 0
+        || verify_result.new_file_count > 0
+        || !verify_result.new_dir_paths.is_empty();
+
+    if has_changes {
+        log::info!(
+            "Background verification found {} stale, {} new files, {} new dirs; flushing",
+            verify_result.stale_count,
+            verify_result.new_file_count,
+            verify_result.new_dir_paths.len(),
+        );
+        if let Err(e) = writer.flush().await {
+            log::warn!("Background verification flush failed: {e}");
+        }
+
+        // For new directories, propagate their subtree totals up the ancestor chain.
+        // scan_subtree computes aggregates within the subtree but doesn't propagate
+        // upward. Read the computed dir_stats and send PropagateDelta.
+        if !verify_result.new_dir_paths.is_empty() {
+            // Scope the mutex guard so it's dropped before the .await below
+            {
+                let guard = GLOBAL_INDEX_STORE.lock();
+                if let Ok(ref guard) = guard
+                    && let Some(store) = guard.as_ref()
+                {
+                    for dir_path in &verify_result.new_dir_paths {
+                        if let Ok(Some(stats)) = store.get_dir_stats(dir_path) {
+                            let _ = writer.send(WriteMessage::PropagateDelta {
+                                path: PathBuf::from(dir_path),
+                                size_delta: stats.recursive_size as i64,
+                                file_count_delta: stats.recursive_file_count as i32,
+                                dir_count_delta: (stats.recursive_dir_count as i32) + 1,
+                            });
+                        } else {
+                            let _ = writer.send(WriteMessage::PropagateDelta {
+                                path: PathBuf::from(dir_path),
+                                size_delta: 0,
+                                file_count_delta: 0,
+                                dir_count_delta: 1,
+                            });
+                        }
+                    }
+                }
+            }
+
+            if let Err(e) = writer.flush().await {
+                log::warn!("Background verification propagation flush failed: {e}");
+            }
+        }
+
+        // Emit index-dir-updated for any corrected paths so the UI refreshes
+        let mut corrected_paths: Vec<String> = affected_paths.into_iter().collect();
+        corrected_paths.extend(verify_result.new_dir_paths.iter().cloned());
+        reconciler::emit_dir_updated(&app, corrected_paths);
+    }
+
+    log::info!(
+        "Background verification completed in {}ms",
+        verify_start.elapsed().as_millis(),
+    );
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────

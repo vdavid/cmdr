@@ -35,13 +35,85 @@ pub fn compute_all_aggregates(conn: &Connection) -> Result<u64, IndexStoreError>
 
 /// Compute `dir_stats` for directories under `root` only (bottom-up).
 ///
-/// Called after a micro-scan completes. Returns the number of directories processed.
+/// Called after a micro-scan completes. Uses scoped queries that only load
+/// children stats and directory relationships under the given root, avoiding
+/// full-table scans. Returns the number of directories processed.
 pub fn compute_subtree_aggregates(conn: &Connection, root: &str) -> Result<u64, IndexStoreError> {
     let dirs = IndexStore::get_directory_paths_under(conn, root)?;
     if dirs.is_empty() {
         return Ok(0);
     }
-    compute_aggregates_for_dirs(conn, &dirs)
+
+    let start = std::time::Instant::now();
+    let dir_count = dirs.len();
+    log::info!("Subtree aggregation: starting bottom-up computation for {dir_count} directories under {root}");
+
+    // Phase 1: Load direct children stats scoped to this subtree only
+    let direct_stats = scoped_get_children_stats(conn, root)?;
+    log::debug!(
+        "Subtree aggregation: loaded stats for {} parent paths in {:.1}ms",
+        direct_stats.len(),
+        start.elapsed().as_secs_f64() * 1000.0,
+    );
+
+    let child_dirs_map = scoped_get_child_directory_paths(conn, root)?;
+    log::debug!(
+        "Subtree aggregation: loaded child dirs for {} parent paths in {:.1}ms",
+        child_dirs_map.len(),
+        start.elapsed().as_secs_f64() * 1000.0,
+    );
+
+    // Phase 2: Sort by depth descending and compute bottom-up in memory
+    let mut sorted: Vec<&str> = dirs.iter().map(String::as_str).collect();
+    sorted.sort_by_key(|p| Reverse(depth(p)));
+
+    let mut computed: HashMap<&str, DirStats> = HashMap::with_capacity(sorted.len());
+
+    for dir_path in &sorted {
+        let (file_size_sum, file_count, child_dir_count) =
+            direct_stats.get(*dir_path).copied().unwrap_or((0, 0, 0));
+
+        let mut recursive_size = file_size_sum;
+        let mut recursive_file_count = file_count;
+        let mut recursive_dir_count = child_dir_count;
+
+        // Add already-computed recursive stats from child directories
+        if let Some(children) = child_dirs_map.get(*dir_path) {
+            for child_dir in children {
+                if let Some(child_stats) = computed.get(child_dir.as_str()) {
+                    recursive_size += child_stats.recursive_size;
+                    recursive_file_count += child_stats.recursive_file_count;
+                    recursive_dir_count += child_stats.recursive_dir_count;
+                }
+            }
+        }
+
+        computed.insert(
+            dir_path,
+            DirStats {
+                path: (*dir_path).to_string(),
+                recursive_size,
+                recursive_file_count,
+                recursive_dir_count,
+            },
+        );
+    }
+
+    // Phase 3: Batch-write all computed stats
+    log::debug!("Subtree aggregation: writing {} dir_stats rows to DB...", computed.len());
+    let all_stats: Vec<DirStats> = computed.into_values().collect();
+    let count = all_stats.len() as u64;
+
+    for chunk in all_stats.chunks(1000) {
+        IndexStore::upsert_dir_stats(conn, chunk)?;
+    }
+
+    log::info!(
+        "Subtree aggregation: complete. {count} directories processed in {:.1}ms",
+        start.elapsed().as_secs_f64() * 1000.0,
+    );
+
+    Ok(count)
 }
 
 /// Propagate a size/count delta up the ancestor chain.
@@ -232,6 +304,71 @@ fn get_child_directory_paths(conn: &Connection, parent: &str) -> Result<Vec<Stri
     let mut stmt = conn.prepare_cached("SELECT path FROM entries WHERE parent_path = ?1 AND is_directory = 1")?;
     let rows = stmt.query_map(params![parent], |row| row.get(0))?;
     rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+}
+
+/// Load direct children stats scoped to a subtree rooted at `root`.
+///
+/// Returns a map: `parent_path -> (total_file_size, file_count, dir_count)`.
+/// Only loads data for parent paths that are the root itself or descendants of it.
+/// Uses a range query on the indexed `parent_path` column for efficiency.
+fn scoped_get_children_stats(
+    conn: &Connection,
+    root: &str,
+) -> Result<HashMap<String, (u64, u64, u64)>, IndexStoreError> {
+    let range_start = format!("{root}/");
+    let range_end = format!("{root}0");
+    let mut stmt = conn.prepare(
+        "SELECT parent_path,
+                COALESCE(SUM(CASE WHEN is_directory = 0 THEN size ELSE 0 END), 0),
+                COALESCE(SUM(CASE WHEN is_directory = 0 THEN 1 ELSE 0 END), 0),
+                COALESCE(SUM(CASE WHEN is_directory = 1 THEN 1 ELSE 0 END), 0)
+         FROM entries
+         WHERE parent_path = ?1 OR (parent_path > ?2 AND parent_path < ?3)
+         GROUP BY parent_path",
+    )?;
+    let rows = stmt.query_map(params![root, range_start, range_end], |row| {
+        Ok((
+            row.get::<_, String>(0)?,
+            row.get::<_, u64>(1)?,
+            row.get::<_, u64>(2)?,
+            row.get::<_, u64>(3)?,
+        ))
+    })?;
+
+    let mut map = HashMap::new();
+    for row in rows {
+        let (parent, size, files, dirs) = row?;
+        map.insert(parent, (size, files, dirs));
+    }
+    Ok(map)
+}
+
+/// Load child directory paths scoped to a subtree rooted at `root`.
+///
+/// Returns a map: `parent_path -> Vec<child_directory_path>`.
+/// Only loads directory entries whose parent path is the root or a descendant of it.
+/// Uses a range query on the indexed `parent_path` column for efficiency.
+fn scoped_get_child_directory_paths(
+    conn: &Connection,
+    root: &str,
+) -> Result<HashMap<String, Vec<String>>, IndexStoreError> {
+    let range_start = format!("{root}/");
+    let range_end = format!("{root}0");
+    let mut stmt = conn.prepare(
+        "SELECT parent_path, path FROM entries
+         WHERE is_directory = 1
+           AND (parent_path = ?1 OR (parent_path > ?2 AND parent_path < ?3))",
+    )?;
+    let rows = stmt.query_map(params![root, range_start, range_end], |row| {
+        Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+    })?;
+
+    let mut map: HashMap<String, Vec<String>> = HashMap::new();
+    for row in rows {
+        let (parent, path) = row?;
+        map.entry(parent).or_default().push(path);
+    }
+    Ok(map)
 }
 
 /// Bulk-load direct children stats for ALL parent paths in a single SQL query.

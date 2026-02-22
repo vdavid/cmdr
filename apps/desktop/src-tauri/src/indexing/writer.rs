@@ -130,8 +130,9 @@ impl IndexWriter {
 
 // ── Writer thread loop ───────────────────────────────────────────────
 
-/// Diagnostic counters for writer thread logging.
-struct WriterStats {
+/// Snapshot of cumulative counters, used to compute per-interval deltas.
+#[derive(Clone, Default)]
+struct StatsSnapshot {
     total: u64,
     insert_entries: u64,
     upsert_entry: u64,
@@ -142,64 +143,89 @@ struct WriterStats {
     compute_aggregates: u64,
     flush: u64,
     other: u64,
+}
+
+/// Diagnostic counters for writer thread logging.
+struct WriterStats {
+    current: StatsSnapshot,
+    previous: StatsSnapshot,
     last_summary: Instant,
 }
 
 impl WriterStats {
     fn new() -> Self {
         Self {
-            total: 0,
-            insert_entries: 0,
-            upsert_entry: 0,
-            update_dir_stats: 0,
-            delete_entry: 0,
-            delete_subtree: 0,
-            propagate_delta: 0,
-            compute_aggregates: 0,
-            flush: 0,
-            other: 0,
+            current: StatsSnapshot::default(),
+            previous: StatsSnapshot::default(),
             last_summary: Instant::now(),
         }
     }
 
     fn record(&mut self, msg: &WriteMessage) {
-        self.total += 1;
+        self.current.total += 1;
         match msg {
-            WriteMessage::InsertEntries(_) => self.insert_entries += 1,
-            WriteMessage::UpsertEntry(_) => self.upsert_entry += 1,
-            WriteMessage::UpdateDirStats(_) => self.update_dir_stats += 1,
-            WriteMessage::DeleteEntry(_) => self.delete_entry += 1,
-            WriteMessage::DeleteSubtree(_) => self.delete_subtree += 1,
-            WriteMessage::PropagateDelta { .. } => self.propagate_delta += 1,
+            WriteMessage::InsertEntries(_) => self.current.insert_entries += 1,
+            WriteMessage::UpsertEntry(_) => self.current.upsert_entry += 1,
+            WriteMessage::UpdateDirStats(_) => self.current.update_dir_stats += 1,
+            WriteMessage::DeleteEntry(_) => self.current.delete_entry += 1,
+            WriteMessage::DeleteSubtree(_) => self.current.delete_subtree += 1,
+            WriteMessage::PropagateDelta { .. } => self.current.propagate_delta += 1,
             WriteMessage::ComputeAllAggregates | WriteMessage::ComputeSubtreeAggregates { .. } => {
-                self.compute_aggregates += 1;
+                self.current.compute_aggregates += 1;
             }
-            WriteMessage::Flush(_) => self.flush += 1,
-            _ => self.other += 1,
+            WriteMessage::Flush(_) => self.current.flush += 1,
+            _ => self.current.other += 1,
         }
     }
 
     /// Log a summary if at least 5 seconds have passed since the last one.
+    ///
+    /// Shows per-interval deltas as the primary info, with cumulative total in brackets.
+    /// Only non-zero delta categories are included to keep the message concise.
     fn maybe_log_summary(&mut self) {
         let elapsed = self.last_summary.elapsed();
-        if elapsed.as_secs() >= 5 && self.total > 0 {
-            log::debug!(
-                "Writer: processed {} msgs ({} inserts, {} upserts, {} dir_stats, {} deletes, \
-                 {} delete_subtrees, {} propagate, {} aggregates, {} flushes, {} other) in {:.1}s",
-                self.total,
-                self.insert_entries,
-                self.upsert_entry,
-                self.update_dir_stats,
-                self.delete_entry,
-                self.delete_subtree,
-                self.propagate_delta,
-                self.compute_aggregates,
-                self.flush,
-                self.other,
-                elapsed.as_secs_f64(),
-            );
-            self.last_summary = Instant::now();
+        if elapsed.as_secs() < 5 || self.current.total == 0 {
+            return;
         }
+
+        let delta_total = self.current.total - self.previous.total;
+        if delta_total == 0 {
+            self.last_summary = Instant::now();
+            return;
+        }
+
+        let deltas: &[(&str, u64)] = &[
+            ("inserts", self.current.insert_entries - self.previous.insert_entries),
+            ("upserts", self.current.upsert_entry - self.previous.upsert_entry),
+            ("dir_stats", self.current.update_dir_stats - self.previous.update_dir_stats),
+            ("deletes", self.current.delete_entry - self.previous.delete_entry),
+            ("delete_subtrees", self.current.delete_subtree - self.previous.delete_subtree),
+            ("propagate", self.current.propagate_delta - self.previous.propagate_delta),
+            ("aggregates", self.current.compute_aggregates - self.previous.compute_aggregates),
+            ("flushes", self.current.flush - self.previous.flush),
+            ("other", self.current.other - self.previous.other),
+        ];
+
+        let parts: Vec<String> = deltas
+            .iter()
+            .filter(|(_, count)| *count > 0)
+            .map(|(name, count)| format!("{count} {name}"))
+            .collect();
+
+        let breakdown = if parts.is_empty() {
+            String::new()
+        } else {
+            format!(" ({})", parts.join(", "))
+        };
+
+        log::debug!(
+            "Writer: +{delta_total} msgs{breakdown} in {:.1}s [{} total]",
+            elapsed.as_secs_f64(),
+            self.current.total,
+        );
+
+        self.previous = self.current.clone();
+        self.last_summary = Instant::now();
     }
 }
 
@@ -227,7 +253,7 @@ fn writer_loop(conn: rusqlite::Connection, receiver: mpsc::Receiver<WriteMessage
                     if process_message(&conn, other, &stats) {
                         log::info!(
                             "Writer: shutdown after processing {} messages",
-                            stats.total,
+                            stats.current.total,
                         );
                         return;
                     }
@@ -238,7 +264,7 @@ fn writer_loop(conn: rusqlite::Connection, receiver: mpsc::Receiver<WriteMessage
                 Err(mpsc::TryRecvError::Disconnected) => {
                     log::info!(
                         "Writer: channel closed, thread exiting after processing {} messages",
-                        stats.total,
+                        stats.current.total,
                     );
                     return;
                 }
@@ -258,7 +284,7 @@ fn writer_loop(conn: rusqlite::Connection, receiver: mpsc::Receiver<WriteMessage
                 if process_message(&conn, msg, &stats) {
                     log::info!(
                         "Writer: shutdown after processing {} messages",
-                        stats.total,
+                        stats.current.total,
                     );
                     return;
                 }
@@ -267,7 +293,7 @@ fn writer_loop(conn: rusqlite::Connection, receiver: mpsc::Receiver<WriteMessage
             Err(mpsc::RecvError) => {
                 log::info!(
                     "Writer: channel closed, thread exiting after processing {} messages",
-                    stats.total,
+                    stats.current.total,
                 );
                 return;
             }
@@ -387,7 +413,7 @@ fn process_message(conn: &rusqlite::Connection, msg: WriteMessage, stats: &Write
         WriteMessage::Flush(reply) => {
             log::debug!(
                 "Writer: processing flush (total msgs processed so far: {})",
-                stats.total,
+                stats.current.total,
             );
             // All prior messages have been processed; signal the caller
             let _ = reply.send(());

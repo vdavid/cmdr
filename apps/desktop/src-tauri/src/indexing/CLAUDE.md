@@ -91,7 +91,7 @@ Key test files are alongside each module (test functions within `#[cfg(test)]` b
 
 ## Gotchas
 
-**Cold-start replay uses two-phase flush**: The `run_replay_event_loop` doesn't emit `index-dir-updated` during Phase 1 (replay). It collects affected paths, flushes the writer (ensuring all writes are committed), then emits a single batched notification. This prevents the frontend from reading stale data.
+**Cold-start replay enters live mode immediately after flush**: The `run_replay_event_loop` doesn't emit `index-dir-updated` during Phase 1 (replay). It collects affected paths, flushes the writer (ensuring all writes are committed), emits a single batched notification, re-enables micro-scans, and enters live mode right away (~100ms from startup). Post-replay verification (`verify_affected_dirs`) runs in a background task (`run_background_verification`) concurrently with live events. This is safe because the writer serializes all writes. Any corrections found by verification are emitted as a separate `index-dir-updated` batch.
 
 **Live events are batched with a 300 ms window**: Both `run_live_event_loop` and the Phase 3 live loop in `run_replay_event_loop` use `tokio::select!` with a 300 ms `tokio::time::interval` to collect affected paths in a `HashSet` and emit a single `index-dir-updated` per flush. This prevents UI flicker from rapid per-event notifications (FSEvents can fire hundreds of events per second during bulk operations). `process_live_event` collects paths into the caller's `HashSet` instead of emitting directly.
 
