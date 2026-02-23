@@ -57,8 +57,8 @@ Progressive status text driven by props (mutually exclusive, evaluated top-down)
 3. `openingFolder` true → "Opening folder..."
 4. Default → "Loading..."
 
-`showCancelHint` adds "Press ESC to cancel and go back" below the spinner. The container uses a 400ms `fadeIn`
-animation where the first 50% is invisible (effectively 200ms before fade begins), avoiding flash for fast loads.
+`showCancelHint` adds "Press ESC to cancel and go back" below the spinner. The container uses a 400ms `fadeIn` animation
+where the first 50% is invisible (effectively 200ms before fade begins), avoiding flash for fast loads.
 
 ## Key gotchas
 

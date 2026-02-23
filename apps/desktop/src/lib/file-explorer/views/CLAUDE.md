@@ -51,8 +51,8 @@ compact/comfortable/spacious). The virtual scroll uses an `itemSize` parameter f
 **Decision**: Virtual scroll in frontend, data in backend **Why**: Sending 50k entries over IPC = 17.4MB, ~4s transfer.
 Virtual scroll fetches only visible ~50 items on demand. Backend-driven caching eliminates serialization overhead.
 
-**Decision**: Uniform row height per density setting (no variable height) **Why**: Variable height requires measuring every
-row, defeating performance gains. Uniform height allows pure math: `scrollTop / itemSize = startIndex`.
+**Decision**: Uniform row height per density setting (no variable height) **Why**: Variable height requires measuring
+every row, defeating performance gains. Uniform height allows pure math: `scrollTop / itemSize = startIndex`.
 
 **Decision**: Prefetch buffer (~500 items) **Why**: Smooth scrolling requires data ready before user sees blank space.
 Buffer balances memory (small) vs. IPC latency (reduces fetches).
@@ -71,8 +71,8 @@ in `.svelte` or `.svelte.ts`. Math functions return plain objects consumed by `$
 **Gotcha**: File watcher diffs shift indices while scrolled **Why**: If 20 files added before cursor, visible range
 shifts by 20. Must recalculate virtual window when `totalCount` changes.
 
-**Gotcha**: When `hasParent = true`, UI indices are 1-based **Why**: Index 0 is ".." parent entry
-(not in backend cache). Real files start at index 1. Adjust: `cache_index = ui_index - 1`.
+**Gotcha**: When `hasParent = true`, UI indices are 1-based **Why**: Index 0 is ".." parent entry (not in backend
+cache). Real files start at index 1. Adjust: `cache_index = ui_index - 1`.
 
 **Gotcha**: Scroll position must use `transform`, not absolute positioning **Why**: Absolute positioning causes full
 layout recalc. `transform` uses GPU compositor for 60fps.

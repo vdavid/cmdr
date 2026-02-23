@@ -13,17 +13,17 @@ import { listDirectoryStart } from '$lib/tauri-commands/file-listing'
 
 ## Files
 
-| File                  | Contents                                                                                  |
-| --------------------- | ----------------------------------------------------------------------------------------- |
-| `index.ts`            | Barrel re-export of everything below                                                      |
-| `file-listing.ts`     | Virtual-scroll listing API, drag-and-drop, `pathExists`, `createDirectory`                |
-| `file-viewer.ts`      | Viewer session, icons, context menu, macOS integrations, MCP pane state, font metrics     |
-| `write-operations.ts` | Copy/move/delete, conflict resolution, scan preview, `formatBytes`/`formatDuration`       |
-| `rename.ts`           | `checkRenamePermission`, `checkRenameValidity`, `renameFile`, `moveToTrash`               |
-| `storage.ts`          | `listVolumes`, `getVolumeSpace`, `checkFullDiskAccess`, `openPrivacySettings`             |
-| `networking.ts`       | SMB host discovery, share listing, Keychain credential ops, mounting, `feLog`             |
-| `mtp.ts`              | Android MTP: device listing, connect/disconnect, file ops, transfer progress, volume copy |
-| `licensing.ts`        | License status, activation, expiry, server validation                                     |
+| File                  | Contents                                                                                                    |
+| --------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `index.ts`            | Barrel re-export of everything below                                                                        |
+| `file-listing.ts`     | Virtual-scroll listing API, drag-and-drop, `pathExists`, `createDirectory`                                  |
+| `file-viewer.ts`      | Viewer session, icons, context menu, macOS integrations, MCP pane state, font metrics                       |
+| `write-operations.ts` | Copy/move/delete, conflict resolution, scan preview, `formatBytes`/`formatDuration`                         |
+| `rename.ts`           | `checkRenamePermission`, `checkRenameValidity`, `renameFile`, `moveToTrash`                                 |
+| `storage.ts`          | `listVolumes`, `getVolumeSpace`, `checkFullDiskAccess`, `openPrivacySettings`                               |
+| `networking.ts`       | SMB host discovery, share listing, Keychain credential ops, mounting, `feLog`                               |
+| `mtp.ts`              | Android MTP: device listing, connect/disconnect, file ops, transfer progress, volume copy                   |
+| `licensing.ts`        | License status, activation, expiry, server validation                                                       |
 | `settings.ts`         | Port checking, file watcher debounce, indexing toggle, AI subsystem commands, `updateServiceResolveTimeout` |
 
 ## Key patterns

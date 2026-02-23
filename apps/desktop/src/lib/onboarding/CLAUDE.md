@@ -26,9 +26,9 @@ The `wasRevoked` prop switches the copy from "first ask" to "revoked" framing.
 
 1. `checkFullDiskAccess()` IPC result — if FDA is already granted, sync setting to `'allow'` and skip.
 2. If FDA is not granted:
-   - `'notAskedYet'` → show first-time onboarding prompt.
-   - `'allow'` (but FDA revoked) → show prompt with "revoked" framing.
-   - `'deny'` → skip (user previously declined).
+    - `'notAskedYet'` → show first-time onboarding prompt.
+    - `'allow'` (but FDA revoked) → show prompt with "revoked" framing.
+    - `'deny'` → skip (user previously declined).
 
 ## Key gotchas
 

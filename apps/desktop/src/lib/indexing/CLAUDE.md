@@ -72,7 +72,8 @@ Both `prioritizeDir` and `cancelNavPriority` silently swallow all errors — ind
 
 Rendered in the top-right corner of the main window while `isScanning()` is true. Uses `pointer-events: none` so it
 never blocks clicks. Displays a CSS spinner and a live label like `Scanning... 42,000 entries, 1,200 dirs`. Uses
-`formatNumber` from selection-info-utils for number formatting (uses `'en-US'` locale, hardcoded via `toLocaleString('en-US')`).
+`formatNumber` from selection-info-utils for number formatting (uses `'en-US'` locale, hardcoded via
+`toLocaleString('en-US')`).
 
 ## No tests
 
