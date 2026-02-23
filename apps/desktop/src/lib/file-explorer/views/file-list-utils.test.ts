@@ -477,7 +477,7 @@ describe('updateIndexSizesInPlace', () => {
             },
         ]
         vi.mocked(getDirStatsBatch).mockResolvedValue([
-            { recursiveSize: 1024, recursiveFileCount: 5, recursiveDirCount: 2 },
+            { path: '/dir/subdir', recursiveSize: 1024, recursiveFileCount: 5, recursiveDirCount: 2 },
         ])
 
         await updateIndexSizesInPlace(entries)
