@@ -343,6 +343,7 @@
             if (errorMsg && rename.active && rename.target?.path === entry.path) {
                 rename.cancel()
                 renameNotification = { message: errorMsg, style: 'error' }
+                onRequestFocus?.()
             }
         })
     }
@@ -403,6 +404,7 @@
         switch (result.type) {
             case 'noop':
                 rename.cancel()
+                onRequestFocus?.()
                 break
             case 'error':
                 rename.triggerShake()
@@ -476,6 +478,7 @@
 
         if (!target || !trimmedName) {
             rename.cancel()
+            onRequestFocus?.()
             return
         }
 
@@ -491,6 +494,7 @@
                         const msg = e instanceof Error ? e.message : String(e)
                         renameNotification = { message: msg, style: 'error' }
                         rename.cancel()
+                        onRequestFocus?.()
                     })
                 break
             }
@@ -1475,6 +1479,7 @@
                 const wasRemoved = diff.changes.some((c) => c.type === 'remove' && c.entry.name === targetName)
                 if (wasRemoved) {
                     rename.cancel()
+                    onRequestFocus?.()
                 }
             }
 
