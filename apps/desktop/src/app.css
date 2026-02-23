@@ -51,11 +51,19 @@
     --color-highlight: rgba(255, 213, 0, 0.4);
     --color-highlight-active: rgba(255, 150, 50, 0.6);
 
-    /* === Size tier colors (20% offset toward target color) === */
-    --color-size-kb: color-mix(in srgb, var(--color-text-secondary) 70%, #f0c000);
-    --color-size-mb: color-mix(in srgb, var(--color-text-secondary) 70%, #ff8c00);
-    --color-size-gb: color-mix(in srgb, var(--color-text-secondary) 70%, #ff4444);
-    --color-size-tb: color-mix(in srgb, var(--color-text-secondary) 70%, #aa44ff);
+    /* === Size tier colors (depth progression: bigger = deeper blue) === */
+    --color-size-bytes: color-mix(in srgb, var(--color-text-secondary) 85%, #88aacc);
+    --color-size-kb: color-mix(in srgb, var(--color-text-secondary) 60%, #88aacc);
+    --color-size-mb: color-mix(in srgb, var(--color-text-secondary) 60%, #5599dd);
+    --color-size-gb: color-mix(in srgb, var(--color-text-secondary) 60%, #2288ee);
+    --color-size-tb: color-mix(in srgb, var(--color-text-secondary) 60%, #0066ff);
+
+    /* === Size tier colors — selected state (gold depth progression) === */
+    --color-size-bytes-selected: color-mix(in srgb, var(--color-text-secondary) 40%, var(--color-selection-fg));
+    --color-size-kb-selected: color-mix(in srgb, var(--color-text-secondary) 25%, var(--color-selection-fg));
+    --color-size-mb-selected: color-mix(in srgb, var(--color-text-secondary) 15%, var(--color-selection-fg));
+    --color-size-gb-selected: color-mix(in srgb, var(--color-text-secondary) 5%, var(--color-selection-fg));
+    --color-size-tb-selected: var(--color-selection-fg);
 
     /* === Spacing === */
     --spacing-xxs: 2px;
@@ -402,7 +410,7 @@ body {
    ============================================================================= */
 
 .size-bytes {
-    color: var(--color-text-secondary);
+    color: var(--color-size-bytes);
 }
 
 .size-kb {

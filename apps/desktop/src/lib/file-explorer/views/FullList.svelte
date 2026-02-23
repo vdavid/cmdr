@@ -610,8 +610,41 @@
         color: var(--color-selection-fg);
     }
 
-    /* Selection color is preserved even under cursor */
+    .file-entry.is-selected .col-date {
+        color: var(--color-selection-fg);
+    }
+
+    .file-entry.is-selected .size-dir {
+        color: var(--color-selection-fg);
+    }
+
+    /* Size tiers follow a gold depth progression when selected */
+    .file-entry.is-selected :global(.size-bytes) {
+        color: var(--color-size-bytes-selected);
+    }
+
+    .file-entry.is-selected :global(.size-kb) {
+        color: var(--color-size-kb-selected);
+    }
+
+    .file-entry.is-selected :global(.size-mb) {
+        color: var(--color-size-mb-selected);
+    }
+
+    .file-entry.is-selected :global(.size-gb) {
+        color: var(--color-size-gb-selected);
+    }
+
+    .file-entry.is-selected :global(.size-tb) {
+        color: var(--color-size-tb-selected);
+    }
+
+    /* Selection colors preserved even under cursor */
     .full-list-container.is-focused .file-entry.is-under-cursor.is-selected .col-name {
+        color: var(--color-selection-fg);
+    }
+
+    .full-list-container.is-focused .file-entry.is-under-cursor.is-selected .col-date {
         color: var(--color-selection-fg);
     }
 

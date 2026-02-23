@@ -131,15 +131,23 @@ invisible.
 File sizes are subtly color-coded by magnitude — a distinctive Cmdr feature. Colors are derived from
 `--color-text-secondary` via `color-mix` so they stay readable in both modes without separate light/dark values.
 
+The progression uses a single blue hue at increasing saturation — a "depth" metaphor where bigger = deeper. This avoids
+the yellow → red "heat" connotation (size isn't danger, it's volume) and complements the pure-gray neutral palette.
+
 ```css
---color-size-kb: color-mix(in srgb, var(--color-text-secondary) 70%, #f0c000); /* warm yellow */
---color-size-mb: color-mix(in srgb, var(--color-text-secondary) 70%, #ff8c00); /* orange */
---color-size-gb: color-mix(in srgb, var(--color-text-secondary) 70%, #ff4444); /* red */
---color-size-tb: color-mix(in srgb, var(--color-text-secondary) 70%, #aa44ff); /* purple */
+--color-size-bytes: color-mix(in srgb, var(--color-text-secondary) 85%, #88aacc); /* hint of blue */
+--color-size-kb:    color-mix(in srgb, var(--color-text-secondary) 60%, #88aacc); /* soft steel blue */
+--color-size-mb:    color-mix(in srgb, var(--color-text-secondary) 60%, #5599dd); /* medium blue */
+--color-size-gb:    color-mix(in srgb, var(--color-text-secondary) 60%, #2288ee); /* rich blue */
+--color-size-tb:    color-mix(in srgb, var(--color-text-secondary) 60%, #0066ff); /* vivid blue */
 ```
 
-Byte-sized files use `--color-text-secondary` (no tint). The 70/30 mix keeps the tint subtle — it's a hint, not a
-traffic light.
+Bytes get a 15% blue tint (not plain gray) so even the smallest tier participates in the progression. The 60/40 mix
+for KB+ gives clear differentiation between adjacent tiers.
+
+When a file is **selected**, size tiers switch to a gold depth progression mirroring the blue one — bytes get a subtle
+gold tint, higher tiers get richer gold, TB uses the full `--color-selection-fg`. The date column also turns gold.
+This keeps the "selected = gold" language consistent across all columns (name, size, date).
 
 ### Header background
 
