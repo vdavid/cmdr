@@ -71,7 +71,7 @@
     import Notification from '$lib/ui/Notification.svelte'
     import ExtensionChangeDialog from '../rename/ExtensionChangeDialog.svelte'
     import RenameConflictDialog from '../rename/RenameConflictDialog.svelte'
-    import { getAppLogger } from '$lib/logger'
+    import { getAppLogger } from '$lib/logging/logger'
 
     const log = getAppLogger('fileExplorer')
     import { isMtpVolumeId, getMtpDisplayPath } from '$lib/mtp'

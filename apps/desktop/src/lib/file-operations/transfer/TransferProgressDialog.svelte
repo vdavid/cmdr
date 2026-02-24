@@ -34,7 +34,7 @@
     import { getSetting } from '$lib/settings'
     import DirectionIndicator from './DirectionIndicator.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
-    import { getAppLogger } from '$lib/logger'
+    import { getAppLogger } from '$lib/logging/logger'
 
     /** Returns CSS class for size coloring based on bytes (kb/mb/gb/tb) */
     function getSizeColorClass(bytes: number): string {

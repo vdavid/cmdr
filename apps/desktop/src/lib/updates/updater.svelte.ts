@@ -2,7 +2,7 @@ import { check, type Update } from '@tauri-apps/plugin-updater'
 import { relaunch } from '@tauri-apps/plugin-process'
 import { getVersion } from '@tauri-apps/api/app'
 import { getSetting, onSpecificSettingChange } from '$lib/settings/settings-store'
-import { getAppLogger } from '$lib/logger'
+import { getAppLogger } from '$lib/logging/logger'
 
 const log = getAppLogger('updater')
 

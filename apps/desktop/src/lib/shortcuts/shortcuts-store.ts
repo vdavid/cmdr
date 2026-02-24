@@ -5,7 +5,7 @@
 import { load, type Store } from '@tauri-apps/plugin-store'
 import { invoke } from '@tauri-apps/api/core'
 import { commands } from '$lib/commands/command-registry'
-import { getAppLogger } from '$lib/logger'
+import { getAppLogger } from '$lib/logging/logger'
 
 const log = getAppLogger('shortcuts')
 

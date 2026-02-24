@@ -1,6 +1,6 @@
 // Character measurement using Canvas API
 
-import { getAppLogger } from '$lib/logger'
+import { getAppLogger } from '$lib/logging/logger'
 
 const log = getAppLogger('fontMetrics')
 

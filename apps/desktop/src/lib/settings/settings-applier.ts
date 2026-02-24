@@ -4,7 +4,7 @@
  */
 
 import { getSetting, onSettingChange, initializeSettings, type UiDensity, densityMappings } from '$lib/settings'
-import { getAppLogger, setVerboseLogging } from '$lib/logger'
+import { getAppLogger, setVerboseLogging } from '$lib/logging/logger'
 import { updateFileWatcherDebounce, updateServiceResolveTimeout, setIndexingEnabled } from '$lib/tauri-commands'
 
 const log = getAppLogger('settings-applier')

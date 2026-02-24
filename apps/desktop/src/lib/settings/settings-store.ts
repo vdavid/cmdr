@@ -7,7 +7,7 @@ import { emit, listen, type UnlistenFn } from '@tauri-apps/api/event'
 import type { SettingId, SettingsValues } from './types'
 import { SettingValidationError } from './types'
 import { getDefaultValue, settingsRegistry, validateSettingValue } from './settings-registry'
-import { getAppLogger } from '$lib/logger'
+import { getAppLogger } from '$lib/logging/logger'
 
 const log = getAppLogger('settings')
 

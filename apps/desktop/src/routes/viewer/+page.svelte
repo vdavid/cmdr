@@ -34,7 +34,7 @@
     import { listen, type UnlistenFn } from '@tauri-apps/api/event'
     import { initializeSettings, getSetting, setSetting } from '$lib/settings'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
-    import { getAppLogger } from '$lib/logger'
+    import { getAppLogger } from '$lib/logging/logger'
 
     const log = getAppLogger('viewer')
 

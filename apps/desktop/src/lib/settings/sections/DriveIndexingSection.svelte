@@ -6,7 +6,7 @@
     import { getSettingDefinition } from '$lib/settings'
     import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
     import { getMatchingSettingIds } from '$lib/settings/settings-search'
-    import { getAppLogger } from '$lib/logger'
+    import { getAppLogger } from '$lib/logging/logger'
 
     interface Props {
         searchQuery: string

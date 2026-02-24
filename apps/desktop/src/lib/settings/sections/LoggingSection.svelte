@@ -3,7 +3,7 @@
     import SettingSwitch from '../components/SettingSwitch.svelte'
     import { getSettingDefinition } from '$lib/settings'
     import { getMatchingSettingIds } from '$lib/settings/settings-search'
-    import { getAppLogger } from '$lib/logger'
+    import { getAppLogger } from '$lib/logging/logger'
     import { revealItemInDir } from '@tauri-apps/plugin-opener'
     import { appLogDir } from '@tauri-apps/api/path'
 

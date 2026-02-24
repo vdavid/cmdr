@@ -4,7 +4,7 @@
  */
 
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { getAppLogger } from '$lib/logger'
+import { getAppLogger } from '$lib/logging/logger'
 
 const log = getAppLogger('settings')
 

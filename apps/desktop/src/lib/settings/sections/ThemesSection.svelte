@@ -4,7 +4,7 @@
     import SettingToggleGroup from '../components/SettingToggleGroup.svelte'
     import { getSettingDefinition, onSpecificSettingChange, getSetting } from '$lib/settings'
     import { getMatchingSettingIds } from '$lib/settings/settings-search'
-    import { getAppLogger } from '$lib/logger'
+    import { getAppLogger } from '$lib/logging/logger'
 
     const log = getAppLogger('settings')
 

@@ -6,7 +6,7 @@
      */
     import { onMount } from 'svelte'
     import '../app.css'
-    import { initLogger } from '$lib/logger'
+    import { initLogger } from '$lib/logging/logger'
 
     onMount(() => {
         void initLogger()

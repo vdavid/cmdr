@@ -16,7 +16,7 @@ import {
     resetShortcut,
 } from '$lib/shortcuts'
 import { commands } from '$lib/commands/command-registry'
-import { getAppLogger } from '$lib/logger'
+import { getAppLogger } from '$lib/logging/logger'
 
 const log = getAppLogger('mcp-settings')
 

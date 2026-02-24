@@ -2,7 +2,7 @@
     import type { MountError, NetworkHost, ShareInfo } from '../types'
     import { mountNetworkShare, listVolumes, findContainingVolume } from '$lib/tauri-commands'
     import { getMountTimeoutMs } from '$lib/settings/network-settings'
-    import { getAppLogger } from '$lib/logger'
+    import { getAppLogger } from '$lib/logging/logger'
     import NetworkBrowser from '../network/NetworkBrowser.svelte'
     import ShareBrowser from '../network/ShareBrowser.svelte'
 

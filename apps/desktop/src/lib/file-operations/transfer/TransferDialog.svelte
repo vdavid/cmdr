@@ -27,7 +27,7 @@
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
     import { generateTitle } from './transfer-dialog-utils'
-    import { getAppLogger } from '$lib/logger'
+    import { getAppLogger } from '$lib/logging/logger'
 
     const log = getAppLogger('transferDialog')
 

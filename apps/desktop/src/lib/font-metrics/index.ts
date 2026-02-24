@@ -2,7 +2,7 @@
 
 import { storeFontMetrics, hasFontMetrics } from '$lib/tauri-commands'
 import { measureCharWidths } from './measure'
-import { getAppLogger } from '$lib/logger'
+import { getAppLogger } from '$lib/logging/logger'
 
 const log = getAppLogger('fontMetrics')
 

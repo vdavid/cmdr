@@ -23,6 +23,7 @@ All under `apps/desktop/src/lib/`.
 | `command-palette/` | Fuzzy command search (~45 commands) |
 | `commands/` | Command registry (~50 commands), fuzzy search engine for command palette |
 | `licensing/` | License validation, commercial reminders, expiration modals |
+| `logging/` | Unified logging: LogTape config, batching bridge to Rust, verbose toggle |
 | `ai/` | Local LLM features (folder suggestions), download flow |
 | `indexing/` | Drive index state, events, priority triggers, scan status overlay |
 | `mtp/` | MTP (Android device) file browsing UI |

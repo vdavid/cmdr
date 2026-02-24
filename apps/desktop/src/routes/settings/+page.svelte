@@ -14,7 +14,7 @@
         setupMcpEventListeners,
         cleanupMcpEventListeners,
     } from '$lib/settings/mcp-settings-bridge'
-    import { getAppLogger } from '$lib/logger'
+    import { getAppLogger } from '$lib/logging/logger'
 
     const log = getAppLogger('settings')
 

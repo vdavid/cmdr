@@ -51,7 +51,7 @@
     } from '../navigation/navigation-history'
     import { initNetworkDiscovery, cleanupNetworkDiscovery } from '../network/network-store.svelte'
     import { openFileViewer } from '$lib/file-viewer/open-viewer'
-    import { getAppLogger } from '$lib/logger'
+    import { getAppLogger } from '$lib/logging/logger'
     import { getMtpVolumes } from '$lib/mtp'
     import { getNewSortOrder, applySortResult, collectSortState } from './sorting-handlers'
     import {

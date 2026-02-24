@@ -2,7 +2,7 @@
  * Logging configuration using LogTape.
  *
  * Usage:
- *   import { getAppLogger } from '$lib/logger'
+ *   import { getAppLogger } from '$lib/logging/logger'
  *   const log = getAppLogger('myFeature')
  *   log.debug('Loading data for {userId}', { userId })
  *   log.info('Loaded {count} items', { count })
@@ -26,7 +26,7 @@ import { configure, getConsoleSink, getLogger as getLogTapeLogger } from '@logta
 import type { Logger } from '@logtape/logtape'
 import { invoke } from '@tauri-apps/api/core'
 import { load, type Store } from '@tauri-apps/plugin-store'
-import { getTauriBridgeSink, startBridge } from '$lib/log-bridge'
+import { getTauriBridgeSink, startBridge } from './log-bridge'
 
 // Re-export getLogger for convenience
 export { getLogger } from '@logtape/logtape'

@@ -1,7 +1,7 @@
 <script lang="ts">
     import { isMtpVolumeId, constructMtpPath } from '$lib/mtp'
     import { connect as connectMtpDevice } from '$lib/mtp/mtp-store.svelte'
-    import { getAppLogger } from '$lib/logger'
+    import { getAppLogger } from '$lib/logging/logger'
 
     const log = getAppLogger('mtpConnection')
 

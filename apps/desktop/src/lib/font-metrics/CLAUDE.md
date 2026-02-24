@@ -55,5 +55,5 @@ For measurement, `'system'` resolves to `'-apple-system, BlinkMacSystemFont, sys
 ## Dependencies
 
 - `$lib/tauri-commands` — `storeFontMetrics`, `hasFontMetrics`
-- `$lib/logger` — `getAppLogger`
+- `$lib/logging/logger` — `getAppLogger`
 - Rust counterpart: `apps/desktop/src-tauri/src/font_metrics/mod.rs`

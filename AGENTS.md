@@ -63,11 +63,12 @@ Run the smallest set of checks possible for efficiency while maintaining confide
 
 - **Unified logging**: Frontend and backend logs appear together in the terminal and in a shared log file at
   `~/Library/Logs/com.veszelovszki.cmdr/`. The log file is also accessible from Settings > Logging > "Open log file".
-- **Svelte/TypeScript**: Use LogTape via `getAppLogger('feature')` from `$lib/logger`. Levels: debug, info, warn, error.
+- **Svelte/TypeScript**: Use LogTape via `getAppLogger('feature')` from `$lib/logging/logger`. Levels: debug, info, warn, error.
   Dev mode shows info+, prod shows error+ only. Enable debug for a feature by adding to `debugCategories` in logger.ts.
 - **Rust**: Uses `tauri-plugin-log` with `RUST_LOG` var. Default: info. Example: `RUST_LOG=cmdr_lib::network=debug pnpm dev`.
   It's usually worth adding `,smb=warn,sspi=warn,info` too to suppress some excessive logging from smb, unless you're
   debugging SMB issues.
+- **Logging guide**: Full reference with `RUST_LOG` recipes for every subsystem: [docs/tooling/logging.md](docs/tooling/logging.md)
 - When ran with `pnpm dev`, Cmdr hot reloads on file changes. Takes max 15s for back-end changes, max 3s on front-end.
 
 ## MCP

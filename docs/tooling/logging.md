@@ -9,7 +9,7 @@ Uses [LogTape](https://logtape.org/) with a batching bridge to the Rust backend.
 ### Usage
 
 ```typescript
-import { getAppLogger } from '$lib/logger'
+import { getAppLogger } from '$lib/logging/logger'
 
 const log = getAppLogger('fileExplorer')
 log.debug('Loading directory {path}', { path })
@@ -39,7 +39,7 @@ From lowest to highest: `debug` < `info` < `warning` < `error` < `fatal`
 
 ### Enabling debug logs for a feature
 
-Edit `apps/desktop/src/lib/logger.ts` and add the feature name to `debugCategories`:
+Edit `apps/desktop/src/lib/logging/logger.ts` and add the feature name to `debugCategories`:
 
 ```typescript
 const debugCategories: string[] = [
@@ -92,6 +92,29 @@ RUST_LOG=trace pnpm dev
 ```
 
 Format: `HH:MM:SS.cc LEVEL target  message`. Frontend logs appear with an `FE:` prefix followed by the LogTape category name.
+
+## RUST_LOG recipes
+
+Copy-paste commands for common debugging scenarios. All include `info` as the base level.
+
+| Area | Command |
+|------|---------|
+| Network/SMB | `RUST_LOG=cmdr_lib::network=debug,mdns_sd=debug,smb=warn,sspi=warn,info pnpm dev` |
+| Drive indexing | `RUST_LOG=cmdr_lib::indexing=debug,info pnpm dev` |
+| Indexing scanner only | `RUST_LOG=cmdr_lib::indexing::scanner=debug,info pnpm dev` |
+| Indexing FSEvents | `RUST_LOG=cmdr_lib::indexing::watcher=debug,info pnpm dev` |
+| File operations (copy/move/delete) | `RUST_LOG=cmdr_lib::file_system::write_operations=debug,info pnpm dev` |
+| Directory listing | `RUST_LOG=cmdr_lib::file_system::listing=debug,info pnpm dev` |
+| File viewer | `RUST_LOG=cmdr_lib::file_viewer=debug,FE:viewer=debug,info pnpm dev` |
+| MTP (Android devices) | `RUST_LOG=cmdr_lib::mtp=debug,FE:mtp=debug,info pnpm dev` |
+| AI/LLM | `RUST_LOG=cmdr_lib::ai=debug,info pnpm dev` |
+| Licensing | `RUST_LOG=cmdr_lib::licensing=debug,info pnpm dev` |
+| MCP server | `RUST_LOG=cmdr_lib::mcp=debug,info pnpm dev` |
+| All frontend logs | `RUST_LOG=FE:=debug,info pnpm dev` |
+| Specific FE feature | `RUST_LOG=FE:fileExplorer=debug,info pnpm dev` |
+| Everything (noisy deps suppressed) | `RUST_LOG=debug,smb=warn,sspi=warn,mdns_sd=warn,hyper=warn pnpm dev` |
+
+Frontend log targets use `FE:{category}` where category matches the `getAppLogger('category')` name.
 
 ## Verbose logging
 

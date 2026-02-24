@@ -13,7 +13,7 @@ import {
     densityMappings,
 } from '$lib/settings'
 import { formatDateTimeWithFormat, formatFileSizeWithFormat } from './format-utils'
-import { getAppLogger } from '$lib/logger'
+import { getAppLogger } from '$lib/logging/logger'
 import { clearExtensionIconCache } from '$lib/icon-cache'
 
 const log = getAppLogger('reactive-settings')
