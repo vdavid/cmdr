@@ -2,20 +2,32 @@
 //!
 //! Monitors an entire volume root using macOS FSEvents with file-level granularity.
 //! Provides event IDs for scan/watch reconciliation and `sinceWhen` replay on cold start.
-//! Uses [`cmdr-fsevent-stream`] under the hood.
+//! Uses [`cmdr-fsevent-stream`] under the hood (macOS only).
+//!
+//! On non-macOS platforms, stub implementations are provided so the rest of the
+//! indexing system compiles. `DriveWatcher::start` returns `WatcherError::StreamCreate`
+//! and `current_event_id` returns `0`.
 
+#[cfg(target_os = "macos")]
 use std::path::Path;
+#[cfg(target_os = "macos")]
 use std::sync::Arc;
+#[cfg(target_os = "macos")]
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+#[cfg(target_os = "macos")]
 use std::time::Duration;
 
+#[cfg(target_os = "macos")]
 use futures_util::StreamExt;
+#[cfg(target_os = "macos")]
 use tokio::sync::mpsc;
 
+#[cfg(target_os = "macos")]
 use cmdr_fsevent_stream::ffi::{
     kFSEventStreamCreateFlagFileEvents, kFSEventStreamCreateFlagNoDefer, kFSEventStreamCreateFlagUseCFTypes,
     kFSEventStreamEventIdSinceNow,
 };
+#[cfg(target_os = "macos")]
 use cmdr_fsevent_stream::stream::{Event, EventStreamHandler, StreamFlags, create_event_stream};
 
 // ── Public types ─────────────────────────────────────────────────────
@@ -63,8 +75,9 @@ impl std::fmt::Display for WatcherError {
 
 impl std::error::Error for WatcherError {}
 
-// ── DriveWatcher ─────────────────────────────────────────────────────
+// ── DriveWatcher (macOS) ─────────────────────────────────────────────
 
+#[cfg(target_os = "macos")]
 /// Watches an entire volume root for filesystem changes via macOS FSEvents.
 ///
 /// Runs the FSEvents stream on a dedicated tokio task, forwarding parsed events
@@ -80,6 +93,7 @@ pub struct DriveWatcher {
     forward_task: Option<tauri::async_runtime::JoinHandle<()>>,
 }
 
+#[cfg(target_os = "macos")]
 impl DriveWatcher {
     /// Start watching `root` for filesystem changes.
     ///
@@ -176,6 +190,7 @@ impl DriveWatcher {
     }
 }
 
+#[cfg(target_os = "macos")]
 impl Drop for DriveWatcher {
     fn drop(&mut self) {
         if self.running.load(Ordering::Relaxed) {
@@ -184,9 +199,42 @@ impl Drop for DriveWatcher {
     }
 }
 
+// ── DriveWatcher stub (non-macOS) ────────────────────────────────────
+
+#[cfg(not(target_os = "macos"))]
+/// Stub DriveWatcher for non-macOS platforms. FSEvents is macOS-only.
+pub struct DriveWatcher {
+    _private: (),
+}
+
+#[cfg(not(target_os = "macos"))]
+impl DriveWatcher {
+    /// Always returns `WatcherError::StreamCreate` on non-macOS platforms.
+    pub fn start(
+        _root: &std::path::Path,
+        _since_when: u64,
+        _event_sender: tokio::sync::mpsc::UnboundedSender<FsChangeEvent>,
+    ) -> Result<Self, WatcherError> {
+        Err(WatcherError::StreamCreate(
+            "FSEvents is only available on macOS".to_string(),
+        ))
+    }
+
+    pub fn stop(&mut self) {}
+
+    pub fn last_event_id(&self) -> u64 {
+        0
+    }
+
+    pub fn is_running(&self) -> bool {
+        false
+    }
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────
 
 /// Convert a `cmdr_fsevent_stream::Event` into our `FsChangeEvent`.
+#[cfg(target_os = "macos")]
 fn parse_event(event: &Event) -> FsChangeEvent {
     FsChangeEvent {
         path: event.path.to_string_lossy().to_string(),
@@ -208,14 +256,21 @@ fn parse_event(event: &Event) -> FsChangeEvent {
 /// Get the current system-wide FSEvents event ID.
 ///
 /// Useful for determining `sinceWhen` at the start of a scan.
+/// Returns `0` on non-macOS platforms.
+#[cfg(target_os = "macos")]
 pub fn current_event_id() -> u64 {
     // Safety: FSEventsGetCurrentEventId is a simple read of the global counter
     unsafe { cmdr_fsevent_stream::ffi::FSEventsGetCurrentEventId() }
 }
 
+#[cfg(not(target_os = "macos"))]
+pub fn current_event_id() -> u64 {
+    0
+}
+
 // ── Tests ────────────────────────────────────────────────────────────
 
-#[cfg(test)]
+#[cfg(all(test, target_os = "macos"))]
 mod tests {
     use super::*;
 
