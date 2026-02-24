@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use std::sync::{LazyLock, RwLock};
 
 use crate::file_system::listing::metadata::FileEntry;
-use crate::file_system::listing::sorting::{SortColumn, SortOrder};
+use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
 
 /// Cache for directory listings (on-demand virtual scrolling).
 /// Key: listing_id, Value: cached listing with all entries.
@@ -29,6 +29,8 @@ pub(crate) struct CachedListing {
     pub sort_by: SortColumn,
     /// Current sort order
     pub sort_order: SortOrder,
+    /// How directories are sorted relative to the current sort column
+    pub directory_sort_mode: DirectorySortMode,
 }
 
 /// Cached directory listing for on-demand virtual scrolling.
@@ -44,4 +46,6 @@ pub(crate) struct CachedListing {
     pub sort_by: SortColumn,
     /// Current sort order
     pub sort_order: SortOrder,
+    /// How directories are sorted relative to the current sort column
+    pub directory_sort_mode: DirectorySortMode,
 }

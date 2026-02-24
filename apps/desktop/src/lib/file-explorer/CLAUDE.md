@@ -48,17 +48,25 @@ Dual-pane file explorer with keyboard-driven navigation, file selection, sorting
 - **Natural sorting** — `file10.txt` after `file2.txt`
 - **Extension grouping** — dotfiles → no-extension → by extension alphabetically
 - **Per-column remembered order** — ascending/descending persisted in `settings.json`
+- **Directory sort mode** — setting `listing.directorySortMode` controls how dirs sort among themselves:
+    - `likeFiles` (default): dirs sort by the active column (uses `recursive_size` for Size). Dirs with unknown size
+      sort last.
+    - `alwaysByName`: dirs always sort by name, ignoring the active sort column.
+- **Name ASC tiebreaker** — when primary sort values are equal, entries fall back to name ascending
 
 ### Implementation
 
 - **Efficient re-sort** — `resort_listing` re-sorts cached listing without disk reads
 - **Preserves cursor by filename** — frontend sends current filename, backend returns new index
 - **Preserves selection by indices** — backend resolves filenames, re-finds after sort
+- **Dir sort mode flows via IPC** — `directorySortMode` passed to `listDirectoryStart` and `resortListing`, stored in
+  `CachedListing` so watcher re-sorts use the correct mode
 
 ### Gotchas
 
 - **A and B cleared after sort** — range selection anchor/end reset (sorting is "new context")
 - **Selected indices remapped** — backend returns `newSelectedIndices[]`, frontend updates `Set`
+- **Dir size = `recursive_size`** — for sorting, dirs use `recursive_size` (from drive index), not `size` (always None)
 
 ## Command palette (`../command-palette/`)
 

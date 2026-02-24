@@ -5,6 +5,7 @@
 
 use super::caching::{CachedListing, LISTING_CACHE};
 use super::operations::{find_file_index, get_file_at, get_file_range, get_total_count, list_directory_end};
+use super::sorting::DirectorySortMode;
 use super::{FileEntry, SortColumn, SortOrder};
 use crate::file_system::volume::{InMemoryVolume, Volume};
 use std::path::Path;
@@ -69,6 +70,7 @@ fn test_get_total_count_with_hidden_includes_all() {
                 entries,
                 sort_by: SortColumn::Name,
                 sort_order: SortOrder::Ascending,
+                directory_sort_mode: DirectorySortMode::LikeFiles,
             },
         );
     }
@@ -99,6 +101,7 @@ fn test_get_total_count_without_hidden_excludes_dot_files() {
                 entries,
                 sort_by: SortColumn::Name,
                 sort_order: SortOrder::Ascending,
+                directory_sort_mode: DirectorySortMode::LikeFiles,
             },
         );
     }
@@ -133,6 +136,7 @@ fn test_get_file_range_with_hidden_returns_all() {
                 entries,
                 sort_by: SortColumn::Name,
                 sort_order: SortOrder::Ascending,
+                directory_sort_mode: DirectorySortMode::LikeFiles,
             },
         );
     }
@@ -168,6 +172,7 @@ fn test_get_file_range_without_hidden_excludes_dot_files() {
                 entries,
                 sort_by: SortColumn::Name,
                 sort_order: SortOrder::Ascending,
+                directory_sort_mode: DirectorySortMode::LikeFiles,
             },
         );
     }
@@ -207,6 +212,7 @@ fn test_get_file_range_pagination_respects_hidden_filter() {
                 entries,
                 sort_by: SortColumn::Name,
                 sort_order: SortOrder::Ascending,
+                directory_sort_mode: DirectorySortMode::LikeFiles,
             },
         );
     }
@@ -253,6 +259,7 @@ fn test_find_file_index_hidden_file_with_hidden_enabled() {
                 entries,
                 sort_by: SortColumn::Name,
                 sort_order: SortOrder::Ascending,
+                directory_sort_mode: DirectorySortMode::LikeFiles,
             },
         );
     }
@@ -282,6 +289,7 @@ fn test_find_file_index_hidden_file_with_hidden_disabled() {
                 entries,
                 sort_by: SortColumn::Name,
                 sort_order: SortOrder::Ascending,
+                directory_sort_mode: DirectorySortMode::LikeFiles,
             },
         );
     }
@@ -311,6 +319,7 @@ fn test_find_file_index_visible_file_index_changes_with_hidden_setting() {
                 entries,
                 sort_by: SortColumn::Name,
                 sort_order: SortOrder::Ascending,
+                directory_sort_mode: DirectorySortMode::LikeFiles,
             },
         );
     }
@@ -357,6 +366,7 @@ fn test_get_file_at_index_0_with_hidden_enabled() {
                 entries,
                 sort_by: SortColumn::Name,
                 sort_order: SortOrder::Ascending,
+                directory_sort_mode: DirectorySortMode::LikeFiles,
             },
         );
     }
@@ -392,6 +402,7 @@ fn test_get_file_at_index_0_with_hidden_disabled() {
                 entries,
                 sort_by: SortColumn::Name,
                 sort_order: SortOrder::Ascending,
+                directory_sort_mode: DirectorySortMode::LikeFiles,
             },
         );
     }
@@ -436,6 +447,7 @@ fn test_directory_with_only_hidden_files() {
                 entries,
                 sort_by: SortColumn::Name,
                 sort_order: SortOrder::Ascending,
+                directory_sort_mode: DirectorySortMode::LikeFiles,
             },
         );
     }
@@ -470,6 +482,7 @@ fn test_directory_with_no_hidden_files() {
                 entries,
                 sort_by: SortColumn::Name,
                 sort_order: SortOrder::Ascending,
+                directory_sort_mode: DirectorySortMode::LikeFiles,
             },
         );
     }

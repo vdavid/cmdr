@@ -10,6 +10,7 @@ import {
     type UiDensity,
     type DateTimeFormat,
     type FileSizeFormat,
+    type DirectorySortMode,
     densityMappings,
 } from '$lib/settings'
 import { formatDateTimeWithFormat, formatFileSizeWithFormat } from './format-utils'
@@ -24,6 +25,7 @@ let dateTimeFormat = $state<DateTimeFormat>('iso')
 let customDateTimeFormat = $state<string>('YYYY-MM-DD HH:mm')
 let fileSizeFormat = $state<FileSizeFormat>('binary')
 let useAppIconsForDocuments = $state<boolean>(true)
+let directorySortMode = $state<DirectorySortMode>('likeFiles')
 
 let initialized = false
 let unsubscribe: (() => void) | undefined
@@ -45,6 +47,7 @@ export async function initReactiveSettings(): Promise<void> {
         customDateTimeFormat = getSetting('appearance.customDateTimeFormat')
         fileSizeFormat = getSetting('appearance.fileSizeFormat')
         useAppIconsForDocuments = getSetting('appearance.useAppIconsForDocuments')
+        directorySortMode = getSetting('listing.directorySortMode')
 
         // Subscribe to changes (including cross-window changes)
         unsubscribe = onSettingChange((id, value) => {
@@ -72,6 +75,10 @@ export async function initReactiveSettings(): Promise<void> {
                     useAppIconsForDocuments = value as boolean
                     // Clear the icon cache so icons are re-fetched with the new setting
                     void clearExtensionIconCache()
+                    break
+                case 'listing.directorySortMode':
+                    log.info('Applying directory sort mode change: {value}', { value })
+                    directorySortMode = value as DirectorySortMode
                     break
             }
         })
@@ -109,6 +116,11 @@ export function getIsCompactDensity(): boolean {
 /** Get current "use app icons for documents" setting */
 export function getUseAppIconsForDocuments(): boolean {
     return useAppIconsForDocuments
+}
+
+/** Get current directory sort mode */
+export function getDirectorySortMode(): DirectorySortMode {
+    return directorySortMode
 }
 
 // ============================================================================

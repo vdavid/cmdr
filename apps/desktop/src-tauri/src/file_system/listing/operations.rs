@@ -12,7 +12,7 @@ use uuid::Uuid;
 use crate::benchmark;
 use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
 use crate::file_system::listing::metadata::FileEntry;
-use crate::file_system::listing::sorting::{SortColumn, SortOrder, sort_entries};
+use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder, sort_entries};
 use crate::file_system::watcher::{start_watching, stop_watching};
 
 /// Returns true if the entry is not a hidden dotfile.
@@ -39,7 +39,14 @@ pub struct ListingStartResult {
 /// Reads the directory once, caches it, and returns listing ID + total count.
 /// Frontend then fetches visible ranges on demand via `get_file_range`.
 pub fn list_directory_start(path: &Path, include_hidden: bool) -> Result<ListingStartResult, std::io::Error> {
-    list_directory_start_with_volume("root", path, include_hidden, SortColumn::Name, SortOrder::Ascending)
+    list_directory_start_with_volume(
+        "root",
+        path,
+        include_hidden,
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+    )
 }
 
 /// Starts a new directory listing using a specific volume.
@@ -51,6 +58,7 @@ pub fn list_directory_start_with_volume(
     include_hidden: bool,
     sort_by: SortColumn,
     sort_order: SortOrder,
+    dir_sort_mode: DirectorySortMode,
 ) -> Result<ListingStartResult, std::io::Error> {
     // Reset benchmark epoch for this navigation
     benchmark::reset_epoch();
@@ -80,9 +88,13 @@ pub fn list_directory_start_with_volume(
         all_entries.iter().filter(|e| is_visible(e)).count()
     };
 
-    // Sort the entries
+    // Enrich directory entries with index data (recursive_size etc.) before sorting,
+    // so that sort-by-size works correctly for directories.
     let mut all_entries = all_entries;
-    sort_entries(&mut all_entries, sort_by, sort_order);
+    crate::indexing::enrich_entries_with_index(&mut all_entries);
+
+    // Sort the entries
+    sort_entries(&mut all_entries, sort_by, sort_order, dir_sort_mode);
 
     // Cache the entries FIRST (watcher will read from here)
     if let Ok(mut cache) = LISTING_CACHE.write() {
@@ -94,6 +106,7 @@ pub fn list_directory_start_with_volume(
                 entries: all_entries.clone(),
                 sort_by,
                 sort_order,
+                directory_sort_mode: dir_sort_mode,
             },
         );
     }
@@ -318,10 +331,15 @@ pub struct ResortResult {
 /// Re-sorts an existing cached listing in-place.
 ///
 /// More efficient than creating a new listing when you just want to change the sort order.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "Resort requires sort params, cursor tracking, and selection state"
+)]
 pub fn resort_listing(
     listing_id: &str,
     sort_by: SortColumn,
     sort_order: SortOrder,
+    dir_sort_mode: DirectorySortMode,
     cursor_filename: Option<&str>,
     include_hidden: bool,
     selected_indices: Option<&[usize]>,
@@ -351,9 +369,13 @@ pub fn resort_listing(
         })
     };
 
+    // Refresh index data before re-sorting (cache entries may not have fresh sizes)
+    crate::indexing::enrich_entries_with_index(&mut listing.entries);
+
     // Re-sort the entries
-    sort_entries(&mut listing.entries, sort_by, sort_order);
+    sort_entries(&mut listing.entries, sort_by, sort_order, dir_sort_mode);
     listing.sort_by = sort_by;
+    listing.directory_sort_mode = dir_sort_mode;
     listing.sort_order = sort_order;
 
     // Find the new cursor position
@@ -417,7 +439,13 @@ pub(crate) fn update_listing_entries(listing_id: &str, entries: Vec<FileEntry>) 
         && let Some(listing) = cache.get_mut(listing_id)
     {
         let mut entries = entries;
-        sort_entries(&mut entries, listing.sort_by, listing.sort_order);
+        crate::indexing::enrich_entries_with_index(&mut entries);
+        sort_entries(
+            &mut entries,
+            listing.sort_by,
+            listing.sort_order,
+            listing.directory_sort_mode,
+        );
         listing.entries = entries;
     }
 }

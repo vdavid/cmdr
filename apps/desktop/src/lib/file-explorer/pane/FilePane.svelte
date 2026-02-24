@@ -66,7 +66,7 @@
     import { cancelClickToRename } from '../rename/rename-activation'
     import { executeRenameSave, performRename, checkPermission, type RenameResult } from '../rename/rename-operations'
     import { moveToTrash, type RenameValidityResult } from '$lib/tauri-commands'
-    import { getSetting } from '$lib/settings'
+    import { getSetting, type DirectorySortMode } from '$lib/settings'
     import type { ConflictResolution } from '../rename/RenameConflictDialog.svelte'
     import Notification from '$lib/ui/Notification.svelte'
     import ExtensionChangeDialog from '../rename/ExtensionChangeDialog.svelte'
@@ -92,6 +92,7 @@
         viewMode?: ViewMode
         sortBy?: SortColumn
         sortOrder?: SortOrder
+        directorySortMode?: DirectorySortMode
         onPathChange?: (path: string) => void
         onVolumeChange?: (volumeId: string, volumePath: string, targetPath: string) => void
         onSortChange?: (column: SortColumn) => void
@@ -115,6 +116,7 @@
         viewMode = 'brief',
         sortBy = 'name',
         sortOrder = 'ascending',
+        directorySortMode = 'likeFiles',
         onPathChange,
         onVolumeChange,
         onSortChange,
@@ -993,7 +995,15 @@
                 '[FilePane] calling listDirectoryStart: volumeId={volumeId}, path={loadPath}, listingId={listingId}',
                 { volumeId, loadPath, listingId: newListingId },
             )
-            const result = await listDirectoryStart(volumeId, path, includeHidden, sortBy, sortOrder, newListingId)
+            const result = await listDirectoryStart(
+                volumeId,
+                path,
+                includeHidden,
+                sortBy,
+                sortOrder,
+                newListingId,
+                directorySortMode,
+            )
             benchmark.logEventValue('IPC listDirectoryStart RETURNED', result.listingId)
             log.debug('[FilePane] listDirectoryStart returned: status={status}', {
                 status: JSON.stringify(result.status),

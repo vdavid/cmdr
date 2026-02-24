@@ -8,6 +8,7 @@ export type {
     DensityValues,
     DurationUnit,
     EnumOption,
+    DirectorySortMode,
     ExtensionChangePolicy,
     FileSizeFormat,
     NetworkTimeoutMode,

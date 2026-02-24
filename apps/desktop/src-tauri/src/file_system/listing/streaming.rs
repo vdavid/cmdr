@@ -15,7 +15,7 @@ use std::time::Duration;
 
 use crate::benchmark;
 use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
-use crate::file_system::listing::sorting::{SortColumn, SortOrder, sort_entries};
+use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder, sort_entries};
 use crate::file_system::watcher::start_watching;
 
 // ============================================================================
@@ -112,6 +112,10 @@ pub(crate) static STREAMING_STATE: LazyLock<RwLock<HashMap<String, Arc<Streaming
 ///
 /// This is non-blocking - the actual directory reading happens in a background task.
 /// Progress is reported via Tauri events every 500ms.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "Streaming operation requires many state parameters"
+)]
 pub async fn list_directory_start_streaming(
     app: tauri::AppHandle,
     volume_id: &str,
@@ -119,6 +123,7 @@ pub async fn list_directory_start_streaming(
     include_hidden: bool,
     sort_by: SortColumn,
     sort_order: SortOrder,
+    dir_sort_mode: DirectorySortMode,
     listing_id: String,
 ) -> Result<StreamingListingStartResult, std::io::Error> {
     // Reset benchmark epoch for this navigation
@@ -158,6 +163,7 @@ pub async fn list_directory_start_streaming(
                 include_hidden,
                 sort_by,
                 sort_order,
+                dir_sort_mode,
             )
         })
         .await;
@@ -220,6 +226,7 @@ fn read_directory_with_progress(
     include_hidden: bool,
     sort_by: SortColumn,
     sort_order: SortOrder,
+    dir_sort_mode: DirectorySortMode,
 ) -> Result<(), std::io::Error> {
     use tauri::Emitter;
 
@@ -318,9 +325,13 @@ fn read_directory_with_progress(
         return Ok(());
     }
 
+    // Enrich directory entries with index data (recursive_size etc.) before sorting,
+    // so that sort-by-size works correctly for directories.
+    crate::indexing::enrich_entries_with_index(&mut entries);
+
     // Sort entries
     benchmark::log_event("sort START");
-    sort_entries(&mut entries, sort_by, sort_order);
+    sort_entries(&mut entries, sort_by, sort_order, dir_sort_mode);
     benchmark::log_event("sort END");
 
     // Calculate counts based on include_hidden setting
@@ -363,6 +374,7 @@ fn read_directory_with_progress(
                 entries,
                 sort_by,
                 sort_order,
+                directory_sort_mode: dir_sort_mode,
             },
         );
     }

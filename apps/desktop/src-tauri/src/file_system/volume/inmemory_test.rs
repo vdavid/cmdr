@@ -301,7 +301,7 @@ fn test_multiple_concurrent_streaming_states() {
 
 #[test]
 fn test_streaming_entries_are_sorted() {
-    use crate::file_system::listing::sorting::sort_entries;
+    use crate::file_system::listing::sorting::{DirectorySortMode, sort_entries};
     use crate::file_system::listing::{SortColumn, SortOrder};
 
     // Create unsorted entries
@@ -313,7 +313,12 @@ fn test_streaming_entries_are_sorted() {
     ];
 
     // Sort by name ascending (default)
-    sort_entries(&mut entries, SortColumn::Name, SortOrder::Ascending);
+    sort_entries(
+        &mut entries,
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+    );
 
     // Directories should come first, sorted alphabetically
     assert_eq!(entries[0].name, "aardvark");

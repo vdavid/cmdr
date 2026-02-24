@@ -22,10 +22,10 @@ use std::sync::{Arc, LazyLock};
 #[allow(unused_imports, reason = "Public API re-exports for future use")]
 pub use listing::ExtendedMetadata;
 pub use listing::{
-    FileEntry, ListingStartResult, ListingStats, ResortResult, SortColumn, SortOrder, StreamingListingStartResult,
-    cancel_listing, find_file_index, get_file_at, get_file_range, get_listing_stats, get_max_filename_width,
-    get_total_count, list_directory_end, list_directory_start_streaming, list_directory_start_with_volume,
-    resort_listing,
+    DirectorySortMode, FileEntry, ListingStartResult, ListingStats, ResortResult, SortColumn, SortOrder,
+    StreamingListingStartResult, cancel_listing, find_file_index, get_file_at, get_file_range, get_listing_stats,
+    get_max_filename_width, get_total_count, list_directory_end, list_directory_start_streaming,
+    list_directory_start_with_volume, resort_listing,
 };
 // macOS-only exports (used by drag operations)
 #[cfg(target_os = "macos")]

@@ -70,6 +70,7 @@ export type DateTimeFormat = 'system' | 'iso' | 'short' | 'custom'
 export type NetworkTimeoutMode = 'normal' | 'slow' | 'custom'
 export type ThemeMode = 'light' | 'dark' | 'system'
 export type ExtensionChangePolicy = 'yes' | 'no' | 'ask'
+export type DirectorySortMode = 'likeFiles' | 'alwaysByName'
 
 export interface SettingsValues {
     // Appearance
@@ -78,6 +79,9 @@ export interface SettingsValues {
     'appearance.fileSizeFormat': FileSizeFormat
     'appearance.dateTimeFormat': DateTimeFormat
     'appearance.customDateTimeFormat': string
+
+    // Listing
+    'listing.directorySortMode': DirectorySortMode
 
     // File operations
     'fileOperations.confirmBeforeDelete': boolean

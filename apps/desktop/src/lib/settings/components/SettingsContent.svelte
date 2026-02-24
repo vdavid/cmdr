@@ -1,6 +1,7 @@
 <script lang="ts">
     import AppearanceSection from '$lib/settings/sections/AppearanceSection.svelte'
     import FileOperationsSection from '$lib/settings/sections/FileOperationsSection.svelte'
+    import ListingSection from '$lib/settings/sections/ListingSection.svelte'
     import DriveIndexingSection from '$lib/settings/sections/DriveIndexingSection.svelte'
     import UpdatesSection from '$lib/settings/sections/UpdatesSection.svelte'
     import NetworkSection from '$lib/settings/sections/NetworkSection.svelte'
@@ -79,6 +80,12 @@
         {#if shouldShowSection(['General', 'Appearance'])}
             <section data-section-id="general-appearance">
                 <AppearanceSection {searchQuery} />
+            </section>
+        {/if}
+
+        {#if shouldShowSection(['General', 'Listing'])}
+            <section data-section-id="general-listing">
+                <ListingSection {searchQuery} />
             </section>
         {/if}
 

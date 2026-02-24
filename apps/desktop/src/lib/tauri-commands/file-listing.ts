@@ -9,6 +9,7 @@ import type {
     SortOrder,
     StreamingListingStartResult,
 } from '../file-explorer/types'
+import type { DirectorySortMode } from '$lib/settings'
 
 /**
  * Starts a new streaming directory listing.
@@ -20,6 +21,7 @@ import type {
  * @param sortBy - Column to sort by.
  * @param sortOrder - Ascending or descending.
  * @param listingId - Unique identifier for the listing (used for cancellation)
+ * @param directorySortMode - How to sort directories: like files or always by name.
  */
 export async function listDirectoryStart(
     volumeId: string,
@@ -28,6 +30,7 @@ export async function listDirectoryStart(
     sortBy: SortColumn,
     sortOrder: SortOrder,
     listingId: string,
+    directorySortMode?: DirectorySortMode,
 ): Promise<StreamingListingStartResult> {
     return invoke<StreamingListingStartResult>('list_directory_start_streaming', {
         volumeId,
@@ -36,6 +39,7 @@ export async function listDirectoryStart(
         sortBy,
         sortOrder,
         listingId,
+        directorySortMode,
     })
 }
 
@@ -58,6 +62,7 @@ export async function cancelListing(listingId: string): Promise<void> {
  * @param includeHidden - Whether to include hidden files when calculating cursor index.
  * @param selectedIndices - Optional indices of selected files to track through re-sort.
  * @param allSelected - If true, all files are selected (optimization).
+ * @param directorySortMode - How to sort directories: like files or always by name.
  * @public
  */
 export async function resortListing(
@@ -68,6 +73,7 @@ export async function resortListing(
     includeHidden: boolean,
     selectedIndices?: number[],
     allSelected?: boolean,
+    directorySortMode?: DirectorySortMode,
 ): Promise<ResortResult> {
     return invoke<ResortResult>('resort_listing', {
         listingId,
@@ -77,6 +83,7 @@ export async function resortListing(
         includeHidden,
         selectedIndices,
         allSelected,
+        directorySortMode,
     })
 }
 

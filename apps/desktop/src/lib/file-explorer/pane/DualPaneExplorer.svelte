@@ -77,6 +77,7 @@
         endSelfDragSession,
     } from '../drag/drag-drop'
     import { initIndexEvents, prioritizeDir, cancelNavPriority } from '$lib/indexing/index'
+    import { getDirectorySortMode } from '$lib/settings/reactive-settings.svelte'
     import { resolveDropTarget } from '../drag/drop-target-hit-testing'
     import DragOverlay from '../drag/DragOverlay.svelte'
     import { showOverlay, updateOverlay, hideOverlay, type OverlayFileInfo } from '../drag/drag-overlay.svelte.js'
@@ -332,6 +333,7 @@
             showHiddenFiles,
             sortState.backendSelectedIndices,
             sortState.allSelected,
+            getDirectorySortMode(),
         )
 
         setPaneSort(pane, newColumn, newOrder)
@@ -339,6 +341,41 @@
         void saveColumnSortOrder(newColumn, newOrder)
         applySortResult(paneRef, result, sortState.hasParent)
     }
+
+    /** Re-sorts a single pane in-place using its current column/order but a new directorySortMode. */
+    async function resortPaneWithCurrentSort(pane: 'left' | 'right') {
+        const paneRef = getPaneRef(pane)
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const listingId = paneRef?.getListingId?.() as string | undefined
+        if (!listingId) return
+
+        const { sortBy, sortOrder } = getPaneSort(pane)
+        const sortState = collectSortState(paneRef)
+        const result = await resortListing(
+            listingId,
+            sortBy,
+            sortOrder,
+            sortState.cursorFilename,
+            showHiddenFiles,
+            sortState.backendSelectedIndices,
+            sortState.allSelected,
+            getDirectorySortMode(),
+        )
+        applySortResult(paneRef, result, sortState.hasParent)
+    }
+
+    // Re-sort both panes when directorySortMode setting changes
+    $effect(() => {
+        // Read the reactive value to establish the dependency
+        void getDirectorySortMode()
+        // Skip during initialization
+        if (!initialized) return
+        // Re-sort both panes with the new mode (untrack to avoid re-triggering)
+        untrack(() => {
+            void resortPaneWithCurrentSort('left')
+            void resortPaneWithCurrentSort('right')
+        })
+    })
 
     async function handleVolumeChange(
         pane: 'left' | 'right',
@@ -1547,6 +1584,7 @@
             showHiddenFiles,
             sortState.backendSelectedIndices,
             sortState.allSelected,
+            getDirectorySortMode(),
         )
 
         setPaneSort(pane, column, newOrder)
@@ -1821,6 +1859,7 @@
                 viewMode={leftViewMode}
                 sortBy={leftSortBy}
                 sortOrder={leftSortOrder}
+                directorySortMode={getDirectorySortMode()}
                 onPathChange={(path: string) => {
                     handlePathChange('left', path)
                 }}
@@ -1859,6 +1898,7 @@
                 viewMode={rightViewMode}
                 sortBy={rightSortBy}
                 sortOrder={rightSortOrder}
+                directorySortMode={getDirectorySortMode()}
                 onPathChange={(path: string) => {
                     handlePathChange('right', path)
                 }}

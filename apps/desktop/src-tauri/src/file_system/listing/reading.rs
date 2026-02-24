@@ -14,7 +14,7 @@ use std::path::Path;
 
 use crate::benchmark;
 use crate::file_system::listing::metadata::{ExtendedMetadata, FileEntry, get_group_name, get_icon_id, get_owner_name};
-use crate::file_system::listing::sorting::{SortColumn, SortOrder, sort_entries};
+use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder, sort_entries};
 
 /// Lists the contents of a directory with full metadata (including macOS extended metadata).
 ///
@@ -112,7 +112,12 @@ pub fn list_directory_core(path: &Path) -> Result<Vec<FileEntry>, std::io::Error
 
     // Sort: directories first, then files, both alphabetically (using natural sort)
     benchmark::log_event("sort START");
-    sort_entries(&mut entries, SortColumn::Name, SortOrder::Ascending);
+    sort_entries(
+        &mut entries,
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+    );
     benchmark::log_event("sort END");
 
     let total_time = overall_start.elapsed();

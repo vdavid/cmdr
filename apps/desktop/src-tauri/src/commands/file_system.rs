@@ -7,9 +7,9 @@ use crate::file_system::write_operations::{
     resolve_write_conflict as ops_resolve_write_conflict, start_scan_preview as ops_start_scan_preview,
 };
 use crate::file_system::{
-    FileEntry, ListingStartResult, ListingStats, OperationStatus, OperationSummary, ResortResult, ScanConflict,
-    SortColumn, SortOrder, StreamingListingStartResult, VolumeCopyConfig, VolumeCopyScanResult, WriteOperationConfig,
-    WriteOperationError, WriteOperationStartResult, cancel_listing as ops_cancel_listing,
+    DirectorySortMode, FileEntry, ListingStartResult, ListingStats, OperationStatus, OperationSummary, ResortResult,
+    ScanConflict, SortColumn, SortOrder, StreamingListingStartResult, VolumeCopyConfig, VolumeCopyScanResult,
+    WriteOperationConfig, WriteOperationError, WriteOperationStartResult, cancel_listing as ops_cancel_listing,
     cancel_write_operation as ops_cancel_write_operation, copy_between_volumes as ops_copy_between_volumes,
     copy_files_start as ops_copy_files_start, delete_files_start as ops_delete_files_start,
     find_file_index as ops_find_file_index, get_file_at as ops_get_file_at, get_file_range as ops_get_file_range,
@@ -132,16 +132,19 @@ pub fn list_directory_start(
     include_hidden: bool,
     sort_by: SortColumn,
     sort_order: SortOrder,
+    directory_sort_mode: Option<DirectorySortMode>,
 ) -> Result<ListingStartResult, String> {
     let expanded_path = expand_tilde(&path);
     let path_buf = PathBuf::from(&expanded_path);
-    ops_list_directory_start_with_volume("root", &path_buf, include_hidden, sort_by, sort_order)
+    let dir_sort_mode = directory_sort_mode.unwrap_or_default();
+    ops_list_directory_start_with_volume("root", &path_buf, include_hidden, sort_by, sort_order, dir_sort_mode)
         .map_err(|e| format!("Failed to start directory listing '{}': {}", path, e))
 }
 
 /// Returns immediately; reads in background.
 /// Emits listing-progress, listing-complete, listing-error, listing-cancelled.
 #[tauri::command]
+#[allow(clippy::too_many_arguments, reason = "Tauri commands require top-level arguments")]
 pub async fn list_directory_start_streaming(
     app: tauri::AppHandle,
     volume_id: String,
@@ -149,6 +152,7 @@ pub async fn list_directory_start_streaming(
     include_hidden: bool,
     sort_by: SortColumn,
     sort_order: SortOrder,
+    directory_sort_mode: Option<DirectorySortMode>,
     listing_id: String,
 ) -> Result<StreamingListingStartResult, String> {
     // Only expand tilde for local volumes (not MTP)
@@ -158,6 +162,7 @@ pub async fn list_directory_start_streaming(
         path.clone()
     };
     let path_buf = PathBuf::from(&expanded_path);
+    let dir_sort_mode = directory_sort_mode.unwrap_or_default();
     ops_list_directory_start_streaming(
         app,
         &volume_id,
@@ -165,6 +170,7 @@ pub async fn list_directory_start_streaming(
         include_hidden,
         sort_by,
         sort_order,
+        dir_sort_mode,
         listing_id,
     )
     .await
@@ -176,11 +182,13 @@ pub fn cancel_listing(listing_id: String) {
     ops_cancel_listing(&listing_id);
 }
 
+#[allow(clippy::too_many_arguments, reason = "Tauri commands require top-level arguments")]
 #[tauri::command]
 pub fn resort_listing(
     listing_id: String,
     sort_by: SortColumn,
     sort_order: SortOrder,
+    directory_sort_mode: Option<DirectorySortMode>,
     cursor_filename: Option<String>,
     include_hidden: bool,
     selected_indices: Option<Vec<usize>>,
@@ -190,6 +198,7 @@ pub fn resort_listing(
         &listing_id,
         sort_by,
         sort_order,
+        directory_sort_mode.unwrap_or_default(),
         cursor_filename.as_deref(),
         include_hidden,
         selected_indices.as_deref(),

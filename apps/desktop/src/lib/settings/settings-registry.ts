@@ -88,6 +88,26 @@ export const settingsRegistry: SettingDefinition[] = [
     },
 
     // ========================================================================
+    // General › Listing
+    // ========================================================================
+    {
+        id: 'listing.directorySortMode',
+        section: ['General', 'Listing'],
+        label: 'Sort directories',
+        description: 'How directories are sorted when changing the sort column.',
+        keywords: ['sort', 'directory', 'folder', 'order', 'listing', 'name', 'size'],
+        type: 'enum',
+        default: 'likeFiles',
+        component: 'toggle-group',
+        constraints: {
+            options: [
+                { value: 'likeFiles', label: 'Like files' },
+                { value: 'alwaysByName', label: 'Always by name' },
+            ],
+        },
+    },
+
+    // ========================================================================
     // General › File operations
     // ========================================================================
     {

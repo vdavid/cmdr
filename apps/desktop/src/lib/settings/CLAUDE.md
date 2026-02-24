@@ -27,15 +27,15 @@ Single source of truth for all settings. Each `SettingDefinition` contains:
 
 ### Reactive state (`reactive-settings.svelte.ts`)
 
-- Svelte 5 `$state` for settings that affect UI rendering (density, date format, file size format)
+- Svelte 5 `$state` for settings that affect UI rendering (density, date format, file size format, directory sort mode)
 - Subscribes to `onSettingChange()` and updates reactive values immediately
 - Provides derived getters like `getRowHeight()` based on current density
 
 ### Sections (`sections/`)
 
-10 section components rendered inside the settings window: `AppearanceSection`, `FileOperationsSection`,
-`KeyboardShortcutsSection`, `NetworkSection`, `LoggingSection`, `McpServerSection`, `UpdatesSection`, `ThemesSection`,
-`AdvancedSection`, `DriveIndexingSection`.
+11 section components rendered inside the settings window: `AppearanceSection`, `ListingSection`,
+`FileOperationsSection`, `KeyboardShortcutsSection`, `NetworkSection`, `LoggingSection`, `McpServerSection`,
+`UpdatesSection`, `ThemesSection`, `AdvancedSection`, `DriveIndexingSection`.
 
 ### Components (`components/`)
 
