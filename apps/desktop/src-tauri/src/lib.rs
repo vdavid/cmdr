@@ -122,40 +122,72 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_dialog::init())
-        // Register the log plugin commands only (skip_logger = we set up the global logger ourselves in .setup())
-        .plugin(tauri_plugin_log::Builder::new().skip_logger().build())
+        .plugin({
+            use tauri_plugin_log::{RotationStrategy, Target, TargetKind};
+
+            fn parse_level_filter(s: &str) -> Option<log::LevelFilter> {
+                match s.to_lowercase().as_str() {
+                    "trace" => Some(log::LevelFilter::Trace),
+                    "debug" => Some(log::LevelFilter::Debug),
+                    "info" => Some(log::LevelFilter::Info),
+                    "warn" | "warning" => Some(log::LevelFilter::Warn),
+                    "error" => Some(log::LevelFilter::Error),
+                    "off" => Some(log::LevelFilter::Off),
+                    _ => None,
+                }
+            }
+
+            let mut builder = tauri_plugin_log::Builder::new()
+                .targets([
+                    Target::new(TargetKind::Stdout),
+                    Target::new(TargetKind::LogDir { file_name: None }),
+                ])
+                .rotation_strategy(RotationStrategy::KeepAll)
+                .max_file_size(50_000_000) // 50 MB
+                .format(|out, message, record| {
+                    let now = chrono::Local::now();
+                    let ts = now.format("%H:%M:%S%.3f"); // HH:MM:SS.mmm
+                    let target = record.target().strip_prefix("cmdr_lib::").unwrap_or(record.target());
+                    let level = record.level();
+                    let color = match level {
+                        log::Level::Error => "\x1b[31m", // red
+                        log::Level::Warn => "\x1b[33m",  // yellow
+                        log::Level::Info => "\x1b[32m",  // green
+                        log::Level::Debug => "\x1b[36m", // cyan
+                        log::Level::Trace => "\x1b[35m", // magenta
+                    };
+                    out.finish(format_args!("{ts} {color}{level:<5}\x1b[0m {target}  {message}"))
+                })
+                .level_for("nusb", log::LevelFilter::Warn);
+
+            // Parse RUST_LOG env var for per-module level overrides
+            if let Ok(rust_log) = std::env::var("RUST_LOG") {
+                let mut base_level = log::LevelFilter::Info;
+                for directive in rust_log.split(',') {
+                    let directive = directive.trim();
+                    if directive.is_empty() {
+                        continue;
+                    }
+                    if let Some((module, level_str)) = directive.split_once('=') {
+                        if let Some(level) = parse_level_filter(level_str) {
+                            builder = builder.level_for(module.to_string(), level);
+                        }
+                    } else if let Some(level) = parse_level_filter(directive) {
+                        base_level = level;
+                    }
+                }
+                builder = builder.level(base_level);
+            } else {
+                // No RUST_LOG: use Trace so set_max_level() controls filtering (enables verbose toggle)
+                builder = builder.level(log::LevelFilter::Trace);
+            }
+
+            builder.build()
+        })
         .setup(|app| {
-            // Set up unified logging: tauri-plugin-log for formatting/targets + env_filter for RUST_LOG support
-            {
-                use tauri_plugin_log::{RotationStrategy, Target, TargetKind, fern::colors::ColoredLevelConfig};
-                let (plugin, _max_level, logger) = tauri_plugin_log::Builder::new()
-                    .targets([
-                        Target::new(TargetKind::Stdout),
-                        Target::new(TargetKind::LogDir { file_name: None }),
-                    ])
-                    .rotation_strategy(RotationStrategy::KeepAll)
-                    .max_file_size(50_000_000) // 50 MB
-                    .format(|out, message, record| {
-                        let now = chrono::Local::now();
-                        let ts = now.format("%H:%M:%S%.2f"); // HH:MM:SS.cc (centiseconds)
-                        // Strip "cmdr_lib::" prefix from target for shorter output
-                        let target = record.target().strip_prefix("cmdr_lib::").unwrap_or(record.target());
-                        out.finish(format_args!("{ts} {:<5} {target}  {message}", record.level()))
-                    })
-                    .with_colors(ColoredLevelConfig::default())
-                    .split(app.handle())
-                    .expect("failed to initialize logger");
-
-                // Register the split plugin (handles log file targets, rotation, etc.)
-                app.handle().plugin(plugin)?;
-
-                // Wrap the plugin's logger with env_filter to support RUST_LOG
-                let filter = env_filter::Builder::from_env("RUST_LOG")
-                    .filter_level(log::LevelFilter::Info)
-                    .build();
-                let filtered = env_filter::FilteredLog::new(logger, filter);
-                log::set_boxed_logger(Box::new(filtered)).expect("failed to set global logger");
-                log::set_max_level(log::LevelFilter::Trace); // Let env_filter handle filtering
+            // When RUST_LOG is not set, restrict to Info by default (verbose toggle can raise to Debug)
+            if std::env::var("RUST_LOG").is_err() {
+                log::set_max_level(log::LevelFilter::Info);
             }
 
             // Initialize benchmarking (enabled by RUSTY_COMMANDER_BENCHMARK=1)

@@ -1,6 +1,6 @@
 # Logging
 
-Both frontend and backend logs appear in a single unified stream (terminal + log file) via `tauri-plugin-log` + `env_filter`.
+Both frontend and backend logs appear in a single unified stream (terminal + log file) via `tauri-plugin-log`.
 
 ## Frontend (Svelte/TypeScript)
 
@@ -49,7 +49,7 @@ const debugCategories: string[] = [
 
 ## Backend (Rust)
 
-Uses `tauri-plugin-log` (replaces `env_logger`) with `env_filter` for `RUST_LOG` support. Same `log` facade API.
+Uses `tauri-plugin-log` (replaces `env_logger`) with `RUST_LOG` support via parsed `level_for()` directives. Same `log` facade API.
 
 ### Usage in Rust
 
@@ -87,11 +87,11 @@ RUST_LOG=trace pnpm dev
 ## Log format
 
 ```
-10:19:34.90 DEBUG indexing::writer  Starting flush
-10:19:34.91 INFO  FE:fileExplorer   Loaded 1,204 files
+10:19:34.908 DEBUG indexing::writer  Starting flush
+10:19:34.912 INFO  FE:fileExplorer   Loaded 1,204 files
 ```
 
-Format: `HH:MM:SS.cc LEVEL target  message`. Frontend logs appear with an `FE:` prefix followed by the LogTape category name.
+Format: `HH:MM:SS.mmm LEVEL target  message`. Frontend logs appear with an `FE:` prefix followed by the LogTape category name.
 
 ## RUST_LOG recipes
 

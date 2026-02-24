@@ -10,8 +10,6 @@ file, with unified timestamps.
 | `logger.ts`          | LogTape configuration, `getAppLogger()` entry point, verbose toggle, `debugCategories`             |
 | `log-bridge.ts`      | Batching sink: collects FE logs for 100ms, deduplicates, throttles at 200/s, sends to Rust via IPC |
 | `log-bridge.test.ts` | Vitest tests for bridge (batching, dedup, throttle)                                                |
-| `index.ts`           | Barrel export                                                                                      |
-
 Rust side lives in `src-tauri/src/commands/logging.rs` (batch IPC receiver + runtime level control).
 
 ## Architecture
@@ -24,10 +22,9 @@ getAppLogger('feature')
         -> batch for 100ms, dedup consecutive identical entries, throttle 200/s
         -> invoke('batch_fe_logs', entries[])
           -> Rust: log::info!(target: "FE:feature", msg)
-            -> tauri-plugin-log (fern)
+            -> tauri-plugin-log (fern + RUST_LOG parsing)
               -> terminal (colored, custom short format)
               -> log file (~/Library/Logs/com.veszelovszki.cmdr/, 50 MB rotation)
-            -> env_filter (RUST_LOG support, per-module filtering)
 ```
 
 ## Key decisions
@@ -36,9 +33,9 @@ getAppLogger('feature')
   toggles (`debugCategories` array). Only the sink changed.
 - **Custom batch IPC instead of plugin JS API**: `tauri-plugin-log`'s JS API sends one IPC per log. The bridge batches
   into one call per 100ms, with dedup and throttle -- critical for infinite-loop protection.
-- **`env_filter` wraps `tauri-plugin-log`**: `tauri-plugin-log` doesn't support `RUST_LOG` natively. We use
-  `skip_logger()` + `split()` to get the raw logger, wrap it with `env_filter::FilteredLog`, and register that as the
-  global logger. This means `RUST_LOG=cmdr_lib::network=debug,info` works exactly like it did with `env_logger`.
+- **RUST_LOG parsed into `level_for()` calls**: `tauri-plugin-log` doesn't support `RUST_LOG` natively. We parse the
+  env var at startup and convert each `module=level` directive into a `.level_for()` call on the builder. This covers all
+  practical use cases (`cmdr_lib::network=debug,smb=warn,info`). No `env_filter` crate needed.
 - **Same level for terminal and file**: `tauri-plugin-log` doesn't support per-target level filtering. Both get the same
   level (Info by default, Debug when verbose toggle is on). Fine because the terminal isn't visible in production.
 

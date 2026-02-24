@@ -30,11 +30,11 @@ Before:
 After:
 
 ```
-10:19:34.90 DEBUG indexing::writer  Starting flush
-10:19:34.91 INFO  FE:fileExplorer   Loaded 1,204 files
+10:19:34.908 DEBUG indexing::writer  Starting flush
+10:19:34.912 INFO  FE:fileExplorer   Loaded 1,204 files
 ```
 
-Changes: drop full date (keep `HH:MM:SS.cc`), drop third ms digit and `Z`, drop `cmdr_lib::` prefix, colored level.
+Changes: drop full date (keep `HH:MM:SS.mmm`), drop `Z`, drop `cmdr_lib::` prefix, colored level.
 Frontend logs get an `FE:` prefix with the LogTape category name.
 
 Implementation: `tauri-plugin-log`'s `.format()` closure with `chrono::Local::now()` for the timestamp and
@@ -42,8 +42,8 @@ Implementation: `tauri-plugin-log`'s `.format()` closure with `chrono::Local::no
 
 ### Terminal colors
 
-Enable the `colored` feature on `tauri-plugin-log`. Use `.with_colors(ColoredLevelConfig::default())` for level-based
-coloring (red = error, yellow = warn, green = info, blue/cyan = debug).
+Raw ANSI escape codes in the format closure (red = error, yellow = warn, green = info, cyan = debug, magenta = trace).
+Note: `.with_colors()` overrides `.format()` in `tauri-plugin-log`, so colors must be handled inside the format closure.
 
 ### Log file
 
@@ -129,12 +129,13 @@ directory (`~/Library/Logs/com.veszelovszki.cmdr/`) via `tauri-plugin-opener`.
 
 ### Add
 
-- `tauri-plugin-log = { version = "2", features = ["colored"] }` (Rust)
-- `chrono = "0.4"` (already a macOS dep, needs to become unconditional for the format closure)
+- `tauri-plugin-log = "2"` (Rust)
+- `chrono = "0.4"` (already a macOS dep, made unconditional for the format closure)
 
 ### Remove
 
 - `env_logger = "0.11.8"` (Rust)
+- `env_filter` (Rust, was added then removed — `RUST_LOG` parsing is done manually instead)
 
 ### Keep
 
