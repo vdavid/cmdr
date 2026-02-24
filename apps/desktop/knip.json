@@ -17,7 +17,9 @@
         "@wdio/mocha-framework",
         "@wdio/spec-reporter",
         "@wdio/types",
-        "webdriverio"
+        "webdriverio",
+        "@crabnebula/tauri-driver",
+        "@crabnebula/test-runner-backend"
     ],
     "ignoreExportsUsedInFile": true,
     "project": ["src/**/*.{ts,svelte}"],

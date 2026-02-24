@@ -26,6 +26,8 @@
         "test:e2e:linux:build": "docker build -t cmdr-e2e -f test/e2e-linux/docker/Dockerfile test/e2e-linux/docker",
         "test:e2e:linux:shell": "./scripts/e2e-linux.sh --shell",
         "test:e2e:linux:vnc": "./scripts/e2e-linux.sh --vnc",
+        "test:e2e:macos": "wdio run test/e2e-macos/wdio.conf.ts",
+        "test:e2e:macos:build": "node scripts/tauri-wrapper.js build --debug --no-bundle --target $(rustc -vV | grep host | cut -d' ' -f2) -- --features automation",
         "knip": "knip",
         "check:type-drift": "tsx scripts/check-type-drift.ts"
     },
@@ -46,6 +48,8 @@
         "@tauri-apps/plugin-window-state": "~2.4.1"
     },
     "devDependencies": {
+        "@crabnebula/tauri-driver": "^2.0.9",
+        "@crabnebula/test-runner-backend": "^0.2.5",
         "@eslint/js": "^9.39.2",
         "@playwright/test": "^1.57.0",
         "@sveltejs/adapter-static": "^3.0.10",

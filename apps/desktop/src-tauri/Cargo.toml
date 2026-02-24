@@ -8,6 +8,10 @@ license = "LicenseRef-BSL-1.1"
 default-run = "Cmdr"
 publish = false  # Private application, not for crates.io
 
+[features]
+# CrabNebula automation plugin for macOS E2E testing. Never enable in production builds.
+automation = ["dep:tauri-plugin-automation"]
+
 [[bin]]
 name = "Cmdr"
 path = "src/main.rs"
@@ -105,6 +109,9 @@ nusb = "0.2.2"
 bytes = "1"
 # Drive indexing: macOS FSEvents watcher with event IDs and sinceWhen replay
 cmdr-fsevent-stream = { git = "https://github.com/vdavid/cmdr-fsevent-stream", rev = "3a02f0d" }
+
+# CrabNebula automation plugin for macOS E2E testing (optional, feature-gated)
+tauri-plugin-automation = { version = "0.1", optional = true }
 
 [dev-dependencies]
 criterion = { version = "0.8.1", features = ["html_reports"] }

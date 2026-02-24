@@ -107,6 +107,10 @@ pub fn run() {
     #[cfg(debug_assertions)]
     let builder = builder.plugin(tauri_plugin_mcp_bridge::init());
 
+    // CrabNebula automation plugin for macOS E2E testing (feature-gated, never in release builds)
+    #[cfg(feature = "automation")]
+    let builder = builder.plugin(tauri_plugin_automation::init());
+
     // Skip updater plugin in CI to avoid network dependency and latency during E2E tests
     let builder = if std::env::var("CI").is_ok() {
         builder

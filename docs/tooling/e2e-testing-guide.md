@@ -4,20 +4,22 @@ This guide explains how to run end-to-end tests for the Cmdr desktop application
 
 ## Overview
 
-Cmdr uses two E2E testing approaches:
+Cmdr uses three E2E testing approaches:
 
 1. **Smoke tests** (Playwright): Test basic UI rendering in a browser (Chromium/WebKit). Works on macOS and Linux.
 2. **Linux E2E tests** (WebDriverIO + tauri-driver): Test the actual Tauri application with full backend integration.
+3. **macOS E2E tests** (WebDriverIO + CrabNebula): Test the actual Tauri application on macOS via CrabNebula's WKWebView WebDriver bridge.
 
 ### Why separate test suites?
 
 - **Smoke tests**: Run in a browser, so Tauri IPC is unavailable. Only tests UI structure and basic interactions.
 - **Linux E2E tests**: Run against the real Tauri app via tauri-driver, enabling full file operation testing.
 
-### Why Linux only for Tauri E2E tests?
+### Why separate platforms for Tauri E2E tests?
 
-macOS uses WKWebView which has **no WebDriver implementation**, so we can't run WebDriver-based E2E tests there.
-Linux uses WebKitGTK which has WebKitWebDriver, making it the only platform where tauri-driver works.
+- **Linux**: Uses WebKitGTK which has WebKitWebDriver, so standard tauri-driver works natively.
+- **macOS**: Uses WKWebView which has no Apple-provided WebDriver. We use CrabNebula's commercial
+  WebDriver bridge (requires `CN_API_KEY`). We're currently evaluating this commercial option.
 
 ### Key dependencies for tauri-driver
 
@@ -84,15 +86,18 @@ pnpm test:e2e:linux:native
 
 ## Test files
 
-| File                                  | Description                                         |
-|---------------------------------------|-----------------------------------------------------|
-| `test/e2e-smoke/smoke.test.ts`        | Playwright tests for basic UI (browser-based)       |
-| `test/e2e-linux/app.spec.ts`          | WebDriverIO tests for Tauri app (Linux)             |
-| `test/e2e-linux/wdio.conf.ts`         | WebDriverIO configuration                           |
-| `test/e2e-linux/docker/Dockerfile`    | Docker image for Linux E2E tests                    |
-| `test/e2e-linux/docker/entrypoint.sh` | Xvfb/dbus setup for headless GUI                    |
-| `scripts/e2e-linux.sh`                | Main script for Docker-based E2E tests (+ VNC mode) |
-| `playwright.config.ts`                | Playwright configuration                            |
+| File                                  | Description                                           |
+|---------------------------------------|-------------------------------------------------------|
+| `test/e2e-smoke/smoke.test.ts`        | Playwright tests for basic UI (browser-based)         |
+| `test/e2e-linux/app.spec.ts`          | WebDriverIO tests for Tauri app (Linux)               |
+| `test/e2e-linux/wdio.conf.ts`         | WebDriverIO configuration (Linux)                     |
+| `test/e2e-linux/docker/Dockerfile`    | Docker image for Linux E2E tests                      |
+| `test/e2e-linux/docker/entrypoint.sh` | Xvfb/dbus setup for headless GUI                      |
+| `test/e2e-macos/app.spec.ts`          | WebDriverIO tests for Tauri app (macOS, CrabNebula)   |
+| `test/e2e-macos/wdio.conf.ts`         | WebDriverIO configuration (macOS, CrabNebula)         |
+| `.env.example`                        | Template for CN_API_KEY                               |
+| `scripts/e2e-linux.sh`                | Main script for Docker-based E2E tests (+ VNC mode)   |
+| `playwright.config.ts`                | Playwright configuration                              |
 
 ## Writing tests
 
@@ -202,15 +207,44 @@ The check script (`./scripts/check.sh`) includes:
 The Docker E2E tests (`pnpm test:e2e:linux`) are not currently in the check script because they're slow.
 You can run them manually before releases.
 
+## macOS E2E tests (CrabNebula)
+
+Uses CrabNebula's WebDriver bridge for WKWebView on macOS. Requires a `CN_API_KEY`.
+
+### Setup
+
+1. Get a CrabNebula API key and set it:
+   ```bash
+   export CN_API_KEY=<your-key>
+   ```
+   Or copy `apps/desktop/.env.example` to `apps/desktop/.env` and fill in your key.
+
+2. Build the app with the automation plugin:
+   ```bash
+   cd apps/desktop
+   pnpm test:e2e:macos:build
+   ```
+
+3. Run the tests:
+   ```bash
+   pnpm test:e2e:macos
+   ```
+
+### How it works
+
+- `tauri-plugin-automation` (Rust crate, feature-gated behind `automation`) enables WKWebView
+  automation in debug builds.
+- CrabNebula's `test-runner-backend` is the macOS WebDriver bridge (runs on port 3000).
+- CrabNebula's `tauri-driver` fork proxies WebDriver requests (runs on port 4444).
+- WebDriverIO connects to tauri-driver like it would any browser driver.
+
+### Notes
+
+- The `automation` feature is only for E2E testing, never for production or normal dev builds.
+- The tests in `test/e2e-macos/` mirror the Linux tests but without WebKitGTK-specific workarounds.
+- CrabNebula is currently in beta (free), but will become a paid service.
+
 ## Future improvements
-
-### macOS E2E testing
-
-macOS doesn't have a WebDriver for WKWebView. Options to explore:
-
-1. **CrabNebula Cloud** - Paid service with their own testing infrastructure
-2. **Tauri's native testing** - `tauri test` is experimental but might mature
-3. **Custom IPC-based testing** - Use Tauri commands to expose test hooks
 
 ### Windows E2E testing
 

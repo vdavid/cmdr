@@ -33,6 +33,7 @@ export default tseslint.config(
             '_ignored',
             // E2E tests use different frameworks (WebDriverIO, Playwright) with their own typing
             'test/e2e-linux',
+            'test/e2e-macos',
             'test/e2e-smoke',
         ],
     },
