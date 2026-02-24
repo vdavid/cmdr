@@ -65,8 +65,8 @@ comparison (relies on trailing-slash normalization).
 | `user_selected` | Cursor moves onto a directory   |
 | `current_dir`   | User navigates into a directory |
 
-Both `prioritizeDir` and `cancelNavPriority` silently swallow all errors — indexing may be disabled
-in settings or not yet initialized.
+Both `prioritizeDir` and `cancelNavPriority` silently swallow all errors — indexing may be disabled in settings or not
+yet initialized.
 
 ## Scan status overlay (`ScanStatusOverlay.svelte`)
 
@@ -77,8 +77,7 @@ never blocks clicks. Displays a CSS spinner and a live label like `Scanning... 4
 
 ## No tests
 
-No unit or integration tests exist for this module yet. Manual testing via the Rust indexer with
-`pnpm dev`.
+No unit or integration tests exist for this module yet. Manual testing via the Rust indexer with `pnpm dev`.
 
 ## Dependencies
 

@@ -26,6 +26,7 @@ immediately to business-logic modules. No significant logic lives here.
 
 - **No business logic here.** If you find yourself adding branching or data transformation, move it to the relevant subsystem module.
 - **`spawn_blocking` for filesystem I/O.** All blocking operations in async commands are wrapped in `tokio::task::spawn_blocking`.
+- **`blocking_with_timeout` for potentially slow I/O.** `path_exists` uses `blocking_with_timeout(2s, false, ...)` to prevent hung network mounts from blocking the async runtime. The helper wraps `spawn_blocking` + `tokio::time::timeout` and returns a fallback value on timeout or `JoinError`.
 - **`expand_tilde`** is applied conditionally: for `list_directory` it's gated on `volume_id == "root"`, but for write operations (copy, move, delete, scan preview) it's always applied. MTP and network volume paths must never be tilde-expanded.
 - **AI commands** are registered directly from `ai::manager` and `ai::suggestions` — there is no `commands/ai.rs` file.
 - **Platform gates.** `mtp`, `network`, and `volumes` modules are macOS-only at the `mod.rs` level. Individual functions also use `#[cfg]` where behaviour differs (e.g., `sync_status`).

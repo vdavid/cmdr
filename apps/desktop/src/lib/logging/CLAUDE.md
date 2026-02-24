@@ -10,6 +10,7 @@ file, with unified timestamps.
 | `logger.ts`          | LogTape configuration, `getAppLogger()` entry point, verbose toggle, `debugCategories`             |
 | `log-bridge.ts`      | Batching sink: collects FE logs for 100ms, deduplicates, throttles at 200/s, sends to Rust via IPC |
 | `log-bridge.test.ts` | Vitest tests for bridge (batching, dedup, throttle)                                                |
+
 Rust side lives in `src-tauri/src/commands/logging.rs` (batch IPC receiver + runtime level control).
 
 ## Architecture
@@ -33,8 +34,8 @@ getAppLogger('feature')
   toggles (`debugCategories` array). Only the sink changed.
 - **Custom batch IPC instead of plugin JS API**: `tauri-plugin-log`'s JS API sends one IPC per log. The bridge batches
   into one call per 100ms, with dedup and throttle -- critical for infinite-loop protection.
-- **RUST_LOG parsed into `level_for()` calls**: `tauri-plugin-log` doesn't support `RUST_LOG` natively. We parse the
-  env var at startup and convert each `module=level` directive into a `.level_for()` call on the builder. This covers all
+- **RUST_LOG parsed into `level_for()` calls**: `tauri-plugin-log` doesn't support `RUST_LOG` natively. We parse the env
+  var at startup and convert each `module=level` directive into a `.level_for()` call on the builder. This covers all
   practical use cases (`cmdr_lib::network=debug,smb=warn,info`). No `env_filter` crate needed.
 - **Same level for terminal and file**: `tauri-plugin-log` doesn't support per-target level filtering. Both get the same
   level (Info by default, Debug when verbose toggle is on). Fine because the terminal isn't visible in production.

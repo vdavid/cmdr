@@ -37,7 +37,7 @@
     } from '../types'
     import { DEFAULT_SORT_BY, defaultSortOrders } from '../types'
     import { ensureFontMetricsLoaded } from '$lib/font-metrics'
-    import { determineNavigationPath, resolveValidPath } from '../navigation/path-navigation'
+    import { determineNavigationPath } from '../navigation/path-navigation'
     import {
         createHistory,
         push,
@@ -185,6 +185,11 @@
     // Initialize with default volume - will be updated on mount with actual state
     let leftHistory = $state<NavigationHistory>(createHistory(DEFAULT_VOLUME_ID, '~'))
     let rightHistory = $state<NavigationHistory>(createHistory(DEFAULT_VOLUME_ID, '~'))
+
+    // Guards against stale background path corrections from determineNavigationPath.
+    // Each handleVolumeChange increments this; the background callback checks its captured
+    // generation still matches before applying a correction.
+    let volumeChangeGeneration = 0
 
     // --- Pane accessor helpers ---
 
@@ -348,25 +353,35 @@
             volumes = await listVolumes()
         }
 
-        const other = otherPane(pane)
-        const pathToNavigate = await determineNavigationPath(volumeId, volumePath, targetPath, {
-            otherPaneVolumeId: getPaneVolumeId(other),
-            otherPanePath: getPanePath(other),
-        })
-
-        // Update index priorities: cancel old dir, prioritize new dir
-        void cancelNavPriority(oldPath)
-        void prioritizeDir(pathToNavigate, 'current_dir')
-
+        // Immediately navigate to the target path (optimistic — shows spinner instantly)
         setPaneVolumeId(pane, volumeId)
-        setPanePath(pane, pathToNavigate)
-        setPaneHistory(pane, push(getPaneHistory(pane), { volumeId, path: pathToNavigate }))
-
+        setPanePath(pane, targetPath)
+        setPaneHistory(pane, push(getPaneHistory(pane), { volumeId, path: targetPath }))
         focusedPane = pane
+
+        void cancelNavPriority(oldPath)
+        void prioritizeDir(targetPath, 'current_dir')
         void saveAppStatus({
             [paneKey(pane, 'volumeId')]: volumeId,
-            [paneKey(pane, 'path')]: pathToNavigate,
+            [paneKey(pane, 'path')]: targetPath,
             focusedPane: pane,
+        })
+
+        // Resolve the "best" path in the background; correct if needed.
+        // Generation counter guards against stale corrections when the user navigates away.
+        const generation = ++volumeChangeGeneration
+        const other = otherPane(pane)
+        void determineNavigationPath(volumeId, volumePath, targetPath, {
+            otherPaneVolumeId: getPaneVolumeId(other),
+            otherPanePath: getPanePath(other),
+        }).then((betterPath) => {
+            if (generation !== volumeChangeGeneration) return
+            if (betterPath !== targetPath && betterPath !== getPanePath(pane)) {
+                setPanePath(pane, betterPath)
+                setPaneHistory(pane, push(getPaneHistory(pane), { volumeId, path: betterPath }))
+                void prioritizeDir(betterPath, 'current_dir')
+                void saveAppStatus({ [paneKey(pane, 'path')]: betterPath })
+            }
         })
     }
 
@@ -380,7 +395,7 @@
         containerElement?.focus()
     }
 
-    function handleCancelLoading(pane: 'left' | 'right', selectName?: string) {
+    function handleCancelLoading(pane: 'left' | 'right') {
         const entry = getCurrentEntry(getPaneHistory(pane))
         const paneRef = getPaneRef(pane)
 
@@ -391,26 +406,10 @@
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call
             paneRef?.setNetworkHost?.(entry.networkHost ?? null)
         } else {
-            void resolveValidPath(entry.path).then((resolvedPath) => {
-                if (resolvedPath !== null) {
-                    setPanePath(pane, resolvedPath)
-                    if (entry.volumeId !== getPaneVolumeId(pane)) {
-                        setPaneVolumeId(pane, entry.volumeId)
-                        void saveAppStatus({
-                            [paneKey(pane, 'volumeId')]: entry.volumeId,
-                            [paneKey(pane, 'path')]: resolvedPath,
-                        })
-                    } else {
-                        void saveAppStatus({ [paneKey(pane, 'path')]: resolvedPath })
-                    }
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                    paneRef?.navigateToPath?.(resolvedPath, selectName)
-                } else {
-                    setPanePath(pane, '~')
-                    setPaneVolumeId(pane, DEFAULT_VOLUME_ID)
-                    void saveAppStatus({ [paneKey(pane, 'path')]: '~', [paneKey(pane, 'volumeId')]: DEFAULT_VOLUME_ID })
-                }
-            })
+            // Immediately navigate to a known-safe local path — the user pressed ESC, they want out
+            setPanePath(pane, '~')
+            setPaneVolumeId(pane, DEFAULT_VOLUME_ID)
+            void saveAppStatus({ [paneKey(pane, 'path')]: '~', [paneKey(pane, 'volumeId')]: DEFAULT_VOLUME_ID })
         }
         containerElement?.focus()
     }
@@ -960,15 +959,8 @@
         }
 
         const targetEntry = getCurrentEntry(newHistory)
-        if (targetEntry.volumeId === 'network') {
-            updatePaneAfterHistoryNavigation(pane, newHistory, targetEntry.path)
-            return
-        }
-
-        const resolvedPath = await resolveValidPath(targetEntry.path)
-        if (resolvedPath !== null) {
-            updatePaneAfterHistoryNavigation(pane, newHistory, resolvedPath)
-        }
+        // Navigate immediately — if path is gone, FilePane's error handler resolves upward
+        updatePaneAfterHistoryNavigation(pane, newHistory, targetEntry.path)
     }
 
     onDestroy(() => {
@@ -1841,8 +1833,8 @@
                 onNetworkHostChange={(host: NetworkHost | null) => {
                     handleNetworkHostChange('left', host)
                 }}
-                onCancelLoading={(selectName: string | undefined) => {
-                    handleCancelLoading('left', selectName)
+                onCancelLoading={() => {
+                    handleCancelLoading('left')
                 }}
                 onMtpFatalError={(msg: string) => handleMtpFatalError('left', msg)}
             />
@@ -1879,8 +1871,8 @@
                 onNetworkHostChange={(host: NetworkHost | null) => {
                     handleNetworkHostChange('right', host)
                 }}
-                onCancelLoading={(selectName: string | undefined) => {
-                    handleCancelLoading('right', selectName)
+                onCancelLoading={() => {
+                    handleCancelLoading('right')
                 }}
                 onMtpFatalError={(msg: string) => handleMtpFatalError('right', msg)}
             />

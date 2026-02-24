@@ -11,6 +11,7 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
 | `keyboard-shortcuts.ts`      | Home/End/PageUp/PageDown handling for file lists |
 | `VolumeBreadcrumb.svelte`    | Clickable volume label + grouped dropdown        |
 | `navigation-history.test.ts` | Full unit test coverage of history functions     |
+| `path-navigation.test.ts`    | Unit tests for path resolution and timeouts      |
 | `keyboard-shortcuts.test.ts` | Unit tests for shortcut calculations             |
 
 ## `navigation-history.ts`
@@ -34,15 +35,34 @@ Entries carry full `volumeId` — navigating back can cross volume boundaries (e
 ## `path-navigation.ts`
 
 `determineNavigationPath(volumeId, volumePath, targetPath, otherPane)` — picks best initial path when switching volumes.
-Priority:
+Runs checks **in parallel** with 500ms frontend timeouts per check. Priority:
 
 1. Favorite path (when `targetPath !== volumePath`)
 2. Other pane's path (if same volume and path exists)
 3. Stored `lastUsedPath` for this volume
 4. Default: `~` for `DEFAULT_VOLUME_ID`, else volume root
 
-`resolveValidPath(targetPath)` — walks parent tree until an existing directory is found. Fallback chain: parent dirs →
-`~` → `/` → `null` (volume unmounted).
+`resolveValidPath(targetPath)` — walks parent tree until an existing directory is found. Each step has a **1-second
+frontend timeout**. Fallback chain: parent dirs → `~` → `/` → `null` (volume unmounted).
+
+`withTimeout(promise, ms, fallback)` — races a promise against a timeout, returning the fallback on expiry. Used by both
+functions above.
+
+### Non-blocking navigation pattern
+
+All `pathExists` calls are guarded by two timeout layers:
+
+- **Rust-side**: `blocking_with_timeout` wraps filesystem syscalls in `tokio::time::timeout` (2 seconds). Prevents
+  kernel syscalls on hung network mounts from blocking the Tauri async runtime.
+- **Frontend-side**: `withTimeout` races each `pathExists` IPC call (500ms for `determineNavigationPath`, 1s for
+  `resolveValidPath`). The faster timeout wins.
+
+`handleVolumeChange` in `DualPaneExplorer.svelte` uses **optimistic navigation**: it updates pane state immediately
+(showing the loading spinner), then resolves the "best" path in the background. A `volumeChangeGeneration` counter
+guards against stale corrections when the user navigates away before resolution completes.
+
+`handleCancelLoading` navigates to `~` immediately on ESC (no `resolveValidPath` call). `handleNavigationAction`
+(back/forward) navigates immediately; FilePane's listing error handler resolves upward if the path is gone.
 
 ## `keyboard-shortcuts.ts`
 

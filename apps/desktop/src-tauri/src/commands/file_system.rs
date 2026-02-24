@@ -25,6 +25,22 @@ use std::path::{Path, PathBuf};
 use std::sync::mpsc::channel;
 #[cfg(target_os = "macos")]
 use tauri::Manager;
+use tokio::time::Duration;
+
+const PATH_EXISTS_TIMEOUT: Duration = Duration::from_secs(2);
+
+/// Runs a blocking closure on the blocking thread pool with a timeout.
+/// Returns the fallback value if the closure doesn't complete in time.
+async fn blocking_with_timeout<T: Send + 'static>(
+    timeout_duration: Duration,
+    fallback: T,
+    f: impl FnOnce() -> T + Send + 'static,
+) -> T {
+    match tokio::time::timeout(timeout_duration, tokio::task::spawn_blocking(f)).await {
+        Ok(Ok(result)) => result,
+        _ => fallback, // Timeout or JoinError
+    }
+}
 
 #[tauri::command]
 pub async fn path_exists(volume_id: Option<String>, path: String) -> bool {
@@ -36,15 +52,15 @@ pub async fn path_exists(volume_id: Option<String>, path: String) -> bool {
     // Try to use Volume abstraction
     if let Some(volume) = get_volume_manager().get(&volume_id) {
         let path_for_check = expanded_path.clone();
-        // Use spawn_blocking for MTP volumes which need tokio runtime context
-        return tokio::task::spawn_blocking(move || volume.exists(Path::new(&path_for_check)))
-            .await
-            .unwrap_or(false);
+        return blocking_with_timeout(PATH_EXISTS_TIMEOUT, false, move || {
+            volume.exists(Path::new(&path_for_check))
+        })
+        .await;
     }
 
     // Fallback for unknown volumes (shouldn't happen in practice)
     let path_buf = PathBuf::from(expanded_path);
-    path_buf.exists()
+    blocking_with_timeout(PATH_EXISTS_TIMEOUT, false, move || path_buf.exists()).await
 }
 
 #[tauri::command]
@@ -661,5 +677,31 @@ mod tests {
     async fn test_create_directory_nonexistent_parent() {
         let result = create_directory(None, "/nonexistent_path_12345".to_string(), "test".to_string()).await;
         assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_blocking_with_timeout_fast_closure_returns_value() {
+        let result = blocking_with_timeout(Duration::from_secs(2), false, || true).await;
+        assert!(result);
+    }
+
+    #[tokio::test]
+    async fn test_blocking_with_timeout_slow_closure_returns_fallback() {
+        let result = blocking_with_timeout(Duration::from_millis(50), false, || {
+            std::thread::sleep(Duration::from_secs(2));
+            true
+        })
+        .await;
+        assert!(!result);
+    }
+
+    #[tokio::test]
+    async fn test_blocking_with_timeout_returns_custom_fallback() {
+        let result = blocking_with_timeout(Duration::from_millis(50), 42, || {
+            std::thread::sleep(Duration::from_secs(2));
+            99
+        })
+        .await;
+        assert_eq!(result, 42);
     }
 }
