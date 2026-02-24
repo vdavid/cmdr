@@ -61,6 +61,15 @@ var AllChecks = []CheckDefinition{
 		Run:         RunJscpdRust,
 	},
 	{
+		ID:          "desktop-rust-cfg-gate",
+		Nickname:    "cfg-gate",
+		DisplayName: "cfg-gate",
+		App:         AppDesktop,
+		Tech:        "🦀 Rust",
+		DependsOn:   nil,
+		Run:         RunCfgGate,
+	},
+	{
 		ID:          "desktop-rust-tests",
 		Nickname:    "rust-tests",
 		DisplayName: "tests",

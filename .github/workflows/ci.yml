@@ -134,6 +134,9 @@ jobs:
             - name: Run jscpd
               run: ./scripts/check/check --check desktop-rust-jscpd --ci
 
+            - name: Check cfg-gate
+              run: ./scripts/check/check --check desktop-rust-cfg-gate --ci
+
             - name: Run Rust tests
               run: ./scripts/check/check --check desktop-rust-tests --ci
 
