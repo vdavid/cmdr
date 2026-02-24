@@ -72,6 +72,7 @@
     import ExtensionChangeDialog from '../rename/ExtensionChangeDialog.svelte'
     import RenameConflictDialog from '../rename/RenameConflictDialog.svelte'
     import { getAppLogger } from '$lib/logging/logger'
+    import { createDebounce, createThrottle } from '$lib/utils/timing'
 
     const log = getAppLogger('fileExplorer')
     import { isMtpVolumeId, getMtpDisplayPath } from '$lib/mtp'
@@ -134,7 +135,11 @@
     let cursorIndex = $state(0)
 
     // Selection state (extracted to selection-state.svelte.ts)
-    const selection = createSelectionState({ onChanged: () => void syncPaneStateToMcp() })
+    const selection = createSelectionState({
+        onChanged: () => {
+            debouncedSyncMcp.call()
+        },
+    })
 
     // Rename state (inline rename editor)
     const rename = createRenameState()
@@ -212,14 +217,14 @@
             return
         }
         cursorIndex = index
-        void fetchEntryUnderCursor()
+        // fetchEntryUnderCursor is handled by the $effect tracking cursorIndex
         // Scroll to make cursor visible
         const listRef = viewMode === 'brief' ? briefListRef : fullListRef
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         listRef?.scrollToIndex(index)
         // Wait for scroll effects to complete before syncing to MCP
         await tick()
-        void syncPaneStateToMcp()
+        debouncedSyncMcp.call()
     }
 
     export function getCursorIndex(): number {
@@ -601,7 +606,7 @@
         void fetchListingStats()
 
         // Sync state to MCP
-        void syncPaneStateToMcp()
+        debouncedSyncMcp.call()
 
         // Scroll to cursor position
         void tick().then(() => {
@@ -773,11 +778,22 @@
         }
     }
 
+    // Debounced/throttled IPC wrappers to avoid flooding the backend during rapid navigation.
+    // The virtual scroll (cursorIndex → scrollToIndex → DOM) is fully synchronous and unaffected.
+    const debouncedFetchEntry = createDebounce(() => void fetchEntryUnderCursor(), 16)
+    const throttledFetchStats = createThrottle(() => void fetchListingStats(), 150)
+    const debouncedMenuContext = createDebounce(() => {
+        if (entryUnderCursor && entryUnderCursor.name !== '..') {
+            void updateMenuContext(entryUnderCursor.path, entryUnderCursor.name)
+        }
+    }, 100)
+    const debouncedSyncMcp = createDebounce(() => void syncPaneStateToMcp(), 300)
+
     /** Handle visible range change from list components */
     function handleVisibleRangeChange(start: number, end: number) {
         visibleRangeStart = start
         visibleRangeEnd = end
-        void syncPaneStateToMcp()
+        debouncedSyncMcp.call()
     }
 
     // Check if error is a permission denied error
@@ -1037,7 +1053,7 @@
         void fetchListingStats()
 
         // Sync state to MCP for context tools
-        void syncPaneStateToMcp()
+        debouncedSyncMcp.call()
 
         // Scroll to cursor after DOM updates
         void tick().then(() => {
@@ -1198,7 +1214,7 @@
         }
         cursorIndex = newIndex
         listRef?.scrollToIndex(newIndex)
-        void fetchEntryUnderCursor()
+        // fetchEntryUnderCursor is handled by the $effect tracking cursorIndex
     }
 
     // Helper: Handle brief mode key navigation
@@ -1427,27 +1443,27 @@
         prevVolumeId = volumeId
     })
 
-    // Update global menu context when cursor position or focus changes
+    // Update global menu context when cursor position or focus changes (debounced — only matters for right-click)
     $effect(() => {
         if (!isFocused) return
         if (entryUnderCursor && entryUnderCursor.name !== '..') {
-            void updateMenuContext(entryUnderCursor.path, entryUnderCursor.name)
+            debouncedMenuContext.call()
         }
     })
 
-    // Re-fetch entry under the cursor when cursorIndex changes
+    // Re-fetch entry under the cursor when cursorIndex changes (debounced — status bar info can lag one frame)
     $effect(() => {
         void cursorIndex // Track
         if (listingId && !loading) {
-            void fetchEntryUnderCursor()
+            debouncedFetchEntry.call()
         }
     })
 
-    // Re-fetch listing stats when selection changes
+    // Re-fetch listing stats when selection changes (throttled — shows live count at steady cadence)
     $effect(() => {
         void selection.selectedIndices.size // Track selection changes
         if (listingId && !loading) {
-            void fetchListingStats()
+            throttledFetchStats.call()
         }
     })
 
@@ -1677,6 +1693,10 @@
         }
         clearInterval(syncPollInterval)
         clearInterval(dirExistsPollInterval)
+        debouncedFetchEntry.cancel()
+        throttledFetchStats.cancel()
+        debouncedMenuContext.cancel()
+        debouncedSyncMcp.cancel()
         unlistenOpening?.()
         unlistenProgress?.()
         unlistenReadComplete?.()
