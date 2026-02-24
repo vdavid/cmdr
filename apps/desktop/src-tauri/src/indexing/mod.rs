@@ -1277,7 +1277,7 @@ fn verify_affected_dirs(affected_paths: &std::collections::HashSet<String>, writ
 /// Register the `IndexManagerState` in Tauri's managed state.
 ///
 /// Call during app setup. Does NOT start scanning (that requires explicit
-/// `start_indexing()` or the dev env var `CMDR_DRIVE_INDEX=1`).
+/// `start_indexing()`).
 pub fn init(app: &AppHandle) {
     app.manage(IndexManagerState(std::sync::Mutex::new(None)));
     log::debug!("Indexing state registered");
@@ -1286,20 +1286,15 @@ pub fn init(app: &AppHandle) {
 /// Whether indexing should auto-start on launch.
 ///
 /// - If settings say disabled (`indexing_enabled == Some(false)`): never auto-start.
-/// - **Dev builds** (`debug_assertions`): requires `CMDR_DRIVE_INDEX=1` env var.
-/// - **Release builds**: auto-start by default.
+/// - Otherwise: auto-start by default (both dev and release builds).
 pub fn should_auto_start(indexing_enabled: Option<bool>) -> bool {
     // User explicitly disabled indexing in settings
     if indexing_enabled == Some(false) {
         return false;
     }
 
-    if cfg!(debug_assertions) {
-        std::env::var("CMDR_DRIVE_INDEX").is_ok_and(|v| v == "1")
-    } else {
-        // Default true (setting not yet stored means first launch, enabled by default)
-        true
-    }
+    // Default true (setting not yet stored means first launch, enabled by default)
+    true
 }
 
 /// Stop all scans, watcher, and micro-scans without deleting the DB.

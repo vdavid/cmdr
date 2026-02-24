@@ -31,7 +31,7 @@ See also: [plan.md](plan.md), [research.md](research.md), [benchmarks.md](benchm
 
 ## Milestone 2: Dev mode + debug window
 
-- [x] `CMDR_DRIVE_INDEX=1` env var gating (no scan in dev mode without it; always runs in production)
+- [x] ~~`CMDR_DRIVE_INDEX=1` env var gating~~ Removed: indexing now auto-starts in dev mode too
 - [x] Debug window: "Drive index" section with status display ("Scanning... N / ? entries" or "Ready: N entries, M dirs")
 - [x] Debug window: "Start scan" and "Clear index" buttons
 - [x] Debug window: volume selector, last scan timestamp, duration, last event ID

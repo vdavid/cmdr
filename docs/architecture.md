@@ -92,7 +92,6 @@ Philosophy: status is "where you are" (ephemeral), settings are "how you like it
 
 - `pnpm dev` at repo root for hot-reloading Tauri app
 - AI disabled unless `CMDR_REAL_AI=1` (prevents large downloads)
-- Drive indexing disabled unless `CMDR_DRIVE_INDEX=1` (prevents full-disk scans)
 - License mock via `CMDR_MOCK_LICENSE=commercial`
 - MCP server available at `localhost:9224` for agent testing
 - `withGlobalTauri: true` in dev mode — security risk if loading remote content

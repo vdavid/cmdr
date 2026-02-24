@@ -66,7 +66,7 @@ comparison (relies on trailing-slash normalization).
 | `current_dir`   | User navigates into a directory |
 
 Both `prioritizeDir` and `cancelNavPriority` silently swallow all errors — indexing may be disabled
-(`CMDR_DRIVE_INDEX=1` required in dev mode) or not yet initialized.
+in settings or not yet initialized.
 
 ## Scan status overlay (`ScanStatusOverlay.svelte`)
 
@@ -78,7 +78,7 @@ never blocks clicks. Displays a CSS spinner and a live label like `Scanning... 4
 ## No tests
 
 No unit or integration tests exist for this module yet. Manual testing via the Rust indexer with
-`CMDR_DRIVE_INDEX=1 pnpm dev`.
+`pnpm dev`.
 
 ## Dependencies
 

@@ -81,8 +81,6 @@ Key test files are alongside each module (test functions within `#[cfg(test)]` b
 
 **Physical sizes (`st_blocks * 512`)**: More meaningful for disk usage than logical size. May overcount ~10-20% for APFS clones (shared blocks). Volume usage bar uses `statfs()` for true totals.
 
-**Dev mode gating**: `CMDR_DRIVE_INDEX=1` env var required in dev mode (debug builds). Production auto-starts by default. This prevents accidental full-disk scans during development.
-
 **Disposable cache pattern**: The index DB is a cache, not a source of truth. Any corruption or error triggers delete+rebuild. No user-facing errors for DB issues.
 
 **cmdr-fsevent-stream fork**: Our fork of `fsevent-stream` (v0.3.0) provides direct access to FSEvents event IDs, `sinceWhen` replay, and `MustScanSubDirs` flags. The existing `notify` crate stays for per-directory file watchers (different use case).

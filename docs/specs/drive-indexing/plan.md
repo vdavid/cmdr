@@ -469,7 +469,7 @@ Add "Drive indexing" subsection under "Settings > General":
 
 ### Dev mode
 
-- **Env var**: `CMDR_DRIVE_INDEX=1` --- required to start scanning in dev mode. Without it, no scan runs.
+- ~~**Env var**: `CMDR_DRIVE_INDEX=1` --- required to start scanning in dev mode.~~ Removed: indexing now auto-starts in dev mode too.
 - **Debug window**: Add "Drive index" section with:
     - Status display: "Scanning... 423,891 / ? entries" or "Ready: 1,823,456 entries, 287,392 dirs"
     - "Start scan" button (triggers manual scan)
@@ -645,7 +645,7 @@ Rough targets for validation, not hard SLAs:
 
 ### Milestone 2: Dev mode + debug window
 
-- `CMDR_DRIVE_INDEX=1` env var gating in production auto-start
+- ~~`CMDR_DRIVE_INDEX=1` env var gating in production auto-start~~ Removed: indexing now auto-starts in dev mode too
 - Debug window: "Drive index" section with status display, start/clear buttons, last event ID
 - Debug window: volume selector (if multiple volumes), last scan timestamp, duration
 - Debug window: listen to and display index events in real time

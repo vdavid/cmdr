@@ -279,10 +279,10 @@ pub fn run() {
             // Initialize AI manager (starts llama-server if model is installed)
             ai::manager::init(app.handle());
 
-            // Register indexing state (does not start scanning; controlled by settings + env var)
+            // Register indexing state (does not start scanning until explicitly started)
             indexing::init(app.handle());
 
-            // Auto-start indexing if conditions are met (settings + dev env var)
+            // Auto-start indexing unless user disabled it in settings
             if indexing::should_auto_start(saved_settings.indexing_enabled) {
                 let app_handle = app.handle().clone();
                 // Use tauri's runtime spawn instead of tokio::spawn since setup()
@@ -293,7 +293,7 @@ pub fn run() {
                     }
                 });
             } else {
-                log::info!("Drive indexing auto-start skipped (disabled in settings or set CMDR_DRIVE_INDEX=1 in dev)");
+                log::info!("Drive indexing auto-start skipped (disabled in settings)");
             }
 
             Ok(())
