@@ -50,4 +50,4 @@ persistence).
 - `@tauri-apps/plugin-process` — `relaunch()`
 - `@tauri-apps/api/app` — `getVersion()`
 - `$lib/settings/settings-store` — `getSetting`, `onSpecificSettingChange`
-- `$lib/tauri-commands` — `feLog`
+- `$lib/logger` — `getAppLogger` (logs via unified LogTape bridge)

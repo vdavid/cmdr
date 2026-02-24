@@ -86,7 +86,6 @@ export {
     resolveNetworkHost,
     listSharesOnHost,
     prefetchShares,
-    feLog,
     getKnownShareByName,
     updateKnownShare,
     getUsernameHints,

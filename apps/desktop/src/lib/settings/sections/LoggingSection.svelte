@@ -3,6 +3,9 @@
     import SettingSwitch from '../components/SettingSwitch.svelte'
     import { getSettingDefinition } from '$lib/settings'
     import { getMatchingSettingIds } from '$lib/settings/settings-search'
+    import { getAppLogger } from '$lib/logger'
+    import { revealItemInDir } from '@tauri-apps/plugin-opener'
+    import { appLogDir } from '@tauri-apps/api/path'
 
     interface Props {
         searchQuery: string
@@ -23,11 +26,14 @@
 
     let copyFeedback = $state(false)
 
-    function openLogFile() {
-        // Log files are in the app data directory
-        // This would need to be implemented to find the actual log path
-        // For now, we'll show a placeholder
-        alert('Log file location: ~/Library/Application Support/com.veszelovszki.cmdr/logs/')
+    async function openLogFile() {
+        try {
+            const logDir = await appLogDir()
+            await revealItemInDir(logDir)
+        } catch (error) {
+            const log = getAppLogger('settings')
+            log.error('Failed to open log directory: {error}', { error: String(error) })
+        }
     }
 
     async function copyDiagnosticInfo() {

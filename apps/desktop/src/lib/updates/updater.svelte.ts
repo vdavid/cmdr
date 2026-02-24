@@ -1,8 +1,10 @@
 import { check, type Update } from '@tauri-apps/plugin-updater'
 import { relaunch } from '@tauri-apps/plugin-process'
 import { getVersion } from '@tauri-apps/api/app'
-import { feLog } from '$lib/tauri-commands'
 import { getSetting, onSpecificSettingChange } from '$lib/settings/settings-store'
+import { getAppLogger } from '$lib/logger'
+
+const log = getAppLogger('updater')
 
 /** Gets the update check interval from settings (in milliseconds) */
 function getCheckIntervalMs(): number {
@@ -35,24 +37,24 @@ export async function checkForUpdates(): Promise<void> {
 
     try {
         const currentVersion = await getVersion()
-        feLog(`[updater] Checking for updates (current: v${currentVersion})...`)
+        log.info('Checking for updates (current: v{version})...', { version: currentVersion })
         const update = await check()
 
         if (update !== null) {
-            feLog(`[updater] Update available: v${currentVersion} → v${update.version}`)
+            log.info('Update available: v{current} -> v{next}', { current: currentVersion, next: update.version })
             updateState.status = 'downloading'
             await update.downloadAndInstall()
-            feLog(`[updater] v${update.version} downloaded, restart to apply`)
+            log.info('v{version} downloaded, restart to apply', { version: update.version })
             updateState.status = 'ready'
             updateState.update = update
         } else {
-            feLog(`[updater] v${currentVersion} is up to date`)
+            log.info('v{version} is up to date', { version: currentVersion })
             updateState.status = 'idle'
         }
     } catch (error) {
         updateState.status = 'idle'
         updateState.error = error instanceof Error ? error.message : String(error)
-        feLog(`[updater] Check failed: ${updateState.error}`)
+        log.error('Check failed: {error}', { error: updateState.error })
     }
 }
 
@@ -62,7 +64,7 @@ export async function restartToUpdate(): Promise<void> {
 
 export function startUpdateChecker(): () => void {
     const endpoint = import.meta.env.DEV ? 'localhost:4321' : 'getcmdr.com'
-    feLog(`[updater] Started (endpoint: ${endpoint})`)
+    log.info('Started (endpoint: {endpoint})', { endpoint })
 
     // Check immediately on start
     void checkForUpdates()
@@ -76,7 +78,7 @@ export function startUpdateChecker(): () => void {
     const unsubscribe = onSpecificSettingChange('advanced.updateCheckInterval', () => {
         clearInterval(intervalId)
         const newInterval = getCheckIntervalMs()
-        feLog(`[updater] Interval changed to ${String(newInterval / 60000)} minutes`)
+        log.info('Interval changed to {minutes} minutes', { minutes: newInterval / 60000 })
         intervalId = setInterval(() => {
             void checkForUpdates()
         }, newInterval)

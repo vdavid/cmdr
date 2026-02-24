@@ -117,19 +117,6 @@ export async function prefetchShares(
     }
 }
 
-// noinspection JSUnusedGlobalSymbols -- This is a utility mechanism for debugging
-/**
- * Logs a message through the backend for unified timestamp tracking.
- * Used for debugging timing issues between frontend and backend.
- */
-export function feLog(message: string): void {
-    void invoke('fe_log', { message }).catch(() => {
-        // Fallback to console if command not available
-        // eslint-disable-next-line no-console -- We do want to log to the console here
-        console.log('[FE]', message)
-    })
-}
-
 // ============================================================================
 // Known shares store (macOS only)
 // ============================================================================

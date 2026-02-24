@@ -27,7 +27,6 @@
         viewerSearchCancel,
         viewerSetupMenu,
         viewerSetWordWrap,
-        feLog,
         type ViewerSearchMatch,
         type BackendCapabilities,
     } from '$lib/tauri-commands'
@@ -35,6 +34,9 @@
     import { listen, type UnlistenFn } from '@tauri-apps/api/event'
     import { initializeSettings, getSetting, setSetting } from '$lib/settings'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
+    import { getAppLogger } from '$lib/logger'
+
+    const log = getAppLogger('viewer')
 
     let fileName = $state('')
     let totalLines = $state<number | null>(null)
@@ -217,9 +219,11 @@
         // Calculate current scroll fraction before updating
         const oldHeight = oldEstimate * effectiveLineHeight
         const scrollFraction = contentRef.scrollTop / oldHeight
-        feLog(
-            `[viewer] totalLines changed: ${String(oldEstimate)} -> ${String(newTotal)}, preserving scroll fraction ${scrollFraction.toFixed(3)}`,
-        )
+        log.debug('totalLines changed: {oldEstimate} -> {newTotal}, preserving scroll fraction {fraction}', {
+            oldEstimate,
+            newTotal,
+            fraction: scrollFraction.toFixed(3),
+        })
         totalLines = newTotal
         // Restore scroll fraction after DOM updates using rAF to run after browser's scroll clamping
         const newHeight = newTotal * effectiveLineHeight
@@ -246,17 +250,21 @@
             const seekType = supportsLineSeek ? 'line' : 'fraction'
             const seekValue = supportsLineSeek ? fetchFrom : fetchFrom / estimatedTotalLines()
 
-            feLog(
-                `[viewer] fetchLines[${String(fetchId)}]: requesting ${seekType}=${String(seekValue)} count=${String(fetchCount)}`,
-            )
+            log.debug('fetchLines[{fetchId}]: requesting {seekType}={seekValue} count={fetchCount}', {
+                fetchId,
+                seekType,
+                seekValue,
+                fetchCount,
+            })
 
             const chunk = await viewerGetLines(sessionId, seekType, seekValue, fetchCount)
 
             // Check if this response is still relevant (no newer fetch started)
             if (fetchId !== currentFetchId) {
-                feLog(
-                    `[viewer] fetchLines[${String(fetchId)}]: discarding stale response (current=${String(currentFetchId)})`,
-                )
+                log.debug('fetchLines[{fetchId}]: discarding stale response (current={currentFetchId})', {
+                    fetchId,
+                    currentFetchId,
+                })
                 return
             }
 
@@ -265,8 +273,14 @@
             // For line seek, use backend's authoritative line numbers.
             const cacheStartLine = seekType === 'fraction' ? fetchFrom : chunk.firstLineNumber
 
-            feLog(
-                `[viewer] fetchLines[${String(fetchId)}]: received ${String(chunk.lines.length)} lines, backend says firstLine=${String(chunk.firstLineNumber)}, caching at ${String(cacheStartLine)}`,
+            log.debug(
+                'fetchLines[{fetchId}]: received {lineCount} lines, backend says firstLine={firstLine}, caching at {cacheStart}',
+                {
+                    fetchId,
+                    lineCount: chunk.lines.length,
+                    firstLine: chunk.firstLineNumber,
+                    cacheStart: cacheStartLine,
+                },
             )
 
             // Update cache
@@ -281,7 +295,7 @@
         } catch (e) {
             // Only log if this is still the current request
             if (fetchId === currentFetchId) {
-                feLog(`[viewer] fetchLines[${String(fetchId)}]: failed with error ${String(e)}`)
+                log.error('fetchLines[{fetchId}]: failed with error {error}', { fetchId, error: String(e) })
             }
         }
     }
@@ -372,7 +386,7 @@
             }
             // Stop polling when indexing is done
             if (!status.isIndexing) {
-                feLog(`[viewer] Indexing finished, backendType=${status.backendType}`)
+                log.info('Indexing finished, backendType={backendType}', { backendType: status.backendType })
                 stopIndexingPoll()
             }
         } catch {
@@ -442,14 +456,14 @@
         if (closing) return
         // If window isn't ready yet, queue the close for when it is
         if (!windowReady) {
-            feLog('[viewer] closeWindow: window not ready, queueing close')
+            log.debug('closeWindow: window not ready, queueing close')
             closeRequested = true
             return
         }
         closing = true
 
         const start = performance.now()
-        feLog('[viewer] closeWindow: starting')
+        log.debug('closeWindow: starting')
 
         // Session cleanup first (fire-and-forget) - do this before closing
         if (sessionId) {
@@ -465,9 +479,11 @@
         // to wait for the current frame to complete AND the next frame to start.
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-                feLog(`[viewer] closeWindow: calling close() after ${String(Math.round(performance.now() - start))}ms`)
+                log.debug('closeWindow: calling close() after {elapsed}ms', {
+                    elapsed: Math.round(performance.now() - start),
+                })
                 currentWindow.close().catch((e: unknown) => {
-                    feLog(`[viewer] closeWindow: close failed: ${String(e)}`)
+                    log.error('closeWindow: close failed: {error}', { error: String(e) })
                 })
             })
         })
@@ -556,7 +572,10 @@
 
         if (e.key === 'Escape') {
             e.preventDefault()
-            feLog(`[viewer] ESC pressed, searchVisible=${String(searchVisible)}, windowReady=${String(windowReady)}`)
+            log.debug('ESC pressed, searchVisible={searchVisible}, windowReady={windowReady}', {
+                searchVisible,
+                windowReady,
+            })
             if (searchVisible) {
                 closeSearch()
             } else {
@@ -616,7 +635,7 @@
         unlistenMcpClose = await listen<{ path?: string }>('mcp-viewer-close', (event) => {
             const requestedPath = event.payload.path
             if (!requestedPath || requestedPath === myFilePath) {
-                feLog(`[viewer] MCP close request received for path=${requestedPath ?? 'any'}`)
+                log.debug('MCP close request received for path={path}', { path: requestedPath ?? 'any' })
                 closeWindow()
             }
         })
@@ -625,7 +644,7 @@
         unlistenMcpFocus = await listen<{ path?: string }>('mcp-viewer-focus', (event) => {
             const requestedPath = event.payload.path
             if (requestedPath === myFilePath) {
-                feLog(`[viewer] MCP focus request received for path=${requestedPath}`)
+                log.debug('MCP focus request received for path={path}', { path: requestedPath })
                 void getCurrentWindow().setFocus()
             }
         })
@@ -675,8 +694,16 @@
             capabilities = result.capabilities
             isIndexing = result.isIndexing
 
-            feLog(
-                `[viewer] Opened file: ${result.fileName}, ${String(result.totalBytes)} bytes, totalLines=${String(result.totalLines)}, estimatedTotalLines=${String(result.estimatedTotalLines)}, backend=${result.backendType}, isIndexing=${String(result.isIndexing)}`,
+            log.info(
+                'Opened file: {fileName}, {totalBytes} bytes, totalLines={totalLines}, estimatedTotalLines={estimatedTotalLines}, backend={backendType}, isIndexing={isIndexing}',
+                {
+                    fileName: result.fileName,
+                    totalBytes: result.totalBytes,
+                    totalLines: result.totalLines,
+                    estimatedTotalLines: result.estimatedTotalLines,
+                    backendType: result.backendType,
+                    isIndexing: result.isIndexing,
+                },
             )
 
             // Start polling for indexing status if indexing is in progress
@@ -690,7 +717,7 @@
                 lineCache.set(result.initialLines.firstLineNumber + i, result.initialLines.lines[i])
             }
 
-            feLog(`[viewer] Initial cache: ${String(result.initialLines.lines.length)} lines loaded`)
+            log.debug('Initial cache: {count} lines loaded', { count: result.initialLines.lines.length })
 
             // Set window title (fire-and-forget, don't block)
             getCurrentWindow()
@@ -716,7 +743,7 @@
             })
         } catch (e) {
             error = typeof e === 'string' ? e : 'Failed to read file'
-            feLog(`[viewer] Failed to open file: ${String(e)}`)
+            log.error('Failed to open file: {error}', { error: String(e) })
         } finally {
             loading = false
             // Auto-focus the container so keyboard events work immediately
@@ -726,7 +753,7 @@
             // Mark window as ready after WebKit has had a frame to settle
             requestAnimationFrame(() => {
                 windowReady = true
-                feLog(`[viewer] Window ready, closeRequested=${String(closeRequested)}`)
+                log.debug('Window ready, closeRequested={closeRequested}', { closeRequested })
                 if (closeRequested) {
                     closeWindow()
                 }

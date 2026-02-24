@@ -24,7 +24,9 @@
 
 import { configure, getConsoleSink, getLogger as getLogTapeLogger } from '@logtape/logtape'
 import type { Logger } from '@logtape/logtape'
+import { invoke } from '@tauri-apps/api/core'
 import { load, type Store } from '@tauri-apps/plugin-store'
+import { getTauriBridgeSink, startBridge } from '$lib/log-bridge'
 
 // Re-export getLogger for convenience
 export { getLogger } from '@logtape/logtape'
@@ -90,14 +92,14 @@ async function applyLoggerConfig(verbose: boolean, isReset: boolean): Promise<vo
         loggers.push({
             category: 'app',
             lowestLevel: 'debug',
-            sinks: ['console'],
+            sinks: ['console', 'tauriBridge'],
         })
     } else {
         // Normal mode: info in dev, error in prod
         loggers.push({
             category: 'app',
             lowestLevel: isDev ? 'info' : 'error',
-            sinks: ['console'],
+            sinks: ['console', 'tauriBridge'],
         })
 
         // Add debug-level loggers for specific categories
@@ -105,7 +107,7 @@ async function applyLoggerConfig(verbose: boolean, isReset: boolean): Promise<vo
             loggers.push({
                 category: ['app', cat],
                 lowestLevel: 'debug',
-                sinks: ['console'],
+                sinks: ['console', 'tauriBridge'],
             })
         }
     }
@@ -113,6 +115,7 @@ async function applyLoggerConfig(verbose: boolean, isReset: boolean): Promise<vo
     await configure({
         sinks: {
             console: getConsoleSink(),
+            tauriBridge: getTauriBridgeSink(),
         },
         loggers,
         reset: isReset,
@@ -132,6 +135,7 @@ export async function initLogger(): Promise<void> {
 
     await applyLoggerConfig(verboseLoggingEnabled, false)
     loggerInitialized = true
+    startBridge()
 
     if (isDev) {
         const log = getLogTapeLogger(['app', 'logger'])
@@ -157,6 +161,13 @@ export async function setVerboseLogging(enabled: boolean): Promise<void> {
 
     verboseLoggingEnabled = enabled
     await applyLoggerConfig(enabled, true)
+
+    // Also update the Rust-side log level to match
+    try {
+        await invoke('set_log_level', { level: enabled ? 'debug' : 'info' })
+    } catch {
+        // Backend may not be ready during early startup — silently ignore
+    }
 
     const log = getLogTapeLogger(['app', 'logger'])
     if (enabled) {

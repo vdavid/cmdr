@@ -28,10 +28,6 @@ use smb as _;
 use smb_rpc as _;
 
 //noinspection ALL
-// chrono is used in network/known_shares.rs for timestamps
-#[cfg(target_os = "macos")]
-use chrono as _;
-//noinspection ALL
 // MCP Bridge is only used in debug builds, so silence the warning in release builds
 #[cfg(not(debug_assertions))]
 use tauri_plugin_mcp_bridge as _;
@@ -126,11 +122,41 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_dialog::init())
+        // Register the log plugin commands only (skip_logger = we set up the global logger ourselves in .setup())
+        .plugin(tauri_plugin_log::Builder::new().skip_logger().build())
         .setup(|app| {
-            // Initialize logging - respects RUST_LOG env var (default: info)
-            env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
-                .format_timestamp_millis()
-                .init();
+            // Set up unified logging: tauri-plugin-log for formatting/targets + env_filter for RUST_LOG support
+            {
+                use tauri_plugin_log::{RotationStrategy, Target, TargetKind, fern::colors::ColoredLevelConfig};
+                let (plugin, _max_level, logger) = tauri_plugin_log::Builder::new()
+                    .targets([
+                        Target::new(TargetKind::Stdout),
+                        Target::new(TargetKind::LogDir { file_name: None }),
+                    ])
+                    .rotation_strategy(RotationStrategy::KeepAll)
+                    .max_file_size(50_000_000) // 50 MB
+                    .format(|out, message, record| {
+                        let now = chrono::Local::now();
+                        let ts = now.format("%H:%M:%S%.2f"); // HH:MM:SS.cc (centiseconds)
+                        // Strip "cmdr_lib::" prefix from target for shorter output
+                        let target = record.target().strip_prefix("cmdr_lib::").unwrap_or(record.target());
+                        out.finish(format_args!("{ts} {:<5} {target}  {message}", record.level()))
+                    })
+                    .with_colors(ColoredLevelConfig::default())
+                    .split(app.handle())
+                    .expect("failed to initialize logger");
+
+                // Register the split plugin (handles log file targets, rotation, etc.)
+                app.handle().plugin(plugin)?;
+
+                // Wrap the plugin's logger with env_filter to support RUST_LOG
+                let filter = env_filter::Builder::from_env("RUST_LOG")
+                    .filter_level(log::LevelFilter::Info)
+                    .build();
+                let filtered = env_filter::FilteredLog::new(logger, filter);
+                log::set_boxed_logger(Box::new(filtered)).expect("failed to set global logger");
+                log::set_max_level(log::LevelFilter::Trace); // Let env_filter handle filtering
+            }
 
             // Initialize benchmarking (enabled by RUSTY_COMMANDER_BENCHMARK=1)
             benchmark::init_benchmarking();
@@ -523,8 +549,6 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             commands::network::get_host_auth_mode,
             #[cfg(target_os = "macos")]
-            commands::network::fe_log,
-            #[cfg(target_os = "macos")]
             commands::network::get_known_shares,
             #[cfg(target_os = "macos")]
             commands::network::get_known_share_by_name,
@@ -617,6 +641,9 @@ pub fn run() {
             commands::settings::update_file_watcher_debounce,
             commands::settings::update_service_resolve_timeout,
             commands::settings::update_menu_accelerator,
+            // Logging commands (frontend log bridge + runtime level control)
+            commands::logging::batch_fe_logs,
+            commands::logging::set_log_level,
             // Drive indexing commands
             commands::indexing::start_drive_index,
             commands::indexing::stop_drive_index,

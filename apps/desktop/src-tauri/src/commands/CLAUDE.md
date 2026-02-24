@@ -11,7 +11,7 @@ immediately to business-logic modules. No significant logic lives here.
 | `file_system.rs` | File listing & writes | Largest file. Streaming + virtual-scroll listing API, write ops, scan preview, conflict resolution, volume copy, native drag, self-drag overlay. Contains `expand_tilde()`. |
 | `volumes.rs` | Volume management | `list_volumes`, `get_default_volume_id`, `find_containing_volume`, `get_volume_space` |
 | `mtp.rs` | MTP devices | Full MTP command surface (connect, disconnect, list, download, upload, delete, rename, move, scan) |
-| `network.rs` | SMB/network shares | Discovery, share listing, keychain, mounting. Also hosts `fe_log` for frontend debug logging. |
+| `network.rs` | SMB/network shares | Discovery, share listing, keychain, mounting. |
 | `font_metrics.rs` | Font metrics cache | `store_font_metrics`, `has_font_metrics` |
 | `icons.rs` | File icons | `get_icons`, `refresh_directory_icons`, cache clear |
 | `rename.rs` | Rename / trash | `move_to_trash` (NSFileManager), `check_rename_permission`, `check_rename_validity`, `rename_file` |
@@ -31,8 +31,6 @@ immediately to business-logic modules. No significant logic lives here.
 - **Platform gates.** `mtp`, `network`, and `volumes` modules are macOS-only at the `mod.rs` level. Individual functions also use `#[cfg]` where behaviour differs (e.g., `sync_status`).
 - **`start_selection_drag`** requires the main thread. It uses `app.run_on_main_thread()` plus a `std::sync::mpsc` channel to return the result synchronously.
 - **`list_shares_with_credentials`** has `#[allow(clippy::too_many_arguments)]` because Tauri command parameters must be top-level arguments — no struct bundling.
-- **`fe_log`** (in `network.rs`) receives log messages from the frontend and forwards them to `env_logger`. Kept in `network.rs` for historical reasons; it has nothing to do with networking.
-
 ## Dependencies
 
 All major subsystems: `file_system`, `volumes`, `mtp`, `network`, `font_metrics`, `icons`,

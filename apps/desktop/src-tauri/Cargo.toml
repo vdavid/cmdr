@@ -47,9 +47,11 @@ tauri-plugin-drag = "2.1.0"
 drag = "2.1.0"
 tauri-plugin-fs = "2.4.4"
 alphanumeric-sort = "1.5"
+chrono = "0.4"
 ed25519-dalek = { version = "2.1", features = ["rand_core"] }
-env_logger = "0.11.8"
+tauri-plugin-log = { version = "2", features = ["colored"] }
 log = "0.4"
+env_filter = "1"
 # HTTP client for license server validation and AI downloads
 reqwest = { version = "0.12", features = ["json", "rustls-tls", "stream"], default-features = false }
 # AI model download: extracting llama-server from tar.gz
@@ -96,7 +98,6 @@ objc2-app-kit = { version = "0.3", features = [
 block2 = "0.6"
 smb = "0.11.1"
 smb-rpc = "=0.11.1"
-chrono = "0.4"
 security-framework = "3.2"
 # MTP (Android device) support via pure Rust implementation
 mtp-rs = "0.1.0"

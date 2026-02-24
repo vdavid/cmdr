@@ -6,12 +6,6 @@ use crate::network::{
     update_host_resolution,
 };
 
-/// Logs a message from the frontend (for debugging).
-#[tauri::command]
-pub fn fe_log(message: String) {
-    log::debug!("[FE] {}", message);
-}
-
 /// Gets all currently discovered network hosts.
 #[tauri::command]
 pub fn list_network_hosts() -> Vec<NetworkHost> {

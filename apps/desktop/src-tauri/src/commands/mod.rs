@@ -6,6 +6,7 @@ pub mod font_metrics;
 pub mod icons;
 pub mod indexing;
 pub mod licensing;
+pub mod logging;
 #[cfg(target_os = "macos")]
 pub mod mtp;
 #[cfg(target_os = "macos")]
