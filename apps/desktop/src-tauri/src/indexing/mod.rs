@@ -1280,7 +1280,7 @@ fn verify_affected_dirs(affected_paths: &std::collections::HashSet<String>, writ
 /// `start_indexing()` or the dev env var `CMDR_DRIVE_INDEX=1`).
 pub fn init(app: &AppHandle) {
     app.manage(IndexManagerState(std::sync::Mutex::new(None)));
-    log::info!("Indexing state registered");
+    log::debug!("Indexing state registered");
 }
 
 /// Whether indexing should auto-start on launch.

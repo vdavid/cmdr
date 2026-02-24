@@ -136,7 +136,7 @@ pub fn start_mtp_watcher(app: &AppHandle) {
         debug!("Initial MTP devices: {:?}", known_guard);
     }
 
-    info!(
+    debug!(
         "Starting MTP device watcher (found {} initial device(s))",
         initial_devices.len()
     );

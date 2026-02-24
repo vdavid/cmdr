@@ -16,7 +16,7 @@
 
 use std::ptr::NonNull;
 
-use log::{info, warn};
+use log::{debug, info, warn};
 use objc2_app_kit::{NSColor, NSColorSpace, NSSystemColorsDidChangeNotification};
 use objc2_foundation::{NSNotification, NSNotificationCenter};
 use tauri::{AppHandle, Emitter, Runtime};
@@ -59,7 +59,7 @@ pub fn get_accent_color() -> String {
 /// changes their accent color in System Settings or switches light/dark mode.
 pub fn observe_accent_color_changes<R: Runtime>(app_handle: AppHandle<R>) {
     let initial = read_accent_color();
-    info!("System accent color: {initial}");
+    debug!("System accent color: {initial}");
 
     let center = NSNotificationCenter::defaultCenter();
 

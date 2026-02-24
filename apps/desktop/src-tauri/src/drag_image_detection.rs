@@ -133,7 +133,7 @@ pub fn install(app_handle: AppHandle) {
             );
         }
 
-        log::info!("drag_image_detection: swizzles installed on WryWebView");
+        log::debug!("drag_image_detection: swizzles installed on WryWebView");
     }
 }
 
