@@ -68,7 +68,7 @@
     import { moveToTrash, type RenameValidityResult } from '$lib/tauri-commands'
     import { getSetting, type DirectorySortMode } from '$lib/settings'
     import type { ConflictResolution } from '../rename/RenameConflictDialog.svelte'
-    import Notification from '$lib/ui/Notification.svelte'
+    import { addToast, dismissTransientToasts } from '$lib/ui/toast'
     import ExtensionChangeDialog from '../rename/ExtensionChangeDialog.svelte'
     import RenameConflictDialog from '../rename/RenameConflictDialog.svelte'
     import { getAppLogger } from '$lib/logging/logger'
@@ -278,9 +278,6 @@
 
     // ==== Rename state and exports ====
 
-    // Notification state (top-right toast)
-    let renameNotification = $state<{ message: string; style: 'info' | 'error' } | null>(null)
-
     // Extension change dialog state
     let extensionDialogState = $state<{ oldExtension: string; newExtension: string } | null>(null)
 
@@ -349,7 +346,7 @@
         void checkPermission(entry.path).then((errorMsg) => {
             if (errorMsg && rename.active && rename.target?.path === entry.path) {
                 rename.cancel()
-                renameNotification = { message: errorMsg, style: 'error' }
+                addToast(errorMsg, { level: 'error' })
                 onRequestFocus?.()
             }
         })
@@ -367,7 +364,7 @@
     function handleRenameInput(value: string) {
         rename.setCurrentName(value)
         // Clear any existing notification on keypress
-        renameNotification = null
+        dismissTransientToasts()
         // Run validation on each keystroke
         const extensionPolicy = getSetting('fileOperations.allowFileExtensionChanges')
         const result = validateFilename(
@@ -384,7 +381,7 @@
         // If there's an error, shake and show notification
         if (rename.severity === 'error') {
             rename.triggerShake()
-            renameNotification = { message: rename.validation.message, style: 'error' }
+            addToast(rename.validation.message, { level: 'error' })
             return
         }
         // No-op if name didn't change
@@ -415,7 +412,7 @@
                 break
             case 'error':
                 rename.triggerShake()
-                renameNotification = { message: result.message, style: 'error' }
+                addToast(result.message, { level: 'error' })
                 break
             case 'extension-ask':
                 // Suppress the blur-cancel that fires when focus moves to the dialog
@@ -448,10 +445,7 @@
         pendingCursorName = newName
 
         if (wasHiddenRename) {
-            renameNotification = {
-                message: "Your file disappeared from view because hidden files aren't shown.",
-                style: 'info',
-            }
+            addToast("Your file disappeared from view because hidden files aren't shown.")
         }
     }
 
@@ -499,7 +493,7 @@
                     })
                     .catch((e: unknown) => {
                         const msg = e instanceof Error ? e.message : String(e)
-                        renameNotification = { message: msg, style: 'error' }
+                        addToast(msg, { level: 'error' })
                         rename.cancel()
                         onRequestFocus?.()
                     })
@@ -534,22 +528,6 @@
     function handleRenameShakeEnd() {
         rename.clearShake()
     }
-
-    // Clear rename notification on the next mouse click anywhere
-    $effect(() => {
-        if (!renameNotification) return
-        function handleClick() {
-            renameNotification = null
-        }
-        // Use setTimeout so the click that triggered the notification (if any) doesn't immediately dismiss it
-        const timer = setTimeout(() => {
-            document.addEventListener('mousedown', handleClick, { once: true })
-        }, 0)
-        return () => {
-            clearTimeout(timer)
-            document.removeEventListener('mousedown', handleClick)
-        }
-    })
 
     // ==== End rename state and exports ====
 
@@ -837,7 +815,7 @@
         // Cancel any active rename when navigating
         rename.cancel()
         cancelClickToRename()
-        renameNotification = null
+        dismissTransientToasts()
 
         // Reset benchmark epoch for this navigation
         benchmark.resetEpoch()
@@ -1836,16 +1814,6 @@
         />
     {/if}
 </div>
-
-{#if renameNotification}
-    <Notification
-        message={renameNotification.message}
-        style={renameNotification.style}
-        onclose={() => {
-            renameNotification = null
-        }}
-    />
-{/if}
 
 {#if extensionDialogState}
     <ExtensionChangeDialog

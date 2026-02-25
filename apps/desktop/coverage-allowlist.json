@@ -134,7 +134,8 @@
         "file-explorer/rename/RenameConflictDialog.svelte": {
             "reason": "UI modal, logic tested in rename-dialogs.test.ts"
         },
-        "ui/Notification.svelte": { "reason": "UI component, depends on Tauri event API" },
+        "ui/toast/ToastContainer.svelte": { "reason": "UI component, renders from toast store" },
+        "ui/toast/ToastItem.svelte": { "reason": "UI component, timer and snippet rendering" },
         "file-explorer/rename/InlineRenameEditor.svelte": {
             "reason": "UI component, depends on DOM focus/selection APIs"
         },

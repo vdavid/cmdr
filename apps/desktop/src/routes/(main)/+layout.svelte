@@ -13,6 +13,7 @@
     import { onMtpExclusiveAccessError, connectMtpDevice, type MtpExclusiveAccessErrorEvent } from '$lib/tauri-commands'
     import AiNotification from '$lib/ai/AiNotification.svelte'
     import UpdateNotification from '$lib/updates/UpdateNotification.svelte'
+    import ToastContainer from '$lib/ui/toast/ToastContainer.svelte'
     import { PtpcameradDialog } from '$lib/mtp'
     import type { Snippet } from 'svelte'
 
@@ -100,6 +101,7 @@
     })
 </script>
 
+<ToastContainer />
 <UpdateNotification />
 <AiNotification />
 {#if showPtpcameradDialog}

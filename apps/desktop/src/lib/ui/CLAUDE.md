@@ -11,7 +11,7 @@ Reusable UI components used across the entire desktop app.
 | `Button.svelte`       | Styled button with variant and size props                                |
 | `LoadingIcon.svelte`  | Animated spinner with progressive status text                            |
 | `AlertDialog.svelte`  | Single-action confirmation dialog built on `ModalDialog`                 |
-| `Notification.svelte` | Fixed-position slide-in toast (top-right), `info`/`error` styles         |
+| `toast/`              | Centralized toast notification system — store, container, item           |
 
 ## ModalDialog
 
@@ -60,6 +60,19 @@ Progressive status text driven by props (mutually exclusive, evaluated top-down)
 `showCancelHint` adds "Press ESC to cancel and go back" below the spinner. The container uses a 400ms `fadeIn` animation
 where the first 50% is invisible (effectively 200ms before fade begins), avoiding flash for fast loads.
 
+## Toast system (`toast/`)
+
+Centralized toast notifications with stacking, levels, and two dismissal modes.
+
+- **Store** (`toast-store.svelte.ts`): Module-level `$state` array. `addToast(content, options?)` accepts a `Snippet` or
+  plain `string`. Optional `id` for dedup (replace in place). Max 5 visible.
+- **Container** (`ToastContainer.svelte`): Mounted once in `(main)/+layout.svelte`. Fixed top-right, stacks vertically.
+- **Item** (`ToastItem.svelte`): Frame, close button, auto-dismiss timer for transient toasts.
+
+Levels: `info` (default), `warn`, `error`. Dismissal: `transient` (4s timeout + nav-dismiss, default) or `persistent`.
+
+Call `dismissTransientToasts()` on pane navigation to clear stale feedback.
+
 ## Key gotchas
 
 - The Svelte 5 snippet named `title` shadows any prop also named `title`. In `AlertDialog` this is handled by
@@ -67,8 +80,6 @@ where the first 50% is invisible (effectively 200ms before fade begins), avoidin
 - `containerStyle` exists because stylelint blocks non-standard CSS custom properties (any not matching
   `(color|spacing|font)-` prefix). Use it for one-off sizing instead of CSS vars.
 - `blur` prop applies `backdrop-filter` which triggers GPU compositing — use sparingly.
-- `Notification.svelte` is a separate component from `UpdateNotification.svelte` (in the updates module). Use
-  `Notification` for general app toasts.
 
 ## Dependencies
 
