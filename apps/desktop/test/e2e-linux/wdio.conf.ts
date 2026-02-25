@@ -96,7 +96,11 @@ export const config: Options.Testrunner & { capabilities: Capabilities.Testrunne
         console.log('Native driver:', nativeDriver || 'auto-detect')
         console.log('tauri-driver args:', args)
 
-        tauriDriver = spawn('tauri-driver', args, {
+        // Use absolute path to the Rust tauri-driver binary to avoid the
+        // CrabNebula npm @crabnebula/tauri-driver CLI shadowing it in PATH
+        const tauriDriverBin = '/root/.cargo/bin/tauri-driver'
+
+        tauriDriver = spawn(tauriDriverBin, args, {
             stdio: ['ignore', 'pipe', 'pipe'],
             env: {
                 ...process.env,

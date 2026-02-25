@@ -52,25 +52,28 @@ renders correctly but cannot test file operations (which require Tauri backend).
 
 ### Run Linux E2E tests (Docker)
 
-The Linux E2E binary is cached in a Docker volume. The script only rebuilds if no cached binary
-exists, so **after code changes you need to clean the cache first**:
+The compiled Tauri binary and all build artifacts are cached in Docker volumes. The script skips
+the build step when a cached binary exists, so what you need to do depends on what changed:
 
 ```bash
 cd apps/desktop
 
-# First run, or after code changes: clean cache and rebuild
-./scripts/e2e-linux.sh --clean && pnpm test:e2e:linux
-
-# Subsequent runs (same code): skip the rebuild
+# Test-only changes (.ts test files, wdio.conf.ts):
+# Source is mounted from host — just re-run, no rebuild needed.
 pnpm test:e2e:linux
-```
 
-If tests fail in unexpected ways, try `./scripts/e2e-linux.sh --clean` — a stale cached binary is
-the most common cause.
+# Rust or Svelte code changes:
+# Remove the target volume (keeps cargo registry cache, so recompilation is fast).
+docker volume rm cmdr-target-cache && pnpm test:e2e:linux
+
+# Nuclear option — nuke everything (cargo cache, target, node_modules):
+# Use when things are inexplicably broken or after dependency changes.
+./scripts/e2e-linux.sh --clean && pnpm test:e2e:linux
+```
 
 Other options:
 ```bash
-pnpm test:e2e:linux:build          # force rebuild Docker image (not the app)
+pnpm test:e2e:linux:build          # force rebuild Docker IMAGE (Dockerfile changes only)
 pnpm test:e2e:linux:shell          # interactive shell in container for debugging
 ```
 
@@ -121,8 +124,8 @@ right/                        (empty)
 
 Both wdio configs (`e2e-linux/wdio.conf.ts` and `e2e-macos/wdio.conf.ts`) import and call
 `createFixtures()` in `onPrepare`, which sets the `CMDR_E2E_START_PATH` env var. The Rust
-backend reads this var (behind the `automation` feature flag) to open the left and right panes
-at `left/` and `right/` on launch.
+backend reads this var (always compiled in, no feature flag needed) to open the left and right
+panes at `left/` and `right/` on launch.
 
 Fixtures are fully recreated before each test via `recreateFixtures()` in the `beforeTest` hook,
 so tests don't depend on each other's side effects. Cleanup happens in `onComplete`.
@@ -214,10 +217,18 @@ events or GTK focus behavior that differ from macOS.
 ### Build caching
 
 The script uses Docker volumes to cache:
-- Cargo registry (`cmdr-cargo-cache`)
-- Target directory (`cmdr-target-cache`)
-- Root node modules (`cmdr-root-node-modules-cache`)
-- Desktop node modules (`cmdr-desktop-node-modules-cache`)
+
+| Volume | Contents | Remove to force... |
+|---|---|---|
+| `cmdr-cargo-cache` | Cargo registry + compiled deps | Full crate re-download |
+| `cmdr-target-cache` | Compiled Tauri binary | App recompilation (fast with cargo cache) |
+| `cmdr-root-node-modules-cache` | Root `node_modules/` | `pnpm install` |
+| `cmdr-desktop-node-modules-cache` | Desktop `node_modules/` | `pnpm install` |
+
+Most common operation: `docker volume rm cmdr-target-cache` after Rust/Svelte changes. This
+preserves the cargo registry so recompilation only takes a few minutes instead of 10+.
+
+`./scripts/e2e-linux.sh --clean` removes all four volumes at once.
 
 **Why two node_modules volumes?** The monorepo has node_modules at both the root and `apps/desktop/`.
 Both must be Docker volumes to prevent Linux binaries from contaminating the host's node_modules

@@ -366,8 +366,8 @@ describe('New folder dialog', () => {
         expect(await nameInput.isExisting()).toBe(true)
 
         // Verify OK and Cancel buttons exist
-        const okButton = browser.$(`${MKDIR_DIALOG} button.btn-primary`)
-        const cancelButton = browser.$(`${MKDIR_DIALOG} button.btn-secondary`)
+        const okButton = browser.$(`${MKDIR_DIALOG} .btn-primary`)
+        const cancelButton = browser.$(`${MKDIR_DIALOG} .btn-secondary`)
         expect(await okButton.isExisting()).toBe(true)
         expect(await cancelButton.isExisting()).toBe(true)
         expect(await okButton.getText()).toBe('OK')
@@ -399,7 +399,7 @@ describe('New folder dialog', () => {
         await browser.pause(200)
 
         // Verify OK button is enabled
-        const okButton = (await browser.$(`${MKDIR_DIALOG} button.btn-primary`)) as unknown as WebdriverIO.Element
+        const okButton = (await browser.$(`${MKDIR_DIALOG} .btn-primary`)) as unknown as WebdriverIO.Element
         expect(await okButton.isEnabled()).toBe(true)
 
         // Click OK to create the folder
@@ -443,8 +443,8 @@ describe('Transfer dialogs', () => {
         expect(await pathInput.isExisting()).toBe(true)
 
         // Verify primary button says "Copy"
-        const copyButton = browser.$(`${TRANSFER_DIALOG} button.btn-primary`)
-        const cancelButton = browser.$(`${TRANSFER_DIALOG} button.btn-secondary`)
+        const copyButton = browser.$(`${TRANSFER_DIALOG} .btn-primary`)
+        const cancelButton = browser.$(`${TRANSFER_DIALOG} .btn-secondary`)
         expect(await copyButton.isExisting()).toBe(true)
         expect(await copyButton.getText()).toBe('Copy')
         expect(await cancelButton.isExisting()).toBe(true)
@@ -491,8 +491,8 @@ describe('Transfer dialogs', () => {
         expect(await pathInput.isExisting()).toBe(true)
 
         // Verify primary button says "Move"
-        const moveButton = browser.$(`${TRANSFER_DIALOG} button.btn-primary`)
-        const cancelButton = browser.$(`${TRANSFER_DIALOG} button.btn-secondary`)
+        const moveButton = browser.$(`${TRANSFER_DIALOG} .btn-primary`)
+        const cancelButton = browser.$(`${TRANSFER_DIALOG} .btn-secondary`)
         expect(await moveButton.isExisting()).toBe(true)
         expect(await moveButton.getText()).toBe('Move')
         expect(await cancelButton.isExisting()).toBe(true)
