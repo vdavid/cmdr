@@ -1951,7 +1951,8 @@
     .dual-pane-explorer {
         display: flex;
         width: 100%;
-        height: 100%;
+        flex: 1;
+        min-height: 0;
         gap: 0;
         outline: none;
     }

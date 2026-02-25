@@ -71,9 +71,6 @@ tauri-wrapper injecting `--target universal-apple-darwin`), the output goes to
 
 ## Known issues
 
-- **Layout glitch**: The app's vertical layout looks off when launched by the E2E runner (empty
-  space between file list and bottom bar). Likely caused by `tauri-plugin-window-state` restoring
-  stale geometry, or a CSS difference between `tauri build --debug` and `pnpm dev`.
 - **JS dispatch vs native keys**: The `dispatchEvent` workaround means we're not testing the real
   OS keyboard input path. If CrabNebula fixes native key delivery, switch back to `browser.keys()`.
 - **Click with offset untested**: `element.click({x: 10, y: 10})` was broken in earlier versions
