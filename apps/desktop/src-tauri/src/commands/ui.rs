@@ -1,5 +1,5 @@
 use crate::ignore_poison::IgnorePoison;
-use crate::menu::{MenuState, build_context_menu};
+use crate::menu::{MenuState, build_context_menu, build_tab_context_menu};
 #[cfg(target_os = "macos")]
 use std::process::Command;
 use tauri::menu::ContextMenu;
@@ -173,6 +173,40 @@ pub fn open_in_editor(path: String) -> Result<(), String> {
 #[cfg(not(target_os = "macos"))]
 pub fn open_in_editor(_path: String) -> Result<(), String> {
     Err("Open in editor is only available on macOS".to_string())
+}
+
+/// Shows a native context menu for a tab (fire-and-forget).
+/// The selected action is delivered asynchronously via a `tab-context-action` Tauri event
+/// from `on_menu_event`, because `popup()` returns before the event loop processes the
+/// `MenuEvent` from muda. A synchronous channel approach doesn't work here — the wakeup
+/// signal posted during the popup's NSEvent tracking loop gets consumed, so `recv` always
+/// times out.
+#[tauri::command]
+pub fn show_tab_context_menu(
+    window: Window<tauri::Wry>,
+    is_pinned: bool,
+    can_close: bool,
+    has_other_unpinned_tabs: bool,
+) -> Result<(), String> {
+    let app = window.app_handle().clone();
+
+    let menu =
+        build_tab_context_menu(&app, is_pinned, can_close, has_other_unpinned_tabs).map_err(|e| e.to_string())?;
+    menu.popup(window).map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+/// Updates the File menu "Pin tab" / "Unpin tab" label based on the active tab's pin state.
+#[tauri::command]
+pub fn update_pin_tab_menu<R: Runtime>(app: AppHandle<R>, is_pinned: bool) -> Result<(), String> {
+    let menu_state = app.state::<MenuState<R>>();
+    let guard = menu_state.pin_tab.lock_ignore_poison();
+    let Some(item) = guard.as_ref() else {
+        return Err("Menu not initialized".to_string());
+    };
+    let label = if is_pinned { "Unpin tab" } else { "Pin tab" };
+    item.set_text(label).map_err(|e| e.to_string())
 }
 
 /// Executes a menu action for the current context.

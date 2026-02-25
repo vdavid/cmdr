@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use tauri::{Manager, Runtime, WebviewWindow};
 
 use super::dialog_state::SoftDialogTracker;
-use super::pane_state::{FileEntry, PaneState, PaneStateStore};
+use super::pane_state::{FileEntry, PaneState, PaneStateStore, TabInfo};
 #[cfg(target_os = "macos")]
 use crate::volumes;
 
@@ -107,6 +107,15 @@ fn format_size(bytes: u64) -> String {
 fn build_pane_yaml(state: &PaneState, indent: &str) -> String {
     let mut lines = Vec::new();
 
+    // Tabs (first — gives context for which tab is active before showing its content)
+    if !state.tabs.is_empty() {
+        lines.push(format!("{}tabs:", indent));
+        for (idx, tab) in state.tabs.iter().enumerate() {
+            let formatted = format_tab_compact(tab, idx);
+            lines.push(format!("{}  - {}", indent, formatted));
+        }
+    }
+
     // Volume and path
     lines.push(format!(
         "{}volume: {}",
@@ -170,6 +179,33 @@ fn build_pane_yaml(state: &PaneState, indent: &str) -> String {
     }
 
     lines.join("\n")
+}
+
+/// Format a tab entry in compact format.
+/// Format: `i:INDEX id:TAB_ID [active] [pinned] FolderName (/full/path)`
+fn format_tab_compact(tab: &TabInfo, index: usize) -> String {
+    let folder_name = tab.path.rsplit('/').find(|s| !s.is_empty()).unwrap_or(&tab.path);
+
+    let mut markers = Vec::new();
+    if tab.active {
+        markers.push("[active]");
+    }
+    if tab.pinned {
+        markers.push("[pinned]");
+    }
+
+    if markers.is_empty() {
+        format!("i:{} id:{} {} ({})", index, tab.id, folder_name, tab.path)
+    } else {
+        format!(
+            "i:{} id:{} {} {} ({})",
+            index,
+            tab.id,
+            markers.join(" "),
+            folder_name,
+            tab.path
+        )
+    }
 }
 
 /// Extract the file path from a viewer window's URL.
@@ -422,6 +458,20 @@ mod tests {
             loaded_start: 0,
             loaded_end: 2,
             show_hidden: false,
+            tabs: vec![
+                TabInfo {
+                    id: "tab-1".to_string(),
+                    path: "/Users/test".to_string(),
+                    pinned: false,
+                    active: true,
+                },
+                TabInfo {
+                    id: "tab-2".to_string(),
+                    path: "/Users/test/Downloads".to_string(),
+                    pinned: true,
+                    active: false,
+                },
+            ],
         };
 
         let yaml = build_pane_yaml(&state, "  ");
@@ -435,5 +485,85 @@ mod tests {
         assert!(yaml.contains("selected: 1"));
         assert!(yaml.contains("[cur]")); // Cursor on first file
         assert!(yaml.contains("[sel]")); // Second file selected
+        assert!(yaml.contains("tabs:"));
+        assert!(yaml.contains("i:0 id:tab-1 [active] test (/Users/test)"));
+        assert!(yaml.contains("i:1 id:tab-2 [pinned] Downloads (/Users/test/Downloads)"));
+    }
+
+    #[test]
+    fn test_format_tab_compact_active() {
+        let tab = TabInfo {
+            id: "t1".to_string(),
+            path: "/Users/foo/Documents".to_string(),
+            pinned: false,
+            active: true,
+        };
+        assert_eq!(
+            format_tab_compact(&tab, 0),
+            "i:0 id:t1 [active] Documents (/Users/foo/Documents)"
+        );
+    }
+
+    #[test]
+    fn test_format_tab_compact_pinned() {
+        let tab = TabInfo {
+            id: "t2".to_string(),
+            path: "/Users/foo/Downloads".to_string(),
+            pinned: true,
+            active: false,
+        };
+        assert_eq!(
+            format_tab_compact(&tab, 1),
+            "i:1 id:t2 [pinned] Downloads (/Users/foo/Downloads)"
+        );
+    }
+
+    #[test]
+    fn test_format_tab_compact_active_and_pinned() {
+        let tab = TabInfo {
+            id: "t3".to_string(),
+            path: "/Users/foo/Projects".to_string(),
+            pinned: true,
+            active: true,
+        };
+        assert_eq!(
+            format_tab_compact(&tab, 2),
+            "i:2 id:t3 [active] [pinned] Projects (/Users/foo/Projects)"
+        );
+    }
+
+    #[test]
+    fn test_format_tab_compact_plain() {
+        let tab = TabInfo {
+            id: "t4".to_string(),
+            path: "/Users/foo/Desktop".to_string(),
+            pinned: false,
+            active: false,
+        };
+        assert_eq!(format_tab_compact(&tab, 3), "i:3 id:t4 Desktop (/Users/foo/Desktop)");
+    }
+
+    #[test]
+    fn test_format_tab_compact_root_path() {
+        let tab = TabInfo {
+            id: "t5".to_string(),
+            path: "/".to_string(),
+            pinned: false,
+            active: true,
+        };
+        // Root path has no non-empty segment after splitting by '/', so falls back to full path
+        assert_eq!(format_tab_compact(&tab, 0), "i:0 id:t5 [active] / (/)");
+    }
+
+    #[test]
+    fn test_pane_yaml_no_tabs_when_empty() {
+        let state = PaneState {
+            path: "/tmp".to_string(),
+            volume_name: Some("Disk".to_string()),
+            tabs: vec![],
+            ..PaneState::default()
+        };
+        let yaml = build_pane_yaml(&state, "  ");
+        assert!(!yaml.contains("tabs:"));
     }
 }

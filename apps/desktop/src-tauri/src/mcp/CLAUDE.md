@@ -21,11 +21,12 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 
 ### Tools (`tools.rs`)
 
-19 semantic tools grouped by category:
+20 semantic tools grouped by category:
 - Navigation (6): `select_volume`, `nav_to_path`, `move_cursor`, etc.
 - Cursor/Selection (3): `move_cursor`, `open_under_cursor`, `select`
 - File operations (3): `copy`, `mkdir`, `refresh`
 - View (3): `sort`, `toggle_hidden`, `set_view_mode`
+- Tabs (2): `activate_tab` (switch to a specific tab by pane + tab ID), `pin_tab` (pin/unpin a tab)
 - Dialogs (1): `dialog` (unified open/focus/close)
 - App (3): `switch_pane`, `swap_panes`, `quit`
 
@@ -48,17 +49,17 @@ Constants and configuration for the MCP server (port, bind address, transport se
 
 ### State stores
 
-- `PaneStateStore`: Current state of left/right panes (path, files, cursor, selection)
+- `PaneStateStore`: Current state of left/right panes (path, files, cursor, selection, tabs)
 - `SoftDialogTracker`: Which dialogs MCP thinks are open (in `dialog_state.rs`)
 - `SettingsStateStore`: Current settings window state (section, settings, shortcuts)
 
-Frontend syncs state to these stores via Tauri commands (`update_left_pane_state`, `mcp_update_settings_sections`, etc.).
+Frontend syncs state to these stores via Tauri commands (`update_left_pane_state`, `update_pane_tabs`, `mcp_update_settings_sections`, etc.).
 
 ## Key decisions
 
 ### Why agent-centric API?
 
-The original design mirrored keyboard shortcuts (43 tools like `nav_up`, `nav_down`). This forced agents to make dozens of calls to find a file. The agent-centric redesign (Jan 2026) consolidated to 19 semantic tools (`move_cursor(index=42)`, `nav_to_path("/Users")`). This reduced round-trips from 6+ reads to 1 (`cmdr://state` resource).
+The original design mirrored keyboard shortcuts (43 tools like `nav_up`, `nav_down`). This forced agents to make dozens of calls to find a file. The agent-centric redesign (Jan 2026) consolidated to 20 semantic tools (`move_cursor(index=42)`, `nav_to_path("/Users")`). This reduced round-trips from 6+ reads to 1 (`cmdr://state` resource).
 
 ### Why YAML over JSON for resources?
 
@@ -131,6 +132,10 @@ This separation keeps main window overhead minimal.
 ### Error codes are JSON-RPC standard
 
 `INVALID_PARAMS = -32602`, `INTERNAL_ERROR = -32603`, etc. These are defined by the JSON-RPC spec, not MCP. Don't change them.
+
+### Tab state is synced separately from pane state
+
+Tab info (id, path, pinned, active) is synced to `PaneState.tabs` via a separate `update_pane_tabs` command, debounced at ~100ms in the frontend. The `cmdr://state` resource shows a `tabs:` section per pane only when tabs are synced (non-empty). The `activate_tab` tool emits an `mcp-activate-tab` Tauri event that the frontend handles by switching to the specified tab.
 
 ### Schema version doesn't apply to MCP state
 

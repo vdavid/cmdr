@@ -47,7 +47,7 @@ Dual-pane file explorer with keyboard-driven navigation, file selection, sorting
 - **Directories first** — always
 - **Natural sorting** — `file10.txt` after `file2.txt`
 - **Extension grouping** — dotfiles → no-extension → by extension alphabetically
-- **Per-column remembered order** — ascending/descending persisted in `settings.json`
+- **Per-tab sort** — each tab owns its `sortBy` + `sortOrder` (no global per-column memory)
 - **Directory sort mode** — setting `listing.directorySortMode` controls how dirs sort among themselves:
     - `likeFiles` (default): dirs sort by the active column (uses `recursive_size` for Size). Dirs with unknown size
       sort last.
@@ -117,3 +117,8 @@ Core explorer UI components:
 - **PermissionDeniedPane.svelte** — Shown when a directory can't be read
 - **selection-state.svelte.ts** — Reactive selection set (indices) with range/toggle helpers
 - **sorting-handlers.ts** / **transfer-operations.ts** — Pure logic extracted from DualPaneExplorer
+
+## Tabs (`tabs/`)
+
+Each pane has an independent tab bar. Tabs use `{#key}` for clean FilePane recreation on switch (cold load, no warm
+cache). See `tabs/CLAUDE.md` for details.

@@ -105,11 +105,11 @@ fn test_tool_input_schemas_are_valid() {
 #[test]
 fn test_total_tool_count() {
     let tools = get_all_tools();
-    // 6 nav + 2 cursor + 1 select + 3 file_op + 3 view + 1 dialog + 3 app = 19
+    // 6 nav + 2 cursor + 1 select + 3 file_op + 3 view + 1 tab + 1 dialog + 3 app = 20
     assert_eq!(
         tools.len(),
-        19,
-        "Expected 19 tools, got {}. Did you add/remove tools?",
+        20,
+        "Expected 20 tools, got {}. Did you add/remove tools?",
         tools.len()
     );
 }
@@ -546,6 +546,7 @@ fn test_pane_state_store_update_left() {
         loaded_start: 0,
         loaded_end: 1,
         show_hidden: false,
+        tabs: vec![],
     };
 
     store.set_left(state.clone());
@@ -605,6 +606,7 @@ fn test_pane_state_cursor_index_bounds() {
         loaded_start: 0,
         loaded_end: 1,
         show_hidden: false,
+        tabs: vec![],
     };
 
     store.set_left(state);
@@ -731,6 +733,7 @@ fn test_empty_file_list() {
         loaded_start: 0,
         loaded_end: 0,
         show_hidden: false,
+        tabs: vec![],
     };
 
     let json = serde_json::to_value(&state).unwrap();
@@ -764,6 +767,7 @@ fn test_large_file_count() {
         loaded_start: 0,
         loaded_end: 1000,
         show_hidden: false,
+        tabs: vec![],
     };
 
     // Should serialize reasonably fast

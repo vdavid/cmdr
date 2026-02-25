@@ -64,6 +64,7 @@ export {
     updateLeftPaneState,
     updateRightPaneState,
     updateFocusedPane,
+    updatePaneTabs,
     notifyDialogOpened,
     notifyDialogClosed,
     registerKnownDialogs,
@@ -71,8 +72,9 @@ export {
     toggleHiddenFiles,
     setViewMode,
     showMainWindow,
+    updatePinTabMenu,
 } from './app-state'
-export type { PaneFileEntry, PaneState } from './app-state'
+export type { PaneFileEntry, PaneState, McpTabInfo } from './app-state'
 
 // Storage (volumes, space, permissions)
 export {
@@ -245,3 +247,6 @@ export {
     getFolderSuggestions,
 } from './settings'
 export type { AiStatus, AiDownloadProgress, AiModelInfo, DirStats } from './settings'
+
+// Tab context menu
+export { showTabContextMenu, onTabContextAction } from './tab'

@@ -61,6 +61,9 @@ pub fn execute_tool<R: Runtime>(app: &AppHandle<R>, name: &str, params: &Value) 
         "select_volume" | "nav_to_path" | "move_cursor" | "scroll_to" => {
             execute_nav_command_with_params(app, name, params)
         }
+        // Tab commands
+        "activate_tab" => execute_activate_tab(app, params),
+        "pin_tab" => execute_pin_tab(app, params),
         // File operation commands
         "copy" => execute_copy(app),
         "mkdir" => execute_mkdir(app),
@@ -103,6 +106,85 @@ fn execute_swap_panes<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
     }
     app.emit("swap-panes", ())?;
     Ok(json!("OK: Swapped left and right panes"))
+}
+
+/// Execute activate_tab command.
+fn execute_activate_tab<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+    let pane = params
+        .get("pane")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ToolError::invalid_params("Missing 'pane' parameter"))?;
+    let tab_id = params
+        .get("tab_id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ToolError::invalid_params("Missing 'tab_id' parameter"))?;
+
+    if !["left", "right"].contains(&pane) {
+        return Err(ToolError::invalid_params("pane must be 'left' or 'right'"));
+    }
+
+    // Validate that the tab ID exists in the pane's synced tab list
+    if let Some(store) = app.try_state::<PaneStateStore>() {
+        let pane_state = match pane {
+            "left" => store.get_left(),
+            "right" => store.get_right(),
+            _ => unreachable!(),
+        };
+        if !pane_state.tabs.is_empty() && !pane_state.tabs.iter().any(|t| t.id == tab_id) {
+            let available_ids: Vec<&str> = pane_state.tabs.iter().map(|t| t.id.as_str()).collect();
+            return Err(ToolError::invalid_params(format!(
+                "Tab '{}' not found in {} pane. Available tabs: {}",
+                tab_id,
+                pane,
+                available_ids.join(", ")
+            )));
+        }
+    }
+
+    app.emit("mcp-activate-tab", json!({"pane": pane, "tabId": tab_id}))?;
+    Ok(json!(format!("OK: Switched to tab {} in {} pane", tab_id, pane)))
+}
+
+/// Execute pin_tab command.
+fn execute_pin_tab<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+    let pane = params
+        .get("pane")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ToolError::invalid_params("Missing 'pane' parameter"))?;
+    let tab_id = params
+        .get("tab_id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ToolError::invalid_params("Missing 'tab_id' parameter"))?;
+    let pinned = params
+        .get("pinned")
+        .and_then(|v| v.as_bool())
+        .ok_or_else(|| ToolError::invalid_params("Missing 'pinned' parameter (boolean)"))?;
+
+    if !["left", "right"].contains(&pane) {
+        return Err(ToolError::invalid_params("pane must be 'left' or 'right'"));
+    }
+
+    // Validate that the tab ID exists in the pane's synced tab list
+    if let Some(store) = app.try_state::<PaneStateStore>() {
+        let pane_state = match pane {
+            "left" => store.get_left(),
+            "right" => store.get_right(),
+            _ => unreachable!(),
+        };
+        if !pane_state.tabs.is_empty() && !pane_state.tabs.iter().any(|t| t.id == tab_id) {
+            let available_ids: Vec<&str> = pane_state.tabs.iter().map(|t| t.id.as_str()).collect();
+            return Err(ToolError::invalid_params(format!(
+                "Tab '{}' not found in {} pane. Available tabs: {}",
+                tab_id,
+                pane,
+                available_ids.join(", ")
+            )));
+        }
+    }
+
+    let action = if pinned { "Pinned" } else { "Unpinned" };
+    app.emit("mcp-pin-tab", json!({"pane": pane, "tabId": tab_id, "pinned": pinned}))?;
+    Ok(json!(format!("OK: {} tab {} in {} pane", action, tab_id, pane)))
 }
 
 /// Execute toggle_hidden command.

@@ -53,6 +53,26 @@ export async function updateFocusedPane(pane: 'left' | 'right'): Promise<void> {
     await invoke('update_focused_pane', { pane })
 }
 
+/** Tab info for MCP state sync. */
+export interface McpTabInfo {
+    id: string
+    path: string
+    pinned: boolean
+    active: boolean
+}
+
+/**
+ * Update tab list for a pane (for MCP state reporting).
+ */
+export async function updatePaneTabs(pane: string, tabs: McpTabInfo[]): Promise<void> {
+    await invoke('update_pane_tabs', { pane, tabs })
+}
+
+/** Updates the File menu "Pin tab" / "Unpin tab" label based on active tab state. */
+export async function updatePinTabMenu(isPinned: boolean): Promise<void> {
+    await invoke('update_pin_tab_menu', { isPinned })
+}
+
 // ============================================================================
 // Dialog tracking
 // ============================================================================

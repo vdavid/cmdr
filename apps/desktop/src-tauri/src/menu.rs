@@ -3,7 +3,7 @@
 use crate::ignore_poison::IgnorePoison;
 use std::sync::Mutex;
 use tauri::{
-    AppHandle, Runtime,
+    AppHandle, Runtime, Wry,
     menu::{CheckMenuItem, Menu, MenuItem, MenuItemKind, PredefinedMenuItem, Submenu},
 };
 
@@ -61,6 +61,8 @@ pub struct MenuState<R: Runtime> {
     /// Positions of items in View submenu (for reinsertion after accelerator updates)
     pub view_mode_full_position: Mutex<usize>,
     pub view_mode_brief_position: Mutex<usize>,
+    /// Pin/unpin tab menu item (label toggles based on active tab state)
+    pub pin_tab: Mutex<Option<MenuItem<R>>>,
 }
 
 impl<R: Runtime> Default for MenuState<R> {
@@ -73,6 +75,7 @@ impl<R: Runtime> Default for MenuState<R> {
             view_submenu: Mutex::new(None),
             view_mode_full_position: Mutex::new(0),
             view_mode_brief_position: Mutex::new(0),
+            pin_tab: Mutex::new(None),
         }
     }
 }
@@ -89,6 +92,8 @@ pub struct MenuItems<R: Runtime> {
     pub view_mode_full_position: usize,
     /// Position of Brief view item in View submenu
     pub view_mode_brief_position: usize,
+    /// Pin/unpin tab menu item (label updated dynamically by frontend)
+    pub pin_tab: MenuItem<R>,
 }
 
 /// View mode type that matches the frontend type.
@@ -101,6 +106,16 @@ pub enum ViewMode {
 
 /// Menu item ID for viewer word wrap toggle.
 pub const VIEWER_WORD_WRAP_ID: &str = "viewer_word_wrap";
+
+/// Menu item IDs for tab actions (app menu).
+pub const NEW_TAB_ID: &str = "new_tab";
+pub const PIN_TAB_MENU_ID: &str = "pin_tab_menu";
+pub const CLOSE_TAB_ID: &str = "close_tab";
+
+/// Menu item IDs for tab context menu.
+pub const TAB_PIN_ID: &str = "tab_pin";
+pub const TAB_CLOSE_OTHERS_ID: &str = "tab_close_others";
+pub const TAB_CLOSE_ID: &str = "tab_close";
 
 /// Menu item ID for About window.
 pub const ABOUT_ID: &str = "about";
@@ -173,11 +188,30 @@ pub fn build_menu<R: Runtime>(
     let get_info_item = MenuItem::with_id(app, GET_INFO_ID, "Get info", true, Some("Cmd+I"))?;
     let quick_look_item = MenuItem::with_id(app, QUICK_LOOK_ID, "Quick look", true, Some("Space"))?;
 
+    // Create tab menu items
+    let new_tab_item = MenuItem::with_id(app, NEW_TAB_ID, "New tab", true, Some("Cmd+T"))?;
+    let pin_tab_item = MenuItem::with_id(app, PIN_TAB_MENU_ID, "Pin tab", true, None::<&str>)?;
+    let close_tab_item = MenuItem::with_id(app, CLOSE_TAB_ID, "Close tab", true, Some("Cmd+W"))?;
+
     // Find the existing File submenu and add our items to it
     for item in menu.items()? {
         if let MenuItemKind::Submenu(submenu) = item
             && submenu.text()? == "File"
         {
+            // Remove the predefined "Close Window" item (⌘W) — replaced by "Close tab"
+            let items = submenu.items()?;
+            for sub_item in &items {
+                if let MenuItemKind::Predefined(pred) = sub_item {
+                    // The predefined Close Window item is typically the last item in the File submenu
+                    // We identify it by checking if it's a predefined (non-separator) item.
+                    // On macOS, the default File submenu only has "Close Window" as a predefined item.
+                    if pred.text().unwrap_or_default() == "Close Window" {
+                        submenu.remove(pred)?;
+                        break;
+                    }
+                }
+            }
+
             submenu.prepend(&PredefinedMenuItem::separator(app)?)?;
             submenu.prepend(&quick_look_item)?;
             submenu.prepend(&get_info_item)?;
@@ -186,6 +220,12 @@ pub fn build_menu<R: Runtime>(
             submenu.prepend(&show_in_finder_item)?;
             submenu.prepend(&edit_item)?;
             submenu.prepend(&open_item)?;
+
+            // Append tab items at the end of the File submenu
+            submenu.append(&PredefinedMenuItem::separator(app)?)?;
+            submenu.append(&new_tab_item)?;
+            submenu.append(&pin_tab_item)?;
+            submenu.append(&close_tab_item)?;
             break;
         }
     }
@@ -359,6 +399,7 @@ pub fn build_menu<R: Runtime>(
         view_submenu,
         view_mode_full_position: view_full_pos,
         view_mode_brief_position: view_brief_pos,
+        pin_tab: pin_tab_item,
     })
 }
 
@@ -566,6 +607,34 @@ pub fn update_view_mode_accelerator<R: Runtime>(
     view_submenu.insert(&new_item, position)?;
 
     Ok(new_item)
+}
+
+/// Builds a context menu for a tab.
+pub fn build_tab_context_menu(
+    app: &AppHandle<Wry>,
+    is_pinned: bool,
+    can_close: bool,
+    has_other_unpinned_tabs: bool,
+) -> tauri::Result<Menu<Wry>> {
+    let menu = Menu::new(app)?;
+
+    let pin_label = if is_pinned { "Unpin tab" } else { "Pin tab" };
+    let pin_item = MenuItem::with_id(app, TAB_PIN_ID, pin_label, true, None::<&str>)?;
+    let close_others_item = MenuItem::with_id(
+        app,
+        TAB_CLOSE_OTHERS_ID,
+        "Close other tabs",
+        has_other_unpinned_tabs,
+        None::<&str>,
+    )?;
+    let close_item = MenuItem::with_id(app, TAB_CLOSE_ID, "Close tab", can_close, None::<&str>)?;
+
+    menu.append(&pin_item)?;
+    menu.append(&PredefinedMenuItem::separator(app)?)?;
+    menu.append(&close_others_item)?;
+    menu.append(&close_item)?;
+
+    Ok(menu)
 }
 
 #[cfg(test)]

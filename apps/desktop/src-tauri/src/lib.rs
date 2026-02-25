@@ -82,9 +82,10 @@ mod volumes;
 mod stubs;
 
 use menu::{
-    ABOUT_ID, COMMAND_PALETTE_ID, ENTER_LICENSE_KEY_ID, GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID, MenuState, RENAME_ID,
-    SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID,
-    SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SORT_DESCENDING_ID, SWAP_PANES_ID, SWITCH_PANE_ID,
+    ABOUT_ID, CLOSE_TAB_ID, COMMAND_PALETTE_ID, ENTER_LICENSE_KEY_ID, GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID,
+    MenuState, NEW_TAB_ID, PIN_TAB_MENU_ID, RENAME_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SORT_ASCENDING_ID,
+    SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID,
+    SORT_DESCENDING_ID, SWAP_PANES_ID, SWITCH_PANE_ID, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID,
     VIEW_MODE_BRIEF_ID, VIEW_MODE_FULL_ID, VIEWER_WORD_WRAP_ID, ViewMode,
 };
 use tauri::{Emitter, Manager};
@@ -254,6 +255,7 @@ pub fn run() {
             *menu_state.view_submenu.lock_ignore_poison() = Some(menu_items.view_submenu);
             *menu_state.view_mode_full_position.lock_ignore_poison() = menu_items.view_mode_full_position;
             *menu_state.view_mode_brief_position.lock_ignore_poison() = menu_items.view_mode_brief_position;
+            *menu_state.pin_tab.lock_ignore_poison() = Some(menu_items.pin_tab);
             app.manage(menu_state);
 
             // Set window title based on license status
@@ -380,6 +382,26 @@ pub fn run() {
             } else if id == SWAP_PANES_ID {
                 // Emit event to swap panes (main window only)
                 let _ = app.emit_to("main", "swap-panes", ());
+            } else if id == NEW_TAB_ID {
+                // Emit event to create a new tab (main window only)
+                let _ = app.emit_to("main", "new-tab", ());
+            } else if id == CLOSE_TAB_ID {
+                // Close the active tab if main window is focused, otherwise close the focused window
+                if let Some(main_window) = app.get_webview_window("main")
+                    && main_window.is_focused().unwrap_or(false)
+                {
+                    let _ = app.emit_to("main", "close-tab", ());
+                } else {
+                    for (_label, window) in app.webview_windows() {
+                        if window.is_focused().unwrap_or(false) {
+                            let _ = window.close();
+                            break;
+                        }
+                    }
+                }
+            } else if id == PIN_TAB_MENU_ID {
+                // Emit event to toggle pin on the active tab (main window only)
+                let _ = app.emit_to("main", "toggle-pin-tab", ());
             } else if id == SORT_BY_NAME_ID
                 || id == SORT_BY_EXTENSION_ID
                 || id == SORT_BY_SIZE_ID
@@ -417,6 +439,9 @@ pub fn run() {
                         break;
                     }
                 }
+            } else if id == TAB_PIN_ID || id == TAB_CLOSE_OTHERS_ID || id == TAB_CLOSE_ID {
+                // Tab context menu: emit event to frontend (async — popup returns before this fires)
+                let _ = app.emit_to("main", "tab-context-action", serde_json::json!({ "action": id }));
             } else {
                 // Handle file actions
                 commands::ui::execute_menu_action(app, id);
@@ -476,6 +501,8 @@ pub fn run() {
             commands::icons::clear_extension_icon_cache,
             commands::icons::clear_directory_icon_cache,
             commands::ui::show_file_context_menu,
+            commands::ui::show_tab_context_menu,
+            commands::ui::update_pin_tab_menu,
             commands::ui::show_main_window,
             commands::ui::update_menu_context,
             commands::ui::toggle_hidden_files,
@@ -488,6 +515,7 @@ pub fn run() {
             mcp::pane_state::update_left_pane_state,
             mcp::pane_state::update_right_pane_state,
             mcp::pane_state::update_focused_pane,
+            mcp::pane_state::update_pane_tabs,
             mcp::dialog_state::notify_dialog_opened,
             mcp::dialog_state::notify_dialog_closed,
             mcp::dialog_state::register_known_dialogs,

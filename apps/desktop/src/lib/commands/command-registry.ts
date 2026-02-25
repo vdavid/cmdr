@@ -85,6 +85,14 @@ export const commands: Command[] = [
     },
 
     // ============================================================================
+    // Main window - Tab commands
+    // ============================================================================
+    { id: 'tab.new', name: 'New tab', scope: 'Main window', showInPalette: true, shortcuts: ['⌘T'] },
+    { id: 'tab.close', name: 'Close tab', scope: 'Main window', showInPalette: true, shortcuts: ['⌘W'] },
+    { id: 'tab.next', name: 'Next tab', scope: 'Main window', showInPalette: true, shortcuts: ['⌃Tab'] },
+    { id: 'tab.prev', name: 'Previous tab', scope: 'Main window', showInPalette: true, shortcuts: ['⌃⇧Tab'] },
+
+    // ============================================================================
     // File list - Navigation commands
     // ============================================================================
     {

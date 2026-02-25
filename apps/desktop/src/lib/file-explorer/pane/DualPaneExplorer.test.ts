@@ -17,11 +17,24 @@ vi.mock('$lib/app-status-store', () => ({
         rightViewMode: 'brief',
         leftPaneWidthPercent: 50,
     }),
-    saveAppStatus: vi.fn().mockResolvedValue(undefined),
+    saveAppStatus: vi.fn(),
     getLastUsedPathForVolume: vi.fn().mockResolvedValue(undefined),
     saveLastUsedPathForVolume: vi.fn().mockResolvedValue(undefined),
-    getColumnSortOrder: vi.fn().mockResolvedValue('ascending'),
-    saveColumnSortOrder: vi.fn().mockResolvedValue(undefined),
+    loadPaneTabs: vi.fn().mockResolvedValue({
+        tabs: [
+            {
+                id: 'mock-tab-id',
+                path: '~',
+                volumeId: 'root',
+                sortBy: 'name',
+                sortOrder: 'ascending',
+                viewMode: 'brief',
+                pinned: false,
+            },
+        ],
+        activeTabId: 'mock-tab-id',
+    }),
+    savePaneTabs: vi.fn().mockResolvedValue(undefined),
 }))
 
 // @tauri-apps/api/event is mocked globally in test-setup.ts
@@ -65,6 +78,12 @@ vi.mock('$lib/tauri-commands', () => ({
     }),
     getDefaultVolumeId: vi.fn().mockResolvedValue('root'),
     DEFAULT_VOLUME_ID: 'root',
+    getE2eStartPath: vi.fn().mockResolvedValue(null),
+    formatBytes: vi.fn().mockReturnValue('0 B'),
+    getFileAt: vi.fn().mockResolvedValue(null),
+    updateFocusedPane: vi.fn().mockResolvedValue(undefined),
+    findFileIndex: vi.fn().mockResolvedValue(null),
+    resortListing: vi.fn().mockResolvedValue({}),
     // Network discovery mocks
     listNetworkHosts: vi.fn().mockResolvedValue([]),
     getNetworkDiscoveryState: vi.fn().mockResolvedValue('idle'),
@@ -76,6 +95,9 @@ vi.mock('$lib/tauri-commands', () => ({
     onMtpExclusiveAccessError: vi.fn().mockResolvedValue(() => {}),
     onMtpDeviceDetected: vi.fn().mockResolvedValue(() => {}),
     onMtpDeviceRemoved: vi.fn().mockResolvedValue(() => {}),
+    // Tab mocks
+    updatePaneTabs: vi.fn().mockResolvedValue(undefined),
+    showTabContextMenu: vi.fn().mockResolvedValue(null),
 }))
 
 // Mock settings-store to avoid Tauri event API dependency in tests
@@ -121,11 +143,21 @@ describe('DualPaneExplorer', () => {
 })
 
 describe('Sorting integration', () => {
-    it('restores sort preferences from storage on load', async () => {
-        const { getColumnSortOrder } = await import('$lib/app-status-store')
-        const mockGetColumnSortOrder = vi.mocked(getColumnSortOrder)
-        mockGetColumnSortOrder.mockClear()
-        mockGetColumnSortOrder.mockResolvedValue('descending')
+    it('initializes sort state from persisted app status', async () => {
+        const { loadAppStatus } = await import('$lib/app-status-store')
+        const mockLoadAppStatus = vi.mocked(loadAppStatus)
+        mockLoadAppStatus.mockResolvedValue({
+            leftPath: '~',
+            rightPath: '~',
+            focusedPane: 'left',
+            leftVolumeId: 'root',
+            rightVolumeId: 'root',
+            leftSortBy: 'size',
+            rightSortBy: 'modified',
+            leftViewMode: 'brief',
+            rightViewMode: 'brief',
+            leftPaneWidthPercent: 50,
+        })
 
         const target = document.createElement('div')
         mount(DualPaneExplorer, { target })
@@ -137,10 +169,7 @@ describe('Sorting integration', () => {
         await new Promise((resolve) => setTimeout(resolve, 10))
         await tick()
 
-        // Verify getColumnSortOrder was called during initialization for left pane
-        expect(mockGetColumnSortOrder).toHaveBeenCalled()
-
-        // Should be called for both left and right panes
-        expect(mockGetColumnSortOrder.mock.calls.length).toBeGreaterThanOrEqual(2)
+        // loadAppStatus should have been called during initialization
+        expect(mockLoadAppStatus).toHaveBeenCalled()
     })
 })

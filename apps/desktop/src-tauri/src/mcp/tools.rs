@@ -31,6 +31,55 @@ impl Tool {
     }
 }
 
+/// Get tab tools.
+fn get_tab_tools() -> Vec<Tool> {
+    vec![
+        Tool {
+            name: "activate_tab".to_string(),
+            description: "Switch to a specific tab in a pane".to_string(),
+            input_schema: json!({
+                "type": "object",
+                "properties": {
+                    "pane": {
+                        "type": "string",
+                        "enum": ["left", "right"],
+                        "description": "Which pane to switch tab in"
+                    },
+                    "tab_id": {
+                        "type": "string",
+                        "description": "ID of the tab to activate"
+                    }
+                },
+                "required": ["pane", "tab_id"]
+            }),
+        },
+        Tool {
+            name: "pin_tab".to_string(),
+            description: "Pin or unpin a tab. Pinned tabs stay in place when navigating to a new directory."
+                .to_string(),
+            input_schema: json!({
+                "type": "object",
+                "properties": {
+                    "pane": {
+                        "type": "string",
+                        "enum": ["left", "right"],
+                        "description": "Which pane the tab is in"
+                    },
+                    "tab_id": {
+                        "type": "string",
+                        "description": "ID of the tab to pin/unpin"
+                    },
+                    "pinned": {
+                        "type": "boolean",
+                        "description": "true to pin, false to unpin"
+                    }
+                },
+                "required": ["pane", "tab_id", "pinned"]
+            }),
+        },
+    ]
+}
+
 /// Get app-level command tools.
 fn get_app_tools() -> Vec<Tool> {
     vec![
@@ -284,6 +333,7 @@ pub fn get_all_tools() -> Vec<Tool> {
     tools.extend(get_selection_tools());
     tools.extend(get_file_op_tools());
     tools.extend(get_view_tools());
+    tools.extend(get_tab_tools());
     tools.extend(get_dialog_tools());
     tools.extend(get_app_tools());
     tools
@@ -329,10 +379,39 @@ mod tests {
     }
 
     #[test]
+    fn test_tab_tools_count() {
+        let tools = get_tab_tools();
+        // activate_tab
+        assert_eq!(tools.len(), 1);
+    }
+
+    #[test]
+    fn test_activate_tab_tool_schema() {
+        let tools = get_tab_tools();
+        let tool = tools.iter().find(|t| t.name == "activate_tab").unwrap();
+
+        let schema = &tool.input_schema;
+        let props = schema.get("properties").unwrap();
+
+        assert!(props.get("pane").is_some());
+        assert!(props.get("tab_id").is_some());
+        assert_eq!(props["tab_id"]["type"], "string");
+
+        let pane_enum = props.get("pane").unwrap().get("enum").unwrap().as_array().unwrap();
+        assert!(pane_enum.contains(&json!("left")));
+        assert!(pane_enum.contains(&json!("right")));
+
+        let required = schema.get("required").unwrap().as_array().unwrap();
+        assert_eq!(required.len(), 2);
+        assert!(required.contains(&json!("pane")));
+        assert!(required.contains(&json!("tab_id")));
+    }
+
+    #[test]
     fn test_all_tools_count() {
         let tools = get_all_tools();
-        // 6 nav + 2 cursor + 1 selection + 3 file_op + 3 view + 1 dialog + 3 app = 19
-        assert_eq!(tools.len(), 19);
+        // 6 nav + 2 cursor + 1 selection + 3 file_op + 3 view + 1 tab + 1 dialog + 3 app = 20
+        assert_eq!(tools.len(), 20);
     }
 
     #[test]

@@ -162,6 +162,12 @@
         },
         "indexing/index-state.svelte.ts": {
             "reason": "Reactive Svelte state, depends on Tauri event listeners"
+        },
+        "file-explorer/tabs/TabBar.svelte": {
+            "reason": "UI component, tab interactions tested via DualPaneExplorer integration"
+        },
+        "tauri-commands/tab.ts": {
+            "reason": "Tauri command wrappers, tested via integration"
         }
     }
 }

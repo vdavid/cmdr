@@ -5,13 +5,20 @@
     import LoadingIcon from '$lib/ui/LoadingIcon.svelte'
     import DialogManager from './DialogManager.svelte'
     import { toBackendCursorIndex } from '$lib/file-operations/transfer/transfer-dialog-utils'
-    import { formatBytes, getFileAt } from '$lib/tauri-commands'
+    import {
+        formatBytes,
+        getFileAt,
+        showTabContextMenu,
+        onTabContextAction,
+        updatePinTabMenu,
+    } from '$lib/tauri-commands'
+    import { confirmDialog } from '$lib/utils/confirm-dialog'
     import {
         loadAppStatus,
         saveAppStatus,
+        savePaneTabs,
+        loadPaneTabs,
         saveLastUsedPathForVolume,
-        getColumnSortOrder,
-        saveColumnSortOrder,
         type ViewMode,
     } from '$lib/app-status-store'
     import { loadSettings, saveSettings, subscribeToSettingsChanges } from '$lib/settings-store'
@@ -25,6 +32,7 @@
         DEFAULT_VOLUME_ID,
         type UnlistenFn,
         updateFocusedPane,
+        updatePaneTabs,
         findFileIndex,
         getE2eStartPath,
     } from '$lib/tauri-commands'
@@ -50,6 +58,23 @@
         canGoForward,
         type NavigationHistory,
     } from '../navigation/navigation-history'
+    import TabBar from '../tabs/TabBar.svelte'
+    import {
+        createTabManager,
+        getActiveTab,
+        addTab,
+        closeTab,
+        closeOtherTabs,
+        switchTab,
+        cycleTab as cycleTabInManager,
+        getAllTabs,
+        getTabCount,
+        pinTab,
+        unpinTab,
+        MAX_TABS_PER_PANE,
+        type TabManager,
+    } from '../tabs/tab-state-manager.svelte'
+    import type { TabState, TabId, PersistedTab, PersistedPaneTabs } from '../tabs/tab-types'
     import { initNetworkDiscovery, cleanupNetworkDiscovery } from '../network/network-store.svelte'
     import { openFileViewer } from '$lib/file-viewer/open-viewer'
     import { getAppLogger } from '$lib/logging/logger'
@@ -93,23 +118,85 @@
 
     const log = getAppLogger('fileExplorer')
 
-    let leftPath = $state('~')
-    let rightPath = $state('~')
+    function createInitialTabState(
+        path: string,
+        volumeId: string,
+        sortBy: SortColumn = DEFAULT_SORT_BY,
+        viewMode: ViewMode = 'brief',
+    ): TabState {
+        return {
+            id: crypto.randomUUID(),
+            path,
+            volumeId,
+            history: createHistory(volumeId, path),
+            sortBy,
+            sortOrder: defaultSortOrders[sortBy],
+            viewMode,
+            pinned: false,
+            cursorFilename: null,
+        }
+    }
+
+    function createTabManagerFromPersisted(paneTabs: PersistedPaneTabs): TabManager {
+        const tabs = paneTabs.tabs.map(
+            (pt): TabState => ({
+                ...pt,
+                history: createHistory(pt.volumeId, pt.path),
+                cursorFilename: null,
+            }),
+        )
+
+        const mgr = createTabManager(tabs[0])
+        for (let i = 1; i < tabs.length; i++) {
+            mgr.tabs.push(tabs[i])
+        }
+        mgr.activeTabId = paneTabs.activeTabId
+        return mgr
+    }
+
+    function buildPersistedPaneTabs(mgr: TabManager): PersistedPaneTabs {
+        return {
+            tabs: getAllTabs(mgr).map(
+                (tab): PersistedTab => ({
+                    id: tab.id,
+                    path: tab.path,
+                    volumeId: tab.volumeId,
+                    sortBy: tab.sortBy,
+                    sortOrder: tab.sortOrder,
+                    viewMode: tab.viewMode,
+                    pinned: tab.pinned,
+                }),
+            ),
+            activeTabId: mgr.activeTabId,
+        }
+    }
+
+    function saveTabsForPane(pane: 'left' | 'right') {
+        void savePaneTabs(pane, buildPersistedPaneTabs(getTabMgr(pane)))
+    }
+
+    let leftTabMgr = $state<TabManager>(createTabManager(createInitialTabState('~', DEFAULT_VOLUME_ID)))
+    let rightTabMgr = $state<TabManager>(createTabManager(createInitialTabState('~', DEFAULT_VOLUME_ID)))
+
+    // Derived active tab state — these replace the old scalar variables
+    const leftPath = $derived(getActiveTab(leftTabMgr).path)
+    const rightPath = $derived(getActiveTab(rightTabMgr).path)
+    const leftVolumeId = $derived(getActiveTab(leftTabMgr).volumeId)
+    const rightVolumeId = $derived(getActiveTab(rightTabMgr).volumeId)
+    const leftViewMode = $derived(getActiveTab(leftTabMgr).viewMode)
+    const rightViewMode = $derived(getActiveTab(rightTabMgr).viewMode)
+    const leftSortBy = $derived(getActiveTab(leftTabMgr).sortBy)
+    const rightSortBy = $derived(getActiveTab(rightTabMgr).sortBy)
+    const leftSortOrder = $derived(getActiveTab(leftTabMgr).sortOrder)
+    const rightSortOrder = $derived(getActiveTab(rightTabMgr).sortOrder)
+    const leftHistory = $derived(getActiveTab(leftTabMgr).history)
+    const rightHistory = $derived(getActiveTab(rightTabMgr).history)
+
     let focusedPane = $state<'left' | 'right'>('left')
     let showHiddenFiles = $state(true)
-    let leftViewMode = $state<ViewMode>('brief')
-    let rightViewMode = $state<ViewMode>('brief')
-    let leftVolumeId = $state(DEFAULT_VOLUME_ID)
-    let rightVolumeId = $state(DEFAULT_VOLUME_ID)
     let volumes = $state<VolumeInfo[]>([])
     let initialized = $state(false)
     let leftPaneWidthPercent = $state(50)
-
-    // Sorting state - per-pane
-    let leftSortBy = $state<SortColumn>(DEFAULT_SORT_BY)
-    let rightSortBy = $state<SortColumn>(DEFAULT_SORT_BY)
-    let leftSortOrder = $state<SortOrder>(defaultSortOrders[DEFAULT_SORT_BY])
-    let rightSortOrder = $state<SortOrder>(defaultSortOrders[DEFAULT_SORT_BY])
 
     let containerElement: HTMLDivElement | undefined = $state()
     let leftPaneRef: FilePane | undefined = $state()
@@ -123,6 +210,48 @@
     let unlistenDragImageSize: UnlistenFn | undefined
     let unlistenDragModifiers: UnlistenFn | undefined
     let unlistenIndexEvents: UnlistenFn | undefined
+    let unlistenMcpActivateTab: UnlistenFn | undefined
+    let unlistenMcpPinTab: UnlistenFn | undefined
+
+    // Debounced tab sync to MCP backend (~100ms trailing)
+    let tabSyncTimer: ReturnType<typeof setTimeout> | null = null
+    const TAB_SYNC_DEBOUNCE_MS = 100
+
+    function syncTabsToBackend() {
+        if (tabSyncTimer) clearTimeout(tabSyncTimer)
+        tabSyncTimer = setTimeout(() => {
+            const leftTabs = getAllTabs(leftTabMgr).map((t) => ({
+                id: t.id,
+                path: t.path,
+                pinned: t.pinned,
+                active: t.id === leftTabMgr.activeTabId,
+            }))
+            const rightTabs = getAllTabs(rightTabMgr).map((t) => ({
+                id: t.id,
+                path: t.path,
+                pinned: t.pinned,
+                active: t.id === rightTabMgr.activeTabId,
+            }))
+            void updatePaneTabs('left', leftTabs)
+            void updatePaneTabs('right', rightTabs)
+        }, TAB_SYNC_DEBOUNCE_MS)
+    }
+
+    // Reactive effect: sync tab structural changes to the MCP backend
+    $effect(() => {
+        // Read reactive values to establish Svelte reactivity dependencies.
+        // Include path so MCP state updates when the active tab navigates.
+        void getAllTabs(leftTabMgr).map((t) => `${t.id}:${t.pinned ? 'p' : ''}:${t.path}`)
+        void getAllTabs(rightTabMgr).map((t) => `${t.id}:${t.pinned ? 'p' : ''}:${t.path}`)
+        void leftTabMgr.activeTabId
+        void rightTabMgr.activeTabId
+
+        if (!initialized) return
+
+        untrack(() => {
+            syncTabsToBackend()
+        })
+    })
 
     // Drag image size from the source app (macOS only, via swizzle).
     // If the source provides a large preview (like Finder), we suppress our overlay.
@@ -184,11 +313,6 @@
         error: WriteOperationError
     } | null>(null)
 
-    // Navigation history for each pane (per-pane, session-only)
-    // Initialize with default volume - will be updated on mount with actual state
-    let leftHistory = $state<NavigationHistory>(createHistory(DEFAULT_VOLUME_ID, '~'))
-    let rightHistory = $state<NavigationHistory>(createHistory(DEFAULT_VOLUME_ID, '~'))
-
     // Guards against stale background path corrections from determineNavigationPath.
     // Each handleVolumeChange increments this; the background callback checks its captured
     // generation still matches before applying a correction.
@@ -218,29 +342,30 @@
             : { sortBy: rightSortBy, sortOrder: rightSortOrder }
     }
 
+    function getTabMgr(pane: 'left' | 'right'): TabManager {
+        return pane === 'left' ? leftTabMgr : rightTabMgr
+    }
+
     function setPanePath(pane: 'left' | 'right', path: string) {
-        if (pane === 'left') leftPath = path
-        else rightPath = path
+        getActiveTab(getTabMgr(pane)).path = path
     }
 
     function setPaneVolumeId(pane: 'left' | 'right', volumeId: string) {
-        if (pane === 'left') leftVolumeId = volumeId
-        else rightVolumeId = volumeId
+        getActiveTab(getTabMgr(pane)).volumeId = volumeId
     }
 
     function setPaneHistory(pane: 'left' | 'right', history: NavigationHistory) {
-        if (pane === 'left') leftHistory = history
-        else rightHistory = history
+        getActiveTab(getTabMgr(pane)).history = history
     }
 
     function setPaneSort(pane: 'left' | 'right', sortBy: SortColumn, sortOrder: SortOrder) {
-        if (pane === 'left') {
-            leftSortBy = sortBy
-            leftSortOrder = sortOrder
-        } else {
-            rightSortBy = sortBy
-            rightSortOrder = sortOrder
-        }
+        const tab = getActiveTab(getTabMgr(pane))
+        tab.sortBy = sortBy
+        tab.sortOrder = sortOrder
+    }
+
+    function setPaneViewMode(pane: 'left' | 'right', viewMode: ViewMode) {
+        getActiveTab(getTabMgr(pane)).viewMode = viewMode
     }
 
     function otherPane(pane: 'left' | 'right'): 'left' | 'right' {
@@ -285,11 +410,53 @@
     // --- Unified handler functions ---
 
     function handlePathChange(pane: 'left' | 'right', path: string) {
+        const mgr = getTabMgr(pane)
+        const activeTab = getActiveTab(mgr)
+
+        // Pinned tab: open a new tab with the target path instead of navigating in-place
+        if (activeTab.pinned && path !== activeTab.path) {
+            if (mgr.tabs.length >= MAX_TABS_PER_PANE) {
+                addToast('Tab limit reached')
+                applyPathChange(pane, path)
+                return
+            }
+
+            const newTab: TabState = {
+                id: crypto.randomUUID(),
+                path,
+                volumeId: activeTab.volumeId,
+                history: createHistory(activeTab.volumeId, path),
+                sortBy: activeTab.sortBy,
+                sortOrder: activeTab.sortOrder,
+                viewMode: activeTab.viewMode,
+                pinned: false,
+                cursorFilename: null,
+            }
+
+            const activeIndex = mgr.tabs.findIndex((t) => t.id === activeTab.id)
+            mgr.tabs.splice(activeIndex + 1, 0, newTab)
+            mgr.activeTabId = newTab.id
+
+            saveTabsForPane(pane)
+            saveAppStatus({ [paneKey(pane, 'path')]: path })
+            void saveLastUsedPathForVolume(activeTab.volumeId, path)
+            void cancelNavPriority(activeTab.path)
+            void prioritizeDir(path, 'current_dir')
+            containerElement?.focus()
+            return
+        }
+
+        applyPathChange(pane, path)
+    }
+
+    /** Applies a path change to the active tab in-place (the normal non-pinned flow). */
+    function applyPathChange(pane: 'left' | 'right', path: string) {
         const oldPath = getPanePath(pane)
         setPanePath(pane, path)
         setPaneHistory(pane, pushPath(getPaneHistory(pane), path))
-        void saveAppStatus({ [paneKey(pane, 'path')]: path })
+        saveAppStatus({ [paneKey(pane, 'path')]: path })
         void saveLastUsedPathForVolume(getPaneVolumeId(pane), path)
+        saveTabsForPane(pane)
 
         // Update index priorities: cancel old dir, prioritize new dir
         if (oldPath !== path) {
@@ -297,7 +464,21 @@
             void prioritizeDir(path, 'current_dir')
         }
 
+        // Restore cursor from tab state if available (happens after cold-load on tab switch)
+        const activeTab = getActiveTab(getTabMgr(pane))
+        if (activeTab.cursorFilename) {
+            const filename = activeTab.cursorFilename
+            activeTab.cursorFilename = null
+            void restoreCursorByFilename(pane, filename)
+        }
+
         containerElement?.focus()
+    }
+
+    async function restoreCursorByFilename(pane: 'left' | 'right', filename: string) {
+        const paneRef = getPaneRef(pane)
+        if (!paneRef) return
+        await moveCursorByNameInFileListing(paneRef, filename)
     }
 
     function handleNetworkHostChange(pane: 'left' | 'right', host: NetworkHost | null) {
@@ -324,7 +505,7 @@
 
         const { sortBy, sortOrder } = getPaneSort(pane)
         const newOrder =
-            newColumn === sortBy ? getNewSortOrder(newColumn, sortBy, sortOrder) : await getColumnSortOrder(newColumn)
+            newColumn === sortBy ? getNewSortOrder(newColumn, sortBy, sortOrder) : defaultSortOrders[newColumn]
 
         const sortState = collectSortState(paneRef)
         const result = await resortListing(
@@ -339,8 +520,8 @@
         )
 
         setPaneSort(pane, newColumn, newOrder)
-        void saveAppStatus({ [paneKey(pane, 'sortBy')]: newColumn })
-        void saveColumnSortOrder(newColumn, newOrder)
+        saveAppStatus({ [paneKey(pane, 'sortBy')]: newColumn })
+        saveTabsForPane(pane)
         applySortResult(paneRef, result, sortState.hasParent)
     }
 
@@ -400,11 +581,12 @@
 
         void cancelNavPriority(oldPath)
         void prioritizeDir(targetPath, 'current_dir')
-        void saveAppStatus({
+        saveAppStatus({
             [paneKey(pane, 'volumeId')]: volumeId,
             [paneKey(pane, 'path')]: targetPath,
             focusedPane: pane,
         })
+        saveTabsForPane(pane)
 
         // Resolve the "best" path in the background; correct if needed.
         // Generation counter guards against stale corrections when the user navigates away.
@@ -419,7 +601,8 @@
                 setPanePath(pane, betterPath)
                 setPaneHistory(pane, push(getPaneHistory(pane), { volumeId, path: betterPath }))
                 void prioritizeDir(betterPath, 'current_dir')
-                void saveAppStatus({ [paneKey(pane, 'path')]: betterPath })
+                saveAppStatus({ [paneKey(pane, 'path')]: betterPath })
+                saveTabsForPane(pane)
             }
         })
     }
@@ -427,8 +610,9 @@
     function handleFocus(pane: 'left' | 'right') {
         if (focusedPane !== pane) {
             focusedPane = pane
-            void saveAppStatus({ focusedPane: pane })
+            saveAppStatus({ focusedPane: pane })
             void updateFocusedPane(pane)
+            syncPinTabMenu()
         }
         // Always restore DOM focus (needed after inline rename or dialog close within a pane)
         containerElement?.focus()
@@ -441,15 +625,16 @@
         if (entry.volumeId === 'network') {
             setPanePath(pane, entry.path)
             setPaneVolumeId(pane, 'network')
-            void saveAppStatus({ [paneKey(pane, 'volumeId')]: 'network', [paneKey(pane, 'path')]: entry.path })
+            saveAppStatus({ [paneKey(pane, 'volumeId')]: 'network', [paneKey(pane, 'path')]: entry.path })
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call
             paneRef?.setNetworkHost?.(entry.networkHost ?? null)
         } else {
             // Immediately navigate to a known-safe local path — the user pressed ESC, they want out
             setPanePath(pane, '~')
             setPaneVolumeId(pane, DEFAULT_VOLUME_ID)
-            void saveAppStatus({ [paneKey(pane, 'path')]: '~', [paneKey(pane, 'volumeId')]: DEFAULT_VOLUME_ID })
+            saveAppStatus({ [paneKey(pane, 'path')]: '~', [paneKey(pane, 'volumeId')]: DEFAULT_VOLUME_ID })
         }
+        saveTabsForPane(pane)
         containerElement?.focus()
     }
 
@@ -462,7 +647,8 @@
         setPaneVolumeId(pane, defaultVolumeId)
         setPanePath(pane, defaultPath)
         setPaneHistory(pane, push(getPaneHistory(pane), { volumeId: defaultVolumeId, path: defaultPath }))
-        void saveAppStatus({ [paneKey(pane, 'volumeId')]: defaultVolumeId, [paneKey(pane, 'path')]: defaultPath })
+        saveAppStatus({ [paneKey(pane, 'volumeId')]: defaultVolumeId, [paneKey(pane, 'path')]: defaultPath })
+        saveTabsForPane(pane)
     }
 
     /** Routes to whichever pane has its volume chooser open. Returns true if handled. */
@@ -489,7 +675,7 @@
     function handleTabKey() {
         const newFocus = focusedPane === 'left' ? 'right' : 'left'
         focusedPane = newFocus
-        void saveAppStatus({ focusedPane: newFocus })
+        saveAppStatus({ focusedPane: newFocus })
     }
 
     function handleEscapeDuringLoading(): boolean {
@@ -539,6 +725,12 @@
     }
 
     function handleKeyDown(e: KeyboardEvent) {
+        if (e.key === 'Tab' && e.ctrlKey) {
+            e.preventDefault()
+            cycleTab(e.shiftKey ? 'prev' : 'next')
+            return
+        }
+
         if (e.key === 'Tab') {
             e.preventDefault()
             handleTabKey()
@@ -763,55 +955,70 @@
         // Load volumes first
         volumes = await listVolumes()
 
-        // Load persisted state and settings in parallel
-        const [status, settings] = await Promise.all([loadAppStatus(pathExists), loadSettings()])
+        // Load persisted state (tabs + app status + settings) in parallel
+        const [leftPaneTabs, rightPaneTabs, status, settings] = await Promise.all([
+            loadPaneTabs('left', pathExists),
+            loadPaneTabs('right', pathExists),
+            loadAppStatus(pathExists),
+            loadSettings(),
+        ])
 
-        leftPath = status.leftPath
-        rightPath = status.rightPath
         focusedPane = status.focusedPane
         showHiddenFiles = settings.showHiddenFiles
-        leftViewMode = status.leftViewMode
-        rightViewMode = status.rightViewMode
         leftPaneWidthPercent = status.leftPaneWidthPercent
 
         // E2E test override: use CMDR_E2E_START_PATH subdirectories when set
         const e2eStartPath = await getE2eStartPath()
-        if (e2eStartPath) {
-            leftPath = `${e2eStartPath}/left`
-            rightPath = `${e2eStartPath}/right`
-        }
 
-        // Load sort state
-        leftSortBy = status.leftSortBy
-        rightSortBy = status.rightSortBy
-        // Load remembered sort orders for each column
-        leftSortOrder = await getColumnSortOrder(leftSortBy)
-        rightSortOrder = await getColumnSortOrder(rightSortBy)
-
-        // Determine the correct volume IDs by finding which volume contains each path
+        // Determine the correct volume IDs by finding which volume contains each tab's path
         // This is more reliable than trusting the stored volumeId, which may be stale
         // Exception: 'network' is a virtual volume, trust the stored ID for that
         const defaultId = await getDefaultVolumeId()
 
-        if (status.leftVolumeId === 'network' && !e2eStartPath) {
-            leftVolumeId = 'network'
-        } else {
-            const leftContaining = await findContainingVolume(leftPath)
-            leftVolumeId = leftContaining?.id ?? defaultId
+        async function resolveVolumeId(volumeId: string, path: string, hasE2eOverride: boolean): Promise<string> {
+            if (volumeId === 'network' && !hasE2eOverride) return 'network'
+            const containing = await findContainingVolume(path)
+            return containing?.id ?? defaultId
         }
 
-        if (status.rightVolumeId === 'network' && !e2eStartPath) {
-            rightVolumeId = 'network'
-        } else {
-            const rightContaining = await findContainingVolume(rightPath)
-            rightVolumeId = rightContaining?.id ?? defaultId
+        // Resolve volume IDs for all tabs in parallel
+        const resolvedLeftTabs = await Promise.all(
+            leftPaneTabs.tabs.map(async (tab) => ({
+                ...tab,
+                volumeId: await resolveVolumeId(tab.volumeId, tab.path, !!e2eStartPath),
+            })),
+        )
+        const resolvedRightTabs = await Promise.all(
+            rightPaneTabs.tabs.map(async (tab) => ({
+                ...tab,
+                volumeId: await resolveVolumeId(tab.volumeId, tab.path, !!e2eStartPath),
+            })),
+        )
+
+        const resolvedLeftPaneTabs: PersistedPaneTabs = {
+            tabs: resolvedLeftTabs,
+            activeTabId: leftPaneTabs.activeTabId,
+        }
+        const resolvedRightPaneTabs: PersistedPaneTabs = {
+            tabs: resolvedRightTabs,
+            activeTabId: rightPaneTabs.activeTabId,
         }
 
-        // Initialize history with loaded paths and their volumes
-        leftHistory = createHistory(leftVolumeId, leftPath)
-        rightHistory = createHistory(rightVolumeId, rightPath)
+        // Create tab managers from persisted tab data
+        leftTabMgr = createTabManagerFromPersisted(resolvedLeftPaneTabs)
+        rightTabMgr = createTabManagerFromPersisted(resolvedRightPaneTabs)
+
+        // E2E override: override the active tab's path on each side
+        if (e2eStartPath) {
+            getActiveTab(leftTabMgr).path = `${e2eStartPath}/left`
+            getActiveTab(rightTabMgr).path = `${e2eStartPath}/right`
+        }
 
         initialized = true
+        syncPinTabMenu()
+
+        // Sync initial tab state to MCP backend
+        syncTabsToBackend()
 
         // Dev-only: correct drag coordinates when Web Inspector is docked.
         if (import.meta.env.DEV) {
@@ -831,14 +1038,9 @@
         // Subscribe to view mode changes from the backend menu
         unlistenViewMode = await listen<{ mode: ViewMode }>('view-mode-changed', (event) => {
             const newMode = event.payload.mode
-            // Apply to the focused pane
-            if (focusedPane === 'left') {
-                leftViewMode = newMode
-                void saveAppStatus({ leftViewMode: newMode })
-            } else {
-                rightViewMode = newMode
-                void saveAppStatus({ rightViewMode: newMode })
-            }
+            setPaneViewMode(focusedPane, newMode)
+            saveAppStatus({ [paneKey(focusedPane, 'viewMode')]: newMode })
+            saveTabsForPane(focusedPane)
             // Refocus after Svelte re-renders the new list component to restore keyboard navigation
             void tick().then(() => {
                 containerElement?.focus()
@@ -886,6 +1088,30 @@
 
         // Listen for index directory updates to refresh panes when sizes change
         unlistenIndexEvents = await initIndexEvents(handleIndexDirUpdated)
+
+        // Listen for MCP activate_tab events
+        unlistenMcpActivateTab = await listen<{ pane: string; tabId: string }>('mcp-activate-tab', (event) => {
+            const { pane, tabId } = event.payload
+            if (pane === 'left' || pane === 'right') {
+                switchToTab(pane, tabId)
+            }
+        })
+
+        // Listen for MCP pin_tab events
+        unlistenMcpPinTab = await listen<{ pane: string; tabId: string; pinned: boolean }>('mcp-pin-tab', (event) => {
+            const { pane, tabId, pinned } = event.payload
+            if (pane !== 'left' && pane !== 'right') return
+            const mgr = getTabMgr(pane)
+            const tab = getAllTabs(mgr).find((t) => t.id === tabId)
+            if (!tab) return
+            if (pinned) {
+                pinTab(mgr, tabId)
+            } else {
+                unpinTab(mgr, tabId)
+            }
+            saveTabsForPane(pane)
+            if (pane === focusedPane && tabId === mgr.activeTabId) syncPinTabMenu()
+        })
 
         // Prioritize scanning the initial directories of both panes
         void prioritizeDir(leftPath, 'current_dir')
@@ -935,15 +1161,17 @@
         const homePath = (await pathExists('~')) ? '~' : '/'
 
         // Switch affected panes to default volume
-        if (leftVolumeId === unmountedId) {
-            leftVolumeId = defaultVolumeId
-            leftPath = homePath
-            void saveAppStatus({ leftVolumeId: defaultVolumeId, leftPath: homePath })
+        if (getPaneVolumeId('left') === unmountedId) {
+            setPaneVolumeId('left', defaultVolumeId)
+            setPanePath('left', homePath)
+            saveAppStatus({ leftVolumeId: defaultVolumeId, leftPath: homePath })
+            saveTabsForPane('left')
         }
-        if (rightVolumeId === unmountedId) {
-            rightVolumeId = defaultVolumeId
-            rightPath = homePath
-            void saveAppStatus({ rightVolumeId: defaultVolumeId, rightPath: homePath })
+        if (getPaneVolumeId('right') === unmountedId) {
+            setPaneVolumeId('right', defaultVolumeId)
+            setPanePath('right', homePath)
+            saveAppStatus({ rightVolumeId: defaultVolumeId, rightPath: homePath })
+            saveTabsForPane('right')
         }
 
         // Refresh volume list
@@ -969,10 +1197,11 @@
         setPanePath(pane, targetPath)
         if (entry.volumeId !== getPaneVolumeId(pane)) {
             setPaneVolumeId(pane, entry.volumeId)
-            void saveAppStatus({ [paneKey(pane, 'volumeId')]: entry.volumeId, [paneKey(pane, 'path')]: targetPath })
+            saveAppStatus({ [paneKey(pane, 'volumeId')]: entry.volumeId, [paneKey(pane, 'path')]: targetPath })
         } else {
-            void saveAppStatus({ [paneKey(pane, 'path')]: targetPath })
+            saveAppStatus({ [paneKey(pane, 'path')]: targetPath })
         }
+        saveTabsForPane(pane)
         void saveLastUsedPathForVolume(entry.volumeId, targetPath)
 
         if (entry.volumeId === 'network') {
@@ -1019,6 +1248,9 @@
         unlistenDragModifiers?.()
         unlistenDragDrop?.()
         unlistenIndexEvents?.()
+        unlistenMcpActivateTab?.()
+        unlistenMcpPinTab?.()
+        if (tabSyncTimer) clearTimeout(tabSyncTimer)
         // No cleanup needed for throttle (no pending timers)
         cleanupNetworkDiscovery()
         stopModifierTracking()
@@ -1030,12 +1262,12 @@
     }
 
     function handlePaneResizeEnd() {
-        void saveAppStatus({ leftPaneWidthPercent })
+        saveAppStatus({ leftPaneWidthPercent })
     }
 
     function handlePaneResizeReset() {
         leftPaneWidthPercent = 50
-        void saveAppStatus({ leftPaneWidthPercent: 50 })
+        saveAppStatus({ leftPaneWidthPercent: 50 })
     }
 
     /** Activates inline rename on the focused pane's cursor item. */
@@ -1393,7 +1625,7 @@
     export function switchPane() {
         const newFocus = otherPane(focusedPane)
         focusedPane = newFocus
-        void saveAppStatus({ focusedPane: newFocus })
+        saveAppStatus({ focusedPane: newFocus })
         void updateFocusedPane(newFocus)
         containerElement?.focus()
     }
@@ -1408,14 +1640,17 @@
         return !(showTransferDialog || showTransferProgressDialog)
     }
 
-    /** Swaps all DualPaneExplorer-level state variables between left and right. */
+    /** Swaps all active tab state between left and right panes. */
     function swapDualPaneState(): void {
-        ;[leftPath, rightPath] = [rightPath, leftPath]
-        ;[leftVolumeId, rightVolumeId] = [rightVolumeId, leftVolumeId]
-        ;[leftHistory, rightHistory] = [rightHistory, leftHistory]
-        ;[leftViewMode, rightViewMode] = [rightViewMode, leftViewMode]
-        ;[leftSortBy, rightSortBy] = [rightSortBy, leftSortBy]
-        ;[leftSortOrder, rightSortOrder] = [rightSortOrder, leftSortOrder]
+        const leftTab = getActiveTab(leftTabMgr)
+        const rightTab = getActiveTab(rightTabMgr)
+
+        ;[leftTab.path, rightTab.path] = [rightTab.path, leftTab.path]
+        ;[leftTab.volumeId, rightTab.volumeId] = [rightTab.volumeId, leftTab.volumeId]
+        ;[leftTab.history, rightTab.history] = [rightTab.history, leftTab.history]
+        ;[leftTab.viewMode, rightTab.viewMode] = [rightTab.viewMode, leftTab.viewMode]
+        ;[leftTab.sortBy, rightTab.sortBy] = [rightTab.sortBy, leftTab.sortBy]
+        ;[leftTab.sortOrder, rightTab.sortOrder] = [rightTab.sortOrder, leftTab.sortOrder]
     }
 
     /**
@@ -1446,7 +1681,7 @@
         rightRef.adoptListing?.(leftSwap)
 
         // 4. Persist
-        void saveAppStatus({
+        saveAppStatus({
             leftPath,
             rightPath,
             leftVolumeId,
@@ -1456,6 +1691,8 @@
             leftSortBy,
             rightSortBy,
         })
+        saveTabsForPane('left')
+        saveTabsForPane('right')
 
         containerElement?.focus()
     }
@@ -1506,13 +1743,9 @@
      */
     export function setViewMode(mode: ViewMode, pane?: 'left' | 'right') {
         const targetPane = pane ?? focusedPane
-        if (targetPane === 'left') {
-            leftViewMode = mode
-            void saveAppStatus({ leftViewMode: mode })
-        } else {
-            rightViewMode = mode
-            void saveAppStatus({ rightViewMode: mode })
-        }
+        setPaneViewMode(targetPane, mode)
+        saveAppStatus({ [paneKey(targetPane, 'viewMode')]: mode })
+        saveTabsForPane(targetPane)
     }
 
     /**
@@ -1600,8 +1833,8 @@
         )
 
         setPaneSort(pane, column, newOrder)
-        void saveAppStatus({ [paneKey(pane, 'sortBy')]: column })
-        void saveColumnSortOrder(column, newOrder)
+        saveAppStatus({ [paneKey(pane, 'sortBy')]: column })
+        saveTabsForPane(pane)
         applySortResult(paneRef, result, sortState.hasParent)
     }
 
@@ -1839,6 +2072,239 @@
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         paneRef.setSelectedIndices?.(newSelection)
     }
+
+    // --- Tab bar handler functions ---
+
+    async function handleTabClose(pane: 'left' | 'right', tabId: TabId) {
+        const mgr = getTabMgr(pane)
+        const tab = getAllTabs(mgr).find((t) => t.id === tabId)
+        if (tab?.pinned) {
+            const ok = await confirmDialog('This tab is pinned. Close it anyway?', 'Close pinned tab')
+            if (!ok) return
+        }
+        closeTab(mgr, tabId)
+        saveTabsForPane(pane)
+        if (pane === focusedPane) syncPinTabMenu()
+    }
+
+    function handleTabMiddleClick(pane: 'left' | 'right', tabId: TabId) {
+        const mgr = getTabMgr(pane)
+        const tab = getAllTabs(mgr).find((t) => t.id === tabId)
+        if (!tab) return
+        // Middle-click on pinned tab: unpin and close without confirmation
+        if (tab.pinned) {
+            unpinTab(mgr, tabId)
+        }
+        handleTabClose(pane, tabId)
+    }
+
+    function handleNewTab(pane: 'left' | 'right') {
+        // Temporarily focus this pane so newTab() creates in the right pane
+        const prevFocus = focusedPane
+        focusedPane = pane
+        const success = newTab()
+        if (!success) {
+            addToast('Tab limit reached')
+        }
+        focusedPane = prevFocus === pane ? pane : prevFocus
+    }
+
+    async function handleTabContextMenu(pane: 'left' | 'right', tabId: TabId, event: MouseEvent) {
+        event.preventDefault()
+
+        const mgr = getTabMgr(pane)
+        const tab = getAllTabs(mgr).find((t) => t.id === tabId)
+        if (!tab) return
+
+        const canClose = getTabCount(mgr) > 1
+        const hasOtherUnpinnedTabs = getAllTabs(mgr).some((t) => t.id !== tabId && !t.pinned)
+
+        // Listen for the action event BEFORE showing the popup. The event fires
+        // asynchronously after popup() returns (muda queues MenuEvent through the
+        // event loop, so a synchronous channel always times out).
+        const actionPromise = new Promise<string | null>((resolve) => {
+            let resolved = false
+            let unlisten: (() => void) | undefined
+
+            void onTabContextAction((action: string) => {
+                if (!resolved) {
+                    resolved = true
+                    unlisten?.()
+                    resolve(action)
+                }
+            }).then((fn) => {
+                unlisten = fn
+                // If already resolved (dismissed before listener registered), clean up
+                if (resolved) fn()
+            })
+
+            // After showing the popup, set a timeout for dismissed-without-selection.
+            // popup() blocks in Rust until the menu closes, so this runs after dismissal.
+            void showTabContextMenu(tab.pinned, canClose, hasOtherUnpinnedTabs).then(() => {
+                // Give the event loop time to deliver the action event
+                setTimeout(() => {
+                    if (!resolved) {
+                        resolved = true
+                        unlisten?.()
+                        resolve(null)
+                    }
+                }, 500)
+            })
+        })
+
+        const action = await actionPromise
+
+        // Re-fetch tab state after the context menu (state may have changed during the await)
+        const currentTab = getAllTabs(mgr).find((t) => t.id === tabId)
+        if (!currentTab) return
+
+        switch (action) {
+            case 'tab_pin':
+                if (currentTab.pinned) {
+                    unpinTab(mgr, tabId)
+                } else {
+                    pinTab(mgr, tabId)
+                }
+                saveTabsForPane(pane)
+                if (pane === focusedPane && tabId === mgr.activeTabId) syncPinTabMenu()
+                break
+            case 'tab_close_others':
+                closeOtherTabs(mgr, tabId)
+                saveTabsForPane(pane)
+                break
+            case 'tab_close': {
+                // handleTabClose shows pinned confirmation internally
+                void handleTabClose(pane, tabId)
+                break
+            }
+        }
+    }
+
+    /**
+     * Creates a new tab in the focused pane via the clone trick:
+     * inserts a clone to the left and keeps the current tab active.
+     * Returns false if at the tab cap.
+     */
+    export function newTab(): boolean {
+        const mgr = getTabMgr(focusedPane)
+        const activeTab = getActiveTab(mgr)
+        const wasPinned = activeTab.pinned
+
+        // Clone trick: insert clone to the LEFT, keep active tab selected.
+        // If the active tab is pinned, the clone inherits the pin (it stays
+        // in the pinned tab's position) and the active tab gets unpinned
+        // (it becomes the new "branched off" tab to the right).
+        const cloneTab: TabState = {
+            id: crypto.randomUUID(),
+            path: activeTab.path,
+            volumeId: activeTab.volumeId,
+            history: $state.snapshot(activeTab.history),
+            sortBy: activeTab.sortBy,
+            sortOrder: activeTab.sortOrder,
+            viewMode: activeTab.viewMode,
+            pinned: wasPinned,
+            cursorFilename: null,
+        }
+
+        const success = addTab(mgr, activeTab.id, cloneTab)
+        if (success && wasPinned) {
+            unpinTab(mgr, activeTab.id)
+        }
+        if (success) {
+            saveTabsForPane(focusedPane)
+        }
+        return success
+    }
+
+    /**
+     * Closes the active tab in the focused pane.
+     * Returns 'closed' if tab was closed, 'last-tab' if it was the last tab.
+     */
+    export function closeActiveTab(): 'closed' | 'last-tab' {
+        const mgr = getTabMgr(focusedPane)
+        const result = closeTab(mgr, mgr.activeTabId)
+        if (result.closed) {
+            saveTabsForPane(focusedPane)
+        }
+        return result.closed ? 'closed' : 'last-tab'
+    }
+
+    /** Closes the active tab with pinned confirmation if needed. */
+    export async function closeActiveTabWithConfirmation(): Promise<'closed' | 'last-tab' | 'cancelled'> {
+        const mgr = getTabMgr(focusedPane)
+        const activeTab = getActiveTab(mgr)
+
+        // Last tab: close window without confirmation (even if pinned)
+        if (getTabCount(mgr) <= 1) {
+            return 'last-tab'
+        }
+
+        // Pinned tab: confirm before closing
+        if (activeTab.pinned) {
+            const ok = await confirmDialog('This tab is pinned. Close it anyway?', 'Close pinned tab')
+            if (!ok) return 'cancelled'
+        }
+
+        const result = closeTab(mgr, mgr.activeTabId)
+        if (result.closed) {
+            saveTabsForPane(focusedPane)
+            return 'closed'
+        }
+        return 'last-tab'
+    }
+
+    /** Toggles pin state on the active tab in the focused pane. */
+    export function togglePinActiveTab(): void {
+        const mgr = getTabMgr(focusedPane)
+        const activeTab = getActiveTab(mgr)
+        if (activeTab.pinned) {
+            unpinTab(mgr, activeTab.id)
+        } else {
+            pinTab(mgr, activeTab.id)
+        }
+        saveTabsForPane(focusedPane)
+        syncPinTabMenu()
+    }
+
+    /** Syncs the File menu "Pin tab" / "Unpin tab" label with the active tab's state. */
+    function syncPinTabMenu() {
+        const mgr = getTabMgr(focusedPane)
+        const activeTab = getActiveTab(mgr)
+        void updatePinTabMenu(activeTab.pinned)
+    }
+
+    /** Cycle to next/prev tab in the focused pane. */
+    export function cycleTab(direction: 'next' | 'prev'): void {
+        const mgr = getTabMgr(focusedPane)
+        const paneRef = getPaneRef(focusedPane)
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const cursorFilename = (paneRef?.getFilenameUnderCursor?.() as string | undefined) ?? null
+        cycleTabInManager(mgr, direction, cursorFilename)
+        saveTabsForPane(focusedPane)
+        syncPinTabMenu()
+    }
+
+    /** Switch to a specific tab by ID in the given pane. Returns false if tab not found. */
+    export function switchToTab(pane: 'left' | 'right', tabId: TabId): boolean {
+        const mgr = getTabMgr(pane)
+        const paneRef = getPaneRef(pane)
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const cursorFilename = (paneRef?.getFilenameUnderCursor?.() as string | undefined) ?? null
+        const switched = switchTab(mgr, tabId, cursorFilename)
+        if (!switched) {
+            log.warn(`MCP activate_tab: tab ${tabId} not found in ${pane} pane`)
+            return false
+        }
+        saveTabsForPane(pane)
+        if (pane === focusedPane) syncPinTabMenu()
+        return true
+    }
+
+    /** Get all tabs for a pane (for TabBar). */
+    export function getTabsForPane(pane: 'left' | 'right'): { tabs: TabState[]; activeTabId: TabId } {
+        const mgr = getTabMgr(pane)
+        return { tabs: getAllTabs(mgr), activeTabId: mgr.activeTabId }
+    }
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex,a11y_no_noninteractive_element_interactions -->
@@ -1858,37 +2324,63 @@
             style="width: {leftPaneWidthPercent}%"
             bind:this={leftPaneWrapperEl}
         >
-            <!--suppress JSUnresolvedReference -->
-            <FilePane
-                bind:this={leftPaneRef}
+            <TabBar
+                tabs={getAllTabs(leftTabMgr)}
+                activeTabId={leftTabMgr.activeTabId}
                 paneId="left"
-                initialPath={leftPath}
-                volumeId={leftVolumeId}
-                volumePath={leftVolumePath}
-                volumeName={leftVolumeName}
-                isFocused={focusedPane === 'left'}
-                {showHiddenFiles}
-                viewMode={leftViewMode}
-                sortBy={leftSortBy}
-                sortOrder={leftSortOrder}
-                directorySortMode={getDirectorySortMode()}
-                onPathChange={(path: string) => {
-                    handlePathChange('left', path)
+                maxTabs={MAX_TABS_PER_PANE}
+                onTabSwitch={(tabId: TabId) => {
+                    switchToTab('left', tabId)
                 }}
-                onVolumeChange={(volumeId: string, volumePath: string, targetPath: string) =>
-                    handleVolumeChange('left', volumeId, volumePath, targetPath)}
-                onRequestFocus={() => {
+                onTabClose={(tabId: TabId) => {
+                    handleTabClose('left', tabId)
+                }}
+                onTabMiddleClick={(tabId: TabId) => {
+                    handleTabMiddleClick('left', tabId)
+                }}
+                onNewTab={() => {
+                    handleNewTab('left')
+                }}
+                onContextMenu={(tabId: TabId, event: MouseEvent) => {
+                    void handleTabContextMenu('left', tabId, event)
+                }}
+                onPaneFocus={() => {
                     handleFocus('left')
                 }}
-                onSortChange={(column: SortColumn) => handleSortChange('left', column)}
-                onNetworkHostChange={(host: NetworkHost | null) => {
-                    handleNetworkHostChange('left', host)
-                }}
-                onCancelLoading={() => {
-                    handleCancelLoading('left')
-                }}
-                onMtpFatalError={(msg: string) => handleMtpFatalError('left', msg)}
             />
+            <!--suppress JSUnresolvedReference -->
+            {#key getActiveTab(leftTabMgr).id}
+                <FilePane
+                    bind:this={leftPaneRef}
+                    paneId="left"
+                    initialPath={leftPath}
+                    volumeId={leftVolumeId}
+                    volumePath={leftVolumePath}
+                    volumeName={leftVolumeName}
+                    isFocused={focusedPane === 'left'}
+                    {showHiddenFiles}
+                    viewMode={leftViewMode}
+                    sortBy={leftSortBy}
+                    sortOrder={leftSortOrder}
+                    directorySortMode={getDirectorySortMode()}
+                    onPathChange={(path: string) => {
+                        handlePathChange('left', path)
+                    }}
+                    onVolumeChange={(volumeId: string, volumePath: string, targetPath: string) =>
+                        handleVolumeChange('left', volumeId, volumePath, targetPath)}
+                    onRequestFocus={() => {
+                        handleFocus('left')
+                    }}
+                    onSortChange={(column: SortColumn) => handleSortChange('left', column)}
+                    onNetworkHostChange={(host: NetworkHost | null) => {
+                        handleNetworkHostChange('left', host)
+                    }}
+                    onCancelLoading={() => {
+                        handleCancelLoading('left')
+                    }}
+                    onMtpFatalError={(msg: string) => handleMtpFatalError('left', msg)}
+                />
+            {/key}
         </div>
         <PaneResizer onResize={handlePaneResize} onResizeEnd={handlePaneResizeEnd} onReset={handlePaneResizeReset} />
         <div
@@ -1897,37 +2389,63 @@
             style="width: {100 - leftPaneWidthPercent}%"
             bind:this={rightPaneWrapperEl}
         >
-            <!--suppress JSUnresolvedReference -->
-            <FilePane
-                bind:this={rightPaneRef}
+            <TabBar
+                tabs={getAllTabs(rightTabMgr)}
+                activeTabId={rightTabMgr.activeTabId}
                 paneId="right"
-                initialPath={rightPath}
-                volumeId={rightVolumeId}
-                volumePath={rightVolumePath}
-                volumeName={rightVolumeName}
-                isFocused={focusedPane === 'right'}
-                {showHiddenFiles}
-                viewMode={rightViewMode}
-                sortBy={rightSortBy}
-                sortOrder={rightSortOrder}
-                directorySortMode={getDirectorySortMode()}
-                onPathChange={(path: string) => {
-                    handlePathChange('right', path)
+                maxTabs={MAX_TABS_PER_PANE}
+                onTabSwitch={(tabId: TabId) => {
+                    switchToTab('right', tabId)
                 }}
-                onVolumeChange={(volumeId: string, volumePath: string, targetPath: string) =>
-                    handleVolumeChange('right', volumeId, volumePath, targetPath)}
-                onRequestFocus={() => {
+                onTabClose={(tabId: TabId) => {
+                    handleTabClose('right', tabId)
+                }}
+                onTabMiddleClick={(tabId: TabId) => {
+                    handleTabMiddleClick('right', tabId)
+                }}
+                onNewTab={() => {
+                    handleNewTab('right')
+                }}
+                onContextMenu={(tabId: TabId, event: MouseEvent) => {
+                    void handleTabContextMenu('right', tabId, event)
+                }}
+                onPaneFocus={() => {
                     handleFocus('right')
                 }}
-                onSortChange={(column: SortColumn) => handleSortChange('right', column)}
-                onNetworkHostChange={(host: NetworkHost | null) => {
-                    handleNetworkHostChange('right', host)
-                }}
-                onCancelLoading={() => {
-                    handleCancelLoading('right')
-                }}
-                onMtpFatalError={(msg: string) => handleMtpFatalError('right', msg)}
             />
+            <!--suppress JSUnresolvedReference -->
+            {#key getActiveTab(rightTabMgr).id}
+                <FilePane
+                    bind:this={rightPaneRef}
+                    paneId="right"
+                    initialPath={rightPath}
+                    volumeId={rightVolumeId}
+                    volumePath={rightVolumePath}
+                    volumeName={rightVolumeName}
+                    isFocused={focusedPane === 'right'}
+                    {showHiddenFiles}
+                    viewMode={rightViewMode}
+                    sortBy={rightSortBy}
+                    sortOrder={rightSortOrder}
+                    directorySortMode={getDirectorySortMode()}
+                    onPathChange={(path: string) => {
+                        handlePathChange('right', path)
+                    }}
+                    onVolumeChange={(volumeId: string, volumePath: string, targetPath: string) =>
+                        handleVolumeChange('right', volumeId, volumePath, targetPath)}
+                    onRequestFocus={() => {
+                        handleFocus('right')
+                    }}
+                    onSortChange={(column: SortColumn) => handleSortChange('right', column)}
+                    onNetworkHostChange={(host: NetworkHost | null) => {
+                        handleNetworkHostChange('right', host)
+                    }}
+                    onCancelLoading={() => {
+                        handleCancelLoading('right')
+                    }}
+                    onMtpFatalError={(msg: string) => handleMtpFatalError('right', msg)}
+                />
+            {/key}
         </div>
     {:else}
         <LoadingIcon />

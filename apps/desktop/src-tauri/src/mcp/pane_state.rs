@@ -6,6 +6,16 @@ use serde::{Deserialize, Serialize};
 use std::sync::RwLock;
 use tauri::{AppHandle, Manager};
 
+/// Represents a tab in a pane (for MCP state reporting).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TabInfo {
+    pub id: String,
+    pub path: String,
+    pub pinned: bool,
+    pub active: bool,
+}
+
 /// Represents a file entry in a pane.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -46,6 +56,8 @@ pub struct PaneState {
     pub loaded_end: usize,
     #[serde(default)]
     pub show_hidden: bool,
+    #[serde(default)]
+    pub tabs: Vec<TabInfo>,
 }
 
 /// Shared state for both panes.
@@ -91,17 +103,25 @@ impl PaneStateStore {
 }
 
 /// Tauri command to update left pane state from frontend.
+/// Preserves `tabs` — those are synced separately via `update_pane_tabs`.
 #[tauri::command]
 pub fn update_left_pane_state(app: AppHandle, state: PaneState) {
     if let Some(store) = app.try_state::<PaneStateStore>() {
+        let tabs = store.left.read().unwrap().tabs.clone();
+        let mut state = state;
+        state.tabs = tabs;
         store.set_left(state);
     }
 }
 
 /// Tauri command to update right pane state from frontend.
+/// Preserves `tabs` — those are synced separately via `update_pane_tabs`.
 #[tauri::command]
 pub fn update_right_pane_state(app: AppHandle, state: PaneState) {
     if let Some(store) = app.try_state::<PaneStateStore>() {
+        let tabs = store.right.read().unwrap().tabs.clone();
+        let mut state = state;
+        state.tabs = tabs;
         store.set_right(state);
     }
 }
@@ -111,6 +131,19 @@ pub fn update_right_pane_state(app: AppHandle, state: PaneState) {
 pub fn update_focused_pane(app: AppHandle, pane: String) {
     if let Some(store) = app.try_state::<PaneStateStore>() {
         store.set_focused_pane(pane);
+    }
+}
+
+/// Tauri command to update tab list for a pane from frontend (for MCP state reporting).
+#[tauri::command]
+pub fn update_pane_tabs(app: AppHandle, pane: String, tabs: Vec<TabInfo>) {
+    if let Some(store) = app.try_state::<PaneStateStore>() {
+        let pane_state = match pane.as_str() {
+            "left" => &store.left,
+            "right" => &store.right,
+            _ => return,
+        };
+        pane_state.write().unwrap().tabs = tabs;
     }
 }
 
@@ -142,6 +175,7 @@ mod tests {
             loaded_start: 0,
             loaded_end: 1,
             show_hidden: false,
+            tabs: vec![],
         };
 
         store.set_left(state.clone());

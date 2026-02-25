@@ -2,8 +2,9 @@
 
 import { load } from '@tauri-apps/plugin-store'
 import type { Store } from '@tauri-apps/plugin-store'
-import type { SortColumn, SortOrder } from './file-explorer/types'
+import type { SortColumn } from './file-explorer/types'
 import { defaultSortOrders } from './file-explorer/types'
+import type { PersistedTab, PersistedPaneTabs } from './file-explorer/tabs/tab-types'
 
 const STORE_NAME = 'app-status.json'
 const DEFAULT_PATH = '~'
@@ -137,7 +138,29 @@ export async function loadAppStatus(pathExists: (p: string) => Promise<boolean>)
     }
 }
 
-export async function saveAppStatus(status: Partial<AppStatus>): Promise<void> {
+const SAVE_DEBOUNCE_MS = 200
+let saveDebounceTimer: ReturnType<typeof setTimeout> | null = null
+let pendingSave: Partial<AppStatus> | null = null
+
+/** Debounced save: merges with pending writes and flushes after 200ms of inactivity. */
+export function saveAppStatus(status: Partial<AppStatus>): void {
+    pendingSave = { ...pendingSave, ...status }
+
+    if (saveDebounceTimer !== null) {
+        clearTimeout(saveDebounceTimer)
+    }
+
+    saveDebounceTimer = setTimeout(() => {
+        const toSave = pendingSave
+        pendingSave = null
+        saveDebounceTimer = null
+        if (toSave) {
+            void doSaveAppStatus(toSave)
+        }
+    }, SAVE_DEBOUNCE_MS)
+}
+
+async function doSaveAppStatus(status: Partial<AppStatus>): Promise<void> {
     try {
         const store = await getStore()
         if (status.leftPath !== undefined) {
@@ -173,54 +196,6 @@ export async function saveAppStatus(status: Partial<AppStatus>): Promise<void> {
         await store.save()
     } catch {
         // Silently fail - persistence is nice-to-have
-    }
-}
-
-// ============================================================================
-// Column sort order memory (app-wide, per-column)
-// ============================================================================
-
-type ColumnSortOrders = Partial<Record<SortColumn, SortOrder>>
-
-function isValidSortOrders(value: unknown): value is ColumnSortOrders {
-    if (typeof value !== 'object' || value === null) return false
-    const validColumns: string[] = ['name', 'extension', 'size', 'modified', 'created']
-    const validOrders: string[] = ['ascending', 'descending']
-    return Object.entries(value).every(([k, v]) => validColumns.includes(k) && validOrders.includes(v as string))
-}
-
-/**
- * Gets the remembered sort order for a column.
- * Returns the default sort order for that column if not previously set.
- * @public
- */
-export async function getColumnSortOrder(column: SortColumn): Promise<SortOrder> {
-    try {
-        const store = await getStore()
-        const orders = await store.get('columnSortOrders')
-        if (isValidSortOrders(orders) && orders[column]) {
-            return orders[column]
-        }
-        return defaultSortOrders[column]
-    } catch {
-        return defaultSortOrders[column]
-    }
-}
-
-/**
- * Saves the sort order for a column (remembered for next time this column is clicked).
- * @public
- */
-export async function saveColumnSortOrder(column: SortColumn, order: SortOrder): Promise<void> {
-    try {
-        const store = await getStore()
-        const orders = await store.get('columnSortOrders')
-        const current: ColumnSortOrders = isValidSortOrders(orders) ? orders : {}
-        current[column] = order
-        await store.set('columnSortOrders', current)
-        await store.save()
-    } catch {
-        // Silently fail
     }
 }
 
@@ -327,6 +302,105 @@ export async function saveLastSettingsSection(section: string[]): Promise<void> 
     try {
         const store = await getStore()
         await store.set('lastSettingsSection', section)
+        await store.save()
+    } catch {
+        // Silently fail
+    }
+}
+
+// ============================================================================
+// Tab persistence
+// ============================================================================
+
+function isValidPersistedTab(raw: unknown): raw is PersistedTab {
+    if (typeof raw !== 'object' || raw === null) return false
+    const obj = raw as Record<string, unknown>
+    return (
+        typeof obj.id === 'string' &&
+        typeof obj.path === 'string' &&
+        typeof obj.volumeId === 'string' &&
+        parseSortColumn(obj.sortBy) === obj.sortBy &&
+        (obj.sortOrder === 'ascending' || obj.sortOrder === 'descending') &&
+        (obj.viewMode === 'full' || obj.viewMode === 'brief') &&
+        typeof obj.pinned === 'boolean'
+    )
+}
+
+function isValidPersistedPaneTabs(raw: unknown): raw is PersistedPaneTabs {
+    if (typeof raw !== 'object' || raw === null) return false
+    const obj = raw as Record<string, unknown>
+    if (!Array.isArray(obj.tabs) || typeof obj.activeTabId !== 'string') return false
+    return obj.tabs.length > 0 && obj.tabs.every(isValidPersistedTab)
+}
+
+/**
+ * Loads persisted tab state for a pane side.
+ * Falls back to migration from old scalar keys if no tab data exists.
+ */
+export async function loadPaneTabs(
+    side: 'left' | 'right',
+    pathExistsFn: (p: string) => Promise<boolean>,
+): Promise<PersistedPaneTabs> {
+    try {
+        const store = await getStore()
+        const key = `${side}Tabs`
+        const raw = await store.get(key)
+
+        if (isValidPersistedPaneTabs(raw)) {
+            // Validate paths exist, fall back for any that don't
+            const validatedTabs = await Promise.all(
+                raw.tabs.map(async (tab) => {
+                    if (tab.volumeId === 'network') return tab
+                    const resolvedPath = await resolvePathWithFallback(tab.path, pathExistsFn)
+                    return { ...tab, path: resolvedPath }
+                }),
+            )
+            return { tabs: validatedTabs, activeTabId: raw.activeTabId }
+        }
+
+        // TODO(2026-04-01): remove migration
+        // Migration from old scalar keys
+        const path = ((await store.get(`${side}Path`)) as string) || DEFAULT_PATH
+        const volumeId = ((await store.get(`${side}VolumeId`)) as string) || DEFAULT_VOLUME_ID
+        const sortBy = parseSortColumn(await store.get(`${side}SortBy`))
+        const viewMode = parseViewMode(await store.get(`${side}ViewMode`))
+        const resolvedPath = volumeId === 'network' ? path : await resolvePathWithFallback(path, pathExistsFn)
+
+        const tab: PersistedTab = {
+            id: crypto.randomUUID(),
+            path: resolvedPath,
+            volumeId,
+            sortBy,
+            sortOrder: defaultSortOrders[sortBy],
+            viewMode,
+            pinned: false,
+        }
+
+        return { tabs: [tab], activeTabId: tab.id }
+    } catch {
+        const id = crypto.randomUUID()
+        return {
+            tabs: [
+                {
+                    id,
+                    path: DEFAULT_PATH,
+                    volumeId: DEFAULT_VOLUME_ID,
+                    sortBy: DEFAULT_SORT_BY,
+                    sortOrder: defaultSortOrders[DEFAULT_SORT_BY],
+                    viewMode: 'brief' as ViewMode,
+                    pinned: false,
+                },
+            ],
+            activeTabId: id,
+        }
+    }
+}
+
+/** Saves tab state for a pane side. */
+export async function savePaneTabs(side: 'left' | 'right', paneTabs: PersistedPaneTabs): Promise<void> {
+    try {
+        const store = await getStore()
+        await store.set(`${side}Tabs`, paneTabs)
         await store.save()
     } catch {
         // Silently fail

@@ -27,6 +27,7 @@
         registerKnownDialogs,
     } from '$lib/tauri-commands'
     import { SOFT_DIALOG_REGISTRY } from '$lib/ui/dialog-registry'
+    import { addToast } from '$lib/ui/toast'
     import { loadSettings, saveSettings } from '$lib/settings-store'
     import { openSettingsWindow } from '$lib/settings/settings-window'
     import { openFileViewer } from '$lib/file-viewer/open-viewer'
@@ -74,6 +75,11 @@
         moveCursor: (pane: 'left' | 'right', to: number | string) => Promise<void>
         scrollTo: (pane: 'left' | 'right', index: number) => void
         refreshPane: () => void
+        newTab: () => boolean
+        closeActiveTab: () => 'closed' | 'last-tab'
+        closeActiveTabWithConfirmation: () => Promise<'closed' | 'last-tab' | 'cancelled'>
+        cycleTab: (direction: 'next' | 'prev') => void
+        togglePinActiveTab: () => void
     }
 
     let showFdaPrompt = $state(false)
@@ -99,6 +105,9 @@
     let unlistenSwitchPane: UnlistenFn | undefined
     let unlistenSwapPanes: UnlistenFn | undefined
     let unlistenStartRename: UnlistenFn | undefined
+    let unlistenNewTab: UnlistenFn | undefined
+    let unlistenCloseTab: UnlistenFn | undefined
+    let unlistenTogglePinTab: UnlistenFn | undefined
 
     /** Opens the debug window (dev mode only) */
     async function openDebugWindow() {
@@ -268,6 +277,15 @@
         })
         unlistenStartRename = await safeListenTauri('start-rename', () => {
             explorerRef?.startRename()
+        })
+        unlistenNewTab = await safeListenTauri('new-tab', () => {
+            void handleCommandExecute('tab.new')
+        })
+        unlistenCloseTab = await safeListenTauri('close-tab', () => {
+            void handleCommandExecute('tab.close')
+        })
+        unlistenTogglePinTab = await safeListenTauri('toggle-pin-tab', () => {
+            explorerRef?.togglePinActiveTab()
         })
     }
 
@@ -552,6 +570,15 @@
         if (unlistenStartRename) {
             unlistenStartRename()
         }
+        if (unlistenNewTab) {
+            unlistenNewTab()
+        }
+        if (unlistenCloseTab) {
+            unlistenCloseTab()
+        }
+        if (unlistenTogglePinTab) {
+            unlistenTogglePinTab()
+        }
     })
 
     function handleFdaComplete() {
@@ -692,6 +719,32 @@
             case 'pane.rightVolumeChooser':
                 explorerRef?.toggleVolumeChooser('right')
                 explorerRef?.refocus()
+                return
+
+            // === Tab commands ===
+            case 'tab.new': {
+                const success = explorerRef?.newTab()
+                if (success === false) {
+                    addToast('Tab limit reached')
+                }
+                return
+            }
+
+            case 'tab.close': {
+                const result = await explorerRef?.closeActiveTabWithConfirmation()
+                if (result === 'last-tab') {
+                    const { getCurrentWindow } = await import('@tauri-apps/api/window')
+                    await getCurrentWindow().close()
+                }
+                return
+            }
+
+            case 'tab.next':
+                explorerRef?.cycleTab('next')
+                return
+
+            case 'tab.prev':
+                explorerRef?.cycleTab('prev')
                 return
 
             // === Navigation commands ===

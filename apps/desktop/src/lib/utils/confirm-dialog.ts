@@ -14,5 +14,7 @@ import { ask } from '@tauri-apps/plugin-dialog'
  * @returns Promise that resolves to true if confirmed, false otherwise
  */
 export async function confirmDialog(message: string, title = 'Confirm'): Promise<boolean> {
-    return ask(message, { title, kind: 'warning' })
+    // cancelLabel must be 'Cancel' so macOS assigns the ESC key equivalent to it.
+    // The default 'No' label doesn't get ESC on NSAlert.
+    return ask(message, { title, kind: 'warning', okLabel: 'OK', cancelLabel: 'Cancel' })
 }

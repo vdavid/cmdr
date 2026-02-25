@@ -84,6 +84,9 @@
     --spacing-xl: 24px;
     --spacing-2xl: 32px;
 
+    /* === Sizing === */
+    --spacing-tab-bar-height: 28px;
+
     /* === Typography === */
     --font-system: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Monaco, Consolas, monospace;
