@@ -26,6 +26,7 @@
         type UnlistenFn,
         updateFocusedPane,
         findFileIndex,
+        getE2eStartPath,
     } from '$lib/tauri-commands'
     import type {
         VolumeInfo,
@@ -772,6 +773,13 @@
         rightViewMode = status.rightViewMode
         leftPaneWidthPercent = status.leftPaneWidthPercent
 
+        // E2E test override: use CMDR_E2E_START_PATH subdirectories when set
+        const e2eStartPath = await getE2eStartPath()
+        if (e2eStartPath) {
+            leftPath = `${e2eStartPath}/left`
+            rightPath = `${e2eStartPath}/right`
+        }
+
         // Load sort state
         leftSortBy = status.leftSortBy
         rightSortBy = status.rightSortBy
@@ -784,23 +792,23 @@
         // Exception: 'network' is a virtual volume, trust the stored ID for that
         const defaultId = await getDefaultVolumeId()
 
-        if (status.leftVolumeId === 'network') {
+        if (status.leftVolumeId === 'network' && !e2eStartPath) {
             leftVolumeId = 'network'
         } else {
-            const leftContaining = await findContainingVolume(status.leftPath)
+            const leftContaining = await findContainingVolume(leftPath)
             leftVolumeId = leftContaining?.id ?? defaultId
         }
 
-        if (status.rightVolumeId === 'network') {
+        if (status.rightVolumeId === 'network' && !e2eStartPath) {
             rightVolumeId = 'network'
         } else {
-            const rightContaining = await findContainingVolume(status.rightPath)
+            const rightContaining = await findContainingVolume(rightPath)
             rightVolumeId = rightContaining?.id ?? defaultId
         }
 
         // Initialize history with loaded paths and their volumes
-        leftHistory = createHistory(leftVolumeId, status.leftPath)
-        rightHistory = createHistory(rightVolumeId, status.rightPath)
+        leftHistory = createHistory(leftVolumeId, leftPath)
+        rightHistory = createHistory(rightVolumeId, rightPath)
 
         initialized = true
 

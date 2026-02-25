@@ -23,6 +23,7 @@ import { spawn, ChildProcess } from 'child_process'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
+import { createFixtures, cleanupFixtures, recreateFixtures } from '../e2e-shared/fixtures.js'
 
 // Get __dirname equivalent for ES modules
 const __filename = fileURLToPath(import.meta.url)
@@ -33,6 +34,7 @@ const TAURI_BINARY = process.env.TAURI_BINARY || path.join(__dirname, '../../src
 
 // tauri-driver process handle
 let tauriDriver: ChildProcess | null = null
+let fixtureRootPath: string | null = null
 
 export const config: Options.Testrunner & { capabilities: Capabilities.TestrunnerCapabilities } = {
     // Use WebDriver protocol (not DevTools)
@@ -79,6 +81,10 @@ export const config: Options.Testrunner & { capabilities: Capabilities.Testrunne
 
     // Hooks
     onPrepare: async function () {
+        // Create E2E fixtures and set env var so the app opens them
+        fixtureRootPath = await createFixtures()
+        process.env.CMDR_E2E_START_PATH = fixtureRootPath
+
         // Start tauri-driver before tests
         console.log('Starting tauri-driver...')
         console.log('TAURI_BINARY:', TAURI_BINARY)
@@ -121,20 +127,35 @@ export const config: Options.Testrunner & { capabilities: Capabilities.Testrunne
             tauriDriver.kill()
             tauriDriver = null
         }
+
+        if (fixtureRootPath) {
+            await cleanupFixtures(fixtureRootPath)
+            fixtureRootPath = null
+        }
     },
 
     // Auto-retry failed tests in CI
     specFileRetries: process.env.CI ? 2 : 0,
 
-    // Take screenshots on failure
+    beforeTest: async function () {
+        if (fixtureRootPath) {
+            await recreateFixtures(fixtureRootPath)
+        }
+    },
+
+    // Take screenshots on failure (guarded: session may already be dead)
     afterTest: async function (_test: unknown, _context: unknown, result: { passed: boolean }) {
         if (!result.passed) {
-            const testResultsDir = path.join(__dirname, '../../test-results')
-            if (!fs.existsSync(testResultsDir)) {
-                fs.mkdirSync(testResultsDir, { recursive: true })
+            try {
+                const testResultsDir = path.join(__dirname, '../../test-results')
+                if (!fs.existsSync(testResultsDir)) {
+                    fs.mkdirSync(testResultsDir, { recursive: true })
+                }
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+                await browser.saveScreenshot(path.join(testResultsDir, `failure-${timestamp}.png`))
+            } catch {
+                // Session may be dead (app crashed) — screenshot not possible
             }
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-            await browser.saveScreenshot(path.join(testResultsDir, `failure-${timestamp}.png`))
         }
     },
 }

@@ -17,9 +17,25 @@ import { fileURLToPath } from 'url'
 import fs from 'fs'
 import { waitTauriDriverReady } from '@crabnebula/tauri-driver'
 import { waitTestRunnerBackendReady } from '@crabnebula/test-runner-backend'
+import { createFixtures, cleanupFixtures, recreateFixtures } from '../e2e-shared/fixtures.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+
+// Load .env file from apps/desktop/.env (skip comments and empty lines).
+// Only sets vars that aren't already in the environment, so explicit exports take precedence.
+const envPath = path.join(__dirname, '../../.env')
+if (fs.existsSync(envPath)) {
+    for (const line of fs.readFileSync(envPath, 'utf-8').split('\n')) {
+        const trimmed = line.trim()
+        if (!trimmed || trimmed.startsWith('#')) continue
+        const eqIndex = trimmed.indexOf('=')
+        if (eqIndex < 0) continue
+        const key = trimmed.slice(0, eqIndex).trim()
+        const value = trimmed.slice(eqIndex + 1).trim()
+        if (!process.env[key]) process.env[key] = value
+    }
+}
 
 // Detect the native Rust target (for example, aarch64-apple-darwin on Apple Silicon)
 const rustTarget =
@@ -36,6 +52,7 @@ let tauriDriver: ChildProcess | null = null
 let killedTauriDriver = false
 let testRunnerBackend: ChildProcess | null = null
 let killedTestRunnerBackend = false
+let fixtureRootPath: string | null = null
 
 export const config: Options.Testrunner & { capabilities: Capabilities.TestrunnerCapabilities } = {
     runner: 'local',
@@ -55,7 +72,7 @@ export const config: Options.Testrunner & { capabilities: Capabilities.Testrunne
         } as WebdriverIO.Capabilities,
     ],
 
-    logLevel: 'info',
+    logLevel: 'warn',
 
     // Connection to tauri-driver
     hostname: '127.0.0.1',
@@ -75,8 +92,7 @@ export const config: Options.Testrunner & { capabilities: Capabilities.Testrunne
     onPrepare: async function () {
         // Validate CN_API_KEY
         if (!process.env.CN_API_KEY) {
-            console.error('CN_API_KEY is not set. Required for CrabNebula WebDriver on macOS.')
-            console.error('Set it via: export CN_API_KEY=<your-key>')
+            console.error('CN_API_KEY is not set. Add it to apps/desktop/.env (see .env.example).')
             process.exit(1)
         }
 
@@ -86,6 +102,10 @@ export const config: Options.Testrunner & { capabilities: Capabilities.Testrunne
             console.error('Build it with: pnpm tauri build --debug --no-bundle -- --features automation')
             process.exit(1)
         }
+
+        // Create E2E fixtures and set env var so the app opens them
+        fixtureRootPath = await createFixtures()
+        process.env.CMDR_E2E_START_PATH = fixtureRootPath
 
         console.log('Starting CrabNebula test-runner-backend...')
 
@@ -143,21 +163,36 @@ export const config: Options.Testrunner & { capabilities: Capabilities.Testrunne
         tauriDriver = null
     },
 
-    onComplete: function () {
+    onComplete: async function () {
         killedTestRunnerBackend = true
         testRunnerBackend?.kill()
         testRunnerBackend = null
+
+        if (fixtureRootPath) {
+            await cleanupFixtures(fixtureRootPath)
+            fixtureRootPath = null
+        }
     },
 
-    // Take screenshots on failure
+    beforeTest: async function () {
+        if (fixtureRootPath) {
+            await recreateFixtures(fixtureRootPath)
+        }
+    },
+
+    // Take screenshots on failure (guarded: session may already be dead)
     afterTest: async function (_test: unknown, _context: unknown, result: { passed: boolean }) {
         if (!result.passed) {
-            const testResultsDir = path.join(__dirname, '../../test-results')
-            if (!fs.existsSync(testResultsDir)) {
-                fs.mkdirSync(testResultsDir, { recursive: true })
+            try {
+                const testResultsDir = path.join(__dirname, '../../test-results')
+                if (!fs.existsSync(testResultsDir)) {
+                    fs.mkdirSync(testResultsDir, { recursive: true })
+                }
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+                await browser.saveScreenshot(path.join(testResultsDir, `failure-macos-${timestamp}.png`))
+            } catch {
+                // Session may be dead (app crashed) — screenshot not possible
             }
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-            await browser.saveScreenshot(path.join(testResultsDir, `failure-macos-${timestamp}.png`))
         }
     },
 }
@@ -168,6 +203,9 @@ function cleanup() {
     tauriDriver?.kill()
     killedTestRunnerBackend = true
     testRunnerBackend?.kill()
+    if (fixtureRootPath) {
+        try { fs.rmSync(fixtureRootPath, { recursive: true, force: true }) } catch { /* best effort */ }
+    }
 }
 
 process.on('exit', cleanup)

@@ -17,64 +17,9 @@
  *   pnpm test:e2e:linux:native # Run natively on Linux
  */
 
+import { ensureAppReady, getEntryName, findFileIndex, MKDIR_DIALOG, TRANSFER_DIALOG } from '../e2e-shared/helpers.js'
+
 // ─── Helpers ────────────────────────────────────────────────────────────────
-
-/**
- * Helper to get file entry name text. Works with both Full and Brief view modes.
- * In Full mode, the name is in `.col-name`. In Brief mode, it's in `.name`.
- */
-async function getEntryName(entry: WebdriverIO.Element): Promise<string> {
-    // Try Full view mode selector first
-    const colName = entry.$('.col-name')
-    if (await colName.isExisting()) {
-        return colName.getText()
-    }
-    // Fall back to Brief view mode selector
-    const name = entry.$('.name')
-    if (await name.isExisting()) {
-        return name.getText()
-    }
-    // Last resort: get all text from the entry
-    return entry.getText()
-}
-
-/**
- * Helper to ensure app is ready and panes have focus initialized.
- * Clicks on a file entry (not the container pane) because WebKitGTK's
- * WebDriver rejects clicks on non-interactive container elements.
- */
-async function ensureAppReadyWithFocus(): Promise<void> {
-    // Wait for file entries to be visible (confirms app is fully loaded)
-    const fileEntry = browser.$('.file-entry')
-    await fileEntry.waitForDisplayed({ timeout: 10000 })
-
-    // Wait for the HTML loading screen to be gone
-    const loadingScreen = browser.$('#loading-screen')
-    if (await loadingScreen.isExisting()) {
-        await browser.waitUntil(async () => !(await loadingScreen.isDisplayed()), {
-            timeout: 5000,
-            timeoutMsg: 'Loading screen did not disappear',
-        })
-    }
-
-    // Dismiss any overlays (AI notification, etc.) via JS click to bypass
-    // WebKitGTK's strict clickability checks
-    await browser.execute(() => {
-        const dismissBtn = document.querySelector('.ai-notification .ai-button.secondary') as HTMLElement | null
-        dismissBtn?.click()
-    })
-    await browser.pause(300)
-
-    // Click on a file entry in the left pane to ensure focus, then
-    // focus the explorer container so keyboard events reach the handler.
-    await browser.execute(() => {
-        const entry = document.querySelector('.file-pane .file-entry') as HTMLElement | null
-        entry?.click()
-        const explorer = document.querySelector('.dual-pane-explorer') as HTMLElement | null
-        explorer?.focus()
-    })
-    await browser.pause(300)
-}
 
 /**
  * Clicks an element via JavaScript, bypassing WebKitGTK WebDriver's strict
@@ -97,13 +42,6 @@ async function pressSpaceKey(): Promise<void> {
     await browser.releaseActions()
     await browser.pause(300)
 }
-
-// ─── Selectors ───────────────────────────────────────────────────────────────
-
-// ModalDialog renders as .modal-overlay[data-dialog-id] > .modal-dialog,
-// with no dialog-specific CSS class. Use data-dialog-id to target each dialog.
-const MKDIR_DIALOG = '[data-dialog-id="mkdir-confirmation"]'
-const TRANSFER_DIALOG = '[data-dialog-id="transfer-confirmation"]'
 
 // ─── Tests ──────────────────────────────────────────────────────────────────
 
@@ -140,7 +78,7 @@ describe('Basic rendering', () => {
 
 describe('Keyboard navigation', () => {
     it('moves cursor with arrow keys', async () => {
-        await ensureAppReadyWithFocus()
+        await ensureAppReady()
 
         // Get all file entries and find which one has the cursor
         // Spread to convert ChainablePromiseArray to real array for .length
@@ -185,7 +123,7 @@ describe('Keyboard navigation', () => {
     })
 
     it('switches panes with Tab key', async () => {
-        await ensureAppReadyWithFocus()
+        await ensureAppReady()
 
         // Re-query panes after ensureAppReady
         let panes = await browser.$$('.file-pane')
@@ -220,7 +158,7 @@ describe('Keyboard navigation', () => {
     })
 
     it('toggles selection with Space key', async () => {
-        await ensureAppReadyWithFocus()
+        await ensureAppReady()
 
         // Get cursor entry (cast needed due to WDIO ChainablePromiseElement type quirk)
         let cursorEntry = browser.$('.file-entry.is-under-cursor') as unknown as WebdriverIO.Element
@@ -258,7 +196,7 @@ describe('Keyboard navigation', () => {
 
 describe('Mouse interactions', () => {
     it('moves cursor when clicking a file entry', async () => {
-        await ensureAppReadyWithFocus()
+        await ensureAppReady()
 
         // Scope to left pane only ($$('.file-entry') returns entries from both panes)
         const panes = [...(await browser.$$('.file-pane'))]
@@ -279,7 +217,7 @@ describe('Mouse interactions', () => {
     })
 
     it('switches pane focus when clicking other pane', async () => {
-        await ensureAppReadyWithFocus()
+        await ensureAppReady()
 
         let panes = [...(await browser.$$('.file-pane'))]
         expect(panes.length).toBe(2)
@@ -313,33 +251,15 @@ describe('Navigation', () => {
      * tracking, causing browser.keys('Enter') to miss the handler on first try.
      */
     async function moveCursorToTestDir(): Promise<boolean> {
-        // Use browser.execute() only for reading (no clicks) to find test-dir's
-        // position, then navigate there with keyboard to preserve WebDriver focus.
-        const info = await browser.execute(() => {
-            const pane = document.querySelector('.file-pane.is-focused')
-            if (!pane) return { error: 'no focused pane' }
-            const entries = pane.querySelectorAll('.file-entry')
-            const names: string[] = []
-            let testDirIndex = -1
-            for (let i = 0; i < entries.length; i++) {
-                const name =
-                    entries[i].querySelector('.col-name')?.textContent ??
-                    entries[i].querySelector('.name')?.textContent ??
-                    ''
-                names.push(name)
-                if (name === 'test-dir') testDirIndex = i
-            }
-            return { testDirIndex, names, total: entries.length }
-        })
-
-        if ('error' in info || info.testDirIndex < 0) {
+        const info = await findFileIndex('test-dir')
+        if ('error' in info || info.targetIndex < 0) {
             return false
         }
 
         // Navigate: Home to reset to first entry, then ArrowDown to target
         await browser.keys('Home')
         await browser.pause(100)
-        for (let i = 0; i < info.testDirIndex; i++) {
+        for (let i = 0; i < info.targetIndex; i++) {
             await browser.keys('ArrowDown')
             await browser.pause(50)
         }
@@ -348,7 +268,7 @@ describe('Navigation', () => {
     }
 
     it('navigates into directories with Enter', async () => {
-        await ensureAppReadyWithFocus()
+        await ensureAppReady()
 
         if (!(await moveCursorToTestDir())) {
             console.log('Skipping navigation test: test-dir fixture not found')
@@ -375,7 +295,7 @@ describe('Navigation', () => {
     })
 
     it('navigates to parent with Backspace', async () => {
-        await ensureAppReadyWithFocus()
+        await ensureAppReady()
 
         // Ensure we're inside test-dir. The Enter test may have already
         // navigated there (tests share the same app instance).
@@ -423,7 +343,7 @@ describe('Navigation', () => {
 
 describe('New folder dialog', () => {
     it('opens new folder dialog with F7', async () => {
-        await ensureAppReadyWithFocus()
+        await ensureAppReady()
 
         // Press F7 to open new folder dialog
         await browser.keys('F7')
@@ -462,7 +382,7 @@ describe('New folder dialog', () => {
     })
 
     it('creates a folder and closes the dialog', async () => {
-        await ensureAppReadyWithFocus()
+        await ensureAppReady()
 
         // Press F7 to open new folder dialog
         await browser.keys('F7')
@@ -493,7 +413,7 @@ describe('New folder dialog', () => {
 
 describe('Transfer dialogs', () => {
     it('opens copy dialog with F5', async () => {
-        await ensureAppReadyWithFocus()
+        await ensureAppReady()
 
         // Move cursor to a file (skip ".." entry)
         const cursorEntry = browser.$('.file-entry.is-under-cursor') as unknown as WebdriverIO.Element
@@ -539,7 +459,7 @@ describe('Transfer dialogs', () => {
     })
 
     it('opens move dialog with F6', async () => {
-        await ensureAppReadyWithFocus()
+        await ensureAppReady()
 
         // Move cursor to a file (skip ".." entry)
         const cursorEntry = browser.$('.file-entry.is-under-cursor') as unknown as WebdriverIO.Element

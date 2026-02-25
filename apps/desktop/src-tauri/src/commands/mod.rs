@@ -1,5 +1,6 @@
 //! Tauri commands module.
 
+pub mod e2e;
 pub mod file_system;
 pub mod file_viewer;
 pub mod font_metrics;

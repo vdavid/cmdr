@@ -17,9 +17,14 @@ Cmdr uses three E2E testing approaches:
 
 ### Why separate platforms for Tauri E2E tests?
 
-- **Linux**: Uses WebKitGTK which has WebKitWebDriver, so standard tauri-driver works natively.
-- **macOS**: Uses WKWebView which has no Apple-provided WebDriver. We use CrabNebula's commercial
-  WebDriver bridge (requires `CN_API_KEY`). We're currently evaluating this commercial option.
+- **Linux (Docker)**: The workhorse. Uses WebKitGTK with WebKitWebDriver, so standard tauri-driver
+  works natively. Runs all platform-independent app logic: dialog flows, keyboard nav, selection,
+  view modes, file viewer, settings, command palette, and file operations (copy, move, rename,
+  create folder).
+- **macOS (CrabNebula)**: Platform integration only. Uses WKWebView, which has no Apple-provided
+  WebDriver, so we use CrabNebula's commercial bridge (requires `CN_API_KEY`). Tests real APFS
+  file operations, volume detection, and WKWebView rendering. Currently in beta (free), will
+  become paid.
 
 ### Key dependencies for tauri-driver
 
@@ -86,18 +91,46 @@ pnpm test:e2e:linux:native
 
 ## Test files
 
-| File                                  | Description                                           |
-|---------------------------------------|-------------------------------------------------------|
-| `test/e2e-smoke/smoke.test.ts`        | Playwright tests for basic UI (browser-based)         |
-| `test/e2e-linux/app.spec.ts`          | WebDriverIO tests for Tauri app (Linux)               |
-| `test/e2e-linux/wdio.conf.ts`         | WebDriverIO configuration (Linux)                     |
-| `test/e2e-linux/docker/Dockerfile`    | Docker image for Linux E2E tests                      |
-| `test/e2e-linux/docker/entrypoint.sh` | Xvfb/dbus setup for headless GUI                      |
-| `test/e2e-macos/app.spec.ts`          | WebDriverIO tests for Tauri app (macOS, CrabNebula)   |
-| `test/e2e-macos/wdio.conf.ts`         | WebDriverIO configuration (macOS, CrabNebula)         |
-| `.env.example`                        | Template for CN_API_KEY                               |
-| `scripts/e2e-linux.sh`                | Main script for Docker-based E2E tests (+ VNC mode)   |
-| `playwright.config.ts`                | Playwright configuration                              |
+| File                                      | Description                                                         |
+|-------------------------------------------|---------------------------------------------------------------------|
+| `test/e2e-smoke/smoke.test.ts`            | Playwright tests for basic UI (browser-based)                       |
+| `test/e2e-shared/fixtures.ts`             | Shared fixture helper (creates/recreates the test directory tree)   |
+| `test/e2e-linux/app.spec.ts`              | WebDriverIO tests: rendering, keyboard nav, dialogs (Linux)         |
+| `test/e2e-linux/file-operations.spec.ts`  | WebDriverIO tests: copy, move, rename, mkdir, view modes (Linux)    |
+| `test/e2e-linux/settings.spec.ts`         | WebDriverIO tests: settings panel (Linux)                           |
+| `test/e2e-linux/viewer.spec.ts`           | WebDriverIO tests: file viewer (Linux)                              |
+| `test/e2e-linux/wdio.conf.ts`             | WebDriverIO configuration (Linux)                                   |
+| `test/e2e-linux/docker/Dockerfile`         | Docker image for Linux E2E tests                                    |
+| `test/e2e-linux/docker/entrypoint.sh`      | Xvfb/dbus setup for headless GUI                                    |
+| `test/e2e-macos/app.spec.ts`              | WebDriverIO tests: rendering, keyboard nav, dialogs (macOS)         |
+| `test/e2e-macos/file-operations.spec.ts`  | WebDriverIO tests: APFS copy/move, volumes, navigation (macOS)      |
+| `test/e2e-macos/wdio.conf.ts`             | WebDriverIO configuration (macOS, CrabNebula)                       |
+| `.env.example`                            | Template for CN_API_KEY                                             |
+| `scripts/e2e-linux.sh`                    | Main script for Docker-based E2E tests (+ VNC mode)                 |
+| `playwright.config.ts`                    | Playwright configuration                                            |
+
+## Fixture system
+
+File operation tests need a known directory tree to work with. The shared helper at
+`test/e2e-shared/fixtures.ts` creates a timestamped `/tmp/cmdr-e2e-<timestamp>/` directory
+with this layout:
+
+```
+left/
+  file-a.txt, file-b.txt     (1 KB text files)
+  sub-dir/nested-file.txt
+  .hidden-file
+  bulk/                       (3 x 50 MB + 20 x 1 MB .dat files)
+right/                        (empty)
+```
+
+Both wdio configs (`e2e-linux/wdio.conf.ts` and `e2e-macos/wdio.conf.ts`) import and call
+`createFixtures()` in `onPrepare`, which sets the `CMDR_E2E_START_PATH` env var. The Rust
+backend reads this var (behind the `automation` feature flag) to open the left and right panes
+at `left/` and `right/` on launch.
+
+Fixtures are fully recreated before each test via `recreateFixtures()` in the `beforeTest` hook,
+so tests don't depend on each other's side effects. Cleanup happens in `onComplete`.
 
 ## Writing tests
 
@@ -207,17 +240,18 @@ The check script (`./scripts/check.sh`) includes:
 The Docker E2E tests (`pnpm test:e2e:linux`) are not currently in the check script because they're slow.
 You can run them manually before releases.
 
-## macOS E2E tests (CrabNebula)
+## macOS E2E tests (CrabNebula) — local-only
 
 Uses CrabNebula's WebDriver bridge for WKWebView on macOS. Requires a `CN_API_KEY`.
 
+**These tests are intentionally local-only** (not in CI). GitHub Actions charges macOS runner minutes
+at 10x the normal rate — a single ~15-min run costs 150 billing minutes, so you'd get roughly 10 runs
+before hitting the free plan's 2,000 minutes/month limit. Linux E2E runs in CI via Docker (free).
+macOS E2E is a local pre-release check.
+
 ### Setup
 
-1. Get a CrabNebula API key and set it:
-   ```bash
-   export CN_API_KEY=<your-key>
-   ```
-   Or copy `apps/desktop/.env.example` to `apps/desktop/.env` and fill in your key.
+1. Copy `apps/desktop/.env.example` to `apps/desktop/.env` and fill in your CrabNebula API key.
 
 2. Build the app with the automation plugin:
    ```bash
@@ -225,7 +259,7 @@ Uses CrabNebula's WebDriver bridge for WKWebView on macOS. Requires a `CN_API_KE
    pnpm test:e2e:macos:build
    ```
 
-3. Run the tests:
+3. Run the tests (the config auto-loads `.env`):
    ```bash
    pnpm test:e2e:macos
    ```
@@ -241,8 +275,9 @@ Uses CrabNebula's WebDriver bridge for WKWebView on macOS. Requires a `CN_API_KE
 ### Notes
 
 - The `automation` feature is only for E2E testing, never for production or normal dev builds.
-- The tests in `test/e2e-macos/` mirror the Linux tests but without WebKitGTK-specific workarounds.
-- CrabNebula is currently in beta (free), but will become a paid service.
+- macOS tests focus on platform integration (APFS file ops, volume detection). Platform-independent
+  app logic lives in the Linux test suite.
+- Delete (F8) is intentionally skipped on both platforms since it's not yet implemented.
 
 ## Future improvements
 

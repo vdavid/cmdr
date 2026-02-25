@@ -139,6 +139,22 @@ export async function isAiOptedOut(): Promise<boolean> {
     return invoke<boolean>('is_ai_opted_out')
 }
 
+// ============================================================================
+// E2E test support
+// ============================================================================
+
+/**
+ * Returns the CMDR_E2E_START_PATH env var when the automation feature is enabled.
+ * Returns null when the feature is disabled or the env var is not set.
+ */
+export async function getE2eStartPath(): Promise<string | null> {
+    return invoke<string | null>('get_e2e_start_path')
+}
+
+// ============================================================================
+// AI commands
+// ============================================================================
+
 /** Gets AI-generated folder name suggestions for the current directory. */
 export async function getFolderSuggestions(
     listingId: string,

@@ -231,6 +231,7 @@ export {
     updateServiceResolveTimeout,
     setIndexingEnabled,
     getDirStatsBatch,
+    getE2eStartPath,
     getAiStatus,
     getAiModelInfo,
     startAiDownload,

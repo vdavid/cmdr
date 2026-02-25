@@ -8,5 +8,5 @@
         "skipLibCheck": true,
         "types": ["@wdio/globals/types", "@wdio/mocha-framework", "node"]
     },
-    "include": ["*.ts"]
+    "include": ["*.ts", "../e2e-shared/*.ts"]
 }

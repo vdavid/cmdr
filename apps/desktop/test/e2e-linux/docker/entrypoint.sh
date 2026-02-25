@@ -25,9 +25,11 @@ export XDG_RUNTIME_DIR=/tmp/runtime-root
 mkdir -p "$XDG_RUNTIME_DIR"
 chmod 700 "$XDG_RUNTIME_DIR"
 
-# Create test fixture directories so navigation tests have something to work with
+# Legacy test fixture for viewer.spec.ts (references /root/test-dir/test-file.txt directly)
 mkdir -p /root/test-dir/sub-dir
 echo "test content" > /root/test-dir/test-file.txt
+
+# Main E2E fixtures are created by wdio.conf.ts via the shared fixture helper
 
 # Verify environment
 echo "Environment:"

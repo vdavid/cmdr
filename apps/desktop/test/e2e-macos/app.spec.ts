@@ -15,20 +15,9 @@
  *   pnpm test:e2e:macos
  */
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
+import { ensureAppReady, MKDIR_DIALOG, TRANSFER_DIALOG } from '../e2e-shared/helpers.js'
 
-/** Gets file entry name text. Works with both Full and Brief view modes. */
-async function getEntryName(entry: WebdriverIO.Element): Promise<string> {
-    const colName = entry.$('.col-name')
-    if (await colName.isExisting()) {
-        return colName.getText()
-    }
-    const name = entry.$('.name')
-    if (await name.isExisting()) {
-        return name.getText()
-    }
-    return entry.getText()
-}
+// ─── Helpers ────────────────────────────────────────────────────────────────
 
 /**
  * Dispatches a keyboard event via JavaScript. CrabNebula's WebDriver doesn't
@@ -42,40 +31,6 @@ async function dispatchKey(key: string): Promise<void> {
         target.dispatchEvent(new KeyboardEvent('keyup', { key: k, bubbles: true, cancelable: true }))
     }, key)
     await browser.pause(300)
-}
-
-/**
- * Ensures the app is loaded and focus is initialized.
- * Uses JS execution for all interactions to avoid CrabNebula driver quirks.
- */
-async function ensureAppReady(): Promise<void> {
-    const fileEntry = browser.$('.file-entry')
-    await fileEntry.waitForDisplayed({ timeout: 15000 })
-
-    // Wait for the HTML loading screen to be gone
-    const loadingScreen = browser.$('#loading-screen')
-    if (await loadingScreen.isExisting()) {
-        await browser.waitUntil(async () => !(await loadingScreen.isDisplayed()), {
-            timeout: 5000,
-            timeoutMsg: 'Loading screen did not disappear',
-        })
-    }
-
-    // Dismiss any overlays (AI notification, etc.) via JS
-    await browser.execute(() => {
-        const dismissBtn = document.querySelector('.ai-notification .ai-button.secondary')
-        dismissBtn?.click()
-    })
-    await browser.pause(300)
-
-    // Click on a file entry in the left pane to ensure focus
-    await browser.execute(() => {
-        const entry = document.querySelector('.file-pane .file-entry')
-        entry?.click()
-        const explorer = document.querySelector('.dual-pane-explorer')
-        explorer?.focus()
-    })
-    await browser.pause(500)
 }
 
 /** Returns the cursor index in the focused pane via JS (avoids element ref issues). */
@@ -269,13 +224,13 @@ describe('New folder dialog', () => {
 
         await dispatchKey('F7')
 
-        const dialog = browser.$('[data-dialog-id="mkdir-confirmation"]')
+        const dialog = browser.$(MKDIR_DIALOG)
         await dialog.waitForExist({ timeout: 5000 })
 
-        const title = browser.$('[data-dialog-id="mkdir-confirmation"] h2')
+        const title = browser.$(`${MKDIR_DIALOG} h2`)
         expect(await title.getText()).toBe('New folder')
 
-        const nameInput = browser.$('[data-dialog-id="mkdir-confirmation"] .name-input')
+        const nameInput = browser.$(`${MKDIR_DIALOG} .name-input`)
         expect(await nameInput.isExisting()).toBe(true)
 
         // Close dialog via JS dispatch (browser.keys doesn't work)
@@ -306,10 +261,10 @@ describe('Transfer dialogs', () => {
 
         await dispatchKey('F5')
 
-        const dialog = browser.$('[data-dialog-id="transfer-confirmation"]')
+        const dialog = browser.$(TRANSFER_DIALOG)
         await dialog.waitForExist({ timeout: 5000 })
 
-        const title = browser.$('[data-dialog-id="transfer-confirmation"] h2')
+        const title = browser.$(`${TRANSFER_DIALOG} h2`)
         expect(await title.getText()).toContain('Copy')
 
         // Close dialog

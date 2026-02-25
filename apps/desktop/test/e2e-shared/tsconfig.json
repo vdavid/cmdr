@@ -6,7 +6,7 @@
         "esModuleInterop": true,
         "strict": true,
         "skipLibCheck": true,
-        "types": ["@wdio/globals/types", "@wdio/mocha-framework", "node"]
+        "types": ["@wdio/globals/types", "node"]
     },
-    "include": ["*.ts", "../e2e-shared/*.ts"]
+    "include": ["*.ts"]
 }

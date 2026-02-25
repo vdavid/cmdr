@@ -74,20 +74,32 @@ automatically.
   path. If CrabNebula fixes native key delivery, switch back to `browser.keys()`.
 - **Click with offset untested**: `element.click({x: 10, y: 10})` was broken in earlier versions (actions API error). We
   haven't verified whether it's fixed — test before relying on offset clicks.
-- **Not in CI yet**: Requires `CN_API_KEY` secret. Currently local-only.
+- **Intentionally local-only (not in CI)**: GitHub Actions charges macOS minutes at 10x, which would
+  eat through the free plan's 2,000 minutes/month quickly. Linux E2E runs in CI via Docker (free).
+  macOS E2E is a local pre-release check. Requires `CN_API_KEY` env var.
+
+## Fixture system
+
+Tests use a shared fixture helper (`../e2e-shared/fixtures.ts`) that creates a temp directory tree at
+`/tmp/cmdr-e2e-<timestamp>/` with `left/` (text files, sub-dir, hidden file, bulk .dat files) and `right/` (empty).
+
+The `CMDR_E2E_START_PATH` env var tells the app where to open. Fixtures are fully recreated before each test via
+`recreateFixtures()` in the `beforeTest` hook so tests don't affect each other.
 
 ## Files
 
-| File                 | Purpose                                                                             |
-| -------------------- | ----------------------------------------------------------------------------------- |
-| `wdio.conf.ts`       | WebDriverIO config: spawns test-runner-backend + tauri-driver, validates CN_API_KEY |
-| `app.spec.ts`        | 10 tests: rendering, keyboard nav, mouse interaction, dialogs                       |
-| `tsconfig.json`      | TypeScript config for WDIO types                                                    |
-| `../../.env.example` | Template for `CN_API_KEY`                                                           |
+| File                       | Purpose                                                                             |
+| -------------------------- | ----------------------------------------------------------------------------------- |
+| `wdio.conf.ts`             | WebDriverIO config: spawns test-runner-backend + tauri-driver, validates CN_API_KEY |
+| `app.spec.ts`              | 10 tests: rendering, keyboard nav, mouse interaction, dialogs                       |
+| `file-operations.spec.ts`  | 5 tests: APFS copy/move, volume list, navigate into dir, navigate to parent         |
+| `tsconfig.json`            | TypeScript config for WDIO types                                                    |
+| `../../.env.example`       | Template for `CN_API_KEY`                                                           |
 
 ## Related
 
+- Shared fixture helper: `test/e2e-shared/fixtures.ts`
 - Rust plugin registration: `src-tauri/src/lib.rs` (search for `automation`)
 - Cargo feature: `src-tauri/Cargo.toml` `[features]` section
 - Full guide: `docs/tooling/e2e-testing-guide.md`
-- Linux E2E tests: `test/e2e-linux/` (similar structure, uses standard tauri-driver + WebKitGTK)
+- Linux E2E tests: `test/e2e-linux/` (the workhorse — all platform-independent app logic)

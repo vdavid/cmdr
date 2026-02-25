@@ -695,6 +695,8 @@ pub fn run() {
             commands::indexing::cancel_nav_priority,
             commands::indexing::clear_drive_index,
             commands::indexing::set_indexing_enabled,
+            // E2E test support
+            commands::e2e::get_e2e_start_path,
         ])
         .on_window_event(|window, event| {
             // When the main window is closed, quit the entire app (including settings/debug/viewer windows)
