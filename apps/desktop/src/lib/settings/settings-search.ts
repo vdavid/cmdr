@@ -246,6 +246,16 @@ export function highlightMatches(text: string, matchedIndices: number[]): Array<
 }
 
 /**
+ * Create a `shouldShow` filter for a given search query.
+ * Returns a function that checks whether a setting ID matches the query.
+ * When the query is empty, all settings are shown.
+ */
+export function createShouldShow(searchQuery: string): (id: string) => boolean {
+    const matchingIds = searchQuery.trim() ? getMatchingSettingIds(searchQuery) : null
+    return (id: string) => !matchingIds || matchingIds.has(id)
+}
+
+/**
  * Clear the search index (for testing or when settings change).
  */
 export function clearSearchIndex(): void {

@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount } from 'svelte'
+    import SettingsSection from '../components/SettingsSection.svelte'
     import { commands } from '$lib/commands/command-registry'
     import type { Command } from '$lib/commands/types'
     import { searchCommands } from '$lib/commands/fuzzy-search'
@@ -334,9 +335,7 @@
     })
 </script>
 
-<div class="section">
-    <h2 class="section-title">Keyboard shortcuts</h2>
-
+<SettingsSection title="Keyboard shortcuts">
     <div class="shortcuts-header">
         <div class="search-fields">
             <input
@@ -498,24 +497,11 @@
     </div>
 
     <div class="shortcuts-footer">
-        <button class="reset-button" onclick={handleResetAll}>Reset all to defaults</button>
+        <button class="section-action-btn" onclick={handleResetAll}>Reset all to defaults</button>
     </div>
-</div>
+</SettingsSection>
 
 <style>
-    .section {
-        margin-bottom: var(--spacing-lg);
-    }
-
-    .section-title {
-        font-size: var(--font-size-lg);
-        font-weight: 600;
-        color: var(--color-text-primary);
-        margin: 0 0 var(--spacing-sm);
-        padding-bottom: var(--spacing-xs);
-        border-bottom: 1px solid var(--color-border);
-    }
-
     .shortcuts-header {
         display: flex;
         flex-direction: column;
@@ -775,15 +761,5 @@
         margin-top: var(--spacing-lg);
         padding-top: var(--spacing-sm);
         border-top: 1px solid var(--color-border);
-    }
-
-    .reset-button {
-        padding: var(--spacing-xs) var(--spacing-sm);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        background: var(--color-bg-secondary);
-        color: var(--color-text-secondary);
-        font-size: var(--font-size-sm);
-        cursor: default;
     }
 </style>

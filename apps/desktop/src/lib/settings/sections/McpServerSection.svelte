@@ -1,10 +1,11 @@
 <script lang="ts">
+    import SettingsSection from '../components/SettingsSection.svelte'
     import SettingRow from '../components/SettingRow.svelte'
     import SettingSwitch from '../components/SettingSwitch.svelte'
     import SettingNumberInput from '../components/SettingNumberInput.svelte'
     import { getSetting, getSettingDefinition, setSetting } from '$lib/settings'
     import { checkPortAvailable, findAvailablePort } from '$lib/tauri-commands'
-    import { getMatchingSettingIds } from '$lib/settings/settings-search'
+    import { createShouldShow } from '$lib/settings/settings-search'
 
     interface Props {
         searchQuery: string
@@ -12,14 +13,7 @@
 
     const { searchQuery }: Props = $props()
 
-    // Get matching setting IDs for filtering
-    const matchingIds = $derived(searchQuery.trim() ? getMatchingSettingIds(searchQuery) : null)
-
-    // Check if a setting should be shown
-    function shouldShow(id: string): boolean {
-        if (!matchingIds) return true
-        return matchingIds.has(id)
-    }
+    const shouldShow = $derived(createShouldShow(searchQuery))
 
     const defaultDef = { label: '', description: '', requiresRestart: false }
     const mcpEnabledDef = getSettingDefinition('developer.mcpEnabled') ?? defaultDef
@@ -57,9 +51,7 @@
     }
 </script>
 
-<div class="section">
-    <h2 class="section-title">MCP server</h2>
-
+<SettingsSection title="MCP server">
     {#if shouldShow('developer.mcpEnabled')}
         <SettingRow
             id="developer.mcpEnabled"
@@ -83,7 +75,7 @@
         >
             <div class="port-setting">
                 <SettingNumberInput id="developer.mcpPort" disabled={!mcpEnabled} />
-                <button class="check-port-btn" onclick={checkPort} disabled={!mcpEnabled}> Check port </button>
+                <button class="section-action-btn" onclick={checkPort} disabled={!mcpEnabled}> Check port </button>
             </div>
         </SettingRow>
 
@@ -102,42 +94,13 @@
             </div>
         {/if}
     {/if}
-</div>
+</SettingsSection>
 
 <style>
-    .section {
-        margin-bottom: var(--spacing-lg);
-    }
-
-    .section-title {
-        font-size: var(--font-size-lg);
-        font-weight: 600;
-        color: var(--color-text-primary);
-        margin: 0 0 var(--spacing-sm);
-        padding-bottom: var(--spacing-xs);
-        border-bottom: 1px solid var(--color-border);
-    }
-
     .port-setting {
         display: flex;
         align-items: center;
         gap: var(--spacing-sm);
-    }
-
-    .check-port-btn {
-        padding: var(--spacing-xs) var(--spacing-sm);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        background: var(--color-bg-secondary);
-        color: var(--color-text-secondary);
-        font-size: var(--font-size-sm);
-        cursor: default;
-        white-space: nowrap;
-    }
-
-    .check-port-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
     }
 
     .port-status {

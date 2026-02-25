@@ -39,9 +39,10 @@ Single source of truth for all settings. Each `SettingDefinition` contains:
 
 ### Components (`components/`)
 
-9 reusable setting UI primitives used by section components: `SettingRow`, `SettingSwitch`, `SettingSelect`,
-`SettingSlider`, `SettingNumberInput`, `SettingRadioGroup`, `SettingToggleGroup`, `SettingsSidebar`, `SettingsContent`.
-Also `SectionSummary` for collapsed-section previews.
+10 reusable setting UI primitives used by section components: `SettingsSection` (wrapper providing shared section title
+and action button styles), `SettingRow`, `SettingSwitch`, `SettingSelect`, `SettingSlider`, `SettingNumberInput`,
+`SettingRadioGroup`, `SettingToggleGroup`, `SettingsSidebar`, `SettingsContent`. Also `SectionSummary` for
+collapsed-section previews.
 
 ### Other files
 

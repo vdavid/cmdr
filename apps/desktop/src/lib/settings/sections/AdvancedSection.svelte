@@ -10,6 +10,7 @@
         type SettingsValues,
         formatDuration,
     } from '$lib/settings'
+    import SettingsSection from '../components/SettingsSection.svelte'
     import { Switch } from '@ark-ui/svelte/switch'
     import { NumberInput, type NumberInputValueChangeDetails } from '@ark-ui/svelte/number-input'
     import { searchAdvancedSettings, getMatchIndicesForLabel, highlightMatches } from '$lib/settings/settings-search'
@@ -79,9 +80,7 @@
     }
 </script>
 
-<div class="section">
-    <h2 class="section-title">Advanced</h2>
-
+<SettingsSection title="Advanced">
     <div class="warning-banner">
         <span class="warning-icon">⚠️</span>
         <span>
@@ -90,7 +89,7 @@
     </div>
 
     <div class="header-actions">
-        <button class="reset-all-btn" onclick={handleResetAll}>Reset all to defaults</button>
+        <button class="section-action-btn" onclick={handleResetAll}>Reset all to defaults</button>
     </div>
 
     <div class="advanced-settings">
@@ -164,22 +163,9 @@
             </div>
         {/each}
     </div>
-</div>
+</SettingsSection>
 
 <style>
-    .section {
-        margin-bottom: var(--spacing-lg);
-    }
-
-    .section-title {
-        font-size: var(--font-size-lg);
-        font-weight: 600;
-        color: var(--color-text-primary);
-        margin: 0 0 var(--spacing-sm);
-        padding-bottom: var(--spacing-xs);
-        border-bottom: 1px solid var(--color-border);
-    }
-
     .warning-banner {
         display: flex;
         align-items: flex-start;
@@ -201,16 +187,6 @@
         display: flex;
         justify-content: flex-end;
         margin-bottom: var(--spacing-lg);
-    }
-
-    .reset-all-btn {
-        padding: var(--spacing-xs) var(--spacing-sm);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        background: var(--color-bg-secondary);
-        color: var(--color-text-secondary);
-        font-size: var(--font-size-sm);
-        cursor: default;
     }
 
     .advanced-settings {

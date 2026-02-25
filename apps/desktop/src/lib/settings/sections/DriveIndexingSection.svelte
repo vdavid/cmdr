@@ -1,11 +1,12 @@
 <script lang="ts">
     import { invoke } from '@tauri-apps/api/core'
     import { onMount } from 'svelte'
+    import SettingsSection from '../components/SettingsSection.svelte'
     import SettingRow from '../components/SettingRow.svelte'
     import SettingSwitch from '../components/SettingSwitch.svelte'
     import { getSettingDefinition } from '$lib/settings'
     import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
-    import { getMatchingSettingIds } from '$lib/settings/settings-search'
+    import { createShouldShow } from '$lib/settings/settings-search'
     import { getAppLogger } from '$lib/logging/logger'
 
     interface Props {
@@ -16,13 +17,7 @@
 
     const log = getAppLogger('settings')
 
-    // Get matching setting IDs for filtering
-    const matchingIds = $derived(searchQuery.trim() ? getMatchingSettingIds(searchQuery) : null)
-
-    function shouldShow(id: string): boolean {
-        if (!matchingIds) return true
-        return matchingIds.has(id)
-    }
+    const shouldShow = $derived(createShouldShow(searchQuery))
 
     const enabledDef = getSettingDefinition('indexing.enabled') ?? { label: '', description: '' }
 
@@ -74,9 +69,7 @@
     })
 </script>
 
-<div class="section">
-    <h2 class="section-title">Drive indexing</h2>
-
+<SettingsSection title="Drive indexing">
     {#if shouldShow('indexing.enabled')}
         <SettingRow id="indexing.enabled" label={enabledDef.label} description={enabledDef.description} {searchQuery}>
             <SettingSwitch id="indexing.enabled" />
@@ -96,7 +89,7 @@
         </div>
 
         <div class="clear-action">
-            <button class="clear-btn" onclick={handleClearIndex} disabled={clearing || dbFileSize == null}>
+            <button class="section-action-btn" onclick={handleClearIndex} disabled={clearing || dbFileSize == null}>
                 {clearing ? 'Clearing...' : 'Clear index'}
             </button>
             <span class="clear-description">
@@ -108,22 +101,9 @@
             <div class="clear-error">{clearError}</div>
         {/if}
     </div>
-</div>
+</SettingsSection>
 
 <style>
-    .section {
-        margin-bottom: var(--spacing-lg);
-    }
-
-    .section-title {
-        font-size: var(--font-size-lg);
-        font-weight: 600;
-        color: var(--color-text-primary);
-        margin: 0 0 var(--spacing-sm);
-        padding-bottom: var(--spacing-xs);
-        border-bottom: 1px solid var(--color-border);
-    }
-
     .index-info {
         padding: var(--spacing-sm) 0;
     }
@@ -151,22 +131,6 @@
         align-items: center;
         gap: var(--spacing-sm);
         margin-top: var(--spacing-sm);
-    }
-
-    .clear-btn {
-        padding: var(--spacing-xs) var(--spacing-sm);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        background: var(--color-bg-secondary);
-        color: var(--color-text-secondary);
-        font-size: var(--font-size-sm);
-        cursor: default;
-        white-space: nowrap;
-    }
-
-    .clear-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
     }
 
     .clear-description {

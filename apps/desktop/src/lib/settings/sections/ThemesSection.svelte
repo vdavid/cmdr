@@ -1,9 +1,10 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte'
+    import SettingsSection from '../components/SettingsSection.svelte'
     import SettingRow from '../components/SettingRow.svelte'
     import SettingToggleGroup from '../components/SettingToggleGroup.svelte'
     import { getSettingDefinition, onSpecificSettingChange, getSetting } from '$lib/settings'
-    import { getMatchingSettingIds } from '$lib/settings/settings-search'
+    import { createShouldShow } from '$lib/settings/settings-search'
     import { getAppLogger } from '$lib/logging/logger'
 
     const log = getAppLogger('settings')
@@ -14,14 +15,7 @@
 
     const { searchQuery }: Props = $props()
 
-    // Get matching setting IDs for filtering
-    const matchingIds = $derived(searchQuery.trim() ? getMatchingSettingIds(searchQuery) : null)
-
-    // Check if a setting should be shown
-    function shouldShow(id: string): boolean {
-        if (!matchingIds) return true
-        return matchingIds.has(id)
-    }
+    const shouldShow = $derived(createShouldShow(searchQuery))
 
     const themeModeDef = getSettingDefinition('theme.mode') ?? { label: '', description: '' }
 
@@ -59,9 +53,7 @@
     })
 </script>
 
-<div class="section">
-    <h2 class="section-title">Themes</h2>
-
+<SettingsSection title="Themes">
     {#if shouldShow('theme.mode')}
         <SettingRow id="theme.mode" label={themeModeDef.label} description={themeModeDef.description} {searchQuery}>
             <SettingToggleGroup id="theme.mode" />
@@ -81,22 +73,9 @@
             <p>Create and customize your own color schemes. Coming soon!</p>
         </div>
     {/if}
-</div>
+</SettingsSection>
 
 <style>
-    .section {
-        margin-bottom: var(--spacing-lg);
-    }
-
-    .section-title {
-        font-size: var(--font-size-lg);
-        font-weight: 600;
-        color: var(--color-text-primary);
-        margin: 0 0 var(--spacing-sm);
-        padding-bottom: var(--spacing-xs);
-        border-bottom: 1px solid var(--color-border);
-    }
-
     .coming-soon {
         padding: var(--spacing-lg);
         background: var(--color-bg-secondary);
