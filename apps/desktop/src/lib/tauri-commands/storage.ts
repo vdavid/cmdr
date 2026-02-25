@@ -97,3 +97,12 @@ export async function openPrivacySettings(): Promise<void> {
         // Command not available (non-macOS) - silently fail
     }
 }
+
+/** Opens System Settings > Appearance. Only available on macOS. */
+export async function openAppearanceSettings(): Promise<void> {
+    try {
+        await invoke('open_appearance_settings')
+    } catch {
+        // Command not available (non-macOS) - silently fail
+    }
+}

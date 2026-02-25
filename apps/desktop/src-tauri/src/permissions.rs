@@ -20,6 +20,16 @@ pub fn open_privacy_settings() -> Result<(), String> {
     Ok(())
 }
 
+/// Opens System Settings > Appearance.
+#[tauri::command]
+pub fn open_appearance_settings() -> Result<(), String> {
+    std::process::Command::new("open")
+        .arg("x-apple.systempreferences:com.apple.Appearance-Settings.extension")
+        .spawn()
+        .map_err(|e| format!("Failed to open System Settings: {}", e))?;
+    Ok(())
+}
+
 /// Checks if an I/O error is a permission denied error.
 #[allow(dead_code, reason = "Utility for future use")]
 pub fn is_permission_denied_error(error: &std::io::Error) -> bool {

@@ -83,6 +83,7 @@ export {
     getVolumeSpace,
     checkFullDiskAccess,
     openPrivacySettings,
+    openAppearanceSettings,
 } from './storage'
 export type { VolumeSpaceInfo } from './storage'
 

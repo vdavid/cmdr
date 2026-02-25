@@ -19,3 +19,9 @@ pub fn check_full_disk_access() -> bool {
 pub fn open_privacy_settings() -> Result<(), String> {
     Err("Privacy settings not available on Linux".to_string())
 }
+
+/// Opens appearance settings (stub: no-op, returns error).
+#[tauri::command]
+pub fn open_appearance_settings() -> Result<(), String> {
+    Err("Appearance settings not available on Linux".to_string())
+}

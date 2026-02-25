@@ -647,10 +647,14 @@ pub fn run() {
             permissions::check_full_disk_access,
             #[cfg(target_os = "macos")]
             permissions::open_privacy_settings,
+            #[cfg(target_os = "macos")]
+            permissions::open_appearance_settings,
             #[cfg(not(target_os = "macos"))]
             stubs::permissions::check_full_disk_access,
             #[cfg(not(target_os = "macos"))]
             stubs::permissions::open_privacy_settings,
+            #[cfg(not(target_os = "macos"))]
+            stubs::permissions::open_appearance_settings,
             // Licensing commands
             commands::licensing::get_license_status,
             commands::licensing::get_window_title,

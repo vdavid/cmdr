@@ -71,9 +71,11 @@ export type NetworkTimeoutMode = 'normal' | 'slow' | 'custom'
 export type ThemeMode = 'light' | 'dark' | 'system'
 export type ExtensionChangePolicy = 'yes' | 'no' | 'ask'
 export type DirectorySortMode = 'likeFiles' | 'alwaysByName'
+export type AppColor = 'system' | 'cmdr-gold'
 
 export interface SettingsValues {
     // Appearance
+    'appearance.appColor': AppColor
     'appearance.uiDensity': UiDensity
     'appearance.useAppIconsForDocuments': boolean
     'appearance.fileSizeFormat': FileSizeFormat

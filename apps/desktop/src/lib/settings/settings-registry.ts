@@ -14,6 +14,22 @@ export const settingsRegistry: SettingDefinition[] = [
     // General › Appearance
     // ========================================================================
     {
+        id: 'appearance.appColor',
+        section: ['General', 'Appearance'],
+        label: 'App color',
+        description: 'To change your system theme color, go to System Settings > Appearance.',
+        keywords: ['color', 'accent', 'theme', 'gold', 'system', 'brand'],
+        type: 'enum',
+        default: 'system',
+        component: 'radio',
+        constraints: {
+            options: [
+                { value: 'system', label: 'System theme color' },
+                { value: 'cmdr-gold', label: 'Cmdr gold' },
+            ],
+        },
+    },
+    {
         id: 'appearance.uiDensity',
         section: ['General', 'Appearance'],
         label: 'UI density',

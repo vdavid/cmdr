@@ -34,6 +34,8 @@
     --color-accent: #d4a006;
     --color-accent-hover: color-mix(in oklch, var(--color-accent), white 15%);
     --color-accent-subtle: color-mix(in oklch, var(--color-accent), transparent 85%);
+    --color-cmdr-gold: #d4a006;
+    --color-system-accent: #d4a006; /* Updated at runtime by accent-color.ts */
 
     /* === Cursor (row highlight in file lists) === */
     --color-cursor-inactive: color-mix(in srgb, var(--color-bg-tertiary), transparent 60%);
@@ -135,6 +137,8 @@
         --color-accent: #ffc206;
         --color-accent-hover: color-mix(in oklch, var(--color-accent), white 10%);
         --color-accent-subtle: color-mix(in oklch, var(--color-accent), transparent 85%);
+        --color-cmdr-gold: #ffc206;
+        --color-system-accent: #ffc206; /* Updated at runtime by accent-color.ts */
 
         /* === Cursor (row highlight in file lists) === */
         --color-cursor-inactive: color-mix(in srgb, var(--color-bg-tertiary), transparent 60%);

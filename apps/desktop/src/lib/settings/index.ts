@@ -4,6 +4,7 @@
 
 // Types
 export type {
+    AppColor,
     DateTimeFormat,
     DensityValues,
     DurationUnit,
