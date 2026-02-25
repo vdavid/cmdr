@@ -1,6 +1,6 @@
 # Check runner
 
-Go CLI that runs all code quality checks for the Cmdr monorepo (~40 checks across 4 apps) in
+Go CLI that runs all code quality checks for the Cmdr monorepo (~41 checks across 4 apps) in
 parallel with dependency ordering. Invoked via `./scripts/check.sh` at the repo root.
 
 ## Key files
@@ -17,6 +17,7 @@ parallel with dependency ordering. Invoked via `./scripts/check.sh` at the repo 
 | `checks/desktop-rust-*.go` | One file per Rust check |
 | `checks/desktop-svelte-*.go` | One file per Svelte/TS check |
 | `checks/website-*.go`, `checks/license-server-*.go`, `checks/scripts-go-*.go` | One file per check |
+| `checks/file-length.go` | Informational file-length scanner (warn-only, never fails) |
 
 ## Architecture
 
@@ -83,6 +84,7 @@ Named `--check` invocations implicitly include slow checks (`includeSlow = len(c
 | License server | TS | prettier, eslint, typecheck, tests |
 | Scripts | Go | gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, govulncheck, deadcode, go-tests |
 | Other | pnpm | pnpm-audit |
+| Other | Metrics | file-length (warn-only) |
 
 ## Dependencies
 

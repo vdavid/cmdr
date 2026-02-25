@@ -365,6 +365,16 @@ var AllChecks = []CheckDefinition{
 		DependsOn:   []string{"scripts-go-vet"},
 		Run:         RunGoTests,
 	},
+
+	// Monorepo-wide metrics (informational, never fails)
+	{
+		ID:          "file-length",
+		DisplayName: "file length",
+		App:         AppOther,
+		Tech:        "📏 Metrics",
+		DependsOn:   nil,
+		Run:         RunFileLength,
+	},
 }
 
 // GetCheckByID returns a check definition by its ID or nickname.
