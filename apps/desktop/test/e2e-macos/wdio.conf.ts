@@ -178,6 +178,16 @@ export const config: Options.Testrunner & { capabilities: Capabilities.Testrunne
         }
     },
 
+    // Recreate fixtures before the app launches so retried spec files start
+    // with a clean filesystem (fixtureRootPath is only set in the launcher
+    // process via onPrepare, so workers must read from the env var).
+    beforeSession: async function () {
+        const fixturePath = process.env.CMDR_E2E_START_PATH
+        if (fixturePath) {
+            await recreateFixtures(fixturePath)
+        }
+    },
+
     beforeTest: async function () {
         if (fixtureRootPath) {
             await recreateFixtures(fixtureRootPath)
@@ -208,7 +218,11 @@ function cleanup() {
     killedTestRunnerBackend = true
     testRunnerBackend?.kill()
     if (fixtureRootPath) {
-        try { fs.rmSync(fixtureRootPath, { recursive: true, force: true }) } catch { /* best effort */ }
+        try {
+            fs.rmSync(fixtureRootPath, { recursive: true, force: true })
+        } catch {
+            /* best effort */
+        }
     }
 }
 

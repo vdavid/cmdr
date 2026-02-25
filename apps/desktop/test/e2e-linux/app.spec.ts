@@ -246,12 +246,12 @@ describe('Mouse interactions', () => {
 
 describe('Navigation', () => {
     /**
-     * Moves the cursor to "test-dir" using only WebDriver keyboard commands.
+     * Moves the cursor to "sub-dir" using only WebDriver keyboard commands.
      * Using browser.execute() JS clicks here would break WebDriver's focus
      * tracking, causing browser.keys('Enter') to miss the handler on first try.
      */
-    async function moveCursorToTestDir(): Promise<boolean> {
-        const info = await findFileIndex('test-dir')
+    async function moveCursorToSubDir(): Promise<boolean> {
+        const info = await findFileIndex('sub-dir')
         if ('error' in info || info.targetIndex < 0) {
             return false
         }
@@ -270,15 +270,15 @@ describe('Navigation', () => {
     it('navigates into directories with Enter', async () => {
         await ensureAppReady()
 
-        if (!(await moveCursorToTestDir())) {
-            console.log('Skipping navigation test: test-dir fixture not found')
+        if (!(await moveCursorToSubDir())) {
+            console.log('Skipping navigation test: sub-dir fixture not found')
             return
         }
 
-        // Press Enter to navigate into test-dir
+        // Press Enter to navigate into sub-dir
         await browser.keys('Enter')
 
-        // Wait for navigation: sub-dir should appear in the listing
+        // Wait for navigation: nested-file.txt should appear in the listing
         await browser.waitUntil(
             async () =>
                 browser.execute(() => {
@@ -286,29 +286,29 @@ describe('Navigation', () => {
                     if (!pane) return false
                     const entries = pane.querySelectorAll('.file-entry')
                     for (const entry of entries) {
-                        if (entry.querySelector('.name')?.textContent === 'sub-dir') return true
+                        if (entry.querySelector('.name')?.textContent === 'nested-file.txt') return true
                     }
                     return false
                 }),
-            { timeout: 5000, timeoutMsg: 'sub-dir did not appear after navigating into test-dir' },
+            { timeout: 5000, timeoutMsg: 'nested-file.txt did not appear after navigating into sub-dir' },
         )
     })
 
     it('navigates to parent with Backspace', async () => {
         await ensureAppReady()
 
-        // Ensure we're inside test-dir. The Enter test may have already
+        // Ensure we're inside sub-dir. The Enter test may have already
         // navigated there (tests share the same app instance).
         const alreadyInside = await browser.execute(() => {
             const pane = document.querySelector('.file-pane.is-focused')
             if (!pane) return false
             const entries = pane.querySelectorAll('.file-entry')
-            return Array.from(entries).some((e) => e.querySelector('.name')?.textContent === 'sub-dir')
+            return Array.from(entries).some((e) => e.querySelector('.name')?.textContent === 'nested-file.txt')
         })
 
         if (!alreadyInside) {
-            if (!(await moveCursorToTestDir())) {
-                console.log('Skipping backspace test: test-dir fixture not found')
+            if (!(await moveCursorToSubDir())) {
+                console.log('Skipping backspace test: sub-dir fixture not found')
                 return
             }
             await browser.keys('Enter')
@@ -318,25 +318,27 @@ describe('Navigation', () => {
                         const pane = document.querySelector('.file-pane.is-focused')
                         if (!pane) return false
                         const entries = pane.querySelectorAll('.file-entry')
-                        return Array.from(entries).some((e) => e.querySelector('.name')?.textContent === 'sub-dir')
+                        return Array.from(entries).some(
+                            (e) => e.querySelector('.name')?.textContent === 'nested-file.txt',
+                        )
                     }),
-                { timeout: 5000, timeoutMsg: 'sub-dir did not appear after navigating into test-dir' },
+                { timeout: 5000, timeoutMsg: 'nested-file.txt did not appear after navigating into sub-dir' },
             )
         }
 
         // Press Backspace to go to parent
         await browser.keys('Backspace')
 
-        // Wait for test-dir to reappear in the listing
+        // Wait for sub-dir to reappear in the listing (we're back in left/)
         await browser.waitUntil(
             async () =>
                 browser.execute(() => {
                     const pane = document.querySelector('.file-pane.is-focused')
                     if (!pane) return false
                     const entries = pane.querySelectorAll('.file-entry')
-                    return Array.from(entries).some((e) => e.querySelector('.name')?.textContent === 'test-dir')
+                    return Array.from(entries).some((e) => e.querySelector('.name')?.textContent === 'sub-dir')
                 }),
-            { timeout: 5000, timeoutMsg: 'test-dir did not reappear after Backspace' },
+            { timeout: 5000, timeoutMsg: 'sub-dir did not reappear after Backspace' },
         )
     })
 })

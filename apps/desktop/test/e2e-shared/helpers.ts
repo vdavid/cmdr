@@ -32,7 +32,7 @@ export async function ensureAppReady(): Promise<void> {
 
     // Close any lingering modal dialog from a prior test (prevents cascading failures)
     await browser.execute(() => {
-        const overlay = document.querySelector('.modal-overlay') as HTMLElement | null
+        const overlay = document.querySelector('.modal-overlay')
         overlay?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
     })
     await browser.pause(300)
@@ -40,7 +40,7 @@ export async function ensureAppReady(): Promise<void> {
     // Dismiss any overlays (AI notification, etc.) via JS click to bypass
     // WebDriver strict clickability checks
     await browser.execute(() => {
-        const dismissBtn = document.querySelector('.ai-notification .ai-button.secondary') as HTMLElement | null
+        const dismissBtn = document.querySelector('.ai-notification .ai-button.secondary')
         dismissBtn?.click()
     })
     await browser.pause(300)
@@ -48,9 +48,9 @@ export async function ensureAppReady(): Promise<void> {
     // Click on a file entry in the left pane to ensure focus, then
     // focus the explorer container so keyboard events reach the handler.
     await browser.execute(() => {
-        const entry = document.querySelector('.file-pane .file-entry') as HTMLElement | null
+        const entry = document.querySelector('.file-pane .file-entry')
         entry?.click()
-        const explorer = document.querySelector('.dual-pane-explorer') as HTMLElement | null
+        const explorer = document.querySelector('.dual-pane-explorer')
         explorer?.focus()
     })
     await browser.pause(500)
@@ -83,8 +83,7 @@ export async function fileExistsInFocusedPane(targetName: string): Promise<boole
         if (!pane) return false
         const entries = pane.querySelectorAll('.file-entry')
         return Array.from(entries).some(
-            (e) =>
-                (e.querySelector('.col-name') ?? e.querySelector('.name'))?.textContent === name,
+            (e) => (e.querySelector('.col-name') ?? e.querySelector('.name'))?.textContent === name,
         )
     }, targetName)
 }
@@ -98,9 +97,7 @@ export async function fileExistsInPane(targetName: string, paneIndex: number): P
             if (!pane) return false
             const entries = pane.querySelectorAll('.file-entry')
             return Array.from(entries).some(
-                (e) =>
-                    (e.querySelector('.col-name') ?? e.querySelector('.name'))?.textContent ===
-                    name,
+                (e) => (e.querySelector('.col-name') ?? e.querySelector('.name'))?.textContent === name,
             )
         },
         targetName,

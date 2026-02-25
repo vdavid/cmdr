@@ -128,7 +128,9 @@ if (process.argv[1]?.endsWith('fixtures.ts')) {
             console.log(`Self-test passed. Cleaning up...`)
             return cleanupFixtures(root)
         })
-        .then(() => console.log('Done.'))
+        .then(() => {
+            console.log('Done.')
+        })
         .catch((err) => {
             console.error('Self-test failed:', err)
             process.exit(1)

@@ -18,7 +18,13 @@
 
 import fs from 'fs'
 import path from 'path'
-import { ensureAppReady, fileExistsInFocusedPane, fileExistsInPane, findFileIndex, TRANSFER_DIALOG } from '../e2e-shared/helpers.js'
+import {
+    ensureAppReady,
+    fileExistsInFocusedPane,
+    fileExistsInPane,
+    findFileIndex,
+    TRANSFER_DIALOG,
+} from '../e2e-shared/helpers.js'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -66,7 +72,9 @@ function getFixtureRoot(): string {
  */
 async function confirmTransferDialog(): Promise<void> {
     await browser.execute(() => {
-        const btn = document.querySelector('[data-dialog-id="transfer-confirmation"] button.btn-primary') as HTMLElement | null
+        const btn = document.querySelector(
+            '[data-dialog-id="transfer-confirmation"] button.btn-primary',
+        ) as HTMLElement | null
         btn?.click()
     })
     await browser.pause(300)
@@ -114,10 +122,10 @@ describe('Copy on APFS', () => {
         // Switch to right pane to verify the file appeared in DOM
         await dispatchKey('Tab')
 
-        await browser.waitUntil(
-            async () => fileExistsInFocusedPane('file-a.txt'),
-            { timeout: 5000, timeoutMsg: 'file-a.txt did not appear in right pane after copy' },
-        )
+        await browser.waitUntil(async () => fileExistsInFocusedPane('file-a.txt'), {
+            timeout: 5000,
+            timeoutMsg: 'file-a.txt did not appear in right pane after copy',
+        })
 
         // Verify on disk: file exists in right dir
         expect(fs.existsSync(path.join(fixtureRoot, 'right', 'file-a.txt'))).toBe(true)
@@ -155,18 +163,18 @@ describe('Move on APFS', () => {
         await modalOverlay.waitForExist({ timeout: 10000, reverse: true })
 
         // Verify file-b.txt is gone from left pane DOM
-        await browser.waitUntil(
-            async () => !(await fileExistsInPane('file-b.txt', 0)),
-            { timeout: 5000, timeoutMsg: 'file-b.txt did not disappear from left pane after move' },
-        )
+        await browser.waitUntil(async () => !(await fileExistsInPane('file-b.txt', 0)), {
+            timeout: 5000,
+            timeoutMsg: 'file-b.txt did not disappear from left pane after move',
+        })
 
         // Switch to right pane and verify file-b.txt appeared
         await dispatchKey('Tab')
 
-        await browser.waitUntil(
-            async () => fileExistsInFocusedPane('file-b.txt'),
-            { timeout: 5000, timeoutMsg: 'file-b.txt did not appear in right pane after move' },
-        )
+        await browser.waitUntil(async () => fileExistsInFocusedPane('file-b.txt'), {
+            timeout: 5000,
+            timeoutMsg: 'file-b.txt did not appear in right pane after move',
+        })
 
         // Verify on disk: file is gone from left, present in right
         expect(fs.existsSync(path.join(fixtureRoot, 'left', 'file-b.txt'))).toBe(false)
@@ -219,10 +227,10 @@ describe('Navigate into directory with Enter', () => {
         await dispatchKey('Enter')
 
         // Wait for nested-file.txt to appear in the listing (confirms navigation)
-        await browser.waitUntil(
-            async () => fileExistsInFocusedPane('nested-file.txt'),
-            { timeout: 5000, timeoutMsg: 'nested-file.txt did not appear after entering sub-dir' },
-        )
+        await browser.waitUntil(async () => fileExistsInFocusedPane('nested-file.txt'), {
+            timeout: 5000,
+            timeoutMsg: 'nested-file.txt did not appear after entering sub-dir',
+        })
     })
 })
 
@@ -240,20 +248,20 @@ describe('Navigate to parent with Backspace', () => {
 
             await dispatchKey('Enter')
 
-            await browser.waitUntil(
-                async () => fileExistsInFocusedPane('nested-file.txt'),
-                { timeout: 5000, timeoutMsg: 'nested-file.txt did not appear after entering sub-dir' },
-            )
+            await browser.waitUntil(async () => fileExistsInFocusedPane('nested-file.txt'), {
+                timeout: 5000,
+                timeoutMsg: 'nested-file.txt did not appear after entering sub-dir',
+            })
         }
 
         // Press Backspace to go to parent
         await dispatchKey('Backspace')
 
         // Wait for file-a.txt to appear (confirms we're back in left/)
-        await browser.waitUntil(
-            async () => fileExistsInFocusedPane('file-a.txt'),
-            { timeout: 5000, timeoutMsg: 'file-a.txt did not appear after navigating to parent' },
-        )
+        await browser.waitUntil(async () => fileExistsInFocusedPane('file-a.txt'), {
+            timeout: 5000,
+            timeoutMsg: 'file-a.txt did not appear after navigating to parent',
+        })
 
         // Also confirm sub-dir is visible (we're in the parent that contains it)
         const hasSubDir = await fileExistsInFocusedPane('sub-dir')
