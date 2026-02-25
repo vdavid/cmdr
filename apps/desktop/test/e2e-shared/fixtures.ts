@@ -32,12 +32,12 @@ const fixtureLayout = {
 } as const
 
 function generateDatFile(filePath: string, sizeMb: number): void {
-    execSync(`dd if=/dev/zero bs=1048576 count=${sizeMb} of="${filePath}" 2>/dev/null`)
+    execSync(`dd if=/dev/zero bs=1048576 count=${String(sizeMb)} of="${filePath}" 2>/dev/null`)
 }
 
-export async function createFixtures(): Promise<string> {
+export function createFixtures(): string {
     const timestamp = Date.now()
-    const rootPath = `/tmp/cmdr-e2e-${timestamp}`
+    const rootPath = `/tmp/cmdr-e2e-${String(timestamp)}`
 
     // Create all directories first
     for (const dir of fixtureLayout.directories) {
@@ -61,15 +61,17 @@ export async function createFixtures(): Promise<string> {
         generateDatFile(path.join(rootPath, file.rel), file.sizeMb)
     }
 
+    // eslint-disable-next-line no-console
     console.log(`Fixtures created at ${rootPath} (~170 MB)`)
     return rootPath
 }
 
-export async function cleanupFixtures(rootPath: string): Promise<void> {
+export function cleanupFixtures(rootPath: string): void {
     if (!rootPath.startsWith('/tmp/cmdr-e2e-')) {
         throw new Error(`Refusing to delete path outside /tmp/cmdr-e2e-*: ${rootPath}`)
     }
     fs.rmSync(rootPath, { recursive: true, force: true })
+    // eslint-disable-next-line no-console
     console.log(`Fixtures cleaned up: ${rootPath}`)
 }
 
@@ -85,7 +87,7 @@ export async function cleanupFixtures(rootPath: string): Promise<void> {
  * Instead, we surgically remove and recreate only the small files that tests
  * might have moved/deleted.
  */
-export async function recreateFixtures(rootPath: string): Promise<void> {
+export function recreateFixtures(rootPath: string): void {
     if (!rootPath.startsWith('/tmp/cmdr-e2e-')) {
         throw new Error(`Refusing to recreate path outside /tmp/cmdr-e2e-*: ${rootPath}`)
     }
@@ -123,16 +125,16 @@ export async function recreateFixtures(rootPath: string): Promise<void> {
 
 // Allow running directly for testing: npx tsx apps/desktop/test/e2e-shared/fixtures.ts
 if (process.argv[1]?.endsWith('fixtures.ts')) {
-    createFixtures()
-        .then((root) => {
-            console.log(`Self-test passed. Cleaning up...`)
-            return cleanupFixtures(root)
-        })
-        .then(() => {
-            console.log('Done.')
-        })
-        .catch((err) => {
-            console.error('Self-test failed:', err)
-            process.exit(1)
-        })
+    try {
+        const root = createFixtures()
+        // eslint-disable-next-line no-console
+        console.log('Self-test passed. Cleaning up...')
+        cleanupFixtures(root)
+        // eslint-disable-next-line no-console
+        console.log('Done.')
+    } catch (err: unknown) {
+        // eslint-disable-next-line no-console
+        console.error('Self-test failed:', err)
+        process.exit(1)
+    }
 }

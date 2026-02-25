@@ -41,6 +41,7 @@ export async function ensureAppReady(): Promise<void> {
     // WebDriver strict clickability checks
     await browser.execute(() => {
         const dismissBtn = document.querySelector('.ai-notification .ai-button.secondary')
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         dismissBtn?.click()
     })
     await browser.pause(300)
@@ -49,8 +50,10 @@ export async function ensureAppReady(): Promise<void> {
     // focus the explorer container so keyboard events reach the handler.
     await browser.execute(() => {
         const entry = document.querySelector('.file-pane .file-entry')
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         entry?.click()
         const explorer = document.querySelector('.dual-pane-explorer')
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         explorer?.focus()
     })
     await browser.pause(500)
@@ -94,6 +97,7 @@ export async function fileExistsInPane(targetName: string, paneIndex: number): P
         (name: string, idx: number) => {
             const panes = document.querySelectorAll('.file-pane')
             const pane = panes[idx]
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard; TS lacks noUncheckedIndexedAccess here
             if (!pane) return false
             const entries = pane.querySelectorAll('.file-entry')
             return Array.from(entries).some(
