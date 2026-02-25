@@ -17,8 +17,7 @@ WebDriverIO ──HTTP:4444──> tauri-driver (CN fork) ──HTTP:3000──>
 
 ## Running
 
-Put your `CN_API_KEY` in `apps/desktop/.env` (gitignored, see `.env.example` for the template).
-Then:
+Put your `CN_API_KEY` in `apps/desktop/.env` (gitignored, see `.env.example` for the template). Then:
 
 ```bash
 cd apps/desktop
@@ -32,8 +31,8 @@ These are critical for writing tests. Without these workarounds, tests will sile
 
 ### 1. `browser.keys()` doesn't deliver key events
 
-Standard WebDriver key input doesn't reach the app. The W3C Actions API (`browser.action('key')`)
-also fails. **Use JavaScript `dispatchEvent` instead:**
+Standard WebDriver key input doesn't reach the app. The W3C Actions API (`browser.action('key')`) also fails. **Use
+JavaScript `dispatchEvent` instead:**
 
 ```typescript
 async function dispatchKey(key: string): Promise<void> {
@@ -48,8 +47,8 @@ async function dispatchKey(key: string): Promise<void> {
 
 ### 2. Element references in `browser.execute()` args don't serialize
 
-Passing WebDriverIO elements as args to `browser.execute()` results in `undefined` inside the
-callback. **Use `document.querySelector()` inside the callback instead:**
+Passing WebDriverIO elements as args to `browser.execute()` results in `undefined` inside the callback. **Use
+`document.querySelector()` inside the callback instead:**
 
 ```typescript
 // BAD — el is undefined inside execute
@@ -64,27 +63,27 @@ await browser.execute(() => {
 
 ### 3. Binary path differs with `--target`
 
-When building with `--target aarch64-apple-darwin` (which the build script does to avoid the
-tauri-wrapper injecting `--target universal-apple-darwin`), the output goes to
-`target/<arch>/debug/Cmdr` at the workspace root, NOT `src-tauri/target/debug/Cmdr`. The
-`wdio.conf.ts` detects the native arch via `rustc -vV` and resolves the path automatically.
+When building with `--target aarch64-apple-darwin` (which the build script does to avoid the tauri-wrapper injecting
+`--target universal-apple-darwin`), the output goes to `target/<arch>/debug/Cmdr` at the workspace root, NOT
+`src-tauri/target/debug/Cmdr`. The `wdio.conf.ts` detects the native arch via `rustc -vV` and resolves the path
+automatically.
 
 ## Known issues
 
-- **JS dispatch vs native keys**: The `dispatchEvent` workaround means we're not testing the real
-  OS keyboard input path. If CrabNebula fixes native key delivery, switch back to `browser.keys()`.
-- **Click with offset untested**: `element.click({x: 10, y: 10})` was broken in earlier versions
-  (actions API error). We haven't verified whether it's fixed — test before relying on offset clicks.
+- **JS dispatch vs native keys**: The `dispatchEvent` workaround means we're not testing the real OS keyboard input
+  path. If CrabNebula fixes native key delivery, switch back to `browser.keys()`.
+- **Click with offset untested**: `element.click({x: 10, y: 10})` was broken in earlier versions (actions API error). We
+  haven't verified whether it's fixed — test before relying on offset clicks.
 - **Not in CI yet**: Requires `CN_API_KEY` secret. Currently local-only.
 
 ## Files
 
-| File | Purpose |
-|------|---------|
-| `wdio.conf.ts` | WebDriverIO config: spawns test-runner-backend + tauri-driver, validates CN_API_KEY |
-| `app.spec.ts` | 10 tests: rendering, keyboard nav, mouse interaction, dialogs |
-| `tsconfig.json` | TypeScript config for WDIO types |
-| `../../.env.example` | Template for `CN_API_KEY` |
+| File                 | Purpose                                                                             |
+| -------------------- | ----------------------------------------------------------------------------------- |
+| `wdio.conf.ts`       | WebDriverIO config: spawns test-runner-backend + tauri-driver, validates CN_API_KEY |
+| `app.spec.ts`        | 10 tests: rendering, keyboard nav, mouse interaction, dialogs                       |
+| `tsconfig.json`      | TypeScript config for WDIO types                                                    |
+| `../../.env.example` | Template for `CN_API_KEY`                                                           |
 
 ## Related
 
