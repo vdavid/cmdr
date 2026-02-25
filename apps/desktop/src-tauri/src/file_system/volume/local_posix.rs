@@ -3,7 +3,7 @@
 use super::{
     CopyScanResult, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeScanner, VolumeWatcher,
 };
-use crate::file_system::listing::{FileEntry, get_single_entry, list_directory_core};
+use crate::file_system::listing::{FileEntry, get_single_entry, list_directory_core, list_directory_core_with_progress};
 use crate::indexing::scanner::{self, ScanConfig, ScanError, ScanHandle, ScanSummary};
 use crate::indexing::watcher::{DriveWatcher, FsChangeEvent, WatcherError};
 use crate::indexing::writer::IndexWriter;
@@ -86,6 +86,15 @@ impl Volume for LocalPosixVolume {
     fn list_directory(&self, path: &Path) -> Result<Vec<FileEntry>, VolumeError> {
         let abs_path = self.resolve(path);
         list_directory_core(&abs_path).map_err(VolumeError::from)
+    }
+
+    fn list_directory_with_progress(
+        &self,
+        path: &Path,
+        on_progress: &dyn Fn(usize),
+    ) -> Result<Vec<FileEntry>, VolumeError> {
+        let abs_path = self.resolve(path);
+        list_directory_core_with_progress(&abs_path, on_progress).map_err(VolumeError::from)
     }
 
     fn get_metadata(&self, path: &Path) -> Result<FileEntry, VolumeError> {

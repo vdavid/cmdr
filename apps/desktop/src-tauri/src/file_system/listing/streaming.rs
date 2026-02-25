@@ -3,8 +3,6 @@
 //! Provides non-blocking directory reading with progress events and cancellation.
 //! The implementation spawns background tasks and emits Tauri events.
 
-#![allow(dead_code, reason = "ListingProgressEvent is part of public API for future use")]
-
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
@@ -111,7 +109,7 @@ pub(crate) static STREAMING_STATE: LazyLock<RwLock<HashMap<String, Arc<Streaming
 /// Starts a streaming directory listing that returns immediately and emits progress events.
 ///
 /// This is non-blocking - the actual directory reading happens in a background task.
-/// Progress is reported via Tauri events every 500ms.
+/// Progress is reported via Tauri events every ~200ms.
 #[allow(
     clippy::too_many_arguments,
     reason = "Streaming operation requires many state parameters"
@@ -270,9 +268,21 @@ fn read_directory_with_progress(
     let read_start = std::time::Instant::now();
     let path_for_thread = path.to_path_buf();
     let (tx, rx) = mpsc::channel();
+    let app_for_progress = app.clone();
+    let listing_id_for_progress = listing_id.to_string();
 
     std::thread::spawn(move || {
-        let result = volume.list_directory(&path_for_thread);
+        let on_progress = |loaded_count: usize| {
+            use tauri::Emitter;
+            let _ = app_for_progress.emit(
+                "listing-progress",
+                ListingProgressEvent {
+                    listing_id: listing_id_for_progress.clone(),
+                    loaded_count,
+                },
+            );
+        };
+        let result = volume.list_directory_with_progress(&path_for_thread, &on_progress);
         let _ = tx.send(result);
     });
 

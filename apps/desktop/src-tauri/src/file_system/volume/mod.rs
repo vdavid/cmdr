@@ -181,6 +181,18 @@ pub trait Volume: Send + Sync {
     /// Returns entries sorted with directories first, then files, both alphabetically.
     fn list_directory(&self, path: &Path) -> Result<Vec<FileEntry>, VolumeError>;
 
+    /// Like `list_directory`, but calls `on_progress(loaded_count)` periodically
+    /// during the stat loop so callers can report incremental progress to the UI.
+    ///
+    /// Default implementation delegates to `list_directory` with no incremental updates.
+    fn list_directory_with_progress(
+        &self,
+        path: &Path,
+        _on_progress: &dyn Fn(usize),
+    ) -> Result<Vec<FileEntry>, VolumeError> {
+        self.list_directory(path)
+    }
+
     /// Gets metadata for a single path (relative to volume root).
     fn get_metadata(&self, path: &Path) -> Result<FileEntry, VolumeError>;
 

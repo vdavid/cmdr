@@ -66,7 +66,7 @@ Frontend                          Backend
 **Decision**: Three-stage progress: opening → progress → read-complete → complete
 **Why**: Gives user fine-grained feedback:
 - `listing-opening`: "About to start slow I/O" (for network folders)
-- `listing-progress`: "Loaded N files..." (every 500ms)
+- `listing-progress`: "Loaded N files..." (every 200ms, via `list_directory_core_with_progress`)
 - `listing-read-complete`: "All files read, sorting now"
 - `listing-complete`: "Ready to render"
 

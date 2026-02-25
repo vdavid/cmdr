@@ -63,6 +63,25 @@ pub fn list_directory(path: &Path) -> Result<Vec<FileEntry>, std::io::Error> {
 ///
 /// Use `get_extended_metadata_batch()` to fetch extended metadata later.
 pub fn list_directory_core(path: &Path) -> Result<Vec<FileEntry>, std::io::Error> {
+    list_directory_core_impl(path, None)
+}
+
+/// Like `list_directory_core`, but calls `on_progress(loaded_count)` every ~200ms
+/// during the stat loop so callers can report incremental progress.
+pub fn list_directory_core_with_progress(
+    path: &Path,
+    on_progress: &dyn Fn(usize),
+) -> Result<Vec<FileEntry>, std::io::Error> {
+    list_directory_core_impl(path, Some(on_progress))
+}
+
+/// Interval between progress callbacks during the stat loop.
+const PROGRESS_REPORT_INTERVAL: std::time::Duration = std::time::Duration::from_millis(200);
+
+fn list_directory_core_impl(
+    path: &Path,
+    on_progress: Option<&dyn Fn(usize)>,
+) -> Result<Vec<FileEntry>, std::io::Error> {
     benchmark::log_event("list_directory_core START");
     let overall_start = std::time::Instant::now();
     let mut entries = Vec::new();
@@ -74,6 +93,7 @@ pub fn list_directory_core(path: &Path) -> Result<Vec<FileEntry>, std::io::Error
     benchmark::log_event_value("readdir END, count", dir_entries.len());
 
     benchmark::log_event("stat_loop START");
+    let mut last_progress = std::time::Instant::now();
     for entry in dir_entries {
         let entry = entry?;
         match process_dir_entry(&entry) {
@@ -106,6 +126,13 @@ pub fn list_directory_core(path: &Path) -> Result<Vec<FileEntry>, std::io::Error
                     recursive_dir_count: None,
                 });
             }
+        }
+
+        if let Some(cb) = on_progress
+            && last_progress.elapsed() >= PROGRESS_REPORT_INTERVAL
+        {
+            cb(entries.len());
+            last_progress = std::time::Instant::now();
         }
     }
     benchmark::log_event_value("stat_loop END, entries", entries.len());
