@@ -11,7 +11,7 @@
  */
 
 import type { Options, Capabilities } from '@wdio/types'
-import { spawn, ChildProcess } from 'child_process'
+import { spawn, execSync, ChildProcess } from 'child_process'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
@@ -21,8 +21,13 @@ import { waitTestRunnerBackendReady } from '@crabnebula/test-runner-backend'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-// Binary built with: pnpm tauri build --debug --no-bundle -- --features automation
-const TAURI_BINARY = process.env.TAURI_BINARY || path.join(__dirname, '../../src-tauri/target/debug/Cmdr')
+// Detect the native Rust target (for example, aarch64-apple-darwin on Apple Silicon)
+const rustTarget = execSync('rustc -vV').toString().match(/host: (.+)/)?.[1]?.trim() ?? 'aarch64-apple-darwin'
+
+// Binary built with: pnpm test:e2e:macos:build
+// Output goes to workspace-level target/<arch>/debug/ when --target is used
+const TAURI_BINARY =
+    process.env.TAURI_BINARY || path.join(__dirname, `../../../../target/${rustTarget}/debug/Cmdr`)
 
 let tauriDriver: ChildProcess | null = null
 let killedTauriDriver = false

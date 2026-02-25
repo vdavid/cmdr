@@ -5,6 +5,11 @@
  * for macOS (WKWebView). They verify real application behavior including
  * frontend-backend integration.
  *
+ * CrabNebula WebDriver quirks addressed in these tests:
+ * - browser.keys() doesn't deliver key events — use dispatchKey() via JS
+ * - Element references in browser.execute() args aren't serialized — use
+ *   querySelector inside execute() instead of passing element refs
+ *
  * Usage:
  *   export CN_API_KEY=<your-key>
  *   pnpm test:e2e:macos
@@ -26,8 +31,22 @@ async function getEntryName(entry: WebdriverIO.Element): Promise<string> {
 }
 
 /**
+ * Dispatches a keyboard event via JavaScript. CrabNebula's WebDriver doesn't
+ * deliver browser.keys() to the app, so we dispatch events directly on the
+ * focused element or the explorer container.
+ */
+async function dispatchKey(key: string): Promise<void> {
+    await browser.execute((k: string) => {
+        const target = document.querySelector('.dual-pane-explorer') ?? document.activeElement ?? document.body
+        target.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }))
+        target.dispatchEvent(new KeyboardEvent('keyup', { key: k, bubbles: true, cancelable: true }))
+    }, key)
+    await browser.pause(300)
+}
+
+/**
  * Ensures the app is loaded and focus is initialized.
- * Uses JS execution for dismissing overlays to avoid driver-specific click issues.
+ * Uses JS execution for all interactions to avoid CrabNebula driver quirks.
  */
 async function ensureAppReady(): Promise<void> {
     const fileEntry = browser.$('.file-entry')
@@ -56,7 +75,20 @@ async function ensureAppReady(): Promise<void> {
         const explorer = document.querySelector('.dual-pane-explorer')
         explorer?.focus()
     })
-    await browser.pause(300)
+    await browser.pause(500)
+}
+
+/** Returns the cursor index in the focused pane via JS (avoids element ref issues). */
+async function getCursorIndex(): Promise<number> {
+    return browser.execute(() => {
+        const pane = document.querySelector('.file-pane.is-focused') ?? document.querySelector('.file-pane')
+        if (!pane) return -1
+        const entries = pane.querySelectorAll('.file-entry')
+        for (let i = 0; i < entries.length; i++) {
+            if (entries[i].classList.contains('is-under-cursor')) return i
+        }
+        return -1
+    })
 }
 
 // ─── Tests ──────────────────────────────────────────────────────────────────
@@ -87,98 +119,94 @@ describe('Keyboard navigation', () => {
     it('moves cursor with arrow keys', async () => {
         await ensureAppReady()
 
-        const entries = [...(await browser.$$('.file-entry'))]
-        if (entries.length < 2) {
+        const entryCount = await browser.execute(() => {
+            const pane = document.querySelector('.file-pane.is-focused') ?? document.querySelector('.file-pane')
+            return pane?.querySelectorAll('.file-entry').length ?? 0
+        })
+        if (entryCount < 2) {
             console.log('Skipping arrow key test: fewer than 2 entries')
             return
         }
 
-        let initialCursorIndex = -1
-        for (let i = 0; i < entries.length; i++) {
-            const cls = await entries[i].getAttribute('class')
-            if (cls.includes('is-under-cursor')) {
-                initialCursorIndex = i
-                break
-            }
-        }
+        const initialIndex = await getCursorIndex()
+        expect(initialIndex).toBeGreaterThanOrEqual(0)
 
-        expect(initialCursorIndex).toBeGreaterThanOrEqual(0)
+        await dispatchKey('ArrowDown')
 
-        await browser.keys('ArrowDown')
-        await browser.pause(300)
-
-        const updatedEntries = [...(await browser.$$('.file-entry'))]
-        let newCursorIndex = -1
-        for (let i = 0; i < updatedEntries.length; i++) {
-            const cls = await updatedEntries[i].getAttribute('class')
-            if (cls.includes('is-under-cursor')) {
-                newCursorIndex = i
-                break
-            }
-        }
-
-        expect(newCursorIndex).toBeGreaterThanOrEqual(0)
-        expect(newCursorIndex).not.toBe(initialCursorIndex)
+        const newIndex = await getCursorIndex()
+        expect(newIndex).toBeGreaterThanOrEqual(0)
+        expect(newIndex).not.toBe(initialIndex)
     })
 
     it('switches panes with Tab key', async () => {
         await ensureAppReady()
 
-        let panes = await browser.$$('.file-pane')
-        expect(panes.length).toBe(2)
+        // Verify left pane is focused after ensureAppReady
+        const initialFocus = await browser.execute(() => {
+            const panes = document.querySelectorAll('.file-pane')
+            return {
+                leftFocused: panes[0]?.classList.contains('is-focused') ?? false,
+                rightFocused: panes[1]?.classList.contains('is-focused') ?? false,
+            }
+        })
+        expect(initialFocus.leftFocused).toBe(true)
 
-        const leftPaneClass = await panes[0].getAttribute('class')
-        expect(leftPaneClass).toContain('is-focused')
+        // Dispatch Tab to switch to right pane
+        await dispatchKey('Tab')
 
-        await browser.keys('Tab')
-        await browser.pause(300)
+        const afterTab = await browser.execute(() => {
+            const panes = document.querySelectorAll('.file-pane')
+            return {
+                leftFocused: panes[0]?.classList.contains('is-focused') ?? false,
+                rightFocused: panes[1]?.classList.contains('is-focused') ?? false,
+            }
+        })
+        expect(afterTab.rightFocused).toBe(true)
+        expect(afterTab.leftFocused).toBe(false)
 
-        panes = await browser.$$('.file-pane')
-        const rightPaneClass = await panes[1].getAttribute('class')
-        expect(rightPaneClass).toContain('is-focused')
+        // Tab again to go back to left pane
+        await dispatchKey('Tab')
 
-        const leftPaneClassAfter = await panes[0].getAttribute('class')
-        expect(leftPaneClassAfter).not.toContain('is-focused')
-
-        await browser.keys('Tab')
-        await browser.pause(300)
-
-        panes = await browser.$$('.file-pane')
-        const leftPaneClassFinal = await panes[0].getAttribute('class')
-        expect(leftPaneClassFinal).toContain('is-focused')
+        const afterSecondTab = await browser.execute(() => {
+            const panes = document.querySelectorAll('.file-pane')
+            return panes[0]?.classList.contains('is-focused') ?? false
+        })
+        expect(afterSecondTab).toBe(true)
     })
 
     it('toggles selection with Space key', async () => {
         await ensureAppReady()
 
-        let cursorEntry = browser.$('.file-entry.is-under-cursor') as unknown as WebdriverIO.Element
-        const cursorText = await getEntryName(cursorEntry)
-
+        // Skip ".." entry
+        const cursorText = await browser.execute(() => {
+            const entry = document.querySelector('.file-entry.is-under-cursor')
+            return entry?.querySelector('.col-name')?.textContent ?? entry?.querySelector('.name')?.textContent ?? ''
+        })
         if (cursorText === '..') {
-            await browser.keys('ArrowDown')
-            await browser.pause(300)
-            cursorEntry = browser.$('.file-entry.is-under-cursor') as unknown as WebdriverIO.Element
+            await dispatchKey('ArrowDown')
         }
 
-        let cursorClass = await cursorEntry.getAttribute('class')
-        expect(cursorClass).not.toContain('is-selected')
+        // Verify not selected initially
+        const initialSelected = await browser.execute(() => {
+            return document.querySelector('.file-entry.is-under-cursor')?.classList.contains('is-selected') ?? false
+        })
+        expect(initialSelected).toBe(false)
 
-        // Use W3C Actions API for Space (most reliable across WebDriver implementations)
-        await browser.action('key').down(' ').pause(50).up(' ').perform()
-        await browser.releaseActions()
-        await browser.pause(300)
+        // Space to select
+        await dispatchKey(' ')
 
-        cursorEntry = browser.$('.file-entry.is-under-cursor') as unknown as WebdriverIO.Element
-        cursorClass = await cursorEntry.getAttribute('class')
-        expect(cursorClass).toContain('is-selected')
+        const afterSelect = await browser.execute(() => {
+            return document.querySelector('.file-entry.is-under-cursor')?.classList.contains('is-selected') ?? false
+        })
+        expect(afterSelect).toBe(true)
 
-        await browser.action('key').down(' ').pause(50).up(' ').perform()
-        await browser.releaseActions()
-        await browser.pause(300)
+        // Space again to deselect
+        await dispatchKey(' ')
 
-        cursorEntry = browser.$('.file-entry.is-under-cursor') as unknown as WebdriverIO.Element
-        cursorClass = await cursorEntry.getAttribute('class')
-        expect(cursorClass).not.toContain('is-selected')
+        const afterDeselect = await browser.execute(() => {
+            return document.querySelector('.file-entry.is-under-cursor')?.classList.contains('is-selected') ?? false
+        })
+        expect(afterDeselect).toBe(false)
     })
 })
 
@@ -186,29 +214,26 @@ describe('Mouse interactions', () => {
     it('moves cursor when clicking a file entry', async () => {
         await ensureAppReady()
 
-        const panes = [...(await browser.$$('.file-pane'))]
-        const entries = [...(await panes[0].$$('.file-entry'))]
-        if (entries.length < 2) return
+        const entryCount = await browser.execute(() => {
+            const pane = document.querySelector('.file-pane.is-focused') ?? document.querySelector('.file-pane')
+            return pane?.querySelectorAll('.file-entry').length ?? 0
+        })
+        if (entryCount < 2) return
 
-        // Use JS click for reliability across WebDriver implementations
-        await browser.execute(
-            (el: HTMLElement) => {
-                el.click()
-            },
-            entries[1] as unknown as HTMLElement,
-        )
+        // Click the second entry via querySelector (element refs don't work in CrabNebula)
+        await browser.execute(() => {
+            const pane = document.querySelector('.file-pane.is-focused') ?? document.querySelector('.file-pane')
+            const entries = pane?.querySelectorAll('.file-entry')
+            ;(entries?.[1] as HTMLElement | undefined)?.click()
+        })
         await browser.pause(300)
 
-        const updatedEntries = [...(await panes[0].$$('.file-entry'))]
-        const entryClass = await updatedEntries[1].getAttribute('class')
-        expect(entryClass).toContain('is-under-cursor')
+        const cursorIndex = await getCursorIndex()
+        expect(cursorIndex).toBe(1)
     })
 
     it('switches pane focus when clicking other pane', async () => {
         await ensureAppReady()
-
-        let panes = [...(await browser.$$('.file-pane'))]
-        expect(panes.length).toBe(2)
 
         // Click a file entry in the right pane
         await browser.execute(() => {
@@ -218,9 +243,10 @@ describe('Mouse interactions', () => {
         })
         await browser.pause(300)
 
-        panes = [...(await browser.$$('.file-pane'))]
-        const rightPaneClass = await panes[1].getAttribute('class')
-        expect(rightPaneClass).toContain('is-focused')
+        const rightFocused = await browser.execute(() => {
+            return document.querySelectorAll('.file-pane')[1]?.classList.contains('is-focused') ?? false
+        })
+        expect(rightFocused).toBe(true)
 
         // Click a file entry in the left pane to transfer focus back
         await browser.execute(() => {
@@ -230,9 +256,10 @@ describe('Mouse interactions', () => {
         })
         await browser.pause(300)
 
-        panes = [...(await browser.$$('.file-pane'))]
-        const leftPaneClass = await panes[0].getAttribute('class')
-        expect(leftPaneClass).toContain('is-focused')
+        const leftFocused = await browser.execute(() => {
+            return document.querySelectorAll('.file-pane')[0]?.classList.contains('is-focused') ?? false
+        })
+        expect(leftFocused).toBe(true)
     })
 })
 
@@ -240,7 +267,7 @@ describe('New folder dialog', () => {
     it('opens new folder dialog with F7', async () => {
         await ensureAppReady()
 
-        await browser.keys('F7')
+        await dispatchKey('F7')
 
         const dialog = browser.$('[data-dialog-id="mkdir-confirmation"]')
         await dialog.waitForExist({ timeout: 5000 })
@@ -251,8 +278,14 @@ describe('New folder dialog', () => {
         const nameInput = browser.$('[data-dialog-id="mkdir-confirmation"] .name-input')
         expect(await nameInput.isExisting()).toBe(true)
 
-        // Close dialog
-        await browser.keys('Escape')
+        // Close dialog via JS dispatch (browser.keys doesn't work)
+        await browser.execute(() => {
+            document.activeElement?.dispatchEvent(
+                new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+            )
+        })
+        await browser.pause(500)
+
         const modalOverlay = browser.$('.modal-overlay')
         await modalOverlay.waitForExist({ timeout: 3000, reverse: true })
     })
@@ -262,14 +295,16 @@ describe('Transfer dialogs', () => {
     it('opens copy dialog with F5', async () => {
         await ensureAppReady()
 
-        const cursorEntry = browser.$('.file-entry.is-under-cursor') as unknown as WebdriverIO.Element
-        const cursorText = await getEntryName(cursorEntry)
+        // Skip ".." entry
+        const cursorText = await browser.execute(() => {
+            const entry = document.querySelector('.file-entry.is-under-cursor')
+            return entry?.querySelector('.col-name')?.textContent ?? entry?.querySelector('.name')?.textContent ?? ''
+        })
         if (cursorText === '..') {
-            await browser.keys('ArrowDown')
-            await browser.pause(300)
+            await dispatchKey('ArrowDown')
         }
 
-        await browser.keys('F5')
+        await dispatchKey('F5')
 
         const dialog = browser.$('[data-dialog-id="transfer-confirmation"]')
         await dialog.waitForExist({ timeout: 5000 })
@@ -277,8 +312,13 @@ describe('Transfer dialogs', () => {
         const title = browser.$('[data-dialog-id="transfer-confirmation"] h2')
         expect(await title.getText()).toContain('Copy')
 
-        await browser.keys('Escape')
-        await browser.pause(300)
+        // Close dialog
+        await browser.execute(() => {
+            document.activeElement?.dispatchEvent(
+                new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+            )
+        })
+        await browser.pause(500)
 
         const modalAfter = browser.$('.modal-overlay')
         expect(await modalAfter.isExisting()).toBe(false)
