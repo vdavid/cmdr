@@ -407,6 +407,13 @@ body {
     flex-direction: column;
 }
 
+/* SvelteKit's production build strips inline styles from its mount target.
+ * Without this, the #app-root div defaults to display:block, breaking
+ * the body flex layout (content overflows instead of fitting the window). */
+#app-root {
+    display: contents;
+}
+
 /* Disable scroll bounce on all scrollable elements */
 * {
     overscroll-behavior: none;
