@@ -36,6 +36,7 @@ export {
     getIcons,
     refreshDirectoryIcons,
     clearExtensionIconCache,
+    clearDirectoryIconCache,
     showFileContextMenu,
     updateMenuContext,
     toggleHiddenFiles,

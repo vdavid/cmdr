@@ -36,3 +36,10 @@ pub fn refresh_directory_icons(
 pub fn clear_extension_icon_cache() {
     icons::clear_extension_icon_cache();
 }
+
+/// Clears cached directory icons (`dir`, `symlink-dir`, `path:*`).
+/// Called when the system theme or accent color changes.
+#[tauri::command]
+pub fn clear_directory_icon_cache() {
+    icons::clear_directory_icon_cache();
+}

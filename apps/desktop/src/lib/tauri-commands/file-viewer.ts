@@ -163,6 +163,14 @@ export async function clearExtensionIconCache(): Promise<void> {
 }
 
 /**
+ * Clears cached directory icons (`dir`, `symlink-dir`, `path:*`).
+ * Called when the system theme or accent color changes.
+ */
+export async function clearDirectoryIconCache(): Promise<void> {
+    await invoke('clear_directory_icon_cache')
+}
+
+/**
  * Shows a native context menu for a file.
  * @param path - Absolute path to the file.
  * @param filename - Name of the file.

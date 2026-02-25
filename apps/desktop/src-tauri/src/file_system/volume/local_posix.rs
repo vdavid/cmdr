@@ -3,7 +3,9 @@
 use super::{
     CopyScanResult, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeScanner, VolumeWatcher,
 };
-use crate::file_system::listing::{FileEntry, get_single_entry, list_directory_core, list_directory_core_with_progress};
+use crate::file_system::listing::{
+    FileEntry, get_single_entry, list_directory_core, list_directory_core_with_progress,
+};
 use crate::indexing::scanner::{self, ScanConfig, ScanError, ScanHandle, ScanSummary};
 use crate::indexing::watcher::{DriveWatcher, FsChangeEvent, WatcherError};
 use crate::indexing::writer::IndexWriter;

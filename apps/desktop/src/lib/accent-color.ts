@@ -11,6 +11,7 @@
 import { invoke } from '@tauri-apps/api/core'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { getAppLogger } from '$lib/logging/logger'
+import { clearDirectoryIconCache } from '$lib/icon-cache'
 
 const log = getAppLogger('accent-color')
 
@@ -38,6 +39,9 @@ export async function initAccentColor(): Promise<void> {
     try {
         unlisten = await listen<string>('accent-color-changed', (event) => {
             applyAccentColor(event.payload)
+            // macOS renders folder icons with the accent color baked in,
+            // so we need to flush cached folder bitmaps and re-fetch them.
+            void clearDirectoryIconCache()
             log.info('System accent color changed: {hex}', { hex: event.payload })
         })
     } catch (error) {

@@ -22,7 +22,7 @@
     import { getSetting } from '$lib/settings/settings-store'
     import { formatNumber, pluralize } from '../selection/selection-info-utils'
     import { isScanning } from '$lib/indexing/index-state.svelte'
-    import { extensionCacheCleared } from '$lib/icon-cache'
+    import { iconCacheCleared } from '$lib/icon-cache'
     import type { RenameState } from '../rename/rename-state.svelte'
 
     interface Props {
@@ -421,9 +421,9 @@
         prevContainerHeight = height
     })
 
-    // Re-fetch icons when the extension icon cache is cleared (settings change)
+    // Re-fetch icons when the icon cache is cleared (settings or theme change)
     $effect(() => {
-        void $extensionCacheCleared // Track the store value
+        void $iconCacheCleared // Track the store value
         // Re-fetch icons for all cached entries
         if (cachedEntries.length > 0) {
             refetchIconsForEntries(cachedEntries)

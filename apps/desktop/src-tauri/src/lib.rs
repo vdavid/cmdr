@@ -473,6 +473,7 @@ pub fn run() {
             commands::icons::get_icons,
             commands::icons::refresh_directory_icons,
             commands::icons::clear_extension_icon_cache,
+            commands::icons::clear_directory_icon_cache,
             commands::ui::show_file_context_menu,
             commands::ui::show_main_window,
             commands::ui::update_menu_context,

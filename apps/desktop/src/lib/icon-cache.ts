@@ -6,6 +6,7 @@ import {
     getIcons,
     refreshDirectoryIcons as refreshIconsCommand,
     clearExtensionIconCache as clearExtensionIconCacheCommand,
+    clearDirectoryIconCache as clearDirectoryIconCacheCommand,
 } from './tauri-commands'
 
 const STORAGE_KEY = 'cmdr-icon-cache'
@@ -20,10 +21,11 @@ const memoryCache = new Map<string, string>()
 export const iconCacheVersion = writable(0)
 
 /**
- * Reactive counter that increments when extension icon cache is cleared.
+ * Reactive counter that increments when part of the icon cache is cleared
+ * (extension icons, directory icons, etc.).
  * List components subscribe to this to re-fetch icons for visible files.
  */
-export const extensionCacheCleared = writable(0)
+export const iconCacheCleared = writable(0)
 
 /** Load persisted cache from localStorage */
 function loadFromStorage(): void {
@@ -153,8 +155,27 @@ export async function clearExtensionIconCache(): Promise<void> {
     // Notify list components to re-fetch icons for visible files
     // This must happen BEFORE incrementing iconCacheVersion so components
     // can re-fetch before re-rendering with the cleared cache
-    extensionCacheCleared.update((v) => v + 1)
+    iconCacheCleared.update((v) => v + 1)
 
     // Trigger reactive update so components re-fetch icons
+    iconCacheVersion.update((v) => v + 1)
+}
+
+/**
+ * Clears all cached directory icons from both memory and localStorage.
+ * Called when the system theme or accent color changes, since macOS renders
+ * folder icons with the current accent color baked in.
+ */
+export async function clearDirectoryIconCache(): Promise<void> {
+    await clearDirectoryIconCacheCommand()
+
+    for (const key of memoryCache.keys()) {
+        if (key === 'dir' || key === 'symlink-dir' || key.startsWith('path:')) {
+            memoryCache.delete(key)
+        }
+    }
+
+    saveToStorage()
+    iconCacheCleared.update((v) => v + 1)
     iconCacheVersion.update((v) => v + 1)
 }

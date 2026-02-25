@@ -57,6 +57,17 @@ pub fn clear_extension_icon_cache() {
     }
 }
 
+/// Clears all cached icons for directory entries (`dir`, `symlink-dir`, `path:*`).
+/// Called when the system theme or accent color changes, since macOS folder icons
+/// are tinted by the current appearance.
+pub fn clear_directory_icon_cache() {
+    ensure_cache();
+    let mut cache = ICON_CACHE.write().unwrap();
+    if let Some(ref mut map) = *cache {
+        map.retain(|key, _| key != "dir" && key != "symlink-dir" && !key.starts_with("path:"));
+    }
+}
+
 /// Converts an image to a base64 WebP data URL.
 fn image_to_data_url(img: &DynamicImage) -> Option<String> {
     // Resize to configured size
