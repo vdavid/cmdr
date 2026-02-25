@@ -3,6 +3,8 @@ import { relaunch } from '@tauri-apps/plugin-process'
 import { getVersion } from '@tauri-apps/api/app'
 import { getSetting, onSpecificSettingChange } from '$lib/settings/settings-store'
 import { getAppLogger } from '$lib/logging/logger'
+import UpdateToastContent from './UpdateToastContent.svelte'
+import { addToast } from '$lib/ui/toast'
 
 const log = getAppLogger('updater')
 
@@ -22,10 +24,6 @@ const updateState = $state<UpdateState>({
     update: null,
     error: null,
 })
-
-export function getUpdateState(): UpdateState {
-    return updateState
-}
 
 export async function checkForUpdates(): Promise<void> {
     if (updateState.status === 'downloading' || updateState.status === 'ready') {
@@ -47,6 +45,7 @@ export async function checkForUpdates(): Promise<void> {
             log.info('v{version} downloaded, restart to apply', { version: update.version })
             updateState.status = 'ready'
             updateState.update = update
+            addToast(UpdateToastContent, { id: 'update', dismissal: 'persistent' })
         } else {
             log.info('v{version} is up to date', { version: currentVersion })
             updateState.status = 'idle'

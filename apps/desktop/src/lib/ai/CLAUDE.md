@@ -4,9 +4,14 @@ UI and state for local LLM-powered features. Backend: `src-tauri/src/ai/` (downl
 
 ## Architecture
 
-- **State**: `ai-state.svelte.ts` — Reactive AI status, download progress, Tauri event listeners
-- **Notification**: `AiNotification.svelte` — Install flow UI (offer → downloading → installing → ready)
+- **State**: `ai-state.svelte.ts` — Reactive AI status, download progress, Tauri event listeners, toast sync
+- **Toast content**: `AiToastContent.svelte` — Install flow UI (offer → downloading → installing → ready)
 - **Backend**: See `src-tauri/src/ai/` for model download, llama-server lifecycle, inference client
+
+`ai-state.svelte.ts` exposes a `syncAiToast()` helper that all state transitions call. It adds or dismisses the `'ai'`
+toast via `addToast(AiToastContent, { id: 'ai', ... })` / `dismissToast('ai')` based on the current AI status.
+`AiToastContent.svelte` reads `aiState` reactively and renders the appropriate state UI. `initAiState()` is called from
+`+layout.svelte` (not from the toast component).
 
 ## Key decisions
 

@@ -1,7 +1,11 @@
-import type { Snippet } from 'svelte'
+import type { Component } from 'svelte'
 
 export type ToastLevel = 'info' | 'warn' | 'error'
 export type ToastDismissal = 'transient' | 'persistent'
+
+/** Content can be a plain string (rendered as text) or a Svelte component (mounted as-is). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type ToastContent = string | Component<any>
 
 export interface ToastOptions {
     level?: ToastLevel
@@ -14,7 +18,7 @@ export interface ToastOptions {
 
 export interface Toast {
     id: string
-    content: Snippet | string
+    content: ToastContent
     level: ToastLevel
     dismissal: ToastDismissal
     timeoutMs: number
@@ -37,7 +41,7 @@ function findOldestTransientIndex(): number {
     return toasts.findIndex((t) => t.dismissal === 'transient')
 }
 
-export function addToast(content: Snippet | string, options?: ToastOptions): string {
+export function addToast(content: ToastContent, options?: ToastOptions): string {
     const level = options?.level ?? 'info'
     const dismissal = options?.dismissal ?? 'transient'
     const timeoutMs = dismissal === 'persistent' ? 0 : (options?.timeoutMs ?? 4000)

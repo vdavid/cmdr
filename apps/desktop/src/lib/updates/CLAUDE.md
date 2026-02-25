@@ -7,7 +7,7 @@ Auto-update checker and restart notification for the Cmdr desktop app.
 | File                        | Purpose                                                            |
 | --------------------------- | ------------------------------------------------------------------ |
 | `updater.svelte.ts`         | Module-level `$state` singleton, update check loop, download logic |
-| `UpdateNotification.svelte` | Fixed-position toast shown when an update is ready to install      |
+| `UpdateToastContent.svelte` | Toast body shown when an update is ready to install                |
 
 ## Architecture
 
@@ -29,10 +29,11 @@ idle ──check()──► checking ──update found──► downloading ─
   └──────error/no update
 ```
 
-`UpdateNotification.svelte` reads `getUpdateState()` and renders the toast when `status === 'ready'`. Clicking "Later"
-sets a local `$state` `dismissed` flag in `UpdateNotification.svelte` — it does NOT change `updateState.status`. The
-status remains `ready` until the next check cycle resets it. The notification is just hidden locally (session-only, no
-persistence).
+When `status` becomes `'ready'`, the updater calls
+`addToast(UpdateToastContent, { id: 'update', dismissal: 'persistent' })` to show the restart prompt via the global
+toast system. `UpdateToastContent.svelte` renders the toast body and handles the "Later" button by calling
+`dismissToast('update')`. There is no local `$state` dismissed flag — dismissal is managed entirely by the toast
+infrastructure.
 
 ## Key patterns and gotchas
 

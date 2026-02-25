@@ -89,6 +89,7 @@
         getIsAltHeld,
         setAltHeld,
     } from '../modifier-key-tracker.svelte'
+    import { addToast } from '$lib/ui/toast'
 
     const log = getAppLogger('fileExplorer')
 
@@ -1311,6 +1312,9 @@
         const op = transferProgressProps?.operationType ?? 'copy'
         log.info(
             `${op === 'copy' ? 'Copy' : 'Move'} complete: ${String(filesProcessed)} files (${formatBytes(bytesProcessed)})`,
+        )
+        addToast(
+            `${op === 'copy' ? 'Copy' : 'Move'} complete: ${String(filesProcessed)} ${filesProcessed === 1 ? 'file' : 'files'}`,
         )
 
         refreshPanesAfterTransfer()

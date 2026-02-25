@@ -5,7 +5,7 @@
         "ui/AlertDialog.svelte": { "reason": "Simple UI modal for informational messages" },
         "ui/dialog-registry.ts": { "reason": "Pure constant and type definition, no logic to test" },
         "ui/ModalDialog.svelte": { "reason": "Shared modal dialog wrapper, depends on DOM APIs and Tauri commands" },
-        "updates/UpdateNotification.svelte": { "reason": "UI component, needs component testing" },
+        "updates/UpdateToastContent.svelte": { "reason": "UI component, toast content for update prompt" },
         "app-status-store.ts": { "reason": "Depends on Tauri APIs" },
         "benchmark.ts": { "reason": "Dev tooling, not critical path" },
         "file-explorer/drag/drag-drop.ts": { "reason": "Needs integration testing with Tauri" },

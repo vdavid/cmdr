@@ -1,13 +1,10 @@
 <script lang="ts">
-    import type { Snippet } from 'svelte'
     import { onMount, onDestroy } from 'svelte'
-
-    type ToastLevel = 'info' | 'warn' | 'error'
-    type ToastDismissal = 'transient' | 'persistent'
+    import type { ToastContent, ToastLevel, ToastDismissal } from './toast-store.svelte'
 
     interface Props {
         id: string
-        content: Snippet | string
+        content: ToastContent
         level: ToastLevel
         dismissal: ToastDismissal
         timeoutMs: number
@@ -43,7 +40,8 @@
         {#if typeof content === 'string'}
             <span class="toast-message">{content}</span>
         {:else}
-            {@render content()}
+            {@const ContentComponent = content}
+            <ContentComponent />
         {/if}
     </div>
     <button
@@ -53,17 +51,28 @@
         }}
         aria-label="Dismiss notification"
     >
-        &times;
+        <svg
+            width="10"
+            height="10"
+            viewBox="0 0 10 10"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+        >
+            <path d="M1 1l8 8M9 1l-8 8" />
+        </svg>
     </button>
 </div>
 
 <style>
     .toast {
         background: var(--color-bg-secondary);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-lg);
+        border: 1px solid var(--color-border-subtle);
+        border-left: 3px solid var(--color-text-tertiary);
+        border-radius: var(--radius-md);
         box-shadow: var(--shadow-md);
-        padding: var(--spacing-sm) var(--spacing-md);
+        padding: var(--spacing-md) var(--spacing-lg);
         font-size: var(--font-size-sm);
         max-width: 360px;
         display: flex;
@@ -72,22 +81,18 @@
     }
 
     .toast.warn {
-        border-color: color-mix(in srgb, var(--color-warning) 50%, transparent);
-        background: var(--color-warning-bg);
+        border-left-color: var(--color-toast-warn-stripe);
+        background: var(--color-toast-warn-bg);
     }
 
     .toast.error {
-        border-color: var(--color-error-border);
-        background: var(--color-error-bg);
+        border-left-color: var(--color-error);
+        background: var(--color-toast-error-bg);
     }
 
     .toast-message {
         color: var(--color-text-primary);
         line-height: 1.4;
-    }
-
-    .error .toast-message {
-        color: var(--color-error);
     }
 
     .toast-content {
@@ -100,11 +105,18 @@
         background: none;
         border: none;
         color: var(--color-text-tertiary);
-        font-size: var(--font-size-md);
+        font-size: var(--font-size-sm);
         cursor: pointer;
-        padding: 2px var(--spacing-xs);
+        width: 22px;
+        height: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         border-radius: var(--radius-sm);
         line-height: 1;
+        transition:
+            background var(--transition-fast),
+            color var(--transition-fast);
     }
 
     .toast-close:hover {

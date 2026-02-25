@@ -1,5 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy, tick } from 'svelte'
+    import { addToast, dismissTransientToasts, clearAllToasts, getToasts } from '$lib/ui/toast'
+    import ToastContainer from '$lib/ui/toast/ToastContainer.svelte'
 
     interface HistoryEntry {
         volumeId: string
@@ -46,6 +48,8 @@
     let rightHistory = $state<NavigationHistory | null>(null)
     let focusedPane = $state<'left' | 'right'>('left')
     let unlisten: (() => void) | undefined
+
+    let toastCounter = $state(0)
 
     // Drive index state
     let indexStatus = $state<IndexStatus | null>(null)
@@ -234,6 +238,7 @@
     tabindex="-1"
     onkeydown={handleKeydown}
 >
+    <ToastContainer />
     <div class="debug-header">
         <h1>Debug</h1>
         <button class="close-button" onclick={closeWindow} aria-label="Close">×</button>
@@ -328,6 +333,95 @@
                             </div>
                         {/each}
                     {/if}
+                </div>
+            </div>
+        </section>
+
+        <section class="debug-section">
+            <h2>Toast notifications</h2>
+            <div class="toast-debug-panel">
+                <div class="toast-debug-row">
+                    <span class="toast-debug-label">Transient</span>
+                    <button
+                        class="index-button"
+                        onclick={() => {
+                            toastCounter++
+                            addToast(`Info toast #${String(toastCounter)}`)
+                        }}>Info</button
+                    >
+                    <button
+                        class="index-button"
+                        onclick={() => {
+                            toastCounter++
+                            addToast(`Warning toast #${String(toastCounter)}`, { level: 'warn' })
+                        }}>Warn</button
+                    >
+                    <button
+                        class="index-button"
+                        onclick={() => {
+                            toastCounter++
+                            addToast(`Error toast #${String(toastCounter)}`, { level: 'error' })
+                        }}>Error</button
+                    >
+                </div>
+                <div class="toast-debug-row">
+                    <span class="toast-debug-label">Persistent</span>
+                    <button
+                        class="index-button"
+                        onclick={() => {
+                            toastCounter++
+                            addToast(`Persistent info #${String(toastCounter)}`, { dismissal: 'persistent' })
+                        }}>Info</button
+                    >
+                    <button
+                        class="index-button"
+                        onclick={() => {
+                            toastCounter++
+                            addToast(`Persistent warning #${String(toastCounter)}`, {
+                                dismissal: 'persistent',
+                                level: 'warn',
+                            })
+                        }}>Warn</button
+                    >
+                    <button
+                        class="index-button"
+                        onclick={() => {
+                            toastCounter++
+                            addToast(`Persistent error #${String(toastCounter)}`, {
+                                dismissal: 'persistent',
+                                level: 'error',
+                            })
+                        }}>Error</button
+                    >
+                </div>
+                <div class="toast-debug-row">
+                    <span class="toast-debug-label">Dedup</span>
+                    <button
+                        class="index-button"
+                        onclick={() => {
+                            toastCounter++
+                            addToast(`Dedup toast (always replaces) #${String(toastCounter)}`, { id: 'dedup-test' })
+                        }}>Replace (same ID)</button
+                    >
+                </div>
+                <div class="toast-debug-row">
+                    <span class="toast-debug-label">Custom timeout</span>
+                    <button
+                        class="index-button"
+                        onclick={() => {
+                            toastCounter++
+                            addToast(`10s timeout #${String(toastCounter)}`, { timeoutMs: 10000 })
+                        }}>10 seconds</button
+                    >
+                </div>
+                <div class="toast-debug-row">
+                    <span class="toast-debug-label">Bulk actions</span>
+                    <button class="index-button" onclick={dismissTransientToasts}>Dismiss transient</button>
+                    <button class="index-button" onclick={clearAllToasts}>Clear all</button>
+                </div>
+                <div class="toast-debug-row">
+                    <span class="toast-debug-label">Active</span>
+                    <span class="toast-debug-count">{getToasts().length} toasts</span>
                 </div>
             </div>
         </section>
@@ -656,5 +750,33 @@
         text-overflow: ellipsis;
         white-space: nowrap;
         color: var(--color-text-secondary);
+    }
+
+    /* Toast debug styles */
+    .toast-debug-panel {
+        background: var(--color-bg-secondary);
+        border-radius: var(--radius-md);
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .toast-debug-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .toast-debug-label {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
+        min-width: 110px;
+    }
+
+    .toast-debug-count {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        font-family: var(--font-mono);
     }
 </style>

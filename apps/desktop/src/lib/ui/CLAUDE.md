@@ -4,14 +4,14 @@ Reusable UI components used across the entire desktop app.
 
 ## Key files
 
-| File                  | Purpose                                                                  |
-| --------------------- | ------------------------------------------------------------------------ |
-| `ModalDialog.svelte`  | Central modal container: overlay, dragging, Escape, focus, MCP tracking  |
-| `dialog-registry.ts`  | `SOFT_DIALOG_REGISTRY` array — single source of truth for all dialog IDs |
-| `Button.svelte`       | Styled button with variant and size props                                |
-| `LoadingIcon.svelte`  | Animated spinner with progressive status text                            |
-| `AlertDialog.svelte`  | Single-action confirmation dialog built on `ModalDialog`                 |
-| `toast/`              | Centralized toast notification system — store, container, item           |
+| File                 | Purpose                                                                  |
+| -------------------- | ------------------------------------------------------------------------ |
+| `ModalDialog.svelte` | Central modal container: overlay, dragging, Escape, focus, MCP tracking  |
+| `dialog-registry.ts` | `SOFT_DIALOG_REGISTRY` array — single source of truth for all dialog IDs |
+| `Button.svelte`      | Styled button with variant and size props                                |
+| `LoadingIcon.svelte` | Animated spinner with progressive status text                            |
+| `AlertDialog.svelte` | Single-action confirmation dialog built on `ModalDialog`                 |
+| `toast/`             | Centralized toast notification system — store, container, item           |
 
 ## ModalDialog
 

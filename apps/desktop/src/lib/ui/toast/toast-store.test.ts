@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import type { Snippet } from 'svelte'
+import type { ToastContent } from './toast-store.svelte'
 import { addToast, dismissToast, dismissTransientToasts, clearAllToasts, getToasts } from './toast-store.svelte'
 
-const dummyContent = (() => {}) as unknown as Snippet
+const dummyContent = (() => {}) as unknown as ToastContent
 
 beforeEach(() => {
     clearAllToasts()
@@ -27,8 +27,8 @@ describe('addToast', () => {
     })
 
     it('replaces content and level in place for duplicate IDs', () => {
-        const content1 = (() => {}) as unknown as Snippet
-        const content2 = (() => {}) as unknown as Snippet
+        const content1 = (() => {}) as unknown as ToastContent
+        const content2 = (() => {}) as unknown as ToastContent
 
         addToast(content1, { id: 'dup', level: 'info' })
         addToast(content2, { id: 'dup', level: 'error' })

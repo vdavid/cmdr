@@ -49,6 +49,11 @@
     --color-warning: #e65100;
     --color-warning-bg: rgba(230, 81, 0, 0.1);
 
+    /* === Toast tints (tuned per scheme so warn reads amber, error reads red) === */
+    --color-toast-warn-stripe: #d4a006;
+    --color-toast-warn-bg: #fef9ee;
+    --color-toast-error-bg: #fef2f2;
+
     /* === Selection === */
     --color-selection-fg: #c9a227;
 
@@ -151,6 +156,11 @@
         --color-error-border: #7f1d1d;
         --color-warning: #f5a623;
         --color-warning-bg: rgba(245, 166, 35, 0.15);
+
+        /* === Toast tints === */
+        --color-toast-warn-stripe: var(--color-warning);
+        --color-toast-warn-bg: color-mix(in srgb, var(--color-warning) 8%, var(--color-bg-secondary));
+        --color-toast-error-bg: color-mix(in srgb, var(--color-error) 8%, var(--color-bg-secondary));
 
         /* === Selection === */
         --color-selection-fg: #d4a82a;

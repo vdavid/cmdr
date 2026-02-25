@@ -11,8 +11,7 @@
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
     import { initializeShortcuts, setupMcpShortcutsListener, cleanupMcpShortcutsListener } from '$lib/shortcuts'
     import { onMtpExclusiveAccessError, connectMtpDevice, type MtpExclusiveAccessErrorEvent } from '$lib/tauri-commands'
-    import AiNotification from '$lib/ai/AiNotification.svelte'
-    import UpdateNotification from '$lib/updates/UpdateNotification.svelte'
+    import { initAiState } from '$lib/ai/ai-state.svelte'
     import ToastContainer from '$lib/ui/toast/ToastContainer.svelte'
     import { PtpcameradDialog } from '$lib/mtp'
     import type { Snippet } from 'svelte'
@@ -55,6 +54,7 @@
     // Cleanup functions stored for onDestroy
     let mtpUnlistenPromise: Promise<() => void> | undefined
     let updateCleanup: (() => void) | undefined
+    let aiCleanup: (() => void) | undefined
 
     onMount(() => {
         // Initialize all async setup
@@ -83,6 +83,9 @@
 
             // Start checking for updates (skips in dev mode)
             updateCleanup = startUpdateChecker()
+
+            // Initialize AI state and event listeners (shows offer toast if eligible)
+            aiCleanup = await initAiState()
         })()
     })
 
@@ -93,6 +96,8 @@
         })
         // Cleanup update checker
         updateCleanup?.()
+        // Cleanup AI event listeners
+        aiCleanup?.()
         // Cleanup other modules
         cleanupAccentColor()
         cleanupReactiveSettings()
@@ -102,8 +107,6 @@
 </script>
 
 <ToastContainer />
-<UpdateNotification />
-<AiNotification />
 {#if showPtpcameradDialog}
     <PtpcameradDialog
         blockingProcess={ptpcameradBlockingProcess}
