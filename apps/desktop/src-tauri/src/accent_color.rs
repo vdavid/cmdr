@@ -21,8 +21,9 @@ use objc2_app_kit::{NSColor, NSColorSpace, NSSystemColorsDidChangeNotification};
 use objc2_foundation::{NSNotification, NSNotificationCenter};
 use tauri::{AppHandle, Emitter, Runtime};
 
-/// macOS default blue accent (light mode fallback).
-const FALLBACK_ACCENT_HEX: &str = "#007aff";
+/// Brand fallback accent (mustard gold from getcmdr.com).
+/// Only used if NSColor.controlAccentColor() cannot be read.
+const FALLBACK_ACCENT_HEX: &str = "#d4a006";
 
 /// Reads the current system accent color and returns it as a hex string (for example, `#007aff`).
 /// Falls back to macOS default blue if the color cannot be read.

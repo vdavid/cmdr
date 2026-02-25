@@ -159,7 +159,7 @@
     <div class="mtp-connecting">
         {#if mtpConnecting}
             <div class="connecting-spinner">
-                <div class="spinner"></div>
+                <div class="spinner spinner-md"></div>
                 <span>Connecting to device...</span>
             </div>
         {:else if mtpConnectionError}
@@ -190,21 +190,6 @@
         gap: var(--spacing-md);
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
-    }
-
-    .connecting-spinner .spinner {
-        width: 24px;
-        height: 24px;
-        border: 2px solid var(--color-border-strong);
-        border-top-color: var(--color-accent);
-        border-radius: var(--radius-full);
-        animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-        to {
-            transform: rotate(360deg);
-        }
     }
 
     .mtp-error {

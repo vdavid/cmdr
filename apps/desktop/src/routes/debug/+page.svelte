@@ -257,7 +257,7 @@
                         <span class="index-status-text">Loading...</span>
                     {:else if indexStatus.scanning}
                         <span class="index-status-text scanning">
-                            <span class="index-spinner"></span>
+                            <span class="spinner spinner-sm"></span>
                             Scanning... {formatEntryCount(indexStatus.entriesScanned)} / ? entries
                         </span>
                     {:else if indexStatus.initialized}
@@ -566,23 +566,6 @@
 
     .index-status-text.ready {
         color: var(--color-text-primary);
-    }
-
-    .index-spinner {
-        display: inline-block;
-        width: 10px;
-        height: 10px;
-        border: 1.5px solid var(--color-border);
-        border-top-color: var(--color-accent);
-        border-radius: 50%;
-        animation: index-spin 0.8s linear infinite;
-        flex-shrink: 0;
-    }
-
-    @keyframes index-spin {
-        to {
-            transform: rotate(360deg);
-        }
     }
 
     .index-actions {

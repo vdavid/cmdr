@@ -165,7 +165,7 @@
 
 {#if isMounting}
     <div class="mounting-state">
-        <span class="spinner"></span>
+        <span class="spinner spinner-md"></span>
         <span class="mounting-text">Mounting {currentNetworkHost?.name ?? 'share'}...</span>
     </div>
 {:else if mountError}
@@ -200,21 +200,6 @@
         height: 100%;
         gap: 12px;
         color: var(--color-text-secondary);
-    }
-
-    .mounting-state .spinner {
-        width: 24px;
-        height: 24px;
-        border: 3px solid var(--color-border-strong);
-        border-top-color: var(--color-accent);
-        border-radius: var(--radius-full);
-        animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-        to {
-            transform: rotate(360deg);
-        }
     }
 
     .mounting-text {

@@ -465,7 +465,7 @@
                                     {/if}
                                 {:else if scanning}
                                     <span class="size-scanning">
-                                        <span class="size-spinner"></span>
+                                        <span class="spinner spinner-xs"></span>
                                         Scanning...
                                     </span>
                                 {:else}
@@ -583,23 +583,6 @@
         color: var(--color-text-tertiary);
         font-size: var(--font-size-xs);
         white-space: nowrap;
-    }
-
-    .size-spinner {
-        display: inline-block;
-        width: 8px;
-        height: 8px;
-        border: 1.5px solid var(--color-border);
-        border-top-color: var(--color-accent);
-        border-radius: 50%;
-        animation: size-spin 0.8s linear infinite;
-        flex-shrink: 0;
-    }
-
-    @keyframes size-spin {
-        to {
-            transform: rotate(360deg);
-        }
     }
 
     .col-date {

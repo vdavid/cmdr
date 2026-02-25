@@ -25,7 +25,7 @@ function applyAccentColor(hex: string): void {
 /**
  * Fetches the system accent color and applies it, then listens for changes.
  * Call once on app startup. If the backend command fails, the CSS fallback
- * in app.css (`#007aff` light / `#0a84ff` dark) stays in effect.
+ * in app.css (`#d4a006` light / `#ffc206` dark) stays in effect.
  */
 export async function initAccentColor(): Promise<void> {
     try {

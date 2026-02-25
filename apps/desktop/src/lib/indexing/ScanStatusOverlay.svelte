@@ -15,7 +15,7 @@
 
 {#if scanning}
     <div class="scan-overlay" role="status" aria-label="Scanning drive">
-        <div class="scan-spinner"></div>
+        <span class="spinner spinner-sm"></span>
         <span class="scan-label">{progressLabel}</span>
     </div>
 {/if}
@@ -39,22 +39,7 @@
         z-index: 10;
     }
 
-    .scan-spinner {
-        width: 12px;
-        height: 12px;
-        border: 2px solid var(--color-border);
-        border-top-color: var(--color-accent);
-        border-radius: 50%;
-        animation: scan-spin 0.8s linear infinite;
-    }
-
     .scan-label {
         white-space: nowrap;
-    }
-
-    @keyframes scan-spin {
-        to {
-            transform: rotate(360deg);
-        }
     }
 </style>

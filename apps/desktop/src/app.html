@@ -6,11 +6,16 @@
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Cmdr</title>
         <style>
-            /* Inline critical CSS - renders before any JS */
+            /* Inline critical CSS - renders before any JS.
+             * Accent colors here are brand fallbacks (mustard gold from getcmdr.com).
+             * At runtime, accent-color.ts overrides --color-accent with the macOS
+             * system accent color — see src-tauri/src/accent_color.rs. */
             :root {
                 --bg: #ffffff;
                 --text: #000000;
                 --muted: #666666;
+                --accent: #d4a006;
+                --border: #ddd;
             }
 
             @media (prefers-color-scheme: dark) {
@@ -18,10 +23,8 @@
                     --bg: #1e1e1e;
                     --text: #ffffff;
                     --muted: #888888;
-                }
-
-                .app-loader:after {
-                    box-shadow: 0 2px 0 #a13200 inset;
+                    --accent: #ffc206;
+                    --border: #444444;
                 }
             }
 
@@ -48,10 +51,14 @@
             }
 
             .app-loader {
-                position: relative;
-                width: 100px;
-                height: 100px;
-                animation: fade-in 500ms ease-out forwards;
+                width: 48px;
+                height: 48px;
+                border: 3px solid var(--border);
+                border-top-color: var(--accent);
+                border-radius: 50%;
+                animation:
+                    fade-in 500ms ease-out forwards,
+                    spin 0.8s linear infinite;
             }
 
             @keyframes fade-in {
@@ -64,26 +71,8 @@
                 }
             }
 
-            .app-loader:before,
-            .app-loader:after {
-                content: '';
-                border-radius: 50%;
-                position: absolute;
-                inset: 0;
-                box-shadow: 0 0 10px 2px rgba(0, 0, 0, 0.3) inset;
-            }
-
-            .app-loader:after {
-                box-shadow: 0 2px 0 #ff9e1b inset;
-                animation: rotate 2s linear infinite;
-            }
-
-            @keyframes rotate {
-                0% {
-                    transform: rotate(0);
-                }
-
-                100% {
+            @keyframes spin {
+                to {
                     transform: rotate(360deg);
                 }
             }

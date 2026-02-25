@@ -27,8 +27,11 @@
     --color-text-secondary: #666666;
     --color-text-tertiary: #888888;
 
-    /* === Interactive States === */
-    --color-accent: #007aff;
+    /* === Interactive States ===
+     * These accent colors are CSS fallbacks only. At runtime, the Rust backend
+     * reads the macOS system accent color and overrides --color-accent via
+     * accent-color.ts → initAccentColor(). See src-tauri/src/accent_color.rs. */
+    --color-accent: #d4a006;
     --color-accent-hover: color-mix(in oklch, var(--color-accent), white 15%);
     --color-accent-subtle: color-mix(in oklch, var(--color-accent), transparent 85%);
 
@@ -128,8 +131,8 @@
         --color-text-secondary: #aaaaaa;
         --color-text-tertiary: #888888;
 
-        /* === Interactive States === */
-        --color-accent: #0a84ff;
+        /* === Interactive States (fallbacks — see light-mode comment above) === */
+        --color-accent: #ffc206;
         --color-accent-hover: color-mix(in oklch, var(--color-accent), white 10%);
         --color-accent-subtle: color-mix(in oklch, var(--color-accent), transparent 85%);
 
@@ -427,4 +430,48 @@ body {
 
 .size-tb {
     color: var(--color-size-tb);
+}
+
+/* =============================================================================
+   Spinner utility classes
+   ============================================================================= */
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.spinner {
+    display: inline-block;
+    flex-shrink: 0;
+    border-radius: 50%;
+    border-style: solid;
+    border-color: var(--color-border);
+    border-top-color: var(--color-accent);
+    animation: spin 0.8s linear infinite;
+}
+
+.spinner-xs {
+    width: 8px;
+    height: 8px;
+    border-width: 1.5px;
+}
+
+.spinner-sm {
+    width: 12px;
+    height: 12px;
+    border-width: 2px;
+}
+
+.spinner-md {
+    width: 24px;
+    height: 24px;
+    border-width: 2.5px;
+}
+
+.spinner-lg {
+    width: 32px;
+    height: 32px;
+    border-width: 2.5px;
 }

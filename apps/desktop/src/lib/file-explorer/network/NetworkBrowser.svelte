@@ -389,7 +389,7 @@
 
         {#if isSearching}
             <div class="searching-indicator">
-                <span class="searching-spinner"></span>
+                <span class="spinner spinner-sm"></span>
                 Searching...
             </div>
         {:else if hosts.length === 0}
@@ -488,21 +488,6 @@
         padding: var(--spacing-md) var(--spacing-lg);
         color: var(--color-text-tertiary);
         font-style: italic;
-    }
-
-    .searching-spinner {
-        width: 12px;
-        height: 12px;
-        border: 2px solid var(--color-border-strong);
-        border-top-color: var(--color-accent);
-        border-radius: var(--radius-full);
-        animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-        to {
-            transform: rotate(360deg);
-        }
     }
 
     .empty-state {

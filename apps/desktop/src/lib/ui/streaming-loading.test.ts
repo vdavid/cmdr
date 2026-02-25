@@ -182,7 +182,7 @@ describe('LoadingIcon component', () => {
             mount(LoadingIcon, { target, props: {} })
             await tick()
 
-            const loader = target.querySelector('.loader')
+            const loader = target.querySelector('.spinner')
             expect(loader).not.toBeNull()
         })
     })

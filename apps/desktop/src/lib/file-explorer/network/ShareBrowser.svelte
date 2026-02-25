@@ -385,7 +385,7 @@
         />
     {:else if loading}
         <div class="loading-state">
-            <span class="spinner"></span>
+            <span class="spinner spinner-md"></span>
             Connecting to {host.name}...
         </div>
     {:else if error && !showLoginForm}
@@ -459,21 +459,6 @@
         padding: var(--spacing-xl);
         gap: var(--spacing-md);
         color: var(--color-text-secondary);
-    }
-
-    .spinner {
-        width: 24px;
-        height: 24px;
-        border: 3px solid var(--color-border-strong);
-        border-top-color: var(--color-accent);
-        border-radius: var(--radius-full);
-        animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-        to {
-            transform: rotate(360deg);
-        }
     }
 
     .error-icon,

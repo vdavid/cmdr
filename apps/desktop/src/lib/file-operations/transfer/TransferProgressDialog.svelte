@@ -542,7 +542,7 @@
         <!-- Rollback in progress -->
         <div class="rollback-section">
             <div class="rollback-indicator">
-                <span class="spinner"></span>
+                <span class="spinner spinner-md rollback-spinner"></span>
             </div>
             <p class="rollback-message">
                 Deleting {filesDone}
@@ -562,7 +562,7 @@
                         {#if status === 'done'}
                             <span class="checkmark">✓</span>
                         {:else if status === 'active'}
-                            <span class="spinner"></span>
+                            <span class="spinner spinner-sm stage-spinner"></span>
                         {:else}
                             <span class="dot"></span>
                         {/if}
@@ -682,19 +682,9 @@
         background: var(--color-text-tertiary);
     }
 
-    .spinner {
-        width: 14px;
-        height: 14px;
-        border: 2px solid var(--color-accent);
+    .stage-spinner {
+        border-color: var(--color-accent);
         border-top-color: transparent;
-        border-radius: var(--radius-full);
-        animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-        to {
-            transform: rotate(360deg);
-        }
     }
 
     .stage-connector {
@@ -843,13 +833,9 @@
         justify-content: center;
     }
 
-    .rollback-indicator .spinner {
-        width: 24px;
-        height: 24px;
-        border: 3px solid var(--color-error);
+    .rollback-spinner {
+        border-color: var(--color-error);
         border-top-color: transparent;
-        border-radius: var(--radius-full);
-        animation: spin 0.8s linear infinite;
     }
 
     .rollback-message {
