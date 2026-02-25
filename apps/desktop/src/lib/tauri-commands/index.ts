@@ -1,7 +1,7 @@
 // Re-export all modules for backward compatibility
 // This allows existing imports from '$lib/tauri-commands' to continue working
 
-// File listing (on-demand virtual scrolling API)
+// File listing (on-demand virtual scrolling API, sync status, font metrics)
 export {
     listDirectoryStart,
     cancelListing,
@@ -18,9 +18,12 @@ export {
     clearSelfDragOverlay,
     pathExists,
     createDirectory,
+    getSyncStatus,
+    storeFontMetrics,
+    hasFontMetrics,
 } from './file-listing'
 
-// File viewer
+// File viewer (session management, search, seeking)
 export {
     viewerOpen,
     viewerGetLines,
@@ -31,31 +34,6 @@ export {
     viewerClose,
     viewerSetupMenu,
     viewerSetWordWrap,
-    openFile,
-    openExternalUrl,
-    getIcons,
-    refreshDirectoryIcons,
-    clearExtensionIconCache,
-    clearDirectoryIconCache,
-    showFileContextMenu,
-    updateMenuContext,
-    toggleHiddenFiles,
-    setViewMode,
-    updateLeftPaneState,
-    updateRightPaneState,
-    updateFocusedPane,
-    notifyDialogOpened,
-    notifyDialogClosed,
-    registerKnownDialogs,
-    showInFinder,
-    copyToClipboard,
-    quickLook,
-    getInfo,
-    openInEditor,
-    showMainWindow,
-    getSyncStatus,
-    storeFontMetrics,
-    hasFontMetrics,
 } from './file-viewer'
 export type {
     LineChunk,
@@ -64,9 +42,37 @@ export type {
     ViewerSessionStatus,
     ViewerSearchMatch,
     SearchPollResult,
-    PaneFileEntry,
-    PaneState,
 } from './file-viewer'
+
+// File actions (open, reveal, preview, context menu)
+export {
+    openFile,
+    openExternalUrl,
+    showFileContextMenu,
+    showInFinder,
+    copyToClipboard,
+    quickLook,
+    getInfo,
+    openInEditor,
+} from './file-actions'
+
+// Icons (fetching and cache management)
+export { getIcons, refreshDirectoryIcons, clearExtensionIconCache, clearDirectoryIconCache } from './icons'
+
+// App state (MCP pane state, dialog tracking, menu context, window lifecycle)
+export {
+    updateLeftPaneState,
+    updateRightPaneState,
+    updateFocusedPane,
+    notifyDialogOpened,
+    notifyDialogClosed,
+    registerKnownDialogs,
+    updateMenuContext,
+    toggleHiddenFiles,
+    setViewMode,
+    showMainWindow,
+} from './app-state'
+export type { PaneFileEntry, PaneState } from './app-state'
 
 // Storage (volumes, space, permissions)
 export {

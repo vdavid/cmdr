@@ -1,4 +1,4 @@
-// On-demand virtual scrolling API (listing-based)
+// On-demand virtual scrolling API (listing-based), sync status, font metrics
 
 import { invoke } from '@tauri-apps/api/core'
 import type {
@@ -8,6 +8,7 @@ import type {
     SortColumn,
     SortOrder,
     StreamingListingStartResult,
+    SyncStatus,
 } from '../file-explorer/types'
 import type { DirectorySortMode } from '$lib/settings'
 
@@ -223,4 +224,42 @@ export async function pathExists(path: string, volumeId?: string): Promise<boole
  */
 export async function createDirectory(parentPath: string, name: string, volumeId?: string): Promise<string> {
     return invoke<string>('create_directory', { volumeId, parentPath, name })
+}
+
+// ============================================================================
+// Sync status and font metrics (support file list display)
+// ============================================================================
+
+/**
+ * Gets sync status for multiple file paths.
+ * Returns a map of path -> sync status.
+ * Only works on macOS with files in cloud-synced folders (Dropbox, iCloud, etc.)
+ * @param paths - Array of absolute file paths.
+ * @returns Map of path -> SyncStatus
+ */
+export async function getSyncStatus(paths: string[]): Promise<Record<string, SyncStatus>> {
+    try {
+        return await invoke<Record<string, SyncStatus>>('get_sync_status', { paths })
+    } catch {
+        // Command not available (non-macOS) - return empty map
+        return {}
+    }
+}
+
+/**
+ * Stores font metrics for a font configuration.
+ * @param fontId - Font identifier (like "system-400-12")
+ * @param widths - Map of code point -> width in pixels
+ */
+export async function storeFontMetrics(fontId: string, widths: Record<number, number>): Promise<void> {
+    await invoke('store_font_metrics', { fontId, widths })
+}
+
+/**
+ * Checks if font metrics are available for a font ID.
+ * @param fontId - Font identifier to check
+ * @returns True if metrics are cached
+ */
+export async function hasFontMetrics(fontId: string): Promise<boolean> {
+    return invoke<boolean>('has_font_metrics', { fontId })
 }
