@@ -90,7 +90,7 @@ describe('Copy round-trip', () => {
         expect(await title.getText()).toContain('Copy')
 
         // Click the Copy button to confirm
-        const copyButton = browser.$(`${TRANSFER_DIALOG} button.primary`) as unknown as WebdriverIO.Element
+        const copyButton = browser.$(`${TRANSFER_DIALOG} button.btn-primary`) as unknown as WebdriverIO.Element
         await jsClick(copyButton)
 
         // Wait for dialog to close (confirms copy succeeded)
@@ -135,7 +135,7 @@ describe('Move round-trip', () => {
         expect(await title.getText()).toContain('Move')
 
         // Click the Move button to confirm
-        const moveButton = browser.$(`${TRANSFER_DIALOG} button.primary`) as unknown as WebdriverIO.Element
+        const moveButton = browser.$(`${TRANSFER_DIALOG} button.btn-primary`) as unknown as WebdriverIO.Element
         await jsClick(moveButton)
 
         // Wait for dialog to close (confirms move succeeded)
@@ -233,7 +233,7 @@ describe('Create folder round-trip', () => {
         await browser.pause(200)
 
         // Click OK to create
-        const okButton = browser.$(`${MKDIR_DIALOG} button.primary`) as unknown as WebdriverIO.Element
+        const okButton = browser.$(`${MKDIR_DIALOG} button.btn-primary`) as unknown as WebdriverIO.Element
         await jsClick(okButton)
 
         // Wait for dialog to close
@@ -266,15 +266,13 @@ describe('View mode toggle', () => {
         expect(hasBriefList || hasFullList).toBe(true)
 
         if (hasBriefList) {
-            // Currently in Brief mode -- switch to Full view via command palette
-            // On Linux with WebKitGTK, Tauri maps Cmd to Ctrl
-            // Use the Tauri event system to trigger view mode change
+            // Currently in Brief mode -- switch to Full view via Ctrl+1
+            // On Linux, Tauri maps Cmd to Ctrl, so use ctrlKey (not metaKey)
             await browser.execute(() => {
-                // Dispatch a custom event that the app listens for
                 document.dispatchEvent(
                     new KeyboardEvent('keydown', {
                         key: '1',
-                        metaKey: true,
+                        ctrlKey: true,
                         bubbles: true,
                     }),
                 )

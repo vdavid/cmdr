@@ -111,7 +111,7 @@ export const config: Options.Testrunner & { capabilities: Capabilities.Testrunne
 
         // Start test-runner-backend (CrabNebula's macOS WebDriver bridge)
         testRunnerBackend = spawn('pnpm', ['test-runner-backend'], {
-            stdio: 'inherit',
+            stdio: ['ignore', 'pipe', 'pipe'],
             shell: true,
         })
 
@@ -138,8 +138,12 @@ export const config: Options.Testrunner & { capabilities: Capabilities.Testrunne
         console.log('Starting tauri-driver...')
 
         tauriDriver = spawn('pnpm', ['tauri-driver'], {
-            stdio: [null, process.stdout, process.stderr],
+            stdio: ['ignore', 'pipe', 'pipe'],
             shell: true,
+            env: {
+                ...process.env,
+                RUST_LOG: 'warn',
+            },
         })
 
         tauriDriver.on('error', (error) => {

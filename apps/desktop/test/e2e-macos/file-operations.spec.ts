@@ -66,7 +66,7 @@ function getFixtureRoot(): string {
  */
 async function confirmTransferDialog(): Promise<void> {
     await browser.execute(() => {
-        const btn = document.querySelector('[data-dialog-id="transfer-confirmation"] button.primary') as HTMLElement | null
+        const btn = document.querySelector('[data-dialog-id="transfer-confirmation"] button.btn-primary') as HTMLElement | null
         btn?.click()
     })
     await browser.pause(300)
@@ -230,17 +230,21 @@ describe('Navigate to parent with Backspace', () => {
     it('goes back to left/ from sub-dir via Backspace', async () => {
         await ensureAppReady()
 
-        // First, navigate into sub-dir
-        const found = await moveCursorToFile('sub-dir')
-        expect(found).toBe(true)
+        // The previous test ("Navigate into directory") may have already left us
+        // inside sub-dir (tests share the app session within a spec file).
+        const alreadyInside = await fileExistsInFocusedPane('nested-file.txt')
 
-        await dispatchKey('Enter')
+        if (!alreadyInside) {
+            const found = await moveCursorToFile('sub-dir')
+            expect(found).toBe(true)
 
-        // Wait until we're inside sub-dir (nested-file.txt visible)
-        await browser.waitUntil(
-            async () => fileExistsInFocusedPane('nested-file.txt'),
-            { timeout: 5000, timeoutMsg: 'nested-file.txt did not appear after entering sub-dir' },
-        )
+            await dispatchKey('Enter')
+
+            await browser.waitUntil(
+                async () => fileExistsInFocusedPane('nested-file.txt'),
+                { timeout: 5000, timeoutMsg: 'nested-file.txt did not appear after entering sub-dir' },
+            )
+        }
 
         // Press Backspace to go to parent
         await dispatchKey('Backspace')

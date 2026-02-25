@@ -50,34 +50,29 @@ pnpm test:e2e:smoke
 Tests basic UI rendering in Chromium/WebKit browsers. These tests verify that the UI structure
 renders correctly but cannot test file operations (which require Tauri backend).
 
-### Run Linux E2E tests (Docker - recommended)
+### Run Linux E2E tests (Docker)
+
+The Linux E2E binary is cached in a Docker volume. The script only rebuilds if no cached binary
+exists, so **after code changes you need to clean the cache first**:
 
 ```bash
 cd apps/desktop
+
+# First run, or after code changes: clean cache and rebuild
+./scripts/e2e-linux.sh --clean && pnpm test:e2e:linux
+
+# Subsequent runs (same code): skip the rebuild
 pnpm test:e2e:linux
 ```
 
-This will:
-1. Build the Docker image if needed (first run only)
-2. Build the Tauri app for Linux inside Docker (cached between runs)
-3. Run WebDriverIO tests against the actual Tauri app using tauri-driver
+If tests fail in unexpected ways, try `./scripts/e2e-linux.sh --clean` — a stale cached binary is
+the most common cause.
 
-Options:
+Other options:
 ```bash
-# Force rebuild the Docker image
-pnpm test:e2e:linux:build
-
-# Get an interactive shell in the container for debugging
-pnpm test:e2e:linux:shell
-
-# Clean the Linux build cache (forces full rebuild)
-./scripts/e2e-linux.sh --clean
+pnpm test:e2e:linux:build          # force rebuild Docker image (not the app)
+pnpm test:e2e:linux:shell          # interactive shell in container for debugging
 ```
-
-### Troubleshooting
-
-When adding a new feature (+tests) and the new tests start oddly failing, clean the build cache!
-`./scripts/e2e-linux.sh --clean` is your friend!
 
 ### Run Linux E2E tests (native Linux)
 

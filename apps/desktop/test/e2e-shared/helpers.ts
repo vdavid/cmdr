@@ -30,6 +30,13 @@ export async function ensureAppReady(): Promise<void> {
         })
     }
 
+    // Close any lingering modal dialog from a prior test (prevents cascading failures)
+    await browser.execute(() => {
+        const overlay = document.querySelector('.modal-overlay') as HTMLElement | null
+        overlay?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    })
+    await browser.pause(300)
+
     // Dismiss any overlays (AI notification, etc.) via JS click to bypass
     // WebDriver strict clickability checks
     await browser.execute(() => {
