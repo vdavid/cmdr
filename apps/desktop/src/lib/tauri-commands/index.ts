@@ -118,6 +118,7 @@ export {
     copyFiles,
     moveFiles,
     cancelWriteOperation,
+    cancelAllWriteOperations,
     resolveWriteConflict,
     onWriteProgress,
     onWriteComplete,

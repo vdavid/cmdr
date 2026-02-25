@@ -121,6 +121,10 @@ export async function cancelWriteOperation(operationId: string, rollback: boolea
     await invoke('cancel_write_operation', { operationId, rollback })
 }
 
+export async function cancelAllWriteOperations(): Promise<void> {
+    await invoke('cancel_all_write_operations')
+}
+
 /** In Stop mode, the operation pauses on conflict and waits for this call to proceed. */
 export async function resolveWriteConflict(
     operationId: string,

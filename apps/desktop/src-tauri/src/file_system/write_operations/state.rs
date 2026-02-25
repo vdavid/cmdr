@@ -193,6 +193,23 @@ pub fn cancel_write_operation(operation_id: &str, rollback: bool) {
     }
 }
 
+/// Cancels all in-progress write operations with rollback.
+///
+/// Used as a safety net when the frontend is tearing down (beforeunload, hot-reload).
+pub fn cancel_all_write_operations() {
+    if let Ok(cache) = WRITE_OPERATION_STATE.read() {
+        for (id, state) in cache.iter() {
+            if !state.cancelled.load(Ordering::Relaxed) {
+                log::info!("cancel_all_write_operations: cancelling op={id}");
+                state.cancelled.store(true, Ordering::Relaxed);
+                state.skip_rollback.store(false, Ordering::Relaxed);
+                let _guard = state.conflict_mutex.lock();
+                state.conflict_condvar.notify_all();
+            }
+        }
+    }
+}
+
 /// Resolves a pending conflict for an in-progress write operation.
 ///
 /// When an operation encounters a conflict in Stop mode, it emits a WriteConflictEvent
@@ -329,12 +346,18 @@ pub(super) struct ScanResult {
 // ============================================================================
 
 /// Tracks created files/directories for rollback on failure.
+///
+/// If dropped without calling `commit()`, automatically rolls back
+/// (deletes) all recorded files and directories. This ensures cleanup
+/// even if a thread panics during the copy loop.
 #[cfg_attr(test, derive(Debug))]
 pub(crate) struct CopyTransaction {
     /// In creation order.
     pub created_files: Vec<PathBuf>,
     /// In creation order.
     pub created_dirs: Vec<PathBuf>,
+    /// Set to `true` by `commit()` to prevent rollback on drop.
+    committed: bool,
 }
 
 impl CopyTransaction {
@@ -342,6 +365,7 @@ impl CopyTransaction {
         Self {
             created_files: Vec::new(),
             created_dirs: Vec::new(),
+            committed: false,
         }
     }
 
@@ -365,10 +389,21 @@ impl CopyTransaction {
         }
     }
 
-    /// Clears the transaction (call on success to prevent rollback).
-    pub fn commit(self) {
-        // Just drop without calling rollback
-        drop(self.created_files);
-        drop(self.created_dirs);
+    /// Marks the transaction as committed, preventing rollback on drop.
+    pub fn commit(mut self) {
+        self.committed = true;
+    }
+}
+
+impl Drop for CopyTransaction {
+    fn drop(&mut self) {
+        if !self.committed {
+            log::warn!(
+                "CopyTransaction dropped without commit, rolling back {} files and {} dirs",
+                self.created_files.len(),
+                self.created_dirs.len()
+            );
+            self.rollback();
+        }
     }
 }

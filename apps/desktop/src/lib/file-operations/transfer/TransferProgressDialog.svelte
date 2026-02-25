@@ -101,6 +101,7 @@
     let startTime = $state(0)
     let isCancelling = $state(false)
     let isRollingBack = $state(false)
+    let destroyed = false
 
     // Events that arrived before we know our operationId (from the command response).
     // Without buffering, a stale event from a previous operation could claim the ID slot first.
@@ -335,6 +336,18 @@
                 op: operationLabel,
                 operationId,
             })
+
+            // If the dialog was destroyed/cancelled while waiting for the IPC response,
+            // cancel the operation immediately and bail out
+            if (destroyed) {
+                log.info('Dialog destroyed before operationId arrived — cancelling op={operationId}', {
+                    operationId,
+                })
+                void cancelWriteOperation(operationId, true)
+                cleanup()
+                return
+            }
+
             replayBufferedEvents()
         } catch (err: unknown) {
             log.error('Failed to start {op} operation: {error}', { op: operationType, error: err })
@@ -355,7 +368,8 @@
 
     async function handleCancel(rollback: boolean) {
         if (!operationId) {
-            log.warn('Cancel requested but no operationId yet')
+            log.warn('Cancel requested but no operationId yet — will cancel after IPC resolves')
+            destroyed = true
             return
         }
         if (isCancelling || isRollingBack) {
@@ -425,10 +439,12 @@
     })
 
     onDestroy(() => {
-        // If destroyed while a conflict is pending, cancel the operation
-        // so the backend thread doesn't block forever on the condvar
-        if (conflictEvent && operationId) {
-            void cancelWriteOperation(operationId, false)
+        destroyed = true
+        if (operationId) {
+            // Cancel with rollback on unexpected teardown (hot-reload, navigation, crash).
+            // Normal user-initiated cancel/complete already ran cleanup() + callbacks,
+            // and the backend ignores cancel on finished operations (idempotent).
+            void cancelWriteOperation(operationId, true)
         }
         cleanup()
     })

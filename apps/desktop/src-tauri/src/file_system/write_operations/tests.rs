@@ -398,3 +398,49 @@ fn test_cancelled_event_rolled_back_field_serialization() {
         "JSON should contain rolledBack:false"
     );
 }
+
+// ============================================================================
+// CopyTransaction Drop auto-rollback tests
+// ============================================================================
+
+#[test]
+fn test_copy_transaction_drop_without_commit_rolls_back() {
+    let temp_dir = create_temp_dir("drop_rollback");
+
+    let file1 = temp_dir.join("file1.txt");
+    let file2 = temp_dir.join("file2.txt");
+    fs::write(&file1, "content1").expect("Failed to create file1");
+    fs::write(&file2, "content2").expect("Failed to create file2");
+
+    // Create a transaction, record files, then drop without committing
+    {
+        let mut transaction = CopyTransaction::new();
+        transaction.record_file(file1.clone());
+        transaction.record_file(file2.clone());
+        // transaction drops here without commit()
+    }
+
+    // Files should be rolled back (deleted)
+    assert!(!file1.exists(), "file1 should be deleted by Drop rollback");
+    assert!(!file2.exists(), "file2 should be deleted by Drop rollback");
+
+    cleanup_temp_dir(&temp_dir);
+}
+
+#[test]
+fn test_copy_transaction_commit_prevents_drop_rollback() {
+    let temp_dir = create_temp_dir("commit_no_rollback");
+
+    let file1 = temp_dir.join("file1.txt");
+    fs::write(&file1, "content1").expect("Failed to create file1");
+
+    {
+        let mut transaction = CopyTransaction::new();
+        transaction.record_file(file1.clone());
+        transaction.commit(); // should prevent Drop from rolling back
+    }
+
+    assert!(file1.exists(), "file1 should still exist after commit + drop");
+
+    cleanup_temp_dir(&temp_dir);
+}

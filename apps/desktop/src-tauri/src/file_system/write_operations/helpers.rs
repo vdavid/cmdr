@@ -364,7 +364,7 @@ pub(super) fn resolve_conflict(
             let guard = state.conflict_mutex.lock_ignore_poison();
             let (_guard, wait_result) = state
                 .conflict_condvar
-                .wait_timeout_while(guard, Duration::from_secs(300), |_| {
+                .wait_timeout_while(guard, Duration::from_secs(30), |_| {
                     // Keep waiting while:
                     // 1. No pending resolution
                     // 2. Not cancelled

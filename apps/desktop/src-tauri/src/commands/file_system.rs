@@ -10,6 +10,7 @@ use crate::file_system::{
     DirectorySortMode, FileEntry, ListingStartResult, ListingStats, OperationStatus, OperationSummary, ResortResult,
     ScanConflict, SortColumn, SortOrder, StreamingListingStartResult, VolumeCopyConfig, VolumeCopyScanResult,
     WriteOperationConfig, WriteOperationError, WriteOperationStartResult, cancel_listing as ops_cancel_listing,
+    cancel_all_write_operations as ops_cancel_all_write_operations,
     cancel_write_operation as ops_cancel_write_operation, copy_between_volumes as ops_copy_between_volumes,
     copy_files_start as ops_copy_files_start, delete_files_start as ops_delete_files_start,
     find_file_index as ops_find_file_index, get_file_at as ops_get_file_at, get_file_range as ops_get_file_range,
@@ -320,6 +321,11 @@ pub async fn delete_files(
 #[tauri::command]
 pub fn cancel_write_operation(operation_id: String, rollback: bool) {
     ops_cancel_write_operation(&operation_id, rollback);
+}
+
+#[tauri::command]
+pub fn cancel_all_write_operations() {
+    ops_cancel_all_write_operations();
 }
 
 // ============================================================================

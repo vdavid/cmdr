@@ -51,7 +51,10 @@ use state::{WRITE_OPERATION_STATE, register_operation_status, unregister_operati
 
 // Re-export public types
 pub use scan::{cancel_scan_preview, start_scan_preview};
-pub use state::{cancel_write_operation, get_operation_status, list_active_operations, resolve_write_conflict};
+pub use state::{
+    cancel_all_write_operations, cancel_write_operation, get_operation_status, list_active_operations,
+    resolve_write_conflict,
+};
 #[allow(unused_imports, reason = "Public API re-exports for consumers of this module")]
 pub use types::{
     ConflictInfo, ConflictResolution, DryRunResult, OperationStatus, OperationSummary, ScanPreviewCancelledEvent,

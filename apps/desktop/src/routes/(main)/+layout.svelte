@@ -10,7 +10,12 @@
     import { initReactiveSettings, cleanupReactiveSettings } from '$lib/settings/reactive-settings.svelte'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
     import { initializeShortcuts, setupMcpShortcutsListener, cleanupMcpShortcutsListener } from '$lib/shortcuts'
-    import { onMtpExclusiveAccessError, connectMtpDevice, type MtpExclusiveAccessErrorEvent } from '$lib/tauri-commands'
+    import {
+        onMtpExclusiveAccessError,
+        connectMtpDevice,
+        cancelAllWriteOperations,
+        type MtpExclusiveAccessErrorEvent,
+    } from '$lib/tauri-commands'
     import { initAiState } from '$lib/ai/ai-state.svelte'
     import ToastContainer from '$lib/ui/toast/ToastContainer.svelte'
     import { PtpcameradDialog } from '$lib/mtp'
@@ -86,6 +91,11 @@
 
             // Initialize AI state and event listeners (shows offer toast if eligible)
             aiCleanup = await initAiState()
+
+            // Cancel all active write operations on page unload (hot-reload, close, navigation)
+            window.addEventListener('beforeunload', () => {
+                void cancelAllWriteOperations()
+            })
         })()
     })
 
