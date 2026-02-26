@@ -80,6 +80,7 @@
         closeActiveTabWithConfirmation: () => Promise<'closed' | 'last-tab' | 'cancelled'>
         cycleTab: (direction: 'next' | 'prev') => void
         togglePinActiveTab: () => void
+        closeOtherTabs: () => void
     }
 
     let showFdaPrompt = $state(false)
@@ -747,6 +748,14 @@
                 explorerRef?.cycleTab('prev')
                 return
 
+            case 'tab.togglePin':
+                explorerRef?.togglePinActiveTab()
+                return
+
+            case 'tab.closeOthers':
+                explorerRef?.closeOtherTabs()
+                return
+
             // === Navigation commands ===
             case 'nav.open':
                 explorerRef?.sendKeyToFocusedPane('Enter')
@@ -830,6 +839,11 @@
                 return
 
             // === File action commands ===
+            case 'file.view':
+                void explorerRef?.openViewerForCursor()
+                explorerRef?.refocus()
+                return
+
             case 'file.rename':
                 explorerRef?.startRename()
                 explorerRef?.refocus()
@@ -843,6 +857,21 @@
                 explorerRef?.refocus()
                 return
             }
+
+            case 'file.copy':
+                void explorerRef?.openCopyDialog()
+                explorerRef?.refocus()
+                return
+
+            case 'file.move':
+                void explorerRef?.openMoveDialog()
+                explorerRef?.refocus()
+                return
+
+            case 'file.newFolder':
+                void explorerRef?.openNewFolderDialog()
+                explorerRef?.refocus()
+                return
 
             case 'file.showInFinder': {
                 const entryUnderCursor = explorerRef?.getFileAndPathUnderCursor()

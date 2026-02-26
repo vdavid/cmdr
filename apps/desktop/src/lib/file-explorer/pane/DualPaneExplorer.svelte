@@ -73,6 +73,7 @@
         closeActiveTab as tabOpsCloseActiveTab,
         closeActiveTabWithConfirmation as tabOpsCloseActiveTabWithConfirmation,
         togglePinActiveTab as tabOpsTogglePinActiveTab,
+        closeOtherTabsInFocusedPane as tabOpsCloseOtherTabs,
         syncPinTabMenuForPane,
         cycleTab as tabOpsCycleTab,
         switchToTab as tabOpsSwitchToTab,
@@ -1893,6 +1894,10 @@
 
     export function togglePinActiveTab(): void {
         tabOpsTogglePinActiveTab(focusedPane, getTabMgr)
+    }
+
+    export function closeOtherTabs(): void {
+        tabOpsCloseOtherTabs(focusedPane, getTabMgr)
     }
 
     function syncPinTabMenu() {

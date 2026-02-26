@@ -276,6 +276,16 @@ export async function closeActiveTabWithConfirmation(
     return 'last-tab'
 }
 
+/** Closes all other tabs (except the active one) in the focused pane. */
+export function closeOtherTabsInFocusedPane(
+    focusedPane: 'left' | 'right',
+    getTabMgr: (pane: 'left' | 'right') => TabManager,
+) {
+    const mgr = getTabMgr(focusedPane)
+    closeOtherTabs(mgr, mgr.activeTabId)
+    saveTabsForPane(focusedPane, getTabMgr)
+}
+
 /** Toggles pin state on the active tab in the focused pane. */
 export function togglePinActiveTab(focusedPane: 'left' | 'right', getTabMgr: (pane: 'left' | 'right') => TabManager) {
     const mgr = getTabMgr(focusedPane)

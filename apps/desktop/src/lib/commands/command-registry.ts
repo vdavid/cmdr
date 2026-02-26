@@ -91,6 +91,8 @@ export const commands: Command[] = [
     { id: 'tab.close', name: 'Close tab', scope: 'Main window', showInPalette: true, shortcuts: ['⌘W'] },
     { id: 'tab.next', name: 'Next tab', scope: 'Main window', showInPalette: true, shortcuts: ['⌃Tab'] },
     { id: 'tab.prev', name: 'Previous tab', scope: 'Main window', showInPalette: true, shortcuts: ['⌃⇧Tab'] },
+    { id: 'tab.togglePin', name: 'Toggle pin tab', scope: 'Main window', showInPalette: true, shortcuts: [] },
+    { id: 'tab.closeOthers', name: 'Close other tabs', scope: 'Main window', showInPalette: true, shortcuts: [] },
 
     // ============================================================================
     // File list - Navigation commands
@@ -200,12 +202,22 @@ export const commands: Command[] = [
         showInPalette: true,
         shortcuts: ['F2', '⇧F6'],
     },
+    { id: 'file.view', name: 'View', scope: 'Main window/File list', showInPalette: true, shortcuts: ['F3'] },
     {
         id: 'file.edit',
         name: 'Edit in default editor',
         scope: 'Main window/File list',
         showInPalette: true,
         shortcuts: ['F4'],
+    },
+    { id: 'file.copy', name: 'Copy', scope: 'Main window/File list', showInPalette: true, shortcuts: ['F5'] },
+    { id: 'file.move', name: 'Move', scope: 'Main window/File list', showInPalette: true, shortcuts: ['F6'] },
+    {
+        id: 'file.newFolder',
+        name: 'New folder',
+        scope: 'Main window/File list',
+        showInPalette: true,
+        shortcuts: ['F7'],
     },
     {
         id: 'file.showInFinder',

@@ -108,6 +108,12 @@ There are two MCP servers available to you:
 - When shortcuts are available for a feature, always display the shortcut in a tooltip or somewhere, less prominent than
   the main UI.
 
+## Checklist for new features
+
+- When adding a new user-facing action (file operation, tab operation, view toggle, etc.), always add a corresponding
+  entry to `command-registry.ts` and a `case` in `handleCommandExecute` in `+page.svelte`. This keeps the command
+  palette complete.
+
 ## Things to avoid
 
 - ❌ Don't touch git, user handles commits manually. Unless explicitly asked to.
