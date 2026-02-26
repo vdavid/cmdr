@@ -118,6 +118,8 @@ Core explorer UI components:
 - **selection-state.svelte.ts** — Reactive selection set (indices) with range/toggle helpers
 - **sorting-handlers.ts** / **transfer-operations.ts** / **tab-operations.ts** — Pure logic extracted from
   DualPaneExplorer
+- **dialog-state.svelte.ts** — Dialog state and handlers (transfer, new folder, alert, error) extracted from
+  DualPaneExplorer via factory pattern
 - **rename-flow.svelte.ts** — Rename flow logic (validation, conflict/extension dialogs) extracted from FilePane
 
 ## Tabs (`tabs/`)

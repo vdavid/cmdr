@@ -5,7 +5,7 @@
     import LoadingIcon from '$lib/ui/LoadingIcon.svelte'
     import DialogManager from './DialogManager.svelte'
     import { toBackendCursorIndex } from '$lib/file-operations/transfer/transfer-dialog-utils'
-    import { formatBytes, getFileAt } from '$lib/tauri-commands'
+    import { getFileAt } from '$lib/tauri-commands'
     import {
         loadAppStatus,
         saveAppStatus,
@@ -84,7 +84,6 @@
     import { getMtpVolumes } from '$lib/mtp'
     import { getNewSortOrder, applySortResult, collectSortState } from './sorting-handlers'
     import {
-        type TransferDialogPropsData,
         type TransferContext,
         buildTransferPropsFromSelection,
         buildTransferPropsFromCursor,
@@ -92,7 +91,8 @@
         getDestinationVolumeInfo,
     } from './transfer-operations'
     import type { TransferOperationType } from '../types'
-    import { getInitialFolderName, moveCursorToNewFolder } from '$lib/file-operations/mkdir/new-folder-operations'
+    import { getInitialFolderName } from '$lib/file-operations/mkdir/new-folder-operations'
+    import { createDialogState } from './dialog-state.svelte'
     import { getCurrentWebview } from '@tauri-apps/api/webview'
     import { recalculateWebviewOffset, toViewportPosition } from '../drag/drag-position'
     import {
@@ -219,49 +219,14 @@
     let leftPaneWrapperEl: HTMLDivElement | undefined = $state()
     let rightPaneWrapperEl: HTMLDivElement | undefined = $state()
 
-    // Transfer dialog state (copy/move)
-    let showTransferDialog = $state(false)
-    let transferDialogProps = $state<TransferDialogPropsData | null>(null)
-
-    // Transfer progress dialog state
-    let showTransferProgressDialog = $state(false)
-    let transferProgressProps = $state<{
-        operationType: TransferOperationType
-        sourcePaths: string[]
-        sourceFolderPath: string
-        destinationPath: string
-        direction: 'left' | 'right'
-        sortColumn: SortColumn
-        sortOrder: SortOrder
-        previewId: string | null
-        sourceVolumeId: string
-        destVolumeId: string
-        conflictResolution: ConflictResolution
-    } | null>(null)
-
-    // New folder dialog state
-    let showNewFolderDialog = $state(false)
-    let newFolderDialogProps = $state<{
-        currentPath: string
-        listingId: string
-        showHiddenFiles: boolean
-        initialName: string
-        volumeId: string
-    } | null>(null)
-
-    // Alert dialog state
-    let showAlertDialog = $state(false)
-    let alertDialogProps = $state<{
-        title: string
-        message: string
-    } | null>(null)
-
-    // Transfer error dialog state
-    let showTransferErrorDialog = $state(false)
-    let transferErrorProps = $state<{
-        operationType: TransferOperationType
-        error: WriteOperationError
-    } | null>(null)
+    // Dialog state (transfer, new folder, alert, error)
+    const dialogs = createDialogState({
+        getLeftPaneRef: () => leftPaneRef,
+        getRightPaneRef: () => rightPaneRef,
+        getFocusedPaneRef: () => getPaneRef(focusedPane),
+        getShowHiddenFiles: () => showHiddenFiles,
+        onRefocus: () => containerElement?.focus(),
+    })
 
     // Guards against stale background path corrections from determineNavigationPath.
     // Each handleVolumeChange increments this; the background callback checks its captured
@@ -731,11 +696,10 @@
         const destPath = targetFolderPath ?? getPanePath(targetPane)
         const destVolId = getPaneVolumeId(targetPane)
 
-        transferDialogProps = {
+        dialogs.showTransfer({
             ...buildTransferPropsFromDroppedPaths(operation, paths, destPath, targetPane, destVolId, sortBy, sortOrder),
             allowOperationToggle: true,
-        }
-        showTransferDialog = true
+        })
     }
 
     /** Extracts the last path component as a display name. */
@@ -1229,11 +1193,7 @@
         const volId = getPaneVolumeId(focusedPane)
         const volumeInfo = getDestinationVolumeInfo(volId, volumes, getMtpVolumes())
         if (volumeInfo?.isReadOnly) {
-            alertDialogProps = {
-                title: 'Read-only volume',
-                message: "This is a read-only volume. Renaming isn't possible here.",
-            }
-            showAlertDialog = true
+            dialogs.showAlert('Read-only volume', "This is a read-only volume. Renaming isn't possible here.")
             return
         }
 
@@ -1268,62 +1228,23 @@
 
         const initialName = await getInitialFolderName(paneRef, paneListingId, showHiddenFiles, getFileAt)
 
-        newFolderDialogProps = {
+        dialogs.showNewFolder({
             currentPath: path,
             listingId: paneListingId,
             showHiddenFiles,
             initialName,
             volumeId: volumeIdForPane,
-        }
-        showNewFolderDialog = true
-    }
-
-    function handleNewFolderCreated(folderName: string) {
-        const paneRef = getPaneRef(focusedPane)
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const paneListingId = paneRef?.getListingId?.() as string | undefined
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const hasParent = paneRef?.hasParentEntry?.() as boolean | undefined
-
-        showNewFolderDialog = false
-        newFolderDialogProps = null
-        containerElement?.focus()
-
-        if (!paneListingId) return
-        void moveCursorToNewFolder(
-            paneListingId,
-            folderName,
-            paneRef,
-            hasParent ?? false,
-            showHiddenFiles,
-            listen,
-            findFileIndex,
-        )
-    }
-
-    function handleNewFolderCancel() {
-        showNewFolderDialog = false
-        newFolderDialogProps = null
-        containerElement?.focus()
+        })
     }
 
     /** Closes any confirmation dialog (new folder or transfer) if open (for MCP). */
     export function closeConfirmationDialog() {
-        if (showNewFolderDialog) {
-            showNewFolderDialog = false
-            newFolderDialogProps = null
-            containerElement?.focus()
-        }
-        if (showTransferDialog) {
-            showTransferDialog = false
-            transferDialogProps = null
-            containerElement?.focus()
-        }
+        dialogs.closeConfirmationDialog()
     }
 
     /** Returns whether any confirmation dialog is currently open. */
     export function isConfirmationDialogOpen(): boolean {
-        return showNewFolderDialog || showTransferDialog
+        return dialogs.isConfirmationDialogOpen()
     }
 
     /** Opens the file viewer for the file under the cursor. */
@@ -1398,8 +1319,7 @@
               )
 
         if (props) {
-            transferDialogProps = props
-            showTransferDialog = true
+            dialogs.showTransfer(props)
         }
     }
 
@@ -1410,11 +1330,10 @@
 
         const destVolume = getDestinationVolumeInfo(destVolId, volumes, getMtpVolumes())
         if (destVolume?.isReadOnly) {
-            alertDialogProps = {
-                title: 'Read-only device',
-                message: `"${destVolume.name}" is read-only. You can copy files from it, but not to it.`,
-            }
-            showAlertDialog = true
+            dialogs.showAlert(
+                'Read-only device',
+                `"${destVolume.name}" is read-only. You can copy files from it, but not to it.`,
+            )
             return
         }
 
@@ -1422,11 +1341,10 @@
         if (operationType === 'move') {
             const sourceVolId = getPaneVolumeId(focusedPane)
             if (sourceVolId.startsWith('mtp-') || destVolId.startsWith('mtp-')) {
-                alertDialogProps = {
-                    title: 'Not supported yet',
-                    message: "Move between MTP devices isn't supported yet. You can use copy instead.",
-                }
-                showAlertDialog = true
+                dialogs.showAlert(
+                    'Not supported yet',
+                    "Move between MTP devices isn't supported yet. You can use copy instead.",
+                )
                 return
             }
         }
@@ -1442,113 +1360,6 @@
     /** Opens the move dialog (convenience wrapper for MCP/key binding). */
     export async function openMoveDialog() {
         await openTransferDialog('move')
-    }
-
-    function handleTransferConfirm(
-        destination: string,
-        _volumeId: string,
-        previewId: string | null,
-        conflictResolution: ConflictResolution,
-        operationType: TransferOperationType,
-    ) {
-        if (!transferDialogProps) return
-
-        // Store the props needed for the progress dialog (operationType may have been toggled by the user)
-        transferProgressProps = {
-            operationType,
-            sourcePaths: transferDialogProps.sourcePaths,
-            sourceFolderPath: transferDialogProps.sourceFolderPath,
-            destinationPath: destination,
-            direction: transferDialogProps.direction,
-            sortColumn: transferDialogProps.sortColumn,
-            sortOrder: transferDialogProps.sortOrder,
-            previewId,
-            sourceVolumeId: transferDialogProps.sourceVolumeId,
-            destVolumeId: transferDialogProps.destVolumeId,
-            conflictResolution,
-        }
-
-        // Close transfer dialog and open progress dialog
-        showTransferDialog = false
-        transferDialogProps = null
-        showTransferProgressDialog = true
-    }
-
-    function handleTransferCancel() {
-        showTransferDialog = false
-        transferDialogProps = null
-        containerElement?.focus()
-    }
-
-    /** Refreshes panes after a transfer completes — for move, refresh both panes. */
-    function refreshPanesAfterTransfer() {
-        const destPaneRef = transferProgressProps?.direction === 'right' ? rightPaneRef : leftPaneRef
-        const sourcePaneRef = transferProgressProps?.direction === 'right' ? leftPaneRef : rightPaneRef
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        destPaneRef?.refreshView?.()
-        // For move, source files disappeared — refresh source pane too
-        if (transferProgressProps?.operationType === 'move') {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            sourcePaneRef?.refreshView?.()
-        }
-        // Refresh disk space on both panes — both might be on the same volume
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        void leftPaneRef?.refreshVolumeSpace?.()
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        void rightPaneRef?.refreshVolumeSpace?.()
-    }
-
-    function handleTransferComplete(filesProcessed: number, bytesProcessed: number) {
-        const op = transferProgressProps?.operationType ?? 'copy'
-        log.info(
-            `${op === 'copy' ? 'Copy' : 'Move'} complete: ${String(filesProcessed)} files (${formatBytes(bytesProcessed)})`,
-        )
-        addToast(
-            `${op === 'copy' ? 'Copy' : 'Move'} complete: ${String(filesProcessed)} ${filesProcessed === 1 ? 'file' : 'files'}`,
-        )
-
-        refreshPanesAfterTransfer()
-
-        showTransferProgressDialog = false
-        transferProgressProps = null
-        containerElement?.focus()
-    }
-
-    function handleTransferCancelled(filesProcessed: number) {
-        const op = transferProgressProps?.operationType ?? 'copy'
-        log.info(`${op === 'copy' ? 'Copy' : 'Move'} cancelled after ${String(filesProcessed)} files`)
-
-        refreshPanesAfterTransfer()
-
-        showTransferProgressDialog = false
-        transferProgressProps = null
-        containerElement?.focus()
-    }
-
-    function handleTransferError(error: WriteOperationError) {
-        const op = transferProgressProps?.operationType ?? 'copy'
-        log.error('{op} failed: {errorType}', { op: op === 'copy' ? 'Copy' : 'Move', errorType: error.type, error })
-
-        refreshPanesAfterTransfer()
-
-        showTransferProgressDialog = false
-        transferProgressProps = null
-
-        // Show the error dialog
-        transferErrorProps = { operationType: op, error }
-        showTransferErrorDialog = true
-    }
-
-    function handleTransferErrorClose() {
-        showTransferErrorDialog = false
-        transferErrorProps = null
-        containerElement?.focus()
-    }
-
-    function handleAlertClose() {
-        showAlertDialog = false
-        alertDialogProps = null
-        containerElement?.focus()
     }
 
     // Focus the container after initialization so keyboard events work
@@ -1595,7 +1406,7 @@
         if (!leftRef || !rightRef) return false
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         if (leftRef.isLoading?.() || rightRef.isLoading?.()) return false
-        return !(showTransferDialog || showTransferProgressDialog)
+        return !dialogs.isAnyTransferDialogOpen()
     }
 
     /** Swaps all active tab state between left and right panes. */
@@ -2230,26 +2041,50 @@
 <DragOverlay />
 
 <DialogManager
-    {showTransferDialog}
-    {transferDialogProps}
+    showTransferDialog={dialogs.showTransferDialog}
+    transferDialogProps={dialogs.transferDialogProps}
     {volumes}
-    {showTransferProgressDialog}
-    {transferProgressProps}
-    {showNewFolderDialog}
-    {newFolderDialogProps}
-    {showAlertDialog}
-    {alertDialogProps}
-    {showTransferErrorDialog}
-    {transferErrorProps}
-    onTransferConfirm={handleTransferConfirm}
-    onTransferCancel={handleTransferCancel}
-    onTransferComplete={handleTransferComplete}
-    onTransferCancelled={handleTransferCancelled}
-    onTransferError={handleTransferError}
-    onTransferErrorClose={handleTransferErrorClose}
-    onNewFolderCreated={handleNewFolderCreated}
-    onNewFolderCancel={handleNewFolderCancel}
-    onAlertClose={handleAlertClose}
+    showTransferProgressDialog={dialogs.showTransferProgressDialog}
+    transferProgressProps={dialogs.transferProgressProps}
+    showNewFolderDialog={dialogs.showNewFolderDialog}
+    newFolderDialogProps={dialogs.newFolderDialogProps}
+    showAlertDialog={dialogs.showAlertDialog}
+    alertDialogProps={dialogs.alertDialogProps}
+    showTransferErrorDialog={dialogs.showTransferErrorDialog}
+    transferErrorProps={dialogs.transferErrorProps}
+    onTransferConfirm={(
+        dest: string,
+        volId: string,
+        prevId: string | null,
+        resolution: ConflictResolution,
+        opType: TransferOperationType,
+    ) => {
+        dialogs.handleTransferConfirm(dest, volId, prevId, resolution, opType)
+    }}
+    onTransferCancel={() => {
+        dialogs.handleTransferCancel()
+    }}
+    onTransferComplete={(files: number, bytes: number) => {
+        dialogs.handleTransferComplete(files, bytes)
+    }}
+    onTransferCancelled={(files: number) => {
+        dialogs.handleTransferCancelled(files)
+    }}
+    onTransferError={(error: WriteOperationError) => {
+        dialogs.handleTransferError(error)
+    }}
+    onTransferErrorClose={() => {
+        dialogs.handleTransferErrorClose()
+    }}
+    onNewFolderCreated={(name: string) => {
+        dialogs.handleNewFolderCreated(name)
+    }}
+    onNewFolderCancel={() => {
+        dialogs.handleNewFolderCancel()
+    }}
+    onAlertClose={() => {
+        dialogs.handleAlertClose()
+    }}
 />
 
 <style>

@@ -6,13 +6,12 @@
     import AlertDialog from '$lib/ui/AlertDialog.svelte'
     import type { TransferDialogPropsData } from './transfer-operations'
     import type {
-        TransferOperationType,
-        SortColumn,
-        SortOrder,
-        VolumeInfo,
-        ConflictResolution,
-        WriteOperationError,
-    } from '../types'
+        TransferProgressPropsData,
+        NewFolderDialogPropsData,
+        AlertDialogPropsData,
+        TransferErrorPropsData,
+    } from './dialog-state.svelte'
+    import type { VolumeInfo, ConflictResolution, TransferOperationType, WriteOperationError } from '../types'
 
     const {
         showTransferDialog,
@@ -40,31 +39,13 @@
         transferDialogProps: TransferDialogPropsData | null
         volumes: VolumeInfo[]
         showTransferProgressDialog: boolean
-        transferProgressProps: {
-            operationType: TransferOperationType
-            sourcePaths: string[]
-            sourceFolderPath: string
-            destinationPath: string
-            direction: 'left' | 'right'
-            sortColumn: SortColumn
-            sortOrder: SortOrder
-            previewId: string | null
-            sourceVolumeId: string
-            destVolumeId: string
-            conflictResolution: ConflictResolution
-        } | null
+        transferProgressProps: TransferProgressPropsData | null
         showNewFolderDialog: boolean
-        newFolderDialogProps: {
-            currentPath: string
-            listingId: string
-            showHiddenFiles: boolean
-            initialName: string
-            volumeId: string
-        } | null
+        newFolderDialogProps: NewFolderDialogPropsData | null
         showAlertDialog: boolean
-        alertDialogProps: { title: string; message: string } | null
+        alertDialogProps: AlertDialogPropsData | null
         showTransferErrorDialog: boolean
-        transferErrorProps: { operationType: TransferOperationType; error: WriteOperationError } | null
+        transferErrorProps: TransferErrorPropsData | null
         onTransferConfirm: (
             destination: string,
             volumeId: string,

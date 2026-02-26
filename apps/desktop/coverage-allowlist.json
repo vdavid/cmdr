@@ -177,6 +177,9 @@
         },
         "file-explorer/navigation/VolumeBreadcrumb.svelte": {
             "reason": "UI component, depends on Tauri APIs and MTP store"
+        },
+        "file-explorer/pane/dialog-state.svelte.ts": {
+            "reason": "Reactive Svelte state, depends on FilePane refs and Tauri commands"
         }
     }
 }
