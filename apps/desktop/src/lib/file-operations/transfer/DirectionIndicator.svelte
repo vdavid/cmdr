@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { tooltip } from '$lib/tooltip/tooltip'
     import { getFolderName } from './transfer-dialog-utils'
 
     interface Props {
@@ -16,13 +17,21 @@
 
 <div class="direction-indicator">
     {#if direction === 'right'}
-        <span class="folder-name left-side source" title={sourcePath}>{sourceName}</span>
+        <span class="folder-name left-side source" use:tooltip={{ text: sourcePath, overflowOnly: true }}
+            >{sourceName}</span
+        >
         <span class="arrow">&#x2192;</span>
-        <span class="folder-name right-side destination" title={destinationPath}>{destinationName}</span>
+        <span class="folder-name right-side destination" use:tooltip={{ text: destinationPath, overflowOnly: true }}
+            >{destinationName}</span
+        >
     {:else}
-        <span class="folder-name left-side destination" title={destinationPath}>{destinationName}</span>
+        <span class="folder-name left-side destination" use:tooltip={{ text: destinationPath, overflowOnly: true }}
+            >{destinationName}</span
+        >
         <span class="arrow">&#x2190;</span>
-        <span class="folder-name right-side source" title={sourcePath}>{sourceName}</span>
+        <span class="folder-name right-side source" use:tooltip={{ text: sourcePath, overflowOnly: true }}
+            >{sourceName}</span
+        >
     {/if}
 </div>
 

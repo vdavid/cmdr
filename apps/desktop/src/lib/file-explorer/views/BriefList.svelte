@@ -23,6 +23,7 @@
     import { formatNumber, pluralize } from '../selection/selection-info-utils'
     import { isScanning } from '$lib/indexing/index-state.svelte'
     import { iconCacheCleared } from '$lib/icon-cache'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import type { RenameState } from '../rename/rename-state.svelte'
 
     interface Props {
@@ -518,7 +519,7 @@
                                 class:is-under-cursor={globalIndex === cursorIndex}
                                 class:is-selected={selectedIndices.has(globalIndex)}
                                 data-drop-target-path={file.isDirectory && file.name !== '..' ? file.path : undefined}
-                                title={buildDirTooltip(file)}
+                                use:tooltip={buildDirTooltip(file)}
                                 style="height: {rowHeight}px;"
                                 onmousedown={(e: MouseEvent) => {
                                     handleMouseDown(e, globalIndex)

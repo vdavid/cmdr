@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount } from 'svelte'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import SettingsSection from '../components/SettingsSection.svelte'
     import { commands } from '$lib/commands/command-registry'
     import type { Command } from '$lib/commands/types'
@@ -416,10 +417,10 @@
                     <div class="command-row" class:has-conflicts={hasConflicts}>
                         <div class="command-info">
                             {#if isModified}
-                                <span class="modified-dot" title="Modified from default"></span>
+                                <span class="modified-dot" use:tooltip={'Modified from default'}></span>
                             {/if}
                             {#if hasConflicts}
-                                <span class="conflict-icon" title="Has conflicting shortcuts">⚠️</span>
+                                <span class="conflict-icon" use:tooltip={'Has conflicting shortcuts'}>⚠️</span>
                             {/if}
                             <span class="command-name">{command.name}</span>
                         </div>
@@ -446,7 +447,7 @@
                                             {shortcut}
                                             <span
                                                 class="remove-shortcut"
-                                                title="Remove shortcut"
+                                                use:tooltip={'Remove shortcut'}
                                                 role="button"
                                                 tabindex="-1"
                                                 onclick={(e) => {
@@ -470,7 +471,7 @@
                             {/if}
                             <button
                                 class="add-shortcut"
-                                title="Add shortcut"
+                                use:tooltip={'Add shortcut'}
                                 onclick={() => {
                                     handleAddShortcut(command.id)
                                 }}
@@ -480,7 +481,7 @@
                             {#if isModified}
                                 <button
                                     class="reset-shortcut"
-                                    title="Reset to default"
+                                    use:tooltip={'Reset to default'}
                                     onclick={(e) => {
                                         e.stopPropagation()
                                         handleResetShortcut(command.id)

@@ -34,6 +34,7 @@
     import { listen, type UnlistenFn } from '@tauri-apps/api/event'
     import { initializeSettings, getSetting, setSetting } from '$lib/settings'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import { getAppLogger } from '$lib/logging/logger'
 
     const log = getAppLogger('viewer')
@@ -800,15 +801,17 @@
                 onclick={findPrev}
                 disabled={searchMatches.length === 0}
                 aria-label="Previous match"
-                title="Previous match (Shift+Enter)">&#x25B2;</button
+                use:tooltip={{ text: 'Previous match', shortcut: '⇧Enter' }}>&#x25B2;</button
             >
             <button
                 onclick={findNext}
                 disabled={searchMatches.length === 0}
                 aria-label="Next match"
-                title="Next match (Enter)">&#x25BC;</button
+                use:tooltip={{ text: 'Next match', shortcut: 'Enter' }}>&#x25BC;</button
             >
-            <button onclick={closeSearch} aria-label="Close search" title="Close (Escape)">&#x2715;</button>
+            <button onclick={closeSearch} aria-label="Close search" use:tooltip={{ text: 'Close', shortcut: 'Esc' }}
+                >&#x2715;</button
+            >
         </div>
     {/if}
 
@@ -862,29 +865,32 @@
         {#if currentMode === 'fullLoad'}
             <span
                 class="backend-badge"
-                title="You have the file entirely in memory. You can quickly scroll to any line.">in memory</span
+                use:tooltip={'You have the file entirely in memory. You can quickly scroll to any line.'}
+                >in memory</span
             >
         {:else if currentMode === 'lineIndex'}
             <span
                 class="backend-badge"
-                title="You have the file indexed, so the line numbers are accurate, and you can quickly scroll to any point."
+                use:tooltip={'You have the file indexed, so the line numbers are accurate, and you can quickly scroll to any point.'}
                 >indexed</span
             >
         {:else if isIndexing}
             <span
                 class="backend-badge"
-                title="This is a large file in streaming mode. We're building an index in background (max {INDEXING_TIMEOUT_SECS} sec)... Line numbers are currently approximate."
+                use:tooltip={`This is a large file in streaming mode. We're building an index in background (max ${String(INDEXING_TIMEOUT_SECS)} sec)... Line numbers are currently approximate.`}
                 >streaming, indexing...</span
             >
         {:else}
             <span
                 class="backend-badge"
-                title="This is a large file in streaming mode. Indexing would've taken longer than {INDEXING_TIMEOUT_SECS} sec, so we didn't do it. The line numbers are estimates."
+                use:tooltip={`This is a large file in streaming mode. Indexing would've taken longer than ${String(INDEXING_TIMEOUT_SECS)} sec, so we didn't do it. The line numbers are estimates.`}
                 >streaming</span
             >
         {/if}
         {#if wordWrap}
-            <span class="backend-badge" title="Lines wrap at the window edge. Press W to toggle.">wrap</span>
+            <span class="backend-badge" use:tooltip={{ text: 'Lines wrap at the window edge', shortcut: 'W' }}
+                >wrap</span
+            >
         {/if}
         <span class="shortcut-hint">W wrap &middot; Ctrl+F search &middot; Esc close</span>
     </div>

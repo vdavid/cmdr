@@ -34,6 +34,7 @@
     import { getSetting } from '$lib/settings'
     import DirectionIndicator from './DirectionIndicator.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import { getAppLogger } from '$lib/logging/logger'
 
     /** Returns CSS class for size coloring based on bytes (kb/mb/gb/tb) */
@@ -476,7 +477,9 @@
         {@const newIsLarger = conflictEvent.sizeDifference < 0}
         <div class="conflict-section">
             <!-- Filename -->
-            <p class="conflict-filename" title={conflictEvent.destinationPath}>{fileName}</p>
+            <p class="conflict-filename" use:tooltip={{ text: conflictEvent.destinationPath, overflowOnly: true }}>
+                {fileName}
+            </p>
 
             <!-- File comparison -->
             <div class="conflict-comparison">
@@ -624,7 +627,7 @@
 
         <!-- Current file -->
         {#if currentFile}
-            <div class="current-file" title={currentFile}>
+            <div class="current-file" use:tooltip={{ text: currentFile, overflowOnly: true }}>
                 {currentFile}
             </div>
         {/if}
@@ -635,7 +638,7 @@
                 class="secondary"
                 onclick={() => handleCancel(false)}
                 disabled={isCancelling}
-                title="Cancel and keep progress"
+                use:tooltip={'Cancel and keep progress'}
             >
                 Cancel
             </button>
@@ -643,7 +646,7 @@
                 class="danger"
                 onclick={() => handleCancel(true)}
                 disabled={isCancelling}
-                title="Cancel and delete any partial target files created"
+                use:tooltip={'Cancel and delete any partial target files created'}
             >
                 Rollback
             </button>

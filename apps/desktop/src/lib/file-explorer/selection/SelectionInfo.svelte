@@ -13,6 +13,7 @@
     import { measureDateColumnWidth } from '../views/full-list-utils'
     import { formatFileSize, formatDateTime } from '$lib/settings/reactive-settings.svelte'
     import { isScanning } from '$lib/indexing/index-state.svelte'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import type { VolumeSpaceInfo } from '$lib/tauri-commands/storage'
     import { formatDiskSpaceStatus } from '../disk-space-utils'
 
@@ -230,8 +231,8 @@
         {/if}
     {:else if displayMode === 'file-info' && entry}
         <!-- Brief mode without selection: show file info -->
-        <span class="name" bind:this={nameElement} title={displayName}>{truncatedName}</span>
-        <span class="size" title={sizeTooltip}>
+        <span class="name" bind:this={nameElement} use:tooltip={displayName}>{truncatedName}</span>
+        <span class="size" use:tooltip={sizeTooltip}>
             {#if sizeDisplay === 'DIR'}
                 DIR
             {:else if sizeDisplay}
@@ -240,7 +241,7 @@
                 {/each}
             {/if}
         </span>
-        <span class="date" style="width: {dateColumnWidth}px;" title={dateTooltip}>{dateDisplay}</span>
+        <span class="date" style="width: {dateColumnWidth}px;" use:tooltip={dateTooltip}>{dateDisplay}</span>
         {#if volumeSpace}
             <span class="disk-space-text">{formatDiskSpaceStatus(volumeSpace, formatFileSize)}</span>
         {/if}
@@ -252,13 +253,13 @@
         {/if}
     {:else if displayMode === 'selection-summary' && stats}
         <!-- Selection summary -->
-        <span class="summary-text" title={selectionSizeTooltip}>
+        <span class="summary-text" use:tooltip={selectionSizeTooltip}>
             {#if hasOnlyDirs}
                 <!-- Only dirs, no files -->
                 {formatNumber(selectedDirs)} of {formatNumber(totalDirs)}
                 {pluralize(totalDirs, 'dir', 'dirs')} ({dirPercentage}%) selected.
                 {#if showSelectionStale}
-                    <span class="stale-indicator" title="Might be outdated. Currently scanning...">⚠️</span>
+                    <span class="stale-indicator" use:tooltip={'Might be outdated. Currently scanning...'}>⚠️</span>
                 {/if}
             {:else if hasFiles}
                 <!-- Has files: show full summary -->
@@ -270,7 +271,7 @@
                     &nbsp;and {formatNumber(selectedDirs)} of {formatNumber(totalDirs)}
                     {pluralize(totalDirs, 'dir', 'dirs')} ({dirPercentage}%){/if}.
                 {#if showSelectionStale}
-                    <span class="stale-indicator" title="Might be outdated. Currently scanning...">⚠️</span>
+                    <span class="stale-indicator" use:tooltip={'Might be outdated. Currently scanning...'}>⚠️</span>
                 {/if}
             {/if}
         </span>

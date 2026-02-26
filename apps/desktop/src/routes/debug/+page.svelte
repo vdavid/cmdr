@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount, onDestroy, tick } from 'svelte'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import { addToast, dismissTransientToasts, clearAllToasts, getToasts } from '$lib/ui/toast'
     import ToastContainer from '$lib/ui/toast/ToastContainer.svelte'
 
@@ -329,7 +330,9 @@
                             <div class="index-log-entry">
                                 <span class="index-log-time">{entry.time}</span>
                                 <span class="index-log-event">{entry.event}</span>
-                                <span class="index-log-detail" title={entry.detail}>{entry.detail}</span>
+                                <span class="index-log-detail" use:tooltip={{ text: entry.detail, overflowOnly: true }}
+                                    >{entry.detail}</span
+                                >
                             </div>
                         {/each}
                     {/if}
@@ -439,7 +442,9 @@
                                 {@const arrow = isCurrent ? '→' : i < leftHistory.currentIndex ? '←' : '↓'}
                                 <li class:current={isCurrent} class:future={isFuture}>
                                     <span class="history-index">{arrow}</span>
-                                    <span class="history-path" title={entry.path}>{formatEntry(entry)}</span>
+                                    <span class="history-path" use:tooltip={{ text: entry.path, overflowOnly: true }}
+                                        >{formatEntry(entry)}</span
+                                    >
                                 </li>
                             {/each}
                         </ul>
@@ -457,7 +462,9 @@
                                 {@const arrow = isCurrent ? '→' : i < rightHistory.currentIndex ? '←' : '↓'}
                                 <li class:current={isCurrent} class:future={isFuture}>
                                     <span class="history-index">{arrow}</span>
-                                    <span class="history-path" title={entry.path}>{formatEntry(entry)}</span>
+                                    <span class="history-path" use:tooltip={{ text: entry.path, overflowOnly: true }}
+                                        >{formatEntry(entry)}</span
+                                    >
                                 </li>
                             {/each}
                         </ul>

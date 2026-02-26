@@ -32,6 +32,7 @@
         formatFileSize,
     } from '$lib/settings/reactive-settings.svelte'
     import { iconCacheCleared } from '$lib/icon-cache'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import type { RenameState } from '../rename/rename-state.svelte'
 
     interface Props {
@@ -439,7 +440,7 @@
                         {/if}
                         <span
                             class="col-size"
-                            title={file.isDirectory
+                            use:tooltip={file.isDirectory
                                 ? buildDirSizeTooltip(
                                       file.recursiveSize,
                                       file.recursiveFileCount ?? 0,
@@ -459,8 +460,9 @@
                                         <span class={triad.tierClass}>{triad.value}</span>
                                     {/each}
                                     {#if scanning}
-                                        <span class="size-stale" title="Might be outdated. Currently scanning..."
-                                            >⚠️</span
+                                        <span
+                                            class="size-stale"
+                                            use:tooltip={'Might be outdated. Currently scanning...'}>⚠️</span
                                         >
                                     {/if}
                                 {:else if scanning}

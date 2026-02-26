@@ -299,6 +299,7 @@ In dark mode, the backup shadow uses `rgba(255, 255, 255, 0.08)` instead.
 | `--z-overlay` | `200` | Modal overlays (dim background) |
 | `--z-modal` | `300` | Modal dialogs |
 | `--z-notification` | `400` | Toasts, notifications (always on top) |
+| `--z-tooltip` | `500` | Tooltips (above all other layers) |
 
 Keep gaps between tiers so intermediate values are available without reshuffling. Never use raw numbers — always
 reference the token.
@@ -456,14 +457,38 @@ Error: `border-color: var(--color-error); box-shadow: 0 0 0 3px color-mix(in srg
 
 ### Tooltips (app)
 
-Native `title` attribute. No custom tooltip component. This is intentional — native tooltips match OS behavior and don't
-require hover-timing logic. If custom tooltips become necessary later, they should use `--shadow-sm`, `--radius-sm`,
-`--font-size-sm`, and `--color-bg-secondary` background.
+Custom frosted-glass tooltips via Svelte action (`use:tooltip`). A singleton `<div>` is appended to `<body>` and
+repositioned per hover — only one tooltip exists at a time.
+
+**Glass material:**
+- Light: `rgba(245, 245, 245, 0.72)` + `backdrop-filter: saturate(180%) blur(20px)`
+- Dark: `rgba(42, 42, 42, 0.72)` + same filter
+- Hairline border: `0.5px solid rgba(0, 0, 0, 0.12)` (light) / `rgba(255, 255, 255, 0.1)` (dark)
+- Shadow: `--shadow-sm`
+- Radius: `--radius-sm` (4px)
+
+**Typography:** `--font-size-sm` (12px), weight 400, line-height 1.3. Keyboard shortcuts render in a `<kbd>` badge
+with accent-colored text on `--color-accent-subtle` background, using `--font-mono` at `--font-size-xs`.
+
+**Timing:** 400ms show delay. Immediate hide. Entrance: 100ms opacity + 2px translateY (disabled under
+`prefers-reduced-motion`).
+
+**Positioning:** Below element by default, 6px offset. Flips above if near viewport bottom. Clamped to viewport edges
+with 8px margin.
+
+**Content types:**
+- Simple string: `use:tooltip={"Close tab"}`
+- With shortcut: `use:tooltip={{ text: "New tab", shortcut: "⌘T" }}`
+- Rich HTML: `use:tooltip={{ html: dirSizeHtml }}`
+- Overflow-only: `use:tooltip={{ text: fullPath, overflowOnly: true }}`
+
+**Accessibility:** Shows on focus (keyboard navigation), hides on blur/Escape. Trigger element gets `aria-describedby`
+pointing to the tooltip's unique `id`. Tooltip has `role="tooltip"`.
 
 ### Keyboard shortcut hints (app)
 
-Shortcut hints appear in tooltips (via native `title`) and in the command palette. When displayed inline (for example,
-beside a menu item or in a settings label):
+Shortcut hints appear in custom tooltips (via `use:tooltip={{ text: "Label", shortcut: "⌘K" }}`) and in the command
+palette. When displayed inline (for example, beside a menu item or in a settings label):
 
 ```css
 font-size: var(--font-size-xs);    /* 10px */

@@ -5,6 +5,7 @@
     import { SvelteMap } from 'svelte/reactivity'
     import { getDiskUsageLevel, getUsedPercent, formatDiskSpaceShort } from '../disk-space-utils'
     import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import type { VolumeInfo, LocationCategory } from '../types'
     import { getMtpVolumes, initialize as initMtpStore, scanDevices as scanMtpDevices, type MtpVolume } from '$lib/mtp'
 
@@ -433,7 +434,7 @@
         {/if}
         {currentVolumeName}
         {#if currentVolume?.isReadOnly}
-            <span class="read-only-indicator" title="Read-only">🔒</span>
+            <span class="read-only-indicator" use:tooltip={'Read-only'}>🔒</span>
         {/if}
         <span class="chevron">▾</span>
     </span>
@@ -482,7 +483,7 @@
                         {/if}
                         <span class="volume-label">{volume.name}</span>
                         {#if volume.isReadOnly}
-                            <span class="read-only-indicator" title="Read-only">🔒</span>
+                            <span class="read-only-indicator" use:tooltip={'Read-only'}>🔒</span>
                         {/if}
                     </div>
                     {#if volumeSpaceMap.has(volume.id)}

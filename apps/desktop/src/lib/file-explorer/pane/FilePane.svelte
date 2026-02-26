@@ -40,6 +40,7 @@
         type PaneFileEntry,
     } from '$lib/tauri-commands'
     import type { ViewMode } from '$lib/app-status-store'
+    import { tooltip } from '$lib/tooltip/tooltip'
 
     /** State snapshot for swapping panes without backend calls. */
     export interface SwapState {
@@ -1605,21 +1606,25 @@
         />
         <!--suppress HtmlWrongAttributeValue -- We know this is not a valid ARIA role, it's fine -->
         <div
-            class="disk-usage-bar"
-            title={volumeSpace ? formatBarTooltip(volumeSpace, formatFileSize) : ''}
-            role="meter"
-            aria-label="Disk usage"
-            aria-valuenow={volumeSpace ? getUsedPercent(volumeSpace) : 0}
-            aria-valuemin={0}
-            aria-valuemax={100}
+            class="disk-usage-bar-wrapper"
+            use:tooltip={volumeSpace ? formatBarTooltip(volumeSpace, formatFileSize) : ''}
         >
-            {#if volumeSpace}
-                <div
-                    class="disk-usage-fill"
-                    style:width="{getUsedPercent(volumeSpace)}%"
-                    style:background-color="var({getDiskUsageLevel(getUsedPercent(volumeSpace)).cssVar})"
-                ></div>
-            {/if}
+            <div
+                class="disk-usage-bar"
+                role="meter"
+                aria-label="Disk usage"
+                aria-valuenow={volumeSpace ? getUsedPercent(volumeSpace) : 0}
+                aria-valuemin={0}
+                aria-valuemax={100}
+            >
+                {#if volumeSpace}
+                    <div
+                        class="disk-usage-fill"
+                        style:width="{getUsedPercent(volumeSpace)}%"
+                        style:background-color="var({getDiskUsageLevel(getUsedPercent(volumeSpace)).cssVar})"
+                    ></div>
+                {/if}
+            </div>
         </div>
     {/if}
 </div>
@@ -1668,15 +1673,19 @@
         align-items: center;
     }
 
+    .disk-usage-bar-wrapper {
+        flex-shrink: 0;
+    }
+
     .disk-usage-bar {
         height: 2px;
         background-color: var(--color-disk-track);
-        flex-shrink: 0;
     }
 
     .disk-usage-fill {
         height: 100%;
         transition: none;
+        pointer-events: none;
     }
 
     .path {

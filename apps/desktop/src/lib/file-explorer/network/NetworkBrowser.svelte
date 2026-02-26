@@ -19,6 +19,7 @@
         getCredentialStatus,
         checkCredentialsForHost,
     } from './network-store.svelte'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import type { NetworkHost } from '../types'
     import { updateLeftPaneState, updateRightPaneState, type PaneState, type PaneFileEntry } from '$lib/tauri-commands'
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
@@ -382,7 +383,7 @@
                     class="col-status"
                     class:is-error={isStatusError(host)}
                     class:needs-login={!isStatusError(host) && getShareState(host.id)?.status === 'error'}
-                    title={getStatusTooltip(host)}>{getStatusDisplay(host)}</span
+                    use:tooltip={getStatusTooltip(host)}>{getStatusDisplay(host)}</span
                 >
             </div>
         {/each}

@@ -2,6 +2,7 @@
     import type { Snippet } from 'svelte'
     import { isModified, resetSetting, onSpecificSettingChange, type SettingId } from '$lib/settings'
     import { getMatchIndicesForLabel, highlightMatches } from '$lib/settings/settings-search'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import { onMount } from 'svelte'
 
     interface Props {
@@ -54,7 +55,7 @@
     <div class="setting-header">
         <div class="setting-label-wrapper">
             {#if modified}
-                <span class="modified-indicator" title="Modified from default">●</span>
+                <span class="modified-indicator" use:tooltip={'Modified from default'}>●</span>
             {/if}
             <label class="setting-label" for={id}
                 >{#each labelSegments as segment, i (i)}{#if segment.matched}<mark class="search-highlight"

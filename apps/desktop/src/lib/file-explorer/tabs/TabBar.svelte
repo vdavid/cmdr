@@ -1,5 +1,6 @@
 <script lang="ts">
     import type { TabState, TabId } from './tab-types'
+    import { tooltip } from '$lib/tooltip/tooltip'
 
     interface Props {
         tabs: TabState[]
@@ -78,7 +79,7 @@
                 class:after-active={isAfterActive}
                 role="tab"
                 aria-selected={isActive}
-                title={tab.path}
+                use:tooltip={{ text: tab.path, overflowOnly: true }}
                 onmousedown={(e: MouseEvent) => {
                     handleTabMouseDown(e, tab.id)
                 }}
@@ -90,7 +91,7 @@
                 }}
             >
                 {#if tab.pinned}
-                    <span class="pin-icon" title="Pinned" aria-label="Pinned">
+                    <span class="pin-icon" use:tooltip={'Pinned'} aria-label="Pinned">
                         <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
                             <path
                                 d="M11 7V5a3 3 0 1 0-6 0v2H4a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1h-1zM6 5a2 2 0 1 1 4 0v2H6V5z"
@@ -106,7 +107,7 @@
                         class="close-btn"
                         role="button"
                         tabindex="-1"
-                        title="Close tab"
+                        use:tooltip={'Close tab'}
                         aria-label="Close tab"
                         onclick={(e: MouseEvent) => {
                             handleCloseClick(e, tab.id)
@@ -119,7 +120,7 @@
     <button
         class="new-tab-btn"
         aria-label="New tab"
-        title="New tab (⌘T)"
+        use:tooltip={{ text: 'New tab', shortcut: '⌘T' }}
         disabled={isAtMax}
         class:disabled={isAtMax}
         onclick={onNewTab}

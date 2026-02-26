@@ -21,6 +21,10 @@ var allowedUnusedClasses = map[string]bool{
 	"btn-danger":  true,
 	"btn-mini":    true,
 	"btn-regular": true,
+	// Tooltip - singleton DOM node created/managed by tooltip.ts action, not in Svelte templates
+	"cmdr-tooltip":     true,
+	"cmdr-tooltip-kbd": true,
+	"visible":          true,
 }
 
 // allowedUnusedVariables lists CSS custom properties that are defined but used dynamically,

@@ -180,6 +180,9 @@
         },
         "file-explorer/pane/dialog-state.svelte.ts": {
             "reason": "Reactive Svelte state, depends on FilePane refs and Tauri commands"
+        },
+        "tooltip/tooltip.ts": {
+            "reason": "DOM-dependent singleton tooltip, requires document.body and getBoundingClientRect"
         }
     }
 }
