@@ -55,7 +55,8 @@
       "resources/llama-server.tar.gz"
     ],
     "macOS": {
-      "bundleName": "Cmdr"
+      "bundleName": "Cmdr",
+      "entitlements": "./Entitlements.plist"
     }
   }
 }

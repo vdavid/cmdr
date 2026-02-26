@@ -4,5 +4,17 @@
 <dict>
     <key>CFBundleName</key>
     <string>Cmdr</string>
+
+    <!-- Privacy usage descriptions shown in macOS TCC prompts -->
+    <key>NSNetworkVolumesUsageDescription</key>
+    <string>Cmdr needs access to network volumes to browse and manage files on your NAS and other network drives.</string>
+    <key>NSRemovableVolumesUsageDescription</key>
+    <string>Cmdr needs access to removable volumes to browse and manage files on USB drives and external disks.</string>
+    <key>NSDesktopFolderUsageDescription</key>
+    <string>Cmdr needs access to your Desktop folder to browse and manage files there.</string>
+    <key>NSDocumentsFolderUsageDescription</key>
+    <string>Cmdr needs access to your Documents folder to browse and manage files there.</string>
+    <key>NSDownloadsFolderUsageDescription</key>
+    <string>Cmdr needs access to your Downloads folder to browse and manage files there.</string>
 </dict>
 </plist>
