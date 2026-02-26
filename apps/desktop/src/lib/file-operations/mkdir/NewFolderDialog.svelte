@@ -330,15 +330,16 @@
     .suggestion-item {
         padding: var(--spacing-xs) 10px;
         font-size: var(--font-size-sm);
+        font-weight: 500;
         color: var(--color-text-secondary);
         background: var(--color-bg-tertiary);
         border: 1px solid var(--color-border-strong);
         border-radius: var(--radius-sm);
-        cursor: pointer;
         max-width: 100%;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        transition: all var(--transition-base);
     }
 
     .suggestion-item:hover {
@@ -350,5 +351,6 @@
     .suggestion-item:focus-visible {
         outline: 2px solid var(--color-accent);
         outline-offset: 1px;
+        box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1);
     }
 </style>

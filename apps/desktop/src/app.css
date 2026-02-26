@@ -247,6 +247,7 @@
 
     a {
         background-color: transparent;
+        cursor: default;
     }
 
     a:active,
@@ -330,7 +331,7 @@
     [type='reset'],
     [type='submit'],
     button {
-        cursor: pointer;
+        cursor: default;
     }
 
     [type='reset'],

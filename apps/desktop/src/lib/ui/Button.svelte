@@ -29,7 +29,6 @@
 
 <style>
     .btn {
-        cursor: pointer;
         font-weight: 500;
         line-height: 1;
         border-radius: var(--radius-md);

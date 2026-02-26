@@ -156,7 +156,6 @@
         border: none;
         color: var(--color-text-secondary);
         font-size: var(--font-size-xl);
-        cursor: pointer;
         padding: var(--spacing-xs) var(--spacing-sm);
         line-height: 1;
         border-radius: var(--radius-sm);

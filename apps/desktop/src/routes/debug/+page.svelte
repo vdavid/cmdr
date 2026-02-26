@@ -512,7 +512,6 @@
         border: none;
         color: var(--color-text-secondary);
         font-size: var(--font-size-xl);
-        cursor: pointer;
         padding: 2px 8px;
         line-height: 1;
         border-radius: var(--radius-sm);
@@ -549,7 +548,6 @@
         padding: 8px 12px;
         background: var(--color-bg-secondary);
         border-radius: var(--radius-md);
-        cursor: pointer;
     }
 
     .toggle-row:hover {
@@ -564,7 +562,6 @@
     .toggle-checkbox {
         width: 18px;
         height: 18px;
-        cursor: pointer;
         accent-color: var(--color-accent);
     }
 
@@ -683,7 +680,6 @@
         color: var(--color-text-primary);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-sm);
-        cursor: pointer;
     }
 
     .index-button:hover {

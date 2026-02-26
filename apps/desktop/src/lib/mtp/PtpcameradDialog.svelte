@@ -74,14 +74,15 @@
 
         <div class="command-box">
             <code class="command">{workaroundCommand}</code>
-            <button
-                class="copy-button"
+            <Button
+                variant="secondary"
+                size="mini"
                 onclick={handleCopyCommand}
                 disabled={!workaroundCommand}
                 aria-label="Copy command to clipboard"
             >
                 {copied ? 'Copied!' : 'Copy'}
-            </button>
+            </Button>
         </div>
 
         <p class="help-text">
@@ -148,29 +149,6 @@
         line-height: 1.5;
         background: none;
         padding: 0;
-    }
-
-    .copy-button {
-        flex-shrink: 0;
-        padding: var(--spacing-sm) var(--spacing-md);
-        font-size: var(--font-size-sm);
-        font-weight: 500;
-        border-radius: var(--radius-sm);
-        cursor: pointer;
-        transition: all var(--transition-base);
-        background: var(--color-bg-tertiary);
-        color: var(--color-text-secondary);
-        border: 1px solid var(--color-border-strong);
-    }
-
-    .copy-button:hover:not(:disabled) {
-        background: var(--color-accent-subtle);
-        color: var(--color-text-primary);
-    }
-
-    .copy-button:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
     }
 
     .help-text {

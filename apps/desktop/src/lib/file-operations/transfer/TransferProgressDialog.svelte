@@ -34,6 +34,7 @@
     import { getSetting } from '$lib/settings'
     import DirectionIndicator from './DirectionIndicator.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
+    import Button from '$lib/ui/Button.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { getAppLogger } from '$lib/logging/logger'
 
@@ -513,36 +514,36 @@
             <!-- Buttons in two rows -->
             <div class="conflict-buttons">
                 <div class="conflict-buttons-row">
-                    <button
-                        class="secondary"
+                    <Button
+                        variant="secondary"
                         onclick={() => handleConflictResolution('skip', false)}
                         disabled={isResolvingConflict}
                     >
                         Skip
-                    </button>
-                    <button
-                        class="secondary"
+                    </Button>
+                    <Button
+                        variant="secondary"
                         onclick={() => handleConflictResolution('overwrite', false)}
                         disabled={isResolvingConflict}
                     >
                         Overwrite
-                    </button>
+                    </Button>
                 </div>
                 <div class="conflict-buttons-row">
-                    <button
-                        class="secondary"
+                    <Button
+                        variant="secondary"
                         onclick={() => handleConflictResolution('skip', true)}
                         disabled={isResolvingConflict}
                     >
                         Skip all
-                    </button>
-                    <button
-                        class="secondary"
+                    </Button>
+                    <Button
+                        variant="secondary"
                         onclick={() => handleConflictResolution('overwrite', true)}
                         disabled={isResolvingConflict}
                     >
                         Overwrite all
-                    </button>
+                    </Button>
                 </div>
             </div>
 
@@ -634,22 +635,12 @@
 
         <!-- Action buttons -->
         <div class="button-row">
-            <button
-                class="secondary"
-                onclick={() => handleCancel(false)}
-                disabled={isCancelling}
-                use:tooltip={'Cancel and keep progress'}
-            >
-                Cancel
-            </button>
-            <button
-                class="danger"
-                onclick={() => handleCancel(true)}
-                disabled={isCancelling}
-                use:tooltip={'Cancel and delete any partial target files created'}
-            >
-                Rollback
-            </button>
+            <span use:tooltip={'Cancel and keep progress'}>
+                <Button variant="secondary" onclick={() => handleCancel(false)} disabled={isCancelling}>Cancel</Button>
+            </span>
+            <span use:tooltip={'Cancel and delete any partial target files created'}>
+                <Button variant="danger" onclick={() => handleCancel(true)} disabled={isCancelling}>Rollback</Button>
+            </span>
         </div>
     {/if}
 </ModalDialog>
@@ -797,43 +788,6 @@
         padding: var(--spacing-lg) var(--spacing-xl) 20px;
     }
 
-    button {
-        padding: var(--spacing-sm) 20px;
-        border-radius: var(--radius-md);
-        font-size: var(--font-size-md);
-        font-weight: 500;
-        cursor: pointer;
-        transition: all var(--transition-base);
-        min-width: 80px;
-    }
-
-    button:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .secondary {
-        background: transparent;
-        color: var(--color-text-secondary);
-        border: 1px solid var(--color-border-strong);
-    }
-
-    .secondary:hover:not(:disabled) {
-        background: var(--color-bg-tertiary);
-        color: var(--color-text-primary);
-    }
-
-    .danger {
-        background: transparent;
-        color: var(--color-error);
-        border: 1px solid var(--color-error);
-    }
-
-    .danger:hover:not(:disabled) {
-        background: var(--color-error);
-        color: var(--color-text-primary);
-    }
-
     /* Rollback section */
     .rollback-section {
         display: flex;
@@ -945,7 +899,7 @@
         justify-content: center;
     }
 
-    .conflict-buttons button {
+    .conflict-buttons :global(button) {
         flex: 1;
         max-width: 120px;
     }
@@ -963,7 +917,15 @@
         color: var(--color-error);
         border: none;
         font-size: var(--font-size-sm);
+        font-weight: 500;
         padding: var(--spacing-sm) var(--spacing-lg);
+        cursor: pointer;
+        transition: all var(--transition-base);
+    }
+
+    .danger-text:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
     }
 
     .danger-text:hover:not(:disabled) {

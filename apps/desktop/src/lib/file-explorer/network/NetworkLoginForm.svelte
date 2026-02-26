@@ -4,6 +4,7 @@
      * Displayed in the file pane when credentials are required to connect to a network share.
      */
     import { onMount } from 'svelte'
+    import Button from '$lib/ui/Button.svelte'
     import type { AuthMode, ConnectionMode, KnownNetworkShare, NetworkHost } from '../types'
     import { getUsernameHints, getKnownShareByName } from '$lib/tauri-commands'
 
@@ -195,17 +196,17 @@
             </div>
 
             <div class="button-row">
-                <button type="button" class="btn btn-secondary" onclick={onCancel} disabled={isConnecting}>
-                    Cancel
-                </button>
-                <button type="submit" class="btn btn-primary" disabled={!canSubmit || isConnecting}>
-                    {#if isConnecting}
-                        <span class="spinner"></span>
-                        Connecting...
-                    {:else}
-                        Connect
-                    {/if}
-                </button>
+                <Button variant="secondary" onclick={onCancel} disabled={isConnecting}>Cancel</Button>
+                <Button variant="primary" type="submit" disabled={!canSubmit || isConnecting}>
+                    <span class="btn-content">
+                        {#if isConnecting}
+                            <span class="spinner"></span>
+                            Connecting...
+                        {:else}
+                            Connect
+                        {/if}
+                    </span>
+                </Button>
             </div>
         </form>
     </div>
@@ -381,43 +382,10 @@
         margin-top: 20px;
     }
 
-    .btn {
-        padding: 10px 20px;
-        border-radius: var(--radius-md);
-        font-size: var(--font-size-sm);
-        font-weight: 500;
-        cursor: pointer;
-        transition:
-            background-color var(--transition-base),
-            opacity var(--transition-base);
-    }
-
-    .btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .btn-secondary {
-        background-color: var(--color-bg-tertiary);
-        border: 1px solid var(--color-border-strong);
-        color: var(--color-text-primary);
-    }
-
-    .btn-secondary:hover:not(:disabled) {
-        background-color: var(--color-bg-tertiary);
-    }
-
-    .btn-primary {
+    .btn-content {
         display: flex;
         align-items: center;
         gap: 8px;
-        background-color: var(--color-accent);
-        border: none;
-        color: white;
-    }
-
-    .btn-primary:hover:not(:disabled) {
-        filter: brightness(1.1);
     }
 
     .spinner {

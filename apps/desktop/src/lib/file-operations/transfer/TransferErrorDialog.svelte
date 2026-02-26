@@ -2,6 +2,7 @@
     import type { WriteOperationError, TransferOperationType } from '$lib/file-explorer/types'
     import { getUserFriendlyMessage, getTechnicalDetails } from './transfer-error-messages'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
+    import Button from '$lib/ui/Button.svelte'
 
     interface Props {
         operationType: TransferOperationType
@@ -89,9 +90,9 @@
     <!-- Action buttons -->
     <div class="button-row">
         {#if onRetry}
-            <button class="secondary" onclick={onRetry}>Retry</button>
+            <Button variant="secondary" onclick={onRetry}>Retry</Button>
         {/if}
-        <button class="primary" onclick={onClose}>Close</button>
+        <Button variant="primary" onclick={onClose}>Close</Button>
     </div>
 </ModalDialog>
 
@@ -162,6 +163,11 @@
         color: var(--color-text-secondary);
     }
 
+    .details-toggle:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 1px;
+    }
+
     .toggle-icon {
         display: flex;
         align-items: center;
@@ -203,36 +209,5 @@
         gap: 12px;
         justify-content: center;
         padding: 0 24px 20px;
-    }
-
-    button {
-        padding: var(--spacing-sm) 20px;
-        border-radius: var(--radius-md);
-        font-size: var(--font-size-md);
-        font-weight: 500;
-        cursor: pointer;
-        transition: all var(--transition-base);
-        min-width: 80px;
-    }
-
-    .primary {
-        background: var(--color-accent);
-        color: white;
-        border: none;
-    }
-
-    .primary:hover {
-        filter: brightness(1.1);
-    }
-
-    .secondary {
-        background: transparent;
-        color: var(--color-text-secondary);
-        border: 1px solid var(--color-border-strong);
-    }
-
-    .secondary:hover {
-        background: var(--color-bg-tertiary);
-        color: var(--color-text-primary);
     }
 </style>

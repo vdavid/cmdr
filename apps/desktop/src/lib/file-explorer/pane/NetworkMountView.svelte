@@ -5,6 +5,7 @@
     import { getAppLogger } from '$lib/logging/logger'
     import NetworkBrowser from '../network/NetworkBrowser.svelte'
     import ShareBrowser from '../network/ShareBrowser.svelte'
+    import Button from '$lib/ui/Button.svelte'
 
     const log = getAppLogger('fileExplorer')
 
@@ -174,8 +175,8 @@
         <div class="error-title">Couldn't mount share</div>
         <div class="error-message">{mountError.message}</div>
         <div class="error-actions">
-            <button type="button" class="btn" onclick={handleMountRetry}>Try again</button>
-            <button type="button" class="btn" onclick={handleMountErrorBack}>Back</button>
+            <Button variant="secondary" onclick={handleMountRetry}>Try again</Button>
+            <Button variant="secondary" onclick={handleMountErrorBack}>Back</Button>
         </div>
     </div>
 {:else if currentNetworkHost}
@@ -239,20 +240,5 @@
         display: flex;
         gap: var(--spacing-sm);
         margin-top: var(--spacing-sm);
-    }
-
-    .mount-error-state .btn {
-        padding: var(--spacing-sm) var(--spacing-lg);
-        border: 1px solid var(--color-border-strong);
-        border-radius: var(--radius-md);
-        background-color: var(--color-bg-secondary);
-        color: var(--color-text-primary);
-        font-size: var(--font-size-sm);
-        cursor: pointer;
-        transition: background-color var(--transition-base);
-    }
-
-    .mount-error-state .btn:hover {
-        background-color: var(--color-bg-tertiary);
     }
 </style>

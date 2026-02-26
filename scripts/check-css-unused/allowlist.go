@@ -18,9 +18,11 @@ var allowedUnusedClasses = map[string]bool{
 	// DualPaneExplorer.svelte - applied imperatively via classList.add during drag-and-drop
 	"folder-drop-target": true,
 	// Button.svelte - classes constructed dynamically via template strings (btn-{variant}, btn-{size})
-	"btn-danger":  true,
-	"btn-mini":    true,
-	"btn-regular": true,
+	"btn-primary":   true,
+	"btn-secondary": true,
+	"btn-danger":    true,
+	"btn-mini":      true,
+	"btn-regular":   true,
 	// Tooltip - singleton DOM node created/managed by tooltip.ts action, not in Svelte templates
 	"cmdr-tooltip":     true,
 	"cmdr-tooltip-kbd": true,

@@ -3,6 +3,7 @@
     import SettingRow from '../components/SettingRow.svelte'
     import SettingSwitch from '../components/SettingSwitch.svelte'
     import SettingNumberInput from '../components/SettingNumberInput.svelte'
+    import Button from '$lib/ui/Button.svelte'
     import { getSetting, getSettingDefinition, setSetting } from '$lib/settings'
     import { checkPortAvailable, findAvailablePort } from '$lib/tauri-commands'
     import { createShouldShow } from '$lib/settings/settings-search'
@@ -87,9 +88,9 @@
             <div class="port-status unavailable">
                 Port is in use
                 {#if suggestedPort}
-                    <button class="use-suggested" onclick={useSuggestedPort}>
+                    <Button variant="primary" size="mini" onclick={useSuggestedPort}>
                         Use port {suggestedPort} instead
-                    </button>
+                    </Button>
                 {/if}
             </div>
         {/if}
@@ -126,21 +127,5 @@
         display: flex;
         align-items: center;
         gap: var(--spacing-sm);
-    }
-
-    .use-suggested {
-        padding: 2px 8px;
-        border: 1px solid var(--color-accent);
-        border-radius: var(--radius-sm);
-        background: var(--color-accent);
-        color: white;
-        font-size: var(--font-size-sm);
-        cursor: default;
-        transition: background-color var(--transition-base);
-    }
-
-    .use-suggested:hover {
-        background: var(--color-accent-hover);
-        border-color: var(--color-accent-hover);
     }
 </style>

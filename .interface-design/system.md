@@ -413,7 +413,7 @@ font-size: var(--font-size-sm);   /* 12px */
 border-radius: var(--radius-sm);  /* 4px */
 ```
 
-**All buttons:** `cursor: pointer`. No `outline: none` on focus — rely on focus-visible ring.
+**All buttons:** `cursor: default`. No `outline: none` on focus — rely on focus-visible ring.
 
 ### Buttons (website)
 

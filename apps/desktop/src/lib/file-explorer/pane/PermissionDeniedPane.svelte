@@ -61,18 +61,31 @@
     }
 
     button {
-        padding: 10px 20px;
-        border-radius: var(--radius-lg);
+        padding: 7px 20px;
+        border-radius: var(--radius-md);
+        font-size: var(--font-size-md);
         font-weight: 500;
-        cursor: pointer;
         background: var(--color-allow);
         color: white;
         border: none;
         display: block;
         margin: var(--spacing-2xl) auto 0;
+        transition: all var(--transition-base);
     }
 
     button:hover {
-        opacity: 0.85;
+        background: color-mix(in oklch, var(--color-allow), white 15%);
+    }
+
+    button:focus-visible {
+        outline: 2px solid var(--color-allow);
+        outline-offset: 1px;
+        box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1);
+    }
+
+    @media (prefers-color-scheme: dark) {
+        button:focus-visible {
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.08);
+        }
     }
 </style>

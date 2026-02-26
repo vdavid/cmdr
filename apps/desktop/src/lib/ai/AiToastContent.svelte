@@ -7,6 +7,7 @@
         handleGotIt,
         handleOptOut,
     } from './ai-state.svelte'
+    import Button from '$lib/ui/Button.svelte'
 
     const aiState = getAiState()
 </script>
@@ -20,9 +21,9 @@
         <span class="ai-hint">You can add or remove AI later in settings.</span>
     </div>
     <div class="ai-actions">
-        <button class="ai-button primary" onclick={() => void handleDownload()}>Download</button>
-        <button class="ai-button secondary" onclick={() => void handleDismiss()}>Not now</button>
-        <button class="ai-button tertiary" onclick={() => void handleOptOut()}>I don't want AI</button>
+        <Button variant="primary" size="mini" onclick={() => void handleDownload()}>Download</Button>
+        <Button variant="secondary" size="mini" onclick={() => void handleDismiss()}>Not now</Button>
+        <button class="tertiary-link" onclick={() => void handleOptOut()}>I don't want AI</button>
     </div>
 {:else if aiState.notificationState === 'downloading'}
     <div class="ai-content">
@@ -44,7 +45,7 @@
         {/if}
     </div>
     <div class="ai-actions">
-        <button class="ai-button secondary" onclick={() => void handleCancel()}>Cancel</button>
+        <Button variant="secondary" size="mini" onclick={() => void handleCancel()}>Cancel</Button>
     </div>
 {:else if aiState.notificationState === 'installing'}
     <div class="ai-content">
@@ -57,7 +58,7 @@
         <span class="ai-description">Try creating a new folder (F7) to see AI-powered name suggestions.</span>
     </div>
     <div class="ai-actions">
-        <button class="ai-button primary" onclick={handleGotIt}>Got it</button>
+        <Button variant="primary" size="mini" onclick={handleGotIt}>Got it</Button>
     </div>
 {:else if aiState.notificationState === 'starting'}
     <div class="ai-content">
@@ -120,39 +121,21 @@
         margin-top: var(--spacing-xs);
     }
 
-    .ai-button {
-        padding: var(--spacing-xs) var(--spacing-sm);
-        border-radius: var(--radius-md);
-        font-size: var(--font-size-sm);
-        cursor: pointer;
-        border: none;
-    }
-
-    .ai-button.primary {
-        background: var(--color-accent);
-        color: #fff;
-    }
-
-    .ai-button.primary:hover {
-        filter: brightness(1.1);
-    }
-
-    .ai-button.secondary {
-        background: transparent;
-        color: var(--color-text-secondary);
-    }
-
-    .ai-button.secondary:hover {
-        background: var(--color-bg-tertiary);
-    }
-
-    .ai-button.tertiary {
+    .tertiary-link {
         background: transparent;
         color: var(--color-text-tertiary);
         font-size: var(--font-size-xs);
+        border: none;
+        padding: var(--spacing-xs) var(--spacing-sm);
+        transition: all var(--transition-base);
     }
 
-    .ai-button.tertiary:hover {
+    .tertiary-link:hover {
         color: var(--color-text-secondary);
+    }
+
+    .tertiary-link:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 1px;
     }
 </style>

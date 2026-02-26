@@ -106,7 +106,6 @@
         border: none;
         color: var(--color-text-tertiary);
         font-size: var(--font-size-sm);
-        cursor: pointer;
         width: 22px;
         height: 22px;
         display: flex;

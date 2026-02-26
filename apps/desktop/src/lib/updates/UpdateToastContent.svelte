@@ -1,6 +1,7 @@
 <script lang="ts">
     import { restartToUpdate } from './updater.svelte'
     import { dismissToast } from '$lib/ui/toast'
+    import Button from '$lib/ui/Button.svelte'
 
     function handleRestart() {
         void restartToUpdate()
@@ -13,8 +14,8 @@
 
 <span class="update-text">New version available. Restart to update.</span>
 <div class="update-actions">
-    <button class="update-button restart" onclick={handleRestart}>Restart</button>
-    <button class="update-button later" onclick={handleDismiss}>Later</button>
+    <Button variant="primary" size="mini" onclick={handleRestart}>Restart</Button>
+    <Button variant="secondary" size="mini" onclick={handleDismiss}>Later</Button>
 </div>
 
 <style>
@@ -27,31 +28,5 @@
         display: flex;
         gap: var(--spacing-xs);
         margin-top: var(--spacing-xs);
-    }
-
-    .update-button {
-        padding: var(--spacing-xs) var(--spacing-sm);
-        border-radius: var(--radius-md);
-        font-size: var(--font-size-sm);
-        cursor: pointer;
-        border: none;
-    }
-
-    .update-button.restart {
-        background: var(--color-accent);
-        color: #fff;
-    }
-
-    .update-button.restart:hover {
-        filter: brightness(1.1);
-    }
-
-    .update-button.later {
-        background: transparent;
-        color: var(--color-text-secondary);
-    }
-
-    .update-button.later:hover {
-        background: var(--color-bg-tertiary);
     }
 </style>

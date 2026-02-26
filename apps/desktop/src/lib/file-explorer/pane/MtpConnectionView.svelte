@@ -2,6 +2,7 @@
     import { isMtpVolumeId, constructMtpPath } from '$lib/mtp'
     import { connect as connectMtpDevice } from '$lib/mtp/mtp-store.svelte'
     import { getAppLogger } from '$lib/logging/logger'
+    import Button from '$lib/ui/Button.svelte'
 
     const log = getAppLogger('mtpConnection')
 
@@ -166,7 +167,7 @@
             <div class="mtp-error">
                 <span class="error-icon">⚠</span>
                 <span class="error-message">{mtpConnectionError}</span>
-                <button type="button" class="btn" onclick={handleRetry}>Try again</button>
+                <Button variant="secondary" onclick={handleRetry}>Try again</Button>
             </div>
         {/if}
     </div>
@@ -209,20 +210,5 @@
         font-size: var(--font-size-sm);
         height: auto;
         padding: 0;
-    }
-
-    .mtp-error .btn {
-        padding: var(--spacing-sm) var(--spacing-lg);
-        border: 1px solid var(--color-border-strong);
-        border-radius: var(--radius-md);
-        background-color: var(--color-bg-secondary);
-        color: var(--color-text-primary);
-        font-size: var(--font-size-sm);
-        cursor: pointer;
-        transition: background-color var(--transition-base);
-    }
-
-    .mtp-error .btn:hover {
-        background-color: var(--color-bg-tertiary);
     }
 </style>

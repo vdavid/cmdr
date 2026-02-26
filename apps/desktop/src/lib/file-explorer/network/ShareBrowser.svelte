@@ -4,6 +4,7 @@
      * Shows login form when authentication is required.
      */
     import { onMount } from 'svelte'
+    import Button from '$lib/ui/Button.svelte'
     import type { AuthMode, NetworkHost, ShareInfo, ShareListError } from '../types'
     import {
         getShareState,
@@ -394,9 +395,9 @@
             <div class="error-title">Couldn't connect to {host.name}</div>
             <div class="error-message">{error.message || error.type}</div>
             <div class="error-actions">
-                <button type="button" class="btn" onclick={handleRetry}>Retry</button>
-                <button type="button" class="btn" onclick={() => (showLoginForm = true)}>Sign in</button>
-                <button type="button" class="btn" onclick={onBack}>Back</button>
+                <Button variant="secondary" onclick={handleRetry}>Retry</Button>
+                <Button variant="secondary" onclick={() => (showLoginForm = true)}>Sign in</Button>
+                <Button variant="secondary" onclick={onBack}>Back</Button>
             </div>
         </div>
     {:else if sortedShares.length === 0}
@@ -404,11 +405,11 @@
             <div class="empty-icon">📁</div>
             <div class="empty-title">No shares available</div>
             <div class="empty-message">This host has no accessible shares.</div>
-            <button type="button" class="btn" onclick={onBack}>Back</button>
+            <Button variant="secondary" onclick={onBack}>Back</Button>
         </div>
     {:else}
         <div class="header-row">
-            <button type="button" class="back-button" onclick={onBack}>← Back</button>
+            <Button variant="secondary" size="mini" onclick={onBack}>← Back</Button>
             <span class="host-name">{host.name}</span>
             <span class="share-count">{sortedShares.length} {sortedShares.length === 1 ? 'share' : 'shares'}</span>
         </div>
@@ -486,21 +487,6 @@
         margin-top: var(--spacing-sm);
     }
 
-    .btn {
-        padding: var(--spacing-sm) var(--spacing-lg);
-        border: 1px solid var(--color-border-strong);
-        border-radius: var(--radius-md);
-        background-color: var(--color-bg-secondary);
-        color: var(--color-text-primary);
-        font-size: var(--font-size-sm);
-        cursor: pointer;
-        transition: background-color var(--transition-base);
-    }
-
-    .btn:hover {
-        background-color: var(--color-bg-tertiary);
-    }
-
     .header-row {
         display: flex;
         align-items: center;
@@ -508,20 +494,6 @@
         padding: var(--spacing-sm) var(--spacing-md);
         background-color: var(--color-bg-secondary);
         border-bottom: 1px solid var(--color-border-strong);
-    }
-
-    .back-button {
-        padding: var(--spacing-xs) var(--spacing-sm);
-        border: 1px solid var(--color-border-strong);
-        border-radius: var(--radius-sm);
-        background-color: transparent;
-        color: var(--color-text-secondary);
-        font-size: var(--font-size-sm);
-        cursor: pointer;
-    }
-
-    .back-button:hover {
-        background-color: var(--color-bg-tertiary);
     }
 
     .host-name {

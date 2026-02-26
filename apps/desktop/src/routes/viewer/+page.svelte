@@ -946,13 +946,20 @@
         border-radius: var(--radius-sm);
         color: var(--color-text-primary);
         font-size: var(--font-size-sm);
+        font-weight: 500;
         padding: 2px var(--spacing-xs);
-        cursor: pointer;
         line-height: 1;
+        transition: all var(--transition-base);
+    }
+
+    .search-bar button:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 1px;
     }
 
     .search-bar button:hover:not(:disabled) {
-        background: var(--color-bg-tertiary);
+        background: var(--color-bg-secondary);
+        color: var(--color-text-primary);
     }
 
     .search-bar button:disabled {

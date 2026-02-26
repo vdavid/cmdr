@@ -5,6 +5,7 @@
      * Uses the shared network-store for host data (initialized at app startup).
      */
     import { onMount } from 'svelte'
+    import Button from '$lib/ui/Button.svelte'
     import {
         getNetworkHosts,
         getDiscoveryState,
@@ -399,7 +400,7 @@
     </div>
 
     <div class="refresh-section">
-        <button type="button" class="refresh-button" onclick={handleRefreshClick}> 🔄 Refresh </button>
+        <Button variant="secondary" onclick={handleRefreshClick}>🔄 Refresh</Button>
     </div>
 </div>
 
@@ -524,27 +525,5 @@
         justify-content: center;
         padding: var(--spacing-lg) var(--spacing-sm);
         border-top: 1px solid var(--color-border-subtle);
-    }
-
-    .refresh-button {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
-        padding: var(--spacing-sm) var(--spacing-lg);
-        border: 1px solid var(--color-border-strong);
-        border-radius: var(--radius-md);
-        background-color: var(--color-bg-secondary);
-        color: var(--color-text-primary);
-        font-size: var(--font-size-sm);
-        cursor: pointer;
-        transition: background-color var(--transition-base);
-    }
-
-    .refresh-button:hover {
-        background-color: var(--color-bg-tertiary);
-    }
-
-    .refresh-button:active {
-        background-color: var(--color-bg-tertiary);
     }
 </style>

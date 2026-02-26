@@ -1,5 +1,6 @@
 <script lang="ts">
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
+    import Button from '$lib/ui/Button.svelte'
     import { setSetting } from '$lib/settings'
 
     interface Props {
@@ -50,8 +51,8 @@
     </label>
 
     <div class="button-row">
-        <button class="secondary" onclick={onKeepOld}>Keep .{oldExtension}</button>
-        <button class="primary" onclick={handleUseNew}>Use .{newExtension}</button>
+        <Button variant="secondary" onclick={onKeepOld}>Keep .{oldExtension}</Button>
+        <Button variant="primary" onclick={handleUseNew}>Use .{newExtension}</Button>
     </div>
 </ModalDialog>
 
@@ -84,36 +85,5 @@
         gap: 12px;
         justify-content: center;
         padding: 0 24px 20px;
-    }
-
-    button {
-        padding: var(--spacing-sm) 20px;
-        border-radius: var(--radius-md);
-        font-size: var(--font-size-md);
-        font-weight: 500;
-        cursor: pointer;
-        transition: all var(--transition-base);
-        min-width: 80px;
-    }
-
-    .primary {
-        background: var(--color-accent);
-        color: white;
-        border: none;
-    }
-
-    .primary:hover {
-        filter: brightness(1.1);
-    }
-
-    .secondary {
-        background: transparent;
-        color: var(--color-text-secondary);
-        border: 1px solid var(--color-border-strong);
-    }
-
-    .secondary:hover {
-        background: var(--color-bg-tertiary);
-        color: var(--color-text-primary);
     }
 </style>

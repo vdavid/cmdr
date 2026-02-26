@@ -264,7 +264,6 @@
         padding: 0;
         background: none;
         border: none;
-        cursor: pointer;
     }
 
     .appearance-link:hover {
@@ -315,7 +314,6 @@
         border: none;
         color: var(--color-accent);
         font-size: var(--font-size-sm);
-        cursor: pointer;
         text-decoration: underline;
     }
 

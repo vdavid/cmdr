@@ -252,7 +252,6 @@
         justify-content: space-between;
         align-items: center;
         padding: var(--spacing-sm) var(--spacing-lg);
-        cursor: pointer;
         font-size: var(--font-size-md);
         color: var(--color-text-primary);
     }

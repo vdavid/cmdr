@@ -104,7 +104,6 @@
         padding: var(--spacing-xs) 0;
         font-family: var(--font-system) sans-serif;
         font-size: var(--font-size-sm);
-        cursor: pointer;
         color: var(--color-text-primary);
     }
 

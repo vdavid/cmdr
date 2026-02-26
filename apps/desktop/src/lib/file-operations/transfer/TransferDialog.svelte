@@ -456,7 +456,6 @@
         border: 1px solid var(--color-border-strong);
         border-radius: var(--radius-md);
         color: var(--color-text-primary);
-        cursor: pointer;
     }
 
     .volume-select:focus {
@@ -611,12 +610,10 @@
         gap: var(--spacing-sm);
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
-        cursor: pointer;
     }
 
     .policy-option input[type='radio'] {
         margin: 0;
-        cursor: pointer;
     }
 
     .policy-option:hover {
@@ -635,7 +632,6 @@
         padding: 5px var(--spacing-lg);
         font-size: var(--font-size-sm);
         font-weight: 500;
-        cursor: pointer;
         border: 1px solid var(--color-border-strong);
         background: transparent;
         color: var(--color-text-secondary);

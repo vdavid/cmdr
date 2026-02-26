@@ -49,7 +49,6 @@
         padding: 0 var(--spacing-xs);
         background: transparent;
         border: none;
-        cursor: pointer;
         font: inherit;
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);

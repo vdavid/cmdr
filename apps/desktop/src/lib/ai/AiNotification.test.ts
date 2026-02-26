@@ -73,7 +73,7 @@ describe('AiToastContent', () => {
         const title = target.querySelector('.ai-title')
         expect(title?.textContent).toBe('AI features available')
 
-        const buttons = target.querySelectorAll('.ai-button')
+        const buttons = target.querySelectorAll('.ai-actions button')
         expect(buttons).toHaveLength(3)
         expect(buttons[0].textContent).toBe('Download')
         expect(buttons[1].textContent).toBe('Not now')
@@ -85,7 +85,7 @@ describe('AiToastContent', () => {
         const target = document.createElement('div')
         mount(AiToastContent, { target })
 
-        const downloadButton = target.querySelector('.ai-button.primary') as HTMLButtonElement
+        const downloadButton = target.querySelector('.btn-primary') as HTMLButtonElement
         downloadButton.click()
         flushSync()
 
@@ -97,7 +97,7 @@ describe('AiToastContent', () => {
         const target = document.createElement('div')
         mount(AiToastContent, { target })
 
-        const dismissButton = target.querySelector('.ai-button.secondary') as HTMLButtonElement
+        const dismissButton = target.querySelector('.btn-secondary') as HTMLButtonElement
         dismissButton.click()
         flushSync()
 
@@ -109,7 +109,7 @@ describe('AiToastContent', () => {
         const target = document.createElement('div')
         mount(AiToastContent, { target })
 
-        const optOutButton = target.querySelector('.ai-button.tertiary') as HTMLButtonElement
+        const optOutButton = target.querySelector('.tertiary-link') as HTMLButtonElement
         optOutButton.click()
         flushSync()
 
@@ -149,7 +149,7 @@ describe('AiToastContent', () => {
         const target = document.createElement('div')
         mount(AiToastContent, { target })
 
-        const cancelButton = target.querySelector('.ai-button.secondary') as HTMLButtonElement
+        const cancelButton = target.querySelector('.btn-secondary') as HTMLButtonElement
         cancelButton.click()
         flushSync()
 
@@ -169,7 +169,7 @@ describe('AiToastContent', () => {
         expect(description?.textContent).toBe('Starting inference server')
 
         // No buttons in installing state
-        expect(target.querySelectorAll('.ai-button')).toHaveLength(0)
+        expect(target.querySelectorAll('.ai-actions button')).toHaveLength(0)
     })
 
     it('renders ready state with Got it button', () => {
@@ -181,7 +181,7 @@ describe('AiToastContent', () => {
         const title = target.querySelector('.ai-title')
         expect(title?.textContent).toBe('AI ready')
 
-        const button = target.querySelector('.ai-button.primary') as HTMLButtonElement
+        const button = target.querySelector('.btn-primary') as HTMLButtonElement
         expect(button.textContent).toBe('Got it')
     })
 
@@ -191,7 +191,7 @@ describe('AiToastContent', () => {
         const target = document.createElement('div')
         mount(AiToastContent, { target })
 
-        const button = target.querySelector('.ai-button.primary') as HTMLButtonElement
+        const button = target.querySelector('.btn-primary') as HTMLButtonElement
         button.click()
         flushSync()
 
