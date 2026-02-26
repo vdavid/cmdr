@@ -56,14 +56,29 @@
 <div class="setting-row" class:disabled>
     <div class="setting-header">
         <div class="setting-label-wrapper">
-            {#if modified}
-                <span class="modified-indicator" use:tooltip={'Modified from default'}>●</span>
-            {/if}
             <label class="setting-label" for={id}
                 >{#each labelSegments as segment, i (i)}{#if segment.matched}<mark class="search-highlight"
                             >{segment.text}</mark
                         >{:else}{segment.text}{/if}{/each}</label
             >
+            {#if modified}
+                <button
+                    class="reset-button"
+                    use:tooltip={'Reset to default'}
+                    onclick={handleReset}
+                    aria-label="Reset to default"
+                >
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <path
+                            d="M2 2v3.5h2.5M3 10a6 6 0 1 0 5-8 6.5 6.5 0 0 0-4.5 1.8L2 5.5"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        />
+                    </svg>
+                </button>
+            {/if}
             {#if disabled && disabledReason}
                 <span class="disabled-badge">{disabledReason}</span>
             {/if}
@@ -80,9 +95,6 @@
     {:else}
         <p class="setting-description">{description}</p>
     {/if}
-    <button class="reset-link" class:hidden={!modified} onclick={handleReset} aria-hidden={!modified}>
-        Reset to default
-    </button>
 </div>
 
 <style>
@@ -112,9 +124,20 @@
         gap: var(--spacing-xs);
     }
 
-    .modified-indicator {
+    .reset-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: var(--spacing-xs);
+        padding: 0;
+        background: none;
+        border: none;
         color: var(--color-accent);
-        font-size: var(--font-size-xs);
+        cursor: default;
+    }
+
+    .reset-button:hover {
+        color: var(--color-accent-hover);
     }
 
     .setting-label {
@@ -150,21 +173,6 @@
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
         line-height: 1.4;
-    }
-
-    .reset-link {
-        margin-top: var(--spacing-xs);
-        padding: 0;
-        background: none;
-        border: none;
-        color: var(--color-accent);
-        font-size: var(--font-size-sm);
-        cursor: default;
-        text-decoration: underline;
-    }
-
-    .reset-link.hidden {
-        visibility: hidden;
     }
 
     .search-highlight {
