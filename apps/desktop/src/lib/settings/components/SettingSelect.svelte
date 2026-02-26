@@ -323,12 +323,12 @@
     /* Highlighted item (keyboard navigation) - same as checked for immediate feedback */
     :global(.select-item[data-highlighted]) {
         background: var(--color-accent);
-        color: white;
+        color: var(--color-accent-fg);
     }
 
     :global(.select-item[data-state='checked']) {
         background: var(--color-accent);
-        color: white;
+        color: var(--color-accent-fg);
     }
 
     :global(.select-item[data-state='checked']:hover),
@@ -353,7 +353,7 @@
     :global(.select-item[data-state='checked'] .item-indicator),
     :global(.select-item[data-highlighted] .item-indicator) {
         visibility: visible;
-        color: white;
+        color: var(--color-accent-fg);
     }
 
     /* When Custom... is highlighted, hide the checked state from other items */

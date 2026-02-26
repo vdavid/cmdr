@@ -651,7 +651,7 @@
     .toggle-option.active {
         background: var(--color-accent);
         border-color: var(--color-accent);
-        color: white;
+        color: var(--color-accent-fg);
     }
 
     .toggle-option:not(.active):hover {

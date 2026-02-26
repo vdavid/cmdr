@@ -130,8 +130,9 @@
     }
 
     .restart-badge {
-        background: var(--color-warning);
-        color: white;
+        background: var(--color-accent);
+        color: var(--color-accent-fg);
+        margin-left: var(--spacing-xs);
     }
 
     .setting-control {

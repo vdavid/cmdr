@@ -306,7 +306,7 @@
 
     .section-item.selected {
         background: var(--color-accent);
-        color: white;
+        color: var(--color-accent-fg);
     }
 
     .section-item.selected:hover {
@@ -319,6 +319,6 @@
     }
 
     .section-item.subsection.selected {
-        color: white;
+        color: var(--color-accent-fg);
     }
 </style>

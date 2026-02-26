@@ -71,7 +71,7 @@
 
     :global(.toggle-item[data-state='on']) {
         background: var(--color-accent);
-        color: white;
+        color: var(--color-accent-fg);
     }
 
     :global(.toggle-item[data-state='on']:hover) {

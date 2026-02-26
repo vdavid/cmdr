@@ -556,7 +556,7 @@
 
     .filter-chip.active {
         background: var(--color-accent);
-        color: white;
+        color: var(--color-accent-fg);
         border-color: var(--color-accent);
     }
 
@@ -681,7 +681,7 @@
 
     .shortcut-pill.editing {
         background: var(--color-accent);
-        color: white;
+        color: var(--color-accent-fg);
         border-color: var(--color-accent);
     }
 

@@ -27,11 +27,24 @@
     --color-text-secondary: #666666;
     --color-text-tertiary: #888888;
 
+    /* === macOS system accent colors (for reference / testing) ===
+     * These are the fixed colors returned by NSColor.controlAccentColor().
+     * "Multicolor" (the default macOS option) returns Blue. */
+    --color-apple-blue: #087aff;
+    --color-apple-purple: #a54fa7;
+    --color-apple-pink: #f74f9f;
+    --color-apple-red: #ff5157;
+    --color-apple-orange: #f6821b;
+    --color-apple-yellow: #ffc601;
+    --color-apple-green: #61bb46;
+    --color-apple-graphite: #8b8c8c;
+
     /* === Interactive States ===
      * These accent colors are CSS fallbacks only. At runtime, the Rust backend
      * reads the macOS system accent color and overrides --color-accent via
      * accent-color.ts → initAccentColor(). See src-tauri/src/accent_color.rs. */
     --color-accent: #d4a006;
+    --color-accent-fg: #1a1a1a; /* Text on accent backgrounds — dark in both themes for a11y */
     --color-accent-hover: color-mix(in oklch, var(--color-accent), white 15%);
     --color-accent-subtle: color-mix(in oklch, var(--color-accent), transparent 85%);
     --color-cmdr-gold: #d4a006;

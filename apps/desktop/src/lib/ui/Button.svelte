@@ -71,7 +71,7 @@
     /* === Variant: primary === */
     .btn-primary {
         background: var(--color-accent);
-        color: white;
+        color: var(--color-accent-fg);
         border: none;
     }
 
