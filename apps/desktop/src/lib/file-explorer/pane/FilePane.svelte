@@ -1594,8 +1594,8 @@
             />
         {/if}
     </div>
-    <!-- SelectionInfo shown in both modes (not in network view or MTP connecting state) -->
-    {#if !isNetworkView && !isMtpDeviceOnly}
+    <!-- SelectionInfo shown in both modes (not in network view, MTP connecting state, or error states) -->
+    {#if !isNetworkView && !isMtpDeviceOnly && !isPermissionDenied && !error}
         <SelectionInfo
             {viewMode}
             entry={entryUnderCursor}
