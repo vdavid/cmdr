@@ -2,6 +2,7 @@
     import type { FileEntry } from '../types'
     import { getCachedIcon, iconCacheVersion } from '$lib/icon-cache'
     import { getFallbackEmoji } from '../views/file-list-utils'
+    import { getIsCmdrGold } from '$lib/settings/reactive-settings.svelte'
 
     interface Props {
         file: FileEntry
@@ -17,11 +18,14 @@
         void _cacheVersion // Track cache version for reactivity
         return getCachedIcon(f.iconId)
     }
+
+    const isFolderIcon = $derived(file.iconId === 'dir' || file.iconId === 'symlink-dir')
+    const recolorToGold = $derived(isFolderIcon && getIsCmdrGold())
 </script>
 
 <span class="icon-wrapper">
     {#if getIconUrl(file)}
-        <img class="icon" src={getIconUrl(file)} alt="" width="16" height="16" />
+        <img class="icon" class:gold-folder={recolorToGold} src={getIconUrl(file)} alt="" width="16" height="16" />
     {:else}
         <span class="icon-emoji">{getFallbackEmoji(file)}</span>
     {/if}
@@ -45,6 +49,10 @@
         width: 16px;
         height: 16px;
         object-fit: contain;
+    }
+
+    .gold-folder {
+        filter: grayscale(1) sepia(1) hue-rotate(3deg) saturate(2.5) brightness(0.95);
     }
 
     .icon-emoji {

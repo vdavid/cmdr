@@ -11,6 +11,7 @@ import {
     type DateTimeFormat,
     type FileSizeFormat,
     type DirectorySortMode,
+    type AppColor,
     densityMappings,
 } from '$lib/settings'
 import { formatDateTimeWithFormat, formatFileSizeWithFormat } from './format-utils'
@@ -26,6 +27,7 @@ let customDateTimeFormat = $state<string>('YYYY-MM-DD HH:mm')
 let fileSizeFormat = $state<FileSizeFormat>('binary')
 let useAppIconsForDocuments = $state<boolean>(true)
 let directorySortMode = $state<DirectorySortMode>('likeFiles')
+let appColor = $state<AppColor>('cmdr-gold')
 
 let initialized = false
 let unsubscribe: (() => void) | undefined
@@ -48,6 +50,7 @@ export async function initReactiveSettings(): Promise<void> {
         fileSizeFormat = getSetting('appearance.fileSizeFormat')
         useAppIconsForDocuments = getSetting('appearance.useAppIconsForDocuments')
         directorySortMode = getSetting('listing.directorySortMode')
+        appColor = getSetting('appearance.appColor')
 
         // Subscribe to changes (including cross-window changes)
         unsubscribe = onSettingChange((id, value) => {
@@ -79,6 +82,9 @@ export async function initReactiveSettings(): Promise<void> {
                 case 'listing.directorySortMode':
                     log.info('Applying directory sort mode change: {value}', { value })
                     directorySortMode = value as DirectorySortMode
+                    break
+                case 'appearance.appColor':
+                    appColor = value as AppColor
                     break
             }
         })
@@ -121,6 +127,11 @@ export function getUseAppIconsForDocuments(): boolean {
 /** Get current directory sort mode */
 export function getDirectorySortMode(): DirectorySortMode {
     return directorySortMode
+}
+
+/** Whether the user has selected Cmdr gold as their app color */
+export function getIsCmdrGold(): boolean {
+    return appColor === 'cmdr-gold'
 }
 
 // ============================================================================
