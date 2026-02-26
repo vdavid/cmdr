@@ -149,8 +149,7 @@
     let leftPaneWidthPercent = $state(50)
 
     let containerElement: HTMLDivElement | undefined = $state()
-    let leftPaneRef: FilePane | undefined = $state()
-    let rightPaneRef: FilePane | undefined = $state()
+    const paneRefs = $state<Record<'left' | 'right', FilePane | undefined>>({ left: undefined, right: undefined })
     let unlistenSettings: UnlistenFn | undefined
     let unlistenViewMode: UnlistenFn | undefined
     let unlistenVolumeMount: UnlistenFn | undefined
@@ -216,13 +215,15 @@
     let dropTargetFolderEl = $state<HTMLElement | null>(null)
 
     // Refs for pane wrapper elements (used for hit-testing drop targets)
-    let leftPaneWrapperEl: HTMLDivElement | undefined = $state()
-    let rightPaneWrapperEl: HTMLDivElement | undefined = $state()
+    const paneWrapperEls = $state<Record<'left' | 'right', HTMLDivElement | undefined>>({
+        left: undefined,
+        right: undefined,
+    })
 
     // Dialog state (transfer, new folder, alert, error)
     const dialogs = createDialogState({
-        getLeftPaneRef: () => leftPaneRef,
-        getRightPaneRef: () => rightPaneRef,
+        getLeftPaneRef: () => paneRefs.left,
+        getRightPaneRef: () => paneRefs.right,
         getFocusedPaneRef: () => getPaneRef(focusedPane),
         getShowHiddenFiles: () => showHiddenFiles,
         onRefocus: () => containerElement?.focus(),
@@ -236,7 +237,7 @@
     // --- Pane accessor helpers ---
 
     function getPaneRef(pane: 'left' | 'right'): FilePane | undefined {
-        return pane === 'left' ? leftPaneRef : rightPaneRef
+        return paneRefs[pane]
     }
 
     function getPanePath(pane: 'left' | 'right'): string {
@@ -281,6 +282,22 @@
 
     function setPaneViewMode(pane: 'left' | 'right', viewMode: ViewMode) {
         getActiveTab(getTabMgr(pane)).viewMode = viewMode
+    }
+
+    function getPaneViewMode(pane: 'left' | 'right'): ViewMode {
+        return pane === 'left' ? leftViewMode : rightViewMode
+    }
+
+    function getPaneVolumePath(pane: 'left' | 'right'): string {
+        return pane === 'left' ? leftVolumePath : rightVolumePath
+    }
+
+    function getPaneVolumeName(pane: 'left' | 'right'): string | undefined {
+        return pane === 'left' ? leftVolumeName : rightVolumeName
+    }
+
+    function getPaneWidth(pane: 'left' | 'right'): number {
+        return pane === 'left' ? leftPaneWidthPercent : 100 - leftPaneWidthPercent
     }
 
     function otherPane(pane: 'left' | 'right'): 'left' | 'right' {
@@ -570,18 +587,14 @@
     function routeToVolumeChooser(e: KeyboardEvent): boolean {
         // Check if EITHER pane has a volume chooser open - if so, route events there
         // This is important because F1/F2 can open a volume chooser on the non-focused pane
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        if (leftPaneRef?.isVolumeChooserOpen?.()) {
+        for (const side of ['left', 'right'] as const) {
+            const ref = getPaneRef(side)
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            if (leftPaneRef.handleVolumeChooserKeyDown?.(e)) {
-                return true
-            }
-        }
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        if (rightPaneRef?.isVolumeChooserOpen?.()) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            if (rightPaneRef.handleVolumeChooserKeyDown?.(e)) {
-                return true
+            if (ref?.isVolumeChooserOpen?.()) {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+                if (ref.handleVolumeChooserKeyDown?.(e)) {
+                    return true
+                }
             }
         }
         return false
@@ -609,9 +622,9 @@
         switch (e.key) {
             case 'F1':
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                rightPaneRef?.closeVolumeChooser()
+                getPaneRef('right')?.closeVolumeChooser()
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                leftPaneRef?.toggleVolumeChooser()
+                getPaneRef('left')?.toggleVolumeChooser()
                 return true
             case 'F2':
                 startRename()
@@ -759,7 +772,7 @@
 
     /** Updates drop-target highlights and overlay as the cursor moves during a drag. */
     function handleDragOver(position: { x: number; y: number }) {
-        const resolved = resolveDropTarget(position.x, position.y, leftPaneWrapperEl, rightPaneWrapperEl)
+        const resolved = resolveDropTarget(position.x, position.y, paneWrapperEls.left, paneWrapperEls.right)
 
         if (resolved?.type === 'folder') {
             dropTargetPane = null
@@ -786,7 +799,7 @@
 
     /** Handles the drop event: resolves the target and opens the transfer dialog. */
     function handleDrop(paths: string[], position: { x: number; y: number }) {
-        const resolved = resolveDropTarget(position.x, position.y, leftPaneWrapperEl, rightPaneWrapperEl)
+        const resolved = resolveDropTarget(position.x, position.y, paneWrapperEls.left, paneWrapperEls.right)
         const folderPath = dropTargetFolderPath
 
         // Read the modifier BEFORE stopping the tracker (which resets altKeyHeld)
@@ -836,7 +849,7 @@
         shouldRefresh: boolean,
         throttleUntil: number,
         setThrottle: (v: number) => void,
-        paneRef: typeof leftPaneRef,
+        paneRef: FilePane | undefined,
     ) {
         if (!shouldRefresh) return
         const now = Date.now()
@@ -851,8 +864,8 @@
         const refreshLeft = hasDescendantUpdate(paths, ensureTrailingSlash(leftPath))
         const refreshRight = hasDescendantUpdate(paths, ensureTrailingSlash(rightPath))
 
-        throttledRefresh(refreshLeft, leftThrottleUntil, (v) => (leftThrottleUntil = v), leftPaneRef)
-        throttledRefresh(refreshRight, rightThrottleUntil, (v) => (rightThrottleUntil = v), rightPaneRef)
+        throttledRefresh(refreshLeft, leftThrottleUntil, (v) => (leftThrottleUntil = v), getPaneRef('left'))
+        throttledRefresh(refreshRight, rightThrottleUntil, (v) => (rightThrottleUntil = v), getPaneRef('right'))
     }
 
     function handleResizeForDevTools() {
@@ -1208,16 +1221,18 @@
 
     /** Cancels any active inline rename on either pane. */
     export function cancelRename() {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        leftPaneRef?.cancelRename?.()
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        rightPaneRef?.cancelRename?.()
+        for (const side of ['left', 'right'] as const) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            getPaneRef(side)?.cancelRename?.()
+        }
     }
 
     /** Returns whether inline rename is active on either pane. */
     export function isRenaming(): boolean {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        return (leftPaneRef?.isRenaming?.() as boolean) || (rightPaneRef?.isRenaming?.() as boolean) || false
+        return (['left', 'right'] as const).some((side) => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            return getPaneRef(side)?.isRenaming?.() as boolean
+        })
     }
 
     /** Opens the new folder dialog. Pre-fills with the entry name under cursor. */
@@ -1496,10 +1511,10 @@
      * Close volume chooser on all panes.
      */
     export function closeVolumeChooser() {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        leftPaneRef?.closeVolumeChooser()
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        rightPaneRef?.closeVolumeChooser()
+        for (const side of ['left', 'right'] as const) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            getPaneRef(side)?.closeVolumeChooser()
+        }
     }
 
     /**
@@ -1897,6 +1912,74 @@
     }
 </script>
 
+{#snippet paneBlock(paneId: 'left' | 'right')}
+    {@const tabMgr = getTabMgr(paneId)}
+    <div
+        class="pane-wrapper"
+        class:drop-target-active={dropTargetPane === paneId}
+        style="width: {getPaneWidth(paneId)}%"
+        bind:this={paneWrapperEls[paneId]}
+    >
+        <TabBar
+            tabs={getAllTabs(tabMgr)}
+            activeTabId={tabMgr.activeTabId}
+            {paneId}
+            maxTabs={MAX_TABS_PER_PANE}
+            onTabSwitch={(tabId: TabId) => {
+                switchToTab(paneId, tabId)
+            }}
+            onTabClose={(tabId: TabId) => {
+                handleTabClose(paneId, tabId)
+            }}
+            onTabMiddleClick={(tabId: TabId) => {
+                handleTabMiddleClick(paneId, tabId)
+            }}
+            onNewTab={() => {
+                handleNewTab(paneId)
+            }}
+            onContextMenu={(tabId: TabId, event: MouseEvent) => {
+                handleTabContextMenu(paneId, tabId, event)
+            }}
+            onPaneFocus={() => {
+                handleFocus(paneId)
+            }}
+        />
+        <!--suppress JSUnresolvedReference -->
+        {#key getActiveTab(tabMgr).id}
+            <FilePane
+                bind:this={paneRefs[paneId]}
+                {paneId}
+                initialPath={getPanePath(paneId)}
+                volumeId={getPaneVolumeId(paneId)}
+                volumePath={getPaneVolumePath(paneId)}
+                volumeName={getPaneVolumeName(paneId)}
+                isFocused={focusedPane === paneId}
+                {showHiddenFiles}
+                viewMode={getPaneViewMode(paneId)}
+                sortBy={getPaneSort(paneId).sortBy}
+                sortOrder={getPaneSort(paneId).sortOrder}
+                directorySortMode={getDirectorySortMode()}
+                onPathChange={(path: string) => {
+                    handlePathChange(paneId, path)
+                }}
+                onVolumeChange={(volumeId: string, volumePath: string, targetPath: string) =>
+                    handleVolumeChange(paneId, volumeId, volumePath, targetPath)}
+                onRequestFocus={() => {
+                    handleFocus(paneId)
+                }}
+                onSortChange={(column: SortColumn) => handleSortChange(paneId, column)}
+                onNetworkHostChange={(host: NetworkHost | null) => {
+                    handleNetworkHostChange(paneId, host)
+                }}
+                onCancelLoading={() => {
+                    handleCancelLoading(paneId)
+                }}
+                onMtpFatalError={(msg: string) => handleMtpFatalError(paneId, msg)}
+            />
+        {/key}
+    </div>
+{/snippet}
+
 <!-- svelte-ignore a11y_no_noninteractive_tabindex,a11y_no_noninteractive_element_interactions -->
 <div
     class="dual-pane-explorer"
@@ -1908,135 +1991,11 @@
     aria-label="File explorer"
 >
     {#if initialized}
-        <div
-            class="pane-wrapper"
-            class:drop-target-active={dropTargetPane === 'left'}
-            style="width: {leftPaneWidthPercent}%"
-            bind:this={leftPaneWrapperEl}
-        >
-            <TabBar
-                tabs={getAllTabs(leftTabMgr)}
-                activeTabId={leftTabMgr.activeTabId}
-                paneId="left"
-                maxTabs={MAX_TABS_PER_PANE}
-                onTabSwitch={(tabId: TabId) => {
-                    switchToTab('left', tabId)
-                }}
-                onTabClose={(tabId: TabId) => {
-                    handleTabClose('left', tabId)
-                }}
-                onTabMiddleClick={(tabId: TabId) => {
-                    handleTabMiddleClick('left', tabId)
-                }}
-                onNewTab={() => {
-                    handleNewTab('left')
-                }}
-                onContextMenu={(tabId: TabId, event: MouseEvent) => {
-                    handleTabContextMenu('left', tabId, event)
-                }}
-                onPaneFocus={() => {
-                    handleFocus('left')
-                }}
-            />
-            <!--suppress JSUnresolvedReference -->
-            {#key getActiveTab(leftTabMgr).id}
-                <FilePane
-                    bind:this={leftPaneRef}
-                    paneId="left"
-                    initialPath={leftPath}
-                    volumeId={leftVolumeId}
-                    volumePath={leftVolumePath}
-                    volumeName={leftVolumeName}
-                    isFocused={focusedPane === 'left'}
-                    {showHiddenFiles}
-                    viewMode={leftViewMode}
-                    sortBy={leftSortBy}
-                    sortOrder={leftSortOrder}
-                    directorySortMode={getDirectorySortMode()}
-                    onPathChange={(path: string) => {
-                        handlePathChange('left', path)
-                    }}
-                    onVolumeChange={(volumeId: string, volumePath: string, targetPath: string) =>
-                        handleVolumeChange('left', volumeId, volumePath, targetPath)}
-                    onRequestFocus={() => {
-                        handleFocus('left')
-                    }}
-                    onSortChange={(column: SortColumn) => handleSortChange('left', column)}
-                    onNetworkHostChange={(host: NetworkHost | null) => {
-                        handleNetworkHostChange('left', host)
-                    }}
-                    onCancelLoading={() => {
-                        handleCancelLoading('left')
-                    }}
-                    onMtpFatalError={(msg: string) => handleMtpFatalError('left', msg)}
-                />
-            {/key}
-        </div>
+        <!-- eslint-disable-next-line @typescript-eslint/no-confusing-void-expression -- Svelte {@render} syntax -->
+        {@render paneBlock('left')}
         <PaneResizer onResize={handlePaneResize} onResizeEnd={handlePaneResizeEnd} onReset={handlePaneResizeReset} />
-        <div
-            class="pane-wrapper"
-            class:drop-target-active={dropTargetPane === 'right'}
-            style="width: {100 - leftPaneWidthPercent}%"
-            bind:this={rightPaneWrapperEl}
-        >
-            <TabBar
-                tabs={getAllTabs(rightTabMgr)}
-                activeTabId={rightTabMgr.activeTabId}
-                paneId="right"
-                maxTabs={MAX_TABS_PER_PANE}
-                onTabSwitch={(tabId: TabId) => {
-                    switchToTab('right', tabId)
-                }}
-                onTabClose={(tabId: TabId) => {
-                    handleTabClose('right', tabId)
-                }}
-                onTabMiddleClick={(tabId: TabId) => {
-                    handleTabMiddleClick('right', tabId)
-                }}
-                onNewTab={() => {
-                    handleNewTab('right')
-                }}
-                onContextMenu={(tabId: TabId, event: MouseEvent) => {
-                    handleTabContextMenu('right', tabId, event)
-                }}
-                onPaneFocus={() => {
-                    handleFocus('right')
-                }}
-            />
-            <!--suppress JSUnresolvedReference -->
-            {#key getActiveTab(rightTabMgr).id}
-                <FilePane
-                    bind:this={rightPaneRef}
-                    paneId="right"
-                    initialPath={rightPath}
-                    volumeId={rightVolumeId}
-                    volumePath={rightVolumePath}
-                    volumeName={rightVolumeName}
-                    isFocused={focusedPane === 'right'}
-                    {showHiddenFiles}
-                    viewMode={rightViewMode}
-                    sortBy={rightSortBy}
-                    sortOrder={rightSortOrder}
-                    directorySortMode={getDirectorySortMode()}
-                    onPathChange={(path: string) => {
-                        handlePathChange('right', path)
-                    }}
-                    onVolumeChange={(volumeId: string, volumePath: string, targetPath: string) =>
-                        handleVolumeChange('right', volumeId, volumePath, targetPath)}
-                    onRequestFocus={() => {
-                        handleFocus('right')
-                    }}
-                    onSortChange={(column: SortColumn) => handleSortChange('right', column)}
-                    onNetworkHostChange={(host: NetworkHost | null) => {
-                        handleNetworkHostChange('right', host)
-                    }}
-                    onCancelLoading={() => {
-                        handleCancelLoading('right')
-                    }}
-                    onMtpFatalError={(msg: string) => handleMtpFatalError('right', msg)}
-                />
-            {/key}
-        </div>
+        <!-- eslint-disable-next-line @typescript-eslint/no-confusing-void-expression -- Svelte {@render} syntax -->
+        {@render paneBlock('right')}
     {:else}
         <LoadingIcon />
     {/if}
