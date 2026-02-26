@@ -1808,6 +1808,13 @@
         paneRef?.refreshView?.()
     }
 
+    /** Refresh network hosts in the focused pane (used by ⌘R shortcut). */
+    export function refreshNetworkHosts() {
+        const paneRef = getPaneRef(focusedPane)
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        paneRef?.refreshNetworkHosts?.()
+    }
+
     /**
      * Handle unified select command from MCP.
      * @param pane - Which pane to select in

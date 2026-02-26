@@ -75,6 +75,7 @@
         moveCursor: (pane: 'left' | 'right', to: number | string) => Promise<void>
         scrollTo: (pane: 'left' | 'right', index: number) => void
         refreshPane: () => void
+        refreshNetworkHosts: () => void
         newTab: () => boolean
         closeActiveTab: () => 'closed' | 'last-tab'
         closeActiveTabWithConfirmation: () => Promise<'closed' | 'last-tab' | 'cancelled'>
@@ -794,6 +795,12 @@
 
             case 'nav.pageDown':
                 explorerRef?.sendKeyToFocusedPane('PageDown')
+                explorerRef?.refocus()
+                return
+
+            // === Network commands ===
+            case 'network.refresh':
+                explorerRef?.refreshNetworkHosts()
                 explorerRef?.refocus()
                 return
 

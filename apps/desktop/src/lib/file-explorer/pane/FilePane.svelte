@@ -253,6 +253,12 @@
         return isNetworkView
     }
 
+    /** Refresh network hosts (used by ⌘R shortcut). */
+    export function refreshNetworkHosts(): void {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        networkMountViewRef?.refreshNetworkHosts()
+    }
+
     export function getSelectedIndices(): number[] {
         return selection.getSelectedIndices()
     }

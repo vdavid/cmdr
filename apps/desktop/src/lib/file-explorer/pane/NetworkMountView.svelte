@@ -157,6 +157,12 @@
         return (networkBrowserRef?.findItemIndex(name) as number | undefined) ?? -1
     }
 
+    /** Refresh network hosts (used by ⌘R shortcut). */
+    export function refreshNetworkHosts() {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte bind:this ref
+        networkBrowserRef?.refresh()
+    }
+
     export function setNetworkHost(host: NetworkHost | null) {
         currentNetworkHost = host
         mountError = null

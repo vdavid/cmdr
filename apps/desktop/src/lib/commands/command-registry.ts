@@ -303,7 +303,7 @@ export const commands: Command[] = [
         name: 'Refresh network hosts',
         scope: 'Main window/Network',
         showInPalette: true,
-        shortcuts: [],
+        shortcuts: ['⌘R'],
     },
 
     // ============================================================================

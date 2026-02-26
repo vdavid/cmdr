@@ -137,15 +137,32 @@
         scrollToIndex(cursorIndex)
     }
 
+    /** Refresh all shares (used by ⌘R shortcut). */
+    export function refresh() {
+        handleRefreshClick()
+    }
+
     /** Find a host by name, returns its index or -1. */
     // noinspection JSUnusedGlobalSymbols -- used dynamically
     export function findItemIndex(name: string): number {
         return hosts.findIndex((h) => h.name.toLowerCase() === name.toLowerCase())
     }
 
+    /** Check for ⌘R refresh shortcut */
+    function isRefreshShortcut(e: KeyboardEvent): boolean {
+        return e.key === 'r' && e.metaKey && !e.shiftKey && !e.altKey && !e.ctrlKey
+    }
+
     // Handle keyboard navigation
     // noinspection JSUnusedGlobalSymbols -- used dynamically
     export function handleKeyDown(e: KeyboardEvent): boolean {
+        // ⌘R to refresh — works regardless of host count
+        if (isRefreshShortcut(e)) {
+            e.preventDefault()
+            handleRefreshClick()
+            return true
+        }
+
         if (hosts.length === 0) return false
 
         // Try centralized navigation shortcuts first (PageUp, PageDown, Home, End, Option+arrows)
@@ -408,9 +425,10 @@
     </div>
 
     {#if hosts.length > 0}
-        <div class="refresh-section">
-            <Button variant="secondary" onclick={handleRefreshClick}>🔄 Refresh</Button>
-        </div>
+        <button class="network-status-bar" onclick={handleRefreshClick} aria-label="Refresh network hosts">
+            <span class="status-text">{hosts.length} {hosts.length === 1 ? 'host' : 'hosts'}</span>
+            <span class="refresh-hint">Press ⌘R or click here to refresh</span>
+        </button>
     {/if}
 </div>
 
@@ -549,10 +567,35 @@
         cursor: help;
     }
 
-    .refresh-section {
+    .network-status-bar {
         display: flex;
-        justify-content: center;
-        padding: var(--spacing-lg) var(--spacing-sm);
-        border-top: 1px solid var(--color-border-subtle);
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: var(--spacing-xs) var(--spacing-sm);
+        font-family: var(--font-system), sans-serif;
+        font-size: calc(var(--font-size-sm) * 0.95);
+        color: var(--color-text-secondary);
+        background-color: var(--color-bg-secondary);
+        border: none;
+        border-top: 1px solid var(--color-border-strong);
+        min-height: 1.5em;
+        text-align: left;
+    }
+
+    .status-text {
+        flex: 1 1 0;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .refresh-hint {
+        flex-shrink: 0;
+        margin-left: auto;
+        padding-left: var(--spacing-md);
+        color: var(--color-text-tertiary);
+        white-space: nowrap;
     }
 </style>
