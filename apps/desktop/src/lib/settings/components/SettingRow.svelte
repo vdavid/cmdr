@@ -14,6 +14,7 @@
         requiresRestart?: boolean
         searchQuery?: string
         children: Snippet
+        descriptionContent?: Snippet
     }
 
     const {
@@ -25,6 +26,7 @@
         requiresRestart = false,
         searchQuery = '',
         children,
+        descriptionContent,
     }: Props = $props()
 
     // Get highlighted label segments based on search query
@@ -73,7 +75,11 @@
             {@render children()}
         </div>
     </div>
-    <p class="setting-description">{description}</p>
+    {#if descriptionContent}
+        <p class="setting-description">{@render descriptionContent()}</p>
+    {:else}
+        <p class="setting-description">{description}</p>
+    {/if}
     <button class="reset-link" class:hidden={!modified} onclick={handleReset} aria-hidden={!modified}>
         Reset to default
     </button>

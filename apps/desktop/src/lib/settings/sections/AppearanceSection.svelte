@@ -64,6 +64,12 @@
 <SettingsSection title="Appearance">
     {#if shouldShow('appearance.appColor')}
         <SettingRow id="appearance.appColor" label={appColorDef.label} description="" {searchQuery}>
+            {#snippet descriptionContent()}
+                To change your system theme color, go to
+                <button type="button" class="appearance-link" onclick={() => void openAppearanceSettings()}
+                    >System Settings &gt; Appearance</button
+                >.
+            {/snippet}
             <div class="app-color-options">
                 <label class="app-color-option">
                     <input
@@ -95,12 +101,6 @@
                 </label>
             </div>
         </SettingRow>
-        <p class="app-color-description">
-            To change your system theme color, go to
-            <button type="button" class="appearance-link" onclick={() => void openAppearanceSettings()}
-                >System Settings &gt; Appearance</button
-            >.
-        </p>
     {/if}
 
     {#if shouldShow('appearance.uiDensity')}
@@ -248,13 +248,6 @@
 
     .app-color-label {
         font-size: var(--font-size-sm);
-    }
-
-    .app-color-description {
-        color: var(--color-text-tertiary);
-        font-size: var(--font-size-sm);
-        margin: 0 0 var(--spacing-md);
-        padding-left: 0;
     }
 
     .appearance-link {
