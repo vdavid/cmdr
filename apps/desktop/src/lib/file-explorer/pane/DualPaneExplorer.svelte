@@ -5,18 +5,10 @@
     import LoadingIcon from '$lib/ui/LoadingIcon.svelte'
     import DialogManager from './DialogManager.svelte'
     import { toBackendCursorIndex } from '$lib/file-operations/transfer/transfer-dialog-utils'
-    import {
-        formatBytes,
-        getFileAt,
-        showTabContextMenu,
-        onTabContextAction,
-        updatePinTabMenu,
-    } from '$lib/tauri-commands'
-    import { confirmDialog } from '$lib/utils/confirm-dialog'
+    import { formatBytes, getFileAt } from '$lib/tauri-commands'
     import {
         loadAppStatus,
         saveAppStatus,
-        savePaneTabs,
         loadPaneTabs,
         saveLastUsedPathForVolume,
         type ViewMode,
@@ -44,7 +36,7 @@
         ConflictResolution,
         WriteOperationError,
     } from '../types'
-    import { DEFAULT_SORT_BY, defaultSortOrders } from '../types'
+    import { defaultSortOrders } from '../types'
     import { ensureFontMetricsLoaded } from '$lib/font-metrics'
     import { determineNavigationPath } from '../navigation/path-navigation'
     import {
@@ -62,19 +54,30 @@
     import {
         createTabManager,
         getActiveTab,
-        addTab,
-        closeTab,
-        closeOtherTabs,
-        switchTab,
-        cycleTab as cycleTabInManager,
         getAllTabs,
-        getTabCount,
+        MAX_TABS_PER_PANE,
         pinTab,
         unpinTab,
-        MAX_TABS_PER_PANE,
         type TabManager,
     } from '../tabs/tab-state-manager.svelte'
-    import type { TabState, TabId, PersistedTab, PersistedPaneTabs } from '../tabs/tab-types'
+    import type { TabState, TabId, PersistedPaneTabs } from '../tabs/tab-types'
+    import {
+        createInitialTabState,
+        createTabManagerFromPersisted,
+        saveTabsForPane,
+        handleTabClose as tabOpsHandleTabClose,
+        handleTabMiddleClick as tabOpsHandleTabMiddleClick,
+        handleTabContextMenu as tabOpsHandleTabContextMenu,
+        handleNewTab as tabOpsHandleNewTab,
+        newTab as tabOpsNewTab,
+        closeActiveTab as tabOpsCloseActiveTab,
+        closeActiveTabWithConfirmation as tabOpsCloseActiveTabWithConfirmation,
+        togglePinActiveTab as tabOpsTogglePinActiveTab,
+        syncPinTabMenuForPane,
+        cycleTab as tabOpsCycleTab,
+        switchToTab as tabOpsSwitchToTab,
+        getTabsForPane as tabOpsGetTabsForPane,
+    } from './tab-operations'
     import { initNetworkDiscovery, cleanupNetworkDiscovery } from '../network/network-store.svelte'
     import { openFileViewer } from '$lib/file-viewer/open-viewer'
     import { getAppLogger } from '$lib/logging/logger'
@@ -118,61 +121,8 @@
 
     const log = getAppLogger('fileExplorer')
 
-    function createInitialTabState(
-        path: string,
-        volumeId: string,
-        sortBy: SortColumn = DEFAULT_SORT_BY,
-        viewMode: ViewMode = 'brief',
-    ): TabState {
-        return {
-            id: crypto.randomUUID(),
-            path,
-            volumeId,
-            history: createHistory(volumeId, path),
-            sortBy,
-            sortOrder: defaultSortOrders[sortBy],
-            viewMode,
-            pinned: false,
-            cursorFilename: null,
-        }
-    }
-
-    function createTabManagerFromPersisted(paneTabs: PersistedPaneTabs): TabManager {
-        const tabs = paneTabs.tabs.map(
-            (pt): TabState => ({
-                ...pt,
-                history: createHistory(pt.volumeId, pt.path),
-                cursorFilename: null,
-            }),
-        )
-
-        const mgr = createTabManager(tabs[0])
-        for (let i = 1; i < tabs.length; i++) {
-            mgr.tabs.push(tabs[i])
-        }
-        mgr.activeTabId = paneTabs.activeTabId
-        return mgr
-    }
-
-    function buildPersistedPaneTabs(mgr: TabManager): PersistedPaneTabs {
-        return {
-            tabs: getAllTabs(mgr).map(
-                (tab): PersistedTab => ({
-                    id: tab.id,
-                    path: tab.path,
-                    volumeId: tab.volumeId,
-                    sortBy: tab.sortBy,
-                    sortOrder: tab.sortOrder,
-                    viewMode: tab.viewMode,
-                    pinned: tab.pinned,
-                }),
-            ),
-            activeTabId: mgr.activeTabId,
-        }
-    }
-
-    function saveTabsForPane(pane: 'left' | 'right') {
-        void savePaneTabs(pane, buildPersistedPaneTabs(getTabMgr(pane)))
+    function saveTabsForPaneSide(pane: 'left' | 'right') {
+        saveTabsForPane(pane, getTabMgr)
     }
 
     let leftTabMgr = $state<TabManager>(createTabManager(createInitialTabState('~', DEFAULT_VOLUME_ID)))
@@ -437,7 +387,7 @@
             mgr.tabs.splice(activeIndex + 1, 0, newTab)
             mgr.activeTabId = newTab.id
 
-            saveTabsForPane(pane)
+            saveTabsForPaneSide(pane)
             saveAppStatus({ [paneKey(pane, 'path')]: path })
             void saveLastUsedPathForVolume(activeTab.volumeId, path)
             void cancelNavPriority(activeTab.path)
@@ -456,7 +406,7 @@
         setPaneHistory(pane, pushPath(getPaneHistory(pane), path))
         saveAppStatus({ [paneKey(pane, 'path')]: path })
         void saveLastUsedPathForVolume(getPaneVolumeId(pane), path)
-        saveTabsForPane(pane)
+        saveTabsForPaneSide(pane)
 
         // Update index priorities: cancel old dir, prioritize new dir
         if (oldPath !== path) {
@@ -521,7 +471,7 @@
 
         setPaneSort(pane, newColumn, newOrder)
         saveAppStatus({ [paneKey(pane, 'sortBy')]: newColumn })
-        saveTabsForPane(pane)
+        saveTabsForPaneSide(pane)
         applySortResult(paneRef, result, sortState.hasParent)
     }
 
@@ -586,7 +536,7 @@
             [paneKey(pane, 'path')]: targetPath,
             focusedPane: pane,
         })
-        saveTabsForPane(pane)
+        saveTabsForPaneSide(pane)
 
         // Resolve the "best" path in the background; correct if needed.
         // Generation counter guards against stale corrections when the user navigates away.
@@ -602,7 +552,7 @@
                 setPaneHistory(pane, push(getPaneHistory(pane), { volumeId, path: betterPath }))
                 void prioritizeDir(betterPath, 'current_dir')
                 saveAppStatus({ [paneKey(pane, 'path')]: betterPath })
-                saveTabsForPane(pane)
+                saveTabsForPaneSide(pane)
             }
         })
     }
@@ -634,7 +584,7 @@
             setPaneVolumeId(pane, DEFAULT_VOLUME_ID)
             saveAppStatus({ [paneKey(pane, 'path')]: '~', [paneKey(pane, 'volumeId')]: DEFAULT_VOLUME_ID })
         }
-        saveTabsForPane(pane)
+        saveTabsForPaneSide(pane)
         containerElement?.focus()
     }
 
@@ -648,7 +598,7 @@
         setPanePath(pane, defaultPath)
         setPaneHistory(pane, push(getPaneHistory(pane), { volumeId: defaultVolumeId, path: defaultPath }))
         saveAppStatus({ [paneKey(pane, 'volumeId')]: defaultVolumeId, [paneKey(pane, 'path')]: defaultPath })
-        saveTabsForPane(pane)
+        saveTabsForPaneSide(pane)
     }
 
     /** Routes to whichever pane has its volume chooser open. Returns true if handled. */
@@ -1043,7 +993,7 @@
             const newMode = event.payload.mode
             setPaneViewMode(focusedPane, newMode)
             saveAppStatus({ [paneKey(focusedPane, 'viewMode')]: newMode })
-            saveTabsForPane(focusedPane)
+            saveTabsForPaneSide(focusedPane)
             // Refocus after Svelte re-renders the new list component to restore keyboard navigation
             void tick().then(() => {
                 containerElement?.focus()
@@ -1112,7 +1062,7 @@
             } else {
                 unpinTab(mgr, tabId)
             }
-            saveTabsForPane(pane)
+            saveTabsForPaneSide(pane)
             if (pane === focusedPane && tabId === mgr.activeTabId) syncPinTabMenu()
         })
 
@@ -1168,13 +1118,13 @@
             setPaneVolumeId('left', defaultVolumeId)
             setPanePath('left', homePath)
             saveAppStatus({ leftVolumeId: defaultVolumeId, leftPath: homePath })
-            saveTabsForPane('left')
+            saveTabsForPaneSide('left')
         }
         if (getPaneVolumeId('right') === unmountedId) {
             setPaneVolumeId('right', defaultVolumeId)
             setPanePath('right', homePath)
             saveAppStatus({ rightVolumeId: defaultVolumeId, rightPath: homePath })
-            saveTabsForPane('right')
+            saveTabsForPaneSide('right')
         }
 
         // Refresh volume list
@@ -1204,7 +1154,7 @@
         } else {
             saveAppStatus({ [paneKey(pane, 'path')]: targetPath })
         }
-        saveTabsForPane(pane)
+        saveTabsForPaneSide(pane)
         void saveLastUsedPathForVolume(entry.volumeId, targetPath)
 
         if (entry.volumeId === 'network') {
@@ -1694,8 +1644,8 @@
             leftSortBy,
             rightSortBy,
         })
-        saveTabsForPane('left')
-        saveTabsForPane('right')
+        saveTabsForPaneSide('left')
+        saveTabsForPaneSide('right')
 
         containerElement?.focus()
     }
@@ -1748,7 +1698,7 @@
         const targetPane = pane ?? focusedPane
         setPaneViewMode(targetPane, mode)
         saveAppStatus({ [paneKey(targetPane, 'viewMode')]: mode })
-        saveTabsForPane(targetPane)
+        saveTabsForPaneSide(targetPane)
     }
 
     /**
@@ -1837,7 +1787,7 @@
 
         setPaneSort(pane, column, newOrder)
         saveAppStatus({ [paneKey(pane, 'sortBy')]: column })
-        saveTabsForPane(pane)
+        saveTabsForPaneSide(pane)
         applySortResult(paneRef, result, sortState.hasParent)
     }
 
@@ -2076,237 +2026,54 @@
         paneRef.setSelectedIndices?.(newSelection)
     }
 
-    // --- Tab bar handler functions ---
+    // --- Tab bar handler functions (logic in tab-operations.ts) ---
 
-    async function handleTabClose(pane: 'left' | 'right', tabId: TabId) {
-        const mgr = getTabMgr(pane)
-        const tab = getAllTabs(mgr).find((t) => t.id === tabId)
-        if (tab?.pinned) {
-            const ok = await confirmDialog('This tab is pinned. Close it anyway?', 'Close pinned tab')
-            if (!ok) return
-        }
-        closeTab(mgr, tabId)
-        saveTabsForPane(pane)
-        if (pane === focusedPane) syncPinTabMenu()
+    function handleTabClose(pane: 'left' | 'right', tabId: TabId) {
+        void tabOpsHandleTabClose(pane, tabId, getTabMgr, focusedPane, syncPinTabMenu)
     }
 
     function handleTabMiddleClick(pane: 'left' | 'right', tabId: TabId) {
-        const mgr = getTabMgr(pane)
-        const tab = getAllTabs(mgr).find((t) => t.id === tabId)
-        if (!tab) return
-        // Middle-click on pinned tab: unpin and close without confirmation
-        if (tab.pinned) {
-            unpinTab(mgr, tabId)
-        }
-        void handleTabClose(pane, tabId)
+        tabOpsHandleTabMiddleClick(pane, tabId, getTabMgr, focusedPane, syncPinTabMenu)
     }
 
     function handleNewTab(pane: 'left' | 'right') {
-        // Temporarily focus this pane so newTab() creates in the right pane
-        const prevFocus = focusedPane
-        focusedPane = pane
-        const success = newTab()
-        if (!success) {
-            addToast('Tab limit reached')
-        }
-        focusedPane = prevFocus === pane ? pane : prevFocus
+        tabOpsHandleNewTab(pane, focusedPane, (p) => (focusedPane = p), newTab)
     }
 
-    async function handleTabContextMenu(pane: 'left' | 'right', tabId: TabId, event: MouseEvent) {
-        event.preventDefault()
-
-        const mgr = getTabMgr(pane)
-        const tab = getAllTabs(mgr).find((t) => t.id === tabId)
-        if (!tab) return
-
-        const canClose = getTabCount(mgr) > 1
-        const hasOtherUnpinnedTabs = getAllTabs(mgr).some((t) => t.id !== tabId && !t.pinned)
-
-        // Listen for the action event BEFORE showing the popup. The event fires
-        // asynchronously after popup() returns (muda queues MenuEvent through the
-        // event loop, so a synchronous channel always times out).
-        const actionPromise = new Promise<string | null>((resolve) => {
-            let resolved = false
-            let unlisten: (() => void) | undefined
-
-            void onTabContextAction((action: string) => {
-                if (!resolved) {
-                    resolved = true
-                    unlisten?.()
-                    resolve(action)
-                }
-            }).then((fn) => {
-                unlisten = fn
-                // If already resolved (dismissed before listener registered), clean up
-                if (resolved) fn()
-            })
-
-            // After showing the popup, set a timeout for dismissed-without-selection.
-            // popup() blocks in Rust until the menu closes, so this runs after dismissal.
-            void showTabContextMenu(tab.pinned, canClose, hasOtherUnpinnedTabs).then(() => {
-                // Give the event loop time to deliver the action event
-                setTimeout(() => {
-                    if (!resolved) {
-                        resolved = true
-                        unlisten?.()
-                        resolve(null)
-                    }
-                }, 500)
-            })
-        })
-
-        const action = await actionPromise
-
-        // Re-fetch tab state after the context menu (state may have changed during the await)
-        const currentTab = getAllTabs(mgr).find((t) => t.id === tabId)
-        if (!currentTab) return
-
-        switch (action) {
-            case 'tab_pin':
-                if (currentTab.pinned) {
-                    unpinTab(mgr, tabId)
-                } else {
-                    pinTab(mgr, tabId)
-                }
-                saveTabsForPane(pane)
-                if (pane === focusedPane && tabId === mgr.activeTabId) syncPinTabMenu()
-                break
-            case 'tab_close_others':
-                closeOtherTabs(mgr, tabId)
-                saveTabsForPane(pane)
-                break
-            case 'tab_close': {
-                // handleTabClose shows pinned confirmation internally
-                void handleTabClose(pane, tabId)
-                break
-            }
-        }
+    function handleTabContextMenu(pane: 'left' | 'right', tabId: TabId, event: MouseEvent) {
+        void tabOpsHandleTabContextMenu(pane, tabId, event, getTabMgr, focusedPane, syncPinTabMenu)
     }
 
-    /**
-     * Creates a new tab in the focused pane via the clone trick:
-     * inserts a clone to the left and keeps the current tab active.
-     * Returns false if at the tab cap.
-     */
     export function newTab(): boolean {
-        const mgr = getTabMgr(focusedPane)
-        const activeTab = getActiveTab(mgr)
-        const wasPinned = activeTab.pinned
-
-        // Clone trick: insert clone to the LEFT, keep active tab selected.
-        // If the active tab is pinned, the clone inherits the pin (it stays
-        // in the pinned tab's position) and the active tab gets unpinned
-        // (it becomes the new "branched off" tab to the right).
-        const cloneTab: TabState = {
-            id: crypto.randomUUID(),
-            path: activeTab.path,
-            volumeId: activeTab.volumeId,
-            history: $state.snapshot(activeTab.history),
-            sortBy: activeTab.sortBy,
-            sortOrder: activeTab.sortOrder,
-            viewMode: activeTab.viewMode,
-            pinned: wasPinned,
-            cursorFilename: null,
-        }
-
-        const success = addTab(mgr, activeTab.id, cloneTab)
-        if (success && wasPinned) {
-            unpinTab(mgr, activeTab.id)
-        }
-        if (success) {
-            saveTabsForPane(focusedPane)
-        }
-        return success
+        return tabOpsNewTab(focusedPane, getTabMgr, (h) => $state.snapshot(h))
     }
 
-    /**
-     * Closes the active tab in the focused pane.
-     * Returns 'closed' if tab was closed, 'last-tab' if it was the last tab.
-     */
     export function closeActiveTab(): 'closed' | 'last-tab' {
-        const mgr = getTabMgr(focusedPane)
-        const result = closeTab(mgr, mgr.activeTabId)
-        if (result.closed) {
-            saveTabsForPane(focusedPane)
-        }
-        return result.closed ? 'closed' : 'last-tab'
+        return tabOpsCloseActiveTab(focusedPane, getTabMgr)
     }
 
-    /** Closes the active tab with pinned confirmation if needed. */
     export async function closeActiveTabWithConfirmation(): Promise<'closed' | 'last-tab' | 'cancelled'> {
-        const mgr = getTabMgr(focusedPane)
-        const activeTab = getActiveTab(mgr)
-
-        // Last tab: close window without confirmation (even if pinned)
-        if (getTabCount(mgr) <= 1) {
-            return 'last-tab'
-        }
-
-        // Pinned tab: confirm before closing
-        if (activeTab.pinned) {
-            const ok = await confirmDialog('This tab is pinned. Close it anyway?', 'Close pinned tab')
-            if (!ok) return 'cancelled'
-        }
-
-        const result = closeTab(mgr, mgr.activeTabId)
-        if (result.closed) {
-            saveTabsForPane(focusedPane)
-            return 'closed'
-        }
-        return 'last-tab'
+        return tabOpsCloseActiveTabWithConfirmation(focusedPane, getTabMgr)
     }
 
-    /** Toggles pin state on the active tab in the focused pane. */
     export function togglePinActiveTab(): void {
-        const mgr = getTabMgr(focusedPane)
-        const activeTab = getActiveTab(mgr)
-        if (activeTab.pinned) {
-            unpinTab(mgr, activeTab.id)
-        } else {
-            pinTab(mgr, activeTab.id)
-        }
-        saveTabsForPane(focusedPane)
-        syncPinTabMenu()
+        tabOpsTogglePinActiveTab(focusedPane, getTabMgr)
     }
 
-    /** Syncs the File menu "Pin tab" / "Unpin tab" label with the active tab's state. */
     function syncPinTabMenu() {
-        const mgr = getTabMgr(focusedPane)
-        const activeTab = getActiveTab(mgr)
-        void updatePinTabMenu(activeTab.pinned)
+        syncPinTabMenuForPane(focusedPane, getTabMgr)
     }
 
-    /** Cycle to next/prev tab in the focused pane. */
     export function cycleTab(direction: 'next' | 'prev'): void {
-        const mgr = getTabMgr(focusedPane)
-        const paneRef = getPaneRef(focusedPane)
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const cursorFilename = (paneRef?.getFilenameUnderCursor?.() as string | undefined) ?? null
-        cycleTabInManager(mgr, direction, cursorFilename)
-        saveTabsForPane(focusedPane)
-        syncPinTabMenu()
+        tabOpsCycleTab(direction, focusedPane, getTabMgr, getPaneRef)
     }
 
-    /** Switch to a specific tab by ID in the given pane. Returns false if tab not found. */
     export function switchToTab(pane: 'left' | 'right', tabId: TabId): boolean {
-        const mgr = getTabMgr(pane)
-        const paneRef = getPaneRef(pane)
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const cursorFilename = (paneRef?.getFilenameUnderCursor?.() as string | undefined) ?? null
-        const switched = switchTab(mgr, tabId, cursorFilename)
-        if (!switched) {
-            log.warn(`MCP activate_tab: tab ${tabId} not found in ${pane} pane`)
-            return false
-        }
-        saveTabsForPane(pane)
-        if (pane === focusedPane) syncPinTabMenu()
-        return true
+        return tabOpsSwitchToTab(pane, tabId, getTabMgr, getPaneRef, focusedPane)
     }
 
-    /** Get all tabs for a pane (for TabBar). */
     export function getTabsForPane(pane: 'left' | 'right'): { tabs: TabState[]; activeTabId: TabId } {
-        const mgr = getTabMgr(pane)
-        return { tabs: getAllTabs(mgr), activeTabId: mgr.activeTabId }
+        return tabOpsGetTabsForPane(pane, getTabMgr)
     }
 </script>
 
@@ -2336,7 +2103,7 @@
                     switchToTab('left', tabId)
                 }}
                 onTabClose={(tabId: TabId) => {
-                    void handleTabClose('left', tabId)
+                    handleTabClose('left', tabId)
                 }}
                 onTabMiddleClick={(tabId: TabId) => {
                     handleTabMiddleClick('left', tabId)
@@ -2345,7 +2112,7 @@
                     handleNewTab('left')
                 }}
                 onContextMenu={(tabId: TabId, event: MouseEvent) => {
-                    void handleTabContextMenu('left', tabId, event)
+                    handleTabContextMenu('left', tabId, event)
                 }}
                 onPaneFocus={() => {
                     handleFocus('left')
@@ -2401,7 +2168,7 @@
                     switchToTab('right', tabId)
                 }}
                 onTabClose={(tabId: TabId) => {
-                    void handleTabClose('right', tabId)
+                    handleTabClose('right', tabId)
                 }}
                 onTabMiddleClick={(tabId: TabId) => {
                     handleTabMiddleClick('right', tabId)
@@ -2410,7 +2177,7 @@
                     handleNewTab('right')
                 }}
                 onContextMenu={(tabId: TabId, event: MouseEvent) => {
-                    void handleTabContextMenu('right', tabId, event)
+                    handleTabContextMenu('right', tabId, event)
                 }}
                 onPaneFocus={() => {
                     handleFocus('right')

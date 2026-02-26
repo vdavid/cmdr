@@ -21,7 +21,6 @@
         findFileIndex,
         pathExists,
         getFileAt,
-        getFileRange,
         getListingStats,
         getMaxFilenameWidth,
         getSyncStatus,
@@ -62,13 +61,10 @@
     import MtpConnectionView from './MtpConnectionView.svelte'
     import { createSelectionState } from './selection-state.svelte'
     import { createRenameState } from '../rename/rename-state.svelte'
-    import { validateFilename, getExtension } from '$lib/utils/filename-validation'
     import { cancelClickToRename } from '../rename/rename-activation'
-    import { executeRenameSave, performRename, checkPermission, type RenameResult } from '../rename/rename-operations'
-    import { moveToTrash, type RenameValidityResult } from '$lib/tauri-commands'
-    import { getSetting, type DirectorySortMode } from '$lib/settings'
-    import type { ConflictResolution } from '../rename/RenameConflictDialog.svelte'
-    import { addToast, dismissTransientToasts } from '$lib/ui/toast'
+    import { type DirectorySortMode } from '$lib/settings'
+    import { dismissTransientToasts } from '$lib/ui/toast'
+    import { createRenameFlow } from './rename-flow.svelte'
     import ExtensionChangeDialog from '../rename/ExtensionChangeDialog.svelte'
     import RenameConflictDialog from '../rename/RenameConflictDialog.svelte'
     import { getAppLogger } from '$lib/logging/logger'
@@ -276,260 +272,44 @@
         selection.selectRange(startIndex, endIndex, hasParent)
     }
 
-    // ==== Rename state and exports ====
+    // ==== Rename flow (logic in rename-flow.svelte.ts) ====
 
-    // Extension change dialog state
-    let extensionDialogState = $state<{ oldExtension: string; newExtension: string } | null>(null)
+    const renameFlow = createRenameFlow({
+        rename,
+        getListingId: () => listingId,
+        getTotalCount: () => totalCount,
+        getIncludeHidden: () => includeHidden,
+        getCurrentPath: () => currentPath,
+        getCursorIndex: () => cursorIndex,
+        getShowHiddenFiles: () => showHiddenFiles,
+        getEntryUnderCursor,
+        onRequestFocus: () => onRequestFocus?.(),
+    })
 
-    // Conflict dialog state
-    let conflictDialogState = $state<{
-        validity: RenameValidityResult
-        trimmedName: string
-    } | null>(null)
-
-    // Post-rename: name to select after file watcher refresh
-    let pendingCursorName = $state<string | null>(null)
-
-    // Sibling names cache for rename conflict detection (loaded once when rename starts)
-    let renameSiblingNames: string[] = []
-
-    // When true, suppress the blur-cancel (a dialog is about to open)
-    let suppressBlurCancel = false
+    // Destructure handlers — factory methods don't use `this`, safe to destructure
+    /* eslint-disable @typescript-eslint/unbound-method -- factory return, no `this` */
+    const {
+        handleRenameInput,
+        handleRenameSubmit,
+        handleRenameCancel,
+        handleRenameShakeEnd,
+        handleExtensionKeepOld,
+        handleExtensionUseNew,
+        handleConflictResolve,
+    } = renameFlow
+    /* eslint-enable @typescript-eslint/unbound-method */
 
     export function isRenaming(): boolean {
         return rename.active
     }
 
-    /** Loads sibling names from the current listing for rename conflict detection. */
-    async function loadSiblingNames(excludeName: string): Promise<string[]> {
-        if (!listingId || totalCount === 0) return []
-        try {
-            const batchSize = 500
-            const names: string[] = []
-            for (let start = 0; start < totalCount; start += batchSize) {
-                const count = Math.min(batchSize, totalCount - start)
-                const entries = await getFileRange(listingId, start, count, includeHidden)
-                for (const entry of entries) {
-                    if (entry.name !== excludeName) {
-                        names.push(entry.name)
-                    }
-                }
-            }
-            return names
-        } catch {
-            return []
-        }
-    }
-
-    /** Activates inline rename for the entry under the cursor. No-op on ".." entry. */
     export function startRename(): void {
-        const entry = getEntryUnderCursor()
-        if (!entry || entry.name === '..') return
-
-        const target = {
-            path: entry.path,
-            originalName: entry.name,
-            parentPath: currentPath,
-            index: cursorIndex,
-            isDirectory: entry.isDirectory,
-        }
-
-        rename.activate(target)
-        renameSiblingNames = []
-
-        // Load sibling names in background for conflict detection
-        void loadSiblingNames(entry.name).then((names) => {
-            renameSiblingNames = names
-        })
-
-        // Check permission in background
-        void checkPermission(entry.path).then((errorMsg) => {
-            if (errorMsg && rename.active && rename.target?.path === entry.path) {
-                rename.cancel()
-                addToast(errorMsg, { level: 'error' })
-                onRequestFocus?.()
-            }
-        })
+        renameFlow.startRename()
     }
 
     export function cancelRename(): void {
-        cancelClickToRename()
-        rename.cancel()
-        renameSiblingNames = []
-        extensionDialogState = null
-        conflictDialogState = null
-        onRequestFocus?.()
+        renameFlow.cancelRename()
     }
-
-    function handleRenameInput(value: string) {
-        rename.setCurrentName(value)
-        // Clear any existing notification on keypress
-        dismissTransientToasts()
-        // Run validation on each keystroke
-        const extensionPolicy = getSetting('fileOperations.allowFileExtensionChanges')
-        const result = validateFilename(
-            value,
-            rename.target?.originalName ?? '',
-            currentPath,
-            renameSiblingNames,
-            extensionPolicy,
-        )
-        rename.setValidation(result)
-    }
-
-    function handleRenameSubmit() {
-        // If there's an error, shake and show notification
-        if (rename.severity === 'error') {
-            rename.triggerShake()
-            addToast(rename.validation.message, { level: 'error' })
-            return
-        }
-        // No-op if name didn't change
-        if (!rename.hasChanged()) {
-            rename.cancel()
-            onRequestFocus?.()
-            return
-        }
-        void executeRenameFlow()
-    }
-
-    async function executeRenameFlow(skipExtensionCheck?: boolean) {
-        const target = rename.target
-        if (!target) return
-
-        const trimmedName = rename.getTrimmedName()
-        const extensionPolicy = getSetting('fileOperations.allowFileExtensionChanges')
-
-        const result = await executeRenameSave(target, trimmedName, extensionPolicy, skipExtensionCheck)
-        handleRenameResult(result, trimmedName)
-    }
-
-    function handleRenameResult(result: RenameResult, trimmedName: string) {
-        switch (result.type) {
-            case 'noop':
-                rename.cancel()
-                onRequestFocus?.()
-                break
-            case 'error':
-                rename.triggerShake()
-                addToast(result.message, { level: 'error' })
-                break
-            case 'extension-ask':
-                // Suppress the blur-cancel that fires when focus moves to the dialog
-                suppressBlurCancel = true
-                extensionDialogState = {
-                    oldExtension: result.oldExtension,
-                    newExtension: result.newExtension,
-                }
-                break
-            case 'conflict':
-                // Suppress the blur-cancel that fires when focus moves to the dialog
-                suppressBlurCancel = true
-                conflictDialogState = { validity: result.validity, trimmedName }
-                break
-            case 'success':
-                finalizeRename(result.newName)
-                break
-        }
-    }
-
-    function finalizeRename(newName: string) {
-        const wasHiddenRename = newName.startsWith('.') && !showHiddenFiles
-
-        rename.cancel()
-        extensionDialogState = null
-        conflictDialogState = null
-        onRequestFocus?.()
-
-        // Set cursor tracking for post-refresh
-        pendingCursorName = newName
-
-        if (wasHiddenRename) {
-            addToast("Your file disappeared from view because hidden files aren't shown.")
-        }
-    }
-
-    // Extension change dialog handlers
-    function handleExtensionKeepOld() {
-        extensionDialogState = null
-        // Re-focus the input: restore the old extension
-        if (rename.target) {
-            const oldExt = getExtension(rename.target.originalName)
-            const nameWithoutExt = rename.getTrimmedName()
-            const newExt = getExtension(nameWithoutExt)
-            if (newExt) {
-                const base = nameWithoutExt.slice(0, -newExt.length)
-                rename.setCurrentName(base + oldExt)
-            }
-        }
-        rename.requestRefocus()
-    }
-
-    function handleExtensionUseNew() {
-        extensionDialogState = null
-        // Continue with the rename, skipping the extension check this time
-        void executeRenameFlow(true)
-    }
-
-    // Conflict dialog handler
-    function handleConflictResolve(resolution: ConflictResolution) {
-        const target = rename.target
-        const trimmedName = conflictDialogState?.trimmedName
-        conflictDialogState = null
-
-        if (!target || !trimmedName) {
-            rename.cancel()
-            onRequestFocus?.()
-            return
-        }
-
-        switch (resolution) {
-            case 'overwrite-trash': {
-                const conflictPath = target.parentPath + '/' + trimmedName
-                void moveToTrash(conflictPath)
-                    .then(() => performRename(target, trimmedName, true))
-                    .then((result) => {
-                        handleRenameResult(result, trimmedName)
-                    })
-                    .catch((e: unknown) => {
-                        const msg = e instanceof Error ? e.message : String(e)
-                        addToast(msg, { level: 'error' })
-                        rename.cancel()
-                        onRequestFocus?.()
-                    })
-                break
-            }
-            case 'overwrite-delete':
-                void performRename(target, trimmedName, true).then((result) => {
-                    handleRenameResult(result, trimmedName)
-                })
-                break
-            case 'cancel':
-                rename.cancel()
-                onRequestFocus?.()
-                break
-            case 'continue':
-                // Return to editing with cursor restored
-                rename.requestRefocus()
-                break
-        }
-    }
-
-    /** Called by the inline editor on blur/escape. Suppressed when a dialog is about to open. */
-    function handleRenameCancel() {
-        if (suppressBlurCancel) {
-            suppressBlurCancel = false
-            return
-        }
-        rename.cancel()
-        onRequestFocus?.()
-    }
-
-    function handleRenameShakeEnd() {
-        rename.clearShake()
-    }
-
-    // ==== End rename state and exports ====
 
     // Cache generation counter - incremented to force list components to re-fetch
     let cacheGeneration = $state(0)
@@ -1499,9 +1279,9 @@
                 cacheGeneration++
 
                 // Post-rename cursor tracking: move cursor to the renamed file
-                const nameToFind = pendingCursorName
+                const nameToFind = renameFlow.pendingCursorName
                 if (nameToFind) {
-                    pendingCursorName = null
+                    renameFlow.pendingCursorName = null
                     const foundIndex = await findFileIndex(listingId, nameToFind, includeHidden)
                     if (foundIndex !== null) {
                         const adjustedIndex = hasParent ? foundIndex + 1 : foundIndex
@@ -1815,16 +1595,16 @@
     {/if}
 </div>
 
-{#if extensionDialogState}
+{#if renameFlow.extensionDialogState}
     <ExtensionChangeDialog
-        oldExtension={extensionDialogState.oldExtension}
-        newExtension={extensionDialogState.newExtension}
+        oldExtension={renameFlow.extensionDialogState.oldExtension}
+        newExtension={renameFlow.extensionDialogState.newExtension}
         onKeepOld={handleExtensionKeepOld}
         onUseNew={handleExtensionUseNew}
     />
 {/if}
 
-{#if conflictDialogState && conflictDialogState.validity.conflict}
+{#if renameFlow.conflictDialogState?.validity.conflict}
     <RenameConflictDialog
         renamedFile={{
             name: rename.target?.originalName ?? '',
@@ -1832,9 +1612,9 @@
             modifiedAt: entryUnderCursor?.modifiedAt,
         }}
         existingFile={{
-            name: conflictDialogState.validity.conflict.name,
-            size: conflictDialogState.validity.conflict.size,
-            modifiedAt: conflictDialogState.validity.conflict.modified ?? undefined,
+            name: renameFlow.conflictDialogState.validity.conflict.name,
+            size: renameFlow.conflictDialogState.validity.conflict.size,
+            modifiedAt: renameFlow.conflictDialogState.validity.conflict.modified ?? undefined,
         }}
         onResolve={handleConflictResolve}
     />

@@ -32,6 +32,9 @@
         "file-explorer/pane/FilePane.svelte": { "reason": "Tested in integration.test.ts, complex component" },
         "file-explorer/pane/MtpConnectionView.svelte": { "reason": "MTP connection UI, depends on Tauri APIs" },
         "file-explorer/pane/NetworkMountView.svelte": { "reason": "Network mount UI, depends on Tauri APIs" },
+        "file-explorer/pane/rename-flow.svelte.ts": {
+            "reason": "Extracted from FilePane, depends on Tauri commands and rename operations"
+        },
         "file-explorer/pane/selection-state.svelte.ts": {
             "reason": "Reactive selection state, tested via FilePane integration"
         },
@@ -165,6 +168,9 @@
         },
         "file-explorer/tabs/TabBar.svelte": {
             "reason": "UI component, tab interactions tested via DualPaneExplorer integration"
+        },
+        "file-explorer/pane/tab-operations.ts": {
+            "reason": "Extracted from DualPaneExplorer, depends on Tauri commands and confirmDialog"
         },
         "tauri-commands/tab.ts": {
             "reason": "Tauri command wrappers, tested via integration"
