@@ -11,6 +11,7 @@
         formatDuration,
     } from '$lib/settings'
     import SettingsSection from '../components/SettingsSection.svelte'
+    import Button from '$lib/ui/Button.svelte'
     import { Switch } from '@ark-ui/svelte/switch'
     import { NumberInput, type NumberInputValueChangeDetails } from '@ark-ui/svelte/number-input'
     import { searchAdvancedSettings, getMatchIndicesForLabel, highlightMatches } from '$lib/settings/settings-search'
@@ -89,7 +90,7 @@
     </div>
 
     <div class="header-actions">
-        <button class="section-action-btn" onclick={handleResetAll}>Reset all to defaults</button>
+        <Button variant="secondary" size="mini" onclick={handleResetAll}>Reset all to defaults</Button>
     </div>
 
     <div class="advanced-settings">

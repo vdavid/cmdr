@@ -4,6 +4,7 @@
     import SettingsSection from '../components/SettingsSection.svelte'
     import SettingRow from '../components/SettingRow.svelte'
     import SettingSwitch from '../components/SettingSwitch.svelte'
+    import Button from '$lib/ui/Button.svelte'
     import { getSettingDefinition } from '$lib/settings'
     import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
     import { createShouldShow } from '$lib/settings/settings-search'
@@ -89,9 +90,14 @@
         </div>
 
         <div class="clear-action">
-            <button class="section-action-btn" onclick={handleClearIndex} disabled={clearing || dbFileSize == null}>
+            <Button
+                variant="secondary"
+                size="mini"
+                onclick={handleClearIndex}
+                disabled={clearing || dbFileSize == null}
+            >
                 {clearing ? 'Clearing...' : 'Clear index'}
-            </button>
+            </Button>
             <span class="clear-description">
                 Deletes the index database. A fresh scan starts next time indexing is enabled.
             </span>

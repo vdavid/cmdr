@@ -2,6 +2,7 @@
     import SettingsSection from '../components/SettingsSection.svelte'
     import SettingRow from '../components/SettingRow.svelte'
     import SettingSwitch from '../components/SettingSwitch.svelte'
+    import Button from '$lib/ui/Button.svelte'
     import { getSettingDefinition } from '$lib/settings'
     import { createShouldShow } from '$lib/settings/settings-search'
     import { getAppLogger } from '$lib/logging/logger'
@@ -70,10 +71,10 @@ Timestamp: ${info.timestamp}
     {/if}
 
     <div class="logging-actions">
-        <button class="section-action-btn" onclick={openLogFile}>Open log file</button>
-        <button class="section-action-btn" onclick={copyDiagnosticInfo}>
+        <Button variant="secondary" size="mini" onclick={openLogFile}>Open log file</Button>
+        <Button variant="secondary" size="mini" onclick={copyDiagnosticInfo}>
             {copyFeedback ? 'Copied!' : 'Copy diagnostic info'}
-        </button>
+        </Button>
     </div>
 </SettingsSection>
 

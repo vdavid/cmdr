@@ -1,6 +1,7 @@
 <script lang="ts">
     import { DotLottieSvelte } from '@lottiefiles/dotlottie-svelte'
     import { openPrivacySettings } from '$lib/tauri-commands'
+    import Button from '$lib/ui/Button.svelte'
 
     interface Props {
         folderPath: string
@@ -21,7 +22,9 @@
             <li>Find <strong>Cmdr</strong> and toggle the switch for this folder.</li>
             <li>Confirm it and click <strong>Quit & Reopen</strong></li>
         </ol>
-        <button onclick={() => openPrivacySettings()}>Open System Settings</button>
+        <div class="cta">
+            <Button variant="primary" onclick={() => openPrivacySettings()}>Open System Settings</Button>
+        </div>
     </div>
 </div>
 
@@ -60,32 +63,9 @@
         line-height: 1.5;
     }
 
-    button {
-        padding: 7px 20px;
-        border-radius: var(--radius-md);
-        font-size: var(--font-size-md);
-        font-weight: 500;
-        background: var(--color-allow);
-        color: white;
-        border: none;
-        display: block;
-        margin: var(--spacing-2xl) auto 0;
-        transition: all var(--transition-base);
-    }
-
-    button:hover {
-        background: color-mix(in oklch, var(--color-allow), white 15%);
-    }
-
-    button:focus-visible {
-        outline: 2px solid var(--color-allow);
-        outline-offset: 1px;
-        box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1);
-    }
-
-    @media (prefers-color-scheme: dark) {
-        button:focus-visible {
-            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.08);
-        }
+    .cta {
+        display: flex;
+        justify-content: center;
+        margin-top: var(--spacing-2xl);
     }
 </style>

@@ -76,7 +76,7 @@
         >
             <div class="port-setting">
                 <SettingNumberInput id="developer.mcpPort" disabled={!mcpEnabled} />
-                <button class="section-action-btn" onclick={checkPort} disabled={!mcpEnabled}> Check port </button>
+                <Button variant="secondary" size="mini" onclick={checkPort} disabled={!mcpEnabled}>Check port</Button>
             </div>
         </SettingRow>
 

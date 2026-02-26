@@ -2,6 +2,7 @@
     import { onMount } from 'svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import SettingsSection from '../components/SettingsSection.svelte'
+    import Button from '$lib/ui/Button.svelte'
     import { commands } from '$lib/commands/command-registry'
     import type { Command } from '$lib/commands/types'
     import { searchCommands } from '$lib/commands/fuzzy-search'
@@ -399,9 +400,9 @@
                     .name}"
             </span>
             <div class="warning-actions">
-                <button class="warning-btn" onclick={handleRemoveFromOther}>Remove from other</button>
-                <button class="warning-btn" onclick={handleKeepBoth}>Keep both</button>
-                <button class="warning-btn secondary" onclick={cancelEdit}>Cancel</button>
+                <Button variant="secondary" size="mini" onclick={handleRemoveFromOther}>Remove from other</Button>
+                <Button variant="secondary" size="mini" onclick={handleKeepBoth}>Keep both</Button>
+                <Button variant="secondary" size="mini" onclick={cancelEdit}>Cancel</Button>
             </div>
         </div>
     {/if}
@@ -498,7 +499,7 @@
     </div>
 
     <div class="shortcuts-footer">
-        <button class="section-action-btn" onclick={handleResetAll}>Reset all to defaults</button>
+        <Button variant="secondary" size="mini" onclick={handleResetAll}>Reset all to defaults</Button>
     </div>
 </SettingsSection>
 
@@ -597,20 +598,6 @@
     .warning-actions {
         display: flex;
         gap: var(--spacing-xs);
-    }
-
-    .warning-btn {
-        padding: var(--spacing-xs) var(--spacing-sm);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        background: var(--color-bg-primary);
-        color: var(--color-text-primary);
-        font-size: var(--font-size-sm);
-        cursor: default;
-    }
-
-    .warning-btn.secondary {
-        color: var(--color-text-secondary);
     }
 
     .commands-list {
