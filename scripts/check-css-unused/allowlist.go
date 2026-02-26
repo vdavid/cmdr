@@ -30,6 +30,10 @@ var allowedUnusedVariables = map[string]bool{
 	"z-base":    true,
 	"z-overlay": true,
 	"z-sticky":  true,
+	// Disk usage bar colors - referenced via dynamic inline styles (constructed CSS var names in JS)
+	"color-disk-ok":      true,
+	"color-disk-warning": true,
+	"color-disk-danger":  true,
 }
 
 // allowedUndefinedClasses lists classes used in templates that don't need CSS definitions

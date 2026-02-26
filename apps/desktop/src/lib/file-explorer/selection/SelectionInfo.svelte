@@ -13,6 +13,8 @@
     import { measureDateColumnWidth } from '../views/full-list-utils'
     import { formatFileSize, formatDateTime } from '$lib/settings/reactive-settings.svelte'
     import { isScanning } from '$lib/indexing/index-state.svelte'
+    import type { VolumeSpaceInfo } from '$lib/tauri-commands/storage'
+    import { formatDiskSpaceStatus } from '../disk-space-utils'
 
     interface Props {
         /** View mode: 'brief' or 'full' */
@@ -25,9 +27,11 @@
         stats: ListingStats | null
         /** Number of selected items */
         selectedCount: number
+        /** Disk space info for current volume (null when unavailable) */
+        volumeSpace?: VolumeSpaceInfo | null
     }
 
-    const { viewMode, entry, currentDirModifiedAt, stats, selectedCount }: Props = $props()
+    const { viewMode, entry, currentDirModifiedAt, stats, selectedCount, volumeSpace }: Props = $props()
 
     // ========================================================================
     // Display mode determination
@@ -95,7 +99,9 @@
         const dateEl = containerElement.querySelector('.date')
         const sizeWidth = sizeEl instanceof HTMLElement ? sizeEl.offsetWidth : 0
         const dateWidth = dateEl instanceof HTMLElement ? dateEl.offsetWidth : 0
-        const availableWidth = containerWidth - sizeWidth - dateWidth - 24 // gaps
+        const diskSpaceEl = containerElement.querySelector('.disk-space-text')
+        const diskSpaceWidth = diskSpaceEl instanceof HTMLElement ? diskSpaceEl.offsetWidth : 0
+        const availableWidth = containerWidth - sizeWidth - dateWidth - diskSpaceWidth - 24 // gaps
 
         // Create a temporary span to measure (avoids direct DOM manipulation)
         const measureSpan = document.createElement('span')
@@ -219,6 +225,9 @@
 <div class="selection-info" bind:this={containerElement}>
     {#if displayMode === 'empty'}
         <span class="summary-text">Nothing in here.</span>
+        {#if volumeSpace}
+            <span class="disk-space-text">{formatDiskSpaceStatus(volumeSpace, formatFileSize)}</span>
+        {/if}
     {:else if displayMode === 'file-info' && entry}
         <!-- Brief mode without selection: show file info -->
         <span class="name" bind:this={nameElement} title={displayName}>{truncatedName}</span>
@@ -232,9 +241,15 @@
             {/if}
         </span>
         <span class="date" style="width: {dateColumnWidth}px;" title={dateTooltip}>{dateDisplay}</span>
+        {#if volumeSpace}
+            <span class="disk-space-text">{formatDiskSpaceStatus(volumeSpace, formatFileSize)}</span>
+        {/if}
     {:else if displayMode === 'no-selection'}
         <!-- Full mode without selection: show totals -->
         <span class="summary-text">{noSelectionText}</span>
+        {#if volumeSpace}
+            <span class="disk-space-text">{formatDiskSpaceStatus(volumeSpace, formatFileSize)}</span>
+        {/if}
     {:else if displayMode === 'selection-summary' && stats}
         <!-- Selection summary -->
         <span class="summary-text" title={selectionSizeTooltip}>
@@ -303,6 +318,14 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+    }
+
+    .disk-space-text {
+        flex-shrink: 0;
+        margin-left: auto;
+        padding-left: var(--spacing-md);
+        color: var(--color-text-tertiary);
+        white-space: nowrap;
     }
 
     .stale-indicator {

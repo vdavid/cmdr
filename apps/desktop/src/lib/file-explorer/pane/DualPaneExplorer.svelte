@@ -1491,6 +1491,11 @@
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call
             sourcePaneRef?.refreshView?.()
         }
+        // Refresh disk space on both panes — both might be on the same volume
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        void leftPaneRef?.refreshVolumeSpace?.()
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        void rightPaneRef?.refreshVolumeSpace?.()
     }
 
     function handleTransferComplete(filesProcessed: number, bytesProcessed: number) {

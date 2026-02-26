@@ -49,6 +49,14 @@
     --color-warning: #e65100;
     --color-warning-bg: rgba(230, 81, 0, 0.1);
 
+    /* Disk usage bar — solid colors mixed against the track for clean layering.
+     * Uses color-mix against the border color (not transparent) to avoid
+     * muddy blending when the semi-transparent fill sits atop the track. */
+    --color-disk-ok: color-mix(in srgb, var(--color-allow) 60%, var(--color-border));
+    --color-disk-warning: color-mix(in srgb, var(--color-warning) 70%, var(--color-border));
+    --color-disk-danger: var(--color-error);
+    --color-disk-track: var(--color-border);
+
     /* === Toast tints (tuned per scheme so warn reads amber, error reads red) === */
     --color-toast-warn-stripe: #d4a006;
     --color-toast-warn-bg: #fef9ee;
@@ -159,6 +167,12 @@
         --color-error-border: #7f1d1d;
         --color-warning: #f5a623;
         --color-warning-bg: rgba(245, 166, 35, 0.15);
+
+        /* Disk usage bar — solid colors, same mixing strategy as light mode */
+        --color-disk-ok: color-mix(in srgb, var(--color-allow) 60%, var(--color-border));
+        --color-disk-warning: color-mix(in srgb, var(--color-warning) 70%, var(--color-border));
+        --color-disk-danger: var(--color-error);
+        --color-disk-track: var(--color-border);
 
         /* === Toast tints === */
         --color-toast-warn-stripe: var(--color-warning);

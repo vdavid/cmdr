@@ -4,7 +4,6 @@
 import { describe, it, expect } from 'vitest'
 import {
     formatSizeTriads,
-    formatHumanReadable,
     formatDate,
     buildDateTooltip,
     getSizeDisplay,
@@ -114,45 +113,6 @@ describe('formatSizeTriads', () => {
         expect(result).toHaveLength(1)
         expect(result[0].value).toBe('0')
         expect(result[0].tierClass).toBe('size-bytes')
-    })
-})
-
-describe('formatHumanReadable', () => {
-    it('formats bytes', () => {
-        expect(formatHumanReadable(0)).toBe('0 bytes')
-        expect(formatHumanReadable(1)).toBe('1 bytes')
-        expect(formatHumanReadable(512)).toBe('512 bytes')
-        expect(formatHumanReadable(1023)).toBe('1023 bytes')
-    })
-
-    it('formats kilobytes', () => {
-        expect(formatHumanReadable(1024)).toBe('1.00 KB')
-        expect(formatHumanReadable(1536)).toBe('1.50 KB')
-        expect(formatHumanReadable(10240)).toBe('10.00 KB')
-    })
-
-    it('formats megabytes', () => {
-        expect(formatHumanReadable(1048576)).toBe('1.00 MB')
-        expect(formatHumanReadable(5242880)).toBe('5.00 MB')
-    })
-
-    it('formats gigabytes', () => {
-        expect(formatHumanReadable(1073741824)).toBe('1.00 GB')
-        expect(formatHumanReadable(10737418240)).toBe('10.00 GB')
-    })
-
-    it('formats terabytes', () => {
-        expect(formatHumanReadable(1099511627776)).toBe('1.00 TB')
-    })
-
-    it('formats petabytes', () => {
-        expect(formatHumanReadable(1125899906842624)).toBe('1.00 PB')
-    })
-
-    it('caps at petabytes for very large values', () => {
-        // Even larger than PB stays at PB
-        const result = formatHumanReadable(1125899906842624 * 1024)
-        expect(result).toContain('PB')
     })
 })
 

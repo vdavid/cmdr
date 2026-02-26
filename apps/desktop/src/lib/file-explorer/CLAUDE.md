@@ -116,7 +116,8 @@ Core explorer UI components:
 - **PaneResizer.svelte** — Drag handle between the two panes
 - **PermissionDeniedPane.svelte** — Shown when a directory can't be read
 - **selection-state.svelte.ts** — Reactive selection set (indices) with range/toggle helpers
-- **sorting-handlers.ts** / **transfer-operations.ts** / **tab-operations.ts** — Pure logic extracted from DualPaneExplorer
+- **sorting-handlers.ts** / **transfer-operations.ts** / **tab-operations.ts** — Pure logic extracted from
+  DualPaneExplorer
 - **rename-flow.svelte.ts** — Rename flow logic (validation, conflict/extension dialogs) extracted from FilePane
 
 ## Tabs (`tabs/`)

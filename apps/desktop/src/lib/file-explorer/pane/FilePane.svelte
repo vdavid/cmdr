@@ -75,7 +75,10 @@
     import * as benchmark from '$lib/benchmark'
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
     import { resolveValidPath } from '../navigation/path-navigation'
-    import { prioritizeDir } from '$lib/indexing/index'
+    import { prioritizeDir } from '$lib/indexing'
+    import { getVolumeSpace, type VolumeSpaceInfo } from '$lib/tauri-commands/storage'
+    import { getDiskUsageLevel, getUsedPercent, formatBarTooltip } from '../disk-space-utils'
+    import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
 
     interface Props {
         initialPath: string
@@ -151,6 +154,9 @@
     // Volume root path from listing-complete event (accurate for MTP and all volume types)
     let volumeRootFromEvent = $state<string | undefined>(undefined)
 
+    // Disk space info for the current volume (fetched on mount, volume change, and after file ops)
+    let volumeSpace: VolumeSpaceInfo | null = $state(null)
+
     // Component refs for keyboard navigation
     let fullListRef: FullList | undefined = $state()
     let briefListRef: BriefList | undefined = $state()
@@ -170,26 +176,31 @@
     // Network browsing state - tracked here for history navigation integration
     let currentNetworkHost = $state<NetworkHost | null>(null)
 
+    // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function toggleVolumeChooser() {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         volumeBreadcrumbRef?.toggle()
     }
 
+    // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function isVolumeChooserOpen(): boolean {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
         return volumeBreadcrumbRef?.getIsOpen() ?? false
     }
 
+    // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function closeVolumeChooser() {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         volumeBreadcrumbRef?.close()
     }
 
+    // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function openVolumeChooser() {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         volumeBreadcrumbRef?.open()
     }
 
+    // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function handleVolumeChooserKeyDown(e: KeyboardEvent): boolean {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
         return volumeBreadcrumbRef?.handleKeyDown(e) ?? false
@@ -203,6 +214,7 @@
         return loading
     }
 
+    // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function getFilenameUnderCursor(): string | undefined {
         return entryUnderCursor?.name
     }
@@ -225,6 +237,7 @@
         debouncedSyncMcp.call()
     }
 
+    // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function getCursorIndex(): number {
         return cursorIndex
     }
@@ -248,6 +261,7 @@
         return hasParent
     }
 
+    // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function isAllSelected(): boolean {
         return selection.isAllSelected(hasParent, effectiveTotalCount)
     }
@@ -299,6 +313,7 @@
     } = renameFlow
     /* eslint-enable @typescript-eslint/unbound-method */
 
+    // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function isRenaming(): boolean {
         return rename.active
     }
@@ -307,6 +322,7 @@
         renameFlow.startRename()
     }
 
+    // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function cancelRename(): void {
         renameFlow.cancelRename()
     }
@@ -314,8 +330,13 @@
     // Cache generation counter - incremented to force list components to re-fetch
     let cacheGeneration = $state(0)
 
+    // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function refreshView(): void {
         cacheGeneration++
+    }
+
+    export async function refreshVolumeSpace(): Promise<void> {
+        volumeSpace = await getVolumeSpace(currentPath)
     }
 
     /** Re-fetches index sizes (recursive_size, etc.) without a full list rebuild. */
@@ -376,10 +397,12 @@
         })
     }
 
+    // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function isMtp(): boolean {
         return isMtpView
     }
 
+    // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function getVolumeId(): string {
         return volumeId
     }
@@ -388,26 +411,7 @@
         return currentPath
     }
 
-    /** @deprecated Use standard selection instead. */
-    export async function getMtpSelectedFiles(): Promise<FileEntry[]> {
-        if (!isMtpView || !listingId) return []
-        const files: FileEntry[] = []
-        for (const index of selection.selectedIndices) {
-            const backendIndex = hasParent ? index - 1 : index
-            if (backendIndex >= 0) {
-                const entry = await getFileAt(listingId, backendIndex, includeHidden)
-                if (entry) files.push(entry)
-            }
-        }
-        return files
-    }
-
-    /** @deprecated Use standard cursor instead. */
-    export function getMtpEntryUnderCursor(): FileEntry | null {
-        if (!isMtpView) return null
-        return entryUnderCursor
-    }
-
+    // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function setNetworkHost(host: NetworkHost | null): void {
         currentNetworkHost = host
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
@@ -832,6 +836,7 @@
     }
 
     // Handle cancellation during loading (called from DualPaneExplorer on ESC)
+    // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function handleCancelLoading() {
         if (!loading || !listingId) return
 
@@ -846,6 +851,7 @@
     }
 
     // Navigate to a specific path with optional item selection (used when cancelling navigation)
+    // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function navigateToPath(path: string, selectName?: string) {
         currentPath = path
         void loadDirectory(path, selectName)
@@ -959,6 +965,7 @@
         const isDeviceOnlyMtp = isMtpVolumeId(newVolumeId) && !newVolumeId.includes(':')
         if (newVolumeId !== 'network' && !isDeviceOnlyMtp) {
             void loadDirectory(targetPath)
+            void refreshVolumeSpace()
         }
     }
 
@@ -1073,6 +1080,7 @@
     }
 
     // Exported so DualPaneExplorer can forward keyboard events
+    // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function handleKeyDown(e: KeyboardEvent) {
         // When rename is active, suppress all app-level shortcuts.
         // The InlineRenameEditor handles its own keyboard events via stopPropagation.
@@ -1128,6 +1136,7 @@
 
     // Handle key release - clear range state when Shift is released
     // This ensures a new Shift+navigation starts fresh selection from current cursor
+    // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function handleKeyUp(e: KeyboardEvent) {
         if (e.key === 'Shift') {
             selection.clearRangeState()
@@ -1408,6 +1417,7 @@
         if (!isNetworkView && !isMtpDeviceOnly) {
             log.debug('[FilePane] onMount: triggering loadDirectory for paneId={paneId}', { paneId })
             void loadDirectory(currentPath)
+            void refreshVolumeSpace()
         } else {
             log.debug('[FilePane] onMount: SKIPPING loadDirectory for paneId={paneId}', { paneId })
         }
@@ -1591,7 +1601,26 @@
             currentDirModifiedAt={undefined}
             stats={listingStats}
             selectedCount={selection.selectedIndices.size}
+            {volumeSpace}
         />
+        <!--suppress HtmlWrongAttributeValue -- We know this is not a valid ARIA role, it's fine -->
+        <div
+            class="disk-usage-bar"
+            title={volumeSpace ? formatBarTooltip(volumeSpace, formatFileSize) : ''}
+            role="meter"
+            aria-label="Disk usage"
+            aria-valuenow={volumeSpace ? getUsedPercent(volumeSpace) : 0}
+            aria-valuemin={0}
+            aria-valuemax={100}
+        >
+            {#if volumeSpace}
+                <div
+                    class="disk-usage-fill"
+                    style:width="{getUsedPercent(volumeSpace)}%"
+                    style:background-color="var({getDiskUsageLevel(getUsedPercent(volumeSpace)).cssVar})"
+                ></div>
+            {/if}
+        </div>
     {/if}
 </div>
 
@@ -1637,6 +1666,17 @@
         white-space: nowrap;
         display: flex;
         align-items: center;
+    }
+
+    .disk-usage-bar {
+        height: 2px;
+        background-color: var(--color-disk-track);
+        flex-shrink: 0;
+    }
+
+    .disk-usage-fill {
+        height: 100%;
+        transition: none;
     }
 
     .path {

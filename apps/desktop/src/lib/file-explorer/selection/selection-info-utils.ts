@@ -35,19 +35,6 @@ export function formatSizeTriads(bytes: number): { value: string; tierClass: str
     }))
 }
 
-/** Formats bytes as human-readable (for tooltip) */
-export function formatHumanReadable(bytes: number): string {
-    const units = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB']
-    let value = bytes
-    let unitIndex = 0
-    while (value >= 1024 && unitIndex < units.length - 1) {
-        value /= 1024
-        unitIndex++
-    }
-    const valueStr = unitIndex === 0 ? String(value) : value.toFixed(2)
-    return `${valueStr} ${units[unitIndex]}`
-}
-
 /** Formats timestamp as YYYY-MM-DD hh:mm:ss */
 export function formatDate(timestamp: number | undefined): string {
     if (timestamp === undefined) return ''

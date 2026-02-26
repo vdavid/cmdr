@@ -1,6 +1,10 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte'
     import { listVolumes, findContainingVolume, listen, type UnlistenFn } from '$lib/tauri-commands'
+    import { getVolumeSpace, type VolumeSpaceInfo } from '$lib/tauri-commands/storage'
+    import { SvelteMap } from 'svelte/reactivity'
+    import { getDiskUsageLevel, getUsedPercent, formatDiskSpaceShort } from '../disk-space-utils'
+    import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
     import type { VolumeInfo, LocationCategory } from '../types'
     import { getMtpVolumes, initialize as initMtpStore, scanDevices as scanMtpDevices, type MtpVolume } from '$lib/mtp'
 
@@ -29,6 +33,9 @@
     // The ID of the actual volume that contains the current path
     // This is used to show the checkmark on the correct volume, not on favorites
     let containingVolumeId = $state<string | null>(null)
+
+    // Disk space cache for volume selector (fetched lazily on dropdown open)
+    const volumeSpaceMap = new SvelteMap<string, VolumeSpaceInfo>()
 
     // Current volume info derived from volumes list (the actual containing volume)
     // Special case: 'network' is a virtual volume, not from the backend
@@ -188,11 +195,17 @@
 
     function handleToggle() {
         isOpen = !isOpen
+        if (isOpen) {
+            void fetchVolumeSpaces(volumes)
+        }
     }
 
     // Export for keyboard shortcut access
     export function toggle() {
         isOpen = !isOpen
+        if (isOpen) {
+            void fetchVolumeSpaces(volumes)
+        }
     }
 
     // Export to check if dropdown is open
@@ -208,6 +221,7 @@
     // Export to explicitly open the dropdown
     export function open() {
         isOpen = true
+        void fetchVolumeSpaces(volumes)
     }
 
     // Export keyboard handler for parent components to call
@@ -339,6 +353,18 @@
         mtpVolumes = getMtpVolumes()
     }
 
+    async function fetchVolumeSpaces(vols: VolumeInfo[]): Promise<void> {
+        const physicalVolumes = vols.filter((v) => v.category === 'main_volume' || v.category === 'attached_volume')
+        await Promise.all(
+            physicalVolumes
+                .filter((v) => !volumeSpaceMap.has(v.id))
+                .map(async (v) => {
+                    const space = await getVolumeSpace(v.path)
+                    if (space) volumeSpaceMap.set(v.id, space)
+                }),
+        )
+    }
+
     onMount(async () => {
         await loadVolumes()
         await loadMtpVolumes()
@@ -346,10 +372,12 @@
 
         // Listen for volume mount/unmount events
         unlistenMount = await listen<{ volumeId: string }>('volume-mounted', () => {
+            volumeSpaceMap.clear()
             void loadVolumes()
         })
 
         unlistenUnmount = await listen<{ volumeId: string }>('volume-unmounted', () => {
+            volumeSpaceMap.clear()
             void loadVolumes()
         })
 
@@ -457,6 +485,21 @@
                             <span class="read-only-indicator" title="Read-only">🔒</span>
                         {/if}
                     </div>
+                    {#if volumeSpaceMap.has(volume.id)}
+                        {@const space = volumeSpaceMap.get(volume.id)}
+                        {#if space}
+                            <div class="volume-space-info">
+                                <div class="volume-space-bar">
+                                    <div
+                                        class="volume-space-fill"
+                                        style:width="{getUsedPercent(space)}%"
+                                        style:background-color="var({getDiskUsageLevel(getUsedPercent(space)).cssVar})"
+                                    ></div>
+                                </div>
+                                <span class="volume-space-text">{formatDiskSpaceShort(space, formatFileSize)}</span>
+                            </div>
+                        {/if}
+                    {/if}
                 {/each}
             {/each}
         </div>
@@ -595,5 +638,31 @@
         font-size: var(--font-size-sm);
         margin-left: auto;
         opacity: 0.7;
+    }
+
+    .volume-space-info {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        padding: 0 var(--spacing-md) var(--spacing-xs) calc(14px + var(--spacing-sm) + 16px + var(--spacing-sm));
+    }
+
+    .volume-space-bar {
+        flex: 1;
+        height: 2px;
+        background-color: var(--color-disk-track);
+        border-radius: var(--radius-sm);
+    }
+
+    .volume-space-fill {
+        height: 100%;
+        border-radius: var(--radius-sm);
+    }
+
+    .volume-space-text {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+        white-space: nowrap;
+        flex-shrink: 0;
     }
 </style>
