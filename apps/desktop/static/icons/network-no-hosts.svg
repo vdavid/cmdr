@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 64" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <style>
+        @keyframes monitor{to{opacity:.7}}
+        @keyframes net-in{to{opacity:.6}}
+        @keyframes net-dim{to{opacity:.33}}
+        @keyframes slash-in{to{opacity:.6;stroke-dashoffset:0}}
+        @keyframes dot{0%,25%{opacity:0}30%,48%{opacity:.35}52%{opacity:.85}57%,to{opacity:.15}}
+        @keyframes arc1{0%,28%{opacity:0}33%,52%{opacity:.35}56%{opacity:.85}61%,to{opacity:.15}}
+        @keyframes arc2{0%,32%{opacity:0}37%,56%{opacity:.35}60%{opacity:.85}65%,to{opacity:.15}}
+        @keyframes arc3{0%,36%{opacity:0}41%,60%{opacity:.35}64%{opacity:.85}69%,to{opacity:.15}}
+        svg{stroke:#d4a006} @media (prefers-color-scheme:dark){svg{stroke:#ffc206}}
+        .monitor,.stand1,.stand2{stroke-width:1.8;opacity:0;animation:monitor .7s ease-out .1s forwards}
+        .stand1{animation:monitor .3s ease-out .5s forwards}
+        .stand2{animation:monitor .3s ease-out .7s forwards}
+        .network{animation:net-dim .8s ease-in 2.7s forwards}
+        .net-1{animation:net-in .15s ease-out 0s forwards}
+        .net-1,.net-2,.net-3{stroke-width:1.5;opacity:0}
+        .net-2{animation:net-in .15s ease-out .12s forwards}
+        .net-3{animation:net-in .15s ease-out .24s forwards}
+        .net-4,.net-5{animation:net-in .15s ease-out .36s forwards}
+        .net-4,.net-5,.net-6,.net-7{stroke-width:1.5;opacity:0}
+        .net-6{animation:net-in .15s ease-out .52s forwards}
+        .net-7{animation:net-in .15s ease-out .65s forwards}
+        .dot{stroke-width:0;animation:dot 4s linear forwards;fill:#d4a006} @media (prefers-color-scheme:dark){.dot{fill:#ffc206}}
+        .arc1{stroke-width:1.6;animation:arc1 4s linear forwards}
+        .arc2,.arc3{stroke-width:1.6;animation:arc2 4s linear forwards}
+        .arc3{animation:arc3 4s linear forwards}
+        .slash{stroke-width:1.8;stroke-dasharray:28;stroke-dashoffset:28;opacity:0;animation:slash-in .5s ease-out 2.8s forwards}
+    </style>
+    <!--Monitor-->
+    <rect class="monitor" x="2" y="16" width="20" height="16" rx="2"/>
+    <line class="stand1" x1="12" y1="33" x2="12" y2="36"/>
+    <line class="stand2" x1="7" y1="37" x2="17" y2="37"/>
+    <!--Signal dot+arcs (fan out rightward)-->
+    <circle class="dot" cx="29" cy="25" r="1.5"/>
+    <path class="arc1" d="M33 22a4 4 0 0 1 0 6"/>
+    <path class="arc2" d="M36 18a8 8 0 0 1 0 14"/>
+    <path class="arc3" d="M41 14a14 14 0 0 1 0 22"/>
+    <!--Network cluster (tree topology, drawn TL to BR)-->
+    <g class="network">
+        <rect class="net-1" x="60" y="15" width="8" height="6" rx="1.5"/>
+        <line class="net-2" x1="64" y1="22" x2="64" y2="24"/>
+        <line class="net-3" x1="58" y1="25" x2="70" y2="25"/>
+        <line class="net-4" x1="58" y1="26" x2="58" y2="28"/>
+        <line class="net-5" x1="70" y1="26" x2="70" y2="28"/>
+        <rect class="net-6" x="54" y="29" width="8" height="6" rx="1.5"/>
+        <rect class="net-7" x="66" y="29" width="8" height="6" rx="1.5"/>
+    </g>
+    <!--Diagonal slash (TL to BR anim)-->
+    <line class="slash" x1="28" y1="14" x2="46" y2="36" stroke="#d4000080"/>
+</svg>

@@ -130,18 +130,21 @@
         }
     }
 
-    /** Move cursor to a specific index (used by MCP move_cursor tool). */
+    /** Move cursor to a specific index. */
+    // noinspection JSUnusedGlobalSymbols -- used dynamically by MCP move_cursor tool
     export function setCursorIndex(index: number) {
         cursorIndex = Math.max(0, Math.min(index, hosts.length - 1))
         scrollToIndex(cursorIndex)
     }
 
     /** Find a host by name, returns its index or -1. */
+    // noinspection JSUnusedGlobalSymbols -- used dynamically
     export function findItemIndex(name: string): number {
         return hosts.findIndex((h) => h.name.toLowerCase() === name.toLowerCase())
     }
 
     // Handle keyboard navigation
+    // noinspection JSUnusedGlobalSymbols -- used dynamically
     export function handleKeyDown(e: KeyboardEvent): boolean {
         if (hosts.length === 0) return false
 
@@ -395,13 +398,20 @@
                 Searching...
             </div>
         {:else if hosts.length === 0}
-            <div class="empty-state">No network hosts found.</div>
+            <div class="empty-state">
+                <img class="empty-icon" src="/icons/network-no-hosts.svg" alt="" />
+                <div class="empty-title">No network hosts found</div>
+                <div class="empty-message">Make sure you're on a network with SMB-capable devices.</div>
+                <Button variant="secondary" onclick={handleRefreshClick}>Refresh</Button>
+            </div>
         {/if}
     </div>
 
-    <div class="refresh-section">
-        <Button variant="secondary" onclick={handleRefreshClick}>🔄 Refresh</Button>
-    </div>
+    {#if hosts.length > 0}
+        <div class="refresh-section">
+            <Button variant="secondary" onclick={handleRefreshClick}>🔄 Refresh</Button>
+        </div>
+    {/if}
 </div>
 
 <style>
@@ -494,11 +504,30 @@
 
     .empty-state {
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 48px var(--spacing-lg);
+        height: 100%;
+        padding: var(--spacing-xl);
+        gap: var(--spacing-md);
+        color: var(--color-text-secondary);
+    }
+
+    .empty-icon {
+        width: 96px;
+        height: 96px;
+    }
+
+    .empty-title {
+        font-size: var(--font-size-lg);
+        font-weight: 500;
+        color: var(--color-text-primary);
+    }
+
+    .empty-message {
+        font-size: var(--font-size-sm);
         color: var(--color-text-tertiary);
-        font-style: italic;
+        text-align: center;
     }
 
     .col-shares.is-fetching {
