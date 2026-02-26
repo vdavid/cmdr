@@ -7,7 +7,7 @@ export async function showTabContextMenu(
     canClose: boolean,
     hasOtherUnpinnedTabs: boolean,
 ): Promise<void> {
-    await invoke<void>('show_tab_context_menu', {
+    await invoke('show_tab_context_menu', {
         isPinned,
         canClose,
         hasOtherUnpinnedTabs,

@@ -12,5 +12,10 @@
         "dev:license-server": "pnpm --filter @cmdr/license-server dev",
         "deploy:license-server": "pnpm --filter @cmdr/license-server deploy",
         "check": "./scripts/check.sh"
+    },
+    "pnpm": {
+        "overrides": {
+            "rollup": ">=4.59.0"
+        }
     }
 }

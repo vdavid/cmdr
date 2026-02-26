@@ -40,21 +40,15 @@ export async function ensureAppReady(): Promise<void> {
     // Dismiss any overlays (AI notification, etc.) via JS click to bypass
     // WebDriver strict clickability checks
     await browser.execute(() => {
-        const dismissBtn = document.querySelector('.ai-notification .ai-button.secondary')
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        dismissBtn?.click()
+        document.querySelector<HTMLElement>('.ai-notification .ai-button.secondary')?.click()
     })
     await browser.pause(300)
 
     // Click on a file entry in the left pane to ensure focus, then
     // focus the explorer container so keyboard events reach the handler.
     await browser.execute(() => {
-        const entry = document.querySelector('.file-pane .file-entry')
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        entry?.click()
-        const explorer = document.querySelector('.dual-pane-explorer')
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        explorer?.focus()
+        document.querySelector<HTMLElement>('.file-pane .file-entry')?.click()
+        document.querySelector<HTMLElement>('.dual-pane-explorer')?.focus()
     })
     await browser.pause(500)
 }

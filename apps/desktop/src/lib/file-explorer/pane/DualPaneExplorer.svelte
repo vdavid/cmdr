@@ -1004,15 +1004,18 @@
             activeTabId: rightPaneTabs.activeTabId,
         }
 
+        // E2E override: apply fixture paths to the active tab data BEFORE creating tab managers,
+        // so the managers are initialized with the correct paths from the start
+        if (e2eStartPath) {
+            const leftActiveTab = resolvedLeftPaneTabs.tabs.find((t) => t.id === resolvedLeftPaneTabs.activeTabId)
+            const rightActiveTab = resolvedRightPaneTabs.tabs.find((t) => t.id === resolvedRightPaneTabs.activeTabId)
+            if (leftActiveTab) leftActiveTab.path = `${e2eStartPath}/left`
+            if (rightActiveTab) rightActiveTab.path = `${e2eStartPath}/right`
+        }
+
         // Create tab managers from persisted tab data
         leftTabMgr = createTabManagerFromPersisted(resolvedLeftPaneTabs)
         rightTabMgr = createTabManagerFromPersisted(resolvedRightPaneTabs)
-
-        // E2E override: override the active tab's path on each side
-        if (e2eStartPath) {
-            getActiveTab(leftTabMgr).path = `${e2eStartPath}/left`
-            getActiveTab(rightTabMgr).path = `${e2eStartPath}/right`
-        }
 
         initialized = true
         syncPinTabMenu()
@@ -2095,7 +2098,7 @@
         if (tab.pinned) {
             unpinTab(mgr, tabId)
         }
-        handleTabClose(pane, tabId)
+        void handleTabClose(pane, tabId)
     }
 
     function handleNewTab(pane: 'left' | 'right') {
@@ -2333,7 +2336,7 @@
                     switchToTab('left', tabId)
                 }}
                 onTabClose={(tabId: TabId) => {
-                    handleTabClose('left', tabId)
+                    void handleTabClose('left', tabId)
                 }}
                 onTabMiddleClick={(tabId: TabId) => {
                     handleTabMiddleClick('left', tabId)
@@ -2398,7 +2401,7 @@
                     switchToTab('right', tabId)
                 }}
                 onTabClose={(tabId: TabId) => {
-                    handleTabClose('right', tabId)
+                    void handleTabClose('right', tabId)
                 }}
                 onTabMiddleClick={(tabId: TabId) => {
                     handleTabMiddleClick('right', tabId)

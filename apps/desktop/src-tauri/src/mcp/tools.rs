@@ -381,8 +381,8 @@ mod tests {
     #[test]
     fn test_tab_tools_count() {
         let tools = get_tab_tools();
-        // activate_tab
-        assert_eq!(tools.len(), 1);
+        // activate_tab, pin_tab
+        assert_eq!(tools.len(), 2);
     }
 
     #[test]
@@ -410,8 +410,8 @@ mod tests {
     #[test]
     fn test_all_tools_count() {
         let tools = get_all_tools();
-        // 6 nav + 2 cursor + 1 selection + 3 file_op + 3 view + 1 tab + 1 dialog + 3 app = 20
-        assert_eq!(tools.len(), 20);
+        // 6 nav + 2 cursor + 1 selection + 3 file_op + 3 view + 2 tab + 1 dialog + 3 app = 21
+        assert_eq!(tools.len(), 21);
     }
 
     #[test]

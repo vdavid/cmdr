@@ -97,6 +97,7 @@ vi.mock('$lib/tauri-commands', () => ({
     onMtpDeviceRemoved: vi.fn().mockResolvedValue(() => {}),
     // Tab mocks
     updatePaneTabs: vi.fn().mockResolvedValue(undefined),
+    updatePinTabMenu: vi.fn().mockResolvedValue(undefined),
     showTabContextMenu: vi.fn().mockResolvedValue(null),
 }))
 

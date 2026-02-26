@@ -20,6 +20,7 @@
 
 import type { Options, Capabilities } from '@wdio/types'
 import { spawn, ChildProcess } from 'child_process'
+import os from 'os'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
@@ -98,7 +99,8 @@ export const config: Options.Testrunner & { capabilities: Capabilities.Testrunne
 
         // Use absolute path to the Rust tauri-driver binary to avoid the
         // CrabNebula npm @crabnebula/tauri-driver CLI shadowing it in PATH
-        const tauriDriverBin = '/root/.cargo/bin/tauri-driver'
+        const cargoHome = process.env.CARGO_HOME || path.join(os.homedir(), '.cargo')
+        const tauriDriverBin = path.join(cargoHome, 'bin', 'tauri-driver')
 
         tauriDriver = spawn(tauriDriverBin, args, {
             stdio: ['ignore', 'pipe', 'pipe'],

@@ -148,7 +148,11 @@ export async function isAiOptedOut(): Promise<boolean> {
  * Returns null when the feature is disabled or the env var is not set.
  */
 export async function getE2eStartPath(): Promise<string | null> {
-    return invoke<string | null>('get_e2e_start_path')
+    try {
+        return await invoke<string | null>('get_e2e_start_path')
+    } catch {
+        return null
+    }
 }
 
 // ============================================================================
