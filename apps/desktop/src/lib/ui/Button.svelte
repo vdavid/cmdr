@@ -1,15 +1,16 @@
 <script lang="ts">
     import type { Snippet } from 'svelte'
-    import type { HTMLButtonAttributes } from 'svelte/elements'
 
     type Variant = 'primary' | 'secondary' | 'danger'
     type Size = 'regular' | 'mini'
 
-    interface Props extends HTMLButtonAttributes {
+    interface Props {
         variant?: Variant
         size?: Size
         disabled?: boolean
         type?: 'button' | 'submit'
+        onclick?: (e: MouseEvent) => void
+        'aria-label'?: string
         children: Snippet
     }
 
@@ -18,12 +19,13 @@
         size = 'regular',
         disabled = false,
         type = 'button',
+        onclick,
+        'aria-label': ariaLabel,
         children,
-        ...rest
     }: Props = $props()
 </script>
 
-<button {type} class="btn btn-{variant} btn-{size}" {disabled} {...rest}>
+<button {type} class="btn btn-{variant} btn-{size}" {disabled} {onclick} aria-label={ariaLabel}>
     {@render children()}
 </button>
 

@@ -154,8 +154,9 @@ export const config: Options.Testrunner & { capabilities: Capabilities.Testrunne
     },
 
     beforeTest: async function () {
-        if (fixtureRootPath) {
-            await recreateFixtures(fixtureRootPath)
+        const fixturePath = process.env.CMDR_E2E_START_PATH
+        if (fixturePath) {
+            await recreateFixtures(fixturePath)
         }
     },
 

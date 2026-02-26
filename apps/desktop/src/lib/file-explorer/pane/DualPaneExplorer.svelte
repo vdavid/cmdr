@@ -923,8 +923,12 @@
         if (e2eStartPath) {
             const leftActiveTab = resolvedLeftPaneTabs.tabs.find((t) => t.id === resolvedLeftPaneTabs.activeTabId)
             const rightActiveTab = resolvedRightPaneTabs.tabs.find((t) => t.id === resolvedRightPaneTabs.activeTabId)
-            if (leftActiveTab) leftActiveTab.path = `${e2eStartPath}/left`
-            if (rightActiveTab) rightActiveTab.path = `${e2eStartPath}/right`
+            const leftTarget = leftActiveTab ?? resolvedLeftPaneTabs.tabs[0]
+            const rightTarget = rightActiveTab ?? resolvedRightPaneTabs.tabs[0]
+            if (!leftActiveTab) log.warn('E2E path override: left active tab ID mismatch, using first tab')
+            if (!rightActiveTab) log.warn('E2E path override: right active tab ID mismatch, using first tab')
+            leftTarget.path = `${e2eStartPath}/left`
+            rightTarget.path = `${e2eStartPath}/right`
         }
 
         // Create tab managers from persisted tab data
