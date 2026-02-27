@@ -117,6 +117,23 @@ export async function moveFiles(
     return invoke<WriteOperationStartResult>('move_files', { sources, destination, config: config ?? {} })
 }
 
+/** Recursively deletes files and directories. Same events as copyFiles. */
+export async function deleteFiles(
+    sources: string[],
+    config?: WriteOperationConfig,
+): Promise<WriteOperationStartResult> {
+    return invoke<WriteOperationStartResult>('delete_files', { sources, config: config ?? {} })
+}
+
+/** Moves files to macOS Trash. Same events as copyFiles but with operationType: trash. */
+export async function trashFiles(
+    sources: string[],
+    itemSizes?: number[],
+    config?: WriteOperationConfig,
+): Promise<WriteOperationStartResult> {
+    return invoke<WriteOperationStartResult>('trash_files', { sources, itemSizes, config: config ?? {} })
+}
+
 export async function cancelWriteOperation(operationId: string, rollback: boolean): Promise<void> {
     await invoke('cancel_write_operation', { operationId, rollback })
 }

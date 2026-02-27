@@ -220,6 +220,20 @@ export const commands: Command[] = [
         shortcuts: ['F7'],
     },
     {
+        id: 'file.delete',
+        name: 'Delete',
+        scope: 'Main window/File list',
+        showInPalette: true,
+        shortcuts: ['F8'],
+    },
+    {
+        id: 'file.deletePermanently',
+        name: 'Delete permanently',
+        scope: 'Main window/File list',
+        showInPalette: true,
+        shortcuts: ['⇧F8'],
+    },
+    {
         id: 'file.showInFinder',
         name: 'Show in Finder',
         scope: 'Main window/File list',

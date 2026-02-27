@@ -466,6 +466,7 @@ pub fn run() {
             commands::file_system::copy_files,
             commands::file_system::move_files,
             commands::file_system::delete_files,
+            commands::file_system::trash_files,
             commands::file_system::cancel_write_operation,
             commands::file_system::cancel_all_write_operations,
             commands::file_system::start_scan_preview,

@@ -127,30 +127,6 @@ export const settingsRegistry: SettingDefinition[] = [
     // General › File operations
     // ========================================================================
     {
-        id: 'fileOperations.confirmBeforeDelete',
-        section: ['General', 'File operations'],
-        label: 'Confirm before delete',
-        description: 'Show a confirmation dialog before moving files to trash.',
-        keywords: ['confirm', 'delete', 'trash', 'dialog', 'warning'],
-        type: 'boolean',
-        default: true,
-        component: 'switch',
-        disabled: true,
-        disabledReason: 'Coming soon',
-    },
-    {
-        id: 'fileOperations.deletePermanently',
-        section: ['General', 'File operations'],
-        label: 'Delete permanently instead of using trash',
-        description: 'Bypass trash and delete files immediately. This cannot be undone.',
-        keywords: ['permanent', 'delete', 'trash', 'bypass', 'remove'],
-        type: 'boolean',
-        default: false,
-        component: 'switch',
-        disabled: true,
-        disabledReason: 'Coming soon',
-    },
-    {
         id: 'fileOperations.allowFileExtensionChanges',
         section: ['General', 'File operations'],
         label: 'Allow file extension changes',

@@ -4,7 +4,7 @@
     import PaneResizer from './PaneResizer.svelte'
     import LoadingIcon from '$lib/ui/LoadingIcon.svelte'
     import DialogManager from './DialogManager.svelte'
-    import { toBackendCursorIndex } from '$lib/file-operations/transfer/transfer-dialog-utils'
+    import { toBackendCursorIndex, toBackendIndices } from '$lib/file-operations/transfer/transfer-dialog-utils'
     import { getFileAt } from '$lib/tauri-commands'
     import {
         loadAppStatus,
@@ -92,6 +92,7 @@
         getDestinationVolumeInfo,
     } from './transfer-operations'
     import type { TransferOperationType } from '../types'
+    import type { DeleteSourceItem } from '$lib/file-operations/delete/delete-dialog-utils'
     import { getInitialFolderName } from '$lib/file-operations/mkdir/new-folder-operations'
     import { createDialogState } from './dialog-state.svelte'
     import { getCurrentWebview } from '@tauri-apps/api/webview'
@@ -618,7 +619,7 @@
         return false
     }
 
-    /** Handles function key shortcuts (F1-F7). Returns true if a function key was handled. */
+    /** Handles function key shortcuts (F1-F8). Returns true if a function key was handled. */
     function handleFunctionKey(e: KeyboardEvent): boolean {
         switch (e.key) {
             case 'F1':
@@ -647,6 +648,9 @@
                 return true
             case 'F7':
                 void openNewFolderDialog()
+                return true
+            case 'F8':
+                void openDeleteDialog(e.shiftKey)
                 return true
             default:
                 return false
@@ -1382,6 +1386,64 @@
         await openTransferDialog('move')
     }
 
+    /** Opens the delete confirmation dialog for the current selection or cursor item. */
+    export async function openDeleteDialog(permanent: boolean) {
+        const sourcePaneRef = getPaneRef(focusedPane)
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const listingId = sourcePaneRef?.getListingId?.() as string | undefined
+        if (!listingId) return
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const hasParent = sourcePaneRef?.hasParentEntry?.() as boolean | undefined
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const selectedIndices = sourcePaneRef?.getSelectedIndices?.() as number[] | undefined
+        const hasSelection = selectedIndices && selectedIndices.length > 0
+
+        const backendIndices = hasSelection
+            ? toBackendIndices(selectedIndices, hasParent ?? false)
+            : (() => {
+                  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+                  const cursorIndex = sourcePaneRef?.getCursorIndex?.() as number | undefined
+                  const idx = toBackendCursorIndex(cursorIndex ?? -1, hasParent ?? false)
+                  return idx !== null ? [idx] : []
+              })()
+        if (backendIndices.length === 0) return
+
+        // Fetch full FileEntry data for each item
+        const entries = await Promise.all(backendIndices.map((idx) => getFileAt(listingId, idx, showHiddenFiles)))
+        const validEntries = entries.filter((e): e is NonNullable<typeof e> => e !== null && e.name !== '..')
+        if (validEntries.length === 0) return
+
+        const sourceItems: DeleteSourceItem[] = validEntries.map((e) => ({
+            name: e.name,
+            size: e.size,
+            isDirectory: e.isDirectory,
+            isSymlink: e.isSymlink,
+            recursiveSize: e.recursiveSize,
+            recursiveFileCount: e.recursiveFileCount,
+        }))
+        const sourcePaths = validEntries.map((e) => e.path)
+
+        // Look up supportsTrash from the source volume
+        const sourceVolId = getPaneVolumeId(focusedPane)
+        const sourceVolume = volumes.find((v) => v.id === sourceVolId)
+        const supportsTrash = sourceVolume?.supportsTrash !== false
+
+        const { sortBy, sortOrder } = getPaneSort(focusedPane)
+
+        dialogs.showDeleteConfirmation({
+            sourceItems,
+            sourcePaths,
+            sourceFolderPath: getPanePath(focusedPane),
+            isPermanent: permanent,
+            supportsTrash,
+            isFromCursor: !hasSelection,
+            sortColumn: sortBy,
+            sortOrder,
+            sourceVolumeId: sourceVolId,
+        })
+    }
+
     // Focus the container after initialization so keyboard events work
     $effect(() => {
         if (initialized) {
@@ -2059,6 +2121,14 @@
     }}
     onAlertClose={() => {
         dialogs.handleAlertClose()
+    }}
+    showDeleteDialog={dialogs.showDeleteDialog}
+    deleteDialogProps={dialogs.deleteDialogProps}
+    onDeleteConfirm={(previewId: string | null) => {
+        dialogs.handleDeleteConfirm(previewId)
+    }}
+    onDeleteCancel={() => {
+        dialogs.handleDeleteCancel()
     }}
 />
 

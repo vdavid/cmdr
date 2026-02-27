@@ -21,6 +21,7 @@ pub enum WriteOperationType {
     Copy,
     Move,
     Delete,
+    Trash,
 }
 
 /// Phase of the operation (for progress reporting).
@@ -33,6 +34,8 @@ pub enum WriteOperationPhase {
     Copying,
     /// Deleting files (for delete, and cleanup phase of cross-filesystem move)
     Deleting,
+    /// Moving items to trash
+    Trashing,
 }
 
 // ============================================================================

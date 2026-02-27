@@ -147,6 +147,10 @@ export interface VolumeInfo {
     isEjectable: boolean
     /** Whether this volume is read-only (for example, PTP cameras) */
     isReadOnly?: boolean
+    /** Filesystem type from statfs (for example, "apfs", "smbfs", "exfat") */
+    fsType?: string
+    /** Whether this volume supports macOS trash. `undefined` means unknown (treat as `true`). */
+    supportsTrash?: boolean
 }
 
 // ============================================================================
@@ -328,13 +332,13 @@ export type MountError =
 // ============================================================================
 
 /** Type of write operation. */
-export type WriteOperationType = 'copy' | 'move' | 'delete'
+export type WriteOperationType = 'copy' | 'move' | 'delete' | 'trash'
 
 /** Transfer operations (copy or move) — subset of write operations that share UI. */
-export type TransferOperationType = 'copy' | 'move'
+export type TransferOperationType = 'copy' | 'move' | 'delete' | 'trash'
 
 /** Phase of a write operation. */
-export type WriteOperationPhase = 'scanning' | 'copying' | 'deleting'
+export type WriteOperationPhase = 'scanning' | 'copying' | 'deleting' | 'trashing'
 
 /** How to handle conflicts when destination files already exist. */
 export type ConflictResolution = 'stop' | 'skip' | 'overwrite' | 'rename'

@@ -148,6 +148,7 @@ fn get_view_tools() -> Vec<Tool> {
 fn get_file_op_tools() -> Vec<Tool> {
     vec![
         Tool::no_params("copy", "Copy selected files to other pane (triggers native dialog)"),
+        Tool::no_params("delete", "Delete selected files (triggers confirmation dialog)"),
         Tool::no_params("mkdir", "Create folder in focused pane (triggers naming dialog)"),
         Tool::no_params("refresh", "Refresh focused pane"),
     ]
@@ -308,7 +309,7 @@ fn get_dialog_tools() -> Vec<Tool> {
                 },
                 "type": {
                     "type": "string",
-                    "enum": ["settings", "file-viewer", "about", "copy-confirmation", "mkdir-confirmation"],
+                    "enum": ["settings", "file-viewer", "about", "copy-confirmation", "mkdir-confirmation", "delete-confirmation"],
                     "description": "Dialog type"
                 },
                 "section": {
@@ -374,8 +375,8 @@ mod tests {
     #[test]
     fn test_file_op_tools_count() {
         let tools = get_file_op_tools();
-        // copy, mkdir, refresh
-        assert_eq!(tools.len(), 3);
+        // copy, delete, mkdir, refresh
+        assert_eq!(tools.len(), 4);
     }
 
     #[test]
@@ -410,8 +411,8 @@ mod tests {
     #[test]
     fn test_all_tools_count() {
         let tools = get_all_tools();
-        // 6 nav + 2 cursor + 1 selection + 3 file_op + 3 view + 2 tab + 1 dialog + 3 app = 21
-        assert_eq!(tools.len(), 21);
+        // 6 nav + 2 cursor + 1 selection + 4 file_op + 3 view + 2 tab + 1 dialog + 3 app = 22
+        assert_eq!(tools.len(), 22);
     }
 
     #[test]
@@ -504,6 +505,7 @@ mod tests {
         assert!(type_enum.contains(&json!("about")));
         assert!(type_enum.contains(&json!("copy-confirmation")));
         assert!(type_enum.contains(&json!("mkdir-confirmation")));
+        assert!(type_enum.contains(&json!("delete-confirmation")));
 
         // Check required fields
         let required = schema.get("required").unwrap().as_array().unwrap();

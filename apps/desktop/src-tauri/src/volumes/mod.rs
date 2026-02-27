@@ -36,10 +36,57 @@ pub struct LocationInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub icon: Option<String>,
     pub is_ejectable: bool,
+    /// Filesystem type from `statfs` (for example, "apfs", "hfs", "smbfs").
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fs_type: Option<String>,
+    /// Whether this volume supports macOS trash. Derived from `fs_type`.
+    pub supports_trash: bool,
 }
 
 /// Default volume ID for the root filesystem.
 pub const DEFAULT_VOLUME_ID: &str = "root";
+
+/// Determine whether a filesystem type supports macOS trash.
+///
+/// APFS and HFS+ support trash natively. Network filesystems (SMB, NFS,
+/// AFP, WebDAV) and non-Mac formats (FAT32/exFAT) don't reliably support
+/// it. Unknown types default to `true` (optimistic — `trashItemAtURL`
+/// failure is caught at operation time).
+pub fn supports_trash_for_fs_type(fs_type: Option<&str>) -> bool {
+    let Some(fs) = fs_type else { return true };
+    let fs_lower = fs.to_ascii_lowercase();
+    match fs_lower.as_str() {
+        "apfs" | "hfs" => true,
+        "smbfs" | "nfs" | "afpfs" | "webdav" | "msdos" | "exfat" => false,
+        _ => true,
+    }
+}
+
+/// Read the filesystem type for a path using `libc::statfs`.
+///
+/// Returns `None` if the `statfs` call fails (for example, the volume was
+/// ejected between listing and probing).
+fn get_fs_type(path: &str) -> Option<String> {
+    use std::ffi::CString;
+
+    let c_path = CString::new(path).ok()?;
+    let mut stat: std::mem::MaybeUninit<libc::statfs> = std::mem::MaybeUninit::uninit();
+
+    let result = unsafe { libc::statfs(c_path.as_ptr(), stat.as_mut_ptr()) };
+    if result != 0 {
+        return None;
+    }
+
+    let stat = unsafe { stat.assume_init() };
+    // f_fstypename is [c_char; 16] on macOS. Convert to &str.
+    let name_bytes: Vec<u8> = stat
+        .f_fstypename
+        .iter()
+        .take_while(|&&c| c != 0)
+        .map(|&c| c as u8)
+        .collect();
+    String::from_utf8(name_bytes).ok()
+}
 
 /// Get all locations organized by category, deduplicated.
 pub fn list_locations() -> Vec<LocationInfo> {
@@ -103,13 +150,21 @@ fn get_favorites() -> Vec<LocationInfo> {
     favorites_paths
         .into_iter()
         .filter(|(path, _)| Path::new(*path).exists())
-        .map(|(path, name)| LocationInfo {
-            id: format!("fav-{}", name.to_lowercase()),
-            name: name.to_string(),
-            path: path.to_string(),
-            category: LocationCategory::Favorite,
-            icon: get_icon_for_path(path),
-            is_ejectable: false,
+        .map(|(path, name)| {
+            // Favorites are folders on the boot volume, not mount points.
+            // statfs still works — it reports the underlying volume's fs type.
+            let fs_type = get_fs_type(path);
+            let supports_trash = supports_trash_for_fs_type(fs_type.as_deref());
+            LocationInfo {
+                id: format!("fav-{}", name.to_lowercase()),
+                name: name.to_string(),
+                path: path.to_string(),
+                category: LocationCategory::Favorite,
+                icon: get_icon_for_path(path),
+                is_ejectable: false,
+                fs_type,
+                supports_trash,
+            }
         })
         .collect()
 }
@@ -133,6 +188,8 @@ fn get_main_volume() -> Option<LocationInfo> {
         // Root volume
         if path == "/" {
             let name = get_volume_name(&url, &path);
+            let fs_type = get_fs_type("/");
+            let supports_trash = supports_trash_for_fs_type(fs_type.as_deref());
             return Some(LocationInfo {
                 id: DEFAULT_VOLUME_ID.to_string(),
                 name,
@@ -140,6 +197,8 @@ fn get_main_volume() -> Option<LocationInfo> {
                 category: LocationCategory::MainVolume,
                 icon: get_icon_for_path("/"),
                 is_ejectable: false,
+                fs_type,
+                supports_trash,
             });
         }
     }
@@ -188,6 +247,8 @@ pub fn get_attached_volumes() -> Vec<LocationInfo> {
 
         let name = get_volume_name(&url, &path);
         let is_ejectable = get_bool_resource(&url, "NSURLVolumeIsEjectableKey").unwrap_or(false);
+        let fs_type = get_fs_type(&path);
+        let supports_trash = supports_trash_for_fs_type(fs_type.as_deref());
 
         volumes.push(LocationInfo {
             id: path_to_id(&path),
@@ -196,6 +257,8 @@ pub fn get_attached_volumes() -> Vec<LocationInfo> {
             category: LocationCategory::AttachedVolume,
             icon: get_icon_for_path(&path),
             is_ejectable,
+            fs_type,
+            supports_trash,
         });
     }
 
@@ -212,13 +275,18 @@ pub fn get_cloud_drives() -> Vec<LocationInfo> {
     // iCloud Drive
     let icloud_path = home.join("Library/Mobile Documents/com~apple~CloudDocs");
     if icloud_path.exists() {
+        let icloud_path_str = icloud_path.to_string_lossy().to_string();
+        let fs_type = get_fs_type(&icloud_path_str);
+        let supports_trash = supports_trash_for_fs_type(fs_type.as_deref());
         drives.push(LocationInfo {
             id: "cloud-icloud".to_string(),
             name: "iCloud Drive".to_string(),
-            path: icloud_path.to_string_lossy().to_string(),
+            path: icloud_path_str,
             category: LocationCategory::CloudDrive,
             icon: get_icon_for_path(&icloud_path.to_string_lossy()),
             is_ejectable: false,
+            fs_type,
+            supports_trash,
         });
     }
 
@@ -233,13 +301,18 @@ pub fn get_cloud_drives() -> Vec<LocationInfo> {
                 // Parse cloud provider name from directory
                 let (provider_name, id) = parse_cloud_provider_name(dir_name);
                 if !provider_name.is_empty() {
+                    let cloud_path = path.to_string_lossy().to_string();
+                    let fs_type = get_fs_type(&cloud_path);
+                    let supports_trash = supports_trash_for_fs_type(fs_type.as_deref());
                     drives.push(LocationInfo {
                         id,
                         name: provider_name,
-                        path: path.to_string_lossy().to_string(),
+                        path: cloud_path,
                         category: LocationCategory::CloudDrive,
                         icon: get_icon_for_path(&path.to_string_lossy()),
                         is_ejectable: false,
+                        fs_type,
+                        supports_trash,
                     });
                 }
             }
@@ -299,6 +372,8 @@ fn get_network_locations() -> Vec<LocationInfo> {
         category: LocationCategory::Network,
         icon: None, // Will use placeholder in frontend
         is_ejectable: false,
+        fs_type: None,
+        supports_trash: false,
     });
 
     locations
@@ -513,5 +588,89 @@ mod tests {
         // Nonexistent paths return None - the NSURL resource API doesn't resolve to ancestor volumes
         let space = get_volume_space("/nonexistent/path/that/does/not/exist");
         assert!(space.is_none(), "Nonexistent paths should return None");
+    }
+
+    // ========================================================================
+    // Filesystem type and trash support tests
+    // ========================================================================
+
+    #[test]
+    fn test_supports_trash_local_filesystems() {
+        assert!(supports_trash_for_fs_type(Some("apfs")));
+        assert!(supports_trash_for_fs_type(Some("hfs")));
+    }
+
+    #[test]
+    fn test_supports_trash_network_filesystems() {
+        assert!(!supports_trash_for_fs_type(Some("smbfs")));
+        assert!(!supports_trash_for_fs_type(Some("nfs")));
+        assert!(!supports_trash_for_fs_type(Some("afpfs")));
+        assert!(!supports_trash_for_fs_type(Some("webdav")));
+    }
+
+    #[test]
+    fn test_supports_trash_removable_formats() {
+        assert!(!supports_trash_for_fs_type(Some("msdos")));
+        assert!(!supports_trash_for_fs_type(Some("exfat")));
+    }
+
+    #[test]
+    fn test_supports_trash_case_insensitive() {
+        assert!(supports_trash_for_fs_type(Some("APFS")));
+        assert!(supports_trash_for_fs_type(Some("HFS")));
+        assert!(!supports_trash_for_fs_type(Some("SMBFS")));
+        assert!(!supports_trash_for_fs_type(Some("NFS")));
+        assert!(!supports_trash_for_fs_type(Some("ExFAT")));
+        assert!(!supports_trash_for_fs_type(Some("MSDOS")));
+    }
+
+    #[test]
+    fn test_supports_trash_unknown_defaults_true() {
+        assert!(supports_trash_for_fs_type(Some("zfs")));
+        assert!(supports_trash_for_fs_type(Some("btrfs")));
+        assert!(supports_trash_for_fs_type(Some("ext4")));
+        assert!(supports_trash_for_fs_type(Some("ntfs")));
+    }
+
+    #[test]
+    fn test_supports_trash_none_defaults_true() {
+        assert!(supports_trash_for_fs_type(None));
+    }
+
+    #[test]
+    fn test_get_fs_type_root() {
+        let fs_type = get_fs_type("/");
+        assert!(fs_type.is_some(), "Root volume should have a filesystem type");
+        let fs = fs_type.unwrap();
+        assert!(!fs.is_empty(), "Filesystem type should not be empty");
+        // On modern macOS, root is APFS
+        assert!(fs == "apfs" || fs == "hfs", "Root should be apfs or hfs, got: {fs}");
+    }
+
+    #[test]
+    fn test_get_fs_type_nonexistent_path() {
+        let fs_type = get_fs_type("/nonexistent/path/that/does/not/exist");
+        // statfs on a nonexistent path fails
+        assert!(fs_type.is_none(), "Nonexistent path should return None");
+    }
+
+    #[test]
+    fn test_get_fs_type_home() {
+        let home = dirs::home_dir().expect("Should have home dir");
+        let fs_type = get_fs_type(home.to_str().unwrap());
+        assert!(fs_type.is_some(), "Home dir should have a filesystem type");
+    }
+
+    #[test]
+    fn test_locations_have_fs_type_and_supports_trash() {
+        let locations = list_locations();
+        // Every location should have supports_trash set
+        for loc in &locations {
+            // Main volume and favorites on APFS should support trash
+            if loc.category == LocationCategory::MainVolume {
+                assert!(loc.fs_type.is_some(), "Main volume should have fs_type");
+                assert!(loc.supports_trash, "Main volume should support trash");
+            }
+        }
     }
 }

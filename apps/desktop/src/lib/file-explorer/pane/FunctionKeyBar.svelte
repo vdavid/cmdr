@@ -7,9 +7,21 @@
         onCopy?: () => void
         onMove?: () => void
         onNewFolder?: () => void
+        onDelete?: () => void
+        onDeletePermanently?: () => void
     }
 
-    const { visible = true, onRename, onView, onEdit, onCopy, onMove, onNewFolder }: Props = $props()
+    const {
+        visible = true,
+        onRename,
+        onView,
+        onEdit,
+        onCopy,
+        onMove,
+        onNewFolder,
+        onDelete,
+        onDeletePermanently,
+    }: Props = $props()
 
     let shiftHeld = $state(false)
 
@@ -55,8 +67,8 @@
             <button disabled tabindex={-1} aria-label="F7 — no shift action">
                 <kbd>F7</kbd>
             </button>
-            <button disabled tabindex={-1} aria-label="F8 — no shift action">
-                <kbd>F8</kbd>
+            <button onclick={onDeletePermanently} tabindex={-1} aria-label="Delete permanently (Shift+F8)">
+                <kbd>⇧F8</kbd><span>Permanently</span>
             </button>
         {:else}
             <button onclick={onRename} tabindex={-1} aria-label="Rename (F2)">
@@ -77,7 +89,7 @@
             <button onclick={onNewFolder} tabindex={-1} aria-label="New folder (F7)">
                 <kbd>F7</kbd><span>New folder</span>
             </button>
-            <button disabled tabindex={-1} aria-label="Delete (F8) — not yet available">
+            <button onclick={onDelete} tabindex={-1} aria-label="Delete (F8)">
                 <kbd>F8</kbd><span>Delete</span>
             </button>
         {/if}

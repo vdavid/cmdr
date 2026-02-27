@@ -86,8 +86,6 @@ export interface SettingsValues {
     'listing.directorySortMode': DirectorySortMode
 
     // File operations
-    'fileOperations.confirmBeforeDelete': boolean
-    'fileOperations.deletePermanently': boolean
     'fileOperations.allowFileExtensionChanges': ExtensionChangePolicy
     'fileOperations.progressUpdateInterval': number
     'fileOperations.maxConflictsToShow': number

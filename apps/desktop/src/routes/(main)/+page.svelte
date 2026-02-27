@@ -68,6 +68,7 @@
         openCopyDialog: () => Promise<void>
         openMoveDialog: () => Promise<void>
         openNewFolderDialog: () => Promise<void>
+        openDeleteDialog: (permanent: boolean) => Promise<void>
         closeConfirmationDialog: () => void
         isConfirmationDialogOpen: () => boolean
         openViewerForCursor: () => Promise<void>
@@ -425,6 +426,10 @@
         await safeListenTauri('mcp-mkdir', () => {
             void explorerRef?.openNewFolderDialog()
         })
+
+        await safeListenTauri('mcp-delete', () => {
+            void explorerRef?.openDeleteDialog(false)
+        })
     }
 
     /** Global keyboard handler for app-level shortcuts */
@@ -655,6 +660,14 @@
         explorerRef?.refocus()
     }
 
+    function handleFnDelete() {
+        void explorerRef?.openDeleteDialog(false)
+    }
+
+    function handleFnDeletePermanently() {
+        void explorerRef?.openDeleteDialog(true)
+    }
+
     // eslint-disable-next-line complexity -- Command dispatcher handles many cases; switch is the clearest pattern
     async function handleCommandExecute(commandId: string) {
         showCommandPalette = false
@@ -880,6 +893,14 @@
                 explorerRef?.refocus()
                 return
 
+            case 'file.delete':
+                void explorerRef?.openDeleteDialog(false)
+                return
+
+            case 'file.deletePermanently':
+                void explorerRef?.openDeleteDialog(true)
+                return
+
             case 'file.showInFinder': {
                 const entryUnderCursor = explorerRef?.getFileAndPathUnderCursor()
                 if (entryUnderCursor) {
@@ -992,6 +1013,8 @@
             onCopy={handleFnCopy}
             onMove={handleFnMove}
             onNewFolder={handleFnNewFolder}
+            onDelete={handleFnDelete}
+            onDeletePermanently={handleFnDeletePermanently}
         />
     {/if}
 </div>

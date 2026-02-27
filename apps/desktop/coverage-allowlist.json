@@ -183,6 +183,9 @@
         },
         "tooltip/tooltip.ts": {
             "reason": "DOM-dependent singleton tooltip, requires document.body and getBoundingClientRect"
+        },
+        "file-operations/delete/DeleteDialog.svelte": {
+            "reason": "UI modal, logic tested in delete-dialog-utils.test.ts"
         }
     }
 }

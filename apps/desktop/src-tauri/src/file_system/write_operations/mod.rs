@@ -26,6 +26,7 @@ pub(crate) mod macos_copy;
 mod move_op;
 mod scan;
 mod state;
+pub(crate) mod trash;
 mod types;
 mod volume_conflict;
 mod volume_copy;
@@ -48,6 +49,7 @@ use move_op::move_files_with_progress;
 #[cfg(not(test))]
 use state::WriteOperationState;
 use state::{WRITE_OPERATION_STATE, register_operation_status, unregister_operation_status};
+use trash::trash_files_with_progress;
 
 // Re-export public types
 pub use scan::{cancel_scan_preview, start_scan_preview};
@@ -319,6 +321,85 @@ pub async fn delete_files_start(
     Ok(WriteOperationStartResult {
         operation_id,
         operation_type: WriteOperationType::Delete,
+    })
+}
+
+/// Starts a trash operation in the background.
+///
+/// Moves top-level items to the macOS Trash via `NSFileManager.trashItemAtURL`.
+/// Supports cancellation between items and partial failure (some items may fail
+/// while others succeed).
+///
+/// # Arguments
+/// * `app` - Tauri app handle for event emission
+/// * `sources` - Top-level items to trash
+/// * `item_sizes` - Optional per-item sizes for byte-level progress
+/// * `config` - Operation configuration (only `progress_interval_ms` is used)
+pub async fn trash_files_start(
+    app: tauri::AppHandle,
+    sources: Vec<PathBuf>,
+    item_sizes: Option<Vec<u64>>,
+    config: WriteOperationConfig,
+) -> Result<WriteOperationStartResult, WriteOperationError> {
+    // Validate inputs
+    validate_sources(&sources)?;
+
+    let operation_id = Uuid::new_v4().to_string();
+    let state = Arc::new(WriteOperationState {
+        cancelled: Arc::new(AtomicBool::new(false)),
+        skip_rollback: AtomicBool::new(false),
+        progress_interval: Duration::from_millis(config.progress_interval_ms),
+        pending_resolution: std::sync::RwLock::new(None),
+        conflict_condvar: std::sync::Condvar::new(),
+        conflict_mutex: std::sync::Mutex::new(false),
+    });
+
+    // Store state for cancellation
+    if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
+        cache.insert(operation_id.clone(), Arc::clone(&state));
+    }
+
+    // Register operation status for query APIs
+    register_operation_status(&operation_id, WriteOperationType::Trash);
+
+    let operation_id_for_spawn = operation_id.clone();
+
+    // Spawn background task
+    tokio::spawn(async move {
+        let operation_id_for_cleanup = operation_id_for_spawn.clone();
+        let app_for_error = app.clone();
+
+        let result = tokio::task::spawn_blocking(move || {
+            trash_files_with_progress(&app, &operation_id_for_spawn, &state, &sources, item_sizes.as_deref())
+        })
+        .await;
+
+        // Clean up state
+        if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
+            cache.remove(&operation_id_for_cleanup);
+        }
+        unregister_operation_status(&operation_id_for_cleanup);
+
+        // Handle task panic
+        if let Err(e) = result {
+            use tauri::Emitter;
+            let _ = app_for_error.emit(
+                "write-error",
+                WriteErrorEvent {
+                    operation_id: operation_id_for_cleanup,
+                    operation_type: WriteOperationType::Trash,
+                    error: WriteOperationError::IoError {
+                        path: String::new(),
+                        message: format!("Task failed: {}", e),
+                    },
+                },
+            );
+        }
+    });
+
+    Ok(WriteOperationStartResult {
+        operation_id,
+        operation_type: WriteOperationType::Trash,
     })
 }
 

@@ -3,6 +3,7 @@
 use std::path::{Path, PathBuf};
 
 use super::file_system::expand_tilde;
+use crate::file_system::write_operations::trash::move_to_trash_sync;
 
 // ============================================================================
 // Rename operations
@@ -17,36 +18,6 @@ pub async fn move_to_trash(path: String) -> Result<(), String> {
     tokio::task::spawn_blocking(move || move_to_trash_sync(&path_buf))
         .await
         .map_err(|e| format!("Task failed: {}", e))?
-}
-
-/// Synchronous trash implementation using macOS NSFileManager.trashItem.
-#[cfg(target_os = "macos")]
-fn move_to_trash_sync(path: &Path) -> Result<(), String> {
-    use objc2_foundation::{NSFileManager, NSString, NSURL};
-
-    if !path.exists() {
-        return Err(format!("'{}' doesn't exist", path.display()));
-    }
-
-    let path_str = path.to_string_lossy();
-    let ns_path = NSString::from_str(&path_str);
-    let url = NSURL::fileURLWithPath(&ns_path);
-    let file_manager = NSFileManager::defaultManager();
-
-    // trashItemAtURL:resultingItemURL:error: moves the item to Trash.
-    // We pass None for resultingItemURL since we don't need the trash location.
-    file_manager
-        .trashItemAtURL_resultingItemURL_error(&url, None)
-        .map_err(|e| format!("Failed to move to trash: {}", e))?;
-    Ok(())
-}
-
-#[cfg(not(target_os = "macos"))]
-fn move_to_trash_sync(path: &Path) -> Result<(), String> {
-    Err(format!(
-        "Moving to trash is not supported on this platform for '{}'",
-        path.display()
-    ))
 }
 
 /// Checks if a file/folder can be renamed (parent writable, not immutable, not SIP-protected, not locked).

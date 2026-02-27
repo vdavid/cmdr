@@ -20,6 +20,7 @@ use crate::file_system::{
     list_directory_start_streaming as ops_list_directory_start_streaming,
     list_directory_start_with_volume as ops_list_directory_start_with_volume, move_files_start as ops_move_files_start,
     resort_listing as ops_resort_listing, scan_for_volume_copy as ops_scan_for_volume_copy,
+    trash_files_start as ops_trash_files_start,
 };
 use std::path::{Path, PathBuf};
 #[cfg(target_os = "macos")]
@@ -323,6 +324,20 @@ pub async fn delete_files(
     let config = config.unwrap_or_default();
 
     ops_delete_files_start(app, sources, config).await
+}
+
+/// Moves files to macOS Trash. Same events as `copy_files` but with `operationType: trash`.
+#[tauri::command]
+pub async fn trash_files(
+    app: tauri::AppHandle,
+    sources: Vec<String>,
+    item_sizes: Option<Vec<u64>>,
+    config: Option<WriteOperationConfig>,
+) -> Result<WriteOperationStartResult, WriteOperationError> {
+    let sources: Vec<PathBuf> = sources.iter().map(|s| PathBuf::from(expand_tilde(s))).collect();
+    let config = config.unwrap_or_default();
+
+    ops_trash_files_start(app, sources, item_sizes, config).await
 }
 
 #[tauri::command]

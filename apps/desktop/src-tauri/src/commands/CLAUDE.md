@@ -8,13 +8,13 @@ immediately to business-logic modules. No significant logic lives here.
 | File | Domain | Notes |
 |------|--------|-------|
 | `mod.rs` | Re-exports | `mtp`, `network`, `volumes` gated behind `#[cfg(target_os = "macos")]` |
-| `file_system.rs` | File listing & writes | Largest file. Streaming + virtual-scroll listing API, write ops, scan preview, conflict resolution, volume copy, native drag, self-drag overlay. Contains `expand_tilde()`. |
+| `file_system.rs` | File listing & writes | Largest file. Streaming + virtual-scroll listing API, write ops (copy, move, delete, trash), scan preview, conflict resolution, volume copy, native drag, self-drag overlay. Contains `expand_tilde()`. |
 | `volumes.rs` | Volume management | `list_volumes`, `get_default_volume_id`, `find_containing_volume`, `get_volume_space` |
 | `mtp.rs` | MTP devices | Full MTP command surface (connect, disconnect, list, download, upload, delete, rename, move, scan) |
 | `network.rs` | SMB/network shares | Discovery, share listing, keychain, mounting. |
 | `font_metrics.rs` | Font metrics cache | `store_font_metrics`, `has_font_metrics` |
 | `icons.rs` | File icons | `get_icons`, `refresh_directory_icons`, cache clear |
-| `rename.rs` | Rename / trash | `move_to_trash` (NSFileManager), `check_rename_permission`, `check_rename_validity`, `rename_file` |
+| `rename.rs` | Rename / trash | `move_to_trash` (delegates to `write_operations::trash::move_to_trash_sync`), `check_rename_permission`, `check_rename_validity`, `rename_file` |
 | `file_viewer.rs` | File viewer | Session lifecycle, line search, word wrap, menu state |
 | `ui.rs` | UI / menu | Context menu, Finder reveal, clipboard, Quick Look, Get Info, view mode |
 | `settings.rs` | Settings | Port availability check, watcher debounce setting, menu accelerator updates |

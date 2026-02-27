@@ -7,6 +7,8 @@ import type { TransferOperationType } from '$lib/file-explorer/types'
 const operationLabelMap: Record<TransferOperationType, string> = {
     copy: 'Copy',
     move: 'Move',
+    delete: 'Delete',
+    trash: 'Move to trash',
 }
 
 /**

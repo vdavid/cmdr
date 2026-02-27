@@ -49,7 +49,7 @@ describe('getDefaultValue', () => {
     })
 
     it('should return correct defaults for boolean settings', () => {
-        const value = getDefaultValue('fileOperations.confirmBeforeDelete')
+        const value = getDefaultValue('updates.autoCheck')
         expect(value).toBe(true)
     })
 
@@ -114,15 +114,15 @@ describe('validateSettingValue', () => {
     it('should validate boolean values', () => {
         // Valid
         expect(() => {
-            validateSettingValue('fileOperations.confirmBeforeDelete', true)
+            validateSettingValue('updates.autoCheck', true)
         }).not.toThrow()
         expect(() => {
-            validateSettingValue('fileOperations.confirmBeforeDelete', false)
+            validateSettingValue('updates.autoCheck', false)
         }).not.toThrow()
 
         // Invalid
         expect(() => {
-            validateSettingValue('fileOperations.confirmBeforeDelete', 'yes')
+            validateSettingValue('updates.autoCheck', 'yes')
         }).toThrow()
     })
 

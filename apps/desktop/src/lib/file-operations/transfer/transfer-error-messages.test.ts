@@ -311,6 +311,93 @@ describe('getTechnicalDetails', () => {
     })
 })
 
+describe('getUserFriendlyMessage — delete operation', () => {
+    it('uses "delete" in source_not_found message', () => {
+        const error: WriteOperationError = { type: 'source_not_found', path: '/path/to/file.txt' }
+        const result = getUserFriendlyMessage(error, 'delete')
+
+        expect(result.message).toContain('delete')
+    })
+
+    it('uses "Delete failed" for io_error', () => {
+        const error: WriteOperationError = { type: 'io_error', path: '/path', message: 'Something broke' }
+        const result = getUserFriendlyMessage(error, 'delete')
+
+        expect(result.title).toBe('Delete failed')
+    })
+
+    it('gives delete-specific suggestion for permission_denied', () => {
+        const error: WriteOperationError = {
+            type: 'permission_denied',
+            path: '/protected',
+            message: 'denied',
+        }
+        const result = getUserFriendlyMessage(error, 'delete')
+
+        expect(result.suggestion).toContain('locked')
+        expect(result.suggestion).toContain('Finder')
+    })
+
+    it('detects locked file error for delete', () => {
+        const error: WriteOperationError = {
+            type: 'io_error',
+            path: '/path/to/locked.txt',
+            message: 'Operation not permitted',
+        }
+        const result = getUserFriendlyMessage(error, 'delete')
+
+        expect(result.message).toContain('locked')
+        expect(result.suggestion).toContain('Unlock')
+        expect(result.suggestion).toContain('Finder')
+    })
+})
+
+describe('getUserFriendlyMessage — trash operation', () => {
+    it('uses "move to trash" in source_not_found message', () => {
+        const error: WriteOperationError = { type: 'source_not_found', path: '/path/to/file.txt' }
+        const result = getUserFriendlyMessage(error, 'trash')
+
+        expect(result.message).toContain('move to trash')
+    })
+
+    it('uses "Move to trash failed" for io_error', () => {
+        const error: WriteOperationError = { type: 'io_error', path: '/path', message: 'Something broke' }
+        const result = getUserFriendlyMessage(error, 'trash')
+
+        expect(result.title).toBe('Move to trash failed')
+    })
+
+    it('gives delete-specific suggestion for permission_denied', () => {
+        const error: WriteOperationError = {
+            type: 'permission_denied',
+            path: '/protected',
+            message: 'denied',
+        }
+        const result = getUserFriendlyMessage(error, 'trash')
+
+        expect(result.suggestion).toContain('locked')
+    })
+
+    it('detects trash-not-supported error', () => {
+        const error: WriteOperationError = {
+            type: 'io_error',
+            path: '/Volumes/USB/file.txt',
+            message: "This volume doesn't support trash",
+        }
+        const result = getUserFriendlyMessage(error, 'trash')
+
+        expect(result.message).toContain("doesn't support trash")
+        expect(result.suggestion).toContain('Shift+F8')
+    })
+
+    it('uses "Move to trash cancelled" for cancelled error', () => {
+        const error: WriteOperationError = { type: 'cancelled', message: 'User cancelled' }
+        const result = getUserFriendlyMessage(error, 'trash')
+
+        expect(result.title).toBe('Move to trash cancelled')
+    })
+})
+
 describe('error messages are volume-agnostic', () => {
     it('does not mention MTP in any error message', () => {
         const errors: WriteOperationError[] = [

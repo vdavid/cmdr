@@ -1,10 +1,10 @@
 # Write operations
 
-Copy, move, and delete with streaming progress, cancellation, conflict resolution, and rollback. macOS only.
+Copy, move, delete, and trash with streaming progress, cancellation, conflict resolution, and rollback. macOS only.
 
 ## Purpose
 
-Implements the three destructive file operations as background tasks that stream Tauri events to the frontend. Every
+Implements the four destructive file operations as background tasks that stream Tauri events to the frontend. Every
 operation is cancellable, reports byte-level progress, and handles edge cases: symlink loops, same-inode overwrites,
 network mounts, cross-filesystem moves, and name/path length limits.
 
@@ -12,7 +12,7 @@ network mounts, cross-filesystem moves, and name/path length limits.
 
 | File | Responsibility |
 |------|----------------|
-| `mod.rs` | Public API: `copy_files_start`, `move_files_start`, `delete_files_start`. Validates inputs, creates `WriteOperationState`, spawns `tokio::spawn` + `spawn_blocking`. |
+| `mod.rs` | Public API: `copy_files_start`, `move_files_start`, `delete_files_start`, `trash_files_start`. Validates inputs, creates `WriteOperationState`, spawns `tokio::spawn` + `spawn_blocking`. |
 | `types.rs` | All serializable types: events, config, errors, results. `WriteOperationConfig`, `ConflictResolution`, `WriteOperationError`, `DryRunResult`, scan preview events. |
 | `state.rs` | Two `LazyLock<RwLock<HashMap>>` caches (`WRITE_OPERATION_STATE`, `OPERATION_STATUS_CACHE`). `WriteOperationState`, `CopyTransaction`, `ScanResult`, `FileInfo`. |
 | `helpers.rs` | Validation (`validate_sources`, `validate_destination_writable` via `libc::access`, `validate_disk_space` via `statvfs`). Conflict resolution (condvar wait for Stop mode). `safe_overwrite_file`/`safe_overwrite_dir` (temp+rename). `find_unique_name`. `run_cancellable`. `is_same_filesystem` (device IDs). |
@@ -20,6 +20,7 @@ network mounts, cross-filesystem moves, and name/path length limits.
 | `copy.rs` | `copy_files_with_progress`: scan → disk space check → per-file copy via `copy_single_item`. `CopyTransaction` for rollback. |
 | `move_op.rs` | Same-fs: `fs::rename`. Cross-fs: copy to `.cmdr-staging-<uuid>`, atomic rename, delete sources. |
 | `delete.rs` | Scan, delete files first, then directories in reverse/deepest-first order. Not rollbackable. |
+| `trash.rs` | `move_to_trash_sync()` (ObjC `trashItemAtURL` wrapper, reused by `commands/rename.rs`) and `trash_files_with_progress()` (batch trash with per-item progress, cancellation, partial failure). Uses `symlink_metadata()` for existence checks (handles dangling symlinks). |
 | `copy_strategy.rs` | Strategy selection per file: network FS → chunked copy; overwrite → temp+rename; otherwise → macOS `copyfile(3)`. |
 | `macos_copy.rs` | FFI to macOS `copyfile(3)`. Preserves xattrs, ACLs, resource forks, Finder metadata. Supports APFS `clonefile`. |
 | `chunked_copy.rs` | 1 MB chunked read/write for network mounts. Checks cancellation between chunks. Copies xattrs, ACLs, timestamps. |
@@ -82,6 +83,11 @@ actual `copy_files_start` can consume the cache via `preview_id` in `WriteOperat
 - Needs safe overwrite → `safe_overwrite_file`
 - Otherwise → `copy_single_file_native` (macOS `copyfile(3)`, supports `COPYFILE_CLONE` for APFS instant copies)
 
+**Trash has no scan phase.** `trashItemAtURL` is atomic per top-level item (the OS moves the entire tree), so trash
+doesn't need the recursive scan that delete/copy use. Progress tracks top-level items, with optional byte-level progress
+from pre-computed item sizes. Partial failure is supported: if some items fail, others still succeed. The core
+`move_to_trash_sync()` is extracted to `trash.rs` and reused by `commands/rename.rs`.
+
 **Special files skipped.** Sockets, FIFOs, and device files are filtered out during scan.
 
 **`volume_copy` path is incomplete.** The three `volume_*` files are Phase 5 work, but are publicly re-exported from `mod.rs` and at least partially wired up.
@@ -90,7 +96,7 @@ actual `copy_files_start` can consume the cache via `preview_id` in `WriteOperat
 
 | Event | Trigger |
 |-------|---------|
-| `write-progress` | Every ~200ms during copy/move/delete |
+| `write-progress` | Every ~200ms during copy/move/delete/trash |
 | `write-conflict` | Stop mode hit a conflicting destination file |
 | `write-complete` | Operation finished successfully |
 | `write-cancelled` | Operation cancelled (includes `rolled_back` flag) |

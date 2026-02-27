@@ -1,11 +1,12 @@
 # File operations
 
-Transfer (copy/move) and mkdir dialogs with progress tracking and conflict resolution.
+Transfer (copy/move), delete/trash, and mkdir dialogs with progress tracking and conflict resolution.
 
 ## Purpose
 
-Provides unified UI for file operations triggered by F5 (copy), F6 (move), and F7 (new folder). All transfer operations
-share components parameterized by `operationType: 'copy' | 'move'`.
+Provides unified UI for file operations triggered by F5 (copy), F6 (move), F7 (new folder), and F8/Shift+F8
+(trash/delete). Transfer and delete operations share `TransferProgressDialog`, parameterized by
+`operationType: 'copy' | 'move' | 'delete' | 'trash'`.
 
 ## Architecture
 
@@ -38,6 +39,14 @@ share components parameterized by `operationType: 'copy' | 'move'`.
 - **transfer/TransferDialog.svelte**, **transfer/TransferProgressDialog.svelte**,
   **transfer/TransferErrorDialog.svelte**: Transfer UI components
 - **transfer/transfer-error-messages.ts**: Operation-specific error strings
+
+### Delete/trash (`delete/`)
+
+- **delete/DeleteDialog.svelte**: Confirmation dialog with file list, scan preview, symlink notice, no-trash warning
+- **delete/delete-dialog-utils.ts**: Pure utilities: `generateDeleteTitle()`, `abbreviatePath()`, `getSymlinkNotice()`
+- F8 = trash, Shift+F8 = permanent delete. On no-trash volumes, dialog forces permanent mode with warning banner.
+- After confirm, transitions to `TransferProgressDialog` with `operationType: 'delete' | 'trash'`
+- See `delete/CLAUDE.md` for full details
 
 ### New folder (`mkdir/`)
 

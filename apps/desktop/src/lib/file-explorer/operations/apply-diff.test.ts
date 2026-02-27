@@ -99,14 +99,14 @@ describe('applyDiff', () => {
             expect(newIndex).toBe(0) // a.txt still at index 0
         })
 
-        it('resets cursor to 0 when the file under the cursor is removed', () => {
+        it('stays at same position index when cursor file is removed', () => {
             const files = [file('a.txt'), file('b.txt'), file('c.txt')]
             const changes: DiffChange[] = [{ type: 'remove', entry: file('b.txt') }]
 
             const newIndex = applyDiff(files, 1, changes) // cursor on b.txt
 
             expect(files.map((f) => f.name)).toEqual(['a.txt', 'c.txt'])
-            expect(newIndex).toBe(0) // b.txt deleted, reset to 0
+            expect(newIndex).toBe(1) // stays at index 1, now on c.txt
         })
     })
 
@@ -143,7 +143,7 @@ describe('applyDiff', () => {
             expect(newIndex).toBe(4) // keep2.txt is now at index 4
         })
 
-        it('resets cursor to 0 when the file under the cursor is one of many removed', () => {
+        it('stays at same position when cursor file is one of many removed', () => {
             const files = [file('a.txt'), file('b.txt'), file('c.txt')]
             const changes: DiffChange[] = [
                 { type: 'add', entry: file('d.txt') },
@@ -154,7 +154,7 @@ describe('applyDiff', () => {
             const newIndex = applyDiff(files, 1, changes) // cursor on b.txt
 
             expect(files.map((f) => f.name)).toEqual(['a.txt', 'd.txt'])
-            expect(newIndex).toBe(0) // b.txt deleted
+            expect(newIndex).toBe(1) // stays at index 1, now on d.txt
         })
     })
 
@@ -199,7 +199,27 @@ describe('applyDiff', () => {
             const newIndex = applyDiff(files, 0, changes)
 
             expect(files).toEqual([])
-            expect(newIndex).toBe(0) // Safe fallback
+            expect(newIndex).toBe(0) // Safe fallback for empty list
+        })
+
+        it('clamps cursor to end when removed file was at the last position', () => {
+            const files = [file('a.txt'), file('b.txt'), file('c.txt')]
+            const changes: DiffChange[] = [{ type: 'remove', entry: file('c.txt') }]
+
+            const newIndex = applyDiff(files, 2, changes) // cursor on c.txt (last)
+
+            expect(files.map((f) => f.name)).toEqual(['a.txt', 'b.txt'])
+            expect(newIndex).toBe(1) // clamped to last item (b.txt)
+        })
+
+        it('keeps cursor at same position when middle file removed from a large list', () => {
+            const files = [file('a.txt'), file('b.txt'), file('c.txt'), file('d.txt'), file('e.txt')]
+            const changes: DiffChange[] = [{ type: 'remove', entry: file('c.txt') }]
+
+            const newIndex = applyDiff(files, 2, changes) // cursor on c.txt
+
+            expect(files.map((f) => f.name)).toEqual(['a.txt', 'b.txt', 'd.txt', 'e.txt'])
+            expect(newIndex).toBe(2) // stays at index 2, now on d.txt
         })
 
         it('handles removing non-existent file (no-op)', () => {

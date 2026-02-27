@@ -6,7 +6,8 @@ import type { FileEntry, DiffChange } from '../types'
 /**
  * Apply a diff from the file watcher to the file list.
  * Maintains sort order (directories first, then alphabetically).
- * Preserves cursor position: cursor stays on the same file by path, or resets to 0 if deleted.
+ * Preserves cursor position: cursor stays on the same file by path when it survives,
+ * or stays at the same position index (clamped) when the cursor file is removed.
  *
  * @param files - Current file list (will be mutated)
  * @param cursorIndex - Current cursor position
@@ -16,6 +17,7 @@ import type { FileEntry, DiffChange } from '../types'
 export function applyDiff(files: FileEntry[], cursorIndex: number, changes: DiffChange[]): number {
     // Capture the path of the file currently under the cursor before any changes
     const pathUnderCursor = files[cursorIndex]?.path
+    const originalCursorIndex = cursorIndex
 
     // Apply all changes
     for (const change of changes) {
@@ -55,8 +57,10 @@ export function applyDiff(files: FileEntry[], cursorIndex: number, changes: Diff
             // File still exists - keep cursor on it
             return newIndex
         } else {
-            // The file under the cursor was deleted - reset cursor to first entry
-            return 0
+            // The file under the cursor was removed - stay at the same position index,
+            // clamped to the list bounds, so the cursor lands on the next surviving file.
+            if (files.length === 0) return 0
+            return Math.min(originalCursorIndex, files.length - 1)
         }
     } else if (files.length > 0) {
         return 0

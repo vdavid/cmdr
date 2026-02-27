@@ -120,6 +120,8 @@ export {
     onScanPreviewCancelled,
     copyFiles,
     moveFiles,
+    deleteFiles,
+    trashFiles,
     cancelWriteOperation,
     cancelAllWriteOperations,
     resolveWriteConflict,

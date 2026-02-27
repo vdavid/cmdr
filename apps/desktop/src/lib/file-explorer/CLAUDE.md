@@ -110,7 +110,7 @@ Core explorer UI components:
 
 - **DualPaneExplorer.svelte** — Root component; manages both panes, unified key/command handlers, MCP exports
 - **FilePane.svelte** — Single pane: navigation, listing, cursor, selection, view mode
-- **DialogManager.svelte** — Renders all modal dialogs (transfer, rename, new-folder, etc.)
+- **DialogManager.svelte** — Renders all modal dialogs (transfer, delete, rename, new-folder, etc.)
 - **FunctionKeyBar.svelte** — F1–F10 bar at the bottom of the window
 - **MtpConnectionView.svelte** / **NetworkMountView.svelte** — Placeholder panes for MTP/network mount states
 - **PaneResizer.svelte** — Drag handle between the two panes
@@ -118,8 +118,8 @@ Core explorer UI components:
 - **selection-state.svelte.ts** — Reactive selection set (indices) with range/toggle helpers
 - **sorting-handlers.ts** / **transfer-operations.ts** / **tab-operations.ts** — Pure logic extracted from
   DualPaneExplorer
-- **dialog-state.svelte.ts** — Dialog state and handlers (transfer, new folder, alert, error) extracted from
-  DualPaneExplorer via factory pattern
+- **dialog-state.svelte.ts** — Dialog state and handlers (transfer, delete/trash, new folder, alert, error) extracted
+  from DualPaneExplorer via factory pattern
 - **rename-flow.svelte.ts** — Rename flow logic (validation, conflict/extension dialogs) extracted from FilePane
 
 ## Tabs (`tabs/`)

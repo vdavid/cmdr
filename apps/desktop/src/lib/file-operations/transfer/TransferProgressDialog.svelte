@@ -4,6 +4,8 @@
         copyFiles,
         copyBetweenVolumes,
         moveFiles,
+        deleteFiles,
+        trashFiles,
         onWriteProgress,
         onWriteComplete,
         onWriteError,
@@ -53,8 +55,10 @@
         operationType: TransferOperationType
         sourcePaths: string[]
         sourceFolderPath: string
-        destinationPath: string
-        direction: 'left' | 'right'
+        /** Destination path (not applicable for delete/trash) */
+        destinationPath?: string
+        /** Transfer direction (not applicable for delete/trash) */
+        direction?: 'left' | 'right'
         /** Current sort column on source pane (files will be processed in this order) */
         sortColumn: SortColumn
         /** Current sort order on source pane */
@@ -63,10 +67,12 @@
         previewId: string | null
         /** Source volume ID (like "root", "mtp-336592896:65537") */
         sourceVolumeId: string
-        /** Destination volume ID */
-        destVolumeId: string
-        /** Conflict resolution policy from TransferDialog */
-        conflictResolution: ConflictResolution
+        /** Destination volume ID (not applicable for delete/trash) */
+        destVolumeId?: string
+        /** Conflict resolution policy from TransferDialog (not applicable for delete/trash) */
+        conflictResolution?: ConflictResolution
+        /** Per-item sizes for trash progress (from scan or drive index, optional) */
+        itemSizes?: number[]
         onComplete: (filesProcessed: number, bytesProcessed: number) => void
         onCancelled: (filesProcessed: number) => void
         onError: (error: WriteOperationError) => void
@@ -84,13 +90,30 @@
         sourceVolumeId,
         destVolumeId,
         conflictResolution,
+        itemSizes,
         onComplete,
         onCancelled,
         onError,
     }: Props = $props()
 
-    const operationLabel = $derived(operationType === 'copy' ? 'Copy' : 'Move')
-    const operationGerund = $derived(operationType === 'copy' ? 'Copying' : 'Moving')
+    const operationLabelMap: Record<TransferOperationType, string> = {
+        copy: 'Copy',
+        move: 'Move',
+        delete: 'Delete',
+        trash: 'Trash',
+    }
+    const operationGerundMap: Record<TransferOperationType, string> = {
+        copy: 'Copying',
+        move: 'Moving',
+        delete: 'Deleting',
+        trash: 'Moving to trash',
+    }
+    const operationLabel = $derived(operationLabelMap[operationType])
+    const operationGerund = $derived(operationGerundMap[operationType])
+    const isDeleteOrTrash = $derived(operationType === 'delete' || operationType === 'trash')
+
+    /** Minimum display time (ms) to prevent jarring one-frame flash. */
+    const MIN_DISPLAY_MS = 400
 
     // Operation state
     let operationId = $state<string | null>(null)
@@ -169,9 +192,12 @@
     })
 
     // Progress stages for visualization — the active phase label adapts to operation type
+    const activePhaseId = $derived<WriteOperationPhase>(
+        operationType === 'delete' ? 'deleting' : operationType === 'trash' ? 'trashing' : 'copying',
+    )
     const stages = $derived<{ id: WriteOperationPhase; label: string }[]>([
         { id: 'scanning', label: 'Scanning' },
-        { id: 'copying', label: operationGerund },
+        { id: activePhaseId, label: operationGerund },
     ])
 
     function getStageStatus(stageId: WriteOperationPhase): 'done' | 'active' | 'pending' {
@@ -212,7 +238,17 @@
         })
 
         cleanup()
-        onComplete(event.filesProcessed, event.bytesProcessed)
+
+        // Enforce minimum display time to prevent jarring one-frame flash
+        const elapsed = Date.now() - startTime
+        const delay = Math.max(0, MIN_DISPLAY_MS - elapsed)
+        if (delay > 0) {
+            setTimeout(() => {
+                onComplete(event.filesProcessed, event.bytesProcessed)
+            }, delay)
+        } else {
+            onComplete(event.filesProcessed, event.bytesProcessed)
+        }
     }
 
     function handleError(event: WriteErrorEvent) {
@@ -275,11 +311,55 @@
         unlisteners = []
     }
 
+    /** Dispatches the backend command based on operation type. */
+    async function dispatchOperation(): Promise<{ operationId: string }> {
+        const progressIntervalMs = getSetting('fileOperations.progressUpdateInterval')
+        const maxConflictsToShow = getSetting('fileOperations.maxConflictsToShow')
+
+        if (operationType === 'trash') {
+            return trashFiles(sourcePaths, itemSizes, { progressIntervalMs, previewId })
+        }
+        if (operationType === 'delete') {
+            return deleteFiles(sourcePaths, { progressIntervalMs, sortColumn, sortOrder, previewId })
+        }
+        if (operationType === 'move') {
+            return moveFiles(sourcePaths, destinationPath ?? '', {
+                conflictResolution,
+                progressIntervalMs,
+                maxConflictsToShow,
+                sortColumn,
+                sortOrder,
+                previewId,
+            })
+        }
+        // Copy: use unified copyBetweenVolumes for cross-volume operations (including MTP)
+        const isLocalToLocal = sourceVolumeId === DEFAULT_VOLUME_ID && (destVolumeId ?? '') === DEFAULT_VOLUME_ID
+        return isLocalToLocal
+            ? copyFiles(sourcePaths, destinationPath ?? '', {
+                  conflictResolution,
+                  progressIntervalMs,
+                  maxConflictsToShow,
+                  sortColumn,
+                  sortOrder,
+                  previewId,
+              })
+            : copyBetweenVolumes(
+                  sourceVolumeId,
+                  sourcePaths,
+                  destVolumeId ?? DEFAULT_VOLUME_ID,
+                  destinationPath ?? '',
+                  {
+                      conflictResolution,
+                      progressIntervalMs,
+                      maxConflictsToShow,
+                  },
+              )
+    }
+
     async function startOperation() {
-        log.info('Starting {op} operation: {sourceCount} sources to {destination}', {
+        log.info('Starting {op} operation: {sourceCount} sources', {
             op: operationType,
             sourceCount: sourcePaths.length,
-            destination: destinationPath,
         })
 
         startTime = Date.now()
@@ -298,40 +378,7 @@
         log.debug('Event subscriptions ready, starting {op}', { op: operationType })
 
         try {
-            const progressIntervalMs = getSetting('fileOperations.progressUpdateInterval')
-            const maxConflictsToShow = getSetting('fileOperations.maxConflictsToShow')
-
-            let result
-
-            if (operationType === 'move') {
-                // Move always uses moveFiles (backend handles same-fs rename vs cross-fs copy+delete)
-                result = await moveFiles(sourcePaths, destinationPath, {
-                    conflictResolution,
-                    progressIntervalMs,
-                    maxConflictsToShow,
-                    sortColumn,
-                    sortOrder,
-                    previewId,
-                })
-            } else {
-                // Copy: use unified copyBetweenVolumes for cross-volume operations (including MTP)
-                // Fall back to copyFiles for local-to-local copies when both volumes are "root"
-                const isLocalToLocal = sourceVolumeId === DEFAULT_VOLUME_ID && destVolumeId === DEFAULT_VOLUME_ID
-                result = isLocalToLocal
-                    ? await copyFiles(sourcePaths, destinationPath, {
-                          conflictResolution,
-                          progressIntervalMs,
-                          maxConflictsToShow,
-                          sortColumn,
-                          sortOrder,
-                          previewId,
-                      })
-                    : await copyBetweenVolumes(sourceVolumeId, sourcePaths, destVolumeId, destinationPath, {
-                          conflictResolution,
-                          progressIntervalMs,
-                          maxConflictsToShow,
-                      })
-            }
+            const result = await dispatchOperation()
 
             operationId = result.operationId
             log.info('{op} operation started with operationId: {operationId}', {
@@ -469,8 +516,8 @@
         {/if}
     {/snippet}
 
-    {#if conflictEvent}
-        <!-- Conflict resolution -->
+    {#if !isDeleteOrTrash && conflictEvent}
+        <!-- Conflict resolution (copy/move only) -->
         {@const fileName = conflictEvent.destinationPath.split('/').pop() ?? ''}
         {@const existingIsNewer = conflictEvent.destinationIsNewer}
         {@const newIsNewer = !existingIsNewer && conflictEvent.sourceModified !== conflictEvent.destinationModified}
@@ -558,8 +605,8 @@
                 </button>
             </div>
         </div>
-    {:else if isRollingBack}
-        <!-- Rollback in progress -->
+    {:else if !isDeleteOrTrash && isRollingBack}
+        <!-- Rollback in progress (copy/move only) -->
         <div class="rollback-section">
             <div class="rollback-indicator">
                 <span class="spinner spinner-md rollback-spinner"></span>
@@ -570,8 +617,10 @@
             </p>
         </div>
     {:else}
-        <!-- Direction indicator -->
-        <DirectionIndicator sourcePath={sourceFolderPath} {destinationPath} {direction} />
+        <!-- Direction indicator (copy/move only) -->
+        {#if !isDeleteOrTrash && destinationPath && direction}
+            <DirectionIndicator sourcePath={sourceFolderPath} {destinationPath} {direction} />
+        {/if}
 
         <!-- Progress stages -->
         <div class="progress-stages">
@@ -580,7 +629,7 @@
                 <div class="stage" class:done={status === 'done'} class:active={status === 'active'}>
                     <div class="stage-indicator">
                         {#if status === 'done'}
-                            <span class="checkmark">✓</span>
+                            <span class="checkmark">&#10003;</span>
                         {:else if status === 'active'}
                             <span class="spinner spinner-sm stage-spinner"></span>
                         {:else}
@@ -611,7 +660,7 @@
         <!-- Stats -->
         <div class="stats-section">
             <div class="stat-row">
-                <span class="stat-label">Files:</span>
+                <span class="stat-label">{operationType === 'trash' ? 'Items:' : 'Files:'}</span>
                 <span class="stat-value">{filesDone} / {filesTotal}</span>
             </div>
             <div class="stat-row">
@@ -635,12 +684,13 @@
 
         <!-- Action buttons -->
         <div class="button-row">
-            <span use:tooltip={'Cancel and keep progress'}>
-                <Button variant="secondary" onclick={() => handleCancel(false)} disabled={isCancelling}>Cancel</Button>
-            </span>
-            <span use:tooltip={'Cancel and delete any partial target files created'}>
-                <Button variant="danger" onclick={() => handleCancel(true)} disabled={isCancelling}>Rollback</Button>
-            </span>
+            <Button variant="secondary" onclick={() => handleCancel(false)} disabled={isCancelling}>Cancel</Button>
+            {#if !isDeleteOrTrash}
+                <span use:tooltip={'Cancel and delete any partial target files created'}>
+                    <Button variant="danger" onclick={() => handleCancel(true)} disabled={isCancelling}>Rollback</Button
+                    >
+                </span>
+            {/if}
         </div>
     {/if}
 </ModalDialog>

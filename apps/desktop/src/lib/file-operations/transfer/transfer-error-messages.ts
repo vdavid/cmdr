@@ -19,6 +19,8 @@ export interface FriendlyErrorMessage {
 const operationVerbMap: Record<TransferOperationType, { verb: string; pastTense: string; gerund: string }> = {
     copy: { verb: 'copy', pastTense: 'copied', gerund: 'copying' },
     move: { verb: 'move', pastTense: 'moved', gerund: 'moving' },
+    delete: { verb: 'delete', pastTense: 'deleted', gerund: 'deleting' },
+    trash: { verb: 'move to trash', pastTense: 'moved to trash', gerund: 'moving to trash' },
 }
 
 /**
@@ -45,13 +47,16 @@ export function getUserFriendlyMessage(
                 message: "There's already a file with this name at the destination.",
                 suggestion: 'Choose a different name or location, or delete the existing file first.',
             }
-        case 'permission_denied':
+        case 'permission_denied': {
+            const isDeleteOp = operationType === 'delete' || operationType === 'trash'
             return {
                 title: "Couldn't access this location",
                 message: `You don't have permission to ${verb} files here.`,
-                suggestion:
-                    'Check that you have write access to the destination folder. You may need to unlock the device or change folder permissions.',
+                suggestion: isDeleteOp
+                    ? 'Check that you have write access to the parent folder. The file may be locked — unlock it in Finder (Get Info > uncheck Locked) and try again.'
+                    : 'Check that you have write access to the destination folder. You may need to unlock the device or change folder permissions.',
             }
+        }
         case 'insufficient_space':
             return {
                 title: 'Not enough space',
@@ -116,13 +121,25 @@ function getDeviceNameFromError(rawMessage: string): string {
     return 'The target device'
 }
 
-/**
- * Parses IO error messages into user-friendly text.
- */
-function getIoErrorMessage(rawMessage: string, operationType: TransferOperationType): string {
-    const lower = rawMessage.toLowerCase()
-    const { verb } = operationVerbMap[operationType]
+/** Checks for delete/trash-specific IO error patterns (locked files, no-trash volumes). */
+function getDeleteSpecificIoMessage(lower: string, operationType: TransferOperationType): string | undefined {
+    const isDeleteOp = operationType === 'delete' || operationType === 'trash'
 
+    // Locked file detection (macOS: "Operation not permitted" from immutable flag)
+    if (isDeleteOp && (lower.includes('operation not permitted') || lower.includes('immutable'))) {
+        return "The file is locked and can't be deleted."
+    }
+
+    // Trash not supported on this volume
+    if (operationType === 'trash' && lower.includes("doesn't support trash")) {
+        return "This volume doesn't support trash."
+    }
+
+    return undefined
+}
+
+/** Checks for device/connection IO error patterns. */
+function getDeviceIoMessage(lower: string, rawMessage: string, verb: string): string | undefined {
     // Read-only device (check BEFORE generic "read" + "error" check!)
     if (lower.includes('read-only')) {
         const deviceName = getDeviceNameFromError(rawMessage)
@@ -138,6 +155,22 @@ function getIoErrorMessage(rawMessage: string, operationType: TransferOperationT
     if (lower.includes('connection') || lower.includes('timeout') || lower.includes('timed out')) {
         return 'The connection was interrupted.'
     }
+
+    return undefined
+}
+
+/**
+ * Parses IO error messages into user-friendly text.
+ */
+function getIoErrorMessage(rawMessage: string, operationType: TransferOperationType): string {
+    const lower = rawMessage.toLowerCase()
+    const { verb } = operationVerbMap[operationType]
+
+    const deleteMsg = getDeleteSpecificIoMessage(lower, operationType)
+    if (deleteMsg) return deleteMsg
+
+    const deviceMsg = getDeviceIoMessage(lower, rawMessage, verb)
+    if (deviceMsg) return deviceMsg
 
     // Read/write errors
     if (lower.includes('read') && lower.includes('error')) {
@@ -164,6 +197,16 @@ function getIoErrorMessage(rawMessage: string, operationType: TransferOperationT
  */
 function getIoErrorSuggestion(rawMessage: string): string {
     const lower = rawMessage.toLowerCase()
+
+    // Locked file
+    if (lower.includes('operation not permitted') || lower.includes('immutable')) {
+        return 'Unlock it in Finder (Get Info > uncheck Locked) and try again.'
+    }
+
+    // Trash not supported
+    if (lower.includes("doesn't support trash")) {
+        return 'Use Shift+F8 to delete permanently instead.'
+    }
 
     // Read-only device - no action the user can take
     if (lower.includes('read-only')) {

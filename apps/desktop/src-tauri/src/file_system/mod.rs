@@ -49,7 +49,7 @@ pub(crate) use watcher::{DirectoryDiff, compute_diff};
 pub use write_operations::{
     OperationStatus, OperationSummary, WriteOperationConfig, WriteOperationError, WriteOperationStartResult,
     cancel_all_write_operations, cancel_write_operation, copy_files_start, delete_files_start, get_operation_status,
-    list_active_operations, move_files_start,
+    list_active_operations, move_files_start, trash_files_start,
 };
 // Re-export volume copy types and functions
 // TODO: Remove this allow once volume_copy is integrated into Tauri commands (Phase 5)

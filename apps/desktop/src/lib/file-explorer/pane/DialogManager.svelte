@@ -2,6 +2,7 @@
     import TransferDialog from '../../file-operations/transfer/TransferDialog.svelte'
     import TransferProgressDialog from '../../file-operations/transfer/TransferProgressDialog.svelte'
     import TransferErrorDialog from '../../file-operations/transfer/TransferErrorDialog.svelte'
+    import DeleteDialog from '$lib/file-operations/delete/DeleteDialog.svelte'
     import NewFolderDialog from '$lib/file-operations/mkdir/NewFolderDialog.svelte'
     import AlertDialog from '$lib/ui/AlertDialog.svelte'
     import type { TransferDialogPropsData } from './transfer-operations'
@@ -10,6 +11,7 @@
         NewFolderDialogPropsData,
         AlertDialogPropsData,
         TransferErrorPropsData,
+        DeleteDialogPropsData,
     } from './dialog-state.svelte'
     import type { VolumeInfo, ConflictResolution, TransferOperationType, WriteOperationError } from '../types'
 
@@ -25,6 +27,8 @@
         alertDialogProps,
         showTransferErrorDialog,
         transferErrorProps,
+        showDeleteDialog,
+        deleteDialogProps,
         onTransferConfirm,
         onTransferCancel,
         onTransferComplete,
@@ -34,6 +38,8 @@
         onNewFolderCreated,
         onNewFolderCancel,
         onAlertClose,
+        onDeleteConfirm,
+        onDeleteCancel,
     }: {
         showTransferDialog: boolean
         transferDialogProps: TransferDialogPropsData | null
@@ -46,6 +52,8 @@
         alertDialogProps: AlertDialogPropsData | null
         showTransferErrorDialog: boolean
         transferErrorProps: TransferErrorPropsData | null
+        showDeleteDialog: boolean
+        deleteDialogProps: DeleteDialogPropsData | null
         onTransferConfirm: (
             destination: string,
             volumeId: string,
@@ -61,6 +69,8 @@
         onNewFolderCreated: (folderName: string) => void
         onNewFolderCancel: () => void
         onAlertClose: () => void
+        onDeleteConfirm: (previewId: string | null) => void
+        onDeleteCancel: () => void
     } = $props()
 </script>
 
@@ -100,10 +110,28 @@
         sourceVolumeId={transferProgressProps.sourceVolumeId}
         destVolumeId={transferProgressProps.destVolumeId}
         conflictResolution={transferProgressProps.conflictResolution}
+        itemSizes={transferProgressProps.itemSizes}
         onComplete={onTransferComplete}
         onCancelled={onTransferCancelled}
         onError={onTransferError}
     />
+{/if}
+
+{#if showDeleteDialog && deleteDialogProps}
+    {#key deleteDialogProps}
+        <DeleteDialog
+            sourceItems={deleteDialogProps.sourceItems}
+            sourcePaths={deleteDialogProps.sourcePaths}
+            sourceFolderPath={deleteDialogProps.sourceFolderPath}
+            isPermanent={deleteDialogProps.isPermanent}
+            supportsTrash={deleteDialogProps.supportsTrash}
+            isFromCursor={deleteDialogProps.isFromCursor}
+            sortColumn={deleteDialogProps.sortColumn}
+            sortOrder={deleteDialogProps.sortOrder}
+            onConfirm={onDeleteConfirm}
+            onCancel={onDeleteCancel}
+        />
+    {/key}
 {/if}
 
 {#if showNewFolderDialog && newFolderDialogProps}

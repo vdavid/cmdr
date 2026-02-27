@@ -4,6 +4,7 @@ import { addToast } from '$lib/ui/toast'
 import { getAppLogger } from '$lib/logging/logger'
 import { moveCursorToNewFolder } from '$lib/file-operations/mkdir/new-folder-operations'
 import type { TransferDialogPropsData } from './transfer-operations'
+import type { DeleteSourceItem } from '$lib/file-operations/delete/delete-dialog-utils'
 import type { TransferOperationType, SortColumn, SortOrder, ConflictResolution, WriteOperationError } from '../types'
 import type FilePane from './FilePane.svelte'
 
@@ -13,14 +14,20 @@ export interface TransferProgressPropsData {
     operationType: TransferOperationType
     sourcePaths: string[]
     sourceFolderPath: string
-    destinationPath: string
-    direction: 'left' | 'right'
+    /** Not applicable for delete/trash */
+    destinationPath?: string
+    /** Not applicable for delete/trash */
+    direction?: 'left' | 'right'
     sortColumn: SortColumn
     sortOrder: SortOrder
     previewId: string | null
     sourceVolumeId: string
-    destVolumeId: string
-    conflictResolution: ConflictResolution
+    /** Not applicable for delete/trash */
+    destVolumeId?: string
+    /** Not applicable for delete/trash */
+    conflictResolution?: ConflictResolution
+    /** Per-item sizes for trash progress (from scan or drive index) */
+    itemSizes?: number[]
 }
 
 export interface NewFolderDialogPropsData {
@@ -39,6 +46,18 @@ export interface AlertDialogPropsData {
 export interface TransferErrorPropsData {
     operationType: TransferOperationType
     error: WriteOperationError
+}
+
+export interface DeleteDialogPropsData {
+    sourceItems: DeleteSourceItem[]
+    sourcePaths: string[]
+    sourceFolderPath: string
+    isPermanent: boolean
+    supportsTrash: boolean
+    isFromCursor: boolean
+    sortColumn: SortColumn
+    sortOrder: SortOrder
+    sourceVolumeId: string
 }
 
 export interface DialogStateDeps {
@@ -77,18 +96,31 @@ export function createDialogState(deps: DialogStateDeps) {
     let showTransferErrorDialog = $state(false)
     let transferErrorProps = $state<TransferErrorPropsData | null>(null)
 
-    /** Refreshes panes after a transfer completes — for move, refresh both panes. */
-    function refreshPanesAfterTransfer() {
-        const destPaneRef =
-            transferProgressProps?.direction === 'right' ? deps.getRightPaneRef() : deps.getLeftPaneRef()
-        const sourcePaneRef =
-            transferProgressProps?.direction === 'right' ? deps.getLeftPaneRef() : deps.getRightPaneRef()
+    // Delete dialog state
+    let showDeleteDialog = $state(false)
+    let deleteDialogProps = $state<DeleteDialogPropsData | null>(null)
 
-        // Force backend to re-read directories and emit diffs. The file watcher may
-        // not have fired yet (common for instant renames on Linux), leaving stale cache.
-        refreshPaneListing(destPaneRef)
-        if (transferProgressProps?.operationType === 'move') {
-            refreshPaneListing(sourcePaneRef)
+    /** Refreshes panes after a transfer completes — for move/delete/trash, refresh both panes. */
+    function refreshPanesAfterTransfer() {
+        const opType = transferProgressProps?.operationType
+        const isDeleteOrTrash = opType === 'delete' || opType === 'trash'
+
+        if (isDeleteOrTrash) {
+            // Delete/trash: refresh both panes (both might show the affected directory)
+            refreshPaneListing(deps.getLeftPaneRef())
+            refreshPaneListing(deps.getRightPaneRef())
+        } else {
+            const destPaneRef =
+                transferProgressProps?.direction === 'right' ? deps.getRightPaneRef() : deps.getLeftPaneRef()
+            const sourcePaneRef =
+                transferProgressProps?.direction === 'right' ? deps.getLeftPaneRef() : deps.getRightPaneRef()
+
+            // Force backend to re-read directories and emit diffs. The file watcher may
+            // not have fired yet (common for instant renames on Linux), leaving stale cache.
+            refreshPaneListing(destPaneRef)
+            if (opType === 'move') {
+                refreshPaneListing(sourcePaneRef)
+            }
         }
 
         // Refresh disk space on both panes — both might be on the same volume
@@ -130,6 +162,12 @@ export function createDialogState(deps: DialogStateDeps) {
         get transferErrorProps() {
             return transferErrorProps
         },
+        get showDeleteDialog() {
+            return showDeleteDialog
+        },
+        get deleteDialogProps() {
+            return deleteDialogProps
+        },
 
         // --- Methods to open dialogs (called from DualPaneExplorer) ---
 
@@ -146,6 +184,11 @@ export function createDialogState(deps: DialogStateDeps) {
         showNewFolder(props: NewFolderDialogPropsData) {
             newFolderDialogProps = props
             showNewFolderDialog = true
+        },
+
+        showDeleteConfirmation(props: DeleteDialogPropsData) {
+            deleteDialogProps = props
+            showDeleteDialog = true
         },
 
         // --- Handler functions (passed to DialogManager) ---
@@ -184,14 +227,50 @@ export function createDialogState(deps: DialogStateDeps) {
             deps.onRefocus()
         },
 
+        handleDeleteConfirm(previewId: string | null) {
+            if (!deleteDialogProps) return
+
+            const isPermanent = deleteDialogProps.isPermanent || !deleteDialogProps.supportsTrash
+            const opType: TransferOperationType = isPermanent ? 'delete' : 'trash'
+
+            // Collect per-item sizes for trash progress if available
+            const sizes = deleteDialogProps.sourceItems
+                .map((item) => (item.isDirectory ? item.recursiveSize : item.size))
+                .filter((s): s is number => s !== undefined)
+            const itemSizes = sizes.length === deleteDialogProps.sourceItems.length ? sizes : undefined
+
+            transferProgressProps = {
+                operationType: opType,
+                sourcePaths: deleteDialogProps.sourcePaths,
+                sourceFolderPath: deleteDialogProps.sourceFolderPath,
+                sortColumn: deleteDialogProps.sortColumn,
+                sortOrder: deleteDialogProps.sortOrder,
+                previewId,
+                sourceVolumeId: deleteDialogProps.sourceVolumeId,
+                itemSizes,
+            }
+
+            showDeleteDialog = false
+            deleteDialogProps = null
+            showTransferProgressDialog = true
+        },
+
+        handleDeleteCancel() {
+            showDeleteDialog = false
+            deleteDialogProps = null
+            deps.onRefocus()
+        },
+
         handleTransferComplete(filesProcessed: number, bytesProcessed: number) {
             const op = transferProgressProps?.operationType ?? 'copy'
-            log.info(
-                `${op === 'copy' ? 'Copy' : 'Move'} complete: ${String(filesProcessed)} files (${formatBytes(bytesProcessed)})`,
-            )
-            addToast(
-                `${op === 'copy' ? 'Copy' : 'Move'} complete: ${String(filesProcessed)} ${filesProcessed === 1 ? 'file' : 'files'}`,
-            )
+            const opLabel = op === 'copy' ? 'Copy' : op === 'move' ? 'Move' : op === 'trash' ? 'Trash' : 'Delete'
+            log.info(`${opLabel} complete: ${String(filesProcessed)} files (${formatBytes(bytesProcessed)})`)
+            const itemWord = filesProcessed === 1 ? 'file' : 'files'
+            const toastMessage =
+                op === 'trash'
+                    ? `Moved ${String(filesProcessed)} ${itemWord} to trash`
+                    : `${opLabel} complete: ${String(filesProcessed)} ${itemWord}`
+            addToast(toastMessage)
 
             refreshPanesAfterTransfer()
 
@@ -202,7 +281,8 @@ export function createDialogState(deps: DialogStateDeps) {
 
         handleTransferCancelled(filesProcessed: number) {
             const op = transferProgressProps?.operationType ?? 'copy'
-            log.info(`${op === 'copy' ? 'Copy' : 'Move'} cancelled after ${String(filesProcessed)} files`)
+            const opLabel = op === 'copy' ? 'Copy' : op === 'move' ? 'Move' : op === 'trash' ? 'Trash' : 'Delete'
+            log.info(`${opLabel} cancelled after ${String(filesProcessed)} files`)
 
             refreshPanesAfterTransfer()
 
@@ -213,8 +293,9 @@ export function createDialogState(deps: DialogStateDeps) {
 
         handleTransferError(error: WriteOperationError) {
             const op = transferProgressProps?.operationType ?? 'copy'
+            const opLabel = op === 'copy' ? 'Copy' : op === 'move' ? 'Move' : op === 'trash' ? 'Trash' : 'Delete'
             log.error('{op} failed: {errorType}', {
-                op: op === 'copy' ? 'Copy' : 'Move',
+                op: opLabel,
                 errorType: error.type,
                 error,
             })
@@ -271,7 +352,7 @@ export function createDialogState(deps: DialogStateDeps) {
 
         // --- Query methods ---
 
-        /** Closes any confirmation dialog (new folder or transfer) if open (for MCP). */
+        /** Closes any confirmation dialog (new folder, transfer, or delete) if open (for MCP). */
         closeConfirmationDialog() {
             if (showNewFolderDialog) {
                 showNewFolderDialog = false
@@ -283,15 +364,20 @@ export function createDialogState(deps: DialogStateDeps) {
                 transferDialogProps = null
                 deps.onRefocus()
             }
+            if (showDeleteDialog) {
+                showDeleteDialog = false
+                deleteDialogProps = null
+                deps.onRefocus()
+            }
         },
 
         isConfirmationDialogOpen(): boolean {
-            return showNewFolderDialog || showTransferDialog
+            return showNewFolderDialog || showTransferDialog || showDeleteDialog
         },
 
-        /** Whether any transfer-related dialog is open (used by canSwapPanes). */
+        /** Whether any transfer/delete-related dialog is open (used by canSwapPanes). */
         isAnyTransferDialogOpen(): boolean {
-            return showTransferDialog || showTransferProgressDialog
+            return showTransferDialog || showTransferProgressDialog || showDeleteDialog
         },
     }
 }
