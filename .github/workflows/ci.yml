@@ -238,7 +238,7 @@ jobs:
               with:
                   path: |
                       ~/.cargo/registry/cache
-                      apps/desktop/src-tauri/target
+                      target
                   key: ${{ runner.os }}-cargo-e2e-${{ hashFiles('Cargo.lock') }}
                   restore-keys: |
                       ${{ runner.os }}-cargo-e2e-
@@ -286,7 +286,7 @@ jobs:
               run: xvfb-run --auto-servernum pnpm test:e2e:linux:native
               working-directory: ./apps/desktop
               env:
-                  TAURI_BINARY: ./src-tauri/target/release/Cmdr
+                  TAURI_BINARY: ../../target/release/Cmdr
 
             - name: Upload E2E screenshots on failure
               uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

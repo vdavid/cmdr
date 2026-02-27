@@ -30,8 +30,8 @@ import { createFixtures, cleanupFixtures, recreateFixtures } from '../e2e-shared
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-// Path to the built Tauri binary (relative to test/e2e-linux/)
-const TAURI_BINARY = process.env.TAURI_BINARY || path.join(__dirname, '../../src-tauri/target/release/Cmdr')
+// Path to the built Tauri binary (workspace root target dir, relative to test/e2e-linux/)
+const TAURI_BINARY = process.env.TAURI_BINARY || path.join(__dirname, '../../../../target/release/Cmdr')
 
 // tauri-driver process handle
 let tauriDriver: ChildProcess | null = null
