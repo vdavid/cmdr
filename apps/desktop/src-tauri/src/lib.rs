@@ -453,6 +453,7 @@ pub fn run() {
             commands::file_system::list_directory_start_streaming,
             commands::file_system::cancel_listing,
             commands::file_system::list_directory_end,
+            commands::file_system::refresh_listing,
             commands::file_system::get_file_range,
             commands::file_system::get_file_at,
             commands::file_system::get_total_count,

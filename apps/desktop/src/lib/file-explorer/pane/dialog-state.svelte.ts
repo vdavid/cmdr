@@ -1,4 +1,4 @@
-import { formatBytes } from '$lib/tauri-commands'
+import { formatBytes, refreshListing } from '$lib/tauri-commands'
 import { listen, findFileIndex } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast'
 import { getAppLogger } from '$lib/logging/logger'
@@ -49,6 +49,13 @@ export interface DialogStateDeps {
     onRefocus: () => void
 }
 
+/** Force a backend re-read on a pane's listing so file diffs are emitted promptly. */
+function refreshPaneListing(paneRef: FilePane | undefined): void {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    const listingId = paneRef?.getListingId?.() as string | undefined
+    if (listingId) void refreshListing(listingId)
+}
+
 export function createDialogState(deps: DialogStateDeps) {
     // Transfer dialog state (copy/move)
     let showTransferDialog = $state(false)
@@ -76,13 +83,14 @@ export function createDialogState(deps: DialogStateDeps) {
             transferProgressProps?.direction === 'right' ? deps.getRightPaneRef() : deps.getLeftPaneRef()
         const sourcePaneRef =
             transferProgressProps?.direction === 'right' ? deps.getLeftPaneRef() : deps.getRightPaneRef()
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        destPaneRef?.refreshView?.()
-        // For move, source files disappeared — refresh source pane too
+
+        // Force backend to re-read directories and emit diffs. The file watcher may
+        // not have fired yet (common for instant renames on Linux), leaving stale cache.
+        refreshPaneListing(destPaneRef)
         if (transferProgressProps?.operationType === 'move') {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            sourcePaneRef?.refreshView?.()
+            refreshPaneListing(sourcePaneRef)
         }
+
         // Refresh disk space on both panes — both might be on the same volume
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         void deps.getLeftPaneRef()?.refreshVolumeSpace?.()

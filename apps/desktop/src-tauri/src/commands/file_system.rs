@@ -243,6 +243,13 @@ pub fn list_directory_end(listing_id: String) {
     ops_list_directory_end(&listing_id);
 }
 
+/// Force a re-read of a watched directory listing, emitting any diff.
+/// Used after write operations (move) when the file watcher may not fire promptly.
+#[tauri::command]
+pub fn refresh_listing(listing_id: String) {
+    crate::file_system::watcher::handle_directory_change(&listing_id);
+}
+
 /// Returns total file/dir counts and sizes, plus selection stats if `selected_indices` is given.
 #[tauri::command]
 pub fn get_listing_stats(

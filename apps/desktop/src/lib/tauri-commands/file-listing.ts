@@ -151,6 +151,11 @@ export async function listDirectoryEnd(listingId: string): Promise<void> {
     await invoke('list_directory_end', { listingId })
 }
 
+/** Force a re-read of a watched listing, emitting any diff. */
+export async function refreshListing(listingId: string): Promise<void> {
+    await invoke('refresh_listing', { listingId })
+}
+
 /**
  * Gets statistics about a cached listing.
  * Returns total file/dir counts and sizes. If selectedIndices is provided,

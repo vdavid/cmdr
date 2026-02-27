@@ -151,9 +151,10 @@ pub fn stop_watching(listing_id: &str) {
     }
 }
 
-/// Handle a directory change event.
-/// Re-reads the directory, computes diff, updates LISTING_CACHE, and emits event.
-fn handle_directory_change(listing_id: &str) {
+/// Force a re-read of a directory listing, computing and emitting any diff.
+/// Called by the file watcher on change events, and also available as a Tauri
+/// command for cases where the watcher doesn't fire (e.g. rename-move on Linux).
+pub fn handle_directory_change(listing_id: &str) {
     // Get old entries and path from the unified LISTING_CACHE
     let Some((path, old_entries)) = get_listing_entries(listing_id) else {
         return; // Listing no longer exists

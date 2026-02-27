@@ -15,7 +15,9 @@
     },
     "pnpm": {
         "overrides": {
-            "rollup": ">=4.59.0"
+            "rollup": ">=4.59.0",
+            "svelte": ">=5.53.5",
+            "fast-xml-parser": ">=5.3.8"
         }
     }
 }

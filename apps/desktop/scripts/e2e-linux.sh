@@ -273,6 +273,7 @@ if $INTERACTIVE; then
         -v "$ROOT_NODE_MODULES_VOLUME:/app/node_modules" \
         -v "$DESKTOP_NODE_MODULES_VOLUME:/app/apps/desktop/node_modules" \
         -w /app/apps/desktop \
+        -p 5900:5900 \
         -e TAURI_BINARY="$DOCKER_TAURI_BINARY" \
         -e CI=true \
         "$IMAGE_NAME" \

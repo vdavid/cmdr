@@ -189,6 +189,40 @@ Inside the container, you can:
 - Check the display: `echo $DISPLAY`
 - Inspect the environment
 
+### Watching E2E tests live via VNC
+
+You can watch the tests run in real time by connecting to the container's virtual display via VNC.
+This is the best way to debug test failures — you see exactly what the test sees.
+
+1. **Start the interactive shell:**
+   ```bash
+   cd apps/desktop
+   pnpm test:e2e:linux:shell
+   ```
+
+2. **Inside the container**, start a VNC server on the Xvfb display:
+   ```bash
+   x11vnc -display :99 -forever -nopw -rfbport 5900 -passwd "aaaa" &
+   ```
+   (macOS Screen Sharing requires a non-empty password.)
+
+3. **On your Mac**, open Finder and press **Cmd+K** (or menu: Go → Connect to Server). Type:
+   ```
+   vnc://localhost:5900
+   ```
+   Hit Connect, enter the password (`aaaa`), and you'll see the container's virtual display.
+
+4. **Inside the container**, run the tests (all or a specific spec):
+   ```bash
+   # All file operation tests
+   pnpm test:e2e:linux:native -- --spec test/e2e-linux/file-operations.spec.ts
+
+   # All E2E tests
+   pnpm test:e2e:linux:native
+   ```
+
+You'll see the Tauri app launch and the WebDriverIO test interact with it in real time.
+
 ### VNC mode (visual debugging with hot reload)
 
 VNC mode runs `pnpm dev` inside the Docker container with a VNC server, so you can see and

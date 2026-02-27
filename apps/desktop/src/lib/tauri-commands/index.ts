@@ -12,6 +12,7 @@ export {
     findFileIndex,
     getFileAt,
     listDirectoryEnd,
+    refreshListing,
     getListingStats,
     startSelectionDrag,
     prepareSelfDragOverlay,

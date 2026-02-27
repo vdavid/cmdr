@@ -363,11 +363,15 @@ mod tests {
         let (writer, _dir) = setup_writer();
         let mgr = MicroScanManager::new(writer.clone(), 2);
 
-        // Create 3 directories to scan
+        // Create 3 directories with enough files to keep scans busy
         let roots: Vec<tempfile::TempDir> = (0..3)
-            .map(|i| {
+            .map(|_| {
                 let root = tempfile::tempdir().unwrap();
-                fs::write(root.path().join(format!("file{i}.txt")), "content").unwrap();
+                let deep = root.path().join("a/b/c/d/e");
+                fs::create_dir_all(&deep).unwrap();
+                for i in 0..200 {
+                    fs::write(deep.join(format!("file{i}.txt")), "content").unwrap();
+                }
                 root
             })
             .collect();
@@ -381,8 +385,8 @@ mod tests {
         let queued = mgr.queue_len().await;
         assert!(active <= 2, "should respect max_concurrent, got {active}");
         assert!(
-            queued >= 1 || active == 3,
-            "excess should be queued (queued={queued}, active={active})"
+            queued >= 1,
+            "3rd scan should be queued (queued={queued}, active={active})"
         );
 
         writer.shutdown();

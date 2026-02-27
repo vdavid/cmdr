@@ -40,6 +40,15 @@ var allowedUnusedVariables = map[string]bool{
 	"color-disk-ok":      true,
 	"color-disk-warning": true,
 	"color-disk-danger":  true,
+	// macOS accent color palette - defined for theming, applied dynamically based on system accent
+	"color-apple-blue":     true,
+	"color-apple-graphite": true,
+	"color-apple-green":    true,
+	"color-apple-orange":   true,
+	"color-apple-pink":     true,
+	"color-apple-purple":   true,
+	"color-apple-red":      true,
+	"color-apple-yellow":   true,
 }
 
 // allowedUndefinedClasses lists classes used in templates that don't need CSS definitions
