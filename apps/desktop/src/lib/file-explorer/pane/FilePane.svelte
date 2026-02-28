@@ -30,7 +30,6 @@
         listen,
         onMtpDeviceRemoved,
         openFile,
-        openInEditor,
         showFileContextMenu,
         type UnlistenFn,
         updateMenuContext,
@@ -1109,16 +1108,6 @@
             if (entry) {
                 e.preventDefault()
                 void handleNavigate(entry)
-                return
-            }
-        }
-
-        // Handle F4 key - open file in default text editor
-        if (e.key === 'F4') {
-            const entry = getEntryUnderCursor()
-            if (entry && !entry.isDirectory) {
-                e.preventDefault()
-                void openInEditor(entry.path)
                 return
             }
         }

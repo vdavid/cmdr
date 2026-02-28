@@ -70,7 +70,8 @@ The uFuzzy instance is a module-level singleton (created once at import time).
 
 1. Add an entry to the `commands` array in `command-registry.ts`.
 2. Add a `case` for its `id` in the `handleCommandExecute` switch in `routes/(main)/+page.svelte`.
-3. No changes needed to the palette, fuzzy search, or types.
+3. No changes needed to the palette, fuzzy search, types, or keyboard dispatch. Commands with `showInPalette: true` are
+   automatically dispatched from keyboard shortcuts via centralized dispatch (`../shortcuts/shortcut-dispatch.ts`).
 
 ## Dependencies
 

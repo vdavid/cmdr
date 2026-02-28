@@ -10,6 +10,8 @@
     import CommandPalette from '$lib/command-palette/CommandPalette.svelte'
     import ScanStatusOverlay from '$lib/indexing/ScanStatusOverlay.svelte'
     import { initIndexState, destroyIndexState } from '$lib/indexing/index'
+    import { initShortcutDispatch, destroyShortcutDispatch, lookupCommand } from '$lib/shortcuts/shortcut-dispatch'
+    import { formatKeyCombo } from '$lib/shortcuts/key-capture'
     import {
         showMainWindow,
         checkFullDiskAccess,
@@ -71,6 +73,7 @@
         openDeleteDialog: (permanent: boolean) => Promise<void>
         closeConfirmationDialog: () => void
         isConfirmationDialogOpen: () => boolean
+        isRenaming: () => boolean
         openViewerForCursor: () => Promise<void>
         navigateToPath: (pane: 'left' | 'right', path: string) => void
         moveCursor: (pane: 'left' | 'right', to: number | string) => Promise<void>
@@ -138,16 +141,6 @@
             // eslint-disable-next-line no-console -- Debug window is dev-only
             console.error('Failed to open debug window:', error)
         }
-    }
-
-    /** Check if key event matches ⌘⇧P (command palette) */
-    function isCommandPaletteShortcut(e: KeyboardEvent): boolean {
-        return e.metaKey && e.shiftKey && e.key.toLowerCase() === 'p'
-    }
-
-    /** Check if key event matches ⌘, (settings) */
-    function isSettingsShortcut(e: KeyboardEvent): boolean {
-        return e.metaKey && !e.shiftKey && !e.altKey && e.key === ','
     }
 
     /** Check if key event matches ⌘D (debug window, dev only) */
@@ -432,15 +425,37 @@
         })
     }
 
+    /** Check if any modal dialog is open that should suppress centralized dispatch. */
+    function isModalDialogOpen(): boolean {
+        return (
+            showCommandPalette ||
+            showAboutWindow ||
+            showLicenseKeyDialog ||
+            showExpiredModal ||
+            showCommercialReminder ||
+            (explorerRef?.isConfirmationDialogOpen() ?? false) ||
+            (explorerRef?.isRenaming() ?? false)
+        )
+    }
+
     /** Global keyboard handler for app-level shortcuts */
     function handleGlobalKeyDown(e: KeyboardEvent): void {
-        if (isCommandPaletteShortcut(e)) {
-            e.preventDefault()
-            showCommandPalette = true
-        } else if (isSettingsShortcut(e)) {
-            e.preventDefault()
-            void openSettingsWindow()
-        } else if (isDebugWindowShortcut(e)) {
+        // Centralized dispatch: look up the command for this key combo
+        if (!isModalDialogOpen()) {
+            const shortcutString = formatKeyCombo(e)
+            const commandId = lookupCommand(shortcutString)
+            if (commandId) {
+                e.preventDefault()
+                e.stopPropagation()
+                void handleCommandExecute(commandId)
+                return
+            }
+        }
+
+        // Special cases not handled by centralized dispatch:
+        // - Debug window: dev-only, not worth registering as a command
+        // - Key suppression: browser behavior overrides, not commands
+        if (isDebugWindowShortcut(e)) {
             e.preventDefault()
             void openDebugWindow()
         } else if (shouldSuppressKey(e)) {
@@ -526,19 +541,20 @@
         // Show window when ready
         void showMainWindow()
 
-        // Set up Tauri event listeners (extracted to reduce complexity)
-        await setupTauriEventListeners()
+        // Initialize centralized shortcut dispatch and global keyboard/context menu
+        // handlers. These must be registered BEFORE setupTauriEventListeners() because
+        // that call may throw in non-Tauri environments (e.g. Playwright smoke tests).
+        initShortcutDispatch()
 
-        // Global keyboard shortcuts
         handleKeyDown = handleGlobalKeyDown
-
-        // Suppress right-click context menu
         handleContextMenu = (e: MouseEvent) => {
             e.preventDefault()
         }
-
         document.addEventListener('keydown', handleKeyDown)
         document.addEventListener('contextmenu', handleContextMenu)
+
+        // Set up Tauri event listeners (extracted to reduce complexity)
+        await setupTauriEventListeners()
     })
 
     /**
@@ -552,6 +568,7 @@
     }
 
     onDestroy(() => {
+        destroyShortcutDispatch()
         destroyIndexState()
         if (handleKeyDown) {
             document.removeEventListener('keydown', handleKeyDown)
@@ -692,6 +709,14 @@
                 } catch {
                     // Not in Tauri environment
                 }
+                return
+
+            case 'app.commandPalette':
+                showCommandPalette = true
+                return
+
+            case 'app.settings':
+                void openSettingsWindow()
                 return
 
             case 'app.about':

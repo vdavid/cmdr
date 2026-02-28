@@ -26,6 +26,7 @@ export const commands: Command[] = [
         showInPalette: false, // Don't show the palette in itself
         shortcuts: ['⌘⇧P'],
     },
+    { id: 'app.settings', name: 'Open settings', scope: 'App', showInPalette: true, shortcuts: ['⌘,'] },
 
     // ============================================================================
     // Main window - View commands

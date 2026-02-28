@@ -602,12 +602,6 @@
         return false
     }
 
-    function handleTabKey() {
-        const newFocus = focusedPane === 'left' ? 'right' : 'left'
-        focusedPane = newFocus
-        saveAppStatus({ focusedPane: newFocus })
-    }
-
     function handleEscapeDuringLoading(): boolean {
         const paneRef = getPaneRef(focusedPane)
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
@@ -619,57 +613,19 @@
         return false
     }
 
-    /** Handles function key shortcuts (F1-F8). Returns true if a function key was handled. */
+    /** Handles the F1 key (volume chooser toggle). Returns true if handled. */
     function handleFunctionKey(e: KeyboardEvent): boolean {
-        switch (e.key) {
-            case 'F1':
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                getPaneRef('right')?.closeVolumeChooser()
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                getPaneRef('left')?.toggleVolumeChooser()
-                return true
-            case 'F2':
-                startRename()
-                return true
-            case 'F3':
-                void openViewerForCursor()
-                return true
-            case 'F5':
-                void openTransferDialog('copy')
-                return true
-            case 'F6':
-                if (e.shiftKey) {
-                    // Shift+F6 = Rename
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                    getPaneRef(focusedPane)?.startRename()
-                } else {
-                    void openTransferDialog('move')
-                }
-                return true
-            case 'F7':
-                void openNewFolderDialog()
-                return true
-            case 'F8':
-                void openDeleteDialog(e.shiftKey)
-                return true
-            default:
-                return false
+        if (e.key === 'F1') {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            getPaneRef('right')?.closeVolumeChooser()
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            getPaneRef('left')?.toggleVolumeChooser()
+            return true
         }
+        return false
     }
 
     function handleKeyDown(e: KeyboardEvent) {
-        if (e.key === 'Tab' && e.ctrlKey) {
-            e.preventDefault()
-            cycleTab(e.shiftKey ? 'prev' : 'next')
-            return
-        }
-
-        if (e.key === 'Tab') {
-            e.preventDefault()
-            handleTabKey()
-            return
-        }
-
         // ESC during loading = cancel and go back
         if (e.key === 'Escape' && handleEscapeDuringLoading()) {
             e.preventDefault()

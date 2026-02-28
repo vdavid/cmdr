@@ -66,6 +66,16 @@ No normalization—shortcuts are stored exactly as displayed.
 Main window listens for MCP events to modify shortcuts even when settings window is closed. This allows AI agents to
 customize shortcuts on the fly.
 
+### Centralized dispatch (`shortcut-dispatch.ts`)
+
+Builds a reverse lookup `Map<shortcutString, commandId>` for Tier 1 commands (those with `showInPalette: true` plus
+`app.commandPalette`). On every keypress, `handleGlobalKeyDown()` in `+page.svelte` calls `formatKeyCombo(e)` and
+`lookupCommand()` to find a matching command, then routes through `handleCommandExecute()` -- the same path used by the
+command palette and MCP events. Rebuilds automatically when custom shortcuts change via `onShortcutChange`.
+
+Tier 2 commands (arrows, Space, Enter, Backspace, etc.) are not in the dispatch map. Unmatched keypresses propagate
+normally to component-level handlers in DualPaneExplorer and FilePane.
+
 ## Key decisions
 
 ### Why platform-specific storage?
