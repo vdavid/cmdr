@@ -363,32 +363,42 @@ mod tests {
         let (writer, _dir) = setup_writer();
         let mgr = MicroScanManager::new(writer.clone(), 2);
 
-        // Create 3 directories with enough files to keep scans busy
-        let roots: Vec<tempfile::TempDir> = (0..3)
-            .map(|_| {
-                let root = tempfile::tempdir().unwrap();
-                let deep = root.path().join("a/b/c/d/e");
-                fs::create_dir_all(&deep).unwrap();
-                for i in 0..200 {
-                    fs::write(deep.join(format!("file{i}.txt")), "content").unwrap();
-                }
-                root
-            })
-            .collect();
-
-        for root in &roots {
-            mgr.request_scan(root.path().to_path_buf(), ScanPriority::CurrentDir)
-                .await;
+        // Pre-fill both slots with blocked tasks so no monitor can drain
+        // the queue before we assert. The channels keep spawn_blocking
+        // threads alive; dropping the senders unblocks them for cleanup.
+        let (hold_tx1, hold_rx1) = std::sync::mpsc::channel::<()>();
+        let (hold_tx2, hold_rx2) = std::sync::mpsc::channel::<()>();
+        {
+            let mut inner = mgr.inner.lock().await;
+            for (i, rx) in [hold_rx1, hold_rx2].into_iter().enumerate() {
+                let handle = tokio::task::spawn_blocking(move || {
+                    let _ = rx.recv();
+                });
+                inner.active.insert(
+                    PathBuf::from(format!("/fake/slot{i}")),
+                    ActiveScan {
+                        priority: ScanPriority::CurrentDir,
+                        cancelled: Arc::new(AtomicBool::new(false)),
+                        handle,
+                    },
+                );
+            }
         }
 
-        let active = mgr.active_count().await;
-        let queued = mgr.queue_len().await;
-        assert!(active <= 2, "should respect max_concurrent, got {active}");
-        assert!(
-            queued >= 1,
-            "3rd scan should be queued (queued={queued}, active={active})"
-        );
+        // 3rd scan should be queued since both slots are occupied
+        let scan_root = tempfile::tempdir().unwrap();
+        fs::write(scan_root.path().join("test.txt"), "content").unwrap();
+        mgr.request_scan(scan_root.path().to_path_buf(), ScanPriority::CurrentDir)
+            .await;
 
+        let inner = mgr.inner.lock().await;
+        assert_eq!(inner.active.len(), 2, "both slots should be occupied");
+        assert_eq!(inner.queue.len(), 1, "3rd scan should be queued");
+        drop(inner);
+
+        drop(hold_tx1);
+        drop(hold_tx2);
+        mgr.cancel_all().await;
         writer.shutdown();
     }
 
