@@ -6,6 +6,7 @@ import { load, type Store } from '@tauri-apps/plugin-store'
 import { invoke } from '@tauri-apps/api/core'
 import { commands } from '$lib/commands/command-registry'
 import { getAppLogger } from '$lib/logging/logger'
+import { toPlatformShortcut } from './key-capture'
 
 const log = getAppLogger('shortcuts')
 
@@ -142,8 +143,9 @@ export function getEffectiveShortcuts(commandId: string): string[] {
         return [...custom]
     }
 
+    // Defaults are stored in macOS format; convert to current platform
     const command = commands.find((c) => c.id === commandId)
-    return [...(command?.shortcuts ?? [])]
+    return (command?.shortcuts ?? []).map(toPlatformShortcut)
 }
 
 /**
@@ -152,7 +154,8 @@ export function getEffectiveShortcuts(commandId: string): string[] {
  */
 export function getDefaultShortcuts(commandId: string): string[] {
     const command = commands.find((c) => c.id === commandId)
-    return [...(command?.shortcuts ?? [])]
+    // Defaults are stored in macOS format; convert to current platform
+    return (command?.shortcuts ?? []).map(toPlatformShortcut)
 }
 
 /**

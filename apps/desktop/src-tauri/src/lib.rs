@@ -285,6 +285,15 @@ pub fn run() {
                 let _ = window.set_title(&title);
             }
 
+            // Apply macOS overlay title bar at runtime (titleBarStyle removed from tauri.conf.json
+            // because "Overlay" hides the native title bar on Linux/GTK, breaking window controls).
+            // trafficLightPosition stays in JSON since it's macOS-only and ignored on other platforms.
+            #[cfg(target_os = "macos")]
+            if let Some(window) = app.get_webview_window("main") {
+                use tauri::TitleBarStyle;
+                let _ = window.set_title_bar_style(TitleBarStyle::Overlay);
+            }
+
             // Initialize pane state store for MCP context tools
             app.manage(mcp::PaneStateStore::new());
 

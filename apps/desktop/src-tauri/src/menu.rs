@@ -126,8 +126,61 @@ pub const ENTER_LICENSE_KEY_ID: &str = "enter_license_key";
 /// Menu item ID for Settings.
 pub const SETTINGS_ID: &str = "settings";
 
+/// Platform-aware accelerator for "Copy path to clipboard".
+/// On macOS: Ctrl+Cmd+C. On Linux: Ctrl+Shift+C (Ctrl+Cmd+C becomes Ctrl+Ctrl+C which is broken).
+#[cfg(target_os = "macos")]
+fn copy_path_accelerator() -> &'static str {
+    "Ctrl+Cmd+C"
+}
+
+#[cfg(not(target_os = "macos"))]
+fn copy_path_accelerator() -> &'static str {
+    "Ctrl+Shift+C"
+}
+
+/// Platform-aware accelerator for "Show in Finder / file manager".
+#[cfg(target_os = "macos")]
+fn show_in_file_manager_accelerator() -> &'static str {
+    "Opt+Cmd+O"
+}
+
+#[cfg(not(target_os = "macos"))]
+fn show_in_file_manager_accelerator() -> &'static str {
+    "Alt+Ctrl+O"
+}
+
+/// Platform-aware label for the "Show in Finder" / "Show in file manager" action.
+#[cfg(target_os = "macos")]
+fn show_in_file_manager_label() -> &'static str {
+    "Show in Finder"
+}
+
+#[cfg(not(target_os = "macos"))]
+fn show_in_file_manager_label() -> &'static str {
+    "Show in file manager"
+}
+
 /// Builds the application menu with default macOS items plus a custom View and File submenu enhancements.
 pub fn build_menu<R: Runtime>(
+    app: &AppHandle<R>,
+    show_hidden_files: bool,
+    view_mode: ViewMode,
+    has_existing_license: bool,
+) -> tauri::Result<MenuItems<R>> {
+    #[cfg(target_os = "macos")]
+    {
+        build_menu_macos(app, show_hidden_files, view_mode, has_existing_license)
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        build_menu_linux(app, show_hidden_files, view_mode, has_existing_license)
+    }
+}
+
+/// macOS menu: starts from `Menu::default()` and patches submenus.
+#[cfg(target_os = "macos")]
+fn build_menu_macos<R: Runtime>(
     app: &AppHandle<R>,
     show_hidden_files: bool,
     view_mode: ViewMode,
@@ -182,8 +235,20 @@ pub fn build_menu<R: Runtime>(
     // Add File menu items
     let open_item = MenuItem::with_id(app, OPEN_ID, "Open", true, None::<&str>)?;
     let edit_item = MenuItem::with_id(app, EDIT_ID, "Edit", true, Some("F4"))?;
-    let show_in_finder_item = MenuItem::with_id(app, SHOW_IN_FINDER_ID, "Show in Finder", true, Some("Opt+Cmd+O"))?;
-    let copy_path_item = MenuItem::with_id(app, COPY_PATH_ID, "Copy path to clipboard", true, Some("Ctrl+Cmd+C"))?;
+    let show_in_finder_item = MenuItem::with_id(
+        app,
+        SHOW_IN_FINDER_ID,
+        show_in_file_manager_label(),
+        true,
+        Some(show_in_file_manager_accelerator()),
+    )?;
+    let copy_path_item = MenuItem::with_id(
+        app,
+        COPY_PATH_ID,
+        "Copy path to clipboard",
+        true,
+        Some(copy_path_accelerator()),
+    )?;
     let copy_filename_item = MenuItem::with_id(app, COPY_FILENAME_ID, "Copy filename", true, None::<&str>)?;
     let get_info_item = MenuItem::with_id(app, GET_INFO_ID, "Get info", true, Some("Cmd+I"))?;
     let quick_look_item = MenuItem::with_id(app, QUICK_LOOK_ID, "Quick look", true, Some("Space"))?;
@@ -403,6 +468,199 @@ pub fn build_menu<R: Runtime>(
     })
 }
 
+/// Linux menu: builds all menus from scratch (no `Menu::default()` patching).
+#[cfg(not(target_os = "macos"))]
+fn build_menu_linux<R: Runtime>(
+    app: &AppHandle<R>,
+    show_hidden_files: bool,
+    view_mode: ViewMode,
+    has_existing_license: bool,
+) -> tauri::Result<MenuItems<R>> {
+    let menu = Menu::new(app)?;
+
+    // --- File menu ---
+    let open_item = MenuItem::with_id(app, OPEN_ID, "Open", true, None::<&str>)?;
+    let edit_item = MenuItem::with_id(app, EDIT_ID, "Edit", true, Some("F4"))?;
+    let show_in_fm_item = MenuItem::with_id(
+        app,
+        SHOW_IN_FINDER_ID,
+        show_in_file_manager_label(),
+        true,
+        Some(show_in_file_manager_accelerator()),
+    )?;
+    let copy_path_item = MenuItem::with_id(
+        app,
+        COPY_PATH_ID,
+        "Copy path to clipboard",
+        true,
+        Some(copy_path_accelerator()),
+    )?;
+    let copy_filename_item = MenuItem::with_id(app, COPY_FILENAME_ID, "Copy filename", true, None::<&str>)?;
+    let new_tab_item = MenuItem::with_id(app, NEW_TAB_ID, "New tab", true, Some("Cmd+T"))?;
+    let pin_tab_item = MenuItem::with_id(app, PIN_TAB_MENU_ID, "Pin tab", true, None::<&str>)?;
+    let close_tab_item = MenuItem::with_id(app, CLOSE_TAB_ID, "Close tab", true, Some("Cmd+W"))?;
+
+    let file_menu = Submenu::with_items(
+        app,
+        "File",
+        true,
+        &[
+            &open_item,
+            &edit_item,
+            &show_in_fm_item,
+            &copy_path_item,
+            &copy_filename_item,
+            &PredefinedMenuItem::separator(app)?,
+            &new_tab_item,
+            &pin_tab_item,
+            &close_tab_item,
+        ],
+    )?;
+    menu.append(&file_menu)?;
+
+    // --- Edit menu ---
+    let rename_item = MenuItem::with_id(app, RENAME_ID, "Rename", true, Some("F2"))?;
+    let settings_item = MenuItem::with_id(app, SETTINGS_ID, "Settings...", true, Some("Cmd+,"))?;
+    let license_label = if has_existing_license {
+        "See license details..."
+    } else {
+        "Enter license key..."
+    };
+    let license_item = MenuItem::with_id(app, ENTER_LICENSE_KEY_ID, license_label, true, None::<&str>)?;
+
+    let edit_menu = Submenu::with_items(
+        app,
+        "Edit",
+        true,
+        &[
+            &PredefinedMenuItem::undo(app, None)?,
+            &PredefinedMenuItem::redo(app, None)?,
+            &PredefinedMenuItem::separator(app)?,
+            &PredefinedMenuItem::cut(app, None)?,
+            &PredefinedMenuItem::copy(app, None)?,
+            &PredefinedMenuItem::paste(app, None)?,
+            &PredefinedMenuItem::select_all(app, None)?,
+            &PredefinedMenuItem::separator(app)?,
+            &rename_item,
+            &PredefinedMenuItem::separator(app)?,
+            &settings_item,
+            &license_item,
+        ],
+    )?;
+    menu.append(&edit_menu)?;
+
+    // --- View menu ---
+    let view_mode_full_item = CheckMenuItem::with_id(
+        app,
+        VIEW_MODE_FULL_ID,
+        "Full view",
+        true,
+        view_mode == ViewMode::Full,
+        Some("Cmd+1"),
+    )?;
+    let view_mode_brief_item = CheckMenuItem::with_id(
+        app,
+        VIEW_MODE_BRIEF_ID,
+        "Brief view",
+        true,
+        view_mode == ViewMode::Brief,
+        Some("Cmd+2"),
+    )?;
+    let show_hidden_item = CheckMenuItem::with_id(
+        app,
+        SHOW_HIDDEN_FILES_ID,
+        "Show hidden files",
+        true,
+        show_hidden_files,
+        Some("Cmd+Shift+."),
+    )?;
+
+    // Sort by submenu
+    let sort_by_name = MenuItem::with_id(app, SORT_BY_NAME_ID, "Name", true, None::<&str>)?;
+    let sort_by_ext = MenuItem::with_id(app, SORT_BY_EXTENSION_ID, "Extension", true, None::<&str>)?;
+    let sort_by_size = MenuItem::with_id(app, SORT_BY_SIZE_ID, "Size", true, None::<&str>)?;
+    let sort_by_modified = MenuItem::with_id(app, SORT_BY_MODIFIED_ID, "Date modified", true, None::<&str>)?;
+    let sort_by_created = MenuItem::with_id(app, SORT_BY_CREATED_ID, "Date created", true, None::<&str>)?;
+    let sort_asc = MenuItem::with_id(app, SORT_ASCENDING_ID, "Ascending", true, None::<&str>)?;
+    let sort_desc = MenuItem::with_id(app, SORT_DESCENDING_ID, "Descending", true, None::<&str>)?;
+    let sort_submenu = Submenu::with_items(
+        app,
+        "Sort by",
+        true,
+        &[
+            &sort_by_name,
+            &sort_by_ext,
+            &sort_by_size,
+            &sort_by_modified,
+            &sort_by_created,
+            &PredefinedMenuItem::separator(app)?,
+            &sort_asc,
+            &sort_desc,
+        ],
+    )?;
+
+    let command_palette_item =
+        MenuItem::with_id(app, COMMAND_PALETTE_ID, "Command palette...", true, Some("Cmd+Shift+P"))?;
+    let switch_pane_item = MenuItem::with_id(app, SWITCH_PANE_ID, "Switch pane", true, Some("Tab"))?;
+    let swap_panes_item = MenuItem::with_id(app, SWAP_PANES_ID, "Swap panes", true, Some("Cmd+U"))?;
+
+    let view_submenu = Submenu::with_items(
+        app,
+        "View",
+        true,
+        &[
+            &view_mode_full_item,
+            &view_mode_brief_item,
+            &PredefinedMenuItem::separator(app)?,
+            &show_hidden_item,
+            &sort_submenu,
+            &PredefinedMenuItem::separator(app)?,
+            &command_palette_item,
+            &switch_pane_item,
+            &swap_panes_item,
+        ],
+    )?;
+    menu.append(&view_submenu)?;
+
+    // View mode items are at positions 0 and 1 in our freshly built View submenu
+    let view_full_pos: usize = 0;
+    let view_brief_pos: usize = 1;
+
+    // --- Go menu ---
+    let go_back_item = MenuItem::with_id(app, GO_BACK_ID, "Back", true, Some("Cmd+["))?;
+    let go_forward_item = MenuItem::with_id(app, GO_FORWARD_ID, "Forward", true, Some("Cmd+]"))?;
+    let go_parent_item = MenuItem::with_id(app, GO_PARENT_ID, "Parent folder", true, Some("Cmd+Up"))?;
+
+    let go_menu = Submenu::with_items(
+        app,
+        "Go",
+        true,
+        &[
+            &go_back_item,
+            &go_forward_item,
+            &PredefinedMenuItem::separator(app)?,
+            &go_parent_item,
+        ],
+    )?;
+    menu.append(&go_menu)?;
+
+    // --- Help menu ---
+    let about_item = MenuItem::with_id(app, ABOUT_ID, "About cmdr", true, None::<&str>)?;
+    let help_menu = Submenu::with_items(app, "Help", true, &[&about_item])?;
+    menu.append(&help_menu)?;
+
+    Ok(MenuItems {
+        menu,
+        show_hidden_files: show_hidden_item,
+        view_mode_full: view_mode_full_item,
+        view_mode_brief: view_mode_brief_item,
+        view_submenu,
+        view_mode_full_position: view_full_pos,
+        view_mode_brief_position: view_brief_pos,
+        pin_tab: pin_tab_item,
+    })
+}
+
 /// Builds a context menu for a specific file.
 pub fn build_context_menu<R: Runtime>(
     app: &AppHandle<R>,
@@ -413,8 +671,20 @@ pub fn build_context_menu<R: Runtime>(
 
     let open_item = MenuItem::with_id(app, OPEN_ID, "Open", true, None::<&str>)?;
     let edit_item = MenuItem::with_id(app, EDIT_ID, "Edit", true, Some("F4"))?;
-    let show_in_finder_item = MenuItem::with_id(app, SHOW_IN_FINDER_ID, "Show in Finder", true, Some("Opt+Cmd+O"))?;
-    let copy_path_item = MenuItem::with_id(app, COPY_PATH_ID, "Copy path to clipboard", true, Some("Ctrl+Cmd+C"))?;
+    let show_in_finder_item = MenuItem::with_id(
+        app,
+        SHOW_IN_FINDER_ID,
+        show_in_file_manager_label(),
+        true,
+        Some(show_in_file_manager_accelerator()),
+    )?;
+    let copy_path_item = MenuItem::with_id(
+        app,
+        COPY_PATH_ID,
+        "Copy path to clipboard",
+        true,
+        Some(copy_path_accelerator()),
+    )?;
     let copy_filename_item = MenuItem::with_id(
         app,
         COPY_FILENAME_ID,
@@ -423,8 +693,6 @@ pub fn build_context_menu<R: Runtime>(
         Some("Cmd+C"),
     )?;
     let rename_item = MenuItem::with_id(app, RENAME_ID, "Rename", true, Some("F2"))?;
-    let get_info_item = MenuItem::with_id(app, GET_INFO_ID, "Get info", true, Some("Cmd+I"))?;
-    let quick_look_item = MenuItem::with_id(app, QUICK_LOOK_ID, "Quick look", true, None::<&str>)?;
 
     // Add items to menu
     if !is_directory {
@@ -436,30 +704,53 @@ pub fn build_context_menu<R: Runtime>(
     menu.append(&PredefinedMenuItem::separator(app)?)?;
     menu.append(&copy_filename_item)?;
     menu.append(&copy_path_item)?;
-    menu.append(&PredefinedMenuItem::separator(app)?)?;
-    menu.append(&get_info_item)?;
-    menu.append(&quick_look_item)?;
+
+    // Quick Look and Get Info are macOS-only
+    #[cfg(target_os = "macos")]
+    {
+        let get_info_item = MenuItem::with_id(app, GET_INFO_ID, "Get info", true, Some("Cmd+I"))?;
+        let quick_look_item = MenuItem::with_id(app, QUICK_LOOK_ID, "Quick look", true, None::<&str>)?;
+        menu.append(&PredefinedMenuItem::separator(app)?)?;
+        menu.append(&get_info_item)?;
+        menu.append(&quick_look_item)?;
+    }
 
     Ok(menu)
 }
 
-/// Builds a menu for viewer windows. Starts from the default macOS menu and adds a "Word wrap" toggle to the View submenu.
+/// Builds a menu for viewer windows.
+/// On macOS: starts from `Menu::default()` and patches the View submenu.
+/// On Linux: builds from scratch with just a View submenu containing the Word wrap toggle.
 pub fn build_viewer_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
-    let menu = Menu::default(app)?;
+    #[cfg(target_os = "macos")]
+    {
+        let menu = Menu::default(app)?;
 
-    for item in menu.items()? {
-        if let MenuItemKind::Submenu(submenu) = item
-            && submenu.text()? == "View"
-        {
-            submenu.append(&PredefinedMenuItem::separator(app)?)?;
-            let word_wrap_item =
-                CheckMenuItem::with_id(app, VIEWER_WORD_WRAP_ID, "Word wrap", true, false, None::<&str>)?;
-            submenu.append(&word_wrap_item)?;
-            break;
+        for item in menu.items()? {
+            if let MenuItemKind::Submenu(submenu) = item
+                && submenu.text()? == "View"
+            {
+                submenu.append(&PredefinedMenuItem::separator(app)?)?;
+                let word_wrap_item =
+                    CheckMenuItem::with_id(app, VIEWER_WORD_WRAP_ID, "Word wrap", true, false, None::<&str>)?;
+                submenu.append(&word_wrap_item)?;
+                break;
+            }
         }
+
+        Ok(menu)
     }
 
-    Ok(menu)
+    #[cfg(not(target_os = "macos"))]
+    {
+        let menu = Menu::new(app)?;
+
+        let word_wrap_item = CheckMenuItem::with_id(app, VIEWER_WORD_WRAP_ID, "Word wrap", true, false, None::<&str>)?;
+        let view_submenu = Submenu::with_items(app, "View", true, &[&word_wrap_item])?;
+        menu.append(&view_submenu)?;
+
+        Ok(menu)
+    }
 }
 
 /// Convert frontend shortcut format (⌘2) to Tauri accelerator format (Cmd+2).

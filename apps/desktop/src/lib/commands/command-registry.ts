@@ -9,15 +9,16 @@
  */
 
 import type { Command } from './types'
+import { isMacOS } from '$lib/shortcuts/key-capture'
 
 export const commands: Command[] = [
     // ============================================================================
     // App scope (work everywhere, regardless of window/modal state)
     // ============================================================================
     { id: 'app.quit', name: 'Quit Cmdr', scope: 'App', showInPalette: true, shortcuts: ['⌘Q'] },
-    { id: 'app.hide', name: 'Hide Cmdr', scope: 'App', showInPalette: true, shortcuts: ['⌘H'] },
-    { id: 'app.hideOthers', name: 'Hide others', scope: 'App', showInPalette: true, shortcuts: ['⌥⌘H'] },
-    { id: 'app.showAll', name: 'Show all', scope: 'App', showInPalette: true, shortcuts: [] },
+    { id: 'app.hide', name: 'Hide Cmdr', scope: 'App', showInPalette: isMacOS(), shortcuts: ['⌘H'] },
+    { id: 'app.hideOthers', name: 'Hide others', scope: 'App', showInPalette: isMacOS(), shortcuts: ['⌥⌘H'] },
+    { id: 'app.showAll', name: 'Show all', scope: 'App', showInPalette: isMacOS(), shortcuts: [] },
     { id: 'app.about', name: 'About Cmdr', scope: 'App', showInPalette: true, shortcuts: [] },
     {
         id: 'app.commandPalette',
@@ -236,7 +237,7 @@ export const commands: Command[] = [
     },
     {
         id: 'file.showInFinder',
-        name: 'Show in Finder',
+        name: isMacOS() ? 'Show in Finder' : 'Show in file manager',
         scope: 'Main window/File list',
         showInPalette: true,
         shortcuts: ['⌥⌘O'],
@@ -257,16 +258,16 @@ export const commands: Command[] = [
     },
     {
         id: 'file.getInfo',
-        name: 'Get info',
+        name: isMacOS() ? 'Get info' : 'File properties',
         scope: 'Main window/File list',
-        showInPalette: true,
+        showInPalette: isMacOS(),
         shortcuts: ['⌘I'],
     },
     {
         id: 'file.quickLook',
-        name: 'Quick look',
+        name: isMacOS() ? 'Quick look' : 'Preview',
         scope: 'Main window/File list',
-        showInPalette: true,
+        showInPalette: isMacOS(),
         shortcuts: [],
     },
     {

@@ -1,6 +1,6 @@
 use crate::ignore_poison::IgnorePoison;
 use crate::menu::{MenuState, build_context_menu, build_tab_context_menu};
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 use std::process::Command;
 use tauri::menu::ContextMenu;
 use tauri::{AppHandle, Emitter, Manager, Runtime, Window};
@@ -101,9 +101,22 @@ pub fn show_in_finder(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-#[cfg(not(target_os = "macos"))]
+#[cfg(target_os = "linux")]
+pub fn show_in_finder(path: String) -> Result<(), String> {
+    let parent = std::path::Path::new(&path)
+        .parent()
+        .unwrap_or(std::path::Path::new("/"));
+    Command::new("xdg-open")
+        .arg(parent)
+        .spawn()
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
 pub fn show_in_finder(_path: String) -> Result<(), String> {
-    Err("Show in Finder is only available on macOS".to_string())
+    Err("Show in file manager is not available on this platform".to_string())
 }
 
 /// Copy text to clipboard
@@ -170,9 +183,16 @@ pub fn open_in_editor(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-#[cfg(not(target_os = "macos"))]
+#[cfg(target_os = "linux")]
+pub fn open_in_editor(path: String) -> Result<(), String> {
+    Command::new("xdg-open").arg(&path).spawn().map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
 pub fn open_in_editor(_path: String) -> Result<(), String> {
-    Err("Open in editor is only available on macOS".to_string())
+    Err("Open in editor is not available on this platform".to_string())
 }
 
 /// Shows a native context menu for a tab (fire-and-forget).
@@ -223,13 +243,13 @@ pub fn execute_menu_action<R: Runtime>(app: &AppHandle<R>, id: &str) {
             let _ = app.opener().open_path(&context.path, None::<&str>);
         }
         crate::menu::EDIT_ID => {
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             {
                 let _ = open_in_editor(context.path);
             }
         }
         crate::menu::SHOW_IN_FINDER_ID => {
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             {
                 let _ = show_in_finder(context.path);
             }

@@ -11,7 +11,7 @@
     import ScanStatusOverlay from '$lib/indexing/ScanStatusOverlay.svelte'
     import { initIndexState, destroyIndexState } from '$lib/indexing/index'
     import { initShortcutDispatch, destroyShortcutDispatch, lookupCommand } from '$lib/shortcuts/shortcut-dispatch'
-    import { formatKeyCombo } from '$lib/shortcuts/key-capture'
+    import { formatKeyCombo, isMacOS } from '$lib/shortcuts/key-capture'
     import {
         showMainWindow,
         checkFullDiskAccess,
@@ -995,10 +995,12 @@
 </script>
 
 <div class="page-container">
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="title-bar" onmousedown={handleTitleBarMouseDown}>
-        <span class="title-text">{windowTitle}</span>
-    </div>
+    {#if isMacOS()}
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div class="title-bar" onmousedown={handleTitleBarMouseDown}>
+            <span class="title-text">{windowTitle}</span>
+        </div>
+    {/if}
 
     <div class="main-content">
         {#if showAboutWindow}
