@@ -1,7 +1,8 @@
 # MTP module
 
 MTP (Media Transfer Protocol) support for Android devices and PTP cameras connected via USB.
-macOS-only (`#[cfg(target_os = "macos")]` at the command registration level).
+Available on macOS and Linux (`#[cfg(any(target_os = "macos", target_os = "linux"))]`).
+On Linux, users may need udev rules for USB device permissions (see `resources/99-cmdr-mtp.rules`).
 
 ## File map
 
@@ -11,7 +12,7 @@ macOS-only (`#[cfg(target_os = "macos")]` at the command registration level).
 | `types.rs` | `MtpDeviceInfo`, `MtpStorageInfo` — camelCase JSON via `serde(rename_all)` |
 | `discovery.rs` | `list_mtp_devices()` via `mtp_rs::MtpDevice::list_devices()`; device IDs formatted as `"mtp-{location_id}"` |
 | `watcher.rs` | `start_mtp_watcher()` — nusb hotplug watcher; 500 ms delay on connect before re-checking; emits `mtp-device-detected` / `mtp-device-removed` Tauri events |
-| `macos_workaround.rs` | Detects `ptpcamerad` via `ioreg`; exposes `PTPCAMERAD_WORKAROUND_COMMAND` (a bash one-liner) |
+| `macos_workaround.rs` | macOS-only (`#[cfg(target_os = "macos")]`). Detects `ptpcamerad` via `ioreg`; exposes `PTPCAMERAD_WORKAROUND_COMMAND` (a bash one-liner) |
 | `connection/mod.rs` | `MtpConnectionManager` singleton (`LazyLock`); `DeviceEntry` map; `connect()` (idempotent, probes write capability, registers `MtpVolume`); `disconnect()` |
 | `connection/cache.rs` | `PathHandleCache` (path → MTP object handle), `ListingCache` (5 s TTL), `EventDebouncer` (500 ms per device) |
 | `connection/errors.rs` | `MtpConnectionError` enum with typed variants and `map_mtp_error()` from `mtp_rs::Error` |
@@ -49,7 +50,7 @@ Event loop (event_loop.rs)
 - **Device lock**: `Arc<tokio::sync::Mutex<MtpDevice>>` held for the entire USB I/O call (tokio's Mutex can be held across `.await` points, unlike `std::sync::Mutex`). Operations are serialized per device with a 30 s timeout (`MTP_TIMEOUT_SECS`). Holding the lock too long logs a warning.
 - **Cache-only path resolution**: `resolve_path_to_handle()` fails if the path has not appeared in a prior `list_directory()` call. There is no on-demand path walk.
 - **Write capability probe**: `probe_write_capability()` creates a hidden `.cmdr_write_probe` folder to detect cameras that advertise write support but reject writes at runtime (`StoreReadOnly`). Timeout or non-fatal errors are treated as writable (benefit of the doubt).
-- **ExclusiveAccess errors**: when `ptpcamerad` claims a device, `connect()` emits `mtp-exclusive-access-error` with the blocking process name (from `ioreg`) so the frontend can show a dialog with the workaround command.
+- **ExclusiveAccess errors**: on macOS, when `ptpcamerad` claims a device, `connect()` emits `mtp-exclusive-access-error` with the blocking process name (from `ioreg`) so the frontend can show a dialog with the workaround command. On Linux, the blocking process is reported as `None`.
 - **Async recursion**: all recursive operations in `bulk_ops.rs` use `Box::pin(async move { ... })`.
 - **Event loop shutdown**: uses a biased `tokio::select!` so the shutdown signal (broadcast channel) is always checked first.
 - **Volume IDs**: MTP storage volumes use `"{device_id}:{storage_id}"` (e.g., `"mtp-336592896:65537"`).

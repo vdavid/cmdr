@@ -49,7 +49,7 @@ Run the smallest set of checks possible for efficiency while maintaining confide
 - Running a Svelte test: `cd apps/desktop && pnpm vitest run -t "<test_name>"`
 - Running all Rust/Svelte tests: `./scripts/check.sh --rust` or `--svelte`
 - Running specific checks `/scripts/check.sh --check {desktop-svelte-prettier|desktop-svelte-eslint|stylelint|css-unused
-  |svelte-check|knip|type-drift|svelte-tests|desktop-e2e|e2e-linux-typecheck|desktop-e2e-linux|rustfmt|clippy
+  |svelte-check|knip|type-drift|svelte-tests|desktop-smoke|e2e-linux-typecheck|desktop-e2e-linux (slow)|rustfmt|clippy
   |cargo-audit|cargo-deny|cargo-udeps|jscpd-rust|cfg-gate|rust-tests|rust-tests-linux (slow)|license-server-prettier
   |license-server-eslint|license-server-typecheck|license-server-tests|gofmt|go-vet|staticcheck|ineffassign|misspell
   |gocyclo|nilaway|govulncheck|deadcode|go-tests|website-prettier|website-eslint|website-typecheck|website-build

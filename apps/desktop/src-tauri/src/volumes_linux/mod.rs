@@ -1,0 +1,512 @@
+//! Volume and location discovery for Linux.
+//!
+//! Provides a sidebar location picker with:
+//! - Favorites (Home, Desktop, Documents, Downloads)
+//! - Main volume (root `/`)
+//! - Mounted volumes (real filesystems from /proc/mounts)
+//! - Cloud drives (Dropbox, Google Drive, Nextcloud, OneDrive)
+//! - Removable media under /run/media/ or /media/
+
+pub mod watcher;
+
+use crate::file_system::linux_mounts::{self, MountEntry};
+use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
+use std::path::Path;
+
+/// Category of a location item.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum LocationCategory {
+    Favorite,
+    MainVolume,
+    AttachedVolume,
+    CloudDrive,
+    Network,
+}
+
+/// Information about a location (volume, folder, or cloud drive).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LocationInfo {
+    pub id: String,
+    pub name: String,
+    pub path: String,
+    pub category: LocationCategory,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub icon: Option<String>,
+    pub is_ejectable: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fs_type: Option<String>,
+    pub supports_trash: bool,
+}
+
+/// Information about volume space.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VolumeSpaceInfo {
+    pub total_bytes: u64,
+    pub available_bytes: u64,
+}
+
+// Legacy compat alias
+pub use LocationInfo as VolumeInfo;
+
+/// Default volume ID for the root filesystem.
+pub const DEFAULT_VOLUME_ID: &str = "root";
+
+/// Virtual filesystem types to filter out of mount listings.
+const VIRTUAL_FS_TYPES: &[&str] = &[
+    "proc",
+    "sysfs",
+    "devpts",
+    "tmpfs",
+    "cgroup",
+    "cgroup2",
+    "devtmpfs",
+    "hugetlbfs",
+    "mqueue",
+    "debugfs",
+    "tracefs",
+    "securityfs",
+    "pstore",
+    "configfs",
+    "fusectl",
+    "binfmt_misc",
+    "autofs",
+    "efivarfs",
+    "ramfs",
+    "rpc_pipefs",
+    "nfsd",
+    "nsfs",
+    "bpf",
+];
+
+/// Determine whether a filesystem type supports trash.
+///
+/// Local filesystems (ext4, btrfs, xfs, zfs) support trash via the
+/// FreeDesktop.org trash spec. Network filesystems (NFS, CIFS, SSHFS)
+/// and non-native formats (FAT32/exFAT) don't reliably support it.
+/// Unknown types default to `true` (optimistic).
+pub fn supports_trash_for_fs_type(fs_type: Option<&str>) -> bool {
+    let Some(fs) = fs_type else { return true };
+    let fs_lower = fs.to_ascii_lowercase();
+    match fs_lower.as_str() {
+        "ext4" | "ext3" | "ext2" | "btrfs" | "xfs" | "zfs" | "f2fs" | "reiserfs" => true,
+        "nfs" | "nfs4" | "cifs" | "smbfs" | "fuse.sshfs" | "ncpfs" | "9p" => false,
+        "vfat" | "exfat" | "msdos" | "ntfs" | "fuseblk" => false,
+        _ => true,
+    }
+}
+
+/// Get all locations organized by category, deduplicated.
+pub fn list_locations() -> Vec<LocationInfo> {
+    let mounts = linux_mounts::parse_proc_mounts();
+    let mut locations = Vec::new();
+    let mut seen_paths: HashSet<String> = HashSet::new();
+
+    // 1. Favorites
+    for loc in get_favorites(&mounts) {
+        if seen_paths.insert(loc.path.clone()) {
+            locations.push(loc);
+        }
+    }
+
+    // 2. Main volume
+    if let Some(loc) = get_main_volume(&mounts) {
+        if seen_paths.insert(loc.path.clone()) {
+            locations.push(loc);
+        }
+    }
+
+    // 3. Mounted volumes (real filesystems, excluding root and virtual)
+    for loc in get_mounted_volumes(&mounts) {
+        if seen_paths.insert(loc.path.clone()) {
+            locations.push(loc);
+        }
+    }
+
+    // 4. Cloud drives
+    for loc in get_cloud_drives(&mounts) {
+        if seen_paths.insert(loc.path.clone()) {
+            locations.push(loc);
+        }
+    }
+
+    locations
+}
+
+/// Legacy compatibility wrapper.
+pub fn list_mounted_volumes() -> Vec<LocationInfo> {
+    list_locations()
+}
+
+/// Get common user directories as favorites.
+fn get_favorites(mounts: &[MountEntry]) -> Vec<LocationInfo> {
+    let home = dirs::home_dir().unwrap_or_default();
+    let home_str = home.to_string_lossy().to_string();
+
+    let candidates = [
+        (home_str, "Home", "fav-home"),
+        (
+            home.join("Desktop").to_string_lossy().to_string(),
+            "Desktop",
+            "fav-desktop",
+        ),
+        (
+            home.join("Documents").to_string_lossy().to_string(),
+            "Documents",
+            "fav-documents",
+        ),
+        (
+            home.join("Downloads").to_string_lossy().to_string(),
+            "Downloads",
+            "fav-downloads",
+        ),
+    ];
+
+    candidates
+        .into_iter()
+        .filter(|(path, _, _)| Path::new(path).exists())
+        .map(|(path, name, id)| {
+            let fs_type = linux_mounts::fs_type_for_path_from_entries(Path::new(&path), mounts);
+            let supports_trash = supports_trash_for_fs_type(fs_type.as_deref());
+            LocationInfo {
+                id: id.to_string(),
+                name: name.to_string(),
+                path,
+                category: LocationCategory::Favorite,
+                icon: None,
+                is_ejectable: false,
+                fs_type,
+                supports_trash,
+            }
+        })
+        .collect()
+}
+
+/// Get the root filesystem as the main volume.
+fn get_main_volume(mounts: &[MountEntry]) -> Option<LocationInfo> {
+    let fs_type = linux_mounts::fs_type_for_path_from_entries(Path::new("/"), mounts);
+    let supports_trash = supports_trash_for_fs_type(fs_type.as_deref());
+    Some(LocationInfo {
+        id: DEFAULT_VOLUME_ID.to_string(),
+        name: "Root".to_string(),
+        path: "/".to_string(),
+        category: LocationCategory::MainVolume,
+        icon: None,
+        is_ejectable: false,
+        fs_type,
+        supports_trash,
+    })
+}
+
+/// Get mounted real filesystems, filtering out virtual ones and root.
+pub fn get_mounted_volumes(mounts: &[MountEntry]) -> Vec<LocationInfo> {
+    let username = get_username();
+    let mut volumes = Vec::new();
+
+    for entry in mounts {
+        if is_virtual_fs(&entry.fstype) {
+            continue;
+        }
+        if entry.mountpoint == "/" {
+            continue;
+        }
+
+        let is_removable = is_removable_mount(&entry.mountpoint, &username);
+        let name = mount_display_name(&entry.mountpoint);
+        let fs_type = Some(entry.fstype.clone());
+        let supports_trash = supports_trash_for_fs_type(fs_type.as_deref());
+
+        volumes.push(LocationInfo {
+            id: path_to_id(&entry.mountpoint),
+            name,
+            path: entry.mountpoint.clone(),
+            category: LocationCategory::AttachedVolume,
+            icon: None,
+            is_ejectable: is_removable,
+            fs_type,
+            supports_trash,
+        });
+    }
+
+    volumes.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    volumes
+}
+
+/// Get cloud drives by checking common locations.
+fn get_cloud_drives(mounts: &[MountEntry]) -> Vec<LocationInfo> {
+    let home = dirs::home_dir().unwrap_or_default();
+    let mut drives = Vec::new();
+
+    let candidates = [
+        (home.join("Dropbox"), "Dropbox", "cloud-dropbox"),
+        (home.join("Google Drive"), "Google Drive", "cloud-google-drive"),
+        (home.join(".local/share/Nextcloud"), "Nextcloud", "cloud-nextcloud"),
+        (home.join("OneDrive"), "OneDrive", "cloud-onedrive"),
+    ];
+
+    for (path, name, id) in candidates {
+        if path.is_dir() {
+            let path_str = path.to_string_lossy().to_string();
+            let fs_type = linux_mounts::fs_type_for_path_from_entries(Path::new(&path_str), mounts);
+            let supports_trash = supports_trash_for_fs_type(fs_type.as_deref());
+            drives.push(LocationInfo {
+                id: id.to_string(),
+                name: name.to_string(),
+                path: path_str,
+                category: LocationCategory::CloudDrive,
+                icon: None,
+                is_ejectable: false,
+                fs_type,
+                supports_trash,
+            });
+        }
+    }
+
+    drives.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    drives
+}
+
+/// Get space information for a volume using `statvfs`.
+pub fn get_volume_space(path: &str) -> Option<VolumeSpaceInfo> {
+    use std::ffi::CString;
+
+    let c_path = CString::new(path).ok()?;
+
+    unsafe {
+        let mut stat: libc::statvfs = std::mem::zeroed();
+        if libc::statvfs(c_path.as_ptr(), &mut stat) == 0 {
+            let block_size = stat.f_frsize;
+            Some(VolumeSpaceInfo {
+                total_bytes: stat.f_blocks * block_size,
+                available_bytes: stat.f_bavail * block_size,
+            })
+        } else {
+            None
+        }
+    }
+}
+
+/// Find the volume that contains a given path using longest-prefix match.
+#[allow(dead_code, reason = "Utility kept for future path-to-volume resolution")]
+pub fn find_volume_for_path(path: &str) -> Option<String> {
+    let locations = list_locations();
+    locations
+        .iter()
+        .filter(|loc| loc.category != LocationCategory::Favorite)
+        .filter(|loc| path.starts_with(&loc.path))
+        .max_by_key(|loc| loc.path.len())
+        .map(|loc| loc.id.clone())
+}
+
+/// Convert a mount path to a safe ID string.
+fn path_to_id(path: &str) -> String {
+    if path == "/" {
+        return DEFAULT_VOLUME_ID.to_string();
+    }
+    path.chars()
+        .filter(|c| c.is_alphanumeric() || *c == '-')
+        .collect::<String>()
+        .to_lowercase()
+}
+
+/// Extract a display name from a mount path.
+fn mount_display_name(mountpoint: &str) -> String {
+    Path::new(mountpoint)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or(mountpoint)
+        .to_string()
+}
+
+/// Check if a filesystem type is virtual (not a real disk).
+fn is_virtual_fs(fstype: &str) -> bool {
+    VIRTUAL_FS_TYPES.contains(&fstype)
+}
+
+/// Check if a mount point is under a removable media path.
+fn is_removable_mount(mountpoint: &str, username: &str) -> bool {
+    if username.is_empty() {
+        return false;
+    }
+    let run_media = format!("/run/media/{}/", username);
+    let media_user = format!("/media/{}/", username);
+    mountpoint.starts_with(&run_media) || mountpoint.starts_with(&media_user)
+}
+
+/// Get the current username for removable media path detection.
+fn get_username() -> String {
+    std::env::var("USER")
+        .or_else(|_| std::env::var("LOGNAME"))
+        .unwrap_or_default()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const SAMPLE_MOUNTS: &str = "\
+sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+/dev/sda1 / ext4 rw,relatime 0 0
+/dev/sda2 /home ext4 rw,relatime 0 0
+/dev/sdb1 /mnt/data xfs rw,relatime 0 0
+tmpfs /tmp tmpfs rw,nosuid,nodev 0 0
+/dev/sdc1 /run/media/testuser/USB btrfs rw,relatime 0 0
+";
+
+    fn parse_test_mounts() -> Vec<MountEntry> {
+        linux_mounts::parse_proc_mounts_from_content(SAMPLE_MOUNTS)
+    }
+
+    #[test]
+    fn test_is_virtual_fs() {
+        assert!(is_virtual_fs("proc"));
+        assert!(is_virtual_fs("sysfs"));
+        assert!(is_virtual_fs("tmpfs"));
+        assert!(is_virtual_fs("cgroup2"));
+        assert!(!is_virtual_fs("ext4"));
+        assert!(!is_virtual_fs("btrfs"));
+        assert!(!is_virtual_fs("xfs"));
+        assert!(!is_virtual_fs("ntfs"));
+    }
+
+    #[test]
+    fn test_is_removable_mount() {
+        assert!(is_removable_mount("/run/media/user/USB", "user"));
+        assert!(is_removable_mount("/media/user/SD", "user"));
+        assert!(!is_removable_mount("/mnt/data", "user"));
+        assert!(!is_removable_mount("/home", "user"));
+        assert!(!is_removable_mount("/run/media/other/USB", "user"));
+        assert!(!is_removable_mount("/run/media/user/USB", ""));
+    }
+
+    #[test]
+    fn test_path_to_id() {
+        assert_eq!(path_to_id("/"), "root");
+        assert_eq!(path_to_id("/mnt/data"), "mntdata");
+        assert_eq!(path_to_id("/run/media/user/My-Drive"), "runmediausermy-drive");
+    }
+
+    #[test]
+    fn test_mount_display_name() {
+        assert_eq!(mount_display_name("/mnt/data"), "data");
+        assert_eq!(mount_display_name("/run/media/user/USB"), "USB");
+        assert_eq!(mount_display_name("/home"), "home");
+    }
+
+    #[test]
+    fn test_supports_trash_linux_local() {
+        assert!(supports_trash_for_fs_type(Some("ext4")));
+        assert!(supports_trash_for_fs_type(Some("ext3")));
+        assert!(supports_trash_for_fs_type(Some("btrfs")));
+        assert!(supports_trash_for_fs_type(Some("xfs")));
+        assert!(supports_trash_for_fs_type(Some("zfs")));
+        assert!(supports_trash_for_fs_type(Some("f2fs")));
+    }
+
+    #[test]
+    fn test_supports_trash_linux_network() {
+        assert!(!supports_trash_for_fs_type(Some("nfs")));
+        assert!(!supports_trash_for_fs_type(Some("nfs4")));
+        assert!(!supports_trash_for_fs_type(Some("cifs")));
+        assert!(!supports_trash_for_fs_type(Some("fuse.sshfs")));
+    }
+
+    #[test]
+    fn test_supports_trash_removable_formats() {
+        assert!(!supports_trash_for_fs_type(Some("vfat")));
+        assert!(!supports_trash_for_fs_type(Some("exfat")));
+        assert!(!supports_trash_for_fs_type(Some("ntfs")));
+        assert!(!supports_trash_for_fs_type(Some("fuseblk")));
+    }
+
+    #[test]
+    fn test_supports_trash_unknown_and_none() {
+        assert!(supports_trash_for_fs_type(None));
+        assert!(supports_trash_for_fs_type(Some("somefs")));
+    }
+
+    #[test]
+    fn test_get_mounted_volumes_filters_virtual() {
+        let mounts = parse_test_mounts();
+        let volumes = get_mounted_volumes(&mounts);
+        for vol in &volumes {
+            assert_ne!(vol.path, "/proc");
+            assert_ne!(vol.path, "/sys");
+            assert_ne!(vol.path, "/tmp");
+        }
+    }
+
+    #[test]
+    fn test_get_mounted_volumes_excludes_root() {
+        let mounts = parse_test_mounts();
+        let volumes = get_mounted_volumes(&mounts);
+        assert!(
+            !volumes.iter().any(|v| v.path == "/"),
+            "Root should not be in mounted volumes"
+        );
+    }
+
+    #[test]
+    fn test_get_mounted_volumes_includes_real_fs() {
+        let mounts = parse_test_mounts();
+        let volumes = get_mounted_volumes(&mounts);
+        assert!(volumes.iter().any(|v| v.path == "/home"), "Should include /home");
+        assert!(
+            volumes.iter().any(|v| v.path == "/mnt/data"),
+            "Should include /mnt/data"
+        );
+    }
+
+    #[test]
+    fn test_get_main_volume() {
+        let mounts = parse_test_mounts();
+        let main = get_main_volume(&mounts);
+        assert!(main.is_some());
+        let main = main.unwrap();
+        assert_eq!(main.id, "root");
+        assert_eq!(main.path, "/");
+        assert_eq!(main.category, LocationCategory::MainVolume);
+        assert_eq!(main.fs_type.as_deref(), Some("ext4"));
+    }
+
+    #[test]
+    fn test_removable_volume_is_ejectable() {
+        // Set USER env var for this test
+        let prev = std::env::var("USER").ok();
+        // SAFETY: This test is not run concurrently with other tests that read USER.
+        unsafe { std::env::set_var("USER", "testuser") };
+
+        let mounts = parse_test_mounts();
+        let volumes = get_mounted_volumes(&mounts);
+        let usb = volumes.iter().find(|v| v.path.contains("USB"));
+        assert!(usb.is_some(), "Should find USB volume");
+        assert!(usb.unwrap().is_ejectable, "USB volume should be ejectable");
+        assert_eq!(usb.unwrap().fs_type.as_deref(), Some("btrfs"));
+
+        // Restore
+        if let Some(prev) = prev {
+            // SAFETY: Same as above — restoring original value.
+            unsafe { std::env::set_var("USER", prev) };
+        }
+    }
+
+    #[test]
+    fn test_get_volume_space_root() {
+        let space = get_volume_space("/");
+        // statvfs works on both macOS and Linux
+        if let Some(space) = space {
+            assert!(space.total_bytes > 0);
+            assert!(space.available_bytes <= space.total_bytes);
+        }
+    }
+
+    #[test]
+    fn test_get_volume_space_nonexistent() {
+        let space = get_volume_space("/nonexistent/path/does/not/exist");
+        assert!(space.is_none());
+    }
+}

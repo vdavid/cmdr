@@ -42,7 +42,8 @@ fn should_exclude(path: &str) -> bool {
         }
     }
 
-    // /System/ paths: allow only firmlinked ones
+    // macOS: /System/ paths -- allow only firmlinked ones
+    #[cfg(target_os = "macos")]
     if path.starts_with("/System/") || path == "/System" {
         const FIRMLINKED_SYSTEM_PREFIXES: &[&str] = &[
             "/System/Library/Caches",
@@ -582,8 +583,15 @@ mod tests {
 
     #[test]
     fn excluded_paths_are_skipped() {
-        // Use a path under /System/Volumes/VM/ which is excluded and has no firmlink normalization
-        let event = make_event("/System/Volumes/VM/swapfile0", 1, created_file_flags());
+        // Use a platform-appropriate excluded path
+        #[cfg(target_os = "macos")]
+        let excluded_path = "/System/Volumes/VM/swapfile0";
+        #[cfg(target_os = "linux")]
+        let excluded_path = "/proc/1/status";
+        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+        let excluded_path = "/dev/null";
+
+        let event = make_event(excluded_path, 1, created_file_flags());
         let writer = setup_test_writer();
         let result = process_fs_event(&event, &writer.0);
         assert!(result.is_none());
@@ -591,6 +599,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(target_os = "macos")]
     fn system_paths_without_firmlink_are_skipped() {
         // /System/foo paths that aren't firmlinked should be excluded
         let event = make_event("/System/Library/Frameworks/foo", 1, created_file_flags());
@@ -657,8 +666,8 @@ mod tests {
     fn process_file_creation_writes_entry() {
         let (writer, dir) = setup_test_writer();
 
-        // Create a real file so stat() works
-        let test_dir = tempfile::tempdir().unwrap();
+        // Create a real file so stat() works (must be outside excluded paths)
+        let test_dir = non_excluded_tempdir();
         let file_path = test_dir.path().join("created.txt");
         std::fs::write(&file_path, "hello world").unwrap();
 
@@ -717,8 +726,8 @@ mod tests {
     fn process_dir_creation_writes_entry_and_propagates() {
         let (writer, dir) = setup_test_writer();
 
-        // Create a real directory
-        let test_dir = tempfile::tempdir().unwrap();
+        // Create a real directory (must be outside excluded paths)
+        let test_dir = non_excluded_tempdir();
         let new_dir = test_dir.path().join("newdir");
         std::fs::create_dir(&new_dir).unwrap();
 
@@ -792,7 +801,8 @@ mod tests {
         let (writer, dir) = setup_test_writer();
 
         // Event for a file that was created and immediately deleted
-        let event = make_event("/tmp/ghost_file_xyz_nonexistent.txt", 90, created_file_flags());
+        // Use a path not under any excluded prefix (e.g. /tmp/ is excluded on Linux)
+        let event = make_event("/nonexistent_cmdr_test_dir/ghost_file.txt", 90, created_file_flags());
         let result = process_fs_event(&event, &writer);
         // Should still return Some (it sends a DeleteEntry)
         assert!(result.is_some());
@@ -808,5 +818,21 @@ mod tests {
         let _store = IndexStore::open(&db_path).expect("open store");
         let writer = IndexWriter::spawn(&db_path).expect("spawn writer");
         (writer, dir)
+    }
+
+    /// Create a temp directory outside indexing-excluded paths.
+    /// On Linux, `/tmp/` is excluded from indexing; use the current directory instead.
+    fn non_excluded_tempdir() -> tempfile::TempDir {
+        #[cfg(target_os = "linux")]
+        {
+            tempfile::Builder::new()
+                .prefix("cmdr_test_")
+                .tempdir_in(std::env::current_dir().unwrap())
+                .expect("tempdir in cwd")
+        }
+        #[cfg(not(target_os = "linux"))]
+        {
+            tempfile::tempdir().expect("tempdir")
+        }
     }
 }

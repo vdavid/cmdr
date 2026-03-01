@@ -11,10 +11,10 @@ Full design: `docs/specs/drive-indexing/plan.md`
 - **mod.rs** -- Public API: `init()`, `start_indexing()`, `stop_indexing()`, `clear_index()`, `enrich_entries_with_index()`. `IndexManager` coordinates all subsystems. Global read-only store for enrichment.
 - **store.rs** -- SQLite schema (entries, dir_stats, meta), read queries (`get_dir_stats_batch`, `get_index_status`), DB open/migrate. Schema version check: mismatch triggers drop+rebuild.
 - **writer.rs** -- Single writer thread, owns the write connection, processes `WriteMessage` channel (unbounded mpsc). Priority: `UpdateDirStats` before `InsertEntries`. `Flush` variant + async `flush()` method let callers wait for all prior writes to commit.
-- **scanner.rs** -- jwalk-based parallel directory walker. `scan_volume()` for full scan, `scan_subtree()` for micro-scans. Exclusion filter for macOS system paths. Physical sizes (`st_blocks * 512`).
+- **scanner.rs** -- jwalk-based parallel directory walker. `scan_volume()` for full scan, `scan_subtree()` for micro-scans. Platform-specific exclusion filters (macOS system paths, Linux virtual filesystems). Physical sizes (`st_blocks * 512`).
 - **micro_scan.rs** -- `MicroScanManager`: bounded task pool (default 3 concurrent), priority queue (`UserSelected` > `CurrentDir`), deduplication, cancellation. Skips after full scan completes.
 - **aggregator.rs** -- Dir stats computation. Bottom-up after full scan (O(N) single pass), per-subtree after micro-scan, incremental delta propagation up ancestor chain for watcher events.
-- **watcher.rs** -- Drive-level FSEvents watcher via `cmdr-fsevent-stream`. File-level events with event IDs. Supports `sinceWhen` for cold-start replay.
+- **watcher.rs** -- Drive-level filesystem watcher. macOS: FSEvents via `cmdr-fsevent-stream` with event IDs and `sinceWhen` replay. Linux: `notify` crate (inotify backend) with recursive watching and synthetic event counter. Other platforms: stub. `supports_event_replay()` lets callers branch on whether journal replay is available.
 - **reconciler.rs** -- Buffers FSEvents during scan, replays after scan completes using event IDs to skip stale events. Processes live events for file creates/removes/modifies. Key functions (`process_fs_event`, `emit_dir_updated`) are `pub(super)` so `mod.rs` can call them directly during cold-start replay.
 - **firmlinks.rs** -- Parses `/usr/share/firmlinks`, builds prefix map, normalizes paths. Converts `/System/Volumes/Data/Users/foo` to `/Users/foo`.
 - **verifier.rs** -- Placeholder for per-navigation background readdir diff (future milestone).
@@ -30,7 +30,8 @@ App startup
   |-- init(): register IndexManagerState in Tauri
   |-- start_indexing(): create IndexManager, open SQLite, spawn writer thread
   |-- resume_or_scan():
-  |   |-- Has existing index + last_event_id? -> sinceWhen replay (FSEvents journal)
+  |   |-- macOS: Has existing index + last_event_id? -> sinceWhen replay (FSEvents journal)
+  |   |-- Linux: Always full rescan (no event journal; existing DB used for instant enrichment)
   |   |-- Otherwise -> fresh full scan
   |
 Full scan:
@@ -39,7 +40,8 @@ Full scan:
   |-- On complete: replay buffered events (reconciler), compute all aggregates, switch to live mode
   |
 Live mode:
-  |-- FSEvents -> reconciler -> UpsertEntry/DeleteEntry/DeleteSubtree -> writer (auto-propagates deltas) -> SQLite
+  |-- macOS: FSEvents -> reconciler -> UpsertEntry/DeleteEntry/DeleteSubtree -> writer -> SQLite
+  |-- Linux: inotify (via notify crate) -> same pipeline
   |-- Affected paths batched in HashSet, flushed to frontend every 300 ms via index-dir-updated event
   |
 Enrichment (every get_file_range call):
@@ -83,7 +85,9 @@ Key test files are alongside each module (test functions within `#[cfg(test)]` b
 
 **Disposable cache pattern**: The index DB is a cache, not a source of truth. Any corruption or error triggers delete+rebuild. No user-facing errors for DB issues.
 
-**cmdr-fsevent-stream fork**: Our fork of `fsevent-stream` (v0.3.0) provides direct access to FSEvents event IDs, `sinceWhen` replay, and `MustScanSubDirs` flags. The existing `notify` crate stays for per-directory file watchers (different use case).
+**cmdr-fsevent-stream fork (macOS only)**: Our fork of `fsevent-stream` (v0.3.0) provides direct access to FSEvents event IDs, `sinceWhen` replay, and `MustScanSubDirs` flags. Only used on macOS. On Linux, the `notify` crate (inotify backend) provides recursive directory watching with `RecursiveMode::Recursive`.
+
+**Linux inotify watch limits**: Default `fs.inotify.max_user_watches` is ~8192. The `notify` crate's recursive mode adds one inotify watch per directory. Power users with large directory trees may hit this limit; the workaround is `sysctl fs.inotify.max_user_watches=524288`. The watcher gracefully handles watch errors without crashing.
 
 **APFS firmlinks**: Scan from `/` only, skip `/System/Volumes/Data`. Normalize all paths via firmlink prefix map so DB lookups work regardless of how the user navigated to a path.
 

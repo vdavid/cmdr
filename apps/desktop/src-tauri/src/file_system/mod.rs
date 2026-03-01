@@ -1,5 +1,7 @@
 //! File system module - operations, watchers, volumes, and providers.
 
+#[cfg(target_os = "linux")]
+pub(crate) mod linux_mounts;
 pub(crate) mod listing;
 #[cfg(target_os = "macos")]
 mod macos_metadata;
@@ -31,7 +33,7 @@ pub use listing::{
 #[cfg(target_os = "macos")]
 pub use listing::get_paths_at_indices;
 // Re-export volume types (some not used externally yet)
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 #[allow(unused_imports, reason = "Public API re-exports for future use")]
 pub use volume::MtpVolume;
 #[allow(unused_imports, reason = "Public API re-exports for future use")]
@@ -43,7 +45,7 @@ pub use volume::{
 // Watcher management - init_watcher_manager must be called from lib.rs
 pub use watcher::{init_watcher_manager, update_debounce_ms};
 // Diff types for file watching (used by MTP module for unified diff events)
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) use watcher::{DirectoryDiff, compute_diff};
 // Re-export write operation types
 pub use write_operations::{
@@ -68,11 +70,16 @@ static VOLUME_MANAGER: LazyLock<VolumeManager> = LazyLock::new(VolumeManager::ne
 /// - Cloud drives (Dropbox, iCloud, Google Drive, etc.)
 pub fn init_volume_manager() {
     // Register root volume
-    let root_volume = Arc::new(LocalPosixVolume::new("Macintosh HD", "/"));
+    #[cfg(target_os = "macos")]
+    let root_name = "Macintosh HD";
+    #[cfg(not(target_os = "macos"))]
+    let root_name = "Root";
+
+    let root_volume = Arc::new(LocalPosixVolume::new(root_name, "/"));
     VOLUME_MANAGER.register("root", root_volume);
     VOLUME_MANAGER.set_default("root");
 
-    // Register attached volumes and cloud drives (macOS only)
+    // Register attached volumes and cloud drives (macOS)
     #[cfg(target_os = "macos")]
     {
         let attached = crate::volumes::get_attached_volumes();
@@ -89,6 +96,19 @@ pub fn init_volume_manager() {
             let volume = Arc::new(LocalPosixVolume::new(&location.name, &location.path));
             VOLUME_MANAGER.register(&location.id, volume);
             log::info!("  Registered cloud drive: {} -> {}", location.id, location.path);
+        }
+    }
+
+    // Register mounted volumes and cloud drives (Linux)
+    #[cfg(target_os = "linux")]
+    {
+        let mounts = linux_mounts::parse_proc_mounts();
+        let mounted = crate::volumes_linux::get_mounted_volumes(&mounts);
+        log::info!("Registering {} mounted volume(s)", mounted.len());
+        for location in mounted {
+            let volume = Arc::new(LocalPosixVolume::new(&location.name, &location.path));
+            VOLUME_MANAGER.register(&location.id, volume);
+            log::info!("  Registered volume: {} -> {}", location.id, location.path);
         }
     }
 }

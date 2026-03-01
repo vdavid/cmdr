@@ -1,0 +1,20 @@
+# Cmdr MTP device access rules for Linux
+#
+# Grant user-level access to MTP (Media Transfer Protocol) devices
+# so Cmdr can connect to Android phones and cameras without root.
+#
+# Install: sudo cp 99-cmdr-mtp.rules /etc/udev/rules.d/
+# Reload:  sudo udevadm control --reload-rules && sudo udevadm trigger
+#
+# MTP device class: bInterfaceClass 06 (Still Image / PTP),
+# or devices that use MTP as a subclass of vendor-specific protocols.
+
+# PTP/MTP devices (USB class 06 = Still Image)
+SUBSYSTEM=="usb", ATTR{bInterfaceClass}=="06", MODE="0664", TAG+="uaccess"
+
+# Android devices in MTP mode (USB class ff, subclass ff, protocol 00)
+SUBSYSTEM=="usb", ATTR{bInterfaceClass}=="ff", ATTR{bInterfaceSubClass}=="ff", ATTR{bInterfaceProtocol}=="00", MODE="0664", TAG+="uaccess"
+
+# Fallback: grant access to any USB device the logged-in user plugs in
+# (modern systemd systems use TAG+="uaccess" which grants access to the
+# physically logged-in user via ACLs — this is the recommended approach)

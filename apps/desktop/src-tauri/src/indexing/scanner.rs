@@ -20,7 +20,8 @@ use crate::indexing::writer::{IndexWriter, WriteMessage};
 
 // ── Exclusion prefixes ──────────────────────────────────────────────
 
-/// Absolute path prefixes to skip during scanning. See `docs/specs/drive-indexing/plan.md`.
+/// macOS: absolute path prefixes to skip during scanning.
+#[cfg(target_os = "macos")]
 const EXCLUDED_PREFIXES: &[&str] = &[
     "/System/Volumes/Data/",
     "/System/Volumes/VM/",
@@ -38,8 +39,32 @@ const EXCLUDED_PREFIXES: &[&str] = &[
     "/proc/",
 ];
 
-/// `/System/` paths that are reachable via firmlinks (from `/usr/share/firmlinks`).
+/// Linux: virtual filesystems and system directories to skip during scanning.
+#[cfg(target_os = "linux")]
+const EXCLUDED_PREFIXES: &[&str] = &[
+    "/dev/",
+    "/proc/",
+    "/sys/",
+    "/run/",
+    "/snap/",
+    "/lost+found/",
+    "/mnt/",   // Skip manual mount points -- index the root filesystem only
+    "/media/", // Skip removable media
+    "/boot/",
+    "/tmp/",
+    "/var/tmp/",
+    "/var/cache/",
+    "/var/log/",
+    "/var/run/",
+];
+
+/// Fallback exclusion prefixes for other platforms.
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+const EXCLUDED_PREFIXES: &[&str] = &["/dev/", "/proc/"];
+
+/// macOS: `/System/` paths reachable via firmlinks (from `/usr/share/firmlinks`).
 /// These are the ONLY `/System/` subdirectories we allow through the exclusion filter.
+#[cfg(target_os = "macos")]
 const FIRMLINKED_SYSTEM_PREFIXES: &[&str] = &[
     "/System/Library/Caches",
     "/System/Library/Assets",
@@ -264,10 +289,11 @@ fn run_scan(
         let path = entry.path();
         let path_str = path.to_string_lossy().to_string();
 
-        // For subtree scans, we still need to check exclusions on the iteration side
-        // (process_read_dir handles it for children, but the walker might still yield
-        // entries that got through before the callback ran)
-        if !is_volume_root && should_exclude(&path_str) {
+        // For volume-root scans, double-check exclusions on the iteration side
+        // (process_read_dir callback prevents descent, but entries can leak through
+        // before the rayon callback runs). Subtree scans skip this — the caller
+        // explicitly chose the subtree, so global exclusions don't apply.
+        if is_volume_root && should_exclude(&path_str) {
             continue;
         }
 
@@ -371,7 +397,8 @@ fn should_exclude(path_str: &str) -> bool {
         }
     }
 
-    // Special handling for /System/: skip everything except firmlinked paths
+    // macOS: special handling for /System/ -- skip everything except firmlinked paths
+    #[cfg(target_os = "macos")]
     if path_str.starts_with("/System/") || path_str == "/System" {
         // Already covered by EXCLUDED_PREFIXES above for /System/Volumes/*
         // For remaining /System/ paths, allow only firmlinked ones
@@ -499,6 +526,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(target_os = "macos")]
     fn should_exclude_system_volumes() {
         assert!(should_exclude("/System/Volumes/Data/"));
         assert!(should_exclude("/System/Volumes/Data/Users/foo"));
@@ -512,6 +540,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(target_os = "macos")]
     fn should_exclude_system_except_firmlinked() {
         // Generic /System/ paths should be excluded
         assert!(should_exclude("/System/foo"));
@@ -527,12 +556,42 @@ mod tests {
     }
 
     #[test]
+    #[cfg(target_os = "macos")]
     fn should_not_exclude_normal_paths() {
         assert!(!should_exclude("/Users/foo"));
         assert!(!should_exclude("/Users/foo/Documents"));
         assert!(!should_exclude("/Applications"));
         assert!(!should_exclude("/tmp"));
         assert!(!should_exclude("/opt/homebrew"));
+    }
+
+    #[test]
+    #[cfg(target_os = "linux")]
+    fn should_exclude_linux_virtual_filesystems() {
+        assert!(should_exclude("/dev"));
+        assert!(should_exclude("/dev/null"));
+        assert!(should_exclude("/proc"));
+        assert!(should_exclude("/proc/1/status"));
+        assert!(should_exclude("/sys"));
+        assert!(should_exclude("/sys/class/block"));
+        assert!(should_exclude("/run"));
+        assert!(should_exclude("/run/user/1000"));
+        assert!(should_exclude("/snap"));
+        assert!(should_exclude("/mnt"));
+        assert!(should_exclude("/media"));
+        assert!(should_exclude("/boot"));
+        assert!(should_exclude("/tmp"));
+    }
+
+    #[test]
+    #[cfg(target_os = "linux")]
+    fn should_not_exclude_linux_normal_paths() {
+        assert!(!should_exclude("/home/user"));
+        assert!(!should_exclude("/home/user/Documents"));
+        assert!(!should_exclude("/usr/local/bin"));
+        assert!(!should_exclude("/opt/app"));
+        assert!(!should_exclude("/etc/config"));
+        assert!(!should_exclude("/var/lib"));
     }
 
     #[test]
@@ -739,6 +798,9 @@ mod tests {
     fn default_exclusions_populated() {
         let exclusions = default_exclusions();
         assert!(!exclusions.is_empty());
+        #[cfg(target_os = "macos")]
         assert!(exclusions.iter().any(|e| e.contains("System/Volumes/Data")));
+        #[cfg(target_os = "linux")]
+        assert!(exclusions.iter().any(|e| e.contains("/proc")));
     }
 }

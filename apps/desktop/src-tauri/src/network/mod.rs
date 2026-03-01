@@ -1,12 +1,31 @@
-//! Network host discovery and SMB share listing for macOS.
+//! Network host discovery and SMB share listing.
 //!
 //! Discovers SMB-capable hosts on the local network using mDNS/DNS-SD
 //! and enumerates shares using the smb-rs crate.
+//!
+//! Platform-specific modules:
+//! - `keychain.rs` / `keychain_linux.rs` — credential storage (macOS Keychain / Linux secret service)
+//! - `mount.rs` / `mount_linux.rs` — SMB mounting (macOS NetFS / Linux gio)
 
+#[cfg(target_os = "macos")]
+#[path = "keychain.rs"]
 pub mod keychain;
+
+#[cfg(target_os = "linux")]
+#[path = "keychain_linux.rs"]
+pub mod keychain;
+
 pub mod known_shares;
 pub mod mdns_discovery;
+
+#[cfg(target_os = "macos")]
+#[path = "mount.rs"]
 pub mod mount;
+
+#[cfg(target_os = "linux")]
+#[path = "mount_linux.rs"]
+pub mod mount;
+
 pub mod smb_client;
 
 // SMB submodules - these are implementation details of smb_client

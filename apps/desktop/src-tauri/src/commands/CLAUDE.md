@@ -7,9 +7,10 @@ immediately to business-logic modules. No significant logic lives here.
 
 | File | Domain | Notes |
 |------|--------|-------|
-| `mod.rs` | Re-exports | `mtp`, `network`, `volumes` gated behind `#[cfg(target_os = "macos")]` |
+| `mod.rs` | Re-exports | `mtp`, `network` gated behind `#[cfg(any(target_os = "macos", target_os = "linux"))]`; `volumes` behind `#[cfg(target_os = "macos")]`; `volumes_linux` behind `#[cfg(target_os = "linux")]` |
 | `file_system.rs` | File listing & writes | Largest file. Streaming + virtual-scroll listing API, write ops (copy, move, delete, trash), scan preview, conflict resolution, volume copy, native drag, self-drag overlay. Contains `expand_tilde()`. |
-| `volumes.rs` | Volume management | `list_volumes`, `get_default_volume_id`, `find_containing_volume`, `get_volume_space` |
+| `volumes.rs` | Volume management (macOS) | `list_volumes`, `get_default_volume_id`, `find_containing_volume`, `get_volume_space` |
+| `volumes_linux.rs` | Volume management (Linux) | Same interface as `volumes.rs`, delegates to `volumes_linux` module |
 | `mtp.rs` | MTP devices | Full MTP command surface (connect, disconnect, list, download, upload, delete, rename, move, scan) |
 | `network.rs` | SMB/network shares | Discovery, share listing, keychain, mounting. |
 | `font_metrics.rs` | Font metrics cache | `store_font_metrics`, `has_font_metrics` |
@@ -29,7 +30,7 @@ immediately to business-logic modules. No significant logic lives here.
 - **`blocking_with_timeout` for potentially slow I/O.** `path_exists` uses `blocking_with_timeout(2s, false, ...)` to prevent hung network mounts from blocking the async runtime. The helper wraps `spawn_blocking` + `tokio::time::timeout` and returns a fallback value on timeout or `JoinError`.
 - **`expand_tilde`** is applied conditionally: for `list_directory` it's gated on `volume_id == "root"`, but for write operations (copy, move, delete, scan preview) it's always applied. MTP and network volume paths must never be tilde-expanded.
 - **AI commands** are registered directly from `ai::manager` and `ai::suggestions` — there is no `commands/ai.rs` file.
-- **Platform gates.** `mtp`, `network`, and `volumes` modules are macOS-only at the `mod.rs` level. Individual functions also use `#[cfg]` where behaviour differs (e.g., `sync_status`).
+- **Platform gates.** `volumes` is macOS-only; `mtp` and `network` are macOS+Linux; `volumes_linux` is Linux-only. Individual functions also use `#[cfg]` where behaviour differs (e.g., `sync_status`).
 - **`start_selection_drag`** requires the main thread. It uses `app.run_on_main_thread()` plus a `std::sync::mpsc` channel to return the result synchronously.
 - **`list_shares_with_credentials`** has `#[allow(clippy::too_many_arguments)]` because Tauri command parameters must be top-level arguments — no struct bundling.
 ## Dependencies

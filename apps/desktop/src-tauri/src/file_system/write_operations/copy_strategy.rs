@@ -3,14 +3,18 @@
 //! Encapsulates the decision of which copy method to use:
 //! - Network filesystems: chunked copy for responsive cancellation
 //! - Safe overwrite needed: temp file + rename pattern
-//! - Otherwise: native macOS copyfile (or std::fs::copy on other platforms)
+//! - macOS: native copyfile(3) with APFS clonefile support
+//! - Linux: copy_file_range(2) with reflink support on btrfs/XFS
+//! - Other platforms: std::fs::copy fallback
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
 use std::fs;
 use std::path::Path;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
+#[cfg(target_os = "linux")]
+use super::linux_copy::copy_single_file_linux;
 #[cfg(target_os = "macos")]
 use super::macos_copy::{CopyProgressContext, copy_single_file_native};
 
@@ -21,10 +25,11 @@ use super::types::WriteOperationError;
 /// Copies file contents using the appropriate strategy based on destination type.
 ///
 /// Strategy selection:
-/// - Network filesystems: chunked copy for responsive cancellation (macOS copyfile ignores
-///   COPYFILE_QUIT on network mounts)
+/// - Network filesystems: chunked copy for responsive cancellation
 /// - Safe overwrite needed: temp file + rename pattern to preserve original on failure
-/// - Otherwise: native macOS copyfile or std::fs::copy
+/// - macOS: native copyfile(3) with APFS clonefile support
+/// - Linux: copy_file_range(2) with reflink support on btrfs/XFS
+/// - Other platforms: std::fs::copy fallback
 #[cfg(target_os = "macos")]
 pub(super) fn copy_file_with_strategy(
     source: &Path,
@@ -48,7 +53,7 @@ pub(super) fn copy_file_with_strategy(
     }
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(target_os = "linux")]
 pub(super) fn copy_file_with_strategy(
     source: &Path,
     dest: &Path,
@@ -62,6 +67,28 @@ pub(super) fn copy_file_with_strategy(
             dest.display()
         );
         chunked_copy_with_metadata(source, dest, cancelled, progress_callback)
+    } else if needs_safe_overwrite {
+        safe_overwrite_file(source, dest)
+    } else {
+        copy_single_file_linux(source, dest, false, cancelled, progress_callback)
+    }
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+pub(super) fn copy_file_with_strategy(
+    source: &Path,
+    dest: &Path,
+    needs_safe_overwrite: bool,
+    cancelled: &Arc<AtomicBool>,
+    progress_callback: Option<ChunkedCopyProgressFn>,
+) -> Result<u64, WriteOperationError> {
+    let _ = progress_callback; // Unused on this platform
+    if is_network_filesystem(dest) {
+        log::debug!(
+            "copy_file_with_strategy: using chunked copy for network destination {}",
+            dest.display()
+        );
+        chunked_copy_with_metadata(source, dest, cancelled, None)
     } else if needs_safe_overwrite {
         safe_overwrite_file(source, dest)
     } else {

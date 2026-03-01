@@ -20,12 +20,22 @@ use notify as _;
 // drag is used by tauri-plugin-drag for drag-and-drop support
 use drag as _;
 //noinspection ALL
-// smb crates are used in network/smb_client module (macOS only)
-#[cfg(target_os = "macos")]
+// smb crates are used in network/smb_client module (macOS + Linux)
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 use smb as _;
 //noinspection ALL
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 use smb_rpc as _;
+
+//noinspection ALL
+// trash crate is used in write_operations/trash.rs (Linux only)
+#[cfg(target_os = "linux")]
+use trash as _;
+
+//noinspection ALL
+// keyring crate is used in network/keychain_linux.rs for credential storage (Linux only)
+#[cfg(target_os = "linux")]
+use keyring as _;
 
 //noinspection ALL
 // MCP Bridge is only used in debug builds, so silence the warning in release builds
@@ -36,12 +46,12 @@ use tauri_plugin_mcp_bridge as _;
 #[cfg(target_os = "macos")]
 use security_framework as _;
 //noinspection ALL
-// mtp-rs is used in mtp/ module for Android device support (macOS only, Phase 1 foundation)
-#[cfg(target_os = "macos")]
+// mtp-rs is used in mtp/ module for Android device support (macOS + Linux)
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 use mtp_rs as _;
 //noinspection ALL
 // nusb is used in mtp/watcher.rs for USB hotplug detection
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 use nusb as _;
 
 mod ignore_poison;
@@ -49,6 +59,8 @@ pub use ignore_poison::IgnorePoison;
 
 #[cfg(target_os = "macos")]
 mod accent_color;
+#[cfg(target_os = "linux")]
+mod accent_color_linux;
 mod ai;
 pub mod benchmark;
 mod commands;
@@ -67,17 +79,22 @@ pub mod licensing;
 mod macos_icons;
 mod mcp;
 mod menu;
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 mod mtp;
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 mod network;
 #[cfg(target_os = "macos")]
 mod permissions;
+#[cfg(target_os = "linux")]
+mod permissions_linux;
 mod settings;
 #[cfg(target_os = "macos")]
 mod volumes;
+#[cfg(target_os = "linux")]
+mod volumes_linux;
 
-// Linux/non-macOS stubs for E2E testing
+// Non-macOS stubs (Linux has real implementations for everything;
+// other platforms use stubs for all platform-specific features)
 #[cfg(not(target_os = "macos"))]
 mod stubs;
 
@@ -204,20 +221,23 @@ pub fn run() {
             // Initialize the volume manager with the root volume
             file_system::init_volume_manager();
 
-            // Start network host discovery (Bonjour)
-            #[cfg(target_os = "macos")]
+            // Start network host discovery (mDNS)
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             network::start_discovery(app.handle().clone());
 
             // Start volume mount/unmount watcher
             #[cfg(target_os = "macos")]
             volumes::watcher::start_volume_watcher(app.handle());
 
+            #[cfg(target_os = "linux")]
+            volumes_linux::watcher::start_volume_watcher(app.handle());
+
             // Start MTP device hotplug watcher (Android device support)
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             mtp::start_mtp_watcher(app.handle());
 
             // Load known network shares from disk
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             network::known_shares::load_known_shares(app.handle());
 
             // Install drag image detection swizzle (macOS only)
@@ -529,62 +549,62 @@ pub fn run() {
             mcp::settings_state::mcp_update_shortcuts,
             // Sync status (macOS uses real implementation, others use stub in commands)
             commands::sync_status::get_sync_status,
-            // MTP commands (macOS only - Android device support)
-            #[cfg(target_os = "macos")]
+            // MTP commands (macOS + Linux - Android device support)
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::mtp::list_mtp_devices,
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::mtp::connect_mtp_device,
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::mtp::disconnect_mtp_device,
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::mtp::get_mtp_device_info,
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::mtp::get_ptpcamerad_workaround_command,
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::mtp::get_mtp_storages,
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::mtp::list_mtp_directory,
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::mtp::download_mtp_file,
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::mtp::upload_to_mtp,
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::mtp::delete_mtp_object,
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::mtp::create_mtp_folder,
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::mtp::rename_mtp_object,
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::mtp::move_mtp_object,
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::mtp::scan_mtp_for_copy,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::mtp::list_mtp_devices,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::mtp::connect_mtp_device,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::mtp::disconnect_mtp_device,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::mtp::get_mtp_device_info,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::mtp::get_ptpcamerad_workaround_command,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::mtp::get_mtp_storages,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::mtp::list_mtp_directory,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::mtp::download_mtp_file,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::mtp::upload_to_mtp,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::mtp::delete_mtp_object,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::mtp::create_mtp_folder,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::mtp::rename_mtp_object,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::mtp::move_mtp_object,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::mtp::scan_mtp_for_copy,
             // Volume commands (platform-specific)
             #[cfg(target_os = "macos")]
@@ -595,83 +615,93 @@ pub fn run() {
             commands::volumes::find_containing_volume,
             #[cfg(target_os = "macos")]
             commands::volumes::get_volume_space,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(target_os = "linux")]
+            commands::volumes_linux::list_volumes,
+            #[cfg(target_os = "linux")]
+            commands::volumes_linux::get_default_volume_id,
+            #[cfg(target_os = "linux")]
+            commands::volumes_linux::find_containing_volume,
+            #[cfg(target_os = "linux")]
+            commands::volumes_linux::get_volume_space,
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::volumes::list_volumes,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::volumes::get_default_volume_id,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::volumes::find_containing_volume,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::volumes::get_volume_space,
-            // Network commands (platform-specific)
-            #[cfg(target_os = "macos")]
+            // Network commands (macOS + Linux, stubs for other platforms)
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::network::list_network_hosts,
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::network::get_network_discovery_state,
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::network::resolve_host,
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::network::list_shares_on_host,
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::network::prefetch_shares,
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::network::get_host_auth_mode,
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::network::get_known_shares,
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::network::get_known_share_by_name,
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::network::update_known_share,
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::network::get_username_hints,
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::network::save_smb_credentials,
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::network::get_smb_credentials,
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::network::has_smb_credentials,
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::network::delete_smb_credentials,
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::network::list_shares_with_credentials,
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::network::mount_network_share,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::network::list_network_hosts,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::network::get_network_discovery_state,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::network::resolve_host,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::network::list_shares_on_host,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::network::prefetch_shares,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::network::get_host_auth_mode,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::network::get_known_shares,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::network::get_known_share_by_name,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::network::update_known_share,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::network::get_username_hints,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::network::save_smb_credentials,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::network::get_smb_credentials,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::network::has_smb_credentials,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::network::delete_smb_credentials,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::network::list_shares_with_credentials,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::network::mount_network_share,
-            // Accent color command (macOS reads system color, others return fallback)
+            // Accent color command (macOS reads NSColor, Linux reads gsettings, others return fallback)
             #[cfg(target_os = "macos")]
             accent_color::get_accent_color,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(target_os = "linux")]
+            accent_color_linux::get_accent_color,
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::accent_color::get_accent_color,
             // Permission commands (platform-specific)
             #[cfg(target_os = "macos")]
@@ -680,11 +710,17 @@ pub fn run() {
             permissions::open_privacy_settings,
             #[cfg(target_os = "macos")]
             permissions::open_appearance_settings,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(target_os = "linux")]
+            permissions_linux::check_full_disk_access,
+            #[cfg(target_os = "linux")]
+            permissions_linux::open_privacy_settings,
+            #[cfg(target_os = "linux")]
+            permissions_linux::open_appearance_settings,
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::permissions::check_full_disk_access,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::permissions::open_privacy_settings,
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::permissions::open_appearance_settings,
             // Licensing commands
             commands::licensing::get_license_status,
@@ -735,7 +771,7 @@ pub fn run() {
                 && window.label() == "main"
             {
                 ai::manager::shutdown();
-                #[cfg(target_os = "macos")]
+                #[cfg(any(target_os = "macos", target_os = "linux"))]
                 network::mdns_discovery::stop_discovery();
                 window.app_handle().exit(0);
             }
@@ -744,7 +780,7 @@ pub fn run() {
                 && window.label() == "main"
             {
                 ai::manager::shutdown();
-                #[cfg(target_os = "macos")]
+                #[cfg(any(target_os = "macos", target_os = "linux"))]
                 network::mdns_discovery::stop_discovery();
             }
         })

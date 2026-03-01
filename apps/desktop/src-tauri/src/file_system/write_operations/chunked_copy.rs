@@ -70,10 +70,14 @@ pub fn is_network_filesystem(path: &Path) -> bool {
     is_network
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(target_os = "linux")]
+pub fn is_network_filesystem(path: &Path) -> bool {
+    crate::file_system::linux_mounts::is_network_filesystem_linux(path)
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
 pub fn is_network_filesystem(_path: &Path) -> bool {
-    // On non-macOS platforms, assume local filesystem
-    // This can be extended later for Linux (check /proc/mounts)
+    // On unsupported platforms, assume local filesystem
     false
 }
 

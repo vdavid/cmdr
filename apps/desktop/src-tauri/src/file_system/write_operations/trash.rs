@@ -45,7 +45,16 @@ pub fn move_to_trash_sync(path: &Path) -> Result<(), String> {
     Ok(())
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(target_os = "linux")]
+pub fn move_to_trash_sync(path: &Path) -> Result<(), String> {
+    if fs::symlink_metadata(path).is_err() {
+        return Err(format!("'{}' doesn't exist", path.display()));
+    }
+
+    trash::delete(path).map_err(|e| format!("Failed to move to trash: {}", e))
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
 pub fn move_to_trash_sync(path: &Path) -> Result<(), String> {
     Err(format!(
         "Moving to trash is not supported on this platform for '{}'",
@@ -240,6 +249,7 @@ mod tests {
     use std::sync::{Arc, RwLock};
     use std::time::Duration;
 
+    #[cfg(target_os = "macos")]
     fn create_test_dir(name: &str) -> PathBuf {
         let dir = std::env::temp_dir().join(format!("cmdr_trash_test_{}", name));
         let _ = fs::remove_dir_all(&dir);
@@ -247,6 +257,7 @@ mod tests {
         dir
     }
 
+    #[cfg(target_os = "macos")]
     fn cleanup_test_dir(path: &PathBuf) {
         let _ = fs::remove_dir_all(path);
     }

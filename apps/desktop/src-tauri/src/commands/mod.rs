@@ -8,9 +8,9 @@ pub mod icons;
 pub mod indexing;
 pub mod licensing;
 pub mod logging;
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod mtp;
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod network;
 pub mod rename;
 pub mod settings;
@@ -18,3 +18,5 @@ pub mod sync_status; // Has both macOS and non-macOS implementations
 pub mod ui;
 #[cfg(target_os = "macos")]
 pub mod volumes;
+#[cfg(target_os = "linux")]
+pub mod volumes_linux;

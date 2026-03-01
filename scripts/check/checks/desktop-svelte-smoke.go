@@ -8,13 +8,13 @@ import (
 	"strconv"
 )
 
-// RunDesktopE2E runs smoke tests with Playwright (browser-based, no Tauri backend).
-func RunDesktopE2E(ctx *CheckContext) (CheckResult, error) {
+// RunDesktopSmoke runs smoke tests with Playwright (browser-based, no Tauri backend).
+func RunDesktopSmoke(ctx *CheckContext) (CheckResult, error) {
 	cmd := exec.Command("pnpm", "test:e2e:smoke")
 	cmd.Dir = filepath.Join(ctx.RootDir, "apps", "desktop")
 	output, err := RunCommand(cmd, true)
 	if err != nil {
-		return CheckResult{}, fmt.Errorf("e2e tests failed\n%s", indentOutput(output))
+		return CheckResult{}, fmt.Errorf("smoke tests failed\n%s", indentOutput(output))
 	}
 
 	// Extract test count
@@ -24,5 +24,5 @@ func RunDesktopE2E(ctx *CheckContext) (CheckResult, error) {
 		count, _ := strconv.Atoi(matches[1])
 		return Success(fmt.Sprintf("%d %s passed", count, Pluralize(count, "test", "tests"))), nil
 	}
-	return Success("All E2E tests passed"), nil
+	return Success("All smoke tests passed"), nil
 }

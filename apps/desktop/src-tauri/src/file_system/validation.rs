@@ -6,9 +6,14 @@
 
 use serde::{Deserialize, Serialize};
 
-/// Maximum file name length in bytes (APFS/HFS+ limit).
+/// Maximum file name length in bytes (APFS/HFS+/ext4 limit).
 pub const MAX_NAME_BYTES: usize = 255;
-/// Maximum path length in bytes (macOS PATH_MAX).
+
+/// Maximum path length in bytes.
+/// macOS PATH_MAX is 1024; Linux PATH_MAX is 4096.
+#[cfg(target_os = "linux")]
+pub const MAX_PATH_BYTES: usize = 4096;
+#[cfg(not(target_os = "linux"))]
 pub const MAX_PATH_BYTES: usize = 1024;
 
 /// Validation error types for filename and path checks.
@@ -48,8 +53,8 @@ impl std::error::Error for ValidationError {}
 ///
 /// Checks performed (on trimmed input):
 /// - Not empty / whitespace-only
-/// - No disallowed characters (`/` and `\0` on macOS)
-/// - Byte length < 255 (APFS/HFS+ limit)
+/// - No disallowed characters (`/` and `\0` on macOS and Linux)
+/// - Byte length < 255 (APFS/HFS+/ext4 limit)
 ///
 /// The input is checked as-is; callers are responsible for trimming if desired.
 // TODO: Add per-OS logic for Windows (backslash, reserved names like CON, NUL, etc.)
@@ -58,8 +63,8 @@ pub fn validate_filename(name: &str) -> Result<(), ValidationError> {
         return Err(ValidationError::Empty);
     }
 
-    // Check disallowed characters (macOS: / and \0)
-    // TODO: Per-OS disallowed character sets
+    // Check disallowed characters (macOS + Linux: / and \0)
+    // TODO: Per-OS disallowed character sets for Windows
     for ch in name.chars() {
         if ch == '/' {
             return Err(ValidationError::DisallowedCharacter {
@@ -179,15 +184,15 @@ mod tests {
     }
 
     #[test]
-    fn rejects_path_at_1024_bytes() {
-        let long_path = "/".to_string() + &"a".repeat(1023);
+    fn rejects_path_at_max_bytes() {
+        let long_path = "/".to_string() + &"a".repeat(MAX_PATH_BYTES - 1);
         let result = validate_path_length(Path::new(&long_path));
         assert!(matches!(result, Err(ValidationError::PathTooLong { .. })));
     }
 
     #[test]
-    fn accepts_path_at_1023_bytes() {
-        let path = "/".to_string() + &"a".repeat(1022);
+    fn accepts_path_just_under_max() {
+        let path = "/".to_string() + &"a".repeat(MAX_PATH_BYTES - 2);
         assert!(validate_path_length(Path::new(&path)).is_ok());
     }
 }

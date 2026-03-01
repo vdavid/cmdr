@@ -354,12 +354,12 @@ pub trait Volume: Send + Sync {
 mod in_memory;
 mod local_posix;
 pub(crate) mod manager;
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 mod mtp;
 
 pub use in_memory::InMemoryVolume;
 pub use local_posix::LocalPosixVolume;
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 pub use mtp::MtpVolume;
 
 // Re-export types defined in this module for convenience

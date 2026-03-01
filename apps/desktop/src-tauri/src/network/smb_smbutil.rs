@@ -3,7 +3,10 @@
 //! Provides fallback share listing using the macOS `smbutil` command when
 //! the pure Rust smb-rs implementation fails (for example, with certain Samba servers).
 
-use crate::network::smb_types::{AuthMode, ShareInfo, ShareListError, ShareListResult};
+#[cfg(target_os = "macos")]
+use crate::network::smb_types::AuthMode;
+use crate::network::smb_types::{ShareInfo, ShareListError, ShareListResult};
+#[cfg(target_os = "macos")]
 use log::debug;
 
 /// Lists shares using macOS smbutil command as fallback.
@@ -137,6 +140,7 @@ pub async fn list_shares_smbutil_with_auth(
 
 /// Builds an SMB URL for smbutil commands.
 /// Returns (url_for_command, safe_url_for_logging).
+#[cfg(target_os = "macos")]
 pub fn build_smbutil_url(
     hostname: &str,
     ip_address: Option<&str>,
@@ -217,6 +221,10 @@ async fn run_smbutil_view(url: &str, use_guest: bool) -> Result<Vec<ShareInfo>, 
 }
 
 /// Parses smbutil view output to extract share information.
+#[cfg_attr(
+    not(target_os = "macos"),
+    allow(dead_code, reason = "Used by macOS smbutil path and tests")
+)]
 /// Example output:
 /// ```text
 /// Share                                           Type    Comments

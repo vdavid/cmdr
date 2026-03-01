@@ -12,6 +12,7 @@ use crate::network::{
 use log::{debug, warn};
 use mdns_sd::{Receiver, ServiceDaemon, ServiceEvent};
 use std::net::IpAddr;
+#[cfg(target_os = "macos")]
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Mutex, OnceLock};
 use tauri::AppHandle;
@@ -21,15 +22,18 @@ const SMB_SERVICE_TYPE: &str = "_smb._tcp.local.";
 /// Default SMB port.
 const SMB_DEFAULT_PORT: u16 = 445;
 /// Default timeout for service resolution in milliseconds.
+#[cfg(target_os = "macos")]
 const DEFAULT_RESOLVE_TIMEOUT_MS: u64 = 5000;
 
 /// Configured resolve timeout in milliseconds (set by frontend via update_resolve_timeout).
 /// With mdns-sd, browse automatically resolves services. This timeout is only relevant
 /// for the manual DNS fallback path in `mod.rs::resolve_host_ip()`.
+#[cfg(target_os = "macos")]
 static RESOLVE_TIMEOUT_MS: AtomicU64 = AtomicU64::new(DEFAULT_RESOLVE_TIMEOUT_MS);
 
 /// Updates the mDNS service resolve timeout.
 /// This affects future service resolutions; ongoing resolutions keep their original timeout.
+#[cfg(target_os = "macos")]
 pub fn update_resolve_timeout(ms: u64) {
     RESOLVE_TIMEOUT_MS.store(ms, Ordering::Relaxed);
     debug!("mDNS resolve timeout updated to {} ms", ms);

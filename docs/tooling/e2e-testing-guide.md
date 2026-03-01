@@ -8,7 +8,8 @@ Cmdr uses three E2E testing approaches:
 
 1. **Smoke tests** (Playwright): Test basic UI rendering in a browser (Chromium/WebKit). Works on macOS and Linux.
 2. **Linux E2E tests** (WebDriverIO + tauri-driver): Test the actual Tauri application with full backend integration.
-3. **macOS E2E tests** (WebDriverIO + CrabNebula): Test the actual Tauri application on macOS via CrabNebula's WKWebView WebDriver bridge.
+3. **macOS E2E tests** (WebDriverIO + CrabNebula): Test the actual Tauri application on macOS via CrabNebula's WKWebView
+   WebDriver bridge.
 
 ### Why separate test suites?
 
@@ -72,6 +73,7 @@ docker volume rm cmdr-target-cache && pnpm test:e2e:linux
 ```
 
 Other options:
+
 ```bash
 pnpm test:e2e:linux:build          # force rebuild Docker IMAGE (Dockerfile changes only)
 pnpm test:e2e:linux:shell          # interactive shell in container for debugging
@@ -89,23 +91,23 @@ pnpm test:e2e:linux:native
 
 ## Test files
 
-| File                                      | Description                                                         |
-|-------------------------------------------|---------------------------------------------------------------------|
-| `test/e2e-smoke/smoke.test.ts`            | Playwright tests for basic UI (browser-based)                       |
-| `test/e2e-shared/fixtures.ts`             | Shared fixture helper (creates/recreates the test directory tree)   |
-| `test/e2e-linux/app.spec.ts`              | WebDriverIO tests: rendering, keyboard nav, dialogs (Linux)         |
-| `test/e2e-linux/file-operations.spec.ts`  | WebDriverIO tests: copy, move, rename, mkdir, view modes (Linux)    |
-| `test/e2e-linux/settings.spec.ts`         | WebDriverIO tests: settings panel (Linux)                           |
-| `test/e2e-linux/viewer.spec.ts`           | WebDriverIO tests: file viewer (Linux)                              |
-| `test/e2e-linux/wdio.conf.ts`             | WebDriverIO configuration (Linux)                                   |
-| `test/e2e-linux/docker/Dockerfile`         | Docker image for Linux E2E tests                                    |
-| `test/e2e-linux/docker/entrypoint.sh`      | Xvfb/dbus setup for headless GUI                                    |
-| `test/e2e-macos/app.spec.ts`              | WebDriverIO tests: rendering, keyboard nav, dialogs (macOS)         |
-| `test/e2e-macos/file-operations.spec.ts`  | WebDriverIO tests: APFS copy/move, volumes, navigation (macOS)      |
-| `test/e2e-macos/wdio.conf.ts`             | WebDriverIO configuration (macOS, CrabNebula)                       |
-| `.env.example`                            | Template for CN_API_KEY                                             |
-| `scripts/e2e-linux.sh`                    | Main script for Docker-based E2E tests (+ VNC mode)                 |
-| `playwright.config.ts`                    | Playwright configuration                                            |
+| File                                     | Description                                                       |
+|------------------------------------------|-------------------------------------------------------------------|
+| `test/e2e-smoke/smoke.test.ts`           | Playwright tests for basic UI (browser-based)                     |
+| `test/e2e-shared/fixtures.ts`            | Shared fixture helper (creates/recreates the test directory tree) |
+| `test/e2e-linux/app.spec.ts`             | WebDriverIO tests: rendering, keyboard nav, dialogs (Linux)       |
+| `test/e2e-linux/file-operations.spec.ts` | WebDriverIO tests: copy, move, rename, mkdir, view modes (Linux)  |
+| `test/e2e-linux/settings.spec.ts`        | WebDriverIO tests: settings panel (Linux)                         |
+| `test/e2e-linux/viewer.spec.ts`          | WebDriverIO tests: file viewer (Linux)                            |
+| `test/e2e-linux/wdio.conf.ts`            | WebDriverIO configuration (Linux)                                 |
+| `test/e2e-linux/docker/Dockerfile`       | Docker image for Linux E2E tests                                  |
+| `test/e2e-linux/docker/entrypoint.sh`    | Xvfb/dbus setup for headless GUI                                  |
+| `test/e2e-macos/app.spec.ts`             | WebDriverIO tests: rendering, keyboard nav, dialogs (macOS)       |
+| `test/e2e-macos/file-operations.spec.ts` | WebDriverIO tests: APFS copy/move, volumes, navigation (macOS)    |
+| `test/e2e-macos/wdio.conf.ts`            | WebDriverIO configuration (macOS, CrabNebula)                     |
+| `.env.example`                           | Template for CN_API_KEY                                           |
+| `scripts/e2e-linux.sh`                   | Main script for Docker-based E2E tests (+ VNC mode)               |
+| `playwright.config.ts`                   | Playwright configuration                                          |
 
 ## Fixture system
 
@@ -185,6 +187,7 @@ pnpm test:e2e:linux:shell
 ```
 
 Inside the container, you can:
+
 - Run the app manually: `$TAURI_BINARY`
 - Check the display: `echo $DISPLAY`
 - Inspect the environment
@@ -239,6 +242,7 @@ Once it starts, open the URL printed in the terminal (http://localhost:6090/vnc.
 You can also connect with a native VNC client (macOS Screen Sharing) at `vnc://localhost:5990`.
 
 How it works:
+
 - The container runs Xvfb + x11vnc + noVNC, forwarding the virtual display to your browser
 - `pnpm dev` starts Vite + Tauri inside the container
 - Source code is mounted from your host, so `.svelte`/`.ts` edits trigger Vite HMR (~1–3s reload)
@@ -252,12 +256,12 @@ events or GTK focus behavior that differ from macOS.
 
 The script uses Docker volumes to cache:
 
-| Volume | Contents | Remove to force... |
-|---|---|---|
-| `cmdr-cargo-cache` | Cargo registry + compiled deps | Full crate re-download |
-| `cmdr-target-cache` | Compiled Tauri binary | App recompilation (fast with cargo cache) |
-| `cmdr-root-node-modules-cache` | Root `node_modules/` | `pnpm install` |
-| `cmdr-desktop-node-modules-cache` | Desktop `node_modules/` | `pnpm install` |
+| Volume                            | Contents                       | Remove to force...                        |
+|-----------------------------------|--------------------------------|-------------------------------------------|
+| `cmdr-cargo-cache`                | Cargo registry + compiled deps | Full crate re-download                    |
+| `cmdr-target-cache`               | Compiled Tauri binary          | App recompilation (fast with cargo cache) |
+| `cmdr-root-node-modules-cache`    | Root `node_modules/`           | `pnpm install`                            |
+| `cmdr-desktop-node-modules-cache` | Desktop `node_modules/`        | `pnpm install`                            |
 
 Most common operation: `docker volume rm cmdr-target-cache` after Rust/Svelte changes. This
 preserves the cargo registry so recompilation only takes a few minutes instead of 10+.
@@ -272,13 +276,23 @@ To clear caches: `./scripts/e2e-linux.sh --clean`
 
 ## CI integration
 
-The check script (`./scripts/check.sh`) includes:
+The check script (`./scripts/check.sh`) includes these test-related checks:
 
-1. **`rust-tests-linux`**: Runs `cargo test` in Docker (unit tests only, faster)
-2. **`desktop-e2e`**: Runs Playwright smoke tests locally
+| Check nickname        | What it runs                                    | Included by default? |
+|-----------------------|-------------------------------------------------|----------------------|
+| `rust-tests`          | `cargo nextest run` (macOS)                     | Yes                  |
+| `rust-tests-linux`    | `cargo test` in Docker (Linux/GTK)              | No (slow)            |
+| `svelte-tests`        | Vitest unit tests + coverage                    | Yes                  |
+| `desktop-smoke`       | Playwright smoke tests (browser, no Tauri)      | Yes                  |
+| `e2e-linux-typecheck` | TypeScript check on E2E test files              | Yes                  |
+| `desktop-e2e-linux`   | Full E2E in Docker (WebDriverIO + tauri-driver) | No (slow)            |
 
-The Docker E2E tests (`pnpm test:e2e:linux`) are not currently in the check script because they're slow.
-You can run them manually before releases.
+Slow checks are excluded from `./scripts/check.sh` by default. Run them explicitly:
+
+```bash
+./scripts/check.sh --check desktop-e2e-linux
+./scripts/check.sh --include-slow  # runs everything
+```
 
 ## macOS E2E tests (CrabNebula) — local-only
 
@@ -324,6 +338,7 @@ macOS E2E is a local pre-release check.
 ### Windows E2E testing
 
 Windows can use tauri-driver with Edge WebDriver. To add:
+
 1. Create `test/e2e-windows/` directory structure
 2. Set up CI with Windows runners
 3. Configure WebDriverIO for Windows
@@ -354,6 +369,7 @@ If builds are still slow, ensure Docker has enough resources (4GB+ RAM recommend
 ### "Docker not running"
 
 Start Docker Desktop or the Docker daemon:
+
 ```bash
 # macOS
 open -a Docker
@@ -371,6 +387,7 @@ file operations will be skipped automatically. Use `pnpm test:e2e:linux` for ful
 
 This means the DISPLAY environment variable isn't set. The entrypoint.sh should handle this,
 but you can verify:
+
 ```bash
 pnpm test:e2e:linux:shell
 echo $DISPLAY  # Should show :99

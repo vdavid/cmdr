@@ -28,7 +28,7 @@ func RunRustTestsLinux(ctx *CheckContext) (CheckResult, error) {
 		"-w", "/app",
 		"-e", "CARGO_TARGET_DIR=/tmp/cargo-target",
 		"rust:latest",
-		"sh", "-c", "apt-get update && apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev && cargo test --no-fail-fast")
+		"sh", "-c", "apt-get update && apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libacl1-dev && cargo test --no-fail-fast")
 	output, err := RunCommand(cmd, true)
 	if err != nil {
 		return CheckResult{}, fmt.Errorf("rust tests failed on Linux\n%s", indentOutput(output))

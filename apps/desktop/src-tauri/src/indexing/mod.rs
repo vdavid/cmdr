@@ -259,23 +259,26 @@ impl IndexManager {
 
     /// Resume from an existing index or start a fresh full scan.
     ///
-    /// **If existing index exists** (`scan_completed_at` is set in meta):
-    /// 1. Load the SQLite index immediately (already done on open)
-    /// 2. Read `last_event_id` from meta table
-    /// 3. Start FSEvents watcher with `sinceWhen = last_event_id`
-    /// 4. FSEvents replays its journal -> events processed as live events
-    /// 5. If journal unavailable (gap detected): fall back to full scan
+    /// **macOS (with event replay support):**
+    /// If an existing index exists (`scan_completed_at` is set in meta) and we have a
+    /// stored `last_event_id`, start the FSEvents watcher with `sinceWhen = last_event_id`
+    /// to replay the journal. If the journal is unavailable, fall back to a full scan.
     ///
-    /// **If no existing index** (first launch or cleared):
-    /// 1. Full scan via `start_scan()`
+    /// **Linux (no event replay):**
+    /// Always does a full scan on startup. The existing index DB is kept as-is for
+    /// instant enrichment; the scan overwrites stale entries. The watcher starts
+    /// alongside the scan for live events.
+    ///
+    /// **No existing index:** Full scan via `start_scan()`.
     pub fn resume_or_scan(&mut self) -> Result<(), String> {
         let status = self
             .store
             .get_index_status()
             .map_err(|e| format!("Failed to get index status: {e}"))?;
 
-        // Check if we have a completed scan with a stored event ID
-        if status.scan_completed_at.is_some() {
+        // Event ID replay is only available on macOS (FSEvents journal).
+        // On Linux (inotify), always rescan -- there's no journal to replay.
+        if watcher::supports_event_replay() && status.scan_completed_at.is_some() {
             if let Some(ref last_event_id_str) = status.last_event_id {
                 let last_event_id: u64 = last_event_id_str.parse().unwrap_or(0);
                 if last_event_id > 0 {
@@ -288,6 +291,8 @@ impl IndexManager {
                 }
             }
             log::info!("Existing index found but no last_event_id, starting fresh scan");
+        } else if status.scan_completed_at.is_some() {
+            log::info!("Existing index found, starting rescan (no event replay on this platform)");
         } else {
             log::info!("No existing index (scan_completed_at not set), starting fresh scan");
         }

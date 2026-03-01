@@ -46,18 +46,18 @@ pub struct LocationInfo {
 /// Default volume ID for the root filesystem.
 pub const DEFAULT_VOLUME_ID: &str = "root";
 
-/// Determine whether a filesystem type supports macOS trash.
+/// Determine whether a filesystem type supports trash.
 ///
-/// APFS and HFS+ support trash natively. Network filesystems (SMB, NFS,
-/// AFP, WebDAV) and non-Mac formats (FAT32/exFAT) don't reliably support
-/// it. Unknown types default to `true` (optimistic — `trashItemAtURL`
-/// failure is caught at operation time).
+/// Local filesystems (APFS, HFS+, ext4, btrfs, xfs, zfs) support trash.
+/// Network filesystems (SMB, NFS, AFP, WebDAV, CIFS, FUSE-based SSH) and
+/// non-Mac formats (FAT32/exFAT) don't reliably support it. Unknown types
+/// default to `true` (optimistic — trash failure is caught at operation time).
 pub fn supports_trash_for_fs_type(fs_type: Option<&str>) -> bool {
     let Some(fs) = fs_type else { return true };
     let fs_lower = fs.to_ascii_lowercase();
     match fs_lower.as_str() {
-        "apfs" | "hfs" => true,
-        "smbfs" | "nfs" | "afpfs" | "webdav" | "msdos" | "exfat" => false,
+        "apfs" | "hfs" | "ext4" | "btrfs" | "xfs" | "zfs" => true,
+        "smbfs" | "nfs" | "afpfs" | "webdav" | "cifs" | "fuse.sshfs" | "msdos" | "exfat" => false,
         _ => true,
     }
 }
@@ -598,6 +598,10 @@ mod tests {
     fn test_supports_trash_local_filesystems() {
         assert!(supports_trash_for_fs_type(Some("apfs")));
         assert!(supports_trash_for_fs_type(Some("hfs")));
+        assert!(supports_trash_for_fs_type(Some("ext4")));
+        assert!(supports_trash_for_fs_type(Some("btrfs")));
+        assert!(supports_trash_for_fs_type(Some("xfs")));
+        assert!(supports_trash_for_fs_type(Some("zfs")));
     }
 
     #[test]
@@ -606,6 +610,8 @@ mod tests {
         assert!(!supports_trash_for_fs_type(Some("nfs")));
         assert!(!supports_trash_for_fs_type(Some("afpfs")));
         assert!(!supports_trash_for_fs_type(Some("webdav")));
+        assert!(!supports_trash_for_fs_type(Some("cifs")));
+        assert!(!supports_trash_for_fs_type(Some("fuse.sshfs")));
     }
 
     #[test]
@@ -618,17 +624,17 @@ mod tests {
     fn test_supports_trash_case_insensitive() {
         assert!(supports_trash_for_fs_type(Some("APFS")));
         assert!(supports_trash_for_fs_type(Some("HFS")));
+        assert!(supports_trash_for_fs_type(Some("EXT4")));
+        assert!(supports_trash_for_fs_type(Some("BTRFS")));
         assert!(!supports_trash_for_fs_type(Some("SMBFS")));
         assert!(!supports_trash_for_fs_type(Some("NFS")));
+        assert!(!supports_trash_for_fs_type(Some("CIFS")));
         assert!(!supports_trash_for_fs_type(Some("ExFAT")));
         assert!(!supports_trash_for_fs_type(Some("MSDOS")));
     }
 
     #[test]
     fn test_supports_trash_unknown_defaults_true() {
-        assert!(supports_trash_for_fs_type(Some("zfs")));
-        assert!(supports_trash_for_fs_type(Some("btrfs")));
-        assert!(supports_trash_for_fs_type(Some("ext4")));
         assert!(supports_trash_for_fs_type(Some("ntfs")));
     }
 

@@ -83,6 +83,23 @@ libc = "0.2"
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-window-state = "2"
 
+[target.'cfg(target_os = "linux")'.dependencies]
+trash = "5.2"
+# Credential storage via Linux secret service (GNOME Keyring / KDE Wallet)
+keyring = "3"
+
+[target.'cfg(any(target_os = "macos", target_os = "linux"))'.dependencies]
+# MTP (Android device) support via pure Rust implementation
+mtp-rs = "0.1.0"
+# USB hotplug detection for MTP device watcher
+nusb = "0.2.2"
+bytes = "1"
+# mDNS discovery for network host browsing (pure Rust, cross-platform)
+mdns-sd = { version = "0.17", features = ["logging"] }
+# SMB protocol client for share enumeration (pure Rust)
+smb = "0.11.1"
+smb-rpc = "=0.11.1"
+
 [target.'cfg(target_os = "macos")'.dependencies]
 core-foundation = "0.10.1"
 core-services = "1.0.0"
@@ -94,19 +111,11 @@ objc2-foundation = { version = "0.3", features = [
     "NSURL", "NSString", "NSDictionary", "NSDate", "NSArray", "NSValue", "NSError",
     "NSFileManager", "NSNotification",
 ] }
-mdns-sd = { version = "0.17", features = ["logging"] }
 objc2-app-kit = { version = "0.3", features = [
     "NSDragging", "NSDraggingItem", "NSImage", "NSColor", "NSColorSpace",
 ] }
 block2 = "0.6"
-smb = "0.11.1"
-smb-rpc = "=0.11.1"
 security-framework = "3.2"
-# MTP (Android device) support via pure Rust implementation
-mtp-rs = "0.1.0"
-# USB hotplug detection for MTP device watcher
-nusb = "0.2.2"
-bytes = "1"
 # Drive indexing: macOS FSEvents watcher with event IDs and sinceWhen replay
 cmdr-fsevent-stream = { git = "https://github.com/vdavid/cmdr-fsevent-stream", rev = "3a02f0d" }
 

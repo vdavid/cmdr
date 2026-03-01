@@ -1,7 +1,7 @@
-//! MTP stubs for Linux/non-macOS platforms.
+//! MTP stubs for platforms without MTP support.
 //!
-//! MTP support is currently macOS-only. This stub allows the app to compile
-//! and run on Linux for E2E testing.
+//! MTP support is available on macOS and Linux. This stub allows the app to
+//! compile and run on other platforms.
 
 use serde::{Deserialize, Serialize};
 

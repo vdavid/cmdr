@@ -66,8 +66,9 @@ failure and are counted as failed. Dependencies not in the selected run set are 
 **Auto-fix vs CI mode:** `--ci` disables auto-fixing. Formatters/linters fix files locally, report
 only in CI. `runPrettierCheck` and `runESLintCheck` in `common.go` handle both modes.
 
-**Slow checks:** `IsSlow: true` marks checks excluded by default (currently: `rust-tests-linux`).
-Named `--check` invocations implicitly include slow checks (`includeSlow = len(checkNames) > 0`).
+**Slow checks:** `IsSlow: true` marks checks excluded by default (currently: `rust-tests-linux`,
+`desktop-e2e-linux`). Named `--check` invocations implicitly include slow checks
+(`includeSlow = len(checkNames) > 0`).
 
 **Go tool auto-install:** `EnsureGoTool(name, installPath)` checks PATH first, then runs
 `go install` and returns the full binary path. Used for staticcheck, nilaway, etc.
@@ -79,7 +80,7 @@ Named `--check` invocations implicitly include slow checks (`includeSlow = len(c
 | App | Tech | Checks |
 |-----|------|--------|
 | Desktop | Rust | rustfmt, clippy, cargo-audit, cargo-deny, cargo-udeps, jscpd, tests, tests-linux (slow) |
-| Desktop | Svelte | prettier, eslint, stylelint, css-unused, svelte-check, knip, type-drift, tests, e2e, e2e-linux-typecheck, e2e-linux |
+| Desktop | Svelte | prettier, eslint, stylelint, css-unused, svelte-check, knip, type-drift, tests, smoke, e2e-linux-typecheck, e2e-linux (slow) |
 | Website | Astro | prettier, eslint, typecheck, build, e2e |
 | License server | TS | prettier, eslint, typecheck, tests |
 | Scripts | Go | gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, govulncheck, deadcode, go-tests |
