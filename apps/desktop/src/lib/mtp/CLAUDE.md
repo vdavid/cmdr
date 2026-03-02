@@ -36,6 +36,17 @@ On macOS, `ptpcamerad` daemon auto-claims devices. When exclusive access error:
     ```
 4. User runs command, clicks "Retry connection"
 
+### Linux USB permission handling
+
+On Linux, USB device files need udev rules to grant user access. When `open_device()` fails with EACCES:
+
+1. Backend detects "permission denied" in the USB error string (`#[cfg(target_os = "linux")]`)
+2. Emits `mtp-permission-error` event
+3. Frontend shows `MtpPermissionDialog` with a copyable command to install udev rules and reload them
+4. User runs command, replugs device, clicks "Retry connection"
+
+The udev rules file is at `src-tauri/resources/99-cmdr-mtp.rules` (for deb/rpm packaging).
+
 ### No Volume trait integration (yet)
 
 MTP operations use dedicated Tauri commands (`listMtpDirectory`, `uploadToMtp`, `downloadFromMtp`, etc.) instead of

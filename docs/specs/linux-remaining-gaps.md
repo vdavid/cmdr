@@ -20,7 +20,7 @@ Each section is self-contained and can be handed to an agent independently.
 - [x] 10. Trash implementation (medium) — `trash` crate, wire up in lib.rs
 - [x] 11. Network filesystem detection for copy (medium) — `/proc/self/mountinfo` parser, copy strategy
 - [x] 12. File watching E2E verification (small) — add inotify E2E test
-- [ ] 13. MTP USB permissions (small) — error messages + packaging metadata
+- [x] 13. MTP USB permissions (small) — ship udev rules file, permission error handling
 - [x] 14. SMB mounting completion (large) — `smbclient` fallback, auth prompts, cross-DE testing
 - [-] 15. Custom drag image — deferred (no WebKitGTK API)
 - [ ] 16. Dropbox sync status (medium) — socket protocol + CLI fallback
@@ -352,24 +352,36 @@ a full rescan (keeping the old SQLite DB for instant enrichment). This is the st
 
 ## 13. MTP USB permissions (small)
 
-**What are udev rules:** When you plug in a USB device on Linux, the `udev` daemon applies rules (text
-files in `/etc/udev/rules.d/`) to set permissions, create device nodes, and trigger actions. Think of it
-as Linux's version of macOS IOKit for device management, but configurable via files.
+**Background:** On macOS, apps can open USB devices freely via IOKit. On Linux, USB device files at
+`/dev/bus/usb/` are owned by `root:root` with mode `0664` — regular users can read but not write.
+MTP requires read-write access, so without a udev rule granting write permissions, `nusb` gets `EACCES`
+before `mtp-rs` can even inspect the device.
 
-**Good news: no custom rules needed.** The `libmtp` package (available on all major distros) ships its
-own comprehensive rules file (`69-libmtp.rules`) covering hundreds of MTP devices. Cmdr uses MTP via
-`mtp-rs` (pure Rust), but the USB access permissions still come from the system-level udev rules.
+**No `libmtp` dependency needed.** Cmdr uses `mtp-rs` (pure Rust, discovers MTP by inspecting USB
+interfaces) + `nusb` (pure Rust USB). `libmtp`'s massive per-device vendor/product ID list is obsolete —
+all modern (<10 year old) Android devices and PTP cameras are standards-compliant and report the standard
+MTP/PTP interface class (USB interface class 6, subclass 1). `mtp-rs` detects these generically.
+
+The only thing needed from the OS is a udev rule granting the logged-in user write access to these devices.
+Many distros already have this via `libmtp` (pulled in by `gvfs-backends`), but Cmdr should ship its own
+rule to work on minimal installs too. Both rules coexist harmlessly — udev merges all rule files.
 
 **What to do:**
-- Declare `libmtp` as a recommended/suggested package dependency in `.deb`/`.rpm` packaging.
-- Document that the user must be in the `plugdev` group (standard on Ubuntu/Fedora).
-- In the MTP connection error path, detect permission errors and show a helpful message:
-  "Cannot access USB device. Make sure `libmtp` is installed and you're in the `plugdev` group."
-- No udev rules file to ship — rely on `libmtp`'s.
+- Ship `70-cmdr-mtp.rules` in the package at `/usr/lib/udev/rules.d/`:
+  ```
+  # Grant logged-in user access to MTP/PTP devices (USB interface class 6, subclass 1)
+  SUBSYSTEM=="usb", ATTR{bInterfaceClass}=="06", ATTR{bInterfaceSubClass}=="01", TAG+="uaccess"
+  ```
+  `TAG+="uaccess"` is the modern systemd approach — grants access to the physically logged-in user
+  without requiring a `plugdev` group. Works on all systemd-based distros.
+- In the MTP connection error path, detect `EACCES` from `nusb` and show a helpful message:
+  "Can't access USB device. Reconnect the device or run `sudo udevadm control --reload-rules`."
+- Include the rules file in `.deb`/`.rpm` packaging.
 
 **Files to modify:**
-- MTP error handling in `src-tauri/src/mtp/` — add Linux-specific error guidance
-- Packaging config (when packaging is set up) — add `libmtp` as recommended dependency
+- Create `apps/desktop/src-tauri/resources/linux/70-cmdr-mtp.rules` — the udev rules file (2 lines)
+- MTP error handling in `src-tauri/src/mtp/` — detect permission errors, show Linux-specific guidance
+- Packaging config (when set up) — install rules file to `/usr/lib/udev/rules.d/`
 
 ## 14. SMB mounting completion (large)
 

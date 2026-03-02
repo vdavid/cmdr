@@ -12,13 +12,15 @@
     import { initializeShortcuts, setupMcpShortcutsListener, cleanupMcpShortcutsListener } from '$lib/shortcuts'
     import {
         onMtpExclusiveAccessError,
+        onMtpPermissionError,
         connectMtpDevice,
         cancelAllWriteOperations,
         type MtpExclusiveAccessErrorEvent,
+        type MtpPermissionErrorEvent,
     } from '$lib/tauri-commands'
     import { initAiState } from '$lib/ai/ai-state.svelte'
     import ToastContainer from '$lib/ui/toast/ToastContainer.svelte'
-    import { PtpcameradDialog } from '$lib/mtp'
+    import { MtpPermissionDialog, PtpcameradDialog } from '$lib/mtp'
     import type { Snippet } from 'svelte'
 
     interface Props {
@@ -27,10 +29,14 @@
 
     const { children }: Props = $props()
 
-    // State for ptpcamerad dialog
+    // State for ptpcamerad dialog (macOS)
     let showPtpcameradDialog = $state(false)
     let ptpcameradBlockingProcess = $state<string | undefined>(undefined)
     let pendingDeviceId = $state<string | undefined>(undefined)
+
+    // State for permission dialog (Linux)
+    let showPermissionDialog = $state(false)
+    let permissionPendingDeviceId = $state<string | undefined>(undefined)
 
     function handleMtpExclusiveAccessError(event: MtpExclusiveAccessErrorEvent) {
         ptpcameradBlockingProcess = event.blockingProcess
@@ -42,6 +48,28 @@
         showPtpcameradDialog = false
         ptpcameradBlockingProcess = undefined
         pendingDeviceId = undefined
+    }
+
+    function handleMtpPermissionError(event: MtpPermissionErrorEvent) {
+        permissionPendingDeviceId = event.deviceId
+        showPermissionDialog = true
+    }
+
+    function closePermissionDialog() {
+        showPermissionDialog = false
+        permissionPendingDeviceId = undefined
+    }
+
+    async function retryPermissionConnection() {
+        if (permissionPendingDeviceId) {
+            const deviceId = permissionPendingDeviceId
+            closePermissionDialog()
+            try {
+                await connectMtpDevice(deviceId)
+            } catch {
+                // Error will trigger another event if still permission denied
+            }
+        }
     }
 
     async function retryMtpConnection() {
@@ -57,7 +85,8 @@
     }
 
     // Cleanup functions stored for onDestroy
-    let mtpUnlistenPromise: Promise<() => void> | undefined
+    let mtpExclusiveUnlistenPromise: Promise<() => void> | undefined
+    let mtpPermissionUnlistenPromise: Promise<() => void> | undefined
     let updateCleanup: (() => void) | undefined
     let aiCleanup: (() => void) | undefined
 
@@ -83,8 +112,9 @@
             // This ensures window size/position survives hot reloads
             void initWindowStateListener()
 
-            // Listen for MTP exclusive access errors
-            mtpUnlistenPromise = onMtpExclusiveAccessError(handleMtpExclusiveAccessError)
+            // Listen for MTP connection errors
+            mtpExclusiveUnlistenPromise = onMtpExclusiveAccessError(handleMtpExclusiveAccessError)
+            mtpPermissionUnlistenPromise = onMtpPermissionError(handleMtpPermissionError)
 
             // Start checking for updates (skips in dev mode)
             updateCleanup = startUpdateChecker()
@@ -100,8 +130,11 @@
     })
 
     onDestroy(() => {
-        // Cleanup MTP listener
-        void mtpUnlistenPromise?.then((unlisten) => {
+        // Cleanup MTP listeners
+        void mtpExclusiveUnlistenPromise?.then((unlisten) => {
+            unlisten()
+        })
+        void mtpPermissionUnlistenPromise?.then((unlisten) => {
             unlisten()
         })
         // Cleanup update checker
@@ -123,6 +156,9 @@
         onClose={closePtpcameradDialog}
         onRetry={retryMtpConnection}
     />
+{/if}
+{#if showPermissionDialog}
+    <MtpPermissionDialog onClose={closePermissionDialog} onRetry={retryPermissionConnection} />
 {/if}
 <div class="page-wrapper">
     {@render children?.()}

@@ -33,6 +33,10 @@ pub enum MtpConnectionError {
     StorageFull {
         device_id: String,
     },
+    /// Linux: USB device file not accessible (missing udev rules).
+    PermissionDenied {
+        device_id: String,
+    },
     ObjectNotFound {
         device_id: String,
         path: String,
@@ -77,6 +81,9 @@ impl MtpConnectionError {
             }
             Self::DeviceBusy { .. } => "Device is busy. Wait a moment and try again.".to_string(),
             Self::StorageFull { .. } => "Device storage is full. Free up some space.".to_string(),
+            Self::PermissionDenied { .. } => {
+                "Can't access the USB device. Install udev rules and reconnect.".to_string()
+            }
             Self::ObjectNotFound { path, .. } => {
                 format!("File or folder not found: {}. It may have been deleted.", path)
             }
@@ -118,6 +125,9 @@ impl std::fmt::Display for MtpConnectionError {
             }
             Self::StorageFull { device_id } => {
                 write!(f, "Storage full on device: {device_id}")
+            }
+            Self::PermissionDenied { device_id } => {
+                write!(f, "Permission denied for device: {device_id}")
             }
             Self::ObjectNotFound { device_id, path } => {
                 write!(f, "Object not found on {device_id}: {path}")
@@ -188,12 +198,15 @@ pub(super) fn map_mtp_error(e: mtp_rs::Error, device_id: &str) -> MtpConnectionE
             message: format!("I/O error: {}", io_err),
         },
         mtp_rs::Error::Usb(usb_err) => {
-            // Check for exclusive access errors
             let msg = usb_err.to_string().to_lowercase();
             if msg.contains("exclusive access") || msg.contains("device or resource busy") {
                 MtpConnectionError::ExclusiveAccess {
                     device_id: device_id.to_string(),
                     blocking_process: None,
+                }
+            } else if msg.contains("permission denied") || msg.contains("access denied") {
+                MtpConnectionError::PermissionDenied {
+                    device_id: device_id.to_string(),
                 }
             } else {
                 MtpConnectionError::Other {
@@ -378,6 +391,9 @@ mod tests {
             MtpConnectionError::StorageFull {
                 device_id: "test".to_string(),
             },
+            MtpConnectionError::PermissionDenied {
+                device_id: "test".to_string(),
+            },
             MtpConnectionError::ObjectNotFound {
                 device_id: "test".to_string(),
                 path: "/path".to_string(),
@@ -446,6 +462,19 @@ mod tests {
         assert!(err.user_message().contains("/DCIM/photo.jpg"));
         assert!(err.user_message().contains("deleted"));
         assert!(!err.is_retryable());
+    }
+
+    #[test]
+    fn test_permission_denied_error() {
+        let err = MtpConnectionError::PermissionDenied {
+            device_id: "mtp-1-5".to_string(),
+        };
+        assert!(err.to_string().contains("Permission denied"));
+        assert!(err.user_message().contains("udev"));
+        assert!(!err.is_retryable());
+
+        let json = serde_json::to_string(&err).unwrap();
+        assert!(json.contains("\"type\":\"permissionDenied\""), "JSON: {}", json);
     }
 
     #[test]

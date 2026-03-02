@@ -228,6 +228,20 @@ impl MtpConnectionManager {
                     });
                 }
 
+                // Check for permission errors (Linux: missing udev rules)
+                #[cfg(target_os = "linux")]
+                {
+                    let msg = e.to_string().to_lowercase();
+                    if msg.contains("permission denied") || msg.contains("access denied") {
+                        if let Some(app) = app {
+                            let _ = app.emit("mtp-permission-error", serde_json::json!({ "deviceId": device_id }));
+                        }
+                        return Err(MtpConnectionError::PermissionDenied {
+                            device_id: device_id.to_string(),
+                        });
+                    }
+                }
+
                 // Map other errors
                 return Err(map_mtp_error(e, device_id));
             }

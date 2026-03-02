@@ -63,6 +63,7 @@
         "icon-cache.ts": { "reason": "Depends on Tauri APIs" },
         "licensing/licensing-store.svelte.ts": { "reason": "Depends on Tauri store APIs" },
         "logging/logger.ts": { "reason": "LogTape config, initialization code only" },
+        "mtp/MtpPermissionDialog.svelte": { "reason": "UI modal for Linux MTP udev rules" },
         "mtp/PtpcameradDialog.svelte": { "reason": "UI modal for macOS MTP workaround" },
         "mtp/mtp-store.svelte.ts": { "reason": "Depends on Tauri APIs, tests planned in Phase 6" },
         "licensing/AboutWindow.svelte": { "reason": "UI component" },

@@ -10,6 +10,7 @@ use std::sync::OnceLock;
 pub struct LinuxDistro {
     pub id: String,
     pub id_like: Vec<String>,
+    #[allow(dead_code, reason = "Parsed for future UI use (e.g. about dialog)")]
     pub pretty_name: String,
 }
 

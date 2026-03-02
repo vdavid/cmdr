@@ -79,6 +79,7 @@ export type MtpConnectionError =
     | { type: 'deviceNotFound'; deviceId: string }
     | { type: 'notConnected'; deviceId: string }
     | { type: 'exclusiveAccess'; deviceId: string; blockingProcess?: string }
+    | { type: 'permissionDenied'; deviceId: string }
     | { type: 'timeout'; deviceId: string }
     | { type: 'disconnected'; deviceId: string }
     | { type: 'protocol'; deviceId: string; message: string }
@@ -174,6 +175,11 @@ export interface MtpExclusiveAccessErrorEvent {
     blockingProcess?: string
 }
 
+/** Event payload for mtp-permission-error (Linux: missing udev rules). */
+export interface MtpPermissionErrorEvent {
+    deviceId: string
+}
+
 /** Event payload for mtp-device-connected. */
 export interface MtpDeviceConnectedEvent {
     deviceId: string
@@ -214,6 +220,16 @@ export async function onMtpExclusiveAccessError(
     callback: (event: MtpExclusiveAccessErrorEvent) => void,
 ): Promise<UnlistenFn> {
     return listen<MtpExclusiveAccessErrorEvent>('mtp-exclusive-access-error', (event) => {
+        callback(event.payload)
+    })
+}
+
+/**
+ * Subscribes to MTP permission error events (Linux only).
+ * Emitted when USB device access fails due to missing udev rules.
+ */
+export async function onMtpPermissionError(callback: (event: MtpPermissionErrorEvent) => void): Promise<UnlistenFn> {
+    return listen<MtpPermissionErrorEvent>('mtp-permission-error', (event) => {
         callback(event.payload)
     })
 }

@@ -18,6 +18,7 @@ import {
     onMtpDeviceDisconnected,
     onMtpDeviceRemoved,
     onMtpExclusiveAccessError,
+    onMtpPermissionError,
 } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 
@@ -58,6 +59,7 @@ let state = $state<MtpStoreState>({
 let unlistenConnected: UnlistenFn | undefined
 let unlistenDisconnected: UnlistenFn | undefined
 let unlistenExclusiveAccess: UnlistenFn | undefined
+let unlistenPermissionError: UnlistenFn | undefined
 let unlistenDeviceDetected: UnlistenFn | undefined
 let unlistenDeviceRemoved: UnlistenFn | undefined
 
@@ -324,6 +326,17 @@ export async function initialize(): Promise<void> {
         }
     })
 
+    unlistenPermissionError = await onMtpPermissionError((event) => {
+        const deviceState = state.devices.get(event.deviceId)
+        if (deviceState) {
+            state.devices.set(event.deviceId, {
+                ...deviceState,
+                connectionState: 'error',
+                error: 'USB permission denied — install udev rules and reconnect',
+            })
+        }
+    })
+
     // USB hotplug: device detected
     unlistenDeviceDetected = await onMtpDeviceDetected((event) => {
         logger.info('MTP device detected via hotplug: {deviceId}', { deviceId: event.deviceId })
@@ -359,6 +372,7 @@ export function cleanup(): void {
     unlistenConnected?.()
     unlistenDisconnected?.()
     unlistenExclusiveAccess?.()
+    unlistenPermissionError?.()
     unlistenDeviceDetected?.()
     unlistenDeviceRemoved?.()
 
