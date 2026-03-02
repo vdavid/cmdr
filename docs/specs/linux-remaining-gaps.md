@@ -21,7 +21,7 @@ Each section is self-contained and can be handed to an agent independently.
 - [x] 11. Network filesystem detection for copy (medium) — `/proc/self/mountinfo` parser, copy strategy
 - [x] 12. File watching E2E verification (small) — add inotify E2E test
 - [ ] 13. MTP USB permissions (small) — error messages + packaging metadata
-- [ ] 14. SMB mounting completion (large) — `smbclient` fallback, auth prompts, cross-DE testing
+- [x] 14. SMB mounting completion (large) — `smbclient` fallback, auth prompts, cross-DE testing
 - [-] 15. Custom drag image — deferred (no WebKitGTK API)
 - [ ] 16. Dropbox sync status (medium) — socket protocol + CLI fallback
 - [ ] 17. Native file icons (medium) — test existing provider, fix threading if needed

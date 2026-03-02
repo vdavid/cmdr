@@ -9,7 +9,8 @@ Discover, browse, and mount SMB network shares. Works on macOS and Linux.
   - `smb_client.rs` — Top-level share-listing entry point; orchestrates guest -> keychain -> prompt auth flow; tries smb-rs first, falls back to smbutil (macOS only)
   - `smb_connection.rs` — TCP connection establishment and IPC-level share listing calls
   - `smb_cache.rs` — 30-second in-memory cache for share lists, keyed by server address
-  - `smb_smbutil.rs` — `smbutil view -G` fallback for older Samba/NAS servers (macOS only; non-macOS stubs return errors)
+  - `smb_smbutil.rs` — `smbutil view -G` fallback for older Samba/NAS servers (macOS); on Linux delegates to `smb_smbclient`
+  - `smb_smbclient.rs` — `smbclient -L` fallback for Linux (requires `samba-client` package)
   - `smb_types.rs` — Shared types (`SmbShare`, `AuthMode`, `SmbError`, etc.)
   - `smb_util.rs` — Helpers: hostname derivation, IP resolution, account-name normalization
 - **Mounting** (platform-specific via `#[path]` in `mod.rs`):
@@ -26,7 +27,7 @@ Discover, browse, and mount SMB network shares. Works on macOS and Linux.
 |-----------|-------|-------|
 | mDNS discovery | `mdns-sd` (pure Rust) | `mdns-sd` (same) |
 | SMB share listing | `smb` + `smb-rpc` crates | `smb` + `smb-rpc` (same) |
-| smbutil fallback | `smbutil view -G` | Not available (returns error, smb-rs handles most cases) |
+| smbutil fallback | `smbutil view -G` | `smbclient -L` (from `samba-client` package) |
 | Credential storage | `security-framework` (macOS Keychain) | `keyring` (Secret Service) → `cocoon` encrypted file fallback |
 | Mounting | `NetFSMountURLSync` → `/Volumes/` | `gio mount` → `/run/user/<uid>/gvfs/` |
 
@@ -43,9 +44,12 @@ smb-rs doesn't resolve `.local` hostnames reliably (std lib DNS doesn't handle m
 3. If no stored creds → prompt user
 4. Never assume "guest only" — always offer "Sign in for more access" when guest succeeds (can't distinguish guest-only from guest-or-creds at probe time)
 
-### smbutil fallback (macOS only)
+### smbutil / smbclient fallback
 
-`smb` crate fails on older Samba servers with RPC incompatibility. Classify error as `ProtocolError`, then try `smbutil view -G` as fallback. On Linux, the non-macOS stubs return `ProtocolError` so the error propagates to the user.
+`smb` crate fails on older Samba servers (for example, Raspberry Pi) with RPC incompatibility. Classify error as `ProtocolError`, then try a platform-specific CLI fallback:
+- **macOS:** `smbutil view -G` (built-in).
+- **Linux:** `smbclient -L` (from `samba-client` package). If `smbclient` is not installed, returns a helpful error message. The `smb_smbutil.rs` Linux stubs delegate to `smb_smbclient.rs`.
+- **Other platforms:** stubs return `ProtocolError`.
 
 ### No persistent connection pool
 

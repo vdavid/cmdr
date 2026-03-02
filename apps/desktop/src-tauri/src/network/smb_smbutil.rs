@@ -70,8 +70,20 @@ pub async fn list_shares_smbutil_authenticated_from_keychain(
     })
 }
 
-/// Fallback for non-macOS platforms - smbutil Keychain auth is not available.
-#[cfg(not(target_os = "macos"))]
+/// Linux fallback: no Keychain equivalent — return AuthRequired so the user gets a login prompt.
+#[cfg(target_os = "linux")]
+pub async fn list_shares_smbutil_authenticated_from_keychain(
+    _hostname: &str,
+    _ip_address: Option<&str>,
+    _port: u16,
+) -> Result<ShareListResult, ShareListError> {
+    Err(ShareListError::AuthRequired(
+        "Stored credential lookup not available via smbclient fallback".to_string(),
+    ))
+}
+
+/// Stub for platforms with neither smbutil nor smbclient.
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
 pub async fn list_shares_smbutil_authenticated_from_keychain(
     _hostname: &str,
     _ip_address: Option<&str>,
@@ -112,20 +124,63 @@ pub async fn list_shares_smbutil_with_auth(
     })
 }
 
-/// Fallback for non-macOS platforms - smbutil is not available.
-#[cfg(not(target_os = "macos"))]
+/// Linux fallback: delegate to `smbclient -L` (guest access).
+#[cfg(target_os = "linux")]
+pub async fn list_shares_smbutil(
+    hostname: &str,
+    ip_address: Option<&str>,
+    port: u16,
+) -> Result<ShareListResult, ShareListError> {
+    use log::debug;
+    let host = ip_address.unwrap_or(hostname);
+    debug!("smbutil not available on Linux, trying smbclient -L //{} -N", host);
+
+    let shares = super::smb_smbclient::run_smbclient_list(host, port, None).await?;
+    Ok(ShareListResult {
+        shares,
+        auth_mode: super::smb_types::AuthMode::GuestAllowed,
+        from_cache: false,
+    })
+}
+
+/// Stub for platforms with neither smbutil nor smbclient.
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
 pub async fn list_shares_smbutil(
     _hostname: &str,
     _ip_address: Option<&str>,
     _port: u16,
 ) -> Result<ShareListResult, ShareListError> {
     Err(ShareListError::ProtocolError(
-        "smbutil fallback not available on this platform".to_string(),
+        "No share listing fallback available on this platform".to_string(),
     ))
 }
 
-/// Fallback for non-macOS platforms - smbutil with auth is not available.
-#[cfg(not(target_os = "macos"))]
+/// Linux fallback: delegate to `smbclient -L -U` (authenticated access).
+#[cfg(target_os = "linux")]
+pub async fn list_shares_smbutil_with_auth(
+    hostname: &str,
+    ip_address: Option<&str>,
+    port: u16,
+    username: &str,
+    password: &str,
+) -> Result<ShareListResult, ShareListError> {
+    use log::debug;
+    let host = ip_address.unwrap_or(hostname);
+    debug!(
+        "smbutil not available on Linux, trying smbclient -L //{} -U {}",
+        host, username
+    );
+
+    let shares = super::smb_smbclient::run_smbclient_list(host, port, Some((username, password))).await?;
+    Ok(ShareListResult {
+        shares,
+        auth_mode: super::smb_types::AuthMode::CredsRequired,
+        from_cache: false,
+    })
+}
+
+/// Stub for platforms with neither smbutil nor smbclient.
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
 pub async fn list_shares_smbutil_with_auth(
     _hostname: &str,
     _ip_address: Option<&str>,
@@ -134,7 +189,7 @@ pub async fn list_shares_smbutil_with_auth(
     _password: &str,
 ) -> Result<ShareListResult, ShareListError> {
     Err(ShareListError::ProtocolError(
-        "smbutil fallback not available on this platform".to_string(),
+        "No share listing fallback available on this platform".to_string(),
     ))
 }
 

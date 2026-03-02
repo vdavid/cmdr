@@ -285,7 +285,9 @@ pub fn save_credentials(
                 cache_put(&account, &creds);
                 return Ok(());
             }
-            _ => debug!("Secret service save appeared to succeed but read-back failed (keyring likely locked), trying file backend"),
+            _ => debug!(
+                "Secret service save appeared to succeed but read-back failed (keyring likely locked), trying file backend"
+            ),
         },
         Err(e) => debug!("Secret service save failed, trying file backend: {}", e),
     }

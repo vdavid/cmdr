@@ -31,6 +31,8 @@ pub mod smb_client;
 // SMB submodules - these are implementation details of smb_client
 mod smb_cache;
 mod smb_connection;
+#[cfg(target_os = "linux")]
+mod smb_smbclient;
 mod smb_smbutil;
 mod smb_types;
 mod smb_util;

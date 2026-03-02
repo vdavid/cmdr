@@ -337,16 +337,18 @@ fn is_virtual_fs(fstype: &str) -> bool {
 /// Mount paths that are system internals and should never appear as volumes.
 /// These are path prefixes — any mount whose mountpoint starts with one of these is filtered out.
 const HIDDEN_MOUNT_PREFIXES: &[&str] = &[
-    "/snap/",          // Ubuntu snap loopback packages (squashfs)
-    "/run/snapd/",     // Snap daemon internals
-    "/boot/",          // EFI system partition, boot loaders
-    "/run/user/",      // Per-user runtime mounts (XDG portals, GVFS)
+    "/snap/",            // Ubuntu snap loopback packages (squashfs)
+    "/run/snapd/",       // Snap daemon internals
+    "/boot/",            // EFI system partition, boot loaders
+    "/run/user/",        // Per-user runtime mounts (XDG portals, GVFS)
     "/run/credentials/", // systemd credential mounts
 ];
 
 /// Check if a mount path should be hidden from the volume list.
 fn is_hidden_mount(mountpoint: &str) -> bool {
-    HIDDEN_MOUNT_PREFIXES.iter().any(|prefix| mountpoint.starts_with(prefix))
+    HIDDEN_MOUNT_PREFIXES
+        .iter()
+        .any(|prefix| mountpoint.starts_with(prefix))
 }
 
 /// Check if a mount point is under a removable media path.
@@ -484,9 +486,18 @@ gvfsd-fuse /run/user/1000/gvfs fuse.gvfsd-fuse rw 0 0
         let volumes = get_mounted_volumes(&mounts);
         let paths: Vec<&str> = volumes.iter().map(|v| v.path.as_str()).collect();
         assert!(paths.contains(&"/mnt/data"), "Should include real mount");
-        assert!(!paths.iter().any(|p| p.starts_with("/snap/")), "Should filter snap mounts");
-        assert!(!paths.iter().any(|p| p.starts_with("/boot/")), "Should filter boot mounts");
-        assert!(!paths.iter().any(|p| p.starts_with("/run/user/")), "Should filter user runtime mounts");
+        assert!(
+            !paths.iter().any(|p| p.starts_with("/snap/")),
+            "Should filter snap mounts"
+        );
+        assert!(
+            !paths.iter().any(|p| p.starts_with("/boot/")),
+            "Should filter boot mounts"
+        );
+        assert!(
+            !paths.iter().any(|p| p.starts_with("/run/user/")),
+            "Should filter user runtime mounts"
+        );
     }
 
     #[test]

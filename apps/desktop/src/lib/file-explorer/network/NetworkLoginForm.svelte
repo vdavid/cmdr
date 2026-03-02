@@ -78,7 +78,7 @@
     // Computed display values
     const title = $derived(shareName ? `Sign in to "${host.name}/${shareName}"` : `Sign in to "${host.name}"`)
     const showGuestOption = $derived(authMode === 'guest_allowed')
-    const canSubmit = $derived(connectionMode === 'guest' || (username.trim() !== '' && password !== ''))
+    const canSubmit = $derived(connectionMode === 'guest' || username.trim() !== '')
 
     function handleSubmit(e: Event) {
         e.preventDefault()
@@ -104,7 +104,16 @@
     }
 </script>
 
-<div class="login-container" role="dialog" aria-labelledby="login-title" onkeydown={handleKeyDown} tabindex="-1">
+<div
+    class="login-container"
+    role="dialog"
+    aria-labelledby="login-title"
+    onkeydown={handleKeyDown}
+    onclick={(e) => {
+        e.stopPropagation()
+    }}
+    tabindex="-1"
+>
     <div class="login-card">
         <h2 id="login-title" class="login-title">
             <span class="lock-icon">🔒</span>

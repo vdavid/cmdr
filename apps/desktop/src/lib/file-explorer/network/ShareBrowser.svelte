@@ -229,15 +229,15 @@
             // Update credential status
             setCredentialStatus(host.name, username ? 'has_creds' : 'no_creds')
 
-            // Store credentials for mounting
-            if (username && password) {
-                authenticatedCredentials = { username, password }
+            // Store credentials for mounting (empty password is valid for SMB)
+            if (username !== null) {
+                authenticatedCredentials = { username, password: password ?? '' }
             } else {
                 authenticatedCredentials = null
             }
 
             // Save credentials to Keychain if requested
-            if (rememberInKeychain && username && password) {
+            if (rememberInKeychain && username !== null && password !== null) {
                 await saveSmbCredentials(host.name, null, username, password)
                 await notifyIfUsingFileFallback()
             }
