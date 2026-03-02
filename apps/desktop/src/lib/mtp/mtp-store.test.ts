@@ -15,6 +15,7 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => {
         onMtpDeviceConnected: vi.fn(),
         onMtpDeviceDisconnected: vi.fn(),
         onMtpExclusiveAccessError: vi.fn(),
+        onMtpPermissionError: vi.fn(),
         onMtpDeviceDetected: vi.fn(),
         onMtpDeviceRemoved: vi.fn(),
     }
@@ -28,6 +29,7 @@ import {
     onMtpDeviceConnected,
     onMtpDeviceDisconnected,
     onMtpExclusiveAccessError,
+    onMtpPermissionError,
     onMtpDeviceDetected,
     onMtpDeviceRemoved,
 } from '$lib/tauri-commands'
@@ -64,6 +66,7 @@ describe('mtp-store', () => {
         vi.mocked(onMtpDeviceConnected).mockResolvedValue(vi.fn())
         vi.mocked(onMtpDeviceDisconnected).mockResolvedValue(vi.fn())
         vi.mocked(onMtpExclusiveAccessError).mockResolvedValue(vi.fn())
+        vi.mocked(onMtpPermissionError).mockResolvedValue(vi.fn())
         vi.mocked(onMtpDeviceDetected).mockResolvedValue(vi.fn())
         vi.mocked(onMtpDeviceRemoved).mockResolvedValue(vi.fn())
     })
@@ -296,6 +299,7 @@ describe('mtp-store', () => {
             expect(onMtpDeviceConnected).toHaveBeenCalledWith(expect.any(Function))
             expect(onMtpDeviceDisconnected).toHaveBeenCalledWith(expect.any(Function))
             expect(onMtpExclusiveAccessError).toHaveBeenCalledWith(expect.any(Function))
+            expect(onMtpPermissionError).toHaveBeenCalledWith(expect.any(Function))
             expect(onMtpDeviceDetected).toHaveBeenCalledWith(expect.any(Function))
             expect(onMtpDeviceRemoved).toHaveBeenCalledWith(expect.any(Function))
         })
@@ -316,12 +320,14 @@ describe('mtp-store', () => {
             const unlistenConnected = vi.fn()
             const unlistenDisconnected = vi.fn()
             const unlistenExclusive = vi.fn()
+            const unlistenPermission = vi.fn()
             const unlistenDetected = vi.fn()
             const unlistenRemoved = vi.fn()
 
             vi.mocked(onMtpDeviceConnected).mockResolvedValue(unlistenConnected)
             vi.mocked(onMtpDeviceDisconnected).mockResolvedValue(unlistenDisconnected)
             vi.mocked(onMtpExclusiveAccessError).mockResolvedValue(unlistenExclusive)
+            vi.mocked(onMtpPermissionError).mockResolvedValue(unlistenPermission)
             vi.mocked(onMtpDeviceDetected).mockResolvedValue(unlistenDetected)
             vi.mocked(onMtpDeviceRemoved).mockResolvedValue(unlistenRemoved)
             vi.mocked(listMtpDevices).mockResolvedValue([mockDevice])
@@ -337,6 +343,7 @@ describe('mtp-store', () => {
             expect(unlistenConnected).toHaveBeenCalled()
             expect(unlistenDisconnected).toHaveBeenCalled()
             expect(unlistenExclusive).toHaveBeenCalled()
+            expect(unlistenPermission).toHaveBeenCalled()
             expect(unlistenDetected).toHaveBeenCalled()
             expect(unlistenRemoved).toHaveBeenCalled()
             expect(isInitialized()).toBe(false)

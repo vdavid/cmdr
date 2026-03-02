@@ -88,6 +88,7 @@ vi.mock('$lib/tauri-commands', () => ({
     onMtpDeviceConnected: vi.fn().mockResolvedValue(() => {}),
     onMtpDeviceDisconnected: vi.fn().mockResolvedValue(() => {}),
     onMtpExclusiveAccessError: vi.fn().mockResolvedValue(() => {}),
+    onMtpPermissionError: vi.fn().mockResolvedValue(() => {}),
     onMtpDeviceDetected: vi.fn().mockResolvedValue(() => {}),
     onMtpDeviceRemoved: vi.fn().mockResolvedValue(() => {}),
     // Dialog state tracking for MCP
