@@ -209,6 +209,14 @@ fn get_main_volume(mounts: &[MountEntry]) -> Option<LocationInfo> {
 /// Get mounted real filesystems, filtering out virtual ones and root.
 pub fn get_mounted_volumes(mounts: &[MountEntry]) -> Vec<LocationInfo> {
     let username = get_username();
+
+    // Collect candidate mount points (real, non-hidden, non-root).
+    let candidate_paths: Vec<&str> = mounts
+        .iter()
+        .filter(|e| !is_virtual_fs(&e.fstype) && e.mountpoint != "/" && !is_hidden_mount(&e.mountpoint))
+        .map(|e| e.mountpoint.as_str())
+        .collect();
+
     let mut volumes = Vec::new();
 
     for entry in mounts {
@@ -219,6 +227,10 @@ pub fn get_mounted_volumes(mounts: &[MountEntry]) -> Vec<LocationInfo> {
             continue;
         }
         if is_hidden_mount(&entry.mountpoint) {
+            continue;
+        }
+        // Skip sub-mounts (bind mounts nested under another real mount).
+        if is_submount(&entry.mountpoint, &candidate_paths) {
             continue;
         }
 
@@ -343,6 +355,16 @@ const HIDDEN_MOUNT_PREFIXES: &[&str] = &[
     "/run/user/",        // Per-user runtime mounts (XDG portals, GVFS)
     "/run/credentials/", // systemd credential mounts
 ];
+
+/// Check if a mount is nested under another real mount (bind mount or sub-partition).
+/// For example, `/mnt/share/project/node_modules` is a sub-mount of `/mnt/share`.
+fn is_submount(mountpoint: &str, candidate_paths: &[&str]) -> bool {
+    candidate_paths.iter().any(|parent| {
+        *parent != mountpoint
+            && mountpoint.starts_with(parent)
+            && mountpoint.as_bytes().get(parent.len()) == Some(&b'/')
+    })
+}
 
 /// Check if a mount path should be hidden from the volume list.
 fn is_hidden_mount(mountpoint: &str) -> bool {
@@ -497,6 +519,40 @@ gvfsd-fuse /run/user/1000/gvfs fuse.gvfsd-fuse rw 0 0
         assert!(
             !paths.iter().any(|p| p.starts_with("/run/user/")),
             "Should filter user runtime mounts"
+        );
+    }
+
+    #[test]
+    fn test_is_submount() {
+        let candidates = vec!["/mnt/cmdr", "/mnt/cmdr/cmdr/node_modules", "/media/user/USB"];
+        assert!(is_submount("/mnt/cmdr/cmdr/node_modules", &candidates));
+        assert!(!is_submount("/mnt/cmdr", &candidates));
+        assert!(!is_submount("/media/user/USB", &candidates));
+        // Not a submount just because of a shared prefix without a path separator
+        assert!(!is_submount("/mnt/cmdr2", &["/mnt/cmdr"]));
+    }
+
+    #[test]
+    fn test_bind_mounts_filtered_from_volumes() {
+        let mounts_with_binds = "\
+/dev/vda2 / ext4 rw,relatime 0 0
+share /mnt/cmdr virtiofs rw,relatime 0 0
+/dev/vda2 /mnt/cmdr/cmdr/node_modules ext4 rw,relatime 0 0
+/dev/vda2 /mnt/cmdr/cmdr/apps/desktop/node_modules ext4 rw,relatime 0 0
+/dev/sda1 /media/user/Ubuntu\\04025.10\\040arm64 iso9660 ro,relatime 0 0
+";
+        let mounts = linux_mounts::parse_proc_mounts_from_content(mounts_with_binds);
+        let volumes = get_mounted_volumes(&mounts);
+        let paths: Vec<&str> = volumes.iter().map(|v| v.path.as_str()).collect();
+
+        assert!(paths.contains(&"/mnt/cmdr"), "Should include the parent mount");
+        assert!(
+            !paths.iter().any(|p| p.contains("node_modules")),
+            "Should filter bind mounts nested under another volume"
+        );
+        assert!(
+            paths.iter().any(|p| p.contains("Ubuntu")),
+            "Should keep independent mounts"
         );
     }
 
