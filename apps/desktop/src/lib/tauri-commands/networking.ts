@@ -1,4 +1,4 @@
-// Network hosts, SMB shares, keychain, mounting (macOS only)
+// Network hosts, SMB shares, keychain, and mounting
 
 import { invoke } from '@tauri-apps/api/core'
 import type {

@@ -613,26 +613,9 @@
         return false
     }
 
-    /** Handles the F1 key (volume chooser toggle). Returns true if handled. */
-    function handleFunctionKey(e: KeyboardEvent): boolean {
-        if (e.key === 'F1') {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            getPaneRef('right')?.closeVolumeChooser()
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            getPaneRef('left')?.toggleVolumeChooser()
-            return true
-        }
-        return false
-    }
-
     function handleKeyDown(e: KeyboardEvent) {
         // ESC during loading = cancel and go back
         if (e.key === 'Escape' && handleEscapeDuringLoading()) {
-            e.preventDefault()
-            return
-        }
-
-        if (handleFunctionKey(e)) {
             e.preventDefault()
             return
         }

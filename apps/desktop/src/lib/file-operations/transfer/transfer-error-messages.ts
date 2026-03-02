@@ -6,6 +6,7 @@
 import type { WriteOperationError, TransferOperationType } from '$lib/file-explorer/types'
 import { formatBytes } from '$lib/tauri-commands'
 import { getDevice } from '$lib/mtp/mtp-store.svelte'
+import { isMacOS } from '$lib/shortcuts/key-capture'
 
 export interface FriendlyErrorMessage {
     /** Short title for the error */
@@ -53,7 +54,9 @@ export function getUserFriendlyMessage(
                 title: "Couldn't access this location",
                 message: `You don't have permission to ${verb} files here.`,
                 suggestion: isDeleteOp
-                    ? 'Check that you have write access to the parent folder. The file may be locked — unlock it in Finder (Get Info > uncheck Locked) and try again.'
+                    ? isMacOS()
+                        ? 'Check that you have write access to the parent folder. The file may be locked — unlock it in Finder (Get Info > uncheck Locked) and try again.'
+                        : 'Check that you have write access to the parent folder. The file may be protected — check its permissions (e.g. via chmod or your file manager) and try again.'
                     : 'Check that you have write access to the destination folder. You may need to unlock the device or change folder permissions.',
             }
         }
@@ -200,7 +203,9 @@ function getIoErrorSuggestion(rawMessage: string): string {
 
     // Locked file
     if (lower.includes('operation not permitted') || lower.includes('immutable')) {
-        return 'Unlock it in Finder (Get Info > uncheck Locked) and try again.'
+        return isMacOS()
+            ? 'Unlock it in Finder (Get Info > uncheck Locked) and try again.'
+            : 'The file may be protected — check its permissions (e.g. via chmod or your file manager) and try again.'
     }
 
     // Trash not supported

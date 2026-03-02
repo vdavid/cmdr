@@ -84,7 +84,7 @@ export function formatKeyCombo(event: KeyboardEvent): string {
         if (event.ctrlKey) parts.push('Ctrl')
         if (event.altKey) parts.push('Alt')
         if (event.shiftKey) parts.push('Shift')
-        if (event.metaKey) parts.push('Win')
+        if (event.metaKey) parts.push('Super')
     }
 
     // Don't include modifier keys themselves as the main key

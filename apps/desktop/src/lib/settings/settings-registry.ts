@@ -4,6 +4,7 @@
 
 import type { SettingDefinition, SettingId, SettingsValues } from './types'
 import { SettingValidationError } from './types'
+import { isMacOS } from '$lib/shortcuts/key-capture'
 
 // ============================================================================
 // Settings Definitions
@@ -17,7 +18,9 @@ export const settingsRegistry: SettingDefinition[] = [
         id: 'appearance.appColor',
         section: ['General', 'Appearance'],
         label: 'App color',
-        description: 'To change your system theme color, go to System Settings > Appearance.',
+        description: isMacOS()
+            ? 'To change your system theme color, go to System Settings > Appearance.'
+            : 'To change your system theme color, open your desktop appearance settings.',
         keywords: ['color', 'accent', 'theme', 'gold', 'system', 'brand'],
         type: 'enum',
         default: 'system',

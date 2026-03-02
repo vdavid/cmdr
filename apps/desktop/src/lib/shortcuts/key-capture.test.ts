@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { toPlatformShortcut } from './key-capture'
+import { formatKeyCombo, toPlatformShortcut } from './key-capture'
 
 // Mock navigator to control isMacOS() behavior
 const navigatorSpy = vi.spyOn(globalThis, 'navigator', 'get')
@@ -10,11 +10,11 @@ function setMacOS(isMac: boolean) {
     } as Navigator)
 }
 
-describe('toPlatformShortcut', () => {
-    afterEach(() => {
-        vi.restoreAllMocks()
-    })
+afterEach(() => {
+    navigatorSpy.mockReset()
+})
 
+describe('toPlatformShortcut', () => {
     it('returns shortcut as-is on macOS', () => {
         setMacOS(true)
         expect(toPlatformShortcut('⌘Q')).toBe('⌘Q')
@@ -74,5 +74,48 @@ describe('toPlatformShortcut', () => {
         expect(toPlatformShortcut('⌘⇧.')).toBe('Ctrl+Shift+.')
         expect(toPlatformShortcut('⌘⇧A')).toBe('Ctrl+Shift+A')
         expect(toPlatformShortcut('⌃⇧Tab')).toBe('Ctrl+Shift+Tab')
+    })
+
+    it('converts Alt+F-key shortcuts for volume choosers', () => {
+        setMacOS(false)
+        expect(toPlatformShortcut('⌥F1')).toBe('Alt+F1')
+        expect(toPlatformShortcut('⌥F2')).toBe('Alt+F2')
+    })
+})
+
+describe('formatKeyCombo', () => {
+    function makeKeyEvent(overrides: Partial<KeyboardEvent>): KeyboardEvent {
+        return {
+            key: '',
+            metaKey: false,
+            ctrlKey: false,
+            altKey: false,
+            shiftKey: false,
+            ...overrides,
+        } as KeyboardEvent
+    }
+
+    it('uses Super for metaKey on Linux', () => {
+        setMacOS(false)
+        const result = formatKeyCombo(makeKeyEvent({ metaKey: true, key: 'a' }))
+        expect(result).toBe('Super+A')
+    })
+
+    it('uses ⌘ for metaKey on macOS', () => {
+        setMacOS(true)
+        const result = formatKeyCombo(makeKeyEvent({ metaKey: true, key: 'a' }))
+        expect(result).toBe('⌘A')
+    })
+
+    it('formats Alt+F1 on Linux', () => {
+        setMacOS(false)
+        const result = formatKeyCombo(makeKeyEvent({ altKey: true, key: 'F1' }))
+        expect(result).toBe('Alt+F1')
+    })
+
+    it('formats Alt+F2 on Linux', () => {
+        setMacOS(false)
+        const result = formatKeyCombo(makeKeyEvent({ altKey: true, key: 'F2' }))
+        expect(result).toBe('Alt+F2')
     })
 })

@@ -107,6 +107,12 @@ There are two MCP servers available to you:
   processes as well, to avoid wasting the user's resources.
 - When shortcuts are available for a feature, always display the shortcut in a tooltip or somewhere, less prominent than
   the main UI.
+- **Platform-native, not generic.** The app should look and feel as if it was specifically made for the user's OS. Never
+  generalize user-facing text, labels, or behavior to be "cross-platform" — instead, fork by OS. On macOS, say "Finder",
+  "Trash", "System Settings". On Linux, say "file manager", "Trash" (FreeDesktop spec), and use DE-specific terminology
+  where possible. Windows (later) gets its own native terms too. This applies to error messages, menu labels, tooltips,
+  and any user-visible string. Use `isMacOS()` / `cfg(target_os)` to branch — a few extra lines of platform-specific
+  text are always better than one watered-down generic string.
 
 ## Checklist for new features
 

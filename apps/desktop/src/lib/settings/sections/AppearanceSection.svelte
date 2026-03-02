@@ -9,6 +9,7 @@
     import { getSettingDefinition, getSetting, setSetting, onSpecificSettingChange } from '$lib/settings'
     import { createShouldShow } from '$lib/settings/settings-search'
     import { openAppearanceSettings } from '$lib/tauri-commands'
+    import { isMacOS } from '$lib/shortcuts/key-capture'
 
     interface Props {
         searchQuery: string
@@ -67,7 +68,7 @@
             {#snippet descriptionContent()}
                 To change your system theme color, go to
                 <button type="button" class="appearance-link" onclick={() => void openAppearanceSettings()}
-                    >System Settings &gt; Appearance</button
+                    >{isMacOS() ? 'System Settings > Appearance' : 'your system appearance settings'}</button
                 >.
             {/snippet}
             <div class="app-color-options">

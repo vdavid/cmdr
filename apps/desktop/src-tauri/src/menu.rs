@@ -159,7 +159,7 @@ fn show_in_file_manager_label() -> &'static str {
 
 #[cfg(not(target_os = "macos"))]
 fn show_in_file_manager_label() -> &'static str {
-    "Show in file manager"
+    "Show in &file manager"
 }
 
 /// Builds the application menu with default macOS items plus a custom View and File submenu enhancements.
@@ -481,8 +481,8 @@ fn build_menu_linux<R: Runtime>(
     let menu = Menu::new(app)?;
 
     // --- File menu ---
-    let open_item = MenuItem::with_id(app, OPEN_ID, "Open", true, None::<&str>)?;
-    let edit_item = MenuItem::with_id(app, EDIT_ID, "Edit", true, Some("F4"))?;
+    let open_item = MenuItem::with_id(app, OPEN_ID, "&Open", true, None::<&str>)?;
+    let edit_item = MenuItem::with_id(app, EDIT_ID, "&Edit", true, Some("F4"))?;
     let show_in_fm_item = MenuItem::with_id(
         app,
         SHOW_IN_FINDER_ID,
@@ -493,18 +493,18 @@ fn build_menu_linux<R: Runtime>(
     let copy_path_item = MenuItem::with_id(
         app,
         COPY_PATH_ID,
-        "Copy path to clipboard",
+        "Copy &path to clipboard",
         true,
         Some(copy_path_accelerator()),
     )?;
-    let copy_filename_item = MenuItem::with_id(app, COPY_FILENAME_ID, "Copy filename", true, None::<&str>)?;
-    let new_tab_item = MenuItem::with_id(app, NEW_TAB_ID, "New tab", true, Some("Cmd+T"))?;
-    let pin_tab_item = MenuItem::with_id(app, PIN_TAB_MENU_ID, "Pin tab", true, None::<&str>)?;
-    let close_tab_item = MenuItem::with_id(app, CLOSE_TAB_ID, "Close tab", true, Some("Cmd+W"))?;
+    let copy_filename_item = MenuItem::with_id(app, COPY_FILENAME_ID, "Copy file&name", true, None::<&str>)?;
+    let new_tab_item = MenuItem::with_id(app, NEW_TAB_ID, "New &tab", true, Some("Cmd+T"))?;
+    let pin_tab_item = MenuItem::with_id(app, PIN_TAB_MENU_ID, "P&in tab", true, None::<&str>)?;
+    let close_tab_item = MenuItem::with_id(app, CLOSE_TAB_ID, "&Close tab", true, Some("Cmd+W"))?;
 
     let file_menu = Submenu::with_items(
         app,
-        "File",
+        "&File",
         true,
         &[
             &open_item,
@@ -521,27 +521,30 @@ fn build_menu_linux<R: Runtime>(
     menu.append(&file_menu)?;
 
     // --- Edit menu ---
-    let rename_item = MenuItem::with_id(app, RENAME_ID, "Rename", true, Some("F2"))?;
-    let settings_item = MenuItem::with_id(app, SETTINGS_ID, "Settings...", true, Some("Cmd+,"))?;
+    // No accelerator — F2 is handled by the webview's centralized shortcut dispatch.
+    // GTK menu accelerators intercept keys before they reach the webview, and the
+    // is_focused() check in on_menu_event fails on Linux, so F2 rename never fires.
+    let rename_item = MenuItem::with_id(app, RENAME_ID, "Re&name", true, None::<&str>)?;
+    let settings_item = MenuItem::with_id(app, SETTINGS_ID, "&Settings...", true, Some("Cmd+,"))?;
     let license_label = if has_existing_license {
-        "See license details..."
+        "See &license details..."
     } else {
-        "Enter license key..."
+        "Enter &license key..."
     };
     let license_item = MenuItem::with_id(app, ENTER_LICENSE_KEY_ID, license_label, true, None::<&str>)?;
 
     let edit_menu = Submenu::with_items(
         app,
-        "Edit",
+        "&Edit",
         true,
         &[
-            &PredefinedMenuItem::undo(app, None)?,
-            &PredefinedMenuItem::redo(app, None)?,
+            &PredefinedMenuItem::undo(app, Some("&Undo"))?,
+            &PredefinedMenuItem::redo(app, Some("&Redo"))?,
             &PredefinedMenuItem::separator(app)?,
-            &PredefinedMenuItem::cut(app, None)?,
-            &PredefinedMenuItem::copy(app, None)?,
-            &PredefinedMenuItem::paste(app, None)?,
-            &PredefinedMenuItem::select_all(app, None)?,
+            &PredefinedMenuItem::cut(app, Some("Cu&t"))?,
+            &PredefinedMenuItem::copy(app, Some("&Copy"))?,
+            &PredefinedMenuItem::paste(app, Some("&Paste"))?,
+            &PredefinedMenuItem::select_all(app, Some("Select &all"))?,
             &PredefinedMenuItem::separator(app)?,
             &rename_item,
             &PredefinedMenuItem::separator(app)?,
@@ -555,7 +558,7 @@ fn build_menu_linux<R: Runtime>(
     let view_mode_full_item = CheckMenuItem::with_id(
         app,
         VIEW_MODE_FULL_ID,
-        "Full view",
+        "&Full view",
         true,
         view_mode == ViewMode::Full,
         Some("Cmd+1"),
@@ -563,7 +566,7 @@ fn build_menu_linux<R: Runtime>(
     let view_mode_brief_item = CheckMenuItem::with_id(
         app,
         VIEW_MODE_BRIEF_ID,
-        "Brief view",
+        "&Brief view",
         true,
         view_mode == ViewMode::Brief,
         Some("Cmd+2"),
@@ -571,23 +574,23 @@ fn build_menu_linux<R: Runtime>(
     let show_hidden_item = CheckMenuItem::with_id(
         app,
         SHOW_HIDDEN_FILES_ID,
-        "Show hidden files",
+        "Show &hidden files",
         true,
         show_hidden_files,
         Some("Cmd+Shift+."),
     )?;
 
     // Sort by submenu
-    let sort_by_name = MenuItem::with_id(app, SORT_BY_NAME_ID, "Name", true, None::<&str>)?;
-    let sort_by_ext = MenuItem::with_id(app, SORT_BY_EXTENSION_ID, "Extension", true, None::<&str>)?;
-    let sort_by_size = MenuItem::with_id(app, SORT_BY_SIZE_ID, "Size", true, None::<&str>)?;
-    let sort_by_modified = MenuItem::with_id(app, SORT_BY_MODIFIED_ID, "Date modified", true, None::<&str>)?;
-    let sort_by_created = MenuItem::with_id(app, SORT_BY_CREATED_ID, "Date created", true, None::<&str>)?;
-    let sort_asc = MenuItem::with_id(app, SORT_ASCENDING_ID, "Ascending", true, None::<&str>)?;
-    let sort_desc = MenuItem::with_id(app, SORT_DESCENDING_ID, "Descending", true, None::<&str>)?;
+    let sort_by_name = MenuItem::with_id(app, SORT_BY_NAME_ID, "&Name", true, None::<&str>)?;
+    let sort_by_ext = MenuItem::with_id(app, SORT_BY_EXTENSION_ID, "&Extension", true, None::<&str>)?;
+    let sort_by_size = MenuItem::with_id(app, SORT_BY_SIZE_ID, "&Size", true, None::<&str>)?;
+    let sort_by_modified = MenuItem::with_id(app, SORT_BY_MODIFIED_ID, "Date &modified", true, None::<&str>)?;
+    let sort_by_created = MenuItem::with_id(app, SORT_BY_CREATED_ID, "Date &created", true, None::<&str>)?;
+    let sort_asc = MenuItem::with_id(app, SORT_ASCENDING_ID, "&Ascending", true, None::<&str>)?;
+    let sort_desc = MenuItem::with_id(app, SORT_DESCENDING_ID, "&Descending", true, None::<&str>)?;
     let sort_submenu = Submenu::with_items(
         app,
-        "Sort by",
+        "&Sort by",
         true,
         &[
             &sort_by_name,
@@ -601,14 +604,19 @@ fn build_menu_linux<R: Runtime>(
         ],
     )?;
 
-    let command_palette_item =
-        MenuItem::with_id(app, COMMAND_PALETTE_ID, "Command palette...", true, Some("Cmd+Shift+P"))?;
-    let switch_pane_item = MenuItem::with_id(app, SWITCH_PANE_ID, "Switch pane", true, Some("Tab"))?;
-    let swap_panes_item = MenuItem::with_id(app, SWAP_PANES_ID, "Swap panes", true, Some("Cmd+U"))?;
+    let command_palette_item = MenuItem::with_id(
+        app,
+        COMMAND_PALETTE_ID,
+        "&Command palette...",
+        true,
+        Some("Cmd+Shift+P"),
+    )?;
+    let switch_pane_item = MenuItem::with_id(app, SWITCH_PANE_ID, "S&witch pane", true, Some("Tab"))?;
+    let swap_panes_item = MenuItem::with_id(app, SWAP_PANES_ID, "Swa&p panes", true, Some("Cmd+U"))?;
 
     let view_submenu = Submenu::with_items(
         app,
-        "View",
+        "&View",
         true,
         &[
             &view_mode_full_item,
@@ -629,13 +637,13 @@ fn build_menu_linux<R: Runtime>(
     let view_brief_pos: usize = 1;
 
     // --- Go menu ---
-    let go_back_item = MenuItem::with_id(app, GO_BACK_ID, "Back", true, Some("Cmd+["))?;
-    let go_forward_item = MenuItem::with_id(app, GO_FORWARD_ID, "Forward", true, Some("Cmd+]"))?;
-    let go_parent_item = MenuItem::with_id(app, GO_PARENT_ID, "Parent folder", true, Some("Cmd+Up"))?;
+    let go_back_item = MenuItem::with_id(app, GO_BACK_ID, "&Back", true, Some("Cmd+["))?;
+    let go_forward_item = MenuItem::with_id(app, GO_FORWARD_ID, "&Forward", true, Some("Cmd+]"))?;
+    let go_parent_item = MenuItem::with_id(app, GO_PARENT_ID, "&Parent folder", true, Some("Cmd+Up"))?;
 
     let go_menu = Submenu::with_items(
         app,
-        "Go",
+        "&Go",
         true,
         &[
             &go_back_item,
@@ -647,8 +655,8 @@ fn build_menu_linux<R: Runtime>(
     menu.append(&go_menu)?;
 
     // --- Help menu ---
-    let about_item = MenuItem::with_id(app, ABOUT_ID, "About cmdr", true, None::<&str>)?;
-    let help_menu = Submenu::with_items(app, "Help", true, &[&about_item])?;
+    let about_item = MenuItem::with_id(app, ABOUT_ID, "&About cmdr", true, None::<&str>)?;
+    let help_menu = Submenu::with_items(app, "&Help", true, &[&about_item])?;
     menu.append(&help_menu)?;
 
     Ok(MenuItems {
@@ -747,8 +755,8 @@ pub fn build_viewer_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R
     {
         let menu = Menu::new(app)?;
 
-        let word_wrap_item = CheckMenuItem::with_id(app, VIEWER_WORD_WRAP_ID, "Word wrap", true, false, None::<&str>)?;
-        let view_submenu = Submenu::with_items(app, "View", true, &[&word_wrap_item])?;
+        let word_wrap_item = CheckMenuItem::with_id(app, VIEWER_WORD_WRAP_ID, "&Word wrap", true, false, None::<&str>)?;
+        let view_submenu = Submenu::with_items(app, "&View", true, &[&word_wrap_item])?;
         menu.append(&view_submenu)?;
 
         Ok(menu)
@@ -874,14 +882,14 @@ pub fn update_view_mode_accelerator<R: Runtime>(
             menu_state.view_mode_full.lock_ignore_poison(),
             menu_state.view_mode_full_position.lock_ignore_poison(),
             VIEW_MODE_FULL_ID,
-            "Full view",
+            "&Full view",
         )
     } else {
         (
             menu_state.view_mode_brief.lock_ignore_poison(),
             menu_state.view_mode_brief_position.lock_ignore_poison(),
             VIEW_MODE_BRIEF_ID,
-            "Brief view",
+            "&Brief view",
         )
     };
 

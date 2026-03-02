@@ -65,6 +65,7 @@ await browser.releaseActions()
 | `wdio.conf.ts`            | WebDriverIO config: spawns tauri-driver, manages fixtures       |
 | `app.spec.ts`             | 14 tests: rendering, keyboard nav, mouse interaction, dialogs   |
 | `file-operations.spec.ts` | 8 tests: copy, move, rename, mkdir, view modes, hidden, palette |
+| `file-watching.spec.ts`   | 1 test: inotify file watching (external mkdir detection)        |
 | `settings.spec.ts`        | 5 tests: settings panel                                         |
 | `viewer.spec.ts`          | 10 tests: file viewer                                           |
 | `docker/Dockerfile`       | Ubuntu 24.04 image with Tauri prereqs, Xvfb, Node, Rust         |

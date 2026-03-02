@@ -1,4 +1,4 @@
-// Volume management, space, permissions (macOS only)
+// Volume management, space, and permissions
 
 import { invoke } from '@tauri-apps/api/core'
 import type { VolumeInfo } from '../file-explorer/types'
@@ -8,7 +8,7 @@ export const DEFAULT_VOLUME_ID = 'root'
 
 /**
  * Lists all mounted volumes.
- * Only available on macOS.
+ * Available on macOS and Linux.
  * @returns Array of VolumeInfo objects, sorted with root first
  */
 export async function listVolumes(): Promise<VolumeInfo[]> {
@@ -69,12 +69,12 @@ export async function getVolumeSpace(path: string): Promise<VolumeSpaceInfo | nu
 }
 
 // ============================================================================
-// Permission checking (macOS only)
+// Permission checking
 // ============================================================================
 
 /**
  * Checks if the app has full disk access.
- * Only available on macOS.
+ * On macOS, checks the actual FDA status. On Linux, always returns true (no sandboxing).
  * @returns True if the app has FDA, false otherwise
  */
 export async function checkFullDiskAccess(): Promise<boolean> {
@@ -87,8 +87,8 @@ export async function checkFullDiskAccess(): Promise<boolean> {
 }
 
 /**
- * Opens System Settings > Privacy & Security > Privacy.
- * Only available on macOS.
+ * Opens the system privacy settings.
+ * On macOS, opens System Settings > Privacy & Security. Not applicable on Linux.
  */
 export async function openPrivacySettings(): Promise<void> {
     try {
@@ -98,7 +98,7 @@ export async function openPrivacySettings(): Promise<void> {
     }
 }
 
-/** Opens System Settings > Appearance. Only available on macOS. */
+/** Opens the system appearance settings. On macOS, opens System Settings > Appearance. On Linux, opens the DE-specific appearance settings. */
 export async function openAppearanceSettings(): Promise<void> {
     try {
         await invoke('open_appearance_settings')

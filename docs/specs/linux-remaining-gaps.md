@@ -8,18 +8,18 @@ Each section is self-contained and can be handed to an agent independently.
 
 ## Task list
 
-- [ ] 1. Quick Look and Get Info (small) — unbind shortcuts, no-op error paths
+- [x] 1. Quick Look and Get Info (small) — unbind shortcuts, no-op error paths
 - [ ] 2. Accent colors via XDG Desktop Portal (medium) — D-Bus call + live updates + fallback chain
-- [ ] 3. Appearance settings opener (tiny) — DE-specific commands replacing broken `xdg-open`
-- [ ] 4. Volume chooser shortcuts and key naming (small) — Alt+F1/F2, F2 rename fix, Super label
-- [ ] 5. GTK menu mnemonics (small) — add `&` prefixes to `build_menu_linux()` labels
-- [ ] 6. Linux-specific error messages (small) — audit and replace macOS terminology
+- [x] 3. Appearance settings opener (tiny) — DE-specific commands replacing broken `xdg-open`
+- [x] 4. Volume chooser shortcuts and key naming (small) — Alt+F1/F2, F2 rename fix, Super label
+- [x] 5. GTK menu mnemonics (small) — add `&` prefixes to `build_menu_linux()` labels
+- [x] 6. Linux-specific error messages (small) — audit and replace macOS terminology
 - [ ] 7. Credential storage resilience (medium) — Secret Service → keyutils → encrypted file fallback
 - [ ] 8. Media eject — deferred (not on macOS either)
 - [ ] 9. High-DPI support — no code changes needed, just verification
 - [ ] 10. Trash implementation (medium) — `trash` crate, wire up in lib.rs
 - [ ] 11. Network filesystem detection for copy (medium) — `/proc/self/mountinfo` parser, copy strategy
-- [ ] 12. File watching E2E verification (small) — add inotify E2E test
+- [x] 12. File watching E2E verification (small) — add inotify E2E test
 - [ ] 13. MTP USB permissions (small) — error messages + packaging metadata
 - [ ] 14. SMB mounting completion (large) — `smbclient` fallback, auth prompts, cross-DE testing
 - [ ] 15. Custom drag image — deferred (no WebKitGTK API)
@@ -126,7 +126,7 @@ Use `contains()` on the uppercased env var (Ubuntu sets it to `ubuntu:GNOME`).
 
 ## 4. Volume chooser shortcuts and key naming on Linux (small)
 
-**Current state:** Several shortcut issues on Linux:
+**Previous state:** Several shortcut issues on Linux:
 
 1. **Volume chooser shortcuts:** On macOS, `⌘F1` opens the left volume chooser and `⌘F2` opens the right
    one. On Linux, `⌘` maps to `Ctrl`, so these become `Ctrl+F1` / `Ctrl+F2`. Standard Linux convention
@@ -164,6 +164,21 @@ Use `contains()` on the uppercased env var (Ubuntu sets it to `ubuntu:GNOME`).
 - `apps/desktop/src/lib/file-explorer/pane/DualPaneExplorer.svelte` — `handleFunctionKey()` guard
 - `apps/desktop/src/lib/shortcuts/key-capture.ts` — `formatKeyCombo()` line with `'Win'`
 - `apps/desktop/src-tauri/src/menu.rs` — menu accelerators for volume chooser on Linux
+
+Implemented. Summary of changes:
+
+- **Volume chooser shortcuts**: Both platforms now use `⌥F1`/`⌥F2` (Option+F1/F2 on macOS, Alt+F1/F2
+  on Linux). The `pane.rightVolumeChooser` entry now has a shortcut (was empty).
+- **Removed dead `handleFunctionKey()`**: The bare F1 handler in `DualPaneExplorer.svelte` was redundant
+  — the centralized dispatch already handled F1 via the command registry. Removed entirely since volume
+  choosers now use ⌥F1/⌥F2 on both platforms.
+- **F2 rename fix on Linux**: Root cause was that GTK's menu accelerator intercepted F2 before it reached
+  the webview, then the `is_focused()` check in `on_menu_event` (lib.rs) failed on Linux. Fix: removed
+  the F2 menu accelerator from `build_menu_linux()` so F2 reaches the webview's centralized dispatch
+  directly. macOS menu accelerator kept as-is.
+- **'Win' → 'Super'**: Changed in `formatKeyCombo()` in `key-capture.ts`.
+- **Tests**: Extended `key-capture.test.ts` with `formatKeyCombo` tests (Super label, Alt+F1/F2 formatting)
+  and `toPlatformShortcut` test for `⌥F1`/`⌥F2` conversion.
 
 ## 5. GTK menu mnemonics (small)
 

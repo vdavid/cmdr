@@ -1,6 +1,19 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getUserFriendlyMessage, getTechnicalDetails } from './transfer-error-messages'
 import type { WriteOperationError } from '$lib/file-explorer/types'
+
+// Mock navigator to control isMacOS() behavior
+const navigatorSpy = vi.spyOn(globalThis, 'navigator', 'get')
+
+function setMacOS(isMac: boolean) {
+    navigatorSpy.mockReturnValue({
+        userAgent: isMac ? 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' : 'Mozilla/5.0 (X11; Linux x86_64)',
+    } as Navigator)
+}
+
+afterEach(() => {
+    navigatorSpy.mockReset()
+})
 
 describe('getUserFriendlyMessage', () => {
     describe('copy operation (default)', () => {
@@ -326,7 +339,8 @@ describe('getUserFriendlyMessage — delete operation', () => {
         expect(result.title).toBe('Delete failed')
     })
 
-    it('gives delete-specific suggestion for permission_denied', () => {
+    it('gives macOS-specific suggestion for permission_denied on delete', () => {
+        setMacOS(true)
         const error: WriteOperationError = {
             type: 'permission_denied',
             path: '/protected',
@@ -334,11 +348,25 @@ describe('getUserFriendlyMessage — delete operation', () => {
         }
         const result = getUserFriendlyMessage(error, 'delete')
 
-        expect(result.suggestion).toContain('locked')
         expect(result.suggestion).toContain('Finder')
+        expect(result.suggestion).toContain('Get Info')
     })
 
-    it('detects locked file error for delete', () => {
+    it('gives Linux-specific suggestion for permission_denied on delete', () => {
+        setMacOS(false)
+        const error: WriteOperationError = {
+            type: 'permission_denied',
+            path: '/protected',
+            message: 'denied',
+        }
+        const result = getUserFriendlyMessage(error, 'delete')
+
+        expect(result.suggestion).toContain('chmod')
+        expect(result.suggestion).not.toContain('Finder')
+    })
+
+    it('gives macOS-specific suggestion for locked file IO error on delete', () => {
+        setMacOS(true)
         const error: WriteOperationError = {
             type: 'io_error',
             path: '/path/to/locked.txt',
@@ -347,8 +375,21 @@ describe('getUserFriendlyMessage — delete operation', () => {
         const result = getUserFriendlyMessage(error, 'delete')
 
         expect(result.message).toContain('locked')
-        expect(result.suggestion).toContain('Unlock')
         expect(result.suggestion).toContain('Finder')
+    })
+
+    it('gives Linux-specific suggestion for locked file IO error on delete', () => {
+        setMacOS(false)
+        const error: WriteOperationError = {
+            type: 'io_error',
+            path: '/path/to/locked.txt',
+            message: 'Operation not permitted',
+        }
+        const result = getUserFriendlyMessage(error, 'delete')
+
+        expect(result.message).toContain('locked')
+        expect(result.suggestion).toContain('chmod')
+        expect(result.suggestion).not.toContain('Finder')
     })
 })
 
@@ -367,7 +408,8 @@ describe('getUserFriendlyMessage — trash operation', () => {
         expect(result.title).toBe('Move to trash failed')
     })
 
-    it('gives delete-specific suggestion for permission_denied', () => {
+    it('gives macOS-specific suggestion for permission_denied on trash', () => {
+        setMacOS(true)
         const error: WriteOperationError = {
             type: 'permission_denied',
             path: '/protected',
@@ -375,7 +417,21 @@ describe('getUserFriendlyMessage — trash operation', () => {
         }
         const result = getUserFriendlyMessage(error, 'trash')
 
+        expect(result.suggestion).toContain('Finder')
         expect(result.suggestion).toContain('locked')
+    })
+
+    it('gives Linux-specific suggestion for permission_denied on trash', () => {
+        setMacOS(false)
+        const error: WriteOperationError = {
+            type: 'permission_denied',
+            path: '/protected',
+            message: 'denied',
+        }
+        const result = getUserFriendlyMessage(error, 'trash')
+
+        expect(result.suggestion).toContain('chmod')
+        expect(result.suggestion).not.toContain('Finder')
     })
 
     it('detects trash-not-supported error', () => {

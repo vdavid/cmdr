@@ -76,14 +76,14 @@ export const commands: Command[] = [
         name: 'Open left volume chooser',
         scope: 'Main window',
         showInPalette: true,
-        shortcuts: ['F1'],
+        shortcuts: ['⌥F1'],
     },
     {
         id: 'pane.rightVolumeChooser',
         name: 'Open right volume chooser',
         scope: 'Main window',
         showInPalette: true,
-        shortcuts: [],
+        shortcuts: ['⌥F2'],
     },
 
     // ============================================================================
@@ -261,7 +261,7 @@ export const commands: Command[] = [
         name: isMacOS() ? 'Get info' : 'File properties',
         scope: 'Main window/File list',
         showInPalette: isMacOS(),
-        shortcuts: ['⌘I'],
+        shortcuts: isMacOS() ? ['⌘I'] : [],
     },
     {
         id: 'file.quickLook',

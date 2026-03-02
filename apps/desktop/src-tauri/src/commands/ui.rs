@@ -100,6 +100,7 @@ pub fn show_in_finder(path: String) -> Result<(), String> {
     Ok(())
 }
 
+/// Show a file in the default file manager (open parent folder via xdg-open)
 #[tauri::command]
 #[cfg(target_os = "linux")]
 pub fn show_in_finder(path: String) -> Result<(), String> {
@@ -140,10 +141,10 @@ pub fn quick_look(path: String) -> Result<(), String> {
 #[tauri::command]
 #[cfg(not(target_os = "macos"))]
 pub fn quick_look(_path: String) -> Result<(), String> {
-    Err("Quick Look is only available on macOS".to_string())
+    Ok(())
 }
 
-/// Open Get Info window in Finder (macOS only)
+/// Open the Get Info window for a file (macOS only, no-op on other platforms)
 #[tauri::command]
 #[cfg(target_os = "macos")]
 pub fn get_info(path: String) -> Result<(), String> {
@@ -167,7 +168,7 @@ pub fn get_info(path: String) -> Result<(), String> {
 #[tauri::command]
 #[cfg(not(target_os = "macos"))]
 pub fn get_info(_path: String) -> Result<(), String> {
-    Err("Get Info is only available on macOS".to_string())
+    Ok(())
 }
 
 /// Open file in the system's default text editor (macOS only)

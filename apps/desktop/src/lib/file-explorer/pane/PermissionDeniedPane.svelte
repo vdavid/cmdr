@@ -1,6 +1,7 @@
 <script lang="ts">
     import { DotLottieSvelte } from '@lottiefiles/dotlottie-svelte'
     import { openPrivacySettings } from '$lib/tauri-commands'
+    import { isMacOS } from '$lib/shortcuts/key-capture'
     import Button from '$lib/ui/Button.svelte'
 
     interface Props {
@@ -15,16 +16,20 @@
         <div class="icon"><DotLottieSvelte src="/icons/lock-closing.lottie" autoplay speed={0.5} /></div>
         <h2>No permission</h2>
         <p class="folder-path">{folderPath}</p>
-        <p>If you want to see the content of this folder:</p>
-        <ol>
-            <li>Click <strong>Open System Settings</strong> below</li>
-            <li>Click <strong>Files & Folders</strong> in the list</li>
-            <li>Find <strong>Cmdr</strong> and toggle the switch for this folder.</li>
-            <li>Confirm it and click <strong>Quit & Reopen</strong></li>
-        </ol>
-        <div class="cta">
-            <Button variant="primary" onclick={() => openPrivacySettings()}>Open System Settings</Button>
-        </div>
+        {#if isMacOS()}
+            <p>If you want to see the content of this folder:</p>
+            <ol>
+                <li>Click <strong>Open System Settings</strong> below</li>
+                <li>Click <strong>Files & Folders</strong> in the list</li>
+                <li>Find <strong>Cmdr</strong> and toggle the switch for this folder.</li>
+                <li>Confirm it and click <strong>Quit & Reopen</strong></li>
+            </ol>
+            <div class="cta">
+                <Button variant="primary" onclick={() => openPrivacySettings()}>Open System Settings</Button>
+            </div>
+        {:else}
+            <p>You don't have permission to read this folder. Check that your user has the right file permissions.</p>
+        {/if}
     </div>
 </div>
 

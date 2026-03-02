@@ -30,7 +30,8 @@ export async function showFileContextMenu(path: string, filename: string, isDire
 }
 
 /**
- * Show a file in Finder (reveal in parent folder).
+ * Show a file in the system file manager (reveal in parent folder).
+ * On macOS, reveals in Finder. On Linux, uses the default file manager.
  * @param path - Absolute path to the file.
  */
 export async function showInFinder(path: string): Promise<void> {
@@ -54,7 +55,7 @@ export async function quickLook(path: string): Promise<void> {
 }
 
 /**
- * Open Get Info window in Finder (macOS only).
+ * Open file info window (macOS only, no-op on other platforms).
  * @param path - Absolute path to the file.
  */
 export async function getInfo(path: string): Promise<void> {
@@ -62,8 +63,8 @@ export async function getInfo(path: string): Promise<void> {
 }
 
 /**
- * Open file in the system's default text editor (macOS only).
- * Uses `open -t` which opens the file in the default text editor.
+ * Open file in the system's default text editor.
+ * On macOS, uses `open -t`. On Linux, uses `xdg-open`.
  * @param path - Absolute path to the file.
  */
 export async function openInEditor(path: string): Promise<void> {
