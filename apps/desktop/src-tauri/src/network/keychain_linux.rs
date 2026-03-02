@@ -1,23 +1,37 @@
 //! Credential storage for SMB on Linux.
 //!
-//! Uses the `keyring` crate which delegates to the platform's secret service
-//! (GNOME Keyring, KDE Wallet, or similar via the Secret Service D-Bus API).
+//! Uses a two-tier strategy:
+//! 1. Secret Service D-Bus API via the `keyring` crate (GNOME Keyring, KDE Wallet)
+//! 2. Encrypted file store via `cocoon` as fallback when no secret service is available
 //!
 //! Credentials are cached in-memory after first access to avoid repeated
-//! D-Bus round-trips during a session.
+//! backend lookups during a session.
 
-use log::{debug, warn};
+use cocoon::Cocoon;
+use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::sync::RwLock;
+use std::os::unix::fs::PermissionsExt;
+use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Mutex, RwLock};
 
 /// Service name used for keyring items.
 const SERVICE_NAME: &str = "Cmdr";
 
-/// In-memory cache for credentials to avoid repeated secret service lookups.
+/// In-memory cache for credentials to avoid repeated backend lookups.
 /// Key is the account name (like "smb://server" or "smb://server/share").
 static CREDENTIAL_CACHE: std::sync::LazyLock<RwLock<HashMap<String, SmbCredentials>>> =
     std::sync::LazyLock::new(|| RwLock::new(HashMap::new()));
+
+/// Mutex for serializing file-based credential store access.
+static FILE_STORE_LOCK: std::sync::LazyLock<Mutex<()>> = std::sync::LazyLock::new(|| Mutex::new(()));
+
+/// Whether the file-based fallback has been used this session.
+static USING_FILE_FALLBACK: AtomicBool = AtomicBool::new(false);
+
+/// Whether we've already logged the fallback info message.
+static FILE_FALLBACK_LOGGED: AtomicBool = AtomicBool::new(false);
 
 /// Credentials for SMB authentication.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -48,6 +62,8 @@ impl std::fmt::Display for KeychainError {
 
 impl std::error::Error for KeychainError {}
 
+// --- Account naming ---
+
 /// Creates the account name used for credential storage.
 /// Format: "smb://{server}/{share}" or "smb://{server}" for server-level credentials.
 fn make_account_name(server: &str, share: Option<&str>) -> String {
@@ -57,8 +73,9 @@ fn make_account_name(server: &str, share: Option<&str>) -> String {
     }
 }
 
-/// Parses a stored password entry to extract username and password.
-/// Format: "username\0password" (null-separated)
+// --- Secret Service helpers (keyring crate) ---
+
+/// Format: "username\0password" (null-separated, for keyring string storage)
 fn parse_password_entry(data: &str) -> Option<SmbCredentials> {
     let parts: Vec<&str> = data.splitn(2, '\0').collect();
     if parts.len() == 2 {
@@ -71,13 +88,181 @@ fn parse_password_entry(data: &str) -> Option<SmbCredentials> {
     }
 }
 
-/// Creates a password entry for storage.
-/// Format: "username\0password" (null-separated)
 fn make_password_entry(username: &str, password: &str) -> String {
     format!("{}\0{}", username, password)
 }
 
-/// Saves SMB credentials to the secret service.
+fn secret_service_save(account: &str, username: &str, password: &str) -> Result<(), String> {
+    let entry = keyring::Entry::new(SERVICE_NAME, account).map_err(|e| format!("{}", e))?;
+    let data = make_password_entry(username, password);
+    entry.set_password(&data).map_err(|e| format!("{}", e))
+}
+
+/// Returns `Ok(Some(creds))` if found, `Ok(None)` if not found or service unavailable.
+fn secret_service_get(account: &str) -> Result<Option<SmbCredentials>, String> {
+    let entry = keyring::Entry::new(SERVICE_NAME, account).map_err(|e| format!("{}", e))?;
+    match entry.get_password() {
+        Ok(data) => Ok(parse_password_entry(&data)),
+        Err(keyring::Error::NoEntry) => Ok(None),
+        Err(e) => Err(format!("{}", e)),
+    }
+}
+
+/// Returns `Ok(true)` if deleted, `Ok(false)` if not found.
+fn secret_service_delete(account: &str) -> Result<bool, String> {
+    let entry = keyring::Entry::new(SERVICE_NAME, account).map_err(|e| format!("{}", e))?;
+    match entry.delete_credential() {
+        Ok(()) => Ok(true),
+        Err(keyring::Error::NoEntry) => Ok(false),
+        Err(e) => Err(format!("{}", e)),
+    }
+}
+
+// --- Encrypted file store ---
+
+/// Credential entry stored in the encrypted file.
+#[derive(Serialize, Deserialize)]
+struct FileCredentialEntry {
+    username: String,
+    password: String,
+}
+
+type FileCredentialMap = HashMap<String, FileCredentialEntry>;
+
+fn credential_file_path() -> PathBuf {
+    dirs::data_dir()
+        .unwrap_or_else(|| PathBuf::from("/tmp"))
+        .join("cmdr")
+        .join("credentials.enc")
+}
+
+/// Reads `/etc/machine-id` as encryption password (standard on systemd systems:
+/// Ubuntu, Fedora, Arch). Falls back to a fixed string on non-systemd systems
+/// where file permissions (0600) provide the primary protection.
+fn encryption_password() -> Vec<u8> {
+    std::fs::read_to_string("/etc/machine-id")
+        .unwrap_or_else(|_| "cmdr-credential-store".to_string())
+        .trim()
+        .as_bytes()
+        .to_vec()
+}
+
+/// Reads and decrypts the credential file. Returns an empty map on any failure
+/// (missing file, corrupted data, wrong key) so callers can recover gracefully.
+fn read_credential_file() -> FileCredentialMap {
+    let path = credential_file_path();
+    if !path.exists() {
+        return HashMap::new();
+    }
+    let Ok(encrypted) = std::fs::read(&path) else {
+        warn!("Could not read credential file, starting fresh");
+        return HashMap::new();
+    };
+    let password = encryption_password();
+    let cocoon = Cocoon::new(&password);
+    match cocoon.unwrap(&encrypted) {
+        Ok(decrypted) => serde_json::from_slice(&decrypted).unwrap_or_else(|e| {
+            warn!("Credential file has invalid format ({}), starting fresh", e);
+            HashMap::new()
+        }),
+        Err(e) => {
+            warn!("Could not decrypt credential file ({:?}), starting fresh", e);
+            HashMap::new()
+        }
+    }
+}
+
+fn write_credential_file(creds: &FileCredentialMap) -> Result<(), String> {
+    let path = credential_file_path();
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| format!("Could not create credential directory: {}", e))?;
+    }
+    let json = serde_json::to_vec(creds).map_err(|e| format!("Could not serialize credentials: {}", e))?;
+    let password = encryption_password();
+    let mut cocoon = Cocoon::new(&password);
+    let encrypted = cocoon
+        .wrap(&json)
+        .map_err(|e| format!("Could not encrypt credentials: {:?}", e))?;
+    std::fs::write(&path, &encrypted).map_err(|e| format!("Could not write credential file: {}", e))?;
+    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600))
+        .map_err(|e| format!("Could not set credential file permissions: {}", e))?;
+    Ok(())
+}
+
+fn mark_file_fallback() {
+    USING_FILE_FALLBACK.store(true, Ordering::Relaxed);
+    if !FILE_FALLBACK_LOGGED.swap(true, Ordering::Relaxed) {
+        info!("No system keyring detected, using encrypted file-based credential storage");
+    }
+}
+
+fn file_save(account: &str, username: &str, password: &str) -> Result<(), KeychainError> {
+    let _lock = FILE_STORE_LOCK
+        .lock()
+        .map_err(|e| KeychainError::Other(format!("Lock error: {}", e)))?;
+    let mut creds = read_credential_file();
+    creds.insert(
+        account.to_string(),
+        FileCredentialEntry {
+            username: username.to_string(),
+            password: password.to_string(),
+        },
+    );
+    write_credential_file(&creds).map_err(KeychainError::Other)?;
+    mark_file_fallback();
+    Ok(())
+}
+
+fn file_get(account: &str) -> Option<SmbCredentials> {
+    let _lock = FILE_STORE_LOCK.lock().ok()?;
+    let creds = read_credential_file();
+    let entry = creds.get(account)?;
+    mark_file_fallback();
+    Some(SmbCredentials {
+        username: entry.username.clone(),
+        password: entry.password.clone(),
+    })
+}
+
+/// Returns `Ok(true)` if deleted, `Ok(false)` if not found.
+fn file_delete(account: &str) -> Result<bool, KeychainError> {
+    let _lock = FILE_STORE_LOCK
+        .lock()
+        .map_err(|e| KeychainError::Other(format!("Lock error: {}", e)))?;
+    let mut creds = read_credential_file();
+    if creds.remove(account).is_none() {
+        return Ok(false);
+    }
+    write_credential_file(&creds).map_err(KeychainError::Other)?;
+    Ok(true)
+}
+
+// --- Cache helpers ---
+
+fn cache_put(account: &str, creds: &SmbCredentials) {
+    if let Ok(mut cache) = CREDENTIAL_CACHE.write() {
+        cache.insert(account.to_string(), creds.clone());
+    }
+}
+
+fn cache_remove(account: &str) {
+    if let Ok(mut cache) = CREDENTIAL_CACHE.write() {
+        cache.remove(account);
+    }
+}
+
+fn cache_get(account: &str) -> Option<SmbCredentials> {
+    CREDENTIAL_CACHE.read().ok()?.get(account).cloned()
+}
+
+// --- Public API ---
+
+/// Returns whether the encrypted file fallback is being used instead of the system keyring.
+pub fn is_using_file_fallback() -> bool {
+    USING_FILE_FALLBACK.load(Ordering::Relaxed)
+}
+
+/// Saves SMB credentials. Tries Secret Service first, falls back to encrypted file.
 pub fn save_credentials(
     server: &str,
     share: Option<&str>,
@@ -85,96 +270,77 @@ pub fn save_credentials(
     password: &str,
 ) -> Result<(), KeychainError> {
     let account = make_account_name(server, share);
-    let entry_data = make_password_entry(username, password);
+    let creds = SmbCredentials {
+        username: username.to_string(),
+        password: password.to_string(),
+    };
 
-    debug!("Saving credentials to secret service for account: {}", account);
+    debug!("Saving credentials for account: {}", account);
 
-    let entry = keyring::Entry::new(SERVICE_NAME, &account)
-        .map_err(|e| KeychainError::Other(format!("Failed to create keyring entry: {}", e)))?;
-
-    entry.set_password(&entry_data).map_err(|e| {
-        let msg = format!("Failed to save credentials: {}", e);
-        warn!("{}", msg);
-        KeychainError::Other(msg)
-    })?;
-
-    // Update the in-memory cache
-    if let Ok(mut cache) = CREDENTIAL_CACHE.write() {
-        cache.insert(
-            account,
-            SmbCredentials {
-                username: username.to_string(),
-                password: password.to_string(),
-            },
-        );
+    // Try Secret Service first, then verify it actually persisted.
+    // Locked keyrings may accept writes silently without persisting them.
+    match secret_service_save(&account, username, password) {
+        Ok(()) => match secret_service_get(&account) {
+            Ok(Some(_)) => {
+                cache_put(&account, &creds);
+                return Ok(());
+            }
+            _ => debug!("Secret service save appeared to succeed but read-back failed (keyring likely locked), trying file backend"),
+        },
+        Err(e) => debug!("Secret service save failed, trying file backend: {}", e),
     }
 
+    // Fall back to encrypted file
+    file_save(&account, username, password)?;
+    cache_put(&account, &creds);
     Ok(())
 }
 
-/// Retrieves SMB credentials from the secret service.
+/// Retrieves SMB credentials. Checks cache, then Secret Service, then encrypted file.
 pub fn get_credentials(server: &str, share: Option<&str>) -> Result<SmbCredentials, KeychainError> {
     let account = make_account_name(server, share);
 
     // Check in-memory cache first
-    if let Ok(cache) = CREDENTIAL_CACHE.read()
-        && let Some(creds) = cache.get(&account)
-    {
+    if let Some(creds) = cache_get(&account) {
         debug!("Returning cached credentials for account: {}", account);
-        return Ok(creds.clone());
+        return Ok(creds);
     }
 
-    debug!("Getting credentials from secret service for account: {}", account);
+    debug!("Getting credentials for account: {}", account);
 
-    let entry = keyring::Entry::new(SERVICE_NAME, &account)
-        .map_err(|e| KeychainError::Other(format!("Failed to create keyring entry: {}", e)))?;
-
-    match entry.get_password() {
-        Ok(data) => {
-            let creds = parse_password_entry(&data)
-                .ok_or_else(|| KeychainError::Other("Invalid credential format".to_string()))?;
-
-            // Cache the credentials for future use
-            if let Ok(mut cache) = CREDENTIAL_CACHE.write() {
-                cache.insert(account, creds.clone());
-            }
-
-            Ok(creds)
+    // Try Secret Service
+    match secret_service_get(&account) {
+        Ok(Some(creds)) => {
+            cache_put(&account, &creds);
+            return Ok(creds);
         }
-        Err(keyring::Error::NoEntry) => Err(KeychainError::NotFound(format!("No credentials found for {}", account))),
-        Err(keyring::Error::Ambiguous(_)) => Err(KeychainError::Other(format!(
-            "Multiple credentials found for {}",
-            account
-        ))),
-        Err(e) => {
-            let msg = format!("{}", e);
-            if msg.contains("denied") || msg.contains("cancelled") {
-                Err(KeychainError::AccessDenied(msg))
-            } else {
-                Err(KeychainError::Other(msg))
-            }
-        }
+        Ok(None) => {} // Not found in secret service — try file backend
+        Err(e) => debug!("Secret service lookup failed, trying file backend: {}", e),
     }
+
+    // Try encrypted file
+    if let Some(creds) = file_get(&account) {
+        cache_put(&account, &creds);
+        return Ok(creds);
+    }
+
+    Err(KeychainError::NotFound(format!("No credentials found for {}", account)))
 }
 
-/// Deletes SMB credentials from the secret service.
+/// Deletes SMB credentials from all backends.
 pub fn delete_credentials(server: &str, share: Option<&str>) -> Result<(), KeychainError> {
     let account = make_account_name(server, share);
+    debug!("Deleting credentials for account: {}", account);
 
-    debug!("Deleting credentials from secret service for account: {}", account);
+    cache_remove(&account);
 
-    // Remove from cache first
-    if let Ok(mut cache) = CREDENTIAL_CACHE.write() {
-        cache.remove(&account);
-    }
+    let ss_deleted = secret_service_delete(&account).unwrap_or(false);
+    let file_deleted = file_delete(&account).unwrap_or(false);
 
-    let entry = keyring::Entry::new(SERVICE_NAME, &account)
-        .map_err(|e| KeychainError::Other(format!("Failed to create keyring entry: {}", e)))?;
-
-    match entry.delete_credential() {
-        Ok(()) => Ok(()),
-        Err(keyring::Error::NoEntry) => Err(KeychainError::NotFound(format!("No credentials found for {}", account))),
-        Err(e) => Err(KeychainError::Other(format!("{}", e))),
+    if ss_deleted || file_deleted {
+        Ok(())
+    } else {
+        Err(KeychainError::NotFound(format!("No credentials found for {}", account)))
     }
 }
 
@@ -225,5 +391,40 @@ mod tests {
     #[test]
     fn test_parse_password_entry_invalid() {
         assert!(parse_password_entry("no-separator-here").is_none());
+    }
+
+    #[test]
+    fn test_credential_file_path() {
+        let path = credential_file_path();
+        assert!(path.to_string_lossy().contains("cmdr"));
+        assert!(path.to_string_lossy().ends_with("credentials.enc"));
+    }
+
+    #[test]
+    fn test_encryption_roundtrip() {
+        let password = encryption_password();
+        let data = b"test data for encryption";
+        let mut cocoon = Cocoon::new(&password);
+        let encrypted = cocoon.wrap(data).expect("wrap should succeed");
+        let decrypted = Cocoon::new(&password)
+            .unwrap(&encrypted)
+            .expect("unwrap should succeed");
+        assert_eq!(decrypted, data);
+    }
+
+    #[test]
+    fn test_file_credential_map_serialization() {
+        let mut creds = FileCredentialMap::new();
+        creds.insert(
+            "smb://server/share".to_string(),
+            FileCredentialEntry {
+                username: "user".to_string(),
+                password: "pass".to_string(),
+            },
+        );
+        let json = serde_json::to_vec(&creds).unwrap();
+        let parsed: FileCredentialMap = serde_json::from_slice(&json).unwrap();
+        assert_eq!(parsed["smb://server/share"].username, "user");
+        assert_eq!(parsed["smb://server/share"].password, "pass");
     }
 }

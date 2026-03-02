@@ -17,7 +17,7 @@ Discover, browse, and mount SMB network shares. Works on macOS and Linux.
   - `mount_linux.rs` — Linux `gio mount` for GVFS-based user-space mounts
 - **Auth** (platform-specific via `#[path]` in `mod.rs`):
   - `keychain.rs` — macOS Keychain via `security-framework`
-  - `keychain_linux.rs` — Linux secret service via `keyring` crate (GNOME Keyring / KDE Wallet)
+  - `keychain_linux.rs` — Two-tier: Secret Service via `keyring` crate → encrypted file via `cocoon` crate
 - **State**: `known_shares.rs` — Connection history in `known-shares.json` (usernames, last auth mode, timestamps).
 
 ## Platform strategy
@@ -27,7 +27,7 @@ Discover, browse, and mount SMB network shares. Works on macOS and Linux.
 | mDNS discovery | `mdns-sd` (pure Rust) | `mdns-sd` (same) |
 | SMB share listing | `smb` + `smb-rpc` crates | `smb` + `smb-rpc` (same) |
 | smbutil fallback | `smbutil view -G` | Not available (returns error, smb-rs handles most cases) |
-| Credential storage | `security-framework` (macOS Keychain) | `keyring` crate (secret service D-Bus API) |
+| Credential storage | `security-framework` (macOS Keychain) | `keyring` (Secret Service) → `cocoon` encrypted file fallback |
 | Mounting | `NetFSMountURLSync` → `/Volumes/` | `gio mount` → `/run/user/<uid>/gvfs/` |
 
 ## Key decisions
@@ -54,6 +54,10 @@ smb-rs connections are lightweight and created on-demand. Caching is at the shar
 ### In-memory credential cache
 
 After first credential fetch, credentials cached in `CREDENTIAL_CACHE` (LazyLock + RwLock). Prevents repeated Keychain/secret-service round-trips during session. Cache keyed by `"smb://{server}/{share}"`.
+
+### Linux credential storage fallback
+
+On Linux, `keychain_linux.rs` tries Secret Service (GNOME Keyring / KDE Wallet) first. If unavailable (no D-Bus service, headless server, minimal DE), it falls back to an encrypted file at `~/.local/share/cmdr/credentials.enc`. The file is encrypted with `cocoon` (Chacha20-Poly1305) using `/etc/machine-id` as the password, with 0600 file permissions. A static `USING_FILE_FALLBACK` flag tracks whether the fallback is active for the frontend to show a one-time info toast. Corrupted credential files are handled gracefully (start fresh, log warning).
 
 ### Linux mounting via GVFS
 

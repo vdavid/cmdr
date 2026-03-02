@@ -36,6 +36,10 @@ use trash as _;
 // keyring crate is used in network/keychain_linux.rs for credential storage (Linux only)
 #[cfg(target_os = "linux")]
 use keyring as _;
+//noinspection ALL
+// cocoon is used in network/keychain_linux.rs for encrypted file-based credential fallback
+#[cfg(target_os = "linux")]
+use cocoon as _;
 
 //noinspection ALL
 // MCP Bridge is only used in debug builds, so silence the warning in release builds
@@ -672,6 +676,8 @@ pub fn run() {
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::network::delete_smb_credentials,
             #[cfg(any(target_os = "macos", target_os = "linux"))]
+            commands::network::is_using_credential_file_fallback,
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::network::list_shares_with_credentials,
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::network::mount_network_share,
@@ -703,6 +709,8 @@ pub fn run() {
             stubs::network::has_smb_credentials,
             #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::network::delete_smb_credentials,
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+            stubs::network::is_using_credential_file_fallback,
             #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::network::list_shares_with_credentials,
             #[cfg(not(any(target_os = "macos", target_os = "linux")))]

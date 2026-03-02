@@ -87,6 +87,8 @@ tauri-plugin-window-state = "2"
 trash = "5.2"
 # Credential storage via Linux secret service (GNOME Keyring / KDE Wallet)
 keyring = "3"
+# Encrypted file-based credential storage fallback when no secret service is available
+cocoon = "0.4"
 # D-Bus client for XDG Desktop Portal (accent color, appearance settings)
 zbus = "5"
 

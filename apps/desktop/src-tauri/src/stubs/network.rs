@@ -247,7 +247,15 @@ pub fn has_smb_credentials(_server: String, _share: Option<String>) -> bool {
 /// Deletes SMB credentials (stub: returns error).
 #[tauri::command]
 pub fn delete_smb_credentials(_server: String, _share: Option<String>) -> Result<(), KeychainError> {
-    Err(KeychainError::NotFound("Keychain not supported on Linux".to_string()))
+    Err(KeychainError::NotFound(
+        "Credential storage not supported on this platform".to_string(),
+    ))
+}
+
+/// Returns whether credential storage is using file fallback (stub: always false).
+#[tauri::command]
+pub fn is_using_credential_file_fallback() -> bool {
+    false
 }
 
 /// Lists shares with credentials (stub: returns error).

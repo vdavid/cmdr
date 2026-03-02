@@ -206,6 +206,11 @@ pub fn has_credentials(server: &str, share: Option<&str>) -> bool {
     get_credentials(server, share).is_ok()
 }
 
+/// Always returns false on macOS (macOS Keychain is always available).
+pub fn is_using_file_fallback() -> bool {
+    false
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

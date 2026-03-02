@@ -17,12 +17,23 @@
         listSharesWithCredentials,
         saveSmbCredentials,
         getSmbCredentials,
+        isUsingCredentialFileFallback,
         updateKnownShare,
     } from '$lib/tauri-commands'
+    import { addToast } from '$lib/ui/toast'
     import { getNetworkTimeoutMs, getShareCacheTtlMs } from '$lib/settings/network-settings'
     import NetworkLoginForm from './NetworkLoginForm.svelte'
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
     import { updateLeftPaneState, updateRightPaneState, type PaneState, type PaneFileEntry } from '$lib/tauri-commands'
+
+    async function notifyIfUsingFileFallback(): Promise<void> {
+        if (await isUsingCredentialFileFallback()) {
+            addToast('Credentials stored locally (no system keyring detected)', {
+                level: 'info',
+                id: 'credential-file-fallback',
+            })
+        }
+    }
 
     /** Row height for share list (matches Full list) */
     const SHARE_ROW_HEIGHT = 20
@@ -228,6 +239,7 @@
             // Save credentials to Keychain if requested
             if (rememberInKeychain && username && password) {
                 await saveSmbCredentials(host.name, null, username, password)
+                await notifyIfUsingFileFallback()
             }
 
             // Update known shares store

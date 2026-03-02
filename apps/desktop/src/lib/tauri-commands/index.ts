@@ -103,6 +103,7 @@ export {
     saveSmbCredentials,
     getSmbCredentials,
     deleteSmbCredentials,
+    isUsingCredentialFileFallback,
     listSharesWithCredentials,
     isKeychainError,
     mountNetworkShare,

@@ -202,6 +202,14 @@ pub fn delete_smb_credentials(server: String, share: Option<String>) -> Result<(
     keychain::delete_credentials(&server, share.as_deref())
 }
 
+/// Returns whether credential storage is using an encrypted file fallback
+/// instead of the system keyring. The frontend can use this to show a one-time
+/// info toast when the user first saves credentials without a system keyring.
+#[tauri::command]
+pub fn is_using_credential_file_fallback() -> bool {
+    keychain::is_using_file_fallback()
+}
+
 /// Lists shares on a host using stored or provided credentials.
 /// This is the main command for authenticated share listing.
 ///

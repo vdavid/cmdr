@@ -14,8 +14,8 @@ Each section is self-contained and can be handed to an agent independently.
 - [x] 4. Volume chooser shortcuts and key naming (small) — Alt+F1/F2, F2 rename fix, Super label
 - [x] 5. GTK menu mnemonics (small) — add `&` prefixes to `build_menu_linux()` labels
 - [x] 6. Linux-specific error messages (small) — audit and replace macOS terminology
-- [ ] 7. Credential storage resilience (medium) — Secret Service → keyutils → encrypted file fallback
-- [ ] 8. Media eject — deferred (not on macOS either)
+- [x] 7. Credential storage resilience (medium) — Secret Service → keyutils → encrypted file fallback
+- [-] 8. ~~Media eject — deferred (not on macOS either)~~
 - [ ] 9. High-DPI support — no code changes needed, just verification
 - [ ] 10. Trash implementation (medium) — `trash` crate, wire up in lib.rs
 - [ ] 11. Network filesystem detection for copy (medium) — `/proc/self/mountinfo` parser, copy strategy

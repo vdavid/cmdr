@@ -202,6 +202,11 @@ export async function saveSmbCredentials(
     await invoke('save_smb_credentials', { server, share, username, password })
 }
 
+/** Returns whether credential storage is using an encrypted file fallback instead of the system keyring. */
+export async function isUsingCredentialFileFallback(): Promise<boolean> {
+    return invoke<boolean>('is_using_credential_file_fallback')
+}
+
 /**
  * Retrieves SMB credentials from the Keychain.
  * @param server Server hostname or IP
