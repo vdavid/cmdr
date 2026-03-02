@@ -198,6 +198,11 @@ pub(super) fn map_mtp_error(e: mtp_rs::Error, device_id: &str) -> MtpConnectionE
             message: format!("I/O error: {}", io_err),
         },
         mtp_rs::Error::Usb(usb_err) => {
+            // nusb::Error is a type alias for std::io::Error, so the message is the OS
+            // error string verbatim (for example, "Permission denied (os error 13)" on Linux).
+            // mtp_rs::Error::is_exclusive_access() checks "access" && "denied" (Windows),
+            // which does NOT match "permission denied" (Linux EACCES), so the two checks
+            // below are mutually exclusive.
             let msg = usb_err.to_string().to_lowercase();
             if msg.contains("exclusive access") || msg.contains("device or resource busy") {
                 MtpConnectionError::ExclusiveAccess {
