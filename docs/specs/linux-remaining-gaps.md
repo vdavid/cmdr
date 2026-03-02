@@ -9,7 +9,7 @@ Each section is self-contained and can be handed to an agent independently.
 ## Task list
 
 - [x] 1. Quick Look and Get Info (small) — unbind shortcuts, no-op error paths
-- [ ] 2. Accent colors via XDG Desktop Portal (medium) — D-Bus call + live updates + fallback chain
+- [x] 2. Accent colors via XDG Desktop Portal (medium) — D-Bus call + live updates + fallback chain
 - [x] 3. Appearance settings opener (tiny) — DE-specific commands replacing broken `xdg-open`
 - [x] 4. Volume chooser shortcuts and key naming (small) — Alt+F1/F2, F2 rename fix, Super label
 - [x] 5. GTK menu mnemonics (small) — add `&` prefixes to `build_menu_linux()` labels
@@ -109,7 +109,7 @@ for Linux. Detect which is running via the `$XDG_CURRENT_DESKTOP` environment va
 
 | DE | `$XDG_CURRENT_DESKTOP` | Open appearance settings |
 |----|----------------------|------------------------|
-| GNOME | `GNOME` or `ubuntu:GNOME` | `gnome-control-center appearance` |
+| GNOME | `GNOME` or `ubuntu:GNOME` | `gnome-control-center background` |
 | KDE | `KDE` | `systemsettings kcm_lookandfeel` |
 | XFCE | `XFCE` | `xfce4-appearance-settings` |
 | Sway | `sway` | No GUI — return descriptive error |

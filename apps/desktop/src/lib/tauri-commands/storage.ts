@@ -2,6 +2,9 @@
 
 import { invoke } from '@tauri-apps/api/core'
 import type { VolumeInfo } from '../file-explorer/types'
+import { getAppLogger } from '$lib/logging/logger'
+
+const log = getAppLogger('storage')
 
 /** Default volume ID for the root filesystem */
 export const DEFAULT_VOLUME_ID = 'root'
@@ -102,7 +105,7 @@ export async function openPrivacySettings(): Promise<void> {
 export async function openAppearanceSettings(): Promise<void> {
     try {
         await invoke('open_appearance_settings')
-    } catch {
-        // Command not available (non-macOS) - silently fail
+    } catch (error) {
+        log.warn('Failed to open appearance settings: {error}', { error })
     }
 }

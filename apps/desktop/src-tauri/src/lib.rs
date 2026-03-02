@@ -247,6 +247,8 @@ pub fn run() {
             // Observe system accent color changes and emit events to frontend
             #[cfg(target_os = "macos")]
             accent_color::observe_accent_color_changes(app.handle().clone());
+            #[cfg(target_os = "linux")]
+            accent_color_linux::observe_accent_color_changes(app.handle().clone());
 
             // Initialize font metrics for default font (system font at 12px)
             font_metrics::init_font_metrics(app.handle(), "system-400-12");

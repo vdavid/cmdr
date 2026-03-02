@@ -87,6 +87,8 @@ tauri-plugin-window-state = "2"
 trash = "5.2"
 # Credential storage via Linux secret service (GNOME Keyring / KDE Wallet)
 keyring = "3"
+# D-Bus client for XDG Desktop Portal (accent color, appearance settings)
+zbus = "5"
 
 [target.'cfg(any(target_os = "macos", target_os = "linux"))'.dependencies]
 # MTP (Android device) support via pure Rust implementation
