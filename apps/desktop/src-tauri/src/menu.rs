@@ -2,12 +2,12 @@
 
 use crate::ignore_poison::IgnorePoison;
 use std::sync::Mutex;
+#[cfg(target_os = "macos")]
+use tauri::menu::MenuItemKind;
 use tauri::{
     AppHandle, Runtime, Wry,
     menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu},
 };
-#[cfg(target_os = "macos")]
-use tauri::menu::MenuItemKind;
 
 /// Menu item IDs for file actions.
 pub const SHOW_HIDDEN_FILES_ID: &str = "show_hidden_files";
