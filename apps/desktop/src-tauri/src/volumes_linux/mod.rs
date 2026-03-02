@@ -91,9 +91,14 @@ const VIRTUAL_FS_TYPES: &[&str] = &[
 pub fn supports_trash_for_fs_type(fs_type: Option<&str>) -> bool {
     let Some(fs) = fs_type else { return true };
     let fs_lower = fs.to_ascii_lowercase();
+
+    // Network filesystems don't support the FreeDesktop trash spec
+    if linux_mounts::is_network_fs_type(&fs_lower) {
+        return false;
+    }
+
     match fs_lower.as_str() {
         "ext4" | "ext3" | "ext2" | "btrfs" | "xfs" | "zfs" | "f2fs" | "reiserfs" => true,
-        "nfs" | "nfs4" | "cifs" | "smbfs" | "fuse.sshfs" | "ncpfs" | "9p" => false,
         "vfat" | "exfat" | "msdos" | "ntfs" | "fuseblk" => false,
         _ => true,
     }
@@ -213,6 +218,9 @@ pub fn get_mounted_volumes(mounts: &[MountEntry]) -> Vec<LocationInfo> {
         if entry.mountpoint == "/" {
             continue;
         }
+        if is_hidden_mount(&entry.mountpoint) {
+            continue;
+        }
 
         let is_removable = is_removable_mount(&entry.mountpoint, &username);
         let name = mount_display_name(&entry.mountpoint);
@@ -326,6 +334,21 @@ fn is_virtual_fs(fstype: &str) -> bool {
     VIRTUAL_FS_TYPES.contains(&fstype)
 }
 
+/// Mount paths that are system internals and should never appear as volumes.
+/// These are path prefixes — any mount whose mountpoint starts with one of these is filtered out.
+const HIDDEN_MOUNT_PREFIXES: &[&str] = &[
+    "/snap/",          // Ubuntu snap loopback packages (squashfs)
+    "/run/snapd/",     // Snap daemon internals
+    "/boot/",          // EFI system partition, boot loaders
+    "/run/user/",      // Per-user runtime mounts (XDG portals, GVFS)
+    "/run/credentials/", // systemd credential mounts
+];
+
+/// Check if a mount path should be hidden from the volume list.
+fn is_hidden_mount(mountpoint: &str) -> bool {
+    HIDDEN_MOUNT_PREFIXES.iter().any(|prefix| mountpoint.starts_with(prefix))
+}
+
 /// Check if a mount point is under a removable media path.
 fn is_removable_mount(mountpoint: &str, username: &str) -> bool {
     if username.is_empty() {
@@ -427,6 +450,43 @@ tmpfs /tmp tmpfs rw,nosuid,nodev 0 0
     fn test_supports_trash_unknown_and_none() {
         assert!(supports_trash_for_fs_type(None));
         assert!(supports_trash_for_fs_type(Some("somefs")));
+    }
+
+    #[test]
+    fn test_is_hidden_mount() {
+        assert!(is_hidden_mount("/snap/firefox/7764"));
+        assert!(is_hidden_mount("/snap/core22/2134"));
+        assert!(is_hidden_mount("/run/snapd/ns/something.mnt"));
+        assert!(is_hidden_mount("/boot/efi"));
+        assert!(is_hidden_mount("/run/user/1000/doc"));
+        assert!(is_hidden_mount("/run/user/1000/gvfs"));
+        assert!(is_hidden_mount("/run/credentials/systemd-journald.service"));
+        assert!(!is_hidden_mount("/mnt/data"));
+        assert!(!is_hidden_mount("/home"));
+        assert!(!is_hidden_mount("/media/user/USB"));
+        assert!(!is_hidden_mount("/run/media/user/USB"));
+    }
+
+    #[test]
+    fn test_snap_mounts_filtered_from_volumes() {
+        let mounts_with_snaps = "\
+/dev/sda1 / ext4 rw,relatime 0 0
+/dev/loop0 /snap/bare/5 squashfs ro,nodev,relatime 0 0
+/dev/loop2 /snap/firefox/7764 squashfs ro,nodev,relatime 0 0
+/dev/loop8 /snap/snap-store/1271 squashfs ro,nodev,relatime 0 0
+/dev/sdb1 /mnt/data xfs rw,relatime 0 0
+tmpfs /run/user/1000 tmpfs rw,nosuid,nodev,relatime 0 0
+portal /run/user/1000/doc fuse.portal rw 0 0
+gvfsd-fuse /run/user/1000/gvfs fuse.gvfsd-fuse rw 0 0
+/dev/vda1 /boot/efi vfat rw,relatime 0 0
+";
+        let mounts = linux_mounts::parse_proc_mounts_from_content(mounts_with_snaps);
+        let volumes = get_mounted_volumes(&mounts);
+        let paths: Vec<&str> = volumes.iter().map(|v| v.path.as_str()).collect();
+        assert!(paths.contains(&"/mnt/data"), "Should include real mount");
+        assert!(!paths.iter().any(|p| p.starts_with("/snap/")), "Should filter snap mounts");
+        assert!(!paths.iter().any(|p| p.starts_with("/boot/")), "Should filter boot mounts");
+        assert!(!paths.iter().any(|p| p.starts_with("/run/user/")), "Should filter user runtime mounts");
     }
 
     #[test]

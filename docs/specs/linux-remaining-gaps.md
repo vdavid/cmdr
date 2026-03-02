@@ -16,13 +16,13 @@ Each section is self-contained and can be handed to an agent independently.
 - [x] 6. Linux-specific error messages (small) — audit and replace macOS terminology
 - [x] 7. Credential storage resilience (medium) — Secret Service → keyutils → encrypted file fallback
 - [-] 8. ~~Media eject — deferred (not on macOS either)~~
-- [ ] 9. High-DPI support — no code changes needed, just verification
-- [ ] 10. Trash implementation (medium) — `trash` crate, wire up in lib.rs
-- [ ] 11. Network filesystem detection for copy (medium) — `/proc/self/mountinfo` parser, copy strategy
+- [x] 9. High-DPI support — no code changes needed, just verification
+- [x] 10. Trash implementation (medium) — `trash` crate, wire up in lib.rs
+- [x] 11. Network filesystem detection for copy (medium) — `/proc/self/mountinfo` parser, copy strategy
 - [x] 12. File watching E2E verification (small) — add inotify E2E test
 - [ ] 13. MTP USB permissions (small) — error messages + packaging metadata
 - [ ] 14. SMB mounting completion (large) — `smbclient` fallback, auth prompts, cross-DE testing
-- [ ] 15. Custom drag image — deferred (no WebKitGTK API)
+- [-] 15. Custom drag image — deferred (no WebKitGTK API)
 - [ ] 16. Dropbox sync status (medium) — socket protocol + CLI fallback
 - [ ] 17. Native file icons (medium) — test existing provider, fix threading if needed
 

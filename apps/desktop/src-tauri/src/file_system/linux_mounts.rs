@@ -91,11 +91,22 @@ pub fn is_network_filesystem_linux(path: &Path) -> bool {
 }
 
 /// Returns true if the filesystem type string represents a network filesystem.
+///
+/// Known network types are matched explicitly. Unknown `fuse.*` subtypes are
+/// treated conservatively as network (we can't distinguish `fuse.mycloud`
+/// from a local FUSE mount, and chunked copy is the safer default).
 pub fn is_network_fs_type(fstype: &str) -> bool {
-    matches!(
-        fstype,
-        "nfs" | "nfs4" | "cifs" | "smbfs" | "fuse.sshfs" | "ncpfs" | "9p"
-    )
+    match fstype {
+        // Kernel-native network filesystems
+        "nfs" | "nfs4" | "cifs" | "smbfs" | "ncpfs" | "9p" | "afs" => true,
+        // FUSE-based network filesystems
+        "fuse.sshfs" | "fuse.rclone" | "fuse.s3fs" | "fuse.gvfsd-fuse" => true,
+        // FUSE-based local filesystems (known safe)
+        "fuse.ntfs-3g" | "fuse.exfat" | "fuseblk" => false,
+        // Unknown FUSE subtypes — could be network, use chunked copy to be safe
+        s if s.starts_with("fuse.") => true,
+        _ => false,
+    }
 }
 
 /// Unescapes octal sequences in mount paths (for example, `\040` -> space).
@@ -180,11 +191,30 @@ user@host:/path /mnt/sshfs fuse.sshfs rw,relatime 0 0
 
     #[test]
     fn test_is_network_fs_type() {
+        // Kernel-native network filesystems
         assert!(is_network_fs_type("nfs"));
         assert!(is_network_fs_type("nfs4"));
         assert!(is_network_fs_type("cifs"));
         assert!(is_network_fs_type("smbfs"));
+        assert!(is_network_fs_type("ncpfs"));
+        assert!(is_network_fs_type("9p"));
+        assert!(is_network_fs_type("afs"));
+
+        // FUSE-based network filesystems
         assert!(is_network_fs_type("fuse.sshfs"));
+        assert!(is_network_fs_type("fuse.rclone"));
+        assert!(is_network_fs_type("fuse.s3fs"));
+        assert!(is_network_fs_type("fuse.gvfsd-fuse"));
+
+        // Unknown FUSE subtypes — conservatively treated as network
+        assert!(is_network_fs_type("fuse.mycloud"));
+
+        // Known-local FUSE types
+        assert!(!is_network_fs_type("fuse.ntfs-3g"));
+        assert!(!is_network_fs_type("fuse.exfat"));
+        assert!(!is_network_fs_type("fuseblk"));
+
+        // Local filesystems
         assert!(!is_network_fs_type("ext4"));
         assert!(!is_network_fs_type("xfs"));
         assert!(!is_network_fs_type("btrfs"));

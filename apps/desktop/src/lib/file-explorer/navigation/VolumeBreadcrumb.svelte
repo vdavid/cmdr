@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount, onDestroy } from 'svelte'
+    import { onMount, onDestroy, tick } from 'svelte'
     import { listVolumes, findContainingVolume, listen, type UnlistenFn } from '$lib/tauri-commands'
     import { getVolumeSpace, type VolumeSpaceInfo } from '$lib/tauri-commands/storage'
     import { SvelteMap } from 'svelte/reactivity'
@@ -70,17 +70,27 @@
     // Flat list of all volumes for keyboard navigation
     const allVolumes = $derived(groupedVolumes.flatMap((g) => g.items))
 
-    // When dropdown opens, initialize highlight to current volume
+    // When dropdown opens, initialize highlight to current volume and fit to viewport
     $effect(() => {
         if (isOpen) {
             const currentIdx = allVolumes.findIndex((v) => shouldShowCheckmark(v))
             highlightedIndex = currentIdx >= 0 ? currentIdx : 0
+            void fitDropdownToViewport()
         } else {
             highlightedIndex = -1
             isKeyboardMode = false
             lastMousePos = null
         }
     })
+
+    async function fitDropdownToViewport() {
+        await tick()
+        const dropdown = dropdownRef?.querySelector('.volume-dropdown') as HTMLElement | null
+        if (dropdown) {
+            const top = dropdown.getBoundingClientRect().top
+            dropdown.style.maxHeight = `${window.innerHeight - top - 8}px`
+        }
+    }
 
     // Get appropriate icon for a volume (use cloud icon for cloud drives, mobile icon for devices)
     function getIconForVolume(volume: VolumeInfo | undefined): string | undefined {
@@ -268,6 +278,13 @@
     function enterKeyboardMode() {
         isKeyboardMode = true
         lastMousePos = null // Will be captured on next mousemove
+        void scrollHighlightedIntoView()
+    }
+
+    async function scrollHighlightedIntoView() {
+        await tick()
+        const el = dropdownRef?.querySelector(`.volume-item[data-index="${highlightedIndex}"]`) as HTMLElement | null
+        el?.scrollIntoView({ block: 'nearest' })
     }
 
     // Handle mouse hover to sync with keyboard navigation
@@ -562,7 +579,7 @@
         left: 0;
         margin-top: 4px;
         min-width: 220px;
-        max-height: calc(100vh - 30px);
+        max-height: calc(100vh - 30px); /* Fallback — overridden dynamically by fitDropdownToViewport() */
         overflow-y: auto;
         background-color: var(--color-bg-secondary);
         border: 1px solid var(--color-border-strong);
