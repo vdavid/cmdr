@@ -99,13 +99,16 @@ pub fn init_volume_manager() {
         }
     }
 
-    // Register mounted volumes and cloud drives (Linux)
+    // Register mounted volumes, cloud drives, and network mounts (Linux)
     #[cfg(target_os = "linux")]
     {
-        let mounts = linux_mounts::parse_proc_mounts();
-        let mounted = crate::volumes_linux::get_mounted_volumes(&mounts);
-        log::info!("Registering {} mounted volume(s)", mounted.len());
-        for location in mounted {
+        let locations = crate::volumes_linux::list_locations();
+        let non_fav: Vec<_> = locations
+            .iter()
+            .filter(|l| l.category != crate::volumes_linux::LocationCategory::Favorite)
+            .collect();
+        log::info!("Registering {} volume(s)", non_fav.len());
+        for location in non_fav {
             let volume = Arc::new(LocalPosixVolume::new(&location.name, &location.path));
             VOLUME_MANAGER.register(&location.id, volume);
             log::info!("  Registered volume: {} -> {}", location.id, location.path);
