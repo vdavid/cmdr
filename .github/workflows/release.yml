@@ -34,12 +34,47 @@ jobs:
             - name: Install x86_64 target for universal binary
               run: rustup target add x86_64-apple-darwin
 
+            - name: Import Apple certificate
+              env:
+                  APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+                  APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+              run: |
+                  CERTIFICATE_PATH=$RUNNER_TEMP/certificate.p12
+                  KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+                  KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+
+                  echo -n "$APPLE_CERTIFICATE" | base64 --decode -o $CERTIFICATE_PATH
+
+                  security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+                  security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+                  security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+                  security import $CERTIFICATE_PATH -P "$APPLE_CERTIFICATE_PASSWORD" \
+                    -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+                  security set-key-partition-list -S apple-tool:,apple: \
+                    -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+                  security list-keychain -d user -s $KEYCHAIN_PATH
+
+            - name: Set up notarization credentials
+              env:
+                  APPLE_API_KEY_BASE64: ${{ secrets.APPLE_API_KEY_BASE64 }}
+                  APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+              run: |
+                  mkdir -p ~/private_keys
+                  echo -n "$APPLE_API_KEY_BASE64" | base64 --decode \
+                    > ~/private_keys/AuthKey_${APPLE_API_KEY}.p8
+
             - name: Build and release
               uses: tauri-apps/tauri-action@73fb865345c54760d875b94642314f8c0c894afa # v0
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                   TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
                   TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+                  APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+                  APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+                  APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+                  APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+                  APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+                  APPLE_API_KEY_PATH: ~/private_keys/AuthKey_${{ secrets.APPLE_API_KEY }}.p8
               with:
                   projectPath: ./apps/desktop
                   tagName: ${{ github.ref_name }}
@@ -144,3 +179,7 @@ jobs:
                       -H "Content-Type: application/json" \
                       -H "X-Hub-Signature-256: sha256=$SIGNATURE" \
                       -d "$PAYLOAD"
+
+            - name: Clean up keychain
+              if: always()
+              run: security delete-keychain $RUNNER_TEMP/app-signing.keychain-db

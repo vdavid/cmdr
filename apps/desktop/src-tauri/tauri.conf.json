@@ -55,6 +55,7 @@
     ],
     "macOS": {
       "bundleName": "Cmdr",
+      "signingIdentity": "Developer ID Application: Rymdskottkarra AB (83H6YAQMNP)",
       "entitlements": "./Entitlements.plist"
     }
   }
