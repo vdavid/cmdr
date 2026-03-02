@@ -12,7 +12,7 @@ ssh veszelovszki@192.168.64.6
 # Inside the VM — run Cmdr
 eval "$(mise activate bash)"
 cd ~/cmdr
-pnpm dev
+WEBKIT_DISABLE_COMPOSITING_MODE=1 pnpm dev
 ```
 
 For GUI interaction (pressing keys, clicking), use the VM window in UTM directly — not SSH.
@@ -98,8 +98,12 @@ For SSH one-liners, prefix with `eval "$(mise activate bash)" &&`.
 ### Run Cmdr in dev mode (with hot reload)
 
 ```bash
-cd ~/cmdr && pnpm dev
+cd ~/cmdr && WEBKIT_DISABLE_COMPOSITING_MODE=1 pnpm dev
 ```
+
+The env var tells WebKitGTK to skip GPU compositing. Without it, the VM's software-emulated GPU
+causes a ~50s stall on startup while WebKitGTK probes for hardware acceleration, fails, and falls
+back. Real Linux machines with a GPU don't need this.
 
 Frontend changes hot reload via Vite. Rust changes require restarting.
 
