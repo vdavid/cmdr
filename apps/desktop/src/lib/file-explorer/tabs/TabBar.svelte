@@ -35,7 +35,11 @@
     function getFolderName(path: string): string {
         const segments = path.split('/')
         const last = segments[segments.length - 1]
-        return last || path
+        if (!last) return path
+        // GVFS SMB share directories: extract just the share name
+        const smbMatch = last.match(/^smb-share:.*share=([^,]+)/)
+        if (smbMatch) return smbMatch[1]
+        return last
     }
 
     function handleTabMouseDown(event: MouseEvent, tabId: TabId) {

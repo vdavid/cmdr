@@ -5,6 +5,7 @@
 //! - Main volume (root `/`)
 //! - Mounted volumes (real filesystems from /proc/mounts)
 //! - Cloud drives (Dropbox, Google Drive, Nextcloud, OneDrive)
+//! - Network mounts (GVFS SMB shares under /run/user/<uid>/gvfs/)
 //! - Removable media under /run/media/ or /media/
 
 pub mod watcher;
@@ -133,6 +134,13 @@ pub fn list_locations() -> Vec<LocationInfo> {
 
     // 4. Cloud drives
     for loc in get_cloud_drives(&mounts) {
+        if seen_paths.insert(loc.path.clone()) {
+            locations.push(loc);
+        }
+    }
+
+    // 5. Network mounts (GVFS SMB shares)
+    for loc in get_network_mounts() {
         if seen_paths.insert(loc.path.clone()) {
             locations.push(loc);
         }
@@ -289,6 +297,71 @@ fn get_cloud_drives(mounts: &[MountEntry]) -> Vec<LocationInfo> {
     drives
 }
 
+/// Parse a GVFS SMB directory name into (server, share).
+///
+/// GVFS mounts SMB shares as subdirectories under `/run/user/<uid>/gvfs/`
+/// with names like `smb-share:server=192.168.1.150,share=pihdd` (optionally
+/// with `,user=X,domain=Y` suffixes). Returns None for non-SMB entries.
+pub(crate) fn parse_gvfs_smb_dirname(dirname: &str) -> Option<(String, String)> {
+    let rest = dirname.strip_prefix("smb-share:")?;
+    let mut server = None;
+    let mut share = None;
+    for part in rest.split(',') {
+        if let Some(val) = part.strip_prefix("server=") {
+            server = Some(val.to_string());
+        } else if let Some(val) = part.strip_prefix("share=") {
+            share = Some(val.to_string());
+        }
+    }
+    Some((server?, share?))
+}
+
+/// Discover GVFS-mounted SMB shares as network locations.
+///
+/// Scans `/run/user/<uid>/gvfs/` for `smb-share:*` directories. Each one
+/// becomes a `Network` location. Skips silently if the GVFS directory
+/// doesn't exist (non-GNOME systems).
+fn get_network_mounts() -> Vec<LocationInfo> {
+    let uid = unsafe { libc::getuid() };
+    let gvfs_dir = format!("/run/user/{}/gvfs", uid);
+    let gvfs_path = Path::new(&gvfs_dir);
+
+    if !gvfs_path.is_dir() {
+        return Vec::new();
+    }
+
+    let entries = match std::fs::read_dir(gvfs_path) {
+        Ok(entries) => entries,
+        Err(_) => return Vec::new(),
+    };
+
+    let mut mounts = Vec::new();
+    for entry in entries.flatten() {
+        let name = entry.file_name();
+        let dirname = name.to_string_lossy();
+        if let Some((_server, share)) = parse_gvfs_smb_dirname(&dirname) {
+            let path = entry.path().to_string_lossy().to_string();
+            // Skip inaccessible entries (hung FUSE mount)
+            if !entry.path().is_dir() {
+                continue;
+            }
+            mounts.push(LocationInfo {
+                id: path_to_id(&path),
+                name: share,
+                path,
+                category: LocationCategory::Network,
+                icon: None,
+                is_ejectable: true,
+                fs_type: None,
+                supports_trash: false,
+            });
+        }
+    }
+
+    mounts.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    mounts
+}
+
 /// Get space information for a volume using `statvfs`.
 pub fn get_volume_space(path: &str) -> Option<VolumeSpaceInfo> {
     use std::ffi::CString;
@@ -322,7 +395,7 @@ pub fn find_volume_for_path(path: &str) -> Option<String> {
 }
 
 /// Convert a mount path to a safe ID string.
-fn path_to_id(path: &str) -> String {
+pub(crate) fn path_to_id(path: &str) -> String {
     if path == "/" {
         return DEFAULT_VOLUME_ID.to_string();
     }
@@ -635,5 +708,31 @@ share /mnt/cmdr virtiofs rw,relatime 0 0
     fn test_get_volume_space_nonexistent() {
         let space = get_volume_space("/nonexistent/path/does/not/exist");
         assert!(space.is_none());
+    }
+
+    #[test]
+    fn test_parse_gvfs_smb_dirname_basic() {
+        let result = parse_gvfs_smb_dirname("smb-share:server=192.168.1.150,share=pihdd");
+        assert_eq!(result, Some(("192.168.1.150".to_string(), "pihdd".to_string())));
+    }
+
+    #[test]
+    fn test_parse_gvfs_smb_dirname_with_extra_params() {
+        let result = parse_gvfs_smb_dirname("smb-share:server=mynas.local,share=photos,user=alice,domain=WORKGROUP");
+        assert_eq!(result, Some(("mynas.local".to_string(), "photos".to_string())));
+    }
+
+    #[test]
+    fn test_parse_gvfs_smb_dirname_non_smb() {
+        assert_eq!(parse_gvfs_smb_dirname("dav+sd:host=example.com"), None);
+        assert_eq!(parse_gvfs_smb_dirname("ftp:host=ftp.example.com"), None);
+        assert_eq!(parse_gvfs_smb_dirname("some-random-dir"), None);
+    }
+
+    #[test]
+    fn test_parse_gvfs_smb_dirname_missing_fields() {
+        assert_eq!(parse_gvfs_smb_dirname("smb-share:server=192.168.1.1"), None);
+        assert_eq!(parse_gvfs_smb_dirname("smb-share:share=data"), None);
+        assert_eq!(parse_gvfs_smb_dirname("smb-share:"), None);
     }
 }

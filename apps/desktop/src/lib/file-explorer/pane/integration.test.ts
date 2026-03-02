@@ -122,6 +122,9 @@ async function waitForUpdates(ms = 50): Promise<void> {
     await tick()
 }
 
+// Mock scrollIntoView which isn't available in jsdom
+Element.prototype.scrollIntoView = vi.fn()
+
 // ============================================================================
 // FilePane keyboard handling tests
 // ============================================================================

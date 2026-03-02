@@ -1,14 +1,18 @@
 //! Volume mount/unmount watcher for Linux.
 //!
-//! Watches `/proc/mounts` for changes using `notify` (inotify). When mounts
-//! change, diffs against the previous state and emits `volume-mounted` /
-//! `volume-unmounted` Tauri events. Also registers/unregisters volumes with
-//! the global `VolumeManager`.
+//! Two watchers run concurrently:
+//! - `/proc/mounts` (inotify) — detects standard mount/unmount operations
+//! - `/run/user/<uid>/gvfs/` (inotify) — detects GVFS SMB share mount/unmount
+//!   (these are subdirectories of a single gvfsd-fuse mount, so they don't
+//!   appear in `/proc/mounts`)
+//!
+//! Both diff against known state and emit `volume-mounted` / `volume-unmounted`
+//! Tauri events. Also registers/unregisters volumes with the global `VolumeManager`.
 
 use crate::file_system::linux_mounts;
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use notify::{Event, EventKind, RecommendedWatcher, Watcher};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::sync::{Mutex, OnceLock};
 use tauri::{AppHandle, Emitter};
@@ -16,11 +20,17 @@ use tauri::{AppHandle, Emitter};
 /// Global app handle for emitting events from the watcher.
 static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
 
-/// The watcher instance (kept alive for the app's lifetime).
+/// The watcher instance for /proc/mounts (kept alive for the app's lifetime).
 static WATCHER: OnceLock<Mutex<Option<RecommendedWatcher>>> = OnceLock::new();
+
+/// The watcher instance for GVFS directory.
+static GVFS_WATCHER: OnceLock<Mutex<Option<RecommendedWatcher>>> = OnceLock::new();
 
 /// Known mount points mapped to their filesystem type, for diffing.
 static KNOWN_MOUNTS: OnceLock<Mutex<HashMap<String, String>>> = OnceLock::new();
+
+/// Known GVFS SMB mount paths, for diffing.
+static KNOWN_GVFS_MOUNTS: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
 
 /// Payload for volume mount/unmount events.
 #[derive(Clone, serde::Serialize)]
@@ -71,9 +81,11 @@ pub fn start_volume_watcher(app: &AppHandle) {
             error!("Failed to create Linux volume watcher: {}", e);
         }
     }
+
+    start_gvfs_watcher();
 }
 
-/// Stop the volume watcher.
+/// Stop both volume watchers (proc/mounts and GVFS).
 #[allow(dead_code, reason = "Symmetry with macOS, will be used for explicit cleanup")]
 pub fn stop_volume_watcher() {
     if let Some(storage) = WATCHER.get()
@@ -81,7 +93,12 @@ pub fn stop_volume_watcher() {
     {
         *guard = None;
     }
-    debug!("Linux volume watcher stopped");
+    if let Some(storage) = GVFS_WATCHER.get()
+        && let Ok(mut guard) = storage.lock()
+    {
+        *guard = None;
+    }
+    debug!("Linux volume watchers stopped");
 }
 
 /// Handle filesystem events on /proc/mounts.
@@ -163,6 +180,111 @@ fn get_real_mounts() -> HashMap<String, String> {
         .collect()
 }
 
+/// Start watching the GVFS directory for SMB share mount/unmount.
+/// Skips silently if `/run/user/<uid>/gvfs/` doesn't exist (non-GNOME systems).
+fn start_gvfs_watcher() {
+    let uid = unsafe { libc::getuid() };
+    let gvfs_dir = format!("/run/user/{}/gvfs", uid);
+    let gvfs_path = Path::new(&gvfs_dir);
+
+    if !gvfs_path.is_dir() {
+        debug!("GVFS directory {} not found, skipping GVFS watcher", gvfs_dir);
+        return;
+    }
+
+    // Snapshot current GVFS SMB mounts
+    let initial = get_current_gvfs_smb_paths(&gvfs_dir);
+    let known = KNOWN_GVFS_MOUNTS.get_or_init(|| Mutex::new(HashSet::new()));
+    if let Ok(mut guard) = known.lock() {
+        debug!("Initial GVFS SMB mounts: {} entries", initial.len());
+        *guard = initial;
+    }
+
+    let gvfs_dir_owned = gvfs_dir.clone();
+    let watcher_result = notify::recommended_watcher(move |result: Result<Event, notify::Error>| match result {
+        Ok(event) => handle_gvfs_event(event, &gvfs_dir_owned),
+        Err(e) => error!("GVFS watcher error: {}", e),
+    });
+
+    match watcher_result {
+        Ok(mut watcher) => {
+            if let Err(e) = watcher.watch(gvfs_path, notify::RecursiveMode::NonRecursive) {
+                warn!("Failed to watch GVFS directory {}: {}", gvfs_dir, e);
+                return;
+            }
+
+            let storage = GVFS_WATCHER.get_or_init(|| Mutex::new(None));
+            if let Ok(mut guard) = storage.lock() {
+                *guard = Some(watcher);
+            }
+
+            info!("GVFS watcher started on {}", gvfs_dir);
+        }
+        Err(e) => {
+            warn!("Failed to create GVFS watcher: {}", e);
+        }
+    }
+}
+
+/// Handle inotify events on the GVFS directory.
+fn handle_gvfs_event(event: Event, gvfs_dir: &str) {
+    match event.kind {
+        EventKind::Create(_) | EventKind::Remove(_) => {
+            check_for_gvfs_changes(gvfs_dir);
+        }
+        _ => {}
+    }
+}
+
+/// Diff current GVFS SMB directories against known state and emit events.
+fn check_for_gvfs_changes(gvfs_dir: &str) {
+    let current = get_current_gvfs_smb_paths(gvfs_dir);
+
+    let known = match KNOWN_GVFS_MOUNTS.get() {
+        Some(k) => k,
+        None => return,
+    };
+
+    let mut known_guard = match known.lock() {
+        Ok(g) => g,
+        Err(_) => return,
+    };
+
+    // Newly mounted shares
+    for path in &current {
+        if !known_guard.contains(path) {
+            debug!("GVFS SMB share mounted: {}", path);
+            emit_volume_mounted(path);
+        }
+    }
+
+    // Unmounted shares
+    for path in known_guard.iter() {
+        if !current.contains(path) {
+            debug!("GVFS SMB share unmounted: {}", path);
+            emit_volume_unmounted(path);
+        }
+    }
+
+    *known_guard = current;
+}
+
+/// Scan the GVFS directory for current SMB share mount paths.
+fn get_current_gvfs_smb_paths(gvfs_dir: &str) -> HashSet<String> {
+    let mut paths = HashSet::new();
+    let Ok(entries) = std::fs::read_dir(gvfs_dir) else {
+        return paths;
+    };
+    for entry in entries.flatten() {
+        let name = entry.file_name();
+        let dirname = name.to_string_lossy();
+        if super::parse_gvfs_smb_dirname(&dirname).is_some() {
+            paths.insert(entry.path().to_string_lossy().to_string());
+        }
+    }
+    paths
+}
+
 /// Emit a volume-mounted event and register with VolumeManager.
 fn emit_volume_mounted(volume_path: &str) {
     register_volume_with_manager(volume_path);
@@ -201,17 +323,18 @@ fn register_volume_with_manager(volume_path: &str) {
     use crate::file_system::volume::LocalPosixVolume;
     use std::sync::Arc;
 
-    let volume_id: String = volume_path
-        .chars()
-        .filter(|c| c.is_alphanumeric() || *c == '-')
-        .collect::<String>()
-        .to_lowercase();
+    let volume_id = super::path_to_id(volume_path);
 
-    let name = Path::new(volume_path)
-        .file_name()
-        .and_then(|n| n.to_str())
-        .unwrap_or("Unknown")
-        .to_string();
+    // For GVFS SMB shares, extract the share name instead of the raw dirname
+    let name = if let Some(dirname) = Path::new(volume_path).file_name().and_then(|n| n.to_str()) {
+        if let Some((_server, share)) = super::parse_gvfs_smb_dirname(dirname) {
+            share
+        } else {
+            dirname.to_string()
+        }
+    } else {
+        "Unknown".to_string()
+    };
 
     let volume = Arc::new(LocalPosixVolume::new(&name, volume_path));
     get_volume_manager().register(&volume_id, volume);
@@ -222,12 +345,7 @@ fn register_volume_with_manager(volume_path: &str) {
 fn unregister_volume_from_manager(volume_path: &str) {
     use crate::file_system::get_volume_manager;
 
-    let volume_id: String = volume_path
-        .chars()
-        .filter(|c| c.is_alphanumeric() || *c == '-')
-        .collect::<String>()
-        .to_lowercase();
-
+    let volume_id = super::path_to_id(volume_path);
     get_volume_manager().unregister(&volume_id);
     debug!("Unregistered volume: {} ({})", volume_id, volume_path);
 }

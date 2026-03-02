@@ -88,7 +88,7 @@
         const dropdown = dropdownRef?.querySelector('.volume-dropdown') as HTMLElement | null
         if (dropdown) {
             const top = dropdown.getBoundingClientRect().top
-            dropdown.style.maxHeight = `${window.innerHeight - top - 8}px`
+            dropdown.style.maxHeight = `${String(window.innerHeight - top - 8)}px`
         }
     }
 
@@ -283,7 +283,9 @@
 
     async function scrollHighlightedIntoView() {
         await tick()
-        const el = dropdownRef?.querySelector(`.volume-item[data-index="${highlightedIndex}"]`) as HTMLElement | null
+        const el = dropdownRef?.querySelector(
+            `.volume-item[data-index="${String(highlightedIndex)}"]`,
+        ) as HTMLElement | null
         el?.scrollIntoView({ block: 'nearest' })
     }
 

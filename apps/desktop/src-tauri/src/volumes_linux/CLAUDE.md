@@ -6,8 +6,8 @@ Linux volume and location discovery, plus live mount/unmount watching via inotif
 
 | File | Purpose |
 |---|---|
-| `mod.rs` | `LocationInfo`, `LocationCategory`, `VolumeSpaceInfo` types (mirrors macOS `volumes/mod.rs` JSON shape). `list_locations()`, `get_volume_space()`, `get_mounted_volumes()`, cloud drive detection. Uses `linux_mounts::parse_proc_mounts()` for mount enumeration. |
-| `watcher.rs` | `notify` (inotify) watcher on `/proc/mounts`. Detects mount/unmount by diffing real mounts against `KNOWN_MOUNTS`. Registers/unregisters with `VolumeManager`. Emits `volume-mounted` / `volume-unmounted` Tauri events. |
+| `mod.rs` | `LocationInfo`, `LocationCategory`, `VolumeSpaceInfo` types (mirrors macOS `volumes/mod.rs` JSON shape). `list_locations()`, `get_volume_space()`, `get_mounted_volumes()`, cloud drive detection, GVFS SMB share detection. Uses `linux_mounts::parse_proc_mounts()` for mount enumeration. |
+| `watcher.rs` | Two inotify watchers: `/proc/mounts` for standard mounts, `/run/user/<uid>/gvfs/` for GVFS SMB shares. Detects mount/unmount by diffing against known state. Registers/unregisters with `VolumeManager`. Emits `volume-mounted` / `volume-unmounted` Tauri events. |
 
 ## Location categories
 
@@ -16,7 +16,7 @@ Favorite       — Home, ~/Desktop, ~/Documents, ~/Downloads (only if they exist
 MainVolume     — root "/" filesystem
 AttachedVolume — real filesystems from /proc/mounts (filters out virtual: proc, sysfs, tmpfs, etc.)
 CloudDrive     — ~/Dropbox, ~/Google Drive, ~/.local/share/Nextcloud, ~/OneDrive
-Network        — not yet implemented
+Network        — GVFS SMB shares under /run/user/<uid>/gvfs/smb-share:* (ejectable, no trash)
 ```
 
 `list_locations()` aggregates all categories in order and deduplicates by path.
