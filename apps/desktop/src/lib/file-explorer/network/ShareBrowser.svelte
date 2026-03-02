@@ -5,6 +5,7 @@
      */
     import { onMount } from 'svelte'
     import Button from '$lib/ui/Button.svelte'
+    import CommandBox from '$lib/ui/CommandBox.svelte'
     import type { AuthMode, NetworkHost, ShareInfo, ShareListError } from '../types'
     import {
         getShareState,
@@ -406,11 +407,19 @@
             <div class="error-icon">❌</div>
             <div class="error-title">Couldn't connect to {host.name}</div>
             <div class="error-message">{error.message || error.type}</div>
-            <div class="error-actions">
-                <Button variant="secondary" onclick={handleRetry}>Retry</Button>
-                <Button variant="secondary" onclick={() => (showLoginForm = true)}>Sign in</Button>
-                <Button variant="secondary" onclick={onBack}>Back</Button>
-            </div>
+            {#if error.type === 'missing_dependency' && error.installCommand}
+                <CommandBox command={error.installCommand} />
+                <div class="error-actions">
+                    <Button variant="secondary" onclick={handleRetry}>Retry</Button>
+                    <Button variant="secondary" onclick={onBack}>Back</Button>
+                </div>
+            {:else}
+                <div class="error-actions">
+                    <Button variant="secondary" onclick={handleRetry}>Retry</Button>
+                    <Button variant="secondary" onclick={() => (showLoginForm = true)}>Sign in</Button>
+                    <Button variant="secondary" onclick={onBack}>Back</Button>
+                </div>
+            {/if}
         </div>
     {:else if sortedShares.length === 0}
         <div class="empty-state">

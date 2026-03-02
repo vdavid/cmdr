@@ -79,6 +79,8 @@ mod font_metrics;
 pub mod icons;
 mod indexing;
 pub mod licensing;
+#[cfg(target_os = "linux")]
+pub(crate) mod linux_distro;
 #[cfg(target_os = "macos")]
 mod macos_icons;
 mod mcp;

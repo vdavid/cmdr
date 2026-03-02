@@ -61,15 +61,34 @@ pub struct ShareListResult {
 
 /// Error types for share listing operations.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case", tag = "type", content = "message")]
+#[serde(rename_all = "snake_case", tag = "type")]
 pub enum ShareListError {
-    HostUnreachable(String),
-    Timeout(String),
-    AuthRequired(String),
-    SigningRequired(String),
-    AuthFailed(String),
-    ProtocolError(String),
-    ResolutionFailed(String),
+    HostUnreachable {
+        message: String,
+    },
+    Timeout {
+        message: String,
+    },
+    AuthRequired {
+        message: String,
+    },
+    SigningRequired {
+        message: String,
+    },
+    AuthFailed {
+        message: String,
+    },
+    ProtocolError {
+        message: String,
+    },
+    ResolutionFailed {
+        message: String,
+    },
+    MissingDependency {
+        message: String,
+        #[serde(rename = "installCommand")]
+        install_command: Option<String>,
+    },
 }
 
 /// Connection mode used for the last successful connection.
@@ -172,10 +191,9 @@ pub async fn list_shares_on_host(
     _ip_address: Option<String>,
     _port: u16,
 ) -> Result<ShareListResult, ShareListError> {
-    Err(ShareListError::ProtocolError(format!(
-        "Network browsing not supported on Linux (host: {})",
-        hostname
-    )))
+    Err(ShareListError::ProtocolError {
+        message: format!("Network browsing not supported on Linux (host: {})", hostname),
+    })
 }
 
 /// Prefetches shares for a host (stub: no-op).
@@ -268,10 +286,9 @@ pub async fn list_shares_with_credentials(
     _username: Option<String>,
     _password: Option<String>,
 ) -> Result<ShareListResult, ShareListError> {
-    Err(ShareListError::ProtocolError(format!(
-        "Network browsing not supported on Linux (host: {})",
-        hostname
-    )))
+    Err(ShareListError::ProtocolError {
+        message: format!("Network browsing not supported on Linux (host: {})", hostname),
+    })
 }
 
 /// Mounts an SMB share (stub: returns error).

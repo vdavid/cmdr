@@ -29,6 +29,8 @@ pub mod mount;
 pub mod smb_client;
 
 // SMB submodules - these are implementation details of smb_client
+#[cfg(target_os = "linux")]
+mod linux_distro;
 mod smb_cache;
 mod smb_connection;
 #[cfg(target_os = "linux")]

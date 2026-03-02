@@ -45,20 +45,20 @@ pub async fn list_shares_smbutil_authenticated_from_keychain(
     let shares = run_smbutil_view(&url, false).await.map_err(|e| {
         // Convert generic auth errors to Keychain-specific messages
         match e {
-            ShareListError::AuthRequired(_) => {
-                ShareListError::AuthRequired("Keychain credentials invalid or missing".to_string())
-            }
-            ShareListError::ProtocolError(msg) => {
-                ShareListError::AuthRequired(format!("No valid Keychain credentials: {}", msg))
-            }
+            ShareListError::AuthRequired { .. } => ShareListError::AuthRequired {
+                message: "Keychain credentials invalid or missing".to_string(),
+            },
+            ShareListError::ProtocolError { message } => ShareListError::AuthRequired {
+                message: format!("No valid Keychain credentials: {}", message),
+            },
             other => other,
         }
     })?;
 
     if shares.is_empty() {
-        return Err(ShareListError::AuthRequired(
-            "Keychain auth returned no shares".to_string(),
-        ));
+        return Err(ShareListError::AuthRequired {
+            message: "Keychain auth returned no shares".to_string(),
+        });
     }
 
     debug!("smbutil with Keychain auth succeeded, got {} shares", shares.len());
@@ -77,9 +77,9 @@ pub async fn list_shares_smbutil_authenticated_from_keychain(
     _ip_address: Option<&str>,
     _port: u16,
 ) -> Result<ShareListResult, ShareListError> {
-    Err(ShareListError::AuthRequired(
-        "Stored credential lookup not available via smbclient fallback".to_string(),
-    ))
+    Err(ShareListError::AuthRequired {
+        message: "Stored credential lookup not available via smbclient fallback".to_string(),
+    })
 }
 
 /// Stub for platforms with neither smbutil nor smbclient.
@@ -89,9 +89,9 @@ pub async fn list_shares_smbutil_authenticated_from_keychain(
     _ip_address: Option<&str>,
     _port: u16,
 ) -> Result<ShareListResult, ShareListError> {
-    Err(ShareListError::AuthRequired(
-        "Keychain authentication not available on this platform".to_string(),
-    ))
+    Err(ShareListError::AuthRequired {
+        message: "Keychain authentication not available on this platform".to_string(),
+    })
 }
 
 /// Lists shares using macOS smbutil command WITH credentials.
@@ -110,7 +110,9 @@ pub async fn list_shares_smbutil_with_auth(
     let shares = run_smbutil_view(&url, false).await.map_err(|e| {
         // Convert auth errors to AuthFailed for explicit credential attempts
         match e {
-            ShareListError::AuthRequired(_) => ShareListError::AuthFailed("Invalid username or password".to_string()),
+            ShareListError::AuthRequired { .. } => ShareListError::AuthFailed {
+                message: "Invalid username or password".to_string(),
+            },
             other => other,
         }
     })?;
@@ -150,9 +152,9 @@ pub async fn list_shares_smbutil(
     _ip_address: Option<&str>,
     _port: u16,
 ) -> Result<ShareListResult, ShareListError> {
-    Err(ShareListError::ProtocolError(
-        "No share listing fallback available on this platform".to_string(),
-    ))
+    Err(ShareListError::ProtocolError {
+        message: "No share listing fallback available on this platform".to_string(),
+    })
 }
 
 /// Linux fallback: delegate to `smbclient -L -U` (authenticated access).
@@ -188,9 +190,9 @@ pub async fn list_shares_smbutil_with_auth(
     _username: &str,
     _password: &str,
 ) -> Result<ShareListResult, ShareListError> {
-    Err(ShareListError::ProtocolError(
-        "No share listing fallback available on this platform".to_string(),
-    ))
+    Err(ShareListError::ProtocolError {
+        message: "No share listing fallback available on this platform".to_string(),
+    })
 }
 
 /// Builds an SMB URL for smbutil commands.
@@ -247,8 +249,12 @@ async fn run_smbutil_view(url: &str, use_guest: bool) -> Result<Vec<ShareInfo>, 
         cmd.arg(&url_owned).output()
     })
     .await
-    .map_err(|e| ShareListError::ProtocolError(format!("Failed to spawn smbutil: {}", e)))?
-    .map_err(|e| ShareListError::ProtocolError(format!("Failed to run smbutil: {}", e)))?;
+    .map_err(|e| ShareListError::ProtocolError {
+        message: format!("Failed to spawn smbutil: {}", e),
+    })?
+    .map_err(|e| ShareListError::ProtocolError {
+        message: format!("Failed to run smbutil: {}", e),
+    })?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
@@ -261,14 +267,13 @@ async fn run_smbutil_view(url: &str, use_guest: bool) -> Result<Vec<ShareInfo>, 
         );
 
         if stderr.contains("Authentication error") || stderr.contains("rejected the authentication") {
-            return Err(ShareListError::AuthRequired(
-                "smbutil: Authentication required".to_string(),
-            ));
+            return Err(ShareListError::AuthRequired {
+                message: "smbutil: Authentication required".to_string(),
+            });
         }
-        return Err(ShareListError::ProtocolError(format!(
-            "smbutil failed: {}",
-            stderr.trim()
-        )));
+        return Err(ShareListError::ProtocolError {
+            message: format!("smbutil failed: {}", stderr.trim()),
+        });
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);

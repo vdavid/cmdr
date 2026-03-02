@@ -11,7 +11,8 @@ Discover, browse, and mount SMB network shares. Works on macOS and Linux.
   - `smb_cache.rs` — 30-second in-memory cache for share lists, keyed by server address
   - `smb_smbutil.rs` — `smbutil view -G` fallback for older Samba/NAS servers (macOS); on Linux delegates to `smb_smbclient`
   - `smb_smbclient.rs` — `smbclient -L` fallback for Linux (requires `samba-client` package)
-  - `smb_types.rs` — Shared types (`SmbShare`, `AuthMode`, `SmbError`, etc.)
+  - `linux_distro.rs` — Thin wrapper calling `crate::linux_distro::LinuxDistro` for smbclient install hints; `cfg(target_os = "linux")` gated
+  - `smb_types.rs` — Shared types (`ShareInfo`, `AuthMode`, `ShareListError`, etc.)
   - `smb_util.rs` — Helpers: hostname derivation, IP resolution, account-name normalization
 - **Mounting** (platform-specific via `#[path]` in `mod.rs`):
   - `mount.rs` — macOS `NetFSMountURLSync` for native `/Volumes/` mounts
@@ -48,7 +49,7 @@ smb-rs doesn't resolve `.local` hostnames reliably (std lib DNS doesn't handle m
 
 `smb` crate fails on older Samba servers (for example, Raspberry Pi) with RPC incompatibility. Classify error as `ProtocolError`, then try a platform-specific CLI fallback:
 - **macOS:** `smbutil view -G` (built-in).
-- **Linux:** `smbclient -L` (from `samba-client` package). If `smbclient` is not installed, returns a helpful error message. The `smb_smbutil.rs` Linux stubs delegate to `smb_smbclient.rs`.
+- **Linux:** `smbclient -L` (from `samba-client` package). If `smbclient` is not installed, returns a `MissingDependency` error with a distro-specific install command (detected via `/etc/os-release`). The `smb_smbutil.rs` Linux stubs delegate to `smb_smbclient.rs`.
 - **Other platforms:** stubs return `ProtocolError`.
 
 ### No persistent connection pool
@@ -75,3 +76,4 @@ On Linux, `keychain_linux.rs` tries Secret Service (GNOME Keyring / KDE Wallet) 
 - **mDNS service type must include `.local.`**: `mdns-sd` requires full form `"_smb._tcp.local."` (trailing dot). Without it, browse() fails silently.
 - **Account name is lowercase**: `make_account_name` lowercases server name for consistency. Prevents duplicate entries for "SERVER" vs "server".
 - **Linux `gio mount` requires GVFS**: The `gvfs-smb` package must be installed. Standard on Ubuntu/Fedora GNOME desktops. KDE desktops may need it explicitly.
+- **`ShareListError` uses internally tagged serde format** (`#[serde(tag = "type")]`) with struct variants. This keeps a flat JSON shape (`{ "type": "protocol_error", "message": "..." }`). The `MissingDependency` variant adds an optional `installCommand` field. When adding new variants, use struct syntax (not tuple).

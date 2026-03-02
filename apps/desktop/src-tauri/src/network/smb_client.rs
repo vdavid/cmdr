@@ -84,10 +84,13 @@ async fn list_shares_uncached(
     // Try smb-rs first
     match list_shares_smb_rs(hostname, ip_address, port, credentials, timeout).await {
         Ok(result) => Ok(result),
-        Err(ShareListError::ProtocolError(ref msg)) => {
+        Err(ShareListError::ProtocolError { ref message }) => {
             // Protocol error (likely RPC incompatibility with Samba)
             // Try smbutil fallback on macOS
-            debug!("smb-rs failed with protocol error: {}, trying smbutil fallback", msg);
+            debug!(
+                "smb-rs failed with protocol error: {}, trying smbutil fallback",
+                message
+            );
             list_shares_smbutil(hostname, ip_address, port).await
         }
         Err(e) => Err(e),
@@ -187,9 +190,9 @@ async fn list_shares_smb_rs(
                         }
                         Err(e) => {
                             debug!("smbutil with Keychain failed: {:?}, requiring manual login", e);
-                            Err(ShareListError::AuthRequired(
-                                "This server requires authentication to list shares".to_string(),
-                            ))
+                            Err(ShareListError::AuthRequired {
+                                message: "This server requires authentication to list shares".to_string(),
+                            })
                         }
                     };
                 }

@@ -18,20 +18,21 @@ pub fn is_auth_error(err: &str) -> bool {
 /// Classifies an error string into a ShareListError.
 pub fn classify_error(err: &str) -> ShareListError {
     let lower = err.to_lowercase();
+    let message = err.to_string();
 
     if lower.contains("timeout") {
-        ShareListError::Timeout(err.to_string())
+        ShareListError::Timeout { message }
     } else if lower.contains("no route") || lower.contains("unreachable") || lower.contains("connection refused") {
-        ShareListError::HostUnreachable(err.to_string())
+        ShareListError::HostUnreachable { message }
     } else if lower.contains("signing is required") || lower.contains("not signed or encrypted") {
         // Server requires SMB signing - guest/anonymous access won't work
-        ShareListError::SigningRequired(err.to_string())
+        ShareListError::SigningRequired { message }
     } else if lower.contains("logon failure") || lower.contains("0xc000006d") {
-        ShareListError::AuthFailed(err.to_string())
+        ShareListError::AuthFailed { message }
     } else if lower.contains("access denied") || lower.contains("auth") {
-        ShareListError::AuthRequired(err.to_string())
+        ShareListError::AuthRequired { message }
     } else {
-        ShareListError::ProtocolError(err.to_string())
+        ShareListError::ProtocolError { message }
     }
 }
 
@@ -127,17 +128,17 @@ mod tests {
     #[test]
     fn test_classify_error() {
         match classify_error("Timeout after 15s") {
-            ShareListError::Timeout(_) => {}
+            ShareListError::Timeout { .. } => {}
             e => panic!("Expected Timeout, got {:?}", e),
         }
 
         match classify_error("no route to host") {
-            ShareListError::HostUnreachable(_) => {}
+            ShareListError::HostUnreachable { .. } => {}
             e => panic!("Expected HostUnreachable, got {:?}", e),
         }
 
         match classify_error("Logon Failure (0xc000006d)") {
-            ShareListError::AuthFailed(_) => {}
+            ShareListError::AuthFailed { .. } => {}
             e => panic!("Expected AuthFailed, got {:?}", e),
         }
     }

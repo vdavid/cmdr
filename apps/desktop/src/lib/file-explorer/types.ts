@@ -256,6 +256,7 @@ export type ShareListError =
     | { type: 'auth_failed'; message: string }
     | { type: 'protocol_error'; message: string }
     | { type: 'resolution_failed'; message: string }
+    | { type: 'missing_dependency'; message: string; installCommand: string | null }
 
 // ============================================================================
 // Known shares store types

@@ -1,7 +1,8 @@
 <script lang="ts">
     import { onMount } from 'svelte'
-    import { copyToClipboard, getPtpcameradWorkaroundCommand } from '$lib/tauri-commands'
+    import { getPtpcameradWorkaroundCommand } from '$lib/tauri-commands'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
+    import CommandBox from '$lib/ui/CommandBox.svelte'
     import Button from '$lib/ui/Button.svelte'
 
     interface Props {
@@ -16,30 +17,10 @@
     const { blockingProcess, onClose, onRetry }: Props = $props()
 
     let workaroundCommand = $state('')
-    let copied = $state(false)
 
     onMount(async () => {
         workaroundCommand = await getPtpcameradWorkaroundCommand()
     })
-
-    async function handleCopyCommand() {
-        if (!workaroundCommand) return
-
-        try {
-            await copyToClipboard(workaroundCommand)
-            copied = true
-            setTimeout(() => {
-                copied = false
-            }, 2000)
-        } catch {
-            // Fallback to browser clipboard API
-            await navigator.clipboard.writeText(workaroundCommand)
-            copied = true
-            setTimeout(() => {
-                copied = false
-            }, 2000)
-        }
-    }
 
     function handleKeydown(event: KeyboardEvent) {
         if (event.key === 'Enter') {
@@ -72,17 +53,10 @@
             run the following command in Terminal (keep it running while using Cmdr):
         </p>
 
-        <div class="command-box">
-            <code class="command">{workaroundCommand}</code>
-            <Button
-                variant="secondary"
-                size="mini"
-                onclick={handleCopyCommand}
-                disabled={!workaroundCommand}
-                aria-label="Copy command to clipboard"
-            >
-                {copied ? 'Copied!' : 'Copy'}
-            </Button>
+        <div class="command-wrapper">
+            {#if workaroundCommand}
+                <CommandBox command={workaroundCommand} />
+            {/if}
         </div>
 
         <p class="help-text">
@@ -129,26 +103,8 @@
         font-size: var(--font-size-sm);
     }
 
-    .command-box {
-        display: flex;
-        align-items: stretch;
-        gap: var(--spacing-sm);
+    .command-wrapper {
         margin-bottom: var(--spacing-md);
-        background: var(--color-bg-primary);
-        border: 1px solid var(--color-border-strong);
-        border-radius: var(--radius-lg);
-        padding: var(--spacing-md);
-    }
-
-    .command {
-        flex: 1;
-        font-family: var(--font-mono);
-        font-size: var(--font-size-sm);
-        color: var(--color-text-primary);
-        word-break: break-all;
-        line-height: 1.5;
-        background: none;
-        padding: 0;
     }
 
     .help-text {

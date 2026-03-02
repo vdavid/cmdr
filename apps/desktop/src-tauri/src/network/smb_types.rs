@@ -35,29 +35,53 @@ pub struct ShareListResult {
 }
 
 /// Error types for share listing operations.
+///
+/// Uses internally tagged representation so each variant can carry different fields
+/// while keeping a flat JSON shape (`{ "type": "...", "message": "..." }`).
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case", tag = "type", content = "message")]
+#[serde(rename_all = "snake_case", tag = "type")]
 pub enum ShareListError {
-    HostUnreachable(String),
-    Timeout(String),
-    AuthRequired(String),
+    HostUnreachable {
+        message: String,
+    },
+    Timeout {
+        message: String,
+    },
+    AuthRequired {
+        message: String,
+    },
     /// Guest access won't work.
-    SigningRequired(String),
-    AuthFailed(String),
-    ProtocolError(String),
-    ResolutionFailed(String),
+    SigningRequired {
+        message: String,
+    },
+    AuthFailed {
+        message: String,
+    },
+    ProtocolError {
+        message: String,
+    },
+    ResolutionFailed {
+        message: String,
+    },
+    /// A required CLI tool is not installed.
+    MissingDependency {
+        message: String,
+        #[serde(rename = "installCommand")]
+        install_command: Option<String>,
+    },
 }
 
 impl std::fmt::Display for ShareListError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::HostUnreachable(msg) => write!(f, "Host unreachable: {}", msg),
-            Self::Timeout(msg) => write!(f, "Timeout: {}", msg),
-            Self::AuthRequired(msg) => write!(f, "Authentication required: {}", msg),
-            Self::SigningRequired(msg) => write!(f, "SMB signing required: {}", msg),
-            Self::AuthFailed(msg) => write!(f, "Authentication failed: {}", msg),
-            Self::ProtocolError(msg) => write!(f, "Protocol error: {}", msg),
-            Self::ResolutionFailed(msg) => write!(f, "Resolution failed: {}", msg),
+            Self::HostUnreachable { message } => write!(f, "Host unreachable: {}", message),
+            Self::Timeout { message } => write!(f, "Timeout: {}", message),
+            Self::AuthRequired { message } => write!(f, "Authentication required: {}", message),
+            Self::SigningRequired { message } => write!(f, "SMB signing required: {}", message),
+            Self::AuthFailed { message } => write!(f, "Authentication failed: {}", message),
+            Self::ProtocolError { message } => write!(f, "Protocol error: {}", message),
+            Self::ResolutionFailed { message } => write!(f, "Resolution failed: {}", message),
+            Self::MissingDependency { message, .. } => write!(f, "Missing dependency: {}", message),
         }
     }
 }

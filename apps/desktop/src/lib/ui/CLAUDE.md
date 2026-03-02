@@ -9,6 +9,7 @@ Reusable UI components used across the entire desktop app.
 | `ModalDialog.svelte` | Central modal container: overlay, dragging, Escape, focus, MCP tracking  |
 | `dialog-registry.ts` | `SOFT_DIALOG_REGISTRY` array — single source of truth for all dialog IDs |
 | `Button.svelte`      | Styled button with variant and size props                                |
+| `CommandBox.svelte`  | Copyable terminal command (monospace + Copy button)                      |
 | `LoadingIcon.svelte` | Animated spinner with progressive status text                            |
 | `AlertDialog.svelte` | Single-action confirmation dialog built on `ModalDialog`                 |
 | `toast/`             | Centralized toast notification system — store, container, item           |
@@ -72,6 +73,12 @@ Centralized toast notifications with stacking, levels, and two dismissal modes.
 Levels: `info` (default), `warn`, `error`. Dismissal: `transient` (4s timeout + nav-dismiss, default) or `persistent`.
 
 Call `dismissTransientToasts()` on pane navigation to clear stale feedback.
+
+## CommandBox
+
+`CommandBox.svelte` — monospace terminal command with a one-click Copy button and 2-second "Copied!" feedback. Takes a
+single `command` string prop. Handles clipboard internally (`copyToClipboard` with `navigator.clipboard` fallback).
+Parent controls spacing via its own wrapper. Used in `PtpcameradDialog` and `ShareBrowser`.
 
 ## Key gotchas
 

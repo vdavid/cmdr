@@ -38,14 +38,24 @@ pub async fn run_smbclient_list(
         cmd.output()
     })
     .await
-    .map_err(|e| ShareListError::ProtocolError(format!("Failed to spawn smbclient task: {}", e)))?
+    .map_err(|e| ShareListError::ProtocolError {
+        message: format!("Failed to spawn smbclient task: {}", e),
+    })?
     .map_err(|e| {
         if e.kind() == std::io::ErrorKind::NotFound {
-            ShareListError::ProtocolError(
-                "smbclient not found. Install the samba-client package to connect to this server.".to_string(),
-            )
+            #[cfg(target_os = "linux")]
+            let install_command = super::linux_distro::smbclient_install_command();
+            #[cfg(not(target_os = "linux"))]
+            let install_command: Option<String> = None;
+
+            ShareListError::MissingDependency {
+                message: "smbclient is not installed. It's needed to connect to this server.".to_string(),
+                install_command,
+            }
         } else {
-            ShareListError::ProtocolError(format!("Failed to run smbclient: {}", e))
+            ShareListError::ProtocolError {
+                message: format!("Failed to run smbclient: {}", e),
+            }
         }
     })?;
 
@@ -75,9 +85,13 @@ fn classify_smbclient_error(stdout: &str, stderr: &str, host: &str, has_creds: b
         || combined.contains("NT_STATUS_WRONG_PASSWORD")
     {
         return if has_creds {
-            ShareListError::AuthFailed("Invalid username or password".to_string())
+            ShareListError::AuthFailed {
+                message: "Invalid username or password".to_string(),
+            }
         } else {
-            ShareListError::AuthRequired("This server requires authentication".to_string())
+            ShareListError::AuthRequired {
+                message: "This server requires authentication".to_string(),
+            }
         };
     }
 
@@ -85,14 +99,20 @@ fn classify_smbclient_error(stdout: &str, stderr: &str, host: &str, has_creds: b
         || combined.contains("NT_STATUS_CONNECTION_REFUSED")
         || (combined.contains("Connection to") && combined.contains("failed"))
     {
-        return ShareListError::HostUnreachable(format!("Cannot reach {}", host));
+        return ShareListError::HostUnreachable {
+            message: format!("Cannot reach {}", host),
+        };
     }
 
     if combined.contains("NT_STATUS_IO_TIMEOUT") {
-        return ShareListError::Timeout(format!("Connection to {} timed out", host));
+        return ShareListError::Timeout {
+            message: format!("Connection to {} timed out", host),
+        };
     }
 
-    ShareListError::ProtocolError(format!("smbclient failed: {}", stderr.trim()))
+    ShareListError::ProtocolError {
+        message: format!("smbclient failed: {}", stderr.trim()),
+    }
 }
 
 /// Parses `smbclient -L` output to extract share information.
@@ -237,21 +257,21 @@ mod tests {
     #[test]
     fn test_classify_auth_errors() {
         let err = classify_smbclient_error("", "NT_STATUS_ACCESS_DENIED", "host", false);
-        assert!(matches!(err, ShareListError::AuthRequired(_)));
+        assert!(matches!(err, ShareListError::AuthRequired { .. }));
 
         let err = classify_smbclient_error("", "NT_STATUS_LOGON_FAILURE", "host", true);
-        assert!(matches!(err, ShareListError::AuthFailed(_)));
+        assert!(matches!(err, ShareListError::AuthFailed { .. }));
     }
 
     #[test]
     fn test_classify_network_errors() {
         let err = classify_smbclient_error("", "NT_STATUS_HOST_UNREACHABLE", "host", false);
-        assert!(matches!(err, ShareListError::HostUnreachable(_)));
+        assert!(matches!(err, ShareListError::HostUnreachable { .. }));
 
         let err = classify_smbclient_error("", "Connection to host failed", "host", false);
-        assert!(matches!(err, ShareListError::HostUnreachable(_)));
+        assert!(matches!(err, ShareListError::HostUnreachable { .. }));
 
         let err = classify_smbclient_error("", "NT_STATUS_IO_TIMEOUT", "host", false);
-        assert!(matches!(err, ShareListError::Timeout(_)));
+        assert!(matches!(err, ShareListError::Timeout { .. }));
     }
 }
