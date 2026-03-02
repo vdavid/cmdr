@@ -217,15 +217,18 @@ Add this right after the certificate import step:
 
 ### 6.1. Build and verify
 
-- [ ] Build locally:
+- [x] Build the Tauri app locally (not just the frontend — `pnpm build` alone only builds Vite/SvelteKit):
   ```sh
   cd apps/desktop
-  pnpm build -- --target universal-apple-darwin
+  pnpm tauri build
   ```
-- [ ] Verify signing:
+  For a universal binary, add `--target universal-apple-darwin` (requires `rustup target add x86_64-apple-darwin` first).
+- [x] Verify signing:
   ```sh
-  codesign -dvv apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle/macos/Cmdr.app
+  codesign -dvv src-tauri/target/release/bundle/macos/Cmdr.app
   ```
+  (Or `src-tauri/target/universal-apple-darwin/release/bundle/macos/Cmdr.app` if you built the universal binary.)
+
   You should see your signing identity and `Authority=Developer ID Application: ...` in the output.
   If it says `ad-hoc` or has no identity, the certificate isn't in your keychain or the `signingIdentity`
   in `tauri.conf.json` doesn't match.
@@ -234,9 +237,9 @@ Add this right after the certificate import step:
 
 ### 7.1. Trigger a test release
 
-- [ ] Push the `tauri.conf.json` and `release.yml` changes to a branch
-- [ ] Create a test tag: `git tag v0.5.0-signing-test && git push origin v0.5.0-signing-test`
-- [ ] Watch the release workflow — the "Build and release" step should now include signing and notarization
+- [x] Push the `tauri.conf.json` and `release.yml` changes to a branch
+- [x] Create a test tag: `git tag v0.5.0-signing-test && git push origin v0.5.0-signing-test`
+- [x] Watch the release workflow — the "Build and release" step should now include signing and notarization
   output (notarization typically takes 2-5 minutes, sometimes up to 15-20)
 
 ### 7.2. Verify the build
@@ -246,7 +249,7 @@ Add this right after the certificate import step:
 
 ### 7.3. Clean up
 
-- [ ] Delete the test tag and release:
+- [x] Delete the test tag and release:
   ```sh
   git tag -d v0.5.0-signing-test && git push origin :v0.5.0-signing-test
   ```
