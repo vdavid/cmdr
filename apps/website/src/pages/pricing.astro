@@ -2,7 +2,7 @@
 import Layout from '../layouts/Layout.astro'
 import Header from '../components/Header.astro'
 import Footer from '../components/Footer.astro'
-import { version, dmgUrl } from '../lib/release'
+import { version, dmgUrls } from '../lib/release'
 
 // Paddle config - passed to client-side script
 const paddleConfig = {
@@ -33,7 +33,10 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
         <!-- Download Button -->
         <div class="mb-16 text-center">
             <a
-                href={dmgUrl}
+                href={dmgUrls.universal}
+                data-download-link
+                data-dmg-arm={dmgUrls.aarch64}
+                data-dmg-intel={dmgUrls.x86_64}
                 class="inline-flex items-center gap-3 rounded-lg bg-[var(--color-accent)] px-8 py-4 text-[var(--color-accent-contrast)] transition-all duration-200 hover:bg-[var(--color-accent-hover)] hover:shadow-[var(--color-accent-glow)]"
             >
                 <svg class="h-7 w-7" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">

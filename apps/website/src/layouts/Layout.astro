@@ -67,6 +67,37 @@ const {
     </head>
     <body class="min-h-screen">
         <slot />
+        <script is:inline>
+            ;(function () {
+                if (!navigator.userAgentData) return
+                navigator.userAgentData
+                    .getHighEntropyValues(['architecture'])
+                    .then(function (ua) {
+                        var arch = ua.architecture === 'arm' ? 'aarch64' : ua.architecture === 'x86' ? 'x86_64' : null
+                        if (!arch) return
+                        document.querySelectorAll('a[data-download-link]').forEach(function (el) {
+                            var url = arch === 'aarch64' ? el.dataset.dmgArm : el.dataset.dmgIntel
+                            if (url) el.href = url
+                            var size = arch === 'aarch64' ? el.dataset.sizeArm : el.dataset.sizeIntel
+                            if (size) {
+                                el.querySelectorAll('[data-download-size]').forEach(function (s) {
+                                    s.textContent = s.textContent.replace(/\d+ MB/, size)
+                                })
+                            }
+                        })
+                        document.querySelectorAll('[data-arch-subtitle]').forEach(function (el) {
+                            el.textContent = arch === 'aarch64' ? 'Apple Silicon' : 'Intel'
+                        })
+                        document.querySelectorAll('[data-arch-link]').forEach(function (el) {
+                            if (el.dataset.archLink === arch) {
+                                el.style.fontWeight = '600'
+                                el.style.color = 'var(--color-text-primary)'
+                            }
+                        })
+                    })
+                    .catch(function () {})
+            })()
+        </script>
     </body>
 </html>
 

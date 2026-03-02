@@ -1,5 +1,5 @@
 ---
-import { version, dmgUrl } from '../lib/release'
+import { version, dmgUrls, dmgSizes } from '../lib/release'
 import NewsletterInlineWrapper from './NewsletterInlineWrapper.astro'
 ---
 
@@ -33,12 +33,19 @@ import NewsletterInlineWrapper from './NewsletterInlineWrapper.astro'
                 </svg>
                 <div class="text-left">
                     <div class="font-semibold">macOS</div>
-                    <div class="text-sm text-[var(--color-text-tertiary)]">Universal (Apple Silicon + Intel)</div>
+                    <div class="text-sm text-[var(--color-text-tertiary)]" data-arch-subtitle>
+                        Universal (Apple Silicon + Intel)
+                    </div>
                 </div>
             </div>
 
             <a
-                href={dmgUrl}
+                href={dmgUrls.universal}
+                data-download-link
+                data-dmg-arm={dmgUrls.aarch64}
+                data-dmg-intel={dmgUrls.x86_64}
+                data-size-arm={dmgSizes?.aarch64}
+                data-size-intel={dmgSizes?.x86_64}
                 class="glow mb-4 inline-flex w-full flex-col items-center justify-center gap-1 rounded-xl bg-[var(--color-accent)] px-8 py-4 text-[var(--color-accent-contrast)] transition-all duration-300 hover:scale-[1.02] hover:bg-[var(--color-accent-hover)] motion-reduce:transition-none motion-reduce:hover:scale-100"
             >
                 <span class="flex items-center gap-2 font-semibold">
@@ -51,8 +58,33 @@ import NewsletterInlineWrapper from './NewsletterInlineWrapper.astro'
                     </svg>
                     Download for macOS
                 </span>
-                <span class="text-sm opacity-80">{version}</span>
+                <span class="text-sm opacity-80">
+                    {version}{dmgSizes && <span data-download-size> · {dmgSizes.universal}</span>}
+                </span>
             </a>
+
+            <div class="mt-3 flex items-center justify-center gap-1 text-xs text-[var(--color-text-tertiary)]">
+                <span>Also available:</span>
+                <a
+                    href={dmgUrls.aarch64}
+                    data-arch-link="aarch64"
+                    class="underline underline-offset-2 hover:text-[var(--color-text-secondary)]"
+                    >Apple Silicon{dmgSizes ? ` (${dmgSizes.aarch64})` : ''}</a
+                >
+                <span>·</span>
+                <a
+                    href={dmgUrls.x86_64}
+                    data-arch-link="x86_64"
+                    class="underline underline-offset-2 hover:text-[var(--color-text-secondary)]"
+                    >Intel{dmgSizes ? ` (${dmgSizes.x86_64})` : ''}</a
+                >
+                <span>·</span>
+                <a
+                    href={dmgUrls.universal}
+                    class="underline underline-offset-2 hover:text-[var(--color-text-secondary)]"
+                    >Universal{dmgSizes ? ` (${dmgSizes.universal})` : ''}</a
+                >
+            </div>
 
             <div class="space-y-2 text-sm text-[var(--color-text-tertiary)]">
                 <p>

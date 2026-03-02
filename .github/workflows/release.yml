@@ -9,9 +9,19 @@ permissions:
     contents: write
 
 jobs:
-    release:
-        name: Build and release
+    build:
+        name: Build (${{ matrix.arch }})
         runs-on: macos-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - target: aarch64-apple-darwin
+                      arch: aarch64
+                    - target: x86_64-apple-darwin
+                      arch: x86_64
+                    - target: universal-apple-darwin
+                      arch: universal
 
         steps:
             - name: Checkout code
@@ -31,7 +41,8 @@ jobs:
               run: pnpm exec svelte-kit sync
               working-directory: ./apps/desktop
 
-            - name: Install x86_64 target for universal binary
+            - name: Install x86_64 Rust target
+              if: matrix.arch != 'aarch64'
               run: rustup target add x86_64-apple-darwin
 
             - name: Import Apple certificate
@@ -63,7 +74,7 @@ jobs:
                   echo -n "$APPLE_API_KEY_BASE64" | base64 --decode \
                     > ~/private_keys/AuthKey_${APPLE_API_KEY}.p8
 
-            - name: Build and release
+            - name: Build, sign, and notarize
               uses: tauri-apps/tauri-action@73fb865345c54760d875b94642314f8c0c894afa # v0
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -77,37 +88,26 @@ jobs:
                   APPLE_API_KEY_PATH: ~/private_keys/AuthKey_${{ secrets.APPLE_API_KEY }}.p8
               with:
                   projectPath: ./apps/desktop
-                  tagName: ${{ github.ref_name }}
-                  releaseName: 'Cmdr ${{ github.ref_name }}'
-                  releaseBody: 'See CHANGELOG.md for details.'
-                  releaseDraft: false
-                  prerelease: false
-                  args: --target universal-apple-darwin
+                  args: --target ${{ matrix.target }}
 
-            - name: Extract changelog for this version
-              id: changelog
+            - name: Upload release artifacts
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               run: |
-                  VERSION="${{ github.ref_name }}"
-                  VERSION="${VERSION#v}"  # Remove 'v' prefix
+                  TAG="${{ github.ref_name }}"
+                  BUNDLE_DIR="apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle"
 
-                  # Extract section for this version from CHANGELOG.md
-                  NOTES=$(sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | sed '1d;$d')
-
-                  # Write to file to preserve newlines
-                  echo "$NOTES" > /tmp/notes.txt
-
-            - name: Get artifact paths and signatures
-              id: artifacts
-              run: |
-                  # Debug: list all bundle files
                   echo "=== Bundle directory contents ==="
-                  find apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle -type f | head -20
+                  find "$BUNDLE_DIR" -type f | head -30
 
-                  # Find the .app.tar.gz and its signature
-                  BUNDLE=$(find apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle -name "*.app.tar.gz" | head -1)
-                  SIG_FILE="${BUNDLE}.sig"
+                  # Find DMG (Tauri already names it with arch, e.g. Cmdr_0.5.0_aarch64.dmg)
+                  DMG=$(find "$BUNDLE_DIR" -name "*.dmg" | head -1)
+                  echo "DMG: $DMG"
 
-                  echo "Bundle: $BUNDLE"
+                  # Find updater .app.tar.gz and .sig
+                  UPDATER=$(find "$BUNDLE_DIR" -name "*.app.tar.gz" | head -1)
+                  SIG_FILE="${UPDATER}.sig"
+                  echo "Updater: $UPDATER"
                   echo "Sig file: $SIG_FILE"
 
                   if [ ! -f "$SIG_FILE" ]; then
@@ -115,43 +115,118 @@ jobs:
                       exit 1
                   fi
 
-                  SIGNATURE=$(cat "$SIG_FILE")
-                  FILENAME=$(basename "$BUNDLE")
+                  # Rename updater artifacts to include arch (Tauri names them all Cmdr.app.tar.gz)
+                  UPDATER_RENAMED="/tmp/Cmdr_${{ matrix.arch }}.app.tar.gz"
+                  SIG_RENAMED="/tmp/Cmdr_${{ matrix.arch }}.app.tar.gz.sig"
+                  cp "$UPDATER" "$UPDATER_RENAMED"
+                  cp "$SIG_FILE" "$SIG_RENAMED"
 
-                  echo "signature=$SIGNATURE" >> $GITHUB_OUTPUT
-                  echo "filename=$FILENAME" >> $GITHUB_OUTPUT
+                  # Create release if it doesn't exist yet (race between matrix jobs is fine)
+                  gh release create "$TAG" --title "Cmdr $TAG" --notes "See CHANGELOG.md for details." --draft=false || true
 
-            - name: Generate latest.json
+                  # Upload artifacts (--clobber in case of retry)
+                  gh release upload "$TAG" "$DMG" "$UPDATER_RENAMED" "$SIG_RENAMED" --clobber
+
+            - name: Save signature as artifact
+              run: |
+                  BUNDLE_DIR="apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle"
+                  SIG_FILE=$(find "$BUNDLE_DIR" -name "*.app.tar.gz.sig" | head -1)
+                  mkdir -p /tmp/sig-artifacts
+                  cp "$SIG_FILE" "/tmp/sig-artifacts/signature-${{ matrix.arch }}.txt"
+
+            - name: Upload signature artifact
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+              with:
+                  name: signature-${{ matrix.arch }}
+                  path: /tmp/sig-artifacts/signature-${{ matrix.arch }}.txt
+
+            - name: Clean up keychain
+              if: always()
+              run: security delete-keychain $RUNNER_TEMP/app-signing.keychain-db
+
+    publish:
+        name: Publish release
+        needs: [build]
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+            - name: Download all signature artifacts
+              uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+              with:
+                  path: /tmp/signatures
+                  pattern: signature-*
+
+            - name: Extract changelog for this version
+              id: changelog
               run: |
                   VERSION="${{ github.ref_name }}"
                   VERSION="${VERSION#v}"
 
+                  # Extract section for this version from CHANGELOG.md
+                  NOTES=$(sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | sed '1d;$d')
+
+                  # Write to file to preserve newlines
+                  echo "$NOTES" > /tmp/notes.txt
+
+            - name: Generate latest.json
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  VERSION="${{ github.ref_name }}"
+                  VERSION="${VERSION#v}"
+                  TAG="${{ github.ref_name }}"
+
+                  # Read signatures from downloaded artifacts
+                  SIG_AARCH64=$(cat /tmp/signatures/signature-aarch64/signature-aarch64.txt)
+                  SIG_X86_64=$(cat /tmp/signatures/signature-x86_64/signature-x86_64.txt)
+                  SIG_UNIVERSAL=$(cat /tmp/signatures/signature-universal/signature-universal.txt)
+
+                  # Query DMG sizes from the release assets
+                  SIZE_AARCH64=$(gh api "repos/vdavid/cmdr/releases/tags/$TAG" --jq ".assets[] | select(.name | endswith(\"_aarch64.dmg\")) | .size" || echo 0)
+                  SIZE_X86_64=$(gh api "repos/vdavid/cmdr/releases/tags/$TAG" --jq ".assets[] | select(.name | endswith(\"_x86_64.dmg\")) | .size" || echo 0)
+                  SIZE_UNIVERSAL=$(gh api "repos/vdavid/cmdr/releases/tags/$TAG" --jq ".assets[] | select(.name | endswith(\"_universal.dmg\")) | .size" || echo 0)
+
                   # Read notes from file, escape for JSON
                   NOTES=$(cat /tmp/notes.txt | jq -Rs .)
 
-                  # Write to /tmp first (will copy to main branch later)
-                  # All platforms point to the same universal binary
+                  BASE_URL="https://github.com/vdavid/cmdr/releases/download/$TAG"
+
                   cat > /tmp/latest.json << EOF
                   {
                       "version": "$VERSION",
+                      "dmgSizes": {
+                          "aarch64": ${SIZE_AARCH64:-0},
+                          "x86_64": ${SIZE_X86_64:-0},
+                          "universal": ${SIZE_UNIVERSAL:-0}
+                      },
                       "notes": $NOTES,
                       "pub_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
                       "platforms": {
                           "darwin-universal": {
-                              "signature": "${{ steps.artifacts.outputs.signature }}",
-                              "url": "https://github.com/vdavid/cmdr/releases/download/${{ github.ref_name }}/${{ steps.artifacts.outputs.filename }}"
+                              "signature": "$SIG_UNIVERSAL",
+                              "url": "$BASE_URL/Cmdr_universal.app.tar.gz"
                           },
                           "darwin-aarch64": {
-                              "signature": "${{ steps.artifacts.outputs.signature }}",
-                              "url": "https://github.com/vdavid/cmdr/releases/download/${{ github.ref_name }}/${{ steps.artifacts.outputs.filename }}"
+                              "signature": "$SIG_AARCH64",
+                              "url": "$BASE_URL/Cmdr_aarch64.app.tar.gz"
                           },
                           "darwin-x86_64": {
-                              "signature": "${{ steps.artifacts.outputs.signature }}",
-                              "url": "https://github.com/vdavid/cmdr/releases/download/${{ github.ref_name }}/${{ steps.artifacts.outputs.filename }}"
+                              "signature": "$SIG_X86_64",
+                              "url": "$BASE_URL/Cmdr_x86_64.app.tar.gz"
                           }
                       }
                   }
                   EOF
+
+            - name: Update release body with changelog
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  TAG="${{ github.ref_name }}"
+                  gh release edit "$TAG" --notes-file /tmp/notes.txt
 
             - name: Commit latest.json to main
               run: |
@@ -179,7 +254,3 @@ jobs:
                       -H "Content-Type: application/json" \
                       -H "X-Hub-Signature-256: sha256=$SIGNATURE" \
                       -d "$PAYLOAD"
-
-            - name: Clean up keychain
-              if: always()
-              run: security delete-keychain $RUNNER_TEMP/app-signing.keychain-db
