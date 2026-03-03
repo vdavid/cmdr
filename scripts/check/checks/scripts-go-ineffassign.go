@@ -54,7 +54,9 @@ func RunIneffassign(ctx *CheckContext) (CheckResult, error) {
 	}
 
 	if fileCount > 0 {
-		return Success(fmt.Sprintf("%d %s checked, no ineffectual assignments", fileCount, Pluralize(fileCount, "file", "files"))), nil
+		result := Success(fmt.Sprintf("%d %s checked, no ineffectual assignments", fileCount, Pluralize(fileCount, "file", "files")))
+		result.Total = fileCount
+		return result, nil
 	}
 	return Success("No ineffectual assignments"), nil
 }

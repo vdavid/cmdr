@@ -54,7 +54,9 @@ func RunNilaway(ctx *CheckContext) (CheckResult, error) {
 	}
 
 	if pkgCount > 0 {
-		return Success(fmt.Sprintf("%d %s checked, no nil issues", pkgCount, Pluralize(pkgCount, "package", "packages"))), nil
+		result := Success(fmt.Sprintf("%d %s checked, no nil issues", pkgCount, Pluralize(pkgCount, "package", "packages")))
+		result.Total = pkgCount
+		return result, nil
 	}
 	return Success("No nil issues"), nil
 }

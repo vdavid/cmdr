@@ -118,7 +118,7 @@ func RunFileLength(ctx *CheckContext) (CheckResult, error) {
 		strings.TrimRight(sb.String(), "\n"),
 	)
 
-	return CheckResult{Code: ResultWarning, Message: msg}, nil
+	return CheckResult{Code: ResultWarning, Message: msg, Total: -1, Issues: -1, Changes: -1}, nil
 }
 
 func countLines(path string) (int, error) {

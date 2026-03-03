@@ -118,5 +118,7 @@ func RunSvelteTests(ctx *CheckContext) (CheckResult, error) {
 		return Success("All tests passed"), nil
 	}
 	count, _ := strconv.Atoi(testCount)
-	return Success(fmt.Sprintf("%d %s passed", count, Pluralize(count, "test", "tests"))), nil
+	result := Success(fmt.Sprintf("%d %s passed", count, Pluralize(count, "test", "tests")))
+	result.Total = count
+	return result, nil
 }

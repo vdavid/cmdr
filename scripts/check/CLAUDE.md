@@ -12,6 +12,7 @@ parallel with dependency ordering. Invoked via `./scripts/check.sh` at the repo 
 | `checks/common.go` | Core types (`CheckDefinition`, `CheckResult`, `CheckContext`, `CheckFunc`), shared utils (`RunCommand`, `EnsureGoTool`, `runPrettierCheck`, `runESLintCheck`) |
 | `checks/registry.go` | `AllChecks`: canonical ordered list of all check definitions. Lookup and validation functions. |
 | `checks/registry_test.go` | Collision detection, `CLIName()` tests |
+| `stats.go` | CSV stats logging (`logCheckStats`) — appends one row per check to `~/cmdr-check-log.csv` |
 | `colors.go` | ANSI color constants |
 | `utils.go` | `findRootDir()` (walks up until `apps/desktop/src-tauri/Cargo.toml` is found) |
 | `checks/desktop-rust-*.go` | One file per Rust check |
@@ -25,7 +26,7 @@ parallel with dependency ordering. Invoked via `./scripts/check.sh` at the repo 
 ./scripts/check.sh [flags]
   → go run ./scripts/check [flags]
     → ValidateCheckNames()          # startup: catch ID/nickname collisions
-    → parseFlags()                  # --rust/--svelte/--go/--app/--check/--ci/--verbose/--fail-fast
+    → parseFlags()                  # --rust/--svelte/--go/--app/--check/--ci/--verbose/--fail-fast/--no-log
     → findRootDir()                 # walk up to repo root
     → selectChecks()                # filter AllChecks by flags
     → FilterSlowChecks()            # drop IsSlow=true unless --include-slow or --check used
@@ -74,6 +75,11 @@ only in CI. `runPrettierCheck` and `runESLintCheck` in `common.go` handle both m
 `go install` and returns the full binary path. Used for staticcheck, nilaway, etc.
 
 **TTY detection:** `golang.org/x/term.IsTerminal` gates the live status line — CI logs stay clean.
+
+**CSV stats logging:** Each check run appends a row to `~/cmdr-check-log.csv` with timestamp, app,
+check name, duration, result (pass/fail/skip/blocked), and optional counts (total, issues, changes).
+`CheckResult` has `Total`, `Issues`, `Changes` fields (`-1` = N/A, rendered as `N/A` in CSV).
+Disabled by `--no-log` or `--ci`. Implementation in `stats.go`.
 
 ## Apps and check counts
 

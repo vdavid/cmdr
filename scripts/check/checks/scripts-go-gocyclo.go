@@ -71,7 +71,9 @@ func RunGocyclo(ctx *CheckContext) (CheckResult, error) {
 	}
 
 	if fileCount > 0 {
-		return Success(fmt.Sprintf("%d %s checked, complexity OK", fileCount, Pluralize(fileCount, "file", "files"))), nil
+		result := Success(fmt.Sprintf("%d %s checked, complexity OK", fileCount, Pluralize(fileCount, "file", "files")))
+		result.Total = fileCount
+		return result, nil
 	}
 	return Success("Complexity OK"), nil
 }

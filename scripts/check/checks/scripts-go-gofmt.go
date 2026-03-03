@@ -57,12 +57,24 @@ func RunGoFmt(ctx *CheckContext) (CheckResult, error) {
 		if len(allNeedsFormat) > 0 {
 			return CheckResult{}, fmt.Errorf("files need formatting, run gofmt -s -w . locally\n%s", indentOutput(allCheckOutput.String()))
 		}
-		return Success(fmt.Sprintf("%d %s already formatted", totalFileCount, Pluralize(totalFileCount, "file", "files"))), nil
+		result := Success(fmt.Sprintf("%d %s already formatted", totalFileCount, Pluralize(totalFileCount, "file", "files")))
+		result.Total = totalFileCount
+		result.Issues = 0
+		result.Changes = 0
+		return result, nil
 	}
 
 	if len(allNeedsFormat) > 0 {
-		return SuccessWithChanges(fmt.Sprintf("Formatted %d of %d %s", len(allNeedsFormat), totalFileCount, Pluralize(totalFileCount, "file", "files"))), nil
+		result := SuccessWithChanges(fmt.Sprintf("Formatted %d of %d %s", len(allNeedsFormat), totalFileCount, Pluralize(totalFileCount, "file", "files")))
+		result.Total = totalFileCount
+		result.Issues = len(allNeedsFormat)
+		result.Changes = len(allNeedsFormat)
+		return result, nil
 	}
 
-	return Success(fmt.Sprintf("%d %s already formatted", totalFileCount, Pluralize(totalFileCount, "file", "files"))), nil
+	result := Success(fmt.Sprintf("%d %s already formatted", totalFileCount, Pluralize(totalFileCount, "file", "files")))
+	result.Total = totalFileCount
+	result.Issues = 0
+	result.Changes = 0
+	return result, nil
 }

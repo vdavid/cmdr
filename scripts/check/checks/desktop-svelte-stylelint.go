@@ -36,7 +36,9 @@ func RunStylelint(ctx *CheckContext) (CheckResult, error) {
 	}
 
 	if fileCount > 0 {
-		return Success(fmt.Sprintf("%d CSS %s valid", fileCount, Pluralize(fileCount, "file", "files"))), nil
+		result := Success(fmt.Sprintf("%d CSS %s valid", fileCount, Pluralize(fileCount, "file", "files")))
+		result.Total = fileCount
+		return result, nil
 	}
 	return Success("All CSS valid"), nil
 }

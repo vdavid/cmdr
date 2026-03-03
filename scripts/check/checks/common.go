@@ -50,21 +50,24 @@ type CheckResult struct {
 	Code        ResultCode
 	Message     string
 	MadeChanges bool // true if the check modified files (for example, formatted code)
+	Total       int  // items checked (-1 = N/A)
+	Issues      int  // items needing attention (-1 = N/A)
+	Changes     int  // files modified (-1 = N/A)
 }
 
 // Success creates a success result with the given message (no changes made).
 func Success(message string) CheckResult {
-	return CheckResult{Code: ResultSuccess, Message: message, MadeChanges: false}
+	return CheckResult{Code: ResultSuccess, Message: message, Total: -1, Issues: -1, Changes: -1}
 }
 
 // SuccessWithChanges creates a success result indicating files were modified.
 func SuccessWithChanges(message string) CheckResult {
-	return CheckResult{Code: ResultSuccess, Message: message, MadeChanges: true}
+	return CheckResult{Code: ResultSuccess, Message: message, MadeChanges: true, Total: -1, Issues: -1, Changes: -1}
 }
 
 // Skipped creates a skipped result with the given reason.
 func Skipped(reason string) CheckResult {
-	return CheckResult{Code: ResultSkipped, Message: reason}
+	return CheckResult{Code: ResultSkipped, Message: reason, Total: -1, Issues: -1, Changes: -1}
 }
 
 // CheckContext holds the context for running checks.
@@ -218,7 +221,11 @@ func runPrettierCheck(ctx *CheckContext, dir string, extensions []string) (Check
 		if len(needsFormat) > 0 {
 			return CheckResult{}, fmt.Errorf("code is not formatted, run pnpm format locally\n%s", indentOutput(checkOutput))
 		}
-		return Success(fmt.Sprintf("%d %s already formatted", fileCount, Pluralize(fileCount, "file", "files"))), nil
+		result := Success(fmt.Sprintf("%d %s already formatted", fileCount, Pluralize(fileCount, "file", "files")))
+		result.Total = fileCount
+		result.Issues = 0
+		result.Changes = 0
+		return result, nil
 	}
 
 	// Non-CI mode: format if needed
@@ -229,10 +236,18 @@ func runPrettierCheck(ctx *CheckContext, dir string, extensions []string) (Check
 		if err != nil {
 			return CheckResult{}, fmt.Errorf("prettier formatting failed\n%s", indentOutput(output))
 		}
-		return SuccessWithChanges(fmt.Sprintf("Formatted %d of %d %s", len(needsFormat), fileCount, Pluralize(fileCount, "file", "files"))), nil
+		result := SuccessWithChanges(fmt.Sprintf("Formatted %d of %d %s", len(needsFormat), fileCount, Pluralize(fileCount, "file", "files")))
+		result.Total = fileCount
+		result.Issues = len(needsFormat)
+		result.Changes = len(needsFormat)
+		return result, nil
 	}
 
-	return Success(fmt.Sprintf("%d %s already formatted", fileCount, Pluralize(fileCount, "file", "files"))), nil
+	result := Success(fmt.Sprintf("%d %s already formatted", fileCount, Pluralize(fileCount, "file", "files")))
+	result.Total = fileCount
+	result.Issues = 0
+	result.Changes = 0
+	return result, nil
 }
 
 // runESLintCheck runs ESLint check/fix for a given directory.
@@ -271,7 +286,9 @@ func runESLintCheck(ctx *CheckContext, dir string, extensions []string, requireC
 	}
 
 	if fileCount > 0 {
-		return Success(fmt.Sprintf("%d %s passed", fileCount, Pluralize(fileCount, "file", "files"))), nil
+		result := Success(fmt.Sprintf("%d %s passed", fileCount, Pluralize(fileCount, "file", "files")))
+		result.Total = fileCount
+		return result, nil
 	}
 	return Success("All files passed"), nil
 }

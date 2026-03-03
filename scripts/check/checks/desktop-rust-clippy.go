@@ -48,7 +48,9 @@ func RunClippy(ctx *CheckContext) (CheckResult, error) {
 	matches := re.FindStringSubmatch(output)
 	if len(matches) > 1 {
 		count, _ := strconv.Atoi(matches[1])
-		return Success(fmt.Sprintf("Checked %d %s, no warnings", count, Pluralize(count, "crate", "crates"))), nil
+		result := Success(fmt.Sprintf("Checked %d %s, no warnings", count, Pluralize(count, "crate", "crates")))
+		result.Total = count
+		return result, nil
 	}
 
 	// Fallback: count "Checking" lines
@@ -56,7 +58,9 @@ func RunClippy(ctx *CheckContext) (CheckResult, error) {
 	checkingMatches := re2.FindAllString(output, -1)
 	if len(checkingMatches) > 0 {
 		count := len(checkingMatches)
-		return Success(fmt.Sprintf("Checked %d %s, no warnings", count, Pluralize(count, "crate", "crates"))), nil
+		result := Success(fmt.Sprintf("Checked %d %s, no warnings", count, Pluralize(count, "crate", "crates")))
+		result.Total = count
+		return result, nil
 	}
 
 	return Success("No warnings"), nil

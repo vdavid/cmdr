@@ -32,7 +32,9 @@ func RunRustTests(ctx *CheckContext) (CheckResult, error) {
 	matches := re.FindStringSubmatch(output)
 	if len(matches) > 1 {
 		count, _ := strconv.Atoi(matches[1])
-		return Success(fmt.Sprintf("%d %s passed", count, Pluralize(count, "test", "tests"))), nil
+		result := Success(fmt.Sprintf("%d %s passed", count, Pluralize(count, "test", "tests")))
+		result.Total = count
+		return result, nil
 	}
 	return Success("All tests passed"), nil
 }

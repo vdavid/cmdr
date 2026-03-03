@@ -42,6 +42,7 @@ type Runner struct {
 	checks      []*CheckState
 	checkMap    map[string]*CheckState
 	failFast    bool
+	noLog       bool
 	hasFailed   bool
 	mu          sync.Mutex
 	outputMu    sync.Mutex
@@ -53,12 +54,13 @@ type Runner struct {
 }
 
 // NewRunner creates a new check runner.
-func NewRunner(ctx *checks.CheckContext, defs []checks.CheckDefinition, failFast bool) *Runner {
+func NewRunner(ctx *checks.CheckContext, defs []checks.CheckDefinition, failFast, noLog bool) *Runner {
 	r := &Runner{
 		ctx:         ctx,
 		checks:      make([]*CheckState, 0, len(defs)),
 		checkMap:    make(map[string]*CheckState),
 		failFast:    failFast,
+		noLog:       noLog,
 		maxWorkers:  runtime.NumCPU(),
 		completedCh: make(chan *CheckState, len(defs)),
 		isTTY:       term.IsTerminal(int(os.Stdout.Fd())),
@@ -68,6 +70,7 @@ func NewRunner(ctx *checks.CheckContext, defs []checks.CheckDefinition, failFast
 		state := &CheckState{
 			Definition: &defs[i],
 			Status:     StatusPending,
+			Result:     checks.CheckResult{Total: -1, Issues: -1, Changes: -1},
 		}
 		r.checks = append(r.checks, state)
 		r.checkMap[defs[i].ID] = state
@@ -214,6 +217,9 @@ func (r *Runner) runCheck(state *CheckState) {
 	state.mu.Unlock()
 
 	r.printResult(state)
+	if !r.noLog {
+		logCheckStats(state)
+	}
 }
 
 // printResult outputs the result of a check.
@@ -270,6 +276,9 @@ func (r *Runner) printBlocked(state *CheckState, depID string) {
 	prefix := fmt.Sprintf("%s: %s / %s", checks.AppDisplayName(def.App), def.Tech, def.DisplayName)
 	paddedPrefix := r.padPrefix(prefix)
 	fmt.Printf("• %s... %sBLOCKED%s (dependency %s failed)\n", paddedPrefix, colorYellow, colorReset, depID)
+	if !r.noLog {
+		logCheckStats(state)
+	}
 }
 
 // padPrefix pads a prefix string to the calculated max width for alignment.

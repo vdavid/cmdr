@@ -49,7 +49,9 @@ func RunGoTests(ctx *CheckContext) (CheckResult, error) {
 	}
 
 	if pkgCount > 0 {
-		return Success(fmt.Sprintf("%d %s passed", pkgCount, Pluralize(pkgCount, "package", "packages"))), nil
+		result := Success(fmt.Sprintf("%d %s passed", pkgCount, Pluralize(pkgCount, "package", "packages")))
+		result.Total = pkgCount
+		return result, nil
 	}
 	return Success("All tests passed"), nil
 }

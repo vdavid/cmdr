@@ -40,7 +40,11 @@ func RunRustfmt(ctx *CheckContext) (CheckResult, error) {
 		if checkErr != nil || len(needsFormat) > 0 {
 			return CheckResult{}, fmt.Errorf("code is not formatted, run cargo fmt locally\n%s", indentOutput(checkOutput))
 		}
-		return Success(fmt.Sprintf("%d %s already formatted", fileCount, Pluralize(fileCount, "file", "files"))), nil
+		result := Success(fmt.Sprintf("%d %s already formatted", fileCount, Pluralize(fileCount, "file", "files")))
+		result.Total = fileCount
+		result.Issues = 0
+		result.Changes = 0
+		return result, nil
 	}
 
 	// Non-CI mode: format if needed
@@ -51,8 +55,16 @@ func RunRustfmt(ctx *CheckContext) (CheckResult, error) {
 		if err != nil {
 			return CheckResult{}, fmt.Errorf("rust formatting failed\n%s", indentOutput(output))
 		}
-		return SuccessWithChanges(fmt.Sprintf("Formatted %d of %d %s", len(needsFormat), fileCount, Pluralize(fileCount, "file", "files"))), nil
+		result := SuccessWithChanges(fmt.Sprintf("Formatted %d of %d %s", len(needsFormat), fileCount, Pluralize(fileCount, "file", "files")))
+		result.Total = fileCount
+		result.Issues = len(needsFormat)
+		result.Changes = len(needsFormat)
+		return result, nil
 	}
 
-	return Success(fmt.Sprintf("%d %s already formatted", fileCount, Pluralize(fileCount, "file", "files"))), nil
+	result := Success(fmt.Sprintf("%d %s already formatted", fileCount, Pluralize(fileCount, "file", "files")))
+	result.Total = fileCount
+	result.Issues = 0
+	result.Changes = 0
+	return result, nil
 }

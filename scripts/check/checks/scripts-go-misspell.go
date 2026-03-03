@@ -46,7 +46,9 @@ func RunMisspell(ctx *CheckContext) (CheckResult, error) {
 	}
 
 	if totalFileCount > 0 {
-		return Success(fmt.Sprintf("%d %s checked, no misspellings", totalFileCount, Pluralize(totalFileCount, "file", "files"))), nil
+		result := Success(fmt.Sprintf("%d %s checked, no misspellings", totalFileCount, Pluralize(totalFileCount, "file", "files")))
+		result.Total = totalFileCount
+		return result, nil
 	}
 	return Success("No misspellings"), nil
 }

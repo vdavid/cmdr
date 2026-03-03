@@ -39,6 +39,7 @@ type cliFlags struct {
 	verbose     bool
 	includeSlow bool
 	failFast    bool
+	noLog       bool
 }
 
 func main() {
@@ -86,7 +87,7 @@ func main() {
 		}
 	}
 
-	runChecks(ctx, checksToRun, flags.failFast)
+	runChecks(ctx, checksToRun, flags.failFast, flags.noLog)
 }
 
 // parseFlags parses command-line flags and returns nil if help was shown.
@@ -104,6 +105,7 @@ func parseFlags() *cliFlags {
 		verbose     = flag.Bool("verbose", false, "Show detailed output")
 		includeSlow = flag.Bool("include-slow", false, "Include slow checks (excluded by default)")
 		failFast    = flag.Bool("fail-fast", false, "Stop on first failure")
+		noLog       = flag.Bool("no-log", false, "Disable CSV stats logging")
 		help        = flag.Bool("help", false, "Show help message")
 		h           = flag.Bool("h", false, "Show help message")
 	)
@@ -125,6 +127,7 @@ func parseFlags() *cliFlags {
 		verbose:     *verbose,
 		includeSlow: *includeSlow || len(checkNames) > 0,
 		failFast:    *failFast,
+		noLog:       *noLog || *ciMode,
 	}
 }
 
@@ -204,11 +207,11 @@ func selectChecksByApp(appName string) ([]checks.CheckDefinition, error) {
 }
 
 // runChecks executes the checks and prints results.
-func runChecks(ctx *checks.CheckContext, checksToRun []checks.CheckDefinition, failFast bool) {
+func runChecks(ctx *checks.CheckContext, checksToRun []checks.CheckDefinition, failFast, noLog bool) {
 	fmt.Printf("🔍 Running %d checks...\n\n", len(checksToRun))
 
 	startTime := time.Now()
-	runner := NewRunner(ctx, checksToRun, failFast)
+	runner := NewRunner(ctx, checksToRun, failFast, noLog)
 	failed, failedChecks := runner.Run()
 
 	totalDuration := time.Since(startTime)
@@ -283,6 +286,7 @@ func showUsage() {
 	fmt.Println("    --verbose                Show detailed output")
 	fmt.Println("    --include-slow           Include slow checks (excluded by default)")
 	fmt.Println("    --fail-fast              Stop on first failure")
+	fmt.Println("    --no-log                 Disable CSV stats logging (~/cmdr-check-log.csv)")
 	fmt.Println("    -h, --help               Show this help message")
 	fmt.Println()
 	fmt.Println("If no options are provided, runs all non-slow checks for all apps.")
