@@ -23,8 +23,8 @@ Each section is self-contained and can be handed to an agent independently.
 - [x] 13. MTP USB permissions (small) — ship udev rules file, permission error handling
 - [x] 14. SMB mounting completion (large) — `smbclient` fallback, auth prompts, cross-DE testing
 - [-] 15. Custom drag image — deferred (no WebKitGTK API)
-- [ ] 16. Dropbox sync status (medium) — socket protocol + CLI fallback
-- [ ] 17. Native file icons (medium) — test existing provider, fix threading if needed
+- [-] 16. Dropbox sync status (medium) — socket protocol + CLI fallback
+- [x] 17. Native file icons (medium) — test existing provider, fix threading if needed
 
 ## 1. Quick Look and Get Info (small)
 

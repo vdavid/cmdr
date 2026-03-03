@@ -81,6 +81,8 @@ mod indexing;
 pub mod licensing;
 #[cfg(target_os = "linux")]
 pub(crate) mod linux_distro;
+#[cfg(target_os = "linux")]
+mod linux_icons;
 #[cfg(target_os = "macos")]
 mod macos_icons;
 mod mcp;

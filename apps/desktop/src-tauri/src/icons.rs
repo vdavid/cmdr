@@ -6,13 +6,17 @@
 
 use crate::config::ICON_SIZE;
 use base64::Engine;
-use file_icon_provider::get_file_icon;
 use image::{DynamicImage, ImageFormat, imageops::FilterType};
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::io::Cursor;
 use std::path::{Path, PathBuf};
 use std::sync::RwLock;
+
+// file_icon_provider uses GTK on Linux which requires main-thread access and
+// fails silently from rayon/tokio threads. On Linux we use freedesktop-icons instead.
+#[cfg(target_os = "macos")]
+use file_icon_provider::get_file_icon;
 
 /// Cache for generated icons (icon_id -> base64 WebP data URL)
 static ICON_CACHE: RwLock<Option<HashMap<String, String>>> = RwLock::new(None);
@@ -82,7 +86,8 @@ fn image_to_data_url(img: &DynamicImage) -> Option<String> {
     Some(format!("data:image/webp;base64,{}", base64))
 }
 
-/// Fetches icon for a specific file path.
+/// Fetches icon for a specific file path via the OS icon provider (macOS).
+#[cfg(target_os = "macos")]
 fn fetch_icon_for_path(path: &Path) -> Option<String> {
     // Get icon from OS (size is u16)
     let icon = get_file_icon(path, ICON_SIZE as u16).ok()?;
@@ -92,6 +97,19 @@ fn fetch_icon_for_path(path: &Path) -> Option<String> {
     let dynamic_img = DynamicImage::ImageRgba8(img);
 
     image_to_data_url(&dynamic_img)
+}
+
+/// Fetches icon for a specific file path via XDG icon theme lookup.
+#[cfg(target_os = "linux")]
+fn fetch_icon_for_path(path: &Path) -> Option<String> {
+    let icon_id = if path.is_dir() {
+        "dir".to_string()
+    } else if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+        format!("ext:{}", ext.to_lowercase())
+    } else {
+        "file".to_string()
+    };
+    crate::linux_icons::get_icon_for_id(&icon_id, ICON_SIZE as u16).and_then(|img| image_to_data_url(&img))
 }
 
 /// Gets icon for a path as base64 data URL.
@@ -157,7 +175,17 @@ pub fn get_icons(icon_ids: Vec<String>, use_app_icons_for_documents: bool) -> Ha
         #[cfg(not(target_os = "macos"))]
         let _ = use_app_icons_for_documents;
 
-        // Default path: use sample file approach
+        // Linux: look up directly from XDG icon theme (no temp files needed)
+        #[cfg(target_os = "linux")]
+        if let Some(img) = crate::linux_icons::get_icon_for_id(&icon_id, ICON_SIZE as u16)
+            && let Some(data_url) = image_to_data_url(&img)
+        {
+            cache_icon(icon_id.clone(), data_url.clone());
+            result.insert(icon_id, data_url);
+            continue;
+        }
+
+        // macOS/Windows: use sample file approach (Launch Services / Shell)
         if let Some(sample_path) = get_sample_path_for_icon_id(&icon_id)
             && let Some(data_url) = fetch_icon_for_path(&sample_path)
         {

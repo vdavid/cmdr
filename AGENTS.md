@@ -155,6 +155,7 @@ There are two MCP servers available to you:
 - When getting oriented, consider the docs: `docs` folder and `CLAUDE.md` files in each directory.
 - When coming up with a plan for a development, save it to `docs/specs/{feature}-plan.md` in this repo (we clean out old
   plans every few weeks/months, git history remembers them).
+- Don't enter "Plan mode" unless specifically asked to.
 - When writing a plan, always capture the INTENTION behind the plan, not just the steps. That way, the implementing
   agent or human will know the "why"s behind the decisions and can adapt dynamically if it makes an unexpected discovery
   during implementation.

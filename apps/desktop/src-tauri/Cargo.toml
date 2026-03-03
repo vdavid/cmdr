@@ -39,7 +39,6 @@ serde_json = "1"
 notify = "8"
 dirs = "6"
 uzers = "0.12.2"
-file_icon_provider = "0.4.0"
 image = "0.25.9"
 base64 = "0.22.1"
 rayon = "1.11.0"
@@ -91,6 +90,10 @@ keyring = "3"
 cocoon = "0.4"
 # D-Bus client for XDG Desktop Portal (accent color, appearance settings)
 zbus = "5"
+# Native file icons: XDG icon theme lookup (pure Rust, no GTK dependency)
+freedesktop-icons = "0.4"
+# MIME type guessing from file extensions (for icon name resolution)
+mime_guess = "2"
 
 [target.'cfg(any(target_os = "macos", target_os = "linux"))'.dependencies]
 # MTP (Android device) support via pure Rust implementation
@@ -105,6 +108,7 @@ smb = "0.11.1"
 smb-rpc = "=0.11.1"
 
 [target.'cfg(target_os = "macos")'.dependencies]
+file_icon_provider = "0.4.0"
 core-foundation = "0.10.1"
 core-services = "1.0.0"
 icns = "0.3.1"
