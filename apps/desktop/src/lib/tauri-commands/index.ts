@@ -106,9 +106,7 @@ export {
     deleteSmbCredentials,
     isUsingCredentialFileFallback,
     listSharesWithCredentials,
-    isKeychainError,
     mountNetworkShare,
-    isMountError,
 } from './networking'
 
 // Write operations (copy, move, delete)

@@ -261,18 +261,6 @@ export async function listSharesWithCredentials(
     })
 }
 
-/**
- * Helper to check if an error is a KeychainError
- */
-export function isKeychainError(error: unknown): error is KeychainError {
-    return (
-        typeof error === 'object' &&
-        error !== null &&
-        'type' in error &&
-        ['not_found', 'access_denied', 'other'].includes((error as KeychainError).type)
-    )
-}
-
 // ============================================================================
 // SMB mounting (macOS only)
 // ============================================================================
@@ -303,26 +291,4 @@ export async function mountNetworkShare(
         password,
         timeoutMs,
     })
-}
-
-/**
- * Helper to check if an error is a MountError
- */
-export function isMountError(error: unknown): error is MountError {
-    return (
-        typeof error === 'object' &&
-        error !== null &&
-        'type' in error &&
-        [
-            'host_unreachable',
-            'share_not_found',
-            'auth_required',
-            'auth_failed',
-            'permission_denied',
-            'timeout',
-            'cancelled',
-            'protocol_error',
-            'mount_path_conflict',
-        ].includes((error as MountError).type)
-    )
 }
