@@ -290,6 +290,7 @@ pub fn run() {
             *menu_state.view_mode_brief_position.lock_ignore_poison() = menu_items.view_mode_brief_position;
             *menu_state.pin_tab.lock_ignore_poison() = Some(menu_items.pin_tab);
             *menu_state.items.lock_ignore_poison() = menu_items.items;
+            *menu_state.sort_submenu.lock_ignore_poison() = Some(menu_items.sort_submenu);
             app.manage(menu_state);
 
             // Set window title based on license status

@@ -75,7 +75,7 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         ABOUT_ID => Some(("app.about", CommandScope::App)),
         ENTER_LICENSE_KEY_ID => Some(("app.licenseKey", CommandScope::App)),
         SETTINGS_ID => Some(("app.settings", CommandScope::App)),
-        COMMAND_PALETTE_ID => Some(("app.commandPalette", CommandScope::App)),
+        COMMAND_PALETTE_ID => Some(("app.commandPalette", CommandScope::FileScoped)),
 
         // Pane commands (file-scoped)
         SWITCH_PANE_ID => Some(("pane.switch", CommandScope::FileScoped)),
@@ -186,6 +186,8 @@ pub struct MenuState<R: Runtime> {
     pub pin_tab: Mutex<Option<MenuItem<R>>>,
     /// Generic menu items keyed by menu item ID, for accelerator and enable/disable updates.
     pub items: Mutex<HashMap<String, MenuItemEntry<R>>>,
+    /// Sort by submenu (disabled when not in explorer context)
+    pub sort_submenu: Mutex<Option<Submenu<R>>>,
 }
 
 impl<R: Runtime> Default for MenuState<R> {
@@ -200,6 +202,7 @@ impl<R: Runtime> Default for MenuState<R> {
             view_mode_brief_position: Mutex::new(0),
             pin_tab: Mutex::new(None),
             items: Mutex::new(HashMap::new()),
+            sort_submenu: Mutex::new(None),
         }
     }
 }
@@ -220,6 +223,8 @@ pub struct MenuItems<R: Runtime> {
     pub pin_tab: MenuItem<R>,
     /// Generic menu items for accelerator updates, keyed by menu item ID.
     pub items: HashMap<String, MenuItemEntry<R>>,
+    /// Sort by submenu (disabled when not in explorer context)
+    pub sort_submenu: Submenu<R>,
 }
 
 /// View mode type that matches the frontend type.
@@ -720,6 +725,7 @@ fn build_menu_macos<R: Runtime>(
         view_mode_brief_position: view_brief_pos,
         pin_tab: pin_tab_item,
         items,
+        sort_submenu,
     })
 }
 
@@ -991,6 +997,7 @@ fn build_menu_linux<R: Runtime>(
         view_mode_brief_position: view_brief_pos,
         pin_tab: pin_tab_item,
         items,
+        sort_submenu,
     })
 }
 
@@ -1381,12 +1388,13 @@ mod tests {
             Some(("app.settings", CommandScope::App))
         );
         assert_eq!(
-            menu_id_to_command(COMMAND_PALETTE_ID),
-            Some(("app.commandPalette", CommandScope::App))
-        );
-        assert_eq!(
             menu_id_to_command(ENTER_LICENSE_KEY_ID),
             Some(("app.licenseKey", CommandScope::App))
+        );
+        // Command palette is FileScoped — disabled when Settings/viewer has focus
+        assert_eq!(
+            menu_id_to_command(COMMAND_PALETTE_ID),
+            Some(("app.commandPalette", CommandScope::FileScoped))
         );
     }
 
@@ -1504,4 +1512,5 @@ mod tests {
         assert_eq!(command_id_to_menu_id("view.showHidden"), None);
         assert_eq!(command_id_to_menu_id("unknown"), None);
     }
+
 }

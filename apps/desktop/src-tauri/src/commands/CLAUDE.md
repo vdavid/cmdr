@@ -33,6 +33,13 @@ immediately to business-logic modules. No significant logic lives here.
 - **Platform gates.** `volumes` is macOS-only; `mtp` and `network` are macOS+Linux; `volumes_linux` is Linux-only. Individual functions also use `#[cfg]` where behaviour differs (e.g., `sync_status`).
 - **`start_selection_drag`** requires the main thread. It uses `app.run_on_main_thread()` plus a `std::sync::mpsc` channel to return the result synchronously.
 - **`list_shares_with_credentials`** has `#[allow(clippy::too_many_arguments)]` because Tauri command parameters must be top-level arguments — no struct bundling.
+- **`set_menu_context` and Close tab (⌘W).** When the main window loses focus, `set_menu_context("other")` disables all
+  non-App menu items — but `CLOSE_TAB_ID` is explicitly excluded. On macOS, ⌘W means "close the front window," and the
+  `on_menu_event` close-tab exception handles this: if main is focused it closes a tab, otherwise it closes the focused
+  non-main window (Settings, viewer, debug). If `CLOSE_TAB_ID` were disabled, its accelerator wouldn't fire and ⌘W would
+  stop working in non-main windows. This is the only item that needs this exemption — all other non-App items are
+  correctly disabled because they only make sense in the explorer.
+
 ## Dependencies
 
 All major subsystems: `file_system`, `volumes`, `mtp`, `network`, `font_metrics`, `icons`,

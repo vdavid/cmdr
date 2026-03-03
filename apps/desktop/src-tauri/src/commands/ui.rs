@@ -1,5 +1,5 @@
 use crate::ignore_poison::IgnorePoison;
-use crate::menu::{CommandScope, MenuState, build_context_menu, build_tab_context_menu, menu_id_to_command};
+use crate::menu::{CLOSE_TAB_ID, CommandScope, MenuState, build_context_menu, build_tab_context_menu, menu_id_to_command};
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 use std::process::Command;
 use tauri::menu::ContextMenu;
@@ -229,22 +229,28 @@ pub fn update_pin_tab_menu<R: Runtime>(app: AppHandle<R>, is_pinned: bool) -> Re
     item.set_text(label).map_err(|e| e.to_string())
 }
 
-/// Enables or disables file-scoped menu items based on the current context.
+/// Enables or disables explorer-scoped menu items based on the current context.
 /// - `"explorer"`: all menu items enabled (main file explorer has focus)
-/// - `"other"`: file-scoped items disabled (Settings, file viewer, or other window has focus)
+/// - `"other"`: all non-App items disabled except Close tab (⌘W), which doubles as
+///   "close the focused window" — standard macOS behavior
 #[tauri::command]
 pub fn set_menu_context<R: Runtime>(app: AppHandle<R>, context: String) -> Result<(), String> {
     let enabled = context == "explorer";
     let menu_state = app.state::<MenuState<R>>();
-    let items = menu_state.items.lock_ignore_poison();
 
-    for (id, entry) in items.iter() {
-        if let Some((_, CommandScope::FileScoped)) = menu_id_to_command(id) {
+    for (id, entry) in menu_state.items.lock_ignore_poison().iter() {
+        // Close tab stays enabled: on_menu_event has special logic to close the focused
+        // non-main window when main isn't focused (standard ⌘W behavior on macOS).
+        if id == &CLOSE_TAB_ID {
+            continue;
+        }
+        let is_app = matches!(menu_id_to_command(id), Some((_, CommandScope::App)));
+        if !is_app {
             let _ = entry.item.set_enabled(enabled);
         }
     }
 
-    // Items stored in separate MenuState fields (not in the HashMap) also need toggling
+    // Items stored in separate MenuState fields (not in the HashMap)
     if let Some(ref item) = *menu_state.pin_tab.lock_ignore_poison() {
         let _ = item.set_enabled(enabled);
     }
@@ -256,6 +262,9 @@ pub fn set_menu_context<R: Runtime>(app: AppHandle<R>, context: String) -> Resul
     }
     if let Some(ref item) = *menu_state.view_mode_brief.lock_ignore_poison() {
         let _ = item.set_enabled(enabled);
+    }
+    if let Some(ref submenu) = *menu_state.sort_submenu.lock_ignore_poison() {
+        let _ = submenu.set_enabled(enabled);
     }
 
     Ok(())
