@@ -17,9 +17,9 @@ Rust side lives in `src-tauri/src/commands/logging.rs` (batch IPC receiver + run
 
 ```
 getAppLogger('feature')
-  -> LogTape (category filtering, level gates)
-    -> console sink (browser dev tools)
-    -> tauriBridge sink (log-bridge.ts)
+  -> LogTape (separate level gates per sink)
+    -> console sink (browser devtools): info+ default, debug for debugCategories
+    -> tauriBridge sink: debug+ in dev (RUST_LOG filters on Rust side), error+ in prod
         -> batch for 100ms, dedup consecutive identical entries, throttle 200/s
         -> invoke('batch_fe_logs', entries[])
           -> Rust: log::info!(target: "FE:feature", msg)
@@ -48,8 +48,9 @@ getAppLogger('feature')
 - **Throttle warning**: When >200 FE logs/s, excess is dropped and a warning is emitted: "Excessive frontend logging
   detected". This protects against infinite loops flooding the IPC.
 - **`beforeunload` flush**: The bridge flushes remaining logs on page unload, but this is best-effort (async).
-- **`debugCategories` is compile-time**: Adding a category requires editing `logger.ts` and restarting. The verbose
-  logging toggle is runtime.
+- **`debugCategories` only affects the console sink**: The tauriBridge sink always sends debug+ to Rust in dev mode,
+  so `RUST_LOG=FE:fileExplorer=debug,info` works without touching `debugCategories`. `debugCategories` controls which
+  features get debug in browser devtools. The verbose logging toggle enables debug for both sinks.
 
 ## Usage guide
 

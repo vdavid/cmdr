@@ -12,17 +12,18 @@
  * Log levels (in order): debug < info < warning < error < fatal
  *
  * Default behavior:
- *   - Dev mode: info+ for all, but specific features can enable debug
- *   - Prod mode: error+ only
- *   - Verbose logging setting: when enabled, all categories get debug level
+ *   - Dev mode: info+ in browser console, debug+ sent to Rust (filtered by RUST_LOG)
+ *   - Prod mode: error+ only (both sinks)
+ *   - Verbose logging setting: when enabled, all categories get debug level in both sinks
  *
- * To enable debug logs for a feature, add it to debugCategories below,
- * or enable the "Verbose logging" setting in Developer settings.
+ * To enable debug logs for a feature in browser devtools, add it to debugCategories below.
+ * To enable debug logs in the terminal, use RUST_LOG: `RUST_LOG=FE:fileExplorer=debug,info`
+ * Or enable the "Verbose logging" setting in Developer settings for both.
  *
  * @module logger
  */
 
-import { configure, getConsoleSink, getLogger as getLogTapeLogger } from '@logtape/logtape'
+import { configure, getConsoleSink, getLogger as getLogTapeLogger, withFilter } from '@logtape/logtape'
 import type { Logger } from '@logtape/logtape'
 import { invoke } from '@tauri-apps/api/core'
 import { load, type Store } from '@tauri-apps/plugin-store'
@@ -81,28 +82,27 @@ async function getVerboseLoggingSetting(): Promise<boolean> {
  * @param isReset - Whether this is a reconfiguration (requires reset flag)
  */
 async function applyLoggerConfig(verbose: boolean, isReset: boolean): Promise<void> {
+    // The tauriBridge sink always passes debug+ to Rust in dev, where RUST_LOG controls final filtering.
+    // This lets `RUST_LOG=FE:fileExplorer=debug,info` work without needing to touch debugCategories.
+    // The console sink (browser devtools) is gated at info+ by default to avoid noise.
+    // debugCategories lowers the console gate to debug for specific features.
+    const consoleLevel: 'debug' | 'info' | 'error' = verbose ? 'debug' : isDev ? 'info' : 'error'
+
     const loggers: Array<{
         category: string | string[]
         lowestLevel: 'debug' | 'info' | 'warning' | 'error'
         sinks: string[]
-    }> = []
-
-    if (verbose) {
-        // Verbose mode: debug for all categories
-        loggers.push({
+    }> = [
+        // Single logger at debug level — sink-level filters handle the rest
+        {
             category: 'app',
-            lowestLevel: 'debug',
+            lowestLevel: isDev || verbose ? 'debug' : 'error',
             sinks: ['console', 'tauriBridge'],
-        })
-    } else {
-        // Normal mode: info in dev, error in prod
-        loggers.push({
-            category: 'app',
-            lowestLevel: isDev ? 'info' : 'error',
-            sinks: ['console', 'tauriBridge'],
-        })
+        },
+    ]
 
-        // Add debug-level loggers for specific categories
+    // debugCategories lower the console gate to debug for specific features
+    if (!verbose) {
         for (const cat of debugCategories) {
             loggers.push({
                 category: ['app', cat],
@@ -114,7 +114,9 @@ async function applyLoggerConfig(verbose: boolean, isReset: boolean): Promise<vo
 
     await configure({
         sinks: {
-            console: getConsoleSink(),
+            // Console: filtered to info+ by default (debugCategories override at logger level)
+            console: withFilter(getConsoleSink(), consoleLevel),
+            // Bridge: passes everything to Rust — RUST_LOG handles filtering there
             tauriBridge: getTauriBridgeSink(),
         },
         loggers,

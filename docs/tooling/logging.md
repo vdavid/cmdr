@@ -39,11 +39,18 @@ From lowest to highest: `debug` < `info` < `warning` < `error` < `fatal`
 
 ### Enabling debug logs for a feature
 
-Edit `apps/desktop/src/lib/logging/logger.ts` and add the feature name to `debugCategories`:
+Use `RUST_LOG` to enable FE debug logs in the terminal (no code changes needed):
+
+```bash
+RUST_LOG=FE:fileExplorer=debug,info pnpm dev
+```
+
+To also see debug logs in browser devtools, add the feature to `debugCategories` in
+`apps/desktop/src/lib/logging/logger.ts`:
 
 ```typescript
 const debugCategories: string[] = [
-    'fileExplorer',  // Now shows debug logs for this feature
+    'fileExplorer',  // Now shows debug logs in browser devtools too
 ]
 ```
 
