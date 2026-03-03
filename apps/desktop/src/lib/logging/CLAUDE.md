@@ -48,8 +48,8 @@ getAppLogger('feature')
 - **Throttle warning**: When >200 FE logs/s, excess is dropped and a warning is emitted: "Excessive frontend logging
   detected". This protects against infinite loops flooding the IPC.
 - **`beforeunload` flush**: The bridge flushes remaining logs on page unload, but this is best-effort (async).
-- **`debugCategories` only affects the console sink**: The tauriBridge sink always sends debug+ to Rust in dev mode,
-  so `RUST_LOG=FE:fileExplorer=debug,info` works without touching `debugCategories`. `debugCategories` controls which
+- **`debugCategories` only affects the console sink**: The tauriBridge sink always sends debug+ to Rust in dev mode, so
+  `RUST_LOG=FE:fileExplorer=debug,info` works without touching `debugCategories`. `debugCategories` controls which
   features get debug in browser devtools. The verbose logging toggle enables debug for both sinks.
 
 ## Usage guide

@@ -298,12 +298,6 @@ export interface SmbCredentials {
     password: string
 }
 
-/** Error types for Keychain operations. */
-export type KeychainError =
-    | { type: 'not_found'; message: string }
-    | { type: 'access_denied'; message: string }
-    | { type: 'other'; message: string }
-
 // ============================================================================
 // Mount types
 // ============================================================================

@@ -73,31 +73,41 @@ Handles both `onclick` and `onkeydown` (Enter/Space).
 
 ## Key decisions
 
-**Decision**: Size displayed as raw byte count with colored digit triads, not as human-readable "1.23 MB"
-**Why**: Human-readable values lose precision and make it impossible to compare similarly-sized files. Triads with tier-based CSS coloring (bytes/KB/MB/GB/TB) give both precision and quick visual scanning. Human-readable is available as a tooltip.
+**Decision**: Size displayed as raw byte count with colored digit triads, not as human-readable "1.23 MB" **Why**:
+Human-readable values lose precision and make it impossible to compare similarly-sized files. Triads with tier-based CSS
+coloring (bytes/KB/MB/GB/TB) give both precision and quick visual scanning. Human-readable is available as a tooltip.
 
-**Decision**: Middle truncation in `file-info` mode uses a throwaway `<span>` + binary search, not CSS `text-overflow: ellipsis`
-**Why**: CSS ellipsis truncates from the right, losing the file extension. Middle truncation preserves both the start of the filename and the extension (e.g. `very-lon...me.txt`). Binary search against measured pixel width handles variable-width fonts correctly.
+**Decision**: Middle truncation in `file-info` mode uses a throwaway `<span>` + binary search, not CSS
+`text-overflow: ellipsis` **Why**: CSS ellipsis truncates from the right, losing the file extension. Middle truncation
+preserves both the start of the filename and the extension (e.g. `very-lon...me.txt`). Binary search against measured
+pixel width handles variable-width fonts correctly.
 
-**Decision**: `SelectionInfo` derives display mode from props rather than accepting an explicit `mode` prop
-**Why**: The display mode depends on `viewMode`, `selectedCount`, and `stats` together. Letting the component derive it internally avoids duplicating the mode-determination logic in every parent and keeps the truth in one place.
+**Decision**: `SelectionInfo` derives display mode from props rather than accepting an explicit `mode` prop **Why**: The
+display mode depends on `viewMode`, `selectedCount`, and `stats` together. Letting the component derive it internally
+avoids duplicating the mode-determination logic in every parent and keeps the truth in one place.
 
-**Decision**: `isBrokenSymlink` checks `iconId === 'symlink-broken'` instead of filesystem flags
-**Why**: The backend already resolves broken symlink status when computing the icon ID. Re-checking via stat would be redundant and possibly stale. Using `iconId` keeps the frontend consistent with what the user actually sees.
+**Decision**: `isBrokenSymlink` checks `iconId === 'symlink-broken'` instead of filesystem flags **Why**: The backend
+already resolves broken symlink status when computing the icon ID. Re-checking via stat would be redundant and possibly
+stale. Using `iconId` keeps the frontend consistent with what the user actually sees.
 
-**Decision**: Stale indicator only shown when directories are selected during scanning
-**Why**: File sizes come from metadata and are always accurate. Directory sizes come from the drive index (recursive scan). During scanning, directory sizes may be incomplete, so the warning targets that specific case.
+**Decision**: Stale indicator only shown when directories are selected during scanning **Why**: File sizes come from
+metadata and are always accurate. Directory sizes come from the drive index (recursive scan). During scanning, directory
+sizes may be incomplete, so the warning targets that specific case.
 
 ## Gotchas
 
-**Gotcha**: `containerWidth` state exists only to trigger reactivity for `truncatedName`
-**Why**: `ResizeObserver` callbacks run outside Svelte's reactive graph. Writing to a `$state` variable inside the observer callback bridges the gap, causing `truncatedName` (which reads `containerWidth` via `void containerWidth`) to recompute when the container resizes.
+**Gotcha**: `containerWidth` state exists only to trigger reactivity for `truncatedName` **Why**: `ResizeObserver`
+callbacks run outside Svelte's reactive graph. Writing to a `$state` variable inside the observer callback bridges the
+gap, causing `truncatedName` (which reads `containerWidth` via `void containerWidth`) to recompute when the container
+resizes.
 
-**Gotcha**: `sizeTierClasses` CSS rules must be defined in the consuming view, not in `selection-info-utils.ts`
-**Why**: The utility file is pure TypeScript with no DOM or style dependencies. The CSS classes it references (`size-bytes`, `size-kb`, etc.) are defined in the parent list view's stylesheet, keeping style ownership with the view layer.
+**Gotcha**: `sizeTierClasses` CSS rules must be defined in the consuming view, not in `selection-info-utils.ts` **Why**:
+The utility file is pure TypeScript with no DOM or style dependencies. The CSS classes it references (`size-bytes`,
+`size-kb`, etc.) are defined in the parent list view's stylesheet, keeping style ownership with the view layer.
 
-**Gotcha**: Thin space (U+2009) is used between digit triads, not a regular space
-**Why**: Regular spaces are too wide for numeric grouping and look jarring in a compact status bar. Thin space matches typographic convention for digit grouping and renders consistently across platforms.
+**Gotcha**: Thin space (U+2009) is used between digit triads, not a regular space **Why**: Regular spaces are too wide
+for numeric grouping and look jarring in a compact status bar. Thin space matches typographic convention for digit
+grouping and renders consistently across platforms.
 
 ## Dependencies
 

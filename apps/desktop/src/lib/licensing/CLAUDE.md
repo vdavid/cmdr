@@ -30,24 +30,24 @@ for offline validation (no server call needed after activation).
 
 ## Key decisions
 
-**Decision**: Ed25519 offline verification for all license types, server validation only for subscriptions.
-**Why**: A file manager must work without internet. Perpetual and personal licenses validate purely offline via Ed25519
-signature. Subscriptions need periodic server checks (every 7 days) to detect cancellation, but get a 14-day grace period
-so intermittent network issues don't disrupt paid users.
+**Decision**: Ed25519 offline verification for all license types, server validation only for subscriptions. **Why**: A
+file manager must work without internet. Perpetual and personal licenses validate purely offline via Ed25519 signature.
+Subscriptions need periodic server checks (every 7 days) to detect cancellation, but get a 14-day grace period so
+intermittent network issues don't disrupt paid users.
 
-**Decision**: Activation does local signature verification first, then server validation.
-**Why**: If the key has an invalid signature, there's no point hitting the server. Local-first catches typos and forgeries
-instantly. Server validation then confirms expiration status and records the activation.
+**Decision**: Activation does local signature verification first, then server validation. **Why**: If the key has an
+invalid signature, there's no point hitting the server. Local-first catches typos and forgeries instantly. Server
+validation then confirms expiration status and records the activation.
 
-**Decision**: Expired commercial licenses revert to Personal behavior (not locked out).
-**Why**: The app is usable for free (Personal license). Locking out a paying user whose subscription lapsed would be
-hostile — they'd lose access to their file manager. Instead, the app quietly downgrades and shows a one-time modal
-suggesting renewal. The user can keep working.
+**Decision**: Expired commercial licenses revert to Personal behavior (not locked out). **Why**: The app is usable for
+free (Personal license). Locking out a paying user whose subscription lapsed would be hostile — they'd lose access to
+their file manager. Instead, the app quietly downgrades and shows a one-time modal suggesting renewal. The user can keep
+working.
 
-**Decision**: `licenseState` is a plain object (not `$state`) despite living in a `.svelte.ts` file.
-**Why**: The licensing store is consumed by layout-level code that reads `cachedStatus` and `shouldShowModal`
-imperatively (not reactively). Svelte runes would add reactivity overhead for state that only changes on explicit user
-actions (activate, dismiss). The About window and modals read the cached value on mount.
+**Decision**: `licenseState` is a plain object (not `$state`) despite living in a `.svelte.ts` file. **Why**: The
+licensing store is consumed by layout-level code that reads `cachedStatus` and `shouldShowModal` imperatively (not
+reactively). Svelte runes would add reactivity overhead for state that only changes on explicit user actions (activate,
+dismiss). The About window and modals read the cached value on mount.
 
 ## Gotchas
 

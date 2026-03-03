@@ -38,27 +38,26 @@ For measurement, `'system'` resolves to `'-apple-system, BlinkMacSystemFont, sys
 
 ## Key decisions
 
-**Decision**: Measure on the frontend (Canvas API) and send to Rust, rather than measuring in Rust.
-**Why**: Rust has no access to the actual rendered font metrics — the browser's text shaping engine (CoreText on macOS)
-determines how wide each glyph is at a given font/size/weight. The Canvas API's `measureText()` uses the same engine that
-renders the UI, so the widths match exactly. Measuring in Rust would require linking a font shaping library and still
-might not match the browser's output.
+**Decision**: Measure on the frontend (Canvas API) and send to Rust, rather than measuring in Rust. **Why**: Rust has no
+access to the actual rendered font metrics — the browser's text shaping engine (CoreText on macOS) determines how wide
+each glyph is at a given font/size/weight. The Canvas API's `measureText()` uses the same engine that renders the UI, so
+the widths match exactly. Measuring in Rust would require linking a font shaping library and still might not match the
+browser's output.
 
-**Decision**: Explicit Unicode range list instead of iterating all code points 0x0000-0xFFFF.
-**Why**: Many code points in the BMP are unassigned or control characters that have zero width. Measuring them wastes time
-and bloats the width map sent to Rust. The explicit ranges cover all printable blocks. The Private Use Area is listed in
-the ranges array but skipped via `skipRanges` — this makes the intentional exclusion visible rather than silently
-omitting the range.
+**Decision**: Explicit Unicode range list instead of iterating all code points 0x0000-0xFFFF. **Why**: Many code points
+in the BMP are unassigned or control characters that have zero width. Measuring them wastes time and bloats the width
+map sent to Rust. The explicit ranges cover all printable blocks. The Private Use Area is listed in the ranges array but
+skipped via `skipRanges` — this makes the intentional exclusion visible rather than silently omitting the range.
 
-**Decision**: `requestIdleCallback` scheduling with `setTimeout(0)` fallback.
-**Why**: Measurement takes 100-300ms (tens of thousands of `measureText` calls). Running it synchronously during app boot
-would delay the first meaningful paint. `requestIdleCallback` defers it until the browser is idle. The `setTimeout(0)`
-fallback handles environments where `requestIdleCallback` is unavailable (some WebView configurations).
+**Decision**: `requestIdleCallback` scheduling with `setTimeout(0)` fallback. **Why**: Measurement takes 100-300ms (tens
+of thousands of `measureText` calls). Running it synchronously during app boot would delay the first meaningful paint.
+`requestIdleCallback` defers it until the browser is idle. The `setTimeout(0)` fallback handles environments where
+`requestIdleCallback` is unavailable (some WebView configurations).
 
-**Decision**: Hardcoded font ID (`system-400-12`) in both TypeScript and Rust.
-**Why**: Font settings are not yet user-configurable. Hardcoding avoids premature abstraction. When font customization
-ships, this single constant becomes a settings read. The ID format (`family-weight-size`) is designed to be a cache key
-— changing any parameter invalidates the cached metrics.
+**Decision**: Hardcoded font ID (`system-400-12`) in both TypeScript and Rust. **Why**: Font settings are not yet
+user-configurable. Hardcoding avoids premature abstraction. When font customization ships, this single constant becomes
+a settings read. The ID format (`family-weight-size`) is designed to be a cache key — changing any parameter invalidates
+the cached metrics.
 
 ## Key patterns and gotchas
 

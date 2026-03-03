@@ -114,34 +114,45 @@ User double-clicks host
 
 ## Key decisions
 
-**Decision**: Network discovery runs at app startup, not when the user opens the Network volume
-**Why**: mDNS host discovery and resolution are slow (seconds). Starting early means hosts and their share counts are already populated by the time the user navigates to the Network view. The cost is a few background IPC calls on startup.
+**Decision**: Network discovery runs at app startup, not when the user opens the Network volume **Why**: mDNS host
+discovery and resolution are slow (seconds). Starting early means hosts and their share counts are already populated by
+the time the user navigates to the Network view. The cost is a few background IPC calls on startup.
 
-**Decision**: Resolution and share prefetch are fire-and-forget (non-blocking, errors silently discarded)
-**Why**: Network hosts come and go. A timeout or unreachable host during prefetch is normal, not an error worth showing. The UI shows "Not checked" or "Waiting..." until data arrives. Only user-initiated actions (double-click, explicit fetch) surface errors.
+**Decision**: Resolution and share prefetch are fire-and-forget (non-blocking, errors silently discarded) **Why**:
+Network hosts come and go. A timeout or unreachable host during prefetch is normal, not an error worth showing. The UI
+shows "Not checked" or "Waiting..." until data arrives. Only user-initiated actions (double-click, explicit fetch)
+surface errors.
 
-**Decision**: State exposed via getter functions, not raw `$state` exports
-**Why**: Svelte 5 `$state` is only reactive inside `.svelte` and `.svelte.ts` files. Exporting raw state variables would silently lose reactivity if imported from a plain `.ts` file. Getter functions work everywhere and make the API boundary explicit.
+**Decision**: State exposed via getter functions, not raw `$state` exports **Why**: Svelte 5 `$state` is only reactive
+inside `.svelte` and `.svelte.ts` files. Exporting raw state variables would silently lose reactivity if imported from a
+plain `.ts` file. Getter functions work everywhere and make the API boundary explicit.
 
-**Decision**: `tryStoredCredentials` calls `getSmbCredentials` directly without a `hasSmbCredentials` pre-check
-**Why**: Each macOS Keychain access can trigger a system permission prompt. Calling `hasSmbCredentials` then `getSmbCredentials` would be two prompts. Calling `getSmbCredentials` directly and catching the error reduces it to one.
+**Decision**: `tryStoredCredentials` calls `getSmbCredentials` directly without a `hasSmbCredentials` pre-check **Why**:
+Each macOS Keychain access can trigger a system permission prompt. Calling `hasSmbCredentials` then `getSmbCredentials`
+would be two prompts. Calling `getSmbCredentials` directly and catching the error reduces it to one.
 
-**Decision**: `connectionMode` in `NetworkLoginForm` is `$derived.by` from `authMode`, with `bind:group` on radio buttons
-**Why**: In Svelte 5, `$derived` values are read-only. The radio `bind:group` writes to a `let` binding, not the derived value. When `authMode` prop changes (e.g. on retry), the derived re-evaluates and resets the radio selection to the correct default. This avoids stale connection mode after auth mode changes.
+**Decision**: `connectionMode` in `NetworkLoginForm` is `$derived.by` from `authMode`, with `bind:group` on radio
+buttons **Why**: In Svelte 5, `$derived` values are read-only. The radio `bind:group` writes to a `let` binding, not the
+derived value. When `authMode` prop changes (e.g. on retry), the derived re-evaluates and resets the radio selection to
+the correct default. This avoids stale connection mode after auth mode changes.
 
 ## Gotchas
 
-**Gotcha**: `network` volume ID is virtual -- `smb://` path is a sentinel, not a real mount
-**Why**: The network browser is a discovery UI, not a filesystem view. There is no real mount point until the user selects a share and it gets mounted via `mount_smbfs`. Mounted shares then appear as separate `VolumeInfo` entries with real volume IDs.
+**Gotcha**: `network` volume ID is virtual -- `smb://` path is a sentinel, not a real mount **Why**: The network browser
+is a discovery UI, not a filesystem view. There is no real mount point until the user selects a share and it gets
+mounted via `mount_smbfs`. Mounted shares then appear as separate `VolumeInfo` entries with real volume IDs.
 
-**Gotcha**: Credential status is keyed by lowercase `host.name`, not by IP or hostname
-**Why**: The same physical host can have different IPs (DHCP) and different hostnames (mDNS vs DNS). The Bonjour service name (`host.name`) is the most stable identifier across network changes. Lowercasing avoids case-sensitive mismatches.
+**Gotcha**: Credential status is keyed by lowercase `host.name`, not by IP or hostname **Why**: The same physical host
+can have different IPs (DHCP) and different hostnames (mDNS vs DNS). The Bonjour service name (`host.name`) is the most
+stable identifier across network changes. Lowercasing avoids case-sensitive mismatches.
 
-**Gotcha**: Tab key in `NetworkLoginForm` calls `stopPropagation()`
-**Why**: The parent pane handler interprets Tab as a pane-switch shortcut. Without `stopPropagation`, pressing Tab to move from the username field to the password field would switch panes instead.
+**Gotcha**: Tab key in `NetworkLoginForm` calls `stopPropagation()` **Why**: The parent pane handler interprets Tab as a
+pane-switch shortcut. Without `stopPropagation`, pressing Tab to move from the username field to the password field
+would switch panes instead.
 
-**Gotcha**: Host list MCP sync encodes metadata into the `name` field as a flat string
-**Why**: The MCP `PaneFileEntry` type only has `name`, `path`, and `isDirectory`. There is no metadata field. Encoding IP, hostname, share count, and status into the name string is a workaround so MCP agents can read the same info the UI shows without a schema change.
+**Gotcha**: Host list MCP sync encodes metadata into the `name` field as a flat string **Why**: The MCP `PaneFileEntry`
+type only has `name`, `path`, and `isDirectory`. There is no metadata field. Encoding IP, hostname, share count, and
+status into the name string is a workaround so MCP agents can read the same info the UI shows without a schema change.
 
 ## Dependencies
 

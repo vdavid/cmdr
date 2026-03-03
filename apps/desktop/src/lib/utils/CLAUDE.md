@@ -61,26 +61,26 @@ Shows a native warning dialog with OK/Cancel. Resolves `true` on confirm.
 
 ## Key decisions
 
-**Decision**: Validation runs on the frontend (pure TS) instead of round-tripping to Rust.
-**Why**: Keystroke-level feedback needs sub-millisecond latency. An IPC round-trip per keystroke would add ~1-5ms and
-could stutter during fast typing. All the rules (length, chars, conflicts) are deterministic given the sibling list, so
-there is no need for filesystem access.
+**Decision**: Validation runs on the frontend (pure TS) instead of round-tripping to Rust. **Why**: Keystroke-level
+feedback needs sub-millisecond latency. An IPC round-trip per keystroke would add ~1-5ms and could stutter during fast
+typing. All the rules (length, chars, conflicts) are deterministic given the sibling list, so there is no need for
+filesystem access.
 
-**Decision**: `validateFilename` returns the first error or warning, not a list of all issues.
-**Why**: Inline rename UI has space for one message. Showing the highest-priority issue keeps the feedback focused. Errors
-are checked before warnings so a blocking issue always takes precedence over an advisory one.
+**Decision**: `validateFilename` returns the first error or warning, not a list of all issues. **Why**: Inline rename UI
+has space for one message. Showing the highest-priority issue keeps the feedback focused. Errors are checked before
+warnings so a blocking issue always takes precedence over an advisory one.
 
-**Decision**: Case-insensitive conflict check (APFS default) rather than per-filesystem logic.
-**Why**: macOS (APFS) is the only supported platform today. The check is case-insensitive to match the default APFS
-case-insensitive behavior. When Linux support ships, this will need a per-filesystem case-sensitivity flag.
+**Decision**: Case-insensitive conflict check (APFS default) rather than per-filesystem logic. **Why**: macOS (APFS) is
+the only supported platform today. The check is case-insensitive to match the default APFS case-insensitive behavior.
+When Linux support ships, this will need a per-filesystem case-sensitivity flag.
 
 **Decision**: `confirmDialog` wraps Tauri's `ask()` with explicit `cancelLabel: 'Cancel'` instead of the default.
 **Why**: The default label is "No", but macOS `NSAlert` only assigns the Escape key equivalent to a button labeled
 "Cancel". Without this override, Escape does nothing in confirmation dialogs — a jarring UX break.
 
-**Decision**: Custom `createDebounce`/`createThrottle` instead of lodash or a library.
-**Why**: Both are <35 lines. The throttle guarantees a trailing call (last value always fires), which lodash's default
-does not. The debounce exposes `flush()` for `beforeunload` cleanup (e.g. log bridge). No need for a 70KB dependency.
+**Decision**: Custom `createDebounce`/`createThrottle` instead of lodash or a library. **Why**: Both are <35 lines. The
+throttle guarantees a trailing call (last value always fires), which lodash's default does not. The debounce exposes
+`flush()` for `beforeunload` cleanup (e.g. log bridge). No need for a 70KB dependency.
 
 ## Dependencies
 

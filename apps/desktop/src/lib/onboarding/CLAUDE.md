@@ -32,20 +32,19 @@ The `wasRevoked` prop switches the copy from "first ask" to "revoked" framing.
 
 ## Key decisions
 
-**Decision**: Three-state setting (`notAskedYet` / `allow` / `deny`) instead of a boolean.
-**Why**: The app needs to distinguish "never asked" (show first-time prompt), "granted but later revoked" (show revoked
-prompt with different copy), and "user explicitly declined" (never ask again). A boolean would conflate "not asked" with
-"denied", losing the ability to respect the user's explicit refusal.
+**Decision**: Three-state setting (`notAskedYet` / `allow` / `deny`) instead of a boolean. **Why**: The app needs to
+distinguish "never asked" (show first-time prompt), "granted but later revoked" (show revoked prompt with different
+copy), and "user explicitly declined" (never ask again). A boolean would conflate "not asked" with "denied", losing the
+ability to respect the user's explicit refusal.
 
-**Decision**: No `onclose` prop on the ModalDialog (no x button, no Escape dismiss).
-**Why**: This is a blocking onboarding prompt. If the user could dismiss it without choosing, the app would have no
-recorded preference and would re-show the prompt on every launch. The user must explicitly click "Open System Settings"
-or "Deny" to proceed.
+**Decision**: No `onclose` prop on the ModalDialog (no x button, no Escape dismiss). **Why**: This is a blocking
+onboarding prompt. If the user could dismiss it without choosing, the app would have no recorded preference and would
+re-show the prompt on every launch. The user must explicitly click "Open System Settings" or "Deny" to proceed.
 
-**Decision**: Post-click hint to restart manually instead of auto-detecting the grant.
-**Why**: Tauri has no API or callback for when macOS System Settings grants FDA. Polling `checkFullDiskAccess()` would
-work but adds complexity and may not detect the change instantly. A simple "restart the app" instruction is reliable and
-matches what other macOS apps (VS Code, iTerm2) do.
+**Decision**: Post-click hint to restart manually instead of auto-detecting the grant. **Why**: Tauri has no API or
+callback for when macOS System Settings grants FDA. Polling `checkFullDiskAccess()` would work but adds complexity and
+may not detect the change instantly. A simple "restart the app" instruction is reliable and matches what other macOS
+apps (VS Code, iTerm2) do.
 
 ## Key gotchas
 
