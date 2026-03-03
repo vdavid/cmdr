@@ -48,6 +48,9 @@ if file_size < 1MB {
 **Decision**: `SearchMatch.column` and `.length` use UTF-16 code units instead of byte or char offsets.
 **Why**: The frontend is JavaScript, where `String.prototype.length` and `String.prototype.substring()` count UTF-16 code units. If the backend returned byte offsets or Unicode scalar offsets, the frontend would need to convert on every match highlight, which is error-prone for text with emoji or CJK characters. Matching the JS string model eliminates an entire class of off-by-one bugs in the highlight rendering.
 
+**Decision**: `SearchMatch.byte_offset` stores the byte offset of the line start for each match.
+**Why**: In ByteSeek mode (when line indexing timed out), search returns exact line numbers but the virtual scroll uses estimated line counts for fraction-based seeking. The byte offset lets the frontend convert to scroll position via `(byteOffset / totalBytes) * estimatedTotalLines`, which is the same fraction the virtual scroll uses for fetching. Without this, navigating to a search match scrolls to the wrong part of the file.
+
 **Decision**: Sparse checkpoints every 256 lines instead of indexing every line.
 **Why**: Indexing every line in a 100M-line file would need ~800 MB of offset data (8 bytes each). At 256-line intervals, the same file needs ~3 MB. The trade-off is that seeking to a specific line requires reading forward up to 255 lines from the nearest checkpoint, which takes <1ms on any modern disk — well within the 16ms frame budget for 60fps scrolling.
 

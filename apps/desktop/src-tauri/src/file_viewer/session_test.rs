@@ -5,8 +5,8 @@ use std::path::{Path, PathBuf};
 use std::thread;
 use std::time::Duration;
 
-use super::{FULL_LOAD_THRESHOLD, MAX_SEARCH_MATCHES};
 use super::session::{self, SearchStatus};
+use super::{FULL_LOAD_THRESHOLD, MAX_SEARCH_MATCHES};
 
 fn create_test_dir(name: &str) -> PathBuf {
     let dir = std::env::temp_dir().join(format!("cmdr_viewer_session_{}", name));

@@ -74,6 +74,10 @@ pub struct SearchMatch {
     pub column: usize,
     /// Length in UTF-16 code units (matches JS string indexing).
     pub length: usize,
+    /// Byte offset of the start of the line containing this match.
+    /// Used by the frontend to scroll accurately in ByteSeek mode where line numbers
+    /// don't map to the virtual scroll coordinate system.
+    pub byte_offset: u64,
 }
 
 /// What a backend can do.

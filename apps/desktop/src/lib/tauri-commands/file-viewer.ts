@@ -46,6 +46,8 @@ export interface ViewerSearchMatch {
     line: number
     column: number
     length: number
+    /** Byte offset of the line start. Used for accurate scroll positioning in ByteSeek mode. */
+    byteOffset: number
 }
 
 /** Result from polling search progress. */

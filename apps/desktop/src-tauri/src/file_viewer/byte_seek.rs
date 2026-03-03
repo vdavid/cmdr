@@ -223,6 +223,7 @@ impl FileViewerBackend for ByteSeekBackend {
         let mut buf = vec![0u8; chunk_size];
         let mut line_number: usize = 0;
         let mut scanned: u64 = 0;
+        let mut line_byte_offset: u64 = 0;
         let mut leftover = Vec::new();
         let mut limit_reached = false;
 
@@ -263,14 +264,14 @@ impl FileViewerBackend for ByteSeekBackend {
                     let mut search_start = 0;
                     while let Some(match_pos) = line_lower[search_start..].find(&query_lower) {
                         let col_bytes = search_start + match_pos;
-                        let col_utf16: usize =
-                            line_lower[..col_bytes].chars().map(|c| c.len_utf16()).sum();
+                        let col_utf16: usize = line_lower[..col_bytes].chars().map(|c| c.len_utf16()).sum();
                         let len_utf16: usize = query_lower.chars().map(|c| c.len_utf16()).sum();
                         let mut matches = results.lock_ignore_poison();
                         matches.push(SearchMatch {
                             line: line_number,
                             column: col_utf16,
                             length: len_utf16,
+                            byte_offset: line_byte_offset,
                         });
                         if matches.len() >= MAX_SEARCH_MATCHES {
                             limit_reached = true;
@@ -281,6 +282,7 @@ impl FileViewerBackend for ByteSeekBackend {
 
                     scanned += (nl_pos + 1) as u64;
                     pos += nl_pos + 1;
+                    line_byte_offset = scanned;
                     line_number += 1;
                 } else {
                     // Incomplete line — save as leftover for next iteration
@@ -307,6 +309,7 @@ impl FileViewerBackend for ByteSeekBackend {
                     line: line_number,
                     column: col_utf16,
                     length: len_utf16,
+                    byte_offset: line_byte_offset,
                 });
                 if matches.len() >= MAX_SEARCH_MATCHES {
                     break;

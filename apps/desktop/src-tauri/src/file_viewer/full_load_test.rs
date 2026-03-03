@@ -140,8 +140,11 @@ fn search_finds_matches() {
     assert_eq!(matches.len(), 2);
     assert_eq!(matches[0].line, 0);
     assert_eq!(matches[0].column, 0);
+    assert_eq!(matches[0].byte_offset, 0); // First line starts at byte 0
     assert_eq!(matches[1].line, 2);
     assert_eq!(matches[1].column, 0);
+    // "hello world\n" = 12 bytes, "foo bar\n" = 8 bytes → line 2 starts at byte 20
+    assert_eq!(matches[1].byte_offset, 20);
     assert!(scanned > 0);
     // Progress should equal total bytes after search completes
     assert_eq!(*progress.lock().unwrap(), scanned);

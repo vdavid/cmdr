@@ -263,8 +263,9 @@
             const fetchFrom = Math.max(0, from - BUFFER_LINES)
             const fetchCount = Math.min(FETCH_BATCH, to - fetchFrom + BUFFER_LINES * 2)
 
-            // Decide seek type based on backend capabilities
-            const supportsLineSeek = capabilities?.supportsLineSeek ?? false
+            // Decide seek type: use line seek when we know exact line count (LineIndex/FullLoad),
+            // fraction seek when we only have estimates (ByteSeek)
+            const supportsLineSeek = totalLines !== null
             const seekType = supportsLineSeek ? 'line' : 'fraction'
             const seekValue = supportsLineSeek ? fetchFrom : fetchFrom / estimatedTotalLines()
 
@@ -455,8 +456,18 @@
 
     function scrollToMatch(match: ViewerSearchMatch) {
         if (!contentRef) return
-        const targetScroll = match.line * effectiveLineHeight - viewportHeight / 2
-        contentRef.scrollTop = Math.max(0, targetScroll)
+        let targetLine: number
+        if (totalLines !== null) {
+            // LineIndex/FullLoad: line numbers are exact, use directly
+            targetLine = match.line
+        } else {
+            // ByteSeek: line numbers don't match the virtual scroll coordinate system.
+            // Convert via byte offset: (byteOffset / totalBytes) * estimatedTotalLines
+            targetLine = totalBytes > 0 ? (match.byteOffset / totalBytes) * estimatedTotalLines() : match.line
+        }
+        const targetScroll = targetLine * effectiveLineHeight - viewportHeight / 2
+        const finalScroll = Math.max(0, targetScroll)
+        contentRef.scrollTop = finalScroll
     }
 
     // Debounce search input
@@ -1018,6 +1029,7 @@
     .file-content {
         flex: 1;
         overflow: auto;
+        overflow-anchor: none; /* Virtual scroll manages scroll position programmatically */
         font-family: var(--font-mono);
         font-size: var(--font-size-sm);
         line-height: 1.5;

@@ -18,8 +18,8 @@ use super::byte_seek::ByteSeekBackend;
 use super::full_load::FullLoadBackend;
 use super::line_index::LineIndexBackend;
 use super::{
-    BackendCapabilities, FULL_LOAD_THRESHOLD, FileViewerBackend, LineChunk, MAX_SEARCH_MATCHES, SearchMatch, SeekTarget,
-    ViewerError,
+    BackendCapabilities, FULL_LOAD_THRESHOLD, FileViewerBackend, LineChunk, MAX_SEARCH_MATCHES, SearchMatch,
+    SeekTarget, ViewerError,
 };
 
 /// Which backend strategy is active for a session.

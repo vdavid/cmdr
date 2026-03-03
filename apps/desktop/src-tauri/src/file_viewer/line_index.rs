@@ -245,6 +245,7 @@ impl FileViewerBackend for LineIndexBackend {
         let mut buf = vec![0u8; chunk_size];
         let mut line_number: usize = 0;
         let mut scanned: u64 = 0;
+        let mut line_byte_offset: u64 = 0;
         let mut leftover = Vec::new();
         let mut limit_reached = false;
 
@@ -289,6 +290,7 @@ impl FileViewerBackend for LineIndexBackend {
                             line: line_number,
                             column: col,
                             length: query.len(),
+                            byte_offset: line_byte_offset,
                         });
                         if matches.len() >= MAX_SEARCH_MATCHES {
                             limit_reached = true;
@@ -299,6 +301,7 @@ impl FileViewerBackend for LineIndexBackend {
 
                     scanned += (nl_pos + 1) as u64;
                     pos += nl_pos + 1;
+                    line_byte_offset = scanned;
                     line_number += 1;
                 } else {
                     leftover.extend_from_slice(&data[pos..]);
@@ -322,6 +325,7 @@ impl FileViewerBackend for LineIndexBackend {
                     line: line_number,
                     column: col,
                     length: query.len(),
+                    byte_offset: line_byte_offset,
                 });
                 if matches.len() >= MAX_SEARCH_MATCHES {
                     break;

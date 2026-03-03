@@ -8,7 +8,9 @@ use std::path::Path;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use super::{BackendCapabilities, FileViewerBackend, LineChunk, MAX_SEARCH_MATCHES, SearchMatch, SeekTarget, ViewerError};
+use super::{
+    BackendCapabilities, FileViewerBackend, LineChunk, MAX_SEARCH_MATCHES, SearchMatch, SeekTarget, ViewerError,
+};
 
 pub struct FullLoadBackend {
     lines: Vec<String>,
@@ -151,6 +153,7 @@ impl FileViewerBackend for FullLoadBackend {
                     line: line_idx,
                     column: col_utf16,
                     length: len_utf16,
+                    byte_offset: self.line_offsets[line_idx],
                 });
                 if matches.len() >= MAX_SEARCH_MATCHES {
                     limit_reached = true;
