@@ -111,7 +111,7 @@ impl EventReconciler {
         let mut last_event_id = scan_start_event_id;
         let mut affected_paths: Vec<String> = Vec::new();
 
-        log::info!("Reconciler: replaying {total} buffered events (scan_start_event_id={scan_start_event_id})");
+        log::debug!("Reconciler: replaying {total} buffered events (scan_start_event_id={scan_start_event_id})");
 
         for event in &self.buffer {
             // Skip events that the scan already covered
@@ -137,7 +137,7 @@ impl EventReconciler {
             let _ = writer.send(WriteMessage::UpdateLastEventId(last_event_id));
         }
 
-        log::info!("Reconciler: replayed {processed}/{total} events (last_event_id={last_event_id})");
+        log::debug!("Reconciler: replayed {processed}/{total} events (last_event_id={last_event_id})");
         Ok(last_event_id)
     }
 
@@ -146,7 +146,7 @@ impl EventReconciler {
         self.buffering = false;
         self.buffer.clear();
         self.buffer.shrink_to_fit();
-        log::info!("Reconciler: switched to live mode");
+        log::debug!("Reconciler: switched to live mode");
     }
 
     /// Process a single event in live mode.
@@ -209,7 +209,7 @@ impl EventReconciler {
         let writer = writer.clone();
         let rescan_active = Arc::clone(&self.rescan_active);
 
-        log::info!("Reconciler: starting MustScanSubDirs rescan for {}", path.display());
+        log::debug!("Reconciler: starting MustScanSubDirs rescan for {}", path.display());
 
         tokio::task::spawn_blocking(move || {
             let start = Instant::now();

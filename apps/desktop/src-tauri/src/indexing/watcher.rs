@@ -146,7 +146,7 @@ impl DriveWatcher {
         )
         .map_err(WatcherError::Io)?;
 
-        log::info!("DriveWatcher started on {} (sinceWhen={since_when})", root.display());
+        log::debug!("DriveWatcher started on {} (sinceWhen={since_when})", root.display());
 
         // Spawn a task to read the async event stream and forward events.
         // Use tauri::async_runtime::spawn because the watcher can start from
@@ -192,7 +192,7 @@ impl DriveWatcher {
             task.abort();
         }
 
-        log::info!(
+        log::debug!(
             "DriveWatcher stopped (last_event_id={})",
             self.last_event_id.load(Ordering::Relaxed)
         );
@@ -264,7 +264,7 @@ impl DriveWatcher {
             .watch(root, RecursiveMode::Recursive)
             .map_err(|e| WatcherError::StreamCreate(format!("inotify watch: {e}")))?;
 
-        log::info!("DriveWatcher (inotify) started on {}", root.display());
+        log::debug!("DriveWatcher (inotify) started on {}", root.display());
 
         let running_clone = Arc::clone(&running);
         let counter_clone = Arc::clone(&event_counter);
@@ -309,7 +309,7 @@ impl DriveWatcher {
             task.abort();
         }
 
-        log::info!("DriveWatcher (inotify) stopped");
+        log::debug!("DriveWatcher (inotify) stopped");
     }
 
     /// Return the last synthetic event counter value.

@@ -177,7 +177,7 @@ fn validate_license_key_with_public_key(license_key: &str, public_key_hex: &str)
         "Invalid license key: bad payload data"
     })?;
 
-    log::info!("License validated successfully for: {}", redact_email(&data.email));
+    log::debug!("License validated successfully for: {}", redact_email(&data.email));
 
     Ok(data)
 }

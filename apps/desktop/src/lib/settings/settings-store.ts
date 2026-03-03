@@ -66,7 +66,7 @@ export async function initializeSettings(): Promise<void> {
         return
     }
 
-    log.info('Starting settings initialization')
+    log.debug('Starting settings initialization')
 
     try {
         const store = await getStore()
@@ -106,7 +106,7 @@ export async function initializeSettings(): Promise<void> {
             }
         }
 
-        log.info('Settings loaded: {loaded} from store, {defaults} using defaults', {
+        log.debug('Settings loaded: {loaded} from store, {defaults} using defaults', {
             loaded: loadedCount,
             defaults: defaultCount,
         })
@@ -115,7 +115,7 @@ export async function initializeSettings(): Promise<void> {
         await setupCrossWindowListener()
 
         initialized = true
-        log.info('Settings initialization complete')
+        log.debug('Settings initialization complete')
     } catch (error) {
         log.error('Failed to initialize settings: {error}', { error })
         throw error

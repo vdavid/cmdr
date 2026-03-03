@@ -58,11 +58,11 @@ export async function initReactiveSettings(): Promise<void> {
 
             switch (id) {
                 case 'appearance.uiDensity':
-                    log.info('Applying UI density change: {value}', { value })
+                    log.debug('Applying UI density change: {value}', { value })
                     uiDensity = value as UiDensity
                     break
                 case 'appearance.dateTimeFormat':
-                    log.info('Applying date/time format change: {value}', { value })
+                    log.debug('Applying date/time format change: {value}', { value })
                     dateTimeFormat = value as DateTimeFormat
                     break
                 case 'appearance.customDateTimeFormat':
@@ -70,17 +70,17 @@ export async function initReactiveSettings(): Promise<void> {
                     customDateTimeFormat = value as string
                     break
                 case 'appearance.fileSizeFormat':
-                    log.info('Applying file size format change: {value}', { value })
+                    log.debug('Applying file size format change: {value}', { value })
                     fileSizeFormat = value as FileSizeFormat
                     break
                 case 'appearance.useAppIconsForDocuments':
-                    log.info('Applying app icons for documents change: {value}', { value })
+                    log.debug('Applying app icons for documents change: {value}', { value })
                     useAppIconsForDocuments = value as boolean
                     // Clear the icon cache so icons are re-fetched with the new setting
                     void clearExtensionIconCache()
                     break
                 case 'listing.directorySortMode':
-                    log.info('Applying directory sort mode change: {value}', { value })
+                    log.debug('Applying directory sort mode change: {value}', { value })
                     directorySortMode = value as DirectorySortMode
                     break
                 case 'appearance.appColor':
@@ -90,7 +90,7 @@ export async function initReactiveSettings(): Promise<void> {
         })
 
         initialized = true
-        log.info('Reactive settings initialized')
+        log.debug('Reactive settings initialized')
     } catch (error) {
         log.error('Failed to initialize reactive settings: {error}', { error })
     }

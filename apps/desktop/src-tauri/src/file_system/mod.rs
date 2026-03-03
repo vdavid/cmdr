@@ -83,19 +83,19 @@ pub fn init_volume_manager() {
     #[cfg(target_os = "macos")]
     {
         let attached = crate::volumes::get_attached_volumes();
-        log::info!("Registering {} attached volume(s)", attached.len());
+        log::debug!("Registering {} attached volume(s)", attached.len());
         for location in attached {
             let volume = Arc::new(LocalPosixVolume::new(&location.name, &location.path));
             VOLUME_MANAGER.register(&location.id, volume);
-            log::info!("  Registered attached volume: {} -> {}", location.id, location.path);
+            log::debug!("  Registered attached volume: {} -> {}", location.id, location.path);
         }
 
         let cloud = crate::volumes::get_cloud_drives();
-        log::info!("Registering {} cloud drive(s)", cloud.len());
+        log::debug!("Registering {} cloud drive(s)", cloud.len());
         for location in cloud {
             let volume = Arc::new(LocalPosixVolume::new(&location.name, &location.path));
             VOLUME_MANAGER.register(&location.id, volume);
-            log::info!("  Registered cloud drive: {} -> {}", location.id, location.path);
+            log::debug!("  Registered cloud drive: {} -> {}", location.id, location.path);
         }
     }
 
@@ -107,11 +107,11 @@ pub fn init_volume_manager() {
             .iter()
             .filter(|l| l.category != crate::volumes_linux::LocationCategory::Favorite)
             .collect();
-        log::info!("Registering {} volume(s)", non_fav.len());
+        log::debug!("Registering {} volume(s)", non_fav.len());
         for location in non_fav {
             let volume = Arc::new(LocalPosixVolume::new(&location.name, &location.path));
             VOLUME_MANAGER.register(&location.id, volume);
-            log::info!("  Registered volume: {} -> {}", location.id, location.path);
+            log::debug!("  Registered volume: {} -> {}", location.id, location.path);
         }
     }
 }

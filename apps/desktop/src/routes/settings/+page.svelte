@@ -101,7 +101,7 @@
     }
 
     onMount(async () => {
-        log.info('Settings page mounted, starting initialization')
+        log.debug('Settings page mounted, starting initialization')
 
         // Hide loading screen (from app.html) - must do this first!
         const loadingScreen = document.getElementById('loading-screen')
@@ -114,7 +114,7 @@
             // Initialize settings and shortcuts stores
             log.debug('Calling initializeSettings() and initializeShortcuts()')
             await Promise.all([initializeSettings(), initializeShortcuts()])
-            log.info('Settings and shortcuts initialization complete')
+            log.debug('Settings and shortcuts initialization complete')
 
             // Read system accent color from macOS and listen for changes
             await initAccentColor()

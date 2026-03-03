@@ -97,7 +97,7 @@ export async function initSettingsApplier(): Promise<void> {
         return
     }
 
-    log.info('Initializing settings applier')
+    log.debug('Initializing settings applier')
 
     try {
         // Ensure settings store is initialized
@@ -110,7 +110,7 @@ export async function initSettingsApplier(): Promise<void> {
         unsubscribe = onSettingChange(handleSettingChange)
         initialized = true
 
-        log.info('Settings applier initialized successfully')
+        log.debug('Settings applier initialized successfully')
     } catch (error) {
         log.error('Failed to initialize settings applier: {error}', { error })
     }

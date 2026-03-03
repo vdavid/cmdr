@@ -52,7 +52,7 @@ export async function initAccentColor(): Promise<void> {
         const hex = await invoke<string>('get_accent_color')
         applySystemAccentPreview(hex)
         applyAccentForCurrentSetting()
-        log.info('System accent color loaded: {hex}', { hex })
+        log.debug('System accent color loaded: {hex}', { hex })
     } catch (error) {
         log.warn('Could not read system accent color, using CSS fallback: {error}', { error })
     }
@@ -65,7 +65,7 @@ export async function initAccentColor(): Promise<void> {
             // macOS renders folder icons with the accent color baked in,
             // so we need to flush cached folder bitmaps and re-fetch them.
             void clearDirectoryIconCache()
-            log.info('System accent color changed: {hex}', { hex: event.payload })
+            log.debug('System accent color changed: {hex}', { hex: event.payload })
         })
     } catch (error) {
         log.warn('Could not subscribe to accent color changes: {error}', { error })

@@ -266,7 +266,7 @@ fn get_cached_or_validate(app: &tauri::AppHandle, license_info: &LicenseInfo) ->
     // No valid cache - for first-time validation, create initial cache from license key
     // The license key contains the email/transaction info but not subscription status
     // We'll return Personal until async validation completes
-    log::info!(
+    log::debug!(
         "License key found for {} but no cached status, returning Personal until validation",
         redact_email(&license_info.email)
     );

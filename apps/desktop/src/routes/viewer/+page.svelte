@@ -695,7 +695,7 @@
             capabilities = result.capabilities
             isIndexing = result.isIndexing
 
-            log.info(
+            log.debug(
                 'Opened file: {fileName}, {totalBytes} bytes, totalLines={totalLines}, estimatedTotalLines={estimatedTotalLines}, backend={backendType}, isIndexing={isIndexing}',
                 {
                     fileName: result.fileName,

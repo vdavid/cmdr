@@ -140,11 +140,11 @@ export async function initLogger(): Promise<void> {
     if (isDev) {
         const log = getLogTapeLogger(['app', 'logger'])
         if (verboseLoggingEnabled) {
-            log.info('Logger initialized (verbose mode, debug+ for all)')
+            log.debug('Logger initialized (verbose mode, debug+ for all)')
         } else {
-            log.info('Logger initialized (dev mode, info+)')
+            log.debug('Logger initialized (dev mode, info+)')
             if (debugCategories.length > 0) {
-                log.info('Debug enabled for: {categories}', { categories: debugCategories.join(', ') })
+                log.debug('Debug enabled for: {categories}', { categories: debugCategories.join(', ') })
             }
         }
     }

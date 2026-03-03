@@ -35,7 +35,7 @@ export async function checkForUpdates(): Promise<void> {
 
     try {
         const currentVersion = await getVersion()
-        log.info('Checking for updates (current: v{version})...', { version: currentVersion })
+        log.debug('Checking for updates (current: v{version})...', { version: currentVersion })
         const update = await check()
 
         if (update !== null) {
@@ -47,7 +47,7 @@ export async function checkForUpdates(): Promise<void> {
             updateState.update = update
             addToast(UpdateToastContent, { id: 'update', dismissal: 'persistent' })
         } else {
-            log.info('v{version} is up to date', { version: currentVersion })
+            log.debug('v{version} is up to date', { version: currentVersion })
             updateState.status = 'idle'
         }
     } catch (error) {
@@ -63,7 +63,7 @@ export async function restartToUpdate(): Promise<void> {
 
 export function startUpdateChecker(): () => void {
     const endpoint = import.meta.env.DEV ? 'localhost:4321' : 'getcmdr.com'
-    log.info('Started (endpoint: {endpoint})', { endpoint })
+    log.debug('Started (endpoint: {endpoint})', { endpoint })
 
     // Check immediately on start
     void checkForUpdates()

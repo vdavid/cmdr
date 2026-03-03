@@ -46,7 +46,7 @@ pub fn compute_subtree_aggregates(conn: &Connection, root: &str) -> Result<u64, 
 
     let start = std::time::Instant::now();
     let dir_count = dirs.len();
-    log::info!("Subtree aggregation: starting bottom-up computation for {dir_count} directories under {root}");
+    log::debug!("Subtree aggregation: starting bottom-up computation for {dir_count} directories under {root}");
 
     // Phase 1: Load direct children stats scoped to this subtree only
     let direct_stats = scoped_get_children_stats(conn, root)?;
@@ -110,7 +110,7 @@ pub fn compute_subtree_aggregates(conn: &Connection, root: &str) -> Result<u64, 
         IndexStore::upsert_dir_stats(conn, chunk)?;
     }
 
-    log::info!(
+    log::debug!(
         "Subtree aggregation: complete. {count} directories processed in {:.1}ms",
         start.elapsed().as_secs_f64() * 1000.0,
     );
@@ -220,21 +220,21 @@ fn compute_root_stats(conn: &Connection) -> Result<(), IndexStoreError> {
 fn compute_aggregates_for_dirs(conn: &Connection, dirs: &[String]) -> Result<u64, IndexStoreError> {
     let start = std::time::Instant::now();
     let dir_count = dirs.len();
-    log::info!("Aggregation: starting bottom-up computation for {dir_count} directories");
+    log::debug!("Aggregation: starting bottom-up computation for {dir_count} directories");
 
     // Phase 1: Bulk-load direct children stats for ALL parent paths in two SQL queries.
     // This replaces N individual get_children_stats + get_child_directory_paths calls.
-    log::info!("Aggregation: loading direct children stats (bulk query)...");
+    log::debug!("Aggregation: loading direct children stats (bulk query)...");
     let direct_stats = bulk_get_children_stats(conn)?;
-    log::info!(
+    log::debug!(
         "Aggregation: loaded stats for {} parent paths in {:.1}s",
         direct_stats.len(),
         start.elapsed().as_secs_f64()
     );
 
-    log::info!("Aggregation: loading child directory relationships (bulk query)...");
+    log::debug!("Aggregation: loading child directory relationships (bulk query)...");
     let child_dirs_map = bulk_get_child_directory_paths(conn)?;
-    log::info!(
+    log::debug!(
         "Aggregation: loaded child dirs for {} parent paths in {:.1}s",
         child_dirs_map.len(),
         start.elapsed().as_secs_f64()
@@ -276,7 +276,7 @@ fn compute_aggregates_for_dirs(conn: &Connection, dirs: &[String]) -> Result<u64
         );
 
         if (i + 1) % 100_000 == 0 {
-            log::info!(
+            log::debug!(
                 "Aggregation: processed {}/{dir_count} directories ({:.1}s)",
                 i + 1,
                 start.elapsed().as_secs_f64()
@@ -285,7 +285,7 @@ fn compute_aggregates_for_dirs(conn: &Connection, dirs: &[String]) -> Result<u64
     }
 
     // Phase 3: Batch-write all computed stats in chunks of 1000
-    log::info!("Aggregation: writing {} dir_stats rows to DB...", computed.len());
+    log::debug!("Aggregation: writing {} dir_stats rows to DB...", computed.len());
     let all_stats: Vec<DirStats> = computed.into_values().collect();
     let count = all_stats.len() as u64;
 
@@ -293,7 +293,7 @@ fn compute_aggregates_for_dirs(conn: &Connection, dirs: &[String]) -> Result<u64
         IndexStore::upsert_dir_stats(conn, chunk)?;
     }
 
-    log::info!(
+    log::debug!(
         "Aggregation: complete. {count} directories processed in {:.1}s",
         start.elapsed().as_secs_f64()
     );

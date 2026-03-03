@@ -238,7 +238,7 @@ impl IndexManager {
             Err(e) => log::warn!("Failed to open global index read connection: {e}"),
         }
 
-        log::info!(
+        log::debug!(
             "IndexManager created for volume '{volume_id}' at {}",
             volume_root.display()
         );
@@ -282,7 +282,7 @@ impl IndexManager {
             if let Some(ref last_event_id_str) = status.last_event_id {
                 let last_event_id: u64 = last_event_id_str.parse().unwrap_or(0);
                 if last_event_id > 0 {
-                    log::info!(
+                    log::debug!(
                         "Existing index found (scan_completed_at={}, last_event_id={last_event_id}), \
                          attempting sinceWhen replay",
                         status.scan_completed_at.as_deref().unwrap_or("?"),
@@ -290,11 +290,11 @@ impl IndexManager {
                     return self.start_replay(last_event_id);
                 }
             }
-            log::info!("Existing index found but no last_event_id, starting fresh scan");
+            log::debug!("Existing index found but no last_event_id, starting fresh scan");
         } else if status.scan_completed_at.is_some() {
-            log::info!("Existing index found, starting rescan (no event replay on this platform)");
+            log::debug!("Existing index found, starting rescan (no event replay on this platform)");
         } else {
-            log::info!("No existing index (scan_completed_at not set), starting fresh scan");
+            log::debug!("No existing index (scan_completed_at not set), starting fresh scan");
         }
 
         self.start_scan()
@@ -312,7 +312,7 @@ impl IndexManager {
         match DriveWatcher::start(&self.volume_root, since_event_id, event_tx) {
             Ok(watcher) => {
                 self.drive_watcher = Some(watcher);
-                log::info!("DriveWatcher started for replay (sinceWhen={since_event_id}, current={current_id})");
+                log::debug!("DriveWatcher started for replay (sinceWhen={since_event_id}, current={current_id})");
             }
             Err(e) => {
                 log::warn!("Failed to start DriveWatcher for replay: {e}, falling back to full scan");
@@ -419,7 +419,7 @@ impl IndexManager {
         match DriveWatcher::start(&self.volume_root, 0, event_tx) {
             Ok(watcher) => {
                 self.drive_watcher = Some(watcher);
-                log::info!("DriveWatcher started (scan_start_event_id={scan_start_event_id})");
+                log::debug!("DriveWatcher started (scan_start_event_id={scan_start_event_id})");
             }
             Err(e) => {
                 // Watcher failure is non-fatal: scan works without it, just no live updates
@@ -503,7 +503,7 @@ impl IndexManager {
 
             match result {
                 Ok(Ok(summary)) => {
-                    log::info!(
+                    log::debug!(
                         "Volume scan complete: {} entries, {} dirs, {}ms",
                         summary.total_entries,
                         summary.total_dirs,
@@ -520,12 +520,12 @@ impl IndexManager {
                         reconciler.buffer_event(event);
                         buffered_count += 1;
                     }
-                    log::info!("Reconciler: buffered {buffered_count} events during scan");
+                    log::debug!("Reconciler: buffered {buffered_count} events during scan");
 
                     // Replay events that arrived after the scan read their paths
                     match reconciler.replay(scan_start_event_id, &writer, &app) {
                         Ok(last_id) => {
-                            log::info!("Reconciler: replay complete (last_event_id={last_id})");
+                            log::debug!("Reconciler: replay complete (last_event_id={last_id})");
                         }
                         Err(e) => {
                             log::warn!("Reconciler: replay failed: {e}");
@@ -688,7 +688,7 @@ impl IndexManager {
         self.stop_scan();
         self.writer.shutdown();
         clear_global_index_store();
-        log::info!("IndexManager shut down for volume '{}'", self.volume_id);
+        log::debug!("IndexManager shut down for volume '{}'", self.volume_id);
     }
 }
 
@@ -706,7 +706,7 @@ async fn run_live_event_loop(
     writer: IndexWriter,
     app: AppHandle,
 ) {
-    log::info!("Live event processing started");
+    log::debug!("Live event processing started");
     let mut event_count = 0u64;
     let mut pending_paths = std::collections::HashSet::<String>::new();
     let mut flush_interval = tokio::time::interval(Duration::from_millis(300));
@@ -720,7 +720,7 @@ async fn run_live_event_loop(
                         reconciler.process_live_event(&event, &writer, &mut pending_paths);
                         event_count += 1;
                         if event_count.is_multiple_of(10_000) {
-                            log::info!("Live event processing: {event_count} events processed so far");
+                            log::debug!("Live event processing: {event_count} events processed so far");
                         }
                     }
                     None => {
@@ -740,7 +740,7 @@ async fn run_live_event_loop(
         }
     }
 
-    log::info!("Live event processing stopped after {event_count} events");
+    log::debug!("Live event processing stopped after {event_count} events");
 }
 
 // ── Replay event loop (cold start sinceWhen) ─────────────────────────
@@ -788,7 +788,7 @@ async fn run_replay_event_loop(
         since_event_id,
         estimated_total,
     } = config;
-    log::info!("Replay event processing started (since_event_id={since_event_id})");
+    log::debug!("Replay event processing started (since_event_id={since_event_id})");
 
     let mut event_count = 0u64;
     let mut first_event_checked = false;
@@ -832,7 +832,7 @@ async fn run_replay_event_loop(
                 }
                 return Ok(());
             }
-            log::info!(
+            log::debug!(
                 "Replay: first event_id={}, gap from stored={}, journal appears available",
                 event.event_id,
                 event.event_id.saturating_sub(since_event_id),
@@ -841,7 +841,7 @@ async fn run_replay_event_loop(
 
         // HistoryDone marks end of replay phase
         if event.flags.history_done {
-            log::info!("Replay: HistoryDone received after {event_count} events");
+            log::debug!("Replay: HistoryDone received after {event_count} events");
 
             // Process the HistoryDone event itself (it may carry other flags)
             if let Some(paths) = reconciler::process_fs_event(&event, &writer) {
@@ -892,7 +892,7 @@ async fn run_replay_event_loop(
 
         // Log milestone counts
         if event_count.is_multiple_of(10_000) {
-            log::info!("Replay: {event_count} events processed so far");
+            log::debug!("Replay: {event_count} events processed so far");
         }
     }
 
@@ -915,7 +915,7 @@ async fn run_replay_event_loop(
     match writer.flush().await {
         Ok(()) => {
             let flush_ms = flush_start.elapsed().as_millis();
-            log::info!(
+            log::debug!(
                 "Replay complete: {event_count} events, {} affected dirs, {flush_ms}ms writer flush, \
                  {}ms total",
                 affected_paths.len(),
@@ -944,7 +944,7 @@ async fn run_replay_event_loop(
 
     // ── Switch to live mode immediately (before verification) ────────
 
-    log::info!("Replay: switching to live mode");
+    log::debug!("Replay: switching to live mode");
     micro_scans.set_replay_active(false);
     log::debug!("Replay: micro-scans re-enabled for live mode");
     let mut reconciler = EventReconciler::new();
@@ -976,7 +976,7 @@ async fn run_replay_event_loop(
                         reconciler.process_live_event(&event, &writer, &mut live_pending_paths);
                         live_count += 1;
                         if live_count.is_multiple_of(10_000) {
-                            log::info!("Live event processing (post-replay): {live_count} events");
+                            log::debug!("Live event processing (post-replay): {live_count} events");
                         }
                     }
                     None => {
@@ -995,7 +995,7 @@ async fn run_replay_event_loop(
         }
     }
 
-    log::info!("Replay event loop stopped ({event_count} replay + {live_count} live events)");
+    log::debug!("Replay event loop stopped ({event_count} replay + {live_count} live events)");
     Ok(())
 }
 
@@ -1012,7 +1012,7 @@ async fn run_background_verification(
     app: AppHandle,
 ) {
     let verify_start = std::time::Instant::now();
-    log::info!(
+    log::debug!(
         "Background verification started ({} affected dirs)",
         affected_paths.len(),
     );
@@ -1046,7 +1046,7 @@ async fn run_background_verification(
         verify_result.stale_count > 0 || verify_result.new_file_count > 0 || !verify_result.new_dir_paths.is_empty();
 
     if has_changes {
-        log::info!(
+        log::debug!(
             "Background verification found {} stale, {} new files, {} new dirs; flushing",
             verify_result.stale_count,
             verify_result.new_file_count,
@@ -1106,7 +1106,7 @@ async fn run_background_verification(
         reconciler::emit_dir_updated(&app, corrected_paths);
     }
 
-    log::info!(
+    log::debug!(
         "Background verification completed in {}ms",
         verify_start.elapsed().as_millis(),
     );
@@ -1262,7 +1262,7 @@ fn verify_affected_dirs(affected_paths: &std::collections::HashSet<String>, writ
     }
 
     if stale_count > 0 || new_file_count > 0 || !new_dir_paths.is_empty() {
-        log::info!(
+        log::debug!(
             "Replay verification: {stale_count} stale, {new_file_count} new files, \
              {} new dirs across {} affected dirs",
             new_dir_paths.len(),
@@ -1334,7 +1334,7 @@ pub fn start_indexing(app: &AppHandle) -> Result<(), String> {
     let mut guard = state.0.lock().map_err(|e| format!("Failed to lock state: {e}"))?;
     *guard = Some(manager);
 
-    log::info!("Indexing system initialized for root volume");
+    log::debug!("Indexing system initialized for root volume");
     Ok(())
 }
 

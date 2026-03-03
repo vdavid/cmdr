@@ -29,7 +29,7 @@ export async function openSettingsWindow(): Promise<void> {
         return
     }
 
-    log.info('Creating new settings window')
+    log.debug('Creating new settings window')
 
     new WebviewWindow('settings', {
         url: '/settings',

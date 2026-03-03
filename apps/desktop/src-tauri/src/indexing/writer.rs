@@ -263,7 +263,7 @@ fn writer_loop(conn: rusqlite::Connection, receiver: mpsc::Receiver<WriteMessage
                     stats.record(&other);
                     // Got a non-priority message; process it and move on
                     if process_message(&conn, other, &stats) {
-                        log::info!("Writer: shutdown after processing {} messages", stats.current.total,);
+                        log::debug!("Writer: shutdown after processing {} messages", stats.current.total,);
                         return;
                     }
                     stats.maybe_log_summary();
@@ -271,7 +271,7 @@ fn writer_loop(conn: rusqlite::Connection, receiver: mpsc::Receiver<WriteMessage
                 }
                 Err(mpsc::TryRecvError::Empty) => break,
                 Err(mpsc::TryRecvError::Disconnected) => {
-                    log::info!(
+                    log::debug!(
                         "Writer: channel closed, thread exiting after processing {} messages",
                         stats.current.total,
                     );
@@ -291,13 +291,13 @@ fn writer_loop(conn: rusqlite::Connection, receiver: mpsc::Receiver<WriteMessage
             Ok(msg) => {
                 stats.record(&msg);
                 if process_message(&conn, msg, &stats) {
-                    log::info!("Writer: shutdown after processing {} messages", stats.current.total,);
+                    log::debug!("Writer: shutdown after processing {} messages", stats.current.total,);
                     return;
                 }
                 stats.maybe_log_summary();
             }
             Err(mpsc::RecvError) => {
-                log::info!(
+                log::debug!(
                     "Writer: channel closed, thread exiting after processing {} messages",
                     stats.current.total,
                 );
@@ -329,7 +329,7 @@ fn process_message(conn: &rusqlite::Connection, msg: WriteMessage, stats: &Write
             let t = Instant::now();
             match aggregator::compute_all_aggregates(conn) {
                 Ok(count) => {
-                    log::info!(
+                    log::debug!(
                         "Index writer: computed aggregates for {count} directories ({}ms)",
                         t.elapsed().as_millis(),
                     );

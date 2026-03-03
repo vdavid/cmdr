@@ -139,7 +139,7 @@ export async function scanDevices(): Promise<void> {
         }
 
         state.devices = newDevices
-        logger.info('Scanned {count} MTP device(s)', { count: devices.length })
+        logger.debug('Scanned {count} MTP device(s)', { count: devices.length })
 
         // Auto-connect to all disconnected devices
         void connectAllDisconnected()
@@ -361,7 +361,7 @@ export async function initialize(): Promise<void> {
     await scanDevices()
 
     state.initialized = true
-    logger.info('MTP store initialized')
+    logger.debug('MTP store initialized')
 }
 
 /**

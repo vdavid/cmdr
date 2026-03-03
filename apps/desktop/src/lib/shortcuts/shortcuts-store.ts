@@ -74,7 +74,7 @@ export async function initializeShortcuts(): Promise<void> {
     }
 
     if (customShortcuts.size > 0) {
-        log.info('Loaded {count} custom shortcuts: {ids}', {
+        log.debug('Loaded {count} custom shortcuts: {ids}', {
             count: customShortcuts.size,
             ids: [...customShortcuts.keys()].join(', '),
         })
