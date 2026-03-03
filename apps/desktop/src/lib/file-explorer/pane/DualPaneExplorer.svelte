@@ -38,7 +38,7 @@
     } from '../types'
     import { defaultSortOrders } from '../types'
     import { ensureFontMetricsLoaded } from '$lib/font-metrics'
-    import { determineNavigationPath } from '../navigation/path-navigation'
+    import { determineNavigationPath, resolveValidPath } from '../navigation/path-navigation'
     import {
         createHistory,
         push,
@@ -551,8 +551,9 @@
         containerElement?.focus()
     }
 
-    function handleCancelLoading(pane: 'left' | 'right') {
-        const entry = getCurrentEntry(getPaneHistory(pane))
+    function handleCancelLoading(pane: 'left' | 'right', cancelledPath: string, selectName?: string) {
+        const history = getPaneHistory(pane)
+        const entry = getCurrentEntry(history)
         const paneRef = getPaneRef(pane)
 
         if (entry.volumeId === 'network') {
@@ -561,13 +562,36 @@
             saveAppStatus({ [paneKey(pane, 'volumeId')]: 'network', [paneKey(pane, 'path')]: entry.path })
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call
             paneRef?.setNetworkHost?.(entry.networkHost ?? null)
-        } else {
-            // Immediately navigate to a known-safe local path — the user pressed ESC, they want out
-            setPanePath(pane, '~')
-            setPaneVolumeId(pane, DEFAULT_VOLUME_ID)
-            saveAppStatus({ [paneKey(pane, 'path')]: '~', [paneKey(pane, 'volumeId')]: DEFAULT_VOLUME_ID })
+            saveTabsForPaneSide(pane)
+            containerElement?.focus()
+            return
         }
-        saveTabsForPaneSide(pane)
+
+        if (entry.path === cancelledPath) {
+            // Listing completed before cancel — history has the cancelled path pushed. Go back.
+            if (canGoBack(history)) {
+                const newHistory = back(history)
+                const target = getCurrentEntry(newHistory)
+                updatePaneAfterHistoryNavigation(pane, newHistory, target.path)
+                return
+            }
+
+            // Edge case: tab opened directly at this path, no history. Walk up to nearest valid parent.
+            const parentPath = entry.path.substring(0, Math.max(1, entry.path.lastIndexOf('/')))
+            void resolveValidPath(parentPath).then((validPath) => {
+                const target = validPath ?? '~'
+                setPanePath(pane, target)
+                saveAppStatus({ [paneKey(pane, 'path')]: target })
+                saveTabsForPaneSide(pane)
+                containerElement?.focus()
+            })
+            return
+        }
+
+        // Listing didn't complete — history still points at the previous folder (correct destination).
+        // setPanePath won't trigger FilePane's $effect (path unchanged), so call navigateToPath directly.
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        paneRef?.navigateToPath?.(entry.path, selectName)
         containerElement?.focus()
     }
 
@@ -1977,8 +2001,8 @@
                 onNetworkHostChange={(host: NetworkHost | null) => {
                     handleNetworkHostChange(paneId, host)
                 }}
-                onCancelLoading={() => {
-                    handleCancelLoading(paneId)
+                onCancelLoading={(cancelledPath: string, selectName?: string) => {
+                    handleCancelLoading(paneId, cancelledPath, selectName)
                 }}
                 onMtpFatalError={(msg: string) => handleMtpFatalError(paneId, msg)}
             />

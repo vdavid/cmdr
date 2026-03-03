@@ -98,8 +98,8 @@
         onRequestFocus?: () => void
         /** Called when active network host changes (for history tracking) */
         onNetworkHostChange?: (host: NetworkHost | null) => void
-        /** Called when user cancels loading (ESC key) - parent should reload previous folder, optionally selecting the folder we tried to enter */
-        onCancelLoading?: (selectName?: string) => void
+        /** Called when user cancels loading (ESC key) - parent navigates back to previous folder */
+        onCancelLoading?: (cancelledPath: string, selectName?: string) => void
         /** Called when MTP connection fails fatally (device disconnected, timeout) - parent should fall back to previous volume */
         onMtpFatalError?: (error: string) => void
     }
@@ -852,8 +852,8 @@
         // Extract the folder name we were trying to enter, so parent can select it when reloading
         const folderName = currentPath.split('/').pop()
 
-        // Reload previous folder via callback (parent will set the path, triggering our effect)
-        onCancelLoading?.(folderName)
+        // Tell parent to navigate back — passes the path we were loading so parent can decide where to go
+        onCancelLoading?.(currentPath, folderName)
     }
 
     // Navigate to a specific path with optional item selection (used when cancelling navigation)
