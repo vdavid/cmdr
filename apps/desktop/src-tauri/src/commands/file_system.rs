@@ -29,20 +29,9 @@ use std::sync::mpsc::channel;
 use tauri::Manager;
 use tokio::time::Duration;
 
-const PATH_EXISTS_TIMEOUT: Duration = Duration::from_secs(2);
+use super::util::blocking_with_timeout;
 
-/// Runs a blocking closure on the blocking thread pool with a timeout.
-/// Returns the fallback value if the closure doesn't complete in time.
-async fn blocking_with_timeout<T: Send + 'static>(
-    timeout_duration: Duration,
-    fallback: T,
-    f: impl FnOnce() -> T + Send + 'static,
-) -> T {
-    match tokio::time::timeout(timeout_duration, tokio::task::spawn_blocking(f)).await {
-        Ok(Ok(result)) => result,
-        _ => fallback, // Timeout or JoinError
-    }
-}
+const PATH_EXISTS_TIMEOUT: Duration = Duration::from_secs(2);
 
 #[tauri::command]
 pub async fn path_exists(volume_id: Option<String>, path: String) -> bool {
@@ -92,19 +81,23 @@ pub async fn create_directory(volume_id: Option<String>, parent_path: String, na
 
         // Use spawn_blocking to run the Volume operation in a context where
         // tokio::runtime::Handle::current() is available (needed for MtpVolume)
-        tokio::task::spawn_blocking(move || {
-            volume.create_directory(&new_path_clone).map_err(|e| match e {
-                crate::file_system::VolumeError::AlreadyExists(_) => format!("'{}' already exists", name_clone),
-                crate::file_system::VolumeError::PermissionDenied(_) => {
-                    format!(
-                        "Permission denied: cannot create '{}' in '{}'",
-                        name_clone, parent_path_clone
-                    )
-                }
-                _ => format!("Failed to create folder: {}", e),
-            })
-        })
+        tokio::time::timeout(
+            Duration::from_secs(5),
+            tokio::task::spawn_blocking(move || {
+                volume.create_directory(&new_path_clone).map_err(|e| match e {
+                    crate::file_system::VolumeError::AlreadyExists(_) => format!("'{}' already exists", name_clone),
+                    crate::file_system::VolumeError::PermissionDenied(_) => {
+                        format!(
+                            "Permission denied: cannot create '{}' in '{}'",
+                            name_clone, parent_path_clone
+                        )
+                    }
+                    _ => format!("Failed to create folder: {}", e),
+                })
+            }),
+        )
         .await
+        .map_err(|_| "Operation timed out (network mount may be unresponsive)".to_string())?
         .map_err(|e| format!("Task failed: {}", e))??;
 
         return Ok(new_path.to_string_lossy().to_string());
@@ -129,7 +122,7 @@ pub async fn create_directory(volume_id: Option<String>, parent_path: String, na
 
 /// Synchronous version — prefer `list_directory_start_streaming` for non-blocking operation.
 #[tauri::command]
-pub fn list_directory_start(
+pub async fn list_directory_start(
     path: String,
     include_hidden: bool,
     sort_by: SortColumn,
@@ -139,8 +132,15 @@ pub fn list_directory_start(
     let expanded_path = expand_tilde(&path);
     let path_buf = PathBuf::from(&expanded_path);
     let dir_sort_mode = directory_sort_mode.unwrap_or_default();
-    ops_list_directory_start_with_volume("root", &path_buf, include_hidden, sort_by, sort_order, dir_sort_mode)
-        .map_err(|e| format!("Failed to start directory listing '{}': {}", path, e))
+    blocking_with_timeout(
+        Duration::from_secs(2),
+        Err("Operation timed out (network mount may be unresponsive)".to_string()),
+        move || {
+            ops_list_directory_start_with_volume("root", &path_buf, include_hidden, sort_by, sort_order, dir_sort_mode)
+                .map_err(|e| format!("Failed to start directory listing '{}': {}", path, e))
+        },
+    )
+    .await
 }
 
 /// Returns immediately; reads in background.
@@ -247,8 +247,11 @@ pub fn list_directory_end(listing_id: String) {
 /// Force a re-read of a watched directory listing, emitting any diff.
 /// Used after write operations (move) when the file watcher may not fire promptly.
 #[tauri::command]
-pub fn refresh_listing(listing_id: String) {
-    crate::file_system::watcher::handle_directory_change(&listing_id);
+pub async fn refresh_listing(listing_id: String) {
+    blocking_with_timeout(Duration::from_secs(2), (), move || {
+        crate::file_system::watcher::handle_directory_change(&listing_id);
+    })
+    .await;
 }
 
 /// Returns total file/dir counts and sizes, plus selection stats if `selected_indices` is given.
@@ -535,11 +538,15 @@ pub async fn scan_volume_for_copy(
     let max_conflicts = max_conflicts.unwrap_or(100);
 
     // Run scan in blocking context for MTP volume support
-    tokio::task::spawn_blocking(move || {
-        ops_scan_for_volume_copy(&*source_volume, &source_paths, &*dest_volume, &dest_path, max_conflicts)
-            .map_err(|e| e.to_string())
-    })
+    tokio::time::timeout(
+        Duration::from_secs(30),
+        tokio::task::spawn_blocking(move || {
+            ops_scan_for_volume_copy(&*source_volume, &source_paths, &*dest_volume, &dest_path, max_conflicts)
+                .map_err(|e| e.to_string())
+        }),
+    )
     .await
+    .map_err(|_| "Operation timed out (network mount may be unresponsive)".to_string())?
     .map_err(|e| format!("Scan task failed: {}", e))?
 }
 
@@ -565,12 +572,16 @@ pub async fn scan_volume_for_conflicts(
     let dest_path = PathBuf::from(dest_path);
 
     // Run in blocking context for MTP volume support
-    tokio::task::spawn_blocking(move || {
-        volume
-            .scan_for_conflicts(&source_items, &dest_path)
-            .map_err(|e| e.to_string())
-    })
+    tokio::time::timeout(
+        Duration::from_secs(30),
+        tokio::task::spawn_blocking(move || {
+            volume
+                .scan_for_conflicts(&source_items, &dest_path)
+                .map_err(|e| e.to_string())
+        }),
+    )
     .await
+    .map_err(|_| "Operation timed out (network mount may be unresponsive)".to_string())?
     .map_err(|e| format!("Conflict scan task failed: {}", e))?
 }
 

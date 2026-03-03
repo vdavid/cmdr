@@ -4,13 +4,13 @@ Small stateless utility functions. Pure, no Svelte state, safe to import from pl
 
 ## Files
 
-| File                          | Purpose                                                             |
-| ----------------------------- | ------------------------------------------------------------------- |
-| `filename-validation.ts`      | Pure client-side filename validation for instant keystroke feedback |
-| `filename-validation.test.ts` | Vitest tests covering all validators                                |
-| `confirm-dialog.ts`           | Wrapper around Tauri's native dialog API                            |
-| `timing.ts`                   | `createDebounce` and `createThrottle` for rate-limiting IPC calls   |
-| `timing.test.ts`              | Vitest tests for debounce and throttle                              |
+| File                          | Purpose                                                                  |
+| ----------------------------- | ------------------------------------------------------------------------ |
+| `filename-validation.ts`      | Pure client-side filename validation for instant keystroke feedback      |
+| `filename-validation.test.ts` | Vitest tests covering all validators                                     |
+| `confirm-dialog.ts`           | Wrapper around Tauri's native dialog API                                 |
+| `timing.ts`                   | `withTimeout`, `createDebounce`, and `createThrottle` for timing control |
+| `timing.test.ts`              | Vitest tests for withTimeout, debounce, and throttle                     |
 
 ## filename-validation.ts
 

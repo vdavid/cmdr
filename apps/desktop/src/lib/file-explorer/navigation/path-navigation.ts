@@ -9,22 +9,13 @@
 import { pathExists } from '$lib/tauri-commands'
 import { getLastUsedPathForVolume } from '$lib/app-status-store'
 import { DEFAULT_VOLUME_ID } from '$lib/tauri-commands'
+import { withTimeout } from '$lib/utils/timing'
+
+export { withTimeout }
 
 export interface OtherPaneState {
     otherPaneVolumeId: string
     otherPanePath: string
-}
-
-/** Races a promise against a timeout, returning the fallback if it doesn't resolve in time. */
-export function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
-    return Promise.race([
-        promise,
-        new Promise<T>((resolve) =>
-            setTimeout(() => {
-                resolve(fallback)
-            }, ms),
-        ),
-    ])
 }
 
 /**

@@ -1,11 +1,43 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { createDebounce, createThrottle } from './timing'
+import { withTimeout, createDebounce, createThrottle } from './timing'
 
 beforeEach(() => {
     vi.useFakeTimers()
 })
 afterEach(() => {
     vi.useRealTimers()
+})
+
+describe('withTimeout', () => {
+    it('returns the promise result if it resolves before timeout', async () => {
+        const promise = Promise.resolve('resolved-value')
+        const result = await withTimeout(promise, 500, 'fallback')
+        expect(result).toBe('resolved-value')
+    })
+
+    it('returns the fallback if the promise does not resolve in time', async () => {
+        vi.useFakeTimers()
+        const neverResolves = new Promise<string>(() => {})
+        const resultPromise = withTimeout(neverResolves, 500, 'fallback')
+
+        await vi.advanceTimersByTimeAsync(500)
+
+        const result = await resultPromise
+        expect(result).toBe('fallback')
+        vi.useRealTimers()
+    })
+
+    it('returns the fallback value with correct type', async () => {
+        vi.useFakeTimers()
+        const neverResolves = new Promise<number | null>(() => {})
+        const resultPromise = withTimeout(neverResolves, 100, null)
+
+        await vi.advanceTimersByTimeAsync(100)
+
+        const result = await resultPromise
+        expect(result).toBeNull()
+        vi.useRealTimers()
+    })
 })
 
 describe('createDebounce', () => {

@@ -39,6 +39,7 @@
     import { defaultSortOrders } from '../types'
     import { ensureFontMetricsLoaded } from '$lib/font-metrics'
     import { determineNavigationPath, resolveValidPath } from '../navigation/path-navigation'
+    import { withTimeout } from '$lib/utils/timing'
     import {
         createHistory,
         push,
@@ -869,9 +870,10 @@
         // Exception: 'network' is a virtual volume, trust the stored ID for that
         const defaultId = await getDefaultVolumeId()
 
+        const volumeResolveTimeoutMs = 3000
         async function resolveVolumeId(volumeId: string, path: string, hasE2eOverride: boolean): Promise<string> {
             if (volumeId === 'network' && !hasE2eOverride) return 'network'
-            const containing = await findContainingVolume(path)
+            const containing = await withTimeout(findContainingVolume(path), volumeResolveTimeoutMs, null)
             return containing?.id ?? defaultId
         }
 

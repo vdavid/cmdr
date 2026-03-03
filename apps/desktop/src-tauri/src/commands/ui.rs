@@ -1,5 +1,7 @@
 use crate::ignore_poison::IgnorePoison;
-use crate::menu::{CLOSE_TAB_ID, CommandScope, MenuState, build_context_menu, build_tab_context_menu, menu_id_to_command};
+use crate::menu::{
+    CLOSE_TAB_ID, CommandScope, MenuState, build_context_menu, build_tab_context_menu, menu_id_to_command,
+};
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 use std::process::Command;
 use tauri::menu::ContextMenu;

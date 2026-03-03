@@ -1,7 +1,12 @@
 //! Tauri commands for icon retrieval.
 
-use crate::icons;
 use std::collections::HashMap;
+use tokio::time::Duration;
+
+use super::util::blocking_with_timeout;
+use crate::icons;
+
+const ICONS_TIMEOUT: Duration = Duration::from_secs(2);
 
 /// Gets icon data URLs for the requested icon IDs.
 /// Returns a map of icon_id -> base64 WebP data URL.
@@ -11,8 +16,11 @@ use std::collections::HashMap;
 /// are fetched from app bundles (showing the app's icon as fallback). When false,
 /// the system's default document icons are used (Finder-style with app badge).
 #[tauri::command]
-pub fn get_icons(icon_ids: Vec<String>, use_app_icons_for_documents: bool) -> HashMap<String, String> {
-    icons::get_icons(icon_ids, use_app_icons_for_documents)
+pub async fn get_icons(icon_ids: Vec<String>, use_app_icons_for_documents: bool) -> HashMap<String, String> {
+    blocking_with_timeout(ICONS_TIMEOUT, HashMap::new(), move || {
+        icons::get_icons(icon_ids, use_app_icons_for_documents)
+    })
+    .await
 }
 
 /// Refreshes icons for a directory listing.
@@ -22,12 +30,15 @@ pub fn get_icons(icon_ids: Vec<String>, use_app_icons_for_documents: bool) -> Ha
 /// When `use_app_icons_for_documents` is true, falls back to app icons for files without
 /// document-specific icons. When false, uses Finder-style document icons.
 #[tauri::command]
-pub fn refresh_directory_icons(
+pub async fn refresh_directory_icons(
     directory_paths: Vec<String>,
     extensions: Vec<String>,
     use_app_icons_for_documents: bool,
 ) -> HashMap<String, String> {
-    icons::refresh_icons_for_directory(directory_paths, extensions, use_app_icons_for_documents)
+    blocking_with_timeout(ICONS_TIMEOUT, HashMap::new(), move || {
+        icons::refresh_icons_for_directory(directory_paths, extensions, use_app_icons_for_documents)
+    })
+    .await
 }
 
 /// Clears cached extension icons.

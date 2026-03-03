@@ -1512,5 +1512,4 @@ mod tests {
         assert_eq!(command_id_to_menu_id("view.showHidden"), None);
         assert_eq!(command_id_to_menu_id("unknown"), None);
     }
-
 }

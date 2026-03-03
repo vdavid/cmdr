@@ -1,3 +1,15 @@
+/** Races a promise against a timeout, returning the fallback if it doesn't resolve in time. */
+export function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+    return Promise.race([
+        promise,
+        new Promise<T>((resolve) =>
+            setTimeout(() => {
+                resolve(fallback)
+            }, ms),
+        ),
+    ])
+}
+
 /**
  * Debounce: delays execution until `delayMs` after the last call.
  * Only the final call in a burst fires. Good for "I only care about the end state."

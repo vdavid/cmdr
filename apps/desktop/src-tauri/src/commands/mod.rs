@@ -16,6 +16,7 @@ pub mod rename;
 pub mod settings;
 pub mod sync_status; // Has both macOS and non-macOS implementations
 pub mod ui;
+mod util;
 #[cfg(target_os = "macos")]
 pub mod volumes;
 #[cfg(target_os = "linux")]

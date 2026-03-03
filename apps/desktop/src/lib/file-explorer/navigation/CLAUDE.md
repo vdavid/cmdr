@@ -45,8 +45,9 @@ Runs checks **in parallel** with 500ms frontend timeouts per check. Priority:
 `resolveValidPath(targetPath)` — walks parent tree until an existing directory is found. Each step has a **1-second
 frontend timeout**. Fallback chain: parent dirs → `~` → `/` → `null` (volume unmounted).
 
-`withTimeout(promise, ms, fallback)` — races a promise against a timeout, returning the fallback on expiry. Used by both
-functions above.
+`withTimeout(promise, ms, fallback)` — imported from `$lib/utils/timing` and re-exported. Races a promise against a
+timeout, returning the fallback on expiry. Used by both functions above, and also by `VolumeBreadcrumb.svelte` (wraps
+`getVolumeSpace`) and `DualPaneExplorer.svelte` (wraps `findContainingVolume` during startup tab restore).
 
 ### Non-blocking navigation pattern
 
@@ -115,6 +116,7 @@ Exported methods for parent components: `toggle()`, `open()`, `close()`, `getIsO
 ## Dependencies
 
 - `$lib/tauri-commands` — `listVolumes`, `findContainingVolume`, `listen`, `pathExists`
+- `$lib/utils/timing` — `withTimeout` (defense-in-depth IPC timeout wrapper)
 - `$lib/app-status-store` — `getLastUsedPathForVolume`
 - `$lib/mtp` — `getMtpVolumes`, `initialize`, `scanDevices`
 - `../types` — `VolumeInfo`, `LocationCategory`, `NetworkHost`

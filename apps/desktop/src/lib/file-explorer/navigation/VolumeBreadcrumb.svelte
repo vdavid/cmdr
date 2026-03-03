@@ -6,6 +6,7 @@
     import { getDiskUsageLevel, getUsedPercent, formatDiskSpaceShort } from '../disk-space-utils'
     import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import { withTimeout } from '$lib/utils/timing'
     import type { VolumeInfo, LocationCategory } from '../types'
     import { getMtpVolumes, initialize as initMtpStore, scanDevices as scanMtpDevices, type MtpVolume } from '$lib/mtp'
 
@@ -374,12 +375,13 @@
     }
 
     async function fetchVolumeSpaces(vols: VolumeInfo[]): Promise<void> {
+        const volumeSpaceTimeoutMs = 3000
         const physicalVolumes = vols.filter((v) => v.category === 'main_volume' || v.category === 'attached_volume')
         await Promise.all(
             physicalVolumes
                 .filter((v) => !volumeSpaceMap.has(v.id))
                 .map(async (v) => {
-                    const space = await getVolumeSpace(v.path)
+                    const space = await withTimeout(getVolumeSpace(v.path), volumeSpaceTimeoutMs, null)
                     if (space) volumeSpaceMap.set(v.id, space)
                 }),
         )

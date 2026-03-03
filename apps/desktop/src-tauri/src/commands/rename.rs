@@ -1,6 +1,7 @@
 //! Tauri commands for file rename operations.
 
 use std::path::{Path, PathBuf};
+use tokio::time::Duration;
 
 use super::file_system::expand_tilde;
 use crate::file_system::write_operations::trash::move_to_trash_sync;
@@ -15,9 +16,13 @@ pub async fn move_to_trash(path: String) -> Result<(), String> {
     let expanded = expand_tilde(&path);
     let path_buf = PathBuf::from(&expanded);
 
-    tokio::task::spawn_blocking(move || move_to_trash_sync(&path_buf))
-        .await
-        .map_err(|e| format!("Task failed: {}", e))?
+    tokio::time::timeout(
+        Duration::from_secs(15),
+        tokio::task::spawn_blocking(move || move_to_trash_sync(&path_buf)),
+    )
+    .await
+    .map_err(|_| "Operation timed out (network mount may be unresponsive)".to_string())?
+    .map_err(|e| format!("Task failed: {}", e))?
 }
 
 /// Checks if a file/folder can be renamed (parent writable, not immutable, not SIP-protected, not locked).
@@ -26,9 +31,13 @@ pub async fn check_rename_permission(path: String) -> Result<(), String> {
     let expanded = expand_tilde(&path);
     let path_buf = PathBuf::from(&expanded);
 
-    tokio::task::spawn_blocking(move || check_rename_permission_sync(&path_buf))
-        .await
-        .map_err(|e| format!("Task failed: {}", e))?
+    tokio::time::timeout(
+        Duration::from_secs(2),
+        tokio::task::spawn_blocking(move || check_rename_permission_sync(&path_buf)),
+    )
+    .await
+    .map_err(|_| "Operation timed out (network mount may be unresponsive)".to_string())?
+    .map_err(|e| format!("Task failed: {}", e))?
 }
 
 /// Result of a rename validity check.
@@ -69,9 +78,13 @@ pub async fn check_rename_validity(
 ) -> Result<RenameValidityResult, String> {
     let expanded_dir = expand_tilde(&dir);
 
-    tokio::task::spawn_blocking(move || check_rename_validity_sync(&expanded_dir, &old_name, &new_name))
-        .await
-        .map_err(|e| format!("Task failed: {}", e))?
+    tokio::time::timeout(
+        Duration::from_secs(2),
+        tokio::task::spawn_blocking(move || check_rename_validity_sync(&expanded_dir, &old_name, &new_name)),
+    )
+    .await
+    .map_err(|_| "Operation timed out (network mount may be unresponsive)".to_string())?
+    .map_err(|e| format!("Task failed: {}", e))?
 }
 
 /// Renames a file or directory. When `force` is true, proceeds even if the destination exists.
@@ -82,13 +95,17 @@ pub async fn rename_file(from: String, to: String, force: bool) -> Result<(), St
     let from_path = PathBuf::from(&from_expanded);
     let to_path = PathBuf::from(&to_expanded);
 
-    tokio::task::spawn_blocking(move || {
-        if !force && from_path != to_path && std::fs::symlink_metadata(&to_path).is_ok() {
-            return Err(format!("'{}' already exists", to_path.display()));
-        }
-        std::fs::rename(&from_path, &to_path).map_err(|e| format!("Rename failed: {}", e))
-    })
+    tokio::time::timeout(
+        Duration::from_secs(5),
+        tokio::task::spawn_blocking(move || {
+            if !force && from_path != to_path && std::fs::symlink_metadata(&to_path).is_ok() {
+                return Err(format!("'{}' already exists", to_path.display()));
+            }
+            std::fs::rename(&from_path, &to_path).map_err(|e| format!("Rename failed: {}", e))
+        }),
+    )
     .await
+    .map_err(|_| "Operation timed out (network mount may be unresponsive)".to_string())?
     .map_err(|e| format!("Task failed: {}", e))?
 }
 

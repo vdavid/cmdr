@@ -1,15 +1,25 @@
 //! Tauri commands for the file viewer.
 
+use tokio::time::Duration;
+
+use super::util::blocking_with_timeout;
 use crate::file_viewer::{self, LineChunk, SearchPollResult, SeekTarget, ViewerOpenResult, ViewerSessionStatus};
 use log::debug;
 use tauri::Manager;
 use tauri::menu::MenuItemKind;
 
+const VIEWER_TIMEOUT: Duration = Duration::from_secs(2);
+
 /// Opens a viewer session for the given file.
 /// Returns session metadata + initial lines from the start of the file.
 #[tauri::command]
-pub fn viewer_open(path: String) -> Result<ViewerOpenResult, String> {
-    file_viewer::open_session(&path).map_err(|e| e.to_string())
+pub async fn viewer_open(path: String) -> Result<ViewerOpenResult, String> {
+    blocking_with_timeout(
+        VIEWER_TIMEOUT,
+        Err("Operation timed out (network mount may be unresponsive)".to_string()),
+        move || file_viewer::open_session(&path).map_err(|e| e.to_string()),
+    )
+    .await
 }
 
 /// Fetches a range of lines from a viewer session.
@@ -20,7 +30,7 @@ pub fn viewer_open(path: String) -> Result<ViewerOpenResult, String> {
 /// * `target_value` - The seek value (line number, byte offset, or fraction 0.0-1.0).
 /// * `count` - Number of lines to fetch.
 #[tauri::command]
-pub fn viewer_get_lines(
+pub async fn viewer_get_lines(
     session_id: String,
     target_type: String,
     target_value: f64,
@@ -43,7 +53,12 @@ pub fn viewer_get_lines(
         session_id, target_type, target_value, count
     );
 
-    let result = file_viewer::get_lines(&session_id, target, count).map_err(|e| e.to_string())?;
+    let result = blocking_with_timeout(
+        VIEWER_TIMEOUT,
+        Err("Operation timed out (network mount may be unresponsive)".to_string()),
+        move || file_viewer::get_lines(&session_id, target, count).map_err(|e| e.to_string()),
+    )
+    .await?;
 
     debug!(
         "viewer_get_lines: returned {} lines, first_line_number={}, byte_offset={}, first_line_preview={:?}",
