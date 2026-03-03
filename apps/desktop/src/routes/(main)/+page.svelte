@@ -25,6 +25,7 @@
         openInEditor,
         toggleHiddenFiles,
         setViewMode,
+        setMenuContext,
         getWindowTitle,
         registerKnownDialogs,
     } from '$lib/tauri-commands'
@@ -105,15 +106,8 @@
     // Event handlers stored for cleanup
     let handleKeyDown: ((e: KeyboardEvent) => void) | undefined
     let handleContextMenu: ((e: MouseEvent) => void) | undefined
-    let unlistenShowAbout: UnlistenFn | undefined
-    let unlistenLicenseKeyDialog: UnlistenFn | undefined
-    let unlistenCommandPalette: UnlistenFn | undefined
-    let unlistenSwitchPane: UnlistenFn | undefined
-    let unlistenSwapPanes: UnlistenFn | undefined
-    let unlistenStartRename: UnlistenFn | undefined
-    let unlistenNewTab: UnlistenFn | undefined
-    let unlistenCloseTab: UnlistenFn | undefined
-    let unlistenTogglePinTab: UnlistenFn | undefined
+    let unlistenExecuteCommand: UnlistenFn | undefined
+    let unlistenWindowFocus: UnlistenFn | undefined
 
     /** Opens the debug window (dev mode only) */
     async function openDebugWindow() {
@@ -253,40 +247,20 @@
 
     /** Set up menu-related event listeners */
     async function setupMenuListeners() {
-        unlistenShowAbout = await safeListenTauri('show-about', () => {
-            showAboutWindow = true
-        })
-        unlistenLicenseKeyDialog = await safeListenTauri('show-license-key-dialog', () => {
-            showLicenseKeyDialog = true
-        })
-        unlistenCommandPalette = await safeListenTauri('show-command-palette', () => {
-            showCommandPalette = true
-        })
-        await safeListenTauri('open-settings', () => {
-            void openSettingsWindow()
-        })
-        unlistenSwitchPane = await safeListenTauri('switch-pane', () => {
-            explorerRef?.switchPane()
-        })
-        unlistenSwapPanes = await safeListenTauri('swap-panes', () => {
-            explorerRef?.swapPanes()
-        })
-        unlistenStartRename = await safeListenTauri('start-rename', () => {
-            explorerRef?.startRename()
-        })
-        unlistenNewTab = await safeListenTauri('new-tab', () => {
-            void handleCommandExecute('tab.new')
-        })
-        unlistenCloseTab = await safeListenTauri('close-tab', () => {
-            void handleCommandExecute('tab.close')
-        })
-        unlistenTogglePinTab = await safeListenTauri('toggle-pin-tab', () => {
-            explorerRef?.togglePinActiveTab()
+        // Single unified listener for all menu commands routed through "execute-command"
+        unlistenExecuteCommand = await safeListenTauri('execute-command', (event) => {
+            const { commandId } = event.payload as { commandId: string }
+            void handleCommandExecute(commandId)
         })
     }
 
     /** Set up MCP dialog event listeners (close/focus) */
     async function setupDialogListeners() {
+        // Settings with section (MCP-specific: "dialog open settings --section shortcuts")
+        await safeListenTauri('open-settings', () => {
+            void openSettingsWindow()
+        })
+
         // About dialog
         await safeListenTauri('close-about', () => {
             showAboutWindow = false
@@ -565,6 +539,19 @@
         await setupDialogListeners()
         await setupMcpListeners()
         await initIndexState()
+        await setupWindowFocusListener()
+    }
+
+    /** Sync file-scoped menu items with main window focus state. */
+    async function setupWindowFocusListener() {
+        try {
+            const { getCurrentWindow } = await import('@tauri-apps/api/window')
+            unlistenWindowFocus = await getCurrentWindow().onFocusChanged(({ payload: focused }) => {
+                void setMenuContext(focused ? 'explorer' : 'other')
+            })
+        } catch {
+            // Not in Tauri environment
+        }
     }
 
     onDestroy(() => {
@@ -576,32 +563,11 @@
         if (handleContextMenu) {
             document.removeEventListener('contextmenu', handleContextMenu)
         }
-        if (unlistenShowAbout) {
-            unlistenShowAbout()
+        if (unlistenExecuteCommand) {
+            unlistenExecuteCommand()
         }
-        if (unlistenLicenseKeyDialog) {
-            unlistenLicenseKeyDialog()
-        }
-        if (unlistenCommandPalette) {
-            unlistenCommandPalette()
-        }
-        if (unlistenSwitchPane) {
-            unlistenSwitchPane()
-        }
-        if (unlistenSwapPanes) {
-            unlistenSwapPanes()
-        }
-        if (unlistenStartRename) {
-            unlistenStartRename()
-        }
-        if (unlistenNewTab) {
-            unlistenNewTab()
-        }
-        if (unlistenCloseTab) {
-            unlistenCloseTab()
-        }
-        if (unlistenTogglePinTab) {
-            unlistenTogglePinTab()
+        if (unlistenWindowFocus) {
+            unlistenWindowFocus()
         }
     })
 
@@ -692,24 +658,8 @@
         // Handle known commands by category
         switch (commandId) {
             // === App commands ===
-            case 'app.quit':
-                // Quit is handled by the OS/Tauri, we just need to trigger the window close
-                try {
-                    const { getCurrentWindow } = await import('@tauri-apps/api/window')
-                    await getCurrentWindow().close()
-                } catch {
-                    // Not in Tauri environment
-                }
-                return
-
-            case 'app.hide':
-                try {
-                    const { getCurrentWindow } = await import('@tauri-apps/api/window')
-                    await getCurrentWindow().hide()
-                } catch {
-                    // Not in Tauri environment
-                }
-                return
+            // app.quit, app.hide, app.hideOthers, app.showAll are native-only —
+            // handled by PredefinedMenuItems (terminate:, hide:, etc.), not JS dispatch.
 
             case 'app.commandPalette':
                 showCommandPalette = true
@@ -721,6 +671,10 @@
 
             case 'app.about':
                 showAboutWindow = true
+                return
+
+            case 'app.licenseKey':
+                showLicenseKeyDialog = true
                 return
 
             // === View commands ===
@@ -970,6 +924,17 @@
                 explorerRef?.refocus()
                 return
             }
+
+            // === Selection commands ===
+            case 'selection.selectAll':
+                explorerRef?.handleSelectionAction('selectAll')
+                explorerRef?.refocus()
+                return
+
+            case 'selection.deselectAll':
+                explorerRef?.handleSelectionAction('deselectAll')
+                explorerRef?.refocus()
+                return
 
             // === About window commands ===
             case 'about.openWebsite':

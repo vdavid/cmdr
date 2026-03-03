@@ -92,7 +92,7 @@ fn execute_switch_pane<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
         let new_pane = if current == "left" { "right" } else { "left" };
         store.set_focused_pane(new_pane.to_string());
     }
-    app.emit("switch-pane", ())?;
+    app.emit_to("main", "execute-command", json!({"commandId": "pane.switch"}))?;
     Ok(json!("OK: Switched focus to other pane"))
 }
 
@@ -105,7 +105,7 @@ fn execute_swap_panes<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
         store.set_left(right);
         store.set_right(left);
     }
-    app.emit("swap-panes", ())?;
+    app.emit_to("main", "execute-command", json!({"commandId": "pane.swap"}))?;
     Ok(json!("OK: Swapped left and right panes"))
 }
 
@@ -561,12 +561,12 @@ fn execute_dialog_open<R: Runtime>(
 
     match dialog_type {
         "settings" => {
-            // Emit event to open settings, optionally with a section
             if let Some(section) = section {
+                // Section-specific: MCP-only event handled by setupDialogListeners
                 app.emit_to("main", "open-settings", json!({"section": section}))?;
                 Ok(json!(format!("OK: Opened settings at {section}")))
             } else {
-                app.emit_to("main", "open-settings", ())?;
+                app.emit_to("main", "execute-command", json!({"commandId": "app.settings"}))?;
                 Ok(json!("OK: Opened settings"))
             }
         }
@@ -586,7 +586,7 @@ fn execute_dialog_open<R: Runtime>(
             }
         }
         "about" => {
-            app.emit("show-about", ())?;
+            app.emit_to("main", "execute-command", json!({"commandId": "app.about"}))?;
             Ok(json!("OK: Opened about dialog"))
         }
         "copy-confirmation" | "mkdir-confirmation" | "delete-confirmation" => Err(ToolError::invalid_params(

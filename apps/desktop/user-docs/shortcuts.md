@@ -39,8 +39,8 @@ This document lists all keyboard shortcuts available in Cmdr.
 | Shortcut       | Action                              | Mode |
 | -------------- | ----------------------------------- | ---- |
 | `Space`        | Toggle selection at cursor          | Both |
-| `⌘A`           | Select all files                    | Both |
-| `⌘⇧A`          | Deselect all files                  | Both |
+| `⌘A`           | Select all                          | Both |
+| `⌘⇧A`          | Deselect all                        | Both |
 | `Shift+arrows` | Extend selection in arrow direction | Both |
 | `Shift+click`  | Select range from cursor to click   | Both |
 

@@ -110,11 +110,14 @@ A lightweight listener keeps concerns separated and reduces overhead.
 `scopeHierarchy` in `scope-hierarchy.ts` is a static object. Adding a new scope requires updating the object manually.
 There's no dynamic registration.
 
-### Menu accelerators don't auto-sync
+### Menu accelerator sync
 
-When shortcuts change, menu items with accelerators (⌘N next to the menu label) don't update automatically. Call
-`invoke('update_menu_accelerators')` for affected commands. Currently only `view.fullMode` and `view.briefMode` need
-this.
+When shortcuts change, `updateMenuAccelerator()` calls `invoke('update_menu_accelerator')` to update the native menu
+label. The `menuCommands` array in `shortcuts-store.ts` lists all ~30 commands that have menu items. At startup,
+`syncMenuAccelerators()` pushes any persisted customizations into the menu. On the Rust side, `MenuState.items` is a
+`HashMap<String, MenuItemEntry>` that tracks regular `MenuItem`s by ID; `update_menu_item_accelerator()` handles the
+remove/recreate/reinsert cycle. View mode CheckMenuItems still use the separate `update_view_mode_accelerator()` path to
+preserve checked state.
 
 ### Conflict warnings are not errors
 

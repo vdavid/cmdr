@@ -70,6 +70,7 @@ export {
     notifyDialogClosed,
     registerKnownDialogs,
     updateMenuContext,
+    setMenuContext,
     toggleHiddenFiles,
     setViewMode,
     showMainWindow,

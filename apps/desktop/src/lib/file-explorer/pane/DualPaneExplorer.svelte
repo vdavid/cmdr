@@ -156,7 +156,6 @@
     let unlistenViewMode: UnlistenFn | undefined
     let unlistenVolumeMount: UnlistenFn | undefined
     let unlistenVolumeUnmount: UnlistenFn | undefined
-    let unlistenNavigation: UnlistenFn | undefined
     let unlistenDragDrop: UnlistenFn | undefined
     let unlistenDragImageSize: UnlistenFn | undefined
     let unlistenDragModifiers: UnlistenFn | undefined
@@ -946,11 +945,6 @@
             })()
         })
 
-        // Subscribe to navigation actions from Go menu
-        unlistenNavigation = await listen<{ action: string }>('navigation-action', (event) => {
-            void handleNavigationAction(event.payload.action)
-        })
-
         // Listen for drag image size from native swizzle (macOS).
         // Fires before the Tauri drag enter event, so the flag is ready when handleDragEnter runs.
         unlistenDragImageSize = await listen<{ width: number; height: number }>('drag-image-size', (event) => {
@@ -1121,7 +1115,6 @@
         unlistenViewMode?.()
         unlistenVolumeMount?.()
         unlistenVolumeUnmount?.()
-        unlistenNavigation?.()
         unlistenDragImageSize?.()
         unlistenDragModifiers?.()
         unlistenDragDrop?.()

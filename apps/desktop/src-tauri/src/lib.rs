@@ -107,11 +107,10 @@ mod volumes_linux;
 mod stubs;
 
 use menu::{
-    ABOUT_ID, CLOSE_TAB_ID, COMMAND_PALETTE_ID, ENTER_LICENSE_KEY_ID, GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID,
-    MenuState, NEW_TAB_ID, PIN_TAB_MENU_ID, RENAME_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SORT_ASCENDING_ID,
-    SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID,
-    SORT_DESCENDING_ID, SWAP_PANES_ID, SWITCH_PANE_ID, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID,
-    VIEW_MODE_BRIEF_ID, VIEW_MODE_FULL_ID, VIEWER_WORD_WRAP_ID, ViewMode,
+    CLOSE_TAB_ID, CommandScope, MenuState, SHOW_HIDDEN_FILES_ID, SORT_ASCENDING_ID, SORT_BY_CREATED_ID,
+    SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SORT_DESCENDING_ID, TAB_CLOSE_ID,
+    TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, VIEW_MODE_BRIEF_ID, VIEW_MODE_FULL_ID, VIEWER_WORD_WRAP_ID, ViewMode,
+    menu_id_to_command,
 };
 use tauri::{Emitter, Manager};
 
@@ -277,6 +276,10 @@ pub fn run() {
             )?;
             app.set_menu(menu_items.menu)?;
 
+            // Remove macOS system-injected Edit menu items and register Help menu for search
+            #[cfg(target_os = "macos")]
+            menu::cleanup_macos_menus();
+
             // Store the CheckMenuItem references in app state
             let menu_state = MenuState::default();
             *menu_state.show_hidden_files.lock_ignore_poison() = Some(menu_items.show_hidden_files);
@@ -286,6 +289,7 @@ pub fn run() {
             *menu_state.view_mode_full_position.lock_ignore_poison() = menu_items.view_mode_full_position;
             *menu_state.view_mode_brief_position.lock_ignore_poison() = menu_items.view_mode_brief_position;
             *menu_state.pin_tab.lock_ignore_poison() = Some(menu_items.pin_tab);
+            *menu_state.items.lock_ignore_poison() = menu_items.items;
             app.manage(menu_state);
 
             // Set window title based on license status
@@ -345,91 +349,48 @@ pub fn run() {
         })
         .on_menu_event(|app, event| {
             let id = event.id().as_ref();
+
+            // === CheckMenuItem exceptions: sync checked state and emit directly ===
+            // These must NOT go through "execute-command" — that would double-toggle.
             if id == SHOW_HIDDEN_FILES_ID {
-                // Get the CheckMenuItem from app state
                 let menu_state = app.state::<MenuState<tauri::Wry>>();
                 let guard = menu_state.show_hidden_files.lock_ignore_poison();
-                let Some(check_item) = guard.as_ref() else {
-                    return;
-                };
-
-                // CheckMenuItem auto-toggles on click, so is_checked() returns the NEW state
-                // We just need to read and emit it, not toggle again
-                let new_state = check_item.is_checked().unwrap_or(true);
-
-                // Emit event to frontend with the new state (main window only)
-                let _ = app.emit_to(
-                    "main",
-                    "settings-changed",
-                    serde_json::json!({ "showHiddenFiles": new_state }),
-                );
-            } else if id == VIEW_MODE_FULL_ID || id == VIEW_MODE_BRIEF_ID {
-                // Handle view mode toggle (radio button behavior)
+                if let Some(check_item) = guard.as_ref() {
+                    let new_state = check_item.is_checked().unwrap_or(true);
+                    let _ = app.emit_to(
+                        "main",
+                        "settings-changed",
+                        serde_json::json!({ "showHiddenFiles": new_state }),
+                    );
+                }
+                return;
+            }
+            if id == VIEW_MODE_FULL_ID || id == VIEW_MODE_BRIEF_ID {
                 let menu_state = app.state::<MenuState<tauri::Wry>>();
-
                 let (full_guard, brief_guard) = (
                     menu_state.view_mode_full.lock_ignore_poison(),
                     menu_state.view_mode_brief.lock_ignore_poison(),
                 );
-
                 if let (Some(full_item), Some(brief_item)) = (full_guard.as_ref(), brief_guard.as_ref()) {
-                    // Set the correct check state (radio behavior)
                     let is_full = id == VIEW_MODE_FULL_ID;
                     let _ = full_item.set_checked(is_full);
                     let _ = brief_item.set_checked(!is_full);
-
-                    // Emit event to frontend (main window only)
                     let mode = if is_full { "full" } else { "brief" };
                     let _ = app.emit_to("main", "view-mode-changed", serde_json::json!({ "mode": mode }));
                 }
-            } else if id == GO_BACK_ID || id == GO_FORWARD_ID || id == GO_PARENT_ID {
-                // Handle Go menu navigation actions - only when main window is focused
-                // This prevents shortcuts from affecting main window when viewer is open
+                return;
+            }
+
+            // === Close-tab exception: close focused non-main window, or emit tab.close ===
+            if id == CLOSE_TAB_ID {
                 if let Some(main_window) = app.get_webview_window("main")
                     && main_window.is_focused().unwrap_or(false)
                 {
-                    let action = match id {
-                        GO_BACK_ID => "back",
-                        GO_FORWARD_ID => "forward",
-                        GO_PARENT_ID => "parent",
-                        _ => return,
-                    };
-                    let _ = app.emit_to("main", "navigation-action", serde_json::json!({ "action": action }));
-                }
-            } else if id == ABOUT_ID {
-                // Emit event to show our custom About window (main window only)
-                let _ = app.emit_to("main", "show-about", ());
-            } else if id == ENTER_LICENSE_KEY_ID {
-                // Emit event to show the license key entry dialog (main window only)
-                let _ = app.emit_to("main", "show-license-key-dialog", ());
-            } else if id == SETTINGS_ID {
-                // Open settings window (emits to main window to handle)
-                let _ = app.emit_to("main", "open-settings", ());
-            } else if id == COMMAND_PALETTE_ID {
-                // Emit event to show the command palette (main window only)
-                let _ = app.emit_to("main", "show-command-palette", ());
-            } else if id == SWITCH_PANE_ID {
-                // Emit event to switch pane (main window only)
-                let _ = app.emit_to("main", "switch-pane", ());
-            } else if id == RENAME_ID {
-                // Emit event to start rename (main window only, when focused)
-                if let Some(main_window) = app.get_webview_window("main")
-                    && main_window.is_focused().unwrap_or(false)
-                {
-                    let _ = app.emit_to("main", "start-rename", ());
-                }
-            } else if id == SWAP_PANES_ID {
-                // Emit event to swap panes (main window only)
-                let _ = app.emit_to("main", "swap-panes", ());
-            } else if id == NEW_TAB_ID {
-                // Emit event to create a new tab (main window only)
-                let _ = app.emit_to("main", "new-tab", ());
-            } else if id == CLOSE_TAB_ID {
-                // Close the active tab if main window is focused, otherwise close the focused window
-                if let Some(main_window) = app.get_webview_window("main")
-                    && main_window.is_focused().unwrap_or(false)
-                {
-                    let _ = app.emit_to("main", "close-tab", ());
+                    let _ = app.emit_to(
+                        "main",
+                        "execute-command",
+                        serde_json::json!({ "commandId": "tab.close" }),
+                    );
                 } else {
                     for (_label, window) in app.webview_windows() {
                         if window.is_focused().unwrap_or(false) {
@@ -438,53 +399,76 @@ pub fn run() {
                         }
                     }
                 }
-            } else if id == PIN_TAB_MENU_ID {
-                // Emit event to toggle pin on the active tab (main window only)
-                let _ = app.emit_to("main", "toggle-pin-tab", ());
-            } else if id == SORT_BY_NAME_ID
-                || id == SORT_BY_EXTENSION_ID
-                || id == SORT_BY_SIZE_ID
-                || id == SORT_BY_MODIFIED_ID
-                || id == SORT_BY_CREATED_ID
-            {
-                // Handle sort by column
-                let column = match id {
-                    SORT_BY_NAME_ID => "name",
-                    SORT_BY_EXTENSION_ID => "extension",
-                    SORT_BY_SIZE_ID => "size",
-                    SORT_BY_MODIFIED_ID => "modified",
-                    SORT_BY_CREATED_ID => "created",
-                    _ => return,
-                };
-                let _ = app.emit_to(
-                    "main",
-                    "menu-sort",
-                    serde_json::json!({ "action": "sortBy", "value": column }),
-                );
-            } else if id == SORT_ASCENDING_ID || id == SORT_DESCENDING_ID {
-                // Handle sort order (main window only)
-                let order = if id == SORT_ASCENDING_ID { "asc" } else { "desc" };
-                let _ = app.emit_to(
-                    "main",
-                    "menu-sort",
-                    serde_json::json!({ "action": "sortOrder", "value": order }),
-                );
-            } else if id == VIEWER_WORD_WRAP_ID {
-                // Toggle word wrap on the focused viewer window (if any).
-                // Safe: unwrap_or(false) handles destroyed windows, `let _ =` ignores emit errors.
+                return;
+            }
+
+            // === Viewer word wrap: emit to the focused viewer window ===
+            if id == VIEWER_WORD_WRAP_ID {
                 for (label, window) in app.webview_windows() {
                     if label.starts_with("viewer-") && window.is_focused().unwrap_or(false) {
                         let _ = app.emit_to(&label, "viewer-word-wrap-toggled", ());
                         break;
                     }
                 }
-            } else if id == TAB_PIN_ID || id == TAB_CLOSE_OTHERS_ID || id == TAB_CLOSE_ID {
-                // Tab context menu: emit event to frontend (async — popup returns before this fires)
-                let _ = app.emit_to("main", "tab-context-action", serde_json::json!({ "action": id }));
-            } else {
-                // Handle file actions
-                commands::ui::execute_menu_action(app, id);
+                return;
             }
+
+            // === Sort items: emit menu-sort directly (frontend has a dedicated listener) ===
+            if id == SORT_BY_NAME_ID
+                || id == SORT_BY_EXTENSION_ID
+                || id == SORT_BY_SIZE_ID
+                || id == SORT_BY_MODIFIED_ID
+                || id == SORT_BY_CREATED_ID
+            {
+                let column = match id {
+                    SORT_BY_NAME_ID => "name",
+                    SORT_BY_EXTENSION_ID => "extension",
+                    SORT_BY_SIZE_ID => "size",
+                    SORT_BY_MODIFIED_ID => "modified",
+                    _ => "created",
+                };
+                let _ = app.emit_to(
+                    "main",
+                    "menu-sort",
+                    serde_json::json!({ "action": "sortBy", "value": column }),
+                );
+                return;
+            }
+            if id == SORT_ASCENDING_ID || id == SORT_DESCENDING_ID {
+                let order = if id == SORT_ASCENDING_ID { "asc" } else { "desc" };
+                let _ = app.emit_to(
+                    "main",
+                    "menu-sort",
+                    serde_json::json!({ "action": "sortOrder", "value": order }),
+                );
+                return;
+            }
+
+            // === Tab context menu actions: emit tab-context-action directly ===
+            if id == TAB_PIN_ID || id == TAB_CLOSE_OTHERS_ID || id == TAB_CLOSE_ID {
+                let _ = app.emit_to("main", "tab-context-action", serde_json::json!({ "action": id }));
+                return;
+            }
+
+            // === Unified dispatch: look up command ID from the mapping ===
+            if let Some((command_id, scope)) = menu_id_to_command(id) {
+                if scope == CommandScope::FileScoped {
+                    // Focus guard: only emit if main window has focus
+                    let focused = app
+                        .get_webview_window("main")
+                        .is_some_and(|w| w.is_focused().unwrap_or(false));
+                    if !focused {
+                        return;
+                    }
+                }
+                let _ = app.emit_to(
+                    "main",
+                    "execute-command",
+                    serde_json::json!({ "commandId": command_id }),
+                );
+            }
+
+            // Unknown menu ID — no-op (all known IDs are handled above)
         })
         .invoke_handler(tauri::generate_handler![
             greet,
@@ -546,6 +530,7 @@ pub fn run() {
             commands::ui::update_pin_tab_menu,
             commands::ui::show_main_window,
             commands::ui::update_menu_context,
+            commands::ui::set_menu_context,
             commands::ui::toggle_hidden_files,
             commands::ui::set_view_mode,
             commands::ui::show_in_finder,

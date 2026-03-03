@@ -1,11 +1,10 @@
 use crate::ignore_poison::IgnorePoison;
-use crate::menu::{MenuState, build_context_menu, build_tab_context_menu};
+use crate::menu::{CommandScope, MenuState, build_context_menu, build_tab_context_menu, menu_id_to_command};
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 use std::process::Command;
 use tauri::menu::ContextMenu;
 use tauri::{AppHandle, Emitter, Manager, Runtime, Window};
 use tauri_plugin_clipboard_manager::ClipboardExt;
-use tauri_plugin_opener::OpenerExt;
 
 #[tauri::command]
 pub fn update_menu_context<R: Runtime>(app: AppHandle<R>, path: String, filename: String) {
@@ -230,49 +229,34 @@ pub fn update_pin_tab_menu<R: Runtime>(app: AppHandle<R>, is_pinned: bool) -> Re
     item.set_text(label).map_err(|e| e.to_string())
 }
 
-/// Executes a menu action for the current context.
-pub fn execute_menu_action<R: Runtime>(app: &AppHandle<R>, id: &str) {
-    let state = app.state::<MenuState<R>>();
-    let context = state.context.lock_ignore_poison().clone();
+/// Enables or disables file-scoped menu items based on the current context.
+/// - `"explorer"`: all menu items enabled (main file explorer has focus)
+/// - `"other"`: file-scoped items disabled (Settings, file viewer, or other window has focus)
+#[tauri::command]
+pub fn set_menu_context<R: Runtime>(app: AppHandle<R>, context: String) -> Result<(), String> {
+    let enabled = context == "explorer";
+    let menu_state = app.state::<MenuState<R>>();
+    let items = menu_state.items.lock_ignore_poison();
 
-    if context.path.is_empty() {
-        return;
+    for (id, entry) in items.iter() {
+        if let Some((_, CommandScope::FileScoped)) = menu_id_to_command(id) {
+            let _ = entry.item.set_enabled(enabled);
+        }
     }
 
-    match id {
-        crate::menu::OPEN_ID => {
-            let _ = app.opener().open_path(&context.path, None::<&str>);
-        }
-        crate::menu::EDIT_ID => {
-            #[cfg(any(target_os = "macos", target_os = "linux"))]
-            {
-                let _ = open_in_editor(context.path);
-            }
-        }
-        crate::menu::SHOW_IN_FINDER_ID => {
-            #[cfg(any(target_os = "macos", target_os = "linux"))]
-            {
-                let _ = show_in_finder(context.path);
-            }
-        }
-        crate::menu::COPY_PATH_ID => {
-            let _ = app.clipboard().write_text(context.path);
-        }
-        crate::menu::COPY_FILENAME_ID => {
-            let _ = app.clipboard().write_text(context.filename);
-        }
-        crate::menu::QUICK_LOOK_ID => {
-            #[cfg(target_os = "macos")]
-            {
-                let _ = quick_look(context.path);
-            }
-        }
-        crate::menu::GET_INFO_ID => {
-            #[cfg(target_os = "macos")]
-            {
-                let _ = get_info(context.path);
-            }
-        }
-        _ => {}
+    // Items stored in separate MenuState fields (not in the HashMap) also need toggling
+    if let Some(ref item) = *menu_state.pin_tab.lock_ignore_poison() {
+        let _ = item.set_enabled(enabled);
     }
+    if let Some(ref item) = *menu_state.show_hidden_files.lock_ignore_poison() {
+        let _ = item.set_enabled(enabled);
+    }
+    if let Some(ref item) = *menu_state.view_mode_full.lock_ignore_poison() {
+        let _ = item.set_enabled(enabled);
+    }
+    if let Some(ref item) = *menu_state.view_mode_brief.lock_ignore_poison() {
+        let _ = item.set_enabled(enabled);
+    }
+
+    Ok(())
 }

@@ -6,7 +6,10 @@ use tauri::{AppHandle, Manager};
 
 use crate::file_system::update_debounce_ms;
 use crate::ignore_poison::IgnorePoison;
-use crate::menu::{MenuState, frontend_shortcut_to_accelerator, update_view_mode_accelerator};
+use crate::menu::{
+    MenuState, command_id_to_menu_id, frontend_shortcut_to_accelerator, update_menu_item_accelerator,
+    update_view_mode_accelerator,
+};
 #[cfg(target_os = "macos")]
 use crate::network::mdns_discovery::update_resolve_timeout;
 
@@ -53,7 +56,6 @@ pub fn update_service_resolve_timeout(_timeout_ms: u64) {
 
 /// Update menu accelerator for a command.
 /// Called from frontend when keyboard shortcuts are changed.
-/// Currently supports: view.fullMode, view.briefMode
 #[tauri::command]
 pub fn update_menu_accelerator(app: AppHandle, command_id: &str, shortcut: &str) -> Result<(), String> {
     let menu_state = app.state::<MenuState<tauri::Wry>>();
@@ -62,8 +64,8 @@ pub fn update_menu_accelerator(app: AppHandle, command_id: &str, shortcut: &str)
     let accelerator = frontend_shortcut_to_accelerator(shortcut);
 
     match command_id {
+        // View mode CheckMenuItems need special handling to preserve checked state
         "view.fullMode" => {
-            // Get current checked state before updating
             let is_checked = menu_state
                 .view_mode_full
                 .lock_ignore_poison()
@@ -74,12 +76,10 @@ pub fn update_menu_accelerator(app: AppHandle, command_id: &str, shortcut: &str)
             let new_item = update_view_mode_accelerator(&app, &menu_state, true, accelerator.as_deref(), is_checked)
                 .map_err(|e| format!("Failed to update Full view accelerator: {e}"))?;
 
-            // Update the reference in MenuState
             *menu_state.view_mode_full.lock_ignore_poison() = Some(new_item);
             Ok(())
         }
         "view.briefMode" => {
-            // Get current checked state before updating
             let is_checked = menu_state
                 .view_mode_brief
                 .lock_ignore_poison()
@@ -90,13 +90,16 @@ pub fn update_menu_accelerator(app: AppHandle, command_id: &str, shortcut: &str)
             let new_item = update_view_mode_accelerator(&app, &menu_state, false, accelerator.as_deref(), is_checked)
                 .map_err(|e| format!("Failed to update Brief view accelerator: {e}"))?;
 
-            // Update the reference in MenuState
             *menu_state.view_mode_brief.lock_ignore_poison() = Some(new_item);
             Ok(())
         }
+        // All other commands: use the generic HashMap-based update
         _ => {
+            if let Some(menu_id) = command_id_to_menu_id(command_id) {
+                update_menu_item_accelerator(&app, &menu_state, menu_id, accelerator.as_deref())
+                    .map_err(|e| format!("Failed to update {command_id} accelerator: {e}"))?;
+            }
             // Silently succeed for commands that don't have menu items
-            // This allows the frontend to call this for all shortcuts without errors
             Ok(())
         }
     }

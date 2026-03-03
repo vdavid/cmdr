@@ -88,14 +88,51 @@ export async function initializeShortcuts(): Promise<void> {
     await syncMenuAccelerators()
 }
 
+/** Commands that have corresponding native menu items with accelerators. */
+const menuCommands = [
+    // View modes (CheckMenuItems, special handling in Rust)
+    'view.fullMode',
+    'view.briefMode',
+    // App-level
+    'app.commandPalette',
+    'app.settings',
+    // File operations
+    'file.view',
+    'file.edit',
+    'file.copy',
+    'file.move',
+    'file.newFolder',
+    'file.delete',
+    'file.deletePermanently',
+    'file.rename',
+    'file.showInFinder',
+    'file.getInfo',
+    'file.quickLook',
+    'file.copyPath',
+    'file.copyFilename',
+    // Selection
+    'selection.selectAll',
+    'selection.deselectAll',
+    // Panes
+    'pane.switch',
+    'pane.swap',
+    // Navigation
+    'nav.back',
+    'nav.forward',
+    'nav.parent',
+    // Tabs
+    'tab.new',
+    'tab.close',
+    'tab.next',
+    'tab.prev',
+    'tab.closeOthers',
+]
+
 /**
  * Sync all custom shortcuts to menu accelerators.
  * Called at initialization to ensure menu reflects persisted shortcuts.
  */
 async function syncMenuAccelerators(): Promise<void> {
-    // Commands that have corresponding menu items
-    const menuCommands = ['view.fullMode', 'view.briefMode']
-
     for (const commandId of menuCommands) {
         // Only update if there's a custom shortcut
         if (customShortcuts.has(commandId)) {
@@ -327,8 +364,6 @@ function notifyListeners(commandId: string): void {
  * Only affects commands that have corresponding menu items.
  */
 async function updateMenuAccelerator(commandId: string): Promise<void> {
-    // Only certain commands have menu items with accelerators
-    const menuCommands = ['view.fullMode', 'view.briefMode']
     if (!menuCommands.includes(commandId)) return
 
     try {

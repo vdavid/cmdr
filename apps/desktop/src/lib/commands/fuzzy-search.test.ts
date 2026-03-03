@@ -19,8 +19,8 @@ describe('searchCommands', () => {
 
     describe('exact matches', () => {
         it('finds exact prefix matches', () => {
-            const results = searchCommands('Quit')
-            expect(results.some((r) => r.command.id === 'app.quit')).toBe(true)
+            const results = searchCommands('About')
+            expect(results.some((r) => r.command.id === 'app.about')).toBe(true)
         })
 
         it('finds exact substring matches', () => {
@@ -29,8 +29,8 @@ describe('searchCommands', () => {
         })
 
         it('matches are case-insensitive', () => {
-            const results = searchCommands('QUIT')
-            expect(results.some((r) => r.command.id === 'app.quit')).toBe(true)
+            const results = searchCommands('ABOUT')
+            expect(results.some((r) => r.command.id === 'app.about')).toBe(true)
         })
     })
 
@@ -51,11 +51,10 @@ describe('searchCommands', () => {
 
     describe('match highlighting', () => {
         it('returns matched character indices for highlighting', () => {
-            const results = searchCommands('quit')
-            const quitResult = results.find((r) => r.command.id === 'app.quit')
-            expect(quitResult).toBeDefined()
-            // "Quit Cmdr" - Q, u, i, t should be matched (indices 0, 1, 2, 3)
-            expect(quitResult?.matchedIndices.length).toBeGreaterThan(0)
+            const results = searchCommands('about')
+            const aboutResult = results.find((r) => r.command.id === 'app.about')
+            expect(aboutResult).toBeDefined()
+            expect(aboutResult?.matchedIndices.length).toBeGreaterThan(0)
         })
 
         it('matched indices are within command name bounds', () => {

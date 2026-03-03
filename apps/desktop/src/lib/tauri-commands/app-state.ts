@@ -106,6 +106,15 @@ export async function updateMenuContext(path: string, filename: string): Promise
 }
 
 /**
+ * Enables or disables file-scoped menu items based on the current context.
+ * Call with "explorer" when the main file explorer has focus, "other" when
+ * Settings or a file viewer window has focus.
+ */
+export async function setMenuContext(context: 'explorer' | 'other'): Promise<void> {
+    await invoke('set_menu_context', { context })
+}
+
+/**
  * Toggle hidden files visibility and sync menu checkbox state.
  * @returns The new state of showHiddenFiles.
  */

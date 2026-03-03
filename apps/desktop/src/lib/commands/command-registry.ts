@@ -15,11 +15,15 @@ export const commands: Command[] = [
     // ============================================================================
     // App scope (work everywhere, regardless of window/modal state)
     // ============================================================================
-    { id: 'app.quit', name: 'Quit Cmdr', scope: 'App', showInPalette: true, shortcuts: ['⌘Q'] },
-    { id: 'app.hide', name: 'Hide Cmdr', scope: 'App', showInPalette: isMacOS(), shortcuts: ['⌘H'] },
-    { id: 'app.hideOthers', name: 'Hide others', scope: 'App', showInPalette: isMacOS(), shortcuts: ['⌥⌘H'] },
-    { id: 'app.showAll', name: 'Show all', scope: 'App', showInPalette: isMacOS(), shortcuts: [] },
+    // Native-only: handled by PredefinedMenuItems via macOS selectors (hide:, hideOtherApplications:,
+    // unhideAllApplications:, terminate:). showInPalette: false keeps them out of the JS shortcut
+    // dispatch map — the native menu accelerators handle the keyboard shortcuts directly.
+    { id: 'app.quit', name: 'Quit Cmdr', scope: 'App', showInPalette: false, shortcuts: ['⌘Q'] },
+    { id: 'app.hide', name: 'Hide Cmdr', scope: 'App', showInPalette: false, shortcuts: ['⌘H'] },
+    { id: 'app.hideOthers', name: 'Hide others', scope: 'App', showInPalette: false, shortcuts: ['⌥⌘H'] },
+    { id: 'app.showAll', name: 'Show all', scope: 'App', showInPalette: false, shortcuts: [] },
     { id: 'app.about', name: 'About Cmdr', scope: 'App', showInPalette: true, shortcuts: [] },
+    { id: 'app.licenseKey', name: 'See license details', scope: 'App', showInPalette: true, shortcuts: [] },
     {
         id: 'app.commandPalette',
         name: 'Open command palette',
@@ -291,14 +295,14 @@ export const commands: Command[] = [
     },
     {
         id: 'selection.selectAll',
-        name: 'Select all files',
+        name: 'Select all',
         scope: 'Main window/File list',
         showInPalette: true,
         shortcuts: ['⌘A'],
     },
     {
         id: 'selection.deselectAll',
-        name: 'Deselect all files',
+        name: 'Deselect all',
         scope: 'Main window/File list',
         showInPalette: true,
         shortcuts: ['⌘⇧A'],

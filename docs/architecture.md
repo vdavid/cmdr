@@ -52,6 +52,7 @@ All under `apps/desktop/src-tauri/src/`.
 | `font_metrics/` | Binary font metrics cache, per-directory width calculation |
 | `volumes/` | Volume abstraction (local, network, MTP), scanner/watcher traits |
 | `stubs/` | Linux compilation stubs for macOS-only modules (used by Docker E2E pipeline) |
+| `menu/` | Native menu bar: platform-specific construction, dispatch mapping, accelerator sync, context-aware enable/disable |
 | `drag_image_detection.rs` | macOS method swizzle for drag image size detection |
 | `drag_image_swap.rs` | Rich/transparent drag image swap for self-drags |
 | `commands/` | Tauri command definitions (IPC entry points) |

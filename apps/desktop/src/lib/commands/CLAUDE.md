@@ -66,12 +66,24 @@ individual character indices for `matchedIndices`.
 
 The uFuzzy instance is a module-level singleton (created once at import time).
 
+## Unified dispatch
+
+Native menu clicks and keyboard shortcuts both route through `handleCommandExecute(commandId)` in `+page.svelte`. The
+Rust `on_menu_event` handler maps menu item IDs to command registry IDs and emits a single `"execute-command"` Tauri
+event. The frontend listens for this event and calls `handleCommandExecute`. This eliminates the old per-command
+individual events (`show-command-palette`, `switch-pane`, etc.).
+
+Exception: `CheckMenuItem`s (show hidden files, view modes) keep separate handling to avoid double-toggle. Close tab
+(⌘W) has special logic to close focused non-main windows.
+
 ## Adding a command
 
 1. Add an entry to the `commands` array in `command-registry.ts`.
 2. Add a `case` for its `id` in the `handleCommandExecute` switch in `routes/(main)/+page.svelte`.
 3. No changes needed to the palette, fuzzy search, types, or keyboard dispatch. Commands with `showInPalette: true` are
    automatically dispatched from keyboard shortcuts via centralized dispatch (`../shortcuts/shortcut-dispatch.ts`).
+4. If the command has a native menu item, add a mapping in `menu.rs` (`menu_id_to_command` and `command_id_to_menu_id`)
+   and add its ID to the `menuCommands` array in `shortcuts-store.ts`.
 
 ## Dependencies
 
