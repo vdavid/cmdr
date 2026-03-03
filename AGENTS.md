@@ -140,6 +140,12 @@ There are two MCP servers available to you:
 - For maps, try to name them like `somethingToSomeethingElseMap`. That avoids unnecessary comments.
 - Keep interfaces minimal: only export what you must export.
 
+### Svelte 5
+
+- `$state()` can only live in `.svelte` or `.svelte.ts` files, not plain `.ts`.
+- Template arrow function closures need explicit type annotations to avoid `any` args from Svelte's event system.
+- When extracting logic from `.svelte` to `.ts`, use callback-based deps (getters) rather than threading reactive state.
+
 ### Rust
 
 - Max 120 char lines, 4-space indent, cognitive complexity threshold: 15, enforced by clippy.
@@ -166,6 +172,8 @@ There are two MCP servers available to you:
 ## Development
 
 - Always tick off tasks as they are done when using a task list.
+- Never stash anything or touch git any any non-read-only way except when explicitly asked to. Another agent might
+  always be working on the codebase at the same time.
 - When testing, consider using Rust/Go tests, Vitest, Playwright, and manual tests with the MCP servers, whatever is
   needed to feel confident about the development. Do this per milestone. Don't go overboard with unit tests. Test
   exactly so that you feel confident.
