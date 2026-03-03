@@ -89,6 +89,22 @@
     let searchInputRef: HTMLInputElement | undefined = $state()
     let searchPollTimer: ReturnType<typeof setInterval> | undefined
 
+    // Index matches by line number for O(1) lookups during rendering.
+    // Each entry stores the match plus its global index (for active-match highlighting).
+    const matchesByLine = $derived.by(() => {
+        const map = new SvelteMap<number, Array<{ match: ViewerSearchMatch; globalIndex: number }>>()
+        for (let i = 0; i < searchMatches.length; i++) {
+            const m = searchMatches[i]
+            let entries = map.get(m.line)
+            if (!entries) {
+                entries = []
+                map.set(m.line, entries)
+            }
+            entries.push({ match: m, globalIndex: i })
+        }
+        return map
+    })
+
     // Fetch state: debounce timer and request ID for cancellation
     let fetchDebounceTimer: ReturnType<typeof setTimeout> | undefined
     let currentFetchId = 0 // Incremented on each fetch, used to ignore stale responses
@@ -609,24 +625,23 @@
         }
     }
 
-    /** Highlights search matches within a line. */
+    /** Highlights search matches within a line using the pre-built matchesByLine index. */
     function getHighlightedSegments(lineNumber: number, lineText: string) {
-        const lineMatches = searchMatches.filter((m) => m.line === lineNumber)
-        if (lineMatches.length === 0) {
+        const entries = matchesByLine.get(lineNumber)
+        if (!entries) {
             return [{ text: lineText, highlight: false, active: false }]
         }
 
         const segments: Array<{ text: string; highlight: boolean; active: boolean }> = []
         let pos = 0
-        for (const m of lineMatches) {
+        for (const { match: m, globalIndex } of entries) {
             if (m.column > pos) {
                 segments.push({ text: lineText.slice(pos, m.column), highlight: false, active: false })
             }
-            const isActive = searchMatches.indexOf(m) === currentMatchIndex
             segments.push({
                 text: lineText.slice(m.column, m.column + m.length),
                 highlight: true,
-                active: isActive,
+                active: globalIndex === currentMatchIndex,
             })
             pos = m.column + m.length
         }
