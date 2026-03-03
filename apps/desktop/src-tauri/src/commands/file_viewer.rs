@@ -66,10 +66,10 @@ pub fn viewer_search_start(session_id: String, query: String) -> Result<(), Stri
     file_viewer::search_start(&session_id, query).map_err(|e| e.to_string())
 }
 
-/// Polls search progress and current matches.
+/// Polls search progress and new matches since `since_index`.
 #[tauri::command]
-pub fn viewer_search_poll(session_id: String) -> Result<SearchPollResult, String> {
-    file_viewer::search_poll(&session_id).map_err(|e| e.to_string())
+pub fn viewer_search_poll(session_id: String, since_index: usize) -> Result<SearchPollResult, String> {
+    file_viewer::search_poll(&session_id, since_index).map_err(|e| e.to_string())
 }
 
 /// Cancels an ongoing search.

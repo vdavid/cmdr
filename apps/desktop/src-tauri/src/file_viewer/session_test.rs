@@ -138,9 +138,10 @@ fn search_start_and_poll() {
     // Poll until done (with timeout)
     let mut done = false;
     for _ in 0..100 {
-        let poll = session::search_poll(sid).unwrap();
+        let poll = session::search_poll(sid, 0).unwrap();
         if matches!(poll.status, SearchStatus::Done) {
-            assert_eq!(poll.matches.len(), 2);
+            assert_eq!(poll.new_matches.len(), 2);
+            assert_eq!(poll.total_match_count, 2);
             done = true;
             break;
         }
@@ -167,7 +168,7 @@ fn search_cancel_works() {
     session::search_cancel(sid).unwrap();
 
     // Poll should show cancelled or idle (since we removed the search state)
-    let poll = session::search_poll(sid).unwrap();
+    let poll = session::search_poll(sid, 0).unwrap();
     assert!(matches!(poll.status, SearchStatus::Idle));
 
     session::close_session(sid).unwrap();
@@ -182,7 +183,7 @@ fn search_poll_no_active_search() {
     let open_result = session::open_session(file.to_str().unwrap()).unwrap();
     let sid = &open_result.session_id;
 
-    let poll = session::search_poll(sid).unwrap();
+    let poll = session::search_poll(sid, 0).unwrap();
     assert!(matches!(poll.status, SearchStatus::Idle));
 
     session::close_session(sid).unwrap();
@@ -268,9 +269,10 @@ fn search_poll_reports_match_limit() {
     // Poll until done
     let mut done = false;
     for _ in 0..200 {
-        let poll = session::search_poll(sid).unwrap();
+        let poll = session::search_poll(sid, 0).unwrap();
         if matches!(poll.status, SearchStatus::Done) {
-            assert_eq!(poll.matches.len(), MAX_SEARCH_MATCHES);
+            assert_eq!(poll.new_matches.len(), MAX_SEARCH_MATCHES);
+            assert_eq!(poll.total_match_count, MAX_SEARCH_MATCHES);
             assert!(poll.match_limit_reached);
             // Progress should cover the full file
             assert_eq!(poll.bytes_scanned, poll.total_bytes);
@@ -280,6 +282,45 @@ fn search_poll_reports_match_limit() {
         thread::sleep(Duration::from_millis(10));
     }
     assert!(done, "Search did not complete in time");
+
+    session::close_session(sid).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn search_poll_incremental_delivery() {
+    let dir = create_test_dir("search_incremental");
+    let file = write_test_file(&dir, "test.txt", "aaa\nbbb\naaa\nbbb\naaa\n");
+
+    let open_result = session::open_session(file.to_str().unwrap()).unwrap();
+    let sid = &open_result.session_id;
+
+    session::search_start(sid, "aaa".to_string()).unwrap();
+
+    // Wait for search to finish
+    for _ in 0..100 {
+        let poll = session::search_poll(sid, 0).unwrap();
+        if matches!(poll.status, SearchStatus::Done) {
+            break;
+        }
+        thread::sleep(Duration::from_millis(10));
+    }
+
+    // since_index=0 returns all 3 matches
+    let poll_all = session::search_poll(sid, 0).unwrap();
+    assert_eq!(poll_all.new_matches.len(), 3);
+    assert_eq!(poll_all.total_match_count, 3);
+
+    // since_index=2 returns only the last match
+    let poll_delta = session::search_poll(sid, 2).unwrap();
+    assert_eq!(poll_delta.new_matches.len(), 1);
+    assert_eq!(poll_delta.total_match_count, 3);
+    assert_eq!(poll_delta.new_matches[0].line, 4); // 5th line (0-indexed)
+
+    // since_index=3 (caught up) returns no new matches
+    let poll_none = session::search_poll(sid, 3).unwrap();
+    assert_eq!(poll_none.new_matches.len(), 0);
+    assert_eq!(poll_none.total_match_count, 3);
 
     session::close_session(sid).unwrap();
     cleanup(&dir);

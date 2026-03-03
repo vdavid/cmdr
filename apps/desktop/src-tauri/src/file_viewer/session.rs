@@ -72,7 +72,11 @@ pub enum SearchStatus {
 #[serde(rename_all = "camelCase")]
 pub struct SearchPollResult {
     pub status: SearchStatus,
-    pub matches: Vec<SearchMatch>,
+    /// Only matches discovered since the caller's `since_index`. The caller accumulates
+    /// these locally, so each poll transfers only the delta.
+    pub new_matches: Vec<SearchMatch>,
+    /// Authoritative total match count (including matches the caller already has).
+    pub total_match_count: usize,
     pub total_bytes: u64,
     pub bytes_scanned: u64,
     /// True when the match list was capped at MAX_SEARCH_MATCHES. The search kept scanning
@@ -352,7 +356,10 @@ pub fn search_start(session_id: &str, query: String) -> Result<(), ViewerError> 
 }
 
 /// Polls search progress for a session.
-pub fn search_poll(session_id: &str) -> Result<SearchPollResult, ViewerError> {
+///
+/// `since_index` is the number of matches the caller already has. Only matches after
+/// that index are returned, so each poll transfers only the delta.
+pub fn search_poll(session_id: &str, since_index: usize) -> Result<SearchPollResult, ViewerError> {
     let sessions = SESSIONS.lock_ignore_poison();
     let session = sessions
         .get(session_id)
@@ -363,20 +370,29 @@ pub fn search_poll(session_id: &str) -> Result<SearchPollResult, ViewerError> {
     match &session.search {
         None => Ok(SearchPollResult {
             status: SearchStatus::Idle,
-            matches: Vec::new(),
+            new_matches: Vec::new(),
+            total_match_count: 0,
             total_bytes,
             bytes_scanned: 0,
             match_limit_reached: false,
         }),
         Some(search) => {
             let status = search.status.lock_ignore_poison().clone();
-            let matches = search.matches.lock_ignore_poison().clone();
+            let matches = search.matches.lock_ignore_poison();
+            let total_match_count = matches.len();
+            let new_matches = if since_index < matches.len() {
+                matches[since_index..].to_vec()
+            } else {
+                Vec::new()
+            };
+            drop(matches);
             let bytes_scanned = *search.bytes_scanned.lock_ignore_poison();
-            let match_limit_reached = matches.len() >= MAX_SEARCH_MATCHES;
+            let match_limit_reached = total_match_count >= MAX_SEARCH_MATCHES;
 
             Ok(SearchPollResult {
                 status,
-                matches,
+                new_matches,
+                total_match_count,
                 total_bytes,
                 bytes_scanned,
                 match_limit_reached,

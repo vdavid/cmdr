@@ -336,11 +336,13 @@
     async function pollSearchTick() {
         if (!sessionId) return
         try {
-            const result = await viewerSearchPoll(sessionId)
-            searchMatches = result.matches
+            const result = await viewerSearchPoll(sessionId, searchMatches.length)
+            if (result.newMatches.length > 0) {
+                searchMatches = [...searchMatches, ...result.newMatches]
+            }
             searchProgress = totalBytes > 0 ? result.bytesScanned / totalBytes : 0
             searchLimitReached = result.matchLimitReached
-            if (currentMatchIndex === -1 && result.matches.length > 0) {
+            if (currentMatchIndex === -1 && searchMatches.length > 0) {
                 currentMatchIndex = 0
             }
             if (result.status !== 'running') {

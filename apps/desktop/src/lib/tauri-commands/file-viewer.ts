@@ -51,7 +51,10 @@ export interface ViewerSearchMatch {
 /** Result from polling search progress. */
 export interface SearchPollResult {
     status: 'running' | 'done' | 'cancelled' | 'idle'
-    matches: ViewerSearchMatch[]
+    /** Only matches discovered since the caller's `sinceIndex`. Accumulate locally. */
+    newMatches: ViewerSearchMatch[]
+    /** Authoritative total match count (including matches the caller already has). */
+    totalMatchCount: number
     totalBytes: number
     bytesScanned: number
     /** True when match count was capped (search kept scanning for progress but stopped storing) */
@@ -78,9 +81,9 @@ export async function viewerSearchStart(sessionId: string, query: string): Promi
     await invoke('viewer_search_start', { sessionId, query })
 }
 
-/** Polls search progress and matches. */
-export async function viewerSearchPoll(sessionId: string): Promise<SearchPollResult> {
-    return invoke<SearchPollResult>('viewer_search_poll', { sessionId })
+/** Polls search progress and new matches since `sinceIndex`. */
+export async function viewerSearchPoll(sessionId: string, sinceIndex: number): Promise<SearchPollResult> {
+    return invoke<SearchPollResult>('viewer_search_poll', { sessionId, sinceIndex })
 }
 
 /** Cancels an ongoing search. */
