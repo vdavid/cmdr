@@ -69,6 +69,14 @@ Run the smallest set of checks possible for efficiency while maintaining confide
   It's usually worth adding `,smb=warn,sspi=warn,info` too to suppress some excessive logging from smb, unless you're
   debugging SMB issues.
 - **Logging guide**: Full reference with `RUST_LOG` recipes for every subsystem: [docs/tooling/logging.md](docs/tooling/logging.md)
+- **Log levels** (applies to both Rust and TypeScript):
+    - **debug**: Internal details useful when investigating a specific subsystem. Routine startup steps, periodic
+      background activity, intermediate state. Leave debug logs in the code if they are well-scoped to a feature.
+    - **info**: Noteworthy standard behavior that an operator would want to see in production. User-initiated actions
+      (settings saved, index cleared), rare events (schema migration, update available), and important state transitions.
+      If it happens every startup without user interaction, it's probably debug, not info.
+    - **warn**: Something unexpected that the app recovered from (fallback used, retry needed, config missing).
+    - **error**: Something failed and couldn't be recovered. Requires attention.
 - When ran with `pnpm dev`, Cmdr hot reloads on file changes. Takes max 15s for back-end changes, max 3s on front-end.
 
 ## MCP
