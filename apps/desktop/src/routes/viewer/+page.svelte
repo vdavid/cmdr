@@ -9,6 +9,8 @@
     const LINE_HEIGHT = 18
     const BUFFER_LINES = 50
     const FETCH_BATCH = 500
+    // WebKit caps element height at ~2^25 px (33.5M). Stay well below to avoid scroll cutoff.
+    const MAX_SCROLL_HEIGHT = 30_000_000
     const SEARCH_POLL_INTERVAL = 100
     // Must match INDEXING_TIMEOUT_SECS in src-tauri/src/file_viewer/session.rs
     const INDEXING_TIMEOUT_SECS = 5
@@ -28,7 +30,6 @@
         viewerSetupMenu,
         viewerSetWordWrap,
         type ViewerSearchMatch,
-        type BackendCapabilities,
     } from '$lib/tauri-commands'
     import { getCurrentWindow } from '@tauri-apps/api/window'
     import { listen, type UnlistenFn } from '@tauri-apps/api/event'
@@ -47,7 +48,6 @@
     let loading = $state(true)
     let sessionId = $state('')
     let backendType = $state<'fullLoad' | 'byteSeek' | 'lineIndex'>('fullLoad')
-    let capabilities = $state<BackendCapabilities | null>(null)
     let isIndexing = $state(false)
 
     // Line cache: lineNumber -> text (sparse - may have gaps)
@@ -68,10 +68,19 @@
     let avgWrappedLineHeight = $state(LINE_HEIGHT)
     const effectiveLineHeight = $derived(wordWrap ? avgWrappedLineHeight : LINE_HEIGHT)
 
+    // Scroll compression: when total content height exceeds browser limits, scale down
+    // the scroll coordinate system. Each scroll pixel then covers more than one real line.
+    // scrollLineHeight = pixels per line in scroll space (may be < effectiveLineHeight for huge files).
+    const scrollScale = $derived.by(() => {
+        const fullHeight = estimatedTotalLines() * effectiveLineHeight
+        return fullHeight > MAX_SCROLL_HEIGHT ? MAX_SCROLL_HEIGHT / fullHeight : 1
+    })
+    const scrollLineHeight = $derived(effectiveLineHeight * scrollScale)
+
     // Derived: which lines are visible
-    const visibleFrom = $derived(Math.max(0, Math.floor(scrollTop / effectiveLineHeight) - BUFFER_LINES))
+    const visibleFrom = $derived(Math.max(0, Math.floor(scrollTop / scrollLineHeight) - BUFFER_LINES))
     const visibleTo = $derived(
-        Math.min(estimatedTotalLines(), Math.ceil((scrollTop + viewportHeight) / effectiveLineHeight) + BUFFER_LINES),
+        Math.min(estimatedTotalLines(), Math.ceil((scrollTop + viewportHeight) / scrollLineHeight) + BUFFER_LINES),
     )
     const visibleLines = $derived(getVisibleLines())
     const gutterWidth = $derived(String(estimatedTotalLines()).length)
@@ -201,19 +210,19 @@
         }
     })
 
-    // Compensate scroll position when effectiveLineHeight changes (toggle or measurement update).
-    // Proportional adjustment keeps the same line visible: ratio * scrollTop preserves the line
-    // at the top of the viewport, and ON ratio * OFF ratio = 1.0 so there's zero cumulative drift.
-    let prevEffectiveLineHeight = LINE_HEIGHT
+    // Compensate scroll position when scrollLineHeight changes (word wrap toggle, measurement
+    // update, or scroll scale change from totalLines update). Ratio adjustment preserves the
+    // line at the top of the viewport.
+    let prevScrollLineHeight = LINE_HEIGHT
     $effect(() => {
-        const newHeight = effectiveLineHeight
-        if (!contentRef || prevEffectiveLineHeight === newHeight) {
-            prevEffectiveLineHeight = newHeight
+        const newSLH = scrollLineHeight
+        if (!contentRef || prevScrollLineHeight === newSLH) {
+            prevScrollLineHeight = newSLH
             return
         }
-        const ratio = newHeight / prevEffectiveLineHeight
+        const ratio = newSLH / prevScrollLineHeight
         contentRef.scrollTop = Math.round(contentRef.scrollTop * ratio)
-        prevEffectiveLineHeight = newHeight
+        prevScrollLineHeight = newSLH
     })
 
     function scheduleFetch(from: number, to: number) {
@@ -234,8 +243,8 @@
             totalLines = newTotal
             return
         }
-        // Calculate current scroll fraction before updating
-        const oldHeight = oldEstimate * effectiveLineHeight
+        // Calculate current scroll fraction before updating (use capped heights for accuracy)
+        const oldHeight = Math.min(oldEstimate * effectiveLineHeight, MAX_SCROLL_HEIGHT)
         const scrollFraction = contentRef.scrollTop / oldHeight
         log.debug('totalLines changed: {oldEstimate} -> {newTotal}, preserving scroll fraction {fraction}', {
             oldEstimate,
@@ -244,7 +253,7 @@
         })
         totalLines = newTotal
         // Restore scroll fraction after DOM updates using rAF to run after browser's scroll clamping
-        const newHeight = newTotal * effectiveLineHeight
+        const newHeight = Math.min(newTotal * effectiveLineHeight, MAX_SCROLL_HEIGHT)
         const newScrollTop = Math.round(scrollFraction * newHeight)
         const ref = contentRef // Capture reference for rAF callback
         requestAnimationFrame(() => {
@@ -465,9 +474,8 @@
             // Convert via byte offset: (byteOffset / totalBytes) * estimatedTotalLines
             targetLine = totalBytes > 0 ? (match.byteOffset / totalBytes) * estimatedTotalLines() : match.line
         }
-        const targetScroll = targetLine * effectiveLineHeight - viewportHeight / 2
-        const finalScroll = Math.max(0, targetScroll)
-        contentRef.scrollTop = finalScroll
+        const targetScroll = targetLine * scrollLineHeight - viewportHeight / 2
+        contentRef.scrollTop = Math.max(0, targetScroll)
     }
 
     // Debounce search input
@@ -529,14 +537,15 @@
 
     function scrollByLines(lines: number) {
         if (contentRef) {
-            contentRef.scrollTop = Math.max(0, contentRef.scrollTop + lines * effectiveLineHeight)
+            contentRef.scrollTop = Math.max(0, contentRef.scrollTop + lines * scrollLineHeight)
         }
     }
 
     function scrollByPages(pages: number) {
         if (contentRef) {
-            const pageSize = contentRef.clientHeight - effectiveLineHeight // Overlap by 1 line
-            contentRef.scrollTop = Math.max(0, contentRef.scrollTop + pages * pageSize)
+            // Advance by one screenful of lines (minus 1 for overlap context)
+            const linesPerPage = Math.floor(contentRef.clientHeight / effectiveLineHeight) - 1
+            contentRef.scrollTop = Math.max(0, contentRef.scrollTop + pages * linesPerPage * scrollLineHeight)
         }
     }
 
@@ -748,7 +757,6 @@
             totalLines = result.totalLines
             estimatedLines = result.estimatedTotalLines
             backendType = result.backendType
-            capabilities = result.capabilities
             isIndexing = result.isIndexing
 
             log.debug(
@@ -889,14 +897,12 @@
         >
             <div
                 class="scroll-spacer"
-                style="height: {estimatedTotalLines() * effectiveLineHeight}px; min-width: {wordWrap
-                    ? 0
-                    : contentWidth}px"
+                style="height: {estimatedTotalLines() * scrollLineHeight}px; min-width: {wordWrap ? 0 : contentWidth}px"
             >
                 <div
                     class="lines-container"
                     bind:this={linesContainerRef}
-                    style="transform: translateY({visibleFrom * effectiveLineHeight}px)"
+                    style="transform: translateY({visibleFrom * scrollLineHeight}px)"
                 >
                     {#each visibleLines as { lineNumber, text } (lineNumber)}
                         <div class="line" data-line={lineNumber}>
