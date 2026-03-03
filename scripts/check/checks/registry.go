@@ -376,6 +376,14 @@ var AllChecks = []CheckDefinition{
 		DependsOn:   nil,
 		Run:         RunFileLength,
 	},
+	{
+		ID:          "claude-md-staleness",
+		DisplayName: "CLAUDE.md staleness",
+		App:         AppOther,
+		Tech:        "📏 Metrics",
+		DependsOn:   nil,
+		Run:         RunClaudeMdStaleness,
+	},
 }
 
 // GetCheckByID returns a check definition by its ID or nickname.
