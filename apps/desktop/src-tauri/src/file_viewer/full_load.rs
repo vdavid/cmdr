@@ -124,7 +124,13 @@ impl FileViewerBackend for FullLoadBackend {
         })
     }
 
-    fn search(&self, query: &str, cancel: &AtomicBool, results: &Mutex<Vec<SearchMatch>>) -> Result<u64, ViewerError> {
+    fn search(
+        &self,
+        query: &str,
+        cancel: &AtomicBool,
+        results: &Mutex<Vec<SearchMatch>>,
+        progress: &Mutex<u64>,
+    ) -> Result<u64, ViewerError> {
         let query_lower = query.to_lowercase();
         let mut scanned: u64 = 0;
 
@@ -151,6 +157,7 @@ impl FileViewerBackend for FullLoadBackend {
             scanned += line.len() as u64 + 1; // +1 for newline
         }
 
+        *progress.lock_ignore_poison() = scanned;
         Ok(scanned)
     }
 

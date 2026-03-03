@@ -187,8 +187,9 @@ fn search_finds_matches() {
 
     let cancel = AtomicBool::new(false);
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("hello", &cancel, &results).unwrap();
+    backend.search("hello", &cancel, &results, &progress).unwrap();
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 2);
@@ -208,8 +209,9 @@ fn search_case_insensitive() {
 
     let cancel = AtomicBool::new(false);
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("hello", &cancel, &results).unwrap();
+    backend.search("hello", &cancel, &results, &progress).unwrap();
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 3);
@@ -228,8 +230,9 @@ fn search_cancellation() {
 
     let cancel = AtomicBool::new(true);
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("hello", &cancel, &results).unwrap();
+    backend.search("hello", &cancel, &results, &progress).unwrap();
     let matches = results.lock().unwrap();
 
     assert!(matches.len() < 10000);

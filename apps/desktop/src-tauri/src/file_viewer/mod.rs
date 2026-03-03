@@ -114,12 +114,14 @@ pub trait FileViewerBackend: Send + Sync {
 
     /// Search for a query string, populating matches into the provided vec.
     /// Checks the cancel flag periodically and stops early if set.
-    /// Returns the total number of bytes scanned (for progress reporting).
+    /// Updates `progress` with the number of bytes scanned so far.
+    /// Returns the total number of bytes scanned.
     fn search(
         &self,
         query: &str,
         cancel: &std::sync::atomic::AtomicBool,
         matches: &std::sync::Mutex<Vec<SearchMatch>>,
+        progress: &std::sync::Mutex<u64>,
     ) -> Result<u64, ViewerError>;
 
     /// What this backend can do.

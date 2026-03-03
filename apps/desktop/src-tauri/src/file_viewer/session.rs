@@ -332,10 +332,9 @@ pub fn search_start(session_id: &str, query: String) -> Result<(), ViewerError> 
             }
         };
 
-        let result = backend.search(&query, &cancel_clone, &matches_clone);
-        let final_scanned: u64 = result.unwrap_or_default();
-
-        *bytes_scanned_clone.lock_ignore_poison() = final_scanned;
+        backend
+            .search(&query, &cancel_clone, &matches_clone, &bytes_scanned_clone)
+            .ok();
 
         let final_status = if cancel_clone.load(Ordering::Relaxed) {
             SearchStatus::Cancelled

@@ -172,14 +172,18 @@ fn search_finds_matches() {
     let backend = ByteSeekBackend::open(&file).unwrap();
     let cancel = AtomicBool::new(false);
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("hello", &cancel, &results).unwrap();
+    backend.search("hello", &cancel, &results, &progress).unwrap();
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 2);
     assert_eq!(matches[0].line, 0);
     assert_eq!(matches[0].column, 0);
     assert_eq!(matches[1].line, 2);
+
+    // Progress should equal total bytes after search completes
+    assert_eq!(*progress.lock().unwrap(), backend.total_bytes());
 
     cleanup(&dir);
 }
@@ -192,8 +196,9 @@ fn search_case_insensitive() {
     let backend = ByteSeekBackend::open(&file).unwrap();
     let cancel = AtomicBool::new(false);
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("hello", &cancel, &results).unwrap();
+    backend.search("hello", &cancel, &results, &progress).unwrap();
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 3);
@@ -210,8 +215,9 @@ fn search_cancellation() {
     let backend = ByteSeekBackend::open(&file).unwrap();
     let cancel = AtomicBool::new(true); // Pre-cancelled
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("hello", &cancel, &results).unwrap();
+    backend.search("hello", &cancel, &results, &progress).unwrap();
     let matches = results.lock().unwrap();
 
     // Should stop early
@@ -228,8 +234,9 @@ fn search_no_matches() {
     let backend = ByteSeekBackend::open(&file).unwrap();
     let cancel = AtomicBool::new(false);
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("xyz", &cancel, &results).unwrap();
+    backend.search("xyz", &cancel, &results, &progress).unwrap();
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 0);
@@ -246,8 +253,9 @@ fn search_with_multibyte_chars() {
     let backend = ByteSeekBackend::open(&file).unwrap();
     let cancel = AtomicBool::new(false);
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("latte", &cancel, &results).unwrap();
+    backend.search("latte", &cancel, &results, &progress).unwrap();
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 1);
@@ -271,8 +279,9 @@ fn search_with_replacement_chars() {
     let backend = ByteSeekBackend::open(&file).unwrap();
     let cancel = AtomicBool::new(false);
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("png", &cancel, &results).unwrap();
+    backend.search("png", &cancel, &results, &progress).unwrap();
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 1);

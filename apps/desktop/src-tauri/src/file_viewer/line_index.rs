@@ -228,7 +228,13 @@ impl FileViewerBackend for LineIndexBackend {
         })
     }
 
-    fn search(&self, query: &str, cancel: &AtomicBool, results: &Mutex<Vec<SearchMatch>>) -> Result<u64, ViewerError> {
+    fn search(
+        &self,
+        query: &str,
+        cancel: &AtomicBool,
+        results: &Mutex<Vec<SearchMatch>>,
+        progress: &Mutex<u64>,
+    ) -> Result<u64, ViewerError> {
         // Stream through file in 1 MB chunks, same as ByteSeekBackend
         let query_lower = query.to_lowercase();
         let mut file = File::open(&self.path)?;
@@ -292,6 +298,9 @@ impl FileViewerBackend for LineIndexBackend {
                     break;
                 }
             }
+
+            // Update progress after each chunk so the frontend can show real progress
+            *progress.lock_ignore_poison() = scanned;
         }
 
         // Handle last line
@@ -312,6 +321,7 @@ impl FileViewerBackend for LineIndexBackend {
             scanned += leftover.len() as u64;
         }
 
+        *progress.lock_ignore_poison() = scanned;
         Ok(scanned)
     }
 

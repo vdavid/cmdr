@@ -132,8 +132,9 @@ fn search_finds_matches() {
 
     let cancel = AtomicBool::new(false);
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
 
-    let scanned = backend.search("hello", &cancel, &results).unwrap();
+    let scanned = backend.search("hello", &cancel, &results, &progress).unwrap();
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 2);
@@ -142,6 +143,8 @@ fn search_finds_matches() {
     assert_eq!(matches[1].line, 2);
     assert_eq!(matches[1].column, 0);
     assert!(scanned > 0);
+    // Progress should equal total bytes after search completes
+    assert_eq!(*progress.lock().unwrap(), scanned);
 }
 
 #[test]
@@ -150,8 +153,9 @@ fn search_case_insensitive() {
 
     let cancel = AtomicBool::new(false);
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("hello", &cancel, &results).unwrap();
+    backend.search("hello", &cancel, &results, &progress).unwrap();
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 3);
@@ -163,8 +167,9 @@ fn search_multiple_per_line() {
 
     let cancel = AtomicBool::new(false);
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("aa", &cancel, &results).unwrap();
+    backend.search("aa", &cancel, &results, &progress).unwrap();
     let matches = results.lock().unwrap();
 
     // Non-overlapping: "aaa" contains "aa" once at position 0, then only "a" remains
@@ -179,8 +184,9 @@ fn search_cancellation() {
 
     let cancel = AtomicBool::new(true); // Already cancelled
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("hello", &cancel, &results).unwrap();
+    backend.search("hello", &cancel, &results, &progress).unwrap();
     let matches = results.lock().unwrap();
 
     // Should find zero or very few matches since cancelled immediately
@@ -193,8 +199,9 @@ fn search_no_matches() {
 
     let cancel = AtomicBool::new(false);
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("xyz", &cancel, &results).unwrap();
+    backend.search("xyz", &cancel, &results, &progress).unwrap();
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 0);
@@ -235,8 +242,9 @@ fn search_with_multibyte_chars() {
 
     let cancel = AtomicBool::new(false);
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("latte", &cancel, &results).unwrap();
+    backend.search("latte", &cancel, &results, &progress).unwrap();
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 1);
@@ -254,8 +262,9 @@ fn search_with_replacement_chars() {
 
     let cancel = AtomicBool::new(false);
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("png", &cancel, &results).unwrap();
+    backend.search("png", &cancel, &results, &progress).unwrap();
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 1);
@@ -272,8 +281,9 @@ fn search_with_emoji() {
 
     let cancel = AtomicBool::new(false);
     let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
 
-    backend.search("rust", &cancel, &results).unwrap();
+    backend.search("rust", &cancel, &results, &progress).unwrap();
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 1);
