@@ -35,9 +35,9 @@ const INDEX_CHECKPOINT_INTERVAL: usize = 256;
 /// Maximum bytes to scan backward when seeking by byte offset.
 const MAX_BACKWARD_SCAN: usize = 8192;
 
-/// Maximum number of matches stored during search. Once reached, the search keeps scanning
-/// (for accurate progress) but stops accumulating matches. Prevents unbounded memory growth
-/// and IPC serialization cost when a common term matches millions of times in a huge file.
+/// Maximum number of matches stored during search. Once reached, the search stops entirely.
+/// The frontend highlights additional matches client-side on visible lines, so stopping early
+/// doesn't lose highlighting — it only caps the prev/next navigation index.
 const MAX_SEARCH_MATCHES: usize = 10_000;
 
 /// Where to seek in the file.

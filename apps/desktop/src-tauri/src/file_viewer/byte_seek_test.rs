@@ -359,9 +359,9 @@ fn search_caps_at_match_limit() {
 
     // Should cap at exactly MAX_SEARCH_MATCHES
     assert_eq!(matches.len(), MAX_SEARCH_MATCHES);
-    // But should still scan the entire file for progress
-    assert_eq!(scanned, backend.total_bytes());
-    assert_eq!(*progress.lock().unwrap(), backend.total_bytes());
+    // Should stop scanning early (not read the whole file)
+    assert!(scanned < backend.total_bytes());
+    assert!(scanned > 0);
 
     cleanup(&dir);
 }

@@ -316,7 +316,6 @@ fn search_caps_at_match_limit() {
 
     // Should cap at exactly MAX_SEARCH_MATCHES
     assert_eq!(matches.len(), MAX_SEARCH_MATCHES);
-    // Progress should cover the full file (FullLoad scanned bytes may overshoot by 1
-    // due to the trailing empty line from split('\n') getting +1 for a non-existent newline)
-    assert!(*progress.lock().unwrap() >= backend.total_bytes());
+    // Should stop scanning early (not process the whole file)
+    assert!(*progress.lock().unwrap() < backend.total_bytes());
 }

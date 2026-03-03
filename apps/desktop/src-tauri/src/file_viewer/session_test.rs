@@ -274,8 +274,8 @@ fn search_poll_reports_match_limit() {
             assert_eq!(poll.new_matches.len(), MAX_SEARCH_MATCHES);
             assert_eq!(poll.total_match_count, MAX_SEARCH_MATCHES);
             assert!(poll.match_limit_reached);
-            // Progress should cover the full file
-            assert_eq!(poll.bytes_scanned, poll.total_bytes);
+            // Should have stopped early (not scanned the whole file)
+            assert!(poll.bytes_scanned < poll.total_bytes);
             done = true;
             break;
         }

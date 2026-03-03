@@ -625,23 +625,47 @@
         }
     }
 
-    /** Highlights search matches within a line using the pre-built matchesByLine index. */
+    /**
+     * Highlights search matches within a line by running a client-side case-insensitive
+     * search on the visible text. This works for any file size — highlights appear on
+     * every visible line regardless of the backend's 10K navigation match cap.
+     * The backend match index is only used to identify the "active" match (the one
+     * the user navigated to with Enter/Shift+Enter).
+     */
     function getHighlightedSegments(lineNumber: number, lineText: string) {
-        const entries = matchesByLine.get(lineNumber)
-        if (!entries) {
+        if (!searchQuery || !searchVisible) {
             return [{ text: lineText, highlight: false, active: false }]
         }
 
+        // Find all occurrences client-side (JS indexOf operates on UTF-16, matching backend offsets)
+        const queryLower = searchQuery.toLowerCase()
+        const lineLower = lineText.toLowerCase()
+        const localMatches: Array<{ column: number; length: number }> = []
+        let searchStart = 0
+        for (;;) {
+            const idx = lineLower.indexOf(queryLower, searchStart)
+            if (idx === -1) break
+            localMatches.push({ column: idx, length: queryLower.length })
+            searchStart = idx + queryLower.length
+        }
+
+        if (localMatches.length === 0) {
+            return [{ text: lineText, highlight: false, active: false }]
+        }
+
+        // Check if the currently active navigation match is on this line
+        const activeEntry = matchesByLine.get(lineNumber)?.find((e) => e.globalIndex === currentMatchIndex)
+
         const segments: Array<{ text: string; highlight: boolean; active: boolean }> = []
         let pos = 0
-        for (const { match: m, globalIndex } of entries) {
+        for (const m of localMatches) {
             if (m.column > pos) {
                 segments.push({ text: lineText.slice(pos, m.column), highlight: false, active: false })
             }
             segments.push({
                 text: lineText.slice(m.column, m.column + m.length),
                 highlight: true,
-                active: globalIndex === currentMatchIndex,
+                active: activeEntry !== undefined && activeEntry.match.column === m.column,
             })
             pos = m.column + m.length
         }

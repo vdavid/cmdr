@@ -227,7 +227,7 @@ impl FileViewerBackend for ByteSeekBackend {
         let mut limit_reached = false;
 
         loop {
-            if cancel.load(Ordering::Relaxed) {
+            if cancel.load(Ordering::Relaxed) || limit_reached {
                 break;
             }
 
@@ -250,35 +250,33 @@ impl FileViewerBackend for ByteSeekBackend {
 
             let mut pos = 0;
             while pos < data.len() {
-                if cancel.load(Ordering::Relaxed) {
+                if cancel.load(Ordering::Relaxed) || limit_reached {
+                    *progress.lock_ignore_poison() = scanned;
                     return Ok(scanned);
                 }
 
                 if let Some(nl_pos) = memchr(b'\n', &data[pos..]) {
-                    // Only do the expensive match-finding if we haven't hit the limit
-                    if !limit_reached {
-                        let line_bytes = &data[pos..pos + nl_pos];
-                        let line = String::from_utf8_lossy(line_bytes);
-                        let line_lower = line.to_lowercase();
+                    let line_bytes = &data[pos..pos + nl_pos];
+                    let line = String::from_utf8_lossy(line_bytes);
+                    let line_lower = line.to_lowercase();
 
-                        let mut search_start = 0;
-                        while let Some(match_pos) = line_lower[search_start..].find(&query_lower) {
-                            let col_bytes = search_start + match_pos;
-                            let col_utf16: usize =
-                                line_lower[..col_bytes].chars().map(|c| c.len_utf16()).sum();
-                            let len_utf16: usize = query_lower.chars().map(|c| c.len_utf16()).sum();
-                            let mut matches = results.lock_ignore_poison();
-                            matches.push(SearchMatch {
-                                line: line_number,
-                                column: col_utf16,
-                                length: len_utf16,
-                            });
-                            if matches.len() >= MAX_SEARCH_MATCHES {
-                                limit_reached = true;
-                                break;
-                            }
-                            search_start = col_bytes + query_lower.len();
+                    let mut search_start = 0;
+                    while let Some(match_pos) = line_lower[search_start..].find(&query_lower) {
+                        let col_bytes = search_start + match_pos;
+                        let col_utf16: usize =
+                            line_lower[..col_bytes].chars().map(|c| c.len_utf16()).sum();
+                        let len_utf16: usize = query_lower.chars().map(|c| c.len_utf16()).sum();
+                        let mut matches = results.lock_ignore_poison();
+                        matches.push(SearchMatch {
+                            line: line_number,
+                            column: col_utf16,
+                            length: len_utf16,
+                        });
+                        if matches.len() >= MAX_SEARCH_MATCHES {
+                            limit_reached = true;
+                            break;
                         }
+                        search_start = col_bytes + query_lower.len();
                     }
 
                     scanned += (nl_pos + 1) as u64;
@@ -295,27 +293,25 @@ impl FileViewerBackend for ByteSeekBackend {
             *progress.lock_ignore_poison() = scanned;
         }
 
-        // Handle last line without newline
+        // Handle last line without newline (only reached if limit not hit — loop breaks early otherwise)
         if !leftover.is_empty() {
-            if !limit_reached {
-                let line = String::from_utf8_lossy(&leftover);
-                let line_lower = line.to_lowercase();
-                let mut search_start = 0;
-                while let Some(match_pos) = line_lower[search_start..].find(&query_lower) {
-                    let col_bytes = search_start + match_pos;
-                    let col_utf16: usize = line_lower[..col_bytes].chars().map(|c| c.len_utf16()).sum();
-                    let len_utf16: usize = query_lower.chars().map(|c| c.len_utf16()).sum();
-                    let mut matches = results.lock_ignore_poison();
-                    matches.push(SearchMatch {
-                        line: line_number,
-                        column: col_utf16,
-                        length: len_utf16,
-                    });
-                    if matches.len() >= MAX_SEARCH_MATCHES {
-                        break;
-                    }
-                    search_start = col_bytes + query_lower.len();
+            let line = String::from_utf8_lossy(&leftover);
+            let line_lower = line.to_lowercase();
+            let mut search_start = 0;
+            while let Some(match_pos) = line_lower[search_start..].find(&query_lower) {
+                let col_bytes = search_start + match_pos;
+                let col_utf16: usize = line_lower[..col_bytes].chars().map(|c| c.len_utf16()).sum();
+                let len_utf16: usize = query_lower.chars().map(|c| c.len_utf16()).sum();
+                let mut matches = results.lock_ignore_poison();
+                matches.push(SearchMatch {
+                    line: line_number,
+                    column: col_utf16,
+                    length: len_utf16,
+                });
+                if matches.len() >= MAX_SEARCH_MATCHES {
+                    break;
                 }
+                search_start = col_bytes + query_lower.len();
             }
             scanned += leftover.len() as u64;
         }

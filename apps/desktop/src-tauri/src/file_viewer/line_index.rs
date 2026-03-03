@@ -249,7 +249,7 @@ impl FileViewerBackend for LineIndexBackend {
         let mut limit_reached = false;
 
         loop {
-            if cancel.load(Ordering::Relaxed) {
+            if cancel.load(Ordering::Relaxed) || limit_reached {
                 break;
             }
 
@@ -271,31 +271,30 @@ impl FileViewerBackend for LineIndexBackend {
 
             let mut pos = 0;
             while pos < data.len() {
-                if cancel.load(Ordering::Relaxed) {
+                if cancel.load(Ordering::Relaxed) || limit_reached {
+                    *progress.lock_ignore_poison() = scanned;
                     return Ok(scanned);
                 }
 
                 if let Some(nl_pos) = memchr(b'\n', &data[pos..]) {
-                    if !limit_reached {
-                        let line_bytes = &data[pos..pos + nl_pos];
-                        let line = String::from_utf8_lossy(line_bytes);
-                        let line_lower = line.to_lowercase();
+                    let line_bytes = &data[pos..pos + nl_pos];
+                    let line = String::from_utf8_lossy(line_bytes);
+                    let line_lower = line.to_lowercase();
 
-                        let mut search_start = 0;
-                        while let Some(match_pos) = line_lower[search_start..].find(&query_lower) {
-                            let col = search_start + match_pos;
-                            let mut matches = results.lock_ignore_poison();
-                            matches.push(SearchMatch {
-                                line: line_number,
-                                column: col,
-                                length: query.len(),
-                            });
-                            if matches.len() >= MAX_SEARCH_MATCHES {
-                                limit_reached = true;
-                                break;
-                            }
-                            search_start = col + 1;
+                    let mut search_start = 0;
+                    while let Some(match_pos) = line_lower[search_start..].find(&query_lower) {
+                        let col = search_start + match_pos;
+                        let mut matches = results.lock_ignore_poison();
+                        matches.push(SearchMatch {
+                            line: line_number,
+                            column: col,
+                            length: query.len(),
+                        });
+                        if matches.len() >= MAX_SEARCH_MATCHES {
+                            limit_reached = true;
+                            break;
                         }
+                        search_start = col + 1;
                     }
 
                     scanned += (nl_pos + 1) as u64;
@@ -311,25 +310,23 @@ impl FileViewerBackend for LineIndexBackend {
             *progress.lock_ignore_poison() = scanned;
         }
 
-        // Handle last line
+        // Handle last line (only reached if limit not hit — loop breaks early otherwise)
         if !leftover.is_empty() {
-            if !limit_reached {
-                let line = String::from_utf8_lossy(&leftover);
-                let line_lower = line.to_lowercase();
-                let mut search_start = 0;
-                while let Some(match_pos) = line_lower[search_start..].find(&query_lower) {
-                    let col = search_start + match_pos;
-                    let mut matches = results.lock_ignore_poison();
-                    matches.push(SearchMatch {
-                        line: line_number,
-                        column: col,
-                        length: query.len(),
-                    });
-                    if matches.len() >= MAX_SEARCH_MATCHES {
-                        break;
-                    }
-                    search_start = col + 1;
+            let line = String::from_utf8_lossy(&leftover);
+            let line_lower = line.to_lowercase();
+            let mut search_start = 0;
+            while let Some(match_pos) = line_lower[search_start..].find(&query_lower) {
+                let col = search_start + match_pos;
+                let mut matches = results.lock_ignore_poison();
+                matches.push(SearchMatch {
+                    line: line_number,
+                    column: col,
+                    length: query.len(),
+                });
+                if matches.len() >= MAX_SEARCH_MATCHES {
+                    break;
                 }
+                search_start = col + 1;
             }
             scanned += leftover.len() as u64;
         }
