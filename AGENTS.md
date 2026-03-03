@@ -185,10 +185,11 @@ There are two MCP servers available to you:
 - When testing, consider using Rust/Go tests, Vitest, Playwright, and manual tests with the MCP servers, whatever is
   needed to feel confident about the development. Do this per milestone. Don't go overboard with unit tests. Test
   exactly so that you feel confident.
-- **Keep docs alive**: When modifying a feature directory that has a `CLAUDE.md`, check if the doc still matches the
-  code. Update it if your changes affect architecture, key decisions, or gotchas. Don't update for trivial changes.
-  If there is no `CLAUDE.md` file yet, but you want to capture high-level info about a module or feature, create one.
-  Make it faster for the next person or agent to get oriented. 
+- **Keep docs alive**: If you touched files in a directory that has a `CLAUDE.md`, you MUST re-read it before wrapping
+  up and verify its claims still hold. Update it if your changes affect architecture, key decisions, or gotchas —
+  especially `Decision/Why` and `Gotcha/Why` entries. A stale doc is worse than no doc: the next agent will trust it
+  and make wrong decisions. Don't update for trivial changes. If there is no `CLAUDE.md` file yet but you want to
+  capture high-level info about a module or feature, create one.
 
 Always do a last round of checks before wrapping up:
 
@@ -196,6 +197,9 @@ Always do a last round of checks before wrapping up:
 2. Will this lead to superb UX for the end-user, with sufficient transparency into the work that's happening?
 3. Is this as fast as possible, adhering to the "blazing fast" promise we have?
 4. Discuss with the user anything that's not great, or fix if straightforward then GOTO point 1.
+5. For every directory you touched that has a `CLAUDE.md`: re-read it, verify it still matches the code, and update
+   any `Decision/Why` or `Gotcha/Why` entries your changes invalidated. Updating the doc is as important as the code
+   change itself.
 
 ## Useful references
 
