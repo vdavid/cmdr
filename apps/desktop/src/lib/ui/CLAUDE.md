@@ -80,6 +80,32 @@ Call `dismissTransientToasts()` on pane navigation to clear stale feedback.
 single `command` string prop. Handles clipboard internally (`copyToClipboard` with `navigator.clipboard` fallback).
 Parent controls spacing via its own wrapper. Used in `PtpcameradDialog` and `ShareBrowser`.
 
+## Key decisions
+
+**Decision**: Custom `ModalDialog` with manual overlay + drag logic instead of the native `<dialog>` element.
+**Why**: Native `<dialog>` doesn't support drag-to-reposition, and its `::backdrop` is not style-customizable enough for
+the blur effect. The trade-off is manually managing focus trapping and Escape handling, but the overlay `tabindex="-1"` +
+`focus()` on mount approach is simpler than a full focus-trap library.
+
+**Decision**: Dialog registry is a `const` array with `satisfies` (not an `enum` or `Record`).
+**Why**: `as const satisfies` gives a union type for `SoftDialogId` that TypeScript can narrow, while also letting the
+array be iterated at runtime to register with the Rust MCP backend. An `enum` can't be iterated without extra
+transformation, and a `Record` would split the ID from its metadata.
+
+**Decision**: `containerStyle` prop for one-off sizing instead of CSS custom properties or class names.
+**Why**: The project's stylelint config blocks custom properties that don't match the `(color|spacing|font)-` prefix
+convention. Inline style strings bypass this restriction for layout-only overrides (width, max-width) that don't belong
+in the design token system.
+
+**Decision**: Toast content accepts both `string` and `Component<any>` (Svelte component).
+**Why**: Simple notifications are strings. Interactive toasts (update restart, AI download) need buttons and state, so
+they're full Svelte components. The toast item renders strings as `<span>` and components via `{@const}` + render — no
+wrapper needed.
+
+**Decision**: Toast dedup uses an optional `id` key with in-place replacement rather than preventing duplicates.
+**Why**: The update toast and AI toast need to update their content as state changes (e.g. download progress) while
+keeping the same slot in the stack. Replacing in place avoids the visual flicker of remove-then-add.
+
 ## Key gotchas
 
 - The Svelte 5 snippet named `title` shadows any prop also named `title`. In `AlertDialog` this is handled by
@@ -87,6 +113,9 @@ Parent controls spacing via its own wrapper. Used in `PtpcameradDialog` and `Sha
 - `containerStyle` exists because stylelint blocks non-standard CSS custom properties (any not matching
   `(color|spacing|font)-` prefix). Use it for one-off sizing instead of CSS vars.
 - `blur` prop applies `backdrop-filter` which triggers GPU compositing — use sparingly.
+- When the toast stack is full (5 toasts) and all are persistent, new toasts are silently dropped. This is intentional —
+  persistent toasts represent important state (update ready, AI installing) and should not be evicted by transient
+  feedback.
 
 ## Dependencies
 

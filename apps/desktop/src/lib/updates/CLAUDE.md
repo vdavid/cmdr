@@ -35,6 +35,28 @@ toast system. `UpdateToastContent.svelte` renders the toast body and handles the
 `dismissToast('update')`. There is no local `$state` dismissed flag — dismissal is managed entirely by the toast
 infrastructure.
 
+## Key decisions
+
+**Decision**: Auto-download without user confirmation; only prompt for restart.
+**Why**: Updates are small (delta patches via Tauri updater). Asking "download now?" adds a decision point that most users
+will always accept. Downloading silently in the background respects the user's time. The restart prompt is necessary
+because the app must quit to apply the update — that's the only destructive action.
+
+**Decision**: State machine guards against re-checking during download or ready states.
+**Why**: `checkForUpdates` returns early if status is `downloading` or `ready`. Without this, a periodic interval tick
+could start a second download or overwrite the `ready` state with a new `checking` cycle, losing the pending update
+reference.
+
+**Decision**: Update toast uses `dismissal: 'persistent'` with the global `id: 'update'`.
+**Why**: Transient toasts auto-dismiss after 4 seconds. A "restart to update" prompt that vanishes would frustrate users
+who weren't looking. The stable `id` means re-checking doesn't create duplicate toasts — the existing one is updated in
+place.
+
+**Decision**: Interval re-creation on setting change instead of dynamic delay.
+**Why**: `setInterval` doesn't support changing the delay after creation. When the user changes
+`advanced.updateCheckInterval`, the old interval is cleared and a new one is created. This is simpler than a recursive
+`setTimeout` chain and the edge case of one extra tick at the old interval is acceptable.
+
 ## Key patterns and gotchas
 
 - `.svelte.ts` extension is required because `$state` can only live in `.svelte` or `.svelte.ts` files.

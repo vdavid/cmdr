@@ -81,6 +81,26 @@ also Window and Help.
 - `command_id_to_menu_id(id) -> Option<menu_item_id>`: reverse lookup for accelerator updates
 - Both are exhaustive match statements kept in sync manually
 
+## Key decisions
+
+**Decision**: Build all menus from scratch instead of patching `Menu::default()`.
+**Why**: `Menu::default()` inherits OS-injected items (Edit: Writing Tools, AutoFill, Dictation on macOS) that are irrelevant to a file manager and can't be reliably removed before display. Building from scratch gives full control over every item. The cleanup pass via objc2 (`cleanup_macos_menus`) handles only items injected *after* construction by AppKit.
+
+**Decision**: Route most menu clicks through a single `"execute-command"` Tauri event with a command registry ID.
+**Why**: The frontend already has a unified command dispatch system (keyboard shortcuts, command palette, MCP tools all use it). Routing menu clicks through the same path avoids duplicating command handling logic. The few exceptions (CheckMenuItems, sort, close-tab) exist because they need side effects *before* or *instead of* the generic emit (toggling checked state, attaching payloads, or closing non-main windows).
+
+**Decision**: Accelerator updates via remove/recreate/reinsert instead of in-place mutation.
+**Why**: Tauri's menu API has no `set_accelerator()` method. The only way to change a displayed accelerator is to destroy the old `MenuItem`, create a new one with the new accelerator string, and reinsert it at the same position in the parent submenu. This is why `MenuState` tracks both the `Submenu` reference and the positional index for every updatable item.
+
+**Decision**: Omit F-key and Tab/Space accelerators on Linux.
+**Why**: GTK intercepts F2-F8, Tab, and Space at the toolkit level before events reach the webview. Registering them as menu accelerators causes double-handling or silent swallowing. On Linux these keys are dispatched purely through JS keydown handlers, bypassing the native menu system entirely.
+
+**Decision**: Dual enable/disable guard -- `set_menu_context` (visual) + `is_focused()` check (behavioral).
+**Why**: `set_menu_context("other")` greys out file-scoped items so users see they're unavailable, but this is a visual hint only. The real guard is in `on_menu_event`, which checks `main_window.is_focused()` before emitting file-scoped commands. Both layers are needed because menu accelerators fire even when items appear disabled on some platforms.
+
+**Decision**: CheckMenuItems (view modes, show hidden) use separate event paths instead of `"execute-command"`.
+**Why**: CheckMenuItems auto-toggle their checked state on click. If the click also emitted `"execute-command"` and the frontend toggled the setting, the state would double-toggle (menu toggles once, frontend toggles again). Instead, these items emit `"settings-changed"` or `"view-mode-changed"` directly, treating the menu click as the authoritative state change.
+
 ## Gotchas
 
 - **No `Menu::default()`**: Both platforms build from scratch. The old approach inherited system

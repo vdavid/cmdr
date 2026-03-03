@@ -33,6 +33,17 @@ These are top-level keys — the dot is part of the key name, not a nesting sepa
 
 **`settings.json`** (legacy): nested JSON with camelCase keys, parsed via serde aliases.
 
+## Key decisions
+
+**Decision**: Rust reads the settings file directly instead of receiving values via IPC from the frontend.
+**Why**: Several backend systems (MCP server, hidden files filter, indexing) need their config *before* any frontend window loads. Waiting for the frontend to boot and push settings would create a race condition or require delaying backend initialization. Reading the file directly means the backend is configured immediately at launch.
+
+**Decision**: Manual JSON field extraction in `parse_settings_v2` instead of serde auto-derivation.
+**Why**: `tauri-plugin-store` writes flat JSON with literal dot-notation string keys like `"developer.mcpEnabled"`. Serde's `rename` attribute can handle this per-field, but the dot is part of the key name, not a nesting separator. The manual extraction makes this non-obvious format explicit and avoids confusion about nested vs. flat structure.
+
+**Decision**: Try `settings-v2.json` first, then fall back to `settings.json`, then defaults.
+**Why**: The app migrated from a nested JSON format (v1) to the flat dot-notation format (v2) written by `tauri-plugin-store`. Users upgrading from older versions still have the v1 file. The cascade ensures settings survive across app updates without requiring an explicit migration step.
+
 ## Key patterns
 
 - **One-way read only.** This module never writes. All writes go through the frontend's settings store.

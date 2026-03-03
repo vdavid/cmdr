@@ -34,6 +34,25 @@ METRICS_CACHE: LazyLock<RwLock<HashMap<String, FontMetrics>>>
 - `calculate_text_width` is `#[allow(dead_code)]` — it's part of the public API kept for future use; `calculate_max_width` is the primary call site.
 - `init_font_metrics` is idempotent — safe to call multiple times; it just overwrites the cache entry.
 
+## Key decisions
+
+**Decision**: Frontend measures character widths via Canvas API and ships them to Rust over IPC, rather than Rust measuring fonts directly.
+**Why**: Rust has no access to the system's font rendering stack. The browser's Canvas API uses the exact same font rasterizer the user sees, so the measurements match pixel-perfectly. Any Rust-side font library would need to load font files, handle system font resolution, and might produce slightly different widths than what the browser actually renders.
+
+**Decision**: Binary format (bincode2) on disk instead of JSON.
+**Why**: A full Latin character set produces ~4,000 code-point-to-width entries. As JSON that's ~100 KB with key quoting overhead. Bincode compresses this to ~26 KB and deserializes in microseconds vs. milliseconds for JSON parsing. Since this file is only read by Rust (never human-edited), readability doesn't matter.
+
+**Decision**: `RwLock` for the metrics cache instead of `Mutex`.
+**Why**: `calculate_max_width` is called on every Brief mode render for every visible column. Multiple Tauri command threads may need to read metrics concurrently. `RwLock` allows unlimited parallel reads; a `Mutex` would serialize all column width calculations, adding latency to directory listing renders.
+
+**Decision**: Average-width fallback for unmeasured code points instead of returning an error or zero.
+**Why**: The frontend only measures a known character set (typically Latin + common symbols). Filenames can contain any Unicode — emoji, CJK, Arabic. Returning zero would collapse unknown characters to invisible width, breaking column alignment. The average width is a reasonable approximation that keeps columns roughly sized even for scripts the frontend didn't explicitly measure.
+
+## Gotchas
+
+**Gotcha**: If the frontend's `getCurrentFontId()` format changes, `calculate_max_width` silently returns `None`.
+**Why**: The cache key is a string like `"system-400-12"` that must match exactly between frontend and backend. There's no validation — a mismatch just means the key isn't found in the cache. The frontend handles the `None` by falling back to its own width estimation.
+
 ## Dependencies
 
 External: `bincode2`, `tauri::Manager`

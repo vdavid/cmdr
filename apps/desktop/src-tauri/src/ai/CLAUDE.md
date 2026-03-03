@@ -60,6 +60,37 @@ Frontend                    manager.rs              process.rs / download.rs / c
 3. Add entry to `AVAILABLE_MODELS` in `mod.rs`.
 4. Update `DEFAULT_MODEL_ID` if it should be the new default.
 
+## Key decisions
+
+**Decision**: Global `Mutex<Option<ManagerState>>` singleton instead of Tauri managed state.
+**Why**: AI state needs to be accessed from both Tauri commands and internal init/shutdown paths. Tauri managed state requires an `AppHandle` to access, but `shutdown()` is called from the quit handler where threading constraints make it simpler to use a plain global. The `Option` allows lazy init — `None` until `init()` runs.
+
+**Decision**: Two separate install flags (`installed` + `model_download_complete`) rather than a single boolean.
+**Why**: The download can be interrupted (crash, cancel, network loss). A partial 2 GB file on disk looks "installed" but is corrupt. `model_download_complete` is only set after file-size verification passes. This prevents launching llama-server with a truncated model, which would crash silently or produce garbage.
+
+**Decision**: Dev gate via `use_real_ai()` that returns `false` in debug builds unless `CMDR_REAL_AI=1`.
+**Why**: AI features spawn a child process, download multi-GB files, and consume GPU resources. Enabling this by default in dev would make every `cargo run` slow and resource-heavy. The env var opt-in keeps the dev loop fast while still allowing manual AI testing.
+
+**Decision**: Port discovery via `bind(:0)` then pass to llama-server, instead of letting llama-server pick its own port.
+**Why**: llama-server doesn't have a reliable way to report its chosen port back to the parent. Binding port 0, reading the OS-assigned port, closing the listener, then passing it to llama-server avoids the tiny race window while keeping the architecture simple. The 100ms startup delay before the health check loop makes collisions practically impossible.
+
+**Decision**: Cancellation via `Fn() -> bool` parameter rather than `Arc<AtomicBool>`.
+**Why**: `download_file` lives in a separate module from the manager's cancel state. Passing a closure (`is_cancel_requested`) decouples the download logic from the global `MANAGER` mutex — the download module doesn't need to know about `ManagerState` at all.
+
+**Decision**: `SIGTERM` then 5s wait then `SIGKILL` for process shutdown.
+**Why**: llama-server may be mid-inference holding GPU memory. `SIGTERM` gives it a chance to release resources cleanly. The 5s timeout prevents hanging on app quit if the server is stuck.
+
+**Decision**: Suggestion sanitization strips bullets, markdown, numbering, and deduplicates case-insensitively.
+**Why**: Small LLMs (3B params) inconsistently follow formatting instructions. The same model that returns clean `docs\ntests\n` on one prompt may return `1. **Docs**\n2. tests` on the next. Aggressive sanitization makes the output reliable regardless of LLM mood.
+
+## Gotchas
+
+**Gotcha**: `tauri::async_runtime::spawn` is used in `init()` instead of `tokio::spawn`.
+**Why**: `init()` runs during Tauri setup before the tokio runtime is fully available. `tauri::async_runtime::spawn` uses Tauri's own runtime which is always ready at that point.
+
+**Gotcha**: `get_folder_suggestions` returns `Ok(Vec::new())` on LLM errors, not `Err`.
+**Why**: AI suggestions are a nice-to-have enhancement. Propagating errors would force the frontend to show error UI for a non-critical feature. Returning empty gracefully hides the failure — the user just sees no suggestions, same as if AI were not installed.
+
 ## Dependencies
 
 External: `reqwest`, `tokio`, `flate2`, `tar`, `libc`, `futures_util`

@@ -75,6 +75,28 @@ never blocks clicks. Displays a CSS spinner and a live label like `Scanning... 4
 `formatNumber` from selection-info-utils for number formatting (uses `'en-US'` locale, hardcoded via
 `toLocaleString('en-US')`).
 
+## Key decisions
+
+**Decision**: "Listen first, then query" initialization pattern in `initIndexState`.
+**Why**: The Rust indexer starts in Tauri's `setup()` hook, which runs before the frontend mounts. If we registered
+listeners after querying status, we'd have a race window where `index-scan-started` fires between the query and the
+listener registration, leaving the UI stuck on "not scanning". Registering listeners first closes this gap — any event
+that fires during or after the query is caught.
+
+**Decision**: All priority/cancel IPC calls silently swallow errors.
+**Why**: Indexing is an optional subsystem — it may be disabled in settings, not yet initialized (setup hook hasn't
+finished), or unavailable on certain volumes. Bubbling these errors would require every call site to handle a "not
+available" state, adding noise for a best-effort optimization feature.
+
+**Decision**: Two priority levels (`user_selected` vs `current_dir`) instead of a single "prioritize" call.
+**Why**: The Rust indexer uses these to decide queue ordering. `current_dir` (user navigated into a folder) gets higher
+priority than `user_selected` (cursor hovered over a folder). `cancelNavPriority` only cancels `current_dir` scans on
+navigate-away, leaving `user_selected` scans running — the user might navigate back.
+
+**Decision**: Scan overlay uses `pointer-events: none`.
+**Why**: The overlay sits in the top-right corner over the file list. Without `pointer-events: none`, it would intercept
+clicks on files near the corner. The overlay is purely informational — no interactive elements.
+
 ## No tests
 
 No unit or integration tests exist for this module yet. Manual testing via the Rust indexer with `pnpm dev`.

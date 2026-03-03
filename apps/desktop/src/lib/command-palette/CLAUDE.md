@@ -48,6 +48,51 @@ segments and renders `<mark class="match-highlight">` for matched chars.
 **jsdom limitation**: `scrollIntoView` is not implemented in jsdom; tests mock it via
 `Element.prototype.scrollIntoView = vi.fn()`.
 
+## Key decisions
+
+**Decision**: Own overlay and modal, not using the shared `ModalDialog` component.
+**Why**: The command palette has unique interaction requirements (live fuzzy filtering, keyboard-first navigation,
+two-cursor hover model) that don't fit `ModalDialog`'s confirm/cancel pattern. Sharing would mean adding palette-
+specific escape hatches to a generic component. The palette's overlay also needs `stopPropagation` on all keydown
+events — a concern that shouldn't leak into a shared component.
+
+**Decision**: Two independent cursor models (`cursorIndex` for keyboard, `hoveredIndex` for mouse).
+**Why**: VS Code and Spotlight both have this behavior: arrow keys move a "hard" cursor, while mouse hover shows a
+"soft" highlight that doesn't interfere with keyboard navigation. Arrow keys clear `hoveredIndex` so there's never
+two items highlighted at the same intensity. Without this separation, moving the mouse would fight keyboard navigation.
+
+**Decision**: Query persisted across open/close via `app-status-store`.
+**Why**: Users often open the palette, run a command, then reopen to run a related command. Preserving the query saves
+retyping. Saved on every close path (Escape, Enter, overlay click) to ensure nothing is lost.
+
+**Decision**: `$derived` for search results instead of debounced input.
+**Why**: `searchCommands()` via uFuzzy is fast enough for ~60 commands that debouncing would only add latency. The
+`$derived` reactive binding reruns the search synchronously on every keystroke, keeping results perfectly in sync with
+the input. Debouncing would be needed if the command list grew to thousands.
+
+**Decision**: `formatShortcuts()` caps display at 2 shortcuts via `.slice(0, 2)`.
+**Why**: Some commands have many shortcuts (e.g., `nav.parent` has `Backspace` and `Cmd+Up`). Showing all of them
+would crowd the result row. Two is enough for discoverability; the full list lives in the shortcuts settings.
+
+## Gotchas
+
+**Gotcha**: `stopPropagation()` is called on every `keydown`, not just handled keys.
+**Why**: Without this, unhandled keys (letters, numbers) would propagate to the file explorer behind the modal and
+trigger quick-search or other handlers. The palette's overlay div catches all keyboard events first.
+
+**Gotcha**: `cursorIndex` and `hoveredIndex` both reset on every query change.
+**Why**: After typing, the old cursor position may point beyond the new results array. Resetting to 0 / null avoids
+an out-of-bounds index. This happens in a `$effect` tracking `query`.
+
+**Gotcha**: `scrollIntoView` is mocked in tests (`Element.prototype.scrollIntoView = vi.fn()`).
+**Why**: jsdom doesn't implement `scrollIntoView`. The palette calls it after arrow key navigation to keep the cursor
+visible. Tests would crash without the mock.
+
+**Gotcha**: Overlay click detection uses `e.target === e.currentTarget`.
+**Why**: Clicks on the modal content (input, results) bubble up to the overlay. Only clicks on the semi-transparent
+backdrop itself should close the palette. Checking `target === currentTarget` ensures the click originated on the
+overlay div, not a child.
+
 ## Adding a new command
 
 Add the command to `$lib/commands/command-registry.ts` and handle the ID in the `handleCommandExecute` switch in

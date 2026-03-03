@@ -52,6 +52,37 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
 
 Both `VolumeManager` and parts of `Volume` are gated with `#[allow(dead_code)]` pending Phase 2/4 integration into `operations.rs` and `lib.rs`. `LocalPosixVolume` is already wired into the indexing subsystem.
 
+## Key decisions
+
+**Decision**: Trait with optional methods defaulting to `NotSupported`/`false`
+**Why**: New volume types (SMB, S3, FTP) will have vastly different capability sets. Forcing every implementor to stub out every method would be noisy and error-prone. Defaults let new backends start with just `list_directory` + `get_metadata` and opt in to capabilities incrementally. The alternative — a capabilities bitfield — would require runtime checks everywhere and couldn't express return-type differences.
+
+**Decision**: `VolumeScanner` and `VolumeWatcher` are separate sub-traits, not part of `Volume`
+**Why**: Scanning and watching have their own lifetimes, threading models, and state (handles, channels). Folding them into `Volume` would force every volume to carry scanner/watcher state even if it never indexes. Returning `Option<Box<dyn VolumeScanner>>` keeps the core trait lightweight.
+
+**Decision**: `VolumeManager` uses `RwLock<HashMap>` (not `DashMap` or `Mutex`)
+**Why**: Volume registration/unregistration is rare (mount/unmount events); reads are frequent (every file operation resolves a volume). `RwLock` gives concurrent read access without pulling in an extra dependency. `DashMap` would work but is heavier than needed for a registry that rarely exceeds ~10 entries.
+
+**Decision**: `MtpVolume` bridges sync `Volume` trait to async MTP calls via `Handle::block_on`
+**Why**: The `Volume` trait is synchronous because local filesystem ops are blocking and shouldn't touch the async executor. MTP operations are inherently async (USB bulk transfers), so `block_on` bridges the gap. This is safe because MTP methods are always called from `spawn_blocking` contexts (separate OS thread pool), avoiding nested-runtime panics.
+
+**Decision**: `VolumeError` stores `String` messages, not the original `std::io::Error`
+**Why**: `std::io::Error` is not `Clone`, but `VolumeError` needs to be `Clone` for ergonomic error propagation across thread boundaries and for serialization to the frontend. Storing the formatted message loses the original error type but keeps the information that matters for user-facing error messages.
+
+**Decision**: `LocalPosixVolume` uses `symlink_metadata` for `exists()` instead of `Path::exists()`
+**Why**: `Path::exists()` follows symlinks — a dangling symlink returns `false`, which would make the volume claim a file doesn't exist when it visibly does in a directory listing. `symlink_metadata` detects the symlink itself, matching what the user sees.
+
+## Gotchas
+
+**Gotcha**: `write_from_stream` in `MtpVolume` must collect all chunks *before* entering `block_on`
+**Why**: `MtpReadStream::next_chunk()` itself calls `block_on` internally to read from the async download stream. If `write_from_stream` entered `block_on` first and then called `next_chunk` inside it, you'd get a nested `block_on` panic. The workaround is to eagerly materialize all chunks into a `Vec<Bytes>`, then do one `block_on` for the upload.
+
+**Gotcha**: `LocalPosixVolume::resolve` has a three-way branch for absolute paths
+**Why**: The frontend sometimes sends full absolute paths (like `/Users/alice/Documents`), not paths relative to the volume root. If the volume root is `/Users/alice/Dropbox`, the resolve logic must detect whether the absolute path is already inside the root (pass through), whether the root is `/` (pass through), or neither (strip leading `/` and join). Getting this wrong silently serves the wrong directory.
+
+**Gotcha**: `MtpVolume::get_metadata` returns `NotSupported`
+**Why**: MTP has no single-file stat call — you must list the parent directory and search for the entry by name. The listing pipeline doesn't use `get_metadata` during normal browsing (it gets metadata from `list_directory` results), so implementing it would add an expensive round-trip for a code path that's currently unused.
+
 ## Testing
 
 - `in_memory_test.rs` — unit tests for `InMemoryVolume` (CRUD, sorting, concurrency, stress 50k entries)

@@ -16,6 +16,14 @@ On other platforms (not macOS, not Linux), all stubs are used. Never compiled on
 | `accent_color.rs` | `get_accent_color` returns `"#d4a006"` (brand gold fallback). Only compiled on non-macOS, non-Linux platforms. |
 | `mtp.rs` | All MTP commands return `MtpConnectionError::NotSupported`; defines its own local `FileEntry` subset and additional stub types: `ConnectedDeviceInfo`, `MtpOperationResult`, `MtpObjectInfo`, `MtpScanResult`. Only compiled on non-macOS, non-Linux platforms. |
 
+## Key decisions
+
+**Decision**: Duplicate `FileEntry` struct in `stubs/mtp.rs` instead of importing `crate::file_system::FileEntry`.
+**Why**: Stubs are compiled on platforms where the real `file_system` module may have platform-specific dependencies or conditional compilation that differs. Keeping the stub dependency-free avoids pulling in code that may not compile on the target platform, and keeps stub compilation fast by minimizing the dependency graph.
+
+**Decision**: Stubs return hardcoded success values (empty vecs, `true` for permissions) rather than errors.
+**Why**: The frontend doesn't branch on platform — it calls the same commands everywhere. Returning errors would trigger error-handling UI (toast notifications, retry prompts) on unsupported platforms, confusing users. Returning empty/success means the feature silently doesn't appear, which is the correct UX for "not available on this platform."
+
 ## Key patterns and gotchas
 
 - **JSON shape must match macOS.** The frontend does not branch on platform. If a macOS type gains or loses fields, the corresponding stub type needs manual alignment. This is most fragile in `stubs/mtp.rs`, which has a local `FileEntry` that mirrors `crate::file_system::FileEntry` — if the real struct changes, update the stub too.

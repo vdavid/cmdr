@@ -23,6 +23,20 @@ immediately to business-logic modules. No significant logic lives here.
 | `indexing.rs` | Drive index | `start_drive_index`, `stop_drive_index`, `get_index_status`, `get_dir_stats`, `get_dir_stats_batch`, `prioritize_dir`, `cancel_nav_priority`, `clear_drive_index`, `set_indexing_enabled`. Uses `State<IndexManagerState>`. |
 | `sync_status.rs` | Cloud sync status | `get_sync_status` — macOS delegates to `file_system::sync_status`; non-macOS returns empty map via `#[cfg]` on the function itself (not the module). |
 
+## Key decisions
+
+**Decision**: One commands file per domain, with no business logic in commands.
+**Why**: Tauri command functions are the IPC boundary -- they handle argument deserialization, state extraction, and error mapping. Mixing business logic here makes it untestable (Tauri commands need a running app to invoke). Keeping commands as thin pass-throughs means the real logic lives in subsystem modules that can be unit-tested independently.
+
+**Decision**: Platform gating at the module level in `mod.rs`, not inside individual functions.
+**Why**: Entire command surfaces (MTP, network, volumes) are platform-specific. Gating at the module level means the compiler excludes unused code entirely rather than compiling stub functions. This also prevents accidentally calling an unsupported command -- if the module doesn't exist on that platform, the Tauri command isn't registered at all.
+
+**Decision**: `blocking_with_timeout` for filesystem calls that may touch network mounts.
+**Why**: `spawn_blocking` alone doesn't protect against hung NFS/SMB mounts where a simple `path.exists()` can block indefinitely. The timeout wrapper (2s default) returns a fallback value instead of freezing the async runtime. This is specifically for the listing pipeline where latency matters more than correctness -- a false "doesn't exist" is better than a frozen UI.
+
+**Decision**: No `commands/ai.rs` file -- AI commands register directly from `ai::manager` and `ai::suggestions`.
+**Why**: The AI subsystem has its own complex lifecycle (model loading, suggestion pipelines). Adding a thin wrapper in `commands/` would just be boilerplate forwarding. Registering directly keeps the AI command surface co-located with its implementation, which changes frequently.
+
 ## Key patterns and gotchas
 
 - **No business logic here.** If you find yourself adding branching or data transformation, move it to the relevant subsystem module.
