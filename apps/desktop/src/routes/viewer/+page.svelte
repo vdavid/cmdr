@@ -399,6 +399,14 @@
         searchStatus = 'idle'
     }
 
+    /** Stops the background scan but keeps accumulated matches for browsing. */
+    function stopSearch() {
+        stopSearchPoll()
+        if (!sessionId) return
+        viewerSearchCancel(sessionId).catch(() => {})
+        searchStatus = 'cancelled'
+    }
+
     // Indexing status polling functions
     function startIndexingPoll() {
         stopIndexingPoll()
@@ -620,7 +628,11 @@
                 windowReady,
             })
             if (searchVisible) {
-                closeSearch()
+                if (searchStatus === 'running') {
+                    stopSearch()
+                } else {
+                    closeSearch()
+                }
             } else {
                 closeWindow()
             }
@@ -853,17 +865,28 @@
                 spellcheck="false"
             />
             <span class="match-count" aria-live="polite">
-                {#if searchMatches.length > 0}
-                    {currentMatchIndex + 1} of {searchMatches.length}{searchLimitReached ? '+' : ''}
-                    {#if searchStatus === 'running'}
-                        ({Math.round(searchProgress * 100)}%)
+                {#if searchStatus === 'running'}
+                    <span class="spinner spinner-sm search-spinner" aria-hidden="true"></span>
+                    {#if searchMatches.length > 0}
+                        {currentMatchIndex + 1} of {searchMatches.length}{searchLimitReached ? '+' : ''}
+                        &middot; {Math.round(searchProgress * 100)}%
+                    {:else}
+                        Searching... {Math.round(searchProgress * 100)}%
                     {/if}
-                {:else if searchStatus === 'running'}
-                    Searching... {Math.round(searchProgress * 100)}%
-                {:else if searchQuery && searchStatus === 'done'}
-                    No matches
+                {:else if searchMatches.length > 0}
+                    {currentMatchIndex + 1} of {searchMatches.length}{searchLimitReached ? '+' : ''}
+                    {#if searchStatus === 'cancelled'}
+                        (partial)
+                    {/if}
+                {:else if searchQuery && (searchStatus === 'done' || searchStatus === 'cancelled')}
+                    No matches{searchStatus === 'cancelled' ? ' (partial)' : ''}
                 {/if}
             </span>
+            {#if searchStatus === 'running'}
+                <button onclick={stopSearch} aria-label="Stop searching" use:tooltip={'Stop scanning and keep results'}
+                    >&#x25A0;</button
+                >
+            {/if}
             <button
                 onclick={findPrev}
                 disabled={searchMatches.length === 0}
@@ -879,6 +902,17 @@
             <button onclick={closeSearch} aria-label="Close search" use:tooltip={{ text: 'Close', shortcut: 'Esc' }}
                 >&#x2715;</button
             >
+            {#if searchStatus === 'running'}
+                <div
+                    class="search-progress"
+                    role="progressbar"
+                    aria-valuenow={Math.round(searchProgress * 100)}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                >
+                    <div class="search-progress-fill" style="width: {searchProgress * 100}%"></div>
+                </div>
+            {/if}
         </div>
     {/if}
 
@@ -973,6 +1007,7 @@
     }
 
     .search-bar {
+        position: relative;
         display: flex;
         align-items: center;
         gap: var(--spacing-xs);
@@ -1003,6 +1038,34 @@
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
         min-width: 70px;
+        white-space: nowrap;
+    }
+
+    .search-spinner {
+        vertical-align: text-bottom;
+        margin-right: 2px;
+    }
+
+    .search-progress {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--color-bg-tertiary);
+        overflow: hidden;
+    }
+
+    .search-progress-fill {
+        height: 100%;
+        background: var(--color-accent);
+        transition: width var(--transition-base);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .search-progress-fill {
+            transition: none;
+        }
     }
 
     .search-bar button {
