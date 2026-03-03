@@ -129,23 +129,49 @@ func parseFlags() *cliFlags {
 }
 
 // selectChecks determines which checks to run based on flags.
+// Flags are additive: --check clippy --svelte runs clippy plus all Svelte checks.
 func selectChecks(flags *cliFlags) ([]checks.CheckDefinition, error) {
+	hasFilter := len(flags.checkNames) > 0 || flags.appName != "" || flags.rustOnly || flags.svelteOnly || flags.goOnly
+	if !hasFilter {
+		return checks.AllChecks, nil
+	}
+
+	seen := make(map[string]bool)
+	var result []checks.CheckDefinition
+	addUnique := func(cs []checks.CheckDefinition) {
+		for _, c := range cs {
+			if !seen[c.ID] {
+				seen[c.ID] = true
+				result = append(result, c)
+			}
+		}
+	}
+
 	if len(flags.checkNames) > 0 {
-		return selectChecksByID(flags.checkNames)
+		named, err := selectChecksByID(flags.checkNames)
+		if err != nil {
+			return nil, err
+		}
+		addUnique(named)
 	}
 	if flags.appName != "" {
-		return selectChecksByApp(flags.appName)
+		byApp, err := selectChecksByApp(flags.appName)
+		if err != nil {
+			return nil, err
+		}
+		addUnique(byApp)
 	}
 	if flags.rustOnly {
-		return checks.GetChecksByTech(checks.AppDesktop, "🦀 Rust"), nil
+		addUnique(checks.GetChecksByTech(checks.AppDesktop, "🦀 Rust"))
 	}
 	if flags.svelteOnly {
-		return checks.GetChecksByTech(checks.AppDesktop, "🎨 Svelte"), nil
+		addUnique(checks.GetChecksByTech(checks.AppDesktop, "🎨 Svelte"))
 	}
 	if flags.goOnly {
-		return checks.GetChecksByTech(checks.AppScripts, "🐹 Go"), nil
+		addUnique(checks.GetChecksByTech(checks.AppScripts, "🐹 Go"))
 	}
-	return checks.AllChecks, nil
+
+	return result, nil
 }
 
 // selectChecksByID returns checks matching the given IDs.
