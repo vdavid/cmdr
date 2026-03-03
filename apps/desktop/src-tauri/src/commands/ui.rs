@@ -241,7 +241,7 @@ pub fn set_menu_context<R: Runtime>(app: AppHandle<R>, context: String) -> Resul
     for (id, entry) in menu_state.items.lock_ignore_poison().iter() {
         // Close tab stays enabled: on_menu_event has special logic to close the focused
         // non-main window when main isn't focused (standard ⌘W behavior on macOS).
-        if id == &CLOSE_TAB_ID {
+        if id == CLOSE_TAB_ID {
             continue;
         }
         let is_app = matches!(menu_id_to_command(id), Some((_, CommandScope::App)));

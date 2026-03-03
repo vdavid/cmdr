@@ -6,7 +6,7 @@ use std::sync::Mutex;
 use std::sync::atomic::AtomicBool;
 
 use super::byte_seek::ByteSeekBackend;
-use super::{FileViewerBackend, SearchMatch, SeekTarget};
+use super::{FileViewerBackend, MAX_SEARCH_MATCHES, SearchMatch, SeekTarget};
 
 fn create_test_dir(name: &str) -> PathBuf {
     let dir = std::env::temp_dir().join(format!("cmdr_viewer_byte_{}", name));
@@ -338,6 +338,30 @@ fn empty_file() {
     let chunk = backend.get_lines(&SeekTarget::ByteOffset(0), 10).unwrap();
     // Empty file should produce empty lines
     assert!(chunk.lines.is_empty() || (chunk.lines.len() == 1 && chunk.lines[0].is_empty()));
+
+    cleanup(&dir);
+}
+
+#[test]
+fn search_caps_at_match_limit() {
+    let dir = create_test_dir("search_cap");
+    let line_count = MAX_SEARCH_MATCHES + 1000;
+    let content = "aa\n".repeat(line_count);
+    let file = write_test_file(&dir, "test.txt", &content);
+
+    let backend = ByteSeekBackend::open(&file).unwrap();
+    let cancel = AtomicBool::new(false);
+    let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
+
+    let scanned = backend.search("a", &cancel, &results, &progress).unwrap();
+    let matches = results.lock().unwrap();
+
+    // Should cap at exactly MAX_SEARCH_MATCHES
+    assert_eq!(matches.len(), MAX_SEARCH_MATCHES);
+    // But should still scan the entire file for progress
+    assert_eq!(scanned, backend.total_bytes());
+    assert_eq!(*progress.lock().unwrap(), backend.total_bytes());
 
     cleanup(&dir);
 }

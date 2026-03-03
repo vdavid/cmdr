@@ -54,6 +54,8 @@ export interface SearchPollResult {
     matches: ViewerSearchMatch[]
     totalBytes: number
     bytesScanned: number
+    /** True when match count was capped (search kept scanning for progress but stopped storing) */
+    matchLimitReached: boolean
 }
 
 /** Opens a viewer session for a file. Returns session metadata + initial lines. */

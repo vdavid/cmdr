@@ -8,7 +8,7 @@ use std::path::Path;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use super::{BackendCapabilities, FileViewerBackend, LineChunk, SearchMatch, SeekTarget, ViewerError};
+use super::{BackendCapabilities, FileViewerBackend, LineChunk, MAX_SEARCH_MATCHES, SearchMatch, SeekTarget, ViewerError};
 
 pub struct FullLoadBackend {
     lines: Vec<String>,
@@ -133,25 +133,32 @@ impl FileViewerBackend for FullLoadBackend {
     ) -> Result<u64, ViewerError> {
         let query_lower = query.to_lowercase();
         let mut scanned: u64 = 0;
+        let mut limit_reached = false;
 
         for (line_idx, line) in self.lines.iter().enumerate() {
             if cancel.load(Ordering::Relaxed) {
                 break;
             }
 
-            let line_lower = line.to_lowercase();
-            let mut search_start = 0;
-            while let Some(pos) = line_lower[search_start..].find(&query_lower) {
-                let col_bytes = search_start + pos;
-                let col_utf16: usize = line_lower[..col_bytes].chars().map(|c| c.len_utf16()).sum();
-                let len_utf16: usize = query_lower.chars().map(|c| c.len_utf16()).sum();
-                let mut matches = results.lock_ignore_poison();
-                matches.push(SearchMatch {
-                    line: line_idx,
-                    column: col_utf16,
-                    length: len_utf16,
-                });
-                search_start = col_bytes + query_lower.len();
+            if !limit_reached {
+                let line_lower = line.to_lowercase();
+                let mut search_start = 0;
+                while let Some(pos) = line_lower[search_start..].find(&query_lower) {
+                    let col_bytes = search_start + pos;
+                    let col_utf16: usize = line_lower[..col_bytes].chars().map(|c| c.len_utf16()).sum();
+                    let len_utf16: usize = query_lower.chars().map(|c| c.len_utf16()).sum();
+                    let mut matches = results.lock_ignore_poison();
+                    matches.push(SearchMatch {
+                        line: line_idx,
+                        column: col_utf16,
+                        length: len_utf16,
+                    });
+                    if matches.len() >= MAX_SEARCH_MATCHES {
+                        limit_reached = true;
+                        break;
+                    }
+                    search_start = col_bytes + query_lower.len();
+                }
             }
 
             scanned += line.len() as u64 + 1; // +1 for newline

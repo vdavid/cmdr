@@ -6,7 +6,7 @@ use std::sync::Mutex;
 use std::sync::atomic::AtomicBool;
 
 use super::full_load::FullLoadBackend;
-use super::{FileViewerBackend, SearchMatch, SeekTarget};
+use super::{FileViewerBackend, MAX_SEARCH_MATCHES, SearchMatch, SeekTarget};
 
 fn create_test_dir(name: &str) -> PathBuf {
     let dir = std::env::temp_dir().join(format!("cmdr_viewer_full_{}", name));
@@ -298,4 +298,25 @@ fn single_line_no_newline() {
     assert_eq!(backend.total_lines(), Some(1));
     let chunk = backend.get_lines(&SeekTarget::Line(0), 10).unwrap();
     assert_eq!(chunk.lines, vec!["just one line"]);
+}
+
+#[test]
+fn search_caps_at_match_limit() {
+    // Each line has "aa" which matches "a" twice, so we need MAX/2 + extra lines to exceed the limit
+    let line_count = MAX_SEARCH_MATCHES + 1000;
+    let content = "aa\n".repeat(line_count);
+    let backend = FullLoadBackend::from_content(&content, "test.txt");
+
+    let cancel = AtomicBool::new(false);
+    let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
+
+    backend.search("a", &cancel, &results, &progress).unwrap();
+    let matches = results.lock().unwrap();
+
+    // Should cap at exactly MAX_SEARCH_MATCHES
+    assert_eq!(matches.len(), MAX_SEARCH_MATCHES);
+    // Progress should cover the full file (FullLoad scanned bytes may overshoot by 1
+    // due to the trailing empty line from split('\n') getting +1 for a non-existent newline)
+    assert!(*progress.lock().unwrap() >= backend.total_bytes());
 }

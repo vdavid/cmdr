@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::thread;
 use std::time::Duration;
 
-use super::FULL_LOAD_THRESHOLD;
+use super::{FULL_LOAD_THRESHOLD, MAX_SEARCH_MATCHES};
 use super::session::{self, SearchStatus};
 
 fn create_test_dir(name: &str) -> PathBuf {
@@ -250,5 +250,37 @@ fn multiple_sessions() {
 
     session::close_session(&res1.session_id).unwrap();
     session::close_session(&res2.session_id).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn search_poll_reports_match_limit() {
+    let dir = create_test_dir("search_limit");
+    // "a" appears twice per line ("aa"), need enough lines to exceed the cap
+    let content = "aa\n".repeat(MAX_SEARCH_MATCHES + 1000);
+    let file = write_test_file(&dir, "test.txt", &content);
+
+    let open_result = session::open_session(file.to_str().unwrap()).unwrap();
+    let sid = &open_result.session_id;
+
+    session::search_start(sid, "a".to_string()).unwrap();
+
+    // Poll until done
+    let mut done = false;
+    for _ in 0..200 {
+        let poll = session::search_poll(sid).unwrap();
+        if matches!(poll.status, SearchStatus::Done) {
+            assert_eq!(poll.matches.len(), MAX_SEARCH_MATCHES);
+            assert!(poll.match_limit_reached);
+            // Progress should cover the full file
+            assert_eq!(poll.bytes_scanned, poll.total_bytes);
+            done = true;
+            break;
+        }
+        thread::sleep(Duration::from_millis(10));
+    }
+    assert!(done, "Search did not complete in time");
+
+    session::close_session(sid).unwrap();
     cleanup(&dir);
 }

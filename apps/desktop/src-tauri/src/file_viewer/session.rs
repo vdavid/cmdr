@@ -18,7 +18,8 @@ use super::byte_seek::ByteSeekBackend;
 use super::full_load::FullLoadBackend;
 use super::line_index::LineIndexBackend;
 use super::{
-    BackendCapabilities, FULL_LOAD_THRESHOLD, FileViewerBackend, LineChunk, SearchMatch, SeekTarget, ViewerError,
+    BackendCapabilities, FULL_LOAD_THRESHOLD, FileViewerBackend, LineChunk, MAX_SEARCH_MATCHES, SearchMatch, SeekTarget,
+    ViewerError,
 };
 
 /// Which backend strategy is active for a session.
@@ -74,6 +75,9 @@ pub struct SearchPollResult {
     pub matches: Vec<SearchMatch>,
     pub total_bytes: u64,
     pub bytes_scanned: u64,
+    /// True when the match list was capped at MAX_SEARCH_MATCHES. The search kept scanning
+    /// (for progress) but stopped storing new matches.
+    pub match_limit_reached: bool,
 }
 
 /// Internal state for an active search.
@@ -362,17 +366,20 @@ pub fn search_poll(session_id: &str) -> Result<SearchPollResult, ViewerError> {
             matches: Vec::new(),
             total_bytes,
             bytes_scanned: 0,
+            match_limit_reached: false,
         }),
         Some(search) => {
             let status = search.status.lock_ignore_poison().clone();
             let matches = search.matches.lock_ignore_poison().clone();
             let bytes_scanned = *search.bytes_scanned.lock_ignore_poison();
+            let match_limit_reached = matches.len() >= MAX_SEARCH_MATCHES;
 
             Ok(SearchPollResult {
                 status,
                 matches,
                 total_bytes,
                 bytes_scanned,
+                match_limit_reached,
             })
         }
     }

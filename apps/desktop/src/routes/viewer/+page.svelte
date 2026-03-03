@@ -85,6 +85,7 @@
     let currentMatchIndex = $state(-1)
     let searchStatus = $state<'idle' | 'running' | 'done' | 'cancelled'>('idle')
     let searchProgress = $state(0)
+    let searchLimitReached = $state(false)
     let searchInputRef: HTMLInputElement | undefined = $state()
     let searchPollTimer: ReturnType<typeof setInterval> | undefined
 
@@ -315,6 +316,7 @@
         currentMatchIndex = -1
         searchStatus = 'running'
         searchProgress = 0
+        searchLimitReached = false
 
         try {
             await viewerSearchStart(sessionId, query)
@@ -337,6 +339,7 @@
             const result = await viewerSearchPoll(sessionId)
             searchMatches = result.matches
             searchProgress = totalBytes > 0 ? result.bytesScanned / totalBytes : 0
+            searchLimitReached = result.matchLimitReached
             if (currentMatchIndex === -1 && result.matches.length > 0) {
                 currentMatchIndex = 0
             }
@@ -417,6 +420,7 @@
         searchMatches = []
         currentMatchIndex = -1
         searchProgress = 0
+        searchLimitReached = false
     }
 
     function findNext() {
@@ -790,7 +794,10 @@
             />
             <span class="match-count" aria-live="polite">
                 {#if searchMatches.length > 0}
-                    {currentMatchIndex + 1} of {searchMatches.length}
+                    {currentMatchIndex + 1} of {searchMatches.length}{searchLimitReached ? '+' : ''}
+                    {#if searchStatus === 'running'}
+                        ({Math.round(searchProgress * 100)}%)
+                    {/if}
                 {:else if searchStatus === 'running'}
                     Searching... {Math.round(searchProgress * 100)}%
                 {:else if searchQuery && searchStatus === 'done'}
