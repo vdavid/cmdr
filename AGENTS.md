@@ -197,7 +197,8 @@ Always do a last round of checks before wrapping up:
 2. Will this lead to superb UX for the end-user, with sufficient transparency into the work that's happening?
 3. Is this as fast as possible, adhering to the "blazing fast" promise we have?
 4. Discuss with the user anything that's not great, or fix if straightforward then GOTO point 1.
-5. For every directory you touched that has a `CLAUDE.md`: re-read it, verify it still matches the code, and update
+5. If you added a new Tauri command or IPC call that touches the filesystem, check `docs/architecture.md` § Platform constraints.
+6. For every directory you touched that has a `CLAUDE.md`: re-read it, verify it still matches the code, and update
    any `Decision/Why` or `Gotcha/Why` entries your changes invalidated. Updating the doc is as important as the code
    change itself.
 

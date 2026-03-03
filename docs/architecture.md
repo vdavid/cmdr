@@ -229,6 +229,26 @@ Philosophy: status is "where you are" (ephemeral), settings are "how you like it
 | License | **Immediate** (Rust `autoSave`) | None |
 | Window size/position | Debounced 500ms on resize; immediate on normal close | Size since last resize settled |
 
+### Platform constraints
+
+Rules that cut across many modules. Violating these causes hard-to-reproduce freezes.
+
+1. **Tauri IPC threading.** Synchronous `#[tauri::command]` functions block the IPC handler thread.
+   If one command hangs (e.g., a filesystem syscall on a dead network mount), ALL subsequent IPC
+   calls from the frontend queue behind it and the app appears frozen. Mitigation: use `async`
+   commands with `blocking_with_timeout` for anything that touches the filesystem. `path_exists` in
+   `commands/file_system.rs` is the reference implementation.
+
+2. **Network mount blocking syscalls.** Any syscall that touches a mounted filesystem path can block
+   indefinitely on slow/hung network mounts: `statfs`, `readdir`, `metadata()`, `NSURL` resource
+   queries, even `realpath`. The kernel waits for the mount's timeout (30–120s). These MUST be
+   wrapped in `blocking_with_timeout` or run on a separate thread with a timeout.
+
+3. **Frontend fan-out risk.** `Promise.all` patterns that fire multiple IPC calls (e.g., fetching
+   disk space for all volumes) are dangerous when any target is a slow network mount. One blocked
+   call doesn't block the others in JS, BUT if that call occupies the Tauri IPC handler thread
+   (sync command), subsequent calls queue behind it. See constraint 1.
+
 ### macOS specifics
 
 - **Full Disk Access**: checked via `~/Library/Mail` readability (<5ms). Prompt on first launch.
