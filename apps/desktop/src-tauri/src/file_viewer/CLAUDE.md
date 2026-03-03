@@ -51,12 +51,12 @@ if file_size < 1MB {
 **Decision**: Sparse checkpoints every 256 lines instead of indexing every line.
 **Why**: Indexing every line in a 100M-line file would need ~800 MB of offset data (8 bytes each). At 256-line intervals, the same file needs ~3 MB. The trade-off is that seeking to a specific line requires reading forward up to 255 lines from the nearest checkpoint, which takes <1ms on any modern disk — well within the 16ms frame budget for 60fps scrolling.
 
-**Decision**: Session map (`VIEWER_SESSIONS`) is a global `LazyLock<Mutex<HashMap>>` rather than Tauri managed state.
+**Decision**: Session map (`SESSIONS`) is a global `LazyLock<Mutex<HashMap>>` rather than Tauri managed state.
 **Why**: Same reasoning as the AI manager — viewer sessions need to be accessed from background threads (search, indexing) that don't have an `AppHandle`. A global makes the session cache accessible from any context without threading an `AppHandle` through every call chain.
 
 ## Gotchas
 
-- **VIEWER_SESSIONS is unbounded** — grows with each `viewer_open`. Must call `viewer_close` when window closes (not automatic).
+- **SESSIONS is unbounded** — grows with each `viewer_open`. Must call `viewer_close` when window closes (not automatic).
 - **LineIndex build is async** — `ViewerSession` upgrades backend when ready. Frontend sees backend type change via status query.
 - **Search state per session** — only one search can run per session. Starting a new search cancels the previous one.
 - **UTF-16 offsets for JS compatibility** — `SearchMatch.column` and `.length` are in UTF-16 code units, matching JS `String.substring()`.

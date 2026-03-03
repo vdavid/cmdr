@@ -78,7 +78,7 @@ Call `dismissTransientToasts()` on pane navigation to clear stale feedback.
 
 `CommandBox.svelte` — monospace terminal command with a one-click Copy button and 2-second "Copied!" feedback. Takes a
 single `command` string prop. Handles clipboard internally (`copyToClipboard` with `navigator.clipboard` fallback).
-Parent controls spacing via its own wrapper. Used in `PtpcameradDialog` and `ShareBrowser`.
+Parent controls spacing via its own wrapper. Used in `PtpcameradDialog`, `MtpPermissionDialog`, and `ShareBrowser`.
 
 ## Key decisions
 

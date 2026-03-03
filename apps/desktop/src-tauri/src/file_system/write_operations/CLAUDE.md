@@ -1,6 +1,6 @@
 # Write operations
 
-Copy, move, delete, and trash with streaming progress, cancellation, conflict resolution, and rollback. macOS only.
+Copy, move, delete, and trash with streaming progress, cancellation, conflict resolution, and rollback. macOS and Linux.
 
 ## Purpose
 
@@ -20,9 +20,10 @@ network mounts, cross-filesystem moves, and name/path length limits.
 | `copy.rs` | `copy_files_with_progress`: scan → disk space check → per-file copy via `copy_single_item`. `CopyTransaction` for rollback. |
 | `move_op.rs` | Same-fs: `fs::rename`. Cross-fs: copy to `.cmdr-staging-<uuid>`, atomic rename, delete sources. |
 | `delete.rs` | Scan, delete files first, then directories in reverse/deepest-first order. Not rollbackable. |
-| `trash.rs` | `move_to_trash_sync()` (ObjC `trashItemAtURL` wrapper, reused by `commands/rename.rs`) and `trash_files_with_progress()` (batch trash with per-item progress, cancellation, partial failure). Uses `symlink_metadata()` for existence checks (handles dangling symlinks). |
-| `copy_strategy.rs` | Strategy selection per file: network FS → chunked copy; overwrite → temp+rename; otherwise → macOS `copyfile(3)`. |
+| `trash.rs` | `move_to_trash_sync()` (macOS: ObjC `trashItemAtURL`; Linux: `trash` crate; reused by `commands/rename.rs`) and `trash_files_with_progress()` (batch trash with per-item progress, cancellation, partial failure). Uses `symlink_metadata()` for existence checks (handles dangling symlinks). |
+| `copy_strategy.rs` | Strategy selection per file: network FS → chunked copy; overwrite → temp+rename; macOS → `copyfile(3)`; Linux → `copy_file_range(2)`. |
 | `macos_copy.rs` | FFI to macOS `copyfile(3)`. Preserves xattrs, ACLs, resource forks, Finder metadata. Supports APFS `clonefile`. |
+| `linux_copy.rs` | Linux `copy_file_range(2)` with reflink support on btrfs/XFS. 4 MB chunks, cancellation between iterations. |
 | `chunked_copy.rs` | 1 MB chunked read/write for network mounts. Checks cancellation between chunks. Copies xattrs, ACLs, timestamps. |
 | `volume_copy.rs`, `volume_conflict.rs`, `volume_strategy.rs` | Volume-to-volume copy (Local↔MTP abstraction). Publicly re-exported from `mod.rs` and at least partially wired up. |
 | `tests.rs`, `integration_test.rs` | Unit and integration tests. |
@@ -81,7 +82,9 @@ actual `copy_files_start` can consume the cache via `preview_id` in `WriteOperat
 **Copy strategy selection** (`copy_strategy.rs`):
 - Destination is a network mount → `chunked_copy_with_metadata` (macOS `copyfile` ignores `COPYFILE_QUIT` on network mounts)
 - Needs safe overwrite → `safe_overwrite_file`
-- Otherwise → `copy_single_file_native` (macOS `copyfile(3)`, supports `COPYFILE_CLONE` for APFS instant copies)
+- macOS → `copy_single_file_native` (macOS `copyfile(3)`, supports `COPYFILE_CLONE` for APFS instant copies)
+- Linux → `copy_single_file_linux` (Linux `copy_file_range(2)`, supports reflink on btrfs/XFS)
+- Other platforms → `std::fs::copy` fallback
 
 **Trash has no scan phase.** `trashItemAtURL` is atomic per top-level item (the OS moves the entire tree), so trash
 doesn't need the recursive scan that delete/copy use. Progress tracks top-level items, with optional byte-level progress

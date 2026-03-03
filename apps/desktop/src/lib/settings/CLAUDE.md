@@ -47,7 +47,7 @@ collapsed-section previews.
 ### Other files
 
 - **settings-search.ts** — Fuzzy search over setting definitions; returns ranked matches with highlight ranges
-- **settings-applier.ts** — Applies a setting change (validates, calls `setSetting`, emits events)
+- **settings-applier.ts** — Listens for setting changes and applies side effects (CSS vars, backend config sync)
 - **network-settings.ts** — Network-specific setting helpers (proxy config, SMB auth defaults)
 - **settings-window.ts** — Logic for opening/focusing/closing the settings window (Tauri window management)
 - **format-utils.ts** — Shared formatters used in settings UI (e.g., duration, file-size display strings)
@@ -107,7 +107,7 @@ update and the save, the change is lost. This is acceptable for settings (worst 
 
 ### Shortcut menu sync is manual
 
-When shortcuts are modified, menu accelerators don't auto-update. Call `invoke('update_menu_accelerators')` for commands
+When shortcuts are modified, menu accelerators don't auto-update. Call `invoke('update_menu_accelerator')` for commands
 that have menu items (`view.fullMode`, `view.briefMode`). Most commands don't need this.
 
 ### Advanced section is auto-generated
@@ -118,7 +118,7 @@ Just add to registry and it works.
 ### Density mapping is internal
 
 Users see "Compact/Comfortable/Spacious" but the code sees rowHeight/iconSize pixel values. The `densityMappings` object
-in `reactive-settings.svelte.ts` bridges this gap. Don't expose raw pixel values in the UI.
+in `types.ts` bridges this gap. Don't expose raw pixel values in the UI.
 
 ### Shortcuts conflict only when scopes overlap
 

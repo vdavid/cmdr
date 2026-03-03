@@ -37,7 +37,7 @@ keyboard routing is handled by each UI component.
 
 ## Command registry
 
-`command-registry.ts` holds ~60 commands grouped by scope. Key rules:
+`command-registry.ts` holds ~70 commands grouped by scope. Key rules:
 
 - `showInPalette: false` for low-level navigation (↑/↓, ←/→, volume/palette modal internals).
 - `app.commandPalette` has `showInPalette: false` — opening the palette from inside itself makes no sense.

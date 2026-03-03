@@ -10,7 +10,7 @@ Opens files in a read-only viewer with instant load for any file size, virtual s
 ## User interaction
 
 - **F3** in file list opens viewer for file under cursor
-- **Cmd+F / Ctrl+F** opens search bar (case-insensitive, 300ms debounce)
+- **Cmd+F / Ctrl+F** opens search bar (case-insensitive, 100ms debounce)
 - **Enter / Shift+Enter** navigates to next/previous match
 - **W** toggles word wrap (averaged-height virtual scroll)
 - **Escape** closes search bar (if open) or closes window

@@ -23,7 +23,7 @@ for offline validation (no server call needed after activation).
 ## License types
 
 - **Personal** — free forever. Shows "Personal use only" in title bar. Commercial reminder every 30 days.
-- **Supporter** — $10 one-time. Same as Personal but with a badge in About window. No reminder.
+- **Supporter** — $10 one-time. Same as Personal but with a badge in About window. Commercial reminder every 30 days.
 - **Commercial subscription** — $59/year. Server validation every 7 days. 14-day grace on network failure.
 - **Commercial perpetual** — $199 one-time. No periodic validation. 3 years of updates.
 - **Expired** — subscription expired. Shows modal once, then reverts to Personal behavior.

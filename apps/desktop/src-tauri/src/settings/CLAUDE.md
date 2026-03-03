@@ -26,7 +26,7 @@ Settings {
 **`settings-v2.json`** (current): flat JSON with literal dot-notation string keys.
 
 ```json
-{ "showHiddenFiles": true, "developer.mcpEnabled": true, "developer.mcpPort": 9222 }
+{ "showHiddenFiles": true, "developer.mcpEnabled": true, "developer.mcpPort": 9224 }
 ```
 
 These are top-level keys — the dot is part of the key name, not a nesting separator. `parse_settings_v2` reads them manually (serde can't express dot-notation field names as struct fields).

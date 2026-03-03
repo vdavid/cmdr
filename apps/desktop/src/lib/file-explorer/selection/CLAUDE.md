@@ -20,7 +20,6 @@ Exported functions:
 
 - `formatSizeTriads(bytes)` — splits byte count into digit triads, each tagged with a `tierClass`. Uses U+2009
   thin-space as separator between triads.
-- `formatHumanReadable(bytes)` — e.g. `"1.23 MB"`, used for tooltips.
 - `formatDate(timestamp)` — Unix seconds → `"YYYY-MM-DD HH:MM:SS"` local time.
 - `buildDateTooltip(entry)` — multiline string with created/opened/added/modified dates.
 - `getSizeDisplay(entry, isBrokenSymlink, isPermissionDenied)` — returns triads array, `'DIR'`, or `null`.

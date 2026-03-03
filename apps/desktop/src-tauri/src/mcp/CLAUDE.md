@@ -22,7 +22,7 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 ### Tools (`tools.rs`)
 
 22 semantic tools grouped by category:
-- Navigation (6): `select_volume`, `nav_to_path`, `move_cursor`, etc.
+- Navigation (6): `select_volume`, `nav_to_path`, `nav_to_parent`, `nav_back`, `nav_forward`, `scroll_to`
 - Cursor/Selection (3): `move_cursor`, `open_under_cursor`, `select`
 - File operations (4): `copy`, `delete`, `mkdir`, `refresh`
 - View (3): `sort`, `toggle_hidden`, `set_view_mode`
@@ -59,7 +59,7 @@ Frontend syncs state to these stores via Tauri commands (`update_left_pane_state
 
 ### Why agent-centric API?
 
-The original design mirrored keyboard shortcuts (43 tools like `nav_up`, `nav_down`). This forced agents to make dozens of calls to find a file. The agent-centric redesign (Jan 2026) consolidated to 20 semantic tools (`move_cursor(index=42)`, `nav_to_path("/Users")`). This reduced round-trips from 6+ reads to 1 (`cmdr://state` resource).
+The original design mirrored keyboard shortcuts (43 tools like `nav_up`, `nav_down`). This forced agents to make dozens of calls to find a file. The agent-centric redesign (Jan 2026) consolidated to 22 semantic tools (`move_cursor(index=42)`, `nav_to_path("/Users")`). This reduced round-trips from 6+ reads to 1 (`cmdr://state` resource).
 
 ### Why YAML over JSON for resources?
 

@@ -25,7 +25,7 @@ Frontend                          Backend
    |                            [background task spawns]
    |                                   |
    |<--- listing-opening event --------| (just before read_dir)
-   |<--- listing-progress event -------| (every 500ms)
+   |<--- listing-progress event -------| (every 200ms)
    |     { listingId, loadedCount }    |
    |                                   |
    |<--- listing-read-complete event --| (when read_dir finishes)
@@ -35,7 +35,8 @@ Frontend                          Backend
    |                                   |
    |<--- listing-complete event -------| (ready for use)
    |     { listingId, totalCount,      |
-   |       maxFilenameWidth }          |
+   |       maxFilenameWidth,           |
+   |       volumeRoot }               |
    |                                   |
    |-- getFileRange(listingId, ...) -->| (on-demand fetching)
    |<-- [FileEntry, FileEntry, ...]    |
@@ -45,10 +46,10 @@ Frontend                          Backend
 
 **LISTING_CACHE**: Global `RwLock<HashMap<String, CachedListing>>`
 **Key**: `listing_id` (UUID per navigation)
-**Value**: `CachedListing { volume_id, path, entries, sort_by, sort_order }`
+**Value**: `CachedListing { volume_id, path, entries, sort_by, sort_order, directory_sort_mode }`
 
 **Lifecycle**:
-1. `list_directory_start_streaming()` generates ID, spawns task
+1. `list_directory_start_streaming()` receives listing ID from frontend, spawns task
 2. Background task reads directory, sorts, stores in cache
 3. Frontend calls `get_file_range()` for visible entries (on-demand)
 4. `list_directory_end()` stops watcher, removes from cache

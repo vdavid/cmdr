@@ -28,6 +28,7 @@ import { listDirectoryStart } from '$lib/tauri-commands/file-listing'
 | `mtp.ts`              | Android MTP: device listing, connect/disconnect, file ops, transfer progress, volume copy             |
 | `licensing.ts`        | License status, activation, expiry, server validation                                                 |
 | `settings.ts`         | Port checking, file watcher debounce, indexing toggle, AI subsystem commands                          |
+| `tab.ts`              | Tab context menu: `showTabContextMenu`, `onTabContextAction`                                          |
 
 ## Where to put new commands
 
@@ -70,5 +71,5 @@ returning safe empty/null fallbacks so the same code runs on other platforms.
 
 - `@tauri-apps/api/core` — `invoke`
 - `@tauri-apps/api/event` — `listen`, `UnlistenFn`
-- `@tauri-apps/plugin-opener` — `openFile`, `openExternalUrl`
+- `@tauri-apps/plugin-opener` — `openPath`, `openUrl`
 - Types from `$lib/file-explorer/types`
