@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy, tick } from 'svelte'
     import { getCurrentWindow } from '@tauri-apps/api/window'
+    import { listen, type UnlistenFn } from '@tauri-apps/api/event'
     import SettingsSidebar from '$lib/settings/components/SettingsSidebar.svelte'
     import SettingsContent from '$lib/settings/components/SettingsContent.svelte'
     import { initializeSettings, forceSave as forceSettingsSave } from '$lib/settings'
@@ -23,6 +24,7 @@
     let selectedSection = $state<string[]>(['General', 'Appearance'])
     let initialized = $state(false)
     let contentElement: HTMLElement | null = $state(null)
+    let unlistenFocusSelf: UnlistenFn | undefined
 
     // Log page script initialization
     log.debug('Settings page script loaded')
@@ -127,6 +129,15 @@
             // Focus will be handled naturally by the browser's tab order
             await tick()
 
+            // Listen for focus-self events (from ⌘, when window is already open).
+            // Self-focusing is needed because cross-window setFocus() doesn't reliably
+            // bring a window to front on macOS.
+            unlistenFocusSelf = await listen('focus-self', () => {
+                // setTimeout(0) defers past the originating keydown handler —
+                // without it, macOS restores focus to the main window.
+                setTimeout(() => void getCurrentWindow().setFocus(), 0)
+            })
+
             // Set up MCP event listeners and sync initial state
             await setupMcpEventListeners(handleSectionSelect, handleSettingChanged)
             await notifySettingsWindowOpen(true)
@@ -143,7 +154,8 @@
         log.debug('Settings page destroying, flushing pending saves')
         // Fire and forget - we can't await in onDestroy
         void Promise.all([forceSettingsSave(), flushShortcutsSave()])
-        // Clean up MCP event listeners and notify backend
+        // Clean up event listeners and notify backend
+        unlistenFocusSelf?.()
         cleanupMcpEventListeners()
         cleanupAccentColor()
         void notifySettingsWindowOpen(false)

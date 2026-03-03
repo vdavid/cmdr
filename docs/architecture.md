@@ -56,6 +56,7 @@ All under `apps/desktop/src-tauri/src/`.
 | `drag_image_detection.rs` | macOS method swizzle for drag image size detection |
 | `drag_image_swap.rs` | Rich/transparent drag image swap for self-drags |
 | `commands/` | Tauri command definitions (IPC entry points) |
+| `capabilities/` | Per-window Tauri API permissions — must be updated when using new Tauri APIs from a window |
 
 ## Other apps
 

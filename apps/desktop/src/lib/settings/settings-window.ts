@@ -4,11 +4,10 @@
  */
 
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
+import { emitTo } from '@tauri-apps/api/event'
 import { getAppLogger } from '$lib/logging/logger'
 
 const log = getAppLogger('settings')
-
-let settingsWindow: WebviewWindow | null = null
 
 const SETTINGS_WIDTH = 800
 const SETTINGS_HEIGHT = 600
@@ -18,29 +17,21 @@ const SETTINGS_MIN_HEIGHT = 400
 
 /**
  * Opens the settings window, or focuses it if already open.
- * Window always opens centered on screen.
+ * Uses `WebviewWindow.getByLabel` to reliably detect an existing window
+ * instead of a module-level JS reference that can go stale.
  */
 export async function openSettingsWindow(): Promise<void> {
-    log.debug('openSettingsWindow called')
-
-    // Check if window already exists
-    if (settingsWindow) {
-        log.debug('Settings window already exists, attempting to focus')
-        try {
-            await settingsWindow.setFocus()
-            log.debug('Focused existing settings window')
-            return
-        } catch (error) {
-            // Window was closed, create a new one
-            log.debug('Failed to focus existing window (likely closed), creating new: {error}', { error })
-            settingsWindow = null
-        }
+    const existing = await WebviewWindow.getByLabel('settings')
+    if (existing) {
+        // Emit to the settings window so it can self-focus. Cross-window setFocus()
+        // doesn't reliably bring a window to front on macOS.
+        await emitTo('settings', 'focus-self')
+        return
     }
 
-    log.info('Creating new settings window with url=/settings')
+    log.info('Creating new settings window')
 
-    // Create new settings window, centered on screen
-    settingsWindow = new WebviewWindow('settings', {
+    new WebviewWindow('settings', {
         url: '/settings',
         title: 'Settings',
         width: SETTINGS_WIDTH,
@@ -51,22 +42,6 @@ export async function openSettingsWindow(): Promise<void> {
         center: true,
         resizable: true,
         decorations: true,
-    })
-
-    // Listen for window creation success
-    void settingsWindow.once('tauri://created', () => {
-        log.info('Settings window created successfully')
-    })
-
-    // Listen for window close to clean up reference
-    void settingsWindow.once('tauri://destroyed', () => {
-        log.debug('Settings window destroyed, cleaning up reference')
-        settingsWindow = null
-    })
-
-    // Handle any creation errors
-    void settingsWindow.once('tauri://error', (e) => {
-        log.error('Failed to create settings window: {error}', { error: e })
-        settingsWindow = null
+        focus: true,
     })
 }
