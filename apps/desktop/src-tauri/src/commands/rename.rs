@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use tokio::time::Duration;
 
 use super::file_system::expand_tilde;
+use super::util::IpcError;
 use crate::file_system::write_operations::trash::move_to_trash_sync;
 
 // ============================================================================
@@ -12,7 +13,7 @@ use crate::file_system::write_operations::trash::move_to_trash_sync;
 
 /// Moves a file or directory to the macOS Trash via NSFileManager.
 #[tauri::command]
-pub async fn move_to_trash(path: String) -> Result<(), String> {
+pub async fn move_to_trash(path: String) -> Result<(), IpcError> {
     let expanded = expand_tilde(&path);
     let path_buf = PathBuf::from(&expanded);
 
@@ -21,13 +22,14 @@ pub async fn move_to_trash(path: String) -> Result<(), String> {
         tokio::task::spawn_blocking(move || move_to_trash_sync(&path_buf)),
     )
     .await
-    .map_err(|_| "Operation timed out (network mount may be unresponsive)".to_string())?
-    .map_err(|e| format!("Task failed: {}", e))?
+    .map_err(|_| IpcError::timeout())?
+    .map_err(|e| IpcError::from_err(format!("Task failed: {}", e)))?
+    .map_err(IpcError::from_err)
 }
 
 /// Checks if a file/folder can be renamed (parent writable, not immutable, not SIP-protected, not locked).
 #[tauri::command]
-pub async fn check_rename_permission(path: String) -> Result<(), String> {
+pub async fn check_rename_permission(path: String) -> Result<(), IpcError> {
     let expanded = expand_tilde(&path);
     let path_buf = PathBuf::from(&expanded);
 
@@ -36,8 +38,9 @@ pub async fn check_rename_permission(path: String) -> Result<(), String> {
         tokio::task::spawn_blocking(move || check_rename_permission_sync(&path_buf)),
     )
     .await
-    .map_err(|_| "Operation timed out (network mount may be unresponsive)".to_string())?
-    .map_err(|e| format!("Task failed: {}", e))?
+    .map_err(|_| IpcError::timeout())?
+    .map_err(|e| IpcError::from_err(format!("Task failed: {}", e)))?
+    .map_err(IpcError::from_err)
 }
 
 /// Result of a rename validity check.
@@ -75,7 +78,7 @@ pub async fn check_rename_validity(
     dir: String,
     old_name: String,
     new_name: String,
-) -> Result<RenameValidityResult, String> {
+) -> Result<RenameValidityResult, IpcError> {
     let expanded_dir = expand_tilde(&dir);
 
     tokio::time::timeout(
@@ -83,13 +86,14 @@ pub async fn check_rename_validity(
         tokio::task::spawn_blocking(move || check_rename_validity_sync(&expanded_dir, &old_name, &new_name)),
     )
     .await
-    .map_err(|_| "Operation timed out (network mount may be unresponsive)".to_string())?
-    .map_err(|e| format!("Task failed: {}", e))?
+    .map_err(|_| IpcError::timeout())?
+    .map_err(|e| IpcError::from_err(format!("Task failed: {}", e)))?
+    .map_err(IpcError::from_err)
 }
 
 /// Renames a file or directory. When `force` is true, proceeds even if the destination exists.
 #[tauri::command]
-pub async fn rename_file(from: String, to: String, force: bool) -> Result<(), String> {
+pub async fn rename_file(from: String, to: String, force: bool) -> Result<(), IpcError> {
     let from_expanded = expand_tilde(&from);
     let to_expanded = expand_tilde(&to);
     let from_path = PathBuf::from(&from_expanded);
@@ -105,8 +109,9 @@ pub async fn rename_file(from: String, to: String, force: bool) -> Result<(), St
         }),
     )
     .await
-    .map_err(|_| "Operation timed out (network mount may be unresponsive)".to_string())?
-    .map_err(|e| format!("Task failed: {}", e))?
+    .map_err(|_| IpcError::timeout())?
+    .map_err(|e| IpcError::from_err(format!("Task failed: {}", e)))?
+    .map_err(IpcError::from_err)
 }
 
 /// Synchronous permission check implementation.
@@ -327,7 +332,7 @@ mod tests {
     async fn test_check_rename_permission_nonexistent() {
         let result = check_rename_permission("/nonexistent_12345/file.txt".to_string()).await;
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("doesn't exist"));
+        assert!(result.unwrap_err().message.contains("doesn't exist"));
     }
 
     // ========================================================================
@@ -448,7 +453,7 @@ mod tests {
         )
         .await;
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("already exists"));
+        assert!(result.unwrap_err().message.contains("already exists"));
         // Both files still intact
         assert!(old.exists());
         assert!(new.exists());
@@ -495,6 +500,6 @@ mod tests {
     async fn test_move_to_trash_nonexistent() {
         let result = move_to_trash("/nonexistent_12345/trash_me.txt".to_string()).await;
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("doesn't exist"));
+        assert!(result.unwrap_err().message.contains("doesn't exist"));
     }
 }

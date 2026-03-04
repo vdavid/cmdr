@@ -5,13 +5,21 @@
  */
 
 import { getExtension } from '$lib/utils/filename-validation'
-import { checkRenamePermission, checkRenameValidity, renameFile, type RenameValidityResult } from '$lib/tauri-commands'
+import {
+    checkRenamePermission,
+    checkRenameValidity,
+    getIpcErrorMessage,
+    isIpcError,
+    renameFile,
+    type RenameValidityResult,
+} from '$lib/tauri-commands'
 import type { RenameTarget } from './rename-state.svelte'
 import type { ExtensionChangePolicy } from '$lib/settings'
 
 export type RenameResult =
     | { type: 'noop' }
     | { type: 'error'; message: string }
+    | { type: 'timeout'; message: string }
     | { type: 'extension-ask'; oldExtension: string; newExtension: string }
     | { type: 'conflict'; validity: RenameValidityResult }
     | { type: 'success'; newName: string }
@@ -49,7 +57,7 @@ export async function executeRenameSave(
     try {
         validity = await checkRenameValidity(target.parentPath, target.originalName, trimmedName)
     } catch (e) {
-        return { type: 'error', message: e instanceof Error ? e.message : String(e) }
+        return { type: 'error', message: getIpcErrorMessage(e) }
     }
 
     if (!validity.valid) {
@@ -77,7 +85,14 @@ export async function performRename(target: RenameTarget, newName: string, force
         await renameFile(fromPath, toPath, force)
         return { type: 'success', newName }
     } catch (e) {
-        return { type: 'error', message: e instanceof Error ? e.message : String(e) }
+        if (isIpcError(e) && e.timedOut) {
+            return {
+                type: 'timeout',
+                message:
+                    "Couldn't confirm the rename completed. The volume may be slow — the file may have been renamed.",
+            }
+        }
+        return { type: 'error', message: getIpcErrorMessage(e) }
     }
 }
 
@@ -87,6 +102,6 @@ export async function checkPermission(path: string): Promise<string | null> {
         await checkRenamePermission(path)
         return null
     } catch (e) {
-        return e instanceof Error ? e.message : String(e)
+        return getIpcErrorMessage(e)
     }
 }

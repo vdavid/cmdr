@@ -2,7 +2,7 @@
  * Pure utility functions for path navigation logic.
  * Extracted from DualPaneExplorer.svelte to improve modularity.
  *
- * All pathExists calls use frontend timeouts to prevent hangs on slow/dead network mounts.
+ * All pathExists calls use frontend timeouts to prevent hangs on slow/unresponsive volumes.
  * The Rust backend also enforces a 2-second timeout per pathExists call.
  */
 

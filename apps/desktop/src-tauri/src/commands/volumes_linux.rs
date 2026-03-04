@@ -1,11 +1,15 @@
 //! Tauri commands for volume operations on Linux.
 
+use super::util::TimedOut;
 use crate::volumes_linux::{self, DEFAULT_VOLUME_ID, LocationCategory, VolumeInfo, VolumeSpaceInfo};
 
 /// Lists all mounted volumes.
 #[tauri::command]
-pub fn list_volumes() -> Vec<VolumeInfo> {
-    volumes_linux::list_mounted_volumes()
+pub fn list_volumes() -> TimedOut<Vec<VolumeInfo>> {
+    TimedOut {
+        data: volumes_linux::list_mounted_volumes(),
+        timed_out: false,
+    }
 }
 
 /// Gets the default volume ID (root filesystem).
@@ -16,7 +20,7 @@ pub fn get_default_volume_id() -> String {
 
 /// Finds the actual volume (not a favorite) that contains a given path.
 #[tauri::command]
-pub fn find_containing_volume(path: String) -> Option<VolumeInfo> {
+pub fn find_containing_volume(path: String) -> TimedOut<Option<VolumeInfo>> {
     let locations = volumes_linux::list_locations();
 
     let volumes: Vec<_> = locations
@@ -34,11 +38,17 @@ pub fn find_containing_volume(path: String) -> Option<VolumeInfo> {
         }
     }
 
-    best_match
+    TimedOut {
+        data: best_match,
+        timed_out: false,
+    }
 }
 
 /// Gets space information for a volume at the given path.
 #[tauri::command]
-pub fn get_volume_space(path: String) -> Option<VolumeSpaceInfo> {
-    volumes_linux::get_volume_space(&path)
+pub fn get_volume_space(path: String) -> TimedOut<Option<VolumeSpaceInfo>> {
+    TimedOut {
+        data: volumes_linux::get_volume_space(&path),
+        timed_out: false,
+    }
 }

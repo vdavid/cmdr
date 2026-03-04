@@ -2,7 +2,7 @@
 
 use tokio::time::Duration;
 
-use super::util::blocking_with_timeout;
+use super::util::{IpcError, blocking_result_with_timeout};
 use crate::file_viewer::{self, LineChunk, SearchPollResult, SeekTarget, ViewerOpenResult, ViewerSessionStatus};
 use log::debug;
 use tauri::Manager;
@@ -13,12 +13,10 @@ const VIEWER_TIMEOUT: Duration = Duration::from_secs(2);
 /// Opens a viewer session for the given file.
 /// Returns session metadata + initial lines from the start of the file.
 #[tauri::command]
-pub async fn viewer_open(path: String) -> Result<ViewerOpenResult, String> {
-    blocking_with_timeout(
-        VIEWER_TIMEOUT,
-        Err("Operation timed out (network mount may be unresponsive)".to_string()),
-        move || file_viewer::open_session(&path).map_err(|e| e.to_string()),
-    )
+pub async fn viewer_open(path: String) -> Result<ViewerOpenResult, IpcError> {
+    blocking_result_with_timeout(VIEWER_TIMEOUT, move || {
+        file_viewer::open_session(&path).map_err(|e| e.to_string())
+    })
     .await
 }
 
@@ -35,16 +33,16 @@ pub async fn viewer_get_lines(
     target_type: String,
     target_value: f64,
     count: usize,
-) -> Result<LineChunk, String> {
+) -> Result<LineChunk, IpcError> {
     let target = match target_type.as_str() {
         "line" => SeekTarget::Line(target_value as usize),
         "byte" => SeekTarget::ByteOffset(target_value as u64),
         "fraction" => SeekTarget::Fraction(target_value),
         other => {
-            return Err(format!(
+            return Err(IpcError::from_err(format!(
                 "Unknown target type: {}. Use 'line', 'byte', or 'fraction'.",
                 other
-            ));
+            )));
         }
     };
 
@@ -53,11 +51,9 @@ pub async fn viewer_get_lines(
         session_id, target_type, target_value, count
     );
 
-    let result = blocking_with_timeout(
-        VIEWER_TIMEOUT,
-        Err("Operation timed out (network mount may be unresponsive)".to_string()),
-        move || file_viewer::get_lines(&session_id, target, count).map_err(|e| e.to_string()),
-    )
+    let result = blocking_result_with_timeout(VIEWER_TIMEOUT, move || {
+        file_viewer::get_lines(&session_id, target, count).map_err(|e| e.to_string())
+    })
     .await?;
 
     debug!(

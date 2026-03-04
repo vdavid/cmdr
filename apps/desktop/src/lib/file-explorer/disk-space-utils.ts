@@ -1,4 +1,4 @@
-import type { VolumeSpaceInfo } from '$lib/tauri-commands/storage'
+import type { VolumeSpaceInfo } from '$lib/tauri-commands'
 
 type FormatSize = (bytes: number) => string
 

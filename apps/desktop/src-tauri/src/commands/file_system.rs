@@ -29,7 +29,9 @@ use std::sync::mpsc::channel;
 use tauri::Manager;
 use tokio::time::Duration;
 
-use super::util::blocking_with_timeout;
+use super::util::{
+    IpcError, TimedOut, blocking_result_with_timeout, blocking_with_timeout, blocking_with_timeout_flag,
+};
 
 const PATH_EXISTS_TIMEOUT: Duration = Duration::from_secs(2);
 
@@ -55,12 +57,16 @@ pub async fn path_exists(volume_id: Option<String>, path: String) -> bool {
 }
 
 #[tauri::command]
-pub async fn create_directory(volume_id: Option<String>, parent_path: String, name: String) -> Result<String, String> {
+pub async fn create_directory(
+    volume_id: Option<String>,
+    parent_path: String,
+    name: String,
+) -> Result<String, IpcError> {
     if name.is_empty() {
-        return Err("Folder name cannot be empty".to_string());
+        return Err(IpcError::from_err("Folder name cannot be empty"));
     }
     if name.contains('/') || name.contains('\0') {
-        return Err("Folder name contains invalid characters".to_string());
+        return Err(IpcError::from_err("Folder name contains invalid characters"));
     }
 
     let volume_id = volume_id.unwrap_or_else(|| "root".to_string());
@@ -85,7 +91,9 @@ pub async fn create_directory(volume_id: Option<String>, parent_path: String, na
             Duration::from_secs(5),
             tokio::task::spawn_blocking(move || {
                 volume.create_directory(&new_path_clone).map_err(|e| match e {
-                    crate::file_system::VolumeError::AlreadyExists(_) => format!("'{}' already exists", name_clone),
+                    crate::file_system::VolumeError::AlreadyExists(_) => {
+                        format!("'{}' already exists", name_clone)
+                    }
                     crate::file_system::VolumeError::PermissionDenied(_) => {
                         format!(
                             "Permission denied: cannot create '{}' in '{}'",
@@ -97,8 +105,9 @@ pub async fn create_directory(volume_id: Option<String>, parent_path: String, na
             }),
         )
         .await
-        .map_err(|_| "Operation timed out (network mount may be unresponsive)".to_string())?
-        .map_err(|e| format!("Task failed: {}", e))??;
+        .map_err(|_| IpcError::timeout())?
+        .map_err(|e| IpcError::from_err(format!("Task failed: {}", e)))?
+        .map_err(IpcError::from_err)?;
 
         return Ok(new_path.to_string_lossy().to_string());
     }
@@ -106,13 +115,15 @@ pub async fn create_directory(volume_id: Option<String>, parent_path: String, na
     // Fallback for unknown volumes (shouldn't happen in practice)
     let mut new_path = PathBuf::from(&expanded_path);
     new_path.push(&name);
-    std::fs::create_dir(&new_path).map_err(|e| match e.kind() {
-        std::io::ErrorKind::AlreadyExists => format!("'{}' already exists", name),
-        std::io::ErrorKind::PermissionDenied => {
-            format!("Permission denied: cannot create '{}' in '{}'", name, parent_path)
-        }
-        _ => format!("Failed to create folder: {}", e),
-    })?;
+    std::fs::create_dir(&new_path)
+        .map_err(|e| match e.kind() {
+            std::io::ErrorKind::AlreadyExists => format!("'{}' already exists", name),
+            std::io::ErrorKind::PermissionDenied => {
+                format!("Permission denied: cannot create '{}' in '{}'", name, parent_path)
+            }
+            _ => format!("Failed to create folder: {}", e),
+        })
+        .map_err(IpcError::from_err)?;
     Ok(new_path.to_string_lossy().to_string())
 }
 
@@ -128,18 +139,14 @@ pub async fn list_directory_start(
     sort_by: SortColumn,
     sort_order: SortOrder,
     directory_sort_mode: Option<DirectorySortMode>,
-) -> Result<ListingStartResult, String> {
+) -> Result<ListingStartResult, IpcError> {
     let expanded_path = expand_tilde(&path);
     let path_buf = PathBuf::from(&expanded_path);
     let dir_sort_mode = directory_sort_mode.unwrap_or_default();
-    blocking_with_timeout(
-        Duration::from_secs(2),
-        Err("Operation timed out (network mount may be unresponsive)".to_string()),
-        move || {
-            ops_list_directory_start_with_volume("root", &path_buf, include_hidden, sort_by, sort_order, dir_sort_mode)
-                .map_err(|e| format!("Failed to start directory listing '{}': {}", path, e))
-        },
-    )
+    blocking_result_with_timeout(Duration::from_secs(2), move || {
+        ops_list_directory_start_with_volume("root", &path_buf, include_hidden, sort_by, sort_order, dir_sort_mode)
+            .map_err(|e| format!("Failed to start directory listing '{}': {}", path, e))
+    })
     .await
 }
 
@@ -247,11 +254,11 @@ pub fn list_directory_end(listing_id: String) {
 /// Force a re-read of a watched directory listing, emitting any diff.
 /// Used after write operations (move) when the file watcher may not fire promptly.
 #[tauri::command]
-pub async fn refresh_listing(listing_id: String) {
-    blocking_with_timeout(Duration::from_secs(2), (), move || {
+pub async fn refresh_listing(listing_id: String) -> TimedOut<()> {
+    blocking_with_timeout_flag(Duration::from_secs(2), (), move || {
         crate::file_system::watcher::handle_directory_change(&listing_id);
     })
-    .await;
+    .await
 }
 
 /// Returns total file/dir counts and sizes, plus selection stats if `selected_indices` is given.
@@ -524,14 +531,14 @@ pub async fn scan_volume_for_copy(
     dest_volume_id: String,
     dest_path: String,
     max_conflicts: Option<usize>,
-) -> Result<VolumeCopyScanResult, String> {
+) -> Result<VolumeCopyScanResult, IpcError> {
     let source_volume = get_volume_manager()
         .get(&source_volume_id)
-        .ok_or_else(|| format!("Source volume '{}' not found", source_volume_id))?;
+        .ok_or_else(|| IpcError::from_err(format!("Source volume '{}' not found", source_volume_id)))?;
 
     let dest_volume = get_volume_manager()
         .get(&dest_volume_id)
-        .ok_or_else(|| format!("Destination volume '{}' not found", dest_volume_id))?;
+        .ok_or_else(|| IpcError::from_err(format!("Destination volume '{}' not found", dest_volume_id)))?;
 
     let source_paths: Vec<PathBuf> = source_paths.iter().map(PathBuf::from).collect();
     let dest_path = PathBuf::from(dest_path);
@@ -546,8 +553,9 @@ pub async fn scan_volume_for_copy(
         }),
     )
     .await
-    .map_err(|_| "Operation timed out (network mount may be unresponsive)".to_string())?
-    .map_err(|e| format!("Scan task failed: {}", e))?
+    .map_err(|_| IpcError::timeout())?
+    .map_err(|e| IpcError::from_err(format!("Scan task failed: {}", e)))?
+    .map_err(IpcError::from_err)
 }
 
 /// Checks which source items already exist at the destination. Returns conflict details for UI.
@@ -556,10 +564,10 @@ pub async fn scan_volume_for_conflicts(
     volume_id: String,
     source_items: Vec<SourceItemInput>,
     dest_path: String,
-) -> Result<Vec<ScanConflict>, String> {
+) -> Result<Vec<ScanConflict>, IpcError> {
     let volume = get_volume_manager()
         .get(&volume_id)
-        .ok_or_else(|| format!("Volume '{}' not found", volume_id))?;
+        .ok_or_else(|| IpcError::from_err(format!("Volume '{}' not found", volume_id)))?;
 
     let source_items: Vec<crate::file_system::SourceItemInfo> = source_items
         .into_iter()
@@ -581,8 +589,9 @@ pub async fn scan_volume_for_conflicts(
         }),
     )
     .await
-    .map_err(|_| "Operation timed out (network mount may be unresponsive)".to_string())?
-    .map_err(|e| format!("Conflict scan task failed: {}", e))?
+    .map_err(|_| IpcError::timeout())?
+    .map_err(|e| IpcError::from_err(format!("Conflict scan task failed: {}", e)))?
+    .map_err(IpcError::from_err)
 }
 
 /// Input type for source item information (used by scan_volume_for_conflicts).
@@ -693,7 +702,7 @@ mod tests {
         fs::create_dir(tmp.join("existing")).unwrap();
         let result = create_directory(None, parent, "existing".to_string()).await;
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("already exists"));
+        assert!(result.unwrap_err().message.contains("already exists"));
         cleanup_test_dir(&tmp);
     }
 
@@ -703,7 +712,7 @@ mod tests {
         let parent = tmp.to_string_lossy().to_string();
         let result = create_directory(None, parent, "".to_string()).await;
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("cannot be empty"));
+        assert!(result.unwrap_err().message.contains("cannot be empty"));
         cleanup_test_dir(&tmp);
     }
 
@@ -713,11 +722,11 @@ mod tests {
         let parent = tmp.to_string_lossy().to_string();
         let result = create_directory(None, parent.clone(), "foo/bar".to_string()).await;
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("invalid characters"));
+        assert!(result.unwrap_err().message.contains("invalid characters"));
 
         let result = create_directory(None, parent, "foo\0bar".to_string()).await;
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("invalid characters"));
+        assert!(result.unwrap_err().message.contains("invalid characters"));
         cleanup_test_dir(&tmp);
     }
 

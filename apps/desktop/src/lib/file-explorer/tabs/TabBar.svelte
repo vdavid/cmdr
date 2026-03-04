@@ -79,6 +79,7 @@
                 class="tab"
                 class:active={isActive}
                 class:pinned={tab.pinned}
+                class:unreachable={!!tab.unreachable}
                 class:before-active={isBeforeActive}
                 class:after-active={isAfterActive}
                 role="tab"
@@ -94,7 +95,15 @@
                     handleContextMenu(e, tab.id)
                 }}
             >
-                {#if tab.pinned}
+                {#if tab.unreachable}
+                    <span class="warning-icon" use:tooltip={'Unreachable'} aria-label="Unreachable">
+                        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                            <path
+                                d="M8 1a.75.75 0 0 1 .65.375l6.25 10.75A.75.75 0 0 1 14.25 13H1.75a.75.75 0 0 1-.65-1.125L7.35 1.375A.75.75 0 0 1 8 1zm0 4a.75.75 0 0 0-.75.75v3a.75.75 0 0 0 1.5 0v-3A.75.75 0 0 0 8 5zm0 6.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5z"
+                            />
+                        </svg>
+                    </span>
+                {:else if tab.pinned}
                     <span class="pin-icon" use:tooltip={'Pinned'} aria-label="Pinned">
                         <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
                             <path
@@ -241,6 +250,22 @@
 
     .tab.pinned {
         padding-left: 24px;
+    }
+
+    .tab.unreachable {
+        padding-left: 22px;
+    }
+
+    .warning-icon {
+        position: absolute;
+        left: 5px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        align-items: center;
+        color: var(--color-warning);
+        opacity: 0.8;
+        line-height: 0;
     }
 
     .pin-icon {

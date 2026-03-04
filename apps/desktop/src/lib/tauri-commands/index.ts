@@ -78,6 +78,10 @@ export {
 } from './app-state'
 export type { PaneFileEntry, PaneState, McpTabInfo } from './app-state'
 
+// Shared IPC types (timeout-aware wrappers)
+export type { TimedOut, IpcError } from './ipc-types'
+export { isIpcError, getIpcErrorMessage } from './ipc-types'
+
 // Storage (volumes, space, permissions)
 export {
     DEFAULT_VOLUME_ID,

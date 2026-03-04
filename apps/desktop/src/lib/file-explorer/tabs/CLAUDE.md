@@ -4,7 +4,7 @@ Per-pane tab system for the dual-pane file explorer. Each pane side (left/right)
 
 ## Architecture
 
-- `tab-types.ts` — Type definitions: `TabId`, `TabState`, `PersistedTab`, `PersistedPaneTabs`
+- `tab-types.ts` — Type definitions: `TabId`, `TabState`, `PersistedTab`, `PersistedPaneTabs`, `UnreachableState`
 - `tab-state-manager.svelte.ts` — Reactive state manager using `$state()`. All tab operations (add, close, switch,
   cycle, pin). Max 10 tabs per pane.
 - `TabBar.svelte` — Tab bar UI component. Always visible, Chrome-style shrinking tabs, pin icons, close buttons, context
@@ -44,6 +44,14 @@ presses, committing only the final target.
 pinning is to preserve a location. If navigating away from a pinned tab changed its path, pinning would be meaningless.
 The auto-created tab inherits the target path and appears after the pinned tab. Falls back to in-place navigation only
 at the tab cap (10) to avoid blocking the user.
+
+## Unreachable tabs
+
+When a tab's `findContainingVolume` call times out during startup restoration, the tab enters an "unreachable" state
+(`TabState.unreachable: UnreachableState`). Instead of silently falling back to the default volume, the tab shows an
+inline banner (`VolumeUnreachableBanner.svelte`) with the original path, a "Retry" button, and an "Open home folder"
+button. The tab bar shows a small warning icon on affected tabs. This is runtime-only state (not persisted) — on next
+startup, volume resolution is re-attempted.
 
 ## Context menu
 

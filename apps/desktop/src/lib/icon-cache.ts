@@ -10,9 +10,16 @@ import {
 } from './tauri-commands'
 
 const STORAGE_KEY = 'cmdr-icon-cache'
+const retryDelayMs = 5000
 
 /** In-memory cache for current session */
 const memoryCache = new Map<string, string>()
+
+/** Pending retry timer for timed-out prefetchIcons calls */
+let prefetchRetryTimer: ReturnType<typeof setTimeout> | undefined
+
+/** Pending retry timer for timed-out refreshDirectoryIcons calls */
+let refreshRetryTimer: ReturnType<typeof setTimeout> | undefined
 
 /**
  * Reactive version counter - increments when cache updates.
@@ -60,10 +67,28 @@ if (typeof localStorage !== 'undefined') {
     loadFromStorage()
 }
 
+/** Merges fetched icons into the cache, persists, and bumps the version counter. Returns true if any icons were added. */
+function applyIconsToCache(icons: Record<string, string>): boolean {
+    let changed = false
+    for (const [id, url] of Object.entries(icons)) {
+        const existing = memoryCache.get(id)
+        if (existing !== url) {
+            memoryCache.set(id, url)
+            changed = true
+        }
+    }
+    if (changed) {
+        saveToStorage()
+        iconCacheVersion.update((v) => v + 1)
+    }
+    return changed
+}
+
 /**
  * Prefetches icons for the given IDs.
  * Fetches only those not already cached.
  * Increments iconCacheVersion when new icons are loaded, triggering re-renders.
+ * If the backend times out, schedules a single silent retry after ~5 seconds.
  *
  * @param iconIds - Array of icon IDs to prefetch
  * @param useAppIconsForDocuments - Whether to use app icons as fallback for documents
@@ -72,20 +97,25 @@ export async function prefetchIcons(iconIds: string[], useAppIconsForDocuments: 
     const uncached = iconIds.filter((id) => !memoryCache.has(id))
     if (uncached.length === 0) return
 
+    // Cancel any pending retry — a new fetch supersedes it
+    clearTimeout(prefetchRetryTimer)
+    prefetchRetryTimer = undefined
+
     // Deduplicate
     const unique = [...new Set(uncached)]
-    const icons = await getIcons(unique, useAppIconsForDocuments)
+    const { data: icons, timedOut } = await getIcons(unique, useAppIconsForDocuments)
 
-    let added = false
-    for (const [id, url] of Object.entries(icons)) {
-        memoryCache.set(id, url)
-        added = true
-    }
+    applyIconsToCache(icons)
 
-    if (added) {
-        saveToStorage()
-        // Trigger reactive update for subscribed components
-        iconCacheVersion.update((v) => v + 1)
+    if (timedOut) {
+        prefetchRetryTimer = setTimeout(() => {
+            prefetchRetryTimer = undefined
+            void getIcons(unique, useAppIconsForDocuments)
+                .then(({ data: retryIcons }) => applyIconsToCache(retryIcons))
+                .catch(() => {
+                    // Give up silently on retry failure
+                })
+        }, retryDelayMs)
     }
 }
 
@@ -104,6 +134,7 @@ export function getCachedIcon(iconId: string): string | undefined {
  * - All unique extensions (for file association changes)
  *
  * Updates the cache and triggers re-render if any icons changed.
+ * If the backend times out, schedules a single silent retry after ~5 seconds.
  * @param directoryPaths - Array of directory paths to fetch icons for
  * @param extensions - Array of file extensions (without dot)
  * @param useAppIconsForDocuments - Whether to use app icons as fallback for documents
@@ -116,20 +147,23 @@ export async function refreshDirectoryIcons(
 ): Promise<void> {
     if (directoryPaths.length === 0 && extensions.length === 0) return
 
-    const icons = await refreshIconsCommand(directoryPaths, extensions, useAppIconsForDocuments)
+    // Cancel any pending retry — a new refresh supersedes it
+    clearTimeout(refreshRetryTimer)
+    refreshRetryTimer = undefined
 
-    let changed = false
-    for (const [id, url] of Object.entries(icons)) {
-        const existing = memoryCache.get(id)
-        if (existing !== url) {
-            memoryCache.set(id, url)
-            changed = true
-        }
-    }
+    const { data: icons, timedOut } = await refreshIconsCommand(directoryPaths, extensions, useAppIconsForDocuments)
 
-    if (changed) {
-        saveToStorage()
-        iconCacheVersion.update((v) => v + 1)
+    applyIconsToCache(icons)
+
+    if (timedOut) {
+        refreshRetryTimer = setTimeout(() => {
+            refreshRetryTimer = undefined
+            void refreshIconsCommand(directoryPaths, extensions, useAppIconsForDocuments)
+                .then(({ data: retryIcons }) => applyIconsToCache(retryIcons))
+                .catch(() => {
+                    // Give up silently on retry failure
+                })
+        }, retryDelayMs)
     }
 }
 
@@ -139,6 +173,12 @@ export async function refreshDirectoryIcons(
  * After calling this, extension icons will be re-fetched with the new setting.
  */
 export async function clearExtensionIconCache(): Promise<void> {
+    // Cancel pending retries — old icon IDs are now invalidated
+    clearTimeout(prefetchRetryTimer)
+    prefetchRetryTimer = undefined
+    clearTimeout(refreshRetryTimer)
+    refreshRetryTimer = undefined
+
     // Clear backend cache
     await clearExtensionIconCacheCommand()
 
@@ -167,6 +207,12 @@ export async function clearExtensionIconCache(): Promise<void> {
  * folder icons with the current accent color baked in.
  */
 export async function clearDirectoryIconCache(): Promise<void> {
+    // Cancel pending retries — old icon IDs are now invalidated
+    clearTimeout(prefetchRetryTimer)
+    prefetchRetryTimer = undefined
+    clearTimeout(refreshRetryTimer)
+    refreshRetryTimer = undefined
+
     await clearDirectoryIconCacheCommand()
 
     for (const key of memoryCache.keys()) {

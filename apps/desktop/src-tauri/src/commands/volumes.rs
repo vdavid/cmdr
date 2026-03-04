@@ -2,15 +2,15 @@
 
 use tokio::time::Duration;
 
-use super::util::blocking_with_timeout;
+use super::util::{TimedOut, blocking_with_timeout_flag};
 use crate::volumes::{self, DEFAULT_VOLUME_ID, LocationCategory, VolumeInfo, VolumeSpaceInfo};
 
 const VOLUME_TIMEOUT: Duration = Duration::from_secs(2);
 
 /// Lists all mounted volumes.
 #[tauri::command]
-pub async fn list_volumes() -> Vec<VolumeInfo> {
-    blocking_with_timeout(VOLUME_TIMEOUT, vec![], volumes::list_mounted_volumes).await
+pub async fn list_volumes() -> TimedOut<Vec<VolumeInfo>> {
+    blocking_with_timeout_flag(VOLUME_TIMEOUT, vec![], volumes::list_mounted_volumes).await
 }
 
 /// Gets the default volume ID (root filesystem).
@@ -23,8 +23,8 @@ pub fn get_default_volume_id() -> String {
 /// Returns the volume info for the best matching volume, excluding favorites.
 /// This is used to determine which volume to set as active when a favorite is chosen.
 #[tauri::command]
-pub async fn find_containing_volume(path: String) -> Option<VolumeInfo> {
-    blocking_with_timeout(VOLUME_TIMEOUT, None, move || {
+pub async fn find_containing_volume(path: String) -> TimedOut<Option<VolumeInfo>> {
+    blocking_with_timeout_flag(VOLUME_TIMEOUT, None, move || {
         let locations = volumes::list_locations();
 
         // Only consider actual volumes, not favorites
@@ -52,6 +52,6 @@ pub async fn find_containing_volume(path: String) -> Option<VolumeInfo> {
 /// Gets space information for a volume at the given path.
 /// Returns total and available bytes for the volume.
 #[tauri::command]
-pub async fn get_volume_space(path: String) -> Option<VolumeSpaceInfo> {
-    blocking_with_timeout(VOLUME_TIMEOUT, None, move || volumes::get_volume_space(&path)).await
+pub async fn get_volume_space(path: String) -> TimedOut<Option<VolumeSpaceInfo>> {
+    blocking_with_timeout_flag(VOLUME_TIMEOUT, None, move || volumes::get_volume_space(&path)).await
 }

@@ -15,6 +15,7 @@ import { listDirectoryStart } from '$lib/tauri-commands/file-listing'
 
 | File                  | Contents                                                                                              |
 | --------------------- | ----------------------------------------------------------------------------------------------------- |
+| `ipc-types.ts`        | `TimedOut<T>`, `IpcError`, `isIpcError()`, `getIpcErrorMessage()` — shared timeout-aware types        |
 | `index.ts`            | Barrel re-export of everything below                                                                  |
 | `file-listing.ts`     | Virtual-scroll listing API, drag-and-drop, `pathExists`, `createDirectory`, sync status, font metrics |
 | `file-viewer.ts`      | Viewer session only: open, seek, search, close, word wrap menu                                        |
@@ -59,6 +60,17 @@ onDestroy(() => { unlisten() })
 
 **macOS-only commands** (e.g. `quickLook`, `getInfo`, `showInFinder`, `openPrivacySettings`) are wrapped in try/catch
 returning safe empty/null fallbacks so the same code runs on other platforms.
+
+**Timeout-aware return types**: Commands that use backend timeouts return structured types so the frontend can
+distinguish "timed out" from "genuinely empty/none":
+
+- `TimedOut<T>` (`{ data: T, timedOut: boolean }`) — for commands returning collections, `Option`, or `()`. Callers
+  unwrap `.data` for the value and check `.timedOut` to detect timeouts. Used by `listVolumes`, `findContainingVolume`,
+  `getVolumeSpace`, `getSyncStatus`, `getIcons`, `refreshDirectoryIcons`, `refreshListing`.
+- `IpcError` (`{ message: string, timedOut: boolean }`) — thrown as exception by commands returning `Result<T, _>`. Use
+  `isIpcError(e)` type guard and `getIpcErrorMessage(e)` helper in catch blocks. Used by `viewerOpen`, `viewerGetLines`,
+  `createDirectory`, `listDirectoryStart`, `moveToTrash`, `checkRenamePermission`, `checkRenameValidity`, `renameFile`,
+  `scanVolumeForCopy`, `scanVolumeForConflicts`.
 
 ## Notable non-obvious placements
 

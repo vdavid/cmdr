@@ -30,6 +30,7 @@
         viewerSetupMenu,
         viewerSetWordWrap,
         type ViewerSearchMatch,
+        isIpcError,
     } from '$lib/tauri-commands'
     import { getCurrentWindow } from '@tauri-apps/api/window'
     import { listen, type UnlistenFn } from '@tauri-apps/api/event'
@@ -45,6 +46,8 @@
     let estimatedLines = $state(1) // Backend's estimate based on initial sample
     let totalBytes = $state(0)
     let error = $state('')
+    let errorIsTimeout = $state(false)
+    let filePath = $state('')
     let loading = $state(true)
     let sessionId = $state('')
     let backendType = $state<'fullLoad' | 'byteSeek' | 'lineIndex'>('fullLoad')
@@ -323,7 +326,14 @@
         } catch (e) {
             // Only log if this is still the current request
             if (fetchId === currentFetchId) {
-                log.error('fetchLines[{fetchId}]: failed with error {error}', { fetchId, error: String(e) })
+                if (isIpcError(e) && e.timedOut) {
+                    error = "Couldn't load the file — the volume may be slow or unresponsive."
+                    errorIsTimeout = true
+                    log.error('fetchLines[{fetchId}]: timed out', { fetchId })
+                } else {
+                    const msg = isIpcError(e) ? e.message : String(e)
+                    log.error('fetchLines[{fetchId}]: failed with error {error}', { fetchId, error: msg })
+                }
             }
         }
     }
@@ -728,6 +738,95 @@
         })
     }
 
+    /** Open a file in the viewer, populating session state and cache. Throws on failure. */
+    async function openViewerSession(path: string) {
+        const result = await viewerOpen(path)
+
+        sessionId = result.sessionId
+        fileName = result.fileName
+        totalBytes = result.totalBytes
+        totalLines = result.totalLines
+        estimatedLines = result.estimatedTotalLines
+        backendType = result.backendType
+        isIndexing = result.isIndexing
+
+        log.debug(
+            'Opened file: {fileName}, {totalBytes} bytes, totalLines={totalLines}, estimatedTotalLines={estimatedTotalLines}, backend={backendType}, isIndexing={isIndexing}',
+            {
+                fileName: result.fileName,
+                totalBytes: result.totalBytes,
+                totalLines: result.totalLines,
+                estimatedTotalLines: result.estimatedTotalLines,
+                backendType: result.backendType,
+                isIndexing: result.isIndexing,
+            },
+        )
+
+        // Start polling for indexing status if indexing is in progress
+        if (result.isIndexing) {
+            startIndexingPoll()
+        }
+
+        // Populate cache with initial lines
+        lineCache.clear()
+        for (let i = 0; i < result.initialLines.lines.length; i++) {
+            lineCache.set(result.initialLines.firstLineNumber + i, result.initialLines.lines[i])
+        }
+
+        log.debug('Initial cache: {count} lines loaded', { count: result.initialLines.lines.length })
+
+        // Set window title (fire-and-forget, don't block)
+        getCurrentWindow()
+            .setTitle(`${result.fileName} — Viewer`)
+            .catch(() => {
+                // Not in Tauri environment
+            })
+
+        // Set up MCP event listeners for close/focus commands
+        await setupMcpListeners(path)
+
+        // Set up viewer-specific menu with Word wrap toggle, sync initial state
+        const windowLabel = getCurrentWindow().label
+        viewerSetupMenu(windowLabel)
+            .then(() => {
+                if (wordWrap) viewerSetWordWrap(windowLabel, true).catch(() => {})
+            })
+            .catch(() => {})
+
+        // Listen for menu-triggered word wrap toggle
+        unlistenWordWrap = await listen('viewer-word-wrap-toggled', () => {
+            toggleWordWrap(true)
+        })
+
+        // Clear any previous error state
+        error = ''
+        errorIsTimeout = false
+    }
+
+    /** Retry opening the file after a timeout error. */
+    async function retryOpen() {
+        if (!filePath) return
+        loading = true
+        error = ''
+        errorIsTimeout = false
+        try {
+            await openViewerSession(filePath)
+        } catch (e) {
+            if (isIpcError(e) && e.timedOut) {
+                error = "Couldn't load the file — the volume may be slow or unresponsive."
+                errorIsTimeout = true
+            } else {
+                error = typeof e === 'string' ? e : isIpcError(e) ? e.message : 'Failed to read file'
+                errorIsTimeout = false
+            }
+            log.error('Retry failed: {error}', { error: String(e) })
+        } finally {
+            loading = false
+            await tick()
+            containerRef?.focus()
+        }
+    }
+
     /** Clean up event listeners */
     function cleanupListeners() {
         unlistenMcpClose?.()
@@ -752,74 +851,27 @@
         }
 
         const params = new URLSearchParams(window.location.search)
-        const filePath = params.get('path')
+        const pathParam = params.get('path')
 
-        if (!filePath) {
+        if (!pathParam) {
             error = 'No file path specified'
+            errorIsTimeout = false
             loading = false
             return
         }
 
+        filePath = pathParam
+
         try {
-            const result = await viewerOpen(filePath)
-
-            sessionId = result.sessionId
-            fileName = result.fileName
-            totalBytes = result.totalBytes
-            totalLines = result.totalLines
-            estimatedLines = result.estimatedTotalLines
-            backendType = result.backendType
-            isIndexing = result.isIndexing
-
-            log.debug(
-                'Opened file: {fileName}, {totalBytes} bytes, totalLines={totalLines}, estimatedTotalLines={estimatedTotalLines}, backend={backendType}, isIndexing={isIndexing}',
-                {
-                    fileName: result.fileName,
-                    totalBytes: result.totalBytes,
-                    totalLines: result.totalLines,
-                    estimatedTotalLines: result.estimatedTotalLines,
-                    backendType: result.backendType,
-                    isIndexing: result.isIndexing,
-                },
-            )
-
-            // Start polling for indexing status if indexing is in progress
-            if (result.isIndexing) {
-                startIndexingPoll()
-            }
-
-            // Populate cache with initial lines
-            lineCache.clear()
-            for (let i = 0; i < result.initialLines.lines.length; i++) {
-                lineCache.set(result.initialLines.firstLineNumber + i, result.initialLines.lines[i])
-            }
-
-            log.debug('Initial cache: {count} lines loaded', { count: result.initialLines.lines.length })
-
-            // Set window title (fire-and-forget, don't block)
-            getCurrentWindow()
-                .setTitle(`${result.fileName} — Viewer`)
-                .catch(() => {
-                    // Not in Tauri environment
-                })
-
-            // Set up MCP event listeners for close/focus commands
-            await setupMcpListeners(filePath)
-
-            // Set up viewer-specific menu with Word wrap toggle, sync initial state
-            const windowLabel = getCurrentWindow().label
-            viewerSetupMenu(windowLabel)
-                .then(() => {
-                    if (wordWrap) viewerSetWordWrap(windowLabel, true).catch(() => {})
-                })
-                .catch(() => {})
-
-            // Listen for menu-triggered word wrap toggle
-            unlistenWordWrap = await listen('viewer-word-wrap-toggled', () => {
-                toggleWordWrap(true)
-            })
+            await openViewerSession(pathParam)
         } catch (e) {
-            error = typeof e === 'string' ? e : 'Failed to read file'
+            if (isIpcError(e) && e.timedOut) {
+                error = "Couldn't load the file — the volume may be slow or unresponsive."
+                errorIsTimeout = true
+            } else {
+                error = typeof e === 'string' ? e : isIpcError(e) ? e.message : 'Failed to read file'
+                errorIsTimeout = false
+            }
             log.error('Failed to open file: {error}', { error: String(e) })
         } finally {
             loading = false
@@ -918,6 +970,14 @@
 
     {#if loading}
         <div class="status-message">Loading...</div>
+    {:else if error && errorIsTimeout}
+        <div class="status-message timeout-error" role="alert">
+            <p class="timeout-error-message">{error}</p>
+            <div class="timeout-error-actions">
+                <button class="viewer-action-btn" onclick={() => void retryOpen()}>Retry</button>
+                <button class="viewer-action-btn viewer-action-secondary" onclick={closeWindow}>Cancel</button>
+            </div>
+        </div>
     {:else if error}
         <div class="status-message error">{error}</div>
     {:else}
@@ -1209,5 +1269,63 @@
 
     .status-message.error {
         color: var(--color-error);
+    }
+
+    .status-message.timeout-error {
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+
+    .timeout-error-message {
+        margin: 0;
+        color: var(--color-warning);
+        font-size: var(--font-size-md);
+        line-height: 1.4;
+        text-align: center;
+    }
+
+    .timeout-error-actions {
+        display: flex;
+        gap: var(--spacing-sm);
+    }
+
+    .viewer-action-btn {
+        padding: 3px 12px;
+        font-size: var(--font-size-sm);
+        font-weight: 500;
+        line-height: 1;
+        border-radius: var(--radius-sm);
+        background: var(--color-warning);
+        color: white;
+        border: none;
+        transition: all var(--transition-base);
+    }
+
+    .viewer-action-btn:hover {
+        filter: brightness(1.1);
+    }
+
+    .viewer-action-btn:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 1px;
+        box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1);
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .viewer-action-btn:focus-visible {
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.08);
+        }
+    }
+
+    .viewer-action-secondary {
+        background: transparent;
+        color: var(--color-text-secondary);
+        border: 1px solid var(--color-border);
+    }
+
+    .viewer-action-secondary:hover {
+        background: var(--color-bg-tertiary);
+        color: var(--color-text-primary);
+        filter: none;
     }
 </style>

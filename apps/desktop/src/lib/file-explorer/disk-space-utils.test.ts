@@ -6,7 +6,7 @@ import {
     formatDiskSpaceShort,
     formatBarTooltip,
 } from './disk-space-utils'
-import type { VolumeSpaceInfo } from '$lib/tauri-commands/storage'
+import type { VolumeSpaceInfo } from '$lib/tauri-commands'
 
 const mockFormatSize = (bytes: number): string => `${String(bytes)} B`
 

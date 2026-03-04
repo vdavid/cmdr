@@ -2,6 +2,7 @@
 
 import { invoke } from '@tauri-apps/api/core'
 import type { VolumeInfo } from '../file-explorer/types'
+import type { TimedOut } from './ipc-types'
 import { getAppLogger } from '$lib/logging/logger'
 
 const log = getAppLogger('storage')
@@ -14,12 +15,12 @@ export const DEFAULT_VOLUME_ID = 'root'
  * Available on macOS and Linux.
  * @returns Array of VolumeInfo objects, sorted with root first
  */
-export async function listVolumes(): Promise<VolumeInfo[]> {
+export async function listVolumes(): Promise<TimedOut<VolumeInfo[]>> {
     try {
-        return await invoke<VolumeInfo[]>('list_volumes')
+        return await invoke<TimedOut<VolumeInfo[]>>('list_volumes')
     } catch {
         // Command not available (non-macOS) - return empty array
-        return []
+        return { data: [], timedOut: false }
     }
 }
 
@@ -42,12 +43,12 @@ export async function getDefaultVolumeId(): Promise<string> {
  * @param path - Path to find the containing volume for
  * @returns The VolumeInfo for the containing volume, or null if not found
  */
-export async function findContainingVolume(path: string): Promise<VolumeInfo | null> {
+export async function findContainingVolume(path: string): Promise<TimedOut<VolumeInfo | null>> {
     try {
-        return await invoke<VolumeInfo | null>('find_containing_volume', { path })
+        return await invoke<TimedOut<VolumeInfo | null>>('find_containing_volume', { path })
     } catch {
         // Command not available (non-macOS) - return null
-        return null
+        return { data: null, timedOut: false }
     }
 }
 
@@ -62,12 +63,12 @@ export interface VolumeSpaceInfo {
  * @param path - Any path on the volume to get space info for
  * @returns Space info or null if unavailable
  */
-export async function getVolumeSpace(path: string): Promise<VolumeSpaceInfo | null> {
+export async function getVolumeSpace(path: string): Promise<TimedOut<VolumeSpaceInfo | null>> {
     try {
-        return await invoke<VolumeSpaceInfo | null>('get_volume_space', { path })
+        return await invoke<TimedOut<VolumeSpaceInfo | null>>('get_volume_space', { path })
     } catch {
         // Command not available (non-macOS) - return null
-        return null
+        return { data: null, timedOut: false }
     }
 }
 

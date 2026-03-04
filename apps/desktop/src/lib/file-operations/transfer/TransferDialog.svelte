@@ -152,7 +152,7 @@
     async function loadVolumeSpace() {
         const volume = selectedVolume
         if (volume) {
-            volumeSpace = await getVolumeSpace(volume.path)
+            volumeSpace = (await getVolumeSpace(volume.path)).data
         }
     }
 

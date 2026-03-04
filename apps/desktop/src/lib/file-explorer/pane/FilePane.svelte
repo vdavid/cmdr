@@ -57,6 +57,7 @@
     import LoadingIcon from '$lib/ui/LoadingIcon.svelte'
     import VolumeBreadcrumb from '../navigation/VolumeBreadcrumb.svelte'
     import PermissionDeniedPane from './PermissionDeniedPane.svelte'
+    import VolumeUnreachableBanner from './VolumeUnreachableBanner.svelte'
     import NetworkMountView from './NetworkMountView.svelte'
     import MtpConnectionView from './MtpConnectionView.svelte'
     import { createSelectionState } from './selection-state.svelte'
@@ -76,7 +77,8 @@
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
     import { resolveValidPath } from '../navigation/path-navigation'
     import { prioritizeDir } from '$lib/indexing'
-    import { getVolumeSpace, type VolumeSpaceInfo } from '$lib/tauri-commands/storage'
+    import { getVolumeSpace, type VolumeSpaceInfo } from '$lib/tauri-commands'
+    import type { UnreachableState } from '../tabs/tab-types'
     import { getDiskUsageLevel, getUsedPercent, formatBarTooltip } from '../disk-space-utils'
     import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
 
@@ -102,6 +104,12 @@
         onCancelLoading?: (cancelledPath: string, selectName?: string) => void
         /** Called when MTP connection fails fatally (device disconnected, timeout) - parent should fall back to previous volume */
         onMtpFatalError?: (error: string) => void
+        /** Volume resolution timed out for this tab — show banner instead of file list */
+        unreachable?: UnreachableState | null
+        /** Called when user clicks "Retry" on the unreachable banner */
+        onRetryUnreachable?: () => void
+        /** Called when user clicks "Open home folder" on the unreachable banner */
+        onOpenHome?: () => void
     }
 
     const {
@@ -123,6 +131,9 @@
         onNetworkHostChange,
         onCancelLoading,
         onMtpFatalError,
+        unreachable = null,
+        onRetryUnreachable,
+        onOpenHome,
     }: Props = $props()
 
     let currentPath = $state(untrack(() => initialPath))
@@ -342,7 +353,7 @@
     }
 
     export async function refreshVolumeSpace(): Promise<void> {
-        volumeSpace = await getVolumeSpace(currentPath)
+        volumeSpace = (await getVolumeSpace(currentPath)).data
     }
 
     /** Re-fetches index sizes (recursive_size, etc.) without a full list rebuild. */
@@ -460,9 +471,13 @@
     let syncStatusMap = $state<Record<string, SyncStatus>>({})
     const syncPollIntervalMs = 3000
     let syncPollInterval: ReturnType<typeof setInterval>
+    // Pending retry timer for timed-out sync status fetches (max 1 retry)
+    let syncRetryTimer: ReturnType<typeof setTimeout> | undefined
+    const syncRetryDelayMs = 5000
     // Poll to detect when the current directory is deleted externally (FSEvents doesn't notify)
     const dirExistsPollMs = 2000
     let dirExistsPollInterval: ReturnType<typeof setInterval>
+    let dirNotExistsCount = 0 // Consecutive "not exists" results — require 2 before navigating away
 
     // Derive includeHidden from showHiddenFiles prop
     const includeHidden = $derived(showHiddenFiles)
@@ -646,6 +661,8 @@
         finalizingCount = undefined
         error = null
         syncStatusMap = {}
+        clearTimeout(syncRetryTimer)
+        syncRetryTimer = undefined
         selection.clearSelection()
         totalCount = 0 // Reset to show empty list immediately
         entryUnderCursor = null // Clear old under-the-cursor entry info
@@ -910,9 +927,27 @@
     async function fetchSyncStatusForPaths(paths: string[]) {
         if (paths.length === 0) return
 
+        // Cancel any pending retry — a new fetch supersedes it
+        clearTimeout(syncRetryTimer)
+        syncRetryTimer = undefined
+
         try {
-            const statuses = await getSyncStatus(paths)
+            const { data: statuses, timedOut } = await getSyncStatus(paths)
             syncStatusMap = { ...syncStatusMap, ...statuses }
+
+            if (timedOut) {
+                // Schedule a single retry after a short delay
+                syncRetryTimer = setTimeout(() => {
+                    syncRetryTimer = undefined
+                    void getSyncStatus(paths)
+                        .then(({ data: retryStatuses }) => {
+                            syncStatusMap = { ...syncStatusMap, ...retryStatuses }
+                        })
+                        .catch(() => {
+                            // Give up silently on retry failure
+                        })
+                }, syncRetryDelayMs)
+            }
         } catch {
             // Silently ignore - sync status is optional
         }
@@ -1169,6 +1204,24 @@
         }
     })
 
+    // Track previous unreachable state to detect when volume becomes reachable (retry success).
+    // Only triggers when the path stays the same (retry case). The "Open home folder" case
+    // changes the path, which the initialPath effect below handles instead.
+    let prevUnreachable = $state(unreachable)
+
+    $effect(() => {
+        const wasUnreachable = prevUnreachable !== null
+        const isNowReachable = unreachable === null
+        const pathUnchanged = initialPath === untrack(() => currentPath)
+
+        if (wasUnreachable && isNowReachable && pathUnchanged) {
+            log.info('Tab became reachable (retry succeeded), loading directory: {path}', { path: initialPath })
+            void loadDirectory(initialPath)
+            void refreshVolumeSpace()
+        }
+        prevUnreachable = unreachable
+    })
+
     // Track the previous volumeId to detect MTP connection completion
     let prevVolumeId = $state(volumeId)
 
@@ -1410,7 +1463,10 @@
             '[FilePane] onMount: paneId={paneId}, volumeId={volumeId}, currentPath={currentPath}, isNetworkView={isNetworkView}, isMtpDeviceOnly={isMtpDeviceOnly}',
             { paneId, volumeId, currentPath, isNetworkView, isMtpDeviceOnly },
         )
-        if (!isNetworkView && !isMtpDeviceOnly) {
+        if (unreachable) {
+            log.debug('[FilePane] onMount: SKIPPING loadDirectory for unreachable tab, paneId={paneId}', { paneId })
+            loading = false
+        } else if (!isNetworkView && !isMtpDeviceOnly) {
             log.debug('[FilePane] onMount: triggering loadDirectory for paneId={paneId}', { paneId })
             void loadDirectory(currentPath)
             void refreshVolumeSpace()
@@ -1429,16 +1485,26 @@
         dirExistsPollInterval = setInterval(() => {
             if (!listingId || loading || isNetworkView || isMtpView) return
             void pathExists(currentPath).then((exists) => {
-                if (exists) return
+                if (exists) {
+                    dirNotExistsCount = 0
+                    return
+                }
+
+                // Require 2 consecutive "not exists" before navigating away.
+                // A single false can be a timeout on a slow volume (pathExists
+                // returns false on timeout), so we need a second confirmation.
+                dirNotExistsCount++
+                if (dirNotExistsCount < 2) return
 
                 // If on an external volume, check whether the volume root itself is gone.
                 // If so, skip — the volume unmount handler will manage the transition.
                 if (volumePath !== '/') {
                     void pathExists(volumePath).then((volumeExists) => {
                         if (!volumeExists) return
-                        log.info('Directory no longer exists, navigating to valid parent: {path}', {
-                            path: currentPath,
-                        })
+                        log.info(
+                            'Directory {dir} no longer exists, navigating to nearest valid parent under {volume}',
+                            { dir: currentPath, volume: volumePath },
+                        )
                         void resolveValidPath(currentPath).then((validPath) => {
                             const target = validPath ?? volumePath
                             currentPath = target
@@ -1446,8 +1512,8 @@
                         })
                     })
                 } else {
-                    log.info('Directory no longer exists, navigating to valid parent: {path}', {
-                        path: currentPath,
+                    log.info('Directory {dir} no longer exists, navigating to nearest valid parent', {
+                        dir: currentPath,
                     })
                     void resolveValidPath(currentPath).then((validPath) => {
                         const target = validPath ?? volumePath
@@ -1466,6 +1532,7 @@
             void listDirectoryEnd(listingId)
         }
         clearInterval(syncPollInterval)
+        clearTimeout(syncRetryTimer)
         clearInterval(dirExistsPollInterval)
         debouncedFetchEntry.cancel()
         throttledFetchStats.cancel()
@@ -1505,7 +1572,14 @@
         >
     </div>
     <div class="content">
-        {#if isNetworkView}
+        {#if unreachable}
+            <VolumeUnreachableBanner
+                originalPath={unreachable.originalPath}
+                retrying={unreachable.retrying}
+                onRetry={() => onRetryUnreachable?.()}
+                onOpenHome={() => onOpenHome?.()}
+            />
+        {:else if isNetworkView}
             <NetworkMountView
                 bind:this={networkMountViewRef}
                 {paneId}
@@ -1590,7 +1664,7 @@
         {/if}
     </div>
     <!-- SelectionInfo shown in both modes (not in network view, MTP connecting state, or error states) -->
-    {#if !isNetworkView && !isMtpDeviceOnly && !isPermissionDenied && !error}
+    {#if !isNetworkView && !isMtpDeviceOnly && !isPermissionDenied && !error && !unreachable}
         <SelectionInfo
             {viewMode}
             entry={entryUnderCursor}

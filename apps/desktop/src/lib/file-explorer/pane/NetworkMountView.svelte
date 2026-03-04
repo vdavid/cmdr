@@ -102,7 +102,7 @@
 
             // Find the actual volume for the mounted path
             // This ensures proper breadcrumb display and volume context
-            const mountedVolume = await findContainingVolume(mountPath)
+            const { data: mountedVolume } = await findContainingVolume(mountPath)
 
             if (mountedVolume) {
                 // Use the real volume ID and path from the system

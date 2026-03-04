@@ -1,8 +1,14 @@
 <script lang="ts">
     import { onMount, onDestroy, tick } from 'svelte'
-    import { listVolumes, findContainingVolume, listen, type UnlistenFn } from '$lib/tauri-commands'
-    import { getVolumeSpace, type VolumeSpaceInfo } from '$lib/tauri-commands/storage'
-    import { SvelteMap } from 'svelte/reactivity'
+    import {
+        listVolumes,
+        findContainingVolume,
+        getVolumeSpace,
+        listen,
+        type UnlistenFn,
+        type VolumeSpaceInfo,
+    } from '$lib/tauri-commands'
+    import { SvelteMap, SvelteSet } from 'svelte/reactivity'
     import { getDiskUsageLevel, getUsedPercent, formatDiskSpaceShort } from '../disk-space-utils'
     import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
@@ -38,6 +44,30 @@
 
     // Disk space cache for volume selector (fetched lazily on dropdown open)
     const volumeSpaceMap = new SvelteMap<string, VolumeSpaceInfo>()
+
+    // Timeout tracking for listVolumes
+    let volumesTimedOut = $state(false)
+    let isRetryingVolumes = $state(false)
+    let volumeRetryFailed = $state(false)
+    let retryFailedRevertTimer: ReturnType<typeof setTimeout> | null = null
+
+    // Volume IDs whose getVolumeSpace call timed out (shown as placeholder bars)
+    const spaceTimedOutSet = new SvelteSet<string>()
+
+    // Volume IDs currently retrying a getVolumeSpace call (shown as spinner)
+    const spaceRetryingSet = new SvelteSet<string>()
+
+    // Volume IDs whose retry just failed (triggers shake animation, then clears)
+    const spaceRetryFailedSet = new SvelteSet<string>()
+
+    // Whether a retry was already attempted for a volume (persists to show "Still unavailable" tooltip)
+    const spaceRetryAttemptedSet = new SvelteSet<string>()
+
+    // Volume IDs currently being auto-retried (for "Retrying automatically..." tooltip)
+    const spaceAutoRetryingSet = new SvelteSet<string>()
+
+    // Timer refs for auto-retry so we can clean up on destroy
+    const autoRetryTimers: ReturnType<typeof setTimeout>[] = []
 
     // Current volume info derived from volumes list (the actual containing volume)
     // Special case: 'network' is a virtual volume, not from the backend
@@ -177,11 +207,30 @@
     }
 
     async function loadVolumes() {
-        volumes = await listVolumes()
+        const result = await listVolumes()
+        volumes = result.data
+        volumesTimedOut = result.timedOut
+    }
+
+    async function retryLoadVolumes() {
+        isRetryingVolumes = true
+        volumeRetryFailed = false
+        if (retryFailedRevertTimer) clearTimeout(retryFailedRevertTimer)
+        try {
+            await loadVolumes()
+            if (volumesTimedOut) {
+                volumeRetryFailed = true
+                retryFailedRevertTimer = setTimeout(() => {
+                    volumeRetryFailed = false
+                }, 3000)
+            }
+        } finally {
+            isRetryingVolumes = false
+        }
     }
 
     async function updateContainingVolume(path: string) {
-        const containing = await findContainingVolume(path)
+        const { data: containing } = await findContainingVolume(path)
         containingVolumeId = containing?.id ?? volumeId
     }
 
@@ -191,7 +240,7 @@
         // Check if this is a favorite (shortcut) or an actual volume
         if (volume.category === 'favorite') {
             // For favorites, find the actual containing volume
-            const containingVolume = await findContainingVolume(volume.path)
+            const { data: containingVolume } = await findContainingVolume(volume.path)
             if (containingVolume) {
                 // Navigate to the favorite's path, but set the volume to the containing volume
                 onVolumeChange?.(containingVolume.id, containingVolume.path, volume.path)
@@ -376,15 +425,83 @@
 
     async function fetchVolumeSpaces(vols: VolumeInfo[]): Promise<void> {
         const volumeSpaceTimeoutMs = 3000
+        const autoRetryDelayMs = 5000
         const physicalVolumes = vols.filter((v) => v.category === 'main_volume' || v.category === 'attached_volume')
         await Promise.all(
             physicalVolumes
                 .filter((v) => !volumeSpaceMap.has(v.id))
                 .map(async (v) => {
-                    const space = await withTimeout(getVolumeSpace(v.path), volumeSpaceTimeoutMs, null)
-                    if (space) volumeSpaceMap.set(v.id, space)
+                    const result = await withTimeout(getVolumeSpace(v.path), volumeSpaceTimeoutMs, null)
+                    if (!result) {
+                        // Frontend timeout (withTimeout returned fallback null)
+                        spaceTimedOutSet.add(v.id)
+                        scheduleAutoRetry(v, autoRetryDelayMs)
+                        return
+                    }
+                    const { data: space, timedOut } = result
+                    if (timedOut || !space) {
+                        spaceTimedOutSet.add(v.id)
+                        scheduleAutoRetry(v, autoRetryDelayMs)
+                    } else {
+                        spaceTimedOutSet.delete(v.id)
+                        volumeSpaceMap.set(v.id, space)
+                    }
                 }),
         )
+    }
+
+    function scheduleAutoRetry(volume: VolumeInfo, delayMs: number) {
+        const timer = setTimeout(() => {
+            // Only auto-retry if still timed out and not already retrying
+            if (spaceTimedOutSet.has(volume.id) && !spaceRetryingSet.has(volume.id)) {
+                void doRetryVolumeSpace(volume, true)
+            }
+        }, delayMs)
+        autoRetryTimers.push(timer)
+    }
+
+    async function doRetryVolumeSpace(volume: VolumeInfo, isAutoRetry: boolean) {
+        const volumeSpaceTimeoutMs = 3000
+        spaceRetryingSet.add(volume.id)
+        spaceRetryFailedSet.delete(volume.id)
+        spaceRetryAttemptedSet.add(volume.id)
+        if (isAutoRetry) spaceAutoRetryingSet.add(volume.id)
+
+        try {
+            const result = await withTimeout(getVolumeSpace(volume.path), volumeSpaceTimeoutMs, null)
+            if (!result) {
+                // Frontend timeout again
+                handleRetryFailure(volume.id)
+                return
+            }
+            const { data: space, timedOut } = result
+            if (!timedOut && space) {
+                spaceTimedOutSet.delete(volume.id)
+                spaceRetryingSet.delete(volume.id)
+                spaceAutoRetryingSet.delete(volume.id)
+                volumeSpaceMap.set(volume.id, space)
+            } else {
+                handleRetryFailure(volume.id)
+            }
+        } catch {
+            handleRetryFailure(volume.id)
+        }
+    }
+
+    function handleRetryFailure(volumeId: string) {
+        spaceRetryingSet.delete(volumeId)
+        spaceAutoRetryingSet.delete(volumeId)
+        spaceRetryFailedSet.add(volumeId)
+        // Clear the shake trigger after the animation completes (~300ms)
+        setTimeout(() => {
+            spaceRetryFailedSet.delete(volumeId)
+        }, 400)
+    }
+
+    function retryVolumeSpace(volume: VolumeInfo) {
+        // Debounce: ignore clicks while a retry is in flight
+        if (spaceRetryingSet.has(volume.id)) return
+        void doRetryVolumeSpace(volume, false)
     }
 
     onMount(async () => {
@@ -395,11 +512,21 @@
         // Listen for volume mount/unmount events
         unlistenMount = await listen<{ volumeId: string }>('volume-mounted', () => {
             volumeSpaceMap.clear()
+            spaceTimedOutSet.clear()
+            spaceRetryingSet.clear()
+            spaceRetryFailedSet.clear()
+            spaceRetryAttemptedSet.clear()
+            spaceAutoRetryingSet.clear()
             void loadVolumes()
         })
 
         unlistenUnmount = await listen<{ volumeId: string }>('volume-unmounted', () => {
             volumeSpaceMap.clear()
+            spaceTimedOutSet.clear()
+            spaceRetryingSet.clear()
+            spaceRetryFailedSet.clear()
+            spaceRetryAttemptedSet.clear()
+            spaceAutoRetryingSet.clear()
             void loadVolumes()
         })
 
@@ -429,6 +556,7 @@
         unlistenMtpDetected?.()
         unlistenMtpConnected?.()
         unlistenMtpRemoved?.()
+        for (const timer of autoRetryTimers) clearTimeout(timer)
         document.removeEventListener('click', handleClickOutside)
         document.removeEventListener('keydown', handleDocumentKeyDown)
     })
@@ -460,7 +588,7 @@
         <span class="chevron">▾</span>
     </span>
 
-    {#if isOpen && groupedVolumes.length > 0}
+    {#if isOpen && (groupedVolumes.length > 0 || volumesTimedOut)}
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div class="volume-dropdown" class:keyboard-mode={isKeyboardMode} onmousemove={handleDropdownMouseMove}>
             {#each groupedVolumes as group, groupIndex (group.category)}
@@ -521,9 +649,60 @@
                                 <span class="volume-space-text">{formatDiskSpaceShort(space, formatFileSize)}</span>
                             </div>
                         {/if}
+                    {:else if spaceRetryingSet.has(volume.id)}
+                        <div
+                            class="volume-space-info volume-space-timeout"
+                            use:tooltip={spaceAutoRetryingSet.has(volume.id)
+                                ? 'Retrying automatically\u2026'
+                                : 'Retrying\u2026'}
+                        >
+                            <div class="volume-space-bar volume-space-bar-timeout">
+                                <span class="volume-space-timeout-icon space-spinner">\u21BB</span>
+                            </div>
+                            <span class="volume-space-text volume-space-text-timeout">Retrying</span>
+                        </div>
+                    {:else if spaceTimedOutSet.has(volume.id)}
+                        <!-- svelte-ignore a11y_click_events_have_key_events -->
+                        <!-- svelte-ignore a11y_no_static_element_interactions -->
+                        <div
+                            class="volume-space-info volume-space-timeout"
+                            class:space-shake={spaceRetryFailedSet.has(volume.id)}
+                            use:tooltip={spaceRetryAttemptedSet.has(volume.id)
+                                ? 'Still unavailable \u2014 click to retry'
+                                : "Couldn't fetch disk space \u2014 click to retry"}
+                            onclick={(e: MouseEvent) => {
+                                e.stopPropagation()
+                                retryVolumeSpace(volume)
+                            }}
+                        >
+                            <div class="volume-space-bar volume-space-bar-timeout">
+                                <span class="volume-space-timeout-icon">?</span>
+                            </div>
+                            <span class="volume-space-text volume-space-text-timeout">Unavailable</span>
+                        </div>
                     {/if}
                 {/each}
             {/each}
+            {#if volumesTimedOut}
+                <div class="category-separator"></div>
+                <div class="timeout-warning-row" class:retry-failed={volumeRetryFailed}>
+                    <span class="timeout-warning-text"
+                        >{volumeRetryFailed
+                            ? 'Still unreachable — try again later'
+                            : 'Some volumes may be missing'}</span
+                    >
+                    <button
+                        class="timeout-retry-button"
+                        disabled={isRetryingVolumes}
+                        use:tooltip={'Refresh volume list'}
+                        onclick={() => {
+                            void retryLoadVolumes()
+                        }}
+                    >
+                        <span class="timeout-retry-icon" class:is-retrying={isRetryingVolumes}>↻</span>
+                    </button>
+                </div>
+            {/if}
         </div>
     {/if}
 </div>
@@ -686,5 +865,158 @@
         color: var(--color-text-tertiary);
         white-space: nowrap;
         flex-shrink: 0;
+    }
+
+    /* Volume space timeout placeholder */
+    .volume-space-timeout {
+        cursor: default;
+    }
+
+    .volume-space-bar-timeout {
+        border: 1px dashed var(--color-border);
+        background-color: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 8px;
+    }
+
+    .volume-space-timeout-icon {
+        font-size: var(--font-size-xs);
+        color: var(--color-warning);
+        line-height: 1;
+        transition: opacity var(--transition-base);
+    }
+
+    /* Spinner for retrying state */
+    .space-spinner {
+        display: inline-block;
+        animation: spin 1s linear infinite;
+    }
+
+    /* Shake on retry failure */
+    /*noinspection CssUnusedSymbol*/
+    .space-shake {
+        animation: shake 300ms ease;
+    }
+
+    @keyframes shake {
+        0%,
+        100% {
+            transform: translateX(0);
+        }
+        25% {
+            transform: translateX(-3px);
+        }
+        75% {
+            transform: translateX(3px);
+        }
+    }
+
+    .volume-space-text-timeout {
+        color: var(--color-warning);
+    }
+
+    /* Volumes timeout warning row */
+    .timeout-warning-row {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-xs) var(--spacing-md);
+    }
+
+    .timeout-warning-text {
+        font-size: var(--font-size-xs);
+        color: var(--color-warning);
+        flex: 1;
+    }
+
+    .timeout-retry-button {
+        background: none;
+        border: none;
+        padding: 0 var(--spacing-xs);
+        cursor: default;
+        color: var(--color-warning);
+        font-size: var(--font-size-md);
+        line-height: 1;
+        border-radius: var(--radius-sm);
+        transition: background-color var(--transition-base);
+    }
+
+    .timeout-retry-button:hover {
+        background-color: var(--color-bg-tertiary);
+    }
+
+    .timeout-retry-button:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 1px;
+    }
+
+    .timeout-retry-button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    /*noinspection CssUnusedSymbol*/
+    .timeout-retry-icon.is-retrying {
+        display: inline-block;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        from {
+            transform: rotate(0deg);
+        }
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    /*noinspection CssUnusedSymbol*/
+    .timeout-warning-row.retry-failed {
+        animation: flash-warning 0.3s ease;
+    }
+
+    @keyframes flash-warning {
+        0%,
+        100% {
+            background-color: transparent;
+        }
+        50% {
+            background-color: var(--color-warning-bg);
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        /*noinspection CssUnusedSymbol*/
+        .timeout-retry-icon.is-retrying {
+            animation: none;
+        }
+
+        /*noinspection CssUnusedSymbol*/
+        .timeout-warning-row.retry-failed {
+            animation: none;
+        }
+
+        /* Reduced motion: pulsing opacity instead of spinning */
+        .space-spinner {
+            animation: pulse-opacity 1.5s ease-in-out infinite;
+        }
+
+        /* Reduced motion: opacity flash instead of shake */
+        /*noinspection CssUnusedSymbol*/
+        .space-shake {
+            animation: flash-warning 300ms ease;
+        }
+    }
+
+    @keyframes pulse-opacity {
+        0%,
+        100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.3;
+        }
     }
 </style>

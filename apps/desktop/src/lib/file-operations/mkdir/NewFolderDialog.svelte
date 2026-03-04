@@ -6,7 +6,9 @@
         getAiStatus,
         getFileAt,
         getFolderSuggestions,
+        isIpcError,
         listen,
+        refreshListing,
         type UnlistenFn,
     } from '$lib/tauri-commands'
     import type { DirectoryDiff } from '$lib/file-explorer/types'
@@ -32,6 +34,7 @@
 
     let folderName = $state(initialName)
     let errorMessage = $state('')
+    let timeoutError = $state(false)
     let isChecking = $state(false)
     let nameInputRef: HTMLInputElement | undefined = $state()
     let unlistenDiff: UnlistenFn | undefined
@@ -45,7 +48,7 @@
     let validateTimer: ReturnType<typeof setTimeout> | undefined
 
     const currentDirName = $derived(currentPath.split('/').pop() || currentPath)
-    const isValid = $derived(folderName.trim().length > 0 && !errorMessage)
+    const isValid = $derived(folderName.trim().length > 0 && !errorMessage && !timeoutError)
 
     async function validateName(name: string) {
         const trimmed = name.trim()
@@ -139,13 +142,27 @@
 
     async function handleConfirm() {
         const trimmed = folderName.trim()
-        if (!trimmed || errorMessage) return
+        if (!trimmed || errorMessage || timeoutError) return
         try {
             await createDirectory(currentPath, trimmed, volumeId)
             onCreated(trimmed)
         } catch (e) {
-            errorMessage = String(e)
+            if (isIpcError(e) && e.timedOut) {
+                timeoutError = true
+                errorMessage = ''
+            } else {
+                errorMessage = isIpcError(e) ? e.message : String(e)
+            }
         }
+    }
+
+    function handleRefreshListing() {
+        void refreshListing(listingId)
+        onCancel()
+    }
+
+    function handleTimeoutDismiss() {
+        timeoutError = false
     }
 
     function handleKeydown(event: KeyboardEvent) {
@@ -199,6 +216,19 @@
                 <p id="new-folder-error" class="error-message" role="alert">{errorMessage}</p>
             {/if}
         </div>
+
+        {#if timeoutError}
+            <div class="timeout-warning" role="alert">
+                <p class="timeout-message">
+                    Couldn't confirm the folder was created. The volume may be slow — the folder may still have been
+                    created.
+                </p>
+                <div class="timeout-actions">
+                    <Button size="mini" onclick={handleRefreshListing}>Refresh listing</Button>
+                    <Button size="mini" onclick={handleTimeoutDismiss}>Dismiss</Button>
+                </div>
+            </div>
+        {/if}
 
         {#if aiAvailable !== false}
             <div class="ai-suggestions" aria-label="AI suggestions">
@@ -288,6 +318,27 @@
         margin: var(--spacing-sm) 0 0;
         font-size: var(--font-size-sm);
         color: var(--color-error);
+    }
+
+    .timeout-warning {
+        margin-bottom: var(--spacing-lg);
+        padding: var(--spacing-sm) var(--spacing-md);
+        background: var(--color-warning-bg);
+        border: 1px solid var(--color-warning);
+        border-radius: var(--radius-sm);
+    }
+
+    .timeout-message {
+        margin: 0 0 var(--spacing-sm);
+        font-size: var(--font-size-sm);
+        color: var(--color-warning);
+        line-height: 1.4;
+    }
+
+    .timeout-actions {
+        display: flex;
+        gap: var(--spacing-sm);
+        justify-content: flex-end;
     }
 
     .button-row {

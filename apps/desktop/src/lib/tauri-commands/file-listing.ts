@@ -10,6 +10,7 @@ import type {
     StreamingListingStartResult,
     SyncStatus,
 } from '../file-explorer/types'
+import type { TimedOut } from './ipc-types'
 import type { DirectorySortMode } from '$lib/settings'
 
 /**
@@ -152,8 +153,8 @@ export async function listDirectoryEnd(listingId: string): Promise<void> {
 }
 
 /** Force a re-read of a watched listing, emitting any diff. */
-export async function refreshListing(listingId: string): Promise<void> {
-    await invoke('refresh_listing', { listingId })
+export async function refreshListing(listingId: string): Promise<TimedOut<null>> {
+    return invoke<TimedOut<null>>('refresh_listing', { listingId })
 }
 
 /**
@@ -237,17 +238,17 @@ export async function createDirectory(parentPath: string, name: string, volumeId
 
 /**
  * Gets sync status for multiple file paths.
- * Returns a map of path -> sync status.
+ * Returns a map of path -> sync status, with timeout flag.
  * Only works on macOS with files in cloud-synced folders (Dropbox, iCloud, etc.)
  * @param paths - Array of absolute file paths.
- * @returns Map of path -> SyncStatus
+ * @returns Map of path -> SyncStatus, with timeout flag
  */
-export async function getSyncStatus(paths: string[]): Promise<Record<string, SyncStatus>> {
+export async function getSyncStatus(paths: string[]): Promise<TimedOut<Record<string, SyncStatus>>> {
     try {
-        return await invoke<Record<string, SyncStatus>>('get_sync_status', { paths })
+        return await invoke<TimedOut<Record<string, SyncStatus>>>('get_sync_status', { paths })
     } catch {
         // Command not available (non-macOS) - return empty map
-        return {}
+        return { data: {}, timedOut: false }
     }
 }
 

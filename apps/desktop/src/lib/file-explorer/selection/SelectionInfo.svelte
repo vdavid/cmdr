@@ -14,7 +14,7 @@
     import { formatFileSize, formatDateTime } from '$lib/settings/reactive-settings.svelte'
     import { isScanning } from '$lib/indexing/index-state.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
-    import type { VolumeSpaceInfo } from '$lib/tauri-commands/storage'
+    import type { VolumeSpaceInfo } from '$lib/tauri-commands'
     import { formatDiskSpaceStatus } from '../disk-space-utils'
 
     interface Props {

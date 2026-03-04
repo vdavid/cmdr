@@ -1,5 +1,5 @@
-import { getFileRange } from '$lib/tauri-commands'
-import { moveToTrash, type RenameValidityResult } from '$lib/tauri-commands'
+import { getFileRange, refreshListing } from '$lib/tauri-commands'
+import { getIpcErrorMessage, isIpcError, moveToTrash, type RenameValidityResult } from '$lib/tauri-commands'
 import { validateFilename, getExtension } from '$lib/utils/filename-validation'
 import { cancelClickToRename } from '../rename/rename-activation'
 import { executeRenameSave, performRename, checkPermission, type RenameResult } from '../rename/rename-operations'
@@ -74,6 +74,12 @@ export function createRenameFlow(deps: RenameFlowDeps) {
             case 'error':
                 rename.triggerShake()
                 addToast(result.message, { level: 'error' })
+                break
+            case 'timeout':
+                rename.cancel()
+                onRequestFocus()
+                addToast(result.message, { level: 'warn', dismissal: 'persistent' })
+                void refreshListing(deps.getListingId())
                 break
             case 'extension-ask':
                 suppressBlurCancel = true
@@ -236,8 +242,15 @@ export function createRenameFlow(deps: RenameFlowDeps) {
                             handleRenameResult(result, trimmedName)
                         })
                         .catch((e: unknown) => {
-                            const msg = e instanceof Error ? e.message : String(e)
-                            addToast(msg, { level: 'error' })
+                            if (isIpcError(e) && e.timedOut) {
+                                addToast(
+                                    "Couldn't confirm the file was moved to Trash. The volume may be slow — the file may still have been moved.",
+                                    { level: 'warn', dismissal: 'persistent' },
+                                )
+                                void refreshListing(deps.getListingId())
+                            } else {
+                                addToast(getIpcErrorMessage(e), { level: 'error' })
+                            }
                             rename.cancel()
                             onRequestFocus()
                         })

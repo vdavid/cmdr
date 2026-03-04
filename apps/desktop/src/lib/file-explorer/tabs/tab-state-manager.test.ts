@@ -28,6 +28,7 @@ function makeTab(overrides: Partial<TabState> = {}): TabState {
         viewMode: 'full',
         pinned: false,
         cursorFilename: null,
+        unreachable: null,
         ...overrides,
     }
 }

@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 use tokio::time::Duration;
 
-use super::util::blocking_with_timeout;
+use super::util::{TimedOut, blocking_with_timeout_flag};
 use crate::icons;
 
 const ICONS_TIMEOUT: Duration = Duration::from_secs(2);
@@ -16,8 +16,8 @@ const ICONS_TIMEOUT: Duration = Duration::from_secs(2);
 /// are fetched from app bundles (showing the app's icon as fallback). When false,
 /// the system's default document icons are used (Finder-style with app badge).
 #[tauri::command]
-pub async fn get_icons(icon_ids: Vec<String>, use_app_icons_for_documents: bool) -> HashMap<String, String> {
-    blocking_with_timeout(ICONS_TIMEOUT, HashMap::new(), move || {
+pub async fn get_icons(icon_ids: Vec<String>, use_app_icons_for_documents: bool) -> TimedOut<HashMap<String, String>> {
+    blocking_with_timeout_flag(ICONS_TIMEOUT, HashMap::new(), move || {
         icons::get_icons(icon_ids, use_app_icons_for_documents)
     })
     .await
@@ -34,8 +34,8 @@ pub async fn refresh_directory_icons(
     directory_paths: Vec<String>,
     extensions: Vec<String>,
     use_app_icons_for_documents: bool,
-) -> HashMap<String, String> {
-    blocking_with_timeout(ICONS_TIMEOUT, HashMap::new(), move || {
+) -> TimedOut<HashMap<String, String>> {
+    blocking_with_timeout_flag(ICONS_TIMEOUT, HashMap::new(), move || {
         icons::refresh_icons_for_directory(directory_paths, extensions, use_app_icons_for_documents)
     })
     .await

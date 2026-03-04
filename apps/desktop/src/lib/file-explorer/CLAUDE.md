@@ -115,6 +115,7 @@ Core explorer UI components:
 - **MtpConnectionView.svelte** / **NetworkMountView.svelte** — Placeholder panes for MTP/network mount states
 - **PaneResizer.svelte** — Drag handle between the two panes
 - **PermissionDeniedPane.svelte** — Shown when a directory can't be read
+- **VolumeUnreachableBanner.svelte** — Shown when a tab's volume resolution timed out at startup (retry + open home)
 - **selection-state.svelte.ts** — Reactive selection set (indices) with range/toggle helpers
 - **sorting-handlers.ts** / **transfer-operations.ts** / **tab-operations.ts** — Pure logic extracted from
   DualPaneExplorer

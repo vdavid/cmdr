@@ -111,6 +111,25 @@ movement > 5px threshold exits keyboard mode.
 MTP volumes are refreshed with a 100ms delay after hotplug events (`mtp-device-detected`, `mtp-device-connected`,
 `mtp-device-removed`) to let `mtp-store`'s own event handler finish first.
 
+### Timeout-aware UI
+
+Both `listVolumes()` and `getVolumeSpace()` return `TimedOut<T>` wrappers. The component tracks timeout state and
+renders inline indicators (no toasts):
+
+- **Volume list timeout** (`volumesTimedOut`): Shows a warning row at the bottom of the dropdown ("Some volumes may be
+  missing") with a retry button that re-calls `listVolumes()`. The warning auto-clears on successful retry. The dropdown
+  still opens with whatever partial data was returned.
+- **Volume space timeout** (`spaceTimedOutSet`): Three-state cycle with per-volume tracking:
+    - **Idle**: Dashed-outline placeholder bar with "?" icon, "Unavailable" text, tooltip "Couldn't fetch disk space --
+      click to retry". After a retry has been attempted, tooltip changes to "Still unavailable -- click to retry".
+    - **Retrying** (`spaceRetryingSet`): Spinner replaces "?", text shows "Retrying", tooltip "Retrying..." (manual) or
+      "Retrying automatically..." (auto). Clicks are debounced (ignored while in-flight).
+    - **Failed**: Brief shake animation (300ms), then returns to idle with "Still unavailable" tooltip.
+    - **Auto-retry**: 5s after initial timeout, an automatic retry fires with full visual feedback (spinner + shake on
+      failure). Tracked via `spaceAutoRetryingSet` for tooltip distinction.
+    - All retry sets are cleared on volume mount/unmount events. Auto-retry timers are cleaned up on destroy.
+    - Reduced motion: spinner degrades to pulsing opacity, shake degrades to opacity flash.
+
 Exported methods for parent components: `toggle()`, `open()`, `close()`, `getIsOpen()`, `handleKeyDown(e)`.
 
 ## Dependencies

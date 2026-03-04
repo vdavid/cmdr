@@ -21,7 +21,8 @@ Operates on cursor item only; selection is preserved and irrelevant.
 - **rename-state.svelte.ts**: Reactive state ($state) for active/target/currentName/validation/shaking/focusTrigger.
   Must be .svelte.ts for Svelte 5 reactivity.
 - **rename-operations.ts**: Pure logic for save flow. Returns instructions (`RenameResult` discriminated union) instead
-  of side effects.
+  of side effects. Includes `timeout` result type for when `renameFile` times out on slow mounts — the caller shows an
+  honest warning (the rename may have succeeded) and auto-refreshes the listing.
 - **rename-activation.ts**: Click-to-rename timer logic (800ms hold, 10px threshold, cancel on double-click).
 
 ### Three-stage save flow
@@ -38,9 +39,13 @@ Implemented in `rename-operations.ts::executeRenameSave()`:
     - `{ valid: true, hasConflict: true, isCaseOnlyRename: true }` → proceed (same inode, just case change)
     - `{ valid: true, hasConflict: false }` → proceed
 
-3. **Perform rename**: Call `renameFile(from, to, force)`. On success, return `{ type: 'success', newName }`.
+3. **Perform rename**: Call `renameFile(from, to, force)`. On success, return `{ type: 'success', newName }`. On
+   timeout, return `{ type: 'timeout', message }` — the caller shows a persistent warning toast and auto-refreshes the
+   listing so the user can see what actually happened on disk.
 
 Conflict resolution calls `performRename(target, newName, force: true)` after user chooses "Overwrite and trash/delete".
+The `moveToTrash` call in the overwrite-trash path also has timeout detection — if trashing the conflicting file times
+out, a persistent warning toast is shown and the listing is refreshed.
 
 ### Permission check on activation
 

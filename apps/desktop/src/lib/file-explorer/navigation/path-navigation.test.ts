@@ -148,7 +148,7 @@ describe('determineNavigationPath', () => {
             otherPaneVolumeId: 'root',
             otherPanePath: '/Users/test/slow-mount',
         }
-        // pathExists never resolves — simulates a hung network mount
+        // pathExists never resolves — simulates a hung volume
         mockPathExists.mockReturnValue(new Promise<boolean>(() => {}))
         mockGetLastUsedPath.mockResolvedValue(undefined)
 

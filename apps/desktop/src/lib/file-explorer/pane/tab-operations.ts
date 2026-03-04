@@ -42,6 +42,7 @@ export function createInitialTabState(
         viewMode,
         pinned: false,
         cursorFilename: null,
+        unreachable: null,
     }
 }
 
@@ -51,6 +52,7 @@ export function createTabManagerFromPersisted(paneTabs: PersistedPaneTabs): TabM
             ...pt,
             history: createHistory(pt.volumeId, pt.path),
             cursorFilename: null,
+            unreachable: null,
         }),
     )
 
@@ -224,6 +226,7 @@ export function newTab(
         viewMode: activeTab.viewMode,
         pinned: wasPinned,
         cursorFilename: null,
+        unreachable: null,
     }
 
     const success = addTab(mgr, activeTab.id, cloneTab)

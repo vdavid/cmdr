@@ -61,7 +61,7 @@
         unpinTab,
         type TabManager,
     } from '../tabs/tab-state-manager.svelte'
-    import type { TabState, TabId, PersistedPaneTabs } from '../tabs/tab-types'
+    import type { TabState, TabId, PersistedTab, PersistedPaneTabs } from '../tabs/tab-types'
     import {
         createInitialTabState,
         createTabManagerFromPersisted,
@@ -365,6 +365,7 @@
                 viewMode: activeTab.viewMode,
                 pinned: false,
                 cursorFilename: null,
+                unreachable: null,
             }
 
             const activeIndex = mgr.tabs.findIndex((t) => t.id === activeTab.id)
@@ -504,7 +505,7 @@
         void saveLastUsedPathForVolume(getPaneVolumeId(pane), oldPath)
 
         if (!volumes.find((v) => v.id === volumeId)) {
-            volumes = await listVolumes()
+            volumes = (await listVolumes()).data
         }
 
         // Immediately navigate to the target path (optimistic — shows spinner instantly)
@@ -607,6 +608,46 @@
         setPaneHistory(pane, push(getPaneHistory(pane), { volumeId: defaultVolumeId, path: defaultPath }))
         saveAppStatus({ [paneKey(pane, 'volumeId')]: defaultVolumeId, [paneKey(pane, 'path')]: defaultPath })
         saveTabsForPaneSide(pane)
+    }
+
+    async function handleRetryUnreachable(pane: 'left' | 'right') {
+        const tab = getActiveTab(getTabMgr(pane))
+        if (!tab.unreachable) return
+
+        const originalPath = tab.unreachable.originalPath
+        tab.unreachable = { originalPath, retrying: true }
+
+        // Try to resolve the volume, but don't block on it — navigate directly if it times out
+        const volumeResolveTimeoutMs = 3000
+        const result = await withTimeout(findContainingVolume(originalPath), volumeResolveTimeoutMs, null)
+
+        const resolved = result !== null && !result.timedOut && result.data !== null
+        const volumeId = resolved && result.data ? result.data.id : await getDefaultVolumeId()
+
+        // Clear unreachable and navigate — let FilePane try to load the directory directly.
+        // Even if volume resolution timed out, the directory itself may be reachable.
+        tab.unreachable = null
+        setPaneVolumeId(pane, volumeId)
+        setPanePath(pane, originalPath)
+        setPaneHistory(pane, push(getPaneHistory(pane), { volumeId, path: originalPath }))
+        saveTabsForPaneSide(pane)
+        log.info('Volume retry navigating to {path} on volume {vol}', {
+            path: originalPath,
+            vol: volumeId,
+        })
+    }
+
+    async function handleOpenHome(pane: 'left' | 'right') {
+        const tab = getActiveTab(getTabMgr(pane))
+        tab.unreachable = null
+
+        const defaultId = await getDefaultVolumeId()
+        const homePath = '~'
+        setPaneVolumeId(pane, defaultId)
+        setPanePath(pane, homePath)
+        setPaneHistory(pane, push(getPaneHistory(pane), { volumeId: defaultId, path: homePath }))
+        saveTabsForPaneSide(pane)
+        log.info('Unreachable tab opened home folder for {pane} pane', { pane })
     }
 
     /** Routes to whichever pane has its volume chooser open. Returns true if handled. */
@@ -848,7 +889,7 @@
         void initNetworkDiscovery()
 
         // Load volumes first
-        volumes = await listVolumes()
+        volumes = (await listVolumes()).data
 
         // Load persisted state (tabs + app status + settings) in parallel
         const [leftPaneTabs, rightPaneTabs, status, settings] = await Promise.all([
@@ -871,32 +912,77 @@
         const defaultId = await getDefaultVolumeId()
 
         const volumeResolveTimeoutMs = 3000
-        async function resolveVolumeId(volumeId: string, path: string, hasE2eOverride: boolean): Promise<string> {
-            if (volumeId === 'network' && !hasE2eOverride) return 'network'
-            const containing = await withTimeout(findContainingVolume(path), volumeResolveTimeoutMs, null)
-            return containing?.id ?? defaultId
+
+        interface VolumeResolution {
+            volumeId: string
+            timedOut: boolean
         }
 
-        // Resolve volume IDs for all tabs in parallel
+        async function resolveVolumeId(
+            volumeId: string,
+            path: string,
+            hasE2eOverride: boolean,
+        ): Promise<VolumeResolution> {
+            if (volumeId === 'network' && !hasE2eOverride) return { volumeId: 'network', timedOut: false }
+            const result = await withTimeout(findContainingVolume(path), volumeResolveTimeoutMs, null)
+            // Frontend timeout: withTimeout returned null
+            if (result === null) {
+                log.warn('Volume resolution timed out (frontend) for path: {path}', { path })
+                return { volumeId: defaultId, timedOut: true }
+            }
+            // Backend timeout: findContainingVolume returned { data: null, timedOut: true }
+            if (result.timedOut && result.data === null) {
+                log.warn('Volume resolution timed out (backend) for path: {path}', { path })
+                return { volumeId: defaultId, timedOut: true }
+            }
+            return { volumeId: result.data?.id ?? defaultId, timedOut: false }
+        }
+
+        // Resolve volume IDs for all tabs in parallel, tracking timeouts
         const resolvedLeftTabs = await Promise.all(
-            leftPaneTabs.tabs.map(async (tab) => ({
-                ...tab,
-                volumeId: await resolveVolumeId(tab.volumeId, tab.path, !!e2eStartPath),
-            })),
+            leftPaneTabs.tabs.map(async (tab) => {
+                const resolution = await resolveVolumeId(tab.volumeId, tab.path, !!e2eStartPath)
+                return {
+                    ...tab,
+                    volumeId: resolution.volumeId,
+                    unreachablePath: resolution.timedOut ? tab.path : null,
+                }
+            }),
         )
         const resolvedRightTabs = await Promise.all(
-            rightPaneTabs.tabs.map(async (tab) => ({
-                ...tab,
-                volumeId: await resolveVolumeId(tab.volumeId, tab.path, !!e2eStartPath),
-            })),
+            rightPaneTabs.tabs.map(async (tab) => {
+                const resolution = await resolveVolumeId(tab.volumeId, tab.path, !!e2eStartPath)
+                return {
+                    ...tab,
+                    volumeId: resolution.volumeId,
+                    unreachablePath: resolution.timedOut ? tab.path : null,
+                }
+            }),
         )
 
+        // Collect unreachable paths by tab ID before stripping extra fields
+        const unreachableByTabId: Record<string, string> = {}
+        for (const tab of [...resolvedLeftTabs, ...resolvedRightTabs]) {
+            if (tab.unreachablePath) {
+                unreachableByTabId[tab.id] = tab.unreachablePath
+            }
+        }
+
+        const toPersistedTab = (tab: (typeof resolvedLeftTabs)[number]): PersistedTab => ({
+            id: tab.id,
+            path: tab.path,
+            volumeId: tab.volumeId,
+            sortBy: tab.sortBy,
+            sortOrder: tab.sortOrder,
+            viewMode: tab.viewMode,
+            pinned: tab.pinned,
+        })
         const resolvedLeftPaneTabs: PersistedPaneTabs = {
-            tabs: resolvedLeftTabs,
+            tabs: resolvedLeftTabs.map(toPersistedTab),
             activeTabId: leftPaneTabs.activeTabId,
         }
         const resolvedRightPaneTabs: PersistedPaneTabs = {
-            tabs: resolvedRightTabs,
+            tabs: resolvedRightTabs.map(toPersistedTab),
             activeTabId: rightPaneTabs.activeTabId,
         }
 
@@ -916,6 +1002,14 @@
         // Create tab managers from persisted tab data
         leftTabMgr = createTabManagerFromPersisted(resolvedLeftPaneTabs)
         rightTabMgr = createTabManagerFromPersisted(resolvedRightPaneTabs)
+
+        // Apply unreachable state to tabs that timed out during volume resolution
+        for (const tab of [...getAllTabs(leftTabMgr), ...getAllTabs(rightTabMgr)]) {
+            const originalPath = unreachableByTabId[tab.id]
+            if (originalPath) {
+                tab.unreachable = { originalPath, retrying: false }
+            }
+        }
 
         initialized = true
         syncPinTabMenu()
@@ -953,7 +1047,7 @@
         // Subscribe to volume mount events (refresh volume list when new volumes appear)
         unlistenVolumeMount = await listen<{ volumePath: string }>('volume-mounted', () => {
             void (async () => {
-                volumes = await listVolumes()
+                volumes = (await listVolumes()).data
             })()
         })
 
@@ -966,7 +1060,7 @@
                     void handleVolumeUnmount(volume.id)
                 } else {
                     // Volume already gone, just refresh the list
-                    volumes = await listVolumes()
+                    volumes = (await listVolumes()).data
                 }
             })()
         })
@@ -1073,7 +1167,7 @@
         }
 
         // Refresh volume list
-        volumes = await listVolumes()
+        volumes = (await listVolumes()).data
     }
 
     function updatePaneAfterHistoryNavigation(
@@ -1681,7 +1775,7 @@
         // Handle favorites differently from actual volumes (same as VolumeBreadcrumb)
         if (volume.category === 'favorite') {
             // For favorites, find the actual containing volume
-            const containingVolume = await findContainingVolume(volume.path)
+            const { data: containingVolume } = await findContainingVolume(volume.path)
             if (containingVolume) {
                 // Navigate to the favorite's path, but set the volume to the containing volume
                 await handleVolumeChange(pane, containingVolume.id, containingVolume.path, volume.path)
@@ -2007,6 +2101,9 @@
                     handleCancelLoading(paneId, cancelledPath, selectName)
                 }}
                 onMtpFatalError={(msg: string) => handleMtpFatalError(paneId, msg)}
+                unreachable={getActiveTab(tabMgr).unreachable}
+                onRetryUnreachable={() => handleRetryUnreachable(paneId)}
+                onOpenHome={() => handleOpenHome(paneId)}
             />
         {/key}
     </div>

@@ -53,6 +53,9 @@
         "file-explorer/navigation/path-navigation.ts": { "reason": "Depends on Tauri pathExists command" },
         "file-explorer/network/NetworkLoginForm.svelte": { "reason": "Network component, needs Tauri integration" },
         "file-explorer/pane/PermissionDeniedPane.svelte": { "reason": "Simple UI component" },
+        "file-explorer/pane/VolumeUnreachableBanner.svelte": {
+            "reason": "UI banner component, depends on Tauri commands"
+        },
         "file-explorer/selection/SelectionInfo.svelte": {
             "reason": "Logic tested in selection-info-utils.ts, DOM-dependent"
         },
@@ -118,6 +121,7 @@
         "tauri-commands/mtp.ts": { "reason": "Tauri command wrappers, tested via integration" },
         "tauri-commands/networking.ts": { "reason": "Tauri command wrappers, tested via integration" },
         "tauri-commands/settings.ts": { "reason": "Tauri command wrappers, tested via integration" },
+        "tauri-commands/ipc-types.ts": { "reason": "Type definitions and small helpers, tested via consuming modules" },
         "tauri-commands/storage.ts": { "reason": "Tauri command wrappers, tested via integration" },
         "tauri-commands/write-operations.ts": { "reason": "Tauri command wrappers, tested via integration" },
         "utils/confirm-dialog.ts": { "reason": "Thin wrapper over Tauri dialog API" },

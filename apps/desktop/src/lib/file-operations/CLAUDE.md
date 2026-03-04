@@ -50,7 +50,9 @@ Provides unified UI for file operations triggered by F5 (copy), F6 (move), F7 (n
 
 ### New folder (`mkdir/`)
 
-- **mkdir/NewFolderDialog.svelte**: F7 opens dialog pre-filled with cursor item name (sans extension for files)
+- **mkdir/NewFolderDialog.svelte**: F7 opens dialog pre-filled with cursor item name (sans extension for files). If
+  `createDirectory` times out (slow volume), shows a warning banner with "Refresh listing" and "Dismiss" actions instead
+  of a generic error. Warning uses `--color-warning` / `--color-warning-bg` to distinguish from permanent errors.
 - **mkdir/new-folder-operations.ts**: `getInitialFolderName()` extracts from cursor, `moveCursorToNewFolder()`
   subscribes to file watcher to track newly created folder
 - **mkdir/new-folder-utils.ts**: Pure utility helpers for deriving the initial folder name from the cursor entry
