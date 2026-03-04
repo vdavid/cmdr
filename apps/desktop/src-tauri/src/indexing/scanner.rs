@@ -410,7 +410,7 @@ fn build_walker(root: &Path, num_threads: usize, is_volume_root: bool) -> WalkDi
 // ── Helpers ──────────────────────────────────────────────────────────
 
 /// Check if a path should be excluded from scanning.
-fn should_exclude(path_str: &str) -> bool {
+pub(super) fn should_exclude(path_str: &str) -> bool {
     // Check explicit exclusion prefixes
     for prefix in EXCLUDED_PREFIXES {
         if path_str.starts_with(prefix) {

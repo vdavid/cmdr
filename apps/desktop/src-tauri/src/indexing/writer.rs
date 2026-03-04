@@ -428,8 +428,12 @@ fn process_message(conn: &rusqlite::Connection, msg: WriteMessage, stats: &Write
 /// Starts at `start_id` (typically the parent of the affected entry) and
 /// walks up to the root sentinel. Each ancestor gets its dir_stats updated
 /// with the given delta. Creates dir_stats rows if they don't exist.
+///
+/// Uses direct SQL statements (no transaction) because this function is
+/// always called from within the writer thread, which may already be inside
+/// a `BEGIN IMMEDIATE` transaction (for example, during replay).
 fn propagate_delta_by_id(conn: &rusqlite::Connection, start_id: i64, size_delta: i64, file_delta: i32, dir_delta: i32) {
-    use crate::indexing::store::{DirStatsById, ROOT_ID};
+    use crate::indexing::store::ROOT_ID;
 
     let mut current_id = start_id;
     while current_id != 0 {
@@ -449,16 +453,13 @@ fn propagate_delta_by_id(conn: &rusqlite::Connection, start_id: i64, size_delta:
             ),
         };
 
-        if let Err(e) = IndexStore::upsert_dir_stats_by_id(
-            conn,
-            &[DirStatsById {
-                entry_id: current_id,
-                recursive_size: new_size,
-                recursive_file_count: new_files,
-                recursive_dir_count: new_dirs,
-            }],
+        if let Err(e) = conn.execute(
+            "INSERT OR REPLACE INTO dir_stats
+                 (entry_id, recursive_size, recursive_file_count, recursive_dir_count)
+             VALUES (?1, ?2, ?3, ?4)",
+            rusqlite::params![current_id, new_size, new_files, new_dirs],
         ) {
-            log::warn!("propagate_delta_by_id: upsert_dir_stats_by_id failed for id={current_id}: {e}");
+            log::warn!("propagate_delta_by_id: upsert failed for id={current_id}: {e}");
             break;
         }
 

@@ -1207,10 +1207,14 @@ async fn run_background_verification(
     // parent and reconcile with DB.
     let verify_result = verify_affected_dirs(&affected_paths, &writer);
 
-    // Scan newly discovered directories (inserts children + computes subtree aggregates)
+    // Scan newly discovered directories (inserts children + computes subtree aggregates).
+    // Skip excluded paths (system dirs like /System, /dev) that aren't in the index.
     if !verify_result.new_dir_paths.is_empty() {
         let cancelled = AtomicBool::new(false);
         for dir_path in &verify_result.new_dir_paths {
+            if scanner::should_exclude(dir_path) {
+                continue;
+            }
             match scanner::scan_subtree(Path::new(dir_path), &writer, &cancelled) {
                 Ok(summary) => {
                     log::debug!(
