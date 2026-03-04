@@ -1349,6 +1349,7 @@
                 }
 
                 void fetchEntryUnderCursor()
+                void fetchListingStats()
             })
         })
 
