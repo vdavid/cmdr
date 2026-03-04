@@ -14,6 +14,7 @@ import {
     getSmbCredentials,
 } from '$lib/tauri-commands'
 import { getNetworkTimeoutMs, getShareCacheTtlMs } from '$lib/settings/network-settings'
+import { initializeSettings } from '$lib/settings'
 import type { UnlistenFn } from '$lib/tauri-commands'
 import type { NetworkHost, DiscoveryState, ShareListResult, ShareListError } from '../types'
 
@@ -140,6 +141,9 @@ async function fetchSharesSilent(host: NetworkHost): Promise<void> {
 export async function initNetworkDiscovery(): Promise<void> {
     if (initialized) return
     initialized = true
+
+    // Ensure settings are loaded before reading network timeout/cache values
+    await initializeSettings()
 
     // Load initial data
     hosts = await listNetworkHosts()
