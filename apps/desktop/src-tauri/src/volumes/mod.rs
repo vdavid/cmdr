@@ -474,6 +474,7 @@ pub fn get_volume_space(path: &str) -> Option<VolumeSpaceInfo> {
 
     let total = get_u64_resource(&url, "NSURLVolumeTotalCapacityKey")?;
     let available = get_u64_resource(&url, "NSURLVolumeAvailableCapacityForImportantUsageKey")
+        .filter(|&v| v > 0)
         .or_else(|| get_u64_resource(&url, "NSURLVolumeAvailableCapacityKey"))?;
 
     Some(VolumeSpaceInfo {
