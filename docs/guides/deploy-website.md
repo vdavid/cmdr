@@ -137,7 +137,6 @@ Add this secret:
 | ------------------------ | -------------------------- |
 | `DEPLOY_WEBHOOK_SECRET`  | The secret from step 4     |
 
-### 8. Set up Docker network and do initial deploy
 ### 8. Configure website environment variables
 
 Astro bakes `PUBLIC_*` env vars into the static build, so they must be present in `.env` before building.
@@ -157,6 +156,8 @@ Set the following (get values from the relevant dashboards):
 | `PUBLIC_PADDLE_PRICE_ID_*` | Paddle > Catalog > Prices |
 | `PUBLIC_PADDLE_ENVIRONMENT` | `sandbox` or `live` |
 | `PUBLIC_LISTMONK_LIST_UUID` | Listmonk admin > Lists > your list > Settings |
+| `PUBLIC_UMAMI_HOST` | Your Umami instance URL (for example, `https://analytics.example.com`) |
+| `PUBLIC_UMAMI_WEBSITE_ID` | Umami > Settings > Websites > getcmdr.com > ID |
 
 ### 9. Set up Docker network and do initial deploy
 

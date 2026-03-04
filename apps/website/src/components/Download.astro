@@ -46,6 +46,9 @@ import NewsletterInlineWrapper from './NewsletterInlineWrapper.astro'
                 data-dmg-intel={dmgUrls.x86_64}
                 data-size-arm={dmgSizes?.aarch64}
                 data-size-intel={dmgSizes?.x86_64}
+                data-umami-event="download"
+                data-umami-event-version={version}
+                data-umami-event-arch="auto"
                 class="glow mb-4 inline-flex w-full flex-col items-center justify-center gap-1 rounded-xl bg-[var(--color-accent)] px-8 py-4 text-[var(--color-accent-contrast)] transition-all duration-300 hover:scale-[1.02] hover:bg-[var(--color-accent-hover)] motion-reduce:transition-none motion-reduce:hover:scale-100"
             >
                 <span class="flex items-center gap-2 font-semibold">
@@ -68,6 +71,9 @@ import NewsletterInlineWrapper from './NewsletterInlineWrapper.astro'
                 <a
                     href={dmgUrls.aarch64}
                     data-arch-link="aarch64"
+                    data-umami-event="download"
+                    data-umami-event-version={version}
+                    data-umami-event-arch="aarch64"
                     class="underline underline-offset-2 hover:text-[var(--color-text-secondary)]"
                     >Apple Silicon{dmgSizes ? ` (${dmgSizes.aarch64})` : ''}</a
                 >
@@ -75,12 +81,18 @@ import NewsletterInlineWrapper from './NewsletterInlineWrapper.astro'
                 <a
                     href={dmgUrls.x86_64}
                     data-arch-link="x86_64"
+                    data-umami-event="download"
+                    data-umami-event-version={version}
+                    data-umami-event-arch="x86_64"
                     class="underline underline-offset-2 hover:text-[var(--color-text-secondary)]"
                     >Intel{dmgSizes ? ` (${dmgSizes.x86_64})` : ''}</a
                 >
                 <span>·</span>
                 <a
                     href={dmgUrls.universal}
+                    data-umami-event="download"
+                    data-umami-event-version={version}
+                    data-umami-event-arch="universal"
                     class="underline underline-offset-2 hover:text-[var(--color-text-secondary)]"
                     >Universal{dmgSizes ? ` (${dmgSizes.universal})` : ''}</a
                 >

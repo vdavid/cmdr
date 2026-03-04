@@ -50,7 +50,54 @@ cd /opt/cmdr && git pull origin main
 For full setup details, see [deploying the website](../guides/deploy-website.md) and the
 [Listmonk README](../../infra/listmonk/README.md).
 
-## Services
+## Umami (website analytics)
+
+Self-hosted at `https://anal.veszelovszki.com`. Cookieless, GDPR-friendly. Used for getcmdr.com analytics.
+
+- **Dashboard**: https://anal.veszelovszki.com (login required)
+- **getcmdr.com website ID**: `5ea041ae-b99d-4c31-b031-89c4a0005456`
+
+### API access
+
+The website's local `.env` file (at `apps/website/.env`) contains Umami API credentials:
+
+```
+UMAMI_API_URL=https://anal.veszelovszki.com
+UMAMI_USERNAME=...
+UMAMI_PASSWORD='...'    # single-quoted because it contains special chars
+```
+
+These are for scripts and API calls only — the website runtime uses `PUBLIC_UMAMI_HOST` and
+`PUBLIC_UMAMI_WEBSITE_ID` instead.
+
+**Authenticate** (returns a JWT token):
+
+```bash
+cd apps/website && set -a && source .env && set +a
+TOKEN=$(curl -s -X POST "${UMAMI_API_URL}/api/auth/login" \
+  -H 'Content-Type: application/json' \
+  -d "$(jq -n --arg u "$UMAMI_USERNAME" --arg p "$UMAMI_PASSWORD" '{username: $u, password: $p}')" \
+  | jq -r '.token')
+```
+
+**List websites**:
+
+```bash
+curl -s "${UMAMI_API_URL}/api/websites" -H "Authorization: Bearer $TOKEN" | jq '.'
+```
+
+**Query stats** (for example, last 30 days):
+
+```bash
+START=$(($(date +%s) * 1000 - 30 * 86400000))
+END=$(($(date +%s) * 1000))
+curl -s "${UMAMI_API_URL}/api/websites/5ea041ae-b99d-4c31-b031-89c4a0005456/stats?startAt=${START}&endAt=${END}" \
+  -H "Authorization: Bearer $TOKEN" | jq '.'
+```
+
+**Full API docs**: https://umami.is/docs/api
+
+## Other services
 
 | Service | Where | Access | Docs |
 | --- | --- | --- | --- |

@@ -64,6 +64,17 @@ const {
         <link rel="preload" as="font" type="font/woff2" href="/fonts/inter-latin-variable.woff2" crossorigin />
 
         <title>{title}</title>
+
+        {/* Umami analytics — self-hosted, cookieless */}
+        {
+            import.meta.env.PUBLIC_UMAMI_WEBSITE_ID && (
+                <script
+                    defer
+                    src={`${import.meta.env.PUBLIC_UMAMI_HOST}/script.js`}
+                    data-website-id={import.meta.env.PUBLIC_UMAMI_WEBSITE_ID}
+                />
+            )
+        }
     </head>
     <body class="min-h-screen">
         <slot />
@@ -78,6 +89,7 @@ const {
                         document.querySelectorAll('a[data-download-link]').forEach(function (el) {
                             var url = arch === 'aarch64' ? el.dataset.dmgArm : el.dataset.dmgIntel
                             if (url) el.href = url
+                            el.dataset.umamiEventArch = arch
                             var size = arch === 'aarch64' ? el.dataset.sizeArm : el.dataset.sizeIntel
                             if (size) {
                                 el.querySelectorAll('[data-download-size]').forEach(function (s) {
