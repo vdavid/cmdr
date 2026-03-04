@@ -5,6 +5,7 @@
 *
 
 # Allow workspace config
+!package.json
 !pnpm-workspace.yaml
 !pnpm-lock.yaml
 !CHANGELOG.md

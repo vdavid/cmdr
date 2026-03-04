@@ -6,8 +6,8 @@ WORKDIR /app
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@10.30.0 --activate
 
-# Copy workspace config and lockfile from repo root
-COPY pnpm-workspace.yaml pnpm-lock.yaml ./
+# Copy workspace config, lockfile, and root package.json (needed for overrides)
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 
 # Copy the website package.json
 COPY apps/website/package.json ./apps/website/
