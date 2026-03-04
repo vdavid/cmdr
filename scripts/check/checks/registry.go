@@ -349,15 +349,6 @@ var AllChecks = []CheckDefinition{
 		Run:         RunNilaway,
 	},
 	{
-		ID:          "scripts-go-govulncheck",
-		Nickname:    "govulncheck",
-		DisplayName: "govulncheck",
-		App:         AppScripts,
-		Tech:        "🐹 Go",
-		DependsOn:   nil,
-		Run:         RunGovulncheck,
-	},
-	{
 		ID:          "scripts-go-deadcode",
 		Nickname:    "deadcode",
 		DisplayName: "deadcode",

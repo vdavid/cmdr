@@ -455,9 +455,6 @@ jobs:
             - name: Run nilaway
               run: ./scripts/check/check --check scripts-go-nilaway --ci
 
-            - name: Run govulncheck
-              run: ./scripts/check/check --check scripts-go-govulncheck --ci
-
             - name: Run deadcode
               run: ./scripts/check/check --check scripts-go-deadcode --ci
 

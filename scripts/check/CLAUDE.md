@@ -100,7 +100,7 @@ Disabled by `--no-log` or `--ci`. Implementation in `stats.go`.
 | Website | Astro | prettier, eslint, typecheck, build, e2e |
 | Website | Docker | docker-build |
 | License server | TS | prettier, eslint, typecheck, tests |
-| Scripts | Go | gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, govulncheck, deadcode, go-tests |
+| Scripts | Go | gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, deadcode, go-tests |
 | Other | pnpm | pnpm-audit |
 | Other | Metrics | file-length (warn-only) |
 
