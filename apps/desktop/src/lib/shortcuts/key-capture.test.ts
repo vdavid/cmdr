@@ -118,4 +118,30 @@ describe('formatKeyCombo', () => {
         const result = formatKeyCombo(makeKeyEvent({ altKey: true, key: 'F2' }))
         expect(result).toBe('Alt+F2')
     })
+
+    it('resolves Dead key via event.code for ⌥+letter on macOS', () => {
+        setMacOS(true)
+        const result = formatKeyCombo(makeKeyEvent({ altKey: true, key: 'Dead', code: 'KeyH' }))
+        expect(result).toBe('⌥H')
+    })
+
+    it('resolves Dead key via event.code for ⌥+digit on macOS', () => {
+        setMacOS(true)
+        const result = formatKeyCombo(makeKeyEvent({ altKey: true, key: 'Dead', code: 'Digit6' }))
+        expect(result).toBe('⌥6')
+    })
+
+    it('resolves Dead key via event.code for ⌥+punctuation on macOS', () => {
+        setMacOS(true)
+        const result = formatKeyCombo(makeKeyEvent({ altKey: true, key: 'Dead', code: 'BracketLeft' }))
+        expect(result).toBe('⌥[')
+    })
+
+    it('resolves Dead key with multiple modifiers on macOS', () => {
+        setMacOS(true)
+        const result = formatKeyCombo(
+            makeKeyEvent({ metaKey: true, altKey: true, key: 'Dead', code: 'KeyE' }),
+        )
+        expect(result).toBe('⌘⌥E')
+    })
 })

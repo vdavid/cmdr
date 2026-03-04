@@ -46,11 +46,34 @@ const nonMacKeyNames: Record<string, string> = {
     End: 'End',
 }
 
+/** Maps event.code to a display character for physical keys (used when event.key is "Dead") */
+const codeToKey: Record<string, string> = {
+    Minus: '-',
+    Equal: '=',
+    BracketLeft: '[',
+    BracketRight: ']',
+    Backslash: '\\',
+    Semicolon: ';',
+    Quote: "'",
+    Backquote: '`',
+    Comma: ',',
+    Period: '.',
+    Slash: '/',
+}
+
 /**
  * Normalize a key name for display.
  * Single characters are uppercased, special keys are mapped.
  */
-export function normalizeKeyName(key: string): string {
+export function normalizeKeyName(key: string, code?: string): string {
+    // On macOS, Option+key often produces "Dead" — fall back to the physical key via event.code
+    if (key === 'Dead' && code) {
+        const match = /^Key([A-Z])$/.exec(code) ?? /^Digit(\d)$/.exec(code)
+        if (match) return match[1]
+        if (code in codeToKey) return codeToKey[code]
+        return code // last resort: raw code name
+    }
+
     // Single printable characters are uppercased
     if (key.length === 1 && key !== ' ') {
         return key.toUpperCase()
@@ -89,7 +112,7 @@ export function formatKeyCombo(event: KeyboardEvent): string {
 
     // Don't include modifier keys themselves as the main key
     if (!isModifierKey(event.key)) {
-        const key = normalizeKeyName(event.key)
+        const key = normalizeKeyName(event.key, event.code)
         parts.push(key)
     }
 
