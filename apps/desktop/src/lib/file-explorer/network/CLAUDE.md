@@ -46,6 +46,7 @@ Key exported functions:
 | `refreshSharesIfStale(host)`                | Background refresh if TTL expired                   |
 | `refreshAllStaleShares()`                   | Call on entering network view                       |
 | `checkCredentialsForHost(serverName)`       | One-time async Keychain probe; idempotent           |
+| `forgetCredentials(serverName)`             | Deletes stored creds, sets status to `no_creds`     |
 | `setCredentialStatus / getCredentialStatus` | In-memory only, not persisted                       |
 | `setShareState / clearShareState`           | Used by `ShareBrowser` after successful auth        |
 | `getDiscoveryState()`                       | Returns current `DiscoveryState`                    |
@@ -67,6 +68,9 @@ encoded into the synthetic `name` field so MCP agents can read IP, hostname, sha
 
 Exported for parent: `setCursorIndex(index)`, `findItemIndex(name)`, `handleKeyDown(e)`.
 
+Right-click on a host row with stored credentials shows a confirmation dialog to forget the saved password (calls
+`forgetCredentials`).
+
 ## `ShareBrowser.svelte`
 
 Rendered after user selects a host. Auth flow on mount:
@@ -80,6 +84,9 @@ Rendered after user selects a host. Auth flow on mount:
 3. Otherwise fetch via `fetchShares(host)`, same auth fallback.
 
 `authenticatedCredentials` is passed to `onShareSelect` so the caller can mount the share without re-prompting.
+
+When `authenticatedCredentials` is set (stored creds were used), a "Forget saved password" button appears in the header
+row. Clicking it calls `forgetCredentials` and clears `authenticatedCredentials`.
 
 Shares displayed sorted case-insensitively. Escape/Backspace go back to host list.
 
@@ -157,8 +164,10 @@ status into the name string is a workaround so MCP agents can read the same info
 ## Dependencies
 
 - `$lib/tauri-commands` — `listNetworkHosts`, `resolveNetworkHost`, `listSharesOnHost`, `listSharesWithCredentials`,
-  `prefetchShares`, `getSmbCredentials`, `saveSmbCredentials`, `getUsernameHints`, `getKnownShareByName`,
-  `updateKnownShare`, `updateLeftPaneState`, `updateRightPaneState`
+  `prefetchShares`, `getSmbCredentials`, `saveSmbCredentials`, `deleteSmbCredentials`, `getUsernameHints`,
+  `getKnownShareByName`, `updateKnownShare`, `updateLeftPaneState`, `updateRightPaneState`
 - `$lib/settings/network-settings` — `getNetworkTimeoutMs`, `getShareCacheTtlMs`
+- `$lib/utils/confirm-dialog` — `confirmDialog` (used by `NetworkBrowser` for forget-password confirmation)
+- `$lib/ui/toast` — `addToast` (feedback after credential operations)
 - `../navigation/keyboard-shortcuts` — `handleNavigationShortcut`
 - `../types` — `NetworkHost`, `DiscoveryState`, `ShareInfo`, `ShareListResult`, `ShareListError`, `AuthMode`

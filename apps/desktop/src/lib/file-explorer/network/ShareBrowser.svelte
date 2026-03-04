@@ -13,6 +13,7 @@
         clearShareState,
         setShareState,
         setCredentialStatus,
+        forgetCredentials,
     } from './network-store.svelte'
     import {
         listSharesWithCredentials,
@@ -22,6 +23,7 @@
         updateKnownShare,
     } from '$lib/tauri-commands'
     import { addToast } from '$lib/ui/toast'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import { getNetworkTimeoutMs, getShareCacheTtlMs } from '$lib/settings/network-settings'
     import NetworkLoginForm from './NetworkLoginForm.svelte'
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
@@ -380,6 +382,16 @@
         return false
     }
 
+    async function handleForgetPassword() {
+        try {
+            await forgetCredentials(host.name)
+            authenticatedCredentials = null
+            addToast(`Forgot saved password for ${host.name}`, { level: 'info' })
+        } catch {
+            addToast(`Couldn't delete saved password`, { level: 'error' })
+        }
+    }
+
     function handleRetry() {
         error = null
         showLoginForm = false
@@ -432,6 +444,15 @@
         <div class="header-row">
             <Button variant="secondary" size="mini" onclick={onBack}>← Back</Button>
             <span class="host-name">{host.name}</span>
+            {#if authenticatedCredentials}
+                <button
+                    class="forget-password-btn"
+                    onclick={handleForgetPassword}
+                    use:tooltip={'Remove saved password from Keychain'}
+                >
+                    🔑 Forget saved password
+                </button>
+            {/if}
             <span class="share-count">{sortedShares.length} {sortedShares.length === 1 ? 'share' : 'shares'}</span>
         </div>
         <div class="share-list" bind:this={listContainer} bind:clientHeight={containerHeight}>
@@ -520,6 +541,26 @@
     .host-name {
         font-weight: 500;
         color: var(--color-text-primary);
+    }
+
+    .forget-password-btn {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        padding: 1px var(--spacing-sm);
+        font-family: var(--font-system), sans-serif;
+        font-size: calc(var(--font-size-sm) * 0.9);
+        color: var(--color-text-tertiary);
+        background: none;
+        border: 1px solid transparent;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+    }
+
+    .forget-password-btn:hover {
+        color: var(--color-text-secondary);
+        border-color: var(--color-border);
+        background-color: var(--color-bg-tertiary);
     }
 
     .share-count {

@@ -12,6 +12,7 @@ import {
     listSharesOnHost,
     prefetchShares as prefetchSharesCmd,
     getSmbCredentials,
+    deleteSmbCredentials,
 } from '$lib/tauri-commands'
 import { getNetworkTimeoutMs, getShareCacheTtlMs } from '$lib/settings/network-settings'
 import { initializeSettings } from '$lib/settings'
@@ -374,4 +375,13 @@ export async function checkCredentialsForHost(serverName: string): Promise<void>
     } catch {
         credentialStatuses.set(key, 'no_creds')
     }
+}
+
+/**
+ * Delete stored credentials for a host and update status.
+ * Removes server-level credentials from the Keychain/credential store.
+ */
+export async function forgetCredentials(serverName: string): Promise<void> {
+    await deleteSmbCredentials(serverName, null)
+    credentialStatuses.set(serverName.toLowerCase(), 'no_creds')
 }

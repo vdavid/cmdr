@@ -19,11 +19,14 @@
         fetchShares,
         getCredentialStatus,
         checkCredentialsForHost,
+        forgetCredentials,
     } from './network-store.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import type { NetworkHost } from '../types'
     import { updateLeftPaneState, updateRightPaneState, type PaneState, type PaneFileEntry } from '$lib/tauri-commands'
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
+    import { confirmDialog } from '$lib/utils/confirm-dialog'
+    import { addToast } from '$lib/ui/toast'
 
     /** Row height for host list (matches Full list) */
     const HOST_ROW_HEIGHT = 20
@@ -347,6 +350,21 @@
         return undefined
     }
 
+    async function handleHostContextMenu(e: MouseEvent, host: NetworkHost) {
+        e.preventDefault()
+        if (getCredentialStatus(host.name) !== 'has_creds') return
+
+        const confirmed = await confirmDialog(`Remove saved password for "${host.name}"?`, 'Forget saved password')
+        if (!confirmed) return
+
+        try {
+            await forgetCredentials(host.name)
+            addToast(`Forgot saved password for ${host.name}`, { level: 'info' })
+        } catch {
+            addToast(`Couldn't delete saved password`, { level: 'error' })
+        }
+    }
+
     // Refresh all shares (user-initiated)
     function handleRefreshClick() {
         // Clear all share states to force refetch
@@ -382,6 +400,9 @@
                 }}
                 ondblclick={() => {
                     handleHostDoubleClick(index)
+                }}
+                oncontextmenu={(e: MouseEvent) => {
+                    void handleHostContextMenu(e, host)
                 }}
                 onkeydown={() => {}}
             >
