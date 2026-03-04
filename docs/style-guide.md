@@ -59,7 +59,8 @@ Only add JSDoc that actually adds info. No tautologies.
 
 ### Commit messages
 
-Max 50 chars title, a few bullets of body if needed. No co-author.
+Title: Optional prefix like "Bugfix: ", "Docs: ", "Tooling: ", "File viewer: ", etc. Max 50 chars.
+Body: A few bullets if needed. No word wrap. Enclose entities in ``. No co-author.
 
 ### PRs
 
