@@ -139,9 +139,7 @@ describe('formatKeyCombo', () => {
 
     it('resolves Dead key with multiple modifiers on macOS', () => {
         setMacOS(true)
-        const result = formatKeyCombo(
-            makeKeyEvent({ metaKey: true, altKey: true, key: 'Dead', code: 'KeyE' }),
-        )
+        const result = formatKeyCombo(makeKeyEvent({ metaKey: true, altKey: true, key: 'Dead', code: 'KeyE' }))
         expect(result).toBe('⌘⌥E')
     })
 })
