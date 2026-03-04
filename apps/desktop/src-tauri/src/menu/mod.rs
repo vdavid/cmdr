@@ -533,6 +533,9 @@ fn build_menu_macos<R: Runtime>(
     menu.append(&file_menu)?;
 
     // --- Edit menu ---
+    // Clipboard PredefinedMenuItems are required on macOS: ⌘C/⌘V/⌘X/⌘Z in webview text fields
+    // are routed through the native responder chain via these menu items. Without them, clipboard
+    // shortcuts are dead in text inputs (e.g. the "New folder" dialog).
     let select_all_item = MenuItem::with_id(app, SELECT_ALL_ID, "Select all", true, Some("Cmd+A"))?;
     let deselect_all_item = MenuItem::with_id(app, DESELECT_ALL_ID, "Deselect all", true, Some("Cmd+Shift+A"))?;
     let copy_path_item = MenuItem::with_id(app, COPY_PATH_ID, "Copy path", true, Some(copy_path_accelerator()))?;
@@ -543,6 +546,13 @@ fn build_menu_macos<R: Runtime>(
         "Edit",
         true,
         &[
+            &PredefinedMenuItem::undo(app, None)?,
+            &PredefinedMenuItem::redo(app, None)?,
+            &PredefinedMenuItem::separator(app)?,
+            &PredefinedMenuItem::cut(app, None)?,
+            &PredefinedMenuItem::copy(app, None)?,
+            &PredefinedMenuItem::paste(app, None)?,
+            &PredefinedMenuItem::separator(app)?,
             &select_all_item,
             &deselect_all_item,
             &PredefinedMenuItem::separator(app)?,
@@ -691,11 +701,12 @@ fn build_menu_macos<R: Runtime>(
     register_item(&mut items, GET_INFO_ID, &get_info_item, &file_menu, 13);
     register_item(&mut items, QUICK_LOOK_ID, &quick_look_item, &file_menu, 14);
 
-    // Edit menu positions: select_all(0), deselect_all(1), sep(2), copy_path(3), copy_filename(4)
-    register_item(&mut items, SELECT_ALL_ID, &select_all_item, &edit_menu, 0);
-    register_item(&mut items, DESELECT_ALL_ID, &deselect_all_item, &edit_menu, 1);
-    register_item(&mut items, COPY_PATH_ID, &copy_path_item, &edit_menu, 3);
-    register_item(&mut items, COPY_FILENAME_ID, &copy_filename_item, &edit_menu, 4);
+    // Edit menu positions: undo(0), redo(1), sep(2), cut(3), copy(4), paste(5), sep(6),
+    // select_all(7), deselect_all(8), sep(9), copy_path(10), copy_filename(11)
+    register_item(&mut items, SELECT_ALL_ID, &select_all_item, &edit_menu, 7);
+    register_item(&mut items, DESELECT_ALL_ID, &deselect_all_item, &edit_menu, 8);
+    register_item(&mut items, COPY_PATH_ID, &copy_path_item, &edit_menu, 10);
+    register_item(&mut items, COPY_FILENAME_ID, &copy_filename_item, &edit_menu, 11);
 
     // View menu positions: full(0), brief(1), sep(2), hidden(3), sort(4), sep(5),
     // switch(6), swap(7), sep(8), palette(9)

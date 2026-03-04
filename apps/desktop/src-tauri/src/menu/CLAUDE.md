@@ -61,7 +61,7 @@ Uses `objc2::exception::catch` because NSMenu operations can raise ObjC exceptio
 | Aspect | macOS | Linux |
 |--------|-------|-------|
 | App menu | Dedicated "cmdr" menu with About, License, Settings | No app menu; About under Help, Settings/License under Edit |
-| Predefined items | Hide, Hide Others, Show All, Quit, Window items (no clipboard/Edit PredefinedMenuItems) | None (GTK has no equivalent) |
+| Predefined items | Hide, Hide Others, Show All, Quit, Window items, clipboard (Undo/Redo/Cut/Copy/Paste) | None (GTK has no equivalent) |
 | Accelerators | Full set | Omitted for F2 (Rename) and others with GTK interception issues |
 | Mnemonics | Not used | `&` prefixes for GTK keyboard navigation, unique per submenu |
 | Help search | Native NSMenu search field via `setHelpMenu:` | Not available |
@@ -107,8 +107,16 @@ also Window and Help.
   defaults that added unwanted items.
 - **Tab as accelerator**: Switch pane uses Tab, which could conflict with menu bar accessibility
   navigation. If issues arise, omit the accelerator and rely on JS dispatch.
-- **⌘A for Select all**: PredefinedMenuItems (Undo, Redo, Cut, Copy, Paste, Select All) were removed
-  from the Edit menu — they are irrelevant to a file manager. "Select all" uses ⌘A as its native
-  menu accelerator, routed through `execute-command` → `handleCommandExecute`.
+- **Clipboard PredefinedMenuItems required on macOS**: The Edit menu includes PredefinedMenuItems for
+  Undo, Redo, Cut, Copy, and Paste. On macOS, ⌘C/⌘V/⌘X/⌘Z in webview text fields are routed
+  through the native responder chain via these menu items. Without them, clipboard shortcuts are dead
+  in text inputs (dialogs, rename fields, etc.). Note: PredefinedMenuItem::select_all is NOT included
+  because the custom ⌘A "Select all" MenuItem handles file selection. This means ⌘A in text fields
+  triggers file selection rather than text selection — a known trade-off.
+- **⌘A dual routing**: "Select all" uses ⌘A as a native menu accelerator (so it's visible in the
+  Edit menu). Since macOS intercepts it before the webview, the frontend's `handleCommandExecute`
+  checks `document.activeElement` — if it's an input/textarea, it calls `.select()` for text
+  selection; otherwise it selects files. This avoids PredefinedMenuItem::select_all which would
+  conflict with the custom MenuItem.
 - **Pin tab label**: `pin_tab` in MenuState is updated dynamically by the frontend to show
   "Pin tab" or "Unpin tab" based on the active tab's state.

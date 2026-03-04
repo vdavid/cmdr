@@ -930,10 +930,19 @@
             }
 
             // === Selection commands ===
-            case 'selection.selectAll':
+            case 'selection.selectAll': {
+                // ⌘A is a native menu accelerator (so it shows in the Edit menu), which means
+                // macOS intercepts it before the webview. When a text input is focused, route
+                // to the input's select-all instead of file selection.
+                const active = document.activeElement
+                if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) {
+                    active.select()
+                    return
+                }
                 explorerRef?.handleSelectionAction('selectAll')
                 explorerRef?.refocus()
                 return
+            }
 
             case 'selection.deselectAll':
                 explorerRef?.handleSelectionAction('deselectAll')
