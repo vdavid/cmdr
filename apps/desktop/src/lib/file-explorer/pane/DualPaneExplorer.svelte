@@ -501,14 +501,54 @@
         volumePath: string,
         targetPath: string,
     ) {
-        const oldPath = getPanePath(pane)
-        void saveLastUsedPathForVolume(getPaneVolumeId(pane), oldPath)
+        const mgr = getTabMgr(pane)
+        const activeTab = getActiveTab(mgr)
+        const oldPath = activeTab.path
+        void saveLastUsedPathForVolume(activeTab.volumeId, oldPath)
 
         if (!volumes.find((v) => v.id === volumeId)) {
             volumes = (await listVolumes()).data
         }
 
-        // Immediately navigate to the target path (optimistic — shows spinner instantly)
+        // Pinned tab: open a new tab with the target volume instead of navigating in-place
+        if (activeTab.pinned && (volumeId !== activeTab.volumeId || targetPath !== activeTab.path)) {
+            if (mgr.tabs.length >= MAX_TABS_PER_PANE) {
+                addToast('Tab limit reached')
+            } else {
+                const newTab: TabState = {
+                    id: crypto.randomUUID(),
+                    path: targetPath,
+                    volumeId,
+                    history: createHistory(volumeId, targetPath),
+                    sortBy: activeTab.sortBy,
+                    sortOrder: activeTab.sortOrder,
+                    viewMode: activeTab.viewMode,
+                    pinned: false,
+                    cursorFilename: null,
+                    unreachable: null,
+                }
+
+                const activeIndex = mgr.tabs.findIndex((t) => t.id === activeTab.id)
+                mgr.tabs.splice(activeIndex + 1, 0, newTab)
+                mgr.activeTabId = newTab.id
+
+                saveTabsForPaneSide(pane)
+                focusedPane = pane
+                void cancelNavPriority(oldPath)
+                void prioritizeDir(targetPath, 'current_dir')
+                saveAppStatus({
+                    [paneKey(pane, 'volumeId')]: volumeId,
+                    [paneKey(pane, 'path')]: targetPath,
+                    focusedPane: pane,
+                })
+                containerElement?.focus()
+                // Background path correction applies to the new active tab
+                applyVolumePathCorrection(pane, volumeId, volumePath, targetPath)
+                return
+            }
+        }
+
+        // In-place navigation (normal flow or pinned tab at cap)
         setPaneVolumeId(pane, volumeId)
         setPanePath(pane, targetPath)
         setPaneHistory(pane, push(getPaneHistory(pane), { volumeId, path: targetPath }))
@@ -523,8 +563,16 @@
         })
         saveTabsForPaneSide(pane)
 
-        // Resolve the "best" path in the background; correct if needed.
-        // Generation counter guards against stale corrections when the user navigates away.
+        applyVolumePathCorrection(pane, volumeId, volumePath, targetPath)
+    }
+
+    /** Resolves the "best" path for a volume change in the background; corrects the active tab if needed. */
+    function applyVolumePathCorrection(
+        pane: 'left' | 'right',
+        volumeId: string,
+        volumePath: string,
+        targetPath: string,
+    ) {
         const generation = ++volumeChangeGeneration
         const other = otherPane(pane)
         void determineNavigationPath(volumeId, volumePath, targetPath, {
