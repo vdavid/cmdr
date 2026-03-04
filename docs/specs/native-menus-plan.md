@@ -314,7 +314,7 @@ Guidelines:
 - [x] Add `set_menu_context` Tauri command
 - [x] Define context → enabled items mapping in Rust
 - [x] Call `set_menu_context` on window focus changes in frontend
-- [ ] Verify: open Settings → file menu items grayed out, close → re-enabled
+- [x] Verify: open Settings → file menu items grayed out, close → re-enabled
 - [x] Run `./scripts/check.sh --check rustfmt --check clippy --check rust-tests --svelte`
 
 ### Milestone 5: Align Linux menus (can parallel with 3 and 4)
@@ -326,7 +326,7 @@ Guidelines:
 ### Milestone 6: Testing and polish
 - [x] Full manual test pass of all menu items on macOS
 - [x] Verify Help → Search works
-- [ ] Verify viewer window menus are clean
+- [x] Verify viewer window menus are clean
 - [x] Verify command palette still works
 - [x] Verify MCP integration unaffected
 - [x] Update CLAUDE.md files
