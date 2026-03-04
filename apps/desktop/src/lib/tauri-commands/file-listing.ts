@@ -211,6 +211,16 @@ export async function clearSelfDragOverlay(): Promise<void> {
     await invoke('clear_self_drag_overlay')
 }
 
+export interface PathLimits {
+    maxNameBytes: number
+    maxPathBytes: number
+}
+
+/** Returns platform-specific filesystem path limits from the backend. */
+export async function getPathLimits(): Promise<PathLimits> {
+    return invoke<PathLimits>('get_path_limits')
+}
+
 /**
  * Checks if a path exists.
  * @param path - Path to check.

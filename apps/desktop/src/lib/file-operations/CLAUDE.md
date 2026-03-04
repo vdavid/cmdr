@@ -14,6 +14,8 @@ Provides unified UI for file operations triggered by F5 (copy), F6 (move), F7 (n
 
 1. **TransferDialog** (destination picker + dry-run scan)
     - Pre-fills destination from opposite pane
+    - Validates path structure via `validateDirectoryPath()` from `$lib/utils/filename-validation` (empty, absolute,
+      null bytes, length limits), then checks logical constraints (subfolder, same location)
     - Optional dry-run scan to detect conflicts upfront
     - Shows sampled conflicts (max 200) with streaming progress
     - User makes conflict decisions before operation starts
@@ -50,9 +52,11 @@ Provides unified UI for file operations triggered by F5 (copy), F6 (move), F7 (n
 
 ### New folder (`mkdir/`)
 
-- **mkdir/NewFolderDialog.svelte**: F7 opens dialog pre-filled with cursor item name (sans extension for files). If
-  `createDirectory` times out (slow volume), shows a warning banner with "Refresh listing" and "Dismiss" actions instead
-  of a generic error. Warning uses `--color-warning` / `--color-warning-bg` to distinguish from permanent errors.
+- **mkdir/NewFolderDialog.svelte**: F7 opens dialog pre-filled with cursor item name (sans extension for files). Uses
+  shared validators from `$lib/utils/filename-validation` (`validateDisallowedChars`, `validateNameLength`,
+  `validatePathLength`) for sync checks, then runs async `findFileIndex()` for conflict detection. If `createDirectory`
+  times out (slow volume), shows a warning banner with "Refresh listing" and "Dismiss" actions instead of a generic
+  error. Warning uses `--color-warning` / `--color-warning-bg` to distinguish from permanent errors.
 - **mkdir/new-folder-operations.ts**: `getInitialFolderName()` extracts from cursor, `moveCursorToNewFolder()`
   subscribes to file watcher to track newly created folder
 - **mkdir/new-folder-utils.ts**: Pure utility helpers for deriving the initial folder name from the cursor entry

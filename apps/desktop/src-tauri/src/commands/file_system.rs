@@ -32,8 +32,24 @@ use tokio::time::Duration;
 use super::util::{
     IpcError, TimedOut, blocking_result_with_timeout, blocking_with_timeout, blocking_with_timeout_flag,
 };
+use crate::file_system::validation::{MAX_NAME_BYTES, MAX_PATH_BYTES};
 
 const PATH_EXISTS_TIMEOUT: Duration = Duration::from_secs(2);
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PathLimits {
+    pub max_name_bytes: usize,
+    pub max_path_bytes: usize,
+}
+
+#[tauri::command]
+pub fn get_path_limits() -> PathLimits {
+    PathLimits {
+        max_name_bytes: MAX_NAME_BYTES,
+        max_path_bytes: MAX_PATH_BYTES,
+    }
+}
 
 #[tauri::command]
 pub async fn path_exists(volume_id: Option<String>, path: String) -> bool {

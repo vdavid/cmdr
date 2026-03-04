@@ -9,6 +9,7 @@
     import LicenseKeyDialog from '$lib/licensing/LicenseKeyDialog.svelte'
     import CommandPalette from '$lib/command-palette/CommandPalette.svelte'
     import ScanStatusOverlay from '$lib/indexing/ScanStatusOverlay.svelte'
+    import { initPathLimits } from '$lib/utils/filename-validation'
     import { initIndexState, destroyIndexState } from '$lib/indexing/index'
     import { initShortcutDispatch, destroyShortcutDispatch, lookupCommand } from '$lib/shortcuts/shortcut-dispatch'
     import { formatKeyCombo, isMacOS } from '$lib/shortcuts/key-capture'
@@ -456,6 +457,9 @@
         if (loadingScreen) {
             loadingScreen.style.display = 'none'
         }
+
+        // Fetch platform-specific path limits (non-blocking, macOS defaults until resolved)
+        void initPathLimits()
 
         // Register known dialog types with backend (for MCP "available dialogs" resource)
         void registerKnownDialogs(SOFT_DIALOG_REGISTRY)

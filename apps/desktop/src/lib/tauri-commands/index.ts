@@ -17,6 +17,7 @@ export {
     startSelectionDrag,
     prepareSelfDragOverlay,
     clearSelfDragOverlay,
+    getPathLimits,
     pathExists,
     createDirectory,
     getSyncStatus,

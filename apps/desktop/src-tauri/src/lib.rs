@@ -484,6 +484,7 @@ pub fn run() {
             commands::file_system::get_max_filename_width,
             commands::file_system::find_file_index,
             commands::file_system::resort_listing,
+            commands::file_system::get_path_limits,
             commands::file_system::path_exists,
             commands::file_system::create_directory,
             commands::file_system::benchmark_log,

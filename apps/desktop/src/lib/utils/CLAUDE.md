@@ -14,8 +14,8 @@ Small stateless utility functions. Pure, no Svelte state, safe to import from pl
 
 ## filename-validation.ts
 
-`validateFilename()` is the main orchestrator. It runs checks in priority order: errors first, then warnings. Returns
-the first non-ok result, or `{ severity: 'ok', message: '' }`.
+`validateFilename()` is the main orchestrator for single-file renames. It runs checks in priority order: errors first,
+then warnings. Returns the first non-ok result, or `{ severity: 'ok', message: '' }`.
 
 ```
 validateFilename()
@@ -25,6 +25,18 @@ validateFilename()
   ├── validatePathLength()        — error if >= 1024 bytes (UTF-8)
   ├── validateExtensionChange()   — error/ok depending on 'yes'|'no'|'ask' setting
   └── validateConflict()          — warning if a sibling already has that name (case-insensitive)
+```
+
+`validateDirectoryPath()` validates full directory paths (not filenames). Used by TransferDialog and composable with
+individual validators in NewFolderDialog.
+
+```
+validateDirectoryPath(path)
+  ├── empty check                 — error if blank after trim
+  ├── absolute check              — error if doesn't start with /
+  ├── null byte check             — error if contains \0
+  ├── total path length           — error if >= 1024 bytes (UTF-8)
+  └── per-component length        — error if any segment >= 255 bytes (splits on /, filters empty)
 ```
 
 Key types:

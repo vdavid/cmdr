@@ -4,6 +4,7 @@ import {
     validateNotEmpty,
     validateNameLength,
     validatePathLength,
+    validateDirectoryPath,
     validateExtensionChange,
     validateConflict,
     validateFilename,
@@ -27,6 +28,11 @@ describe('validateDisallowedChars', () => {
 
     it('allows dots, spaces, dashes, underscores', () => {
         expect(validateDisallowedChars('my file-name_v2.0.txt').severity).toBe('ok')
+    })
+
+    it('uses folder label when isDir is true', () => {
+        const result = validateDisallowedChars('foo/bar', true)
+        expect(result.message).toContain('Folder name')
     })
 })
 
@@ -78,6 +84,77 @@ describe('validatePathLength', () => {
 
     it('handles trailing slash in parent', () => {
         expect(validatePathLength('/Users/test/', 'file.txt').severity).toBe('ok')
+    })
+})
+
+describe('validateDirectoryPath', () => {
+    it('rejects empty string', () => {
+        const result = validateDirectoryPath('')
+        expect(result.severity).toBe('error')
+        expect(result.message).toBe("Path can't be empty")
+    })
+
+    it('rejects whitespace-only string', () => {
+        const result = validateDirectoryPath('   ')
+        expect(result.severity).toBe('error')
+        expect(result.message).toBe("Path can't be empty")
+    })
+
+    it('rejects relative path', () => {
+        const result = validateDirectoryPath('Documents/folder')
+        expect(result.severity).toBe('error')
+        expect(result.message).toBe('Path must be absolute (start with /)')
+    })
+
+    it('rejects path with null byte', () => {
+        const result = validateDirectoryPath('/Users/test\0/folder')
+        expect(result.severity).toBe('error')
+        expect(result.message).toBe('Path contains a null character')
+    })
+
+    it('rejects path at 1024 bytes', () => {
+        const longPath = '/' + 'a'.repeat(1023)
+        const result = validateDirectoryPath(longPath)
+        expect(result.severity).toBe('error')
+        expect(result.message).toMatch(/Path is too long/)
+    })
+
+    it('rejects path with a component at 255 bytes', () => {
+        const longComponent = 'a'.repeat(255)
+        const result = validateDirectoryPath(`/Users/${longComponent}/folder`)
+        expect(result.severity).toBe('error')
+        expect(result.message).toMatch(/A folder name in the path is too long/)
+    })
+
+    it('allows valid absolute path', () => {
+        expect(validateDirectoryPath('/Users/test/Documents').severity).toBe('ok')
+    })
+
+    it('allows root path', () => {
+        expect(validateDirectoryPath('/').severity).toBe('ok')
+    })
+
+    it('handles trailing slashes', () => {
+        expect(validateDirectoryPath('/Users/test/').severity).toBe('ok')
+    })
+
+    it('handles double slashes', () => {
+        expect(validateDirectoryPath('/Users//test').severity).toBe('ok')
+    })
+
+    it('counts multi-byte characters correctly', () => {
+        // Each emoji is 4 bytes
+        const emojiDir = '\u{1F600}'.repeat(64) // 256 bytes
+        const result = validateDirectoryPath(`/Users/${emojiDir}`)
+        expect(result.severity).toBe('error')
+        expect(result.message).toMatch(/A folder name in the path is too long/)
+    })
+
+    it('allows path just under 1024 bytes', () => {
+        // Build a long path from many short segments to avoid per-component limit
+        const segment = 'a'.repeat(100)
+        const path = ('/' + segment).repeat(10) + '/' + 'b'.repeat(12) // 10 * 101 + 13 = 1023 bytes
+        expect(validateDirectoryPath(path).severity).toBe('ok')
     })
 })
 

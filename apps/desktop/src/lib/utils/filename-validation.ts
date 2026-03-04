@@ -1,7 +1,16 @@
 /** Client-side filename validation for instant keystroke feedback. */
 
-const MAX_NAME_BYTES = 255
-const MAX_PATH_BYTES = 1024
+/** Defaults match macOS. Call initPathLimits() at startup to get platform-specific values from the backend. */
+let maxNameBytes = 255
+let maxPathBytes = 1024
+
+/** Fetches platform-specific limits from the backend. Call once at app startup. */
+export async function initPathLimits(): Promise<void> {
+    const { getPathLimits } = await import('$lib/tauri-commands')
+    const limits = await getPathLimits()
+    maxNameBytes = limits.maxNameBytes
+    maxPathBytes = limits.maxPathBytes
+}
 
 /** Characters disallowed on macOS (APFS/HFS+). TODO: Per-OS logic for future platforms. */
 const DISALLOWED_CHARS_REGEX = /[/\0]/
@@ -15,29 +24,33 @@ export interface ValidationResult {
 
 const OK_RESULT: ValidationResult = { severity: 'ok', message: '' }
 
-/** Validates a filename for disallowed characters. Operates on trimmed value. */
-export function validateDisallowedChars(name: string): ValidationResult {
+function nameLabel(isDir: boolean): string {
+    return isDir ? 'Folder name' : 'Filename'
+}
+
+/** Validates a file or dir name for disallowed characters. Operates on trimmed value. */
+export function validateDisallowedChars(name: string, isDir = false): ValidationResult {
     if (DISALLOWED_CHARS_REGEX.test(name)) {
-        return { severity: 'error', message: 'Filenames can\'t contain "/" or null characters' }
+        return { severity: 'error', message: `${nameLabel(isDir)} can't contain "/" or null characters` }
     }
     return OK_RESULT
 }
 
-/** Validates that a filename is not empty after trimming. */
-export function validateNotEmpty(name: string): ValidationResult {
+/** Validates that a file or dir name is not empty after trimming. */
+export function validateNotEmpty(name: string, isDir = false): ValidationResult {
     if (name.trim().length === 0) {
-        return { severity: 'error', message: "A filename can't be empty" }
+        return { severity: 'error', message: `${nameLabel(isDir)} can't be empty` }
     }
     return OK_RESULT
 }
 
-/** Validates filename byte length (max 255 bytes). */
-export function validateNameLength(name: string): ValidationResult {
+/** Validates name byte length (max 255 bytes). */
+export function validateNameLength(name: string, isDir = false): ValidationResult {
     const byteLength = new TextEncoder().encode(name.trim()).length
-    if (byteLength >= MAX_NAME_BYTES) {
+    if (byteLength >= maxNameBytes) {
         return {
             severity: 'error',
-            message: `Filename is too long (${String(byteLength)}/${String(MAX_NAME_BYTES)} bytes)`,
+            message: `${nameLabel(isDir)} is too long (${String(byteLength)}/${String(maxNameBytes)} bytes)`,
         }
     }
     return OK_RESULT
@@ -47,10 +60,10 @@ export function validateNameLength(name: string): ValidationResult {
 export function validatePathLength(parentPath: string, name: string): ValidationResult {
     const fullPath = parentPath.endsWith('/') ? parentPath + name.trim() : parentPath + '/' + name.trim()
     const byteLength = new TextEncoder().encode(fullPath).length
-    if (byteLength >= MAX_PATH_BYTES) {
+    if (byteLength >= maxPathBytes) {
         return {
             severity: 'error',
-            message: `Full path is too long (${String(byteLength)}/${String(MAX_PATH_BYTES)} bytes)`,
+            message: `Full path is too long (${String(byteLength)}/${String(maxPathBytes)} bytes)`,
         }
     }
     return OK_RESULT
@@ -99,6 +112,45 @@ export function validateConflict(newName: string, siblingNames: string[], origin
             return { severity: 'warning', message: `"${trimmed}" already exists in this folder` }
         }
     }
+    return OK_RESULT
+}
+
+/** Validates a full directory path (not a filename). Checks structure only, not existence. */
+export function validateDirectoryPath(path: string): ValidationResult {
+    const trimmed = path.trim()
+
+    if (trimmed.length === 0) {
+        return { severity: 'error', message: "Path can't be empty" }
+    }
+
+    if (!trimmed.startsWith('/')) {
+        return { severity: 'error', message: 'Path must be absolute (start with /)' }
+    }
+
+    if (trimmed.includes('\0')) {
+        return { severity: 'error', message: 'Path contains a null character' }
+    }
+
+    const encoder = new TextEncoder()
+    const totalBytes = encoder.encode(trimmed).length
+    if (totalBytes >= maxPathBytes) {
+        return {
+            severity: 'error',
+            message: `Path is too long (${String(totalBytes)}/${String(maxPathBytes)} bytes)`,
+        }
+    }
+
+    const segments = trimmed.split('/').filter((s) => s.length > 0)
+    for (const segment of segments) {
+        const segmentBytes = encoder.encode(segment).length
+        if (segmentBytes >= maxNameBytes) {
+            return {
+                severity: 'error',
+                message: `A folder name in the path is too long (${String(segmentBytes)}/${String(maxNameBytes)} bytes)`,
+            }
+        }
+    }
+
     return OK_RESULT
 }
 

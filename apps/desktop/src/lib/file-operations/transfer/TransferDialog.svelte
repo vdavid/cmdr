@@ -23,6 +23,7 @@
         TransferOperationType,
     } from '$lib/file-explorer/types'
     import { getSetting } from '$lib/settings'
+    import { validateDirectoryPath } from '$lib/utils/filename-validation'
     import DirectionIndicator from './DirectionIndicator.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
@@ -140,7 +141,11 @@
         return null
     }
 
-    const pathError = $derived(getPathValidationError(sourcePaths, editedPath))
+    const pathError = $derived.by(() => {
+        const structural = validateDirectoryPath(editedPath)
+        if (structural.severity === 'error') return structural.message
+        return getPathValidationError(sourcePaths, editedPath)
+    })
 
     // Format space info for display
     function formatSpaceInfo(space: VolumeSpaceInfo | null): string {

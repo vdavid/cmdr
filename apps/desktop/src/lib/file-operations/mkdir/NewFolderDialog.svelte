@@ -11,6 +11,7 @@
         refreshListing,
         type UnlistenFn,
     } from '$lib/tauri-commands'
+    import { validateDisallowedChars, validateNameLength, validatePathLength } from '$lib/utils/filename-validation'
     import type { DirectoryDiff } from '$lib/file-explorer/types'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
@@ -56,10 +57,26 @@
             errorMessage = ''
             return
         }
-        if (trimmed.includes('/') || trimmed.includes('\0')) {
-            errorMessage = 'Folder name contains invalid characters.'
+
+        // Sync validators: chars, name length, full path length
+        const charCheck = validateDisallowedChars(trimmed, true)
+        if (charCheck.severity === 'error') {
+            errorMessage = charCheck.message
             return
         }
+        const nameLenCheck = validateNameLength(trimmed, true)
+        if (nameLenCheck.severity === 'error') {
+            errorMessage = nameLenCheck.message
+            return
+        }
+        const pathLenCheck = validatePathLength(currentPath, trimmed)
+        if (pathLenCheck.severity === 'error') {
+            errorMessage = pathLenCheck.message
+            return
+        }
+
+        // Sync checks passed — clear any previous error, then run async conflict check
+        errorMessage = ''
 
         isChecking = true
         try {
