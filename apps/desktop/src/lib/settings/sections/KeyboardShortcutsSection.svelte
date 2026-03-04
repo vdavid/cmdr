@@ -285,6 +285,16 @@
         // Let Tab through for focus navigation
         if (event.key === 'Tab') return
 
+        // ESC clears the filter when it has a value; otherwise let it bubble (closes window)
+        if (event.key === 'Escape') {
+            if (keySearchQuery) {
+                event.preventDefault()
+                event.stopImmediatePropagation()
+                keySearchQuery = ''
+            }
+            return
+        }
+
         event.preventDefault()
         event.stopPropagation()
 
@@ -354,18 +364,21 @@
                 autocapitalize="off"
                 spellcheck="false"
             />
-            <input
-                type="text"
-                class="search-input key-search"
-                placeholder="Filter by keys..."
-                bind:value={keySearchQuery}
-                bind:this={keyFilterInput}
-                onkeydown={handleKeyFilterKeyDown}
-                onkeyup={handleKeyFilterKeyUp}
-                autocomplete="off"
-                autocapitalize="off"
-                spellcheck="false"
-            />
+            <div class="key-search-wrapper">
+                <input
+                    type="text"
+                    class="search-input key-search"
+                    placeholder="Filter by keys..."
+                    bind:value={keySearchQuery}
+                    bind:this={keyFilterInput}
+                    onkeydown={handleKeyFilterKeyDown}
+                    onkeyup={handleKeyFilterKeyUp}
+                    autocomplete="off"
+                    autocapitalize="off"
+                    spellcheck="false"
+                />
+                <span class="key-search-hint" class:visible={!!keySearchQuery}>Press ESC to clear</span>
+            </div>
         </div>
 
         <div class="filters">
@@ -532,8 +545,28 @@
         box-shadow: var(--shadow-focus);
     }
 
-    .key-search {
+    .key-search-wrapper {
         flex: 0.5;
+        position: relative;
+    }
+
+    .key-search {
+        width: 100%;
+    }
+
+    .key-search-hint {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        margin-top: 2px;
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+        opacity: 0;
+        transition: opacity 0.15s;
+    }
+
+    .key-search-hint.visible {
+        opacity: 1;
     }
 
     .filters {
