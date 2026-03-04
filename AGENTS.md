@@ -201,6 +201,8 @@ Always do a last round of checks before wrapping up:
 6. For every directory you touched that has a `CLAUDE.md`: re-read it, verify it still matches the code, and update
    any `Decision/Why` or `Gotcha/Why` entries your changes invalidated. Updating the doc is as important as the code
    change itself.
+7. Did you have to reverse-engineer a flow, state machine, or async lifecycle that isn't documented? If so, add a
+   brief section (5–10 lines) to the nearest `CLAUDE.md` so the next agent doesn't have to re-discover it.
 
 ## Useful references
 
