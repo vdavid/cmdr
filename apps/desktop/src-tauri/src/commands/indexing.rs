@@ -58,8 +58,8 @@ pub async fn get_index_status(state: State<'_, IndexManagerState>) -> Result<Ind
 
 #[tauri::command]
 pub async fn get_dir_stats(state: State<'_, IndexManagerState>, path: String) -> Result<Option<DirStats>, String> {
-    let guard = state.0.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
-    match guard.as_ref() {
+    let mut guard = state.0.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
+    match guard.as_mut() {
         Some(mgr) => mgr.get_dir_stats(&path),
         None => Err("Indexing not initialized".to_string()),
     }
@@ -70,8 +70,8 @@ pub async fn get_dir_stats_batch(
     state: State<'_, IndexManagerState>,
     paths: Vec<String>,
 ) -> Result<Vec<Option<DirStats>>, String> {
-    let guard = state.0.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
-    match guard.as_ref() {
+    let mut guard = state.0.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
+    match guard.as_mut() {
         Some(mgr) => mgr.get_dir_stats_batch(&paths),
         None => Err("Indexing not initialized".to_string()),
     }

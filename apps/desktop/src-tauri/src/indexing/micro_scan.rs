@@ -191,18 +191,15 @@ impl MicroScanManager {
     }
 
     /// Number of currently active scans.
+    #[cfg(test)]
     pub async fn active_count(&self) -> usize {
         self.inner.lock().await.active.len()
     }
 
     /// Number of pending (queued) scans.
+    #[cfg(test)]
     pub async fn queue_len(&self) -> usize {
         self.inner.lock().await.queue.len()
-    }
-
-    /// Check if a path has completed its micro-scan.
-    pub async fn is_completed(&self, path: &Path) -> bool {
-        self.inner.lock().await.completed.contains(path)
     }
 }
 
@@ -303,8 +300,9 @@ fn is_child_of(path: &Path, dir_str: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::indexing::store::IndexStore;
+    use crate::indexing::store::{IndexStore, ROOT_ID};
     use std::fs;
+    use std::path::Path;
 
     fn setup_writer() -> (IndexWriter, tempfile::TempDir) {
         let dir = tempfile::tempdir().expect("temp dir");
@@ -312,6 +310,20 @@ mod tests {
         let _store = IndexStore::open(&db_path).expect("open store");
         let writer = IndexWriter::spawn(&db_path).expect("spawn writer");
         (writer, dir)
+    }
+
+    /// Insert the full parent directory chain for a path into the DB.
+    fn ensure_path_in_db(writer: &IndexWriter, path: &Path) {
+        let conn = IndexStore::open_write_connection(&writer.db_path()).unwrap();
+        let path_str = path.to_string_lossy();
+        let components: Vec<&str> = path_str.split('/').filter(|c| !c.is_empty()).collect();
+        let mut parent_id = ROOT_ID;
+        for component in components {
+            parent_id = match IndexStore::resolve_component(&conn, parent_id, component) {
+                Ok(Some(id)) => id,
+                _ => IndexStore::insert_entry_v2(&conn, parent_id, component, true, false, None, None).unwrap(),
+            };
+        }
     }
 
     #[tokio::test]
@@ -349,6 +361,7 @@ mod tests {
         }
 
         let path = scan_root.path().to_path_buf();
+        ensure_path_in_db(&writer, &path);
         mgr.request_scan(path.clone(), ScanPriority::UserSelected).await;
         mgr.request_scan(path.clone(), ScanPriority::UserSelected).await;
 

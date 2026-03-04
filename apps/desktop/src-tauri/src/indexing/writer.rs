@@ -13,38 +13,45 @@ use std::time::Instant;
 use tokio::sync::oneshot;
 
 use crate::indexing::aggregator;
-use crate::indexing::store::{DirStats, IndexStore, IndexStoreError, ScannedEntry};
+use crate::indexing::store::{EntryRow, IndexStore, IndexStoreError};
 
 // ── Messages ─────────────────────────────────────────────────────────
 
 /// Messages sent to the writer thread via an unbounded mpsc channel.
 pub enum WriteMessage {
-    /// Full scan: batch of entries. Lowest priority.
-    InsertEntries(Vec<ScannedEntry>),
-    /// Micro-scan or watcher: dir_stats updates. Highest priority.
-    UpdateDirStats(Vec<DirStats>),
-    /// Full scan complete: trigger bottom-up aggregation for all directories.
-    ComputeAllAggregates,
-    /// Micro-scan complete: trigger aggregation for a subtree only.
-    ComputeSubtreeAggregates { root: String },
-    /// Watcher: incremental delta propagation for a single file change.
-    PropagateDelta {
-        path: PathBuf,
+    /// Full scan: batch of entries with pre-assigned integer IDs.
+    InsertEntriesV2(Vec<EntryRow>),
+    /// Watcher/reconciler: upsert a single entry by parent_id + name.
+    /// The writer resolves or inserts using integer keys.
+    UpsertEntryV2 {
+        parent_id: i64,
+        name: String,
+        is_directory: bool,
+        is_symlink: bool,
+        size: Option<u64>,
+        modified_at: Option<u64>,
+    },
+    /// Watcher: delete a single entry and its dir_stats by entry ID.
+    DeleteEntryById(i64),
+    /// Watcher: delete a subtree (directory removed with all children) by entry ID.
+    DeleteSubtreeById(i64),
+    /// Watcher: incremental delta propagation walking the parent_id chain.
+    PropagateDeltaById {
+        entry_id: i64,
         size_delta: i64,
         file_count_delta: i32,
         dir_count_delta: i32,
     },
-    /// Watcher: upsert a single entry (file created/modified/renamed).
-    UpsertEntry(ScannedEntry),
-    /// Watcher: delete a single entry and its dir_stats.
-    DeleteEntry(String),
-    /// Watcher: delete a subtree (directory removed with all children).
-    DeleteSubtree(String),
+    /// Full scan complete: trigger bottom-up aggregation for all directories.
+    ComputeAllAggregates,
+    /// Micro-scan complete: trigger aggregation for a subtree only.
+    ComputeSubtreeAggregates { root: String },
     /// Store the last processed FSEvents event ID.
     UpdateLastEventId(u64),
     /// Update a meta key.
     UpdateMeta { key: String, value: String },
     /// Request current entry count (for progress reporting).
+    #[cfg(test)]
     GetEntryCount(oneshot::Sender<Result<u64, IndexStoreError>>),
     /// Flush: confirms all prior messages have been committed.
     /// The writer responds through the channel after processing this message.
@@ -69,6 +76,8 @@ pub struct IndexWriter {
     sender: mpsc::Sender<WriteMessage>,
     /// Handle for the writer thread, shared so shutdown() can join it.
     thread_handle: Arc<std::sync::Mutex<Option<thread::JoinHandle<()>>>>,
+    /// Path to the database file (needed by scanner for ScanContext init).
+    db_path: PathBuf,
 }
 
 impl IndexWriter {
@@ -88,7 +97,14 @@ impl IndexWriter {
         Ok(Self {
             sender,
             thread_handle: Arc::new(std::sync::Mutex::new(Some(handle))),
+            db_path: db_path.to_path_buf(),
         })
+    }
+
+    /// Return the path to the DB file. Used by the scanner to open a
+    /// temporary connection for `ScanContext` initialization.
+    pub fn db_path(&self) -> PathBuf {
+        self.db_path.clone()
     }
 
     /// Send a message to the writer thread (non-blocking).
@@ -136,7 +152,6 @@ struct StatsSnapshot {
     total: u64,
     insert_entries: u64,
     upsert_entry: u64,
-    update_dir_stats: u64,
     delete_entry: u64,
     delete_subtree: u64,
     propagate_delta: u64,
@@ -164,12 +179,11 @@ impl WriterStats {
     fn record(&mut self, msg: &WriteMessage) {
         self.current.total += 1;
         match msg {
-            WriteMessage::InsertEntries(_) => self.current.insert_entries += 1,
-            WriteMessage::UpsertEntry(_) => self.current.upsert_entry += 1,
-            WriteMessage::UpdateDirStats(_) => self.current.update_dir_stats += 1,
-            WriteMessage::DeleteEntry(_) => self.current.delete_entry += 1,
-            WriteMessage::DeleteSubtree(_) => self.current.delete_subtree += 1,
-            WriteMessage::PropagateDelta { .. } => self.current.propagate_delta += 1,
+            WriteMessage::InsertEntriesV2(_) => self.current.insert_entries += 1,
+            WriteMessage::UpsertEntryV2 { .. } => self.current.upsert_entry += 1,
+            WriteMessage::DeleteEntryById(_) => self.current.delete_entry += 1,
+            WriteMessage::DeleteSubtreeById(_) => self.current.delete_subtree += 1,
+            WriteMessage::PropagateDeltaById { .. } => self.current.propagate_delta += 1,
             WriteMessage::ComputeAllAggregates | WriteMessage::ComputeSubtreeAggregates { .. } => {
                 self.current.compute_aggregates += 1;
             }
@@ -197,10 +211,6 @@ impl WriterStats {
         let deltas: &[(&str, u64)] = &[
             ("inserts", self.current.insert_entries - self.previous.insert_entries),
             ("upserts", self.current.upsert_entry - self.previous.upsert_entry),
-            (
-                "dir_stats",
-                self.current.update_dir_stats - self.previous.update_dir_stats,
-            ),
             ("deletes", self.current.delete_entry - self.previous.delete_entry),
             (
                 "delete_subtrees",
@@ -243,87 +253,109 @@ impl WriterStats {
 
 /// Main loop for the writer thread.
 ///
-/// Priority handling: drain ALL pending `UpdateDirStats` messages first (via `try_recv`),
-/// then process ONE other message, then repeat. This ensures micro-scan results
-/// are written promptly even while the full scan pushes large batches.
+/// Processes messages sequentially from the mpsc channel. Each message is
+/// handled in order, ensuring all writes are serialized.
 fn writer_loop(conn: rusqlite::Connection, receiver: mpsc::Receiver<WriteMessage>) {
     log::debug!("Writer: thread started");
     let mut stats = WriterStats::new();
 
-    loop {
-        // Phase 1: drain all pending UpdateDirStats messages (priority)
-        loop {
-            match receiver.try_recv() {
-                Ok(WriteMessage::UpdateDirStats(dir_stats)) => {
-                    stats.record(&WriteMessage::UpdateDirStats(Vec::new()));
-                    process_update_dir_stats(&conn, &dir_stats);
-                    stats.maybe_log_summary();
-                }
-                Ok(other) => {
-                    stats.record(&other);
-                    // Got a non-priority message; process it and move on
-                    if process_message(&conn, other, &stats) {
-                        log::debug!("Writer: shutdown after processing {} messages", stats.current.total,);
-                        return;
-                    }
-                    stats.maybe_log_summary();
-                    break;
-                }
-                Err(mpsc::TryRecvError::Empty) => break,
-                Err(mpsc::TryRecvError::Disconnected) => {
-                    log::debug!(
-                        "Writer: channel closed, thread exiting after processing {} messages",
-                        stats.current.total,
-                    );
-                    return;
-                }
-            }
+    for msg in &receiver {
+        stats.record(&msg);
+        if process_message(&conn, msg, &stats) {
+            log::debug!("Writer: shutdown after processing {} messages", stats.current.total);
+            return;
         }
-
-        // Phase 2: wait for the next message (blocking)
-        match receiver.recv() {
-            Ok(WriteMessage::UpdateDirStats(dir_stats)) => {
-                stats.record(&WriteMessage::UpdateDirStats(Vec::new()));
-                process_update_dir_stats(&conn, &dir_stats);
-                stats.maybe_log_summary();
-                // After processing a priority message, loop back to drain more
-            }
-            Ok(msg) => {
-                stats.record(&msg);
-                if process_message(&conn, msg, &stats) {
-                    log::debug!("Writer: shutdown after processing {} messages", stats.current.total,);
-                    return;
-                }
-                stats.maybe_log_summary();
-            }
-            Err(mpsc::RecvError) => {
-                log::debug!(
-                    "Writer: channel closed, thread exiting after processing {} messages",
-                    stats.current.total,
-                );
-                return;
-            }
-        }
+        stats.maybe_log_summary();
     }
+
+    log::debug!(
+        "Writer: channel closed, thread exiting after processing {} messages",
+        stats.current.total,
+    );
 }
 
 /// Process a single non-`UpdateDirStats` message. Returns `true` if the thread should exit.
 fn process_message(conn: &rusqlite::Connection, msg: WriteMessage, stats: &WriterStats) -> bool {
     match msg {
-        WriteMessage::InsertEntries(entries) => {
+        // ── Integer-keyed variants ───────────────────────────────────
+        WriteMessage::InsertEntriesV2(entries) => {
             let count = entries.len();
             let t = Instant::now();
-            if let Err(e) = IndexStore::insert_entries_batch(conn, &entries) {
-                log::warn!("Index writer: insert_entries_batch failed: {e}");
+            if let Err(e) = IndexStore::insert_entries_v2_batch(conn, &entries) {
+                log::warn!("Index writer: insert_entries_v2_batch failed: {e}");
             }
             let elapsed = t.elapsed().as_millis();
             if elapsed > 100 {
-                log::debug!("Writer: insert_entries_batch ({count} entries) took {elapsed}ms");
+                log::debug!("Writer: insert_entries_v2_batch ({count} entries) took {elapsed}ms");
             }
         }
-        WriteMessage::UpdateDirStats(dir_stats) => {
-            // Shouldn't reach here in normal flow, but handle it anyway
-            process_update_dir_stats(conn, &dir_stats);
+        WriteMessage::UpsertEntryV2 {
+            parent_id,
+            name,
+            is_directory,
+            is_symlink,
+            size,
+            modified_at,
+        } => {
+            // Check if an entry already exists at (parent_id, name)
+            match IndexStore::resolve_component(conn, parent_id, &name) {
+                Ok(Some(existing_id)) => {
+                    if let Err(e) =
+                        IndexStore::update_entry(conn, existing_id, is_directory, is_symlink, size, modified_at)
+                    {
+                        log::warn!("Index writer: update_entry failed for id={existing_id}: {e}");
+                    }
+                }
+                Ok(None) => {
+                    if let Err(e) =
+                        IndexStore::insert_entry_v2(conn, parent_id, &name, is_directory, is_symlink, size, modified_at)
+                    {
+                        log::warn!("Index writer: insert_entry_v2 failed for {name}: {e}");
+                    }
+                }
+                Err(e) => {
+                    log::warn!("Index writer: resolve_component failed for {name}: {e}");
+                }
+            }
+        }
+        WriteMessage::DeleteEntryById(entry_id) => {
+            // Read old entry before deleting to get accurate delta
+            let old_entry = IndexStore::get_entry_by_id(conn, entry_id).ok().flatten();
+            if let Err(e) = IndexStore::delete_entry_by_id(conn, entry_id) {
+                log::warn!("Index writer: delete_entry_by_id failed for id={entry_id}: {e}");
+            }
+            // Auto-propagate accurate negative delta via parent_id chain
+            if let Some(entry) = old_entry {
+                let (size_delta, file_delta, dir_delta) = if entry.is_directory {
+                    (0i64, 0i32, -1i32)
+                } else {
+                    (-(entry.size.unwrap_or(0) as i64), -1, 0)
+                };
+                propagate_delta_by_id(conn, entry.parent_id, size_delta, file_delta, dir_delta);
+            }
+        }
+        WriteMessage::DeleteSubtreeById(root_id) => {
+            // Read subtree totals before deleting to get accurate delta
+            let totals = IndexStore::get_subtree_totals_by_id(conn, root_id).ok();
+            let parent_id = IndexStore::get_parent_id(conn, root_id).ok().flatten();
+            if let Err(e) = IndexStore::delete_subtree_by_id(conn, root_id) {
+                log::warn!("Index writer: delete_subtree_by_id failed for id={root_id}: {e}");
+            }
+            // Auto-propagate accurate negative delta via parent_id chain
+            if let (Some((total_size, file_count, dir_count)), Some(pid)) = (totals, parent_id) {
+                let size_delta = -(total_size as i64);
+                let file_delta = -(file_count as i32);
+                let dir_delta = -(dir_count as i32);
+                propagate_delta_by_id(conn, pid, size_delta, file_delta, dir_delta);
+            }
+        }
+        WriteMessage::PropagateDeltaById {
+            entry_id,
+            size_delta,
+            file_count_delta,
+            dir_count_delta,
+        } => {
+            propagate_delta_by_id(conn, entry_id, size_delta, file_count_delta, dir_count_delta);
         }
         WriteMessage::ComputeAllAggregates => {
             let t = Instant::now();
@@ -349,58 +381,6 @@ fn process_message(conn: &rusqlite::Connection, msg: WriteMessage, stats: &Write
                 Err(e) => log::warn!("Index writer: compute_subtree_aggregates({root}) failed: {e}"),
             }
         }
-        WriteMessage::PropagateDelta {
-            path,
-            size_delta,
-            file_count_delta,
-            dir_count_delta,
-        } => {
-            let path_str = path.to_string_lossy();
-            if let Err(e) = aggregator::propagate_delta(conn, &path_str, size_delta, file_count_delta, dir_count_delta)
-            {
-                log::warn!("Index writer: propagate_delta failed for {}: {e}", path.display());
-            }
-        }
-        WriteMessage::UpsertEntry(entry) => {
-            if let Err(e) = IndexStore::upsert_entry(conn, &entry) {
-                log::warn!("Index writer: upsert_entry failed for {}: {e}", entry.path);
-            }
-        }
-        WriteMessage::DeleteEntry(path) => {
-            // Read old entry before deleting to get accurate delta
-            let old_entry = IndexStore::get_entry(conn, &path).ok().flatten();
-            if let Err(e) = IndexStore::delete_entry(conn, &path) {
-                log::warn!("Index writer: delete_entry failed for {path}: {e}");
-            }
-            // Auto-propagate accurate negative delta
-            if let Some(entry) = old_entry {
-                let (size_delta, file_delta, dir_delta) = if entry.is_directory {
-                    (0i64, 0i32, -1i32)
-                } else {
-                    (-(entry.size.unwrap_or(0) as i64), -1, 0)
-                };
-                if let Err(e) = aggregator::propagate_delta(conn, &path, size_delta, file_delta, dir_delta) {
-                    log::warn!("Index writer: propagate_delta after delete_entry failed for {path}: {e}");
-                }
-            }
-        }
-        WriteMessage::DeleteSubtree(path) => {
-            // Read subtree totals before deleting to get accurate delta
-            let totals = IndexStore::get_subtree_totals(conn, &path).ok();
-            if let Err(e) = IndexStore::delete_subtree(conn, &path) {
-                log::warn!("Index writer: delete_subtree failed for {path}: {e}");
-            }
-            // Auto-propagate accurate negative delta
-            if let Some((total_size, file_count, dir_count)) = totals {
-                // dir_count from the query includes the root dir itself (it's in entries)
-                let size_delta = -(total_size as i64);
-                let file_delta = -(file_count as i32);
-                let dir_delta = -(dir_count as i32);
-                if let Err(e) = aggregator::propagate_delta(conn, &path, size_delta, file_delta, dir_delta) {
-                    log::warn!("Index writer: propagate_delta after delete_subtree failed for {path}: {e}");
-                }
-            }
-        }
         WriteMessage::UpdateLastEventId(id) => {
             if let Err(e) = IndexStore::update_meta(conn, "last_event_id", &id.to_string()) {
                 log::warn!("Index writer: update last_event_id failed: {e}");
@@ -411,6 +391,7 @@ fn process_message(conn: &rusqlite::Connection, msg: WriteMessage, stats: &Write
                 log::warn!("Index writer: update_meta({key}) failed: {e}");
             }
         }
+        #[cfg(test)]
         WriteMessage::GetEntryCount(reply) => {
             let result = IndexStore::get_entry_count(conn);
             // If the receiver dropped, that's fine; ignore the send error
@@ -442,9 +423,53 @@ fn process_message(conn: &rusqlite::Connection, msg: WriteMessage, stats: &Write
     false
 }
 
-fn process_update_dir_stats(conn: &rusqlite::Connection, stats: &[DirStats]) {
-    if let Err(e) = IndexStore::upsert_dir_stats(conn, stats) {
-        log::warn!("Index writer: upsert_dir_stats failed: {e}");
+/// Walk the parent_id chain upward, updating dir_stats for each ancestor.
+///
+/// Starts at `start_id` (typically the parent of the affected entry) and
+/// walks up to the root sentinel. Each ancestor gets its dir_stats updated
+/// with the given delta. Creates dir_stats rows if they don't exist.
+fn propagate_delta_by_id(conn: &rusqlite::Connection, start_id: i64, size_delta: i64, file_delta: i32, dir_delta: i32) {
+    use crate::indexing::store::{DirStatsById, ROOT_ID};
+
+    let mut current_id = start_id;
+    while current_id != 0 {
+        // Read existing stats
+        let existing = IndexStore::get_dir_stats_by_id(conn, current_id).ok().flatten();
+
+        let (new_size, new_files, new_dirs) = match existing {
+            Some(s) => (
+                (s.recursive_size as i64 + size_delta).max(0) as u64,
+                (s.recursive_file_count as i64 + i64::from(file_delta)).max(0) as u64,
+                (s.recursive_dir_count as i64 + i64::from(dir_delta)).max(0) as u64,
+            ),
+            None => (
+                size_delta.max(0) as u64,
+                i64::from(file_delta).max(0) as u64,
+                i64::from(dir_delta).max(0) as u64,
+            ),
+        };
+
+        if let Err(e) = IndexStore::upsert_dir_stats_by_id(
+            conn,
+            &[DirStatsById {
+                entry_id: current_id,
+                recursive_size: new_size,
+                recursive_file_count: new_files,
+                recursive_dir_count: new_dirs,
+            }],
+        ) {
+            log::warn!("propagate_delta_by_id: upsert_dir_stats_by_id failed for id={current_id}: {e}");
+            break;
+        }
+
+        // Walk up to parent
+        if current_id == ROOT_ID {
+            break;
+        }
+        match IndexStore::get_parent_id(conn, current_id) {
+            Ok(Some(pid)) if pid != 0 => current_id = pid,
+            _ => break,
+        }
     }
 }
 
@@ -455,7 +480,7 @@ mod tests {
     use std::time::Duration;
 
     use super::*;
-    use crate::indexing::store::IndexStore;
+    use crate::indexing::store::{DirStatsById, IndexStore, ROOT_ID};
 
     /// Create a temp DB, open the store (to init schema), and return the path + temp dir guard.
     fn setup_db() -> (PathBuf, tempfile::TempDir) {
@@ -470,6 +495,8 @@ mod tests {
         IndexStore::open(db_path).expect("failed to open read store")
     }
 
+    // ── Basic lifecycle tests ────────────────────────────────────────
+
     #[test]
     fn spawn_and_shutdown() {
         let (db_path, _dir) = setup_db();
@@ -483,87 +510,383 @@ mod tests {
         let _ = result;
     }
 
+    // ── Integer-keyed variant tests ──────────────────────────────────
+
     #[test]
-    fn insert_entries_via_writer() {
+    fn insert_entries_v2_via_writer() {
         let (db_path, _dir) = setup_db();
         let writer = IndexWriter::spawn(&db_path).unwrap();
 
-        let entries = vec![ScannedEntry {
-            path: "/test/file.txt".into(),
-            parent_path: "/test".into(),
+        let entries = vec![EntryRow {
+            id: 10,
+            parent_id: ROOT_ID,
             name: "file.txt".into(),
             is_directory: false,
             is_symlink: false,
             size: Some(1024),
             modified_at: Some(1700000000),
         }];
-        writer.send(WriteMessage::InsertEntries(entries)).unwrap();
+        writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
         writer.shutdown();
         thread::sleep(Duration::from_millis(100));
 
         let store = open_read(&db_path);
-        let result = store.list_entries_by_parent("/test").unwrap();
-        assert_eq!(result.len(), 1);
-        assert_eq!(result[0].name, "file.txt");
-        assert_eq!(result[0].size, Some(1024));
+        let children = store.list_children(ROOT_ID).unwrap();
+        assert_eq!(children.len(), 1);
+        assert_eq!(children[0].name, "file.txt");
+        assert_eq!(children[0].size, Some(1024));
+        assert_eq!(children[0].id, 10);
     }
 
     #[test]
-    fn update_dir_stats_via_writer() {
+    fn upsert_entry_v2_insert_and_update() {
         let (db_path, _dir) = setup_db();
         let writer = IndexWriter::spawn(&db_path).unwrap();
 
-        let stats = vec![DirStats {
-            path: "/mydir".into(),
-            recursive_size: 5000,
-            recursive_file_count: 10,
-            recursive_dir_count: 3,
+        // Insert via UpsertEntryV2 (entry doesn't exist yet)
+        writer
+            .send(WriteMessage::UpsertEntryV2 {
+                parent_id: ROOT_ID,
+                name: "new.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                size: Some(256),
+                modified_at: Some(1700000000),
+            })
+            .unwrap();
+        thread::sleep(Duration::from_millis(100));
+
+        // Update via UpsertEntryV2 (entry now exists)
+        writer
+            .send(WriteMessage::UpsertEntryV2 {
+                parent_id: ROOT_ID,
+                name: "new.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                size: Some(512),
+                modified_at: Some(1700000001),
+            })
+            .unwrap();
+        writer.shutdown();
+        thread::sleep(Duration::from_millis(100));
+
+        let store = open_read(&db_path);
+        let children = store.list_children(ROOT_ID).unwrap();
+        assert_eq!(children.len(), 1);
+        assert_eq!(children[0].name, "new.txt");
+        assert_eq!(children[0].size, Some(512), "size should be updated to 512");
+    }
+
+    #[test]
+    fn delete_entry_by_id_via_writer() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path).unwrap();
+
+        // Insert an entry
+        let entries = vec![EntryRow {
+            id: 20,
+            parent_id: ROOT_ID,
+            name: "doomed.txt".into(),
+            is_directory: false,
+            is_symlink: false,
+            size: Some(100),
+            modified_at: None,
         }];
-        writer.send(WriteMessage::UpdateDirStats(stats)).unwrap();
+        writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
+        thread::sleep(Duration::from_millis(100));
+
+        // Delete by ID
+        writer.send(WriteMessage::DeleteEntryById(20)).unwrap();
         writer.shutdown();
         thread::sleep(Duration::from_millis(100));
 
         let store = open_read(&db_path);
-        let result = store.get_dir_stats("/mydir").unwrap().unwrap();
-        assert_eq!(result.recursive_size, 5000);
-        assert_eq!(result.recursive_file_count, 10);
-        assert_eq!(result.recursive_dir_count, 3);
+        let children = store.list_children(ROOT_ID).unwrap();
+        assert!(children.is_empty(), "entry should be deleted");
     }
 
     #[test]
-    fn compute_all_aggregates_via_writer() {
+    fn delete_subtree_by_id_via_writer() {
         let (db_path, _dir) = setup_db();
         let writer = IndexWriter::spawn(&db_path).unwrap();
 
-        // Insert a simple tree
+        // Build a tree: ROOT -> dir(10) -> file(11) + subdir(12)
         let entries = vec![
-            ScannedEntry {
-                path: "/r".into(),
-                parent_path: "/".into(),
-                name: "r".into(),
+            EntryRow {
+                id: 10,
+                parent_id: ROOT_ID,
+                name: "a".into(),
                 is_directory: true,
                 is_symlink: false,
                 size: None,
                 modified_at: None,
             },
-            ScannedEntry {
-                path: "/r/f.txt".into(),
-                parent_path: "/r".into(),
-                name: "f.txt".into(),
+            EntryRow {
+                id: 11,
+                parent_id: 10,
+                name: "b.txt".into(),
                 is_directory: false,
                 is_symlink: false,
-                size: Some(42),
+                size: Some(50),
+                modified_at: None,
+            },
+            EntryRow {
+                id: 12,
+                parent_id: 10,
+                name: "c".into(),
+                is_directory: true,
+                is_symlink: false,
+                size: None,
                 modified_at: None,
             },
         ];
-        writer.send(WriteMessage::InsertEntries(entries)).unwrap();
-        writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+        writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
+        thread::sleep(Duration::from_millis(100));
+
+        // Delete the subtree rooted at id=10
+        writer.send(WriteMessage::DeleteSubtreeById(10)).unwrap();
+        writer.shutdown();
+        thread::sleep(Duration::from_millis(100));
+
+        let store = open_read(&db_path);
+        let root_children = store.list_children(ROOT_ID).unwrap();
+        assert!(root_children.is_empty(), "dir /a should be deleted");
+        let a_children = store.list_children(10).unwrap();
+        assert!(a_children.is_empty(), "children of /a should be deleted");
+    }
+
+    #[test]
+    fn delete_entry_by_id_auto_propagates_delta() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path).unwrap();
+
+        // Insert a parent dir and a file
+        let entries = vec![
+            EntryRow {
+                id: 10,
+                parent_id: ROOT_ID,
+                name: "p".into(),
+                is_directory: true,
+                is_symlink: false,
+                size: None,
+                modified_at: None,
+            },
+            EntryRow {
+                id: 11,
+                parent_id: 10,
+                name: "file.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                size: Some(500),
+                modified_at: None,
+            },
+        ];
+        writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
+
+        // Pre-populate dir_stats for the parent
+        writer
+            .send(WriteMessage::InsertEntriesV2(Vec::new())) // no-op, just to sequence
+            .unwrap();
+        thread::sleep(Duration::from_millis(100));
+
+        // Manually set dir_stats for parent via direct DB write (using the by-id API)
+        {
+            let conn = IndexStore::open_write_connection(&db_path).unwrap();
+            IndexStore::upsert_dir_stats_by_id(
+                &conn,
+                &[DirStatsById {
+                    entry_id: 10,
+                    recursive_size: 500,
+                    recursive_file_count: 1,
+                    recursive_dir_count: 0,
+                }],
+            )
+            .unwrap();
+        }
+
+        // Delete the file — writer should auto-propagate (-500, -1, 0) to parent id=10
+        writer.send(WriteMessage::DeleteEntryById(11)).unwrap();
+        writer.shutdown();
+        thread::sleep(Duration::from_millis(100));
+
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        let stats = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();
+        assert_eq!(stats.recursive_size, 0, "size should be 0 after file deletion");
+        assert_eq!(stats.recursive_file_count, 0, "file count should be 0");
+    }
+
+    #[test]
+    fn delete_subtree_by_id_auto_propagates_delta() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path).unwrap();
+
+        // Build tree: ROOT(1) -> root_dir(10) -> sub(11) -> file.txt(12, 300 bytes)
+        let entries = vec![
+            EntryRow {
+                id: 10,
+                parent_id: ROOT_ID,
+                name: "root".into(),
+                is_directory: true,
+                is_symlink: false,
+                size: None,
+                modified_at: None,
+            },
+            EntryRow {
+                id: 11,
+                parent_id: 10,
+                name: "sub".into(),
+                is_directory: true,
+                is_symlink: false,
+                size: None,
+                modified_at: None,
+            },
+            EntryRow {
+                id: 12,
+                parent_id: 11,
+                name: "file.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                size: Some(300),
+                modified_at: None,
+            },
+        ];
+        writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
+        thread::sleep(Duration::from_millis(100));
+
+        // Pre-populate dir_stats for ancestors
+        {
+            let conn = IndexStore::open_write_connection(&db_path).unwrap();
+            IndexStore::upsert_dir_stats_by_id(
+                &conn,
+                &[
+                    DirStatsById {
+                        entry_id: ROOT_ID,
+                        recursive_size: 300,
+                        recursive_file_count: 1,
+                        recursive_dir_count: 2,
+                    },
+                    DirStatsById {
+                        entry_id: 10,
+                        recursive_size: 300,
+                        recursive_file_count: 1,
+                        recursive_dir_count: 1,
+                    },
+                ],
+            )
+            .unwrap();
+        }
+
+        // Delete the /root/sub subtree (id=11)
+        writer.send(WriteMessage::DeleteSubtreeById(11)).unwrap();
+        writer.shutdown();
+        thread::sleep(Duration::from_millis(100));
+
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+
+        // root_dir(10) should have lost: size=300, files=1, dirs=1
+        let root_stats = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();
+        assert_eq!(root_stats.recursive_size, 0);
+        assert_eq!(root_stats.recursive_file_count, 0);
+        assert_eq!(root_stats.recursive_dir_count, 0);
+
+        // ROOT(1) should have lost: size=300, files=1, dirs=1
+        let vol_stats = IndexStore::get_dir_stats_by_id(&conn, ROOT_ID).unwrap().unwrap();
+        assert_eq!(vol_stats.recursive_size, 0);
+        assert_eq!(vol_stats.recursive_file_count, 0);
+        assert_eq!(vol_stats.recursive_dir_count, 1); // root_dir(10) still exists
+    }
+
+    #[test]
+    fn propagate_delta_by_id_via_writer() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path).unwrap();
+
+        // Insert a directory to propagate to
+        let entries = vec![EntryRow {
+            id: 10,
+            parent_id: ROOT_ID,
+            name: "home".into(),
+            is_directory: true,
+            is_symlink: false,
+            size: None,
+            modified_at: None,
+        }];
+        writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
+        thread::sleep(Duration::from_millis(100));
+
+        // Pre-populate dir_stats
+        {
+            let conn = IndexStore::open_write_connection(&db_path).unwrap();
+            IndexStore::upsert_dir_stats_by_id(
+                &conn,
+                &[DirStatsById {
+                    entry_id: 10,
+                    recursive_size: 1000,
+                    recursive_file_count: 5,
+                    recursive_dir_count: 1,
+                }],
+            )
+            .unwrap();
+        }
+
+        // Propagate a file addition starting from home's entry_id
+        writer
+            .send(WriteMessage::PropagateDeltaById {
+                entry_id: 10,
+                size_delta: 250,
+                file_count_delta: 1,
+                dir_count_delta: 0,
+            })
+            .unwrap();
         writer.shutdown();
         thread::sleep(Duration::from_millis(200));
 
-        let store = open_read(&db_path);
-        let stats = store.get_dir_stats("/r").unwrap().unwrap();
-        assert_eq!(stats.recursive_size, 42);
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        let result = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();
+        assert_eq!(result.recursive_size, 1250);
+        assert_eq!(result.recursive_file_count, 6);
+    }
+
+    #[test]
+    fn delete_entry_by_id_for_nonexistent_skips_propagation() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path).unwrap();
+
+        // Insert a directory and pre-populate its dir_stats
+        let entries = vec![EntryRow {
+            id: 10,
+            parent_id: ROOT_ID,
+            name: "p".into(),
+            is_directory: true,
+            is_symlink: false,
+            size: None,
+            modified_at: None,
+        }];
+        writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
+        thread::sleep(Duration::from_millis(100));
+
+        {
+            let conn = IndexStore::open_write_connection(&db_path).unwrap();
+            IndexStore::upsert_dir_stats_by_id(
+                &conn,
+                &[DirStatsById {
+                    entry_id: 10,
+                    recursive_size: 100,
+                    recursive_file_count: 1,
+                    recursive_dir_count: 0,
+                }],
+            )
+            .unwrap();
+        }
+
+        // Delete a non-existent entry — should not propagate any delta
+        writer.send(WriteMessage::DeleteEntryById(999)).unwrap();
+        writer.shutdown();
+        thread::sleep(Duration::from_millis(100));
+
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        let stats = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();
+        assert_eq!(stats.recursive_size, 100, "stats should be unchanged");
         assert_eq!(stats.recursive_file_count, 1);
     }
 
@@ -572,20 +895,20 @@ mod tests {
         let (db_path, _dir) = setup_db();
         let writer = IndexWriter::spawn(&db_path).unwrap();
 
-        // Insert some entries first
+        // Insert using integer-keyed API (simpler, no path resolution needed)
         let entries = vec![
-            ScannedEntry {
-                path: "/a".into(),
-                parent_path: "/".into(),
+            EntryRow {
+                id: 10,
+                parent_id: ROOT_ID,
                 name: "a".into(),
                 is_directory: true,
                 is_symlink: false,
                 size: None,
                 modified_at: None,
             },
-            ScannedEntry {
-                path: "/a/b.txt".into(),
-                parent_path: "/a".into(),
+            EntryRow {
+                id: 11,
+                parent_id: 10,
                 name: "b.txt".into(),
                 is_directory: false,
                 is_symlink: false,
@@ -593,7 +916,7 @@ mod tests {
                 modified_at: None,
             },
         ];
-        writer.send(WriteMessage::InsertEntries(entries)).unwrap();
+        writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
 
         // Give the writer time to process the insert
         thread::sleep(Duration::from_millis(100));
@@ -602,7 +925,8 @@ mod tests {
         writer.send(WriteMessage::GetEntryCount(tx)).unwrap();
 
         let count = rx.blocking_recv().unwrap().unwrap();
-        assert_eq!(count, 2);
+        // 2 inserted + 1 root sentinel = 3
+        assert_eq!(count, 3);
 
         writer.shutdown();
     }
@@ -636,25 +960,25 @@ mod tests {
         let (db_path, _dir) = setup_db();
         let writer = IndexWriter::spawn(&db_path).unwrap();
 
-        // Insert entries then flush (no sleep needed — flush guarantees completion)
-        let entries = vec![ScannedEntry {
-            path: "/flush/test.txt".into(),
-            parent_path: "/flush".into(),
+        // Insert using integer-keyed API
+        let entries = vec![EntryRow {
+            id: 10,
+            parent_id: ROOT_ID,
             name: "test.txt".into(),
             is_directory: false,
             is_symlink: false,
             size: Some(512),
             modified_at: Some(1700000000),
         }];
-        writer.send(WriteMessage::InsertEntries(entries)).unwrap();
+        writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
         writer.flush().await.unwrap();
 
         // Data should be readable immediately after flush
         let store = open_read(&db_path);
-        let result = store.list_entries_by_parent("/flush").unwrap();
-        assert_eq!(result.len(), 1);
-        assert_eq!(result[0].name, "test.txt");
-        assert_eq!(result[0].size, Some(512));
+        let children = store.list_children(ROOT_ID).unwrap();
+        assert_eq!(children.len(), 1);
+        assert_eq!(children[0].name, "test.txt");
+        assert_eq!(children[0].size, Some(512));
 
         writer.shutdown();
     }
@@ -674,366 +998,10 @@ mod tests {
     }
 
     #[test]
-    fn priority_dir_stats_processed_before_entries() {
-        // This test verifies the priority mechanism: UpdateDirStats messages should
-        // be drained before processing other messages.
+    fn db_path_is_available() {
         let (db_path, _dir) = setup_db();
         let writer = IndexWriter::spawn(&db_path).unwrap();
-
-        // Send many InsertEntries first, then an UpdateDirStats
-        for i in 0..10 {
-            let entries = vec![ScannedEntry {
-                path: format!("/batch{i}/file.txt"),
-                parent_path: format!("/batch{i}"),
-                name: "file.txt".into(),
-                is_directory: false,
-                is_symlink: false,
-                size: Some(100),
-                modified_at: None,
-            }];
-            writer.send(WriteMessage::InsertEntries(entries)).unwrap();
-        }
-
-        // This priority message should be processed as soon as the writer checks
-        let stats = vec![DirStats {
-            path: "/priority".into(),
-            recursive_size: 999,
-            recursive_file_count: 1,
-            recursive_dir_count: 0,
-        }];
-        writer.send(WriteMessage::UpdateDirStats(stats)).unwrap();
-
+        assert_eq!(writer.db_path(), db_path);
         writer.shutdown();
-        thread::sleep(Duration::from_millis(200));
-
-        // Verify the priority message was processed
-        let store = open_read(&db_path);
-        let result = store.get_dir_stats("/priority").unwrap().unwrap();
-        assert_eq!(result.recursive_size, 999);
-    }
-
-    #[test]
-    fn subtree_aggregates_via_writer() {
-        let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path).unwrap();
-
-        let entries = vec![
-            ScannedEntry {
-                path: "/sub".into(),
-                parent_path: "/".into(),
-                name: "sub".into(),
-                is_directory: true,
-                is_symlink: false,
-                size: None,
-                modified_at: None,
-            },
-            ScannedEntry {
-                path: "/sub/inner".into(),
-                parent_path: "/sub".into(),
-                name: "inner".into(),
-                is_directory: true,
-                is_symlink: false,
-                size: None,
-                modified_at: None,
-            },
-            ScannedEntry {
-                path: "/sub/inner/data.bin".into(),
-                parent_path: "/sub/inner".into(),
-                name: "data.bin".into(),
-                is_directory: false,
-                is_symlink: false,
-                size: Some(777),
-                modified_at: None,
-            },
-        ];
-        writer.send(WriteMessage::InsertEntries(entries)).unwrap();
-        writer
-            .send(WriteMessage::ComputeSubtreeAggregates { root: "/sub".into() })
-            .unwrap();
-        writer.shutdown();
-        thread::sleep(Duration::from_millis(200));
-
-        let store = open_read(&db_path);
-        let stats = store.get_dir_stats("/sub").unwrap().unwrap();
-        assert_eq!(stats.recursive_size, 777);
-        assert_eq!(stats.recursive_file_count, 1);
-        assert_eq!(stats.recursive_dir_count, 1);
-    }
-
-    #[test]
-    fn propagate_delta_via_writer() {
-        let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path).unwrap();
-
-        // Pre-populate a dir_stats entry
-        let stats = vec![DirStats {
-            path: "/home".into(),
-            recursive_size: 1000,
-            recursive_file_count: 5,
-            recursive_dir_count: 1,
-        }];
-        writer.send(WriteMessage::UpdateDirStats(stats)).unwrap();
-
-        // Propagate a file addition under /home
-        writer
-            .send(WriteMessage::PropagateDelta {
-                path: PathBuf::from("/home/newfile.txt"),
-                size_delta: 250,
-                file_count_delta: 1,
-                dir_count_delta: 0,
-            })
-            .unwrap();
-        writer.shutdown();
-        thread::sleep(Duration::from_millis(200));
-
-        let store = open_read(&db_path);
-        let result = store.get_dir_stats("/home").unwrap().unwrap();
-        assert_eq!(result.recursive_size, 1250);
-        assert_eq!(result.recursive_file_count, 6);
-    }
-
-    #[test]
-    fn upsert_entry_via_writer() {
-        let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path).unwrap();
-
-        let entry = ScannedEntry {
-            path: "/test/new.txt".into(),
-            parent_path: "/test".into(),
-            name: "new.txt".into(),
-            is_directory: false,
-            is_symlink: false,
-            size: Some(256),
-            modified_at: Some(1700000000),
-        };
-        writer.send(WriteMessage::UpsertEntry(entry)).unwrap();
-        writer.shutdown();
-        thread::sleep(Duration::from_millis(100));
-
-        let store = open_read(&db_path);
-        let result = store.list_entries_by_parent("/test").unwrap();
-        assert_eq!(result.len(), 1);
-        assert_eq!(result[0].name, "new.txt");
-        assert_eq!(result[0].size, Some(256));
-    }
-
-    #[test]
-    fn delete_entry_via_writer() {
-        let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path).unwrap();
-
-        // Insert then delete
-        let entries = vec![ScannedEntry {
-            path: "/test/doomed.txt".into(),
-            parent_path: "/test".into(),
-            name: "doomed.txt".into(),
-            is_directory: false,
-            is_symlink: false,
-            size: Some(100),
-            modified_at: None,
-        }];
-        writer.send(WriteMessage::InsertEntries(entries)).unwrap();
-        thread::sleep(Duration::from_millis(100));
-
-        writer
-            .send(WriteMessage::DeleteEntry("/test/doomed.txt".into()))
-            .unwrap();
-        writer.shutdown();
-        thread::sleep(Duration::from_millis(100));
-
-        let store = open_read(&db_path);
-        let result = store.list_entries_by_parent("/test").unwrap();
-        assert!(result.is_empty());
-    }
-
-    #[test]
-    fn delete_subtree_via_writer() {
-        let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path).unwrap();
-
-        let entries = vec![
-            ScannedEntry {
-                path: "/a".into(),
-                parent_path: "/".into(),
-                name: "a".into(),
-                is_directory: true,
-                is_symlink: false,
-                size: None,
-                modified_at: None,
-            },
-            ScannedEntry {
-                path: "/a/b.txt".into(),
-                parent_path: "/a".into(),
-                name: "b.txt".into(),
-                is_directory: false,
-                is_symlink: false,
-                size: Some(50),
-                modified_at: None,
-            },
-            ScannedEntry {
-                path: "/a/c".into(),
-                parent_path: "/a".into(),
-                name: "c".into(),
-                is_directory: true,
-                is_symlink: false,
-                size: None,
-                modified_at: None,
-            },
-        ];
-        writer.send(WriteMessage::InsertEntries(entries)).unwrap();
-        thread::sleep(Duration::from_millis(100));
-
-        writer.send(WriteMessage::DeleteSubtree("/a".into())).unwrap();
-        writer.shutdown();
-        thread::sleep(Duration::from_millis(100));
-
-        let store = open_read(&db_path);
-        let root_children = store.list_entries_by_parent("/").unwrap();
-        assert!(root_children.is_empty(), "/a should be deleted");
-        let a_children = store.list_entries_by_parent("/a").unwrap();
-        assert!(a_children.is_empty(), "children of /a should be deleted");
-    }
-
-    #[test]
-    fn delete_entry_auto_propagates_delta() {
-        let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path).unwrap();
-
-        // Insert a file and pre-populate parent dir_stats
-        let entries = vec![ScannedEntry {
-            path: "/p/file.txt".into(),
-            parent_path: "/p".into(),
-            name: "file.txt".into(),
-            is_directory: false,
-            is_symlink: false,
-            size: Some(500),
-            modified_at: None,
-        }];
-        writer.send(WriteMessage::InsertEntries(entries)).unwrap();
-        writer
-            .send(WriteMessage::UpdateDirStats(vec![DirStats {
-                path: "/p".into(),
-                recursive_size: 500,
-                recursive_file_count: 1,
-                recursive_dir_count: 0,
-            }]))
-            .unwrap();
-        thread::sleep(Duration::from_millis(100));
-
-        // Delete the file — writer should auto-propagate (-500, -1, 0) to /p
-        writer.send(WriteMessage::DeleteEntry("/p/file.txt".into())).unwrap();
-        writer.shutdown();
-        thread::sleep(Duration::from_millis(100));
-
-        let store = open_read(&db_path);
-        let stats = store.get_dir_stats("/p").unwrap().unwrap();
-        assert_eq!(stats.recursive_size, 0, "size should be 0 after file deletion");
-        assert_eq!(stats.recursive_file_count, 0, "file count should be 0");
-    }
-
-    #[test]
-    fn delete_subtree_auto_propagates_delta() {
-        let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path).unwrap();
-
-        // Build a tree: /root/sub/file.txt (300 bytes)
-        let entries = vec![
-            ScannedEntry {
-                path: "/root".into(),
-                parent_path: "/".into(),
-                name: "root".into(),
-                is_directory: true,
-                is_symlink: false,
-                size: None,
-                modified_at: None,
-            },
-            ScannedEntry {
-                path: "/root/sub".into(),
-                parent_path: "/root".into(),
-                name: "sub".into(),
-                is_directory: true,
-                is_symlink: false,
-                size: None,
-                modified_at: None,
-            },
-            ScannedEntry {
-                path: "/root/sub/file.txt".into(),
-                parent_path: "/root/sub".into(),
-                name: "file.txt".into(),
-                is_directory: false,
-                is_symlink: false,
-                size: Some(300),
-                modified_at: None,
-            },
-        ];
-        writer.send(WriteMessage::InsertEntries(entries)).unwrap();
-
-        // Pre-populate dir_stats for ancestors
-        writer
-            .send(WriteMessage::UpdateDirStats(vec![
-                DirStats {
-                    path: "/".into(),
-                    recursive_size: 300,
-                    recursive_file_count: 1,
-                    recursive_dir_count: 2,
-                },
-                DirStats {
-                    path: "/root".into(),
-                    recursive_size: 300,
-                    recursive_file_count: 1,
-                    recursive_dir_count: 1,
-                },
-            ]))
-            .unwrap();
-        thread::sleep(Duration::from_millis(100));
-
-        // Delete the /root/sub subtree — should auto-propagate accurate negative delta
-        writer.send(WriteMessage::DeleteSubtree("/root/sub".into())).unwrap();
-        writer.shutdown();
-        thread::sleep(Duration::from_millis(100));
-
-        let store = open_read(&db_path);
-
-        // /root should have lost: size=300, files=1, dirs=1 (the /root/sub dir itself)
-        let root_stats = store.get_dir_stats("/root").unwrap().unwrap();
-        assert_eq!(
-            root_stats.recursive_size, 0,
-            "root size should be 0 after subtree deletion"
-        );
-        assert_eq!(root_stats.recursive_file_count, 0);
-        assert_eq!(root_stats.recursive_dir_count, 0);
-
-        // "/" should also have lost: size=300, files=1, dirs=1
-        let vol_stats = store.get_dir_stats("/").unwrap().unwrap();
-        assert_eq!(vol_stats.recursive_size, 0);
-        assert_eq!(vol_stats.recursive_file_count, 0);
-        assert_eq!(vol_stats.recursive_dir_count, 1); // /root still exists
-    }
-
-    #[test]
-    fn delete_entry_for_nonexistent_skips_propagation() {
-        let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path).unwrap();
-
-        // Pre-populate dir_stats
-        writer
-            .send(WriteMessage::UpdateDirStats(vec![DirStats {
-                path: "/p".into(),
-                recursive_size: 100,
-                recursive_file_count: 1,
-                recursive_dir_count: 0,
-            }]))
-            .unwrap();
-        thread::sleep(Duration::from_millis(100));
-
-        // Delete a non-existent entry — should not propagate any delta
-        writer.send(WriteMessage::DeleteEntry("/p/ghost.txt".into())).unwrap();
-        writer.shutdown();
-        thread::sleep(Duration::from_millis(100));
-
-        let store = open_read(&db_path);
-        let stats = store.get_dir_stats("/p").unwrap().unwrap();
-        assert_eq!(stats.recursive_size, 100, "stats should be unchanged");
-        assert_eq!(stats.recursive_file_count, 1);
     }
 }

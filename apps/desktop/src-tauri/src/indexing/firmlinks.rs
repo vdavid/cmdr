@@ -81,6 +81,7 @@ pub fn normalize_path(path: &str) -> String {
 
 /// Check if a path is under `/System/Volumes/Data/` and matches a known firmlink,
 /// meaning it would be a duplicate of the canonical firmlinked path during scanning.
+#[cfg(test)]
 pub fn is_data_volume_firmlink_duplicate(path: &str) -> bool {
     if !path.starts_with(DATA_VOLUME_PREFIX) {
         return false;

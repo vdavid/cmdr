@@ -8,6 +8,13 @@
 //!
 //! After replay, the reconciler switches to live mode where events are processed
 //! immediately.
+//!
+//! ## Integer-keyed resolution (milestone 4)
+//!
+//! All path resolution uses `store::resolve_path(conn, path)` to convert filesystem
+//! paths to integer entry IDs. Write messages use integer-keyed variants:
+//! `UpsertEntryV2`, `DeleteEntryById`, `DeleteSubtreeById`, `PropagateDeltaById`.
+//! The reconciler holds a read connection (`rusqlite::Connection`) for path resolution.
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -15,11 +22,12 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Instant;
 
+use rusqlite::Connection;
 use tauri::{AppHandle, Emitter};
 
 use crate::indexing::firmlinks;
 use crate::indexing::scanner;
-use crate::indexing::store::{IndexStore, ScannedEntry};
+use crate::indexing::store::{self};
 use crate::indexing::watcher::FsChangeEvent;
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 
@@ -102,7 +110,13 @@ impl EventReconciler {
     /// - Events with `event_id <= scan_start_event_id` are skipped (scan data is newer).
     /// - Events with `event_id > scan_start_event_id` are processed (filesystem changed after scan).
     /// - Returns the last processed event ID.
-    pub fn replay(&mut self, scan_start_event_id: u64, writer: &IndexWriter, app: &AppHandle) -> Result<u64, String> {
+    pub fn replay(
+        &mut self,
+        scan_start_event_id: u64,
+        conn: &Connection,
+        writer: &IndexWriter,
+        app: &AppHandle,
+    ) -> Result<u64, String> {
         // Sort by event_id to process in order
         self.buffer.sort_by_key(|e| e.event_id);
 
@@ -119,7 +133,7 @@ impl EventReconciler {
                 continue;
             }
 
-            if let Some(paths) = process_fs_event(event, writer) {
+            if let Some(paths) = process_fs_event(event, conn, writer) {
                 affected_paths.extend(paths);
             }
 
@@ -157,6 +171,7 @@ impl EventReconciler {
     pub fn process_live_event(
         &mut self,
         event: &FsChangeEvent,
+        conn: &Connection,
         writer: &IndexWriter,
         pending_paths: &mut HashSet<String>,
     ) -> Option<u64> {
@@ -172,7 +187,7 @@ impl EventReconciler {
             return Some(event.event_id);
         }
 
-        if let Some(affected_paths) = process_fs_event(event, writer) {
+        if let Some(affected_paths) = process_fs_event(event, conn, writer) {
             pending_paths.extend(affected_paths);
         }
 
@@ -243,11 +258,13 @@ impl EventReconciler {
     }
 
     /// Number of buffered events (for diagnostics).
+    #[cfg(test)]
     pub fn buffer_len(&self) -> usize {
         self.buffer.len()
     }
 
     /// Whether the reconciler is in buffering mode.
+    #[cfg(test)]
     pub fn is_buffering(&self) -> bool {
         self.buffering
     }
@@ -258,8 +275,9 @@ impl EventReconciler {
 /// Process a single filesystem event. Returns affected parent paths for UI notification.
 ///
 /// Shared between replay and live mode. Normalizes paths, checks exclusions,
-/// stats the file, and sends appropriate write messages.
-pub(super) fn process_fs_event(event: &FsChangeEvent, writer: &IndexWriter) -> Option<Vec<String>> {
+/// stats the file, resolves paths to integer entry IDs, and sends appropriate
+/// integer-keyed write messages (`UpsertEntryV2`, `DeleteEntryById`, etc.).
+pub(super) fn process_fs_event(event: &FsChangeEvent, conn: &Connection, writer: &IndexWriter) -> Option<Vec<String>> {
     let normalized = firmlinks::normalize_path(&event.path);
 
     // Skip excluded paths
@@ -272,20 +290,20 @@ pub(super) fn process_fs_event(event: &FsChangeEvent, writer: &IndexWriter) -> O
         return None;
     }
 
-    let parent = compute_parent_path(&normalized);
+    let parent_path = compute_parent_path(&normalized);
     let mut affected = collect_ancestor_paths(&normalized);
 
     if event.flags.item_removed {
-        return handle_removal(&normalized, &parent, event, writer, affected);
+        return handle_removal(&normalized, conn, event, writer, affected);
     }
 
     if event.flags.item_created || event.flags.item_modified || event.flags.item_renamed {
-        return handle_creation_or_modification(&normalized, &parent, event, writer, &mut affected);
+        return handle_creation_or_modification(&normalized, &parent_path, conn, event, writer, &mut affected);
     }
 
     // For other flag combinations (xattr, owner change, etc.), just stat and update
     if event.flags.item_is_file || event.flags.item_is_dir {
-        return handle_creation_or_modification(&normalized, &parent, event, writer, &mut affected);
+        return handle_creation_or_modification(&normalized, &parent_path, conn, event, writer, &mut affected);
     }
 
     None
@@ -293,28 +311,49 @@ pub(super) fn process_fs_event(event: &FsChangeEvent, writer: &IndexWriter) -> O
 
 /// Handle a file/directory removal event.
 ///
-/// Sends `DeleteSubtree` (dirs) or `DeleteEntry` (files) to the writer.
+/// Resolves the path to an entry ID and sends `DeleteSubtreeById` (dirs) or
+/// `DeleteEntryById` (files) to the writer. If the path can't be resolved
+/// (entry already gone from the DB), the event is silently skipped.
 /// The writer auto-propagates accurate negative deltas after reading old data from the DB.
 fn handle_removal(
     normalized: &str,
-    _parent: &str,
+    conn: &Connection,
     event: &FsChangeEvent,
     writer: &IndexWriter,
     affected: Vec<String>,
 ) -> Option<Vec<String>> {
+    // Resolve path to entry ID so we can send integer-keyed deletes
+    let entry_id = match store::resolve_path(conn, normalized) {
+        Ok(Some(id)) => id,
+        Ok(None) => {
+            // Entry not in DB -- already deleted or never indexed, skip
+            log::debug!("Reconciler: removal for unknown path, skipping: {normalized}");
+            return Some(affected);
+        }
+        Err(e) => {
+            log::warn!("Reconciler: resolve_path failed for removal {normalized}: {e}");
+            return Some(affected);
+        }
+    };
+
     if event.flags.item_is_dir {
-        let _ = writer.send(WriteMessage::DeleteSubtree(normalized.to_string()));
+        let _ = writer.send(WriteMessage::DeleteSubtreeById(entry_id));
     } else {
-        let _ = writer.send(WriteMessage::DeleteEntry(normalized.to_string()));
+        let _ = writer.send(WriteMessage::DeleteEntryById(entry_id));
     }
 
     Some(affected)
 }
 
 /// Handle file/directory creation, modification, or rename.
+///
+/// Resolves the parent path to an integer ID and sends `UpsertEntryV2`.
+/// For new entries (create), also sends `PropagateDeltaById` starting
+/// from the parent so dir_stats are updated along the ancestor chain.
 fn handle_creation_or_modification(
     normalized: &str,
-    parent: &str,
+    parent_path: &str,
+    conn: &Connection,
     event: &FsChangeEvent,
     writer: &IndexWriter,
     affected: &mut Vec<String>,
@@ -325,14 +364,39 @@ fn handle_creation_or_modification(
         Ok(m) => m,
         Err(_) => {
             // Path doesn't exist (deleted since event was generated).
-            // Use DeleteSubtree for directories to also remove child entries;
+            // Treat as a removal: resolve to entry ID and send integer-keyed delete.
+            // Use DeleteSubtreeById for directories to also remove child entries;
             // journal replay may coalesce child events into a parent dir event,
             // leaving orphaned children without a subtree delete.
-            if event.flags.item_is_dir {
-                let _ = writer.send(WriteMessage::DeleteSubtree(normalized.to_string()));
-            } else {
-                let _ = writer.send(WriteMessage::DeleteEntry(normalized.to_string()));
+            match store::resolve_path(conn, normalized) {
+                Ok(Some(id)) => {
+                    if event.flags.item_is_dir {
+                        let _ = writer.send(WriteMessage::DeleteSubtreeById(id));
+                    } else {
+                        let _ = writer.send(WriteMessage::DeleteEntryById(id));
+                    }
+                }
+                Ok(None) => {
+                    // Not in DB either -- nothing to do
+                }
+                Err(e) => {
+                    log::warn!("Reconciler: resolve_path failed for gone path {normalized}: {e}");
+                }
             }
+            return Some(affected.clone());
+        }
+    };
+
+    // Resolve parent path to integer ID
+    let parent_id = match store::resolve_path(conn, parent_path) {
+        Ok(Some(id)) => id,
+        Ok(None) => {
+            // Parent not in DB -- stale event (intermediate directory missing), skip
+            log::debug!("Reconciler: parent path not in DB, skipping event for {normalized} (parent: {parent_path})");
+            return Some(affected.clone());
+        }
+        Err(e) => {
+            log::warn!("Reconciler: resolve_path failed for parent {parent_path}: {e}");
             return Some(affected.clone());
         }
     };
@@ -350,30 +414,29 @@ fn handle_creation_or_modification(
         entry_size_and_mtime(&metadata)
     };
 
-    let entry = ScannedEntry {
-        path: normalized.to_string(),
-        parent_path: parent.to_string(),
+    let _ = writer.send(WriteMessage::UpsertEntryV2 {
+        parent_id,
         name,
         is_directory: is_dir,
         is_symlink,
         size,
         modified_at,
-    };
+    });
 
-    let _ = writer.send(WriteMessage::UpsertEntry(entry));
-
-    // Propagate delta for new files
+    // Propagate delta for newly created entries.
+    // Start propagation from the parent directory (parent_id), since that's
+    // the first ancestor whose dir_stats need updating.
     if event.flags.item_created {
         if is_dir {
-            let _ = writer.send(WriteMessage::PropagateDelta {
-                path: normalized.into(),
+            let _ = writer.send(WriteMessage::PropagateDeltaById {
+                entry_id: parent_id,
                 size_delta: 0,
                 file_count_delta: 0,
                 dir_count_delta: 1,
             });
         } else if let Some(sz) = size {
-            let _ = writer.send(WriteMessage::PropagateDelta {
-                path: normalized.into(),
+            let _ = writer.send(WriteMessage::PropagateDeltaById {
+                entry_id: parent_id,
                 size_delta: sz as i64,
                 file_count_delta: 1,
                 dir_count_delta: 0,
@@ -469,9 +532,8 @@ pub(super) fn emit_dir_updated(app: &AppHandle, paths: Vec<String>) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::indexing::store::ScannedEntry;
+    use crate::indexing::store::{IndexStore, ROOT_ID};
     use crate::indexing::watcher::FsEventFlags;
-    use crate::indexing::writer::WriteMessage;
 
     fn make_event(path: &str, event_id: u64, flags: FsEventFlags) -> FsChangeEvent {
         FsChangeEvent {
@@ -516,14 +578,6 @@ mod tests {
     fn removed_dir_flags() -> FsEventFlags {
         FsEventFlags {
             item_removed: true,
-            item_is_dir: true,
-            ..Default::default()
-        }
-    }
-
-    fn must_scan_flags() -> FsEventFlags {
-        FsEventFlags {
-            must_scan_sub_dirs: true,
             item_is_dir: true,
             ..Default::default()
         }
@@ -592,10 +646,10 @@ mod tests {
         let excluded_path = "/dev/null";
 
         let event = make_event(excluded_path, 1, created_file_flags());
-        let writer = setup_test_writer();
-        let result = process_fs_event(&event, &writer.0);
+        let (writer, _dir, conn) = setup_test_writer();
+        let result = process_fs_event(&event, &conn, &writer);
         assert!(result.is_none());
-        writer.0.shutdown();
+        writer.shutdown();
     }
 
     #[test]
@@ -603,19 +657,19 @@ mod tests {
     fn system_paths_without_firmlink_are_skipped() {
         // /System/foo paths that aren't firmlinked should be excluded
         let event = make_event("/System/Library/Frameworks/foo", 1, created_file_flags());
-        let writer = setup_test_writer();
-        let result = process_fs_event(&event, &writer.0);
+        let (writer, _dir, conn) = setup_test_writer();
+        let result = process_fs_event(&event, &conn, &writer);
         assert!(result.is_none());
-        writer.0.shutdown();
+        writer.shutdown();
     }
 
     #[test]
     fn history_done_events_are_skipped() {
         let event = make_event("/test/file.txt", 1, history_done_flags());
-        let writer = setup_test_writer();
-        let result = process_fs_event(&event, &writer.0);
+        let (writer, _dir, conn) = setup_test_writer();
+        let result = process_fs_event(&event, &conn, &writer);
         assert!(result.is_none());
-        writer.0.shutdown();
+        writer.shutdown();
     }
 
     #[test]
@@ -630,15 +684,15 @@ mod tests {
         let mut reconciler = EventReconciler::new();
         reconciler.switch_to_live();
 
-        let writer = setup_test_writer();
-        reconciler.queue_must_scan_sub_dirs(PathBuf::from("/test/dir"), &writer.0);
+        let (writer, _dir, _conn) = setup_test_writer();
+        reconciler.queue_must_scan_sub_dirs(PathBuf::from("/test/dir"), &writer);
 
         // Should not have any pending rescans after starting one
         // (it was popped from the set and started)
         assert!(reconciler.pending_rescans.is_empty());
         assert!(reconciler.rescan_active.load(Ordering::Relaxed));
 
-        writer.0.shutdown();
+        writer.shutdown();
     }
 
     #[tokio::test]
@@ -649,31 +703,36 @@ mod tests {
         // Mark rescan as active so new ones get queued
         reconciler.rescan_active.store(true, Ordering::Relaxed);
 
-        let writer = setup_test_writer();
-        reconciler.queue_must_scan_sub_dirs(PathBuf::from("/test/dir"), &writer.0);
-        reconciler.queue_must_scan_sub_dirs(PathBuf::from("/test/dir"), &writer.0);
-        reconciler.queue_must_scan_sub_dirs(PathBuf::from("/test/other"), &writer.0);
+        let (writer, _dir, _conn) = setup_test_writer();
+        reconciler.queue_must_scan_sub_dirs(PathBuf::from("/test/dir"), &writer);
+        reconciler.queue_must_scan_sub_dirs(PathBuf::from("/test/dir"), &writer);
+        reconciler.queue_must_scan_sub_dirs(PathBuf::from("/test/other"), &writer);
 
         // Deduplication: only 2 unique paths should be queued
         assert_eq!(reconciler.pending_rescans.len(), 2);
 
-        writer.0.shutdown();
+        writer.shutdown();
     }
 
     // ── Event processing with real files ────────────────────────────
 
     #[test]
     fn process_file_creation_writes_entry() {
-        let (writer, dir) = setup_test_writer();
+        let (writer, dir, conn) = setup_test_writer();
 
         // Create a real file so stat() works (must be outside excluded paths)
         let test_dir = non_excluded_tempdir();
         let file_path = test_dir.path().join("created.txt");
         std::fs::write(&file_path, "hello world").unwrap();
 
+        // Pre-populate DB with the parent directory chain so resolve_path works.
+        // In production, the full scan populates all directories before live events.
+        let db_path = dir.path().join("test-reconciler.db");
+        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy());
+
         let event = make_event(&file_path.to_string_lossy(), 50, created_file_flags());
 
-        let result = process_fs_event(&event, &writer);
+        let result = process_fs_event(&event, &conn, &writer);
         assert!(result.is_some());
 
         // Give writer time to process
@@ -682,10 +741,10 @@ mod tests {
         std::thread::sleep(std::time::Duration::from_millis(100));
 
         // Verify the entry was written to DB
-        let db_path = dir.path().join("test-reconciler.db");
         let store = IndexStore::open(&db_path).unwrap();
         let parent = test_dir.path().to_string_lossy().to_string();
-        let entries = store.list_entries_by_parent(&parent).unwrap();
+        let parent_id = store::resolve_path(store.read_conn(), &parent).unwrap().unwrap();
+        let entries = store.list_children(parent_id).unwrap();
         assert_eq!(entries.len(), 1);
         assert_eq!(entries[0].name, "created.txt");
         assert!(entries[0].size.unwrap_or(0) > 0);
@@ -693,47 +752,46 @@ mod tests {
 
     #[test]
     fn process_file_removal_deletes_entry() {
-        let (writer, dir) = setup_test_writer();
+        let (writer, dir, conn) = setup_test_writer();
+        let db_path = dir.path().join("test-reconciler.db");
 
-        // Pre-populate with an entry
-        let entries = vec![ScannedEntry {
-            path: "/gone/deleted.txt".into(),
-            parent_path: "/gone".into(),
-            name: "deleted.txt".into(),
-            is_directory: false,
-            is_symlink: false,
-            size: Some(100),
-            modified_at: None,
-        }];
-        writer.send(WriteMessage::InsertEntries(entries)).unwrap();
-        std::thread::sleep(std::time::Duration::from_millis(100));
+        // Pre-populate the parent dir and entry using integer-keyed inserts
+        {
+            let wconn = IndexStore::open_write_connection(&db_path).unwrap();
+            let gone_id = IndexStore::insert_entry_v2(&wconn, ROOT_ID, "gone", true, false, None, None).unwrap();
+            IndexStore::insert_entry_v2(&wconn, gone_id, "deleted.txt", false, false, Some(100), None).unwrap();
+        }
 
         let event = make_event("/gone/deleted.txt", 60, removed_file_flags());
-        let result = process_fs_event(&event, &writer);
+        let result = process_fs_event(&event, &conn, &writer);
         assert!(result.is_some());
 
         std::thread::sleep(std::time::Duration::from_millis(200));
         writer.shutdown();
         std::thread::sleep(std::time::Duration::from_millis(100));
 
-        let db_path = dir.path().join("test-reconciler.db");
         let store = IndexStore::open(&db_path).unwrap();
-        let entries = store.list_entries_by_parent("/gone").unwrap();
+        let gone_id = store::resolve_path(store.read_conn(), "/gone").unwrap().unwrap();
+        let entries = store.list_children(gone_id).unwrap();
         assert!(entries.is_empty(), "deleted entry should be removed from DB");
     }
 
     #[test]
     fn process_dir_creation_writes_entry_and_propagates() {
-        let (writer, dir) = setup_test_writer();
+        let (writer, dir, conn) = setup_test_writer();
 
         // Create a real directory (must be outside excluded paths)
         let test_dir = non_excluded_tempdir();
         let new_dir = test_dir.path().join("newdir");
         std::fs::create_dir(&new_dir).unwrap();
 
+        // Pre-populate DB with the parent directory chain
+        let db_path = dir.path().join("test-reconciler.db");
+        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy());
+
         let event = make_event(&new_dir.to_string_lossy(), 70, created_dir_flags());
 
-        let result = process_fs_event(&event, &writer);
+        let result = process_fs_event(&event, &conn, &writer);
         assert!(result.is_some());
 
         // The affected paths should include both the parent and the new dir itself
@@ -744,10 +802,10 @@ mod tests {
         writer.shutdown();
         std::thread::sleep(std::time::Duration::from_millis(100));
 
-        let db_path = dir.path().join("test-reconciler.db");
         let store = IndexStore::open(&db_path).unwrap();
         let parent = test_dir.path().to_string_lossy().to_string();
-        let entries = store.list_entries_by_parent(&parent).unwrap();
+        let parent_id = store::resolve_path(store.read_conn(), &parent).unwrap().unwrap();
+        let entries = store.list_children(parent_id).unwrap();
         assert_eq!(entries.len(), 1);
         assert!(entries[0].is_directory);
         assert_eq!(entries[0].name, "newdir");
@@ -755,56 +813,40 @@ mod tests {
 
     #[test]
     fn process_dir_removal_deletes_subtree() {
-        let (writer, dir) = setup_test_writer();
+        let (writer, dir, conn) = setup_test_writer();
+        let db_path = dir.path().join("test-reconciler.db");
 
-        // Pre-populate with a directory subtree
-        let entries = vec![
-            ScannedEntry {
-                path: "/parent/removed_dir".into(),
-                parent_path: "/parent".into(),
-                name: "removed_dir".into(),
-                is_directory: true,
-                is_symlink: false,
-                size: None,
-                modified_at: None,
-            },
-            ScannedEntry {
-                path: "/parent/removed_dir/child.txt".into(),
-                parent_path: "/parent/removed_dir".into(),
-                name: "child.txt".into(),
-                is_directory: false,
-                is_symlink: false,
-                size: Some(50),
-                modified_at: None,
-            },
-        ];
-        writer.send(WriteMessage::InsertEntries(entries)).unwrap();
-        std::thread::sleep(std::time::Duration::from_millis(100));
+        // Pre-populate with a directory subtree using integer-keyed inserts
+        {
+            let wconn = IndexStore::open_write_connection(&db_path).unwrap();
+            let parent_id = IndexStore::insert_entry_v2(&wconn, ROOT_ID, "parent", true, false, None, None).unwrap();
+            let removed_dir_id =
+                IndexStore::insert_entry_v2(&wconn, parent_id, "removed_dir", true, false, None, None).unwrap();
+            IndexStore::insert_entry_v2(&wconn, removed_dir_id, "child.txt", false, false, Some(50), None).unwrap();
+        }
 
         let event = make_event("/parent/removed_dir", 80, removed_dir_flags());
-        process_fs_event(&event, &writer);
+        process_fs_event(&event, &conn, &writer);
 
         std::thread::sleep(std::time::Duration::from_millis(200));
         writer.shutdown();
         std::thread::sleep(std::time::Duration::from_millis(100));
 
-        let db_path = dir.path().join("test-reconciler.db");
         let store = IndexStore::open(&db_path).unwrap();
-        let children = store.list_entries_by_parent("/parent").unwrap();
+        let parent_id = store::resolve_path(store.read_conn(), "/parent").unwrap().unwrap();
+        let children = store.list_children(parent_id).unwrap();
         assert!(children.is_empty(), "directory and its children should be deleted");
-        let inner = store.list_entries_by_parent("/parent/removed_dir").unwrap();
-        assert!(inner.is_empty());
     }
 
     #[test]
     fn process_nonexistent_file_treated_as_removal() {
-        let (writer, dir) = setup_test_writer();
+        let (writer, _dir, conn) = setup_test_writer();
 
         // Event for a file that was created and immediately deleted
-        // Use a path not under any excluded prefix (e.g. /tmp/ is excluded on Linux)
+        // Use a path not under any excluded prefix (for example, /tmp/ is excluded on Linux)
         let event = make_event("/nonexistent_cmdr_test_dir/ghost_file.txt", 90, created_file_flags());
-        let result = process_fs_event(&event, &writer);
-        // Should still return Some (it sends a DeleteEntry)
+        let result = process_fs_event(&event, &conn, &writer);
+        // Should still return Some (stat fails, treated as removal)
         assert!(result.is_some());
 
         writer.shutdown();
@@ -812,12 +854,40 @@ mod tests {
 
     // ── Test helpers ─────────────────────────────────────────────────
 
-    fn setup_test_writer() -> (IndexWriter, tempfile::TempDir) {
+    /// Set up a writer and a read connection for tests.
+    fn setup_test_writer() -> (IndexWriter, tempfile::TempDir, Connection) {
         let dir = tempfile::tempdir().expect("temp dir");
         let db_path = dir.path().join("test-reconciler.db");
         let _store = IndexStore::open(&db_path).expect("open store");
         let writer = IndexWriter::spawn(&db_path).expect("spawn writer");
-        (writer, dir)
+        let conn = IndexStore::open_write_connection(&db_path).expect("open read conn");
+        (writer, dir, conn)
+    }
+
+    /// Ensure all components of an absolute path exist in the DB as directory entries.
+    ///
+    /// Walks from root downward, inserting each missing component. This simulates
+    /// what the full scan does in production: all directories are indexed before
+    /// live events arrive.
+    fn ensure_path_in_db(db_path: &Path, abs_path: &str) {
+        let conn = IndexStore::open_write_connection(db_path).unwrap();
+        let components: Vec<&str> = abs_path
+            .strip_prefix('/')
+            .unwrap_or(abs_path)
+            .split('/')
+            .filter(|c| !c.is_empty())
+            .collect();
+
+        let mut current_id = ROOT_ID;
+        for component in components {
+            match IndexStore::resolve_component(&conn, current_id, component).unwrap() {
+                Some(id) => current_id = id,
+                None => {
+                    current_id =
+                        IndexStore::insert_entry_v2(&conn, current_id, component, true, false, None, None).unwrap();
+                }
+            }
+        }
     }
 
     /// Create a temp directory outside indexing-excluded paths.

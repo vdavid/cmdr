@@ -8,14 +8,15 @@ Full design: `docs/specs/drive-indexing/plan.md`
 
 ### Module structure
 
-- **mod.rs** -- Public API: `init()`, `start_indexing()`, `stop_indexing()`, `clear_index()`, `enrich_entries_with_index()`. `IndexManager` coordinates all subsystems. Global read-only store for enrichment.
-- **store.rs** -- SQLite schema (entries, dir_stats, meta), read queries (`get_dir_stats_batch`, `get_index_status`), DB open/migrate. Schema version check: mismatch triggers drop+rebuild.
-- **writer.rs** -- Single writer thread, owns the write connection, processes `WriteMessage` channel (unbounded mpsc). Priority: `UpdateDirStats` before `InsertEntries`. `Flush` variant + async `flush()` method let callers wait for all prior writes to commit.
-- **scanner.rs** -- jwalk-based parallel directory walker. `scan_volume()` for full scan, `scan_subtree()` for micro-scans. Platform-specific exclusion filters (macOS system paths, Linux virtual filesystems). Physical sizes (`st_blocks * 512`).
+- **mod.rs** -- Public API: `init()`, `start_indexing()`, `stop_indexing()`, `clear_index()`, `enrich_entries_with_index()`. `IndexManager` coordinates all subsystems, owns a `PathResolver` (LRU-cached path→ID mapping) for IPC commands. Global read-only store for enrichment. Enrichment uses an integer-keyed fast path: resolve parent dir once → batch-fetch child dir stats by ID → match by name. Falls back to individual path resolution for edge cases.
+- **store.rs** -- SQLite schema v2 (integer-keyed entries, dir_stats by entry_id, meta), platform_case collation, read queries, DB open/migrate. Schema version check: mismatch triggers drop+rebuild. Both path-keyed (backward compat) and integer-keyed APIs.
+- **path_resolver.rs** -- `PathResolver`: resolves filesystem paths to integer entry IDs via component-by-component walk with full-path LRU cache (50K entries). Case-aware `CacheKey` on macOS (NFD + case fold). Prefix-based invalidation for deletes/renames.
+- **writer.rs** -- Single writer thread, owns the write connection, processes `WriteMessage` channel (unbounded mpsc). Priority: `UpdateDirStats` before `InsertEntries`. `Flush` variant + async `flush()` method let callers wait for all prior writes to commit. Has both integer-keyed variants (`InsertEntriesV2`, `UpsertEntryV2`, `DeleteEntryById`, `DeleteSubtreeById`, `PropagateDeltaById`) and path-keyed backward-compat variants. The integer-keyed delete/subtree-delete handlers auto-propagate negative deltas via the `parent_id` chain (same pattern as the path-keyed variants). `propagate_delta_by_id` walks the parent chain using `get_parent_id` lookups.
+- **scanner.rs** -- jwalk-based parallel directory walker. `scan_volume()` for full scan, `scan_subtree()` for micro-scans. Uses `ScanContext` (from store.rs) to assign integer IDs and parent IDs during the walk: maintains a `HashMap<PathBuf, i64>` mapping directory paths to assigned IDs. The scan root is mapped to `ROOT_ID` (1). Sends `InsertEntriesV2(Vec<EntryRow>)` batches to the writer. Platform-specific exclusion filters (macOS system paths, Linux virtual filesystems). Physical sizes (`st_blocks * 512`).
 - **micro_scan.rs** -- `MicroScanManager`: bounded task pool (default 3 concurrent), priority queue (`UserSelected` > `CurrentDir`), deduplication, cancellation. Skips after full scan completes.
 - **aggregator.rs** -- Dir stats computation. Bottom-up after full scan (O(N) single pass), per-subtree after micro-scan, incremental delta propagation up ancestor chain for watcher events.
 - **watcher.rs** -- Drive-level filesystem watcher. macOS: FSEvents via `cmdr-fsevent-stream` with event IDs and `sinceWhen` replay. Linux: `notify` crate (inotify backend) with recursive watching and synthetic event counter. Other platforms: stub. `supports_event_replay()` lets callers branch on whether journal replay is available.
-- **reconciler.rs** -- Buffers FSEvents during scan, replays after scan completes using event IDs to skip stale events. Processes live events for file creates/removes/modifies. Key functions (`process_fs_event`, `emit_dir_updated`) are `pub(super)` so `mod.rs` can call them directly during cold-start replay.
+- **reconciler.rs** -- Buffers FSEvents during scan, replays after scan completes using event IDs to skip stale events. Processes live events for file creates/removes/modifies using integer-keyed write messages (`UpsertEntryV2`, `DeleteEntryById`, `DeleteSubtreeById`, `PropagateDeltaById`). Resolves filesystem paths to entry IDs via `store::resolve_path()` using a read connection passed by callers. Key functions (`process_fs_event`, `emit_dir_updated`) are `pub(super)` so `mod.rs` can call them directly during cold-start replay.
 - **firmlinks.rs** -- Parses `/usr/share/firmlinks`, builds prefix map, normalizes paths. Converts `/System/Volumes/Data/Users/foo` to `/Users/foo`.
 - **verifier.rs** -- Placeholder for per-navigation background readdir diff (future milestone).
 
@@ -36,16 +37,22 @@ App startup
   |
 Full scan:
   |-- Start DriveWatcher (sinceWhen=0, buffers events)
-  |-- jwalk parallel walk -> batched InsertEntries -> writer thread -> SQLite
+  |-- ScanContext initialized: root -> ROOT_ID, next_id from DB
+  |-- jwalk parallel walk -> ScanContext assigns IDs -> batched InsertEntriesV2 -> writer -> SQLite
   |-- On complete: replay buffered events (reconciler), compute all aggregates, switch to live mode
   |
 Live mode:
-  |-- macOS: FSEvents -> reconciler -> UpsertEntry/DeleteEntry/DeleteSubtree -> writer -> SQLite
+  |-- macOS: FSEvents -> reconciler (resolve_path -> entry IDs) -> UpsertEntryV2/DeleteEntryById/DeleteSubtreeById -> writer -> SQLite
   |-- Linux: inotify (via notify crate) -> same pipeline
+  |-- Reconciler and event loops hold a read connection for integer-keyed path resolution
   |-- Affected paths batched in HashSet, flushed to frontend every 300 ms via index-dir-updated event
   |
 Enrichment (every get_file_range call):
-  |-- enrich_entries_with_index() -> batch SELECT from dir_stats -> populate FileEntry fields
+  |-- enrich_entries_with_index() -> resolve parent dir → id (one tree walk)
+  |-- list_child_dir_ids_and_names(parent_id) → (id, name) pairs
+  |-- get_dir_stats_batch_by_ids(child_ids) → batch stats
+  |-- Match by normalized name → populate FileEntry.recursive_size/file_count/dir_count
+  |-- Fallback: individual path resolution if fast path fails (mixed-parent edge case)
 ```
 
 ### Single-writer architecture
@@ -54,11 +61,18 @@ All writes go through a dedicated `std::thread` via an unbounded mpsc channel. T
 
 Reads happen on separate WAL connections (any thread). The global read-only store (`GLOBAL_INDEX_STORE`) provides enrichment without passing `AppHandle` through the listing pipeline.
 
-### SQLite schema
+### SQLite schema (v2: integer-keyed)
 
 One DB per volume: `~/Library/Application Support/com.veszelovszki.cmdr/index-{volume_id}.db`
 
-Three tables: `entries` (path, parent_path, name, is_directory, is_symlink, size, modified_at), `dir_stats` (recursive_size, recursive_file_count, recursive_dir_count), `meta` (key-value for schema_version, last_event_id, scan metadata). All `WITHOUT ROWID`, WAL mode, 64 MB page cache.
+Three tables:
+- `entries` (id INTEGER PK, parent_id, name COLLATE platform_case, is_directory, is_symlink, size, modified_at) with unique index `idx_parent_name(parent_id, name)`. Root sentinel: id=1, parent_id=0, name="".
+- `dir_stats` (entry_id INTEGER PK, recursive_size, recursive_file_count, recursive_dir_count)
+- `meta` (key TEXT PK, value TEXT) WITHOUT ROWID
+
+WAL mode, 64 MB page cache. Custom `platform_case` collation registered on every connection: case-insensitive + NFD normalization on macOS, binary on Linux. **Opening the DB with the sqlite3 CLI will fail** on queries touching the name column (the collation isn't registered).
+
+**Migration in progress**: Schema bumped from v1 to v2. Milestones 1-5 complete. Scanner, writer, aggregator, reconciler, enrichment, and IPC commands all fully migrated to integer keys. `IndexManager` owns a `PathResolver` for LRU-cached path→ID resolution in IPC commands (`get_dir_stats`, `get_dir_stats_batch`). Enrichment uses integer-keyed fast path: resolve parent once → batch child dir stats by ID. Reconciler sends integer-keyed messages exclusively. Old path-keyed `WriteMessage` variants and backward-compat shims (`ScannedEntry`, `DirStats`) still exist for post-replay verification — cleanup in milestone 6. All 848 tests pass.
 
 ## How to test
 
@@ -68,18 +82,24 @@ cd apps/desktop/src-tauri && cargo nextest run indexing
 ```
 
 Key test files are alongside each module (test functions within `#[cfg(test)]` blocks). Tests use temp dirs and real SQLite to verify:
-- Store: schema creation, reads, writes, batch operations, schema mismatch handling
+- Store: schema creation, reads, writes, batch operations, schema mismatch handling, `list_child_dir_ids_and_names`
 - Aggregator: bottom-up computation, subtree-only computation, delta propagation
 - Scanner: full scan with temp dir trees, exclusion filtering, cancellation
 - Firmlinks: path normalization, edge cases
 - Micro-scan manager: priority ordering, deduplication, cancellation
 - Writer: message processing, priority handling
+- Path resolver: cache hit/miss, prefix invalidation, case-insensitive lookups (macOS)
+- mod.rs: end-to-end integration (scan → aggregate → enrich → watcher update → re-enrich), enrichment fast path, fallback, root-level enrichment, PathResolver for dir stats
 
 ## Key decisions
 
 **Single-writer thread, not connection pooling**: SQLite write concurrency is limited by its single-writer design. Instead of fighting it with `BUSY_TIMEOUT` and retries, one dedicated thread owns the write connection. Eliminates contention entirely.
 
 **Index enrichment at read time, not cache time**: `recursive_size` fields are populated on every `get_file_range` call via a batch SQLite read from `dir_stats`. This avoids stale cache entries when micro-scans complete. The cost is microseconds per page on a WAL connection.
+
+**Enrichment uses integer-keyed batch lookup**: Instead of N individual `resolve_path()` calls (one per directory in the listing), `enrich_entries_with_index` resolves the parent directory once, queries `list_child_dir_ids_and_names(parent_id)` for all child dir IDs, then `get_dir_stats_batch_by_ids()`. Two indexed queries total instead of N. Falls back to individual path resolution for edge cases (for example, mixed-parent entries).
+
+**IPC boundary stays path-based**: Frontend sends filesystem paths, backend resolves path→ID internally via `PathResolver`. No frontend changes needed. `IndexManager.get_dir_stats()` and `get_dir_stats_batch()` use the `PathResolver`'s LRU cache for efficient resolution.
 
 **Physical sizes (`st_blocks * 512`)**: More meaningful for disk usage than logical size. May overcount ~10-20% for APFS clones (shared blocks). Volume usage bar uses `statfs()` for true totals.
 
@@ -97,7 +117,7 @@ Key test files are alongside each module (test functions within `#[cfg(test)]` b
 
 **Live events are batched with a 300 ms window**: Both `run_live_event_loop` and the Phase 3 live loop in `run_replay_event_loop` use `tokio::select!` with a 300 ms `tokio::time::interval` to collect affected paths in a `HashSet` and emit a single `index-dir-updated` per flush. This prevents UI flicker from rapid per-event notifications (FSEvents can fire hundreds of events per second during bulk operations). `process_live_event` collects paths into the caller's `HashSet` instead of emitting directly.
 
-**Writer-side delete-with-propagation**: `DeleteEntry` and `DeleteSubtree` handlers in the writer automatically read old data before deleting and propagate accurate negative deltas. This means every deletion -- replay, live, verification -- gets correct dir_stats updates without callers needing to send separate `PropagateDelta` messages. `delete_subtree` and `propagate_delta` have no internal transactions, so they're safe inside the replay's `BEGIN IMMEDIATE` transaction.
+**Writer-side delete-with-propagation**: Both path-keyed (`DeleteEntry`/`DeleteSubtree`) and integer-keyed (`DeleteEntryById`/`DeleteSubtreeById`) handlers in the writer automatically read old data before deleting and propagate accurate negative deltas. The integer-keyed variants use `propagate_delta_by_id` which walks the `parent_id` chain via `get_parent_id` lookups. This means every deletion -- replay, live, verification -- gets correct dir_stats updates without callers needing to send separate `PropagateDelta` messages.
 
 **Post-replay verification is bidirectional**: `verify_affected_dirs` checks both directions: (1) stale entries in DB but not on disk (sends `DeleteEntry`/`DeleteSubtree`), and (2) missing entries on disk but not in DB (sends `UpsertEntry` + `PropagateDelta` for files, collects directory paths for `scan_subtree`). New directories are scanned and their subtree totals propagated up the ancestor chain. Uses a two-phase pattern: Phase 1 holds the `GLOBAL_INDEX_STORE` lock for bulk SQLite reads into a `HashMap` (can take seconds with hundreds of affected dirs), Phase 2 does all disk I/O without any lock. `enrich_entries_with_index` uses `try_lock` to avoid blocking on Phase 1.
 
@@ -110,3 +130,13 @@ Key test files are alongside each module (test functions within `#[cfg(test)]` b
 **Global read-only store uses `std::sync::Mutex`**: Not `RwLock`, because `rusqlite::Connection` is `Send` but not `Sync`. `enrich_entries_with_index` uses `try_lock` to avoid blocking the listing pipeline when `verify_affected_dirs` Phase 1 holds the lock during startup (hundreds of serial SQLite queries for affected dirs). If the lock is busy, enrichment is skipped and retried on subsequent `get_file_range` calls.
 
 **Progress events use `tauri::async_runtime::spawn`**: Not `tokio::spawn`, because indexing can start from Tauri's synchronous `setup()` hook where no Tokio runtime context exists.
+
+**`platform_case` collation must be registered on every connection**: The custom collation is not persisted in the DB file. Both `IndexStore::open()` and `open_write_connection()` register it. Forgetting to register before querying causes `no such collation sequence: platform_case` errors. On macOS it uses NFD normalization + case folding (matching APFS). On Linux it's binary (zero overhead). The `PathResolver`'s `CacheKey` uses the same normalization via `store::normalize_for_comparison()`.
+
+**Backward-compat shims resolve paths via component walk**: Old path-keyed functions (`get_entry`, `delete_entry`, `upsert_entry`, etc.) internally call `resolve_path()` which walks the tree component-by-component. This means parent directories MUST exist before inserting children. The aggregator's path-keyed `propagate_delta` and `compute_subtree_aggregates` also resolve paths internally. The reconciler no longer uses these shims -- it sends integer-keyed messages directly (milestone 4). Enrichment no longer uses the path-keyed `get_dir_stats_batch` -- it uses integer-keyed batch lookups via `list_child_dir_ids_and_names` + `get_dir_stats_batch_by_ids` (milestone 5). Remaining users of path-keyed shims: `verify_affected_dirs` (post-replay verification). Cleanup in milestone 6.
+
+**Reconciler holds a read connection**: `process_fs_event`, `replay`, and `process_live_event` all require a `&Connection` parameter for path-to-ID resolution. Callers (event loops in mod.rs) open a read connection via `IndexStore::open_write_connection(writer.db_path())` at loop start and pass it through. This is a WAL-mode connection so it doesn't block the writer. The `IndexManager` also owns a `PathResolver` with LRU cache, used by IPC commands (`get_dir_stats`, `get_dir_stats_batch`) for cached resolution. The event loops don't use the `PathResolver` yet because they run in separate async tasks -- could be migrated in a future optimization pass.
+
+**ScanContext maps scan root to ROOT_ID**: Both `scan_volume` and `scan_subtree` create a `ScanContext` that maps the scan root directory to `ROOT_ID` (1). This means all top-level entries under any scan root get `parent_id = ROOT_ID` in the DB. For subtree scans, this means the scan root itself isn't stored as an entry — only its children are. The `ScanContext` opens a temporary read connection to the DB to fetch `next_id` via `get_next_id()`.
+
+**IndexWriter exposes `db_path()`**: The scanner needs the DB path to open a temporary connection for `ScanContext::new()`. This path is stored on the `IndexWriter` handle and accessible via `db_path()`. The temporary connection is short-lived (only used to read `MAX(id)`).

@@ -4,11 +4,9 @@
 //! tracking every file and directory with recursive size aggregates.
 //! See `docs/specs/drive-indexing/plan.md` for the full design.
 
-// Infrastructure being built incrementally; callers come in later milestones
-#![allow(unused, reason = "Skeleton module; public API consumers arrive in later milestones")]
-
 pub mod aggregator;
 pub mod firmlinks;
+pub mod path_resolver;
 pub mod store;
 pub mod writer;
 
@@ -20,18 +18,17 @@ pub(crate) mod watcher;
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::sync::LazyLock;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{LazyLock, RwLock};
 use std::time::Duration;
 
-use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Emitter, Manager};
-use tokio::sync::Mutex;
-
 use micro_scan::{MicroScanManager, ScanPriority};
+use path_resolver::PathResolver;
 use reconciler::EventReconciler;
 use scanner::ScanConfig;
+use serde::{Deserialize, Serialize};
 use store::{DirStats, IndexStatus, IndexStore};
+use tauri::{AppHandle, Emitter, Manager};
 use watcher::DriveWatcher;
 use writer::{IndexWriter, WriteMessage};
 
@@ -71,6 +68,11 @@ fn clear_global_index_store() {
 /// indexing is not initialized. Uses `try_lock` to avoid blocking the
 /// listing pipeline when background verification holds the lock at startup.
 /// Skipped enrichment is retried on subsequent fetches.
+///
+/// **Integer-keyed optimization**: Instead of resolving each directory path
+/// individually, resolves the common parent directory once, gets all child
+/// dir `(id, name)` pairs via `idx_parent_name`, then batch-fetches their
+/// `dir_stats` by integer IDs. Two indexed queries total.
 pub fn enrich_entries_with_index(entries: &mut [FileEntry]) {
     let guard = match GLOBAL_INDEX_STORE.try_lock() {
         Ok(g) => g,
@@ -84,38 +86,120 @@ pub fn enrich_entries_with_index(entries: &mut [FileEntry]) {
         None => return,
     };
 
-    // Collect directory paths that need enrichment
-    let dir_paths: Vec<String> = entries
-        .iter()
-        .filter(|e| e.is_directory && !e.is_symlink)
-        .map(|e| firmlinks::normalize_path(&e.path))
-        .collect();
-
-    if dir_paths.is_empty() {
+    // Find directory entries that need enrichment
+    let has_dirs = entries.iter().any(|e| e.is_directory && !e.is_symlink);
+    if !has_dirs {
         return;
     }
 
-    let refs: Vec<&str> = dir_paths.iter().map(String::as_str).collect();
-    let stats = match store.get_dir_stats_batch(&refs) {
+    // Determine the common parent directory from the first directory entry.
+    // All entries in a listing share the same parent (they're siblings).
+    let parent_path = match entries.iter().find(|e| e.is_directory && !e.is_symlink) {
+        Some(e) => {
+            let normalized = firmlinks::normalize_path(&e.path);
+            // Parent = path without the last component
+            match normalized.rfind('/') {
+                Some(0) => "/".to_string(),
+                Some(pos) => normalized[..pos].to_string(),
+                None => return, // Malformed path, skip
+            }
+        }
+        None => return,
+    };
+
+    // Use the integer-keyed fast path: resolve parent once, batch-fetch child stats
+    if let Err(e) = enrich_via_parent_id(entries, store, &parent_path) {
+        log::debug!("Index enrichment (integer-keyed) failed: {e}, trying path-based fallback");
+        // Fallback: resolve each path individually (handles mixed-parent edge cases)
+        enrich_via_individual_paths(entries, store);
+    }
+}
+
+/// Fast path: resolve parent dir → id, get child dir IDs, batch-fetch stats.
+fn enrich_via_parent_id(entries: &mut [FileEntry], store: &IndexStore, parent_path: &str) -> Result<(), String> {
+    let conn = store.read_conn();
+
+    // Resolve parent directory path → entry ID (one tree walk, almost always cached)
+    let parent_id = match store::resolve_path(conn, parent_path).map_err(|e| format!("{e}"))? {
+        Some(id) => id,
+        None => return Err(format!("Parent path not found in index: {parent_path}")),
+    };
+
+    // Get all child directory (id, name) pairs
+    let child_dirs = IndexStore::list_child_dir_ids_and_names(conn, parent_id).map_err(|e| format!("{e}"))?;
+
+    if child_dirs.is_empty() {
+        return Ok(());
+    }
+
+    // Batch-fetch dir_stats by integer IDs
+    let child_ids: Vec<i64> = child_dirs.iter().map(|(id, _)| *id).collect();
+    let stats_batch = IndexStore::get_dir_stats_batch_by_ids(conn, &child_ids).map_err(|e| format!("{e}"))?;
+
+    // Build name → DirStatsById map (using normalized names for matching)
+    let mut name_to_stats: std::collections::HashMap<String, store::DirStatsById> =
+        std::collections::HashMap::with_capacity(child_dirs.len());
+    for ((_, name), stats_opt) in child_dirs.into_iter().zip(stats_batch) {
+        if let Some(stats) = stats_opt {
+            name_to_stats.insert(store::normalize_for_comparison(&name), stats);
+        }
+    }
+
+    // Apply stats to entries by matching normalized basenames
+    for entry in entries.iter_mut().filter(|e| e.is_directory && !e.is_symlink) {
+        let basename = match entry.path.rfind('/') {
+            Some(pos) => &entry.path[pos + 1..],
+            None => &entry.path,
+        };
+        let normalized_name = store::normalize_for_comparison(basename);
+        if let Some(stats) = name_to_stats.get(&normalized_name) {
+            entry.recursive_size = Some(stats.recursive_size);
+            entry.recursive_file_count = Some(stats.recursive_file_count);
+            entry.recursive_dir_count = Some(stats.recursive_dir_count);
+        }
+    }
+    Ok(())
+}
+
+/// Fallback: resolve each directory path individually (handles mixed-parent entries).
+fn enrich_via_individual_paths(entries: &mut [FileEntry], store: &IndexStore) {
+    let conn = store.read_conn();
+
+    // Resolve each dir path → entry_id, then batch-fetch stats
+    let mut id_to_path: Vec<(i64, String)> = Vec::new();
+    for entry in entries.iter().filter(|e| e.is_directory && !e.is_symlink) {
+        let normalized = firmlinks::normalize_path(&entry.path);
+        if let Ok(Some(id)) = store::resolve_path(conn, &normalized) {
+            id_to_path.push((id, normalized));
+        }
+    }
+
+    if id_to_path.is_empty() {
+        return;
+    }
+
+    let ids: Vec<i64> = id_to_path.iter().map(|(id, _)| *id).collect();
+    let stats_batch = match IndexStore::get_dir_stats_batch_by_ids(conn, &ids) {
         Ok(s) => s,
         Err(e) => {
-            log::debug!("Index enrichment failed: {e}");
+            log::debug!("Index enrichment fallback failed: {e}");
             return;
         }
     };
 
-    // Map normalized path -> DirStats for lookup
-    let mut stats_map = std::collections::HashMap::new();
-    for (path, stat) in dir_paths.iter().zip(stats.into_iter()) {
-        if let Some(s) = stat {
-            stats_map.insert(path.as_str(), s);
+    // Map normalized path -> DirStatsById for lookup
+    let mut stats_map: std::collections::HashMap<String, store::DirStatsById> =
+        std::collections::HashMap::with_capacity(id_to_path.len());
+    for ((_, path), stats_opt) in id_to_path.into_iter().zip(stats_batch) {
+        if let Some(s) = stats_opt {
+            stats_map.insert(path, s);
         }
     }
 
     // Apply to entries
     for entry in entries.iter_mut().filter(|e| e.is_directory && !e.is_symlink) {
         let normalized = firmlinks::normalize_path(&entry.path);
-        if let Some(stats) = stats_map.get(normalized.as_str()) {
+        if let Some(stats) = stats_map.get(&normalized) {
             entry.recursive_size = Some(stats.recursive_size);
             entry.recursive_file_count = Some(stats.recursive_file_count);
             entry.recursive_dir_count = Some(stats.recursive_dir_count);
@@ -188,8 +272,9 @@ pub struct IndexManagerState(pub std::sync::Mutex<Option<IndexManager>>);
 
 /// Central coordinator for the drive indexing system.
 ///
-/// Owns the SQLite store (reads), the writer thread (writes), the scanner handle,
-/// and the micro-scan manager. Exposed to Tauri commands via `IndexManagerState`.
+/// Owns the SQLite store (reads), the writer thread (writes), the path resolver
+/// (LRU-cached path→ID mapping), the scanner handle, and the micro-scan manager.
+/// Exposed to Tauri commands via `IndexManagerState`.
 pub struct IndexManager {
     /// Volume ID (for example, "root" for /)
     volume_id: String,
@@ -199,6 +284,8 @@ pub struct IndexManager {
     store: IndexStore,
     /// Writer handle for sending writes
     writer: IndexWriter,
+    /// Path resolver with LRU cache for path → entry ID resolution
+    path_resolver: PathResolver,
     /// Micro-scan manager
     micro_scans: MicroScanManager,
     /// Handle to the active full scan (if running)
@@ -235,6 +322,8 @@ impl IndexManager {
 
         let micro_scans = MicroScanManager::new(writer.clone(), 3);
 
+        let path_resolver = PathResolver::new();
+
         // Open a separate read connection for global enrichment (used by get_file_range)
         match IndexStore::open(&db_path) {
             Ok(global_store) => set_global_index_store(global_store),
@@ -251,6 +340,7 @@ impl IndexManager {
             volume_root,
             store,
             writer,
+            path_resolver,
             micro_scans,
             scan_handle: None,
             drive_watcher: None,
@@ -525,8 +615,25 @@ impl IndexManager {
                     }
                     log::debug!("Reconciler: buffered {buffered_count} events during scan");
 
+                    // Flush the writer to ensure all scan batches are committed
+                    // before opening the read connection. Without this, the WAL
+                    // snapshot may not include the latest InsertEntriesV2 batches,
+                    // causing resolve_path to fail for recently-scanned parents.
+                    if let Err(e) = writer.flush().await {
+                        log::warn!("Reconciler: writer flush before replay failed: {e}");
+                    }
+
+                    // Open a read connection for path resolution during replay
+                    let replay_conn = match IndexStore::open_write_connection(&writer.db_path()) {
+                        Ok(c) => c,
+                        Err(e) => {
+                            log::warn!("Reconciler: failed to open read connection for replay: {e}");
+                            return;
+                        }
+                    };
+
                     // Replay events that arrived after the scan read their paths
-                    match reconciler.replay(scan_start_event_id, &writer, &app) {
+                    match reconciler.replay(scan_start_event_id, &replay_conn, &writer, &app) {
                         Ok(last_id) => {
                             log::debug!("Reconciler: replay complete (last_event_id={last_id})");
                         }
@@ -645,20 +752,74 @@ impl IndexManager {
     }
 
     /// Look up recursive stats for a single directory.
-    pub fn get_dir_stats(&self, path: &str) -> Result<Option<DirStats>, String> {
+    ///
+    /// Resolves the path to an entry ID using the `PathResolver` (LRU-cached),
+    /// then fetches `dir_stats` by integer ID.
+    pub fn get_dir_stats(&mut self, path: &str) -> Result<Option<DirStats>, String> {
         let normalized = firmlinks::normalize_path(path);
-        self.store
-            .get_dir_stats(&normalized)
-            .map_err(|e| format!("Failed to get dir stats: {e}"))
+        let conn = self.store.read_conn();
+
+        let entry_id = match self
+            .path_resolver
+            .resolve(conn, &normalized)
+            .map_err(|e| format!("Failed to resolve path: {e}"))?
+        {
+            Some(id) => id,
+            None => return Ok(None),
+        };
+
+        let stats =
+            IndexStore::get_dir_stats_by_id(conn, entry_id).map_err(|e| format!("Failed to get dir stats: {e}"))?;
+
+        Ok(stats.map(|s| DirStats {
+            path: normalized,
+            recursive_size: s.recursive_size,
+            recursive_file_count: s.recursive_file_count,
+            recursive_dir_count: s.recursive_dir_count,
+        }))
     }
 
     /// Batch lookup of dir_stats for multiple paths.
-    pub fn get_dir_stats_batch(&self, paths: &[String]) -> Result<Vec<Option<DirStats>>, String> {
-        let normalized: Vec<String> = paths.iter().map(|p| firmlinks::normalize_path(p)).collect();
-        let refs: Vec<&str> = normalized.iter().map(String::as_str).collect();
-        self.store
-            .get_dir_stats_batch(&refs)
-            .map_err(|e| format!("Failed to get dir stats batch: {e}"))
+    ///
+    /// Resolves each path to an entry ID using the `PathResolver` (LRU-cached),
+    /// then batch-fetches `dir_stats` by integer IDs.
+    pub fn get_dir_stats_batch(&mut self, paths: &[String]) -> Result<Vec<Option<DirStats>>, String> {
+        let conn = self.store.read_conn();
+
+        let mut results = Vec::with_capacity(paths.len());
+        let mut id_to_idx: Vec<(i64, usize, String)> = Vec::new();
+
+        for (i, path) in paths.iter().enumerate() {
+            let normalized = firmlinks::normalize_path(path);
+            match self
+                .path_resolver
+                .resolve(conn, &normalized)
+                .map_err(|e| format!("Failed to resolve path: {e}"))?
+            {
+                Some(id) => {
+                    id_to_idx.push((id, i, normalized));
+                    results.push(None); // Placeholder, filled below
+                }
+                None => results.push(None),
+            }
+        }
+
+        if !id_to_idx.is_empty() {
+            let ids: Vec<i64> = id_to_idx.iter().map(|(id, _, _)| *id).collect();
+            let stats_batch = IndexStore::get_dir_stats_batch_by_ids(conn, &ids)
+                .map_err(|e| format!("Failed to get dir stats batch: {e}"))?;
+
+            for ((_, idx, normalized), stats_opt) in id_to_idx.into_iter().zip(stats_batch) {
+                results[idx] = stats_opt.map(|s| DirStats {
+                    path: normalized,
+                    recursive_size: s.recursive_size,
+                    recursive_file_count: s.recursive_file_count,
+                    recursive_dir_count: s.recursive_dir_count,
+                });
+            }
+        }
+
+        Ok(results)
     }
 
     /// Request a priority micro-scan for a directory.
@@ -710,6 +871,17 @@ async fn run_live_event_loop(
     app: AppHandle,
 ) {
     log::debug!("Live event processing started");
+
+    // Open a read connection for path resolution (integer-keyed lookups)
+    let db_path = writer.db_path();
+    let conn = match IndexStore::open_write_connection(&db_path) {
+        Ok(c) => c,
+        Err(e) => {
+            log::warn!("Live event loop: failed to open read connection: {e}");
+            return;
+        }
+    };
+
     let mut event_count = 0u64;
     let mut pending_paths = std::collections::HashSet::<String>::new();
     let mut flush_interval = tokio::time::interval(Duration::from_millis(300));
@@ -720,7 +892,7 @@ async fn run_live_event_loop(
             event = event_rx.recv() => {
                 match event {
                     Some(event) => {
-                        reconciler.process_live_event(&event, &writer, &mut pending_paths);
+                        reconciler.process_live_event(&event, &conn, &writer, &mut pending_paths);
                         event_count += 1;
                         if event_count.is_multiple_of(10_000) {
                             log::debug!("Live event processing: {event_count} events processed so far");
@@ -793,6 +965,15 @@ async fn run_replay_event_loop(
     } = config;
     log::debug!("Replay event processing started (since_event_id={since_event_id})");
 
+    // Open a read connection for path resolution (integer-keyed lookups)
+    let db_path = writer.db_path();
+    let conn = match IndexStore::open_write_connection(&db_path) {
+        Ok(c) => c,
+        Err(e) => {
+            return Err(format!("Failed to open read connection for replay: {e}"));
+        }
+    };
+
     let mut event_count = 0u64;
     let mut first_event_checked = false;
     let mut fallback_tx = Some(fallback_tx);
@@ -847,7 +1028,7 @@ async fn run_replay_event_loop(
             log::debug!("Replay: HistoryDone received after {event_count} events");
 
             // Process the HistoryDone event itself (it may carry other flags)
-            if let Some(paths) = reconciler::process_fs_event(&event, &writer) {
+            if let Some(paths) = reconciler::process_fs_event(&event, &conn, &writer) {
                 affected_paths.extend(paths);
             }
             last_event_id = event.event_id;
@@ -866,7 +1047,7 @@ async fn run_replay_event_loop(
         }
 
         // Process event and collect affected paths
-        if let Some(paths) = reconciler::process_fs_event(&event, &writer) {
+        if let Some(paths) = reconciler::process_fs_event(&event, &conn, &writer) {
             affected_paths.extend(paths);
         }
 
@@ -976,7 +1157,7 @@ async fn run_replay_event_loop(
             event = event_rx.recv() => {
                 match event {
                     Some(event) => {
-                        reconciler.process_live_event(&event, &writer, &mut live_pending_paths);
+                        reconciler.process_live_event(&event, &conn, &writer, &mut live_pending_paths);
                         live_count += 1;
                         if live_count.is_multiple_of(10_000) {
                             log::debug!("Live event processing (post-replay): {live_count} events");
@@ -1061,41 +1242,51 @@ async fn run_background_verification(
 
         // For new directories, propagate their subtree totals up the ancestor chain.
         // scan_subtree computes aggregates within the subtree but doesn't propagate
-        // upward. Read the computed dir_stats and send PropagateDelta.
+        // upward. Resolve each new dir path to its entry ID, read the computed
+        // dir_stats, and send PropagateDeltaById to the parent.
         if !verify_result.new_dir_paths.is_empty() {
-            // Brief lock: batch-read dir_stats, then release before sending writes
-            let dir_stats_snapshot: Vec<(String, Option<DirStats>)> = {
+            // Brief lock: resolve paths → IDs and batch-read dir_stats
+            let dir_deltas: Vec<(i64, store::DirStatsById)> = {
                 let guard = GLOBAL_INDEX_STORE.lock();
                 if let Ok(ref guard) = guard
                     && let Some(store) = guard.as_ref()
                 {
-                    let refs: Vec<&str> = verify_result.new_dir_paths.iter().map(String::as_str).collect();
-                    match store.get_dir_stats_batch(&refs) {
-                        Ok(batch) => verify_result.new_dir_paths.iter().cloned().zip(batch).collect(),
-                        Err(_) => Vec::new(),
+                    let conn = store.read_conn();
+                    let mut deltas = Vec::new();
+                    for dir_path in &verify_result.new_dir_paths {
+                        let entry_id = match store::resolve_path(conn, dir_path) {
+                            Ok(Some(id)) => id,
+                            _ => continue,
+                        };
+                        let parent_id = match IndexStore::get_parent_id(conn, entry_id) {
+                            Ok(Some(pid)) => pid,
+                            _ => continue,
+                        };
+                        let stats = IndexStore::get_dir_stats_by_id(conn, entry_id)
+                            .ok()
+                            .flatten()
+                            .unwrap_or(store::DirStatsById {
+                                entry_id,
+                                recursive_size: 0,
+                                recursive_file_count: 0,
+                                recursive_dir_count: 0,
+                            });
+                        deltas.push((parent_id, stats));
                     }
+                    deltas
                 } else {
                     Vec::new()
                 }
                 // guard dropped here
             };
 
-            for (dir_path, stats_opt) in &dir_stats_snapshot {
-                if let Some(stats) = stats_opt {
-                    let _ = writer.send(WriteMessage::PropagateDelta {
-                        path: PathBuf::from(dir_path),
-                        size_delta: stats.recursive_size as i64,
-                        file_count_delta: stats.recursive_file_count as i32,
-                        dir_count_delta: (stats.recursive_dir_count as i32) + 1,
-                    });
-                } else {
-                    let _ = writer.send(WriteMessage::PropagateDelta {
-                        path: PathBuf::from(dir_path),
-                        size_delta: 0,
-                        file_count_delta: 0,
-                        dir_count_delta: 1,
-                    });
-                }
+            for (parent_id, stats) in &dir_deltas {
+                let _ = writer.send(WriteMessage::PropagateDeltaById {
+                    entry_id: *parent_id,
+                    size_delta: stats.recursive_size as i64,
+                    file_count_delta: stats.recursive_file_count as i32,
+                    dir_count_delta: (stats.recursive_dir_count as i32) + 1,
+                });
             }
 
             if let Err(e) = writer.flush().await {
@@ -1135,21 +1326,22 @@ struct VerifyResult {
 ///
 /// Two-phase approach to minimize `GLOBAL_INDEX_STORE` lock hold time:
 ///
-/// **Phase 1 (lock held briefly):** Read all DB children for every affected
-/// parent into an in-memory `HashMap`, then drop the lock. Only SQLite reads,
-/// no disk I/O.
+/// **Phase 1 (lock held briefly):** Resolve each affected path to its entry ID,
+/// list children as `EntryRow` (integer-keyed), and snapshot into a `HashMap`.
+/// Then drop the lock. Only SQLite reads, no disk I/O.
 ///
-/// **Phase 2 (no lock):** Walk the `HashMap`, check the filesystem
+/// **Phase 2 (no lock):** Walk the snapshot, check the filesystem
 /// (`Path::exists`, `read_dir`, `symlink_metadata`), and send corrections to
-/// the writer channel:
+/// the writer channel using integer-keyed write messages:
 /// 1. **Stale entries**: DB children that no longer exist on disk get
-///    `DeleteEntry`/`DeleteSubtree` (auto-propagates deltas).
-/// 2. **Missing entries**: Disk children not in DB get `UpsertEntry`.
-///    New files also get `PropagateDelta`. New directories are collected
+///    `DeleteEntryById`/`DeleteSubtreeById` (auto-propagates deltas).
+/// 2. **Missing entries**: Disk children not in DB get `UpsertEntryV2`.
+///    New files also get `PropagateDeltaById`. New directories are collected
 ///    in `new_dir_paths` for the caller to scan via `scan_subtree`.
 fn verify_affected_dirs(affected_paths: &std::collections::HashSet<String>, writer: &IndexWriter) -> VerifyResult {
     // ── Phase 1: Bulk-read DB state under the lock ───────────────────
-    let db_snapshot: std::collections::HashMap<String, Vec<store::ScannedEntry>> = {
+    // Snapshot: parent_path → (parent_id, Vec<EntryRow>)
+    let db_snapshot: std::collections::HashMap<String, (i64, Vec<store::EntryRow>)> = {
         let guard = match GLOBAL_INDEX_STORE.lock() {
             Ok(g) => g,
             Err(_) => {
@@ -1171,15 +1363,20 @@ fn verify_affected_dirs(affected_paths: &std::collections::HashSet<String>, writ
             }
         };
 
+        let conn = store.read_conn();
         let mut snapshot = std::collections::HashMap::with_capacity(affected_paths.len());
         for parent_path in affected_paths {
-            match store.list_entries_by_parent(parent_path) {
+            let parent_id = match store::resolve_path(conn, parent_path) {
+                Ok(Some(id)) => id,
+                _ => continue, // Path not in index, skip
+            };
+            match store.list_children(parent_id) {
                 Ok(entries) => {
-                    snapshot.insert(parent_path.clone(), entries);
+                    snapshot.insert(parent_path.clone(), (parent_id, entries));
                 }
                 Err(_) => {
                     // Insert empty vec so Phase 2 still checks disk for new entries
-                    snapshot.insert(parent_path.clone(), Vec::new());
+                    snapshot.insert(parent_path.clone(), (parent_id, Vec::new()));
                 }
             }
         }
@@ -1192,17 +1389,28 @@ fn verify_affected_dirs(affected_paths: &std::collections::HashSet<String>, writ
     let mut new_file_count = 0u64;
     let mut new_dir_paths = Vec::<String>::new();
 
-    for (parent_path, db_children) in &db_snapshot {
-        // Build a set of known DB child paths for fast lookup
-        let db_child_paths: std::collections::HashSet<&str> = db_children.iter().map(|c| c.path.as_str()).collect();
+    for (parent_path, (parent_id, db_children)) in &db_snapshot {
+        // Build a set of normalized DB child names for fast lookup
+        let db_child_names: std::collections::HashSet<String> = db_children
+            .iter()
+            .map(|c| store::normalize_for_comparison(&c.name))
+            .collect();
+
+        // Build child path from parent_path + name for filesystem checks
+        let parent_prefix = if parent_path == "/" {
+            String::new()
+        } else {
+            parent_path.clone()
+        };
 
         // Detect stale entries (in DB but not on disk)
         for child in db_children {
-            if !Path::new(&child.path).exists() {
+            let child_path = format!("{}/{}", parent_prefix, child.name);
+            if !Path::new(&child_path).exists() {
                 if child.is_directory {
-                    let _ = writer.send(WriteMessage::DeleteSubtree(child.path.clone()));
+                    let _ = writer.send(WriteMessage::DeleteSubtreeById(child.id));
                 } else {
-                    let _ = writer.send(WriteMessage::DeleteEntry(child.path.clone()));
+                    let _ = writer.send(WriteMessage::DeleteEntryById(child.id));
                 }
                 stale_count += 1;
             }
@@ -1219,7 +1427,8 @@ fn verify_affected_dirs(affected_paths: &std::collections::HashSet<String>, writ
             let child_path_str = child_path.to_string_lossy().to_string();
             let normalized = firmlinks::normalize_path(&child_path_str);
 
-            if db_child_paths.contains(normalized.as_str()) {
+            let name = dir_entry.file_name().to_string_lossy().to_string();
+            if db_child_names.contains(&store::normalize_for_comparison(&name)) {
                 continue;
             }
 
@@ -1230,7 +1439,6 @@ fn verify_affected_dirs(affected_paths: &std::collections::HashSet<String>, writ
 
             let is_dir = metadata.is_dir();
             let is_symlink = metadata.is_symlink();
-            let name = dir_entry.file_name().to_string_lossy().to_string();
 
             let (size, modified_at) = if is_dir || is_symlink {
                 (None, reconciler::entry_modified_at(&metadata))
@@ -1238,23 +1446,22 @@ fn verify_affected_dirs(affected_paths: &std::collections::HashSet<String>, writ
                 reconciler::entry_size_and_mtime(&metadata)
             };
 
-            let entry = store::ScannedEntry {
-                path: normalized.clone(),
-                parent_path: parent_path.clone(),
+            let _ = writer.send(WriteMessage::UpsertEntryV2 {
+                parent_id: *parent_id,
                 name,
                 is_directory: is_dir,
                 is_symlink,
                 size,
                 modified_at,
-            };
-
-            let _ = writer.send(WriteMessage::UpsertEntry(entry));
+            });
 
             if is_dir {
                 new_dir_paths.push(normalized);
             } else if let Some(sz) = size {
-                let _ = writer.send(WriteMessage::PropagateDelta {
-                    path: PathBuf::from(&normalized),
+                // UpsertEntryV2 inserts the entry; propagate its size delta up the
+                // ancestor chain starting from the parent.
+                let _ = writer.send(WriteMessage::PropagateDeltaById {
+                    entry_id: *parent_id,
                     size_delta: sz as i64,
                     file_count_delta: 1,
                     dir_count_delta: 0,
@@ -1369,4 +1576,472 @@ pub fn clear_index(app: &AppHandle) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+// ── Tests ────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::file_system::listing::FileEntry;
+    use store::{DirStatsById, EntryRow, IndexStore, ROOT_ID};
+
+    /// Helper: open a temp store and write connection for testing.
+    fn open_temp_store() -> (IndexStore, rusqlite::Connection, tempfile::TempDir) {
+        let dir = tempfile::tempdir().expect("create temp dir");
+        let db_path = dir.path().join("test-index.db");
+        let store = IndexStore::open(&db_path).expect("open store");
+        let conn = IndexStore::open_write_connection(&db_path).expect("open write conn");
+        (store, conn, dir)
+    }
+
+    /// Helper: create a FileEntry for testing enrichment.
+    fn make_file_entry(name: &str, path: &str, is_directory: bool) -> FileEntry {
+        FileEntry {
+            name: name.to_string(),
+            path: path.to_string(),
+            is_directory,
+            is_symlink: false,
+            size: if is_directory { None } else { Some(100) },
+            modified_at: None,
+            created_at: None,
+            added_at: None,
+            opened_at: None,
+            permissions: 0o755,
+            owner: String::new(),
+            group: String::new(),
+            icon_id: String::new(),
+            extended_metadata_loaded: false,
+            recursive_size: None,
+            recursive_file_count: None,
+            recursive_dir_count: None,
+        }
+    }
+
+    /// End-to-end test: insert entries, compute aggregates, enrich FileEntry objects, verify stats.
+    #[test]
+    fn enrich_entries_via_parent_id_end_to_end() {
+        let (store, conn, _dir) = open_temp_store();
+
+        // Build a tree:
+        //   / (ROOT_ID=1)
+        //   /projects (dir, id=2)
+        //   /projects/alpha (dir, id=3)
+        //   /projects/alpha/file1.txt (100 bytes, id=4)
+        //   /projects/alpha/file2.txt (200 bytes, id=5)
+        //   /projects/beta (dir, id=6)
+        //   /projects/beta/file3.txt (300 bytes, id=7)
+        //   /projects/readme.txt (file, 50 bytes, id=8)
+        let entries = vec![
+            EntryRow {
+                id: 2,
+                parent_id: ROOT_ID,
+                name: "projects".into(),
+                is_directory: true,
+                is_symlink: false,
+                size: None,
+                modified_at: None,
+            },
+            EntryRow {
+                id: 3,
+                parent_id: 2,
+                name: "alpha".into(),
+                is_directory: true,
+                is_symlink: false,
+                size: None,
+                modified_at: None,
+            },
+            EntryRow {
+                id: 4,
+                parent_id: 3,
+                name: "file1.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                size: Some(100),
+                modified_at: None,
+            },
+            EntryRow {
+                id: 5,
+                parent_id: 3,
+                name: "file2.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                size: Some(200),
+                modified_at: None,
+            },
+            EntryRow {
+                id: 6,
+                parent_id: 2,
+                name: "beta".into(),
+                is_directory: true,
+                is_symlink: false,
+                size: None,
+                modified_at: None,
+            },
+            EntryRow {
+                id: 7,
+                parent_id: 6,
+                name: "file3.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                size: Some(300),
+                modified_at: None,
+            },
+            EntryRow {
+                id: 8,
+                parent_id: 2,
+                name: "readme.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                size: Some(50),
+                modified_at: None,
+            },
+        ];
+        IndexStore::insert_entries_v2_batch(&conn, &entries).expect("insert entries");
+
+        // Compute aggregates
+        aggregator::compute_all_aggregates(&conn).expect("compute aggregates");
+
+        // Verify aggregates were computed correctly
+        let alpha_stats = IndexStore::get_dir_stats_by_id(&conn, 3).expect("get alpha stats");
+        assert!(alpha_stats.is_some(), "alpha should have dir_stats");
+        let alpha = alpha_stats.unwrap();
+        assert_eq!(alpha.recursive_size, 300, "alpha: 100+200=300");
+        assert_eq!(alpha.recursive_file_count, 2, "alpha: 2 files");
+        assert_eq!(alpha.recursive_dir_count, 0, "alpha: 0 subdirs");
+
+        let beta_stats = IndexStore::get_dir_stats_by_id(&conn, 6).expect("get beta stats");
+        assert!(beta_stats.is_some(), "beta should have dir_stats");
+        let beta = beta_stats.unwrap();
+        assert_eq!(beta.recursive_size, 300, "beta: 300");
+        assert_eq!(beta.recursive_file_count, 1, "beta: 1 file");
+        assert_eq!(beta.recursive_dir_count, 0, "beta: 0 subdirs");
+
+        let projects_stats = IndexStore::get_dir_stats_by_id(&conn, 2).expect("get projects stats");
+        assert!(projects_stats.is_some(), "projects should have dir_stats");
+        let proj = projects_stats.unwrap();
+        assert_eq!(proj.recursive_size, 650, "projects: 100+200+300+50=650");
+        assert_eq!(
+            proj.recursive_file_count, 4,
+            "projects: 4 files (file1, file2, file3, readme)"
+        );
+        assert_eq!(proj.recursive_dir_count, 2, "projects: 2 subdirs (alpha, beta)");
+
+        // Now test enrichment: simulate a listing of /projects children
+        let mut file_entries = vec![
+            make_file_entry("alpha", "/projects/alpha", true),
+            make_file_entry("beta", "/projects/beta", true),
+            make_file_entry("readme.txt", "/projects/readme.txt", false),
+        ];
+
+        // Use the integer-keyed fast path
+        let result = enrich_via_parent_id(&mut file_entries, &store, "/projects");
+        assert!(result.is_ok(), "enrich_via_parent_id should succeed: {result:?}");
+
+        // Verify enrichment results
+        let alpha_entry = &file_entries[0];
+        assert_eq!(alpha_entry.recursive_size, Some(300));
+        assert_eq!(alpha_entry.recursive_file_count, Some(2));
+        assert_eq!(alpha_entry.recursive_dir_count, Some(0));
+
+        let beta_entry = &file_entries[1];
+        assert_eq!(beta_entry.recursive_size, Some(300));
+        assert_eq!(beta_entry.recursive_file_count, Some(1));
+        assert_eq!(beta_entry.recursive_dir_count, Some(0));
+
+        // Non-directory entries should be unaffected
+        let readme_entry = &file_entries[2];
+        assert_eq!(readme_entry.recursive_size, None);
+    }
+
+    /// Test enrichment fallback for individual path resolution.
+    #[test]
+    fn enrich_entries_fallback_individual_paths() {
+        let (store, conn, _dir) = open_temp_store();
+
+        // Simple tree: /docs (dir) with one file
+        let entries = vec![
+            EntryRow {
+                id: 2,
+                parent_id: ROOT_ID,
+                name: "docs".into(),
+                is_directory: true,
+                is_symlink: false,
+                size: None,
+                modified_at: None,
+            },
+            EntryRow {
+                id: 3,
+                parent_id: 2,
+                name: "guide.md".into(),
+                is_directory: false,
+                is_symlink: false,
+                size: Some(500),
+                modified_at: None,
+            },
+        ];
+        IndexStore::insert_entries_v2_batch(&conn, &entries).expect("insert");
+        aggregator::compute_all_aggregates(&conn).expect("aggregates");
+
+        let mut file_entries = vec![make_file_entry("docs", "/docs", true)];
+
+        // Use the individual path fallback
+        enrich_via_individual_paths(&mut file_entries, &store);
+
+        let docs = &file_entries[0];
+        assert_eq!(docs.recursive_size, Some(500));
+        assert_eq!(docs.recursive_file_count, Some(1));
+        assert_eq!(docs.recursive_dir_count, Some(0));
+    }
+
+    /// Test that enrichment handles empty directory listing.
+    #[test]
+    fn enrich_entries_empty_list() {
+        let (store, _conn, _dir) = open_temp_store();
+        let mut entries: Vec<FileEntry> = Vec::new();
+        enrich_via_individual_paths(&mut entries, &store);
+    }
+
+    /// Test that enrichment handles entries with no matching index data.
+    #[test]
+    fn enrich_entries_no_matching_index() {
+        let (store, _conn, _dir) = open_temp_store();
+        let mut entries = vec![make_file_entry("nonexistent", "/nonexistent", true)];
+        enrich_via_individual_paths(&mut entries, &store);
+        assert_eq!(entries[0].recursive_size, None, "unindexed dir should remain None");
+    }
+
+    /// Test that `list_child_dir_ids_and_names` returns only directories.
+    #[test]
+    fn list_child_dir_ids_and_names_filters_files() {
+        let (_store, conn, _dir) = open_temp_store();
+
+        let entries = vec![
+            EntryRow {
+                id: 2,
+                parent_id: ROOT_ID,
+                name: "dir_a".into(),
+                is_directory: true,
+                is_symlink: false,
+                size: None,
+                modified_at: None,
+            },
+            EntryRow {
+                id: 3,
+                parent_id: ROOT_ID,
+                name: "dir_b".into(),
+                is_directory: true,
+                is_symlink: false,
+                size: None,
+                modified_at: None,
+            },
+            EntryRow {
+                id: 4,
+                parent_id: ROOT_ID,
+                name: "file.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                size: Some(10),
+                modified_at: None,
+            },
+        ];
+        IndexStore::insert_entries_v2_batch(&conn, &entries).expect("insert");
+
+        let child_dirs = IndexStore::list_child_dir_ids_and_names(&conn, ROOT_ID).expect("list");
+        assert_eq!(child_dirs.len(), 2, "should only return directories, not files");
+
+        let names: std::collections::HashSet<&str> = child_dirs.iter().map(|(_, n)| n.as_str()).collect();
+        assert!(names.contains("dir_a"));
+        assert!(names.contains("dir_b"));
+    }
+
+    /// Test the PathResolver integration for dir stats lookups.
+    #[test]
+    fn path_resolver_for_dir_stats() {
+        let (store, conn, _dir) = open_temp_store();
+
+        let entries = vec![
+            EntryRow {
+                id: 2,
+                parent_id: ROOT_ID,
+                name: "src".into(),
+                is_directory: true,
+                is_symlink: false,
+                size: None,
+                modified_at: None,
+            },
+            EntryRow {
+                id: 3,
+                parent_id: 2,
+                name: "main.rs".into(),
+                is_directory: false,
+                is_symlink: false,
+                size: Some(1000),
+                modified_at: None,
+            },
+        ];
+        IndexStore::insert_entries_v2_batch(&conn, &entries).expect("insert");
+        aggregator::compute_all_aggregates(&conn).expect("aggregates");
+
+        let mut resolver = PathResolver::new();
+        let entry_id = resolver.resolve(store.read_conn(), "/src").expect("resolve");
+        assert_eq!(entry_id, Some(2));
+
+        let stats = IndexStore::get_dir_stats_by_id(store.read_conn(), 2).expect("stats");
+        assert!(stats.is_some());
+        assert_eq!(stats.unwrap().recursive_size, 1000);
+
+        // Second resolve should hit LRU cache (no DB access)
+        let cached_id = resolver.resolve(store.read_conn(), "/src").expect("cached");
+        assert_eq!(cached_id, Some(2));
+    }
+
+    /// End-to-end: scan -> aggregate -> enrich -> simulate watcher event -> re-enrich -> verify.
+    #[test]
+    fn end_to_end_scan_enrich_watcher_update() {
+        let (store, conn, _dir) = open_temp_store();
+
+        // Phase 1: Initial scan
+        let entries = vec![
+            EntryRow {
+                id: 2,
+                parent_id: ROOT_ID,
+                name: "home".into(),
+                is_directory: true,
+                is_symlink: false,
+                size: None,
+                modified_at: None,
+            },
+            EntryRow {
+                id: 3,
+                parent_id: 2,
+                name: "user".into(),
+                is_directory: true,
+                is_symlink: false,
+                size: None,
+                modified_at: None,
+            },
+            EntryRow {
+                id: 4,
+                parent_id: 3,
+                name: "doc.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                size: Some(1000),
+                modified_at: None,
+            },
+        ];
+        IndexStore::insert_entries_v2_batch(&conn, &entries).expect("insert");
+        aggregator::compute_all_aggregates(&conn).expect("aggregates");
+
+        // Verify initial aggregates
+        let home_stats = IndexStore::get_dir_stats_by_id(&conn, 2).unwrap().unwrap();
+        assert_eq!(home_stats.recursive_size, 1000);
+        assert_eq!(home_stats.recursive_file_count, 1);
+        assert_eq!(home_stats.recursive_dir_count, 1);
+
+        // Phase 2: Enrich a listing of /home children
+        let mut listing = vec![make_file_entry("user", "/home/user", true)];
+        let result = enrich_via_parent_id(&mut listing, &store, "/home");
+        assert!(result.is_ok());
+        assert_eq!(listing[0].recursive_size, Some(1000));
+        assert_eq!(listing[0].recursive_file_count, Some(1));
+        assert_eq!(listing[0].recursive_dir_count, Some(0));
+
+        // Phase 3: Simulate a watcher event (new file added via reconciler)
+        IndexStore::insert_entry_v2(&conn, 3, "notes.txt", false, false, Some(500), None).expect("insert new file");
+
+        // Simulate delta propagation (as the writer would do)
+        let updated_user = DirStatsById {
+            entry_id: 3,
+            recursive_size: 1500,
+            recursive_file_count: 2,
+            recursive_dir_count: 0,
+        };
+        IndexStore::upsert_dir_stats_by_id(&conn, &[updated_user]).expect("update user stats");
+
+        let updated_home = DirStatsById {
+            entry_id: 2,
+            recursive_size: 1500,
+            recursive_file_count: 2,
+            recursive_dir_count: 1,
+        };
+        IndexStore::upsert_dir_stats_by_id(&conn, &[updated_home]).expect("update home stats");
+
+        // Phase 4: Re-enrich after watcher event
+        let mut listing2 = vec![make_file_entry("user", "/home/user", true)];
+        let result2 = enrich_via_parent_id(&mut listing2, &store, "/home");
+        assert!(result2.is_ok());
+        assert_eq!(listing2[0].recursive_size, Some(1500), "should reflect new file");
+        assert_eq!(listing2[0].recursive_file_count, Some(2));
+
+        // Phase 5: Verify integer-keyed lookup works
+        let user_id = store::resolve_path(&conn, "/home/user").unwrap().unwrap();
+        let user_stats = IndexStore::get_dir_stats_by_id(&conn, user_id).unwrap();
+        assert!(user_stats.is_some());
+        let user = user_stats.unwrap();
+        assert_eq!(user.recursive_size, 1500);
+    }
+
+    /// Test enrichment of entries at the root level (parent = /).
+    #[test]
+    fn enrich_entries_at_root_level() {
+        let (store, conn, _dir) = open_temp_store();
+
+        let entries = vec![
+            EntryRow {
+                id: 2,
+                parent_id: ROOT_ID,
+                name: "Applications".into(),
+                is_directory: true,
+                is_symlink: false,
+                size: None,
+                modified_at: None,
+            },
+            EntryRow {
+                id: 3,
+                parent_id: 2,
+                name: "app.exe".into(),
+                is_directory: false,
+                is_symlink: false,
+                size: Some(5000),
+                modified_at: None,
+            },
+            EntryRow {
+                id: 4,
+                parent_id: ROOT_ID,
+                name: "Users".into(),
+                is_directory: true,
+                is_symlink: false,
+                size: None,
+                modified_at: None,
+            },
+            EntryRow {
+                id: 5,
+                parent_id: 4,
+                name: "someone".into(),
+                is_directory: true,
+                is_symlink: false,
+                size: None,
+                modified_at: None,
+            },
+        ];
+        IndexStore::insert_entries_v2_batch(&conn, &entries).expect("insert");
+        aggregator::compute_all_aggregates(&conn).expect("aggregates");
+
+        // Listing at /: children are /Applications and /Users
+        let mut listing = vec![
+            make_file_entry("Applications", "/Applications", true),
+            make_file_entry("Users", "/Users", true),
+        ];
+
+        let result = enrich_via_parent_id(&mut listing, &store, "/");
+        assert!(result.is_ok());
+
+        assert_eq!(listing[0].recursive_size, Some(5000));
+        assert_eq!(listing[0].recursive_file_count, Some(1));
+
+        assert_eq!(listing[1].recursive_size, Some(0));
+        assert_eq!(listing[1].recursive_dir_count, Some(1));
+    }
 }

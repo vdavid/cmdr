@@ -15,7 +15,7 @@ use std::time::Instant;
 use jwalk::WalkDir;
 
 use crate::indexing::firmlinks;
-use crate::indexing::store::ScannedEntry;
+use crate::indexing::store::{EntryRow, IndexStore, ScanContext};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 
 // ── Exclusion prefixes ──────────────────────────────────────────────
@@ -131,11 +131,6 @@ impl ScanHandle {
     pub fn cancel(&self) {
         self.cancelled.store(true, Ordering::Relaxed);
     }
-
-    /// Check whether cancellation has been requested.
-    pub fn is_cancelled(&self) -> bool {
-        self.cancelled.load(Ordering::Relaxed)
-    }
 }
 
 /// Summary returned when a scan completes (or is cancelled).
@@ -152,7 +147,6 @@ pub struct ScanSummary {
 pub enum ScanError {
     Io(std::io::Error),
     WriterSend(String),
-    Cancelled,
 }
 
 impl std::fmt::Display for ScanError {
@@ -160,7 +154,6 @@ impl std::fmt::Display for ScanError {
         match self {
             ScanError::Io(e) => write!(f, "I/O error: {e}"),
             ScanError::WriterSend(msg) => write!(f, "Writer send failed: {msg}"),
-            ScanError::Cancelled => write!(f, "Scan cancelled"),
         }
     }
 }
@@ -205,6 +198,7 @@ pub fn scan_volume(
                 &writer,
                 config.batch_size,
                 config.num_threads,
+                true, // volume scan: root always maps to ROOT_ID
             );
 
             // Trigger full aggregation if scan completed without cancellation
@@ -228,7 +222,7 @@ pub fn scan_volume(
 /// `ComputeSubtreeAggregates` to the writer.
 pub fn scan_subtree(root: &Path, writer: &IndexWriter, cancelled: &AtomicBool) -> Result<ScanSummary, ScanError> {
     let progress = Arc::new(ScanProgress::new());
-    let summary = run_scan(root, cancelled, &progress, writer, 2000, 0)?;
+    let summary = run_scan(root, cancelled, &progress, writer, 2000, 0, false)?;
 
     if !summary.was_cancelled {
         let root_str = root.to_string_lossy().to_string();
@@ -243,6 +237,13 @@ pub fn scan_subtree(root: &Path, writer: &IndexWriter, cancelled: &AtomicBool) -
 // ── Core scan logic ──────────────────────────────────────────────────
 
 /// Walk a directory tree and send discovered entries in batches to the writer.
+///
+/// Uses a `ScanContext` to assign integer IDs and parent IDs to each entry.
+/// The context maintains a `HashMap<PathBuf, i64>` mapping directory paths
+/// to their assigned IDs. For each entry:
+/// 1. Look up parent_id from the map using the entry's parent path
+/// 2. Assign `id = next_id; next_id += 1`
+/// 3. If directory: add `(full_path, id)` to the map
 fn run_scan(
     root: &Path,
     cancelled: &AtomicBool,
@@ -250,14 +251,23 @@ fn run_scan(
     writer: &IndexWriter,
     batch_size: usize,
     num_threads: usize,
+    is_volume_root: bool,
 ) -> Result<ScanSummary, ScanError> {
     let start = Instant::now();
-    let mut batch: Vec<ScannedEntry> = Vec::with_capacity(batch_size);
+    let mut batch: Vec<EntryRow> = Vec::with_capacity(batch_size);
     let mut total_entries: u64 = 0;
     let mut total_dirs: u64 = 0;
 
-    let root_str = root.to_string_lossy().to_string();
-    let is_volume_root = root_str == "/";
+    // Initialize the scan context: seed root mapping and get next_id from DB.
+    // We need a temporary read connection to fetch next_id. The writer thread
+    // owns the write connection, but we only need a read here.
+    let mut scan_ctx = {
+        let db_path = writer.db_path();
+        let conn = IndexStore::open_write_connection(&db_path).map_err(|e| ScanError::WriterSend(e.to_string()))?;
+        conn.busy_timeout(std::time::Duration::from_secs(5))
+            .map_err(|e| ScanError::WriterSend(e.to_string()))?;
+        ScanContext::new(&conn, root, is_volume_root).map_err(|e| ScanError::WriterSend(e.to_string()))?
+    };
 
     let walker = build_walker(root, num_threads, is_volume_root);
 
@@ -299,6 +309,7 @@ fn run_scan(
 
         // Normalize via firmlinks
         let normalized = firmlinks::normalize_path(&path_str);
+        let normalized_path = PathBuf::from(&normalized);
 
         let is_dir = entry.file_type().is_dir();
         let is_symlink = entry.file_type().is_symlink();
@@ -311,15 +322,34 @@ fn run_scan(
             (sz, mtime)
         };
 
-        // Compute parent path (no trailing slash, consistent with store.rs conventions)
-        let parent = compute_parent_path(&normalized);
+        // Look up parent_id from the scan context
+        let parent_path = normalized_path.parent().unwrap_or(root);
+        let parent_id = match scan_ctx.lookup_parent(parent_path) {
+            Some(pid) => pid,
+            None => {
+                // Parent not in map -- this can happen if the parent was excluded
+                // or if jwalk delivered entries out of order. Skip.
+                log::debug!("Scanner: parent not found in context for {normalized}, skipping");
+                continue;
+            }
+        };
+
+        // Assign a fresh ID
+        let id = scan_ctx.alloc_id();
 
         // Compute name
         let name = entry.file_name().to_string_lossy().to_string();
 
-        let scanned = ScannedEntry {
-            path: normalized,
-            parent_path: parent,
+        // If directory, register in the scan context so children can find their parent
+        if is_dir {
+            scan_ctx.register_dir(normalized_path, id);
+            total_dirs += 1;
+            progress.dirs_found.fetch_add(1, Ordering::Relaxed);
+        }
+
+        let scanned = EntryRow {
+            id,
+            parent_id,
             name,
             is_directory: is_dir,
             is_symlink,
@@ -327,10 +357,6 @@ fn run_scan(
             modified_at,
         };
 
-        if is_dir {
-            total_dirs += 1;
-            progress.dirs_found.fetch_add(1, Ordering::Relaxed);
-        }
         total_entries += 1;
         progress.entries_scanned.fetch_add(1, Ordering::Relaxed);
 
@@ -471,6 +497,7 @@ fn entry_modified_at(path: &Path) -> Option<u64> {
 /// - `/Users/foo/bar.txt` -> `/Users/foo`
 /// - `/Users` -> `/`
 /// - `/` -> `` (empty, should not happen since we skip root)
+#[cfg(test)]
 fn compute_parent_path(path: &str) -> String {
     match path.rfind('/') {
         Some(0) => "/".to_string(),
@@ -480,13 +507,13 @@ fn compute_parent_path(path: &str) -> String {
 }
 
 /// Send a batch of entries to the writer and clear the batch buffer.
-fn flush_batch(batch: &mut Vec<ScannedEntry>, writer: &IndexWriter) -> Result<(), ScanError> {
+fn flush_batch(batch: &mut Vec<EntryRow>, writer: &IndexWriter) -> Result<(), ScanError> {
     if batch.is_empty() {
         return Ok(());
     }
     let entries = std::mem::take(batch);
     writer
-        .send(WriteMessage::InsertEntries(entries))
+        .send(WriteMessage::InsertEntriesV2(entries))
         .map_err(|e| ScanError::WriterSend(e.to_string()))
 }
 
@@ -500,7 +527,7 @@ pub fn default_exclusions() -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::indexing::store::IndexStore;
+    use crate::indexing::store::{self, IndexStore, ROOT_ID};
     use crate::indexing::writer::IndexWriter;
     use std::fs;
     use std::thread;
@@ -523,6 +550,21 @@ mod tests {
         let _store = IndexStore::open(&db_path).expect("failed to open store");
         let writer = IndexWriter::spawn(&db_path).expect("failed to spawn writer");
         (writer, db_path, dir)
+    }
+
+    /// Insert the full parent directory chain for a path into the DB so that
+    /// `ScanContext::new` can resolve the subtree root for subtree scans.
+    fn ensure_path_in_db(db_path: &Path, path: &Path) {
+        let conn = IndexStore::open_write_connection(db_path).unwrap();
+        let path_str = path.to_string_lossy();
+        let components: Vec<&str> = path_str.split('/').filter(|c| !c.is_empty()).collect();
+        let mut parent_id = ROOT_ID;
+        for component in components {
+            parent_id = match IndexStore::resolve_component(&conn, parent_id, component) {
+                Ok(Some(id)) => id,
+                _ => IndexStore::insert_entry_v2(&conn, parent_id, component, true, false, None, None).unwrap(),
+            };
+        }
     }
 
     #[test]
@@ -635,10 +677,10 @@ mod tests {
         writer.shutdown();
         thread::sleep(Duration::from_millis(100));
 
-        // Verify entries are in the DB
+        // Verify entries are in the DB using integer-keyed API.
+        // The scanner maps the scan root to ROOT_ID, so children are under ROOT_ID.
         let store = IndexStore::open(&db_path).unwrap();
-        let root_str = scan_root.path().to_string_lossy().to_string();
-        let children = store.list_entries_by_parent(&root_str).unwrap();
+        let children = store.list_children(ROOT_ID).unwrap();
         assert_eq!(
             children.len(),
             3,
@@ -660,6 +702,10 @@ mod tests {
         let cancelled = AtomicBool::new(false);
 
         let subtree_root = scan_root.path().join("subdir");
+
+        // Pre-insert the subtree root's parent chain so ScanContext can resolve it
+        ensure_path_in_db(&db_path, &subtree_root);
+
         let summary = scan_subtree(&subtree_root, &writer, &cancelled).unwrap();
 
         assert!(!summary.was_cancelled);
@@ -672,9 +718,14 @@ mod tests {
         writer.shutdown();
         thread::sleep(Duration::from_millis(100));
 
+        // The subtree scan resolves the actual entry ID for the subtree root.
+        // Children should be listed under that ID, not ROOT_ID.
         let store = IndexStore::open(&db_path).unwrap();
-        let subdir_str = subtree_root.to_string_lossy().to_string();
-        let children = store.list_entries_by_parent(&subdir_str).unwrap();
+        let conn = store.read_conn();
+        let subtree_id = store::resolve_path(conn, &subtree_root.to_string_lossy())
+            .unwrap()
+            .expect("subtree root should be in DB");
+        let children = store.list_children(subtree_id).unwrap();
         assert_eq!(children.len(), 2, "subdir should have 2 children: nested.txt, deep");
     }
 
@@ -746,8 +797,7 @@ mod tests {
         thread::sleep(Duration::from_millis(100));
 
         let store = IndexStore::open(&db_path).unwrap();
-        let root_str = scan_root.path().to_string_lossy().to_string();
-        let children = store.list_entries_by_parent(&root_str).unwrap();
+        let children = store.list_children(ROOT_ID).unwrap();
         let sized = children.iter().find(|e| e.name == "sized.bin").unwrap();
 
         // Physical size should be >= logical size (and a multiple of 512)
@@ -782,8 +832,7 @@ mod tests {
         thread::sleep(Duration::from_millis(100));
 
         let store = IndexStore::open(&db_path).unwrap();
-        let root_str = scan_root.path().to_string_lossy().to_string();
-        let children = store.list_entries_by_parent(&root_str).unwrap();
+        let children = store.list_children(ROOT_ID).unwrap();
 
         #[cfg(unix)]
         {
@@ -802,5 +851,109 @@ mod tests {
         assert!(exclusions.iter().any(|e| e.contains("System/Volumes/Data")));
         #[cfg(target_os = "linux")]
         assert!(exclusions.iter().any(|e| e.contains("/proc")));
+    }
+
+    #[test]
+    fn scan_assigns_integer_ids() {
+        // Verify that the scanner correctly assigns integer IDs and parent IDs
+        let scan_root = tempfile::tempdir().expect("scan root");
+        create_test_tree(scan_root.path());
+
+        let (writer, db_path, _db_dir) = setup_writer();
+
+        let config = ScanConfig {
+            root: scan_root.path().to_path_buf(),
+            batch_size: 100,
+            num_threads: 1,
+        };
+
+        let (_handle, join_handle) = scan_volume(config, &writer).unwrap();
+        let _summary = join_handle.join().expect("scan thread panicked").unwrap();
+
+        thread::sleep(Duration::from_millis(500));
+        writer.shutdown();
+        thread::sleep(Duration::from_millis(100));
+
+        let store = IndexStore::open(&db_path).unwrap();
+
+        // All top-level entries should have parent_id = ROOT_ID
+        let top_children = store.list_children(ROOT_ID).unwrap();
+        assert_eq!(top_children.len(), 3); // subdir, file1.txt, file2.txt
+
+        for child in &top_children {
+            assert_eq!(child.parent_id, ROOT_ID);
+            assert!(child.id > ROOT_ID, "all IDs should be > ROOT_ID");
+        }
+
+        // Find the subdir entry and check its children
+        let subdir = top_children.iter().find(|e| e.name == "subdir").unwrap();
+        assert!(subdir.is_directory);
+        let subdir_children = store.list_children(subdir.id).unwrap();
+        assert_eq!(subdir_children.len(), 2); // nested.txt, deep
+
+        for child in &subdir_children {
+            assert_eq!(child.parent_id, subdir.id, "children should reference parent's ID");
+        }
+
+        // Find the deep directory and check its children
+        let deep = subdir_children.iter().find(|e| e.name == "deep").unwrap();
+        assert!(deep.is_directory);
+        let deep_children = store.list_children(deep.id).unwrap();
+        assert_eq!(deep_children.len(), 1); // leaf.txt
+        assert_eq!(deep_children[0].name, "leaf.txt");
+        assert_eq!(deep_children[0].parent_id, deep.id);
+    }
+
+    #[test]
+    fn scan_context_id_allocation() {
+        // Verify ScanContext properly assigns monotonically increasing IDs
+        let dir = tempfile::tempdir().expect("temp dir");
+        let db_path = dir.path().join("test-ctx.db");
+        let _store = IndexStore::open(&db_path).expect("open store");
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+
+        let root_path = Path::new("/test/root");
+        let mut ctx = ScanContext::new(&conn, root_path, true).unwrap();
+
+        // Root sentinel exists (id=1), so next_id should be >= 2
+        assert!(ctx.next_id >= 2);
+
+        let id1 = ctx.alloc_id();
+        let id2 = ctx.alloc_id();
+        let id3 = ctx.alloc_id();
+        assert_eq!(id2, id1 + 1);
+        assert_eq!(id3, id2 + 1);
+
+        // Volume root → maps to ROOT_ID
+        assert_eq!(ctx.lookup_parent(root_path), Some(ROOT_ID));
+
+        // Register a directory and look it up
+        let dir_path = PathBuf::from("/test/root/mydir");
+        ctx.register_dir(dir_path.clone(), id1);
+        assert_eq!(ctx.lookup_parent(&dir_path), Some(id1));
+
+        // Unknown path returns None
+        assert_eq!(ctx.lookup_parent(Path::new("/unknown")), None);
+    }
+
+    #[test]
+    fn scan_context_subtree_resolves_actual_id() {
+        // When the subtree root exists in the DB, ScanContext should use its actual ID
+        let dir = tempfile::tempdir().expect("temp dir");
+        let db_path = dir.path().join("test-ctx-subtree.db");
+        let _store = IndexStore::open(&db_path).expect("open store");
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+
+        // Insert a directory chain: ROOT → Volumes → "NO NAME"
+        let volumes_id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Volumes", true, false, None, None).unwrap();
+        let noname_id = IndexStore::insert_entry_v2(&conn, volumes_id, "NO NAME", true, false, None, None).unwrap();
+        assert_ne!(noname_id, ROOT_ID);
+
+        // Create ScanContext for the subtree root
+        let subtree_root = Path::new("/Volumes/NO NAME");
+        let ctx = ScanContext::new(&conn, subtree_root, false).unwrap();
+
+        // Should resolve to the actual entry ID, NOT ROOT_ID
+        assert_eq!(ctx.lookup_parent(subtree_root), Some(noname_id));
     }
 }

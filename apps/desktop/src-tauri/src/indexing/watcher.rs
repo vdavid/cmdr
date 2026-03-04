@@ -62,7 +62,6 @@ pub struct FsEventFlags {
     pub item_modified: bool,
     pub item_is_file: bool,
     pub item_is_dir: bool,
-    pub item_is_symlink: bool,
     pub history_done: bool,
 }
 
@@ -70,6 +69,8 @@ pub struct FsEventFlags {
 #[derive(Debug)]
 pub enum WatcherError {
     Io(std::io::Error),
+    /// Used on Linux (inotify) and stub platforms; not constructed on macOS.
+    #[allow(dead_code, reason = "constructed on Linux/stub, not macOS")]
     StreamCreate(String),
 }
 
@@ -199,11 +200,13 @@ impl DriveWatcher {
     }
 
     /// Return the last event ID seen by the watcher.
+    #[allow(dead_code, reason = "cross-platform API; used on other platforms")]
     pub fn last_event_id(&self) -> u64 {
         self.last_event_id.load(Ordering::Relaxed)
     }
 
     /// Check if the watcher is currently running.
+    #[allow(dead_code, reason = "cross-platform API; used on other platforms")]
     pub fn is_running(&self) -> bool {
         self.running.load(Ordering::Relaxed)
     }
@@ -313,10 +316,12 @@ impl DriveWatcher {
     }
 
     /// Return the last synthetic event counter value.
+    #[allow(dead_code, reason = "cross-platform API; used on other platforms")]
     pub fn last_event_id(&self) -> u64 {
         self.event_counter.load(Ordering::Relaxed)
     }
 
+    #[allow(dead_code, reason = "cross-platform API; used on other platforms")]
     pub fn is_running(&self) -> bool {
         self.running.load(Ordering::Relaxed)
     }
@@ -388,7 +393,6 @@ fn classify_paths(paths: &[std::path::PathBuf]) -> FsEventFlags {
             return FsEventFlags {
                 item_is_file: meta.is_file(),
                 item_is_dir: meta.is_dir(),
-                item_is_symlink: meta.is_symlink(),
                 ..Default::default()
             };
         }
@@ -419,10 +423,12 @@ impl DriveWatcher {
 
     pub fn stop(&mut self) {}
 
+    #[allow(dead_code, reason = "cross-platform API; used on other platforms")]
     pub fn last_event_id(&self) -> u64 {
         0
     }
 
+    #[allow(dead_code, reason = "cross-platform API; used on other platforms")]
     pub fn is_running(&self) -> bool {
         false
     }
@@ -444,7 +450,6 @@ fn parse_fsevent(event: &Event) -> FsChangeEvent {
             item_modified: event.flags.contains(StreamFlags::ITEM_MODIFIED),
             item_is_file: event.flags.contains(StreamFlags::IS_FILE),
             item_is_dir: event.flags.contains(StreamFlags::IS_DIR),
-            item_is_symlink: event.flags.contains(StreamFlags::IS_SYMLINK),
             history_done: event.flags.contains(StreamFlags::HISTORY_DONE),
         },
     }

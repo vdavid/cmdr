@@ -161,6 +161,7 @@
     let unlistenDragImageSize: UnlistenFn | undefined
     let unlistenDragModifiers: UnlistenFn | undefined
     let unlistenIndexEvents: UnlistenFn | undefined
+    let unlistenIndexScanComplete: UnlistenFn | undefined
     let unlistenMcpActivateTab: UnlistenFn | undefined
     let unlistenMcpPinTab: UnlistenFn | undefined
 
@@ -1129,6 +1130,12 @@
         // Listen for index directory updates to refresh panes when sizes change
         unlistenIndexEvents = await initIndexEvents(handleIndexDirUpdated)
 
+        // Refresh both panes when scan completes (aggregation just finished, all sizes available)
+        unlistenIndexScanComplete = await listen('index-scan-complete', () => {
+            getPaneRef('left')?.refreshIndexSizes?.()
+            getPaneRef('right')?.refreshIndexSizes?.()
+        })
+
         // Listen for MCP activate_tab events
         unlistenMcpActivateTab = await listen<{ pane: string; tabId: string }>('mcp-activate-tab', (event) => {
             const { pane, tabId } = event.payload
@@ -1287,6 +1294,7 @@
         unlistenDragModifiers?.()
         unlistenDragDrop?.()
         unlistenIndexEvents?.()
+        unlistenIndexScanComplete?.()
         unlistenMcpActivateTab?.()
         unlistenMcpPinTab?.()
         if (tabSyncTimer) clearTimeout(tabSyncTimer)
