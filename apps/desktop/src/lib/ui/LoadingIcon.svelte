@@ -16,9 +16,12 @@
 <div class="loading-container">
     <div class="spinner spinner-lg"></div>
     {#if finalizingCount !== undefined}
-        <div class="loading-text">All {formatNumber(finalizingCount)} files loaded, just a moment now.</div>
+        <div class="loading-text">
+            All {formatNumber(finalizingCount)}
+            {finalizingCount === 1 ? 'file' : 'files'} loaded. Sorting your files, preparing view...
+        </div>
     {:else if loadedCount !== undefined}
-        <div class="loading-text">Loaded {formatNumber(loadedCount)} files...</div>
+        <div class="loading-text">Loaded {formatNumber(loadedCount)} {loadedCount === 1 ? 'file' : 'files'}...</div>
     {:else if openingFolder}
         <div class="loading-text">Opening folder...</div>
     {:else}

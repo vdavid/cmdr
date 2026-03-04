@@ -51,6 +51,14 @@ describe('LoadingIcon component', () => {
             expect(loadingText?.textContent).toBe('Loaded 1,500 files...')
         })
 
+        it('uses singular "file" when loadedCount is 1', async () => {
+            mount(LoadingIcon, { target, props: { loadedCount: 1 } })
+            await tick()
+
+            const loadingText = target.querySelector('.loading-text')
+            expect(loadingText?.textContent).toBe('Loaded 1 file...')
+        })
+
         it('shows count of 0 when loadedCount is 0', async () => {
             mount(LoadingIcon, { target, props: { loadedCount: 0 } })
             await tick()
@@ -112,7 +120,15 @@ describe('LoadingIcon component', () => {
             await tick()
 
             const loadingText = target.querySelector('.loading-text')
-            expect(loadingText?.textContent).toBe('All 600 files loaded, just a moment now.')
+            expect(loadingText?.textContent).toBe('All 600 files loaded. Sorting your files, preparing view...')
+        })
+
+        it('uses singular "file" when finalizingCount is 1', async () => {
+            mount(LoadingIcon, { target, props: { finalizingCount: 1 } })
+            await tick()
+
+            const loadingText = target.querySelector('.loading-text')
+            expect(loadingText?.textContent).toBe('All 1 file loaded. Sorting your files, preparing view...')
         })
 
         it('finalizingCount takes precedence over loadedCount', async () => {
@@ -120,7 +136,7 @@ describe('LoadingIcon component', () => {
             await tick()
 
             const loadingText = target.querySelector('.loading-text')
-            expect(loadingText?.textContent).toBe('All 600 files loaded, just a moment now.')
+            expect(loadingText?.textContent).toBe('All 600 files loaded. Sorting your files, preparing view...')
         })
 
         it('shows finalizing message with cancel hint', async () => {
@@ -130,7 +146,7 @@ describe('LoadingIcon component', () => {
             const loadingText = target.querySelector('.loading-text')
             const cancelHint = target.querySelector('.cancel-hint')
 
-            expect(loadingText?.textContent).toBe('All 1,000 files loaded, just a moment now.')
+            expect(loadingText?.textContent).toBe('All 1,000 files loaded. Sorting your files, preparing view...')
             expect(cancelHint?.textContent).toBe('Press ESC to cancel and go back')
         })
     })
@@ -157,7 +173,7 @@ describe('LoadingIcon component', () => {
             await tick()
 
             const loadingText = target.querySelector('.loading-text')
-            expect(loadingText?.textContent).toBe('All 500 files loaded, just a moment now.')
+            expect(loadingText?.textContent).toBe('All 500 files loaded. Sorting your files, preparing view...')
         })
 
         it('shows "Loading..." when openingFolder is false and no counts', async () => {

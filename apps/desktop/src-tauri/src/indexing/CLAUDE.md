@@ -99,7 +99,7 @@ Key test files are alongside each module (test functions within `#[cfg(test)]` b
 
 **Writer-side delete-with-propagation**: `DeleteEntry` and `DeleteSubtree` handlers in the writer automatically read old data before deleting and propagate accurate negative deltas. This means every deletion -- replay, live, verification -- gets correct dir_stats updates without callers needing to send separate `PropagateDelta` messages. `delete_subtree` and `propagate_delta` have no internal transactions, so they're safe inside the replay's `BEGIN IMMEDIATE` transaction.
 
-**Post-replay verification is bidirectional**: `verify_affected_dirs` checks both directions: (1) stale entries in DB but not on disk (sends `DeleteEntry`/`DeleteSubtree`), and (2) missing entries on disk but not in DB (sends `UpsertEntry` + `PropagateDelta` for files, collects directory paths for `scan_subtree`). New directories are scanned and their subtree totals propagated up the ancestor chain. Uses a two-phase pattern to avoid blocking `enrich_entries_with_index`: Phase 1 holds the `GLOBAL_INDEX_STORE` lock briefly for bulk SQLite reads into a `HashMap`, Phase 2 does all disk I/O (hundreds of `readdir`/`exists`/`symlink_metadata` calls) without any lock.
+**Post-replay verification is bidirectional**: `verify_affected_dirs` checks both directions: (1) stale entries in DB but not on disk (sends `DeleteEntry`/`DeleteSubtree`), and (2) missing entries on disk but not in DB (sends `UpsertEntry` + `PropagateDelta` for files, collects directory paths for `scan_subtree`). New directories are scanned and their subtree totals propagated up the ancestor chain. Uses a two-phase pattern: Phase 1 holds the `GLOBAL_INDEX_STORE` lock for bulk SQLite reads into a `HashMap` (can take seconds with hundreds of affected dirs), Phase 2 does all disk I/O without any lock. `enrich_entries_with_index` uses `try_lock` to avoid blocking on Phase 1.
 
 **Schema version mismatch drops the DB**: If `schema_version` in meta doesn't match what the code expects, the entire DB is deleted and rebuilt. No migration path (it's a cache, not user data).
 
@@ -107,6 +107,6 @@ Key test files are alongside each module (test functions within `#[cfg(test)]` b
 
 **Scan cancellation leaves partial data**: By design. `scan_completed_at` not set in meta, so next startup detects incomplete scan and runs fresh. No cleanup needed.
 
-**Global read-only store uses `std::sync::Mutex`**: Not `RwLock`, because `rusqlite::Connection` is `Send` but not `Sync`. The mutex is held briefly for each batch read.
+**Global read-only store uses `std::sync::Mutex`**: Not `RwLock`, because `rusqlite::Connection` is `Send` but not `Sync`. `enrich_entries_with_index` uses `try_lock` to avoid blocking the listing pipeline when `verify_affected_dirs` Phase 1 holds the lock during startup (hundreds of serial SQLite queries for affected dirs). If the lock is busy, enrichment is skipped and retried on subsequent `get_file_range` calls.
 
 **Progress events use `tauri::async_runtime::spawn`**: Not `tokio::spawn`, because indexing can start from Tauri's synchronous `setup()` hook where no Tokio runtime context exists.

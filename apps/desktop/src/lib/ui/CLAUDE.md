@@ -53,8 +53,8 @@ Variants: `primary` | `secondary` (default) | `danger`. Sizes: `regular` (defaul
 
 Progressive status text driven by props (mutually exclusive, evaluated top-down):
 
-1. `finalizingCount` set → "All N files loaded, just a moment now."
-2. `loadedCount` set → "Loaded N files..."
+1. `finalizingCount` set → "All N file/files loaded. Sorting your files, preparing view..."
+2. `loadedCount` set → "Loaded N file/files..."
 3. `openingFolder` true → "Opening folder..."
 4. Default → "Loading..."
 

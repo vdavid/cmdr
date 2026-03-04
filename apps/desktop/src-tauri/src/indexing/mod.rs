@@ -68,13 +68,16 @@ fn clear_global_index_store() {
 /// Enrich directory entries with recursive size data from the index.
 ///
 /// Called from `get_file_range` on every page fetch. Does nothing if
-/// indexing is not initialized. For directories (non-symlinks), populates
-/// `recursive_size`, `recursive_file_count`, and `recursive_dir_count`
-/// from the `dir_stats` table via a batch SQLite read.
+/// indexing is not initialized. Uses `try_lock` to avoid blocking the
+/// listing pipeline when background verification holds the lock at startup.
+/// Skipped enrichment is retried on subsequent fetches.
 pub fn enrich_entries_with_index(entries: &mut [FileEntry]) {
-    let guard = match GLOBAL_INDEX_STORE.lock() {
+    let guard = match GLOBAL_INDEX_STORE.try_lock() {
         Ok(g) => g,
-        Err(_) => return,
+        Err(_) => {
+            log::debug!("Index enrichment skipped: store lock is held (background verification likely in progress)");
+            return;
+        }
     };
     let store = match guard.as_ref() {
         Some(s) => s,
