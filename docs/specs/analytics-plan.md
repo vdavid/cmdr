@@ -194,15 +194,18 @@ implementing the above:
 - [x] Add download event tracking to `Download.astro`
 - [x] Add env vars to `.env.example` and deployment config
 - [x] Set `PUBLIC_UMAMI_HOST` and `PUBLIC_UMAMI_WEBSITE_ID` in production deployment env
-- [ ] Verify data flows in Umami dashboard
+- [x] Verify data flows in Umami dashboard
 
 ### Milestone 2: Download tracking (CF Worker)
-- [ ] Decide: new route in license server vs separate Worker
-- [ ] Enable Analytics Engine in `wrangler.toml`
-- [ ] Implement `/download/:version/:arch` redirect endpoint
-- [ ] Update website download links to use the redirect
-- [ ] Update release workflow if `latest.json` needs changes
-- [ ] Test end-to-end: download via redirect, verify event logged
+- [x] Decide: new route in license server (avoids another deployment target)
+- [x] Enable Analytics Engine in `wrangler.toml` (binding: `DOWNLOADS`, dataset: `cmdr_downloads`)
+- [x] Implement `/download/:version/:arch` redirect endpoint in `index.ts`
+- [x] Update website `release.ts` to use redirect when `PUBLIC_DOWNLOAD_BASE_URL` is set
+- [x] Update `.env.example` with `PUBLIC_DOWNLOAD_BASE_URL`
+- [x] Update license server `CLAUDE.md` with new route and Analytics Engine docs
+- [x] Set `PUBLIC_DOWNLOAD_BASE_URL` in website production env
+- [x] Deploy license server: `cd apps/license-server && pnpm cf:deploy`
+- [ ] Test end-to-end: download via redirect, verify event logged in Analytics Engine
 
 ### Milestone 3: In-app analytics (PostHog)
 - [ ] Create PostHog project, get API key

@@ -2,16 +2,19 @@ import latestRelease from '../../public/latest.json'
 
 export const version = latestRelease.version
 
-const base = `https://github.com/vdavid/cmdr/releases/download/v${version}`
+const downloadBase = import.meta.env.PUBLIC_DOWNLOAD_BASE_URL
+const githubBase = `https://github.com/vdavid/cmdr/releases/download/v${version}`
 
-export const dmgUrls = {
-    aarch64: `${base}/Cmdr_${version}_aarch64.dmg`,
-    x86_64: `${base}/Cmdr_${version}_x86_64.dmg`,
-    universal: `${base}/Cmdr_${version}_universal.dmg`,
+function dmgUrl(arch: string): string {
+    if (downloadBase) return `${downloadBase}/download/${version}/${arch}`
+    return `${githubBase}/Cmdr_${version}_${arch}.dmg`
 }
 
-/** @deprecated Use dmgUrls instead */
-export const dmgUrl = dmgUrls.universal
+export const dmgUrls = {
+    aarch64: dmgUrl('aarch64'),
+    x86_64: dmgUrl('x86_64'),
+    universal: dmgUrl('universal'),
+}
 
 function formatBytes(bytes: number): string {
     return `${Math.round(bytes / (1024 * 1024))} MB`

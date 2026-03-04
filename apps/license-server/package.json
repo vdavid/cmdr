@@ -20,20 +20,20 @@
     },
     "dependencies": {
         "@noble/ed25519": "^3.0.0",
-        "hono": "^4.12.2",
-        "resend": "^6.6.0"
+        "hono": "^4.12.5",
+        "resend": "^6.9.3"
     },
     "devDependencies": {
-        "@cloudflare/workers-types": "^4.20260131.0",
-        "@eslint/js": "^9.39.2",
-        "eslint": "^9.39.2",
+        "@cloudflare/workers-types": "^4.20260301.1",
+        "@eslint/js": "^10.0.1",
+        "eslint": "^10.0.2",
         "eslint-config-prettier": "^10.1.8",
-        "eslint-plugin-prettier": "^5.5.4",
-        "globals": "^17.0.0",
-        "prettier": "^3.7.4",
+        "eslint-plugin-prettier": "^5.5.5",
+        "globals": "^17.4.0",
+        "prettier": "^3.8.1",
         "typescript": "^5.9.3",
-        "typescript-eslint": "^8.52.0",
-        "vitest": "^4.0.16",
-        "wrangler": "^4.61.1"
+        "typescript-eslint": "^8.56.1",
+        "vitest": "^4.0.18",
+        "wrangler": "^4.70.0"
     }
 }

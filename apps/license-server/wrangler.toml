@@ -9,6 +9,11 @@ compatibility_date = "2025-01-01"
 binding = "LICENSE_CODES"
 id = "64418f5cb33e4c629fe0ccf51be76399"
 
+# Analytics Engine for download tracking (created automatically on first write)
+[[analytics_engine_datasets]]
+binding = "DOWNLOADS"
+dataset = "cmdr_downloads"
+
 [vars]
 # Non-secret config
 PRODUCT_NAME = "Cmdr"

@@ -18,13 +18,14 @@ license keys, stores short activation codes in KV, and emails keys via Resend.
 
 ## Routes
 
-| Method | Path              | Auth         | Purpose                                            |
-| ------ | ----------------- | ------------ | -------------------------------------------------- |
-| GET    | `/`               | —            | Health check                                       |
-| POST   | `/webhook/paddle` | HMAC sig     | Purchase completed → generate & email key(s)       |
-| POST   | `/activate`       | —            | Exchange short code → full cryptographic key       |
-| POST   | `/validate`       | —            | Check subscription status via Paddle API           |
-| POST   | `/admin/generate` | Bearer token | Manual key generation (customer service / testing) |
+| Method | Path                       | Auth         | Purpose                                            |
+| ------ | -------------------------- | ------------ | -------------------------------------------------- |
+| GET    | `/`                        | —            | Health check                                       |
+| POST   | `/webhook/paddle`          | HMAC sig     | Purchase completed → generate & email key(s)       |
+| POST   | `/activate`                | —            | Exchange short code → full cryptographic key       |
+| POST   | `/validate`                | —            | Check subscription status via Paddle API           |
+| POST   | `/admin/generate`          | Bearer token | Manual key generation (customer service / testing) |
+| GET    | `/download/:version/:arch` | —            | Log download to Analytics Engine, 302 → GitHub     |
 
 ## Data flow
 
@@ -39,6 +40,8 @@ Paddle webhook → HMAC verify (live + sandbox secrets)
 App activation: POST /activate → KV.get(shortCode) → return fullKey
 
 Subscription validation: POST /validate → Paddle API transactions + subscriptions
+
+Download redirect: GET /download/:version/:arch → log to Analytics Engine → 302 to GitHub Releases
 ```
 
 ## Key patterns
@@ -62,6 +65,10 @@ Cloudflare secrets (`wrangler secret put`), never in `wrangler.toml`.
 
 **No database:** All state lives in Cloudflare KV. Short codes never expire (perpetual licenses last forever);
 subscription validity is checked live via Paddle API.
+
+**Download tracking:** Uses Cloudflare Analytics Engine (binding: `DOWNLOADS`, dataset: `cmdr_downloads`).
+`writeDataPoint` is fire-and-forget. Data schema: indexes=[version], blobs=[version, arch, country, continent],
+doubles=[1]. Query via CF Analytics Engine SQL API.
 
 ## Dependencies
 

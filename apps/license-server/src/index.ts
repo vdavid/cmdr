@@ -13,6 +13,8 @@ import {
 type Bindings = {
     // KV namespace for license code -> full key mappings
     LICENSE_CODES: KVNamespace
+    // Analytics Engine for download tracking
+    DOWNLOADS: AnalyticsEngineDataset
     // Paddle webhook secrets (both optional to support gradual rollout)
     PADDLE_WEBHOOK_SECRET_LIVE?: string
     PADDLE_WEBHOOK_SECRET_SANDBOX?: string
@@ -432,6 +434,31 @@ app.post('/admin/generate', async (c) => {
     await c.env.LICENSE_CODES.put(shortCode, JSON.stringify(stored))
 
     return c.json({ code: shortCode, type, organizationName: organizationName ?? null })
+})
+
+// Download redirect — tracks version, arch, and country, then redirects to GitHub Releases
+const validArchitectures = new Set(['aarch64', 'x86_64', 'universal'])
+const versionPattern = /^\d+\.\d+\.\d+$/
+
+app.get('/download/:version/:arch', (c) => {
+    const { version, arch } = c.req.param()
+
+    if (!versionPattern.test(version) || !validArchitectures.has(arch)) {
+        return c.json({ error: 'Invalid version or architecture' }, 400)
+    }
+
+    const cf = c.req.raw.cf as { country?: string; continent?: string } | undefined
+    const country = cf?.country ?? 'unknown'
+    const continent = cf?.continent ?? 'unknown'
+
+    // Fire-and-forget — writeDataPoint is non-blocking
+    c.env.DOWNLOADS.writeDataPoint({
+        indexes: [version],
+        blobs: [version, arch, country, continent],
+        doubles: [1],
+    })
+
+    return c.redirect(`https://github.com/vdavid/cmdr/releases/download/v${version}/Cmdr_${version}_${arch}.dmg`, 302)
 })
 
 export default app

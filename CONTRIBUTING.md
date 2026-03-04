@@ -131,6 +131,21 @@ Or add it via CLI like:
 Since the agent shares the context with your IDE/client, enabling the MCP server makes the tools available to the agent
 automatically.
 
+## Cloudflare access (license server)
+
+The license server is a Cloudflare Worker. To deploy it or run `wrangler` commands, you need a Cloudflare API token.
+
+1. Go to https://dash.cloudflare.com/profile/api-tokens → **Create Token** → **Custom token**
+2. Permissions: `Account / Workers Scripts / Edit`, `Account / Analytics Engine / Read`
+3. Account resources: the Cmdr account only
+4. Add to `~/.zshenv` (sourced for all shells, including non-interactive agent sessions):
+   ```sh
+   export CLOUDFLARE_API_TOKEN="your-token"
+   ```
+5. Restart your shell or `source ~/.zshenv`
+
+Wrangler picks up `CLOUDFLARE_API_TOKEN` automatically — no `wrangler login` needed.
+
 ## Infrastructure access (maintainers)
 
 If you have SSH access to the production server (`ssh hetzner`) and credentials for services like Umami, Cloudflare,

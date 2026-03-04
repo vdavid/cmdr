@@ -46,7 +46,7 @@ them to customers via Resend.
     URL `https://cmdr-license-server.veszelovszki.workers.dev/webhook/paddle`, and tick event `transaction.completed`.
 11. Paddle (sandbox): Click "..." → Edit destination → copy "Secret key". (Looks like `pdl_ntfset_01keh5q...`)
 12. TODO: Paddle live!
-13. Cloudflare: (first time only) `npx wrangler login` to log in to Cloudflare.
+13. Cloudflare: Set `CLOUDFLARE_API_TOKEN` in `~/.zshenv` (see [CONTRIBUTING.md](../../CONTRIBUTING.md#cloudflare-access-license-server) for how to create one). Alternatively, run `npx wrangler login` for browser-based OAuth (interactive only, won't work for agents).
 14. Cloudflare: Set secrets (supports both live and sandbox simultaneously):
     - `npx wrangler secret put PADDLE_WEBHOOK_SECRET_SANDBOX` - From sandbox webhook (step 11)
     - `npx wrangler secret put PADDLE_WEBHOOK_SECRET_LIVE` - From live webhook (once approved)
@@ -104,12 +104,14 @@ Then open http://localhost:3333 and click "Buy Cmdr".
 
 ## Endpoints
 
-| Method | Path              | Description                                        |
-| ------ | ----------------- | -------------------------------------------------- |
-| `GET`  | `/`               | Health check                                       |
-| `POST` | `/webhook/paddle` | Paddle webhook (generates and emails license)      |
-| `POST` | `/validate`       | Validate license key (returns subscription status) |
-| `POST` | `/admin/generate` | Manual license generation (requires auth header)   |
+| Method | Path                       | Description                                        |
+| ------ | -------------------------- | -------------------------------------------------- |
+| `GET`  | `/`                        | Health check                                       |
+| `POST` | `/webhook/paddle`          | Paddle webhook (generates and emails license)      |
+| `POST` | `/activate`                | Exchange short code for full cryptographic key      |
+| `POST` | `/validate`                | Validate license key (returns subscription status) |
+| `POST` | `/admin/generate`          | Manual license generation (requires auth header)   |
+| `GET`  | `/download/:version/:arch` | Log download to Analytics Engine, 302 → GitHub     |
 
 ## Architecture decisions
 

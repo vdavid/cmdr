@@ -158,6 +158,7 @@ Set the following (get values from the relevant dashboards):
 | `PUBLIC_LISTMONK_LIST_UUID` | Listmonk admin > Lists > your list > Settings |
 | `PUBLIC_UMAMI_HOST` | Your Umami instance URL (for example, `https://analytics.example.com`) |
 | `PUBLIC_UMAMI_WEBSITE_ID` | Umami > Settings > Websites > getcmdr.com > ID |
+| `PUBLIC_DOWNLOAD_BASE_URL` | `https://license.getcmdr.com` — routes downloads through the license server for analytics. Leave empty to link directly to GitHub. |
 
 ### 9. Set up Docker network and do initial deploy
 
