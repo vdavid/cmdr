@@ -92,11 +92,11 @@
             cmds = cmds.filter((c) => matchedIds.has(c.id))
         }
 
-        // Filter by key search (exact match on effective shortcuts)
+        // Filter by key search (subset match: filter's modifiers + key must all be present in shortcut)
         if (keySearchQuery.trim()) {
             cmds = cmds.filter((c) => {
                 const shortcuts = getEffectiveShortcuts(c.id)
-                return shortcuts.some((s) => s.toLowerCase().includes(keySearchQuery.toLowerCase()))
+                return shortcuts.some((s) => keyFilterMatches(s, keySearchQuery))
             })
         }
 
@@ -262,6 +262,34 @@
         if (confirmed) {
             await resetAllShortcuts()
         }
+    }
+
+    /** Check if a filter combo is a subset of a shortcut (all filter modifiers + key present in shortcut) */
+    const macModifierSet = new Set(['⌘', '⌃', '⌥', '⇧'])
+    const nonMacModifierSet = new Set(['Ctrl', 'Alt', 'Shift', 'Super'])
+
+    function splitCombo(combo: string): { mods: Set<string>; key: string } {
+        if (isMacOS()) {
+            const chars = Array.from(combo)
+            const mods = new Set(chars.filter((ch) => macModifierSet.has(ch)))
+            const key = chars.filter((ch) => !macModifierSet.has(ch)).join('')
+            return { mods, key }
+        }
+        const parts = combo.split('+')
+        const mods = new Set(parts.filter((p) => nonMacModifierSet.has(p)))
+        const key = parts.filter((p) => !nonMacModifierSet.has(p)).join('+')
+        return { mods, key }
+    }
+
+    function keyFilterMatches(shortcut: string, filter: string): boolean {
+        const s = splitCombo(shortcut)
+        const f = splitCombo(filter)
+
+        for (const mod of f.mods) {
+            if (!s.mods.has(mod)) return false
+        }
+        if (f.key && s.key.toLowerCase() !== f.key.toLowerCase()) return false
+        return true
     }
 
     // Key filter field: track modifiers and build combo string
