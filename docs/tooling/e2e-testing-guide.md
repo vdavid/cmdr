@@ -11,7 +11,10 @@ Cmdr uses three E2E testing approaches:
 3. **macOS E2E tests** (WebDriverIO + CrabNebula): Test the actual Tauri application on macOS via CrabNebula's WKWebView
    WebDriver bridge.
 
-### Why separate test suites?
+#For testing on a real Linux desktop (manual testing, debugging WebKitGTK behavior), see
+[ubuntu-test-vm.md](ubuntu-test-vm.md).
+
+## Why separate test suites?
 
 - **Smoke tests**: Run in a browser, so Tauri IPC is unavailable. Only tests UI structure and basic interactions.
 - **Linux E2E tests**: Run against the real Tauri app via tauri-driver, enabling full file operation testing.

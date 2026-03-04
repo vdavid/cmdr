@@ -55,6 +55,8 @@ Run the smallest set of checks possible for efficiency while maintaining confide
   |gocyclo|nilaway|govulncheck|deadcode|go-tests|website-prettier|website-eslint|website-typecheck|website-build
   |website-e2e|pnpm-audit|file-length}` (can use multiple `--check` flags or even a comma-separated list)
 - Run all: `./scripts/check.sh`. Runs all tests, linters, and formatters (with auto fixing) for all apps.
+- **E2E testing**: Full guide on Docker E2E, Playwright smoke tests, VNC debugging, fixture system:
+  [docs/tooling/e2e-testing-guide.md](docs/tooling/e2e-testing-guide.md)
 - See also `./scripts/check.sh --help`
 - **CI**: Runs automatically on PRs and pushes to main, but only for changed files. To run all checks regardless of
   changes: Actions → CI → "Run workflow" → select branch → Run workflow.
@@ -211,5 +213,6 @@ Always do a last round of checks before wrapping up:
 - [SvelteKit docs](https://svelte.dev/docs/kit/introduction)
 - [Cargo-deny docs](https://embarkstudios.github.io/cargo-deny/)
 - [Style guide](docs/style-guide.md) - Keep this in mind! Especially "Sentence case" for titles and labels!
+- [Infrastructure](docs/tooling/infrastructure.md) - VPS access (`ssh hetzner`), Umami analytics API, deployment
 
 Happy coding! 🦀✨

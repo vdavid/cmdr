@@ -131,4 +131,10 @@ Or add it via CLI like:
 Since the agent shares the context with your IDE/client, enabling the MCP server makes the tools available to the agent
 automatically.
 
+## Infrastructure access (maintainers)
+
+If you have SSH access to the production server (`ssh hetzner`) and credentials for services like Umami, Cloudflare,
+and Paddle, see [docs/tooling/infrastructure.md](docs/tooling/infrastructure.md) for VPS layout, API recipes, and
+common operations.
+
 Happy coding!

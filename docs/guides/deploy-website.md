@@ -138,6 +138,27 @@ Add this secret:
 | `DEPLOY_WEBHOOK_SECRET`  | The secret from step 4     |
 
 ### 8. Set up Docker network and do initial deploy
+### 8. Configure website environment variables
+
+Astro bakes `PUBLIC_*` env vars into the static build, so they must be present in `.env` before building.
+
+```bash
+sudo -u deploy-cmdr -i
+cd /opt/cmdr/apps/website
+cp .env.example .env
+nano .env
+```
+
+Set the following (get values from the relevant dashboards):
+
+| Variable | Where to get it |
+| --- | --- |
+| `PUBLIC_PADDLE_CLIENT_TOKEN` | [Paddle dashboard](https://vendors.paddle.com) |
+| `PUBLIC_PADDLE_PRICE_ID_*` | Paddle > Catalog > Prices |
+| `PUBLIC_PADDLE_ENVIRONMENT` | `sandbox` or `live` |
+| `PUBLIC_LISTMONK_LIST_UUID` | Listmonk admin > Lists > your list > Settings |
+
+### 9. Set up Docker network and do initial deploy
 
 ```bash
 # As deploy-cmdr user
@@ -151,7 +172,7 @@ docker network create proxy-net 2>/dev/null || true
 docker compose up -d --build
 ```
 
-### 9. Make deploy script executable
+### 10. Make deploy script executable
 
 ```bash
 chmod +x /opt/cmdr/infra/deploy-webhook/deploy-website.sh

@@ -57,8 +57,7 @@ dismiss). The About window and modals read the cached value on mount.
   then every 30 days.
 - **Server validation grace period** — 14 days. After that, expired license shows modal on next launch.
 - **Trial persistence via Keychain** — uses IOPlatformUUID (hashed). Survives reinstalls. Fresh trial on new Mac.
-- **Activation system not yet implemented** — 2-device limit will be enforced via Cloudflare Worker + D1. Self-service
-  deactivation via UI.
+- **Activation system not yet implemented** — Self-service deactivation via UI.
 
 ## Development
 
