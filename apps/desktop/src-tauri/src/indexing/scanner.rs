@@ -259,11 +259,16 @@ fn run_scan(
     let mut total_dirs: u64 = 0;
 
     // Initialize the scan context: seed root mapping and get next_id from DB.
-    // We need a temporary read connection to fetch next_id. The writer thread
-    // owns the write connection, but we only need a read here.
+    // Volume-root scans need a write connection (to create the root sentinel).
+    // Subtree scans only read (next_id + resolve_path), so use a read connection
+    // to avoid contending with the writer thread's write lock.
     let mut scan_ctx = {
         let db_path = writer.db_path();
-        let conn = IndexStore::open_write_connection(&db_path).map_err(|e| ScanError::WriterSend(e.to_string()))?;
+        let conn = if is_volume_root {
+            IndexStore::open_write_connection(&db_path).map_err(|e| ScanError::WriterSend(e.to_string()))?
+        } else {
+            IndexStore::open_read_connection(&db_path).map_err(|e| ScanError::WriterSend(e.to_string()))?
+        };
         conn.busy_timeout(std::time::Duration::from_secs(5))
             .map_err(|e| ScanError::WriterSend(e.to_string()))?;
         ScanContext::new(&conn, root, is_volume_root).map_err(|e| ScanError::WriterSend(e.to_string()))?

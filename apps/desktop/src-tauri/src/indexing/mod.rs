@@ -1210,6 +1210,13 @@ async fn run_background_verification(
     // Scan newly discovered directories (inserts children + computes subtree aggregates).
     // Skip excluded paths (system dirs like /System, /dev) that aren't in the index.
     if !verify_result.new_dir_paths.is_empty() {
+        // Flush first: verify_affected_dirs sent UpsertEntryV2 for each new dir, but those
+        // writes are still queued. scan_subtree opens a read connection to resolve the dir's
+        // path → entry_id, which fails if the entry isn't committed yet.
+        if let Err(e) = writer.flush().await {
+            log::warn!("Background verification pre-scan flush failed: {e}");
+        }
+
         let cancelled = AtomicBool::new(false);
         for dir_path in &verify_result.new_dir_paths {
             if scanner::should_exclude(dir_path) {

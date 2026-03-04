@@ -86,8 +86,12 @@ impl ScanContext {
     /// Returns an error if the root isn't indexed yet (for example, a micro-scan
     /// racing with an ongoing full scan — the full scan will cover it).
     pub fn new(conn: &Connection, root: &Path, is_volume_root: bool) -> Result<Self, IndexStoreError> {
-        // Ensure the root sentinel exists
-        ensure_root_sentinel(conn)?;
+        // Only volume-root scans need to create the sentinel — subtree scans
+        // run after the full scan has already inserted it, and their connection
+        // may be read-only or contending with the writer thread's write lock.
+        if is_volume_root {
+            ensure_root_sentinel(conn)?;
+        }
 
         let next_id = IndexStore::get_next_id(conn)?;
 
@@ -431,6 +435,16 @@ impl IndexStore {
     /// Used by the writer thread; callers own the returned connection.
     pub fn open_write_connection(db_path: &Path) -> Result<Connection, IndexStoreError> {
         let conn = Connection::open(db_path)?;
+        register_platform_case_collation(&conn)?;
+        apply_pragmas(&conn)?;
+        Ok(conn)
+    }
+
+    /// Open a read-only connection with WAL pragmas and `platform_case` collation.
+    ///
+    /// Never contends with the writer thread's write lock.
+    pub fn open_read_connection(db_path: &Path) -> Result<Connection, IndexStoreError> {
+        let conn = Connection::open_with_flags(db_path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)?;
         register_platform_case_collation(&conn)?;
         apply_pragmas(&conn)?;
         Ok(conn)
