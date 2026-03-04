@@ -215,6 +215,15 @@ var AllChecks = []CheckDefinition{
 		Run:         RunWebsiteTypecheck,
 	},
 	{
+		ID:          "website-docker-build",
+		Nickname:    "docker-build",
+		DisplayName: "docker build",
+		App:         AppWebsite,
+		Tech:        "🐳 Docker",
+		DependsOn:   nil,
+		Run:         RunWebsiteDockerBuild,
+	},
+	{
 		ID:          "website-build",
 		DisplayName: "build",
 		App:         AppWebsite,

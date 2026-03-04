@@ -81,6 +81,16 @@ check name, duration, result (pass/fail/skip/blocked), and optional counts (tota
 `CheckResult` has `Total`, `Issues`, `Changes` fields (`-1` = N/A, rendered as `N/A` in CSV).
 Disabled by `--no-log` or `--ci`. Implementation in `stats.go`.
 
+## Adding a new check
+
+1. Create `checks/{app}-{name}.go` with a `func RunSomething(ctx *CheckContext) (CheckResult, error)`.
+   Use `website-build.go` or `website-docker.go` as templates — they're the simplest.
+2. Register it in `AllChecks` in `registry.go` (ID, App, Tech, DependsOn, Run).
+3. Return `Success("message")` on pass, `fmt.Errorf(...)` on fail, `Skipped("reason")` to skip.
+4. Add a test file if the check has non-trivial logic (`checks/{app}-{name}_test.go`).
+5. Run `./scripts/check.sh --go` to verify (staticcheck is strict about idiomatic Go).
+6. Update the table below and `AGENTS.md`'s `--check` list.
+
 ## Apps and check counts
 
 | App | Tech | Checks |
@@ -88,6 +98,7 @@ Disabled by `--no-log` or `--ci`. Implementation in `stats.go`.
 | Desktop | Rust | rustfmt, clippy, cargo-audit, cargo-deny, cargo-udeps, jscpd, tests, tests-linux (slow) |
 | Desktop | Svelte | prettier, eslint, stylelint, css-unused, svelte-check, knip, type-drift, tests, smoke, e2e-linux-typecheck, e2e-linux (slow) |
 | Website | Astro | prettier, eslint, typecheck, build, e2e |
+| Website | Docker | docker-build |
 | License server | TS | prettier, eslint, typecheck, tests |
 | Scripts | Go | gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, govulncheck, deadcode, go-tests |
 | Other | pnpm | pnpm-audit |
