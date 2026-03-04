@@ -10,10 +10,35 @@ Webhook listener for GitHub Actions to trigger deployments without requiring SSH
 4. Webhook verifies the HMAC-SHA256 signature
 5. If valid, runs `deploy-website.sh`
 
+The deploy script builds the new Docker image **before** stopping the old container. If the
+build fails, the existing site stays up.
+
 ## Files
 
 - `hooks.json` — Webhook configuration (reads secret from env var)
 - `deploy-website.sh` — The actual deployment script
+
+## Logs
+
+Deploy output is appended to `/var/log/cmdr/deploy-website.log` on the server.
+
+To view recent deploy logs:
+
+```bash
+ssh hetzner "tail -50 /var/log/cmdr/deploy-website.log"
+```
+
+## Granting journalctl access to the deploy user
+
+The `deploy-cmdr` user can't read systemd journal by default. To fix that without
+giving sudo, add it to the `systemd-journal` group:
+
+```bash
+sudo usermod -aG systemd-journal deploy-cmdr
+```
+
+After that, `deploy-cmdr` can run `journalctl` to see service logs (read-only, no
+sudo needed).
 
 ## Security
 
