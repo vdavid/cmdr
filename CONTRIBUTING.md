@@ -181,6 +181,20 @@ Paddle handles payments and subscriptions. Two API keys are needed — one for l
 
 See [infrastructure.md](docs/tooling/infrastructure.md#paddle-payments) for API recipes.
 
+## ngrok access (tunnels)
+
+ngrok exposes local servers to the internet — useful for testing webhooks (for example, Paddle) against your local
+license server.
+
+1. Go to https://dashboard.ngrok.com → **Your Authtoken** (or **API** → **API Keys** for the API key)
+2. Add to `~/.zshenv`:
+   ```sh
+   export NGROK_API_KEY="your-api-key"
+   ```
+3. Restart your shell or `source ~/.zshenv`
+
+See [infrastructure.md](docs/tooling/infrastructure.md#ngrok-tunnels) for API recipes.
+
 ## License server local dev
 
 To run the license server locally (for testing license activation, generating test keys, etc.), you need a `.dev.vars`
