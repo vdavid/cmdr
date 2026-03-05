@@ -11,27 +11,30 @@ go directly to GitHub Releases with no tracking. This plan closes that gap.
 ## Guiding principles
 
 - **Privacy first**: No PII, no individual tracking, no cookies where avoidable.
-- **Self-hosted where practical**: Umami on our VM, PostHog only where self-hosting is impractical (in-app product
-  analytics with funnels/retention).
-- **Minimal footprint**: No heavy SDKs. HTTP POST calls where possible.
-- **Honest privacy policy**: Only claim what we actually do. Update it to match reality.
+- **Website only**: All analytics live on getcmdr.com. The desktop app collects nothing (beyond license validation).
+- **Self-hosted where practical**: Umami on our VM for page analytics. PostHog cloud for session replay/heatmaps
+  (self-hosting PostHog is heavy and not worth it).
+- **Honest privacy policy**: Only claim what we actually do. Remove the false in-app analytics claim.
 
 ## Architecture overview
 
 ```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────────┐
-│  getcmdr.com    │     │  Cmdr desktop app │     │  Download redirect  │
-│  (Astro)        │     │  (Tauri)          │     │  (CF Worker)        │
-│                 │     │                   │     │                     │
-│  Umami script ──┼──►  │  PostHog HTTP ────┼──►  │  Logs version +    │
-│  (cookieless)   │     │  capture API      │     │  arch + country    │
-│                 │     │  (anonymous)      │     │  then 302 → GitHub │
-└────────┬────────┘     └────────┬──────────┘     └──────────┬──────────┘
-         │                       │                           │
-         ▼                       ▼                           ▼
-   Umami server            PostHog cloud              Cloudflare KV or
-   (self-hosted VM)        (free tier)                Analytics Engine
+┌──────────────────────────────────┐     ┌─────────────────────┐
+│  getcmdr.com (Astro)             │     │  Download redirect  │
+│                                  │     │  (CF Worker)        │
+│  Umami script ───► Umami server  │     │                     │
+│  (cookieless)      (self-hosted) │     │  Logs version +     │
+│                                  │     │  arch + country     │
+│  PostHog JS ─────► PostHog cloud │     │  then 302 → GitHub  │
+│  (session replay,  (free tier)   │     │                     │
+│   heatmaps, clicks)              │     │                     │
+└──────────────────────────────────┘     └──────────┬──────────┘
+                                                    │
+                                                    ▼
+                                              Analytics Engine
 ```
+
+The desktop app has **no analytics**. All behavior tracking lives on the website.
 
 ## Milestone 1: Website analytics with Umami
 
@@ -115,54 +118,51 @@ Analytics Engine is the better fit unless the free tier becomes a concern (unlik
 5. **Update `latest.json`** generation in the release workflow if it contains direct GitHub URLs.
 6. **Test**: download via the new URL, verify the redirect works and the event is logged.
 
-## Milestone 3: In-app product analytics with PostHog
+## Milestone 3: Website behavior tracking with PostHog
 
-### Why PostHog for in-app (not Umami)
+### Why PostHog on the website (not in the desktop app)
 
-- PostHog has funnels, retention, cohorts, and feature flags — Umami doesn't.
-- PostHog's free tier (1M events/month) is more than enough for a desktop app's launch phase.
-- We only need PostHog's HTTP capture API (`POST https://us.i.posthog.com/capture`), no SDK.
+We want to understand how visitors interact with getcmdr.com: where they scroll, what they click, where they drop off.
+This is a HotJar-like use case. PostHog provides session replay, heatmaps, and click tracking on its free tier.
 
-### Design principles for in-app telemetry
+The desktop app has **no telemetry**. The privacy policy's "aggregate usage statistics" claim will be removed (it was
+never implemented). This is a deliberate choice: a file manager touching your files should collect nothing.
 
-- **Anonymous by default**: Use a random `distinct_id` generated on first launch, stored locally. Not tied to email,
-  license key, or any PII. Rotate it if the user resets the app. This keeps the "no individual tracking" promise.
-- **Opt-out available**: Add a toggle in Settings. Respect it immediately.
-- **Events, not sessions**: We're a desktop app, not a web app. Track discrete actions, not page views.
-- **No content**: Never include file names, paths, AI prompts, or user content in events.
+### Why PostHog alongside Umami (not instead of)
 
-### What to track (starter set)
+- **Umami**: Lightweight, cookieless page-level analytics (page views, referrers, geo, UTM). Self-hosted. Stays.
+- **PostHog**: Session replay, heatmaps, click maps, scroll depth, funnels. These are qualitative — Umami can't do
+  them. PostHog's JS snippet is needed for this.
 
-| Event | Properties | Why |
-|---|---|---|
-| `app_launched` | `version`, `os_version`, `arch` | Understand active user base |
-| `feature_used` | `feature` (for example, `copy`, `network_browse`, `search`, `command_palette`) | Know which features matter |
-| `settings_changed` | `setting_key` (not the value) | Understand what people customize |
-| `update_installed` | `from_version`, `to_version` | Track update adoption |
-| `license_activated` | `license_type` (`personal`/`commercial`) | Understand conversion |
+They serve different purposes with minimal overlap. Umami tells us "how many people visited /pricing", PostHog tells
+us "people scroll past the feature list without reading it".
 
-Keep the event list small. Each event should answer a specific product question.
+### What PostHog gives us
+
+- **Session replay**: Watch real visitor sessions (anonymized). See where they get confused or drop off.
+- **Heatmaps**: See click density on each page. Find dead zones and missed CTAs.
+- **Scroll depth**: See how far people scroll on the landing page. Optimize content placement.
+- **Funnels**: Landing → Download → (later) Activate license. Where do people drop off?
+- **Free tier**: 5K session replays/month, 1M events/month. More than enough for launch.
 
 ### Steps
 
-1. **Create a PostHog project** (cloud, free tier). Get the project API key.
-2. **Implement a telemetry module** in the Svelte frontend (`$lib/telemetry/`):
-   - `telemetry.svelte.ts`: reactive state for opt-in/opt-out, `distinct_id` generation and persistence.
-   - `capture.ts`: thin wrapper around `fetch('https://us.i.posthog.com/capture', ...)`. No SDK dependency.
-   - Respect the opt-out setting. If opted out, `capture()` is a no-op.
-3. **Add the opt-out toggle** in Settings, under a "Privacy" or "Telemetry" section.
-4. **Instrument the starter events** listed above.
-5. **Disable in dev mode**: Don't send events when running `pnpm dev`. Use an env var or check `import.meta.env.DEV`.
-6. **Verify**: Check PostHog dashboard for incoming events.
+1. **Add the PostHog JS snippet** to `Layout.astro`, similar to Umami. Use `PUBLIC_POSTHOG_KEY` env var.
+   Guard with the same prod-only check. PostHog's lightweight snippet (`posthog-js`) auto-captures page views,
+   clicks, and enables session replay and heatmaps.
+2. **Configure PostHog** to respect privacy:
+   - Disable autocapture of text input values (default off, but verify).
+   - Enable session replay with DOM masking for sensitive elements (if any — our website is public content).
+   - No need for identified users — all anonymous.
+3. **Add env vars** to `.env.example`: `PUBLIC_POSTHOG_KEY`, `PUBLIC_POSTHOG_HOST` (defaults to `us.i.posthog.com`).
+4. **Disable in dev mode**: Same pattern as Umami — only load when env var is set.
+5. **Verify**: Check PostHog dashboard for session replays and heatmap data.
 
-### Open question: Rust-side events?
+### Note on cookies
 
-Some events (like file operation counts) might be easier to capture from Rust. Options:
-- Emit them as Tauri events, let the frontend capture and forward to PostHog.
-- Or call PostHog's HTTP API directly from Rust (adds a dependency: `reqwest` or similar).
-
-Recommendation: start with frontend-only. Add Rust-side capture later if needed. Simpler to maintain one telemetry
-path.
+PostHog JS does set a first-party cookie (`ph_*`) to correlate page views within a session. This is necessary for
+session replay to work. The privacy policy needs to mention this (unlike Umami which is cookieless). However, it's
+a first-party analytics cookie, not cross-site tracking.
 
 ## Milestone 4: Update the privacy policy
 
@@ -171,20 +171,23 @@ implementing the above:
 
 ### Changes needed
 
-1. **Website analytics section**: Replace PostHog with Umami. Mention it's self-hosted and cookieless.
-2. **Remove or shrink the cookies section**: Umami doesn't set cookies. Only Paddle might (for checkout).
-3. **In-app analytics section**: Keep the current language about aggregate stats. Add that PostHog is the provider.
-   Emphasize the anonymous `distinct_id` and opt-out toggle.
-4. **Download tracking**: Add a brief mention that we track download counts by version and country. No PII involved.
-5. **Data processors list**: Remove PostHog from website, add it under in-app. Add a note that website analytics
-   are self-hosted (no third-party processor).
+1. **Website analytics section**: Currently says "PostHog" only. Rewrite to mention both Umami (self-hosted,
+   cookieless page analytics) and PostHog (session replay, heatmaps, click tracking with a first-party cookie).
+2. **In-app analytics section**: The current claim about "aggregate usage statistics" was never implemented. **Remove
+   it entirely.** The desktop app collects nothing beyond license validation. Be honest.
+3. **Download tracking**: Add a brief mention that we track download counts by version and country. No PII involved.
+4. **Cookies section**: Update to reflect that Umami is cookieless but PostHog sets a first-party `ph_*` cookie for
+   session replay. No third-party or cross-site tracking cookies.
+5. **Data processors list**: Keep PostHog (now accurate — it's used for website behavior tracking). Add a note that
+   Umami is self-hosted (no third-party processor for page analytics).
 6. **Update `lastUpdated` date**.
 
 ### Net effect on privacy posture
 
-- **Better**: Self-hosted, cookieless website analytics. Fewer third-party processors for the website.
-- **Honest**: In-app analytics now actually exist and match what the policy says.
-- **Transparent**: Opt-out toggle gives users control.
+- **More honest**: No more claiming in-app analytics that don't exist. The desktop app collects nothing.
+- **Transparent**: Two website analytics tools, each explained clearly with different purposes.
+- **Fair trade-off**: PostHog adds a cookie, but only first-party, and only for understanding website UX.
+  The cookie section now has real content instead of being misleading.
 
 ## Task list
 
@@ -207,17 +210,19 @@ implementing the above:
 - [x] Deploy license server: `cd apps/license-server && pnpm cf:deploy`
 - [ ] Test end-to-end: download via redirect, verify event logged in Analytics Engine
 
-### Milestone 3: In-app analytics (PostHog)
-- [ ] Create PostHog project, get API key
-- [ ] Implement `$lib/telemetry/` module (capture, opt-out, anonymous ID)
-- [ ] Add opt-out toggle in Settings
-- [ ] Instrument starter events
-- [ ] Disable in dev mode
-- [ ] Verify events in PostHog dashboard
+### Milestone 3: Website behavior tracking (PostHog)
+- [x] Create PostHog project, get API key
+- [x] Add PostHog via `posthog-js` npm package with dynamic import in `Layout.astro` (prod-only, env var gated)
+- [x] Configure: `person_profiles: 'identified_only'`, `capture_pageleave: true` (anonymous, no person profiles)
+- [x] Add `PUBLIC_POSTHOG_KEY` and `PUBLIC_POSTHOG_HOST` to `.env.example`
+- [x] Set `PUBLIC_POSTHOG_KEY` in production env (`/opt/cmdr/apps/website/.env` on Hetzner)
+- [x] Enable session replay and heatmaps in PostHog project settings
+- [x] Add getcmdr.com as authorized domain for PostHog toolbar
+- [ ] Verify session replays and heatmaps in PostHog dashboard
 
 ### Milestone 4: Privacy policy update
 - [ ] Rewrite website analytics section (Umami, self-hosted, cookieless)
-- [ ] Rewrite in-app analytics section (PostHog, anonymous, opt-out)
+- [ ] Remove false in-app analytics claim, rewrite to reflect reality (no desktop telemetry)
 - [ ] Add download tracking mention
 - [ ] Update data processors list
 - [ ] Shrink cookies section

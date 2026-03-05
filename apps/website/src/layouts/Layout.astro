@@ -78,6 +78,24 @@ const {
     </head>
     <body class="min-h-screen">
         <slot />
+
+        {
+            /* PostHog — session replay, heatmaps, click tracking. Dynamically imported so the
+            ~100 KB bundle only loads when the key is set (production). */
+        }
+        <script>
+            const key = import.meta.env.PUBLIC_POSTHOG_KEY
+            if (key) {
+                import('posthog-js').then(({ default: posthog }) => {
+                    posthog.init(key, {
+                        api_host: import.meta.env.PUBLIC_POSTHOG_HOST || 'https://eu.i.posthog.com',
+                        person_profiles: 'identified_only',
+                        capture_pageleave: true,
+                    })
+                })
+            }
+        </script>
+
         <script is:inline>
             ;(function () {
                 if (!navigator.userAgentData) return

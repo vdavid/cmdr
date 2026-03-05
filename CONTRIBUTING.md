@@ -151,6 +151,27 @@ The license server is a Cloudflare Worker. To deploy it or run `wrangler` comman
 
 Wrangler picks up `CLOUDFLARE_API_TOKEN` automatically — no `wrangler login` needed.
 
+## PostHog access (website analytics)
+
+PostHog is used for session replay and heatmaps on getcmdr.com. To use the PostHog management API (for example, to
+update project settings), you need a personal API key.
+
+1. Go to https://eu.posthog.com/settings/user-api-keys → **Create personal API key**
+2. Scope it to the Cmdr project
+3. Add to `~/.zshenv`:
+   ```sh
+   export POSTHOG_API_KEY="phx_your-key"
+   ```
+4. Restart your shell or `source ~/.zshenv`
+
+See [infrastructure.md](docs/tooling/infrastructure.md#posthog-website-behavior-tracking) for API recipes.
+
+## License server local dev
+
+To run the license server locally (for testing license activation, generating test keys, etc.), you need a `.dev.vars`
+file with Paddle and Resend secrets. See the [license server README](apps/license-server/README.md#local-development)
+for the full setup. Ask a maintainer for the current values if you don't have dashboard access.
+
 ## Infrastructure access (maintainers)
 
 If you have SSH access to the production server (`ssh hetzner`) and credentials for services like Umami, Cloudflare,
