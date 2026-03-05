@@ -136,7 +136,12 @@ automatically.
 The license server is a Cloudflare Worker. To deploy it or run `wrangler` commands, you need a Cloudflare API token.
 
 1. Go to https://dash.cloudflare.com/profile/api-tokens → **Create Token** → **Custom token**
-2. Permissions: `Account / Workers Scripts / Edit`, `Account / Analytics Engine / Read`
+2. Permissions:
+    - `Account / Workers Scripts / Edit`
+    - `Account / Account Analytics / Read`
+    - `Account / Workers Scripts / Edit`
+    - `Zone / Workers Routes / Edit`
+    - `Zone / DNS / Edit`
 3. Account resources: the Cmdr account only
 4. Add to `~/.zshenv` (sourced for all shells, including non-interactive agent sessions):
    ```sh

@@ -143,11 +143,66 @@ curl -s "https://api.cloudflare.com/client/v4/accounts/{account_id}/analytics_en
 
 The dataset is created automatically on the first write — no setup needed beyond deploying the license server.
 
+## Cloudflare (DNS, Workers, analytics)
+
+DNS, Workers, and analytics for `getcmdr.com` run on Cloudflare. For license-server-specific deployment,
+custom domain config, and troubleshooting, see the
+[license server README](../../apps/license-server/README.md#deployment).
+
+### API token
+
+`CLOUDFLARE_API_TOKEN` lives in `~/.zshenv`. Wrangler picks it up automatically for deploys. See
+[CONTRIBUTING.md](../../CONTRIBUTING.md#cloudflare-access-license-server) for setup.
+
+**Account ID**: `6a4433bf11c3cf86feda057f76f47991`
+
+**Gotcha**: The token is a scoped API token (not a global API key). It works with wrangler and the REST API, but
+the Bash tool's subshell doesn't always inherit it from `~/.zshenv`. Read it from the file when calling the API
+directly:
+
+```bash
+TOKEN=$(grep CLOUDFLARE_API_TOKEN ~/.zshenv | head -1 | sed 's/.*=//' | tr -d '"' | tr -d "'")
+curl -s "https://api.cloudflare.com/client/v4/..." \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -H "Content-Type: application/json"
+```
+
+**Token permissions** (as of 2026-03): Workers Scripts Edit, Workers KV Storage Edit, Workers Routes Edit,
+Zone DNS Edit, Account Analytics Read. If a deploy fails with a permissions error, check
+https://dash.cloudflare.com/profile/api-tokens and add the missing permission. The token value doesn't change
+when permissions are updated.
+
+### Zones and Workers
+
+| Zone | Zone ID |
+| --- | --- |
+| `getcmdr.com` | `3b1ddce127d21ce9802588dac5aee4e9` |
+| `gitstrata.com` | `6265d396a0d0bf5c0b22e64a2b7777af` |
+
+| Worker | Domain | Config |
+| --- | --- | --- |
+| `cmdr-license-server` | `license.getcmdr.com` | `apps/license-server/wrangler.toml` |
+
+### Common API operations
+
+```bash
+# List DNS records for a zone
+curl -s "https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records" \
+  -H "Authorization: Bearer ${TOKEN}" | jq '.result[] | {id, type, name, content, proxied}'
+
+# Delete a DNS record
+curl -s -X DELETE "https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{record_id}" \
+  -H "Authorization: Bearer ${TOKEN}"
+
+# List Worker custom domains
+curl -s "https://api.cloudflare.com/client/v4/accounts/6a4433bf11c3cf86feda057f76f47991/workers/domains" \
+  -H "Authorization: Bearer ${TOKEN}" | jq '.result[]'
+```
+
 ## Other services
 
 | Service | Where | Access | Docs |
 | --- | --- | --- | --- |
-| **Cloudflare** (DNS, Workers) | cloudflare.com dashboard | `CLOUDFLARE_API_TOKEN` in `~/.zshenv` (see [CONTRIBUTING.md](../../CONTRIBUTING.md#cloudflare-access-license-server)) | [License server README](../../apps/license-server/README.md) |
 | **Paddle** (payments) | vendors.paddle.com | Login required | — |
 | **UptimeRobot** (monitoring) | uptimerobot.com | Login required | [monitoring.md](monitoring.md) (alerts, status page) |
 | **Resend** (email) | resend.com | Login required | [Listmonk README](../../infra/listmonk/README.md) |

@@ -46,14 +46,15 @@ them to customers via Resend.
     URL `https://cmdr-license-server.veszelovszki.workers.dev/webhook/paddle`, and tick event `transaction.completed`.
 11. Paddle (sandbox): Click "..." → Edit destination → copy "Secret key". (Looks like `pdl_ntfset_01keh5q...`)
 12. TODO: Paddle live!
-13. Cloudflare: Set `CLOUDFLARE_API_TOKEN` in `~/.zshenv` (see [CONTRIBUTING.md](../../CONTRIBUTING.md#cloudflare-access-license-server) for how to create one). Alternatively, run `npx wrangler login` for browser-based OAuth (interactive only, won't work for agents).
+13. Cloudflare: Set `CLOUDFLARE_API_TOKEN` — see [infrastructure.md](../../docs/tooling/infrastructure.md#api-token) for
+    token setup and permissions.
 14. Cloudflare: Set secrets (supports both live and sandbox simultaneously):
     - `npx wrangler secret put PADDLE_WEBHOOK_SECRET_SANDBOX` - From sandbox webhook (step 11)
     - `npx wrangler secret put PADDLE_WEBHOOK_SECRET_LIVE` - From live webhook (once approved)
     - `npx wrangler secret put ED25519_PRIVATE_KEY` - From `keys/private.key`
     - `npx wrangler secret put RESEND_API_KEY` - From resend.com
 15. Safest to save `keys/private.key` in a secure store at this point and delete it from the file system.
-16. Cloudflare: Deploy worker: `pnpm run deploy`. Should output `https://cmdr-license-server.veszelovszki.workers.dev`.
+16. Deploy: see [Deployment](#deployment) below.
 17. Go to Sandbox/Notifications at https://sandbox-vendors.paddle.com/notifications-v2
 
 ## Local development
@@ -102,13 +103,38 @@ Then open http://localhost:3333 and click "Buy Cmdr".
 | Token doesn't start with `test_` | Use sandbox token from sandbox-vendors.paddle.com    |
 | "Invalid price"                  | Ensure price ID is from the same sandbox account     |
 
+## Deployment
+
+```bash
+cd apps/license-server && npx wrangler deploy
+```
+
+The Worker is deployed to `license.getcmdr.com` via a Cloudflare custom domain (declared in `wrangler.toml` under
+`[[routes]]` with `custom_domain = true`). Cloudflare manages the DNS record automatically. The `*.workers.dev` fallback
+URL is `cmdr-license-server.veszelovszki.workers.dev`.
+
+For generic Cloudflare API operations (listing DNS records, zones, etc.), see
+[infrastructure.md](../../docs/tooling/infrastructure.md#cloudflare-dns-workers-analytics).
+
+### Troubleshooting deployment
+
+- **522 on `license.getcmdr.com`**: The custom domain isn't routing to the Worker. Check that `npx wrangler deploy`
+  output shows `license.getcmdr.com (custom domain)`. If not, the `[[routes]]` block in `wrangler.toml` may be missing,
+  or an existing DNS record is blocking it.
+- **"externally managed DNS records"**: A DNS record for the hostname was created manually. Delete it via the CF API or
+  dashboard first, then redeploy. Wrangler won't overwrite external records.
+- **"kv bindings require kv write perms"**: The API token is missing "Workers KV Storage: Edit". Update at
+  https://dash.cloudflare.com/profile/api-tokens — the token value stays the same.
+- **Workers.dev works but custom domain doesn't**: The code deployed fine but the domain binding failed. Check the error
+  in `npx wrangler deploy` output.
+
 ## Endpoints
 
 | Method | Path                       | Description                                        |
 | ------ | -------------------------- | -------------------------------------------------- |
 | `GET`  | `/`                        | Health check                                       |
 | `POST` | `/webhook/paddle`          | Paddle webhook (generates and emails license)      |
-| `POST` | `/activate`                | Exchange short code for full cryptographic key      |
+| `POST` | `/activate`                | Exchange short code for full cryptographic key     |
 | `POST` | `/validate`                | Validate license key (returns subscription status) |
 | `POST` | `/admin/generate`          | Manual license generation (requires auth header)   |
 | `GET`  | `/download/:version/:arch` | Log download to Analytics Engine, 302 → GitHub     |

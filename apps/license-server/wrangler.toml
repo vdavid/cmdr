@@ -2,6 +2,14 @@ name = "cmdr-license-server"
 main = "src/index.ts"
 compatibility_date = "2025-01-01"
 
+# license.getcmdr.com is a proxied CNAME → *.workers.dev (handles IPv4 + IPv6).
+# The zone-level route tells Cloudflare to send matching requests to this Worker.
+workers_dev = true
+
+[[routes]]
+pattern = "license.getcmdr.com/*"
+zone_name = "getcmdr.com"
+
 # KV namespace for storing license code -> full key mappings
 # Local dev: wrangler automatically simulates KV (ID is ignored)
 # Production: Run ./scripts/setup-cf-infra.sh to create namespace and update this ID
