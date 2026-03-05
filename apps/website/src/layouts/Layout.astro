@@ -80,21 +80,27 @@ const {
         <slot />
 
         {
-            /* PostHog — session replay, heatmaps, click tracking. Dynamically imported so the
-            ~100 KB bundle only loads when the key is set (production). */
+            /* PostHog — session replay, heatmaps, click tracking.
+            Loaded from PostHog's CDN to avoid bundling dompurify (has an unpatched XSS advisory). */
         }
-        <script>
-            const key = import.meta.env.PUBLIC_POSTHOG_KEY
-            if (key) {
-                import('posthog-js').then(({ default: posthog }) => {
-                    posthog.init(key, {
-                        api_host: import.meta.env.PUBLIC_POSTHOG_HOST || 'https://eu.i.posthog.com',
+        {
+            import.meta.env.PUBLIC_POSTHOG_KEY && (
+                <script
+                    is:inline
+                    data-ph-key={import.meta.env.PUBLIC_POSTHOG_KEY}
+                    data-ph-host={import.meta.env.PUBLIC_POSTHOG_HOST || 'https://eu.i.posthog.com'}
+                >
+                    /* eslint-disable */
+                    !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled getFeatureFlag getFeatureFlagPayload reloadFeatureFlags group updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+                    posthog.init(document.currentScript.dataset.phKey, {
+                        api_host: document.currentScript.dataset.phHost,
                         person_profiles: 'identified_only',
                         capture_pageleave: true,
-                    })
-                })
-            }
-        </script>
+                    });
+                    /* eslint-enable */
+                </script>
+            )
+        }
 
         <script is:inline>
             ;(function () {
