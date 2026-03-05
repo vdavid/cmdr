@@ -2,10 +2,13 @@
 
 WebDriverIO E2E tests for Cmdr on macOS, using CrabNebula's WebDriver bridge for WKWebView.
 
+**Intentionally local-only (not in CI)**: GitHub Actions charges macOS runner minutes at 10x the normal rate — a single
+~15-min run costs 150 billing minutes. Linux E2E runs in CI via Docker (free). macOS E2E is a local pre-release check.
+
 ## Architecture
 
 ```
-WebDriverIO ──HTTP:4444──> tauri-driver (CN fork) ──HTTP:3000──> test-runner-backend ──HTTP:{dynamic}──> tauri-plugin-automation (in-app)
+WebDriverIO --HTTP:4444--> tauri-driver (CN fork) --HTTP:3000--> test-runner-backend --HTTP:{dynamic}--> tauri-plugin-automation (in-app)
 ```
 
 - `tauri-plugin-automation` (Rust crate, `0.1.x`): Starts an HTTP server inside the app on a random port. Feature-gated
@@ -24,6 +27,14 @@ cd apps/desktop
 pnpm test:e2e:macos:build                                  # one-time: builds with --features automation
 export $(grep -v '^#' .env | xargs) && pnpm test:e2e:macos # runs tests
 ```
+
+## Fixture system
+
+Tests use a shared fixture helper (`../e2e-shared/fixtures.ts`) that creates a temp directory tree at
+`/tmp/cmdr-e2e-<timestamp>/` with `left/` (text files, sub-dir, hidden file, bulk .dat files) and `right/` (empty).
+
+The `CMDR_E2E_START_PATH` env var tells the app where to open. Fixtures are fully recreated before each test via
+`recreateFixtures()` in the `beforeTest` hook so tests don't affect each other.
 
 ## CrabNebula WebDriver quirks
 
@@ -74,17 +85,6 @@ automatically.
   path. If CrabNebula fixes native key delivery, switch back to `browser.keys()`.
 - **Click with offset untested**: `element.click({x: 10, y: 10})` was broken in earlier versions (actions API error). We
   haven't verified whether it's fixed — test before relying on offset clicks.
-- **Intentionally local-only (not in CI)**: GitHub Actions charges macOS minutes at 10x, which would eat through the
-  free plan's 2,000 minutes/month quickly. Linux E2E runs in CI via Docker (free). macOS E2E is a local pre-release
-  check. Requires `CN_API_KEY` env var.
-
-## Fixture system
-
-Tests use a shared fixture helper (`../e2e-shared/fixtures.ts`) that creates a temp directory tree at
-`/tmp/cmdr-e2e-<timestamp>/` with `left/` (text files, sub-dir, hidden file, bulk .dat files) and `right/` (empty).
-
-The `CMDR_E2E_START_PATH` env var tells the app where to open. Fixtures are fully recreated before each test via
-`recreateFixtures()` in the `beforeTest` hook so tests don't affect each other.
 
 ## Files
 
@@ -101,5 +101,4 @@ The `CMDR_E2E_START_PATH` env var tells the app where to open. Fixtures are full
 - Shared fixture helper: `test/e2e-shared/fixtures.ts`
 - Rust plugin registration: `src-tauri/src/lib.rs` (search for `automation`)
 - Cargo feature: `src-tauri/Cargo.toml` `[features]` section
-- Full guide: `docs/tooling/e2e-testing-guide.md`
 - Linux E2E tests: `test/e2e-linux/` (the workhorse — all platform-independent app logic)

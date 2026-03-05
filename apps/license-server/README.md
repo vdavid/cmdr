@@ -34,7 +34,7 @@ in [CLAUDE.md](CLAUDE.md).
 7. **Paddle (both environments)**: Create notification destination → webhook URL, subscribe to `transaction.completed`.
     - Sandbox: `https://unsickerly-acclivitous-lala.ngrok-free.dev/webhook/paddle` (for local dev via ngrok)
     - Live: `https://license.getcmdr.com/webhook/paddle`
-8. **Cloudflare**: Set `CLOUDFLARE_API_TOKEN` — see [infrastructure.md](../../docs/tooling/infrastructure.md#api-token).
+8. **Cloudflare**: Set `CLOUDFLARE_API_TOKEN` — see [cloudflare.md](../../docs/tooling/cloudflare.md#api-token).
 9. **Wrangler secrets** (deployed worker — live values):
     ```
     npx wrangler secret put PADDLE_WEBHOOK_SECRET_LIVE

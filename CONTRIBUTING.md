@@ -164,7 +164,7 @@ update project settings), you need a personal API key.
    ```
 4. Restart your shell or `source ~/.zshenv`
 
-See [infrastructure.md](docs/tooling/infrastructure.md#posthog-website-behavior-tracking) for API recipes.
+See [posthog.md](docs/tooling/posthog.md) for API recipes.
 
 ## Paddle access (payments)
 
@@ -179,7 +179,7 @@ Paddle handles payments and subscriptions. Two API keys are needed — one for l
    ```
 4. Restart your shell or `source ~/.zshenv`
 
-See [infrastructure.md](docs/tooling/infrastructure.md#paddle-payments) for API recipes.
+See [paddle.md](docs/tooling/paddle.md) for API recipes.
 
 ## ngrok access (tunnels)
 
@@ -193,7 +193,7 @@ license server.
    ```
 3. Restart your shell or `source ~/.zshenv`
 
-See [infrastructure.md](docs/tooling/infrastructure.md#ngrok-tunnels) for API recipes.
+See [ngrok.md](docs/tooling/ngrok.md) for API recipes.
 
 ## License server local dev
 
@@ -204,7 +204,7 @@ for the full setup. Ask a maintainer for the current values if you don't have da
 ## Infrastructure access (maintainers)
 
 If you have SSH access to the production server (`ssh hetzner`) and credentials for services like Umami, Cloudflare,
-and Paddle, see [docs/tooling/infrastructure.md](docs/tooling/infrastructure.md) for VPS layout, API recipes, and
-common operations.
+and Paddle, see [docs/architecture.md](docs/architecture.md#tooling-and-infrastructure) for the full map of
+per-service docs.
 
 Happy coding!

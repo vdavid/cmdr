@@ -268,3 +268,34 @@ Rules that cut across many modules. All existing commands follow these — apply
 
 Go-based unified runner (`scripts/check/`). Parallel execution with dependency graph.
 Coverage: 70% threshold enforced, `coverage-allowlist.json` exempts Tauri/DOM-dependent files.
+
+## Tooling and infrastructure
+
+Dev workflow docs and external service references. All in `docs/tooling/`.
+
+### Dev workflow
+
+| Doc | Purpose |
+|-----|---------|
+| [logging.md](tooling/logging.md) | Unified logging, `RUST_LOG` recipes for every subsystem |
+| [css-health-checks.md](tooling/css-health-checks.md) | Stylelint + Go-based unused CSS checker |
+
+The check runner and E2E testing docs live colocated with their code:
+- Check runner: [`scripts/check/CLAUDE.md`](../scripts/check/CLAUDE.md)
+- E2E overview (why three suites, fixtures): [`apps/desktop/test/CLAUDE.md`](../apps/desktop/test/CLAUDE.md)
+- Linux E2E (Docker, VNC, Ubuntu VM): [`apps/desktop/test/e2e-linux/CLAUDE.md`](../apps/desktop/test/e2e-linux/CLAUDE.md)
+- macOS E2E (CrabNebula): [`apps/desktop/test/e2e-macos/CLAUDE.md`](../apps/desktop/test/e2e-macos/CLAUDE.md)
+
+### External services
+
+| Doc | Purpose |
+|-----|---------|
+| [hetzner-vps.md](tooling/hetzner-vps.md) | Production VPS: SSH access, layout, deploy commands |
+| [umami.md](tooling/umami.md) | Website analytics: API access, DB queries, troubleshooting |
+| [cloudflare.md](tooling/cloudflare.md) | DNS, Workers, API token, download tracking (Analytics Engine) |
+| [posthog.md](tooling/posthog.md) | Session replay and heatmaps (EU instance), API access |
+| [paddle.md](tooling/paddle.md) | Payments API (live + sandbox), common operations |
+| [ngrok.md](tooling/ngrok.md) | Tunnels for webhook testing |
+| [monitoring.md](tooling/monitoring.md) | UptimeRobot: uptime checks, alerts |
+
+ONLY do read-only operations with these services unless specifically asked to make changes.
