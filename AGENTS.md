@@ -213,6 +213,8 @@ Always do a last round of checks before wrapping up:
 - [SvelteKit docs](https://svelte.dev/docs/kit/introduction)
 - [Cargo-deny docs](https://embarkstudios.github.io/cargo-deny/)
 - [Style guide](docs/style-guide.md) - Keep this in mind! Especially "Sentence case" for titles and labels!
-- [Infrastructure](docs/tooling/infrastructure.md) - VPS access (`ssh hetzner`), Umami analytics API, deployment
+- [Infrastructure](docs/tooling/infrastructure.md) - Use this guide if you want to use the Hetzner VPS (`ssh hetzner`),
+  Umami, Cloudflare, PostHog, Paddle, and download tracking APIs. `gh` is not described, but it also just works! ONLY
+  do read-only stuff with these unless specifically asked to make changes.
 
 Happy coding! 🦀✨

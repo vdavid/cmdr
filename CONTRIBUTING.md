@@ -166,6 +166,21 @@ update project settings), you need a personal API key.
 
 See [infrastructure.md](docs/tooling/infrastructure.md#posthog-website-behavior-tracking) for API recipes.
 
+## Paddle access (payments)
+
+Paddle handles payments and subscriptions. Two API keys are needed — one for live, one for sandbox (testing).
+
+1. Go to https://vendors.paddle.com → **Developer tools** → **Authentication** → **Generate API key**
+2. Repeat for sandbox at https://sandbox-vendors.paddle.com
+3. Add both to `~/.zshenv`:
+   ```sh
+   export PADDLE_LIVE_API_KEY="your-live-key"
+   export PADDLE_SANDBOX_API_KEY="your-sandbox-key"
+   ```
+4. Restart your shell or `source ~/.zshenv`
+
+See [infrastructure.md](docs/tooling/infrastructure.md#paddle-payments) for API recipes.
+
 ## License server local dev
 
 To run the license server locally (for testing license activation, generating test keys, etc.), you need a `.dev.vars`
