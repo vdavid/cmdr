@@ -61,7 +61,7 @@ All writes go through a dedicated `std::thread` via an unbounded mpsc channel. T
 
 Reads happen on separate WAL connections (any thread). The global read-only store (`GLOBAL_INDEX_STORE`) provides enrichment without passing `AppHandle` through the listing pipeline.
 
-### SQLite schema (v2: integer-keyed)
+### SQLite schema (v3: integer-keyed)
 
 One DB per volume: `~/Library/Application Support/com.veszelovszki.cmdr/index-{volume_id}.db`
 
@@ -72,7 +72,7 @@ Three tables:
 
 WAL mode, 64 MB page cache. Custom `platform_case` collation registered on every connection: case-insensitive + NFD normalization on macOS, binary on Linux. **Opening the DB with the sqlite3 CLI will fail** on queries touching the name column (the collation isn't registered).
 
-**Migration in progress**: Schema bumped from v1 to v2. Milestones 1-5 complete. Scanner, writer, aggregator, reconciler, enrichment, and IPC commands all fully migrated to integer keys. `IndexManager` owns a `PathResolver` for LRU-cached path→ID resolution in IPC commands (`get_dir_stats`, `get_dir_stats_batch`). Enrichment uses integer-keyed fast path: resolve parent once → batch child dir stats by ID. Reconciler sends integer-keyed messages exclusively. Old path-keyed `WriteMessage` variants and backward-compat shims (`ScannedEntry`, `DirStats`) still exist for post-replay verification — cleanup in milestone 6. All 848 tests pass.
+**Schema v3**: Bumped from v2 to force DB rebuild after fixing orphan entry bug. Scanner, writer, aggregator, reconciler, enrichment, and IPC commands all fully migrated to integer keys. `IndexManager` owns a `PathResolver` for LRU-cached path→ID resolution in IPC commands (`get_dir_stats`, `get_dir_stats_batch`). Enrichment uses integer-keyed fast path: resolve parent once → batch child dir stats by ID. Reconciler sends integer-keyed messages exclusively. Old path-keyed `WriteMessage` variants and backward-compat shims (`ScannedEntry`, `DirStats`) still exist for post-replay verification — cleanup in milestone 6.
 
 ## How to test
 
@@ -102,6 +102,10 @@ Key test files are alongside each module (test functions within `#[cfg(test)]` b
 **IPC boundary stays path-based**: Frontend sends filesystem paths, backend resolves path→ID internally via `PathResolver`. No frontend changes needed. `IndexManager.get_dir_stats()` and `get_dir_stats_batch()` use the `PathResolver`'s LRU cache for efficient resolution.
 
 **Physical sizes (`st_blocks * 512`)**: More meaningful for disk usage than logical size. May overcount ~10-20% for APFS clones (shared blocks). Volume usage bar uses `statfs()` for true totals.
+
+**Subtree rescans delete descendants first**: `scan_subtree` sends `DeleteDescendantsById(root_id)` to the writer before inserting fresh entries. This prevents orphaned entries that previously caused DB bloat (4x) and missing dir_stats. The root entry is preserved (its existing ID is reused by `ScanContext`). The delete and subsequent inserts are serialized through the single writer channel, so no race conditions. `ComputeSubtreeAggregates` runs after the scan to recompute stats.
+
+**Subtree aggregation uses scoped queries**: `scoped_get_children_stats_by_id` and `scoped_get_child_dir_ids` in `aggregator.rs` use recursive CTEs scoped to the target subtree, not full-table scans. This keeps subtree aggregation O(subtree_size) regardless of total DB size.
 
 **Disposable cache pattern**: The index DB is a cache, not a source of truth. Any corruption or error triggers delete+rebuild. No user-facing errors for DB issues.
 
@@ -137,6 +141,8 @@ Key test files are alongside each module (test functions within `#[cfg(test)]` b
 
 **Reconciler holds a read connection**: `process_fs_event`, `replay`, and `process_live_event` all require a `&Connection` parameter for path-to-ID resolution. Callers (event loops in mod.rs) open a read connection via `IndexStore::open_write_connection(writer.db_path())` at loop start and pass it through. This is a WAL-mode connection so it doesn't block the writer. The `IndexManager` also owns a `PathResolver` with LRU cache, used by IPC commands (`get_dir_stats`, `get_dir_stats_batch`) for cached resolution. The event loops don't use the `PathResolver` yet because they run in separate async tasks -- could be migrated in a future optimization pass.
 
-**ScanContext maps scan root to ROOT_ID**: Both `scan_volume` and `scan_subtree` create a `ScanContext` that maps the scan root directory to `ROOT_ID` (1). This means all top-level entries under any scan root get `parent_id = ROOT_ID` in the DB. For subtree scans, this means the scan root itself isn't stored as an entry — only its children are. The `ScanContext` opens a temporary read connection to the DB to fetch `next_id` via `get_next_id()`.
+**ScanContext maps scan root to ROOT_ID**: Both `scan_volume` and `scan_subtree` create a `ScanContext` that maps the scan root directory to `ROOT_ID` (1). This means all top-level entries under any scan root get `parent_id = ROOT_ID` in the DB. For subtree scans, the root is resolved to its existing entry ID (not ROOT_ID), and `DeleteDescendantsById` is sent before the scan starts. The `ScanContext` opens a temporary read connection to the DB to fetch `next_id` via `get_next_id()`.
+
+**Never use `INSERT OR REPLACE` on entries without deleting descendants first**: `INSERT OR REPLACE` on the `idx_parent_name` unique index silently deletes the old row and inserts a new one with a new ID. This orphans all children (their `parent_id` points to the deleted old ID) and orphans the old `dir_stats` row. The scanner's `insert_entries_v2_batch` still uses `INSERT OR REPLACE` as a safety net, but it's always preceded by `DeleteDescendantsById` for subtree scans, so no conflicts should occur in practice.
 
 **IndexWriter exposes `db_path()`**: The scanner needs the DB path to open a temporary connection for `ScanContext::new()`. This path is stored on the `IndexWriter` handle and accessible via `db_path()`. The temporary connection is short-lived (only used to read `MAX(id)`).

@@ -1467,6 +1467,9 @@ fn verify_affected_dirs(affected_paths: &std::collections::HashSet<String>, writ
             });
 
             if is_dir {
+                log::debug!(
+                    "verify_affected_dirs: new dir on disk: {normalized} (parent_id={parent_id})"
+                );
                 new_dir_paths.push(normalized);
             } else if let Some(sz) = size {
                 // UpsertEntryV2 inserts the entry; propagate its size delta up the

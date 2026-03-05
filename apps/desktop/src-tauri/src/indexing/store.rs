@@ -19,7 +19,7 @@
 use rusqlite::{Connection, OptionalExtension, params};
 use std::path::{Path, PathBuf};
 
-const SCHEMA_VERSION: &str = "2";
+const SCHEMA_VERSION: &str = "3";
 
 /// Root entry sentinel ID. All top-level entries have `parent_id = ROOT_ID`.
 pub const ROOT_ID: i64 = 1;
@@ -98,9 +98,35 @@ impl ScanContext {
         let root_id = if is_volume_root {
             ROOT_ID
         } else {
-            match resolve_path(conn, &root.to_string_lossy())? {
+            let root_str = root.to_string_lossy();
+            match resolve_path(conn, &root_str)? {
                 Some(id) => id,
                 None => {
+                    // Diagnose which component is missing by walking the path
+                    let stripped = root_str.strip_prefix('/').unwrap_or(&root_str);
+                    let mut current_id = ROOT_ID;
+                    for component in stripped.split('/') {
+                        if component.is_empty() {
+                            continue;
+                        }
+                        match IndexStore::resolve_component(conn, current_id, component) {
+                            Ok(Some(id)) => current_id = id,
+                            Ok(None) => {
+                                log::debug!(
+                                    "ScanContext::new: resolve_path({root_str}) failed at \
+                                     component \"{component}\" (parent_id={current_id})"
+                                );
+                                break;
+                            }
+                            Err(e) => {
+                                log::debug!(
+                                    "ScanContext::new: resolve_path({root_str}) errored at \
+                                     component \"{component}\" (parent_id={current_id}): {e}"
+                                );
+                                break;
+                            }
+                        }
+                    }
                     return Err(IndexStoreError::Sqlite(rusqlite::Error::QueryReturnedNoRows));
                 }
             }
@@ -821,6 +847,33 @@ impl IndexStore {
         Ok(())
     }
 
+    /// Delete all descendants of an entry (but not the entry itself) using recursive CTE.
+    ///
+    /// Used before subtree rescans to prevent orphaned entries. The root entry is kept
+    /// because the scanner's `ScanContext` resolves it by path and uses its existing ID.
+    pub fn delete_descendants_by_id(conn: &Connection, root_id: i64) -> Result<(), IndexStoreError> {
+        // Collect descendant IDs (excluding root) then delete dir_stats and entries
+        conn.execute(
+            "WITH RECURSIVE descendants(id) AS (
+                SELECT id FROM entries WHERE parent_id = ?1
+                UNION ALL
+                SELECT e.id FROM entries e JOIN descendants d ON e.parent_id = d.id
+            )
+            DELETE FROM dir_stats WHERE entry_id IN (SELECT id FROM descendants)",
+            params![root_id],
+        )?;
+        conn.execute(
+            "WITH RECURSIVE descendants(id) AS (
+                SELECT id FROM entries WHERE parent_id = ?1
+                UNION ALL
+                SELECT e.id FROM entries e JOIN descendants d ON e.parent_id = d.id
+            )
+            DELETE FROM entries WHERE id IN (SELECT id FROM descendants)",
+            params![root_id],
+        )?;
+        Ok(())
+    }
+
     /// Delete an entire subtree by root entry ID using recursive CTE.
     ///
     /// No internal transaction: safe to call inside an outer `BEGIN IMMEDIATE`.
@@ -952,7 +1005,7 @@ mod tests {
     fn schema_creation_and_version() {
         let (store, _dir) = open_temp_store();
         let status = store.get_index_status().unwrap();
-        assert_eq!(status.schema_version.as_deref(), Some("2"));
+        assert_eq!(status.schema_version.as_deref(), Some(SCHEMA_VERSION));
     }
 
     #[test]
@@ -1120,7 +1173,7 @@ mod tests {
 
         // Schema version should be re-stamped
         let version = IndexStore::get_meta(&write_conn, "schema_version").unwrap();
-        assert_eq!(version.as_deref(), Some("2"));
+        assert_eq!(version.as_deref(), Some(SCHEMA_VERSION));
 
         // Entries should be gone (except root sentinel)
         let children = store.list_children(ROOT_ID).unwrap();
@@ -1142,7 +1195,7 @@ mod tests {
         // Re-open: should detect mismatch and reset
         let store = IndexStore::open(&db_path).unwrap();
         let status = store.get_index_status().unwrap();
-        assert_eq!(status.schema_version.as_deref(), Some("2"));
+        assert_eq!(status.schema_version.as_deref(), Some(SCHEMA_VERSION));
     }
 
     #[test]
@@ -1156,7 +1209,7 @@ mod tests {
         // open() should recover by deleting and recreating
         let store = IndexStore::open(&db_path).unwrap();
         let status = store.get_index_status().unwrap();
-        assert_eq!(status.schema_version.as_deref(), Some("2"));
+        assert_eq!(status.schema_version.as_deref(), Some(SCHEMA_VERSION));
     }
 
     #[test]

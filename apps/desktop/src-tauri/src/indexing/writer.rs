@@ -35,6 +35,9 @@ pub enum WriteMessage {
     DeleteEntryById(i64),
     /// Watcher: delete a subtree (directory removed with all children) by entry ID.
     DeleteSubtreeById(i64),
+    /// Scanner: delete all descendants of an entry before a subtree rescan.
+    /// Prevents orphaned entries when re-scanning an already-indexed subtree.
+    DeleteDescendantsById(i64),
     /// Watcher: incremental delta propagation walking the parent_id chain.
     PropagateDeltaById {
         entry_id: i64,
@@ -182,7 +185,9 @@ impl WriterStats {
             WriteMessage::InsertEntriesV2(_) => self.current.insert_entries += 1,
             WriteMessage::UpsertEntryV2 { .. } => self.current.upsert_entry += 1,
             WriteMessage::DeleteEntryById(_) => self.current.delete_entry += 1,
-            WriteMessage::DeleteSubtreeById(_) => self.current.delete_subtree += 1,
+            WriteMessage::DeleteSubtreeById(_) | WriteMessage::DeleteDescendantsById(_) => {
+                self.current.delete_subtree += 1;
+            }
             WriteMessage::PropagateDeltaById { .. } => self.current.propagate_delta += 1,
             WriteMessage::ComputeAllAggregates | WriteMessage::ComputeSubtreeAggregates { .. } => {
                 self.current.compute_aggregates += 1;
@@ -307,10 +312,17 @@ fn process_message(conn: &rusqlite::Connection, msg: WriteMessage, stats: &Write
                     }
                 }
                 Ok(None) => {
-                    if let Err(e) =
-                        IndexStore::insert_entry_v2(conn, parent_id, &name, is_directory, is_symlink, size, modified_at)
-                    {
-                        log::warn!("Index writer: insert_entry_v2 failed for {name}: {e}");
+                    match IndexStore::insert_entry_v2(
+                        conn, parent_id, &name, is_directory, is_symlink, size, modified_at,
+                    ) {
+                        Ok(new_id) => {
+                            log::debug!(
+                                "Writer: UpsertEntryV2 inserted \"{name}\" (parent_id={parent_id}) → id={new_id}"
+                            );
+                        }
+                        Err(e) => {
+                            log::warn!("Index writer: insert_entry_v2 failed for {name}: {e}");
+                        }
                     }
                 }
                 Err(e) => {
@@ -347,6 +359,13 @@ fn process_message(conn: &rusqlite::Connection, msg: WriteMessage, stats: &Write
                 let file_delta = -(file_count as i32);
                 let dir_delta = -(dir_count as i32);
                 propagate_delta_by_id(conn, pid, size_delta, file_delta, dir_delta);
+            }
+        }
+        WriteMessage::DeleteDescendantsById(root_id) => {
+            // No delta propagation: the subtree will be immediately re-scanned and
+            // ComputeSubtreeAggregates will recompute stats for the subtree root.
+            if let Err(e) = IndexStore::delete_descendants_by_id(conn, root_id) {
+                log::warn!("Index writer: delete_descendants_by_id failed for id={root_id}: {e}");
             }
         }
         WriteMessage::PropagateDeltaById {

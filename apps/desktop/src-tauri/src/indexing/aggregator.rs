@@ -127,16 +127,15 @@ pub fn compute_subtree_aggregates(conn: &Connection, root: &str) -> Result<u64, 
     let dir_count = dir_entries.len();
     log::debug!("Subtree aggregation: starting bottom-up computation for {dir_count} directories under {root}");
 
-    // Load direct children stats scoped to this subtree
-    let dir_id_set: std::collections::HashSet<i64> = dir_entries.iter().map(|&(id, _)| id).collect();
-    let direct_stats = scoped_get_children_stats_by_id(conn, &dir_id_set)?;
+    // Load direct children stats scoped to this subtree via recursive CTE
+    let direct_stats = scoped_get_children_stats_by_id(conn, root_id)?;
     log::debug!(
         "Subtree aggregation: loaded stats for {} parent IDs in {:.1}ms",
         direct_stats.len(),
         start.elapsed().as_secs_f64() * 1000.0,
     );
 
-    let child_dirs_map = scoped_get_child_dir_ids(conn, &dir_id_set)?;
+    let child_dirs_map = scoped_get_child_dir_ids(conn, root_id)?;
     log::debug!(
         "Subtree aggregation: loaded child dirs for {} parent IDs in {:.1}ms",
         child_dirs_map.len(),
@@ -325,35 +324,70 @@ fn bulk_get_child_dir_ids(conn: &Connection) -> Result<HashMap<i64, Vec<i64>>, I
     Ok(map)
 }
 
-/// Load direct children stats scoped to a set of directory IDs.
+/// Load direct children stats scoped to a subtree via recursive CTE.
 ///
 /// Returns a map: `parent_id -> (total_file_size, file_count, dir_count)`.
-/// Only includes results where `parent_id` is in the provided set.
+/// Only includes entries whose parent is within the subtree rooted at `root_id`.
 fn scoped_get_children_stats_by_id(
     conn: &Connection,
-    dir_ids: &std::collections::HashSet<i64>,
+    root_id: i64,
 ) -> Result<HashMap<i64, (u64, u64, u64)>, IndexStoreError> {
-    // Use bulk query and filter in memory (more efficient than N individual queries)
-    let all_stats = bulk_get_children_stats_by_id(conn)?;
-    Ok(all_stats
-        .into_iter()
-        .filter(|(parent_id, _)| dir_ids.contains(parent_id))
-        .collect())
+    let mut stmt = conn.prepare(
+        "WITH RECURSIVE subtree(id) AS (
+            SELECT id FROM entries WHERE id = ?1
+            UNION ALL
+            SELECT e.id FROM entries e JOIN subtree s ON e.parent_id = s.id
+        )
+        SELECT e.parent_id,
+               COALESCE(SUM(CASE WHEN e.is_directory = 0 THEN e.size ELSE 0 END), 0),
+               COALESCE(SUM(CASE WHEN e.is_directory = 0 THEN 1 ELSE 0 END), 0),
+               COALESCE(SUM(CASE WHEN e.is_directory = 1 THEN 1 ELSE 0 END), 0)
+        FROM entries e
+        WHERE e.parent_id IN (SELECT id FROM subtree)
+        GROUP BY e.parent_id",
+    )?;
+    let rows = stmt.query_map(params![root_id], |row| {
+        Ok((
+            row.get::<_, i64>(0)?,
+            row.get::<_, u64>(1)?,
+            row.get::<_, u64>(2)?,
+            row.get::<_, u64>(3)?,
+        ))
+    })?;
+    let mut map = HashMap::new();
+    for row in rows {
+        let (parent_id, size, files, dirs) = row?;
+        map.insert(parent_id, (size, files, dirs));
+    }
+    Ok(map)
 }
 
-/// Load child directory IDs scoped to a set of parent directory IDs.
+/// Load child directory IDs scoped to a subtree via recursive CTE.
 ///
 /// Returns a map: `parent_id -> Vec<child_dir_id>`.
-/// Only includes results where `parent_id` is in the provided set.
+/// Only includes entries whose parent is within the subtree rooted at `root_id`.
 fn scoped_get_child_dir_ids(
     conn: &Connection,
-    dir_ids: &std::collections::HashSet<i64>,
+    root_id: i64,
 ) -> Result<HashMap<i64, Vec<i64>>, IndexStoreError> {
-    let all_children = bulk_get_child_dir_ids(conn)?;
-    Ok(all_children
-        .into_iter()
-        .filter(|(parent_id, _)| dir_ids.contains(parent_id))
-        .collect())
+    let mut stmt = conn.prepare(
+        "WITH RECURSIVE subtree(id) AS (
+            SELECT id FROM entries WHERE id = ?1
+            UNION ALL
+            SELECT e.id FROM entries e JOIN subtree s ON e.parent_id = s.id
+        )
+        SELECT e.parent_id, e.id FROM entries e
+        WHERE e.parent_id IN (SELECT id FROM subtree) AND e.is_directory = 1",
+    )?;
+    let rows = stmt.query_map(params![root_id], |row| {
+        Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?))
+    })?;
+    let mut map: HashMap<i64, Vec<i64>> = HashMap::new();
+    for row in rows {
+        let (parent_id, child_id) = row?;
+        map.entry(parent_id).or_default().push(child_id);
+    }
+    Ok(map)
 }
 
 // ── Tests ────────────────────────────────────────────────────────────
