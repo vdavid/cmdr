@@ -277,9 +277,7 @@ fn run_scan(
     // For subtree rescans, delete existing descendants first to prevent orphaned entries.
     // The scan will re-insert fresh children with correct parent-child relationships.
     // The root entry itself is preserved (ScanContext resolved its existing ID).
-    if !is_volume_root
-        && let Some(&root_id) = scan_ctx.dir_ids.get(root)
-    {
+    if !is_volume_root && let Some(&root_id) = scan_ctx.dir_ids.get(root) {
         writer
             .send(WriteMessage::DeleteDescendantsById(root_id))
             .map_err(|e| ScanError::WriterSend(e.to_string()))?;

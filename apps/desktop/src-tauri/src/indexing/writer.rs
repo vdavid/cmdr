@@ -313,7 +313,13 @@ fn process_message(conn: &rusqlite::Connection, msg: WriteMessage, stats: &Write
                 }
                 Ok(None) => {
                     match IndexStore::insert_entry_v2(
-                        conn, parent_id, &name, is_directory, is_symlink, size, modified_at,
+                        conn,
+                        parent_id,
+                        &name,
+                        is_directory,
+                        is_symlink,
+                        size,
+                        modified_at,
                     ) {
                         Ok(new_id) => {
                             log::debug!(

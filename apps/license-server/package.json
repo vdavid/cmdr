@@ -24,7 +24,7 @@
         "resend": "^6.9.3"
     },
     "devDependencies": {
-        "@cloudflare/workers-types": "^4.20260301.1",
+        "@cloudflare/workers-types": "^4.20260305.1",
         "@eslint/js": "^10.0.1",
         "eslint": "^10.0.2",
         "eslint-config-prettier": "^10.1.8",

@@ -15,10 +15,10 @@
     },
     "pnpm": {
         "overrides": {
-            "rollup": ">=4.59.0",
-            "svelte": ">=5.53.5",
-            "fast-xml-parser": ">=5.3.8",
-            "svgo": ">=4.0.1"
+            "serialize-javascript": ">=7.0.3",
+            "lodash": ">=4.17.23",
+            "cookie": ">=0.7.0",
+            "tmp": ">=0.2.4"
         },
         "onlyBuiltDependencies": [
             "edgedriver",

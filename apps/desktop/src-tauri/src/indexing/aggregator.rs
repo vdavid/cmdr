@@ -366,10 +366,7 @@ fn scoped_get_children_stats_by_id(
 ///
 /// Returns a map: `parent_id -> Vec<child_dir_id>`.
 /// Only includes entries whose parent is within the subtree rooted at `root_id`.
-fn scoped_get_child_dir_ids(
-    conn: &Connection,
-    root_id: i64,
-) -> Result<HashMap<i64, Vec<i64>>, IndexStoreError> {
+fn scoped_get_child_dir_ids(conn: &Connection, root_id: i64) -> Result<HashMap<i64, Vec<i64>>, IndexStoreError> {
     let mut stmt = conn.prepare(
         "WITH RECURSIVE subtree(id) AS (
             SELECT id FROM entries WHERE id = ?1
