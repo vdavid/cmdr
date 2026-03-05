@@ -7,6 +7,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, tick } from 'svelte'
 import LoadingIcon from './LoadingIcon.svelte'
 
+/** Normalize whitespace in text content (Svelte templates may insert newlines/indentation). */
+const normalizeText = (el: Element | null): string => (el?.textContent ?? '').replace(/\s+/g, ' ').trim()
+
 // ============================================================================
 // LoadingIcon component tests
 // ============================================================================
@@ -119,35 +122,37 @@ describe('LoadingIcon component', () => {
             mount(LoadingIcon, { target, props: { finalizingCount: 600 } })
             await tick()
 
-            const loadingText = target.querySelector('.loading-text')
-            expect(loadingText?.textContent).toBe('All 600 files loaded. Sorting your files, preparing view...')
+            expect(normalizeText(target.querySelector('.loading-text'))).toBe(
+                'All 600 files loaded. Sorting your files, preparing view...',
+            )
         })
 
         it('uses singular "file" when finalizingCount is 1', async () => {
             mount(LoadingIcon, { target, props: { finalizingCount: 1 } })
             await tick()
 
-            const loadingText = target.querySelector('.loading-text')
-            expect(loadingText?.textContent).toBe('All 1 file loaded. Sorting your files, preparing view...')
+            expect(normalizeText(target.querySelector('.loading-text'))).toBe(
+                'All 1 file loaded. Sorting your files, preparing view...',
+            )
         })
 
         it('finalizingCount takes precedence over loadedCount', async () => {
             mount(LoadingIcon, { target, props: { loadedCount: 500, finalizingCount: 600 } })
             await tick()
 
-            const loadingText = target.querySelector('.loading-text')
-            expect(loadingText?.textContent).toBe('All 600 files loaded. Sorting your files, preparing view...')
+            expect(normalizeText(target.querySelector('.loading-text'))).toBe(
+                'All 600 files loaded. Sorting your files, preparing view...',
+            )
         })
 
         it('shows finalizing message with cancel hint', async () => {
             mount(LoadingIcon, { target, props: { finalizingCount: 1000, showCancelHint: true } })
             await tick()
 
-            const loadingText = target.querySelector('.loading-text')
-            const cancelHint = target.querySelector('.cancel-hint')
-
-            expect(loadingText?.textContent).toBe('All 1,000 files loaded. Sorting your files, preparing view...')
-            expect(cancelHint?.textContent).toBe('Press ESC to cancel and go back')
+            expect(normalizeText(target.querySelector('.loading-text'))).toBe(
+                'All 1,000 files loaded. Sorting your files, preparing view...',
+            )
+            expect(target.querySelector('.cancel-hint')?.textContent).toBe('Press ESC to cancel and go back')
         })
     })
 
@@ -172,8 +177,9 @@ describe('LoadingIcon component', () => {
             mount(LoadingIcon, { target, props: { openingFolder: true, finalizingCount: 500 } })
             await tick()
 
-            const loadingText = target.querySelector('.loading-text')
-            expect(loadingText?.textContent).toBe('All 500 files loaded. Sorting your files, preparing view...')
+            expect(normalizeText(target.querySelector('.loading-text'))).toBe(
+                'All 500 files loaded. Sorting your files, preparing view...',
+            )
         })
 
         it('shows "Loading..." when openingFolder is false and no counts', async () => {

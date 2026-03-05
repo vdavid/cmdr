@@ -68,6 +68,8 @@ pub struct FsEventFlags {
 /// Errors that can occur when starting the watcher.
 #[derive(Debug)]
 pub enum WatcherError {
+    /// Used on macOS (FSEvents); not constructed on Linux.
+    #[allow(dead_code, reason = "constructed on macOS, not Linux")]
     Io(std::io::Error),
     /// Used on Linux (inotify) and stub platforms; not constructed on macOS.
     #[allow(dead_code, reason = "constructed on Linux/stub, not macOS")]

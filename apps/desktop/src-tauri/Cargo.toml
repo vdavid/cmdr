@@ -73,8 +73,6 @@ jwalk = "0.8"
 rusqlite = { version = "0.32", features = ["bundled", "collation"] }
 # Drive indexing: LRU cache for path→entry_id resolution
 lru = "0.16"
-# Drive indexing: NFD normalization for APFS case-insensitive collation (macOS)
-unicode-normalization = "0.1"
 # For chunked copy metadata preservation (network filesystems)
 xattr = "1"
 filetime = "0.2"
@@ -112,6 +110,8 @@ smb = "0.11.1"
 smb-rpc = "=0.11.1"
 
 [target.'cfg(target_os = "macos")'.dependencies]
+# Drive indexing: NFD normalization for APFS case-insensitive collation
+unicode-normalization = "0.1"
 file_icon_provider = "0.4.0"
 core-foundation = "0.10.1"
 core-services = "1.0.0"

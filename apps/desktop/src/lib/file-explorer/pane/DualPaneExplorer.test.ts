@@ -116,6 +116,12 @@ vi.mock('$lib/settings-store', () => ({
     subscribeToSettingsChanges: vi.fn().mockResolvedValue(() => {}),
 }))
 
+// Mock $lib/settings to avoid @tauri-apps/plugin-store dependency (used by network-store via initializeSettings)
+vi.mock('$lib/settings', () => ({
+    initializeSettings: vi.fn().mockResolvedValue(undefined),
+    getSetting: vi.fn().mockReturnValue(undefined),
+}))
+
 describe('DualPaneExplorer', () => {
     it('renders dual pane container', () => {
         const target = document.createElement('div')

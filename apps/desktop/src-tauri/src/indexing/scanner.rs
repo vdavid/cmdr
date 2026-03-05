@@ -538,6 +538,22 @@ mod tests {
     use std::thread;
     use std::time::Duration;
 
+    /// Create a temp dir for volume-scan tests. On Linux, `/tmp/` is in the exclusion list,
+    /// so we use the current directory to avoid false rejections.
+    fn scan_test_tempdir() -> tempfile::TempDir {
+        #[cfg(target_os = "linux")]
+        {
+            tempfile::Builder::new()
+                .prefix("cmdr-scan-test-")
+                .tempdir_in(std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")))
+                .expect("failed to create temp dir outside /tmp/")
+        }
+        #[cfg(not(target_os = "linux"))]
+        {
+            tempfile::tempdir().expect("failed to create temp dir")
+        }
+    }
+
     /// Create a temp directory with a known file tree and return the root path.
     fn create_test_tree(dir: &Path) {
         let sub = dir.join("subdir");
@@ -652,7 +668,7 @@ mod tests {
 
     #[test]
     fn scan_temp_directory_tree() {
-        let scan_root = tempfile::tempdir().expect("scan root");
+        let scan_root = scan_test_tempdir();
         create_test_tree(scan_root.path());
 
         let (writer, db_path, _db_dir) = setup_writer();
@@ -736,7 +752,7 @@ mod tests {
 
     #[test]
     fn scan_cancellation() {
-        let scan_root = tempfile::tempdir().expect("scan root");
+        let scan_root = scan_test_tempdir();
         create_test_tree(scan_root.path());
 
         let (writer, _db_path, _db_dir) = setup_writer();
@@ -781,7 +797,7 @@ mod tests {
     #[test]
     #[cfg(unix)]
     fn physical_size_is_captured() {
-        let scan_root = tempfile::tempdir().expect("scan root");
+        let scan_root = scan_test_tempdir();
         // Write a file with known content
         let content = vec![0u8; 8192]; // 8KB, should allocate at least one block
         fs::write(scan_root.path().join("sized.bin"), &content).unwrap();
@@ -813,7 +829,7 @@ mod tests {
 
     #[test]
     fn scan_handles_symlinks() {
-        let scan_root = tempfile::tempdir().expect("scan root");
+        let scan_root = scan_test_tempdir();
         fs::write(scan_root.path().join("real.txt"), "real content").unwrap();
 
         #[cfg(unix)]
@@ -861,7 +877,7 @@ mod tests {
     #[test]
     fn scan_assigns_integer_ids() {
         // Verify that the scanner correctly assigns integer IDs and parent IDs
-        let scan_root = tempfile::tempdir().expect("scan root");
+        let scan_root = scan_test_tempdir();
         create_test_tree(scan_root.path());
 
         let (writer, db_path, _db_dir) = setup_writer();

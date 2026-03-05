@@ -6,3 +6,8 @@ src-tauri/
 
 # Lock files
 pnpm-lock.yaml
+
+# Generated test/coverage artifacts
+playwright-report/
+test-results/
+coverage/

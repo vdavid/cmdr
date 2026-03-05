@@ -17,7 +17,8 @@
         "overrides": {
             "rollup": ">=4.59.0",
             "svelte": ">=5.53.5",
-            "fast-xml-parser": ">=5.3.8"
+            "fast-xml-parser": ">=5.3.8",
+            "svgo": ">=4.0.1"
         },
         "onlyBuiltDependencies": [
             "edgedriver",

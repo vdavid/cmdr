@@ -1132,7 +1132,9 @@
 
         // Refresh both panes when scan completes (aggregation just finished, all sizes available)
         unlistenIndexScanComplete = await listen('index-scan-complete', () => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
             getPaneRef('left')?.refreshIndexSizes?.()
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
             getPaneRef('right')?.refreshIndexSizes?.()
         })
 

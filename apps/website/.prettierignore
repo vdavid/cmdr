@@ -1,3 +1,7 @@
 # Astro files with complex inline scripts that prettier-plugin-astro can't parse
 # See: https://github.com/withastro/prettier-plugin-astro/issues
 src/pages/pricing.astro
+
+# Generated test artifacts
+playwright-report/
+test-results/
