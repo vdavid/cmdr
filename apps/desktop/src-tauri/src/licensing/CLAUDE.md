@@ -51,7 +51,8 @@ update LICENSE_CACHE        ← in-memory fast path
 - Key format: `base64(JSON).base64(signature)` — split on single `.`.
 - Public key embedded at compile time as hex in `verification.rs` (`PUBLIC_KEY_HEX`).
 - Mock values (`CMDR_MOCK_LICENSE`): `personal`, `personal_reminder`, `supporter`, `supporter_reminder`, `commercial`, `perpetual`, `expired`, `expired_no_modal`.
-- Key gen: `cd apps/license-server && pnpm run generate-keys` then update `PUBLIC_KEY_HEX`.
+- Key gen: see [license server CLAUDE.md](../../../../apps/license-server/CLAUDE.md) and
+  [README.md](../../../../apps/license-server/README.md#first-time-setup) for the full setup.
 
 ## Key decisions
 

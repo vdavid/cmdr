@@ -26,6 +26,9 @@ dataset = "cmdr_downloads"
 # Non-secret config
 PRODUCT_NAME = "Cmdr"
 SUPPORT_EMAIL = "veszelovszki@gmail.com"
+# "sandbox" or "live" — controls which Paddle API + key to use for /validate and webhooks.
+# Override with `wrangler secret put PADDLE_ENVIRONMENT` → "live" when going live.
+PADDLE_ENVIRONMENT = "sandbox"
 
 # Secrets (set via `wrangler secret put <NAME>`):
 # - PADDLE_WEBHOOK_SECRET_LIVE     (from Paddle live dashboard)

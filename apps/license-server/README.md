@@ -2,145 +2,86 @@
 
 Cloudflare Worker that handles Paddle webhooks and generates Ed25519-signed license keys for Cmdr.
 
-## Overview
+For architecture, data flow, environments, and dev instructions, see [CLAUDE.md](CLAUDE.md).
 
-This server receives purchase notifications from Paddle, generates cryptographically signed license keys, and emails
-them to customers via Resend.
+## Purchase flow
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Purchase flow                           │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  1. User clicks "Buy" on getcmdr.com                            │
-│           ↓                                                     │
-│  2. Redirect to Paddle checkout (paddle.com/checkout/...)       │
-│           ↓                                                     │
-│  3. User pays → Paddle sends webhook to this server             │
-│           ↓                                                     │
-│  4. Server generates Ed25519-signed license key                 │
-│           ↓                                                     │
-│  5. Server emails license key to user via Resend                │
-│           ↓                                                     │
-│  6. User enters key in Cmdr app                                 │
-│           ↓                                                     │
-│  7. App validates signature locally (no server call needed)     │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+User clicks "Buy" on getcmdr.com
+  → Paddle checkout
+  → User pays → Paddle sends webhook to this server
+  → Server generates Ed25519-signed license key
+  → Server emails license key to user via Resend
+  → User enters key in Cmdr app
+  → App validates signature locally (no server call needed)
 ```
 
-## Setup
+## First-time setup
 
-1. `pnpm install` to install dependencies
-2. Gen Ed25519 pair: `pnpm run generate-keys` → `keys/public.key` (use in step 2) and `keys/private.key` (use in step 8)
-3. Copy public key to `PUBLIC_KEY_HEX` in [`verification.rs`](../desktop/src-tauri/src/licensing/verification.rs)).
-4. Resend: Sign up for / log in to resend.com, and create API key [here](https://resend.com/api-keys) or during
-   onboarding.
-5. Resend: Go to https://resend.com/domains, and add getcmdr.com. Let it adds its DNS records to Cloudflare.
-6. Paddle: (first time only) Create a Paddle account at https://paddle.com.
-7. Paddle: (first time only) Also create a Paddle sandbox account at https://sandbox-vendors.paddle.com/.
-8. Paddle (sandbox): Go to https://sandbox-vendors.paddle.com/products-v2, click New product, and crate "Cmdr" or sg,
-   "Standard digital goods" cat, some description.
-9. Paddle (sandbox): Click "New price", and add $29+tax, one-time purchase, rest random.
-10. Paddle (sandbox): Go to https://sandbox-vendors.paddle.com/notifications-v2, click New destination, add the webhook
-    URL `https://cmdr-license-server.veszelovszki.workers.dev/webhook/paddle`, and tick event `transaction.completed`.
-11. Paddle (sandbox): Click "..." → Edit destination → copy "Secret key". (Looks like `pdl_ntfset_01keh5q...`)
-12. TODO: Paddle live!
-13. Cloudflare: Set `CLOUDFLARE_API_TOKEN` — see [infrastructure.md](../../docs/tooling/infrastructure.md#api-token) for
-    token setup and permissions.
-14. Cloudflare: Set secrets (supports both live and sandbox simultaneously):
-    - `npx wrangler secret put PADDLE_WEBHOOK_SECRET_SANDBOX` - From sandbox webhook (step 11)
-    - `npx wrangler secret put PADDLE_WEBHOOK_SECRET_LIVE` - From live webhook (once approved)
-    - `npx wrangler secret put ED25519_PRIVATE_KEY` - From `keys/private.key`
-    - `npx wrangler secret put RESEND_API_KEY` - From resend.com
-15. Safest to save `keys/private.key` in a secure store at this point and delete it from the file system.
-16. Deploy: see [Deployment](#deployment) below.
-17. Go to Sandbox/Notifications at https://sandbox-vendors.paddle.com/notifications-v2
+These steps only need to be done once, by a human. After this, agents can handle dev and deployment via the instructions
+in [CLAUDE.md](CLAUDE.md).
 
-## Local development
-
-- Create `.dev.vars` with your secrets:
+1. `pnpm install`
+2. Generate Ed25519 key pair: `pnpm run generate-keys` → `keys/public.key` + `keys/private.key`
+3. Copy public key hex to `PUBLIC_KEY_HEX` in [`verification.rs`](../desktop/src-tauri/src/licensing/verification.rs)
+4. **Resend**: Create API key at https://resend.com/api-keys. Add `getcmdr.com` domain at https://resend.com/domains
+   (adds DNS records to Cloudflare automatically).
+5. **Paddle**: Create accounts at https://paddle.com (live) and https://sandbox-vendors.paddle.com (sandbox).
+6. **Paddle (both environments)**: Create product "Cmdr" (standard tax category), then three prices:
+    - Personal supporter: $10, one-time
+    - Commercial subscription: $59/year
+    - Commercial perpetual: $199, one-time
+7. **Paddle (both environments)**: Create notification destination → webhook URL, subscribe to `transaction.completed`.
+    - Sandbox: `https://unsickerly-acclivitous-lala.ngrok-free.dev/webhook/paddle` (for local dev via ngrok)
+    - Live: `https://license.getcmdr.com/webhook/paddle`
+8. **Cloudflare**: Set `CLOUDFLARE_API_TOKEN` — see [infrastructure.md](../../docs/tooling/infrastructure.md#api-token).
+9. **Wrangler secrets** (deployed worker — live values):
     ```
-    PADDLE_WEBHOOK_SECRET_SANDBOX=pdl_ntfset_xxx
-    PADDLE_WEBHOOK_SECRET_LIVE=pdl_ntfset_yyy
-    ED25519_PRIVATE_KEY=your_private_key_hex
-    RESEND_API_KEY=re_xxxxx
+    npx wrangler secret put PADDLE_WEBHOOK_SECRET_LIVE
+    npx wrangler secret put PADDLE_WEBHOOK_SECRET_SANDBOX
+    npx wrangler secret put PADDLE_API_KEY_LIVE
+    npx wrangler secret put PADDLE_API_KEY_SANDBOX
+    npx wrangler secret put ED25519_PRIVATE_KEY
+    npx wrangler secret put RESEND_API_KEY
+    npx wrangler secret put PADDLE_ENVIRONMENT              # "live"
+    npx wrangler secret put PRICE_ID_SUPPORTER              # live price ID
+    npx wrangler secret put PRICE_ID_COMMERCIAL_SUBSCRIPTION # live price ID
+    npx wrangler secret put PRICE_ID_COMMERCIAL_PERPETUAL   # live price ID
     ```
-- Run `pnpm run dev`.
-- Test it with `4000 0566 5566 5556` / CVC: `100`, or one of the other test cards from
-  https://developer.paddle.com/concepts/payment-methods/credit-debit-card#test-payment-details.
+10. **`.dev.vars`** (local dev — sandbox values): see [CLAUDE.md](CLAUDE.md#configuration) for the full table.
+11. Save `keys/private.key` in a secure store, then delete it from the filesystem.
+12. Deploy: `cd apps/license-server && npx wrangler deploy`
 
 ## Testing Paddle checkout
 
-Test the full purchase flow through Paddle's sandbox. **This only works with sandbox credentials.**
+Test the full purchase flow through Paddle's sandbox. Only works with sandbox credentials.
 
 ### Prerequisites
 
-1. **Set a default payment link** in Paddle sandbox:
-    - Go to https://sandbox-vendors.paddle.com/checkout-settings
-    - Under "Default payment link", enter `http://localhost:3333` (or any URL)
-    - Save
-
-2. **Create a client-side token**:
-    - Go to https://sandbox-vendors.paddle.com/authentication-v2
-    - Click "Client-side tokens" tab
-    - Create a new token (will start with `test_`)
+1. Set a **default payment link** in Paddle sandbox: https://sandbox-vendors.paddle.com/checkout-settings → enter
+   `http://localhost:3333` → save.
+2. Create a **client-side token**: https://sandbox-vendors.paddle.com/authentication-v2 → "Client-side tokens" tab →
+   create (starts with `test_`).
 
 ### Run the test
 
 ```bash
-# Get values from Paddle sandbox dashboard
 PADDLE_CLIENT_TOKEN=test_xxx PADDLE_PRICE_ID=pri_xxx pnpm test:checkout
 ```
 
-Then open http://localhost:3333 and click "Buy Cmdr".
+Open http://localhost:3333 and click "Buy Cmdr". Use test card `4000 0566 5566 5556` / CVC `100`. More test cards:
+https://developer.paddle.com/concepts/payment-methods/credit-debit-card#test-payment-details
 
 ### Troubleshooting
 
 | Error                            | Fix                                                  |
 | -------------------------------- | ---------------------------------------------------- |
-| "Something went wrong"           | Set default payment link in Paddle Checkout settings |
+| "Something went wrong"           | Set default payment link in Paddle checkout settings |
 | Token doesn't start with `test_` | Use sandbox token from sandbox-vendors.paddle.com    |
 | "Invalid price"                  | Ensure price ID is from the same sandbox account     |
 
-## Deployment
-
-```bash
-cd apps/license-server && npx wrangler deploy
-```
-
-The Worker is deployed to `license.getcmdr.com` via a Cloudflare custom domain (declared in `wrangler.toml` under
-`[[routes]]` with `custom_domain = true`). Cloudflare manages the DNS record automatically. The `*.workers.dev` fallback
-URL is `cmdr-license-server.veszelovszki.workers.dev`.
-
-For generic Cloudflare API operations (listing DNS records, zones, etc.), see
-[infrastructure.md](../../docs/tooling/infrastructure.md#cloudflare-dns-workers-analytics).
-
-### Troubleshooting deployment
-
-- **522 on `license.getcmdr.com`**: The custom domain isn't routing to the Worker. Check that `npx wrangler deploy`
-  output shows `license.getcmdr.com (custom domain)`. If not, the `[[routes]]` block in `wrangler.toml` may be missing,
-  or an existing DNS record is blocking it.
-- **"externally managed DNS records"**: A DNS record for the hostname was created manually. Delete it via the CF API or
-  dashboard first, then redeploy. Wrangler won't overwrite external records.
-- **"kv bindings require kv write perms"**: The API token is missing "Workers KV Storage: Edit". Update at
-  https://dash.cloudflare.com/profile/api-tokens — the token value stays the same.
-- **Workers.dev works but custom domain doesn't**: The code deployed fine but the domain binding failed. Check the error
-  in `npx wrangler deploy` output.
-
-## Endpoints
-
-| Method | Path                       | Description                                        |
-| ------ | -------------------------- | -------------------------------------------------- |
-| `GET`  | `/`                        | Health check                                       |
-| `POST` | `/webhook/paddle`          | Paddle webhook (generates and emails license)      |
-| `POST` | `/activate`                | Exchange short code for full cryptographic key     |
-| `POST` | `/validate`                | Validate license key (returns subscription status) |
-| `POST` | `/admin/generate`          | Manual license generation (requires auth header)   |
-| `GET`  | `/download/:version/:arch` | Log download to Analytics Engine, 302 → GitHub     |
-
 ## Architecture decisions
 
-- See [ADR 014: Payment provider choice](../../docs/adr/014-payment-provider-paddle.md) for why Paddle
-- See [ADR 016: License model](../../docs/adr/016-license-model-bsl.md) for the BSL license approach
-- See `apps/desktop/src/lib/licensing/CLAUDE.md` for the full feature overview
+- [ADR 014: Payment provider choice](../../docs/adr/014-payment-provider-paddle.md)
+- [ADR 016: License model](../../docs/adr/016-license-model-bsl.md)
+- [CLAUDE.md](CLAUDE.md) — full technical reference

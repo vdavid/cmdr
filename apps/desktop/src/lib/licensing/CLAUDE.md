@@ -75,3 +75,6 @@ security delete-generic-password -s "com.veszelovszki.cmdr" -a "trial-*"
 
 **Test commercial reminder**: Set `firstRunTimestamp` in
 `~/Library/Application Support/com.veszelovszki.cmdr/license.json` to 31 days ago.
+
+**Generate a test license key**: See
+[license server CLAUDE.md](../../../../apps/license-server/CLAUDE.md#generate-a-test-license-key).

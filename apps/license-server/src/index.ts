@@ -28,6 +28,8 @@ type Bindings = {
     // Config
     PRODUCT_NAME: string
     SUPPORT_EMAIL: string
+    // "sandbox" (default) or "live" — controls which Paddle API to use for /validate
+    PADDLE_ENVIRONMENT?: string
     // Price IDs for license type mapping
     PRICE_ID_SUPPORTER?: string
     PRICE_ID_COMMERCIAL_SUBSCRIPTION?: string
@@ -124,7 +126,7 @@ app.post('/validate', async (c) => {
     }
 
     // Determine which Paddle environment to use
-    const paddleConfig = getPaddleConfig(transactionId, c.env)
+    const paddleConfig = getPaddleConfig(c.env)
     if (!paddleConfig) {
         console.error('No Paddle API key configured')
         return c.json(invalidResponse())
@@ -160,20 +162,11 @@ function invalidResponse(): ValidationResponse {
     }
 }
 
-/** Determine Paddle API config based on transaction ID */
-function getPaddleConfig(
-    transactionId: string,
-    env: Bindings,
-): { apiKey: string; environment: 'sandbox' | 'live' } | null {
-    // Try sandbox first, then live (based on transaction ID prefix)
-    const isSandbox = transactionId.startsWith('txn_') // Sandbox uses different prefix in practice
-    const primaryKey = isSandbox ? env.PADDLE_API_KEY_SANDBOX : env.PADDLE_API_KEY_LIVE
-    const fallbackKey = isSandbox ? env.PADDLE_API_KEY_LIVE : env.PADDLE_API_KEY_SANDBOX
-    const environment = isSandbox ? 'sandbox' : 'live'
-
-    const apiKey = primaryKey ?? fallbackKey
+/** Determine Paddle API config from PADDLE_ENVIRONMENT var (default: sandbox). */
+function getPaddleConfig(env: Bindings): { apiKey: string; environment: 'sandbox' | 'live' } | null {
+    const environment = env.PADDLE_ENVIRONMENT === 'live' ? 'live' : 'sandbox'
+    const apiKey = environment === 'live' ? env.PADDLE_API_KEY_LIVE : env.PADDLE_API_KEY_SANDBOX
     if (!apiKey) return null
-
     return { apiKey, environment }
 }
 
@@ -232,8 +225,8 @@ async function processCompletedTransaction(payload: PaddleWebhookPayload, env: B
 
     console.log('Processing transaction:', purchaseData.transactionId, 'for customer:', purchaseData.customerId)
 
-    // Determine Paddle API config (sandbox vs live based on transaction ID)
-    const paddleConfig = getPaddleConfig(purchaseData.transactionId, env)
+    // Determine Paddle API config (sandbox vs live based on PADDLE_ENVIRONMENT)
+    const paddleConfig = getPaddleConfig(env)
     if (!paddleConfig) {
         console.error('No Paddle API key configured')
         return Response.json({ error: 'Server configuration error' }, { status: 500 })

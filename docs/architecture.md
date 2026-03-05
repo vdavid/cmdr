@@ -62,7 +62,7 @@ All under `apps/desktop/src-tauri/src/`.
 
 | Directory | Purpose |
 |-----------|---------|
-| `apps/license-server/` | Cloudflare Worker + Hono. Paddle webhooks, Ed25519 key generation. See [README](../apps/license-server/README.md) and [CLAUDE.md](../apps/license-server/CLAUDE.md) |
+| `apps/license-server/` | Cloudflare Worker + Hono. Paddle webhooks, Ed25519 key generation. See [CLAUDE.md](../apps/license-server/CLAUDE.md) (technical reference) and [README](../apps/license-server/README.md) (first-time setup) |
 | `apps/website/` | getcmdr.com marketing site (Astro + Tailwind v4). See [README](../apps/website/README.md) and [CLAUDE.md](../apps/website/CLAUDE.md) |
 | `scripts/check/` | Go unified check runner (~40 checks, parallel with dependency graph) |
 

@@ -121,7 +121,7 @@ function extractTransactionData(json: unknown): {
     if (data.custom_data && typeof data.custom_data === 'object') {
         const cd = data.custom_data as Record<string, unknown>
         customData = {
-            organizationName: typeof cd.organization_name === 'string' ? cd.organization_name : undefined,
+            organizationName: typeof cd.organizationName === 'string' ? cd.organizationName : undefined,
         }
     }
 
