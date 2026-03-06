@@ -6,6 +6,7 @@ import {
     getSubscriptionStatus,
     getLicenseTypeFromPriceId,
     getCustomerDetails,
+    PaddleApiError,
     type ValidationResponse,
     type PriceIdMapping,
 } from './paddle-api'
@@ -125,14 +126,28 @@ app.post('/validate', async (c) => {
         return c.json(invalidResponse())
     }
 
+    // Strip multi-seat suffix (e.g. "txn_abc-2" → "txn_abc") — Paddle only knows the base transaction ID.
+    // The suffix is our own convention from generateAndSendLicenses for quantity > 1.
+    const baseTransactionId = transactionId.replace(/-\d+$/, '')
+
     // Determine which Paddle environment to use
     const paddleConfig = getPaddleConfig(c.env)
     if (!paddleConfig) {
         console.error('No Paddle API key configured')
-        return c.json(invalidResponse())
+        return c.json({ error: 'upstream_error' }, 502)
     }
 
-    const result = await getSubscriptionStatus(transactionId, paddleConfig)
+    let result
+    try {
+        result = await getSubscriptionStatus(baseTransactionId, paddleConfig)
+    } catch (error) {
+        if (error instanceof PaddleApiError) {
+            console.error('Paddle API error during validation:', error.message)
+            return c.json({ error: 'upstream_error' }, 502)
+        }
+        throw error
+    }
+
     if (!result) {
         return c.json(invalidResponse())
     }
@@ -336,6 +351,9 @@ async function generateAndSendLicenses(params: {
     const licenseCodes: string[] = []
 
     for (let i = 0; i < params.quantity; i++) {
+        // Generate the short code first so it can be embedded in the signed payload
+        const shortCode = generateShortCode()
+
         const licenseData = {
             email: params.customerEmail,
             // Each license gets a unique transaction ID suffix for quantity > 1
@@ -343,13 +361,10 @@ async function generateAndSendLicenses(params: {
             issuedAt: new Date().toISOString(),
             type: params.licenseType,
             organizationName: params.organizationName,
+            shortCode,
         }
 
-        // Generate the full cryptographic key (includes organizationName in signed payload)
         const fullKey = await generateLicenseKey(licenseData, params.privateKey)
-
-        // Generate a short code and store the mapping with org name
-        const shortCode = generateShortCode()
         const stored: StoredLicense = {
             fullKey,
             organizationName: params.organizationName,
@@ -410,19 +425,19 @@ app.post('/admin/generate', async (c) => {
         )
     }
 
+    // Generate the short code first so it can be embedded in the signed payload
+    const shortCode = generateShortCode()
+
     const licenseData = {
         email,
         transactionId: `manual-${String(Date.now())}`,
         issuedAt: new Date().toISOString(),
         type,
         organizationName,
+        shortCode,
     }
 
-    // Generate the full cryptographic key (includes organizationName in signed payload)
     const fullKey = await generateLicenseKey(licenseData, c.env.ED25519_PRIVATE_KEY)
-
-    // Generate a short code and store the mapping with org name
-    const shortCode = generateShortCode()
     const stored: StoredLicense = { fullKey, organizationName }
     await c.env.LICENSE_CODES.put(shortCode, JSON.stringify(stored))
 

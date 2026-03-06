@@ -596,8 +596,9 @@
         explorerRef?.refocus()
     }
 
-    function handleLicenseKeyDialogClose() {
+    async function handleLicenseKeyDialogClose() {
         showLicenseKeyDialog = false
+        windowTitle = await getWindowTitle()
         explorerRef?.refocus()
     }
 

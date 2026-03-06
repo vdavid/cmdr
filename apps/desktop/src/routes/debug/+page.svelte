@@ -356,6 +356,13 @@
                         class="index-button"
                         onclick={() => {
                             toastCounter++
+                            addToast(`Success toast #${String(toastCounter)}`, { level: 'success' })
+                        }}>Success</button
+                    >
+                    <button
+                        class="index-button"
+                        onclick={() => {
+                            toastCounter++
                             addToast(`Warning toast #${String(toastCounter)}`, { level: 'warn' })
                         }}>Warn</button
                     >
@@ -375,6 +382,16 @@
                             toastCounter++
                             addToast(`Persistent info #${String(toastCounter)}`, { dismissal: 'persistent' })
                         }}>Info</button
+                    >
+                    <button
+                        class="index-button"
+                        onclick={() => {
+                            toastCounter++
+                            addToast(`Persistent success #${String(toastCounter)}`, {
+                                dismissal: 'persistent',
+                                level: 'success',
+                            })
+                        }}>Success</button
                     >
                     <button
                         class="index-button"

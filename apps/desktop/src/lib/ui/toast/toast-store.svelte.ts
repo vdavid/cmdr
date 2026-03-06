@@ -1,6 +1,6 @@
 import type { Component } from 'svelte'
 
-export type ToastLevel = 'info' | 'warn' | 'error'
+export type ToastLevel = 'info' | 'success' | 'warn' | 'error'
 export type ToastDismissal = 'transient' | 'persistent'
 
 /** Content can be a plain string (rendered as text) or a Svelte component (mounted as-is). */

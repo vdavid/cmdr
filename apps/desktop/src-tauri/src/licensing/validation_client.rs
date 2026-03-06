@@ -2,6 +2,7 @@
 //!
 //! Communicates with the license server to validate subscription status.
 
+use crate::licensing::verification::LicenseActivationError;
 use serde::{Deserialize, Serialize};
 
 /// License server URL (configured at compile time).
@@ -23,6 +24,17 @@ pub struct ValidationResponse {
     pub expires_at: Option<String>,
 }
 
+/// Outcome of a server validation attempt.
+#[derive(Debug)]
+pub enum ValidationOutcome {
+    /// Server returned a definitive response (active, expired, or invalid).
+    Success(ValidationResponse),
+    /// License server couldn't reach Paddle (HTTP 502). Treat like a transient error.
+    UpstreamError,
+    /// Client couldn't reach the license server at all (network/timeout).
+    NetworkError,
+}
+
 /// Request body for the /validate endpoint.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -38,6 +50,10 @@ pub struct ActivateResponse {
     /// Organization name from KV store (also embedded in license_key payload).
     #[allow(dead_code, reason = "Deserialized from API response, not yet displayed in UI")]
     pub organization_name: Option<String>,
+    #[allow(
+        dead_code,
+        reason = "Deserialized from API response; errors now mapped to typed LicenseActivationError"
+    )]
     pub error: Option<String>,
 }
 
@@ -66,18 +82,22 @@ pub fn is_short_code(input: &str) -> bool {
 
 /// Exchange a short license code for the full cryptographic key.
 ///
-/// Returns the full key or an error message.
-pub async fn activate_short_code(code: &str) -> Result<String, String> {
+/// Returns the full key or a typed activation error.
+pub async fn activate_short_code(code: &str) -> Result<String, LicenseActivationError> {
     // In mock mode, return a mock key
     #[cfg(debug_assertions)]
     if std::env::var("CMDR_MOCK_LICENSE").is_ok() {
-        return Err("Mock mode: short code activation not available".to_string());
+        return Err(LicenseActivationError::NetworkError {
+            detail: "Mock mode: short code activation not available".to_string(),
+        });
     }
 
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(10))
         .build()
-        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
+        .map_err(|e| LicenseActivationError::NetworkError {
+            detail: format!("Failed to create HTTP client: {}", e),
+        })?;
 
     let url = format!("{}/activate", LICENSE_SERVER_URL);
 
@@ -88,53 +108,81 @@ pub async fn activate_short_code(code: &str) -> Result<String, String> {
         })
         .send()
         .await
-        .map_err(|e| format!("Failed to connect to license server: {}", e))?;
+        .map_err(|e| LicenseActivationError::NetworkError { detail: e.to_string() })?;
 
     let status = response.status();
     let body: ActivateResponse = response
         .json()
         .await
-        .map_err(|e| format!("Invalid response from license server: {}", e))?;
+        .map_err(|e| LicenseActivationError::ServerError { detail: e.to_string() })?;
 
     if !status.is_success() {
-        return Err(body.error.unwrap_or_else(|| "License code not found".to_string()));
+        return Err(LicenseActivationError::ShortCodeNotFound);
     }
 
-    body.license_key.ok_or_else(|| "No license key in response".to_string())
+    body.license_key.ok_or_else(|| LicenseActivationError::ServerError {
+        detail: "No license key in response".to_string(),
+    })
 }
 
 /// Validate a license with the server.
 ///
-/// Returns the validation response or None if the request failed.
-pub async fn validate_with_server(transaction_id: &str) -> Option<ValidationResponse> {
+/// Returns a `ValidationOutcome` distinguishing between:
+/// - `Success`: server gave a definitive answer (active, expired, or invalid)
+/// - `UpstreamError`: license server couldn't reach Paddle (HTTP 502)
+/// - `NetworkError`: client couldn't reach the license server at all
+pub async fn validate_with_server(transaction_id: &str) -> ValidationOutcome {
     // In mock mode, skip server validation
     #[cfg(debug_assertions)]
     if std::env::var("CMDR_MOCK_LICENSE").is_ok() {
-        return None;
+        return ValidationOutcome::NetworkError;
     }
 
-    let client = reqwest::Client::builder()
+    let client = match reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(10))
         .build()
-        .ok()?;
+    {
+        Ok(c) => c,
+        Err(_) => return ValidationOutcome::NetworkError,
+    };
 
     let url = format!("{}/validate", LICENSE_SERVER_URL);
 
-    let response = client
+    let response = match client
         .post(&url)
         .json(&ValidationRequest {
             transaction_id: transaction_id.to_string(),
         })
         .send()
         .await
-        .ok()?;
+    {
+        Ok(r) => r,
+        Err(e) => {
+            log::warn!("License validation network error: {}", e);
+            return ValidationOutcome::NetworkError;
+        }
+    };
 
-    if !response.status().is_success() {
-        log::warn!("License validation request failed: {}", response.status());
-        return None;
+    let status = response.status();
+
+    // HTTP 502: license server couldn't reach Paddle
+    if status.as_u16() == 502 {
+        log::warn!("License server returned 502 (upstream Paddle error)");
+        return ValidationOutcome::UpstreamError;
     }
 
-    response.json::<ValidationResponse>().await.ok()
+    if !status.is_success() {
+        log::warn!("License validation request failed: {}", status);
+        return ValidationOutcome::NetworkError;
+    }
+
+    match response.json::<ValidationResponse>().await {
+        Ok(resp) => ValidationOutcome::Success(resp),
+        Err(e) => {
+            log::warn!("License validation response parse error: {}", e);
+            ValidationOutcome::NetworkError
+        }
+    }
 }
 
 #[cfg(test)]

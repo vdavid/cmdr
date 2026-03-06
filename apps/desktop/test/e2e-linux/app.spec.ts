@@ -93,7 +93,7 @@ describe('Keyboard navigation', () => {
         let initialCursorIndex = -1
         for (let i = 0; i < entries.length; i++) {
             const cls = await entries[i].getAttribute('class')
-            if (cls.includes('is-under-cursor')) {
+            if (cls?.includes('is-under-cursor')) {
                 initialCursorIndex = i
                 break
             }
@@ -110,7 +110,7 @@ describe('Keyboard navigation', () => {
         let newCursorIndex = -1
         for (let i = 0; i < updatedEntries.length; i++) {
             const cls = await updatedEntries[i].getAttribute('class')
-            if (cls.includes('is-under-cursor')) {
+            if (cls?.includes('is-under-cursor')) {
                 newCursorIndex = i
                 break
             }

@@ -128,34 +128,51 @@ pub fn needs_validation(app: &tauri::AppHandle) -> bool {
     }
 }
 
+/// Check if a server validation has ever completed successfully.
+/// Returns false if no `last_validation_timestamp` exists (license was committed locally but never server-verified).
+pub fn has_been_validated(app: &tauri::AppHandle) -> bool {
+    let store = match app.store("license.json") {
+        Ok(s) => s,
+        Err(_) => return false,
+    };
+    store.get(STORE_KEY_LAST_VALIDATION).and_then(|v| v.as_u64()).is_some()
+}
+
 /// Validate license with server asynchronously.
+/// If `transaction_id` is provided, uses it directly (for pre-commit validation).
+/// If `None`, reads from the stored license (for periodic 7-day re-validation).
 /// Returns the updated AppStatus after validation.
-pub async fn validate_license_async(app: &tauri::AppHandle) -> AppStatus {
+pub async fn validate_license_async(app: &tauri::AppHandle, transaction_id: Option<&str>) -> Result<AppStatus, String> {
+    use crate::licensing::validation_client::ValidationOutcome;
+
     // In debug builds, check for mock mode first
     #[cfg(debug_assertions)]
     if let Some(status) = get_mock_status(app) {
-        return status;
+        return Ok(status);
     }
 
-    // Check for a valid license key
-    let license_info = match get_license_info(app) {
-        Some(info) => info,
-        None => {
-            return AppStatus::Personal {
-                show_commercial_reminder: should_show_commercial_reminder(app),
-            };
-        }
+    // Resolve the transaction ID: use explicit parameter or fall back to stored license
+    let resolved_transaction_id = match transaction_id {
+        Some(id) => id.to_string(),
+        None => match get_license_info(app) {
+            Some(info) => info.transaction_id,
+            None => {
+                return Ok(AppStatus::Personal {
+                    show_commercial_reminder: should_show_commercial_reminder(app),
+                });
+            }
+        },
     };
 
     // Call the license server
-    let response = crate::licensing::validation_client::validate_with_server(&license_info.transaction_id).await;
+    let outcome = crate::licensing::validation_client::validate_with_server(&resolved_transaction_id).await;
 
-    match response {
-        Some(resp) => {
+    match outcome {
+        ValidationOutcome::Success(resp) => {
             // Convert response to LicenseType
             let license_type = resp.license_type.as_deref().and_then(string_to_license_type);
 
-            // Update cache
+            // Update cache — server gave a definitive answer
             update_cached_status(
                 app,
                 &resp.status,
@@ -165,12 +182,15 @@ pub async fn validate_license_async(app: &tauri::AppHandle) -> AppStatus {
             );
 
             // Return the new status based on the response
-            response_to_app_status(app, &resp)
+            Ok(response_to_app_status(app, &resp))
         }
-        None => {
-            // Network error - fall back to cached status
-            log::warn!("License validation failed, using cached status");
-            get_app_status(app)
+        ValidationOutcome::UpstreamError => {
+            log::warn!("License server couldn't reach Paddle");
+            Err("License server couldn't reach payment provider".to_string())
+        }
+        ValidationOutcome::NetworkError => {
+            log::warn!("License validation network error");
+            Err("Couldn't reach the license server".to_string())
         }
     }
 }
@@ -191,7 +211,7 @@ fn response_to_app_status(
 }
 
 /// Convert string to LicenseType.
-fn string_to_license_type(s: &str) -> Option<LicenseType> {
+pub fn string_to_license_type(s: &str) -> Option<LicenseType> {
     match s {
         "supporter" => Some(LicenseType::Supporter),
         "commercial_subscription" => Some(LicenseType::CommercialSubscription),
@@ -342,6 +362,32 @@ pub fn mark_commercial_reminder_dismissed(app: &tauri::AppHandle) {
     }
 }
 
+/// Write cached license status without marking it as server-validated.
+/// Used by `commit_license` so the app shows the correct license type immediately,
+/// while `needs_validation()` still returns true (triggering server verification on next launch).
+pub fn write_cached_status_without_validation(
+    app: &tauri::AppHandle,
+    status: &str,
+    license_type: Option<LicenseType>,
+    organization_name: Option<String>,
+    expires_at: Option<String>,
+) {
+    if let Ok(store) = app.store("license.json") {
+        let cached = CachedLicenseStatus {
+            status: status.to_string(),
+            license_type,
+            organization_name,
+            expires_at,
+            cached_at: current_timestamp(),
+        };
+        store.set(STORE_KEY_CACHED_STATUS, serde_json::json!(cached));
+
+        if status != "expired" {
+            store.delete(STORE_KEY_EXPIRATION_SHOWN);
+        }
+    }
+}
+
 /// Update cached license status from server response.
 pub fn update_cached_status(
     app: &tauri::AppHandle,
@@ -378,22 +424,17 @@ pub fn get_window_title(status: &AppStatus) -> String {
     }
 }
 
-/// Reset license data (for testing only).
-#[cfg(debug_assertions)]
+/// Reset license data, returning the app to unlicensed (Personal) state.
 pub fn reset_license(app: &tauri::AppHandle) {
     crate::licensing::verification::clear_license_cache();
     if let Ok(store) = app.store("license.json") {
         store.delete("license_key");
+        store.delete("license_short_code");
         store.delete(STORE_KEY_CACHED_STATUS);
         store.delete(STORE_KEY_LAST_VALIDATION);
         store.delete(STORE_KEY_EXPIRATION_SHOWN);
         store.delete(STORE_KEY_REMINDER_LAST_DISMISSED);
     }
-}
-
-#[cfg(not(debug_assertions))]
-pub fn reset_license(_app: &tauri::AppHandle) {
-    // No-op in release builds
 }
 
 fn current_timestamp() -> u64 {

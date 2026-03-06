@@ -70,7 +70,8 @@ Centralized toast notifications with stacking, levels, and two dismissal modes.
 - **Container** (`ToastContainer.svelte`): Mounted once in `(main)/+layout.svelte`. Fixed top-right, stacks vertically.
 - **Item** (`ToastItem.svelte`): Frame, close button, auto-dismiss timer for transient toasts.
 
-Levels: `info` (default), `warn`, `error`. Dismissal: `transient` (4s timeout + nav-dismiss, default) or `persistent`.
+Levels: `info` (default), `success`, `warn`, `error`. Dismissal: `transient` (4s timeout + nav-dismiss, default) or
+`persistent`.
 
 Call `dismissTransientToasts()` on pane navigation to clear stale feedback.
 

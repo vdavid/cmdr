@@ -25,9 +25,18 @@ interface SubscriptionResult {
     customData: { organizationName?: string } | null
 }
 
+/** Thrown when the Paddle API is unreachable or returns a server error (not a "not found"). */
+export class PaddleApiError extends Error {
+    constructor(message: string) {
+        super(message)
+        this.name = 'PaddleApiError'
+    }
+}
+
 /**
  * Get subscription status from Paddle API.
- * Returns null if transaction not found or API error.
+ * Returns null if transaction not found (Paddle 404).
+ * Throws PaddleApiError if the Paddle API is unreachable or returns a server error.
  */
 export async function getSubscriptionStatus(
     transactionId: string,
@@ -35,69 +44,84 @@ export async function getSubscriptionStatus(
 ): Promise<SubscriptionResult | null> {
     const baseUrl = config.environment === 'sandbox' ? 'https://sandbox-api.paddle.com' : 'https://api.paddle.com'
 
-    try {
-        const txnResult = await fetchTransaction(baseUrl, transactionId, config.apiKey)
-        if (!txnResult) return null
+    const txnResult = await fetchTransaction(baseUrl, transactionId, config.apiKey)
+    if (!txnResult) return null
 
-        // If no subscription, it's a one-time purchase (always active)
-        if (!txnResult.subscriptionId) {
-            return {
-                status: 'active',
-                expiresAt: null,
-                customData: txnResult.customData?.organizationName
-                    ? { organizationName: txnResult.customData.organizationName }
-                    : null,
-            }
-        }
-
-        const subResult = await fetchSubscription(baseUrl, txnResult.subscriptionId, config.apiKey)
-        if (!subResult) return null
-
+    // If no subscription, it's a one-time purchase (always active)
+    if (!txnResult.subscriptionId) {
         return {
-            status: subResult.status,
-            expiresAt: subResult.expiresAt ?? null,
+            status: 'active',
+            expiresAt: null,
             customData: txnResult.customData?.organizationName
                 ? { organizationName: txnResult.customData.organizationName }
                 : null,
         }
-    } catch (error) {
-        console.error('Paddle API error:', error)
-        return null
+    }
+
+    const subResult = await fetchSubscription(baseUrl, txnResult.subscriptionId, config.apiKey)
+    if (!subResult) return null
+
+    return {
+        status: subResult.status,
+        expiresAt: subResult.expiresAt ?? null,
+        customData: txnResult.customData?.organizationName
+            ? { organizationName: txnResult.customData.organizationName }
+            : null,
     }
 }
 
-/** Fetch transaction from Paddle API */
+/**
+ * Fetch transaction from Paddle API.
+ * Returns null for 404 (transaction not found). Throws PaddleApiError on other failures.
+ */
 async function fetchTransaction(
     baseUrl: string,
     transactionId: string,
     apiKey: string,
 ): Promise<{ subscriptionId: string | undefined; customData: { organizationName?: string } | undefined } | null> {
-    const response = await fetch(`${baseUrl}/transactions/${transactionId}`, {
-        headers: { Authorization: `Bearer ${apiKey}` },
-    })
+    let response: Response
+    try {
+        response = await fetch(`${baseUrl}/transactions/${transactionId}`, {
+            headers: { Authorization: `Bearer ${apiKey}` },
+        })
+    } catch (error) {
+        throw new PaddleApiError(`Paddle API unreachable: ${error instanceof Error ? error.message : String(error)}`)
+    }
 
-    if (!response.ok) {
-        console.error('Failed to fetch transaction:', response.status)
+    if (response.status === 404) {
         return null
+    }
+    if (!response.ok) {
+        throw new PaddleApiError(`Paddle API returned HTTP ${String(response.status)} for transaction`)
     }
 
     const json: unknown = await response.json()
     return extractTransactionData(json)
 }
 
-/** Fetch subscription from Paddle API */
+/**
+ * Fetch subscription from Paddle API.
+ * Returns null for 404 (subscription not found). Throws PaddleApiError on other failures.
+ */
 async function fetchSubscription(
     baseUrl: string,
     subscriptionId: string,
     apiKey: string,
 ): Promise<{ status: 'active' | 'expired' | 'canceled'; expiresAt: string | undefined } | null> {
-    const response = await fetch(`${baseUrl}/subscriptions/${subscriptionId}`, {
-        headers: { Authorization: `Bearer ${apiKey}` },
-    })
+    let response: Response
+    try {
+        response = await fetch(`${baseUrl}/subscriptions/${subscriptionId}`, {
+            headers: { Authorization: `Bearer ${apiKey}` },
+        })
+    } catch (error) {
+        throw new PaddleApiError(`Paddle API unreachable: ${error instanceof Error ? error.message : String(error)}`)
+    }
 
-    if (!response.ok) {
-        console.error('Failed to fetch subscription:', response.status)
+    if (response.status === 404) {
         return null
+    }
+    if (!response.ok) {
+        throw new PaddleApiError(`Paddle API returned HTTP ${String(response.status)} for subscription`)
     }
 
     const json: unknown = await response.json()

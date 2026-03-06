@@ -58,27 +58,29 @@ Test the full purchase flow through Paddle's sandbox. Only works with sandbox cr
 
 ### Prerequisites
 
-1. Set a **default payment link** in Paddle sandbox: https://sandbox-vendors.paddle.com/checkout-settings → enter
-   `http://localhost:3333` → save.
+1. The **default payment link** in Paddle sandbox should be `http://localhost:4321` (the local website). Live uses
+   `https://getcmdr.com`. Check at https://sandbox-vendors.paddle.com/checkout-settings.
 2. Create a **client-side token**: https://sandbox-vendors.paddle.com/authentication-v2 → "Client-side tokens" tab →
    create (starts with `test_`).
 
 ### Run the test
 
-```bash
-PADDLE_CLIENT_TOKEN=test_xxx PADDLE_PRICE_ID=pri_xxx pnpm test:checkout
-```
+Start the local website (`pnpm dev` in `apps/website`) and the local license server (`pnpm dev` in `apps/license-server`
+\+ ngrok). Then use the buy buttons on http://localhost:4321/pricing/.
 
-Open http://localhost:3333 and click "Buy Cmdr". Use test card `4000 0566 5566 5556` / CVC `100`. More test cards:
+Use test card `4000 0566 5566 5556` / CVC `100`. More test cards:
 https://developer.paddle.com/concepts/payment-methods/credit-debit-card#test-payment-details
+
+**Standalone checkout playground:** There's also a minimal test page at `pnpm test:checkout` (port 3333). To use it,
+temporarily change the default payment link to `http://localhost:3333` in the sandbox checkout settings.
 
 ### Troubleshooting
 
-| Error                            | Fix                                                  |
-| -------------------------------- | ---------------------------------------------------- |
-| "Something went wrong"           | Set default payment link in Paddle checkout settings |
-| Token doesn't start with `test_` | Use sandbox token from sandbox-vendors.paddle.com    |
-| "Invalid price"                  | Ensure price ID is from the same sandbox account     |
+| Error                            | Fix                                                      |
+| -------------------------------- | -------------------------------------------------------- |
+| "Something went wrong"           | Check default payment link matches your localhost origin |
+| Token doesn't start with `test_` | Use sandbox token from sandbox-vendors.paddle.com        |
+| "Invalid price"                  | Ensure price ID is from the same sandbox account         |
 
 ## Architecture decisions
 

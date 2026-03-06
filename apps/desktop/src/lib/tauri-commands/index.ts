@@ -172,14 +172,25 @@ export {
     getLicenseStatus,
     getWindowTitle,
     activateLicense,
+    verifyLicense,
+    commitLicense,
     getLicenseInfo,
     markExpirationModalShown,
     markCommercialReminderDismissed,
     resetLicense,
     needsLicenseValidation,
+    hasLicenseBeenValidated,
     validateLicenseWithServer,
+    parseActivationError,
 } from './licensing'
-export type { LicenseType, LicenseStatus, LicenseInfo } from './licensing'
+export type {
+    LicenseType,
+    LicenseStatus,
+    LicenseInfo,
+    VerifyResult,
+    LicenseActivationErrorCode,
+    LicenseActivationError,
+} from './licensing'
 
 // MTP (Android device support)
 export {

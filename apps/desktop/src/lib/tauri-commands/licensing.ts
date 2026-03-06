@@ -18,7 +18,74 @@ export interface LicenseInfo {
     transactionId: string
     issuedAt: string
     organizationName: string | null
+    licenseType: string | null
     shortCode: string | null
+}
+
+/** Result of verifying a license key without persisting it. */
+export interface VerifyResult {
+    info: LicenseInfo
+    fullKey: string
+    shortCode: string | null
+}
+
+/** Error codes from the license activation flow (matches Rust `LicenseActivationError` enum). */
+export type LicenseActivationErrorCode =
+    | 'invalidFormat'
+    | 'badEncoding'
+    | 'badSignature'
+    | 'badPayload'
+    | 'shortCodeNotFound'
+    | 'networkError'
+    | 'serverError'
+
+/** Typed activation error returned by the backend. */
+export interface LicenseActivationError {
+    code: LicenseActivationErrorCode
+    detail?: string
+}
+
+const validActivationErrorCodes = new Set<string>([
+    'invalidFormat',
+    'badEncoding',
+    'badSignature',
+    'badPayload',
+    'shortCodeNotFound',
+    'networkError',
+    'serverError',
+])
+
+/**
+ * Parses a Tauri invoke error into a typed activation error.
+ *
+ * Tauri 2 serializes `Serialize`-implementing error types directly as the rejection value.
+ * The value may arrive as a parsed object or as a JSON string (depending on Tauri version/config).
+ */
+export function parseActivationError(e: unknown): LicenseActivationError | null {
+    // Case 1: already a parsed object with a `code` field
+    if (typeof e === 'object' && e !== null && 'code' in e) {
+        const obj = e as { code: unknown }
+        if (typeof obj.code === 'string' && validActivationErrorCodes.has(obj.code)) {
+            return e as LicenseActivationError
+        }
+    }
+
+    // Case 2: JSON string (Tauri may wrap the serialized error in a string)
+    if (typeof e === 'string') {
+        try {
+            const parsed: unknown = JSON.parse(e)
+            if (typeof parsed === 'object' && parsed !== null && 'code' in parsed) {
+                const obj = parsed as { code: unknown }
+                if (typeof obj.code === 'string' && validActivationErrorCodes.has(obj.code)) {
+                    return parsed as LicenseActivationError
+                }
+            }
+        } catch {
+            // Not JSON — fall through
+        }
+    }
+
+    return null
 }
 
 /**
@@ -38,13 +105,21 @@ export async function getWindowTitle(): Promise<string> {
 }
 
 /**
- * Activates a license key.
- * @param licenseKey The license key to activate
- * @returns License info on success
- * @throws Error message on failure
+ * Activates a license key (verify + commit in one call).
+ * Kept for backward compatibility — new code should use verifyLicense + commitLicense.
  */
 export async function activateLicense(licenseKey: string): Promise<LicenseInfo> {
     return invoke<LicenseInfo>('activate_license', { licenseKey })
+}
+
+/** Verifies a license key offline without writing anything to disk. */
+export async function verifyLicense(licenseKey: string): Promise<VerifyResult> {
+    return invoke<VerifyResult>('verify_license', { licenseKey })
+}
+
+/** Persists a verified license key to disk and updates caches. */
+export async function commitLicense(licenseKey: string, shortCode: string | null): Promise<LicenseInfo> {
+    return invoke<LicenseInfo>('commit_license', { licenseKey, shortCode })
 }
 
 /**
@@ -86,10 +161,18 @@ export async function needsLicenseValidation(): Promise<boolean> {
 }
 
 /**
- * Validates the license with the license server.
- * Call this when needsLicenseValidation returns true, or after activating a new license.
- * @returns Updated license status from server
+ * Checks if a server validation has ever completed for the current license.
+ * Returns false if the license was committed locally but never verified with the server.
  */
-export async function validateLicenseWithServer(): Promise<LicenseStatus> {
-    return invoke<LicenseStatus>('validate_license_with_server')
+export async function hasLicenseBeenValidated(): Promise<boolean> {
+    return invoke<boolean>('has_license_been_validated')
+}
+
+/**
+ * Validates the license with the license server.
+ * If transactionId is provided, uses it directly (for pre-commit validation).
+ * If omitted, reads from the stored license (for periodic re-validation).
+ */
+export async function validateLicenseWithServer(transactionId?: string): Promise<LicenseStatus> {
+    return invoke<LicenseStatus>('validate_license_with_server', { transactionId: transactionId ?? null })
 }

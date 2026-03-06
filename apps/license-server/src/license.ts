@@ -9,6 +9,7 @@ export interface LicenseData {
     issuedAt: string
     type: LicenseType
     organizationName?: string // For commercial licenses
+    shortCode?: string // Embedded so the app can display it even when activated via full key
 }
 
 /**

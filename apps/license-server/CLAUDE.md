@@ -171,6 +171,12 @@ Deployed to `license.getcmdr.com` via Cloudflare custom domain (declared in `wra
   https://dash.cloudflare.com/profile/api-tokens.
 - **Workers.dev works but custom domain doesn't**: Domain binding failed. Check error in deploy output.
 
+## Business rules
+
+**Supporter tax_mode is `internal`, commercial prices are `external`.** Intentional: we absorb tax for personal
+supporters as a goodwill gesture, but commercial customers pay tax on top. This is configured per-price in the Paddle
+dashboard (both sandbox and live). Don't "fix" this to make them consistent.
+
 ## Key decisions
 
 **Decision**: `PADDLE_ENVIRONMENT` env var controls sandbox vs live routing, rather than inferring from transaction IDs.

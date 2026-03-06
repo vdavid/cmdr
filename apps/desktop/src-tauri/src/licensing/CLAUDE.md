@@ -9,9 +9,9 @@ License keys are self-contained: `base64(JSON payload).base64(Ed25519 signature)
 | File | Purpose |
 |---|---|
 | `mod.rs` | `LicenseData` struct, `redact_email` helper, re-exports from sub-modules |
-| `verification.rs` | Ed25519 crypto. Validates key format, verifies signature, caches result in `Mutex`. `activate_license` (sync), `activate_license_async` (handles short-code exchange), `get_license_info` (lazy, cached). |
+| `verification.rs` | Ed25519 crypto. `LicenseActivationError` typed error enum. Validates key format, verifies signature, caches result in `Mutex`. Split into verify/commit: `verify_license_async` (read-only check + short-code exchange), `commit_license` (persist to disk + update caches). Legacy wrappers: `activate_license` (sync verify+commit), `activate_license_async` (async verify+commit). `get_license_info` (lazy, cached). `VerifyResult` struct wraps `LicenseInfo` + `full_key` + `short_code`. |
 | `app_status.rs` | `AppStatus` enum. 7-day server re-validation, 30-day offline grace period. Commercial use reminder timer. Debug: `CMDR_MOCK_LICENSE` env var overrides everything. |
-| `validation_client.rs` | HTTP client: `POST /validate`, `POST /activate`. Debug → `localhost:8787`, release → `license.getcmdr.com`. Mock mode skips network entirely. |
+| `validation_client.rs` | HTTP client: `POST /validate`, `POST /activate`. Debug → `localhost:8787`, release → `license.getcmdr.com`. Mock mode skips network entirely. Returns `ValidationOutcome` enum (Success/UpstreamError/NetworkError). |
 
 ## AppStatus variants
 
@@ -31,19 +31,37 @@ Expired { organization_name, expired_at, show_modal }
 
 Offline grace period: 30 days. After that, status reverts to Personal until next successful server validation.
 
-## Activation flow
+## Activation flow (verify/commit split)
+
+The activation flow is split into two phases to prevent invalid keys from being persisted to disk.
 
 ```
-User enters key or short code
+Frontend: verifyLicense(input)
   |
   |-- is_short_code("CMDR-XXXX-XXXX-XXXX")?
   |     YES → POST /activate → get full crypto key
   |
   v
 validate_license_key()      ← Ed25519 verify offline
-store to license.json       ← persisted
-update LICENSE_CACHE        ← in-memory fast path
+return VerifyResult         ← LicenseInfo + full_key + short_code (nothing stored)
+
+Frontend: validateLicenseWithServer(transactionId)
+  |                                   ↑ passed explicitly since key isn't stored yet
+  v
+Server says active/supporter → commitLicense(fullKey, shortCode) → persist + onSuccess
+Server says expired          → commitLicense(fullKey, shortCode) → persist + show error
+Server says invalid          → DON'T commit. Show error. Nothing stored.
+Network error                → commitLicense(fullKey, shortCode) → persist + fallback
 ```
+
+`commit_license` does: store to `license.json`, write initial `cached_license_status`, update `LICENSE_CACHE`.
+
+`VerifyResult` fields: `info` (LicenseInfo), `full_key`, `short_code`.
+`LicenseInfo` fields: `email`, `transaction_id`, `issued_at`, `organization_name`, `license_type`, `short_code`.
+The frontend uses `license_type` to construct a fallback `LicenseStatus` when the server is unavailable.
+
+Legacy `activate_license`/`activate_license_async` wrappers still exist for backward compatibility — they call
+`commit_license` internally (verify + commit in one call).
 
 ## Key patterns
 
@@ -71,6 +89,18 @@ update LICENSE_CACHE        ← in-memory fast path
 **Decision**: Short codes (`CMDR-XXXX-XXXX-XXXX`) exchanged server-side for full crypto keys, rather than being directly verifiable.
 **Why**: Short codes are human-friendly for typing and sharing, but too short to embed a full Ed25519 signature. The server maps short codes to full keys, so users get a nice entry experience while the app still gets a cryptographically verifiable key for offline use.
 
+**Decision**: `LicenseActivationError` typed enum instead of `Result<_, String>` for activation errors.
+**Why**: The frontend was pattern-matching English substrings to decide which error message to show. A tagged enum (`#[serde(tag = "code")]`) serializes as `{ code: "badSignature" }` so the frontend can `switch` on the code. Follows the same pattern as `MtpConnectionError`. The enum lives in `verification.rs` and is used by `validation_client.rs` too.
+
+**Decision**: Verify/commit split — `verify_license_async` (read-only) + `commit_license` (persist), instead of a single `activate_license_internal` that does both.
+**Why**: The old flow stored the key before server validation. If the server said "invalid" and the user force-quit (or the app crashed), the invalid key persisted to disk. Now the frontend verifies first, validates with the server, and only commits on success or network fallback. Invalid keys never touch disk, eliminating the need for defensive `resetLicense()` cleanup in error handlers.
+
+**Decision**: `VerifyResult` is a separate struct from `LicenseInfo`.
+**Why**: `VerifyResult` carries `full_key` (needed to call `commit_license` later) and `short_code`. These fields shouldn't leak to the frontend via `get_license_info` — they're only meaningful during the activation flow. Keeping them separate means `LicenseInfo` stays clean for its primary use case (displaying license details).
+
+**Decision**: `validate_license_async` accepts an optional `transaction_id` parameter.
+**Why**: During activation, the key isn't stored yet, so the function can't read the transaction ID from the store. The frontend passes it explicitly. For periodic re-validation (7-day cycle), the parameter is `None` and the function falls back to reading from the stored license. This avoids storing the key just to read the transaction ID back.
+
 **Decision**: `CMDR_MOCK_LICENSE` env var bypasses all license logic including server calls.
 **Why**: License UX testing requires seeing every state (personal, supporter, commercial, expired, with/without modals). Without mocking, you'd need real license keys for each variant and a running license server. The mock skips network entirely, making UI development fast.
 
@@ -81,6 +111,12 @@ update LICENSE_CACHE        ← in-memory fast path
 
 **Gotcha**: `ValidationResponse` uses manual `#[serde(rename)]` on individual fields instead of `#[serde(rename_all)]` on the struct.
 **Why**: The license server API returns a mix of naming conventions — `status` is lowercase, but `organizationName` and `expiresAt` are camelCase, and `type` is a Rust keyword requiring rename. The struct matches the API as-is rather than imposing a consistent naming convention that would break deserialization.
+
+**Gotcha**: `validate_with_server` returns `ValidationOutcome` (an enum with `Success`/`UpstreamError`/`NetworkError`), not `Option<ValidationResponse>`.
+**Why**: The license server returns HTTP 502 when it can't reach Paddle (upstream error) vs HTTP 200 with `status: "invalid"` when Paddle actively says the transaction is unknown. The old code collapsed both into `None`, causing `validate_license_async` to trust a stale "invalid" response from a transient Paddle outage and overwrite the cached "active" status. Now `UpstreamError` and `NetworkError` both fall back to cached status without overwriting, while `Success` (even with `status: "invalid"`) is treated as definitive and cached.
+
+**Gotcha**: `validate_license_async` returns `Result<AppStatus, String>`, not bare `AppStatus`.
+**Why**: The Tauri command must propagate network/upstream errors to the frontend so it can distinguish "server actively rejected the key" (`Ok(Personal)`) from "couldn't reach the server" (`Err`). Without this, the frontend's catch block never fires — Tauri's `invoke` only throws on `Err` — and stale cached `Personal` status gets misinterpreted as a server rejection.
 
 ## Dependencies
 
