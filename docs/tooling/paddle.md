@@ -49,4 +49,7 @@ curl -s "${PADDLE_API}/transactions?per_page=5" \
   -H "Authorization: Bearer ${PADDLE_KEY}" | jq '.data[] | {id, status, customer_id, totals}'
 ```
 
+**Gotcha**: Checkout settings (default payment link, etc.) have no API — they can only be changed in the dashboard:
+[sandbox](https://sandbox-vendors.paddle.com/checkout-settings) | [live](https://vendors.paddle.com/checkout-settings).
+
 **Full API docs**: https://developer.paddle.com/api-reference/overview
