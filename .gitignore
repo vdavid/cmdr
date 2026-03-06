@@ -11,6 +11,9 @@ _ignored/
 # macOS system files
 .DS_Store
 
+# Personal Claude hooks
+.claude/hooks/session-start.sh
+
 # .env files
 .env
 .env.*
