@@ -12,6 +12,8 @@ pub mod watcher;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::path::Path;
+use std::sync::Mutex;
+use std::time::Instant;
 
 /// Category of a location item.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -88,8 +90,30 @@ fn get_fs_type(path: &str) -> Option<String> {
     String::from_utf8(name_bytes).ok()
 }
 
+/// Short-lived cache for `list_locations()`. During app init the frontend calls
+/// `list_volumes` + `find_containing_volume` × N tabs within milliseconds — each
+/// one calling `list_locations()` which does expensive NSFileManager + icon work.
+/// Caching the result for a few seconds collapses all of those into a single real call.
+static LOCATIONS_CACHE: Mutex<Option<(Instant, Vec<LocationInfo>)>> = Mutex::new(None);
+const LOCATIONS_CACHE_TTL_SECS: u64 = 5;
+
+/// Invalidate the locations cache. Called by the volume watcher on mount/unmount.
+pub fn invalidate_locations_cache() {
+    *LOCATIONS_CACHE.lock().unwrap() = None;
+}
+
 /// Get all locations organized by category, deduplicated.
 pub fn list_locations() -> Vec<LocationInfo> {
+    if let Some((ts, cached)) = LOCATIONS_CACHE.lock().unwrap().as_ref()
+        && ts.elapsed().as_secs() < LOCATIONS_CACHE_TTL_SECS {
+            return cached.clone();
+        }
+    let result = list_locations_uncached();
+    *LOCATIONS_CACHE.lock().unwrap() = Some((Instant::now(), result.clone()));
+    result
+}
+
+fn list_locations_uncached() -> Vec<LocationInfo> {
     let mut locations = Vec::new();
     let mut seen_paths: HashSet<String> = HashSet::new();
 

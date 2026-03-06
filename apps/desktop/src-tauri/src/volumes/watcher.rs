@@ -114,14 +114,19 @@ fn check_for_volume_changes() {
         Err(_) => return,
     };
 
-    // Find newly mounted volumes
-    for path in current_volumes.difference(&known_guard) {
+    let mounted: Vec<_> = current_volumes.difference(&known_guard).cloned().collect();
+    let unmounted: Vec<_> = known_guard.difference(&current_volumes).cloned().collect();
+
+    if !mounted.is_empty() || !unmounted.is_empty() {
+        super::invalidate_locations_cache();
+    }
+
+    for path in &mounted {
         debug!("Volume mounted: {}", path);
         emit_volume_mounted(path);
     }
 
-    // Find unmounted volumes
-    for path in known_guard.difference(&current_volumes) {
+    for path in &unmounted {
         debug!("Volume unmounted: {}", path);
         emit_volume_unmounted(path);
     }
