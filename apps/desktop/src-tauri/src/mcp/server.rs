@@ -389,11 +389,22 @@ async fn process_request<R: Runtime>(
                 *session_guard = Some(session_id.clone());
             }
 
-            // Negotiate protocol version (use latest supported or client's version if older)
-            let negotiated = if client_version == PROTOCOL_VERSION || client_version == DEFAULT_PROTOCOL_VERSION {
+            // Negotiate protocol version (use latest supported or client's version if older).
+            // Older clients (2024-11-05 spec) send protocolVersion in the JSON body only,
+            // not the HTTP header. Fall back to the body value when the header is absent.
+            let effective_version = if client_version == DEFAULT_PROTOCOL_VERSION {
+                request
+                    .params
+                    .get("protocolVersion")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or(client_version)
+            } else {
+                client_version
+            };
+            let negotiated = if effective_version == PROTOCOL_VERSION || effective_version == DEFAULT_PROTOCOL_VERSION {
                 PROTOCOL_VERSION.to_string()
             } else {
-                client_version.to_string()
+                effective_version.to_string()
             };
 
             if let Ok(mut version_guard) = state.negotiated_version.write() {
