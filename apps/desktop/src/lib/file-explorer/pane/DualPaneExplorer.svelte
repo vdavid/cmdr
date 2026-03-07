@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount, onDestroy, untrack, tick } from 'svelte'
+    import { onMount, onDestroy, untrack } from 'svelte'
     import FilePane from './FilePane.svelte'
     import PaneResizer from './PaneResizer.svelte'
     import LoadingIcon from '$lib/ui/LoadingIcon.svelte'
@@ -383,7 +383,6 @@
             void saveLastUsedPathForVolume(activeTab.volumeId, path)
             void cancelNavPriority(activeTab.path)
             void prioritizeDir(path, 'current_dir')
-            containerElement?.focus()
             return
         }
 
@@ -412,8 +411,6 @@
             activeTab.cursorFilename = null
             void restoreCursorByFilename(pane, filename)
         }
-
-        containerElement?.focus()
     }
 
     async function restoreCursorByFilename(pane: 'left' | 'right', filename: string) {
@@ -431,7 +428,6 @@
                 networkHost: host ?? undefined,
             }),
         )
-        containerElement?.focus()
     }
 
     async function handleSortChange(pane: 'left' | 'right', newColumn: SortColumn) {
@@ -547,7 +543,6 @@
                     [paneKey(pane, 'path')]: targetPath,
                     focusedPane: pane,
                 })
-                containerElement?.focus()
                 // Background path correction applies to the new active tab
                 applyVolumePathCorrection(pane, volumeId, volumePath, targetPath)
                 return
@@ -730,6 +725,20 @@
             return true
         }
         return false
+    }
+
+    /** Prevents focus from escaping to buttons/links inside the explorer. Only inputs (rename, network login) are allowed. */
+    function handleFocusGuard(e: FocusEvent) {
+        const target = e.target as HTMLElement
+        if (
+            target === containerElement ||
+            target instanceof HTMLInputElement ||
+            target instanceof HTMLTextAreaElement ||
+            target instanceof HTMLSelectElement ||
+            target.isContentEditable
+        )
+            return
+        containerElement?.focus()
     }
 
     function handleKeyDown(e: KeyboardEvent) {
@@ -1092,10 +1101,6 @@
             setPaneViewMode(focusedPane, newMode)
             saveAppStatus({ [paneKey(focusedPane, 'viewMode')]: newMode })
             saveTabsForPaneSide(focusedPane)
-            // Refocus after Svelte re-renders the new list component to restore keyboard navigation
-            void tick().then(() => {
-                containerElement?.focus()
-            })
         })
 
         // Subscribe to volume mount events (refresh volume list when new volumes appear)
@@ -1262,8 +1267,6 @@
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call
             paneRef?.setNetworkHost?.(entry.networkHost ?? null)
         }
-
-        containerElement?.focus()
     }
 
     async function handleNavigationAction(action: string) {
@@ -1698,6 +1701,10 @@
      * Switch focus to the other pane.
      */
     export function switchPane() {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        getPaneRef('left')?.closeVolumeChooser()
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        getPaneRef('right')?.closeVolumeChooser()
         const newFocus = otherPane(focusedPane)
         focusedPane = newFocus
         saveAppStatus({ focusedPane: newFocus })
@@ -2285,6 +2292,7 @@
 <div
     class="dual-pane-explorer"
     bind:this={containerElement}
+    onfocusin={handleFocusGuard}
     onkeydown={handleKeyDown}
     onkeyup={handleKeyUp}
     tabindex="0"

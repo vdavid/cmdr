@@ -587,23 +587,19 @@
     function handleExpirationModalClose() {
         showExpiredModal = false
         hideExpirationModal()
-        explorerRef?.refocus()
     }
 
     function handleCommercialReminderClose() {
         showCommercialReminder = false
-        explorerRef?.refocus()
     }
 
     function handleAboutClose() {
         showAboutWindow = false
-        explorerRef?.refocus()
     }
 
     async function handleLicenseKeyDialogClose() {
         showLicenseKeyDialog = false
         windowTitle = await getWindowTitle()
-        explorerRef?.refocus()
     }
 
     async function handleLicenseKeySuccess() {
@@ -616,12 +612,10 @@
 
     function handleCommandPaletteClose() {
         showCommandPalette = false
-        explorerRef?.refocus()
     }
 
     function handleFnView() {
         void explorerRef?.openViewerForCursor()
-        explorerRef?.refocus()
     }
 
     async function handleFnEdit() {
@@ -629,27 +623,22 @@
         if (entry) {
             await openInEditor(entry.path)
         }
-        explorerRef?.refocus()
     }
 
     function handleFnCopy() {
         void explorerRef?.openCopyDialog()
-        explorerRef?.refocus()
     }
 
     function handleFnMove() {
         void explorerRef?.openMoveDialog()
-        explorerRef?.refocus()
     }
 
     function handleFnRename() {
         explorerRef?.startRename()
-        explorerRef?.refocus()
     }
 
     function handleFnNewFolder() {
         void explorerRef?.openNewFolderDialog()
-        explorerRef?.refocus()
     }
 
     function handleFnDelete() {
@@ -690,19 +679,16 @@
             case 'view.showHidden':
                 // Use Tauri command to toggle and sync menu checkbox state
                 await toggleHiddenFiles()
-                explorerRef?.refocus()
                 return
 
             case 'view.briefMode':
                 // Use Tauri command to set mode and sync menu radio state
                 await setViewMode('brief')
-                explorerRef?.refocus()
                 return
 
             case 'view.fullMode':
                 // Use Tauri command to set mode and sync menu radio state
                 await setViewMode('full')
-                explorerRef?.refocus()
                 return
 
             // === Pane commands ===
@@ -716,12 +702,10 @@
 
             case 'pane.leftVolumeChooser':
                 explorerRef?.toggleVolumeChooser('left')
-                explorerRef?.refocus()
                 return
 
             case 'pane.rightVolumeChooser':
                 explorerRef?.toggleVolumeChooser('right')
-                explorerRef?.refocus()
                 return
 
             // === Tab commands ===
@@ -761,100 +745,81 @@
             // === Navigation commands ===
             case 'nav.open':
                 explorerRef?.sendKeyToFocusedPane('Enter')
-                explorerRef?.refocus()
                 return
 
             case 'nav.parent':
                 explorerRef?.navigate('parent')
-                explorerRef?.refocus()
                 return
 
             case 'nav.back':
                 explorerRef?.navigate('back')
-                explorerRef?.refocus()
                 return
 
             case 'nav.forward':
                 explorerRef?.navigate('forward')
-                explorerRef?.refocus()
                 return
 
             case 'nav.home':
                 explorerRef?.sendKeyToFocusedPane('Home')
-                explorerRef?.refocus()
                 return
 
             case 'nav.end':
                 explorerRef?.sendKeyToFocusedPane('End')
-                explorerRef?.refocus()
                 return
 
             case 'nav.pageUp':
                 explorerRef?.sendKeyToFocusedPane('PageUp')
-                explorerRef?.refocus()
                 return
 
             case 'nav.pageDown':
                 explorerRef?.sendKeyToFocusedPane('PageDown')
-                explorerRef?.refocus()
                 return
 
             // === Network commands ===
             case 'network.refresh':
                 explorerRef?.refreshNetworkHosts()
-                explorerRef?.refocus()
                 return
 
             // === Sort commands ===
             case 'sort.byName':
                 explorerRef?.setSortColumn('name')
-                explorerRef?.refocus()
                 return
 
             case 'sort.byExtension':
                 explorerRef?.setSortColumn('extension')
-                explorerRef?.refocus()
                 return
 
             case 'sort.bySize':
                 explorerRef?.setSortColumn('size')
-                explorerRef?.refocus()
                 return
 
             case 'sort.byModified':
                 explorerRef?.setSortColumn('modified')
-                explorerRef?.refocus()
                 return
 
             case 'sort.byCreated':
                 explorerRef?.setSortColumn('created')
-                explorerRef?.refocus()
                 return
 
             case 'sort.ascending':
                 explorerRef?.setSortOrder('asc')
-                explorerRef?.refocus()
                 return
 
             case 'sort.descending':
                 explorerRef?.setSortOrder('desc')
-                explorerRef?.refocus()
                 return
 
             case 'sort.toggleOrder':
                 explorerRef?.setSortOrder('toggle')
-                explorerRef?.refocus()
                 return
 
             // === File action commands ===
             case 'file.view':
                 void explorerRef?.openViewerForCursor()
-                explorerRef?.refocus()
                 return
 
             case 'file.rename':
                 explorerRef?.startRename()
-                explorerRef?.refocus()
                 return
 
             case 'file.edit': {
@@ -862,23 +827,19 @@
                 if (entryUnderCursor) {
                     await openInEditor(entryUnderCursor.path)
                 }
-                explorerRef?.refocus()
                 return
             }
 
             case 'file.copy':
                 void explorerRef?.openCopyDialog()
-                explorerRef?.refocus()
                 return
 
             case 'file.move':
                 void explorerRef?.openMoveDialog()
-                explorerRef?.refocus()
                 return
 
             case 'file.newFolder':
                 void explorerRef?.openNewFolderDialog()
-                explorerRef?.refocus()
                 return
 
             case 'file.delete':
@@ -894,7 +855,6 @@
                 if (entryUnderCursor) {
                     await showInFinder(entryUnderCursor.path)
                 }
-                explorerRef?.refocus()
                 return
             }
 
@@ -903,7 +863,6 @@
                 if (entryUnderCursor) {
                     await copyToClipboard(entryUnderCursor.path)
                 }
-                explorerRef?.refocus()
                 return
             }
 
@@ -912,7 +871,6 @@
                 if (entryUnderCursor) {
                     await copyToClipboard(entryUnderCursor.filename)
                 }
-                explorerRef?.refocus()
                 return
             }
 
@@ -921,7 +879,6 @@
                 if (entryUnderCursor) {
                     await quickLook(entryUnderCursor.path)
                 }
-                explorerRef?.refocus()
                 return
             }
 
@@ -930,7 +887,6 @@
                 if (entryUnderCursor) {
                     await getInfo(entryUnderCursor.path)
                 }
-                explorerRef?.refocus()
                 return
             }
 
@@ -945,13 +901,11 @@
                     return
                 }
                 explorerRef?.handleSelectionAction('selectAll')
-                explorerRef?.refocus()
                 return
             }
 
             case 'selection.deselectAll':
                 explorerRef?.handleSelectionAction('deselectAll')
-                explorerRef?.refocus()
                 return
 
             // === Edit commands (clipboard) ===
@@ -1013,22 +967,15 @@
             // === About window commands ===
             case 'about.openWebsite':
                 await openExternalUrl('https://getcmdr.com')
-                explorerRef?.refocus()
                 return
 
             case 'about.openUpgrade':
                 await openExternalUrl('https://getcmdr.com/upgrade')
-                explorerRef?.refocus()
                 return
 
             case 'about.close':
                 showAboutWindow = false
-                explorerRef?.refocus()
                 return
-
-            default:
-                // Unknown command - just refocus
-                explorerRef?.refocus()
         }
     }
 </script>
