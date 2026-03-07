@@ -74,3 +74,5 @@ landing page is dark-only.
 - `site` must be set in `astro.config.mjs` for RSS and OG image URLs to work.
 - Font files for OG image generation (`inter-400.ttf`, `inter-700.ttf`) live in `public/fonts/`.
 - When adding new pages, don't pass `forceDark` to `Layout` unless the page should be dark-only like the landing page.
+- **Deploy order**: Always `docker compose build` before `docker compose down`. Building first keeps the old container
+  serving traffic. `down → build → up` causes ~15s downtime while the image builds.

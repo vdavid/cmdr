@@ -219,8 +219,9 @@ sudo -u deploy-cmdr -i
 cd /opt/cmdr
 git pull origin main
 cd apps/website
-docker compose down
+# Build first so the old container keeps serving during the build (avoids ~15s downtime)
 docker compose build --no-cache
+docker compose down
 docker compose up -d
 ```
 

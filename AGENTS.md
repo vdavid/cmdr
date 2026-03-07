@@ -79,7 +79,8 @@ Run the smallest set of checks possible for efficiency while maintaining confide
       If it happens every startup without user interaction, it's probably debug, not info.
     - **warn**: Something unexpected that the app recovered from (fallback used, retry needed, config missing).
     - **error**: Something failed and couldn't be recovered. Requires attention.
-- When ran with `pnpm dev`, Cmdr hot reloads on file changes. Takes max 15s for back-end changes, max 3s on front-end.
+- When ran with `pnpm dev`, Cmdr hot reloads on file changes for both front-end and back-end (Tauri rebuilds and
+  restarts the app for Rust changes). Takes max 15s for back-end changes, max 3s on front-end.
 
 ## MCP
 
@@ -192,6 +193,11 @@ There are two MCP servers available to you:
   especially `Decision/Why` and `Gotcha/Why` entries. A stale doc is worse than no doc: the next agent will trust it
   and make wrong decisions. Don't update for trivial changes. If there is no `CLAUDE.md` file yet but you want to
   capture high-level info about a module or feature, create one.
+- **Pass on dead ends**: If you tried something that failed due to a wrong assumption about the codebase (wrong path,
+  wrong command, wrong host, wrong tool), add a `Gotcha/Why` entry to the nearest `CLAUDE.md` immediately. The next
+  agent will hit the same wall. Examples: "dist/ doesn't exist on the server — the site is inside the Docker
+  container", "wrangler login doesn't work in CI — use CLOUDFLARE_API_TOKEN", "Bash tool subshells don't inherit
+  from .zshenv". If there's no CLAUDE.md nearby, create one.
 
 Always do a last round of checks before wrapping up:
 
