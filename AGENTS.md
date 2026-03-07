@@ -137,6 +137,7 @@ There are two MCP servers available to you:
 - ❌ Don't add JSDoc that just repeats types or obvious function names
 - ❌ Don't ignore linter warnings (fix them or justify with a comment)
 - ❌ Don't add dependencies without checking license compatibility (`cargo deny check`)
+- ❌ Don't hard-wrap commit message body lines (no 72-char wrap). Write each bullet as one continuous line.
 
 ### TypeScript
 
