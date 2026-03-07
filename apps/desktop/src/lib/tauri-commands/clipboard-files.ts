@@ -41,6 +41,10 @@ export async function readClipboardFiles(): Promise<ClipboardReadResult> {
     return invoke<ClipboardReadResult>('read_clipboard_files')
 }
 
+export async function readClipboardText(): Promise<string | null> {
+    return invoke<string | null>('read_clipboard_text')
+}
+
 export async function clearClipboardCutState(): Promise<void> {
     await invoke('clear_clipboard_cut_state')
 }

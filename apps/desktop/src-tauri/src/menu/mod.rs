@@ -100,12 +100,13 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         PIN_TAB_MENU_ID => Some(("tab.togglePin", CommandScope::FileScoped)),
         CLOSE_OTHER_TABS_ID => Some(("tab.closeOthers", CommandScope::FileScoped)),
 
-        // Clipboard operations (App scope — text clipboard must work in all windows;
-        // the frontend's activeElement check routes between text and file clipboard)
+        // Clipboard operations — cut/copy/paste are handled specially in on_menu_event
+        // (native responder chain for non-main windows, execute-command for main window).
+        // They're still listed here for command_id_to_menu_id reverse lookups.
         EDIT_CUT_ID => Some(("edit.cut", CommandScope::App)),
         EDIT_COPY_ID => Some(("edit.copy", CommandScope::App)),
         EDIT_PASTE_ID => Some(("edit.paste", CommandScope::App)),
-        EDIT_PASTE_MOVE_ID => Some(("edit.pasteAsMove", CommandScope::App)),
+        EDIT_PASTE_MOVE_ID => Some(("edit.pasteAsMove", CommandScope::FileScoped)),
 
         // File operations (file-scoped)
         OPEN_ID => Some(("nav.open", CommandScope::FileScoped)),

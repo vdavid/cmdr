@@ -108,10 +108,10 @@ mod volumes_linux;
 mod stubs;
 
 use menu::{
-    CLOSE_TAB_ID, CommandScope, MenuState, SHOW_HIDDEN_FILES_ID, SORT_ASCENDING_ID, SORT_BY_CREATED_ID,
-    SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SORT_DESCENDING_ID, TAB_CLOSE_ID,
-    TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, VIEW_MODE_BRIEF_ID, VIEW_MODE_FULL_ID, VIEWER_WORD_WRAP_ID, ViewMode,
-    menu_id_to_command,
+    CLOSE_TAB_ID, CommandScope, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_PASTE_ID, MenuState, SHOW_HIDDEN_FILES_ID,
+    SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID,
+    SORT_BY_SIZE_ID, SORT_DESCENDING_ID, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, VIEW_MODE_BRIEF_ID,
+    VIEW_MODE_FULL_ID, VIEWER_WORD_WRAP_ID, ViewMode, menu_id_to_command,
 };
 use tauri::{Emitter, Manager};
 
@@ -119,6 +119,39 @@ use tauri::{Emitter, Manager};
 #[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
+}
+
+/// Sends a native clipboard action (copy:/cut:/paste:) through the responder chain.
+///
+/// Used when a non-main window is focused: the custom Edit menu items can't use the native
+/// responder chain like PredefinedMenuItems do, so we replicate it manually via
+/// `NSApplication.sendAction:to:from:` with nil target (routes to the first responder).
+#[cfg(target_os = "macos")]
+fn send_native_clipboard_action(menu_id: &str) {
+    use objc2::sel;
+    use objc2_app_kit::NSApplication;
+
+    let selector = match menu_id {
+        EDIT_CUT_ID => sel!(cut:),
+        EDIT_COPY_ID => sel!(copy:),
+        EDIT_PASTE_ID => sel!(paste:),
+        _ => return,
+    };
+
+    // Safety: we're on the main thread (called from on_menu_event which runs on the main thread).
+    let mtm = unsafe { objc2::MainThreadMarker::new_unchecked() };
+    let ns_app = NSApplication::sharedApplication(mtm);
+
+    // sendAction:to:from: with nil `to` sends to the first responder, exactly like
+    // PredefinedMenuItems do internally. This lets WKWebView handle text clipboard natively.
+    unsafe {
+        let _: bool = objc2::msg_send![
+            &ns_app,
+            sendAction: selector,
+            to: std::ptr::null::<objc2::runtime::AnyObject>(),
+            from: std::ptr::null::<objc2::runtime::AnyObject>(),
+        ];
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -452,6 +485,34 @@ pub fn run() {
                 return;
             }
 
+            // === Clipboard exception: file clipboard in main window, native text clipboard elsewhere ===
+            // Custom MenuItems for Cut/Copy/Paste route through execute-command in the main window
+            // so the frontend can decide between file and text clipboard. In non-main windows
+            // (viewer, settings), we send the native action through the responder chain so
+            // WKWebView handles text clipboard natively — just like PredefinedMenuItems would.
+            if id == EDIT_CUT_ID || id == EDIT_COPY_ID || id == EDIT_PASTE_ID {
+                let main_focused = app
+                    .get_webview_window("main")
+                    .is_some_and(|w| w.is_focused().unwrap_or(false));
+                if main_focused {
+                    let command_id = match id {
+                        EDIT_CUT_ID => "edit.cut",
+                        EDIT_COPY_ID => "edit.copy",
+                        _ => "edit.paste",
+                    };
+                    let _ = app.emit_to(
+                        "main",
+                        "execute-command",
+                        serde_json::json!({ "commandId": command_id }),
+                    );
+                } else {
+                    // Send native clipboard action to the first responder chain
+                    #[cfg(target_os = "macos")]
+                    send_native_clipboard_action(id);
+                }
+                return;
+            }
+
             // === Unified dispatch: look up command ID from the mapping ===
             if let Some((command_id, scope)) = menu_id_to_command(id) {
                 if scope == CommandScope::FileScoped {
@@ -782,6 +843,7 @@ pub fn run() {
             commands::clipboard::copy_files_to_clipboard,
             commands::clipboard::cut_files_to_clipboard,
             commands::clipboard::read_clipboard_files,
+            commands::clipboard::read_clipboard_text,
             commands::clipboard::clear_clipboard_cut_state,
         ])
         .on_window_event(|window, event| {

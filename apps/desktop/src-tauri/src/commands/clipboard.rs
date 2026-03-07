@@ -133,6 +133,30 @@ pub async fn read_clipboard_files(app: tauri::AppHandle) -> Result<ClipboardRead
     Ok(ClipboardReadResult { paths, is_cut })
 }
 
+/// Reads plain text from the system clipboard.
+///
+/// Used by the frontend to paste text into input fields. Going through Rust bypasses
+/// WebKit's `navigator.clipboard.readText()` permission popup.
+#[cfg(target_os = "macos")]
+#[tauri::command]
+pub async fn read_clipboard_text(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    let (tx, rx) = std::sync::mpsc::channel();
+    app.run_on_main_thread(move || {
+        let text = clipboard::read_text_from_clipboard();
+        let _ = tx.send(text);
+    })
+    .map_err(|e| format!("Couldn't run on main thread: {e}"))?;
+
+    rx.recv()
+        .map_err(|e| format!("Couldn't receive pasteboard result: {e}"))
+}
+
+#[cfg(not(target_os = "macos"))]
+#[tauri::command]
+pub async fn read_clipboard_text(_app: tauri::AppHandle) -> Result<Option<String>, String> {
+    Err("Clipboard operations are not yet supported on this platform".to_string())
+}
+
 /// Clears the in-process cut state without touching the system clipboard.
 #[tauri::command]
 pub fn clear_clipboard_cut_state() {

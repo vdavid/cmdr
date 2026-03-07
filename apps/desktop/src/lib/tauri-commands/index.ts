@@ -277,6 +277,7 @@ export {
     copyFilesToClipboard,
     cutFilesToClipboard,
     readClipboardFiles,
+    readClipboardText,
     clearClipboardCutState,
 } from './clipboard-files'
 export type { ClipboardReadResult } from './clipboard-files'

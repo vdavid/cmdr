@@ -108,11 +108,14 @@ also Window and Help.
 - **Tab as accelerator**: Switch pane uses Tab, which could conflict with menu bar accessibility
   navigation. If issues arise, omit the accelerator and rely on JS dispatch.
 - **Custom MenuItems for Cut/Copy/Paste**: The Edit menu uses custom MenuItems (not
-  PredefinedMenuItems) for Cut, Copy, Paste, and Move here. This routes ⌘C/⌘V/⌘X through
-  `execute-command` dispatch so the frontend can decide between text clipboard (when an input is
-  focused) and file clipboard (when the file list has focus). Text clipboard is handled via
-  `document.execCommand` / `navigator.clipboard` API in the frontend handler. Undo and Redo remain
-  PredefinedMenuItems since they only apply to text fields.
+  PredefinedMenuItems) for Cut, Copy, Paste, and Move here. In `on_menu_event`, these are handled
+  specially: if the main window is focused, they route through `execute-command` so the frontend can
+  decide between file clipboard and text clipboard (via `document.activeElement` check). If a
+  non-main window is focused (viewer, settings), `send_native_clipboard_action()` in `lib.rs` sends
+  the native `copy:`/`cut:`/`paste:` selector through the responder chain via
+  `NSApplication.sendAction:to:from:` — replicating what PredefinedMenuItems do internally. This
+  ensures text clipboard works natively in all windows. Undo and Redo remain PredefinedMenuItems
+  since they only apply to text fields.
 - **⌘A dual routing**: "Select all" uses ⌘A as a native menu accelerator (so it's visible in the
   Edit menu). Since macOS intercepts it before the webview, the frontend's `handleCommandExecute`
   checks `document.activeElement` — if it's an input/textarea, it calls `.select()` for text

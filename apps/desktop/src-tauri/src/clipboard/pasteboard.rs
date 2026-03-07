@@ -107,3 +107,13 @@ pub fn read_file_urls_from_clipboard() -> Result<Vec<PathBuf>, String> {
 
     Ok(paths)
 }
+
+/// Reads plain text from the system pasteboard.
+///
+/// Used by the frontend to paste text into input fields without triggering
+/// WebKit's clipboard permission popup (which `navigator.clipboard.readText()` causes).
+pub fn read_text_from_clipboard() -> Option<String> {
+    let pasteboard = NSPasteboard::generalPasteboard();
+    let pasteboard_type = unsafe { NSPasteboardTypeString };
+    pasteboard.stringForType(pasteboard_type).map(|s| s.to_string())
+}

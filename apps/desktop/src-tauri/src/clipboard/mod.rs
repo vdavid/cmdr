@@ -7,4 +7,4 @@ mod state;
 pub use state::{clear_cut_state, get_cut_state, set_cut_state};
 
 #[cfg(target_os = "macos")]
-pub use pasteboard::{read_file_urls_from_clipboard, write_file_urls_to_clipboard};
+pub use pasteboard::{read_file_urls_from_clipboard, read_text_from_clipboard, write_file_urls_to_clipboard};

@@ -29,6 +29,7 @@
         setMenuContext,
         getWindowTitle,
         registerKnownDialogs,
+        readClipboardText,
     } from '$lib/tauri-commands'
     import { SOFT_DIALOG_REGISTRY } from '$lib/ui/dialog-registry'
     import { addToast } from '$lib/ui/toast'
@@ -991,17 +992,12 @@
                     active instanceof HTMLTextAreaElement ||
                     active?.closest('[contenteditable]')
                 ) {
-                    // execCommand('paste') is the native paste that works without WebKit's
-                    // clipboard permission popup. Falls back to navigator.clipboard API.
-                    // eslint-disable-next-line @typescript-eslint/no-deprecated -- No modern alternative for triggering native paste in text inputs
-                    if (!document.execCommand('paste')) {
-                        try {
-                            const text = await navigator.clipboard.readText()
-                            // eslint-disable-next-line @typescript-eslint/no-deprecated -- insertText is the only way to insert at cursor position in inputs
-                            document.execCommand('insertText', false, text)
-                        } catch {
-                            // Both methods failed — clipboard may be empty or inaccessible
-                        }
+                    // Read clipboard text via Rust (bypasses WebKit's navigator.clipboard
+                    // permission popup that shows a "Paste" button the user must click).
+                    const text = await readClipboardText()
+                    if (text) {
+                        // eslint-disable-next-line @typescript-eslint/no-deprecated -- insertText is the only way to insert at cursor position in inputs
+                        document.execCommand('insertText', false, text)
                     }
                     return
                 }
