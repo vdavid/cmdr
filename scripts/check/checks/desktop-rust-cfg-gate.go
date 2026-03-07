@@ -265,43 +265,60 @@ var attrLinePattern = regexp.MustCompile(`^\s*#\[`)
 // to check if any preceding attribute contains target_os = "macos" (and not negated with not(...)).
 // Also handles `use` statements inside cfg-gated blocks (e.g., inside a #[cfg(target_os = "macos")] fn).
 func hasMacOSCfgAttribute(lines []string, lineIdx int) bool {
+	// Phase 1: Check for cfg attributes directly above this line (no code lines in between).
+	if hasDirectCfgAttribute(lines, lineIdx) {
+		return true
+	}
+
+	// Phase 2: Find the enclosing block via brace tracking and check if it's cfg-gated.
+	return isInsideCfgGatedBlock(lines, lineIdx)
+}
+
+// hasDirectCfgAttribute checks whether a macOS cfg attribute appears directly above lineIdx,
+// separated only by blank lines and other attributes.
+func hasDirectCfgAttribute(lines []string, lineIdx int) bool {
 	for j := lineIdx - 1; j >= 0; j-- {
 		trimmed := strings.TrimSpace(lines[j])
 
-		// Skip blank lines
 		if trimmed == "" {
 			continue
 		}
 
-		// If this is an attribute line (starts with #[), check it
 		if attrLinePattern.MatchString(lines[j]) {
-			// This attribute might be multi-line. Collect the full attribute text.
 			attrText := collectAttribute(lines, j)
 			if isMacOSGateAttribute(attrText) {
 				return true
 			}
-			// It's an attribute but not a macOS gate — keep walking (there could be stacked attributes)
 			continue
 		}
 
-		// If we hit a line that's part of a multi-line attribute (doesn't start with #[
-		// but looks like attribute content — e.g., ends with )] or contains attribute-like content),
-		// skip it. We handle multi-line attributes by collecting from the #[ opener.
 		if isAttributeContinuation(trimmed) {
 			continue
 		}
 
-		// Hit a non-blank, non-attribute line. If it ends with '{', it could be a
-		// function/block/impl opening that's itself cfg-gated (e.g., #[cfg(target_os = "macos")] fn foo() {).
-		// Recursively check the attributes above this enclosing block.
-		if strings.HasSuffix(trimmed, "{") {
-			if hasMacOSCfgAttribute(lines, j) {
-				return true
-			}
+		// Hit a code line — no direct cfg attribute
+		break
+	}
+	return false
+}
+
+// isInsideCfgGatedBlock walks backwards from lineIdx, tracking brace depth, to find the
+// enclosing block opener. If found, it recursively checks whether that block is cfg-gated.
+func isInsideCfgGatedBlock(lines []string, lineIdx int) bool {
+	braceDepth := 0
+	for j := lineIdx - 1; j >= 0; j-- {
+		trimmed := strings.TrimSpace(lines[j])
+		if trimmed == "" {
+			continue
 		}
 
-		// Stop walking — this is a regular code line
-		break
+		braceDepth += strings.Count(trimmed, "}") - strings.Count(trimmed, "{")
+
+		if braceDepth < 0 {
+			// Found an unmatched '{' — this is the enclosing block.
+			// Check if it (or its enclosing scope) has a macOS cfg gate.
+			return hasMacOSCfgAttribute(lines, j)
+		}
 	}
 	return false
 }

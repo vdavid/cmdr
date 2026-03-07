@@ -946,6 +946,20 @@ use core_foundation::base;`, "\n")
 	}
 }
 
+func TestHasMacOSCfgAttribute_CodeLinesBetweenBraceAndUse(t *testing.T) {
+	lines := strings.Split(`#[cfg(target_os = "macos")]
+fn macos_only() {
+    use objc2::sel;
+    use core_foundation::base;
+}`, "\n")
+
+	// Line 3 is "use core_foundation::base;". There's another use statement (line 2) between
+	// it and the opening brace (line 1). The checker should still find the enclosing cfg gate.
+	if !hasMacOSCfgAttribute(lines, 3) {
+		t.Error("expected true for use inside cfg-gated block with intervening code lines")
+	}
+}
+
 func TestHasMacOSCfgAttribute_NestedBlock(t *testing.T) {
 	lines := strings.Split(`#[cfg(target_os = "macos")]
 impl Foo {
