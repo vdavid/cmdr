@@ -217,7 +217,7 @@ If you need to deploy manually:
 ```bash
 sudo -u deploy-cmdr -i
 cd /opt/cmdr
-git pull origin main
+git fetch origin main && git reset --hard origin/main
 cd apps/website
 # Build first so the old container keeps serving during the build (avoids ~15s downtime)
 docker compose build --no-cache

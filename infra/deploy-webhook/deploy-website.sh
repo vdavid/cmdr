@@ -20,8 +20,9 @@ echo "Time: $(date --iso-8601=seconds)"
 
 cd /opt/cmdr
 
-echo "Pulling latest code..."
-git pull origin main
+echo "Fetching and resetting to origin/main..."
+git fetch origin main
+git reset --hard origin/main
 
 echo "Building new image (old site stays up during build)..."
 cd apps/website

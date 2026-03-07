@@ -40,7 +40,7 @@ docker ps
 docker logs getcmdr-static
 
 # Pull latest code
-cd /opt/cmdr && git pull origin main
+cd /opt/cmdr && git fetch origin main && git reset --hard origin/main
 ```
 
 For full setup details, see [deploying the website](../guides/deploy-website.md) and the
