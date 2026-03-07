@@ -48,5 +48,6 @@ posthog.init(document.currentScript.dataset.phKey, {
     api_host: document.currentScript.dataset.phHost,
     person_profiles: 'identified_only',
     capture_pageleave: true,
+    persistence: 'memory',
 })
 /* eslint-enable */
