@@ -4,14 +4,13 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-vi.mock('$lib/tauri-commands', async (importOriginal) => {
-    const original = await importOriginal<typeof import('$lib/tauri-commands')>()
+vi.mock('$lib/tauri-commands', async () => {
+    const { getMtpDeviceDisplayName } = await import('$lib/tauri-commands/mtp')
     return {
-        ...original,
+        getMtpDeviceDisplayName,
         listMtpDevices: vi.fn(),
         connectMtpDevice: vi.fn(),
         disconnectMtpDevice: vi.fn(),
-        getMtpDeviceDisplayName: original.getMtpDeviceDisplayName, // Use real implementation
         onMtpDeviceConnected: vi.fn(),
         onMtpDeviceDisconnected: vi.fn(),
         onMtpExclusiveAccessError: vi.fn(),

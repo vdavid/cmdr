@@ -119,10 +119,10 @@ pub fn list_locations() -> Vec<LocationInfo> {
     }
 
     // 2. Main volume
-    if let Some(loc) = get_main_volume(&mounts) {
-        if seen_paths.insert(loc.path.clone()) {
-            locations.push(loc);
-        }
+    if let Some(loc) = get_main_volume(&mounts)
+        && seen_paths.insert(loc.path.clone())
+    {
+        locations.push(loc);
     }
 
     // 3. Mounted volumes (real filesystems, excluding root and virtual)

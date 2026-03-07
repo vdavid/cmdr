@@ -1,14 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-vi.mock('$lib/tauri-commands', async (importOriginal) => {
-    const original = await importOriginal<typeof import('$lib/tauri-commands')>()
-    return {
-        ...original,
-        getLicenseStatus: vi.fn(),
-        needsLicenseValidation: vi.fn(),
-        validateLicenseWithServer: vi.fn(),
-    }
-})
+vi.mock('$lib/tauri-commands', () => ({
+    getLicenseStatus: vi.fn(),
+    needsLicenseValidation: vi.fn(),
+    hasLicenseBeenValidated: vi.fn(),
+    validateLicenseWithServer: vi.fn(),
+}))
 
 import type { LicenseStatus } from '$lib/tauri-commands'
 import { getLicenseStatus, needsLicenseValidation, validateLicenseWithServer } from '$lib/tauri-commands'

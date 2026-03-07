@@ -144,14 +144,14 @@ fn map_io_error(err: std::io::Error, source: &Path, destination: &Path) -> Write
         },
         _ => {
             // ENOSPC = 28 on Linux
-            if let Some(os_err) = err.raw_os_error() {
-                if os_err == libc::ENOSPC {
-                    return WriteOperationError::InsufficientSpace {
-                        required: 0,
-                        available: 0,
-                        volume_name: None,
-                    };
-                }
+            if let Some(os_err) = err.raw_os_error()
+                && os_err == libc::ENOSPC
+            {
+                return WriteOperationError::InsufficientSpace {
+                    required: 0,
+                    available: 0,
+                    volume_name: None,
+                };
             }
             WriteOperationError::IoError {
                 path: source.display().to_string(),

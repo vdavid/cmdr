@@ -1,6 +1,8 @@
 //! Tauri commands for clipboard file operations (copy/cut/paste).
 
+#[cfg(target_os = "macos")]
 use std::collections::HashSet;
+#[cfg(target_os = "macos")]
 use std::path::PathBuf;
 
 #[cfg(target_os = "macos")]
@@ -200,6 +202,7 @@ pub async fn read_clipboard_files(_app: tauri::AppHandle) -> Result<ClipboardRea
 // --- Helpers ---
 
 /// When no files are selected, falls back to the cursor index (adjusting for the ".." entry).
+#[cfg(target_os = "macos")]
 fn resolve_indices(selected_indices: &[usize], cursor_index: usize, has_parent: bool) -> Vec<usize> {
     if !selected_indices.is_empty() {
         return selected_indices.to_vec();

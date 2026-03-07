@@ -390,14 +390,14 @@ fn translate_notify_event(event: notify::Event, counter: &AtomicU64) -> Vec<FsCh
 /// Classify the first path in the list as file, dir, or symlink.
 #[cfg(target_os = "linux")]
 fn classify_paths(paths: &[std::path::PathBuf]) -> FsEventFlags {
-    if let Some(path) = paths.first() {
-        if let Ok(meta) = std::fs::symlink_metadata(path) {
-            return FsEventFlags {
-                item_is_file: meta.is_file(),
-                item_is_dir: meta.is_dir(),
-                ..Default::default()
-            };
-        }
+    if let Some(path) = paths.first()
+        && let Ok(meta) = std::fs::symlink_metadata(path)
+    {
+        return FsEventFlags {
+            item_is_file: meta.is_file(),
+            item_is_dir: meta.is_dir(),
+            ..Default::default()
+        };
     }
     // Path may no longer exist (deletion); the caller sets the kind flags
     Default::default()

@@ -181,6 +181,9 @@
         "tauri-commands/tab.ts": {
             "reason": "Tauri command wrappers, tested via integration"
         },
+        "tauri-commands/clipboard-files.ts": {
+            "reason": "Tauri command wrappers, tested via integration"
+        },
         "file-explorer/navigation/VolumeBreadcrumb.svelte": {
             "reason": "UI component, depends on Tauri APIs and MTP store"
         },

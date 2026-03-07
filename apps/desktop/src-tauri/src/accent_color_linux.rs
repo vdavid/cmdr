@@ -43,10 +43,10 @@ fn extract_rgb(value: &Value<'_>) -> Option<(f64, f64, f64)> {
     match inner {
         Value::Structure(s) => {
             let fields = s.fields();
-            if fields.len() == 3 {
-                if let (Value::F64(r), Value::F64(g), Value::F64(b)) = (&fields[0], &fields[1], &fields[2]) {
-                    return Some((*r, *g, *b));
-                }
+            if fields.len() == 3
+                && let (Value::F64(r), Value::F64(g), Value::F64(b)) = (&fields[0], &fields[1], &fields[2])
+            {
+                return Some((*r, *g, *b));
             }
             None
         }
@@ -154,13 +154,14 @@ async fn watch_portal_signal<R: Runtime>(app_handle: AppHandle<R>) -> zbus::Resu
             continue;
         };
 
-        if namespace == APPEARANCE_NS && key == ACCENT_KEY {
-            if let Some((r, g, b)) = extract_rgb(&value) {
-                let hex = rgb_floats_to_hex(r, g, b);
-                info!("Accent color changed: {hex}");
-                if let Err(e) = app_handle.emit("accent-color-changed", &hex) {
-                    warn!("Failed to emit accent-color-changed: {e}");
-                }
+        if namespace == APPEARANCE_NS
+            && key == ACCENT_KEY
+            && let Some((r, g, b)) = extract_rgb(&value)
+        {
+            let hex = rgb_floats_to_hex(r, g, b);
+            info!("Accent color changed: {hex}");
+            if let Err(e) = app_handle.emit("accent-color-changed", &hex) {
+                warn!("Failed to emit accent-color-changed: {e}");
             }
         }
     }

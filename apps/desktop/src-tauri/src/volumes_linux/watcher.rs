@@ -126,7 +126,7 @@ fn check_for_mount_changes() {
     };
 
     // Newly mounted
-    for (path, _fstype) in &current {
+    for path in current.keys() {
         if !known_guard.contains_key(path) {
             debug!("Volume mounted: {}", path);
             emit_volume_mounted(path);

@@ -1,15 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { listen } from '@tauri-apps/api/event'
 
-vi.mock('$lib/tauri-commands', async (importOriginal) => {
-    const original = await importOriginal<typeof import('$lib/tauri-commands')>()
+vi.mock('$lib/tauri-commands', async () => {
+    const { formatBytes, formatDuration } = await import('$lib/tauri-commands/write-operations')
     return {
-        ...original,
+        formatBytes,
+        formatDuration,
         getAiStatus: vi.fn(),
         getAiModelInfo: vi.fn(),
         startAiDownload: vi.fn(),
         cancelAiDownload: vi.fn(),
         dismissAiOffer: vi.fn(),
+        optOutAi: vi.fn(),
     }
 })
 
