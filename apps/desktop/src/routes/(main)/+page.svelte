@@ -71,6 +71,9 @@
         startRename: () => void
         openCopyDialog: () => Promise<void>
         openMoveDialog: () => Promise<void>
+        copyToClipboard: () => Promise<void>
+        cutToClipboard: () => Promise<void>
+        pasteFromClipboard: (forceMove: boolean) => Promise<void>
         openNewFolderDialog: () => Promise<void>
         openDeleteDialog: (permanent: boolean) => Promise<void>
         closeConfirmationDialog: () => void
@@ -948,6 +951,67 @@
             case 'selection.deselectAll':
                 explorerRef?.handleSelectionAction('deselectAll')
                 explorerRef?.refocus()
+                return
+
+            // === Edit commands (clipboard) ===
+            case 'edit.copy': {
+                const active = document.activeElement
+                if (
+                    active instanceof HTMLInputElement ||
+                    active instanceof HTMLTextAreaElement ||
+                    active?.closest('[contenteditable]')
+                ) {
+                    // eslint-disable-next-line @typescript-eslint/no-deprecated -- No modern alternative for triggering native copy in text inputs
+                    document.execCommand('copy')
+                    return
+                }
+                void explorerRef?.copyToClipboard()
+                return
+            }
+
+            case 'edit.cut': {
+                const active = document.activeElement
+                if (
+                    active instanceof HTMLInputElement ||
+                    active instanceof HTMLTextAreaElement ||
+                    active?.closest('[contenteditable]')
+                ) {
+                    // eslint-disable-next-line @typescript-eslint/no-deprecated -- No modern alternative for triggering native cut in text inputs
+                    document.execCommand('cut')
+                    return
+                }
+                void explorerRef?.cutToClipboard()
+                return
+            }
+
+            case 'edit.paste': {
+                const active = document.activeElement
+                if (
+                    active instanceof HTMLInputElement ||
+                    active instanceof HTMLTextAreaElement ||
+                    active?.closest('[contenteditable]')
+                ) {
+                    // execCommand('paste') is the native paste that works without WebKit's
+                    // clipboard permission popup. Falls back to navigator.clipboard API.
+                    // eslint-disable-next-line @typescript-eslint/no-deprecated -- No modern alternative for triggering native paste in text inputs
+                    if (!document.execCommand('paste')) {
+                        try {
+                            const text = await navigator.clipboard.readText()
+                            // eslint-disable-next-line @typescript-eslint/no-deprecated -- insertText is the only way to insert at cursor position in inputs
+                            document.execCommand('insertText', false, text)
+                        } catch {
+                            // Both methods failed — clipboard may be empty or inaccessible
+                        }
+                    }
+                    return
+                }
+                void explorerRef?.pasteFromClipboard(false)
+                return
+            }
+
+            case 'edit.pasteAsMove':
+                // Option+Cmd+V is not a text shortcut, so no activeElement check needed
+                void explorerRef?.pasteFromClipboard(true)
                 return
 
             // === About window commands ===

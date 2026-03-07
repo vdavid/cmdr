@@ -27,6 +27,10 @@
         updatePaneTabs,
         findFileIndex,
         getE2eStartPath,
+        copyFilesToClipboard,
+        cutFilesToClipboard,
+        readClipboardFiles,
+        clearClipboardCutState,
     } from '$lib/tauri-commands'
     import type {
         VolumeInfo,
@@ -91,6 +95,7 @@
         buildTransferPropsFromCursor,
         buildTransferPropsFromDroppedPaths,
         getDestinationVolumeInfo,
+        getCommonParentPath,
     } from './transfer-operations'
     import type { TransferOperationType } from '../types'
     import type { DeleteSourceItem } from '$lib/file-operations/delete/delete-dialog-utils'
@@ -1494,6 +1499,115 @@
     /** Opens the move dialog (convenience wrapper for MCP/key binding). */
     export async function openMoveDialog() {
         await openTransferDialog('move')
+    }
+
+    /** Gathers pane state needed for clipboard copy/cut. Returns null if unavailable. */
+    function getClipboardPaneState() {
+        const sourcePaneRef = getPaneRef(focusedPane)
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const listingId = sourcePaneRef?.getListingId?.() as string | undefined
+        if (!listingId) return null
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const hasParent = (sourcePaneRef?.hasParentEntry?.() as boolean | undefined) ?? false
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const selectedIndices = (sourcePaneRef?.getSelectedIndices?.() as number[] | undefined) ?? []
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const cursorIndex = (sourcePaneRef?.getCursorIndex?.() as number | undefined) ?? 0
+        const volumeId = getPaneVolumeId(focusedPane)
+
+        return { listingId, hasParent, selectedIndices, cursorIndex, volumeId }
+    }
+
+    /** Copies selected files (or cursor file) to the system clipboard. */
+    export async function copyToClipboard() {
+        const state = getClipboardPaneState()
+        if (!state) return
+
+        if (state.volumeId.startsWith('mtp-')) {
+            addToast("Clipboard copy isn't supported for MTP devices yet")
+            return
+        }
+
+        try {
+            const count = await copyFilesToClipboard(
+                state.listingId,
+                state.selectedIndices,
+                state.cursorIndex,
+                state.hasParent,
+                showHiddenFiles,
+            )
+            addToast(`Copied ${String(count)} ${count === 1 ? 'item' : 'items'}`)
+        } catch (error) {
+            log.error('Clipboard copy failed: {error}', { error })
+        }
+    }
+
+    /** Cuts selected files (or cursor file) to the system clipboard. */
+    export async function cutToClipboard() {
+        const state = getClipboardPaneState()
+        if (!state) return
+
+        if (state.volumeId.startsWith('mtp-')) {
+            addToast("Clipboard cut isn't supported for MTP devices yet")
+            return
+        }
+
+        try {
+            const count = await cutFilesToClipboard(
+                state.listingId,
+                state.selectedIndices,
+                state.cursorIndex,
+                state.hasParent,
+                showHiddenFiles,
+            )
+            addToast(`${String(count)} ${count === 1 ? 'item' : 'items'} ready to move. Paste to complete.`)
+        } catch (error) {
+            log.error('Clipboard cut failed: {error}', { error })
+        }
+    }
+
+    /** Pastes files from the system clipboard into the current directory. */
+    export async function pasteFromClipboard(forceMove: boolean) {
+        try {
+            const result = await readClipboardFiles()
+
+            if (result.paths.length === 0) {
+                addToast('No files on the clipboard. Copy files first with \u2318C.')
+                return
+            }
+
+            const volumeId = getPaneVolumeId(focusedPane)
+            if (volumeId.startsWith('mtp-')) {
+                addToast("Paste isn't supported for MTP devices yet")
+                return
+            }
+
+            const operationType: TransferOperationType = result.isCut || forceMove ? 'move' : 'copy'
+            const destPath = getPanePath(focusedPane)
+            const { sortBy, sortOrder } = getPaneSort(focusedPane)
+            const destVolId = getPaneVolumeId(focusedPane)
+            const sourceFolderPath = getCommonParentPath(result.paths)
+
+            dialogs.startTransferProgress({
+                operationType,
+                sourcePaths: result.paths,
+                sourceFolderPath,
+                destinationPath: destPath,
+                direction: focusedPane === 'left' ? 'left' : 'right',
+                sortColumn: sortBy,
+                sortOrder,
+                previewId: null,
+                sourceVolumeId: destVolId,
+                destVolumeId: destVolId,
+            })
+
+            if (result.isCut) {
+                void clearClipboardCutState()
+            }
+        } catch (error) {
+            log.error('Clipboard paste failed: {error}', { error })
+        }
     }
 
     /** Opens the delete confirmation dialog for the current selection or cursor item. */

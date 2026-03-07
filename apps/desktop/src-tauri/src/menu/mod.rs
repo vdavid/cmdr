@@ -34,6 +34,12 @@ pub const RENAME_ID: &str = "rename";
 pub const SELECT_ALL_ID: &str = "select_all_files";
 pub const DESELECT_ALL_ID: &str = "deselect_all";
 
+/// Menu item IDs for clipboard operations (Edit menu).
+pub const EDIT_CUT_ID: &str = "edit_cut";
+pub const EDIT_COPY_ID: &str = "edit_copy";
+pub const EDIT_PASTE_ID: &str = "edit_paste";
+pub const EDIT_PASTE_MOVE_ID: &str = "edit_paste_move";
+
 /// Menu item ID for command palette.
 pub const COMMAND_PALETTE_ID: &str = "command_palette";
 
@@ -94,6 +100,13 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         PIN_TAB_MENU_ID => Some(("tab.togglePin", CommandScope::FileScoped)),
         CLOSE_OTHER_TABS_ID => Some(("tab.closeOthers", CommandScope::FileScoped)),
 
+        // Clipboard operations (App scope — text clipboard must work in all windows;
+        // the frontend's activeElement check routes between text and file clipboard)
+        EDIT_CUT_ID => Some(("edit.cut", CommandScope::App)),
+        EDIT_COPY_ID => Some(("edit.copy", CommandScope::App)),
+        EDIT_PASTE_ID => Some(("edit.paste", CommandScope::App)),
+        EDIT_PASTE_MOVE_ID => Some(("edit.pasteAsMove", CommandScope::App)),
+
         // File operations (file-scoped)
         OPEN_ID => Some(("nav.open", CommandScope::FileScoped)),
         RENAME_ID => Some(("file.rename", CommandScope::FileScoped)),
@@ -153,6 +166,10 @@ pub fn command_id_to_menu_id(command_id: &str) -> Option<&'static str> {
         "file.quickLook" => Some(QUICK_LOOK_ID),
         "selection.selectAll" => Some(SELECT_ALL_ID),
         "selection.deselectAll" => Some(DESELECT_ALL_ID),
+        "edit.cut" => Some(EDIT_CUT_ID),
+        "edit.copy" => Some(EDIT_COPY_ID),
+        "edit.paste" => Some(EDIT_PASTE_ID),
+        "edit.pasteAsMove" => Some(EDIT_PASTE_MOVE_ID),
         _ => None,
     }
 }
@@ -533,9 +550,14 @@ fn build_menu_macos<R: Runtime>(
     menu.append(&file_menu)?;
 
     // --- Edit menu ---
-    // Clipboard PredefinedMenuItems are required on macOS: ⌘C/⌘V/⌘X/⌘Z in webview text fields
-    // are routed through the native responder chain via these menu items. Without them, clipboard
-    // shortcuts are dead in text inputs (e.g. the "New folder" dialog).
+    // Custom MenuItems for Cut/Copy/Paste replace PredefinedMenuItems. This routes ⌘C/⌘V/⌘X
+    // through execute-command dispatch so the frontend can decide between text clipboard (when
+    // an input is focused) and file clipboard (when the file list has focus). Text clipboard is
+    // handled via document.execCommand / navigator.clipboard API in the frontend handler.
+    let edit_cut_item = MenuItem::with_id(app, EDIT_CUT_ID, "Cut", true, Some("Cmd+X"))?;
+    let edit_copy_item = MenuItem::with_id(app, EDIT_COPY_ID, "Copy", true, Some("Cmd+C"))?;
+    let edit_paste_item = MenuItem::with_id(app, EDIT_PASTE_ID, "Paste", true, Some("Cmd+V"))?;
+    let edit_paste_move_item = MenuItem::with_id(app, EDIT_PASTE_MOVE_ID, "Move here", true, Some("Alt+Cmd+V"))?;
     let select_all_item = MenuItem::with_id(app, SELECT_ALL_ID, "Select all", true, Some("Cmd+A"))?;
     let deselect_all_item = MenuItem::with_id(app, DESELECT_ALL_ID, "Deselect all", true, Some("Cmd+Shift+A"))?;
     let copy_path_item = MenuItem::with_id(app, COPY_PATH_ID, "Copy path", true, Some(copy_path_accelerator()))?;
@@ -549,9 +571,10 @@ fn build_menu_macos<R: Runtime>(
             &PredefinedMenuItem::undo(app, None)?,
             &PredefinedMenuItem::redo(app, None)?,
             &PredefinedMenuItem::separator(app)?,
-            &PredefinedMenuItem::cut(app, None)?,
-            &PredefinedMenuItem::copy(app, None)?,
-            &PredefinedMenuItem::paste(app, None)?,
+            &edit_cut_item,
+            &edit_copy_item,
+            &edit_paste_item,
+            &edit_paste_move_item,
             &PredefinedMenuItem::separator(app)?,
             &select_all_item,
             &deselect_all_item,
@@ -701,12 +724,16 @@ fn build_menu_macos<R: Runtime>(
     register_item(&mut items, GET_INFO_ID, &get_info_item, &file_menu, 13);
     register_item(&mut items, QUICK_LOOK_ID, &quick_look_item, &file_menu, 14);
 
-    // Edit menu positions: undo(0), redo(1), sep(2), cut(3), copy(4), paste(5), sep(6),
-    // select_all(7), deselect_all(8), sep(9), copy_path(10), copy_filename(11)
-    register_item(&mut items, SELECT_ALL_ID, &select_all_item, &edit_menu, 7);
-    register_item(&mut items, DESELECT_ALL_ID, &deselect_all_item, &edit_menu, 8);
-    register_item(&mut items, COPY_PATH_ID, &copy_path_item, &edit_menu, 10);
-    register_item(&mut items, COPY_FILENAME_ID, &copy_filename_item, &edit_menu, 11);
+    // Edit menu positions: undo(0), redo(1), sep(2), cut(3), copy(4), paste(5), move_here(6),
+    // sep(7), select_all(8), deselect_all(9), sep(10), copy_path(11), copy_filename(12)
+    register_item(&mut items, EDIT_CUT_ID, &edit_cut_item, &edit_menu, 3);
+    register_item(&mut items, EDIT_COPY_ID, &edit_copy_item, &edit_menu, 4);
+    register_item(&mut items, EDIT_PASTE_ID, &edit_paste_item, &edit_menu, 5);
+    register_item(&mut items, EDIT_PASTE_MOVE_ID, &edit_paste_move_item, &edit_menu, 6);
+    register_item(&mut items, SELECT_ALL_ID, &select_all_item, &edit_menu, 8);
+    register_item(&mut items, DESELECT_ALL_ID, &deselect_all_item, &edit_menu, 9);
+    register_item(&mut items, COPY_PATH_ID, &copy_path_item, &edit_menu, 11);
+    register_item(&mut items, COPY_FILENAME_ID, &copy_filename_item, &edit_menu, 12);
 
     // View menu positions: full(0), brief(1), sep(2), hidden(3), sort(4), sep(5),
     // switch(6), swap(7), sep(8), palette(9)
@@ -808,9 +835,13 @@ fn build_menu_linux<R: Runtime>(
     menu.append(&file_menu)?;
 
     // --- Edit menu ---
+    let edit_cut_item = MenuItem::with_id(app, EDIT_CUT_ID, "Cu&t", true, Some("Ctrl+X"))?;
+    let edit_copy_item = MenuItem::with_id(app, EDIT_COPY_ID, "&Copy", true, Some("Ctrl+C"))?;
+    let edit_paste_item = MenuItem::with_id(app, EDIT_PASTE_ID, "&Paste", true, Some("Ctrl+V"))?;
+    let edit_paste_move_item = MenuItem::with_id(app, EDIT_PASTE_MOVE_ID, "&Move here", true, Some("Ctrl+Alt+V"))?;
     let select_all_item = MenuItem::with_id(app, SELECT_ALL_ID, "Select &all", true, Some("Cmd+A"))?;
     let deselect_all_item = MenuItem::with_id(app, DESELECT_ALL_ID, "D&eselect all", true, Some("Cmd+Shift+A"))?;
-    let copy_path_item = MenuItem::with_id(app, COPY_PATH_ID, "Copy &path", true, Some(copy_path_accelerator()))?;
+    let copy_path_item = MenuItem::with_id(app, COPY_PATH_ID, "Cop&y path", true, Some(copy_path_accelerator()))?;
     let copy_filename_item = MenuItem::with_id(app, COPY_FILENAME_ID, "Copy file&name", true, None::<&str>)?;
     let settings_item = MenuItem::with_id(app, SETTINGS_ID, "&Settings...", true, Some("Cmd+,"))?;
     let license_label = if has_existing_license {
@@ -825,6 +856,11 @@ fn build_menu_linux<R: Runtime>(
         "&Edit",
         true,
         &[
+            &edit_cut_item,
+            &edit_copy_item,
+            &edit_paste_item,
+            &edit_paste_move_item,
+            &PredefinedMenuItem::separator(app)?,
             &select_all_item,
             &deselect_all_item,
             &PredefinedMenuItem::separator(app)?,
@@ -969,13 +1005,18 @@ fn build_menu_linux<R: Runtime>(
     register_item(&mut items, GET_INFO_ID, &get_info_item, &file_menu, 13);
     register_item(&mut items, QUICK_LOOK_ID, &quick_look_item, &file_menu, 14);
 
-    // Edit menu positions: select_all(0), deselect_all(1), sep(2), copy_path(3), copy_filename(4),
-    // sep(5), settings(6), license(7)
-    register_item(&mut items, SELECT_ALL_ID, &select_all_item, &edit_menu, 0);
-    register_item(&mut items, DESELECT_ALL_ID, &deselect_all_item, &edit_menu, 1);
-    register_item(&mut items, COPY_PATH_ID, &copy_path_item, &edit_menu, 3);
-    register_item(&mut items, COPY_FILENAME_ID, &copy_filename_item, &edit_menu, 4);
-    register_item(&mut items, SETTINGS_ID, &settings_item, &edit_menu, 6);
+    // Edit menu positions: cut(0), copy(1), paste(2), move_here(3), sep(4),
+    // select_all(5), deselect_all(6), sep(7), copy_path(8), copy_filename(9),
+    // sep(10), settings(11), license(12)
+    register_item(&mut items, EDIT_CUT_ID, &edit_cut_item, &edit_menu, 0);
+    register_item(&mut items, EDIT_COPY_ID, &edit_copy_item, &edit_menu, 1);
+    register_item(&mut items, EDIT_PASTE_ID, &edit_paste_item, &edit_menu, 2);
+    register_item(&mut items, EDIT_PASTE_MOVE_ID, &edit_paste_move_item, &edit_menu, 3);
+    register_item(&mut items, SELECT_ALL_ID, &select_all_item, &edit_menu, 5);
+    register_item(&mut items, DESELECT_ALL_ID, &deselect_all_item, &edit_menu, 6);
+    register_item(&mut items, COPY_PATH_ID, &copy_path_item, &edit_menu, 8);
+    register_item(&mut items, COPY_FILENAME_ID, &copy_filename_item, &edit_menu, 9);
+    register_item(&mut items, SETTINGS_ID, &settings_item, &edit_menu, 11);
 
     // View menu positions: full(0), brief(1), sep(2), hidden(3), sort(4), sep(5),
     // switch(6), swap(7), sep(8), palette(9)

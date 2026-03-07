@@ -125,7 +125,7 @@ objc2-foundation = { version = "0.3", features = [
 ] }
 objc2-app-kit = { version = "0.3", features = [
     "NSDragging", "NSDraggingItem", "NSImage", "NSColor", "NSColorSpace",
-    "NSApplication", "NSMenu", "NSMenuItem", "NSRunningApplication",
+    "NSApplication", "NSMenu", "NSMenuItem", "NSPasteboard", "NSRunningApplication",
 ] }
 block2 = "0.6"
 security-framework = "3.2"

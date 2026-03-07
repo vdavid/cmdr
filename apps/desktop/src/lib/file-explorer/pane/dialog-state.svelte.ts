@@ -181,6 +181,12 @@ export function createDialogState(deps: DialogStateDeps) {
             showTransferDialog = true
         },
 
+        /** Opens the progress dialog directly, skipping the destination picker (used by clipboard paste). */
+        startTransferProgress(props: TransferProgressPropsData) {
+            transferProgressProps = props
+            showTransferProgressDialog = true
+        },
+
         showNewFolder(props: NewFolderDialogPropsData) {
             newFolderDialogProps = props
             showNewFolderDialog = true

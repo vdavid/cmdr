@@ -271,3 +271,12 @@ export type { AiStatus, AiDownloadProgress, AiModelInfo, DirStats } from './sett
 
 // Tab context menu
 export { showTabContextMenu, onTabContextAction } from './tab'
+
+// Clipboard file operations (copy/cut/paste files via system clipboard)
+export {
+    copyFilesToClipboard,
+    cutFilesToClipboard,
+    readClipboardFiles,
+    clearClipboardCutState,
+} from './clipboard-files'
+export type { ClipboardReadResult } from './clipboard-files'

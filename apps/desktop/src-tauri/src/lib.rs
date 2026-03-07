@@ -67,6 +67,7 @@ mod accent_color;
 mod accent_color_linux;
 mod ai;
 pub mod benchmark;
+mod clipboard;
 mod commands;
 pub mod config;
 #[cfg(target_os = "macos")]
@@ -777,6 +778,11 @@ pub fn run() {
             commands::indexing::set_indexing_enabled,
             // E2E test support
             commands::e2e::get_e2e_start_path,
+            // Clipboard file operations
+            commands::clipboard::copy_files_to_clipboard,
+            commands::clipboard::cut_files_to_clipboard,
+            commands::clipboard::read_clipboard_files,
+            commands::clipboard::clear_clipboard_cut_state,
         ])
         .on_window_event(|window, event| {
             // When the main window is closed, quit the entire app (including settings/debug/viewer windows)

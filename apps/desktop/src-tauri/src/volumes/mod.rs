@@ -105,9 +105,10 @@ pub fn invalidate_locations_cache() {
 /// Get all locations organized by category, deduplicated.
 pub fn list_locations() -> Vec<LocationInfo> {
     if let Some((ts, cached)) = LOCATIONS_CACHE.lock().unwrap().as_ref()
-        && ts.elapsed().as_secs() < LOCATIONS_CACHE_TTL_SECS {
-            return cached.clone();
-        }
+        && ts.elapsed().as_secs() < LOCATIONS_CACHE_TTL_SECS
+    {
+        return cached.clone();
+    }
     let result = list_locations_uncached();
     *LOCATIONS_CACHE.lock().unwrap() = Some((Instant::now(), result.clone()));
     result

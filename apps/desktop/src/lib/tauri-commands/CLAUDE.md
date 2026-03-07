@@ -30,6 +30,7 @@ import { listDirectoryStart } from '$lib/tauri-commands/file-listing'
 | `licensing.ts`        | License status, activation, expiry, server validation                                                 |
 | `settings.ts`         | Port checking, file watcher debounce, indexing toggle, AI subsystem commands                          |
 | `tab.ts`              | Tab context menu: `showTabContextMenu`, `onTabContextAction`                                          |
+| `clipboard-files.ts`  | Clipboard file operations: copy/cut files to system clipboard, read/paste, clear cut state            |
 
 ## Where to put new commands
 
@@ -45,6 +46,7 @@ import { listDirectoryStart } from '$lib/tauri-commands/file-listing'
 - **MTP/Android** → `mtp.ts`
 - **Licensing** → `licensing.ts`
 - **Settings/AI** → `settings.ts`
+- **Clipboard file operations** (copy/cut/paste files via system clipboard) → `clipboard-files.ts`
 
 ## Key patterns
 

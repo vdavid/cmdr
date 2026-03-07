@@ -218,6 +218,42 @@ export const commands: Command[] = [
     },
     { id: 'file.copy', name: 'Copy', scope: 'Main window/File list', showInPalette: true, shortcuts: ['F5'] },
     { id: 'file.move', name: 'Move', scope: 'Main window/File list', showInPalette: true, shortcuts: ['F6'] },
+
+    // ============================================================================
+    // File list - Edit commands (clipboard operations)
+    // ============================================================================
+    {
+        id: 'edit.copy',
+        name: 'Copy to clipboard',
+        scope: 'Main window/File list',
+        showInPalette: true,
+        shortcuts: ['⌘C'],
+        description: 'Copy selected files to clipboard for pasting',
+    },
+    {
+        id: 'edit.cut',
+        name: 'Cut to clipboard',
+        scope: 'Main window/File list',
+        showInPalette: true,
+        shortcuts: ['⌘X'],
+        description: 'Cut selected files (paste will move them)',
+    },
+    {
+        id: 'edit.paste',
+        name: 'Paste',
+        scope: 'Main window/File list',
+        showInPalette: true,
+        shortcuts: ['⌘V'],
+        description: 'Paste files from clipboard into current folder',
+    },
+    {
+        id: 'edit.pasteAsMove',
+        name: 'Move here',
+        scope: 'Main window/File list',
+        showInPalette: true,
+        shortcuts: ['⌥⌘V'],
+        description: 'Paste files from clipboard as a move',
+    },
     {
         id: 'file.newFolder',
         name: 'New folder',
