@@ -40,7 +40,7 @@ mod smb_types;
 mod smb_util;
 
 use crate::ignore_poison::IgnorePoison;
-use log::{debug, warn};
+use log::debug;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Mutex, OnceLock};
@@ -161,6 +161,7 @@ pub(crate) fn on_discovery_state_changed(new_state: DiscoveryState, app_handle: 
 /// Called by the mDNS discovery module when a host's address is resolved.
 pub(crate) fn on_host_resolved(
     host_id: &str,
+    name: &str,
     hostname: Option<String>,
     ip_address: Option<String>,
     port: u16,
@@ -168,25 +169,35 @@ pub(crate) fn on_host_resolved(
 ) {
     let mut state = get_discovery_state().lock_ignore_poison();
 
-    // Update the host with resolved info
-    if let Some(host) = state.hosts.get_mut(host_id) {
-        host.hostname = hostname.clone().or(host.hostname.clone());
-        host.ip_address = ip_address.clone().or(host.ip_address.clone());
-        host.port = port;
-
+    // If host wasn't seen via ServiceFound (race or library quirk), create it now
+    if !state.hosts.contains_key(host_id) {
         debug!(
-            "Host RESOLVED: id={}, hostname={:?}, ip={:?}, port={}",
-            host_id, host.hostname, host.ip_address, port
+            "Host RESOLVED before FOUND, creating entry: id={}, name={}, hostname={:?}, ip={:?}",
+            host_id, name, hostname, ip_address
         );
-
-        // Emit event to frontend with updated host info
-        let _ = app_handle.emit("network-host-resolved", host.clone());
-    } else {
-        warn!(
-            "Host RESOLVED but not found in state: id={}, hostname={:?}, ip={:?}",
-            host_id, hostname, ip_address
-        );
+        let host = NetworkHost {
+            id: host_id.to_string(),
+            name: name.to_string(),
+            hostname: None,
+            ip_address: None,
+            port,
+        };
+        state.hosts.insert(host_id.to_string(), host.clone());
+        let _ = app_handle.emit("network-host-found", &host);
     }
+
+    let host = state.hosts.get_mut(host_id).expect("just inserted or already present");
+    host.hostname = hostname.clone().or(host.hostname.clone());
+    host.ip_address = ip_address.clone().or(host.ip_address.clone());
+    host.port = port;
+
+    debug!(
+        "Host RESOLVED: id={}, hostname={:?}, ip={:?}, port={}",
+        host_id, host.hostname, host.ip_address, port
+    );
+
+    // Emit event to frontend with updated host info
+    let _ = app_handle.emit("network-host-resolved", host.clone());
 }
 
 /// Generates a stable ID from a service name.

@@ -169,7 +169,7 @@ fn process_events(receiver: Receiver<ServiceEvent>) {
                     id, hostname, ip_address, port
                 );
 
-                on_host_resolved(&id, hostname, ip_address, port, &app_handle);
+                on_host_resolved(&id, &name, hostname, ip_address, port, &app_handle);
             }
             ServiceEvent::ServiceRemoved(_, fullname) => {
                 let name = extract_instance_name(&fullname);
