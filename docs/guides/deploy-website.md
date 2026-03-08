@@ -156,11 +156,11 @@ Set the following (get values from the relevant dashboards):
 | `PUBLIC_PADDLE_PRICE_ID_*` | Paddle > Catalog > Prices |
 | `PUBLIC_PADDLE_ENVIRONMENT` | `sandbox` or `live` |
 | `PUBLIC_LISTMONK_LIST_UUID` | Listmonk admin > Lists > your list > Settings |
-| `PUBLIC_UMAMI_HOST` | Your Umami instance URL (for example, `https://analytics.example.com`) |
+| `PUBLIC_UMAMI_HOST` | `/u` — proxied through Caddy to avoid adblockers |
 | `PUBLIC_UMAMI_WEBSITE_ID` | Umami > Settings > Websites > getcmdr.com > ID |
 | `PUBLIC_DOWNLOAD_BASE_URL` | `https://license.getcmdr.com` — routes downloads through the license server for analytics. Leave empty to link directly to GitHub. |
 | `PUBLIC_POSTHOG_KEY` | PostHog project API key (starts with `phc_`). Leave empty to disable. |
-| `PUBLIC_POSTHOG_HOST` | PostHog ingest host. Default: `https://us.i.posthog.com` |
+| `PUBLIC_POSTHOG_HOST` | `/ph` — proxied through Caddy to avoid adblockers |
 
 ### 9. Set up Docker network and do initial deploy
 
