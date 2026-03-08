@@ -44,10 +44,12 @@
         }),
         (e.__SV = 1))
 })(document, window.posthog || [])
-posthog.init(document.currentScript.dataset.phKey, {
-    api_host: document.currentScript.dataset.phHost,
-    person_profiles: 'identified_only',
-    capture_pageleave: true,
-    persistence: 'memory',
-})
+if (!window.__posthog_initialized)
+    posthog.init(document.currentScript.dataset.phKey, {
+        api_host: document.currentScript.dataset.phHost,
+        person_profiles: 'identified_only',
+        capture_pageleave: true,
+        persistence: 'memory',
+    })
+window.__posthog_initialized = true
 /* eslint-enable */
