@@ -28,8 +28,7 @@ pub fn extract_bundled_llama_server<R: Runtime>(app: &AppHandle<R>, ai_dir: &Pat
         return Err(format!("Bundled AI resource directory not found at: {resource_dir:?}"));
     }
 
-    let entries =
-        fs::read_dir(&resource_dir).map_err(|e| format!("Failed to read bundled AI directory: {e}"))?;
+    let entries = fs::read_dir(&resource_dir).map_err(|e| format!("Failed to read bundled AI directory: {e}"))?;
 
     let mut copied_count = 0;
     for entry in entries {
@@ -48,8 +47,7 @@ pub fn extract_bundled_llama_server<R: Runtime>(app: &AppHandle<R>, ai_dir: &Pat
         // Handle symlinks: recreate them in the destination
         #[cfg(unix)]
         if src_path.symlink_metadata().is_ok_and(|m| m.file_type().is_symlink()) {
-            let target =
-                fs::read_link(&src_path).map_err(|e| format!("Failed to read symlink {name}: {e}"))?;
+            let target = fs::read_link(&src_path).map_err(|e| format!("Failed to read symlink {name}: {e}"))?;
             let _ = fs::remove_file(&dest_path);
             std::os::unix::fs::symlink(&target, &dest_path)
                 .map_err(|e| format!("Failed to create symlink {name}: {e}"))?;
