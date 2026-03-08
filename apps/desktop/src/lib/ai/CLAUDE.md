@@ -69,6 +69,6 @@ CMDR_MOCK_LICENSE=commercial pnpm tauri dev
 pnpm dev:ai-debug
 ```
 
-**llama-server update**: See `apps/desktop/scripts/download-llama-server.go` (version + SHA256) **Model registry**: See
+**llama-server update**: See `apps/desktop/scripts/download-llama-server.go` (version + SHA256). Binaries are extracted and signed at build time, bundled as individual files in `resources/ai/`. **Model registry**: See
 `apps/desktop/src-tauri/src/ai/mod.rs` (`AVAILABLE_MODELS`) **Attribution**: Ministral 3B by Mistral AI (Apache 2.0),
 attribution in About window

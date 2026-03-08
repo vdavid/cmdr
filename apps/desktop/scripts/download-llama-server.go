@@ -1,12 +1,14 @@
-// Download llama-server binary from llama.cpp releases.
+// Prepare llama-server binary and shared libraries for bundling.
 //
-// This script downloads the llama-server binary and shared libraries needed for
-// local AI features. It's run automatically before dev/build commands.
+// Downloads the llama.cpp release tarball, extracts only the files needed at
+// runtime (llama-server binary + dylibs), and places them in src-tauri/resources/ai/.
+// When APPLE_SIGNING_IDENTITY is set (CI release builds), each binary is codesigned
+// with hardened runtime + secure timestamp so Apple notarization passes.
 //
 // Usage: go run scripts/download-llama-server.go
 //
-// The script is idempotent — it skips the download if the file already exists
-// and matches the expected checksum.
+// The script is idempotent — it skips work if the marker file matches the
+// expected version.
 //
 // On non-macOS platforms (e.g., Linux CI), creates an empty placeholder file
 // since the AI feature is macOS-only.
@@ -14,21 +16,25 @@
 package main
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 )
 
 // Version is the llama.cpp release version.
 // Check for new versions at: https://github.com/ggml-org/llama.cpp/releases
 const Version = "b7815"
 
-// ExpectedSHA256 checksum of the downloaded archive.
+// ExpectedSHA256 checksum of the upstream release archive.
 // To compute for a new version:
 //
 //	curl -L "<url>" | shasum -a 256
@@ -40,77 +46,220 @@ var DownloadURL = fmt.Sprintf(
 	Version, Version,
 )
 
-// DestPath is the destination path relative to the working directory (apps/desktop).
-const DestPath = "src-tauri/resources/llama-server.tar.gz"
+// DestDir is the directory where extracted files are placed, relative to apps/desktop.
+const DestDir = "src-tauri/resources/ai"
+
+// PlaceholderFile is the single file created on non-macOS for Tauri resource bundling.
+const PlaceholderFile = "src-tauri/resources/ai/llama-server"
+
+// MarkerFile tracks which version is currently extracted, enabling idempotency.
+const MarkerFile = "src-tauri/resources/ai/.version"
 
 func main() {
-	// Resolve destination path relative to current working directory.
-	// This script is expected to be run from apps/desktop/ directory.
-	destPath := DestPath
-
 	// On non-macOS platforms, create a placeholder file for CI builds.
 	// The AI feature is macOS-only, but Tauri requires the resource to exist.
 	if runtime.GOOS != "darwin" {
-		if err := createPlaceholder(destPath); err != nil {
+		if err := createPlaceholder(PlaceholderFile); err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "Error creating placeholder: %v\n", err)
 			os.Exit(1)
 		}
 		return
 	}
 
-	// Check if file already exists with correct checksum
-	if fileExistsWithChecksum(destPath, ExpectedSHA256) {
-		fmt.Println("llama-server.tar.gz already exists with correct checksum, skipping download")
+	// Check if already extracted for this version
+	if isCurrentVersion(MarkerFile, Version) {
+		fmt.Printf("llama-server %s already prepared, skipping\n", Version)
 		return
 	}
 
-	// Ensure destination directory exists
-	if err := os.MkdirAll(filepath.Dir(destPath), 0o755); err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Error creating directory: %v\n", err)
+	// Download the upstream tarball to a temp file
+	tmpFile, err := os.CreateTemp("", "llama-server-*.tar.gz")
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "Error creating temp file: %v\n", err)
 		os.Exit(1)
 	}
+	tmpPath := tmpFile.Name()
+	_ = tmpFile.Close()
+	defer func() { _ = os.Remove(tmpPath) }()
 
 	fmt.Printf("Downloading llama-server %s...\n", Version)
 	fmt.Printf("URL: %s\n", DownloadURL)
 
-	if err := downloadFile(DownloadURL, destPath); err != nil {
+	if err := downloadFile(DownloadURL, tmpPath); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Error downloading: %v\n", err)
 		os.Exit(1)
 	}
 
 	// Verify checksum
-	actualChecksum, err := computeSHA256(destPath)
+	actualChecksum, err := computeSHA256(tmpPath)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Error computing checksum: %v\n", err)
 		os.Exit(1)
 	}
-
 	if actualChecksum != ExpectedSHA256 {
-		err := os.Remove(destPath)
-		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "Error removing corrupted file: %v\n", err)
-		} // Clean up corrupted file
 		_, _ = fmt.Fprintf(os.Stderr, "Checksum mismatch!\n  Expected: %s\n  Got:      %s\n", ExpectedSHA256, actualChecksum)
 		os.Exit(1)
 	}
+	fmt.Println("Download verified")
 
-	fmt.Println("Download complete and verified")
+	// Clean destination directory (fresh extraction each time version changes)
+	if err := os.RemoveAll(DestDir); err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "Error cleaning destination: %v\n", err)
+		os.Exit(1)
+	}
+	if err := os.MkdirAll(DestDir, 0o755); err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "Error creating destination: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Extract only llama-server binary and .dylib files
+	extracted, err := extractNeededFiles(tmpPath, DestDir)
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "Error extracting: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Printf("Extracted %d files\n", len(extracted))
+
+	// Sign binaries if APPLE_SIGNING_IDENTITY is set (CI release builds)
+	identity := os.Getenv("APPLE_SIGNING_IDENTITY")
+	if identity != "" {
+		fmt.Printf("Signing %d files with identity %q...\n", len(extracted), identity)
+		for _, path := range extracted {
+			if err := codesign(path, identity); err != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "Error signing %s: %v\n", path, err)
+				os.Exit(1)
+			}
+		}
+		fmt.Println("All files signed")
+	}
+
+	// Write version marker for idempotency
+	if err := os.WriteFile(MarkerFile, []byte(Version), 0o644); err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "Error writing version marker: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("llama-server prepared")
 }
 
-func createPlaceholder(destPath string) error {
-	// Check if file already exists
-	if _, err := os.Stat(destPath); err == nil {
-		fmt.Printf("Placeholder %s already exists, skipping\n", destPath)
+// extractNeededFiles extracts only the llama-server binary and .dylib files from
+// the tarball into destDir. Returns the list of extracted file paths.
+func extractNeededFiles(archivePath, destDir string) ([]string, error) {
+	f, err := os.Open(archivePath)
+	if err != nil {
+		return nil, fmt.Errorf("open archive: %w", err)
+	}
+	defer func() { _ = f.Close() }()
+
+	gz, err := gzip.NewReader(f)
+	if err != nil {
+		return nil, fmt.Errorf("gzip reader: %w", err)
+	}
+	defer func() { _ = gz.Close() }()
+
+	tr := tar.NewReader(gz)
+	var extracted []string
+	symlinkTargets := make(map[string]string) // link name -> target name
+
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("read tar entry: %w", err)
+		}
+
+		name := filepath.Base(hdr.Name)
+		if name == "" || name == "." {
+			continue
+		}
+
+		isNeeded := name == "llama-server" || strings.HasSuffix(name, ".dylib")
+		if !isNeeded {
+			continue
+		}
+
+		destPath := filepath.Join(destDir, name)
+
+		switch hdr.Typeflag {
+		case tar.TypeReg:
+			if err := writeFile(destPath, tr, os.FileMode(hdr.Mode)); err != nil {
+				return nil, fmt.Errorf("extract %s: %w", name, err)
+			}
+			extracted = append(extracted, destPath)
+
+		case tar.TypeSymlink:
+			// Defer symlink creation until all regular files are extracted
+			target := filepath.Base(hdr.Linkname)
+			symlinkTargets[name] = target
+		}
+	}
+
+	// Create symlinks (e.g. libllama.dylib -> libllama.0.0.7815.dylib)
+	for linkName, target := range symlinkTargets {
+		linkPath := filepath.Join(destDir, linkName)
+		_ = os.Remove(linkPath) // Remove if exists from previous run
+		if err := os.Symlink(target, linkPath); err != nil {
+			return nil, fmt.Errorf("symlink %s -> %s: %w", linkName, target, err)
+		}
+	}
+
+	return extracted, nil
+}
+
+func writeFile(path string, r io.Reader, mode os.FileMode) error {
+	// Ensure at least user-executable for binaries
+	if mode == 0 {
+		mode = 0o644
+	}
+	mode |= 0o755 // Make executable
+
+	out, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, mode)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = out.Close() }()
+
+	_, err = io.Copy(out, r)
+	return err
+}
+
+// codesign signs a binary with the given identity, hardened runtime, and secure timestamp.
+func codesign(path, identity string) error {
+	cmd := exec.Command("codesign",
+		"--force",
+		"--options", "runtime",
+		"--timestamp",
+		"--sign", identity,
+		path,
+	)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("%w: %s", err, string(output))
+	}
+	return nil
+}
+
+func isCurrentVersion(markerPath, version string) bool {
+	data, err := os.ReadFile(markerPath)
+	if err != nil {
+		return false
+	}
+	return strings.TrimSpace(string(data)) == version
+}
+
+func createPlaceholder(path string) error {
+	if _, err := os.Stat(path); err == nil {
+		fmt.Printf("Placeholder %s already exists, skipping\n", path)
 		return nil
 	}
 
-	// Ensure destination directory exists
-	if err := os.MkdirAll(filepath.Dir(destPath), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("create directory: %w", err)
 	}
 
-	// Create empty placeholder file
-	f, err := os.Create(destPath)
+	f, err := os.Create(path)
 	if err != nil {
 		return fmt.Errorf("create file: %w", err)
 	}
@@ -118,16 +267,8 @@ func createPlaceholder(destPath string) error {
 		return fmt.Errorf("close file: %w", err)
 	}
 
-	fmt.Printf("Created placeholder %s (non-macOS build)\n", destPath)
+	fmt.Printf("Created placeholder %s (non-macOS build)\n", path)
 	return nil
-}
-
-func fileExistsWithChecksum(path, expectedChecksum string) bool {
-	checksum, err := computeSHA256(path)
-	if err != nil {
-		return false
-	}
-	return checksum == expectedChecksum
 }
 
 func computeSHA256(path string) (string, error) {
@@ -135,9 +276,7 @@ func computeSHA256(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer func(f *os.File) {
-		_ = f.Close()
-	}(f)
+	defer func() { _ = f.Close() }()
 
 	h := sha256.New()
 	if _, err := io.Copy(h, f); err != nil {
@@ -147,39 +286,20 @@ func computeSHA256(path string) (string, error) {
 }
 
 func downloadFile(url, destPath string) error {
-	// Create temporary file for atomic write
-	tmpPath := destPath + ".tmp"
-	defer func(name string) {
-		err := os.Remove(name)
-		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "Error removing temporary file: %v\n", err)
-		}
-	}(tmpPath) // Clean up on failure
-
-	out, err := os.Create(tmpPath)
+	out, err := os.Create(destPath)
 	if err != nil {
 		return fmt.Errorf("create file: %w", err)
 	}
-	defer func(out *os.File) {
-		err := out.Close()
-		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "Error closing file: %v\n", err)
-		}
-	}(out)
+	defer func() { _ = out.Close() }()
 
-	resp, err := http.Get(url)
+	resp, err := http.Get(url) //nolint:gosec // URL is a hardcoded constant, not user input
 	if err != nil {
 		return fmt.Errorf("http get: %w", err)
 	}
 	if resp == nil {
 		return fmt.Errorf("http get: nil response")
 	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "Error closing response body: %v\n", err)
-		}
-	}(resp.Body)
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("http status: %s", resp.Status)
@@ -189,23 +309,12 @@ func downloadFile(url, destPath string) error {
 		return err
 	}
 
-	// Close before rename
-	err = out.Close()
-	if err != nil {
-		return fmt.Errorf("close: %w", err)
-	}
-
-	// Atomic rename
-	if err := os.Rename(tmpPath, destPath); err != nil {
-		return fmt.Errorf("rename: %w", err)
-	}
-
-	return nil
+	return out.Close()
 }
 
 func copyWithProgress(src io.Reader, dst io.Writer, size int64) error {
 	written := int64(0)
-	lastPct := -10 // Start at -10 so we print 0%
+	lastPct := -10
 	buf := make([]byte, 32*1024)
 
 	for {

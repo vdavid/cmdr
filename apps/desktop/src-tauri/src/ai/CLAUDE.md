@@ -11,7 +11,7 @@ AI requires Apple Silicon (aarch64). Intel Macs are not supported — the bundle
 | `mod.rs` | Types (`AiStatus`, `AiState`, `DownloadProgress`, `ModelInfo`), model registry (`AVAILABLE_MODELS`, `DEFAULT_MODEL_ID`), gate functions |
 | `manager.rs` | Central coordinator. Global `Mutex<Option<ManagerState>>` singleton. Most Tauri commands live here. `get_folder_suggestions` is in `suggestions.rs`. Handles startup recovery. |
 | `download.rs` | HTTP streaming download with Range-based resume. Emits `ai-download-progress` events (200ms throttle). Cooperative cancellation via function parameter (`Fn() -> bool`). |
-| `extract.rs` | Extracts `llama-server` binary + dylibs from a bundled `.tar.gz`. Sets Unix permissions, handles symlinks. |
+| `extract.rs` | Copies bundled `llama-server` binary + dylibs from `resources/ai/` to the AI data dir. Sets Unix permissions, handles symlinks. |
 | `process.rs` | Spawns child process with `DYLD_LIBRARY_PATH` set. SIGTERM → 5s wait → SIGKILL. Port discovery via `bind(:0)`. |
 | `client.rs` | reqwest client: `POST /v1/chat/completions` (15s timeout), `GET /health` (2s timeout). |
 | `suggestions.rs` | Builds few-shot prompt from listing cache, calls LLM, sanitizes response (strips bullets/markdown/numbering, rejects `/` and `\0`, deduplicates case-insensitively, enforces 255-char limit). Also hosts `get_folder_suggestions` Tauri command. |
@@ -80,6 +80,9 @@ Frontend                    manager.rs              process.rs / download.rs / c
 **Decision**: `SIGTERM` then 5s wait then `SIGKILL` for process shutdown.
 **Why**: llama-server may be mid-inference holding GPU memory. `SIGTERM` gives it a chance to release resources cleanly. The 5s timeout prevents hanging on app quit if the server is stuck.
 
+**Decision**: Bundle pre-extracted individual binaries in `resources/ai/` instead of a `.tar.gz` archive.
+**Why**: Apple notarization inspects inside archives and rejects unsigned binaries. By extracting and signing at build time (in the Go download script when `APPLE_SIGNING_IDENTITY` is set), each binary is individually codesigned with hardened runtime + secure timestamp. This also removes the `tar` and `flate2` Rust dependencies — `extract.rs` just copies files instead of decompressing.
+
 **Decision**: Suggestion sanitization strips bullets, markdown, numbering, and deduplicates case-insensitively.
 **Why**: Small LLMs (3B params) inconsistently follow formatting instructions. The same model that returns clean `docs\ntests\n` on one prompt may return `1. **Docs**\n2. tests` on the next. Aggressive sanitization makes the output reliable regardless of LLM mood.
 
@@ -93,5 +96,5 @@ Frontend                    manager.rs              process.rs / download.rs / c
 
 ## Dependencies
 
-External: `reqwest`, `tokio`, `flate2`, `tar`, `libc`, `futures_util`
+External: `reqwest`, `tokio`, `libc`, `futures_util`
 Internal: `crate::ignore_poison::IgnorePoison`, `crate::file_system::get_file_at`
