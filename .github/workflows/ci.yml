@@ -208,7 +208,7 @@ jobs:
               working-directory: ./apps/desktop
 
             - name: Run E2E tests
-              run: ./scripts/check/check --check desktop-svelte-e2e --ci
+              run: ./scripts/check/check --check desktop-svelte-smoke --ci
 
     # ===========================================
     # Desktop app - Tauri E2E (Linux)
