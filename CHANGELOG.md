@@ -7,6 +7,72 @@ and we use [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-03-08
+
+### Added
+
+- Add Linux support (alpha): volumes via /proc/mounts, file ops with reflink support, trash via FreeDesktop spec, inotify file watching, MTP ungated, SMB via mDNS + smbclient fallback, GVFS-mounted shares as volumes, native file icons via freedesktop-icons, accent color via XDG Desktop Portal, encrypted credential fallback when no system keyring, distro-specific install hints, USB permission handling ([b6e80f6](https://github.com/vdavid/cmdr/commit/b6e80f6), [20be0c3](https://github.com/vdavid/cmdr/commit/20be0c3), [9c51fa9](https://github.com/vdavid/cmdr/commit/9c51fa9), [64e41f9](https://github.com/vdavid/cmdr/commit/64e41f9), [40cc1a9](https://github.com/vdavid/cmdr/commit/40cc1a9), [c3ad1ed](https://github.com/vdavid/cmdr/commit/c3ad1ed), [d40ea25](https://github.com/vdavid/cmdr/commit/d40ea25), [60063ec](https://github.com/vdavid/cmdr/commit/60063ec), [e65d993](https://github.com/vdavid/cmdr/commit/e65d993), [22e2ea7](https://github.com/vdavid/cmdr/commit/22e2ea7), [afe2609](https://github.com/vdavid/cmdr/commit/afe2609), [4bbcbb0](https://github.com/vdavid/cmdr/commit/4bbcbb0), [48af543](https://github.com/vdavid/cmdr/commit/48af543))
+- Add per-pane tab support: ⌘T/⌘W, ⌃Tab cycling, pin/unpin, context menu, persistence with migration, per-tab sort ([791a29a](https://github.com/vdavid/cmdr/commit/791a29a))
+- Add delete/trash feature (F8): trash by default, ⇧F8 for permanent delete, confirmation dialog with scan preview, batch progress with cancellation, volume trash support detection ([e3560a3](https://github.com/vdavid/cmdr/commit/e3560a3))
+- Add clipboard for files: ⌘C/⌘V/⌘X with Finder interop, ⌥⌘V for "Move here", cut state tracking, text clipboard in all windows via NSPasteboard ([0dc2953](https://github.com/vdavid/cmdr/commit/0dc2953), [60baeba](https://github.com/vdavid/cmdr/commit/60baeba))
+- Add toast notification system with centralized store, dedup, stacking, three levels, transient/persistent modes ([6c5c452](https://github.com/vdavid/cmdr/commit/6c5c452), [2329f2f](https://github.com/vdavid/cmdr/commit/2329f2f))
+- Add per-pane disk space display: 2px usage bar, free-space text in status bar, mini bars in volume dropdown ([9b6d057](https://github.com/vdavid/cmdr/commit/9b6d057))
+- Add custom tooltips with glass material effect, shortcut badges, smart positioning, accessibility support, replacing all native tooltips ([3c7f965](https://github.com/vdavid/cmdr/commit/3c7f965))
+- Add drive indexing with integer-keyed DB schema (7.4x size reduction, 3.8 GB → 0.54 GB), LRU path cache, platform-aware collation, recursive CTE aggregation ([7c5d3ce](https://github.com/vdavid/cmdr/commit/7c5d3ce), [daee97b](https://github.com/vdavid/cmdr/commit/daee97b), [5e10fa9](https://github.com/vdavid/cmdr/commit/5e10fa9), [68be3ab](https://github.com/vdavid/cmdr/commit/68be3ab))
+- Add IPC hardening: timeout-protect all filesystem commands, transparent timeout UI with retry/fallback for volumes, tabs, file ops, and viewer ([6a58278](https://github.com/vdavid/cmdr/commit/6a58278), [71de96e](https://github.com/vdavid/cmdr/commit/71de96e))
+- Add accent color option in Settings: macOS theme or Cmdr gold, "Recolor to gold" for folder icons ([330e824](https://github.com/vdavid/cmdr/commit/330e824), [ef9de79](https://github.com/vdavid/cmdr/commit/ef9de79))
+- Add directory sorting by size with toggle in Settings ([a7dd8ca](https://github.com/vdavid/cmdr/commit/a7dd8ca))
+- Add "Forget saved password" UI for SMB network shares ([7d751d5](https://github.com/vdavid/cmdr/commit/7d751d5))
+- Add path validation in copy/move and mkdir dialogs with platform-correct limits ([6b295ec](https://github.com/vdavid/cmdr/commit/6b295ec))
+- Add centralized keyboard shortcut dispatch with runtime custom bindings ([e40bcc2](https://github.com/vdavid/cmdr/commit/e40bcc2))
+- Add macOS entitlements and TCC usage descriptions for proper permission prompts ([ff0c27e](https://github.com/vdavid/cmdr/commit/ff0c27e))
+- Add Apple code signing, notarization, and arch-specific downloads (aarch64, x86_64, universal) ([b03f91e](https://github.com/vdavid/cmdr/commit/b03f91e), [944085f](https://github.com/vdavid/cmdr/commit/944085f))
+- Add licensing UI improvements: verify/commit split, typed errors, short code in signed payload, Paddle live setup ([0abc704](https://github.com/vdavid/cmdr/commit/0abc704), [1f2308b](https://github.com/vdavid/cmdr/commit/1f2308b))
+
+### Fixed
+
+- Fix file viewer: search progress bar with spinner and stop button, incremental match delivery, 10k match cap, byte-seek navigation, loading very long files ([9c0a3c3](https://github.com/vdavid/cmdr/commit/9c0a3c3), [a3b9d0e](https://github.com/vdavid/cmdr/commit/a3b9d0e), [31cf5fd](https://github.com/vdavid/cmdr/commit/31cf5fd), [d15ecde](https://github.com/vdavid/cmdr/commit/d15ecde), [86ef2a5](https://github.com/vdavid/cmdr/commit/86ef2a5), [0fcdb13](https://github.com/vdavid/cmdr/commit/0fcdb13), [8b57bbe](https://github.com/vdavid/cmdr/commit/8b57bbe))
+- Fix 3–10s startup block from index enrichment holding the mutex ([267e02b](https://github.com/vdavid/cmdr/commit/267e02b))
+- Fix mDNS host resolution arriving before discovery, causing SMB auth failures ([2dda99b](https://github.com/vdavid/cmdr/commit/2dda99b))
+- Fix focus escaping panes with focus guard, removing ~50 redundant refocus calls ([4c9aadc](https://github.com/vdavid/cmdr/commit/4c9aadc))
+- Fix clipboard shortcuts in text fields on macOS ([20f3de0](https://github.com/vdavid/cmdr/commit/20f3de0))
+- Fix non-blocking navigation on slow/dead SMB shares with timeouts and optimistic UI ([c85c8c2](https://github.com/vdavid/cmdr/commit/c85c8c2))
+- Fix copy feature: auto-rollback on panic, deadlock prevention, cancel race condition ([2b17ab5](https://github.com/vdavid/cmdr/commit/2b17ab5))
+- Fix status bar not refreshing after file watcher diffs ([e880f9f](https://github.com/vdavid/cmdr/commit/e880f9f))
+- Fix pinned tab volume change now opens new tab instead of navigating in-place ([ff4c8f2](https://github.com/vdavid/cmdr/commit/ff4c8f2))
+- Fix cancel-loading to return to previous folder instead of home ([8ff2379](https://github.com/vdavid/cmdr/commit/8ff2379))
+- Fix ⌘, to refocus Settings window if already open ([71b3e61](https://github.com/vdavid/cmdr/commit/71b3e61))
+- Fix Settings: ⌥+key shortcuts showing "Dead" on macOS, key filter subset matching, ESC clears filter ([1fd540a](https://github.com/vdavid/cmdr/commit/1fd540a), [5056bb6](https://github.com/vdavid/cmdr/commit/5056bb6), [47050e0](https://github.com/vdavid/cmdr/commit/47050e0))
+- Fix settings not initialized warning at startup ([b540fcc](https://github.com/vdavid/cmdr/commit/b540fcc))
+- Fix SMB share showing 0 bytes free on network filesystems ([f791153](https://github.com/vdavid/cmdr/commit/f791153))
+- Fix volumes cached to prevent timeout at startup ([024e48f](https://github.com/vdavid/cmdr/commit/024e48f))
+- Fix top menu items staying enabled on non-main windows ([7572d13](https://github.com/vdavid/cmdr/commit/7572d13))
+- Fix live file count during large folder loading ([7815d0f](https://github.com/vdavid/cmdr/commit/7815d0f))
+- Fix window content height for production builds ([0cbd0fd](https://github.com/vdavid/cmdr/commit/0cbd0fd))
+- Fix folder icons updating on OS theme change ([6b02445](https://github.com/vdavid/cmdr/commit/6b02445))
+- Fix focus lost after rename cancellation ([edace18](https://github.com/vdavid/cmdr/commit/edace18))
+- Fix file viewer not loading settings ([acfef93](https://github.com/vdavid/cmdr/commit/acfef93))
+- Fix drive indexing: orphaned entries, missing dir sizes, background scan failures, DB transaction issues ([323ae86](https://github.com/vdavid/cmdr/commit/323ae86), [004f302](https://github.com/vdavid/cmdr/commit/004f302), [c331143](https://github.com/vdavid/cmdr/commit/c331143))
+- Fix MCP protocol version mismatch warnings at startup ([2af0b90](https://github.com/vdavid/cmdr/commit/2af0b90))
+- Fix arrow up/down performance in large folders ([e6f268c](https://github.com/vdavid/cmdr/commit/e6f268c))
+- Fix PostHog CSP and make it cookieless ([1700d99](https://github.com/vdavid/cmdr/commit/1700d99), [9cea85a](https://github.com/vdavid/cmdr/commit/9cea85a))
+- Fix app loading slowly due to startup optimizations: license cache, async validation ([3835866](https://github.com/vdavid/cmdr/commit/3835866), [87de136](https://github.com/vdavid/cmdr/commit/87de136))
+
+### Non-app
+
+- Overhaul native menus on macOS and Linux: build from scratch, strip macOS system-injected items, unify dispatch via single event, context-aware graying, full accelerator sync ([b38c552](https://github.com/vdavid/cmdr/commit/b38c552))
+- Unify frontend + backend logging via tauri-plugin-log, demote noisy log levels, suppress smb/sspi noise ([22f4ab5](https://github.com/vdavid/cmdr/commit/22f4ab5), [dbbcc55](https://github.com/vdavid/cmdr/commit/dbbcc55), [1e59a56](https://github.com/vdavid/cmdr/commit/1e59a56))
+- Design system: unified button styles, consistent loading states, improved text readability, redesigned network screens ([8dc2e33](https://github.com/vdavid/cmdr/commit/8dc2e33), [4d07ad0](https://github.com/vdavid/cmdr/commit/4d07ad0), [71dbe0b](https://github.com/vdavid/cmdr/commit/71dbe0b), [b5d8b28](https://github.com/vdavid/cmdr/commit/b5d8b28), [a018a3e](https://github.com/vdavid/cmdr/commit/a018a3e), [90e2010](https://github.com/vdavid/cmdr/commit/90e2010))
+- Docs overhaul: CLAUDE.md staleness checker in CI, enriched 25 CLAUDE.md files with Decision/Why entries, cross-cutting patterns in architecture.md, split infrastructure.md into per-service files ([ff8b3be](https://github.com/vdavid/cmdr/commit/ff8b3be), [347ae9b](https://github.com/vdavid/cmdr/commit/347ae9b), [f961f19](https://github.com/vdavid/cmdr/commit/f961f19), [2f7bff1](https://github.com/vdavid/cmdr/commit/2f7bff1))
+- Website: add blog with first post, PostHog and Umami analytics, arch-specific download buttons, Docker build check, newsletter improvements ([01681c1](https://github.com/vdavid/cmdr/commit/01681c1), [75d5228](https://github.com/vdavid/cmdr/commit/75d5228), [78de573](https://github.com/vdavid/cmdr/commit/78de573), [ae8f6cb](https://github.com/vdavid/cmdr/commit/ae8f6cb), [34ecc70](https://github.com/vdavid/cmdr/commit/34ecc70))
+- Check runner: CSV stats logging, cfg-gate enclosing block scope detection, file length check, flag combining fix ([9ac4b54](https://github.com/vdavid/cmdr/commit/9ac4b54), [539db62](https://github.com/vdavid/cmdr/commit/539db62), [4a24562](https://github.com/vdavid/cmdr/commit/4a24562), [6fe48a9](https://github.com/vdavid/cmdr/commit/6fe48a9))
+- Refactors: split DualPaneExplorer and FilePane, extract dialog state, deduplicate templates and Settings CSS, split tauri-commands ([337f620](https://github.com/vdavid/cmdr/commit/337f620), [cfae0db](https://github.com/vdavid/cmdr/commit/cfae0db), [dad8790](https://github.com/vdavid/cmdr/commit/dad8790), [35a4239](https://github.com/vdavid/cmdr/commit/35a4239), [ba86d87](https://github.com/vdavid/cmdr/commit/ba86d87))
+- License server: download tracking via Cloudflare Analytics Engine ([ef0f049](https://github.com/vdavid/cmdr/commit/ef0f049))
+- Add Renovate for automated dependency updates ([00880a0](https://github.com/vdavid/cmdr/commit/00880a0))
+- Add macOS Playwright E2E tests and CrabNebula E2E tests ([ec900ee](https://github.com/vdavid/cmdr/commit/ec900ee), [a768c03](https://github.com/vdavid/cmdr/commit/a768c03))
+- Infra: uptime monitoring with UptimeRobot + Pushover, hardened deploy script ([19baefd](https://github.com/vdavid/cmdr/commit/19baefd))
+- Add cfg-gate lint check for macOS-only Rust crates ([075c1d4](https://github.com/vdavid/cmdr/commit/075c1d4))
+
 ## [0.5.0] - 2026-02-15
 
 ### Added
