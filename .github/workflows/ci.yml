@@ -262,7 +262,8 @@ jobs:
                       patchelf \
                       libacl1-dev \
                       webkit2gtk-driver \
-                      xvfb
+                      xvfb \
+                      dbus-x11
 
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
@@ -283,7 +284,7 @@ jobs:
                   sudo chmod a+x /root
 
             - name: Run Tauri E2E tests
-              run: xvfb-run --auto-servernum pnpm test:e2e:linux:native
+              run: xvfb-run --auto-servernum dbus-run-session -- pnpm test:e2e:linux:native
               working-directory: ./apps/desktop
               env:
                   TAURI_BINARY: ../../target/release/Cmdr

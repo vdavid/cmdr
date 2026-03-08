@@ -118,10 +118,19 @@ export const config: Options.Testrunner & { capabilities: Capabilities.Testrunne
             console.error(`[tauri-driver stderr] ${data}`)
         })
 
-        // Wait for tauri-driver to be ready
-        await new Promise<void>((resolve) => {
-            setTimeout(resolve, 2000)
-        })
+        // Wait for tauri-driver to be ready by polling its HTTP endpoint
+        const maxWaitMs = 30_000
+        const intervalMs = 500
+        const start = Date.now()
+        while (Date.now() - start < maxWaitMs) {
+            try {
+                const res = await fetch('http://127.0.0.1:4444/status')
+                if (res.ok) break
+            } catch {
+                // Not ready yet
+            }
+            await new Promise<void>((resolve) => setTimeout(resolve, intervalMs))
+        }
 
         console.log('tauri-driver started')
     },
