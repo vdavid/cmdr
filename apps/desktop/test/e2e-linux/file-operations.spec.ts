@@ -52,7 +52,7 @@ async function jsClick(selector: string): Promise<void> {
  */
 async function executeViaCommandPalette(query: string): Promise<void> {
     await browser.execute(() => {
-        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'p', metaKey: true, shiftKey: true, bubbles: true }))
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'p', ctrlKey: true, shiftKey: true, bubbles: true }))
     })
     const palette = browser.$('.palette-overlay')
     await palette.waitForExist({ timeout: 5000 })
@@ -357,12 +357,12 @@ describe('Command palette', () => {
     it('opens, shows results, and closes with Escape', async () => {
         await ensureAppReady()
 
-        // Open command palette via keyboard shortcut (Cmd+Shift+P)
+        // Open command palette via keyboard shortcut (Ctrl+Shift+P on Linux)
         await browser.execute(() => {
             document.dispatchEvent(
                 new KeyboardEvent('keydown', {
                     key: 'p',
-                    metaKey: true,
+                    ctrlKey: true,
                     shiftKey: true,
                     bubbles: true,
                 }),

@@ -326,8 +326,10 @@ describe('Navigation', () => {
             )
         }
 
-        // Press Backspace to go to parent
-        await browser.keys('Backspace')
+        // Press Backspace to go to parent (use Actions API — browser.keys('Backspace')
+        // is unreliable on WebKitGTK, same as the Space key quirk)
+        await browser.action('key').down('\uE003').pause(50).up('\uE003').perform()
+        await browser.releaseActions()
 
         // Wait for sub-dir to reappear in the listing (we're back in left/)
         await browser.waitUntil(
