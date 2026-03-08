@@ -114,13 +114,10 @@ const {
                                 })
                             }
                         })
-                        document.querySelectorAll('[data-arch-subtitle]').forEach(function (el) {
-                            el.textContent = arch === 'aarch64' ? 'Apple Silicon' : 'Intel'
-                        })
-                        document.querySelectorAll('[data-arch-link]').forEach(function (el) {
-                            if (el.dataset.archLink === arch) {
-                                el.style.fontWeight = '600'
-                                el.style.color = 'var(--color-text-primary)'
+                        // Mark the detected architecture as recommended in split-button dropdowns
+                        document.querySelectorAll('[data-download-dropdown] [data-arch]').forEach(function (el) {
+                            if (el.dataset.arch === arch) {
+                                el.dataset.recommended = 'true'
                             }
                         })
                     })

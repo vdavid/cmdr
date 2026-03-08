@@ -1,0 +1,600 @@
+---
+import { version, dmgUrls, dmgSizes } from '../lib/release'
+
+interface Props {
+    variant: 'hero' | 'card' | 'header' | 'mobile' | 'pricing'
+    class?: string
+}
+
+const { variant, class: className = '' } = Astro.props
+const hasGlow = variant === 'hero' || variant === 'card'
+---
+
+<div class:list={['split-btn', `split-btn--${variant}`, { glow: hasGlow }, className]} data-download-split-btn>
+    <a
+        href={dmgUrls.universal}
+        data-download-link
+        data-dmg-arm={dmgUrls.aarch64}
+        data-dmg-intel={dmgUrls.x86_64}
+        data-size-arm={dmgSizes?.aarch64}
+        data-size-intel={dmgSizes?.x86_64}
+        data-umami-event="download"
+        data-umami-event-version={version}
+        data-umami-event-arch="auto"
+        class="split-btn__main"
+    >
+        {
+            variant === 'card' ? (
+                <svg class="split-btn__icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                    />
+                </svg>
+            ) : (
+                <svg class="split-btn__icon" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+                </svg>
+            )
+        }
+
+        {
+            variant === 'hero' && (
+                <span>Download free{dmgSizes && <span data-download-size> ({dmgSizes.universal})</span>}</span>
+            )
+        }
+
+        {
+            variant === 'card' && (
+                <span class="split-btn__stack split-btn__stack--center">
+                    <span class="split-btn__label">Download for macOS</span>
+                    <span class="split-btn__sub">
+                        {version}
+                        {dmgSizes && <span data-download-size> · {dmgSizes.universal}</span>}
+                    </span>
+                </span>
+            )
+        }
+
+        {variant === 'header' && <span>Download</span>}
+
+        {variant === 'mobile' && <span>Download for macOS</span>}
+
+        {
+            variant === 'pricing' && (
+                <span class="split-btn__stack">
+                    <span class="split-btn__label split-btn__label--pricing">Download Cmdr</span>
+                    <span class="split-btn__sub">{version}</span>
+                </span>
+            )
+        }
+    </a>
+
+    <button
+        type="button"
+        class="split-btn__chevron"
+        aria-haspopup="true"
+        aria-expanded="false"
+        aria-label="Other architecture versions"
+        title="Other architecture versions"
+        data-download-chevron
+    >
+        <svg class="split-btn__chevron-svg" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+            <path
+                d="M2.5 3.5L5 7 7.5 3.5"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
+        </svg>
+    </button>
+
+    <div class="split-btn__dropdown" role="menu" hidden data-download-dropdown>
+        <a
+            href={dmgUrls.aarch64}
+            role="menuitem"
+            tabindex="-1"
+            data-arch="aarch64"
+            data-umami-event="download"
+            data-umami-event-version={version}
+            data-umami-event-arch="aarch64"
+            class="split-btn__option"
+        >
+            <svg
+                class="split-btn__option-icon"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+            >
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+            </svg>
+            <span class="split-btn__option-name">Apple Silicon</span>
+            {dmgSizes && <span class="split-btn__option-size">{dmgSizes.aarch64}</span>}
+        </a>
+        <a
+            href={dmgUrls.x86_64}
+            role="menuitem"
+            tabindex="-1"
+            data-arch="x86_64"
+            data-umami-event="download"
+            data-umami-event-version={version}
+            data-umami-event-arch="x86_64"
+            class="split-btn__option"
+        >
+            <svg
+                class="split-btn__option-icon"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+            >
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+            </svg>
+            <span class="split-btn__option-name">Intel</span>
+            {dmgSizes && <span class="split-btn__option-size">{dmgSizes.x86_64}</span>}
+        </a>
+        <a
+            href={dmgUrls.universal}
+            role="menuitem"
+            tabindex="-1"
+            data-arch="universal"
+            data-umami-event="download"
+            data-umami-event-version={version}
+            data-umami-event-arch="universal"
+            class="split-btn__option"
+        >
+            <svg
+                class="split-btn__option-icon"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+            >
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+            </svg>
+            <span class="split-btn__option-name">Universal</span>
+            {dmgSizes && <span class="split-btn__option-size">{dmgSizes.universal}</span>}
+        </a>
+    </div>
+</div>
+
+<style>
+    /* Split button layout */
+    .split-btn {
+        position: relative;
+        display: inline-flex;
+        align-items: stretch;
+        border-radius: 0.75rem;
+        z-index: 1;
+    }
+
+    .split-btn[data-open] {
+        z-index: 60;
+    }
+
+    .split-btn--header,
+    .split-btn--mobile,
+    .split-btn--pricing {
+        border-radius: 0.5rem;
+    }
+
+    /* Main download link */
+    .split-btn__main {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: var(--color-accent);
+        color: var(--color-accent-contrast);
+        text-decoration: none;
+        transition:
+            background-color var(--duration-normal),
+            border-radius 150ms ease;
+        border-radius: inherit;
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+
+    .split-btn[data-open] .split-btn__main {
+        border-bottom-left-radius: 0;
+    }
+
+    .split-btn__main:hover {
+        background: var(--color-accent-hover);
+    }
+
+    .split-btn__main:focus-visible {
+        outline: 2px solid var(--color-text-primary);
+        outline-offset: 2px;
+        z-index: 1;
+    }
+
+    /* Chevron trigger */
+    .split-btn__chevron {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--color-accent);
+        color: var(--color-accent-contrast);
+        border: none;
+        border-left: 1px solid rgba(20, 19, 15, 0.2);
+        cursor: pointer;
+        transition:
+            background-color var(--duration-normal),
+            border-radius 150ms ease;
+        border-radius: inherit;
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+    }
+
+    .split-btn[data-open] .split-btn__chevron {
+        border-bottom-right-radius: 0;
+    }
+
+    .split-btn__chevron:hover {
+        background: var(--color-accent-hover);
+    }
+
+    .split-btn__chevron:focus-visible {
+        outline: 2px solid var(--color-text-primary);
+        outline-offset: 2px;
+        z-index: 1;
+    }
+
+    .split-btn__chevron-svg {
+        width: 10px;
+        height: 10px;
+        transition: transform 150ms ease;
+    }
+
+    .split-btn__chevron[aria-expanded='true'] .split-btn__chevron-svg {
+        transform: rotate(180deg);
+    }
+
+    /* --- Variant sizes --- */
+
+    /* Hero & Card (large) */
+    .split-btn--hero .split-btn__main,
+    .split-btn--card .split-btn__main {
+        padding: 1rem 2rem;
+        font-size: 1.125rem;
+        font-weight: 600;
+    }
+
+    .split-btn--hero .split-btn__chevron,
+    .split-btn--card .split-btn__chevron {
+        padding: 1rem 0.875rem;
+    }
+
+    .split-btn--hero .split-btn__icon,
+    .split-btn--card .split-btn__icon {
+        width: 1.25rem;
+        height: 1.25rem;
+        flex-shrink: 0;
+    }
+
+    .split-btn--card .split-btn__main {
+        justify-content: center;
+    }
+
+    /* Header (compact) */
+    .split-btn--header .split-btn__main {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        gap: 0.375rem;
+    }
+
+    .split-btn--header .split-btn__chevron {
+        padding: 0.5rem;
+    }
+
+    .split-btn--header .split-btn__icon {
+        width: 1rem;
+        height: 1rem;
+        flex-shrink: 0;
+    }
+
+    /* Mobile */
+    .split-btn--mobile .split-btn__main {
+        padding: 0.75rem 1rem;
+        font-size: 0.9375rem;
+        font-weight: 600;
+        justify-content: center;
+        min-height: 44px;
+    }
+
+    .split-btn--mobile .split-btn__chevron {
+        padding: 0.75rem;
+        min-height: 44px;
+    }
+
+    .split-btn--mobile .split-btn__icon {
+        width: 1rem;
+        height: 1rem;
+        flex-shrink: 0;
+    }
+
+    /* Pricing */
+    .split-btn--pricing .split-btn__main {
+        padding: 1rem 2rem;
+        gap: 0.75rem;
+    }
+
+    .split-btn--pricing .split-btn__chevron {
+        padding: 1rem 0.875rem;
+    }
+
+    .split-btn--pricing .split-btn__icon {
+        width: 1.75rem;
+        height: 1.75rem;
+        flex-shrink: 0;
+    }
+
+    /* Label stack (two-line content) */
+    .split-btn__stack {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .split-btn__stack--center {
+        align-items: center;
+    }
+
+    .split-btn__label {
+        font-weight: 600;
+    }
+
+    .split-btn__label--pricing {
+        font-size: 1.125rem;
+        font-weight: 500;
+        line-height: 1.25;
+    }
+
+    .split-btn__sub {
+        font-size: 0.875rem;
+        opacity: 0.8;
+    }
+
+    /* Hover scale for hero & card */
+    .split-btn--hero,
+    .split-btn--card {
+        transition: transform var(--duration-normal);
+    }
+
+    .split-btn--hero:hover,
+    .split-btn--card:hover {
+        transform: scale(1.02);
+    }
+
+    /* Header hover shadow */
+    .split-btn--header {
+        transition: box-shadow 200ms;
+    }
+
+    .split-btn--header:hover {
+        box-shadow: 0 0 12px var(--color-accent-glow);
+    }
+
+    /* Mobile hover */
+    .split-btn--mobile {
+        transition:
+            background-color var(--duration-normal),
+            box-shadow var(--duration-normal);
+    }
+
+    .split-btn--mobile:hover {
+        box-shadow: 0 0 20px var(--color-accent-glow);
+    }
+
+    /* --- Dropdown --- */
+    .split-btn__dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 50;
+        border-radius: 0 0 0.5rem 0.5rem;
+        border: 1px solid var(--color-border);
+        border-top: none;
+        background: var(--color-surface-elevated);
+        padding: 4px;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+        animation: split-dropdown-in 150ms ease-out;
+        text-align: left;
+    }
+
+    /* Mobile dropdown opens upward to avoid overflow clipping */
+    .split-btn--mobile .split-btn__dropdown {
+        top: auto;
+        bottom: 100%;
+        border-radius: 0.5rem 0.5rem 0 0;
+        border: 1px solid var(--color-border);
+        border-bottom: none;
+        animation: split-dropdown-in-up 150ms ease-out;
+    }
+
+    /* Mobile: invert radius transition — top goes to 0 when open */
+    .split-btn--mobile[data-open] .split-btn__main {
+        border-bottom-left-radius: inherit;
+        border-top-left-radius: 0;
+    }
+
+    .split-btn--mobile[data-open] .split-btn__chevron {
+        border-bottom-right-radius: inherit;
+        border-top-right-radius: 0;
+    }
+
+    .split-btn__option {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+        color: var(--color-text-primary);
+        text-decoration: none;
+        border-radius: 0.375rem;
+        transition: background-color 150ms;
+    }
+
+    .split-btn__option-icon {
+        width: 0.875rem;
+        height: 0.875rem;
+        flex-shrink: 0;
+        opacity: 0.5;
+    }
+
+    .split-btn__option-name {
+        flex: 1;
+    }
+
+    .split-btn__option:hover,
+    .split-btn__option:focus {
+        background: var(--color-surface);
+        outline: none;
+    }
+
+    .split-btn__option:focus-visible {
+        background: var(--color-surface);
+        outline: 2px solid var(--color-accent);
+        outline-offset: -2px;
+    }
+
+    .split-btn__option-size {
+        color: var(--color-text-tertiary);
+        font-size: 0.8125rem;
+    }
+
+    /* Recommended indicator (set by arch detection script) */
+    .split-btn__option[data-recommended] .split-btn__option-name::after {
+        content: ' ✓';
+        color: var(--color-accent);
+        font-size: 0.75rem;
+    }
+
+    @keyframes split-dropdown-in {
+        from {
+            opacity: 0;
+            transform: translateY(-4px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes split-dropdown-in-up {
+        from {
+            opacity: 0;
+            transform: translateY(4px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .split-btn--hero,
+        .split-btn--card {
+            transition: none;
+        }
+
+        .split-btn--hero:hover,
+        .split-btn--card:hover {
+            transform: none;
+        }
+
+        .split-btn__dropdown {
+            animation: none;
+        }
+
+        .split-btn__chevron-svg {
+            transition: none;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('astro:page-load', () => {
+        document.querySelectorAll<HTMLElement>('[data-download-split-btn]').forEach((wrapper) => {
+            const chevron = wrapper.querySelector<HTMLButtonElement>('[data-download-chevron]')
+            const dropdown = wrapper.querySelector<HTMLElement>('[data-download-dropdown]')
+            if (!chevron || !dropdown || chevron.dataset.bound) return
+            chevron.dataset.bound = 'true'
+
+            const open = () => {
+                // Close any other open dropdowns first
+                document.querySelectorAll<HTMLElement>('[data-download-dropdown]').forEach((d) => {
+                    if (d !== dropdown) {
+                        d.hidden = true
+                        const otherWrapper = d.closest<HTMLElement>('[data-download-split-btn]')
+                        otherWrapper?.querySelector('[data-download-chevron]')?.setAttribute('aria-expanded', 'false')
+                        if (otherWrapper) delete otherWrapper.dataset.open
+                    }
+                })
+                dropdown.hidden = false
+                chevron.setAttribute('aria-expanded', 'true')
+                wrapper.dataset.open = ''
+            }
+
+            const close = () => {
+                dropdown.hidden = true
+                chevron.setAttribute('aria-expanded', 'false')
+                delete wrapper.dataset.open
+            }
+
+            chevron.addEventListener('click', (e: MouseEvent) => {
+                e.preventDefault()
+                e.stopPropagation()
+                dropdown.hidden ? open() : close()
+            })
+
+            document.addEventListener('click', (e: MouseEvent) => {
+                if (!wrapper.contains(e.target as Node)) close()
+            })
+
+            document.addEventListener('keydown', (e: KeyboardEvent) => {
+                if (e.key === 'Escape' && !dropdown.hidden) {
+                    close()
+                    chevron.focus()
+                }
+            })
+
+            dropdown.addEventListener('keydown', (e: KeyboardEvent) => {
+                const items = [...dropdown.querySelectorAll<HTMLElement>('[role="menuitem"]')]
+                const idx = items.indexOf(document.activeElement as HTMLElement)
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault()
+                    items[(idx + 1) % items.length]?.focus()
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault()
+                    items[(idx - 1 + items.length) % items.length]?.focus()
+                }
+            })
+
+            chevron.addEventListener('keydown', (e: KeyboardEvent) => {
+                if ((e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') && dropdown.hidden) {
+                    e.preventDefault()
+                    open()
+                    dropdown.querySelector<HTMLElement>('[role="menuitem"]')?.focus()
+                }
+            })
+        })
+    })
+</script>
