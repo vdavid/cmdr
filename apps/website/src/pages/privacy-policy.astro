@@ -5,7 +5,7 @@ import LegalLayout from '../layouts/LegalLayout.astro'
 <LegalLayout
     title="Privacy policy"
     description="How Cmdr collects, uses, and protects your personal data. GDPR compliant."
-    lastUpdated="2026-03-07"
+    lastUpdated="2026-03-08"
 >
     <p>
         Your privacy matters to us a lot. This policy explains what data we collect, why, and how we protect it. We've
@@ -14,8 +14,9 @@ import LegalLayout from '../layouts/LegalLayout.astro'
 
     <div class="highlight-box">
         <p>
-            <strong>The short version:</strong> We collect minimal data. The website uses analytics and collects your email
-            if you subscribe. The app periodically validates your license with our servers. We don't sell your data.
+            <strong>The short version:</strong> We collect minimal data. The website uses privacy-friendly analytics and collects
+            your email if you subscribe. The desktop app doesn't phone home. It only validates your license periodically. We
+            don't sell your data.
         </p>
     </div>
 
@@ -37,9 +38,25 @@ import LegalLayout from '../layouts/LegalLayout.astro'
             <strong>Email address</strong>: if you subscribe to our newsletter or contact us
         </li>
         <li>
-            <strong>Analytics</strong>: we use PostHog to understand how visitors use our website. This includes pages
-            visited, referrer, browser type, and approximate location (country level). PostHog runs without cookies.
+            <strong>Page analytics</strong>: we use <a href="https://umami.is" target="_blank" rel="noopener noreferrer"
+                >Umami</a
+            >, a privacy-focused analytics tool that we host on our own server. It tells us which pages are visited,
+            where traffic comes from, and approximate location (country level). Umami doesn't use cookies and doesn't
+            collect any personal information.
         </li>
+        <li>
+            <strong>Website behavior</strong>: we use <a
+                href="https://posthog.com"
+                target="_blank"
+                rel="noopener noreferrer">PostHog</a
+            >
+            to see how visitors interact with the website, like session recordings and heatmaps. This helps us spot
+            confusing layouts and improve the experience. PostHog sets a first-party cookie to maintain your session, but
+            doesn't track you across other websites.
+        </li>
+        <li>
+            <strong>Download counts</strong>: when you download Cmdr, we record which version and architecture you
+            chose, along with your country, for stats. We don't store your IP address or any other identifying info.
         <li>
             <strong>Payment info</strong>: if you buy a license, payment is handled by Paddle. We see your email address
             and purchase details, but never your credit card number—that'd be too much risk for us.
@@ -49,20 +66,21 @@ import LegalLayout from '../layouts/LegalLayout.astro'
     <h3>In the desktop app</h3>
     <ul>
         <li>
-            <strong>License key</strong>: stored locally on your machine. The apps verifies it cryptographically
-            offline, then we also periodically check on our servers whether it has expired or got extended.
+            <strong>License key</strong>: stored locally on your machine. The app verifies it cryptographically offline,
+            and periodically checks our server to see if your subscription has expired or been extended.
         </li>
         <li>
             <strong>Organization name</strong>: for commercial licenses, we store the organization name you provide at
             checkout, to display it in the app's About window.
         </li>
-        <li>
-            <strong>Analytics</strong>: aggregate usage statistics, _without_ any PII or user content. Think: "How many
-            people used the network features last month?" (but never "Who used network features")
-        </li>
     </ul>
 
-    <h3>What we don't collect</h3>
+    <p>
+        That's it. The desktop app has <strong>no telemetry</strong>—it doesn't report usage statistics, feature usage,
+        or anything else back to us. The only network calls it makes are license validation and checking for updates.
+    </p>
+
+    <h3>What we DON'T collect</h3>
     <ul>
         <li>Your file names, contents, or any data from your file system, ever. We don't want to know your files.</li>
         <li>
@@ -70,8 +88,7 @@ import LegalLayout from '../layouts/LegalLayout.astro'
             unless you use a provider (OpenAI, Anthropic, etc.) that have different terms. But with Cmdr, you always
             have the option to keep ALL communications private with a local model.
         </li>
-        <li>Your keystrokes, screenshots, clicks from the app.</li>
-        <li>Your PII, personal files and documents.</li>
+        <li>Your keystrokes, screenshots, or clicks from the app.</li>
         <li>And we never train models on your data!</li>
     </ul>
 
@@ -86,15 +103,14 @@ import LegalLayout from '../layouts/LegalLayout.astro'
             who has a valid license and who doesn't.
         </li>
         <li>
-            <strong>Legitimate interest</strong>: Analytics to understand how people use our app and website, what
-            features they use, what new features might help them (this affects the roadmap!), and generally improve the
-            website and product. It is very strictly _not_ about tracking any particular user (which we actually _avoid_
-            at all costs), but only aggregate data that can't even be traced back to a single user.
+            <strong>Legitimate interest</strong>: Website analytics and download counts help us understand how people
+            find and use our website, which directly shapes the product roadmap. This is strictly
+            <em>not</em> about tracking any particular user—we actively avoid that. We only look at aggregate data that can't
+            be traced back to a single person.
         </li>
         <li>
             <strong>Consent</strong>: Email addresses to send you news that hopefully interest you. (You can unsubscribe
-            anytime from all communications we send, except for stuff we _need_ to send like updates to this very
-            policy.)
+            anytime from all communications we send, except for stuff we <em>need</em> to send like updates to this very policy.)
         </li>
     </ul>
 
@@ -118,11 +134,13 @@ import LegalLayout from '../layouts/LegalLayout.astro'
             >
         </li>
         <li>
-            <strong>PostHog</strong> (analytics) — helps us understand website usage. Cloud-hosted with EU data storage options.
+            <strong>PostHog</strong> (website behavior) — session recordings and heatmaps to help us improve the website experience.
+            Cloud-hosted with EU data storage options.
             <a href="https://posthog.com/privacy" target="_blank" rel="noopener noreferrer">PostHog's privacy policy</a>
         </li>
         <li>
-            <strong>Cloudflare</strong> (hosting) — hosts our license validation server on its global CDN.
+            <strong>Cloudflare</strong> (hosting) — hosts our license validation and download tracking on its global CDN.
+            Download events (version, architecture, country) are stored in Cloudflare Analytics Engine.
             <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener noreferrer"
                 >Cloudflare's privacy policy</a
             >
@@ -136,13 +154,17 @@ import LegalLayout from '../layouts/LegalLayout.astro'
             <a href="https://aws.amazon.com/privacy/" target="_blank" rel="noopener noreferrer">AWS privacy policy</a>
         </li>
     </ul>
+    <p>
+        Our page-level website analytics (<strong>Umami</strong>) are self-hosted on our own server—no data is shared
+        with any third party for that.
+    </p>
     <p>We don't sell your data. We don't share it with advertisers or anyone not listed above.</p>
 
     <h2>6. Where we store your data</h2>
     <p>
-        Your data is processed and stored in the cloud without any specific geographical boundaries. Our license server
-        runs on Cloudflare Workers on a global CDN. PostHog and Paddle are GDPR-compliant and have appropriate data
-        processing agreements in place.
+        Page-level website analytics (Umami) and our newsletter system (Listmonk) are self-hosted on our own server in
+        Europe. Our license and download tracking server runs on Cloudflare Workers on a global CDN. PostHog and Paddle
+        are GDPR-compliant and have appropriate data processing agreements in place.
     </p>
 
     <h2>7. How long we keep your data</h2>
@@ -160,9 +182,11 @@ import LegalLayout from '../layouts/LegalLayout.astro'
 
     <h2>8. Cookies</h2>
     <p>
-        We don't use cookies. Our analytics tools (Umami and PostHog) are both configured to run without cookies. We
-        don't use third-party advertising cookies or cross-site tracking either.
+        PostHog sets a first-party cookie to maintain your session while you browse our website. This is used for
+        session recordings and heatmaps—it doesn't track you across other websites. Umami, our page analytics tool,
+        doesn't use cookies at all.
     </p>
+    <p>We don't use third-party advertising cookies or cross-site tracking.</p>
 
     <h2>9. Your rights (GDPR)</h2>
     <p>EU residents have the right to:</p>

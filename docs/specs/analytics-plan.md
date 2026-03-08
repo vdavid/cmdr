@@ -218,13 +218,16 @@ implementing the above:
 - [x] Set `PUBLIC_POSTHOG_KEY` in production env (`/opt/cmdr/apps/website/.env` on Hetzner)
 - [x] Enable session replay and heatmaps in PostHog project settings
 - [x] Add getcmdr.com as authorized domain for PostHog toolbar
-- [ ] Verify session replays and heatmaps in PostHog dashboard
+- [x] Verify session replays and heatmaps in PostHog dashboard
 
 ### Milestone 4: Privacy policy update
-- [ ] Rewrite website analytics section (Umami, self-hosted, cookieless)
-- [ ] Remove false in-app analytics claim, rewrite to reflect reality (no desktop telemetry)
-- [ ] Add download tracking mention
-- [ ] Update data processors list
-- [ ] Shrink cookies section
-- [ ] Update `lastUpdated` date
-- [ ] Run checks: `./scripts/check.sh --check website-prettier --check website-build`
+- [x] Rewrite website analytics section (Umami + PostHog with distinct roles)
+- [x] Remove false in-app analytics claim, add "no telemetry" statement
+- [x] Add download tracking mention (version, arch, country, no IP)
+- [x] Update data processors list (PostHog, Cloudflare, Umami self-hosted note)
+- [x] Rewrite cookies section (PostHog first-party cookie, Umami cookieless)
+- [x] Update data storage section (Umami + Listmonk self-hosted in Europe)
+- [x] Fix pre-existing issues: typo "apps verifies" → "app verifies", `_not_`/`_need_` → `<em>`
+- [x] Remove misleading "Your PII" bullet from "What we don't collect" (we do collect email/payment)
+- [x] Update `lastUpdated` date to 2026-03-08
+- [x] Run checks: prettier, eslint, typecheck, build — all pass
