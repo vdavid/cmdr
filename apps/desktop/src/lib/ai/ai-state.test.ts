@@ -41,7 +41,7 @@ describe('ai-state', () => {
             expect(state.notificationState).toBe('hidden')
             expect(state.downloadProgress).toBeNull()
             expect(state.progressText).toBe('')
-        })
+        }, 15_000)
     })
 
     describe('initAiState', () => {

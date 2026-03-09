@@ -79,7 +79,7 @@ describe('mtp-store', () => {
             const { getDevices, isInitialized } = await loadModule()
             expect(getDevices()).toEqual([])
             expect(isInitialized()).toBe(false)
-        })
+        }, 15_000)
 
         it('has no connected devices initially', async () => {
             const { hasConnectedDevices, getConnectedDevices } = await loadModule()

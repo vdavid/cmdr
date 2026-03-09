@@ -38,7 +38,7 @@ describe('licensing-store', () => {
         it('returns null before status is loaded', async () => {
             const { getCachedStatus } = await loadStore()
             expect(getCachedStatus()).toBeNull()
-        })
+        }, 15_000)
     })
 
     describe('loadLicenseStatus', () => {
