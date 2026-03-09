@@ -125,57 +125,6 @@ jobs:
                   echo "Both build attempts failed"
                   exit 1
 
-            - name: Rename and upload updater artifacts
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              run: |
-                  TAG="${{ github.ref_name }}"
-                  BUNDLE_DIR="apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle"
-
-                  # tauri-action uploads DMG automatically. We just need to rename
-                  # updater artifacts to include arch (Tauri names them all Cmdr.app.tar.gz)
-                  UPDATER=$(find "$BUNDLE_DIR" -name "*.app.tar.gz" | head -1)
-                  SIG_FILE="${UPDATER}.sig"
-
-                  if [ -z "$UPDATER" ] || [ ! -f "$SIG_FILE" ]; then
-                      echo "Updater artifacts not found, tauri-action may have uploaded them already"
-                      exit 0
-                  fi
-
-                  UPDATER_RENAMED="/tmp/Cmdr_${{ matrix.arch }}.app.tar.gz"
-                  SIG_RENAMED="/tmp/Cmdr_${{ matrix.arch }}.app.tar.gz.sig"
-                  cp "$UPDATER" "$UPDATER_RENAMED"
-                  cp "$SIG_FILE" "$SIG_RENAMED"
-
-                  gh release upload "$TAG" "$UPDATER_RENAMED" "$SIG_RENAMED" --clobber
-
-            - name: Save signature as artifact
-              run: |
-                  BUNDLE_DIR="apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle"
-                  SIG_FILE=$(find "$BUNDLE_DIR" -name "*.app.tar.gz.sig" | head -1)
-                  mkdir -p /tmp/sig-artifacts
-
-                  if [ -n "$SIG_FILE" ] && [ -f "$SIG_FILE" ]; then
-                      cp "$SIG_FILE" "/tmp/sig-artifacts/signature-${{ matrix.arch }}.txt"
-                  else
-                      echo "Signature file not found in bundle dir, checking tauri-action output"
-                      # Fall back: download from release
-                      TAG="${{ github.ref_name }}"
-                      # tauri-action uploads as Cmdr.app.tar.gz.sig
-                      gh release download "$TAG" -p "Cmdr.app.tar.gz.sig" -D /tmp/sig-artifacts --clobber || true
-                      if [ -f "/tmp/sig-artifacts/Cmdr.app.tar.gz.sig" ]; then
-                          mv "/tmp/sig-artifacts/Cmdr.app.tar.gz.sig" "/tmp/sig-artifacts/signature-${{ matrix.arch }}.txt"
-                      fi
-                  fi
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-            - name: Upload signature artifact
-              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-              with:
-                  name: signature-${{ matrix.arch }}
-                  path: /tmp/sig-artifacts/signature-${{ matrix.arch }}.txt
-
             - name: Clean up keychain
               if: always()
               run: security delete-keychain $RUNNER_TEMP/app-signing.keychain-db
@@ -189,23 +138,28 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-            - name: Download all signature artifacts
-              uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-              with:
-                  path: /tmp/signatures
-                  pattern: signature-*
+            - name: Download signatures from release
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  TAG="${{ github.ref_name }}"
+                  mkdir -p /tmp/signatures
+                  gh release download "$TAG" -p "Cmdr_*.app.tar.gz.sig" -D /tmp/signatures
+
+                  # Verify all 3 arch sigs were downloaded
+                  for arch in aarch64 x64 universal; do
+                      [ -f "/tmp/signatures/Cmdr_${arch}.app.tar.gz.sig" ] || { echo "Missing sig for $arch"; exit 1; }
+                  done
 
             - name: Extract changelog for this version
-              id: changelog
               run: |
                   VERSION="${{ github.ref_name }}"
                   VERSION="${VERSION#v}"
 
                   # Extract section for this version from CHANGELOG.md
-                  NOTES=$(sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | sed '1d;$d')
+                  NOTES=$(sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | sed '1d;$d' | sed '/./,$!d')
 
-                  # Write to file to preserve newlines
-                  echo "$NOTES" > /tmp/notes.txt
+                  printf '%s\n' "$NOTES" > /tmp/notes.txt
 
             - name: Generate latest.json
               env:
@@ -215,47 +169,52 @@ jobs:
                   VERSION="${VERSION#v}"
                   TAG="${{ github.ref_name }}"
 
-                  # Read signatures from downloaded artifacts
-                  SIG_AARCH64=$(cat /tmp/signatures/signature-aarch64/signature-aarch64.txt)
-                  SIG_X86_64=$(cat /tmp/signatures/signature-x86_64/signature-x86_64.txt)
-                  SIG_UNIVERSAL=$(cat /tmp/signatures/signature-universal/signature-universal.txt)
+                  # Read signatures downloaded from the release
+                  SIG_AARCH64=$(cat /tmp/signatures/Cmdr_aarch64.app.tar.gz.sig)
+                  SIG_X86_64=$(cat /tmp/signatures/Cmdr_x64.app.tar.gz.sig)
+                  SIG_UNIVERSAL=$(cat /tmp/signatures/Cmdr_universal.app.tar.gz.sig)
 
-                  # Query DMG sizes from the release assets
-                  SIZE_AARCH64=$(gh api "repos/vdavid/cmdr/releases/tags/$TAG" --jq ".assets[] | select(.name | endswith(\"_aarch64.dmg\")) | .size" || echo 0)
-                  SIZE_X86_64=$(gh api "repos/vdavid/cmdr/releases/tags/$TAG" --jq ".assets[] | select(.name | endswith(\"_x86_64.dmg\")) | .size" || echo 0)
-                  SIZE_UNIVERSAL=$(gh api "repos/vdavid/cmdr/releases/tags/$TAG" --jq ".assets[] | select(.name | endswith(\"_universal.dmg\")) | .size" || echo 0)
+                  # Query DMG sizes from the release assets (tauri-action uses "x64" in DMG names)
+                  RELEASE_JSON=$(gh api "repos/${{ github.repository }}/releases/tags/$TAG")
+                  SIZE_AARCH64=$(echo "$RELEASE_JSON" | jq '[.assets[] | select(.name | endswith("_aarch64.dmg"))][0].size // 0')
+                  SIZE_X86_64=$(echo "$RELEASE_JSON" | jq '[.assets[] | select(.name | endswith("_x64.dmg"))][0].size // 0')
+                  SIZE_UNIVERSAL=$(echo "$RELEASE_JSON" | jq '[.assets[] | select(.name | endswith("_universal.dmg"))][0].size // 0')
 
                   # Read notes from file, escape for JSON
-                  NOTES=$(cat /tmp/notes.txt | jq -Rs .)
+                  NOTES=$(jq -Rs . < /tmp/notes.txt)
 
-                  BASE_URL="https://github.com/vdavid/cmdr/releases/download/$TAG"
+                  BASE_URL="https://github.com/${{ github.repository }}/releases/download/$TAG"
 
-                  cat > /tmp/latest.json << EOF
-                  {
-                      "version": "$VERSION",
-                      "dmgSizes": {
-                          "aarch64": ${SIZE_AARCH64:-0},
-                          "x86_64": ${SIZE_X86_64:-0},
-                          "universal": ${SIZE_UNIVERSAL:-0}
-                      },
-                      "notes": $NOTES,
-                      "pub_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-                      "platforms": {
-                          "darwin-universal": {
-                              "signature": "$SIG_UNIVERSAL",
-                              "url": "$BASE_URL/Cmdr_universal.app.tar.gz"
-                          },
-                          "darwin-aarch64": {
-                              "signature": "$SIG_AARCH64",
-                              "url": "$BASE_URL/Cmdr_aarch64.app.tar.gz"
-                          },
-                          "darwin-x86_64": {
-                              "signature": "$SIG_X86_64",
-                              "url": "$BASE_URL/Cmdr_x86_64.app.tar.gz"
-                          }
+                  jq -n --indent 4 \
+                    --arg version "$VERSION" \
+                    --argjson size_aarch64 "$SIZE_AARCH64" \
+                    --argjson size_x86_64 "$SIZE_X86_64" \
+                    --argjson size_universal "$SIZE_UNIVERSAL" \
+                    --argjson notes "$NOTES" \
+                    --arg pub_date "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+                    --arg sig_universal "$SIG_UNIVERSAL" \
+                    --arg sig_aarch64 "$SIG_AARCH64" \
+                    --arg sig_x86_64 "$SIG_X86_64" \
+                    --arg base_url "$BASE_URL" \
+                    '{
+                      version: $version,
+                      dmgSizes: { aarch64: $size_aarch64, x86_64: $size_x86_64, universal: $size_universal },
+                      notes: $notes,
+                      pub_date: $pub_date,
+                      platforms: {
+                        "darwin-universal": { signature: $sig_universal, url: "\($base_url)/Cmdr_universal.app.tar.gz" },
+                        "darwin-aarch64": { signature: $sig_aarch64, url: "\($base_url)/Cmdr_aarch64.app.tar.gz" },
+                        "darwin-x86_64": { signature: $sig_x86_64, url: "\($base_url)/Cmdr_x64.app.tar.gz" }
                       }
-                  }
-                  EOF
+                    }' > /tmp/latest.json
+
+            - name: Replace tauri-action's latest.json on the release
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  TAG="${{ github.ref_name }}"
+                  gh release delete-asset "$TAG" latest.json --yes || true
+                  gh release upload "$TAG" /tmp/latest.json
 
             - name: Update release body with changelog
               env:
@@ -277,6 +236,7 @@ jobs:
                   cp /tmp/latest.json apps/website/public/latest.json
                   git add apps/website/public/latest.json
                   git commit -m "chore(release): update latest.json for ${{ github.ref_name }} [skip ci]"
+                  git pull --rebase origin main
                   git push origin main
 
             - name: Trigger website deploy
