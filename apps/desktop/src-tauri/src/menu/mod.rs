@@ -1062,21 +1062,43 @@ pub fn build_context_menu<R: Runtime>(
 ) -> tauri::Result<Menu<R>> {
     let menu = Menu::new(app)?;
 
-    let open_item = MenuItem::with_id(app, OPEN_ID, "Open", true, None::<&str>)?;
-    let edit_item = MenuItem::with_id(app, EDIT_ID, "Edit", true, Some("F4"))?;
+    // Open / View / Edit group (files only)
+    if !is_directory {
+        let open_item = MenuItem::with_id(app, OPEN_ID, "Open", true, None::<&str>)?;
+        let view_item = MenuItem::with_id(app, FILE_VIEW_ID, "View", true, Some("F3"))?;
+        let edit_item = MenuItem::with_id(app, EDIT_ID, "Edit", true, Some("F4"))?;
+        menu.append(&open_item)?;
+        menu.append(&view_item)?;
+        menu.append(&edit_item)?;
+        menu.append(&PredefinedMenuItem::separator(app)?)?;
+    }
+
+    // Copy / Move / Rename group
+    let copy_item = MenuItem::with_id(app, FILE_COPY_ID, "Copy", true, Some("F5"))?;
+    let move_item = MenuItem::with_id(app, FILE_MOVE_ID, "Move", true, Some("F6"))?;
+    let rename_item = MenuItem::with_id(app, RENAME_ID, "Rename", true, Some("F2"))?;
+    menu.append(&copy_item)?;
+    menu.append(&move_item)?;
+    menu.append(&rename_item)?;
+    menu.append(&PredefinedMenuItem::separator(app)?)?;
+
+    // New folder
+    let new_folder_item = MenuItem::with_id(app, FILE_NEW_FOLDER_ID, "New folder", true, Some("F7"))?;
+    menu.append(&new_folder_item)?;
+    menu.append(&PredefinedMenuItem::separator(app)?)?;
+
+    // Delete
+    let delete_item = MenuItem::with_id(app, FILE_DELETE_ID, "Delete", true, Some("F8"))?;
+    menu.append(&delete_item)?;
+    menu.append(&PredefinedMenuItem::separator(app)?)?;
+
+    // Utility group: Show in Finder, Copy filename, Copy path
     let show_in_finder_item = MenuItem::with_id(
         app,
         SHOW_IN_FINDER_ID,
         show_in_file_manager_label(),
         true,
         Some(show_in_file_manager_accelerator()),
-    )?;
-    let copy_path_item = MenuItem::with_id(
-        app,
-        COPY_PATH_ID,
-        "Copy path to clipboard",
-        true,
-        Some(copy_path_accelerator()),
     )?;
     let copy_filename_item = MenuItem::with_id(
         app,
@@ -1085,16 +1107,8 @@ pub fn build_context_menu<R: Runtime>(
         true,
         Some("Cmd+C"),
     )?;
-    let rename_item = MenuItem::with_id(app, RENAME_ID, "Rename", true, Some("F2"))?;
-
-    // Add items to menu
-    if !is_directory {
-        menu.append(&open_item)?;
-        menu.append(&edit_item)?;
-    }
+    let copy_path_item = MenuItem::with_id(app, COPY_PATH_ID, "Copy path", true, Some(copy_path_accelerator()))?;
     menu.append(&show_in_finder_item)?;
-    menu.append(&rename_item)?;
-    menu.append(&PredefinedMenuItem::separator(app)?)?;
     menu.append(&copy_filename_item)?;
     menu.append(&copy_path_item)?;
 
