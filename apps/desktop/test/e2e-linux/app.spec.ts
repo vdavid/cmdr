@@ -326,10 +326,12 @@ describe('Navigation', () => {
             )
         }
 
-        // Press Backspace to go to parent (use Actions API — browser.keys('Backspace')
-        // is unreliable on WebKitGTK, same as the Space key quirk)
-        await browser.action('key').down('\uE003').pause(50).up('\uE003').perform()
-        await browser.releaseActions()
+        // Press Backspace to go to parent (dispatch via JS — both browser.keys()
+        // and W3C Actions API fail to deliver Backspace on WebKitGTK in CI)
+        await browser.execute(() => {
+            const pane = document.querySelector('.file-pane.is-focused') as HTMLElement | null
+            pane?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true }))
+        })
 
         // Wait for sub-dir to reappear in the listing (we're back in left/)
         await browser.waitUntil(

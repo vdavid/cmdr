@@ -111,6 +111,23 @@ await browser.action('key').down(' ').pause(50).up(' ').perform()
 await browser.releaseActions()
 ```
 
+### 3. Backspace not delivered in CI (native runner)
+
+Neither `browser.keys('Backspace')` nor the W3C Actions API (`\uE003`) reliably deliver Backspace on the GitHub Actions
+native runner. Works in Docker. **Use JS `dispatchEvent` instead:**
+
+```typescript
+await browser.execute(() => {
+    const pane = document.querySelector('.file-pane.is-focused') as HTMLElement | null
+    pane?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true }))
+})
+```
+
+### 4. Use `ctrlKey`, not `metaKey`, for Linux shortcuts
+
+On Linux, `metaKey` maps to the Super/Windows key, not Ctrl. The shortcut system formats it as `Super+Shift+P` which
+won't match `Ctrl+Shift+P`. Always use `ctrlKey: true` when dispatching keyboard events in Linux E2E tests.
+
 ## Ubuntu test VM (native Linux testing)
 
 A local Ubuntu VM for testing Cmdr on Linux without Docker. Used for manual testing, debugging WebKitGTK-specific
