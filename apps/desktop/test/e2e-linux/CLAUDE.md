@@ -152,16 +152,16 @@ For GUI interaction (pressing keys, clicking), use the VM window in UTM directly
 
 ### VM specs
 
-| Property | Value                                           |
-| -------- | ----------------------------------------------- |
-| Host app | UTM (Apple Virtualization engine)               |
-| OS       | Ubuntu 25.10 (aarch64)                          |
-| RAM      | 12 GB                                           |
-| CPU      | 6 cores                                         |
-| Disk     | 64 GB                                           |
-| Username | `veszelovszki`                                  |
-| SSH      | `ssh veszelovszki@192.168.1.97`                 |
-| IP       | `192.168.1.97` (static, on LAN)                 |
+| Property | Value                             |
+| -------- | --------------------------------- |
+| Host app | UTM (Apple Virtualization engine) |
+| OS       | Ubuntu 25.10 (aarch64)            |
+| RAM      | 12 GB                             |
+| CPU      | 6 cores                           |
+| Disk     | 64 GB                             |
+| Username | `veszelovszki`                    |
+| SSH      | `ssh veszelovszki@192.168.1.97`   |
+| IP       | `192.168.1.97` (static, on LAN)   |
 
 ### File layout
 
