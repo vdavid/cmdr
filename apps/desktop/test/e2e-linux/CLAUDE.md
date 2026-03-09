@@ -111,17 +111,20 @@ await browser.action('key').down(' ').pause(50).up(' ').perform()
 await browser.releaseActions()
 ```
 
-### 3. Backspace not delivered in CI (native runner)
+### 3. Backspace must use JS `dispatchEvent` on the container
 
-Neither `browser.keys('Backspace')` nor the W3C Actions API (`\uE003`) reliably deliver Backspace on the GitHub Actions
-native runner. Works in Docker. **Use JS `dispatchEvent` instead:**
+Neither `browser.keys('Backspace')` nor the W3C Actions API (`\uE003`) reliably deliver Backspace on WebKitGTK (native
+runner or VM). **Dispatch on `.dual-pane-explorer`** (where `onkeydown` is bound):
 
 ```typescript
 await browser.execute(() => {
-    const pane = document.querySelector('.file-pane.is-focused') as HTMLElement | null
-    pane?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true }))
+    const container = document.querySelector('.dual-pane-explorer') as HTMLElement | null
+    container?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true }))
 })
 ```
+
+**Caveat:** Synthetic `dispatchEvent` Backspace from a nested directory may navigate two levels up instead of one (lands
+at the fixture root instead of the immediate parent). The Backspace test accepts either landing as valid.
 
 ### 4. Use `ctrlKey`, not `metaKey`, for Linux shortcuts
 
@@ -137,7 +140,7 @@ behavior, and E2E test development with faster iteration.
 
 ```bash
 # From macOS — SSH into the VM
-ssh veszelovszki@192.168.64.6
+ssh veszelovszki@192.168.1.97
 
 # Inside the VM — run Cmdr
 eval "$(mise activate bash)"
@@ -157,8 +160,8 @@ For GUI interaction (pressing keys, clicking), use the VM window in UTM directly
 | CPU      | 6 cores                                         |
 | Disk     | 64 GB                                           |
 | Username | `veszelovszki`                                  |
-| SSH      | `ssh veszelovszki@192.168.64.6`                 |
-| IP       | `192.168.64.6` (DHCP — may change after reboot) |
+| SSH      | `ssh veszelovszki@192.168.1.97`                 |
+| IP       | `192.168.1.97` (static, on LAN)                 |
 
 ### File layout
 

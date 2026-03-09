@@ -73,6 +73,26 @@ pnpm lint --fix                   # to lint frontend code
 pnpm test                         # to run frontend tests
 ```
 
+## Linux testing (Ubuntu VM)
+
+The Linux E2E tests run against the real Tauri app with WebKitGTK. Since macOS doesn't have a WebDriver for WKWebView,
+you need a Linux environment. We use a UTM virtual machine (Apple Virtualization) with Ubuntu, connected to the LAN at
+`192.168.1.97`. The macOS repo is shared via VirtioFS so edits on either side are instant.
+
+```bash
+ssh veszelovszki@192.168.1.97
+eval "$(mise activate bash)"
+cd ~/cmdr/apps/desktop
+
+# Build the app (needed after Rust or Svelte changes)
+pnpm tauri build --no-bundle
+
+# Run the native E2E tests (same codepath as CI)
+pnpm test:e2e:linux:native
+```
+
+See `apps/desktop/test/e2e-linux/CLAUDE.md` for VNC debugging, VM setup details, and WebKitGTK quirks.
+
 ## Building
 
 From repo root:
