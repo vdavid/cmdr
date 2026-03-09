@@ -1141,7 +1141,7 @@ dependencies = [
 
 [[package]]
 name = "cmdr"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "alphanumeric-sort",
  "axum",
@@ -1161,7 +1161,6 @@ dependencies = [
  "exacl",
  "file_icon_provider",
  "filetime",
- "flate2",
  "freedesktop-icons",
  "futures-util",
  "icns",
@@ -1191,7 +1190,6 @@ dependencies = [
  "serde_json",
  "smb",
  "smb-rpc",
- "tar",
  "tauri",
  "tauri-build",
  "tauri-plugin-automation",
