@@ -92,8 +92,13 @@ jobs:
               with:
                   projectPath: ./apps/desktop
                   args: --target ${{ matrix.target }}
+                  tagName: ${{ github.ref_name }}
+                  releaseName: 'Cmdr ${{ github.ref_name }}'
+                  releaseBody: 'See CHANGELOG.md for details.'
+                  releaseDraft: false
 
             - name: Build, sign, and notarize (retry)
+              id: build_attempt_2
               if: steps.build_attempt_1.outcome == 'failure'
               uses: tauri-apps/tauri-action@73fb865345c54760d875b94642314f8c0c894afa # v0
               env:
@@ -109,50 +114,61 @@ jobs:
               with:
                   projectPath: ./apps/desktop
                   args: --target ${{ matrix.target }}
+                  tagName: ${{ github.ref_name }}
+                  releaseName: 'Cmdr ${{ github.ref_name }}'
+                  releaseBody: 'See CHANGELOG.md for details.'
+                  releaseDraft: false
 
-            - name: Upload release artifacts
+            - name: Verify build succeeded
+              if: steps.build_attempt_1.outcome == 'failure' && steps.build_attempt_2.outcome == 'failure'
+              run: |
+                  echo "Both build attempts failed"
+                  exit 1
+
+            - name: Rename and upload updater artifacts
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               run: |
                   TAG="${{ github.ref_name }}"
                   BUNDLE_DIR="apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle"
 
-                  echo "=== Bundle directory contents ==="
-                  find "$BUNDLE_DIR" -type f | head -30
-
-                  # Find DMG (Tauri already names it with arch, e.g. Cmdr_0.5.0_aarch64.dmg)
-                  DMG=$(find "$BUNDLE_DIR" -name "*.dmg" | head -1)
-                  echo "DMG: $DMG"
-
-                  # Find updater .app.tar.gz and .sig
+                  # tauri-action uploads DMG automatically. We just need to rename
+                  # updater artifacts to include arch (Tauri names them all Cmdr.app.tar.gz)
                   UPDATER=$(find "$BUNDLE_DIR" -name "*.app.tar.gz" | head -1)
                   SIG_FILE="${UPDATER}.sig"
-                  echo "Updater: $UPDATER"
-                  echo "Sig file: $SIG_FILE"
 
-                  if [ ! -f "$SIG_FILE" ]; then
-                      echo "ERROR: Signature file not found!"
-                      exit 1
+                  if [ -z "$UPDATER" ] || [ ! -f "$SIG_FILE" ]; then
+                      echo "Updater artifacts not found, tauri-action may have uploaded them already"
+                      exit 0
                   fi
 
-                  # Rename updater artifacts to include arch (Tauri names them all Cmdr.app.tar.gz)
                   UPDATER_RENAMED="/tmp/Cmdr_${{ matrix.arch }}.app.tar.gz"
                   SIG_RENAMED="/tmp/Cmdr_${{ matrix.arch }}.app.tar.gz.sig"
                   cp "$UPDATER" "$UPDATER_RENAMED"
                   cp "$SIG_FILE" "$SIG_RENAMED"
 
-                  # Create release if it doesn't exist yet (race between matrix jobs is fine)
-                  gh release create "$TAG" --title "Cmdr $TAG" --notes "See CHANGELOG.md for details." --draft=false || true
-
-                  # Upload artifacts (--clobber in case of retry)
-                  gh release upload "$TAG" "$DMG" "$UPDATER_RENAMED" "$SIG_RENAMED" --clobber
+                  gh release upload "$TAG" "$UPDATER_RENAMED" "$SIG_RENAMED" --clobber
 
             - name: Save signature as artifact
               run: |
                   BUNDLE_DIR="apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle"
                   SIG_FILE=$(find "$BUNDLE_DIR" -name "*.app.tar.gz.sig" | head -1)
                   mkdir -p /tmp/sig-artifacts
-                  cp "$SIG_FILE" "/tmp/sig-artifacts/signature-${{ matrix.arch }}.txt"
+
+                  if [ -n "$SIG_FILE" ] && [ -f "$SIG_FILE" ]; then
+                      cp "$SIG_FILE" "/tmp/sig-artifacts/signature-${{ matrix.arch }}.txt"
+                  else
+                      echo "Signature file not found in bundle dir, checking tauri-action output"
+                      # Fall back: download from release
+                      TAG="${{ github.ref_name }}"
+                      # tauri-action uploads as Cmdr.app.tar.gz.sig
+                      gh release download "$TAG" -p "Cmdr.app.tar.gz.sig" -D /tmp/sig-artifacts --clobber || true
+                      if [ -f "/tmp/sig-artifacts/Cmdr.app.tar.gz.sig" ]; then
+                          mv "/tmp/sig-artifacts/Cmdr.app.tar.gz.sig" "/tmp/sig-artifacts/signature-${{ matrix.arch }}.txt"
+                      fi
+                  fi
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
             - name: Upload signature artifact
               uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
