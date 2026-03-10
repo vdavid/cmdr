@@ -110,29 +110,65 @@ const {
 
         <script is:inline>
             ;(function () {
+                function applyArch(arch) {
+                    document.querySelectorAll('a[data-download-link]').forEach(function (el) {
+                        var url = arch === 'aarch64' ? el.dataset.dmgArm : el.dataset.dmgIntel
+                        if (url) el.href = url
+                        el.dataset.umamiEventArch = arch
+                        var size = arch === 'aarch64' ? el.dataset.sizeArm : el.dataset.sizeIntel
+                        if (size) {
+                            el.querySelectorAll('[data-download-size]').forEach(function (s) {
+                                s.textContent = s.textContent.replace(/\d+ MB/, size)
+                            })
+                        }
+                    })
+                    document.querySelectorAll('[data-download-dropdown] [data-arch]').forEach(function (el) {
+                        if (el.dataset.arch === arch) {
+                            el.dataset.recommended = 'true'
+                        }
+                    })
+                }
+
+                // Detect arch synchronously to avoid flash of universal binary on first paint.
+                // WebGL renderer reports "Apple M1/M2/GPU" on Apple Silicon, "Intel/AMD" on Intel Macs.
+                // Falls back to localStorage cache from a previous async detection.
+                function detectArchSync() {
+                    try {
+                        var canvas = document.createElement('canvas')
+                        var gl = canvas.getContext('webgl')
+                        if (!gl) return null
+                        var ext = gl.getExtension('WEBGL_debug_renderer_info')
+                        if (!ext) return null
+                        var renderer = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)
+                        if (/Apple M|Apple GPU/.test(renderer)) return 'aarch64'
+                        if (/Intel|AMD/.test(renderer)) return 'x86_64'
+                    } catch (e) {}
+                    return null
+                }
+
+                var syncArch = detectArchSync()
+                if (!syncArch) {
+                    try {
+                        syncArch = localStorage.getItem('cmdr-arch')
+                    } catch (e) {
+                        /* localStorage unavailable */
+                    }
+                }
+                if (syncArch) applyArch(syncArch)
+
+                // Detect arch async and update cache for next visit
                 if (!navigator.userAgentData) return
                 navigator.userAgentData
                     .getHighEntropyValues(['architecture'])
                     .then(function (ua) {
                         var arch = ua.architecture === 'arm' ? 'aarch64' : ua.architecture === 'x86' ? 'x86_64' : null
                         if (!arch) return
-                        document.querySelectorAll('a[data-download-link]').forEach(function (el) {
-                            var url = arch === 'aarch64' ? el.dataset.dmgArm : el.dataset.dmgIntel
-                            if (url) el.href = url
-                            el.dataset.umamiEventArch = arch
-                            var size = arch === 'aarch64' ? el.dataset.sizeArm : el.dataset.sizeIntel
-                            if (size) {
-                                el.querySelectorAll('[data-download-size]').forEach(function (s) {
-                                    s.textContent = s.textContent.replace(/\d+ MB/, size)
-                                })
-                            }
-                        })
-                        // Mark the detected architecture as recommended in split-button dropdowns
-                        document.querySelectorAll('[data-download-dropdown] [data-arch]').forEach(function (el) {
-                            if (el.dataset.arch === arch) {
-                                el.dataset.recommended = 'true'
-                            }
-                        })
+                        try {
+                            localStorage.setItem('cmdr-arch', arch)
+                        } catch (e) {
+                            /* localStorage unavailable */
+                        }
+                        applyArch(arch)
                     })
                     .catch(function () {})
             })()
