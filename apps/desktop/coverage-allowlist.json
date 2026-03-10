@@ -195,6 +195,12 @@
         },
         "file-operations/delete/DeleteDialog.svelte": {
             "reason": "UI modal, logic tested in delete-dialog-utils.test.ts"
+        },
+        "settings/components/SettingPasswordInput.svelte": {
+            "reason": "UI component, simple show/hide toggle + settings store wiring"
+        },
+        "settings/sections/AiSection.svelte": {
+            "reason": "UI section, depends on Tauri commands and event listeners"
         }
     }
 }

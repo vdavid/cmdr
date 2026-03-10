@@ -10,7 +10,7 @@ pub const SERVER_LOG_FILENAME: &str = "llama-server.log";
 /// Spawns the llama-server process and returns its PID.
 ///
 /// The caller is responsible for health checking and state management.
-pub fn spawn_llama_server(ai_dir: &Path, model_filename: &str, port: u16) -> Result<u32, String> {
+pub fn spawn_llama_server(ai_dir: &Path, model_filename: &str, port: u16, ctx_size: u32) -> Result<u32, String> {
     let binary_path = ai_dir.join(LLAMA_SERVER_BINARY);
     let model_path = ai_dir.join(model_filename);
 
@@ -49,7 +49,7 @@ pub fn spawn_llama_server(ai_dir: &Path, model_filename: &str, port: u16) -> Res
         .arg("--host")
         .arg("127.0.0.1")
         .arg("-c")
-        .arg("4096") // Context window — 4K is plenty for folder suggestions, prevents 27 GB KV cache
+        .arg(ctx_size.to_string())
         .arg("--temp")
         .arg("0.6")
         .arg("--top-p")

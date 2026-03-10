@@ -266,8 +266,12 @@ export {
     optInAi,
     isAiOptedOut,
     getFolderSuggestions,
+    getAiRuntimeStatus,
+    configureAi,
+    stopAiServer,
+    startAiServer,
 } from './settings'
-export type { AiStatus, AiDownloadProgress, AiModelInfo, DirStats } from './settings'
+export type { AiStatus, AiDownloadProgress, AiModelInfo, AiRuntimeStatus, DirStats } from './settings'
 
 // Tab context menu
 export { showTabContextMenu, onTabContextAction } from './tab'

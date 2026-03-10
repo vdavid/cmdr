@@ -3,8 +3,7 @@
 //! The llama-server binary is bundled with the app (no runtime download needed).
 //! Only the AI model (~4.3 GB) is downloaded on first use.
 //!
-//! Uses runtime check `use_real_ai()` to enable/disable real AI features.
-//! In dev mode without `CMDR_REAL_AI=1`, all AI features return Unavailable.
+//! Uses `is_local_ai_supported()` to gate local-only operations (requires Apple Silicon).
 
 use super::download::{cleanup_partial, download_file};
 use super::extract::{LLAMA_SERVER_BINARY, REQUIRED_DYLIB, extract_bundled_llama_server};
@@ -12,7 +11,7 @@ use super::process::{
     SERVER_LOG_FILENAME, find_available_port, is_process_alive, log_diagnostics, read_log_tail, spawn_llama_server,
     stop_process,
 };
-use super::{AiState, AiStatus, ModelInfo, get_default_model, get_model_by_id, use_real_ai};
+use super::{AiState, AiStatus, ModelInfo, get_default_model, get_model_by_id, is_local_ai_supported};
 use crate::ignore_poison::IgnorePoison;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -32,6 +31,18 @@ struct ManagerState {
     cancel_requested: bool,
     /// Flag to prevent multiple concurrent downloads
     download_in_progress: bool,
+    /// True while the server is starting up (health check polling)
+    server_starting: bool,
+    /// AI provider mode: "off", "openai-compatible", or "local"
+    provider: String,
+    /// Context size for local llama-server
+    context_size: u32,
+    /// OpenAI-compatible API key (stored here so suggestions.rs can read without settings files)
+    openai_api_key: String,
+    /// OpenAI-compatible base URL
+    openai_base_url: String,
+    /// OpenAI-compatible model name
+    openai_model: String,
 }
 
 const STATE_FILENAME: &str = "ai-state.json";
@@ -40,6 +51,9 @@ const DISMISS_SECONDS: u64 = 7 * 24 * 60 * 60; // 7 days in seconds
 const STALE_PARTIAL_SECONDS: u64 = 24 * 60 * 60; // 24 hours
 
 /// Initializes the AI manager. Called once on app startup.
+///
+/// Only sets up directories and cleans stale PIDs. Does NOT start the server.
+/// Server start is triggered later by `configure_ai` when the frontend pushes settings.
 pub fn init<R: Runtime>(app: &AppHandle<R>) {
     let ai_dir = get_ai_dir(app);
     let state = load_state(&ai_dir);
@@ -51,91 +65,35 @@ pub fn init<R: Runtime>(app: &AppHandle<R>) {
         child_pid: None,
         cancel_requested: false,
         download_in_progress: false,
+        server_starting: false,
+        provider: String::from("local"),
+        context_size: 4096,
+        openai_api_key: String::new(),
+        openai_base_url: String::from("https://api.openai.com/v1"),
+        openai_model: String::from("gpt-4o-mini"),
     });
 
-    // Only run real AI initialization if enabled
-    if use_real_ai() {
-        log::debug!("AI manager: real AI enabled, checking installation...");
-
-        // Clean up stale PID from a previous session (crash, force-quit, or normal restart)
-        if let Some(ref mut m) = *manager
-            && let Some(pid) = m.state.pid
-        {
-            if is_process_alive(pid) {
-                log::info!("AI manager: stopping orphaned llama-server (PID {pid}) from previous session");
-                stop_process(pid);
-            } else {
-                log::debug!("AI manager: clearing dead PID {pid} from previous session");
-            }
-            m.state.pid = None;
-            m.state.port = None;
-            save_state(&m.ai_dir, &m.state);
+    // Clean up stale PID from a previous session (crash, force-quit, or normal restart)
+    if let Some(ref mut m) = *manager
+        && let Some(pid) = m.state.pid
+    {
+        if is_process_alive(pid) {
+            log::info!("AI manager: stopping orphaned llama-server (PID {pid}) from previous session");
+            stop_process(pid);
+        } else {
+            log::debug!("AI manager: clearing dead PID {pid} from previous session");
         }
-
-        // Clean up stale partial downloads (older than 24 hours)
-        if let Some(ref mut m) = *manager {
-            cleanup_stale_partial_download(m);
-        }
-
-        // Only consider installed if model download is verified complete
-        let mut is_ready = is_fully_installed(manager.as_ref().unwrap());
-        log::debug!("AI manager: ready={is_ready}");
-
-        // Recovery: if state says installed but files are missing, try to recover
-        if !is_ready
-            && let Some(ref mut m) = *manager
-            && m.state.installed
-        {
-            let model = get_model_by_id(&m.state.installed_model_id).unwrap_or_else(get_default_model);
-            let model_path = m.ai_dir.join(model.filename);
-            let binary_path = m.ai_dir.join(LLAMA_SERVER_BINARY);
-
-            // Check if model is complete but binary is missing (can re-extract)
-            let model_complete = model_path.exists()
-                && fs::metadata(&model_path)
-                    .map(|meta| meta.len() >= model.size_bytes)
-                    .unwrap_or(false);
-
-            if model_complete && !binary_path.exists() {
-                log::debug!("AI manager: model exists but binary missing, re-extracting...");
-                match extract_bundled_llama_server(app, &m.ai_dir) {
-                    Ok(()) => {
-                        log::debug!("AI manager: binary re-extracted successfully");
-                        is_ready = true;
-                    }
-                    Err(e) => {
-                        log::error!("AI manager: failed to re-extract binary: {e}");
-                    }
-                }
-            } else if !model_complete {
-                // Model is missing or incomplete - reset installed state
-                log::debug!("AI manager: model missing or incomplete, resetting installed state");
-                m.state.installed = false;
-                m.state.model_download_complete = false;
-                save_state(&m.ai_dir, &m.state);
-            }
-        }
-
-        if is_ready {
-            let app_clone = app.clone();
-            // Use tauri's runtime spawn instead of tokio::spawn since init() is called
-            // during Tauri setup before the tokio runtime is fully available
-            log::debug!("AI manager: spawning server start task...");
-            // Emit starting event so frontend can show "AI starting..." notification
-            let _ = app.emit("ai-starting", ());
-            tauri::async_runtime::spawn(async move {
-                match start_server_inner(&app_clone).await {
-                    Ok(()) => {
-                        log::info!("AI: server ready");
-                        let _ = app_clone.emit("ai-server-ready", ());
-                    }
-                    Err(e) => log::error!("AI manager: failed to start server: {e}"),
-                }
-            });
-        }
-    } else {
-        log::debug!("AI manager: real AI disabled (dev mode without CMDR_REAL_AI=1)");
+        m.state.pid = None;
+        m.state.port = None;
+        save_state(&m.ai_dir, &m.state);
     }
+
+    // Clean up stale partial downloads (older than 24 hours)
+    if let Some(ref mut m) = *manager {
+        cleanup_stale_partial_download(m);
+    }
+
+    log::debug!("AI manager: initialized (server start deferred until configure_ai)");
 }
 
 /// Shuts down the AI server. Called on app quit.
@@ -151,14 +109,9 @@ pub fn shutdown() {
 /// Returns the current AI status.
 #[tauri::command]
 pub fn get_ai_status() -> AiStatus {
-    // If real AI is not enabled (dev mode without env var), return Unavailable
-    if !use_real_ai() {
-        return AiStatus::Unavailable;
-    }
-
     let manager = MANAGER.lock_ignore_poison();
     match &*manager {
-        Some(m) if m.state.opted_out => AiStatus::Unavailable,
+        Some(m) if m.provider == "off" => AiStatus::Unavailable,
         Some(m) if m.state.installed && m.child_pid.is_some() => AiStatus::Available,
         Some(m) if m.state.installed => AiStatus::Unavailable, // installed but server not running
         Some(m) => {
@@ -176,18 +129,39 @@ pub fn get_ai_status() -> AiStatus {
 
 /// Returns the port the llama-server is listening on, if running.
 pub fn get_port() -> Option<u16> {
-    if !use_real_ai() {
-        return None;
-    }
     let manager = MANAGER.lock_ignore_poison();
     manager.as_ref().and_then(|m| m.state.port)
+}
+
+/// Returns the current AI provider stored in manager state.
+pub fn get_provider() -> String {
+    let manager = MANAGER.lock_ignore_poison();
+    manager
+        .as_ref()
+        .map(|m| m.provider.clone())
+        .unwrap_or_else(|| String::from("off"))
+}
+
+/// Returns the OpenAI config stored in manager state.
+pub fn get_openai_config() -> (String, String, String) {
+    let manager = MANAGER.lock_ignore_poison();
+    manager
+        .as_ref()
+        .map(|m| {
+            (
+                m.openai_api_key.clone(),
+                m.openai_base_url.clone(),
+                m.openai_model.clone(),
+            )
+        })
+        .unwrap_or_default()
 }
 
 /// Starts the AI download (binary + model).
 #[tauri::command]
 pub async fn start_ai_download<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
-    if !use_real_ai() {
-        return Err(String::from("AI features not enabled"));
+    if !is_local_ai_supported() {
+        return Err(String::from("Local AI not supported on this hardware"));
     }
 
     // Check if download is already in progress
@@ -310,6 +284,10 @@ pub struct AiModelInfo {
     pub size_bytes: u64,
     /// Human-readable size (like "4.3 GB")
     pub size_formatted: String,
+    /// Bytes per token for KV cache (used for memory estimation)
+    pub kv_bytes_per_token: u64,
+    /// Base memory overhead in bytes (model weights + compute buffers)
+    pub base_overhead_bytes: u64,
 }
 
 /// Returns information about the current AI model.
@@ -321,7 +299,202 @@ pub fn get_ai_model_info() -> AiModelInfo {
         display_name: model.display_name.to_string(),
         size_bytes: model.size_bytes,
         size_formatted: format_bytes_gb(model.size_bytes),
+        kv_bytes_per_token: model.kv_bytes_per_token,
+        base_overhead_bytes: model.base_overhead_bytes,
     }
+}
+
+/// Runtime status of the AI subsystem, returned to frontend.
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiRuntimeStatus {
+    pub server_running: bool,
+    pub server_starting: bool,
+    pub pid: Option<u32>,
+    pub port: Option<u16>,
+    pub model_installed: bool,
+    pub model_name: String,
+    pub model_size_bytes: u64,
+    pub model_size_formatted: String,
+    pub download_in_progress: bool,
+    pub local_ai_supported: bool,
+    pub kv_bytes_per_token: u64,
+    pub base_overhead_bytes: u64,
+}
+
+/// Returns the full runtime status of the AI subsystem.
+#[tauri::command]
+pub fn get_ai_runtime_status() -> AiRuntimeStatus {
+    let model = get_current_model();
+    let manager = MANAGER.lock_ignore_poison();
+    match &*manager {
+        Some(m) => AiRuntimeStatus {
+            server_running: m.child_pid.is_some() && !m.server_starting,
+            server_starting: m.server_starting,
+            pid: m.child_pid,
+            port: m.state.port,
+            model_installed: is_fully_installed(m),
+            model_name: model.display_name.to_string(),
+            model_size_bytes: model.size_bytes,
+            model_size_formatted: format_bytes_gb(model.size_bytes),
+            download_in_progress: m.download_in_progress,
+            local_ai_supported: is_local_ai_supported(),
+            kv_bytes_per_token: model.kv_bytes_per_token,
+            base_overhead_bytes: model.base_overhead_bytes,
+        },
+        None => AiRuntimeStatus {
+            server_running: false,
+            server_starting: false,
+            pid: None,
+            port: None,
+            model_installed: false,
+            model_name: model.display_name.to_string(),
+            model_size_bytes: model.size_bytes,
+            model_size_formatted: format_bytes_gb(model.size_bytes),
+            download_in_progress: false,
+            local_ai_supported: is_local_ai_supported(),
+            kv_bytes_per_token: model.kv_bytes_per_token,
+            base_overhead_bytes: model.base_overhead_bytes,
+        },
+    }
+}
+
+/// Stores provider + context size + OpenAI config in manager state.
+/// If provider is `local` and model is installed and hardware is supported, starts the server
+/// in a background task. If provider is NOT `local` and a server is running, stops it.
+/// Returns immediately.
+#[tauri::command]
+pub fn configure_ai<R: Runtime>(
+    app: AppHandle<R>,
+    provider: String,
+    context_size: u32,
+    openai_api_key: String,
+    openai_base_url: String,
+    openai_model: String,
+) {
+    log::debug!(
+        "AI configure: provider={provider}, context_size={context_size}, base_url={openai_base_url}, model={openai_model}"
+    );
+
+    let should_start_local;
+    let should_stop;
+    {
+        let mut manager = MANAGER.lock_ignore_poison();
+        if let Some(ref mut m) = *manager {
+            // Stop server if switching away from local while one is running
+            should_stop = provider != "local" && m.child_pid.is_some();
+
+            m.provider = provider.clone();
+            m.context_size = context_size;
+            m.openai_api_key = openai_api_key;
+            m.openai_base_url = openai_base_url;
+            m.openai_model = openai_model;
+
+            should_start_local =
+                provider == "local" && is_local_ai_supported() && is_fully_installed(m) && m.child_pid.is_none();
+        } else {
+            return;
+        }
+    }
+
+    // Stop local server if provider changed away from local
+    if should_stop {
+        log::info!("AI configure: provider changed away from local, stopping server");
+        let mut manager = MANAGER.lock_ignore_poison();
+        if let Some(ref mut m) = *manager
+            && let Some(pid) = m.child_pid.take()
+        {
+            stop_process(pid);
+            m.state.port = None;
+            m.state.pid = None;
+            save_state(&m.ai_dir, &m.state);
+        }
+    }
+
+    if should_start_local {
+        let app_clone = app.clone();
+        let _ = app.emit("ai-starting", ());
+        {
+            let mut manager = MANAGER.lock_ignore_poison();
+            if let Some(ref mut m) = *manager {
+                m.server_starting = true;
+            }
+        }
+        tauri::async_runtime::spawn(async move {
+            match start_server_inner(&app_clone).await {
+                Ok(()) => {
+                    log::info!("AI: server ready");
+                    let _ = app_clone.emit("ai-server-ready", ());
+                }
+                Err(e) => log::error!("AI manager: failed to start server: {e}"),
+            }
+            let mut manager = MANAGER.lock_ignore_poison();
+            if let Some(ref mut m) = *manager {
+                m.server_starting = false;
+            }
+        });
+    }
+}
+
+/// Stops the local llama-server without uninstalling.
+#[tauri::command]
+pub fn stop_ai_server() {
+    let mut manager = MANAGER.lock_ignore_poison();
+    if let Some(ref mut m) = *manager
+        && let Some(pid) = m.child_pid.take()
+    {
+        log::info!("AI: stopping server (PID {pid})");
+        stop_process(pid);
+        m.state.port = None;
+        m.state.pid = None;
+        save_state(&m.ai_dir, &m.state);
+    }
+}
+
+/// Starts the local llama-server with the given context size.
+/// Spawns the server in a background task and returns immediately.
+#[tauri::command]
+pub fn start_ai_server<R: Runtime>(app: AppHandle<R>, ctx_size: u32) -> Result<(), String> {
+    if !is_local_ai_supported() {
+        return Err(String::from("Local AI not supported on this hardware"));
+    }
+
+    let should_start;
+    {
+        let mut manager = MANAGER.lock_ignore_poison();
+        if let Some(ref mut m) = *manager {
+            m.context_size = ctx_size;
+            should_start = is_fully_installed(m) && m.child_pid.is_none();
+        } else {
+            return Err(String::from("AI manager not initialized"));
+        }
+    }
+
+    if should_start {
+        let app_clone = app.clone();
+        let _ = app.emit("ai-starting", ());
+        {
+            let mut manager = MANAGER.lock_ignore_poison();
+            if let Some(ref mut m) = *manager {
+                m.server_starting = true;
+            }
+        }
+        tauri::async_runtime::spawn(async move {
+            match start_server_inner(&app_clone).await {
+                Ok(()) => {
+                    log::info!("AI: server ready");
+                    let _ = app_clone.emit("ai-server-ready", ());
+                }
+                Err(e) => log::error!("AI manager: failed to start server: {e}"),
+            }
+            let mut manager = MANAGER.lock_ignore_poison();
+            if let Some(ref mut m) = *manager {
+                m.server_starting = false;
+            }
+        });
+    }
+
+    Ok(())
 }
 
 /// Formats bytes as GB with one decimal place (like "4.3 GB").
@@ -539,12 +712,25 @@ async fn start_server_inner<R: Runtime>(app: &AppHandle<R>) -> Result<(), String
     let ai_dir = get_ai_dir(app);
     let model = get_current_model();
 
+    // Recovery: if model exists but binary is missing, try re-extraction
+    let binary_path = ai_dir.join(LLAMA_SERVER_BINARY);
+    if !binary_path.exists() {
+        log::debug!("AI manager: binary missing, attempting re-extraction...");
+        extract_bundled_llama_server(app, &ai_dir)?;
+    }
+
+    // Read context size from manager state
+    let ctx_size = {
+        let manager = MANAGER.lock_ignore_poison();
+        manager.as_ref().map(|m| m.context_size).unwrap_or(4096)
+    };
+
     // Find an available port
     let port = find_available_port().ok_or("No available port")?;
-    log::debug!("AI server: starting llama-server on port {port}");
+    log::debug!("AI server: starting llama-server on port {port} with context size {ctx_size}");
 
     // Spawn the server process
-    let pid = spawn_llama_server(&ai_dir, model.filename, port)?;
+    let pid = spawn_llama_server(&ai_dir, model.filename, port, ctx_size)?;
 
     // Brief pause to let the process initialize, then check if it's still alive
     tokio::time::sleep(std::time::Duration::from_millis(100)).await;
@@ -648,13 +834,9 @@ mod tests {
     }
 
     #[test]
-    fn test_get_ai_status_dev_mode() {
-        // In dev mode without CMDR_REAL_AI env var, status is Unavailable
+    fn test_get_ai_status_no_manager() {
+        // When manager is not initialized, status is Unavailable
         let status = get_ai_status();
-        // Note: This test will return Unavailable in dev mode (no env var)
-        // or the actual status in release mode
-        if !use_real_ai() {
-            assert_eq!(status, AiStatus::Unavailable);
-        }
+        assert_eq!(status, AiStatus::Unavailable);
     }
 }

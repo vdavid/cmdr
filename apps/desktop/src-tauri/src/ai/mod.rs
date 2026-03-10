@@ -3,10 +3,6 @@
 //! AI features require Apple Silicon (M1 or later). Intel Macs are not supported
 //! because the bundled llama-server binary is ARM64-only.
 //!
-//! In dev mode, AI features are disabled by default (status: Unavailable).
-//! To enable real AI in dev mode, set the `CMDR_REAL_AI=1` environment variable.
-//! In release mode, AI is always enabled (on supported hardware).
-//!
 //! ## Model registry
 //!
 //! Available models are defined in [`AVAILABLE_MODELS`]. To add a new model:
@@ -23,33 +19,16 @@ mod process;
 pub mod suggestions;
 
 use serde::{Deserialize, Serialize};
-use std::sync::OnceLock;
 
-/// Returns true if the current hardware supports AI features.
-/// AI requires Apple Silicon (aarch64). Intel Macs are not supported.
-pub fn is_ai_supported() -> bool {
-    cfg!(target_arch = "aarch64")
-}
-
-/// Returns true if real AI features should be enabled.
+/// Returns true if local AI features (llama-server) can run on this hardware.
 ///
-/// - Requires Apple Silicon (M1+)
-/// - Release mode: always true (on supported hardware)
-/// - Dev mode: true only if `CMDR_REAL_AI=1` env var is set
-pub fn use_real_ai() -> bool {
-    static CACHED: OnceLock<bool> = OnceLock::new();
-    *CACHED.get_or_init(|| {
-        // AI requires Apple Silicon
-        if !is_ai_supported() {
-            return false;
-        }
-        // In release mode, always enable on supported hardware
-        if cfg!(not(debug_assertions)) {
-            return true;
-        }
-        // In dev mode, require explicit opt-in
-        std::env::var("CMDR_REAL_AI").is_ok_and(|v| v == "1" || v.eq_ignore_ascii_case("true"))
-    })
+/// Requires Apple Silicon (M1+) because the bundled llama-server binary is ARM64-only.
+///
+/// Only used to gate local-only operations (start_ai_server, start_ai_download).
+/// Provider-agnostic commands (get_ai_status, get_folder_suggestions, etc.) check
+/// the configured provider instead.
+pub fn is_local_ai_supported() -> bool {
+    cfg!(target_arch = "aarch64")
 }
 
 /// Current state of the AI subsystem.
@@ -90,6 +69,11 @@ pub struct ModelInfo {
     pub url: &'static str,
     /// For download verification. Get via: `curl -sIL "<url>" | grep -i content-length`
     pub size_bytes: u64,
+    /// Bytes per token for KV cache (used for memory estimation).
+    /// Derived from empirical measurement: ctx_size * kv_bytes_per_token = KV cache size.
+    pub kv_bytes_per_token: u64,
+    /// Base memory overhead in bytes (model weights + compute buffers).
+    pub base_overhead_bytes: u64,
 }
 
 /// Available AI models. Add new models here when upgrading.
@@ -100,7 +84,9 @@ pub const AVAILABLE_MODELS: &[ModelInfo] = &[
         display_name: "Ministral 3B",
         filename: "ministral-3b-instruct-q4km.gguf",
         url: "https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-GGUF/resolve/main/Ministral-3-3B-Instruct-2512-Q4_K_M.gguf",
-        size_bytes: 2_147_023_008, // ~2.0 GB
+        size_bytes: 2_147_023_008,          // ~2.0 GB
+        kv_bytes_per_token: 106_496,        // ~0.1016 MiB per token
+        base_overhead_bytes: 3_500_000_000, // ~3.5 GB (model weights + compute buffers)
     },
     ModelInfo {
         id: "falcon-h1r-7b-q4km",
@@ -108,6 +94,8 @@ pub const AVAILABLE_MODELS: &[ModelInfo] = &[
         filename: "falcon-h1r-7b-q4km.gguf",
         url: "https://huggingface.co/tiiuae/Falcon-H1R-7B-GGUF/resolve/main/Falcon-H1R-7B-Q4_K_M.gguf",
         size_bytes: 4_598_343_712, // ~4.28 GB
+        kv_bytes_per_token: 106_496,
+        base_overhead_bytes: 3_500_000_000,
     },
 ];
 

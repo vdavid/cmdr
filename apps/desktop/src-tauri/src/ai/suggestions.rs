@@ -1,9 +1,9 @@
-//! Folder name suggestions powered by the local LLM.
+//! Folder name suggestions powered by AI (local LLM or OpenAI-compatible API).
 //!
-//! Builds a prompt from the current directory listing, calls the LLM,
+//! Builds a prompt from the current directory listing, calls the configured AI backend,
 //! and parses the response into validated folder name suggestions.
 
-use super::use_real_ai;
+use super::client::AiBackend;
 use crate::file_system::get_file_at;
 
 /// Maximum number of file names to include in the prompt context.
@@ -13,8 +13,10 @@ const MAX_SUGGESTIONS: usize = 5;
 
 /// Generates folder name suggestions for the given directory.
 ///
-/// Returns empty if AI is not available (dev mode without env var, or server not running).
-/// In release mode (or dev with CMDR_REAL_AI=1), calls the local llama-server.
+/// Routes based on the configured AI provider:
+/// - `off`: returns empty
+/// - `local`: uses local llama-server (if running)
+/// - `openai-compatible`: uses remote OpenAI-compatible API
 #[tauri::command]
 pub async fn get_folder_suggestions(
     listing_id: String,
@@ -27,13 +29,31 @@ pub async fn get_folder_suggestions(
         current_path
     );
 
-    // If real AI is not enabled, return empty (frontend will hide suggestions)
-    if !use_real_ai() {
-        log::debug!("AI suggestions: real AI not enabled, returning empty");
-        return Ok(Vec::new());
+    let provider = super::manager::get_provider();
+    match provider.as_str() {
+        "off" => {
+            log::debug!("AI suggestions: provider is off, returning empty");
+            Ok(Vec::new())
+        }
+        "local" => get_suggestions_from_backend(&listing_id, &current_path, include_hidden, None).await,
+        "openai-compatible" => {
+            let (api_key, base_url, model) = super::manager::get_openai_config();
+            if api_key.is_empty() {
+                log::debug!("AI suggestions: OpenAI API key not configured, returning empty");
+                return Ok(Vec::new());
+            }
+            let backend = AiBackend::OpenAi {
+                api_key,
+                base_url,
+                model,
+            };
+            get_suggestions_from_backend(&listing_id, &current_path, include_hidden, Some(backend)).await
+        }
+        _ => {
+            log::debug!("AI suggestions: unknown provider '{provider}', returning empty");
+            Ok(Vec::new())
+        }
     }
-
-    get_suggestions_from_llm(&listing_id, &current_path, include_hidden).await
 }
 
 /// Gets file names from the listing cache (up to MAX_CONTEXT_ENTRIES).
@@ -100,30 +120,35 @@ fn parse_suggestions(response: &str, existing_names: &[String]) -> Vec<String> {
         .collect()
 }
 
-/// Calls the LLM and returns parsed suggestions.
-async fn get_suggestions_from_llm(
+/// Calls the AI backend and returns parsed suggestions.
+/// If `backend` is None, uses the local llama-server (looks up port from manager state).
+async fn get_suggestions_from_backend(
     listing_id: &str,
     current_path: &str,
     include_hidden: bool,
+    backend: Option<AiBackend>,
 ) -> Result<Vec<String>, String> {
-    let port = match super::manager::get_port() {
-        Some(p) => p,
+    let backend = match backend {
+        Some(b) => b,
         None => {
-            log::debug!("AI suggestions: server not running (no port)");
-            return Ok(Vec::new());
+            let port = match super::manager::get_port() {
+                Some(p) => p,
+                None => {
+                    log::debug!("AI suggestions: local server not running (no port)");
+                    return Ok(Vec::new());
+                }
+            };
+            AiBackend::Local { port }
         }
     };
 
     let file_names = get_file_names(listing_id, include_hidden);
     let prompt = build_prompt(current_path, &file_names);
 
-    log::debug!(
-        "AI suggestions: calling LLM on port {port} with {} files in context",
-        file_names.len()
-    );
+    log::debug!("AI suggestions: calling AI with {} files in context", file_names.len());
     log::trace!("AI suggestions: prompt:\n{prompt}");
 
-    match super::client::chat_completion(port, &prompt).await {
+    match super::client::chat_completion(&backend, &prompt).await {
         Ok(response) => {
             log::trace!("AI suggestions: raw response:\n{response}");
             let suggestions = parse_suggestions(&response, &file_names);
@@ -135,7 +160,7 @@ async fn get_suggestions_from_llm(
             Ok(suggestions)
         }
         Err(e) => {
-            log::warn!("AI suggestions: LLM call failed: {e}");
+            log::warn!("AI suggestions: AI call failed: {e}");
             Ok(Vec::new()) // Graceful degradation: return empty on any error
         }
     }

@@ -92,6 +92,26 @@ export interface AiModelInfo {
     sizeBytes: number
     /** Human-readable size (like "4.3 GB") */
     sizeFormatted: string
+    /** Bytes per token for KV cache (used for memory estimation) */
+    kvBytesPerToken: number
+    /** Base memory overhead in bytes (model weights + compute buffers) */
+    baseOverheadBytes: number
+}
+
+/** Runtime status of the AI subsystem. */
+export interface AiRuntimeStatus {
+    serverRunning: boolean
+    serverStarting: boolean
+    pid: number | null
+    port: number | null
+    modelInstalled: boolean
+    modelName: string
+    modelSizeBytes: number
+    modelSizeFormatted: string
+    downloadInProgress: boolean
+    localAiSupported: boolean
+    kvBytesPerToken: number
+    baseOverheadBytes: number
 }
 
 /** Returns the current AI subsystem status. */
@@ -139,6 +159,32 @@ export async function isAiOptedOut(): Promise<boolean> {
     return invoke<boolean>('is_ai_opted_out')
 }
 
+/** Returns the full runtime status of the AI subsystem. */
+export async function getAiRuntimeStatus(): Promise<AiRuntimeStatus> {
+    return invoke<AiRuntimeStatus>('get_ai_runtime_status')
+}
+
+/** Pushes AI config to the backend. Triggers server start if provider is local + model installed. */
+export async function configureAi(
+    provider: string,
+    contextSize: number,
+    openaiApiKey: string,
+    openaiBaseUrl: string,
+    openaiModel: string,
+): Promise<void> {
+    await invoke('configure_ai', { provider, contextSize, openaiApiKey, openaiBaseUrl, openaiModel })
+}
+
+/** Stops the local llama-server without uninstalling. */
+export async function stopAiServer(): Promise<void> {
+    await invoke('stop_ai_server')
+}
+
+/** Starts the local llama-server with the given context size. */
+export async function startAiServer(ctxSize: number): Promise<void> {
+    await invoke('start_ai_server', { ctxSize })
+}
+
 // ============================================================================
 // E2E test support
 // ============================================================================
@@ -154,10 +200,6 @@ export async function getE2eStartPath(): Promise<string | null> {
         return null
     }
 }
-
-// ============================================================================
-// AI commands
-// ============================================================================
 
 /** Gets AI-generated folder name suggestions for the current directory. */
 export async function getFolderSuggestions(

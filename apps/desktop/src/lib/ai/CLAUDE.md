@@ -1,6 +1,7 @@
 # AI features (frontend)
 
-UI and state for local LLM-powered features. Backend: `src-tauri/src/ai/` (download, llama-server process, inference).
+UI and state for AI-powered features (local LLM or OpenAI-compatible). Backend: `src-tauri/src/ai/` (download,
+llama-server process, inference client with provider routing).
 
 ## Architecture
 
@@ -15,15 +16,16 @@ toast via `addToast(AiToastContent, { id: 'ai', ... })` / `dismissToast('ai')` b
 
 ## Key decisions
 
-### Dev mode disabled by default
+### Apple Silicon only (local LLM)
 
-In dev mode, AI returns `Unavailable` unless `CMDR_REAL_AI=1` env var set. Prevents large downloads during development.
-Use `pnpm dev:ai-debug` to test real AI.
+Local LLM requires Apple Silicon. Intel Macs can use OpenAI-compatible provider. The "Local LLM" toggle is disabled on
+Intel Macs with an explanatory tooltip (controlled by `AiRuntimeStatus.localAiSupported`).
 
-### Apple Silicon only
+### AI settings in registry
 
-AI features completely hidden on Intel Macs (no notification, no error). llama-server binary is ARM64-only to save 60 MB
-bundle size.
+Settings `ai.provider`, `ai.openaiApiKey`, `ai.openaiBaseUrl`, `ai.openaiModel`, `ai.localContextSize` are defined in
+`settings-registry.ts`. The main layout calls `configureAi(...)` after `initSettingsApplier()` to push config to
+backend.
 
 ### 7-day dismissal, permanent opt-out
 
@@ -52,8 +54,8 @@ provide checksums) — file size check only.
 - **llama-server is NOT auto-restarted**: Health monitoring (periodic restart on crash) is deferred. If server crashes,
   it stays down until app restart. User sees "AI unavailable."
 - **Model switch requires app restart**: Changing selected model in Settings requires download + restart. No hot-swap.
-- **`opted_out` flag is sticky**: After opting out, re-enabling clears the flag but doesn't auto-start download. User
-  must click "Download" again. Prevents surprise 2 GB download.
+- **`opted_out` flag is legacy**: The `opted_out` field in `AiState` is superseded by `ai.provider` setting. It remains
+  in the struct but is no longer checked. `ai.provider` in the frontend settings store is the source of truth.
 
 ## Development
 
@@ -63,7 +65,7 @@ provide checksums) — file size check only.
 CMDR_MOCK_LICENSE=commercial pnpm tauri dev
 ```
 
-**Test with real AI**:
+**Test with AI debug logging**:
 
 ```bash
 pnpm dev:ai-debug

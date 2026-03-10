@@ -819,6 +819,10 @@ pub fn run() {
             // AI commands
             ai::manager::get_ai_status,
             ai::manager::get_ai_model_info,
+            ai::manager::get_ai_runtime_status,
+            ai::manager::configure_ai,
+            ai::manager::start_ai_server,
+            ai::manager::stop_ai_server,
             ai::manager::start_ai_download,
             ai::manager::cancel_ai_download,
             ai::manager::dismiss_ai_offer,

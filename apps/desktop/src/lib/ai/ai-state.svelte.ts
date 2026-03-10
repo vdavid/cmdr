@@ -12,6 +12,7 @@ import {
     type AiModelInfo,
     type AiStatus,
 } from '$lib/tauri-commands'
+import { getSetting, setSetting } from '$lib/settings'
 import { addToast, dismissToast } from '$lib/ui/toast'
 import AiToastContent from './AiToastContent.svelte'
 
@@ -44,6 +45,12 @@ function syncAiToast(): void {
 }
 
 export async function initAiState(): Promise<() => void> {
+    // Don't show toast when provider is off or openai-compatible
+    const aiProvider = getSetting('ai.provider')
+    if (aiProvider === 'off' || aiProvider === 'openai-compatible') {
+        return () => {}
+    }
+
     // Fetch model info and status in parallel
     const [status, modelInfo] = await Promise.all([getAiStatus(), getAiModelInfo()])
     aiState.modelInfo = modelInfo
@@ -88,6 +95,8 @@ export async function initAiState(): Promise<() => void> {
 }
 
 export async function handleDownload(): Promise<void> {
+    // Ensure provider is set to local when user accepts download
+    setSetting('ai.provider', 'local')
     aiState.notificationState = 'downloading'
     aiState.downloadProgress = { bytesDownloaded: 0, totalBytes: 0, speed: 0, etaSeconds: 0 }
     syncAiToast()

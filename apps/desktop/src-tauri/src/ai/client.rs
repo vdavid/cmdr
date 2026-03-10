@@ -1,7 +1,19 @@
-//! HTTP client for the local llama-server (OpenAI-compatible API).
+//! HTTP client for AI chat completions (local llama-server and OpenAI-compatible APIs).
 
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
+
+/// Backend target for AI requests.
+pub enum AiBackend {
+    /// Local llama-server on localhost
+    Local { port: u16 },
+    /// OpenAI-compatible remote API
+    OpenAi {
+        api_key: String,
+        base_url: String,
+        model: String,
+    },
+}
 
 /// Error types for AI client operations.
 #[derive(Debug, Clone)]
@@ -58,15 +70,29 @@ struct ChatChoiceMessage {
     content: String,
 }
 
-/// Sends a chat completion request to the local llama-server.
+/// Sends a chat completion request to an AI backend (local or OpenAI-compatible).
 ///
 /// Returns the assistant's response text, or an error.
-/// Times out after 10 seconds.
-pub async fn chat_completion(port: u16, prompt: &str) -> Result<String, AiError> {
-    let url = format!("http://127.0.0.1:{port}/v1/chat/completions");
+pub async fn chat_completion(backend: &AiBackend, prompt: &str) -> Result<String, AiError> {
+    let (url, model_name, auth_header) = match backend {
+        AiBackend::Local { port } => (
+            format!("http://127.0.0.1:{port}/v1/chat/completions"),
+            String::from("local-model"),
+            None,
+        ),
+        AiBackend::OpenAi {
+            api_key,
+            base_url,
+            model,
+        } => (
+            format!("{}/chat/completions", base_url.trim_end_matches('/')),
+            model.clone(),
+            Some(format!("Bearer {api_key}")),
+        ),
+    };
 
     let request_body = ChatCompletionRequest {
-        model: String::from("local-model"), // llama-server uses whatever model it loaded
+        model: model_name,
         messages: vec![
             ChatMessage {
                 role: String::from("system"),
@@ -90,7 +116,12 @@ pub async fn chat_completion(port: u16, prompt: &str) -> Result<String, AiError>
         .build()
         .map_err(|e| AiError::ServerError(e.to_string()))?;
 
-    let response = client.post(&url).json(&request_body).send().await.map_err(|e| {
+    let mut request = client.post(&url).json(&request_body);
+    if let Some(auth) = auth_header {
+        request = request.header("Authorization", auth);
+    }
+
+    let response = request.send().await.map_err(|e| {
         if e.is_timeout() {
             AiError::Timeout
         } else if e.is_connect() {

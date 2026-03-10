@@ -318,6 +318,79 @@ export const settingsRegistry: SettingDefinition[] = [
     },
 
     // ========================================================================
+    // AI
+    // ========================================================================
+    {
+        id: 'ai.provider',
+        section: ['AI'],
+        label: 'Provider',
+        description: 'Choose how AI features are powered.',
+        keywords: ['ai', 'provider', 'openai', 'local', 'llm', 'off', 'model'],
+        type: 'enum',
+        default: 'local',
+        component: 'toggle-group',
+        constraints: {
+            options: [
+                { value: 'off', label: 'Off' },
+                { value: 'openai-compatible', label: 'OpenAI-compatible' },
+                { value: 'local', label: 'Local LLM' },
+            ],
+        },
+    },
+    {
+        id: 'ai.openaiApiKey',
+        section: ['AI'],
+        label: 'API key',
+        description: 'Your OpenAI-compatible API key.',
+        keywords: ['api', 'key', 'openai', 'secret', 'token'],
+        type: 'string',
+        default: '',
+        component: 'password-input',
+    },
+    {
+        id: 'ai.openaiBaseUrl',
+        section: ['AI'],
+        label: 'Base URL',
+        description: 'API endpoint. Change this for Groq, Together AI, Azure OpenAI, or a local server.',
+        keywords: ['url', 'endpoint', 'base', 'api', 'groq', 'together', 'azure', 'ollama'],
+        type: 'string',
+        default: 'https://api.openai.com/v1',
+        component: 'text-input',
+    },
+    {
+        id: 'ai.openaiModel',
+        section: ['AI'],
+        label: 'Model',
+        description: 'The model name to use for completions.',
+        keywords: ['model', 'gpt', 'openai', 'name'],
+        type: 'string',
+        default: 'gpt-4o-mini',
+        component: 'text-input',
+    },
+    {
+        id: 'ai.localContextSize',
+        section: ['AI'],
+        label: 'Context window',
+        description: 'Number of tokens the local model can process at once. Larger values use more memory.',
+        keywords: ['context', 'window', 'tokens', 'memory', 'size', 'local'],
+        type: 'enum',
+        default: '4096',
+        component: 'select',
+        constraints: {
+            options: [
+                { value: '2048', label: '2048' },
+                { value: '4096', label: '4096' },
+                { value: '8192', label: '8192' },
+                { value: '16384', label: '16384' },
+                { value: '32768', label: '32768' },
+                { value: '65536', label: '65536' },
+                { value: '131072', label: '131072' },
+                { value: '262144', label: '262144' },
+            ],
+        },
+    },
+
+    // ========================================================================
     // Developer › MCP server
     // ========================================================================
     {

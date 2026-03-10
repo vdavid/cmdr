@@ -33,16 +33,21 @@ Single source of truth for all settings. Each `SettingDefinition` contains:
 
 ### Sections (`sections/`)
 
-11 section components rendered inside the settings window: `AppearanceSection`, `ListingSection`,
+13 section components rendered inside the settings window: `AppearanceSection`, `ListingSection`,
 `FileOperationsSection`, `KeyboardShortcutsSection`, `NetworkSection`, `LoggingSection`, `McpServerSection`,
-`UpdatesSection`, `ThemesSection`, `AdvancedSection`, `DriveIndexingSection`.
+`UpdatesSection`, `ThemesSection`, `AdvancedSection`, `DriveIndexingSection`, `AiSection`, `LicenseSection`.
+
+`AiSection` is a hybrid special section (like `LicenseSection` above): it combines dynamic runtime state from the
+backend (via `getAiRuntimeStatus()` and Tauri events) with registry settings (`ai.provider`, `ai.openaiApiKey`, etc.).
+It conditionally renders provider-specific content, handles auto-stop/start of the local server on provider switch, and
+debounces context size changes with a 2-second restart delay.
 
 ### Components (`components/`)
 
-10 reusable setting UI primitives used by section components: `SettingsSection` (wrapper providing shared section title
+11 reusable setting UI primitives used by section components: `SettingsSection` (wrapper providing shared section title
 and action button styles), `SettingRow`, `SettingSwitch`, `SettingSelect`, `SettingSlider`, `SettingNumberInput`,
-`SettingRadioGroup`, `SettingToggleGroup`, `SettingsSidebar`, `SettingsContent`. Also `SectionSummary` for
-collapsed-section previews.
+`SettingPasswordInput`, `SettingRadioGroup`, `SettingToggleGroup`, `SettingsSidebar`, `SettingsContent`. Also
+`SectionSummary` for collapsed-section previews.
 
 ### Other files
 

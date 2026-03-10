@@ -11,6 +11,7 @@
     import LoggingSection from '$lib/settings/sections/LoggingSection.svelte'
     import AdvancedSection from '$lib/settings/sections/AdvancedSection.svelte'
     import LicenseSection from '$lib/settings/sections/LicenseSection.svelte'
+    import AiSection from '$lib/settings/sections/AiSection.svelte'
     import SectionSummary from './SectionSummary.svelte'
     import { getMatchingSettingIdsInSection } from '$lib/settings/settings-search'
     import { searchCommands } from '$lib/commands/fuzzy-search'
@@ -131,6 +132,12 @@
         {#if shouldShowSection(['License']) || (isTopLevelSection && selectedSection[0] === 'License')}
             <section data-section-id="license">
                 <LicenseSection />
+            </section>
+        {/if}
+
+        {#if shouldShowSection(['AI']) || (isTopLevelSection && selectedSection[0] === 'AI')}
+            <section data-section-id="ai">
+                <AiSection {searchQuery} />
             </section>
         {/if}
 

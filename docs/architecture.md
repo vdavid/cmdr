@@ -260,7 +260,6 @@ Rules that cut across many modules. All existing commands follow these — apply
 ### Dev mode
 
 - `pnpm dev` at repo root for hot-reloading Tauri app
-- AI disabled unless `CMDR_REAL_AI=1` (prevents large downloads)
 - License mock via `CMDR_MOCK_LICENSE=commercial`
 - MCP server available at `localhost:9224` for agent testing
 - `withGlobalTauri: true` in dev mode — security risk if loading remote content

@@ -1,104 +1,107 @@
 # AI subsystem
 
-Local on-device AI features powered by llama.cpp's `llama-server`. Currently used for folder name suggestions.
+AI features powered by local LLM (llama-server) or OpenAI-compatible APIs. Currently used for folder name suggestions.
 
-AI requires Apple Silicon (aarch64). Intel Macs are not supported — the bundled binary is ARM64-only.
+Three provider modes:
+- **Off**: No AI features.
+- **OpenAI-compatible** (BYOK): Any OpenAI-compatible API. Works on any hardware.
+- **Local LLM**: On-device llama-server. Requires Apple Silicon (aarch64).
 
 ## Key files
 
 | File | Purpose |
 |---|---|
-| `mod.rs` | Types (`AiStatus`, `AiState`, `DownloadProgress`, `ModelInfo`), model registry (`AVAILABLE_MODELS`, `DEFAULT_MODEL_ID`), gate functions |
-| `manager.rs` | Central coordinator. Global `Mutex<Option<ManagerState>>` singleton. Most Tauri commands live here. `get_folder_suggestions` is in `suggestions.rs`. Handles startup recovery. |
+| `mod.rs` | Types (`AiStatus`, `AiState`, `DownloadProgress`, `ModelInfo`), model registry (`AVAILABLE_MODELS`, `DEFAULT_MODEL_ID`), `is_local_ai_supported()` gate |
+| `manager.rs` | Central coordinator. Global `Mutex<Option<ManagerState>>` singleton. Most Tauri commands live here. Stores provider + OpenAI config in `ManagerState`. |
 | `download.rs` | HTTP streaming download with Range-based resume. Emits `ai-download-progress` events (200ms throttle). Cooperative cancellation via function parameter (`Fn() -> bool`). |
 | `extract.rs` | Copies bundled `llama-server` binary + dylibs from `resources/ai/` to the AI data dir. Sets Unix permissions, handles symlinks. |
-| `process.rs` | Spawns child process with `DYLD_LIBRARY_PATH` set. SIGTERM → 5s wait → SIGKILL. Port discovery via `bind(:0)`. |
-| `client.rs` | reqwest client: `POST /v1/chat/completions` (15s timeout), `GET /health` (2s timeout). |
-| `suggestions.rs` | Builds few-shot prompt from listing cache, calls LLM, sanitizes response (strips bullets/markdown/numbering, rejects `/` and `\0`, deduplicates case-insensitively, enforces 255-char limit). Also hosts `get_folder_suggestions` Tauri command. |
+| `process.rs` | Spawns child process with `DYLD_LIBRARY_PATH` set. SIGTERM -> 5s wait -> SIGKILL. Port discovery via `bind(:0)`. Takes `ctx_size` param. |
+| `client.rs` | reqwest client with `AiBackend` enum: `Local { port }` or `OpenAi { api_key, base_url, model }`. Routes requests accordingly. |
+| `suggestions.rs` | Builds few-shot prompt from listing cache, routes to configured backend, sanitizes response. |
 
-### Additional Tauri commands
+### Tauri commands
 
-Beyond the core start/stop/status flow, the module also exposes: `uninstall_ai`, `dismiss_ai_offer`, `opt_out_ai`, `opt_in_ai`, `is_ai_opted_out`, `get_ai_model_info`.
+Core: `get_ai_status`, `get_ai_model_info`, `get_ai_runtime_status`, `configure_ai`, `start_ai_server`, `stop_ai_server`, `start_ai_download`, `cancel_ai_download`, `get_folder_suggestions`.
+Legacy (still wired, used by toast): `uninstall_ai`, `dismiss_ai_offer`, `opt_out_ai`, `opt_in_ai`, `is_ai_opted_out`.
 
-## Dev gate
-
-`use_real_ai()` returns `false` in debug builds unless `CMDR_REAL_AI=1` is set. In release builds it returns `true` on supported hardware. All Tauri commands check this at entry and return `Unavailable`/empty when false.
-
-## Architecture / data flow
+## Startup flow
 
 ```
-Frontend                    manager.rs              process.rs / download.rs / client.rs
-   |                           |
-   |-- get_ai_status --------> |
-   |<- AiStatus ─────────────  |
-   |                           |
-   |-- start_ai_download ----> |
-   |                           |-- extract_bundled_llama_server()
-   |<- ai-download-progress    |-- download_file()  (streams, emits events)
-   |<- ai-installing           |-- spawn_llama_server()
-   |                           |-- poll /health (up to 60s)
-   |<- ai-install-complete     |
-   |                           |
-   |-- get_folder_suggestions  | (suggestions.rs → client.rs → llama-server)
-   |<- Vec<String>            |
+Tauri setup()
+  -> ai::manager::init()           <- sets up dirs, cleans stale PIDs. Does NOT start server.
+
+Frontend loads
+  -> initializeSettings()           <- loads settings from tauri-plugin-store
+  -> configureAi({                  <- pushes AI config to backend
+       provider, contextSize,
+       openaiApiKey, openaiBaseUrl, openaiModel
+     })
+       -> backend: if provider === 'local' && model installed && local AI supported
+            -> start_server_inner(ctx_size)
+            -> emit 'ai-server-ready' when healthy
 ```
+
+## Provider routing in suggestions
+
+`get_folder_suggestions` reads `provider` from `ManagerState`:
+- `off` -> returns empty
+- `local` -> uses local llama-server (if running)
+- `openai-compatible` -> builds `AiBackend::OpenAi` from stored config, calls `chat_completion`
 
 ## Key patterns
 
-- Two install flags: `AiState.installed` AND `AiState.model_download_complete` — both must be true.
-- State persisted to `ai-state.json` in the app data dir (`~/Library/Application Support/…/ai/`).
-- Stale PIDs from previous sessions are stopped on startup (alive → SIGTERM/SIGKILL, dead → state cleared).
+- Two install flags: `AiState.installed` AND `AiState.model_download_complete` -- both must be true.
+- State persisted to `ai-state.json` in the app data dir (`~/Library/Application Support/.../ai/`).
+- Stale PIDs from previous sessions are stopped on startup (alive -> SIGTERM/SIGKILL, dead -> state cleared).
 - Stale partial downloads (>24 hours) cleaned up at startup.
 - Binary re-extraction is possible if model exists but binary is missing.
 - Download guard: `download_in_progress` flag prevents concurrent downloads.
 - Server logs written to `llama-server.log` in the AI dir for debugging.
+- `opted_out` field in `AiState` is legacy. `ai.provider` in frontend settings store is the source of truth.
+- OpenAI config (api_key, base_url, model) stored in `ManagerState` so suggestions.rs can read without settings files.
+- `configure_ai` is idempotent -- frontend calls it on startup and whenever any AI setting changes.
+- `ModelInfo` includes `kv_bytes_per_token` and `base_overhead_bytes` for frontend memory estimation.
 
 ## Adding a new model
 
 1. Find the GGUF on HuggingFace.
 2. Get exact file size: `curl -sIL "<url>" | grep -i content-length`
-3. Add entry to `AVAILABLE_MODELS` in `mod.rs`.
+3. Add entry to `AVAILABLE_MODELS` in `mod.rs` (including `kv_bytes_per_token` and `base_overhead_bytes`).
 4. Update `DEFAULT_MODEL_ID` if it should be the new default.
 
 ## Key decisions
 
 **Decision**: Global `Mutex<Option<ManagerState>>` singleton instead of Tauri managed state.
-**Why**: AI state needs to be accessed from both Tauri commands and internal init/shutdown paths. Tauri managed state requires an `AppHandle` to access, but `shutdown()` is called from the quit handler where threading constraints make it simpler to use a plain global. The `Option` allows lazy init — `None` until `init()` runs.
+**Why**: AI state needs to be accessed from both Tauri commands and internal init/shutdown paths. Tauri managed state requires an `AppHandle` to access, but `shutdown()` is called from the quit handler where threading constraints make it simpler to use a plain global. The `Option` allows lazy init -- `None` until `init()` runs.
 
 **Decision**: Two separate install flags (`installed` + `model_download_complete`) rather than a single boolean.
 **Why**: The download can be interrupted (crash, cancel, network loss). A partial 2 GB file on disk looks "installed" but is corrupt. `model_download_complete` is only set after file-size verification passes. This prevents launching llama-server with a truncated model, which would crash silently or produce garbage.
 
-**Decision**: Dev gate via `use_real_ai()` that returns `false` in debug builds unless `CMDR_REAL_AI=1`.
-**Why**: AI features spawn a child process, download multi-GB files, and consume GPU resources. Enabling this by default in dev would make every `cargo run` slow and resource-heavy. The env var opt-in keeps the dev loop fast while still allowing manual AI testing.
+**Decision**: Frontend pushes AI config to backend via `configure_ai` -- Rust never reads settings files.
+**Why**: The frontend is the single source of truth for settings via `tauri-plugin-store`. Having Rust also read `settings.json` directly would create a second reader with potential format/timing mismatches.
+
+**Decision**: `init()` only sets up directories and cleans stale PIDs. Server start is deferred to `configure_ai`.
+**Why**: The frontend needs to load settings before the backend knows which provider to use. The ~500ms delay is negligible.
 
 **Decision**: Port discovery via `bind(:0)` then pass to llama-server, instead of letting llama-server pick its own port.
-**Why**: llama-server doesn't have a reliable way to report its chosen port back to the parent. Binding port 0, reading the OS-assigned port, closing the listener, then passing it to llama-server avoids the tiny race window while keeping the architecture simple. The 100ms startup delay before the health check loop makes collisions practically impossible.
-
-**Decision**: Cancellation via `Fn() -> bool` parameter rather than `Arc<AtomicBool>`.
-**Why**: `download_file` lives in a separate module from the manager's cancel state. Passing a closure (`is_cancel_requested`) decouples the download logic from the global `MANAGER` mutex — the download module doesn't need to know about `ManagerState` at all.
-
-**Decision**: `SIGTERM` then 5s wait then `SIGKILL` for process shutdown.
-**Why**: llama-server may be mid-inference holding GPU memory. `SIGTERM` gives it a chance to release resources cleanly. The 5s timeout prevents hanging on app quit if the server is stuck.
-
-**Decision**: `shutdown()` called from both `on_window_event` (CloseRequested/Destroyed) and `RunEvent::Exit`.
-**Why**: `on_window_event` handles normal quit, but force-quit/crash/SIGTERM bypass it. `RunEvent::Exit` fires on app-level exit regardless of how it was triggered. `shutdown()` is idempotent (`child_pid.take()` returns `None` on subsequent calls), so double-calling is safe.
-
-**Decision**: Context window (`-c 4096`) explicitly set on llama-server.
-**Why**: Without `-c`, llama-server defaults to the model's trained max context (256K for Ministral), creating a ~27 GB KV cache. Folder suggestions need at most 2K context. 4K is generous and keeps memory under ~400 MB.
+**Why**: llama-server doesn't have a reliable way to report its chosen port back to the parent.
 
 **Decision**: Bundle pre-extracted individual binaries in `resources/ai/` instead of a `.tar.gz` archive.
-**Why**: Apple notarization inspects inside archives and rejects unsigned binaries. By extracting and signing at build time (in the Go download script when `APPLE_SIGNING_IDENTITY` is set), each binary is individually codesigned with hardened runtime + secure timestamp. This also removes the `tar` and `flate2` Rust dependencies — `extract.rs` just copies files instead of decompressing.
+**Why**: Apple notarization inspects inside archives and rejects unsigned binaries.
 
 **Decision**: Suggestion sanitization strips bullets, markdown, numbering, and deduplicates case-insensitively.
-**Why**: Small LLMs (3B params) inconsistently follow formatting instructions. The same model that returns clean `docs\ntests\n` on one prompt may return `1. **Docs**\n2. tests` on the next. Aggressive sanitization makes the output reliable regardless of LLM mood.
+**Why**: Small LLMs (3B params) inconsistently follow formatting instructions.
 
 ## Gotchas
 
-**Gotcha**: `tauri::async_runtime::spawn` is used in `init()` instead of `tokio::spawn`.
-**Why**: `init()` runs during Tauri setup before the tokio runtime is fully available. `tauri::async_runtime::spawn` uses Tauri's own runtime which is always ready at that point.
+**Gotcha**: `tauri::async_runtime::spawn` is used in `configure_ai` and `start_ai_server` instead of `tokio::spawn`.
+**Why**: These may run during Tauri setup before the tokio runtime is fully available. `tauri::async_runtime::spawn` uses Tauri's own runtime which is always ready at that point.
 
-**Gotcha**: `get_folder_suggestions` returns `Ok(Vec::new())` on LLM errors, not `Err`.
-**Why**: AI suggestions are a nice-to-have enhancement. Propagating errors would force the frontend to show error UI for a non-critical feature. Returning empty gracefully hides the failure — the user just sees no suggestions, same as if AI were not installed.
+**Gotcha**: `get_folder_suggestions` returns `Ok(Vec::new())` on AI errors, not `Err`.
+**Why**: AI suggestions are a nice-to-have enhancement. Returning empty gracefully hides the failure.
+
+**Gotcha**: `configure_ai` must NOT block. Server start is spawned in background via `tauri::async_runtime::spawn`.
+**Why**: `start_server_inner` takes 5-60s for health check polling. Blocking would freeze the frontend on startup.
 
 ## Dependencies
 

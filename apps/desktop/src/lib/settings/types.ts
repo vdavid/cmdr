@@ -56,7 +56,16 @@ export interface SettingDefinition {
     disabledReason?: string
 
     // UI hints
-    component?: 'switch' | 'select' | 'radio' | 'slider' | 'toggle-group' | 'number-input' | 'text-input' | 'duration'
+    component?:
+        | 'switch'
+        | 'select'
+        | 'radio'
+        | 'slider'
+        | 'toggle-group'
+        | 'number-input'
+        | 'text-input'
+        | 'password-input'
+        | 'duration'
     showInAdvanced?: boolean
 }
 
@@ -72,6 +81,8 @@ export type ThemeMode = 'light' | 'dark' | 'system'
 export type ExtensionChangePolicy = 'yes' | 'no' | 'ask'
 export type DirectorySortMode = 'likeFiles' | 'alwaysByName'
 export type AppColor = 'system' | 'cmdr-gold'
+export type AiProvider = 'off' | 'openai-compatible' | 'local'
+export type AiLocalContextSize = '2048' | '4096' | '8192' | '16384' | '32768' | '65536' | '131072' | '262144'
 
 export interface SettingsValues {
     // Appearance
@@ -106,6 +117,13 @@ export interface SettingsValues {
 
     // Viewer
     'viewer.wordWrap': boolean
+
+    // AI
+    'ai.provider': AiProvider
+    'ai.openaiApiKey': string
+    'ai.openaiBaseUrl': string
+    'ai.openaiModel': string
+    'ai.localContextSize': AiLocalContextSize
 
     // Developer
     'developer.mcpEnabled': boolean

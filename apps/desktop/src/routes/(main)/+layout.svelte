@@ -15,9 +15,11 @@
         onMtpPermissionError,
         connectMtpDevice,
         cancelAllWriteOperations,
+        configureAi,
         type MtpExclusiveAccessErrorEvent,
         type MtpPermissionErrorEvent,
     } from '$lib/tauri-commands'
+    import { getSetting } from '$lib/settings'
     import { initAiState } from '$lib/ai/ai-state.svelte'
     import ToastContainer from '$lib/ui/toast/ToastContainer.svelte'
     import { MtpPermissionDialog, PtpcameradDialog } from '$lib/mtp'
@@ -98,6 +100,15 @@
 
             // Initialize settings and apply them to CSS variables
             await initSettingsApplier()
+
+            // Push AI config to backend (triggers server start if provider is local + model installed)
+            void configureAi(
+                getSetting('ai.provider'),
+                Number(getSetting('ai.localContextSize')),
+                getSetting('ai.openaiApiKey'),
+                getSetting('ai.openaiBaseUrl'),
+                getSetting('ai.openaiModel'),
+            )
 
             // Read system accent color from macOS and listen for changes
             await initAccentColor()

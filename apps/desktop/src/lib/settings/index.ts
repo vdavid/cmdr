@@ -4,6 +4,8 @@
 
 // Types
 export type {
+    AiLocalContextSize,
+    AiProvider,
     AppColor,
     DateTimeFormat,
     DensityValues,
