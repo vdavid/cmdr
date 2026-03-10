@@ -36,7 +36,7 @@ Each matrix entry runs on `macos-latest` and does:
      projectPath: ./apps/desktop
      args: --target ${{ matrix.target }}
    ```
-5. **Upload artifacts manually** — find the DMG and updater `.app.tar.gz` + `.sig` in `target/{target}/release/bundle`, rename updater files to include arch (`Cmdr_aarch64.app.tar.gz`, etc.), create the release if needed (`gh release create ... || true`), upload all with `gh release upload --clobber`
+5. **Upload artifacts manually** — find the DMG and updater `.app.tar.zst` + `.sig` in `target/{target}/release/bundle`, rename updater files to include arch (`Cmdr_aarch64.app.tar.zst`, etc.), create the release if needed (`gh release create ... || true`), upload all with `gh release upload --clobber`
 6. **Pass signature to downstream job** — use `actions/upload-artifact` to save the signature string for the `publish` job
 7. Clean up keychain
 
@@ -50,9 +50,9 @@ Runs on `ubuntu-latest` after all three builds complete:
    ```json
    {
      "platforms": {
-       "darwin-universal": { "url": ".../Cmdr_universal.app.tar.gz", "signature": "..." },
-       "darwin-aarch64":   { "url": ".../Cmdr_aarch64.app.tar.gz",  "signature": "..." },
-       "darwin-x86_64":    { "url": ".../Cmdr_x86_64.app.tar.gz",   "signature": "..." }
+       "darwin-universal": { "url": ".../Cmdr_universal.app.tar.zst", "signature": "..." },
+       "darwin-aarch64":   { "url": ".../Cmdr_aarch64.app.tar.zst",  "signature": "..." },
+       "darwin-x86_64":    { "url": ".../Cmdr_x86_64.app.tar.zst",   "signature": "..." }
      }
    }
    ```
@@ -65,9 +65,9 @@ Runs on `ubuntu-latest` after all three builds complete:
 | Type | Pattern |
 |------|---------|
 | DMG | `Cmdr_{version}_aarch64.dmg`, `..._x86_64.dmg`, `..._universal.dmg` |
-| Updater | `Cmdr_aarch64.app.tar.gz`, `..._x86_64...`, `..._universal...` |
+| Updater | `Cmdr_aarch64.app.tar.zst`, `..._x86_64...`, `..._universal...` |
 
-DMGs are already arch-named by Tauri. Updater artifacts need manual renaming (Tauri names them all `Cmdr.app.tar.gz`).
+DMGs are already arch-named by Tauri. Updater artifacts need manual renaming (Tauri names them all `Cmdr.app.tar.zst`).
 
 ## Part 2: Website
 

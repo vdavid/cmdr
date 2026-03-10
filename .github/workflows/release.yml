@@ -144,11 +144,11 @@ jobs:
               run: |
                   TAG="${{ github.ref_name }}"
                   mkdir -p /tmp/signatures
-                  gh release download "$TAG" -p "Cmdr_*.app.tar.gz.sig" -D /tmp/signatures
+                  gh release download "$TAG" -p "Cmdr_*.app.tar.zst.sig" -D /tmp/signatures
 
                   # Verify all 3 arch sigs were downloaded
                   for arch in aarch64 x64 universal; do
-                      [ -f "/tmp/signatures/Cmdr_${arch}.app.tar.gz.sig" ] || { echo "Missing sig for $arch"; exit 1; }
+                      [ -f "/tmp/signatures/Cmdr_${arch}.app.tar.zst.sig" ] || { echo "Missing sig for $arch"; exit 1; }
                   done
 
             - name: Extract changelog for this version
@@ -170,9 +170,9 @@ jobs:
                   TAG="${{ github.ref_name }}"
 
                   # Read signatures downloaded from the release
-                  SIG_AARCH64=$(cat /tmp/signatures/Cmdr_aarch64.app.tar.gz.sig)
-                  SIG_X86_64=$(cat /tmp/signatures/Cmdr_x64.app.tar.gz.sig)
-                  SIG_UNIVERSAL=$(cat /tmp/signatures/Cmdr_universal.app.tar.gz.sig)
+                  SIG_AARCH64=$(cat /tmp/signatures/Cmdr_aarch64.app.tar.zst.sig)
+                  SIG_X86_64=$(cat /tmp/signatures/Cmdr_x64.app.tar.zst.sig)
+                  SIG_UNIVERSAL=$(cat /tmp/signatures/Cmdr_universal.app.tar.zst.sig)
 
                   # Query DMG sizes from the release assets (tauri-action uses "x64" in DMG names)
                   RELEASE_JSON=$(gh api "repos/${{ github.repository }}/releases/tags/$TAG")
@@ -202,9 +202,9 @@ jobs:
                       notes: $notes,
                       pub_date: $pub_date,
                       platforms: {
-                        "darwin-universal": { signature: $sig_universal, url: "\($base_url)/Cmdr_universal.app.tar.gz" },
-                        "darwin-aarch64": { signature: $sig_aarch64, url: "\($base_url)/Cmdr_aarch64.app.tar.gz" },
-                        "darwin-x86_64": { signature: $sig_x86_64, url: "\($base_url)/Cmdr_x64.app.tar.gz" }
+                        "darwin-universal": { signature: $sig_universal, url: "\($base_url)/Cmdr_universal.app.tar.zst" },
+                        "darwin-aarch64": { signature: $sig_aarch64, url: "\($base_url)/Cmdr_aarch64.app.tar.zst" },
+                        "darwin-x86_64": { signature: $sig_x86_64, url: "\($base_url)/Cmdr_x64.app.tar.zst" }
                       }
                     }' > /tmp/latest.json
 
