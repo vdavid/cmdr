@@ -71,8 +71,8 @@ landing page is dark-only.
 
 The website uses three analytics layers. The desktop app has **no telemetry**.
 
-- **Umami** (`Layout.astro`): Cookieless page analytics (pageviews, referrers, geo, UTM). Self-hosted. Script served
-  at `/u/mami` (proxied through Caddy to avoid adblockers).
+- **Umami** (`Layout.astro`): Cookieless page analytics (pageviews, referrers, geo, UTM). Self-hosted. Script served at
+  `/u/mami` (proxied through Caddy to avoid adblockers).
 - **PostHog** (`public/scripts/posthog-init.js`): Session replay, heatmaps, click tracking. Configured with
   `persistence: 'memory'` (no cookies, no localStorage) and `person_profiles: 'identified_only'` (no anonymous person
   profiles). This keeps PostHog fully cookieless.
