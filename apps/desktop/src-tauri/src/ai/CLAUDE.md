@@ -47,7 +47,7 @@ Frontend                    manager.rs              process.rs / download.rs / c
 
 - Two install flags: `AiState.installed` AND `AiState.model_download_complete` — both must be true.
 - State persisted to `ai-state.json` in the app data dir (`~/Library/Application Support/…/ai/`).
-- Stale PIDs cleaned up at startup (`is_process_alive` via `kill(pid, 0)`).
+- Stale PIDs from previous sessions are stopped on startup (alive → SIGTERM/SIGKILL, dead → state cleared).
 - Stale partial downloads (>24 hours) cleaned up at startup.
 - Binary re-extraction is possible if model exists but binary is missing.
 - Download guard: `download_in_progress` flag prevents concurrent downloads.

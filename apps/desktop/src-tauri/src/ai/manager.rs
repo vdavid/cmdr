@@ -57,12 +57,16 @@ pub fn init<R: Runtime>(app: &AppHandle<R>) {
     if use_real_ai() {
         log::debug!("AI manager: real AI enabled, checking installation...");
 
-        // Clean up stale PID from a previous crash
+        // Clean up stale PID from a previous session (crash, force-quit, or normal restart)
         if let Some(ref mut m) = *manager
             && let Some(pid) = m.state.pid
-            && !is_process_alive(pid)
         {
-            log::debug!("AI manager: cleaning up stale PID {pid} from previous session");
+            if is_process_alive(pid) {
+                log::info!("AI manager: stopping orphaned llama-server (PID {pid}) from previous session");
+                stop_process(pid);
+            } else {
+                log::debug!("AI manager: clearing dead PID {pid} from previous session");
+            }
             m.state.pid = None;
             m.state.port = None;
             save_state(&m.ai_dir, &m.state);
