@@ -4,6 +4,17 @@ Native menu bar for macOS and Linux. Builds platform-specific menus from scratch
 events, syncs accelerator labels with user-customized shortcuts, and enables/disables items based on
 window focus context.
 
+## File layout
+
+- `mod.rs` — shared types (`MenuState`, `MenuItems`, `MenuItemEntry`, `CommandScope`, `ViewMode`),
+  constants (all menu item IDs), ID mapping functions (`menu_id_to_command`,
+  `command_id_to_menu_id`), platform-aware accelerator/label helpers, the `build_menu` dispatcher,
+  context menu builders, viewer menu builder, and accelerator update functions.
+- `macos.rs` — `build_menu_macos` (full macOS menu bar), `cleanup_macos_menus` (removes
+  system-injected Edit items, registers Help menu), `set_macos_menu_icons` (SF Symbol icons via
+  objc2 FFI), and their helpers.
+- `linux.rs` — `build_menu_linux` (full Linux/GTK menu bar with mnemonics, no F-key accelerators).
+
 ## Key concepts
 
 ### Unified dispatch
