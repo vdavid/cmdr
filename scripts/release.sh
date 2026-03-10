@@ -56,7 +56,7 @@ git add \
   apps/desktop/package.json \
   apps/desktop/src-tauri/tauri.conf.json \
   apps/desktop/src-tauri/Cargo.toml \
-  apps/desktop/src-tauri/Cargo.lock
+  Cargo.lock
 git commit -m "chore(release): v$VERSION"
 git tag "v$VERSION"
 
