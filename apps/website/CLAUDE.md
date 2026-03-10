@@ -67,6 +67,21 @@ landing page is dark-only.
   The theme switching CSS is in `global.css`.
 - Remark42 comments detect the user's color scheme preference at load time.
 
+## Analytics
+
+The website uses three analytics layers. The desktop app has **no telemetry**.
+
+- **Umami** (`Layout.astro`): Cookieless page analytics (pageviews, referrers, geo, UTM). Self-hosted. Script served
+  at `/u/mami` (proxied through Caddy to avoid adblockers).
+- **PostHog** (`public/scripts/posthog-init.js`): Session replay, heatmaps, click tracking. Configured with
+  `persistence: 'memory'` (no cookies, no localStorage) and `person_profiles: 'identified_only'` (no anonymous person
+  profiles). This keeps PostHog fully cookieless.
+- **CF Analytics Engine** (license server): Download redirect endpoint logs version, arch, and country.
+
+**Decision/Why**: We avoid cookies to not need a cookie consent banner. All three analytics tools are configured to work
+without cookies. If you add or change analytics tooling, preserve this property — no cookies unless absolutely
+inevitable. See `docs/tooling/umami.md` and `docs/tooling/posthog.md` for API access and config details.
+
 ## Gotchas
 
 - The `@ts-expect-error` in `astro.config.mjs` is for a Vite version mismatch between Astro and Tailwind. It doesn't
