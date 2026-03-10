@@ -8,7 +8,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::sync::{LazyLock, RwLock};
-use tauri::Manager;
 
 /// Cache for font metrics, keyed by font ID (like "system-400-12")
 static METRICS_CACHE: LazyLock<RwLock<HashMap<String, FontMetrics>>> = LazyLock::new(|| RwLock::new(HashMap::new()));
@@ -95,7 +94,7 @@ pub fn calculate_max_width(texts: &[&str], font_id: &str) -> Option<f32> {
 
 /// Loads font metrics from disk
 pub fn load_from_disk<R: tauri::Runtime>(app: &tauri::AppHandle<R>, font_id: &str) -> Option<FontMetrics> {
-    let data_dir = app.path().app_data_dir().ok()?;
+    let data_dir = crate::config::resolved_app_data_dir(app).ok()?;
     let metrics_dir = data_dir.join("font-metrics");
     let file_path = metrics_dir.join(format!("{}.bin", font_id));
 
@@ -109,10 +108,7 @@ pub fn save_to_disk<R: tauri::Runtime>(
     font_id: &str,
     widths: &HashMap<u32, f32>,
 ) -> Result<(), String> {
-    let data_dir = app
-        .path()
-        .app_data_dir()
-        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+    let data_dir = crate::config::resolved_app_data_dir(app)?;
     let metrics_dir = data_dir.join("font-metrics");
 
     // Create directory if it doesn't exist

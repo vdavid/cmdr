@@ -8,7 +8,6 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
-use tauri::Manager;
 
 /// Connection mode used for the last successful connection.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -60,7 +59,9 @@ fn get_known_shares_mutex() -> &'static Mutex<KnownSharesStore> {
 
 /// Returns the path to the known shares store file.
 fn get_store_path<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Option<PathBuf> {
-    app.path().app_data_dir().ok().map(|dir| dir.join("known-shares.json"))
+    crate::config::resolved_app_data_dir(app)
+        .ok()
+        .map(|dir| dir.join("known-shares.json"))
 }
 
 /// Loads known shares from disk into memory.

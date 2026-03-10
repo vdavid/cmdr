@@ -6,7 +6,6 @@
 use serde::Deserialize;
 use std::fs;
 use std::path::PathBuf;
-use tauri::Manager;
 
 /// User's choice regarding full disk access permission.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Default)]
@@ -58,7 +57,7 @@ impl Default for Settings {
 /// Returns defaults if the file doesn't exist or can't be parsed.
 pub fn load_settings<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Settings {
     // Get the app data directory (like ~/Library/Application Support/com.veszelovszki.cmdr/)
-    let Some(data_dir) = app.path().app_data_dir().ok() else {
+    let Some(data_dir) = crate::config::resolved_app_data_dir(app).ok() else {
         return Settings::default();
     };
 

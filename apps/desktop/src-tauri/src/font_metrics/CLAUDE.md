@@ -55,5 +55,6 @@ METRICS_CACHE: LazyLock<RwLock<HashMap<String, FontMetrics>>>
 
 ## Dependencies
 
-External: `bincode2`, `tauri::Manager`
+External: `bincode2`
+Internal: `crate::config::resolved_app_data_dir`
 Internal: none

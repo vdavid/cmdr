@@ -2,7 +2,7 @@
   "mcpServers": {
     "cmdr": {
       "type": "http",
-      "url": "http://127.0.0.1:9224/mcp"
+      "url": "http://127.0.0.1:9225/mcp"
     },
     "tauri": {
       "type": "stdio",

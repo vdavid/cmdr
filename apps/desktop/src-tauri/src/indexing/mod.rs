@@ -307,13 +307,7 @@ impl IndexManager {
     /// Opens (or creates) the SQLite database, spawns the writer thread,
     /// and sets up the micro-scan manager.
     pub fn new(volume_id: String, volume_root: PathBuf, app: AppHandle) -> Result<Self, String> {
-        let data_dir = app
-            .path()
-            .app_data_dir()
-            .map_err(|e| format!("Failed to get app data dir: {e}"))?;
-
-        // Ensure the data directory exists
-        std::fs::create_dir_all(&data_dir).map_err(|e| format!("Failed to create app data dir: {e}"))?;
+        let data_dir = crate::config::resolved_app_data_dir(&app)?;
 
         let db_path = data_dir.join(format!("index-{volume_id}.db"));
 

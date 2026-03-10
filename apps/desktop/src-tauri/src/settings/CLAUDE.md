@@ -53,5 +53,5 @@ These are top-level keys — the dot is part of the key name, not a nesting sepa
 
 ## Dependencies
 
-External: `tauri::Manager` (for `app_data_dir`)
-Internal: none
+External: none
+Internal: `crate::config::resolved_app_data_dir` (for app data directory with dev isolation)

@@ -9,7 +9,7 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 ### Server (`server.rs`)
 
 - Runs in a background tokio task spawned at app startup
-- Binds to `127.0.0.1:9224` (localhost only for security)
+- Binds to `127.0.0.1:9225` in dev, `127.0.0.1:9224` in release (localhost only for security)
 - Streamable HTTP transport (MCP spec 2025-11-25)
 - Endpoints: `POST /mcp` (JSON-RPC), `GET /mcp` (optional SSE), `GET /mcp/health`
 

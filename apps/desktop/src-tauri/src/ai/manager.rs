@@ -18,7 +18,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
-use tauri::{AppHandle, Emitter, Manager, Runtime};
+use tauri::{AppHandle, Emitter, Runtime};
 
 /// Global manager state, accessible from Tauri commands.
 static MANAGER: Mutex<Option<ManagerState>> = Mutex::new(None);
@@ -341,8 +341,7 @@ fn get_current_model() -> &'static ModelInfo {
 }
 
 fn get_ai_dir<R: Runtime>(app: &AppHandle<R>) -> PathBuf {
-    app.path()
-        .app_data_dir()
+    crate::config::resolved_app_data_dir(app)
         .unwrap_or_else(|_| PathBuf::from("."))
         .join("ai")
 }

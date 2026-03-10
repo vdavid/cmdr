@@ -253,6 +253,9 @@ pub fn run() {
                 log::set_max_level(log::LevelFilter::Info);
             }
 
+            // Log the resolved app data directory (shows -dev suffix in debug builds)
+            config::log_app_data_dir(app.handle());
+
             // Initialize benchmarking (enabled by RUSTY_COMMANDER_BENCHMARK=1)
             benchmark::init_benchmarking();
 

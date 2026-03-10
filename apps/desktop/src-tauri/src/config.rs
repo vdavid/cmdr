@@ -1,6 +1,9 @@
-//! Configuration constants.
+//! Configuration constants and path helpers.
 //!
 //! These can be extracted to environment variables or a config file in the future.
+
+use std::path::PathBuf;
+use tauri::{AppHandle, Manager, Runtime};
 
 /// Icon size in pixels (32x32 for retina display)
 pub const ICON_SIZE: u32 = 32;
@@ -14,6 +17,36 @@ pub const ICON_SIZE: u32 = 32;
 /// restart when file associations change (due to macOS Launch Services icon cache).
 /// TODO: Move this to a setting once we have a settings window in place
 pub const USE_APP_ICONS_AS_DOCUMENT_ICONS: bool = true;
+
+/// Returns the app data directory, with a `-dev` suffix in debug builds to isolate
+/// dev and prod data (databases, caches, AI models). Creates the directory if needed.
+pub fn resolved_app_data_dir<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {
+    let base = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {e}"))?;
+
+    let dir = if cfg!(debug_assertions) {
+        let mut name = base.file_name().unwrap_or_default().to_os_string();
+        name.push("-dev");
+        base.with_file_name(name)
+    } else {
+        base
+    };
+
+    std::fs::create_dir_all(&dir).map_err(|e| format!("Failed to create app data dir: {e}"))?;
+
+    Ok(dir)
+}
+
+/// Logs the resolved data directory once at startup.
+pub fn log_app_data_dir<R: Runtime>(app: &AppHandle<R>) {
+    if cfg!(debug_assertions)
+        && let Ok(dir) = resolved_app_data_dir(app)
+    {
+        log::debug!("Using dev app data dir: {}", dir.display());
+    }
+}
 
 // MCP Server Security Design:
 // --------------------------
