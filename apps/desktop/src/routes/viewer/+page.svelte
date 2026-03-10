@@ -6,30 +6,18 @@
         return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`
     }
 
-    const LINE_HEIGHT = 18
-    const BUFFER_LINES = 50
-    const FETCH_BATCH = 500
-    // WebKit caps element height at ~2^25 px (33.5M). Stay well below to avoid scroll cutoff.
-    const MAX_SCROLL_HEIGHT = 30_000_000
-    const SEARCH_POLL_INTERVAL = 100
     // Must match INDEXING_TIMEOUT_SECS in src-tauri/src/file_viewer/session.rs
     const INDEXING_TIMEOUT_SECS = 5
 </script>
 
 <script lang="ts">
     import { onMount, onDestroy, tick } from 'svelte'
-    import { SvelteMap } from 'svelte/reactivity'
     import {
         viewerOpen,
-        viewerGetLines,
         viewerGetStatus,
         viewerClose,
-        viewerSearchStart,
-        viewerSearchPoll,
-        viewerSearchCancel,
         viewerSetupMenu,
         viewerSetWordWrap,
-        type ViewerSearchMatch,
         isIpcError,
     } from '$lib/tauri-commands'
     import { getCurrentWindow } from '@tauri-apps/api/window'
@@ -38,6 +26,8 @@
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { getAppLogger } from '$lib/logging/logger'
+    import { createViewerSearch } from './viewer-search.svelte'
+    import { createViewerScroll } from './viewer-scroll.svelte'
 
     const log = getAppLogger('viewer')
 
@@ -53,74 +43,8 @@
     let backendType = $state<'fullLoad' | 'byteSeek' | 'lineIndex'>('fullLoad')
     let isIndexing = $state(false)
 
-    // Line cache: lineNumber -> text (sparse - may have gaps)
-    const lineCache = new SvelteMap<number, string>()
-
-    // Virtual scroll state
-    let scrollTop = $state(0)
-    let viewportHeight = $state(600)
-    let contentRef: HTMLDivElement | undefined = $state()
-    let containerRef: HTMLDivElement | undefined = $state()
-    let linesContainerRef: HTMLDivElement | undefined = $state()
-
-    // High watermark of rendered line container width, for horizontal scroll
-    let contentWidth = $state(0)
-
-    // Word wrap state
-    let wordWrap = $state(false)
-    let avgWrappedLineHeight = $state(LINE_HEIGHT)
-    const effectiveLineHeight = $derived(wordWrap ? avgWrappedLineHeight : LINE_HEIGHT)
-
-    // Scroll compression: when total content height exceeds browser limits, scale down
-    // the scroll coordinate system. Each scroll pixel then covers more than one real line.
-    // scrollLineHeight = pixels per line in scroll space (may be < effectiveLineHeight for huge files).
-    const scrollScale = $derived.by(() => {
-        const fullHeight = estimatedTotalLines() * effectiveLineHeight
-        return fullHeight > MAX_SCROLL_HEIGHT ? MAX_SCROLL_HEIGHT / fullHeight : 1
-    })
-    const scrollLineHeight = $derived(effectiveLineHeight * scrollScale)
-
-    // Derived: which lines are visible
-    const visibleFrom = $derived(Math.max(0, Math.floor(scrollTop / scrollLineHeight) - BUFFER_LINES))
-    const visibleTo = $derived(
-        Math.min(estimatedTotalLines(), Math.ceil((scrollTop + viewportHeight) / scrollLineHeight) + BUFFER_LINES),
-    )
-    const visibleLines = $derived(getVisibleLines())
-    const gutterWidth = $derived(String(estimatedTotalLines()).length)
     // Derive current mode: if we started with byteSeek but now have totalLines, we upgraded to lineIndex
     const currentMode = $derived(backendType === 'byteSeek' && totalLines !== null ? 'lineIndex' : backendType)
-
-    // Search state
-    let searchVisible = $state(false)
-    let searchQuery = $state('')
-    let searchMatches = $state<ViewerSearchMatch[]>([])
-    let currentMatchIndex = $state(-1)
-    let searchStatus = $state<'idle' | 'running' | 'done' | 'cancelled'>('idle')
-    let searchProgress = $state(0)
-    let searchLimitReached = $state(false)
-    let searchInputRef: HTMLInputElement | undefined = $state()
-    let searchPollTimer: ReturnType<typeof setInterval> | undefined
-
-    // Index matches by line number for O(1) lookups during rendering.
-    // Each entry stores the match plus its global index (for active-match highlighting).
-    const matchesByLine = $derived.by(() => {
-        const map = new SvelteMap<number, Array<{ match: ViewerSearchMatch; globalIndex: number }>>()
-        for (let i = 0; i < searchMatches.length; i++) {
-            const m = searchMatches[i]
-            let entries = map.get(m.line)
-            if (!entries) {
-                entries = []
-                map.set(m.line, entries)
-            }
-            entries.push({ match: m, globalIndex: i })
-        }
-        return map
-    })
-
-    // Fetch state: debounce timer and request ID for cancellation
-    let fetchDebounceTimer: ReturnType<typeof setTimeout> | undefined
-    let currentFetchId = 0 // Incremented on each fetch, used to ignore stale responses
-    const FETCH_DEBOUNCE_MS = 100
 
     // Indexing status polling
     let indexingPollTimer: ReturnType<typeof setInterval> | undefined
@@ -136,286 +60,54 @@
     let unlistenMcpFocus: UnlistenFn | undefined
     let unlistenWordWrap: UnlistenFn | undefined
 
-    function estimatedTotalLines(): number {
-        // Use exact count if known (FullLoad or LineIndex backends)
-        if (totalLines !== null) return totalLines
-        // Otherwise use backend's estimate based on initial sample (ByteSeek backend)
-        return estimatedLines
-    }
+    const scroll = createViewerScroll({
+        getSessionId: () => sessionId,
+        getTotalLines: () => totalLines,
+        setTotalLines: (v: number) => {
+            totalLines = v
+        },
+        getEstimatedLines: () => estimatedLines,
+        getBackendType: () => backendType,
+        onTimeoutError: () => {
+            error = "Couldn't load the file — the volume may be slow or unresponsive."
+            errorIsTimeout = true
+        },
+    })
 
-    function getVisibleLines(): Array<{ lineNumber: number; text: string }> {
-        const result: Array<{ lineNumber: number; text: string }> = []
-        const end = Math.min(visibleTo, estimatedTotalLines())
-        for (let i = visibleFrom; i < end; i++) {
-            result.push({ lineNumber: i, text: lineCache.get(i) ?? '' })
-        }
-        return result
-    }
-
-    /** Check if we need to fetch lines - returns true if any visible lines are missing from cache */
-    function needsFetch(from: number, to: number): boolean {
-        // Check a few sample points to avoid iterating the whole range
-        const samplesToCheck = [from, Math.floor((from + to) / 2), to - 1]
-        for (const line of samplesToCheck) {
-            if (line >= 0 && !lineCache.has(line)) {
-                return true
-            }
-        }
-        return false
-    }
+    const search = createViewerSearch({
+        getSessionId: () => sessionId,
+        getTotalBytes: () => totalBytes,
+        getTotalLines: () => totalLines,
+        getEstimatedTotalLines: () => scroll.estimatedTotalLines(),
+        getScrollLineHeight: () => scroll.scrollLineHeight,
+        getViewportHeight: () => scroll.viewportHeight,
+        getContentRef: () => scroll.contentRef,
+    })
 
     // Fetch lines when visible range changes (debounced)
     $effect(() => {
-        const from = visibleFrom
-        const to = visibleTo
-        if (sessionId && needsFetch(from, to)) {
-            scheduleFetch(from, to)
-        }
+        scroll.runFetchEffect()
     })
 
     // Track horizontal content width so .scroll-spacer can create a scrollbar
     $effect(() => {
-        if (wordWrap) return
-        void visibleLines
-        const rafId = requestAnimationFrame(() => {
-            if (linesContainerRef) {
-                const w = linesContainerRef.scrollWidth
-                if (w > contentWidth) {
-                    contentWidth = w
-                }
-            }
-        })
-        return () => {
-            cancelAnimationFrame(rafId)
-        }
+        return scroll.runContentWidthEffect()
     })
 
-    // Measure average wrapped line height for virtual scroll approximation.
-    // Depends on scrollTop (not visibleLines) to avoid a feedback loop:
-    // visibleLines → measure → avgWrappedLineHeight → effectiveLineHeight → visibleLines
+    // Measure average wrapped line height for virtual scroll approximation
     $effect(() => {
-        if (!wordWrap) return
-        void scrollTop
-        const rafId = requestAnimationFrame(() => {
-            if (!linesContainerRef) return
-            const lineCount = linesContainerRef.children.length
-            if (lineCount === 0) return
-            const renderedHeight = linesContainerRef.getBoundingClientRect().height
-            if (renderedHeight > 0) {
-                const measured = renderedHeight / lineCount
-                if (Math.abs(measured - avgWrappedLineHeight) > 1) {
-                    avgWrappedLineHeight = measured
-                }
-            }
-        })
-        return () => {
-            cancelAnimationFrame(rafId)
-        }
+        return scroll.runWrappedLineHeightEffect()
     })
 
-    // Compensate scroll position when scrollLineHeight changes (word wrap toggle, measurement
-    // update, or scroll scale change from totalLines update). Ratio adjustment preserves the
-    // line at the top of the viewport.
-    let prevScrollLineHeight = LINE_HEIGHT
+    // Compensate scroll position when scrollLineHeight changes
     $effect(() => {
-        const newSLH = scrollLineHeight
-        if (!contentRef || prevScrollLineHeight === newSLH) {
-            prevScrollLineHeight = newSLH
-            return
-        }
-        const ratio = newSLH / prevScrollLineHeight
-        contentRef.scrollTop = Math.round(contentRef.scrollTop * ratio)
-        prevScrollLineHeight = newSLH
+        scroll.runScrollCompensationEffect()
     })
 
-    function scheduleFetch(from: number, to: number) {
-        // Clear any pending fetch
-        if (fetchDebounceTimer) {
-            clearTimeout(fetchDebounceTimer)
-        }
-        // Schedule new fetch after debounce
-        fetchDebounceTimer = setTimeout(() => {
-            void fetchLines(from, to)
-        }, FETCH_DEBOUNCE_MS)
-    }
-
-    /** Update totalLines while preserving scroll fraction to prevent jump when height shrinks */
-    function updateTotalLines(newTotal: number) {
-        const oldEstimate = estimatedTotalLines()
-        if (!contentRef || oldEstimate === 0 || newTotal === oldEstimate) {
-            totalLines = newTotal
-            return
-        }
-        // Calculate current scroll fraction before updating (use capped heights for accuracy)
-        const oldHeight = Math.min(oldEstimate * effectiveLineHeight, MAX_SCROLL_HEIGHT)
-        const scrollFraction = contentRef.scrollTop / oldHeight
-        log.debug('totalLines changed: {oldEstimate} -> {newTotal}, preserving scroll fraction {fraction}', {
-            oldEstimate,
-            newTotal,
-            fraction: scrollFraction.toFixed(3),
-        })
-        totalLines = newTotal
-        // Restore scroll fraction after DOM updates using rAF to run after browser's scroll clamping
-        const newHeight = Math.min(newTotal * effectiveLineHeight, MAX_SCROLL_HEIGHT)
-        const newScrollTop = Math.round(scrollFraction * newHeight)
-        const ref = contentRef // Capture reference for rAF callback
-        requestAnimationFrame(() => {
-            ref.scrollTop = newScrollTop
-        })
-    }
-
-    async function fetchLines(from: number, to: number) {
-        if (!sessionId) return
-
-        // Increment fetch ID to invalidate any in-flight requests
-        const fetchId = ++currentFetchId
-
-        try {
-            // Fetch a larger batch to reduce round-trips
-            const fetchFrom = Math.max(0, from - BUFFER_LINES)
-            const fetchCount = Math.min(FETCH_BATCH, to - fetchFrom + BUFFER_LINES * 2)
-
-            // Decide seek type: use line seek when we know exact line count (LineIndex/FullLoad),
-            // fraction seek when we only have estimates (ByteSeek)
-            const supportsLineSeek = totalLines !== null
-            const seekType = supportsLineSeek ? 'line' : 'fraction'
-            const seekValue = supportsLineSeek ? fetchFrom : fetchFrom / estimatedTotalLines()
-
-            log.debug('fetchLines[{fetchId}]: requesting {seekType}={seekValue} count={fetchCount}', {
-                fetchId,
-                seekType,
-                seekValue,
-                fetchCount,
-            })
-
-            const chunk = await viewerGetLines(sessionId, seekType, seekValue, fetchCount)
-
-            // Check if this response is still relevant (no newer fetch started)
-            if (fetchId !== currentFetchId) {
-                log.debug('fetchLines[{fetchId}]: discarding stale response (current={currentFetchId})', {
-                    fetchId,
-                    currentFetchId,
-                })
-                return
-            }
-
-            // When using fraction seek, cache at the requested position since backend's line number
-            // estimate may differ from frontend's estimate (different avg line length assumptions).
-            // For line seek, use backend's authoritative line numbers.
-            const cacheStartLine = seekType === 'fraction' ? fetchFrom : chunk.firstLineNumber
-
-            log.debug(
-                'fetchLines[{fetchId}]: received {lineCount} lines, backend says firstLine={firstLine}, caching at {cacheStart}',
-                {
-                    fetchId,
-                    lineCount: chunk.lines.length,
-                    firstLine: chunk.firstLineNumber,
-                    cacheStart: cacheStartLine,
-                },
-            )
-
-            // Update cache
-            for (let i = 0; i < chunk.lines.length; i++) {
-                lineCache.set(cacheStartLine + i, chunk.lines[i])
-            }
-
-            // Update totalLines if backend now knows it
-            if (chunk.totalLines !== null && chunk.totalLines !== totalLines) {
-                updateTotalLines(chunk.totalLines)
-            }
-        } catch (e) {
-            // Only log if this is still the current request
-            if (fetchId === currentFetchId) {
-                if (isIpcError(e) && e.timedOut) {
-                    error = "Couldn't load the file — the volume may be slow or unresponsive."
-                    errorIsTimeout = true
-                    log.error('fetchLines[{fetchId}]: timed out', { fetchId })
-                } else {
-                    const msg = isIpcError(e) ? e.message : String(e)
-                    log.error('fetchLines[{fetchId}]: failed with error {error}', { fetchId, error: msg })
-                }
-            }
-        }
-    }
-
-    function handleScroll() {
-        if (contentRef) {
-            scrollTop = contentRef.scrollTop
-            viewportHeight = contentRef.clientHeight
-        }
-    }
-
-    // Search functions
-    async function startSearch(query: string) {
-        if (!sessionId || !query) return
-        searchMatches = []
-        currentMatchIndex = -1
-        searchStatus = 'running'
-        searchProgress = 0
-        searchLimitReached = false
-
-        try {
-            await viewerSearchStart(sessionId, query)
-            pollSearch()
-        } catch {
-            searchStatus = 'idle'
-        }
-    }
-
-    function pollSearch() {
-        stopSearchPoll()
-        searchPollTimer = setInterval(() => {
-            void pollSearchTick()
-        }, SEARCH_POLL_INTERVAL)
-    }
-
-    async function pollSearchTick() {
-        if (!sessionId) return
-        try {
-            const result = await viewerSearchPoll(sessionId, searchMatches.length)
-            if (result.newMatches.length > 0) {
-                searchMatches = [...searchMatches, ...result.newMatches]
-            }
-            searchProgress = totalBytes > 0 ? result.bytesScanned / totalBytes : 0
-            searchLimitReached = result.matchLimitReached
-            if (currentMatchIndex === -1 && searchMatches.length > 0) {
-                currentMatchIndex = 0
-            }
-            if (result.status !== 'running') {
-                searchStatus = result.status
-                stopSearchPoll()
-            }
-        } catch {
-            stopSearchPoll()
-            searchStatus = 'idle'
-        }
-    }
-
-    function stopSearchPoll() {
-        if (searchPollTimer) {
-            clearInterval(searchPollTimer)
-            searchPollTimer = undefined
-        }
-    }
-
-    async function cancelSearch() {
-        stopSearchPoll()
-        if (!sessionId) return
-        try {
-            await viewerSearchCancel(sessionId)
-        } catch {
-            // Ignore
-        }
-        searchStatus = 'idle'
-    }
-
-    /** Stops the background scan but keeps accumulated matches for browsing. */
-    function stopSearch() {
-        stopSearchPoll()
-        if (!sessionId) return
-        viewerSearchCancel(sessionId).catch(() => {})
-        searchStatus = 'cancelled'
-    }
+    // Debounce search input
+    $effect(() => {
+        search.runDebounceEffect()
+    })
 
     // Indexing status polling functions
     function startIndexingPoll() {
@@ -434,7 +126,6 @@
             if (status.totalLines !== null) {
                 totalLines = status.totalLines
             }
-            // Stop polling when indexing is done
             if (!status.isIndexing) {
                 log.info('Indexing finished, backendType={backendType}', { backendType: status.backendType })
                 stopIndexingPoll()
@@ -451,70 +142,8 @@
         }
     }
 
-    function openSearch() {
-        searchVisible = true
-        void tick().then(() => {
-            searchInputRef?.focus()
-            searchInputRef?.select()
-        })
-    }
-
-    function closeSearch() {
-        searchVisible = false
-        searchQuery = ''
-        void cancelSearch()
-        searchMatches = []
-        currentMatchIndex = -1
-        searchProgress = 0
-        searchLimitReached = false
-    }
-
-    function findNext() {
-        if (searchMatches.length === 0) return
-        currentMatchIndex = (currentMatchIndex + 1) % searchMatches.length
-        scrollToMatch(searchMatches[currentMatchIndex])
-    }
-
-    function findPrev() {
-        if (searchMatches.length === 0) return
-        currentMatchIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length
-        scrollToMatch(searchMatches[currentMatchIndex])
-    }
-
-    function scrollToMatch(match: ViewerSearchMatch) {
-        if (!contentRef) return
-        let targetLine: number
-        if (totalLines !== null) {
-            // LineIndex/FullLoad: line numbers are exact, use directly
-            targetLine = match.line
-        } else {
-            // ByteSeek: line numbers don't match the virtual scroll coordinate system.
-            // Convert via byte offset: (byteOffset / totalBytes) * estimatedTotalLines
-            targetLine = totalBytes > 0 ? (match.byteOffset / totalBytes) * estimatedTotalLines() : match.line
-        }
-        const targetScroll = targetLine * scrollLineHeight - viewportHeight / 2
-        contentRef.scrollTop = Math.max(0, targetScroll)
-    }
-
-    // Debounce search input
-    let searchDebounceTimer: ReturnType<typeof setTimeout> | undefined
-    $effect(() => {
-        const query = searchQuery
-        if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
-        if (query && searchVisible) {
-            searchDebounceTimer = setTimeout(() => {
-                void startSearch(query)
-            }, 100)
-        } else {
-            void cancelSearch()
-            searchMatches = []
-            currentMatchIndex = -1
-        }
-    })
-
     function closeWindow() {
         if (closing) return
-        // If window isn't ready yet, queue the close for when it is
         if (!windowReady) {
             log.debug('closeWindow: window not ready, queueing close')
             closeRequested = true
@@ -525,18 +154,12 @@
         const start = performance.now()
         log.debug('closeWindow: starting')
 
-        // Session cleanup first (fire-and-forget) - do this before closing
         if (sessionId) {
-            viewerClose(sessionId).catch(() => {
-                // Ignore - session cleanup is best-effort
-            })
+            viewerClose(sessionId).catch(() => {})
         }
 
         const currentWindow = getCurrentWindow()
 
-        // Use double requestAnimationFrame to let WebKit finish pending content inset
-        // updates before destroying the WebPageProxy. Single rAF isn't enough - we need
-        // to wait for the current frame to complete AND the next frame to start.
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 log.debug('closeWindow: calling close() after {elapsed}ms', {
@@ -547,49 +170,17 @@
                 })
             })
         })
-
-        // NOTE: Don't call getAllWindows().setFocus() here - it can trigger WebKit to
-        // recalculate content insets on the dying window, causing a crash. macOS will
-        // automatically focus the main window when this one closes.
-    }
-
-    function scrollByLines(lines: number) {
-        if (contentRef) {
-            contentRef.scrollTop = Math.max(0, contentRef.scrollTop + lines * scrollLineHeight)
-        }
-    }
-
-    function scrollByPages(pages: number) {
-        if (contentRef) {
-            // Advance by one screenful of lines (minus 1 for overlap context)
-            const linesPerPage = Math.floor(contentRef.clientHeight / effectiveLineHeight) - 1
-            contentRef.scrollTop = Math.max(0, contentRef.scrollTop + pages * linesPerPage * scrollLineHeight)
-        }
-    }
-
-    function scrollToStart() {
-        if (contentRef) {
-            contentRef.scrollTop = 0
-        }
-    }
-
-    function scrollToEnd() {
-        if (contentRef) {
-            contentRef.scrollTop = contentRef.scrollHeight - contentRef.clientHeight
-        }
     }
 
     function toggleWordWrap(fromMenu = false) {
-        wordWrap = !wordWrap
-        contentWidth = 0
-        // Sync menu checkbox when toggled via keyboard (menu auto-toggles on click)
+        scroll.wordWrap = !scroll.wordWrap
+        scroll.contentWidth = 0
         if (!fromMenu) {
-            viewerSetWordWrap(getCurrentWindow().label, wordWrap).catch(() => {})
+            viewerSetWordWrap(getCurrentWindow().label, scroll.wordWrap).catch(() => {})
         }
-        setSetting('viewer.wordWrap', wordWrap)
+        setSetting('viewer.wordWrap', scroll.wordWrap)
     }
 
-    /** Handle toggle keys (word wrap). Returns true if handled. */
     function handleToggleKey(e: KeyboardEvent): boolean {
         if (e.key.toLowerCase() === 'w' && !e.metaKey && !e.ctrlKey && !e.altKey) {
             toggleWordWrap()
@@ -598,26 +189,25 @@
         return false
     }
 
-    /** Handle navigation keys (arrows, page up/down, home/end). Returns true if handled. */
     function handleNavigationKey(key: string): boolean {
         switch (key) {
             case 'ArrowUp':
-                scrollByLines(-1)
+                scroll.scrollByLines(-1)
                 return true
             case 'ArrowDown':
-                scrollByLines(1)
+                scroll.scrollByLines(1)
                 return true
             case 'PageUp':
-                scrollByPages(-1)
+                scroll.scrollByPages(-1)
                 return true
             case 'PageDown':
-                scrollByPages(1)
+                scroll.scrollByPages(1)
                 return true
             case 'Home':
-                scrollToStart()
+                scroll.scrollToStart()
                 return true
             case 'End':
-                scrollToEnd()
+                scroll.scrollToEnd()
                 return true
             default:
                 return false
@@ -627,21 +217,21 @@
     function handleKeyDown(e: KeyboardEvent) {
         if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
             e.preventDefault()
-            openSearch()
+            search.openSearch()
             return
         }
 
         if (e.key === 'Escape') {
             e.preventDefault()
             log.debug('ESC pressed, searchVisible={searchVisible}, windowReady={windowReady}', {
-                searchVisible,
+                searchVisible: search.searchVisible,
                 windowReady,
             })
-            if (searchVisible) {
-                if (searchStatus === 'running') {
-                    stopSearch()
+            if (search.searchVisible) {
+                if (search.searchStatus === 'running') {
+                    search.stopSearch()
                 } else {
-                    closeSearch()
+                    search.closeSearch()
                 }
             } else {
                 closeWindow()
@@ -649,77 +239,24 @@
             return
         }
 
-        if (e.key === 'Enter' && searchVisible) {
+        if (e.key === 'Enter' && search.searchVisible) {
             e.preventDefault()
             if (e.shiftKey) {
-                findPrev()
+                search.findPrev()
             } else {
-                findNext()
+                search.findNext()
             }
             return
         }
 
-        // Remaining keys only apply when search input is not focused
-        if (searchVisible && document.activeElement === searchInputRef) return
+        if (search.searchVisible && document.activeElement === search.searchInputRef) return
 
         if (handleToggleKey(e) || handleNavigationKey(e.key)) {
             e.preventDefault()
         }
     }
 
-    /**
-     * Highlights search matches within a line by running a client-side case-insensitive
-     * search on the visible text. This works for any file size — highlights appear on
-     * every visible line regardless of the backend's 10K navigation match cap.
-     * The backend match index is only used to identify the "active" match (the one
-     * the user navigated to with Enter/Shift+Enter).
-     */
-    function getHighlightedSegments(lineNumber: number, lineText: string) {
-        if (!searchQuery || !searchVisible) {
-            return [{ text: lineText, highlight: false, active: false }]
-        }
-
-        // Find all occurrences client-side (JS indexOf operates on UTF-16, matching backend offsets)
-        const queryLower = searchQuery.toLowerCase()
-        const lineLower = lineText.toLowerCase()
-        const localMatches: Array<{ column: number; length: number }> = []
-        let searchStart = 0
-        for (;;) {
-            const idx = lineLower.indexOf(queryLower, searchStart)
-            if (idx === -1) break
-            localMatches.push({ column: idx, length: queryLower.length })
-            searchStart = idx + queryLower.length
-        }
-
-        if (localMatches.length === 0) {
-            return [{ text: lineText, highlight: false, active: false }]
-        }
-
-        // Check if the currently active navigation match is on this line
-        const activeEntry = matchesByLine.get(lineNumber)?.find((e) => e.globalIndex === currentMatchIndex)
-
-        const segments: Array<{ text: string; highlight: boolean; active: boolean }> = []
-        let pos = 0
-        for (const m of localMatches) {
-            if (m.column > pos) {
-                segments.push({ text: lineText.slice(pos, m.column), highlight: false, active: false })
-            }
-            segments.push({
-                text: lineText.slice(m.column, m.column + m.length),
-                highlight: true,
-                active: activeEntry !== undefined && activeEntry.match.column === m.column,
-            })
-            pos = m.column + m.length
-        }
-        if (pos < lineText.length) {
-            segments.push({ text: lineText.slice(pos), highlight: false, active: false })
-        }
-        return segments
-    }
-
-    /** Set up MCP event listeners for close/focus commands from the main window */
     async function setupMcpListeners(myFilePath: string) {
-        // Listen for close requests - close this viewer if the path matches or no path is specified
         unlistenMcpClose = await listen<{ path?: string }>('mcp-viewer-close', (event) => {
             const requestedPath = event.payload.path
             if (!requestedPath || requestedPath === myFilePath) {
@@ -728,7 +265,6 @@
             }
         })
 
-        // Listen for focus requests - focus this viewer if the path matches
         unlistenMcpFocus = await listen<{ path?: string }>('mcp-viewer-focus', (event) => {
             const requestedPath = event.payload.path
             if (requestedPath === myFilePath) {
@@ -738,7 +274,6 @@
         })
     }
 
-    /** Open a file in the viewer, populating session state and cache. Throws on failure. */
     async function openViewerSession(path: string) {
         const result = await viewerOpen(path)
 
@@ -762,48 +297,38 @@
             },
         )
 
-        // Start polling for indexing status if indexing is in progress
         if (result.isIndexing) {
             startIndexingPoll()
         }
 
-        // Populate cache with initial lines
-        lineCache.clear()
+        scroll.lineCache.clear()
         for (let i = 0; i < result.initialLines.lines.length; i++) {
-            lineCache.set(result.initialLines.firstLineNumber + i, result.initialLines.lines[i])
+            scroll.lineCache.set(result.initialLines.firstLineNumber + i, result.initialLines.lines[i])
         }
 
         log.debug('Initial cache: {count} lines loaded', { count: result.initialLines.lines.length })
 
-        // Set window title (fire-and-forget, don't block)
         getCurrentWindow()
             .setTitle(`${result.fileName} — Viewer`)
-            .catch(() => {
-                // Not in Tauri environment
-            })
+            .catch(() => {})
 
-        // Set up MCP event listeners for close/focus commands
         await setupMcpListeners(path)
 
-        // Set up viewer-specific menu with Word wrap toggle, sync initial state
         const windowLabel = getCurrentWindow().label
         viewerSetupMenu(windowLabel)
             .then(() => {
-                if (wordWrap) viewerSetWordWrap(windowLabel, true).catch(() => {})
+                if (scroll.wordWrap) viewerSetWordWrap(windowLabel, true).catch(() => {})
             })
             .catch(() => {})
 
-        // Listen for menu-triggered word wrap toggle
         unlistenWordWrap = await listen('viewer-word-wrap-toggled', () => {
             toggleWordWrap(true)
         })
 
-        // Clear any previous error state
         error = ''
         errorIsTimeout = false
     }
 
-    /** Retry opening the file after a timeout error. */
     async function retryOpen() {
         if (!filePath) return
         loading = true
@@ -823,11 +348,10 @@
         } finally {
             loading = false
             await tick()
-            containerRef?.focus()
+            scroll.containerRef?.focus()
         }
     }
 
-    /** Clean up event listeners */
     function cleanupListeners() {
         unlistenMcpClose?.()
         unlistenMcpFocus?.()
@@ -842,10 +366,9 @@
 
         await initAccentColor()
 
-        // Restore word wrap setting (best-effort — viewer works without it)
         try {
             await initializeSettings()
-            wordWrap = getSetting('viewer.wordWrap')
+            scroll.wordWrap = getSetting('viewer.wordWrap')
         } catch {
             // Settings store not available in this context, use defaults
         }
@@ -875,11 +398,9 @@
             log.error('Failed to open file: {error}', { error: String(e) })
         } finally {
             loading = false
-            // Auto-focus the container so keyboard events work immediately
             await tick()
-            containerRef?.focus()
+            scroll.containerRef?.focus()
 
-            // Mark window as ready after WebKit has had a frame to settle
             requestAnimationFrame(() => {
                 windowReady = true
                 log.debug('Window ready, closeRequested={closeRequested}', { closeRequested })
@@ -893,21 +414,20 @@
     onDestroy(() => {
         cleanupAccentColor()
         cleanupListeners()
-        stopSearchPoll()
+        search.destroy()
+        scroll.destroy()
         stopIndexingPoll()
-        if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
-        if (fetchDebounceTimer) clearTimeout(fetchDebounceTimer)
     })
 </script>
 
 <svelte:window on:keydown={handleKeyDown} />
 
-<div class="viewer-container" bind:this={containerRef} tabindex={-1}>
-    {#if searchVisible}
+<div class="viewer-container" bind:this={scroll.containerRef} tabindex={-1}>
+    {#if search.searchVisible}
         <div class="search-bar" role="search">
             <input
-                bind:this={searchInputRef}
-                bind:value={searchQuery}
+                bind:this={search.searchInputRef}
+                bind:value={search.searchQuery}
                 type="text"
                 placeholder="Find in file..."
                 aria-label="Search text"
@@ -917,52 +437,68 @@
                 spellcheck="false"
             />
             <span class="match-count" aria-live="polite">
-                {#if searchStatus === 'running'}
+                {#if search.searchStatus === 'running'}
                     <span class="spinner spinner-sm search-spinner" aria-hidden="true"></span>
-                    {#if searchMatches.length > 0}
-                        {currentMatchIndex + 1} of {searchMatches.length}{searchLimitReached ? '+' : ''}
-                        &middot; {Math.round(searchProgress * 100)}%
+                    {#if search.searchMatches.length > 0}
+                        {search.currentMatchIndex + 1} of {search.searchMatches.length}{search.searchLimitReached
+                            ? '+'
+                            : ''}
+                        &middot; {Math.round(search.searchProgress * 100)}%
                     {:else}
-                        Searching... {Math.round(searchProgress * 100)}%
+                        Searching... {Math.round(search.searchProgress * 100)}%
                     {/if}
-                {:else if searchMatches.length > 0}
-                    {currentMatchIndex + 1} of {searchMatches.length}{searchLimitReached ? '+' : ''}
-                    {#if searchStatus === 'cancelled'}
+                {:else if search.searchMatches.length > 0}
+                    {search.currentMatchIndex + 1} of {search.searchMatches.length}{search.searchLimitReached
+                        ? '+'
+                        : ''}
+                    {#if search.searchStatus === 'cancelled'}
                         (partial)
                     {/if}
-                {:else if searchQuery && (searchStatus === 'done' || searchStatus === 'cancelled')}
-                    No matches{searchStatus === 'cancelled' ? ' (partial)' : ''}
+                {:else if search.searchQuery && (search.searchStatus === 'done' || search.searchStatus === 'cancelled')}
+                    No matches{search.searchStatus === 'cancelled' ? ' (partial)' : ''}
                 {/if}
             </span>
-            {#if searchStatus === 'running'}
-                <button onclick={stopSearch} aria-label="Stop searching" use:tooltip={'Stop scanning and keep results'}
-                    >&#x25A0;</button
+            {#if search.searchStatus === 'running'}
+                <button
+                    onclick={() => {
+                        search.stopSearch()
+                    }}
+                    aria-label="Stop searching"
+                    use:tooltip={'Stop scanning and keep results'}>&#x25A0;</button
                 >
             {/if}
             <button
-                onclick={findPrev}
-                disabled={searchMatches.length === 0}
+                onclick={() => {
+                    search.findPrev()
+                }}
+                disabled={search.searchMatches.length === 0}
                 aria-label="Previous match"
                 use:tooltip={{ text: 'Previous match', shortcut: '⇧Enter' }}>&#x25B2;</button
             >
             <button
-                onclick={findNext}
-                disabled={searchMatches.length === 0}
+                onclick={() => {
+                    search.findNext()
+                }}
+                disabled={search.searchMatches.length === 0}
                 aria-label="Next match"
                 use:tooltip={{ text: 'Next match', shortcut: 'Enter' }}>&#x25BC;</button
             >
-            <button onclick={closeSearch} aria-label="Close search" use:tooltip={{ text: 'Close', shortcut: 'Esc' }}
-                >&#x2715;</button
+            <button
+                onclick={() => {
+                    search.closeSearch()
+                }}
+                aria-label="Close search"
+                use:tooltip={{ text: 'Close', shortcut: 'Esc' }}>&#x2715;</button
             >
-            {#if searchStatus === 'running'}
+            {#if search.searchStatus === 'running'}
                 <div
                     class="search-progress"
                     role="progressbar"
-                    aria-valuenow={Math.round(searchProgress * 100)}
+                    aria-valuenow={Math.round(search.searchProgress * 100)}
                     aria-valuemin={0}
                     aria-valuemax={100}
                 >
-                    <div class="search-progress-fill" style="width: {searchProgress * 100}%"></div>
+                    <div class="search-progress-fill" style="width: {search.searchProgress * 100}%"></div>
                 </div>
             {/if}
         </div>
@@ -983,28 +519,30 @@
     {:else}
         <div
             class="file-content"
-            class:word-wrap={wordWrap}
+            class:word-wrap={scroll.wordWrap}
             role="document"
             aria-label="File content: {fileName}"
-            bind:this={contentRef}
-            onscroll={handleScroll}
+            bind:this={scroll.contentRef}
+            onscroll={scroll.handleScroll}
         >
             <div
                 class="scroll-spacer"
-                style="height: {estimatedTotalLines() * scrollLineHeight}px; min-width: {wordWrap ? 0 : contentWidth}px"
+                style="height: {scroll.estimatedTotalLines() * scroll.scrollLineHeight}px; min-width: {scroll.wordWrap
+                    ? 0
+                    : scroll.contentWidth}px"
             >
                 <div
                     class="lines-container"
-                    bind:this={linesContainerRef}
-                    style="transform: translateY({visibleFrom * scrollLineHeight}px)"
+                    bind:this={scroll.linesContainerRef}
+                    style="transform: translateY({scroll.visibleFrom * scroll.scrollLineHeight}px)"
                 >
-                    {#each visibleLines as { lineNumber, text } (lineNumber)}
+                    {#each scroll.visibleLines as { lineNumber, text } (lineNumber)}
                         <div class="line" data-line={lineNumber}>
-                            <span class="line-number" style="width: {gutterWidth}ch" aria-hidden="true"
+                            <span class="line-number" style="width: {scroll.gutterWidth}ch" aria-hidden="true"
                                 >{lineNumber + 1}</span
                             >
                             <span class="line-text"
-                                >{#each getHighlightedSegments(lineNumber, text) as seg, segIdx (segIdx)}{#if seg.highlight}<mark
+                                >{#each search.getHighlightedSegments(lineNumber, text) as seg, segIdx (segIdx)}{#if seg.highlight}<mark
                                             class:active={seg.active}>{seg.text}</mark
                                         >{:else}{seg.text}{/if}{/each}</span
                             >
@@ -1046,7 +584,7 @@
                 >streaming</span
             >
         {/if}
-        {#if wordWrap}
+        {#if scroll.wordWrap}
             <span class="backend-badge" use:tooltip={{ text: 'Lines wrap at the window edge', shortcut: 'W' }}
                 >wrap</span
             >
