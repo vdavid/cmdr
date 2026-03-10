@@ -244,8 +244,8 @@ Add this right after the certificate import step:
 
 ### 7.2. Verify the build
 
-- [ ] Download the built `.dmg` from the GitHub release, open it on a Mac, verify no Gatekeeper warning
-- [ ] Also verify with: `spctl --assess --type execute -v Cmdr.app` — should say `accepted`
+- [x] Download the built `.dmg` from the GitHub release, open it on a Mac, verify no Gatekeeper warning
+- [x] Also verify with: `spctl --assess --type execute -v Cmdr.app` — should say `accepted`
 
 ### 7.3. Clean up
 
