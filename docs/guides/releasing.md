@@ -14,17 +14,16 @@ How to release a new version of Cmdr.
    Read the existing changelog to match its style. Note: commits have title + body – read all!
    You can link multiple commits for changelog items if needed. List major but non-app changes in a "Non-app" section.
    ```
-2. Commit the changelog update and anything else. You need a clean working tree. (script auto-fails if not satisfied)
-3. Run `./scripts/release.sh 0.x.x` – version bump guidelines:
+2. Run `./scripts/release.sh 0.x.x` (uncommitted changelog changes are fine — they get included in the release commit). Version bump guidelines:
    - Patch (1.2.0 → 1.2.1): bug fixes, minor tweaks
    - Minor (1.2.1 → 1.3.0): new features
    - Major (1.3.0 → 2.0.0): major launches
    - (Script bumps version in `package.json`, `tauri.conf.json`, `Cargo.toml`)
    - (Script moves `[Unreleased]` → `[0.x.x]` in changelog, commits, and tags)
-4. Push: `git push origin main --tags`
+3. Push: `git push origin main --tags`
    - (CI builds universal macOS binary, creates GitHub release, updates `latest.json`)
    - (Website auto-deploys, users get update notification on next check)
-5. Track the build at https://github.com/vdavid/cmdr/actions
+4. Track the build at https://github.com/vdavid/cmdr/actions
 
 ## How updates work
 

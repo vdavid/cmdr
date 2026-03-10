@@ -15,9 +15,9 @@ if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   exit 1
 fi
 
-# Check for uncommitted changes
-if ! git diff --quiet || ! git diff --staged --quiet; then
-  echo "Error: Working tree has uncommitted changes. Commit or stash them first."
+# Check for uncommitted changes (CHANGELOG.md is allowed — it gets included in the release commit)
+if ! git diff --quiet -- ':!CHANGELOG.md' || ! git diff --staged --quiet -- ':!CHANGELOG.md'; then
+  echo "Error: Working tree has uncommitted changes (other than CHANGELOG.md). Commit or stash them first."
   exit 1
 fi
 
@@ -42,16 +42,21 @@ jq ".version = \"$VERSION\"" tauri.conf.json > tauri.conf.json.tmp
 mv tauri.conf.json.tmp tauri.conf.json
 cd ../../..
 
-# Update version in Cargo.toml and refresh Cargo.lock
+# Update version in Cargo.toml and sync Cargo.lock
 sed -i '' "s/^version = \".*\"/version = \"$VERSION\"/" apps/desktop/src-tauri/Cargo.toml
-(cd apps/desktop/src-tauri && cargo update -p cmdr --quiet)
+(cd apps/desktop/src-tauri && cargo update --workspace --quiet)
 
 # Update CHANGELOG.md: rename [Unreleased] to [version] and add new [Unreleased]
 TODAY=$(date +%Y-%m-%d)
 sed -i '' "s/## \[Unreleased\]/## [Unreleased]\n\n## [$VERSION] - $TODAY/" CHANGELOG.md
 
-# Commit and tag
-git add -A
+# Commit and tag (only files touched by this script)
+git add \
+  CHANGELOG.md \
+  apps/desktop/package.json \
+  apps/desktop/src-tauri/tauri.conf.json \
+  apps/desktop/src-tauri/Cargo.toml \
+  apps/desktop/src-tauri/Cargo.lock
 git commit -m "chore(release): v$VERSION"
 git tag "v$VERSION"
 
