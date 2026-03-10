@@ -5,6 +5,10 @@
     <key>CFBundleName</key>
     <string>Cmdr</string>
 
+    <!-- Liquid Glass icon for macOS Tahoe (26+). Older macOS falls back to CFBundleIconFile (.icns). -->
+    <key>CFBundleIconName</key>
+    <string>Sequoia</string>
+
     <!-- Privacy usage descriptions shown in macOS TCC prompts -->
     <key>NSNetworkVolumesUsageDescription</key>
     <string>Cmdr needs access to network volumes to browse and manage files on your NAS and other network drives.</string>
