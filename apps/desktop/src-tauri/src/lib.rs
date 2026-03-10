@@ -872,6 +872,13 @@ pub fn run() {
                 network::mdns_discovery::stop_discovery();
             }
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|_app, event| {
+            if let tauri::RunEvent::Exit = event {
+                ai::manager::shutdown();
+                #[cfg(any(target_os = "macos", target_os = "linux"))]
+                network::mdns_discovery::stop_discovery();
+            }
+        });
 }

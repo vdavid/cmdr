@@ -80,6 +80,9 @@ Frontend                    manager.rs              process.rs / download.rs / c
 **Decision**: `SIGTERM` then 5s wait then `SIGKILL` for process shutdown.
 **Why**: llama-server may be mid-inference holding GPU memory. `SIGTERM` gives it a chance to release resources cleanly. The 5s timeout prevents hanging on app quit if the server is stuck.
 
+**Decision**: `shutdown()` called from both `on_window_event` (CloseRequested/Destroyed) and `RunEvent::Exit`.
+**Why**: `on_window_event` handles normal quit, but force-quit/crash/SIGTERM bypass it. `RunEvent::Exit` fires on app-level exit regardless of how it was triggered. `shutdown()` is idempotent (`child_pid.take()` returns `None` on subsequent calls), so double-calling is safe.
+
 **Decision**: Context window (`-c 4096`) explicitly set on llama-server.
 **Why**: Without `-c`, llama-server defaults to the model's trained max context (256K for Ministral), creating a ~27 GB KV cache. Folder suggestions need at most 2K context. 4K is generous and keeps memory under ~400 MB.
 
