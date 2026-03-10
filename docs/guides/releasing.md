@@ -58,7 +58,7 @@ To check notarization status manually:
 
 ```bash
 xcrun notarytool info <SUBMISSION_ID> \
-  --key ./AuthKey_Apple_Cmdr.p8 \
+  --key ./_ignored/AuthKey_Apple_Cmdr.p8 \
   --key-id C9VUN857DD \
   --issuer 2c362f71-0680-4ec7-a74f-c62be656eeb7
 ```
