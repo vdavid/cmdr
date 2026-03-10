@@ -208,7 +208,7 @@ implementing the above:
 - [x] Update license server `CLAUDE.md` with new route and Analytics Engine docs
 - [x] Set `PUBLIC_DOWNLOAD_BASE_URL` in website production env
 - [x] Deploy license server: `cd apps/license-server && pnpm cf:deploy`
-- [ ] Test end-to-end: download via redirect, verify event logged in Analytics Engine
+- [x] Test end-to-end: download via redirect, verify event logged in Analytics Engine
 
 ### Milestone 3: Website behavior tracking (PostHog)
 - [x] Create PostHog project, get API key
