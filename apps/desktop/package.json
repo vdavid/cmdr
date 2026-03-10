@@ -72,6 +72,7 @@
         "globals": "^16.5.0",
         "jsdom": "^27.4.0",
         "knip": "^5.85.0",
+        "oxlint": "^1.52.0",
         "postcss-html": "^1.8.1",
         "prettier": "^3.8.1",
         "prettier-plugin-svelte": "^3.5.1",

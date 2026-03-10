@@ -134,6 +134,15 @@ var AllChecks = []CheckDefinition{
 		Run:         RunSvelteCheck,
 	},
 	{
+		ID:          "desktop-svelte-import-cycles",
+		Nickname:    "import-cycles",
+		DisplayName: "import cycles (oxlint)",
+		App:         AppDesktop,
+		Tech:        "🎨 Svelte",
+		DependsOn:   nil,
+		Run:         RunImportCycles,
+	},
+	{
 		ID:          "desktop-svelte-knip",
 		Nickname:    "knip",
 		DisplayName: "knip",
