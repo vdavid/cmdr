@@ -72,8 +72,8 @@ describe('generateLicenseKey', () => {
         expect(parts).toHaveLength(2)
 
         // Both parts should be base64 encoded
-        expect(() => atob(parts[0])).not.toThrow()
-        expect(() => atob(parts[1])).not.toThrow()
+        expect(() => Buffer.from(parts[0], 'base64')).not.toThrow()
+        expect(() => Buffer.from(parts[1], 'base64')).not.toThrow()
     })
 
     it('embeds license data in the payload', async () => {
@@ -89,7 +89,7 @@ describe('generateLicenseKey', () => {
 
         const key = await generateLicenseKey(licenseData, privateKeyHex)
         const [payloadBase64] = key.split('.')
-        const payloadJson = atob(payloadBase64)
+        const payloadJson = Buffer.from(payloadBase64, 'base64').toString('utf-8')
         const decoded = JSON.parse(payloadJson) as LicenseData
 
         expect(decoded.email).toBe(licenseData.email)
@@ -113,8 +113,8 @@ describe('generateLicenseKey', () => {
         const [payloadBase64, signatureBase64] = key.split('.')
 
         // Decode payload and signature
-        const payloadBytes = Uint8Array.from(atob(payloadBase64), (c) => c.charCodeAt(0))
-        const signatureBytes = Uint8Array.from(atob(signatureBase64), (c) => c.charCodeAt(0))
+        const payloadBytes = new Uint8Array(Buffer.from(payloadBase64, 'base64'))
+        const signatureBytes = new Uint8Array(Buffer.from(signatureBase64, 'base64'))
 
         // Verify signature
         const isValid = await ed.verifyAsync(signatureBytes, payloadBytes, publicKey)
@@ -145,7 +145,7 @@ describe('generateLicenseKey', () => {
         }
         const tamperedPayload = JSON.stringify(tamperedData)
         const tamperedPayloadBytes = new TextEncoder().encode(tamperedPayload)
-        const signatureBytes = Uint8Array.from(atob(signatureBase64), (c) => c.charCodeAt(0))
+        const signatureBytes = new Uint8Array(Buffer.from(signatureBase64, 'base64'))
 
         // Signature should NOT verify for tampered payload
         const isValid = await ed.verifyAsync(signatureBytes, tamperedPayloadBytes, publicKey)
@@ -166,7 +166,7 @@ describe('generateLicenseKey', () => {
 
         const key = await generateLicenseKey(licenseData, privateKeyHex)
         const [payloadBase64] = key.split('.')
-        const payloadJson = atob(payloadBase64)
+        const payloadJson = Buffer.from(payloadBase64, 'base64').toString('utf-8')
         const decoded = JSON.parse(payloadJson) as LicenseData
 
         expect(decoded.organizationName).toBe('Acme Corporation')
@@ -188,7 +188,7 @@ describe('generateLicenseKey', () => {
 
         const key = await generateLicenseKey(licenseData, privateKeyHex)
         const [payloadBase64] = key.split('.')
-        const payloadJson = atob(payloadBase64)
+        const payloadJson = Buffer.from(payloadBase64, 'base64').toString('utf-8')
         const decoded = JSON.parse(payloadJson) as LicenseData
 
         expect(decoded.organizationName).toBeUndefined()
@@ -218,7 +218,7 @@ describe('generateLicenseKey', () => {
         }
         const tamperedPayload = JSON.stringify(tamperedData)
         const tamperedPayloadBytes = new TextEncoder().encode(tamperedPayload)
-        const signatureBytes = Uint8Array.from(atob(signatureBase64), (c) => c.charCodeAt(0))
+        const signatureBytes = new Uint8Array(Buffer.from(signatureBase64, 'base64'))
 
         // Signature should NOT verify for tampered org name
         const isValid = await ed.verifyAsync(signatureBytes, tamperedPayloadBytes, publicKey)

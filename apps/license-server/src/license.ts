@@ -73,5 +73,5 @@ function hexToBytes(hex: string): Uint8Array {
 }
 
 function bytesToBase64(bytes: Uint8Array): string {
-    return btoa(String.fromCharCode(...bytes))
+    return Buffer.from(bytes).toString('base64')
 }

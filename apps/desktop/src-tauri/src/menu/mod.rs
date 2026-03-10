@@ -481,15 +481,19 @@ fn set_macos_menu_icons_inner() {
             ],
             "View" => {
                 // Also apply icons to the "Sort by" submenu items
-                apply_sf_symbols_to_nested_submenu(&submenu, "Sort by", &[
-                    ("Name", "textformat.alt"),
-                    ("Extension", "character.textbox"),
-                    ("Size", "ruler"),
-                    ("Date modified", "clock"),
-                    ("Date created", "calendar"),
-                    ("Ascending", "chevron.up"),
-                    ("Descending", "chevron.down"),
-                ]);
+                apply_sf_symbols_to_nested_submenu(
+                    &submenu,
+                    "Sort by",
+                    &[
+                        ("Name", "textformat.alt"),
+                        ("Extension", "character.textbox"),
+                        ("Size", "ruler"),
+                        ("Date modified", "clock"),
+                        ("Date created", "calendar"),
+                        ("Ascending", "chevron.up"),
+                        ("Descending", "chevron.down"),
+                    ],
+                );
 
                 &[
                     ("Switch pane", "rectangle.2.swap"),
@@ -519,10 +523,7 @@ fn set_macos_menu_icons_inner() {
 
 /// Applies SF Symbol icons to menu items in a submenu, matching by title.
 #[cfg(target_os = "macos")]
-fn apply_sf_symbols_to_submenu(
-    submenu: &objc2_app_kit::NSMenu,
-    mappings: &[(&str, &str)],
-) {
+fn apply_sf_symbols_to_submenu(submenu: &objc2_app_kit::NSMenu, mappings: &[(&str, &str)]) {
     let item_count = submenu.numberOfItems();
     for j in 0..item_count {
         let Some(item) = submenu.itemAtIndex(j) else {
@@ -543,11 +544,7 @@ fn apply_sf_symbols_to_submenu(
 
 /// Applies SF Symbol icons to items inside a nested submenu (e.g. "Sort by" inside "View").
 #[cfg(target_os = "macos")]
-fn apply_sf_symbols_to_nested_submenu(
-    parent: &objc2_app_kit::NSMenu,
-    submenu_title: &str,
-    mappings: &[(&str, &str)],
-) {
+fn apply_sf_symbols_to_nested_submenu(parent: &objc2_app_kit::NSMenu, submenu_title: &str, mappings: &[(&str, &str)]) {
     let count = parent.numberOfItems();
     for i in 0..count {
         let Some(item) = parent.itemAtIndex(i) else {
