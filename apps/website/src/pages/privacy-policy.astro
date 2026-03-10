@@ -57,196 +57,196 @@ import LegalLayout from '../layouts/LegalLayout.astro'
         <li>
             <strong>Download counts</strong>: when you download Cmdr, we record which version and architecture you
             chose, along with your country, for stats. We don't store your IP address or any other identifying info.
-            <li>
-                <strong>Payment info</strong>: if you buy a license, payment is handled by Paddle. We see your email
-                address and purchase details, but never your credit card number—that'd be too much risk for us.
-            </li>
         </li>
-
-        <h3>In the desktop app</h3>
-        <ul>
-            <li>
-                <strong>License key</strong>: stored locally on your machine. The app verifies it cryptographically
-                offline, and periodically checks our server to see if your subscription has expired or been extended.
-            </li>
-            <li>
-                <strong>Organization name</strong>: for commercial licenses, we store the organization name you provide
-                at checkout, to display it in the app's About window.
-            </li>
-        </ul>
-
-        <p>
-            That's it. The desktop app has <strong>no telemetry</strong>—it doesn't report usage statistics, feature
-            usage, or anything else back to us. The only network calls it makes are license validation and checking for
-            updates.
-        </p>
-
-        <h3>What we DON'T collect</h3>
-        <ul>
-            <li>
-                Your file names, contents, or any data from your file system, ever. We don't want to know your files.
-            </li>
-            <li>
-                Your prompts, the AI's answers, tool calls, etc. The communication is all private between you and your
-                AI, unless you use a provider (OpenAI, Anthropic, etc.) that have different terms. But with Cmdr, you
-                always have the option to keep ALL communications private with a local model.
-            </li>
-            <li>Your keystrokes, screenshots, or clicks from the app.</li>
-            <li>And we never train models on your data!</li>
-        </ul>
-
-        <h2>3. Why we collect this data (legal basis)</h2>
-        <p>
-            Under GDPR (EU law to protect your rights over your data), we need a legal basis for processing your data,
-            which is pretty nice and fair and we apply it to all our users globally, not just EU citizens. Here is a
-            list:
-        </p>
-        <ul>
-            <li>
-                <strong>License validation and subscription status checks</strong>: As a business baseline, we need to
-                know who has a valid license and who doesn't.
-            </li>
-            <li>
-                <strong>Legitimate interest</strong>: Website analytics and download counts help us understand how
-                people find and use our website, which directly shapes the product roadmap. This is strictly
-                <em>not</em> about tracking any particular user—we actively avoid that. We only look at aggregate data that
-                can't be traced back to a single person.
-            </li>
-            <li>
-                <strong>Consent</strong>: Email addresses to send you news that hopefully interest you. (You can
-                unsubscribe anytime from all communications we send, except for stuff we <em>need</em> to send like updates
-                to this very policy.)
-            </li>
-        </ul>
-
-        <h2>4. How we use your data</h2>
-        <ul>
-            <li>To process your license purchase</li>
-            <li>To maintain and improve Cmdr</li>
-            <li>To send you product updates (if you subscribed)</li>
-            <li>To respond to your support requests</li>
-            <li>To analyze website traffic and improve our communication</li>
-        </ul>
-
-        <h2>5. Who we share data with</h2>
-        <p>We only share data with service providers who help us operate Cmdr:</p>
-        <ul>
-            <li>
-                <strong>Paddle</strong> (payments) — processes purchases, handles taxes and invoicing. Based in the UK with
-                GDPR-compliant processing.
-                <a href="https://www.paddle.com/legal/privacy" target="_blank" rel="noopener noreferrer"
-                    >Paddle's privacy policy</a
-                >
-            </li>
-            <li>
-                <strong>PostHog</strong> (website behavior) — session recordings and heatmaps to help us improve the website
-                experience. Cloud-hosted with EU data storage options.
-                <a href="https://posthog.com/privacy" target="_blank" rel="noopener noreferrer"
-                    >PostHog's privacy policy</a
-                >
-            </li>
-            <li>
-                <strong>Cloudflare</strong> (hosting) — hosts our license validation and download tracking on its global CDN.
-                Download events (version, architecture, country) are stored in Cloudflare Analytics Engine.
-                <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener noreferrer"
-                    >Cloudflare's privacy policy</a
-                >
-            </li>
-            <li>
-                <strong>Listmonk</strong> (newsletter) — self-hosted on our server. Stores your email address and subscription
-                status. No data leaves our infrastructure except when sending emails via AWS SES.
-            </li>
-            <li>
-                <strong>AWS SES</strong> (email delivery) — sends newsletter and confirmation emails on our behalf.
-                <a href="https://aws.amazon.com/privacy/" target="_blank" rel="noopener noreferrer"
-                    >AWS privacy policy</a
-                >
-            </li>
-        </ul>
-        <p>
-            Our page-level website analytics (<strong>Umami</strong>) are self-hosted on our own server—no data is
-            shared with any third party for that.
-        </p>
-        <p>We don't sell your data. We don't share it with advertisers or anyone not listed above.</p>
-
-        <h2>6. Where we store your data</h2>
-        <p>
-            Page-level website analytics (Umami) and our newsletter system (Listmonk) are self-hosted on our own server
-            in Europe. Our license and download tracking server runs on Cloudflare Workers on a global CDN. PostHog and
-            Paddle are GDPR-compliant and have appropriate data processing agreements in place.
-        </p>
-
-        <h2>7. How long we keep your data</h2>
-        <ul>
-            <li>
-                <strong>Purchase records</strong> — kept for 7 years (Swedish accounting law requirement)
-            </li>
-            <li>
-                <strong>Email subscriptions</strong> — until you unsubscribe, then we have no use for it.
-            </li>
-            <li>
-                <strong>Analytics data</strong> — typically 2 years, then aggregated further, or deleted. Old data is less
-                helpful.
-            </li>
-        </ul>
-
-        <h2>8. Cookies</h2>
-        <p>
-            PostHog sets a first-party cookie to maintain your session while you browse our website. This is used for
-            session recordings and heatmaps—it doesn't track you across other websites. Umami, our page analytics tool,
-            doesn't use cookies at all.
-        </p>
-        <p>We don't use third-party advertising cookies or cross-site tracking.</p>
-
-        <h2>9. Your rights (GDPR)</h2>
-        <p>EU residents have the right to:</p>
-        <ul>
-            <li>
-                <strong>Access</strong> — request a copy of your personal data
-            </li>
-            <li>
-                <strong>Rectification</strong> — correct inaccurate data
-            </li>
-            <li>
-                <strong>Erasure</strong> — request deletion of your data ("right to be forgotten")
-            </li>
-            <li>
-                <strong>Portability</strong> — receive your data in a machine-readable format
-            </li>
-            <li>
-                <strong>Object</strong> — object to processing based on legitimate interest
-            </li>
-            <li>
-                <strong>Withdraw consent</strong> — for newsletter subscriptions, unsubscribe anytime
-            </li>
-        </ul>
-        <p>
-            To exercise these rights, email us at
-            <a href="mailto:legal@getcmdr.com">legal@getcmdr.com</a>. We'll respond within 30 days.
-        </p>
-        <p>
-            You also have the right to lodge a complaint with the Swedish Authority for Privacy Protection (IMY) or your
-            local data protection authority.
-        </p>
-        <p>That said, we try to be nice to everyone, not just EU citizens.</p>
-
-        <h2>10. Children's privacy</h2>
-        <p>
-            Cmdr is not directed at children under 16. We don't knowingly collect data from children. If you believe we
-            have, please contact us and we'll delete it.
-        </p>
-
-        <h2>11. Changes to this policy</h2>
-        <p>
-            We may update this policy occasionally. We'll notify you of significant changes via email (if you've
-            purchased a license) or by posting on our website. The "Last updated" date at the top tells you when it was
-            last revised.
-        </p>
-
-        <h2>12. Contact</h2>
-        <p>
-            Questions about your data? Want to exercise your rights? Email us at
-            <a href="mailto:legal@getcmdr.com">legal@getcmdr.com</a>.
-        </p>
+        <li>
+            <strong>Payment info</strong>: if you buy a license, payment is handled by Paddle. We see your email
+            address and purchase details, but never your credit card number—that'd be too much risk for us.
+        </li>
     </ul>
+
+    <h3>In the desktop app</h3>
+    <ul>
+        <li>
+            <strong>License key</strong>: stored locally on your machine. The app verifies it cryptographically
+            offline, and periodically checks our server to see if your subscription has expired or been extended.
+        </li>
+        <li>
+            <strong>Organization name</strong>: for commercial licenses, we store the organization name you provide
+            at checkout, to display it in the app's About window.
+        </li>
+    </ul>
+
+    <p>
+        That's it. The desktop app has <strong>no telemetry</strong>—it doesn't report usage statistics, feature
+        usage, or anything else back to us. The only network calls it makes are license validation and checking for
+        updates.
+    </p>
+
+    <h3>What we DON'T collect</h3>
+    <ul>
+        <li>
+            Your file names, contents, or any data from your file system, ever. We don't want to know your files.
+        </li>
+        <li>
+            Your prompts, the AI's answers, tool calls, etc. The communication is all private between you and your
+            AI, unless you use a provider (OpenAI, Anthropic, etc.) that have different terms. But with Cmdr, you
+            always have the option to keep ALL communications private with a local model.
+        </li>
+        <li>Your keystrokes, screenshots, or clicks from the app.</li>
+        <li>And we never train models on your data!</li>
+    </ul>
+
+    <h2>3. Why we collect this data (legal basis)</h2>
+    <p>
+        Under GDPR (EU law to protect your rights over your data), we need a legal basis for processing your data,
+        which is pretty nice and fair and we apply it to all our users globally, not just EU citizens. Here is a
+        list:
+    </p>
+    <ul>
+        <li>
+            <strong>License validation and subscription status checks</strong>: As a business baseline, we need to
+            know who has a valid license and who doesn't.
+        </li>
+        <li>
+            <strong>Legitimate interest</strong>: Website analytics and download counts help us understand how
+            people find and use our website, which directly shapes the product roadmap. This is strictly
+            <em>not</em> about tracking any particular user—we actively avoid that. We only look at aggregate data that
+            can't be traced back to a single person.
+        </li>
+        <li>
+            <strong>Consent</strong>: Email addresses to send you news that hopefully interest you. (You can
+            unsubscribe anytime from all communications we send, except for stuff we <em>need</em> to send like updates
+            to this very policy.)
+        </li>
+    </ul>
+
+    <h2>4. How we use your data</h2>
+    <ul>
+        <li>To process your license purchase</li>
+        <li>To maintain and improve Cmdr</li>
+        <li>To send you product updates (if you subscribed)</li>
+        <li>To respond to your support requests</li>
+        <li>To analyze website traffic and improve our communication</li>
+    </ul>
+
+    <h2>5. Who we share data with</h2>
+    <p>We only share data with service providers who help us operate Cmdr:</p>
+    <ul>
+        <li>
+            <strong>Paddle</strong> (payments) — processes purchases, handles taxes and invoicing. Based in the UK with
+            GDPR-compliant processing.
+            <a href="https://www.paddle.com/legal/privacy" target="_blank" rel="noopener noreferrer"
+                >Paddle's privacy policy</a
+            >
+        </li>
+        <li>
+            <strong>PostHog</strong> (website behavior) — session recordings and heatmaps to help us improve the website
+            experience. Cloud-hosted with EU data storage options.
+            <a href="https://posthog.com/privacy" target="_blank" rel="noopener noreferrer"
+                >PostHog's privacy policy</a
+            >
+        </li>
+        <li>
+            <strong>Cloudflare</strong> (hosting) — hosts our license validation and download tracking on its global CDN.
+            Download events (version, architecture, country) are stored in Cloudflare Analytics Engine.
+            <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener noreferrer"
+                >Cloudflare's privacy policy</a
+            >
+        </li>
+        <li>
+            <strong>Listmonk</strong> (newsletter) — self-hosted on our server. Stores your email address and subscription
+            status. No data leaves our infrastructure except when sending emails via AWS SES.
+        </li>
+        <li>
+            <strong>AWS SES</strong> (email delivery) — sends newsletter and confirmation emails on our behalf.
+            <a href="https://aws.amazon.com/privacy/" target="_blank" rel="noopener noreferrer"
+                >AWS privacy policy</a
+            >
+        </li>
+    </ul>
+    <p>
+        Our page-level website analytics (<strong>Umami</strong>) are self-hosted on our own server—no data is
+        shared with any third party for that.
+    </p>
+    <p>We don't sell your data. We don't share it with advertisers or anyone not listed above.</p>
+
+    <h2>6. Where we store your data</h2>
+    <p>
+        Page-level website analytics (Umami) and our newsletter system (Listmonk) are self-hosted on our own server
+        in Europe. Our license and download tracking server runs on Cloudflare Workers on a global CDN. PostHog and
+        Paddle are GDPR-compliant and have appropriate data processing agreements in place.
+    </p>
+
+    <h2>7. How long we keep your data</h2>
+    <ul>
+        <li>
+            <strong>Purchase records</strong> — kept for 7 years (Swedish accounting law requirement)
+        </li>
+        <li>
+            <strong>Email subscriptions</strong> — until you unsubscribe, then we have no use for it.
+        </li>
+        <li>
+            <strong>Analytics data</strong> — typically 2 years, then aggregated further, or deleted. Old data is less
+            helpful.
+        </li>
+    </ul>
+
+    <h2>8. Cookies</h2>
+    <p>
+        PostHog sets a first-party cookie to maintain your session while you browse our website. This is used for
+        session recordings and heatmaps—it doesn't track you across other websites. Umami, our page analytics tool,
+        doesn't use cookies at all.
+    </p>
+    <p>We don't use third-party advertising cookies or cross-site tracking.</p>
+
+    <h2>9. Your rights (GDPR)</h2>
+    <p>EU residents have the right to:</p>
+    <ul>
+        <li>
+            <strong>Access</strong> — request a copy of your personal data
+        </li>
+        <li>
+            <strong>Rectification</strong> — correct inaccurate data
+        </li>
+        <li>
+            <strong>Erasure</strong> — request deletion of your data ("right to be forgotten")
+        </li>
+        <li>
+            <strong>Portability</strong> — receive your data in a machine-readable format
+        </li>
+        <li>
+            <strong>Object</strong> — object to processing based on legitimate interest
+        </li>
+        <li>
+            <strong>Withdraw consent</strong> — for newsletter subscriptions, unsubscribe anytime
+        </li>
+    </ul>
+    <p>
+        To exercise these rights, email us at
+        <a href="mailto:legal@getcmdr.com">legal@getcmdr.com</a>. We'll respond within 30 days.
+    </p>
+    <p>
+        You also have the right to lodge a complaint with the Swedish Authority for Privacy Protection (IMY) or your
+        local data protection authority.
+    </p>
+    <p>That said, we try to be nice to everyone, not just EU citizens.</p>
+
+    <h2>10. Children's privacy</h2>
+    <p>
+        Cmdr is not directed at children under 16. We don't knowingly collect data from children. If you believe we
+        have, please contact us and we'll delete it.
+    </p>
+
+    <h2>11. Changes to this policy</h2>
+    <p>
+        We may update this policy occasionally. We'll notify you of significant changes via email (if you've
+        purchased a license) or by posting on our website. The "Last updated" date at the top tells you when it was
+        last revised.
+    </p>
+
+    <h2>12. Contact</h2>
+    <p>
+        Questions about your data? Want to exercise your rights? Email us at
+        <a href="mailto:legal@getcmdr.com">legal@getcmdr.com</a>.
+    </p>
 </LegalLayout>

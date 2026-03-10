@@ -39,6 +39,7 @@
         "eslint-plugin-astro": "^1.6.0",
         "eslint-plugin-prettier": "^5.5.5",
         "globals": "^17.4.0",
+        "html-validate": "^10.11.1",
         "prettier": "^3.8.1",
         "prettier-plugin-astro": "^0.14.1",
         "typescript": "^5.9.3",

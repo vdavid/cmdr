@@ -232,6 +232,15 @@ var AllChecks = []CheckDefinition{
 		Run:         RunWebsiteBuild,
 	},
 	{
+		ID:          "website-html-validate",
+		Nickname:    "html-validate",
+		DisplayName: "html-validate",
+		App:         AppWebsite,
+		Tech:        "🚀 Astro",
+		DependsOn:   []string{"website-build"},
+		Run:         RunWebsiteHTMLValidate,
+	},
+	{
 		ID:          "website-e2e",
 		DisplayName: "e2e",
 		App:         AppWebsite,

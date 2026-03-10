@@ -53,7 +53,7 @@ Run the smallest set of checks possible for efficiency while maintaining confide
   |cargo-audit|cargo-deny|cargo-udeps|jscpd-rust|cfg-gate|rust-tests|rust-tests-linux (slow)|license-server-prettier
   |license-server-eslint|license-server-typecheck|license-server-tests|gofmt|go-vet|staticcheck|ineffassign|misspell
   |gocyclo|nilaway|deadcode|go-tests|website-prettier|website-eslint|website-typecheck|website-build
-  |website-e2e|docker-build|pnpm-audit|file-length}` (can use multiple `--check` flags or even a comma-separated list)
+  |website-e2e|html-validate|docker-build|pnpm-audit|file-length}` (can use multiple `--check` flags or even a comma-separated list)
 - Run all: `./scripts/check.sh`. Runs all tests, linters, and formatters (with auto fixing) for all apps.
 - **E2E testing**: Docker E2E, Playwright smoke tests, VNC debugging, fixture system — see the colocated
   CLAUDE.md files in `apps/desktop/test/e2e-linux/` and `apps/desktop/test/e2e-macos/`
