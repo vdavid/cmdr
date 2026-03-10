@@ -4,15 +4,17 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
 
 ## Key files
 
-| File                         | Purpose                                          |
-| ---------------------------- | ------------------------------------------------ |
-| `navigation-history.ts`      | Purely functional immutable history stack        |
-| `path-navigation.ts`         | Async path resolution with fallback chain        |
-| `keyboard-shortcuts.ts`      | Home/End/PageUp/PageDown handling for file lists |
-| `VolumeBreadcrumb.svelte`    | Clickable volume label + grouped dropdown        |
-| `navigation-history.test.ts` | Full unit test coverage of history functions     |
-| `path-navigation.test.ts`    | Unit tests for path resolution and timeouts      |
-| `keyboard-shortcuts.test.ts` | Unit tests for shortcut calculations             |
+| File                             | Purpose                                                   |
+| -------------------------------- | --------------------------------------------------------- |
+| `navigation-history.ts`          | Purely functional immutable history stack                 |
+| `path-navigation.ts`             | Async path resolution with fallback chain                 |
+| `keyboard-shortcuts.ts`          | Home/End/PageUp/PageDown handling for file lists          |
+| `VolumeBreadcrumb.svelte`        | Clickable volume label + grouped dropdown                 |
+| `volume-grouping.ts`             | Pure logic: group volumes by category, get volume icons   |
+| `volume-space-manager.svelte.ts` | Reactive state machine for disk space fetch/retry/timeout |
+| `navigation-history.test.ts`     | Full unit test coverage of history functions              |
+| `path-navigation.test.ts`        | Unit tests for path resolution and timeouts               |
+| `keyboard-shortcuts.test.ts`     | Unit tests for shortcut calculations                      |
 
 ## `navigation-history.ts`
 
@@ -90,15 +92,8 @@ Brief PageUp/PageDown lands on the **bottom row** of the target column (TUI conv
 
 ## `VolumeBreadcrumb.svelte`
 
-Clickable label that opens a grouped dropdown of all available volumes.
-
-Volume groups (in display order):
-
-1. Favorites — no checkmark shown even if current path is a favorite
-2. main_volume + attached_volume — merged into one group
-3. Cloud drives
-4. Mobile (MTP) devices
-5. Network — always includes a synthetic `'network'` entry (`smb://`) plus any mounted SMB shares
+Clickable label that opens a grouped dropdown of all available volumes. Volume grouping logic and disk-space retry state
+are extracted into `volume-grouping.ts` and `volume-space-manager.svelte.ts` respectively.
 
 Props: `volumeId`, `currentPath`, `onVolumeChange?`.
 
@@ -111,14 +106,30 @@ movement > 5px threshold exits keyboard mode.
 MTP volumes are refreshed with a 100ms delay after hotplug events (`mtp-device-detected`, `mtp-device-connected`,
 `mtp-device-removed`) to let `mtp-store`'s own event handler finish first.
 
-### Timeout-aware UI
+Exported methods for parent components: `toggle()`, `open()`, `close()`, `getIsOpen()`, `handleKeyDown(e)`.
 
-Both `listVolumes()` and `getVolumeSpace()` return `TimedOut<T>` wrappers. The component tracks timeout state and
-renders inline indicators (no toasts):
+## `volume-grouping.ts`
 
-- **Volume list timeout** (`volumesTimedOut`): Shows a warning row at the bottom of the dropdown ("Some volumes may be
-  missing") with a retry button that re-calls `listVolumes()`. The warning auto-clears on successful retry. The dropdown
-  still opens with whatever partial data was returned.
+Pure logic for organizing volumes into display groups. No reactive state.
+
+`groupByCategory(vols, mtpVols)` — groups volumes by category in display order:
+
+1. Favorites — no checkmark shown even if current path is a favorite
+2. main_volume + attached_volume — merged into one group
+3. Cloud drives
+4. Mobile (MTP) devices — mapped from `MtpVolume[]`
+5. Network — always includes a synthetic `'network'` entry (`smb://`) plus any mounted SMB shares
+
+`getIconForVolume(volume)` — returns the appropriate icon path for a volume based on its category.
+
+## `volume-space-manager.svelte.ts`
+
+Reactive state machine for fetching, retrying, and caching disk space info per volume. Created via
+`createVolumeSpaceManager()` (functional factory, no classes).
+
+Both `listVolumes()` and `getVolumeSpace()` return `TimedOut<T>` wrappers. The manager tracks timeout state and exposes
+reactive sets for the component to render inline indicators (no toasts):
+
 - **Volume space timeout** (`spaceTimedOutSet`): Three-state cycle with per-volume tracking:
     - **Idle**: Dashed-outline placeholder bar with "?" icon, "Unavailable" text, tooltip "Couldn't fetch disk space --
       click to retry". After a retry has been attempted, tooltip changes to "Still unavailable -- click to retry".
@@ -127,10 +138,11 @@ renders inline indicators (no toasts):
     - **Failed**: Brief shake animation (300ms), then returns to idle with "Still unavailable" tooltip.
     - **Auto-retry**: 5s after initial timeout, an automatic retry fires with full visual feedback (spinner + shake on
       failure). Tracked via `spaceAutoRetryingSet` for tooltip distinction.
-    - All retry sets are cleared on volume mount/unmount events. Auto-retry timers are cleaned up on destroy.
+    - All retry sets are cleared via `clearAll()` on volume mount/unmount events. Auto-retry timers are cleaned up via
+      `destroy()`.
     - Reduced motion: spinner degrades to pulsing opacity, shake degrades to opacity flash.
-
-Exported methods for parent components: `toggle()`, `open()`, `close()`, `getIsOpen()`, `handleKeyDown(e)`.
+- **Volume list timeout** (`volumesTimedOut`): Tracked in the component itself (not in the manager) since it controls
+  the warning row at the bottom of the dropdown.
 
 ## Dependencies
 

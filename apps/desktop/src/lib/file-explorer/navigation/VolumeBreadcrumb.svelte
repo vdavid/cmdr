@@ -1,20 +1,13 @@
 <script lang="ts">
     import { onMount, onDestroy, tick } from 'svelte'
-    import {
-        listVolumes,
-        findContainingVolume,
-        getVolumeSpace,
-        listen,
-        type UnlistenFn,
-        type VolumeSpaceInfo,
-    } from '$lib/tauri-commands'
-    import { SvelteMap, SvelteSet } from 'svelte/reactivity'
+    import { listVolumes, findContainingVolume, listen, type UnlistenFn } from '$lib/tauri-commands'
     import { getDiskUsageLevel, getUsedPercent, formatDiskSpaceShort } from '../disk-space-utils'
     import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
-    import { withTimeout } from '$lib/utils/timing'
-    import type { VolumeInfo, LocationCategory } from '../types'
+    import type { VolumeInfo } from '../types'
     import { getMtpVolumes, initialize as initMtpStore, scanDevices as scanMtpDevices, type MtpVolume } from '$lib/mtp'
+    import { groupByCategory, getIconForVolume } from './volume-grouping'
+    import { createVolumeSpaceManager } from './volume-space-manager.svelte'
 
     interface Props {
         volumeId: string
@@ -42,32 +35,21 @@
     // This is used to show the checkmark on the correct volume, not on favorites
     let containingVolumeId = $state<string | null>(null)
 
-    // Disk space cache for volume selector (fetched lazily on dropdown open)
-    const volumeSpaceMap = new SvelteMap<string, VolumeSpaceInfo>()
-
     // Timeout tracking for listVolumes
     let volumesTimedOut = $state(false)
     let isRetryingVolumes = $state(false)
     let volumeRetryFailed = $state(false)
     let retryFailedRevertTimer: ReturnType<typeof setTimeout> | null = null
 
-    // Volume IDs whose getVolumeSpace call timed out (shown as placeholder bars)
-    const spaceTimedOutSet = new SvelteSet<string>()
-
-    // Volume IDs currently retrying a getVolumeSpace call (shown as spinner)
-    const spaceRetryingSet = new SvelteSet<string>()
-
-    // Volume IDs whose retry just failed (triggers shake animation, then clears)
-    const spaceRetryFailedSet = new SvelteSet<string>()
-
-    // Whether a retry was already attempted for a volume (persists to show "Still unavailable" tooltip)
-    const spaceRetryAttemptedSet = new SvelteSet<string>()
-
-    // Volume IDs currently being auto-retried (for "Retrying automatically..." tooltip)
-    const spaceAutoRetryingSet = new SvelteSet<string>()
-
-    // Timer refs for auto-retry so we can clean up on destroy
-    const autoRetryTimers: ReturnType<typeof setTimeout>[] = []
+    const spaceManager = createVolumeSpaceManager()
+    const {
+        volumeSpaceMap,
+        spaceTimedOutSet,
+        spaceRetryingSet,
+        spaceRetryFailedSet,
+        spaceRetryAttemptedSet,
+        spaceAutoRetryingSet,
+    } = spaceManager
 
     // Current volume info derived from volumes list (the actual containing volume)
     // Special case: 'network' is a virtual volume, not from the backend
@@ -96,7 +78,7 @@
     const currentVolumeIcon = $derived(getIconForVolume(currentVolume))
 
     // Group volumes by category for display
-    const groupedVolumes = $derived(groupByCategory(volumes))
+    const groupedVolumes = $derived(groupByCategory(volumes, mtpVolumes))
 
     // Flat list of all volumes for keyboard navigation
     const allVolumes = $derived(groupedVolumes.flatMap((g) => g.items))
@@ -121,89 +103,6 @@
             const top = dropdown.getBoundingClientRect().top
             dropdown.style.maxHeight = `${String(window.innerHeight - top - 8)}px`
         }
-    }
-
-    // Get appropriate icon for a volume (use cloud icon for cloud drives, mobile icon for devices)
-    function getIconForVolume(volume: VolumeInfo | undefined): string | undefined {
-        if (!volume) return undefined
-        // Cloud drives use the cloud icon
-        if (volume.category === 'cloud_drive') {
-            return '/icons/sync-online-only.svg'
-        }
-        // Mobile devices use the mobile device icon
-        if (volume.category === 'mobile_device') {
-            return '/icons/mobile-device.svg'
-        }
-        // Network uses globe/network emoji as fallback
-        if (volume.category === 'network' && !volume.icon) {
-            return undefined // Will use placeholder
-        }
-        return volume.icon
-    }
-
-    function groupByCategory(vols: VolumeInfo[]): { category: LocationCategory; label: string; items: VolumeInfo[] }[] {
-        const categoryOrder: { category: LocationCategory; label: string }[] = [
-            { category: 'favorite', label: 'Favorites' },
-            { category: 'main_volume', label: 'Volumes' },
-            { category: 'attached_volume', label: '' }, // No label, continues main volumes
-            { category: 'cloud_drive', label: 'Cloud' },
-            { category: 'mobile_device', label: 'Mobile' },
-            { category: 'network', label: 'Network' },
-        ]
-
-        const groups: { category: LocationCategory; label: string; items: VolumeInfo[] }[] = []
-
-        for (const { category, label } of categoryOrder) {
-            if (category === 'mobile_device') {
-                // Mobile section: show MTP volumes (one per storage on connected devices)
-                const mobileItems: VolumeInfo[] = mtpVolumes.map((v) => ({
-                    id: v.id,
-                    name: v.name,
-                    path: v.path,
-                    category: 'mobile_device' as const,
-                    icon: undefined, // Will use 📱 placeholder
-                    isEjectable: true,
-                    isReadOnly: v.isReadOnly,
-                }))
-
-                if (mobileItems.length > 0) {
-                    groups.push({ category, label, items: mobileItems })
-                }
-            } else if (category === 'network') {
-                // Network section: show a single "Network" item that opens NetworkBrowser
-                // Also include any pre-mounted network volumes (mounted shares)
-                const networkVolumes = vols.filter((v) => v.category === 'network')
-
-                // Create the single "Network" entry that opens NetworkBrowser
-                const networkItem: VolumeInfo = {
-                    id: 'network',
-                    name: 'Network',
-                    path: 'smb://', // Virtual path
-                    category: 'network' as const,
-                    icon: undefined, // Will use 🌐 placeholder
-                    isEjectable: false,
-                }
-
-                // Show network entry plus any mounted shares
-                const allItems = [networkItem, ...networkVolumes]
-                groups.push({ category, label, items: allItems })
-            } else {
-                const items = vols.filter((v) => v.category === category)
-                if (items.length > 0) {
-                    // Merge attached_volume into the previous group (main_volume)
-                    if (category === 'attached_volume' && groups.length > 0) {
-                        const lastGroup = groups[groups.length - 1]
-                        if (lastGroup.category === 'main_volume') {
-                            lastGroup.items.push(...items)
-                            continue
-                        }
-                    }
-                    groups.push({ category, label, items })
-                }
-            }
-        }
-
-        return groups
     }
 
     async function loadVolumes() {
@@ -257,7 +156,7 @@
     function handleToggle() {
         isOpen = !isOpen
         if (isOpen) {
-            void fetchVolumeSpaces(volumes)
+            void spaceManager.fetchVolumeSpaces(volumes)
         }
     }
 
@@ -265,7 +164,7 @@
     export function toggle() {
         isOpen = !isOpen
         if (isOpen) {
-            void fetchVolumeSpaces(volumes)
+            void spaceManager.fetchVolumeSpaces(volumes)
         }
     }
 
@@ -282,7 +181,7 @@
     // Export to explicitly open the dropdown
     export function open() {
         isOpen = true
-        void fetchVolumeSpaces(volumes)
+        void spaceManager.fetchVolumeSpaces(volumes)
     }
 
     // Export keyboard handler for parent components to call
@@ -423,87 +322,6 @@
         mtpVolumes = getMtpVolumes()
     }
 
-    async function fetchVolumeSpaces(vols: VolumeInfo[]): Promise<void> {
-        const volumeSpaceTimeoutMs = 3000
-        const autoRetryDelayMs = 5000
-        const physicalVolumes = vols.filter((v) => v.category === 'main_volume' || v.category === 'attached_volume')
-        await Promise.all(
-            physicalVolumes
-                .filter((v) => !volumeSpaceMap.has(v.id))
-                .map(async (v) => {
-                    const result = await withTimeout(getVolumeSpace(v.path), volumeSpaceTimeoutMs, null)
-                    if (!result) {
-                        // Frontend timeout (withTimeout returned fallback null)
-                        spaceTimedOutSet.add(v.id)
-                        scheduleAutoRetry(v, autoRetryDelayMs)
-                        return
-                    }
-                    const { data: space, timedOut } = result
-                    if (timedOut || !space) {
-                        spaceTimedOutSet.add(v.id)
-                        scheduleAutoRetry(v, autoRetryDelayMs)
-                    } else {
-                        spaceTimedOutSet.delete(v.id)
-                        volumeSpaceMap.set(v.id, space)
-                    }
-                }),
-        )
-    }
-
-    function scheduleAutoRetry(volume: VolumeInfo, delayMs: number) {
-        const timer = setTimeout(() => {
-            // Only auto-retry if still timed out and not already retrying
-            if (spaceTimedOutSet.has(volume.id) && !spaceRetryingSet.has(volume.id)) {
-                void doRetryVolumeSpace(volume, true)
-            }
-        }, delayMs)
-        autoRetryTimers.push(timer)
-    }
-
-    async function doRetryVolumeSpace(volume: VolumeInfo, isAutoRetry: boolean) {
-        const volumeSpaceTimeoutMs = 3000
-        spaceRetryingSet.add(volume.id)
-        spaceRetryFailedSet.delete(volume.id)
-        spaceRetryAttemptedSet.add(volume.id)
-        if (isAutoRetry) spaceAutoRetryingSet.add(volume.id)
-
-        try {
-            const result = await withTimeout(getVolumeSpace(volume.path), volumeSpaceTimeoutMs, null)
-            if (!result) {
-                // Frontend timeout again
-                handleRetryFailure(volume.id)
-                return
-            }
-            const { data: space, timedOut } = result
-            if (!timedOut && space) {
-                spaceTimedOutSet.delete(volume.id)
-                spaceRetryingSet.delete(volume.id)
-                spaceAutoRetryingSet.delete(volume.id)
-                volumeSpaceMap.set(volume.id, space)
-            } else {
-                handleRetryFailure(volume.id)
-            }
-        } catch {
-            handleRetryFailure(volume.id)
-        }
-    }
-
-    function handleRetryFailure(volumeId: string) {
-        spaceRetryingSet.delete(volumeId)
-        spaceAutoRetryingSet.delete(volumeId)
-        spaceRetryFailedSet.add(volumeId)
-        // Clear the shake trigger after the animation completes (~300ms)
-        setTimeout(() => {
-            spaceRetryFailedSet.delete(volumeId)
-        }, 400)
-    }
-
-    function retryVolumeSpace(volume: VolumeInfo) {
-        // Debounce: ignore clicks while a retry is in flight
-        if (spaceRetryingSet.has(volume.id)) return
-        void doRetryVolumeSpace(volume, false)
-    }
-
     onMount(async () => {
         await loadVolumes()
         await loadMtpVolumes()
@@ -511,22 +329,12 @@
 
         // Listen for volume mount/unmount events
         unlistenMount = await listen<{ volumeId: string }>('volume-mounted', () => {
-            volumeSpaceMap.clear()
-            spaceTimedOutSet.clear()
-            spaceRetryingSet.clear()
-            spaceRetryFailedSet.clear()
-            spaceRetryAttemptedSet.clear()
-            spaceAutoRetryingSet.clear()
+            spaceManager.clearAll()
             void loadVolumes()
         })
 
         unlistenUnmount = await listen<{ volumeId: string }>('volume-unmounted', () => {
-            volumeSpaceMap.clear()
-            spaceTimedOutSet.clear()
-            spaceRetryingSet.clear()
-            spaceRetryFailedSet.clear()
-            spaceRetryAttemptedSet.clear()
-            spaceAutoRetryingSet.clear()
+            spaceManager.clearAll()
             void loadVolumes()
         })
 
@@ -556,7 +364,7 @@
         unlistenMtpDetected?.()
         unlistenMtpConnected?.()
         unlistenMtpRemoved?.()
-        for (const timer of autoRetryTimers) clearTimeout(timer)
+        spaceManager.destroy()
         document.removeEventListener('click', handleClickOutside)
         document.removeEventListener('keydown', handleDocumentKeyDown)
     })
@@ -672,7 +480,7 @@
                                 : "Couldn't fetch disk space \u2014 click to retry"}
                             onclick={(e: MouseEvent) => {
                                 e.stopPropagation()
-                                retryVolumeSpace(volume)
+                                spaceManager.retryVolumeSpace(volume)
                             }}
                         >
                             <div class="volume-space-bar volume-space-bar-timeout">
