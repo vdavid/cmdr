@@ -11,13 +11,13 @@ export function getNewSortOrder(newColumn: SortColumn, currentColumn: SortColumn
 }
 
 /** Converts frontend indices (which include ".." at index 0) to backend indices. */
-function toBackendIndices(frontendIndices: number[], hasParent: boolean): number[] {
+export function toBackendIndices(frontendIndices: number[], hasParent: boolean): number[] {
     if (!hasParent) return frontendIndices
     return frontendIndices.filter((i) => i > 0).map((i) => i - 1)
 }
 
 /** Converts backend indices to frontend indices (adding 1 for ".." entry). */
-function toFrontendIndices(backendIndices: number[], hasParent: boolean): number[] {
+export function toFrontendIndices(backendIndices: number[], hasParent: boolean): number[] {
     if (!hasParent) return backendIndices
     return backendIndices.map((i) => i + 1)
 }

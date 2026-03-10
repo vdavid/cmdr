@@ -100,6 +100,10 @@ There are two MCP servers available to you:
 - When writing CSS, ALWAYS use variables defined in `apps/desktop/src/app.css`. Stylelint catches
   undefined/hallucinated CSS variables.
 - Always cover your code with tests until you're confident in your implementation!
+- **Coverage allowlist is a last resort.** There's no point in testing wiring, that's for sure. But in the case of real
+  logic, extract pure functions to a `.ts` file and test them. Only allowlist what can't be tested (Tauri IPC wrappers,
+  DOM-only code, pure UI components with no logic). Name the specific untestable API calls in the reason.
+  "Depends on Tauri" isn't enough.
 - When adding new code that loads remote content (like `fetch` from external URLs or `iframe`), always ask the user
   whether to **disable** that functionality in dev mode, and use static/mock data instead. It's because we use
   `withGlobalTauri: true` in dev mode for MCP Server Tauri, which is a security risk.

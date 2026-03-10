@@ -2,6 +2,9 @@
     "$comment": "Files listed here are exempt from coverage thresholds. Each entry should include a reason. Remove entries as you add tests.",
     "files": {
         "accent-color.ts": { "reason": "Depends on Tauri invoke and listen APIs" },
+        "commands/command-registry.ts": {
+            "reason": "95% static command definitions; filtering validated by fuzzy-search tests"
+        },
         "ui/AlertDialog.svelte": { "reason": "Simple UI modal for informational messages" },
         "ui/CommandBox.svelte": { "reason": "Simple UI component, clipboard + 2s timeout" },
         "ui/dialog-registry.ts": { "reason": "Pure constant and type definition, no logic to test" },
@@ -28,16 +31,15 @@
         },
         "file-explorer/pane/DualPaneExplorer.svelte": { "reason": "Tested in integration.test.ts, complex component" },
         "file-operations/mkdir/new-folder-operations.ts": { "reason": "Depends on FilePane refs and Tauri listen API" },
-        "file-explorer/pane/sorting-handlers.ts": { "reason": "getNewSortOrder tested, rest depends on FilePane refs" },
+        "file-explorer/pane/sorting-handlers.ts": {
+            "reason": "applySortResult/collectSortState depend on FilePane refs; index functions tested"
+        },
         "file-explorer/selection/FileIcon.svelte": { "reason": "Simple UI component, display only" },
         "file-explorer/pane/FilePane.svelte": { "reason": "Tested in integration.test.ts, complex component" },
         "file-explorer/pane/MtpConnectionView.svelte": { "reason": "MTP connection UI, depends on Tauri APIs" },
         "file-explorer/pane/NetworkMountView.svelte": { "reason": "Network mount UI, depends on Tauri APIs" },
         "file-explorer/pane/rename-flow.svelte.ts": {
             "reason": "Extracted from FilePane, depends on Tauri commands and rename operations"
-        },
-        "file-explorer/pane/selection-state.svelte.ts": {
-            "reason": "Reactive selection state, tested via FilePane integration"
         },
         "file-explorer/views/FullList.svelte": {
             "reason": "Logic tested in full-list-utils.ts, component mounting heavy"
@@ -50,7 +52,6 @@
         },
         "file-explorer/network/NetworkBrowser.svelte": { "reason": "Network component, needs Tauri integration" },
         "file-explorer/pane/PaneResizer.svelte": { "reason": "Mouse drag UI component, difficult to unit test" },
-        "file-explorer/navigation/path-navigation.ts": { "reason": "Depends on Tauri pathExists command" },
         "file-explorer/network/NetworkLoginForm.svelte": { "reason": "Network component, needs Tauri integration" },
         "file-explorer/pane/PermissionDeniedPane.svelte": { "reason": "Simple UI component" },
         "file-explorer/pane/VolumeUnreachableBanner.svelte": {
@@ -79,8 +80,6 @@
         "settings/components/SettingNumberInput.svelte": { "reason": "UI component, logic is simple" },
         "settings/components/SettingRadioGroup.svelte": { "reason": "UI component, logic is simple" },
         "settings/components/SectionSummary.svelte": { "reason": "UI component, simple navigation cards" },
-        "settings/format-utils.ts": { "reason": "Simple date formatting, low complexity" },
-        "settings/network-settings.ts": { "reason": "Thin wrapper over getSetting, requires mocking settings store" },
         "settings/reactive-settings.svelte.ts": { "reason": "Svelte reactive state, depends on settings store" },
         "settings/settings-applier.ts": { "reason": "Depends on DOM APIs (document.documentElement.style)" },
         "settings/components/SettingRow.svelte": { "reason": "UI component, layout only" },
@@ -97,6 +96,9 @@
         "settings/sections/KeyboardShortcutsSection.svelte": {
             "reason": "UI section, logic tested in shortcuts/*.test.ts"
         },
+        "settings/sections/LicenseSection.svelte": {
+            "reason": "UI section, pure logic extracted to license-section-utils.ts and tested"
+        },
         "settings/sections/LoggingSection.svelte": { "reason": "UI section, simple rendering" },
         "settings/mcp-settings-bridge.ts": { "reason": "MCP bridge, depends on Tauri APIs and events" },
         "settings/sections/McpServerSection.svelte": { "reason": "UI section, depends on Tauri APIs" },
@@ -107,7 +109,6 @@
         "settings/sections/UpdatesSection.svelte": { "reason": "UI section, simple rendering" },
         "settings/settings-store.ts": { "reason": "Depends on Tauri store APIs" },
         "settings/settings-window.ts": { "reason": "Depends on Tauri window APIs" },
-        "shortcuts/conflict-detector.ts": { "reason": "Logic tested via shortcuts.test.ts" },
         "shortcuts/mcp-shortcuts-listener.ts": { "reason": "MCP listener, depends on Tauri events" },
         "shortcuts/keyboard-handler.ts": { "reason": "DOM event handling, tested via integration" },
         "shortcuts/shortcuts-store.ts": { "reason": "Depends on Tauri store APIs" },
@@ -121,7 +122,6 @@
         "tauri-commands/mtp.ts": { "reason": "Tauri command wrappers, tested via integration" },
         "tauri-commands/networking.ts": { "reason": "Tauri command wrappers, tested via integration" },
         "tauri-commands/settings.ts": { "reason": "Tauri command wrappers, tested via integration" },
-        "tauri-commands/ipc-types.ts": { "reason": "Type definitions and small helpers, tested via consuming modules" },
         "tauri-commands/storage.ts": { "reason": "Tauri command wrappers, tested via integration" },
         "tauri-commands/write-operations.ts": { "reason": "Tauri command wrappers, tested via integration" },
         "utils/confirm-dialog.ts": { "reason": "Thin wrapper over Tauri dialog API" },

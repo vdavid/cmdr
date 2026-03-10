@@ -11,6 +11,7 @@
         type LicenseStatus,
     } from '$lib/tauri-commands'
     import Button from '$lib/ui/Button.svelte'
+    import { getLicenseTypeLabel, getStatusText } from './license-section-utils'
 
     let licenseInfo = $state<LicenseInfo | null>(null)
     let licenseStatus = $state<LicenseStatus | null>(null)
@@ -29,41 +30,8 @@
         }
     })
 
-    function getLicenseTypeLabel(): string {
-        if (!licenseInfo) return 'Personal (free)'
-        if (licenseInfo.licenseType === 'commercial_perpetual') return 'Commercial perpetual'
-        if (licenseInfo.licenseType === 'commercial_subscription') return 'Commercial subscription'
-        if (licenseInfo.licenseType === 'supporter') return 'Supporter'
-        return 'Personal (free)'
-    }
-
-    function formatDate(dateStr: string | null | undefined): string {
-        if (!dateStr) return ''
-        try {
-            return new Date(dateStr).toLocaleDateString(undefined, {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-            })
-        } catch {
-            return dateStr
-        }
-    }
-
-    function getStatusText(): string | null {
-        if (!licenseStatus) return null
-        if (licenseStatus.type === 'expired') return `Expired on ${formatDate(licenseStatus.expiredAt)}`
-        if (licenseStatus.type === 'commercial') {
-            if (licenseStatus.licenseType === 'commercial_perpetual') {
-                return licenseStatus.expiresAt ? `Updates until ${formatDate(licenseStatus.expiresAt)}` : 'Active'
-            }
-            return licenseStatus.expiresAt ? `Valid until ${formatDate(licenseStatus.expiresAt)}` : 'Active'
-        }
-        return null
-    }
-
     const hasLicense = $derived(licenseInfo !== null)
-    const statusText = $derived(getStatusText())
+    const statusText = $derived(getStatusText(licenseStatus))
 
     async function handleManageLicense() {
         await emitTo('main', 'execute-command', { commandId: 'app.licenseKey' })
@@ -82,7 +50,7 @@
         <div class="license-info">
             <div class="info-row">
                 <span class="info-label">License type</span>
-                <span class="info-value">{getLicenseTypeLabel()}</span>
+                <span class="info-value">{getLicenseTypeLabel(licenseInfo)}</span>
             </div>
             {#if licenseInfo?.organizationName}
                 <div class="info-row">

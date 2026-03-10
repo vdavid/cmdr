@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getNewSortOrder } from './sorting-handlers'
+import { getNewSortOrder, toBackendIndices, toFrontendIndices } from './sorting-handlers'
 
 describe('getNewSortOrder', () => {
     describe('clicking the same column', () => {
@@ -52,5 +52,48 @@ describe('getNewSortOrder', () => {
             expect(getNewSortOrder('size', 'name', 'ascending')).toBe('descending')
             expect(getNewSortOrder('size', 'name', 'descending')).toBe('descending')
         })
+    })
+})
+
+describe('toBackendIndices', () => {
+    it('returns indices unchanged when no parent', () => {
+        expect(toBackendIndices([0, 1, 2], false)).toEqual([0, 1, 2])
+    })
+
+    it('shifts indices down by 1 when hasParent', () => {
+        expect(toBackendIndices([1, 2, 3], true)).toEqual([0, 1, 2])
+    })
+
+    it('filters out index 0 when hasParent (the ".." entry)', () => {
+        expect(toBackendIndices([0, 1, 2], true)).toEqual([0, 1])
+    })
+
+    it('handles empty array', () => {
+        expect(toBackendIndices([], true)).toEqual([])
+        expect(toBackendIndices([], false)).toEqual([])
+    })
+
+    it('filters index 0 and shifts remaining when hasParent', () => {
+        expect(toBackendIndices([0, 3, 5], true)).toEqual([2, 4])
+    })
+})
+
+describe('toFrontendIndices', () => {
+    it('returns indices unchanged when no parent', () => {
+        expect(toFrontendIndices([0, 1, 2], false)).toEqual([0, 1, 2])
+    })
+
+    it('shifts indices up by 1 when hasParent', () => {
+        expect(toFrontendIndices([0, 1, 2], true)).toEqual([1, 2, 3])
+    })
+
+    it('handles empty array', () => {
+        expect(toFrontendIndices([], true)).toEqual([])
+        expect(toFrontendIndices([], false)).toEqual([])
+    })
+
+    it('handles single element', () => {
+        expect(toFrontendIndices([5], true)).toEqual([6])
+        expect(toFrontendIndices([5], false)).toEqual([5])
     })
 })
