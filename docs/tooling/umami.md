@@ -54,6 +54,17 @@ ssh hetzner "docker exec umami-db psql -U umami -d umami -c \
 
 **Full API docs**: https://umami.is/docs/api
 
+## Changing Umami config
+
+Umami's `docker-compose.yml` and Caddy config live in the **`hetzner-server`** repo (separate from this repo), checked
+out locally at `~/projects-git/vdavid/hetzner-server` and on the server at `~/hetzner-server`. **Never edit files
+directly on the server.** The process:
+
+1. Edit the file in the local `hetzner-server` repo
+2. Commit and push
+3. On the server: `ssh hetzner "cd ~/hetzner-server && git pull"`
+4. Restart the container: `ssh hetzner "cd ~/hetzner-server/umami && docker compose down && docker compose up -d"`
+
 ## Troubleshooting
 
 If events aren't recording:
@@ -67,3 +78,7 @@ If events aren't recording:
    range or timezone issue in the API query.
 4. **Bot filtering**: Umami silently drops events with minimal `User-Agent` strings. Real browsers work fine. A
    `curl` test needs a full browser-like UA to be recorded.
+5. **`TRACKER_SCRIPT_NAME`**: Set to `mami` in the Umami `docker-compose.yml`. The script is served at `/mami`
+   (no `.js` extension — Umami uses the value literally as the path). Short names like `s` break the Umami API
+   because Next.js middleware matches any URL path containing the tracker name and rewrites it to serve the script.
+   Keep the name distinctive.

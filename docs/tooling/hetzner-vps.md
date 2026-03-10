@@ -22,6 +22,10 @@ The repo is cloned at `/opt/cmdr`, owned by the `deploy-cmdr` user. The `david` 
     └── deploy-webhook/             # GitHub Actions deploy hook
 ```
 
+Caddy, Umami, and other non-Cmdr services are managed in the separate **`hetzner-server`** repo (`~/hetzner-server`
+on the server, `~/projects-git/vdavid/hetzner-server` locally). **Never edit those files directly on the server** —
+commit and push locally, then `git pull` on the server.
+
 Caddy runs as a reverse proxy in front of everything on the `proxy-net` Docker network.
 
 ## Common operations
