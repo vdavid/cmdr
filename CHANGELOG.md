@@ -7,6 +7,25 @@ and we use [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-03-10
+
+### Added
+
+- Add top menu icons ([1a2621a](https://github.com/vdavid/cmdr/commit/1a2621a))
+- Add View, Copy, Move, New folder, and Delete actions to context menu ([a966f17](https://github.com/vdavid/cmdr/commit/a966f17))
+
+### Fixed
+
+- Fix OOM crash from unbounded indexing buffers — toggling Full Disk Access could replay millions of FSEvents with zero backpressure, consuming 500+ GB RAM. All buffers are now bounded (~350 MB peak), with a memory watchdog that stops indexing at 16 GB ([f1501ec](https://github.com/vdavid/cmdr/commit/f1501ec))
+
+### Non-app
+
+- Website: add llms.txt, Schema.org JSON-LD, and auto-generated sitemap for agent accessibility ([ba64c36](https://github.com/vdavid/cmdr/commit/ba64c36))
+- Website: update roadmap ([5197120](https://github.com/vdavid/cmdr/commit/5197120))
+- CI: simplify release pipeline, download sigs directly from release, generate `latest.json` with `jq`, validate all 3 sigs before proceeding ([d3095cb](https://github.com/vdavid/cmdr/commit/d3095cb), [5b82cd0](https://github.com/vdavid/cmdr/commit/5b82cd0))
+- CI: fix Backspace E2E test on WebKitGTK, fix CI failures, fix 3 flaky tests ([7c22951](https://github.com/vdavid/cmdr/commit/7c22951), [79f593c](https://github.com/vdavid/cmdr/commit/79f593c), [8f4ea82](https://github.com/vdavid/cmdr/commit/8f4ea82))
+- Docs: add troubleshooting section to releasing guide ([1768b29](https://github.com/vdavid/cmdr/commit/1768b29))
+
 ## [0.6.0] - 2026-03-08
 
 ### Added
