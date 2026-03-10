@@ -5,6 +5,7 @@
 
 import { invoke } from '@tauri-apps/api/core'
 import { listen, type UnlistenFn } from '$lib/tauri-commands'
+import { addToast } from '$lib/ui/toast'
 
 // Scan state
 let scanning = $state(false)
@@ -28,6 +29,21 @@ export function getDirsFound(): number {
 function resetCounters() {
     entriesScanned = 0
     dirsFound = 0
+}
+
+const rescanReasonToMessage: Record<string, string> = {
+    stale_index:
+        "Your drive index is outdated — it looks like the app hasn't run for a while. Running a fresh scan to catch up.",
+    journal_gap: "The system's file change log doesn't go back far enough. Running a fresh scan to rebuild the index.",
+    replay_overflow:
+        'A lot of file changes happened since last run. Running a fresh scan instead of replaying them one by one.',
+    too_many_subdir_rescans:
+        'Many directories changed significantly since last run. Running a fresh scan to get everything up to date.',
+    watcher_start_failed: "Couldn't start the file change watcher. Running a fresh scan to get the index up to date.",
+    reconciler_buffer_overflow:
+        'Heavy filesystem activity overwhelmed the event buffer. Running a fresh scan to stay accurate.',
+    incomplete_previous_scan:
+        "The previous scan didn't finish (the app may have been closed). Restarting the scan from scratch.",
 }
 
 // Event listener cleanup handles
@@ -62,6 +78,17 @@ export async function initIndexState(): Promise<void> {
         dirsFound = event.payload.totalDirs
     })
     unlistenHandles.push(unlistenComplete)
+
+    const unlistenRescan = await listen<{
+        volumeId: string
+        reason: string
+        details: string
+    }>('index-rescan-notification', (event) => {
+        const message =
+            rescanReasonToMessage[event.payload.reason] ?? 'Running a fresh drive scan to keep the index accurate.'
+        addToast(message, { level: 'info', timeoutMs: 8000, id: 'index-rescan' })
+    })
+    unlistenHandles.push(unlistenRescan)
 
     // Query current status to catch scans already in progress before the frontend loaded.
     // The scan starts in Tauri's setup() hook, so the 'index-scan-started' event may fire

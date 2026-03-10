@@ -280,6 +280,11 @@ impl EventReconciler {
         });
     }
 
+    /// Whether the reconciler's event buffer overflowed during the scan.
+    pub(super) fn did_buffer_overflow(&self) -> bool {
+        self.buffer_overflow
+    }
+
     /// Number of buffered events (for diagnostics).
     #[cfg(test)]
     pub fn buffer_len(&self) -> usize {

@@ -35,13 +35,14 @@ cancelNavPriority(path: string): Promise<void>
 
 ## Scan state (`index-state.svelte.ts`)
 
-Module-level `$state` variables (`scanning`, `entriesScanned`, `dirsFound`) react to three Tauri events:
+Module-level `$state` variables (`scanning`, `entriesScanned`, `dirsFound`) react to four Tauri events:
 
-| Event                 | Payload                                             | Effect                               |
-| --------------------- | --------------------------------------------------- | ------------------------------------ |
-| `index-scan-started`  | `{ volumeId }`                                      | `scanning = true`, counters reset    |
-| `index-scan-progress` | `{ volumeId, entriesScanned, dirsFound }`           | Update counters                      |
-| `index-scan-complete` | `{ volumeId, totalEntries, totalDirs, durationMs }` | `scanning = false`, set final counts |
+| Event                       | Payload                                             | Effect                                       |
+| --------------------------- | --------------------------------------------------- | -------------------------------------------- |
+| `index-scan-started`        | `{ volumeId }`                                      | `scanning = true`, counters reset            |
+| `index-scan-progress`       | `{ volumeId, entriesScanned, dirsFound }`           | Update counters                              |
+| `index-scan-complete`       | `{ volumeId, totalEntries, totalDirs, durationMs }` | `scanning = false`, set final counts         |
+| `index-rescan-notification` | `{ volumeId, reason, details }`                     | Show info toast with reason-specific message |
 
 **Startup race condition**: The Rust indexer starts in Tauri's `setup()` hook before the frontend registers listeners.
 `initIndexState` uses a "listen first, then query" pattern: registers event listeners, then calls `get_index_status` IPC
@@ -105,4 +106,5 @@ No unit or integration tests exist for this module yet. Manual testing via the R
 
 - `@tauri-apps/api/core` — `invoke`
 - `$lib/tauri-commands` — `listen`, `UnlistenFn`
+- `$lib/ui/toast` — `addToast` (rescan notification toasts)
 - `$lib/file-explorer/selection/selection-info-utils` — `formatNumber` (overlay only)

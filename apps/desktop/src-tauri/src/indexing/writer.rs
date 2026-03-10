@@ -63,6 +63,10 @@ pub enum WriteMessage {
     /// Flush: confirms all prior messages have been committed.
     /// The writer responds through the channel after processing this message.
     Flush(oneshot::Sender<()>),
+    /// Truncate `entries` and `dir_stats` tables, preserving `meta`.
+    /// Used before a full rescan on a stale DB to avoid slow `INSERT OR REPLACE`
+    /// on a populated table with the expensive `platform_case` collation.
+    TruncateData,
     /// Begin an explicit SQLite transaction.
     /// All subsequent writes are batched until `CommitTransaction`.
     /// Dramatically reduces fsync overhead for bulk operations (replay).
@@ -131,6 +135,19 @@ impl IndexWriter {
         let (tx, rx) = oneshot::channel();
         self.send(WriteMessage::Flush(tx))?;
         rx.await.map_err(|_| {
+            IndexStoreError::Io(std::io::Error::new(
+                std::io::ErrorKind::BrokenPipe,
+                "Writer thread dropped flush reply",
+            ))
+        })
+    }
+
+    /// Send a `Flush` and block until all prior messages have been committed.
+    /// Safe to call from synchronous code (no async runtime needed).
+    pub fn flush_blocking(&self) -> Result<(), IndexStoreError> {
+        let (tx, rx) = oneshot::channel();
+        self.send(WriteMessage::Flush(tx))?;
+        rx.blocking_recv().map_err(|_| {
             IndexStoreError::Io(std::io::Error::new(
                 std::io::ErrorKind::BrokenPipe,
                 "Writer thread dropped flush reply",
@@ -387,6 +404,20 @@ fn process_message(conn: &rusqlite::Connection, msg: WriteMessage, stats: &Write
             dir_count_delta,
         } => {
             propagate_delta_by_id(conn, entry_id, size_delta, file_count_delta, dir_count_delta);
+        }
+        WriteMessage::TruncateData => {
+            let t = Instant::now();
+            match conn.execute_batch(
+                "DELETE FROM dir_stats; DELETE FROM entries; INSERT OR IGNORE INTO entries (id, parent_id, name, is_directory, is_symlink) VALUES (1, 0, '', 1, 0);",
+            ) {
+                Ok(()) => {
+                    log::info!(
+                        "Writer: truncated entries + dir_stats ({}ms)",
+                        t.elapsed().as_millis(),
+                    );
+                }
+                Err(e) => log::warn!("Writer: truncate failed: {e}"),
+            }
         }
         WriteMessage::ComputeAllAggregates => {
             let t = Instant::now();

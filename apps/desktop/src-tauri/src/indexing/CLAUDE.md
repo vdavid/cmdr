@@ -32,8 +32,11 @@ App startup
   |-- init(): register IndexManagerState in Tauri
   |-- start_indexing(): create IndexManager, open SQLite, spawn writer thread
   |-- resume_or_scan():
-  |   |-- macOS: Has existing index + last_event_id? -> sinceWhen replay (FSEvents journal)
+  |   |-- macOS: Has existing index + last_event_id?
+  |   |   |-- Pre-check: event gap > 1M? -> emit index-rescan-notification (StaleIndex), truncate entries+dir_stats, full scan
+  |   |   |-- Otherwise -> sinceWhen replay (FSEvents journal)
   |   |-- Linux: Always full rescan (no event journal; existing DB used for instant enrichment)
+  |   |-- Incomplete previous scan (has data but no scan_completed_at)? -> notify + fresh scan
   |   |-- Otherwise -> fresh full scan
   |
 Full scan:
@@ -118,7 +121,11 @@ Key test files are alongside each module (test functions within `#[cfg(test)]` b
 
 **APFS firmlinks**: Scan from `/` only, skip `/System/Volumes/Data`. Normalize all paths via firmlink prefix map so DB lookups work regardless of how the user navigated to a path.
 
+**Rescan notification system (`RescanReason` enum)**: Every code path that falls back to a full rescan emits an `index-rescan-notification` event with a `RescanReason` variant and human-readable details. The frontend maps each reason to a user-friendly toast message. Seven reasons: `StaleIndex` (pre-check gap), `JournalGap` (in-loop gap), `ReplayOverflow` (>1M events), `TooManySubdirRescans` (>1K MustScanSubDirs), `WatcherStartFailed`, `ReconcilerBufferOverflow` (>500K buffered events during scan), `IncompletePreviousScan` (has data but no `scan_completed_at`). The pre-check in `resume_or_scan()` catches stale indexes before starting the FSEvents stream, preventing the cmdr-fsevent-stream channel (1024 capacity, `try_send`) from being overwhelmed.
+
 ## Gotchas
+
+**INSERT OR REPLACE on a populated DB is catastrophically slow**: The `platform_case` collation (NFD + case fold on macOS) runs for every B-tree comparison during unique index lookups. On an empty DB a full scan takes ~2.5 min; on a populated DB with 5.5M entries the same scan takes ~30 min because each `INSERT OR REPLACE` triggers ~20 collation calls to traverse the B-tree. The `StaleIndex` path truncates `entries` and `dir_stats` via `TruncateData` + `flush_blocking()` before starting the scan to avoid this. Never do a full rescan into a populated DB without clearing first.
 
 **Cold-start replay enters live mode immediately after flush**: The `run_replay_event_loop` doesn't emit `index-dir-updated` during Phase 1 (replay). It collects affected paths, flushes the writer (ensuring all writes are committed), emits a single batched notification, re-enables micro-scans, and enters live mode right away (~100ms from startup). Post-replay verification (`verify_affected_dirs`) runs in a background task (`run_background_verification`) concurrently with live events. This is safe because the writer serializes all writes. Any corrections found by verification are emitted as a separate `index-dir-updated` batch.
 

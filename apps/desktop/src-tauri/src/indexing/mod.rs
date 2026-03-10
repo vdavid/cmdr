@@ -247,6 +247,50 @@ pub struct IndexReplayProgressEvent {
     pub estimated_total: Option<u64>,
 }
 
+/// Why a full rescan was triggered instead of incremental replay.
+/// Sent to the frontend as `index-rescan-notification` so the UI can show
+/// a transparent, user-friendly toast.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RescanReason {
+    /// Event ID gap too large — app hasn't run for a long time.
+    StaleIndex,
+    /// FSEvents journal unavailable (gap detected during replay).
+    JournalGap,
+    /// Replay processed too many events (safety limit exceeded).
+    ReplayOverflow,
+    /// Too many MustScanSubDirs events during replay.
+    TooManySubdirRescans,
+    /// DriveWatcher failed to start for replay.
+    WatcherStartFailed,
+    /// Reconciler event buffer overflowed during scan.
+    ReconcilerBufferOverflow,
+    /// Previous scan didn't complete (app crashed or was force-quit).
+    IncompletePreviousScan,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IndexRescanNotificationEvent {
+    pub volume_id: String,
+    pub reason: RescanReason,
+    /// Human-readable details for logs (not shown to user directly).
+    pub details: String,
+}
+
+/// Emit an `index-rescan-notification` event and log the reason at INFO level.
+fn emit_rescan_notification(app: &AppHandle, volume_id: &str, reason: RescanReason, details: String) {
+    log::info!("Index rescan triggered ({reason:?}): {details}");
+    let _ = app.emit(
+        "index-rescan-notification",
+        IndexRescanNotificationEvent {
+            volume_id: volume_id.to_string(),
+            reason,
+            details,
+        },
+    );
+}
+
 // ── Response types ───────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -370,6 +414,36 @@ impl IndexManager {
             if let Some(ref last_event_id_str) = status.last_event_id {
                 let last_event_id: u64 = last_event_id_str.parse().unwrap_or(0);
                 if last_event_id > 0 {
+                    // Pre-check: compare stored event ID with current system event ID.
+                    // If the gap is too large, skip replay entirely — the cmdr-fsevent-stream
+                    // channel (1024 capacity, try_send) would silently drop most events,
+                    // and replaying millions of events is slower than a fresh scan anyway.
+                    let current_id = watcher::current_event_id();
+                    if current_id > 0 && current_id > last_event_id + JOURNAL_GAP_THRESHOLD {
+                        let gap = current_id - last_event_id;
+                        emit_rescan_notification(
+                            &self.app,
+                            &self.volume_id,
+                            RescanReason::StaleIndex,
+                            format!(
+                                "Stored last_event_id={last_event_id}, current system \
+                                 event_id={current_id}, gap={gap} \
+                                 (threshold={JOURNAL_GAP_THRESHOLD}). \
+                                 The app likely hasn't run for a long time."
+                            ),
+                        );
+                        // Truncate entries + dir_stats before scanning. INSERT OR REPLACE on a
+                        // populated DB with the `platform_case` collation is extremely slow
+                        // (30 min vs 2.5 min on empty). The stale data is useless anyway.
+                        if let Err(e) = self.writer.send(WriteMessage::TruncateData) {
+                            log::warn!("Failed to send TruncateData: {e}");
+                        }
+                        if let Err(e) = self.writer.flush_blocking() {
+                            log::warn!("Failed to flush after TruncateData: {e}");
+                        }
+                        return self.start_scan();
+                    }
+
                     log::debug!(
                         "Existing index found (scan_completed_at={}, last_event_id={last_event_id}), \
                          attempting sinceWhen replay",
@@ -381,8 +455,17 @@ impl IndexManager {
             log::debug!("Existing index found but no last_event_id, starting fresh scan");
         } else if status.scan_completed_at.is_some() {
             log::debug!("Existing index found, starting rescan (no event replay on this platform)");
+        } else if status.last_event_id.is_some() {
+            emit_rescan_notification(
+                &self.app,
+                &self.volume_id,
+                RescanReason::IncompletePreviousScan,
+                "Index DB exists but scan_completed_at is not set. Previous scan likely didn't \
+                 finish."
+                    .to_string(),
+            );
         } else {
-            log::debug!("No existing index (scan_completed_at not set), starting fresh scan");
+            log::debug!("No existing index, starting fresh scan");
         }
 
         self.start_scan()
@@ -403,7 +486,12 @@ impl IndexManager {
                 log::debug!("DriveWatcher started for replay (sinceWhen={since_event_id}, current={current_id})");
             }
             Err(e) => {
-                log::warn!("Failed to start DriveWatcher for replay: {e}, falling back to full scan");
+                emit_rescan_notification(
+                    &self.app,
+                    &self.volume_id,
+                    RescanReason::WatcherStartFailed,
+                    format!("DriveWatcher failed to start for replay: {e}"),
+                );
                 return self.start_scan();
             }
         }
@@ -609,6 +697,18 @@ impl IndexManager {
                         buffered_count += 1;
                     }
                     log::debug!("Reconciler: buffered {buffered_count} events during scan");
+
+                    if reconciler.did_buffer_overflow() {
+                        emit_rescan_notification(
+                            &app,
+                            &volume_id,
+                            RescanReason::ReconcilerBufferOverflow,
+                            "The filesystem watcher buffered over 500,000 events during the \
+                             scan, exceeding the reconciler's capacity. A lot of filesystem \
+                             activity was happening during the scan."
+                                .to_string(),
+                        );
+                    }
 
                     // Flush the writer to ensure all scan batches are committed
                     // before opening the read connection. Without this, the WAL
@@ -1134,11 +1234,17 @@ async fn run_replay_event_loop(
         if !first_event_checked {
             first_event_checked = true;
             if event.event_id > since_event_id + JOURNAL_GAP_THRESHOLD {
-                log::warn!(
-                    "Journal gap detected: stored last_event_id={since_event_id}, \
-                     first received event_id={}, gap={}",
-                    event.event_id,
-                    event.event_id - since_event_id,
+                emit_rescan_notification(
+                    &app,
+                    &volume_id,
+                    RescanReason::JournalGap,
+                    format!(
+                        "Stored last_event_id={since_event_id}, first received event_id={}, \
+                         gap={} (threshold={JOURNAL_GAP_THRESHOLD}). FSEvents journal may \
+                         have been purged.",
+                        event.event_id,
+                        event.event_id - since_event_id,
+                    ),
                 );
                 // Re-enable micro-scans before falling back to full scan
                 micro_scans.set_replay_active(false);
@@ -1212,9 +1318,15 @@ async fn run_replay_event_loop(
         // fall back to a full scan. Handles the FDA-toggle scenario where
         // the app suddenly sees millions of previously hidden paths.
         if event_count >= REPLAY_EVENT_COUNT_LIMIT {
-            log::warn!(
-                "Replay: event count ({event_count}) exceeded safety limit \
-                 ({REPLAY_EVENT_COUNT_LIMIT}). Aborting replay and falling back to full scan."
+            emit_rescan_notification(
+                &app,
+                &volume_id,
+                RescanReason::ReplayOverflow,
+                format!(
+                    "Replay processed {event_count} events, exceeding the safety limit of \
+                     {REPLAY_EVENT_COUNT_LIMIT}. This can happen when Full Disk Access was \
+                     toggled."
+                ),
             );
             micro_scans.set_replay_active(false);
             if let Some(tx) = fallback_tx.take() {
@@ -1321,7 +1433,15 @@ async fn run_replay_event_loop(
     // Queue any MustScanSubDirs rescans that were deferred during replay.
     // If pending_rescans overflowed, trigger a full rescan via fallback.
     if pending_rescans_overflow {
-        log::warn!("Replay: pending rescans overflowed, triggering full rescan");
+        emit_rescan_notification(
+            &app,
+            &volume_id,
+            RescanReason::TooManySubdirRescans,
+            format!(
+                "Replay accumulated more than {MAX_PENDING_RESCANS} directories needing full \
+                 rescans. This typically means a major filesystem reorganization happened."
+            ),
+        );
         if let Some(tx) = fallback_tx.take() {
             let _ = tx.send(());
         }
