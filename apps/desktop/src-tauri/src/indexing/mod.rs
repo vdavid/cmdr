@@ -432,15 +432,6 @@ impl IndexManager {
                                  The app likely hasn't run for a long time."
                             ),
                         );
-                        // Truncate entries + dir_stats before scanning. INSERT OR REPLACE on a
-                        // populated DB with the `platform_case` collation is extremely slow
-                        // (30 min vs 2.5 min on empty). The stale data is useless anyway.
-                        if let Err(e) = self.writer.send(WriteMessage::TruncateData) {
-                            log::warn!("Failed to send TruncateData: {e}");
-                        }
-                        if let Err(e) = self.writer.flush_blocking() {
-                            log::warn!("Failed to flush after TruncateData: {e}");
-                        }
                         return self.start_scan();
                     }
 
@@ -586,6 +577,17 @@ impl IndexManager {
     pub fn start_scan(&mut self) -> Result<(), String> {
         if self.scanning.load(Ordering::Relaxed) {
             return Err("Scan already running".to_string());
+        }
+
+        // Step 0: Truncate entries + dir_stats so the scan inserts into an empty DB.
+        // Without this, INSERT OR REPLACE on a populated table with the `platform_case`
+        // collation is ~12x slower (30 min vs 2.5 min), and old rows with stale IDs
+        // accumulate as orphaned subtrees, bloating the DB 3-4x per scan cycle.
+        if let Err(e) = self.writer.send(WriteMessage::TruncateData) {
+            log::warn!("Failed to send TruncateData: {e}");
+        }
+        if let Err(e) = self.writer.flush_blocking() {
+            log::warn!("Failed to flush after TruncateData: {e}");
         }
 
         // Step 1: Start the FSEvents watcher BEFORE the scan so we don't miss events

@@ -33,13 +33,14 @@ App startup
   |-- start_indexing(): create IndexManager, open SQLite, spawn writer thread
   |-- resume_or_scan():
   |   |-- macOS: Has existing index + last_event_id?
-  |   |   |-- Pre-check: event gap > 1M? -> emit index-rescan-notification (StaleIndex), truncate entries+dir_stats, full scan
+  |   |   |-- Pre-check: event gap > 1M? -> emit index-rescan-notification (StaleIndex), full scan
   |   |   |-- Otherwise -> sinceWhen replay (FSEvents journal)
   |   |-- Linux: Always full rescan (no event journal; existing DB used for instant enrichment)
   |   |-- Incomplete previous scan (has data but no scan_completed_at)? -> notify + fresh scan
   |   |-- Otherwise -> fresh full scan
   |
-Full scan:
+Full scan (start_scan):
+  |-- Truncate entries + dir_stats (TruncateData + flush_blocking)
   |-- Start DriveWatcher (sinceWhen=0, buffers events)
   |-- ScanContext initialized: root -> ROOT_ID, next_id from DB
   |-- jwalk parallel walk -> ScanContext assigns IDs -> batched InsertEntriesV2 -> writer -> SQLite
@@ -125,7 +126,7 @@ Key test files are alongside each module (test functions within `#[cfg(test)]` b
 
 ## Gotchas
 
-**INSERT OR REPLACE on a populated DB is catastrophically slow**: The `platform_case` collation (NFD + case fold on macOS) runs for every B-tree comparison during unique index lookups. On an empty DB a full scan takes ~2.5 min; on a populated DB with 5.5M entries the same scan takes ~30 min because each `INSERT OR REPLACE` triggers ~20 collation calls to traverse the B-tree. The `StaleIndex` path truncates `entries` and `dir_stats` via `TruncateData` + `flush_blocking()` before starting the scan to avoid this. Never do a full rescan into a populated DB without clearing first.
+**INSERT OR REPLACE on a populated DB is catastrophically slow**: The `platform_case` collation (NFD + case fold on macOS) runs for every B-tree comparison during unique index lookups. On an empty DB a full scan takes ~2.5 min; on a populated DB with 5.5M entries the same scan takes ~30 min because each `INSERT OR REPLACE` triggers ~20 collation calls to traverse the B-tree. `start_scan()` truncates `entries` and `dir_stats` via `TruncateData` + `flush_blocking()` before every scan to avoid this. Additionally, without truncation, old rows accumulate as orphaned subtrees (3-4x DB bloat per scan cycle) because `INSERT OR REPLACE` only deduplicates at the root level.
 
 **Cold-start replay enters live mode immediately after flush**: The `run_replay_event_loop` doesn't emit `index-dir-updated` during Phase 1 (replay). It collects affected paths, flushes the writer (ensuring all writes are committed), emits a single batched notification, re-enables micro-scans, and enters live mode right away (~100ms from startup). Post-replay verification (`verify_affected_dirs`) runs in a background task (`run_background_verification`) concurrently with live events. This is safe because the writer serializes all writes. Any corrections found by verification are emitted as a separate `index-dir-updated` batch.
 
