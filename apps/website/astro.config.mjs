@@ -2,11 +2,13 @@
 import { defineConfig } from 'astro/config'
 import tailwindcss from '@tailwindcss/vite'
 import rehypeExternalLinks from 'rehype-external-links'
+import sitemap from '@astrojs/sitemap'
 
 // https://astro.build/config
 export default defineConfig({
     site: 'https://getcmdr.com',
     output: 'static',
+    integrations: [sitemap()],
     server: {
         port: parseInt(process.env.PORT || '4321'),
     },

@@ -194,6 +194,60 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
         </div>
 
         <!-- FAQ Section -->
+        <script type="application/ld+json" set:html={JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": [
+                {
+                    "@type": "Question",
+                    "name": "What counts as \"commercial use\"?",
+                    "acceptedAnswer": {
+                        "@type": "Answer",
+                        "text": "If you're using Cmdr as part of your job (employment, freelancing, consulting), that's commercial use. Side projects, open source work, and personal file management are all fine without a commercial license.",
+                    },
+                },
+                {
+                    "@type": "Question",
+                    "name": "Can I use it on multiple machines?",
+                    "acceptedAnswer": {
+                        "@type": "Answer",
+                        "text": "Yes! Use Cmdr on as many machines as you like — laptop, desktop, remote debugging rig, whatever. Just make sure you're the one using your license.",
+                    },
+                },
+                {
+                    "@type": "Question",
+                    "name": "What's the difference between subscription and perpetual?",
+                    "acceptedAnswer": {
+                        "@type": "Answer",
+                        "text": "Subscription ($59/year) auto-renews annually and always includes the latest updates. Perpetual ($199) is a one-time purchase that includes 3 years of updates — after that, you can keep using your current version forever or renew updates at a reduced rate.",
+                    },
+                },
+                {
+                    "@type": "Question",
+                    "name": "Can I see the source code?",
+                    "acceptedAnswer": {
+                        "@type": "Answer",
+                        "text": "Yes! Cmdr is source-available on GitHub. You can view, learn from, and modify the code. The license (BSL 1.1) converts to AGPL-3.0 after 3 years.",
+                    },
+                },
+                {
+                    "@type": "Question",
+                    "name": "What if I regret the purchase?",
+                    "acceptedAnswer": {
+                        "@type": "Answer",
+                        "text": "We offer a 30-day, no-questions-asked refund. Just email us and we'll sort it out.",
+                    },
+                },
+                {
+                    "@type": "Question",
+                    "name": "Do you offer team licenses?",
+                    "acceptedAnswer": {
+                        "@type": "Answer",
+                        "text": "Each person needs their own license. For teams of 5+, email us at legal@getcmdr.com for volume pricing.",
+                    },
+                },
+            ],
+        })} />
         <section>
             <h2 class="mb-8 text-center text-2xl font-bold text-[var(--color-text-primary)]">
                 Frequently asked questions

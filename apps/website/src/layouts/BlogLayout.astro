@@ -18,11 +18,35 @@ const formattedDate = new Date(date).toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
 })
+
+const blogPostingSchema: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: title,
+    description: description,
+    datePublished: date,
+    author: {
+        '@type': 'Organization',
+        name: 'Cmdr',
+        url: 'https://getcmdr.com',
+    },
+    publisher: {
+        '@type': 'Organization',
+        name: 'Cmdr',
+        url: 'https://getcmdr.com',
+        logo: 'https://getcmdr.com/logo-512.png',
+    },
+    url: Astro.url.href,
+}
+if (ogImage) {
+    blogPostingSchema.image = new URL(ogImage, Astro.site).href
+}
 ---
 
 <Layout title={`${title} — Cmdr blog`} description={description} ogImage={ogImage}>
     <Header />
     <main class="mx-auto max-w-3xl px-6 pt-32 pb-24">
+        <script type="application/ld+json" set:html={JSON.stringify(blogPostingSchema)} />
         <header class="mb-12">
             <time class="text-sm text-[var(--color-text-tertiary)]" datetime={date}>
                 {formattedDate}

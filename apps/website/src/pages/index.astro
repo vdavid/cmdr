@@ -5,11 +5,28 @@ import Hero from '../components/Hero.astro'
 import Features from '../components/Features.astro'
 import Download from '../components/Download.astro'
 import Footer from '../components/Footer.astro'
+import { version } from '../lib/release'
+
+const softwareApplicationSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'Cmdr',
+    applicationCategory: 'UtilitiesApplication',
+    operatingSystem: 'macOS',
+    offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'USD',
+    },
+    softwareVersion: version,
+    url: 'https://getcmdr.com',
+}
 ---
 
 <Layout title="Cmdr — The AI-native file manager" forceDark>
     <Header />
     <main>
+        <script type="application/ld+json" set:html={JSON.stringify(softwareApplicationSchema)} />
         <Hero />
         <Features />
         <Download />

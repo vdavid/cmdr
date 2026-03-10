@@ -65,6 +65,19 @@ const {
 
         <title>{title}</title>
 
+        <!-- Organization structured data -->
+        <script
+            type="application/ld+json"
+            set:html={JSON.stringify({
+                '@context': 'https://schema.org',
+                '@type': 'Organization',
+                name: 'Cmdr',
+                url: 'https://getcmdr.com',
+                logo: 'https://getcmdr.com/logo-512.png',
+                sameAs: ['https://github.com/vdavid/cmdr'],
+            })}
+        />
+
         {/* Umami analytics — self-hosted, cookieless */}
         {
             import.meta.env.PUBLIC_UMAMI_WEBSITE_ID && (
