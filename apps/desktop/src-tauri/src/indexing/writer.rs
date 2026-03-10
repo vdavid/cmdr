@@ -17,7 +17,11 @@ use crate::indexing::store::{EntryRow, IndexStore, IndexStoreError};
 
 // ── Messages ─────────────────────────────────────────────────────────
 
-/// Messages sent to the writer thread via an unbounded mpsc channel.
+/// Capacity of the bounded writer channel. When full, senders block,
+/// providing natural backpressure instead of unbounded memory growth.
+const WRITER_CHANNEL_CAPACITY: usize = 100_000;
+
+/// Messages sent to the writer thread via a bounded mpsc channel.
 pub enum WriteMessage {
     /// Full scan: batch of entries with pre-assigned integer IDs.
     InsertEntriesV2(Vec<EntryRow>),
@@ -76,7 +80,7 @@ pub enum WriteMessage {
 /// Cloneable; all clones share the same underlying channel.
 #[derive(Clone)]
 pub struct IndexWriter {
-    sender: mpsc::Sender<WriteMessage>,
+    sender: mpsc::SyncSender<WriteMessage>,
     /// Handle for the writer thread, shared so shutdown() can join it.
     thread_handle: Arc<std::sync::Mutex<Option<thread::JoinHandle<()>>>>,
     /// Path to the database file (needed by scanner for ScanContext init).
@@ -90,7 +94,7 @@ impl IndexWriter {
     /// `std::thread` (blocking I/O, not tokio), and returns a handle.
     pub fn spawn(db_path: &Path) -> Result<Self, IndexStoreError> {
         let conn = IndexStore::open_write_connection(db_path)?;
-        let (sender, receiver) = mpsc::channel::<WriteMessage>();
+        let (sender, receiver) = mpsc::sync_channel::<WriteMessage>(WRITER_CHANNEL_CAPACITY);
 
         let handle = thread::Builder::new()
             .name("index-writer".into())
@@ -110,7 +114,9 @@ impl IndexWriter {
         self.db_path.clone()
     }
 
-    /// Send a message to the writer thread (non-blocking).
+    /// Send a message to the writer thread. Blocks if the channel is full
+    /// (backpressure), which slows down event processing rather than
+    /// consuming unlimited memory.
     pub fn send(&self, msg: WriteMessage) -> Result<(), IndexStoreError> {
         self.sender.send(msg).map_err(|_| {
             IndexStoreError::Io(std::io::Error::new(

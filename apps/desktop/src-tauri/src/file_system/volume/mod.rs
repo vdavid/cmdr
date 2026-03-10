@@ -142,7 +142,7 @@ pub trait VolumeWatcher: Send + Sync {
         &self,
         root: &Path,
         since_when: u64,
-        event_sender: mpsc::UnboundedSender<FsChangeEvent>,
+        event_sender: mpsc::Sender<FsChangeEvent>,
     ) -> Result<DriveWatcher, WatcherError>;
 }
 

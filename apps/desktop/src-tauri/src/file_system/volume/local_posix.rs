@@ -287,7 +287,7 @@ impl VolumeWatcher for LocalPosixWatcher {
         &self,
         root: &Path,
         since_when: u64,
-        event_sender: mpsc::UnboundedSender<FsChangeEvent>,
+        event_sender: mpsc::Sender<FsChangeEvent>,
     ) -> Result<DriveWatcher, WatcherError> {
         DriveWatcher::start(root, since_when, event_sender)
     }

@@ -127,7 +127,7 @@ impl DriveWatcher {
     pub fn start(
         root: &Path,
         since_when: u64,
-        event_sender: mpsc::UnboundedSender<FsChangeEvent>,
+        event_sender: mpsc::Sender<FsChangeEvent>,
     ) -> Result<Self, WatcherError> {
         let running = Arc::new(AtomicBool::new(true));
         let last_event_id = Arc::new(AtomicU64::new(0));
@@ -167,7 +167,7 @@ impl DriveWatcher {
                 last_id_clone.store(event.id, Ordering::Relaxed);
 
                 let parsed = parse_fsevent(&event);
-                if event_sender.send(parsed).is_err() {
+                if event_sender.send(parsed).await.is_err() {
                     // Receiver dropped, stop forwarding
                     break;
                 }
@@ -252,7 +252,7 @@ impl DriveWatcher {
     pub fn start(
         root: &std::path::Path,
         _since_when: u64,
-        event_sender: mpsc::UnboundedSender<FsChangeEvent>,
+        event_sender: mpsc::Sender<FsChangeEvent>,
     ) -> Result<Self, WatcherError> {
         use notify::{RecursiveMode, Watcher};
 
@@ -289,7 +289,7 @@ impl DriveWatcher {
                         }
                     };
                     for ev in events {
-                        if event_sender.send(ev).is_err() {
+                        if event_sender.blocking_send(ev).is_err() {
                             return; // receiver dropped
                         }
                     }
@@ -416,7 +416,7 @@ impl DriveWatcher {
     pub fn start(
         _root: &std::path::Path,
         _since_when: u64,
-        _event_sender: tokio::sync::mpsc::UnboundedSender<FsChangeEvent>,
+        _event_sender: tokio::sync::mpsc::Sender<FsChangeEvent>,
     ) -> Result<Self, WatcherError> {
         Err(WatcherError::StreamCreate(
             "Filesystem watching is not supported on this platform".to_string(),

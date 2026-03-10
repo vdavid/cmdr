@@ -10,6 +10,7 @@ pub mod path_resolver;
 pub mod store;
 pub mod writer;
 
+mod memory_watchdog;
 mod micro_scan;
 mod reconciler;
 pub(crate) mod scanner;
@@ -399,7 +400,7 @@ impl IndexManager {
     /// journal events which are processed as live events. If the journal is
     /// unavailable (gap detected), falls back to a full scan.
     fn start_replay(&mut self, since_event_id: u64) -> Result<(), String> {
-        let (event_tx, event_rx) = tokio::sync::mpsc::unbounded_channel();
+        let (event_tx, event_rx) = tokio::sync::mpsc::channel(WATCHER_CHANNEL_CAPACITY);
         let current_id = watcher::current_event_id();
 
         match DriveWatcher::start(&self.volume_root, since_event_id, event_tx) {
@@ -506,7 +507,7 @@ impl IndexManager {
         }
 
         // Step 1: Start the FSEvents watcher BEFORE the scan so we don't miss events
-        let (event_tx, event_rx) = tokio::sync::mpsc::unbounded_channel();
+        let (event_tx, event_rx) = tokio::sync::mpsc::channel(WATCHER_CHANNEL_CAPACITY);
         let scan_start_event_id = watcher::current_event_id();
 
         match DriveWatcher::start(&self.volume_root, 0, event_tx) {
@@ -865,7 +866,7 @@ impl IndexManager {
 /// a 300 ms flush interval to avoid UI flicker from rapid per-event emits.
 /// Exits when the channel closes (watcher stopped).
 async fn run_live_event_loop(
-    mut event_rx: tokio::sync::mpsc::UnboundedReceiver<watcher::FsChangeEvent>,
+    mut event_rx: tokio::sync::mpsc::Receiver<watcher::FsChangeEvent>,
     mut reconciler: EventReconciler,
     writer: IndexWriter,
     app: AppHandle,
@@ -925,6 +926,24 @@ async fn run_live_event_loop(
 /// the journal unavailable and fall back to a full scan.
 const JOURNAL_GAP_THRESHOLD: u64 = 1_000_000;
 
+/// Capacity of the watcher→event loop channel. Provides backpressure to
+/// FSEvents/inotify when the event loop can't keep up, preventing unbounded
+/// memory growth. Each event is ~300 bytes, so 100K ≈ 30 MB worst case.
+const WATCHER_CHANNEL_CAPACITY: usize = 100_000;
+
+/// Cap on `affected_paths` during replay. When exceeded, individual path
+/// tracking stops and a single "full refresh" is emitted instead.
+const MAX_AFFECTED_PATHS: usize = 50_000;
+
+/// Cap on `pending_rescans` during replay. When exceeded, a full rescan
+/// is triggered instead of queuing individual subtree rescans.
+const MAX_PENDING_RESCANS: usize = 1_000;
+
+/// If the number of events processed during replay exceeds this threshold,
+/// abort replay and fall back to a full scan. Safety net for scenarios where
+/// FDA was toggled and the app suddenly sees millions of previously hidden paths.
+const REPLAY_EVENT_COUNT_LIMIT: u64 = 1_000_000;
+
 /// Configuration for a replay event loop.
 struct ReplayConfig {
     volume_id: String,
@@ -951,7 +970,7 @@ struct ReplayConfig {
 /// If a journal gap is detected (first event ID >> stored last_event_id),
 /// sends a signal via `fallback_tx` to trigger a full scan.
 async fn run_replay_event_loop(
-    mut event_rx: tokio::sync::mpsc::UnboundedReceiver<watcher::FsChangeEvent>,
+    mut event_rx: tokio::sync::mpsc::Receiver<watcher::FsChangeEvent>,
     writer: IndexWriter,
     app: AppHandle,
     config: ReplayConfig,
@@ -979,11 +998,15 @@ async fn run_replay_event_loop(
     let mut fallback_tx = Some(fallback_tx);
     let mut last_event_id = since_event_id;
 
-    // Collect all affected parent paths during replay (deduplicated)
+    // Collect all affected parent paths during replay (deduplicated).
+    // Capped at MAX_AFFECTED_PATHS; beyond that we emit a full refresh.
     let mut affected_paths = std::collections::HashSet::<String>::new();
+    let mut affected_paths_overflow = false;
 
-    // MustScanSubDirs paths to queue after replay
+    // MustScanSubDirs paths to queue after replay.
+    // Capped at MAX_PENDING_RESCANS; beyond that a full rescan is triggered.
     let mut pending_rescans = Vec::<String>::new();
+    let mut pending_rescans_overflow = false;
 
     // Progress reporting interval
     let mut last_progress = std::time::Instant::now();
@@ -1028,7 +1051,9 @@ async fn run_replay_event_loop(
             log::debug!("Replay: HistoryDone received after {event_count} events");
 
             // Process the HistoryDone event itself (it may carry other flags)
-            if let Some(paths) = reconciler::process_fs_event(&event, &conn, &writer) {
+            if let Some(paths) = reconciler::process_fs_event(&event, &conn, &writer)
+                && !affected_paths_overflow
+            {
                 affected_paths.extend(paths);
             }
             last_event_id = event.event_id;
@@ -1039,20 +1064,56 @@ async fn run_replay_event_loop(
 
         // Handle MustScanSubDirs: queue for after replay (don't start during replay)
         if event.flags.must_scan_sub_dirs {
-            let normalized = firmlinks::normalize_path(&event.path);
-            pending_rescans.push(normalized);
+            if !pending_rescans_overflow {
+                if pending_rescans.len() >= MAX_PENDING_RESCANS {
+                    log::warn!(
+                        "Replay: pending rescans cap reached ({MAX_PENDING_RESCANS}). \
+                         Will trigger a full rescan instead of individual subtree rescans."
+                    );
+                    pending_rescans_overflow = true;
+                    pending_rescans.clear();
+                } else {
+                    let normalized = firmlinks::normalize_path(&event.path);
+                    pending_rescans.push(normalized);
+                }
+            }
             last_event_id = event.event_id;
             event_count += 1;
             continue;
         }
 
         // Process event and collect affected paths
-        if let Some(paths) = reconciler::process_fs_event(&event, &conn, &writer) {
+        if let Some(paths) = reconciler::process_fs_event(&event, &conn, &writer)
+            && !affected_paths_overflow
+        {
             affected_paths.extend(paths);
+            if affected_paths.len() >= MAX_AFFECTED_PATHS {
+                log::warn!(
+                    "Replay: affected paths cap reached ({MAX_AFFECTED_PATHS}). \
+                         Will emit a full refresh notification instead of individual paths."
+                );
+                affected_paths_overflow = true;
+                affected_paths.clear();
+            }
         }
 
         last_event_id = event.event_id;
         event_count += 1;
+
+        // Safety net: if replay event count exceeds the limit, abort and
+        // fall back to a full scan. Handles the FDA-toggle scenario where
+        // the app suddenly sees millions of previously hidden paths.
+        if event_count >= REPLAY_EVENT_COUNT_LIMIT {
+            log::warn!(
+                "Replay: event count ({event_count}) exceeded safety limit \
+                 ({REPLAY_EVENT_COUNT_LIMIT}). Aborting replay and falling back to full scan."
+            );
+            micro_scans.set_replay_active(false);
+            if let Some(tx) = fallback_tx.take() {
+                let _ = tx.send(());
+            }
+            return Ok(());
+        }
 
         // Batch UpdateLastEventId every 1000 events (reduces writer load ~10x)
         if event_count.is_multiple_of(1000)
@@ -1121,8 +1182,12 @@ async fn run_replay_event_loop(
         },
     );
 
-    // Emit a single batched index-dir-updated with all collected paths
-    if !affected_paths.is_empty() {
+    // Emit a single batched index-dir-updated with all collected paths.
+    // If affected_paths overflowed, emit a full refresh notification with
+    // just "/" so the frontend refreshes everything.
+    if affected_paths_overflow {
+        reconciler::emit_dir_updated(&app, vec!["/".to_string()]);
+    } else if !affected_paths.is_empty() {
         reconciler::emit_dir_updated(&app, affected_paths.iter().cloned().collect());
     }
 
@@ -1136,13 +1201,24 @@ async fn run_replay_event_loop(
 
     // Spawn background verification: runs concurrently with live events.
     // The writer serializes all writes, so this is safe.
-    let verify_writer = writer.clone();
-    let verify_app = app.clone();
-    tauri::async_runtime::spawn(async move {
-        run_background_verification(affected_paths, verify_writer, verify_app).await;
-    });
+    // Skip verification if affected_paths overflowed (no paths to verify).
+    if !affected_paths_overflow {
+        let verify_writer = writer.clone();
+        let verify_app = app.clone();
+        tauri::async_runtime::spawn(async move {
+            run_background_verification(affected_paths, verify_writer, verify_app).await;
+        });
+    }
 
-    // Queue any MustScanSubDirs rescans that were deferred during replay
+    // Queue any MustScanSubDirs rescans that were deferred during replay.
+    // If pending_rescans overflowed, trigger a full rescan via fallback.
+    if pending_rescans_overflow {
+        log::warn!("Replay: pending rescans overflowed, triggering full rescan");
+        if let Some(tx) = fallback_tx.take() {
+            let _ = tx.send(());
+        }
+        return Ok(());
+    }
     for path in pending_rescans {
         reconciler.queue_must_scan_sub_dirs(PathBuf::from(path), &writer);
     }
@@ -1547,6 +1623,9 @@ pub fn stop_indexing(app: &AppHandle) -> Result<(), String> {
 /// it replays the FSEvents journal from the stored `last_event_id`; otherwise
 /// it starts a fresh full scan.
 pub fn start_indexing(app: &AppHandle) -> Result<(), String> {
+    // Start memory watchdog before indexing to catch runaway memory from the start
+    memory_watchdog::start(app.clone());
+
     let mut manager = IndexManager::new("root".to_string(), PathBuf::from("/"), app.clone())?;
 
     // Resume from existing index or start a fresh scan

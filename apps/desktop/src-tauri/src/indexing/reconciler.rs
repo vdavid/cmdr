@@ -75,12 +75,21 @@ fn should_exclude(path: &str) -> bool {
 
 // ── EventReconciler ──────────────────────────────────────────────────
 
+/// Maximum number of events the reconciler will buffer during a scan.
+/// Beyond this, buffering stops and a full rescan is forced after the
+/// current scan completes. The index is a disposable cache, so dropping
+/// events is always safe.
+const MAX_BUFFER_CAPACITY: usize = 500_000;
+
 /// Buffers FSEvents during the initial scan and replays them after the scan completes.
 pub struct EventReconciler {
     /// Events buffered during scan, in arrival order.
     buffer: Vec<FsChangeEvent>,
     /// Whether we're in buffering mode (scan in progress).
     buffering: bool,
+    /// Set when the buffer cap is hit. Forces a full rescan after the
+    /// current scan completes instead of replaying individual events.
+    pub(super) buffer_overflow: bool,
     /// Paths pending MustScanSubDirs rescans, deduplicated.
     pending_rescans: HashSet<PathBuf>,
     /// Whether a MustScanSubDirs rescan is currently running.
@@ -93,16 +102,29 @@ impl EventReconciler {
         Self {
             buffer: Vec::new(),
             buffering: true,
+            buffer_overflow: false,
             pending_rescans: HashSet::new(),
             rescan_active: Arc::new(AtomicBool::new(false)),
         }
     }
 
-    /// Buffer an event during scan.
+    /// Buffer an event during scan. If the buffer cap is reached, stops
+    /// buffering and sets `buffer_overflow` to force a full rescan.
     pub fn buffer_event(&mut self, event: FsChangeEvent) {
-        if self.buffering {
-            self.buffer.push(event);
+        if !self.buffering || self.buffer_overflow {
+            return;
         }
+        if self.buffer.len() >= MAX_BUFFER_CAPACITY {
+            log::warn!(
+                "Reconciler: buffer cap reached ({MAX_BUFFER_CAPACITY} events). \
+                 Dropping further events; a full rescan will run after the current scan."
+            );
+            self.buffer_overflow = true;
+            self.buffer.clear();
+            self.buffer.shrink_to_fit();
+            return;
+        }
+        self.buffer.push(event);
     }
 
     /// Replay buffered events after scan completes.
@@ -158,6 +180,7 @@ impl EventReconciler {
     /// Switch from buffering to live mode. Clears the buffer.
     pub fn switch_to_live(&mut self) {
         self.buffering = false;
+        self.buffer_overflow = false;
         self.buffer.clear();
         self.buffer.shrink_to_fit();
         log::debug!("Reconciler: switched to live mode");
