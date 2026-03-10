@@ -57,18 +57,29 @@ export async function determineNavigationPath(
     return volumeId === DEFAULT_VOLUME_ID ? '~' : volumePath
 }
 
+export interface ResolveValidPathOptions {
+    /** Custom path-existence checker. Defaults to the Tauri `pathExists` command. */
+    pathExistsFn?: (path: string) => Promise<boolean>
+    /** Timeout per step in ms. Set to 0 to skip timeout wrapping. Defaults to 1000. */
+    timeoutMs?: number
+}
+
 /**
  * Resolves a path to a valid existing path by walking up the parent tree.
- * Each step has a 1-second timeout to prevent hanging on dead mounts.
+ * Each step has a timeout to prevent hanging on dead mounts (default 1s).
  * Fallback chain: parent tree → user home (~) → filesystem root (/).
  * Returns null if even the root doesn't exist (volume unmounted).
  */
-export async function resolveValidPath(targetPath: string): Promise<string | null> {
-    const stepTimeoutMs = 1000
+export async function resolveValidPath(targetPath: string, options?: ResolveValidPathOptions): Promise<string | null> {
+    const checkFn = options?.pathExistsFn ?? pathExists
+    const timeoutMs = options?.timeoutMs ?? 1000
+
+    const check = (p: string): Promise<boolean> =>
+        timeoutMs > 0 ? withTimeout(checkFn(p), timeoutMs, false) : checkFn(p)
 
     let path = targetPath
     while (path !== '/' && path !== '') {
-        if (await withTimeout(pathExists(path), stepTimeoutMs, false)) {
+        if (await check(path)) {
             return path
         }
         // Go to parent
@@ -76,11 +87,11 @@ export async function resolveValidPath(targetPath: string): Promise<string | nul
         path = lastSlash > 0 ? path.substring(0, lastSlash) : '/'
     }
     // Try user home before falling back to root (~ is expanded by the backend)
-    if (await withTimeout(pathExists('~'), stepTimeoutMs, false)) {
+    if (await check('~')) {
         return '~'
     }
     // Check root
-    if (await withTimeout(pathExists('/'), stepTimeoutMs, false)) {
+    if (await check('/')) {
         return '/'
     }
     return null

@@ -44,8 +44,10 @@ Runs checks **in parallel** with 500ms frontend timeouts per check. Priority:
 3. Stored `lastUsedPath` for this volume
 4. Default: `~` for `DEFAULT_VOLUME_ID`, else volume root
 
-`resolveValidPath(targetPath)` — walks parent tree until an existing directory is found. Each step has a **1-second
-frontend timeout**. Fallback chain: parent dirs → `~` → `/` → `null` (volume unmounted).
+`resolveValidPath(targetPath, options?)` — walks parent tree until an existing directory is found. Accepts optional
+`{ pathExistsFn, timeoutMs }` — defaults to Tauri `pathExists` with 1s timeout per step. Used both at runtime (with
+timeouts) and at startup via `app-status-store.ts`'s `resolvePersistedPath` wrapper (no timeout, injected
+`pathExistsFn`). Fallback chain: parent dirs → `~` → `/` → `null` (volume unmounted).
 
 `withTimeout(promise, ms, fallback)` — imported from `$lib/utils/timing` and re-exported. Races a promise against a
 timeout, returning the fallback on expiry. Used by both functions above, and also by `VolumeBreadcrumb.svelte` (wraps

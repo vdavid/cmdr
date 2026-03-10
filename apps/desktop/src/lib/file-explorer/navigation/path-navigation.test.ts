@@ -272,4 +272,66 @@ describe('resolveValidPath', () => {
         expect(result).toBe('/Users/test')
         expect(callCount).toBe(2)
     })
+
+    it('uses custom pathExistsFn when provided', async () => {
+        const customPathExists = vi.fn((p: string) => Promise.resolve(p === '/custom/path'))
+
+        const result = await resolveValidPath('/custom/path/child', { pathExistsFn: customPathExists })
+
+        expect(result).toBe('/custom/path')
+        expect(customPathExists).toHaveBeenCalledWith('/custom/path/child')
+        expect(customPathExists).toHaveBeenCalledWith('/custom/path')
+        // The global mock should NOT have been called
+        expect(mockPathExists).not.toHaveBeenCalled()
+    })
+
+    it('uses custom timeoutMs when provided', async () => {
+        // First call hangs, second call resolves
+        let callCount = 0
+        mockPathExists.mockImplementation((): Promise<boolean> => {
+            callCount++
+            if (callCount === 1) return new Promise<boolean>(() => {}) // hangs
+            return Promise.resolve(true)
+        })
+
+        const resultPromise = resolveValidPath('/Users/test/slow', { timeoutMs: 2000 })
+        // At 1000ms the default timeout would have fired, but our custom 2000ms shouldn't yet
+        await vi.advanceTimersByTimeAsync(1000)
+        expect(callCount).toBe(1) // still waiting on first call
+        // At 2000ms it should time out and try parent
+        await vi.advanceTimersByTimeAsync(1000)
+        await vi.advanceTimersByTimeAsync(100) // let microtasks settle
+        const result = await resultPromise
+
+        expect(result).toBe('/Users/test')
+        expect(callCount).toBe(2)
+    })
+
+    it('skips timeout when timeoutMs is 0 (no timeout wrapping)', async () => {
+        const customPathExists = vi.fn((p: string) => Promise.resolve(p === '/exists'))
+
+        const result = await resolveValidPath('/exists/child', { pathExistsFn: customPathExists, timeoutMs: 0 })
+
+        expect(result).toBe('/exists')
+        expect(customPathExists).toHaveBeenCalledWith('/exists/child')
+        expect(customPathExists).toHaveBeenCalledWith('/exists')
+    })
+
+    it('with custom pathExistsFn still falls back to ~ then / then null', async () => {
+        const customPathExists = vi.fn(() => Promise.resolve(false))
+
+        const result = await resolveValidPath('/gone/path', { pathExistsFn: customPathExists, timeoutMs: 0 })
+
+        expect(result).toBeNull()
+        expect(customPathExists).toHaveBeenCalledWith('~')
+        expect(customPathExists).toHaveBeenCalledWith('/')
+    })
+
+    it('with custom pathExistsFn falls back to ~ when parents are gone', async () => {
+        const customPathExists = vi.fn((p: string) => Promise.resolve(p === '~'))
+
+        const result = await resolveValidPath('/gone/deep/path', { pathExistsFn: customPathExists, timeoutMs: 0 })
+
+        expect(result).toBe('~')
+    })
 })

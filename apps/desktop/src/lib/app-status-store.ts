@@ -5,10 +5,10 @@ import type { Store } from '@tauri-apps/plugin-store'
 import type { SortColumn } from './file-explorer/types'
 import { defaultSortOrders } from './file-explorer/types'
 import type { PersistedTab, PersistedPaneTabs } from './file-explorer/tabs/tab-types'
+import { resolveValidPath } from './file-explorer/navigation/path-navigation'
 
 const STORE_NAME = 'app-status.json'
 const DEFAULT_PATH = '~'
-const ROOT_PATH = '/'
 const DEFAULT_VOLUME_ID = 'root'
 const DEFAULT_SORT_BY: SortColumn = 'name'
 
@@ -53,31 +53,12 @@ async function getStore(): Promise<Store> {
 }
 
 /**
- * Resolves a path with fallback logic.
- * If the path doesn't exist, tries parent directories up to root.
- * Falls back to home (~) if nothing exists.
+ * Resolves a persisted path, falling back to ~ if nothing exists.
+ * Uses resolveValidPath with no timeout (startup paths are local, no hung-mount risk at load time)
+ * and the caller's pathExistsFn (which may be mocked in tests).
  */
-async function resolvePathWithFallback(path: string, pathExists: (p: string) => Promise<boolean>): Promise<string> {
-    // Start with the saved path
-    let currentPath = path
-
-    // Try the path and its parents
-    while (currentPath && currentPath !== ROOT_PATH) {
-        if (await pathExists(currentPath)) {
-            return currentPath
-        }
-        // Try parent directory
-        const parentPath = currentPath.substring(0, currentPath.lastIndexOf('/')) || ROOT_PATH
-        currentPath = parentPath === currentPath ? ROOT_PATH : parentPath
-    }
-
-    // Check if root exists
-    if (await pathExists(ROOT_PATH)) {
-        return ROOT_PATH
-    }
-
-    // Ultimate fallback to home
-    return DEFAULT_PATH
+async function resolvePersistedPath(path: string, pathExistsFn: (p: string) => Promise<boolean>): Promise<string> {
+    return (await resolveValidPath(path, { pathExistsFn, timeoutMs: 0 })) ?? DEFAULT_PATH
 }
 
 function parseViewMode(raw: unknown): ViewMode {
@@ -116,9 +97,9 @@ export async function loadAppStatus(pathExists: (p: string) => Promise<boolean>)
 
         // Resolve paths with fallback - skip for virtual 'network' volume
         const resolvedLeftPath =
-            leftVolumeId === 'network' ? leftPath : await resolvePathWithFallback(leftPath, pathExists)
+            leftVolumeId === 'network' ? leftPath : await resolvePersistedPath(leftPath, pathExists)
         const resolvedRightPath =
-            rightVolumeId === 'network' ? rightPath : await resolvePathWithFallback(rightPath, pathExists)
+            rightVolumeId === 'network' ? rightPath : await resolvePersistedPath(rightPath, pathExists)
 
         return {
             leftPath: resolvedLeftPath,
@@ -351,7 +332,7 @@ export async function loadPaneTabs(
             const validatedTabs = await Promise.all(
                 raw.tabs.map(async (tab) => {
                     if (tab.volumeId === 'network') return tab
-                    const resolvedPath = await resolvePathWithFallback(tab.path, pathExistsFn)
+                    const resolvedPath = await resolvePersistedPath(tab.path, pathExistsFn)
                     return { ...tab, path: resolvedPath }
                 }),
             )
@@ -364,7 +345,7 @@ export async function loadPaneTabs(
         const volumeId = ((await store.get(`${side}VolumeId`)) as string) || DEFAULT_VOLUME_ID
         const sortBy = parseSortColumn(await store.get(`${side}SortBy`))
         const viewMode = parseViewMode(await store.get(`${side}ViewMode`))
-        const resolvedPath = volumeId === 'network' ? path : await resolvePathWithFallback(path, pathExistsFn)
+        const resolvedPath = volumeId === 'network' ? path : await resolvePersistedPath(path, pathExistsFn)
 
         const tab: PersistedTab = {
             id: crypto.randomUUID(),
