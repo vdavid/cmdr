@@ -20,7 +20,7 @@ Single source of truth for all settings. Each `SettingDefinition` contains:
 
 ### Store (`settings-store.ts`)
 
-- Uses `tauri-plugin-store` for persistence to `~/Library/Application Support/com.veszelovszki.cmdr/settings-v2.json`
+- Uses `tauri-plugin-store` for persistence to `~/Library/Application Support/com.veszelovszki.cmdr/settings.json`
 - Debounced saves: 500ms after last change, atomic write (temp file + rename)
 - In-memory cache for synchronous reads via `getSetting()`
 - Cross-window sync: emits `settings:changed` events when values change

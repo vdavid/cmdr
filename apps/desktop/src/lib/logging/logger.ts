@@ -64,7 +64,7 @@ let loggerInitialized = false
 async function getVerboseLoggingSetting(): Promise<boolean> {
     try {
         // Use empty defaults since we just want to read existing values
-        const store: Store = await load('settings-v2.json', {
+        const store: Store = await load('settings.json', {
             autoSave: false,
             defaults: {},
         })

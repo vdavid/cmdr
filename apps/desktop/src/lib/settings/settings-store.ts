@@ -23,7 +23,7 @@ interface SettingChangedPayload {
 // Store Configuration
 // ============================================================================
 
-const STORE_NAME = 'settings-v2.json'
+const STORE_NAME = 'settings.json'
 const SCHEMA_VERSION = 1
 
 let storeInstance: Store | null = null

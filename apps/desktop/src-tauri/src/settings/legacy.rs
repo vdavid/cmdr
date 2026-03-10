@@ -1,6 +1,6 @@
 //! Settings loading from tauri-plugin-store JSON file.
 //!
-//! Reads settings from the settings-v2.json file created by tauri-plugin-store.
+//! Reads settings from the settings.json file created by tauri-plugin-store.
 //! Used to initialize app state (menu checkboxes, MCP config) on startup.
 
 use serde::Deserialize;
@@ -21,7 +21,7 @@ pub enum FullDiskAccessChoice {
 }
 
 /// User settings structure, matching the frontend settings-store.ts
-/// Note: Uses serde aliases to support both camelCase (settings-v2.json) and snake_case
+/// Note: Uses serde aliases to support both camelCase (settings.json) and snake_case
 #[derive(Debug, Deserialize)]
 pub struct Settings {
     #[serde(alias = "showHiddenFiles", default = "default_show_hidden")]
@@ -53,7 +53,7 @@ impl Default for Settings {
     }
 }
 
-/// Loads settings from the persistent store file (settings-v2.json).
+/// Loads settings from the persistent store file (settings.json).
 /// Returns defaults if the file doesn't exist or can't be parsed.
 pub fn load_settings<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Settings {
     // Get the app data directory (like ~/Library/Application Support/com.veszelovszki.cmdr/)
@@ -61,18 +61,9 @@ pub fn load_settings<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Settings {
         return Settings::default();
     };
 
-    // Try settings-v2.json first (new format from tauri-plugin-store)
-    let settings_v2_path: PathBuf = data_dir.join("settings-v2.json");
-    if let Ok(contents) = fs::read_to_string(&settings_v2_path)
-        && let Ok(settings) = parse_settings_v2(&contents)
-    {
-        return settings;
-    }
-
-    // Fall back to legacy settings.json
     let settings_path: PathBuf = data_dir.join("settings.json");
     if let Ok(contents) = fs::read_to_string(&settings_path)
-        && let Ok(settings) = serde_json::from_str(&contents)
+        && let Ok(settings) = parse_settings(&contents)
     {
         return settings;
     }
@@ -80,8 +71,8 @@ pub fn load_settings<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Settings {
     Settings::default()
 }
 
-/// Parse settings-v2.json which uses dot notation for keys (like "developer.mcpEnabled")
-fn parse_settings_v2(contents: &str) -> Result<Settings, serde_json::Error> {
+/// Parse settings.json which uses dot notation for keys (like "developer.mcpEnabled")
+fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
     // tauri-plugin-store uses flat JSON with dot notation keys
     let json: serde_json::Value = serde_json::from_str(contents)?;
 

@@ -210,7 +210,7 @@ zero-permission entries with fallback metadata.
 ### Persistence
 
 - **App status** (`app-status.json`): ephemeral state — paths, focused pane, view modes, last-used paths per volume
-- **Settings** (`settings-v2.json`): preferences — hidden files, density, date format. Registry-validated.
+- **Settings** (`settings.json`): preferences — hidden files, density, date format. Registry-validated.
 - **Shortcuts** (`shortcuts.json`): delta-only — only customizations stored, defaults in code
 - **License** (`license.json`): activation state, timestamps
 - **Window state**: `@tauri-apps/plugin-window-state` for size/position per window label
