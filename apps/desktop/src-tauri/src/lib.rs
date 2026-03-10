@@ -15,6 +15,8 @@
 #[cfg(test)]
 use criterion as _;
 //noinspection RsUnusedImport
+use mimalloc as _;
+//noinspection RsUnusedImport
 use notify as _;
 //noinspection RsUnusedImport
 // drag is used by tauri-plugin-drag for drag-and-drop support

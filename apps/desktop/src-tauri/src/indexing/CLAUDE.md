@@ -12,7 +12,7 @@ Full design: `docs/specs/drive-indexing/plan.md`
 - **store.rs** -- SQLite schema v2 (integer-keyed entries, dir_stats by entry_id, meta), platform_case collation, read queries, DB open/migrate. Schema version check: mismatch triggers drop+rebuild. Both path-keyed (backward compat) and integer-keyed APIs.
 - **path_resolver.rs** -- `PathResolver`: resolves filesystem paths to integer entry IDs via component-by-component walk with full-path LRU cache (50K entries). Case-aware `CacheKey` on macOS (NFD + case fold). Prefix-based invalidation for deletes/renames.
 - **memory_watchdog.rs** -- Background task monitoring resident memory via `mach_task_info` (macOS). Warns at 8 GB, stops indexing at 16 GB, emits `index-memory-warning` event to frontend. No-op stub on non-macOS. Started from `start_indexing()`.
-- **writer.rs** -- Single writer thread, owns the write connection, processes `WriteMessage` channel (bounded `sync_channel`, 100K capacity, backpressure via blocking). Priority: `UpdateDirStats` before `InsertEntries`. `Flush` variant + async `flush()` method let callers wait for all prior writes to commit. Has both integer-keyed variants (`InsertEntriesV2`, `UpsertEntryV2`, `DeleteEntryById`, `DeleteSubtreeById`, `PropagateDeltaById`) and path-keyed backward-compat variants. The integer-keyed delete/subtree-delete handlers auto-propagate negative deltas via the `parent_id` chain (same pattern as the path-keyed variants). `propagate_delta_by_id` walks the parent chain using `get_parent_id` lookups.
+- **writer.rs** -- Single writer thread, owns the write connection, processes `WriteMessage` channel (bounded `sync_channel`, 20K capacity, backpressure via blocking). Priority: `UpdateDirStats` before `InsertEntries`. `Flush` variant + async `flush()` method let callers wait for all prior writes to commit. Has both integer-keyed variants (`InsertEntriesV2`, `UpsertEntryV2`, `DeleteEntryById`, `DeleteSubtreeById`, `PropagateDeltaById`) and path-keyed backward-compat variants. The integer-keyed delete/subtree-delete handlers auto-propagate negative deltas via the `parent_id` chain (same pattern as the path-keyed variants). `propagate_delta_by_id` walks the parent chain using `get_parent_id` lookups.
 - **scanner.rs** -- jwalk-based parallel directory walker. `scan_volume()` for full scan, `scan_subtree()` for micro-scans. Uses `ScanContext` (from store.rs) to assign integer IDs and parent IDs during the walk: maintains a `HashMap<PathBuf, i64>` mapping directory paths to assigned IDs. The scan root is mapped to `ROOT_ID` (1). Sends `InsertEntriesV2(Vec<EntryRow>)` batches to the writer. Platform-specific exclusion filters (macOS system paths, Linux virtual filesystems). Physical sizes (`st_blocks * 512`).
 - **micro_scan.rs** -- `MicroScanManager`: bounded task pool (default 3 concurrent), priority queue (`UserSelected` > `CurrentDir`), deduplication, cancellation. Skips after full scan completes.
 - **aggregator.rs** -- Dir stats computation. Bottom-up after full scan (O(N) single pass), per-subtree after micro-scan, incremental delta propagation up ancestor chain for watcher events.
@@ -46,7 +46,7 @@ Live mode:
   |-- macOS: FSEvents -> reconciler (resolve_path -> entry IDs) -> UpsertEntryV2/DeleteEntryById/DeleteSubtreeById -> writer -> SQLite
   |-- Linux: inotify (via notify crate) -> same pipeline
   |-- Reconciler and event loops hold a read connection for integer-keyed path resolution
-  |-- Affected paths batched in HashSet, flushed to frontend every 300 ms via index-dir-updated event
+  |-- Events deduplicated by normalized path in HashMap, flushed every 1s via index-dir-updated event
   |
 Enrichment (every get_file_range call):
   |-- enrich_entries_with_index() -> resolve parent dir → id (one tree walk)
@@ -58,7 +58,7 @@ Enrichment (every get_file_range call):
 
 ### Single-writer architecture
 
-All writes go through a dedicated `std::thread` via a bounded `sync_channel` (100K capacity). When the channel is full, senders block (backpressure). The writer thread owns the write connection and processes messages in order, prioritizing `UpdateDirStats` over `InsertEntries` for responsive micro-scan results.
+All writes go through a dedicated `std::thread` via a bounded `sync_channel` (20K capacity). When the channel is full, senders block (backpressure). The writer thread owns the write connection and processes messages in order, prioritizing `UpdateDirStats` over `InsertEntries` for responsive micro-scan results.
 
 Reads happen on separate WAL connections (any thread). The global read-only store (`GLOBAL_INDEX_STORE`) provides enrichment without passing `AppHandle` through the listing pipeline.
 
@@ -71,7 +71,7 @@ Three tables:
 - `dir_stats` (entry_id INTEGER PK, recursive_size, recursive_file_count, recursive_dir_count)
 - `meta` (key TEXT PK, value TEXT) WITHOUT ROWID
 
-WAL mode, 64 MB page cache. Custom `platform_case` collation registered on every connection: case-insensitive + NFD normalization on macOS, binary on Linux. **Opening the DB with the sqlite3 CLI will fail** on queries touching the name column (the collation isn't registered).
+WAL mode, 16 MB page cache. Custom `platform_case` collation registered on every connection: case-insensitive + NFD normalization on macOS, binary on Linux. **Opening the DB with the sqlite3 CLI will fail** on queries touching the name column (the collation isn't registered).
 
 **Schema v3**: Bumped from v2 to force DB rebuild after fixing orphan entry bug. Scanner, writer, aggregator, reconciler, enrichment, and IPC commands all fully migrated to integer keys. `IndexManager` owns a `PathResolver` for LRU-cached path→ID resolution in IPC commands (`get_dir_stats`, `get_dir_stats_batch`). Enrichment uses integer-keyed fast path: resolve parent once → batch child dir stats by ID. Reconciler sends integer-keyed messages exclusively. Old path-keyed `WriteMessage` variants and backward-compat shims (`ScannedEntry`, `DirStats`) still exist for post-replay verification — cleanup in milestone 6.
 
@@ -108,7 +108,7 @@ Key test files are alongside each module (test functions within `#[cfg(test)]` b
 
 **Subtree aggregation uses scoped queries**: `scoped_get_children_stats_by_id` and `scoped_get_child_dir_ids` in `aggregator.rs` use recursive CTEs scoped to the target subtree, not full-table scans. This keeps subtree aggregation O(subtree_size) regardless of total DB size.
 
-**Bounded buffers prevent OOM**: All buffers have capacity limits. Reconciler buffer: 500K events (overflow triggers full rescan). Writer channel: 100K messages (bounded `sync_channel`, backpressure). Replay `affected_paths`: 50K entries (overflow emits full refresh). Replay `pending_rescans`: 1K entries (overflow triggers full rescan). Replay event count: 1M events max (overflow falls back to full scan). Memory watchdog: warns at 8 GB, stops indexing at 16 GB. The index is a disposable cache, so dropping events and rescanning is always safe.
+**Bounded buffers prevent OOM**: All buffers have capacity limits. Reconciler buffer: 500K events (overflow triggers full rescan). Writer channel: 20K messages (bounded `sync_channel`, backpressure). Replay `affected_paths`: 50K entries (overflow emits full refresh). Replay `pending_rescans`: 1K entries (overflow triggers full rescan). Replay event count: 1M events max (overflow falls back to full scan). Memory watchdog: warns at 8 GB, stops indexing at 16 GB. The index is a disposable cache, so dropping events and rescanning is always safe.
 
 **Disposable cache pattern**: The index DB is a cache, not a source of truth. Any corruption or error triggers delete+rebuild. No user-facing errors for DB issues.
 
@@ -122,7 +122,7 @@ Key test files are alongside each module (test functions within `#[cfg(test)]` b
 
 **Cold-start replay enters live mode immediately after flush**: The `run_replay_event_loop` doesn't emit `index-dir-updated` during Phase 1 (replay). It collects affected paths, flushes the writer (ensuring all writes are committed), emits a single batched notification, re-enables micro-scans, and enters live mode right away (~100ms from startup). Post-replay verification (`verify_affected_dirs`) runs in a background task (`run_background_verification`) concurrently with live events. This is safe because the writer serializes all writes. Any corrections found by verification are emitted as a separate `index-dir-updated` batch.
 
-**Live events are batched with a 300 ms window**: Both `run_live_event_loop` and the Phase 3 live loop in `run_replay_event_loop` use `tokio::select!` with a 300 ms `tokio::time::interval` to collect affected paths in a `HashSet` and emit a single `index-dir-updated` per flush. This prevents UI flicker from rapid per-event notifications (FSEvents can fire hundreds of events per second during bulk operations). `process_live_event` collects paths into the caller's `HashSet` instead of emitting directly.
+**Live events are deduplicated and batched with a 1s window**: Both `run_live_event_loop` and the Phase 3 live loop in `run_replay_event_loop` collect incoming events into a `HashMap<String, FsChangeEvent>` keyed by normalized path. On each 1s flush tick, only the deduplicated set is processed through `process_live_event`. `merge_fs_events` keeps the most significant flags when events collide: `must_scan_sub_dirs` always wins, then `removed`, then `created`, then `modified`. `UpdateLastEventId` is sent once per batch (in `process_live_batch`) instead of per-event, reducing writer channel pressure during event storms.
 
 **Writer-side delete-with-propagation**: Both path-keyed (`DeleteEntry`/`DeleteSubtree`) and integer-keyed (`DeleteEntryById`/`DeleteSubtreeById`) handlers in the writer automatically read old data before deleting and propagate accurate negative deltas. The integer-keyed variants use `propagate_delta_by_id` which walks the `parent_id` chain via `get_parent_id` lookups. This means every deletion -- replay, live, verification -- gets correct dir_stats updates without callers needing to send separate `PropagateDelta` messages.
 

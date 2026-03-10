@@ -282,7 +282,7 @@ fn apply_pragmas(conn: &Connection) -> Result<(), IndexStoreError> {
     conn.execute_batch(
         "PRAGMA journal_mode = WAL;
          PRAGMA synchronous = NORMAL;
-         PRAGMA cache_size = -65536;",
+         PRAGMA cache_size = -16384;",
     )?;
     Ok(())
 }

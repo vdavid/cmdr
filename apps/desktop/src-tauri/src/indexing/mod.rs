@@ -853,11 +853,77 @@ impl IndexManager {
 
 // ── Live event loop ──────────────────────────────────────────────────
 
+/// Flush interval for live event batching. Events are deduplicated by
+/// normalized path during this window before being processed. Longer
+/// windows reduce allocations during event storms (for example, multiple
+/// agents writing simultaneously) at the cost of slightly delayed UI
+/// updates.
+const LIVE_FLUSH_INTERVAL_MS: u64 = 1000;
+
+/// Merge two `FsChangeEvent`s for the same normalized path, keeping the
+/// most significant flags. Priority: `must_scan_sub_dirs` always wins,
+/// then `item_removed`, then `item_created`, then `item_modified`.
+/// The higher `event_id` is always kept.
+fn merge_fs_events(existing: &watcher::FsChangeEvent, incoming: &watcher::FsChangeEvent) -> watcher::FsChangeEvent {
+    use watcher::FsEventFlags;
+
+    let event_id = existing.event_id.max(incoming.event_id);
+
+    // must_scan_sub_dirs always wins -- it triggers a subtree rescan
+    if incoming.flags.must_scan_sub_dirs || existing.flags.must_scan_sub_dirs {
+        return watcher::FsChangeEvent {
+            path: existing.path.clone(),
+            event_id,
+            flags: FsEventFlags {
+                must_scan_sub_dirs: true,
+                ..existing.flags.clone()
+            },
+        };
+    }
+
+    // removed wins over everything else
+    if incoming.flags.item_removed || existing.flags.item_removed {
+        return watcher::FsChangeEvent {
+            path: existing.path.clone(),
+            event_id,
+            flags: FsEventFlags {
+                item_removed: true,
+                item_is_file: incoming.flags.item_is_file || existing.flags.item_is_file,
+                item_is_dir: incoming.flags.item_is_dir || existing.flags.item_is_dir,
+                ..Default::default()
+            },
+        };
+    }
+
+    // created > modified
+    if incoming.flags.item_created || existing.flags.item_created {
+        return watcher::FsChangeEvent {
+            path: existing.path.clone(),
+            event_id,
+            flags: FsEventFlags {
+                item_created: true,
+                item_is_file: incoming.flags.item_is_file || existing.flags.item_is_file,
+                item_is_dir: incoming.flags.item_is_dir || existing.flags.item_is_dir,
+                ..Default::default()
+            },
+        };
+    }
+
+    // Otherwise keep the incoming event (newer) with the higher event_id
+    watcher::FsChangeEvent {
+        path: existing.path.clone(),
+        event_id,
+        flags: incoming.flags.clone(),
+    }
+}
+
 /// Process FSEvents in real time after scan + reconciliation completes.
 ///
-/// Runs as a tokio task, reading events from the watcher channel and processing
-/// them through the reconciler. Batches `index-dir-updated` notifications with
-/// a 300 ms flush interval to avoid UI flicker from rapid per-event emits.
+/// Runs as a tokio task, reading events from the watcher channel and
+/// deduplicating them by normalized path during each flush interval.
+/// Only the deduplicated batch is processed through the reconciler, which
+/// cuts allocations dramatically during event storms. Batches
+/// `index-dir-updated` notifications with a 1s flush interval.
 /// Exits when the channel closes (watcher stopped).
 async fn run_live_event_loop(
     mut event_rx: tokio::sync::mpsc::Receiver<watcher::FsChangeEvent>,
@@ -879,7 +945,8 @@ async fn run_live_event_loop(
 
     let mut event_count = 0u64;
     let mut pending_paths = std::collections::HashSet::<String>::new();
-    let mut flush_interval = tokio::time::interval(Duration::from_millis(300));
+    let mut pending_events = std::collections::HashMap::<String, watcher::FsChangeEvent>::new();
+    let mut flush_interval = tokio::time::interval(Duration::from_millis(LIVE_FLUSH_INTERVAL_MS));
     flush_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
 
     loop {
@@ -887,14 +954,33 @@ async fn run_live_event_loop(
             event = event_rx.recv() => {
                 match event {
                     Some(event) => {
-                        reconciler.process_live_event(&event, &conn, &writer, &mut pending_paths);
+                        let normalized = firmlinks::normalize_path(&event.path);
+                        let deduped_event = watcher::FsChangeEvent {
+                            path: normalized.clone(),
+                            event_id: event.event_id,
+                            flags: event.flags,
+                        };
+                        pending_events
+                            .entry(normalized)
+                            .and_modify(|existing| {
+                                *existing = merge_fs_events(existing, &deduped_event);
+                            })
+                            .or_insert(deduped_event);
                         event_count += 1;
                         if event_count.is_multiple_of(10_000) {
-                            log::debug!("Live event processing: {event_count} events processed so far");
+                            log::debug!(
+                                "Live event processing: {event_count} events received \
+                                 ({} pending deduplicated)",
+                                pending_events.len()
+                            );
                         }
                     }
                     None => {
-                        // Channel closed: flush remaining paths before exit
+                        // Channel closed: process remaining events before exit
+                        process_live_batch(
+                            &mut pending_events, &mut reconciler, &conn,
+                            &writer, &mut pending_paths,
+                        );
                         if !pending_paths.is_empty() {
                             reconciler::emit_dir_updated(&app, pending_paths.drain().collect());
                         }
@@ -903,6 +989,10 @@ async fn run_live_event_loop(
                 }
             }
             _ = flush_interval.tick() => {
+                process_live_batch(
+                    &mut pending_events, &mut reconciler, &conn,
+                    &writer, &mut pending_paths,
+                );
                 if !pending_paths.is_empty() {
                     reconciler::emit_dir_updated(&app, pending_paths.drain().collect());
                 }
@@ -911,6 +1001,30 @@ async fn run_live_event_loop(
     }
 
     log::debug!("Live event processing stopped after {event_count} events");
+}
+
+/// Drain the pending events map, process each through the reconciler, and
+/// send a single `UpdateLastEventId` for the batch.
+fn process_live_batch(
+    pending_events: &mut std::collections::HashMap<String, watcher::FsChangeEvent>,
+    reconciler: &mut EventReconciler,
+    conn: &rusqlite::Connection,
+    writer: &IndexWriter,
+    pending_paths: &mut std::collections::HashSet<String>,
+) {
+    if pending_events.is_empty() {
+        return;
+    }
+
+    let mut max_event_id = 0u64;
+    for (_path, event) in pending_events.drain() {
+        max_event_id = max_event_id.max(event.event_id);
+        reconciler.process_live_event(&event, conn, writer, pending_paths);
+    }
+
+    if max_event_id > 0 {
+        let _ = writer.send(WriteMessage::UpdateLastEventId(max_event_id));
+    }
 }
 
 // ── Replay event loop (cold start sinceWhen) ─────────────────────────
@@ -922,8 +1036,8 @@ const JOURNAL_GAP_THRESHOLD: u64 = 1_000_000;
 
 /// Capacity of the watcher→event loop channel. Provides backpressure to
 /// FSEvents/inotify when the event loop can't keep up, preventing unbounded
-/// memory growth. Each event is ~300 bytes, so 100K ≈ 30 MB worst case.
-const WATCHER_CHANNEL_CAPACITY: usize = 100_000;
+/// memory growth. Each event is ~300 bytes, so 20K ≈ 6 MB worst case.
+const WATCHER_CHANNEL_CAPACITY: usize = 20_000;
 
 /// Cap on `affected_paths` during replay. When exceeded, individual path
 /// tracking stops and a single "full refresh" is emitted instead.
@@ -1219,7 +1333,8 @@ async fn run_replay_event_loop(
 
     let mut live_count = 0u64;
     let mut live_pending_paths = std::collections::HashSet::<String>::new();
-    let mut flush_interval = tokio::time::interval(Duration::from_millis(300));
+    let mut live_pending_events = std::collections::HashMap::<String, watcher::FsChangeEvent>::new();
+    let mut flush_interval = tokio::time::interval(Duration::from_millis(LIVE_FLUSH_INTERVAL_MS));
     flush_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
 
     loop {
@@ -1227,13 +1342,32 @@ async fn run_replay_event_loop(
             event = event_rx.recv() => {
                 match event {
                     Some(event) => {
-                        reconciler.process_live_event(&event, &conn, &writer, &mut live_pending_paths);
+                        let normalized = firmlinks::normalize_path(&event.path);
+                        let deduped_event = watcher::FsChangeEvent {
+                            path: normalized.clone(),
+                            event_id: event.event_id,
+                            flags: event.flags,
+                        };
+                        live_pending_events
+                            .entry(normalized)
+                            .and_modify(|existing| {
+                                *existing = merge_fs_events(existing, &deduped_event);
+                            })
+                            .or_insert(deduped_event);
                         live_count += 1;
                         if live_count.is_multiple_of(10_000) {
-                            log::debug!("Live event processing (post-replay): {live_count} events");
+                            log::debug!(
+                                "Live event processing (post-replay): {live_count} events \
+                                 ({} pending deduplicated)",
+                                live_pending_events.len()
+                            );
                         }
                     }
                     None => {
+                        process_live_batch(
+                            &mut live_pending_events, &mut reconciler, &conn,
+                            &writer, &mut live_pending_paths,
+                        );
                         if !live_pending_paths.is_empty() {
                             reconciler::emit_dir_updated(&app, live_pending_paths.drain().collect());
                         }
@@ -1242,6 +1376,10 @@ async fn run_replay_event_loop(
                 }
             }
             _ = flush_interval.tick() => {
+                process_live_batch(
+                    &mut live_pending_events, &mut reconciler, &conn,
+                    &writer, &mut live_pending_paths,
+                );
                 if !live_pending_paths.is_empty() {
                     reconciler::emit_dir_updated(&app, live_pending_paths.drain().collect());
                 }

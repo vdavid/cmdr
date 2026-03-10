@@ -19,7 +19,7 @@ use crate::indexing::store::{EntryRow, IndexStore, IndexStoreError};
 
 /// Capacity of the bounded writer channel. When full, senders block,
 /// providing natural backpressure instead of unbounded memory growth.
-const WRITER_CHANNEL_CAPACITY: usize = 100_000;
+const WRITER_CHANNEL_CAPACITY: usize = 20_000;
 
 /// Messages sent to the writer thread via a bounded mpsc channel.
 pub enum WriteMessage {

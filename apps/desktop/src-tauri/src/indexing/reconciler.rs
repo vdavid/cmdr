@@ -189,7 +189,7 @@ impl EventReconciler {
     /// Process a single event in live mode.
     ///
     /// Collects affected directory paths into `pending_paths` for batched
-    /// emission by the caller (300 ms flush interval). Returns the event ID
+    /// emission by the caller (1s flush interval). Returns the event ID
     /// on success, or `None` if still buffering.
     pub fn process_live_event(
         &mut self,
@@ -214,8 +214,8 @@ impl EventReconciler {
             pending_paths.extend(affected_paths);
         }
 
-        // Periodically store last event ID (every event in live mode)
-        let _ = writer.send(WriteMessage::UpdateLastEventId(event.event_id));
+        // UpdateLastEventId is sent once per batch by the caller (process_live_batch)
+        // instead of per-event, to reduce writer channel pressure during event storms.
 
         Some(event.event_id)
     }
