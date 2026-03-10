@@ -502,9 +502,16 @@ impl IndexStore {
         &self.read_conn
     }
 
-    /// Return the DB file size on disk (bytes).
+    /// Return the total DB size on disk (main file + WAL + SHM sidecars).
     pub fn db_file_size(&self) -> Result<u64, IndexStoreError> {
-        Ok(std::fs::metadata(&self.db_path)?.len())
+        let main = std::fs::metadata(&self.db_path)?.len();
+        let wal = std::fs::metadata(format!("{}-wal", self.db_path.display()))
+            .map(|m| m.len())
+            .unwrap_or(0);
+        let shm = std::fs::metadata(format!("{}-shm", self.db_path.display()))
+            .map(|m| m.len())
+            .unwrap_or(0);
+        Ok(main + wal + shm)
     }
 
     // ── Read methods (integer-keyed, new API) ────────────────────────

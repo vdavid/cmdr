@@ -61,8 +61,8 @@
 
     onMount(() => {
         void refreshDbSize()
-        // Refresh DB size every 5 seconds while visible
-        refreshTimer = setInterval(() => void refreshDbSize(), 5000)
+        // Refresh DB size every 2 seconds while visible
+        refreshTimer = setInterval(() => void refreshDbSize(), 2000)
 
         return () => {
             clearInterval(refreshTimer)
