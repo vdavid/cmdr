@@ -314,6 +314,10 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             menu::cleanup_macos_menus();
 
+            // Set SF Symbol icons on menu items (macOS only)
+            #[cfg(target_os = "macos")]
+            menu::set_macos_menu_icons();
+
             // Store the CheckMenuItem references in app state
             let menu_state = MenuState::default();
             *menu_state.show_hidden_files.lock_ignore_poison() = Some(menu_items.show_hidden_files);

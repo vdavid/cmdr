@@ -11,7 +11,9 @@ use tauri::{
 #[cfg(target_os = "macos")]
 use objc2::MainThreadMarker;
 #[cfg(target_os = "macos")]
-use objc2_app_kit::NSApplication;
+use objc2_app_kit::{NSApplication, NSImage, NSMenuItem as NSMenuItemAppKit};
+#[cfg(target_os = "macos")]
+use objc2_foundation::NSString;
 
 /// Menu item IDs for file actions.
 pub const SHOW_HIDDEN_FILES_ID: &str = "show_hidden_files";
@@ -413,6 +415,161 @@ fn cleanup_macos_menus_inner() {
             // Register as the app's Help menu so macOS adds the search field
             app.setHelpMenu(Some(&submenu));
         }
+    }
+}
+
+/// Sets SF Symbol icons on menu items post-construction via native AppKit API.
+///
+/// Tauri's menu API doesn't support SF Symbols, so we walk the NSMenu hierarchy after
+/// construction and call `NSImage(systemSymbolName:accessibilityDescription:)` + `setImage:`
+/// on each item, matching by title within each known submenu.
+#[cfg(target_os = "macos")]
+pub fn set_macos_menu_icons() {
+    let result = objc2::exception::catch(set_macos_menu_icons_inner);
+    if let Err(e) = result {
+        log::warn!("Failed to set macOS menu icons: {e:?}");
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn set_macos_menu_icons_inner() {
+    let mtm = unsafe { MainThreadMarker::new_unchecked() };
+    let app = NSApplication::sharedApplication(mtm);
+    let Some(main_menu) = app.mainMenu() else {
+        return;
+    };
+
+    let count = main_menu.numberOfItems();
+    for i in 0..count {
+        let Some(top_item) = main_menu.itemAtIndex(i) else {
+            continue;
+        };
+        let Some(submenu) = top_item.submenu() else {
+            continue;
+        };
+        let title = submenu.title().to_string();
+
+        let mappings: &[(&str, &str)] = match title.as_str() {
+            "cmdr" => &[
+                ("Enter license key\u{2026}", "key"),
+                ("See license details\u{2026}", "key"),
+                ("Settings\u{2026}", "gearshape"),
+            ],
+            "File" => &[
+                ("Open", "arrow.up.forward"),
+                ("View", "document"),
+                ("Edit in editor", "pencil"),
+                ("Copy\u{2026}", "document.on.document"),
+                ("Move\u{2026}", "folder"),
+                ("New folder", "folder.badge.plus"),
+                ("Delete", "trash"),
+                ("Delete permanently", "trash.slash"),
+                ("Rename", "character.cursor.ibeam"),
+                ("Show in Finder", "arrow.forward.circle"),
+                ("Get info", "info.circle"),
+                ("Quick look", "eye"),
+            ],
+            "Edit" => &[
+                ("Cut", "scissors"),
+                ("Copy", "document.on.document"),
+                ("Paste", "clipboard"),
+                ("Move here", "document.on.clipboard"),
+                ("Select all", "checkmark.circle"),
+                ("Deselect all", "circle"),
+                ("Copy path", "link"),
+                ("Copy filename", "textformat"),
+            ],
+            "View" => {
+                // Also apply icons to the "Sort by" submenu items
+                apply_sf_symbols_to_nested_submenu(&submenu, "Sort by", &[
+                    ("Name", "textformat.alt"),
+                    ("Extension", "character.textbox"),
+                    ("Size", "ruler"),
+                    ("Date modified", "clock"),
+                    ("Date created", "calendar"),
+                    ("Ascending", "chevron.up"),
+                    ("Descending", "chevron.down"),
+                ]);
+
+                &[
+                    ("Switch pane", "rectangle.2.swap"),
+                    ("Swap panes", "arrow.left.arrow.right"),
+                    ("Command palette\u{2026}", "command"),
+                ]
+            }
+            "Go" => &[
+                ("Back", "chevron.left"),
+                ("Forward", "chevron.right"),
+                ("Parent folder", "arrow.up"),
+            ],
+            "Tab" => &[
+                ("New tab", "plus"),
+                ("Close tab", "xmark"),
+                ("Next tab", "arrow.right"),
+                ("Previous tab", "arrow.left"),
+                ("Pin tab", "pin"),
+                ("Close other tabs", "xmark.circle"),
+            ],
+            _ => continue,
+        };
+
+        apply_sf_symbols_to_submenu(&submenu, mappings);
+    }
+}
+
+/// Applies SF Symbol icons to menu items in a submenu, matching by title.
+#[cfg(target_os = "macos")]
+fn apply_sf_symbols_to_submenu(
+    submenu: &objc2_app_kit::NSMenu,
+    mappings: &[(&str, &str)],
+) {
+    let item_count = submenu.numberOfItems();
+    for j in 0..item_count {
+        let Some(item) = submenu.itemAtIndex(j) else {
+            continue;
+        };
+        if item.isSeparatorItem() {
+            continue;
+        }
+        let item_title = item.title().to_string();
+        for &(title, symbol_name) in mappings {
+            if item_title == title {
+                set_sf_symbol(&item, symbol_name);
+                break;
+            }
+        }
+    }
+}
+
+/// Applies SF Symbol icons to items inside a nested submenu (e.g. "Sort by" inside "View").
+#[cfg(target_os = "macos")]
+fn apply_sf_symbols_to_nested_submenu(
+    parent: &objc2_app_kit::NSMenu,
+    submenu_title: &str,
+    mappings: &[(&str, &str)],
+) {
+    let count = parent.numberOfItems();
+    for i in 0..count {
+        let Some(item) = parent.itemAtIndex(i) else {
+            continue;
+        };
+        if let Some(child_menu) = item.submenu()
+            && child_menu.title().to_string() == submenu_title
+        {
+            apply_sf_symbols_to_submenu(&child_menu, mappings);
+            return;
+        }
+    }
+}
+
+/// Sets an SF Symbol image on a single NSMenuItem.
+#[cfg(target_os = "macos")]
+fn set_sf_symbol(item: &NSMenuItemAppKit, symbol_name: &str) {
+    let name = NSString::from_str(symbol_name);
+    if let Some(image) = NSImage::imageWithSystemSymbolName_accessibilityDescription(&name, None) {
+        item.setImage(Some(&image));
+    } else {
+        log::warn!("SF Symbol not found: {symbol_name}");
     }
 }
 

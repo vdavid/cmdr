@@ -56,6 +56,16 @@ frontend when Settings or file viewer gains/loses focus. Iterates the `items` Ha
 Uses `objc2::exception::catch` because NSMenu operations can raise ObjC exceptions inside Tauri's
 `did_finish_launching` callback, which aborts on panic.
 
+### SF Symbol icons (macOS only)
+
+`set_macos_menu_icons()` runs post-construction via objc2 FFI, walking
+`NSApplication.mainMenu()` and calling `NSImage(systemSymbolName:)` + `setImage:` on each
+`NSMenuItem` matched by title. This produces true template images that auto-tint on
+selection highlighting. Also handles nested submenus (Sort by) via
+`apply_sf_symbols_to_nested_submenu`. Context menus do NOT have icons — Tauri doesn't expose the
+raw `NSMenu` pointer for context menus, and rasterized SF Symbol bitmaps via `IconMenuItem` look
+poor (no template auto-tinting).
+
 ## Platform differences
 
 | Aspect | macOS | Linux |
@@ -66,6 +76,7 @@ Uses `objc2::exception::catch` because NSMenu operations can raise ObjC exceptio
 | Mnemonics | Not used | `&` prefixes for GTK keyboard navigation, unique per submenu |
 | Help search | Native NSMenu search field via `setHelpMenu:` | Not available |
 | System cleanup | objc2 strips injected Edit items | Not needed |
+| Menu icons | SF Symbols via objc2 (menu bar) and IconMenuItem (context menus) | Not supported |
 
 ## Menu structure
 
@@ -100,6 +111,9 @@ also Window and Help.
 
 **Decision**: CheckMenuItems (view modes, show hidden) use separate event paths instead of `"execute-command"`.
 **Why**: CheckMenuItems auto-toggle their checked state on click. If the click also emitted `"execute-command"` and the frontend toggled the setting, the state would double-toggle (menu toggles once, frontend toggles again). Instead, these items emit `"settings-changed"` or `"view-mode-changed"` directly, treating the menu click as the authoritative state change.
+
+**Decision**: SF Symbol icons only on the menu bar, not on context menus.
+**Why**: Tauri doesn't support SF Symbols natively. For the menu bar, we walk `NSApplication.mainMenu()` post-construction via objc2 FFI and set SF Symbols directly on `NSMenuItem` objects — this produces true template images that auto-tint correctly. Context menus don't get icons because Tauri doesn't expose the raw `NSMenu` pointer, and the alternative (rasterized bitmaps via `IconMenuItem`) produces visually poor results (no template tinting, wrong size/weight).
 
 ## Gotchas
 
