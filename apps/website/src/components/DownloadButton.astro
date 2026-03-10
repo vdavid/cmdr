@@ -42,7 +42,13 @@ const hasGlow = variant === 'hero' || variant === 'card'
 
         {
             variant === 'hero' && (
-                <span>Download free{dmgSizes && <span data-download-size> ({dmgSizes.universal})</span>}</span>
+                <span class="split-btn__stack split-btn__stack--center">
+                    <span class="split-btn__label">Download free</span>
+                    <span class="split-btn__sub">
+                        {version}
+                        {dmgSizes && <span data-download-size> · {dmgSizes.universal}</span>}
+                    </span>
+                </span>
             )
         }
 
@@ -58,15 +64,38 @@ const hasGlow = variant === 'hero' || variant === 'card'
             )
         }
 
-        {variant === 'header' && <span>Download</span>}
+        {
+            variant === 'header' && (
+                <span class="split-btn__stack">
+                    <span class="split-btn__label">Download</span>
+                    <span class="split-btn__sub split-btn__sub--header">
+                        {version}
+                        {dmgSizes && <span data-download-size> · {dmgSizes.universal}</span>}
+                    </span>
+                </span>
+            )
+        }
 
-        {variant === 'mobile' && <span>Download for macOS</span>}
+        {
+            variant === 'mobile' && (
+                <span class="split-btn__stack split-btn__stack--center">
+                    <span class="split-btn__label">Download for macOS</span>
+                    <span class="split-btn__sub">
+                        {version}
+                        {dmgSizes && <span data-download-size> · {dmgSizes.universal}</span>}
+                    </span>
+                </span>
+            )
+        }
 
         {
             variant === 'pricing' && (
                 <span class="split-btn__stack">
                     <span class="split-btn__label split-btn__label--pricing">Download Cmdr</span>
-                    <span class="split-btn__sub">{version}</span>
+                    <span class="split-btn__sub">
+                        {version}
+                        {dmgSizes && <span data-download-size> · {dmgSizes.universal}</span>}
+                    </span>
                 </span>
             )
         }
@@ -371,6 +400,11 @@ const hasGlow = variant === 'hero' || variant === 'card'
         opacity: 0.8;
     }
 
+    .split-btn__sub--header {
+        font-size: 0.6875rem;
+        line-height: 1;
+    }
+
     /* Hover scale for hero & card */
     .split-btn--hero,
     .split-btn--card {
@@ -440,6 +474,13 @@ const hasGlow = variant === 'hero' || variant === 'card'
         border-top-right-radius: 0;
     }
 
+    /* Header dropdown: right-align and allow wider than button */
+    .split-btn--header .split-btn__dropdown {
+        left: auto;
+        right: 0;
+        min-width: 200px;
+    }
+
     .split-btn__option {
         display: flex;
         align-items: center;
@@ -450,6 +491,7 @@ const hasGlow = variant === 'hero' || variant === 'card'
         text-decoration: none;
         border-radius: 0.375rem;
         transition: background-color 150ms;
+        white-space: nowrap;
     }
 
     .split-btn__option-icon {
