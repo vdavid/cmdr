@@ -460,3 +460,11 @@ export const commands: Command[] = [
 export function getPaletteCommands(): Command[] {
     return commands.filter((c) => c.showInPalette)
 }
+
+/** Update the license command name based on whether a license exists. Keeps the command palette in sync with the native menu label. */
+export function updateLicenseCommandName(hasExistingLicense: boolean): void {
+    const cmd = commands.find((c) => c.id === 'app.licenseKey')
+    if (cmd) {
+        cmd.name = hasExistingLicense ? 'See license details' : 'Enter license key'
+    }
+}

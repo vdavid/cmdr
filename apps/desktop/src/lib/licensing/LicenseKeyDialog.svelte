@@ -387,7 +387,16 @@
                 <Button variant="primary" onclick={handleResetConfirm}>Continue</Button>
             </div>
         {:else if !isLoading}
-            <p class="description">Paste your license key from the email you received after purchase.</p>
+            <p class="description">
+                Paste your license key from the email you received after purchase. Don't have one yet? <a
+                    href="https://getcmdr.com/pricing"
+                    class="buy-link"
+                    onclick={(event: MouseEvent) => {
+                        event.preventDefault()
+                        void openExternalUrl('https://getcmdr.com/pricing')
+                    }}>Get a license</a
+                >.
+            </p>
 
             <div class="input-group">
                 <input
@@ -597,6 +606,15 @@
     }
 
     .support-link:hover {
+        color: var(--color-accent-hover);
+    }
+
+    .buy-link {
+        color: var(--color-accent);
+        text-decoration: underline;
+    }
+
+    .buy-link:hover {
         color: var(--color-accent-hover);
     }
 

@@ -20,6 +20,7 @@
     // Note: Themes is in the registry, so we don't add it here
     const specialSections = [
         { name: 'Keyboard shortcuts', path: ['Keyboard shortcuts'] },
+        { name: 'License', path: ['License'] },
         { name: 'Advanced', path: ['Advanced'] },
     ]
 
@@ -93,6 +94,10 @@
         // Keyboard shortcuts: show if any command name matches the search query
         if (path[0] === 'Keyboard shortcuts') {
             return matchingSections.has('Keyboard shortcuts')
+        }
+        // License: show if query matches license-related terms
+        if (path[0] === 'License') {
+            return matchingSections.has('License')
         }
         return false
     }

@@ -10,6 +10,7 @@
     import McpServerSection from '$lib/settings/sections/McpServerSection.svelte'
     import LoggingSection from '$lib/settings/sections/LoggingSection.svelte'
     import AdvancedSection from '$lib/settings/sections/AdvancedSection.svelte'
+    import LicenseSection from '$lib/settings/sections/LicenseSection.svelte'
     import SectionSummary from './SectionSummary.svelte'
     import { getMatchingSettingIdsInSection } from '$lib/settings/settings-search'
     import { searchCommands } from '$lib/commands/fuzzy-search'
@@ -124,6 +125,12 @@
         {#if shouldShowSection(['Themes']) || (isTopLevelSection && selectedSection[0] === 'Themes')}
             <section data-section-id="themes">
                 <ThemesSection {searchQuery} />
+            </section>
+        {/if}
+
+        {#if shouldShowSection(['License']) || (isTopLevelSection && selectedSection[0] === 'License')}
+            <section data-section-id="license">
+                <LicenseSection />
             </section>
         {/if}
 

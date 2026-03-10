@@ -61,13 +61,20 @@
         }
     }
 
-    // Determine if we should show the Upgrade link
-    function shouldShowUpgradeLink(): boolean {
-        if (!status) return true // No license - show upgrade
+    // Determine if we should show the license purchase/upgrade link
+    function shouldShowLicenseLink(): boolean {
+        if (!status) return true
         if (status.type === 'personal') return true
         if (status.type === 'expired') return true
-        // Supporter and commercial don't show the generic upgrade link
+        // Supporter shows "upgrade" to commercial
+        if (status.type === 'supporter') return true
         return false
+    }
+
+    // Label varies by license state: "Get a license" for unlicensed, "Upgrade" for supporters
+    function getLicenseLinkLabel(): string {
+        if (status?.type === 'supporter') return 'Upgrade'
+        return 'Get a license'
     }
 
     // Determine if we should show the commercial upgrade prompt (for supporters)
@@ -124,10 +131,10 @@
 
             <div class="links">
                 <a href="https://getcmdr.com" onclick={handleLinkClick('https://getcmdr.com')}>Website</a>
-                {#if shouldShowUpgradeLink()}
+                {#if shouldShowLicenseLink()}
                     <span class="separator">•</span>
                     <a href="https://getcmdr.com/pricing" onclick={handleLinkClick('https://getcmdr.com/pricing')}
-                        >Upgrade</a
+                        >{getLicenseLinkLabel()}</a
                     >
                 {/if}
                 <span class="separator">•</span>

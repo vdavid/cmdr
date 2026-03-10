@@ -41,6 +41,7 @@
         loadLicenseStatus,
         triggerValidationIfNeeded,
     } from '$lib/licensing/licensing-store.svelte'
+    import { updateLicenseCommandName } from '$lib/commands/command-registry'
     import type { ViewMode } from '$lib/app-status-store'
 
     // Interface for DualPaneExplorer's exported methods
@@ -491,6 +492,9 @@
                 showCommercialReminder = true
             }
 
+            // Update command palette label to match native menu
+            updateLicenseCommandName(licenseStatus.type !== 'personal')
+
             // Load window title based on license status
             windowTitle = await getWindowTitle()
         } catch {
@@ -604,7 +608,8 @@
 
     async function handleLicenseKeySuccess() {
         showLicenseKeyDialog = false
-        // Refresh the window title to reflect new license status
+        // Refresh the window title and command palette label to reflect new license status
+        updateLicenseCommandName(true)
         windowTitle = await getWindowTitle()
         // Show the About window so user can see their license status
         showAboutWindow = true
