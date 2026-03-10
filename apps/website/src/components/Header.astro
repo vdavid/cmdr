@@ -110,7 +110,7 @@ const navLinks = [
     <div
         id="mobile-menu"
         class="mobile-menu md:hidden"
-        aria-hidden="true"
+        inert
         role="navigation"
         aria-label="Mobile navigation"
     >
@@ -239,7 +239,7 @@ const navLinks = [
             visibility 0s var(--duration-slow);
     }
 
-    .mobile-menu[aria-hidden='false'] {
+    .mobile-menu:not([inert]) {
         max-height: 600px;
         border-top-color: var(--color-border-subtle);
         visibility: visible;
@@ -393,7 +393,7 @@ const navLinks = [
         menuToggle.dataset.bound = 'true'
 
         const openMobileMenu = () => {
-            mobileMenu.setAttribute('aria-hidden', 'false')
+            mobileMenu.removeAttribute('inert')
             menuToggle.setAttribute('aria-expanded', 'true')
             menuToggle.setAttribute('aria-label', 'Close menu')
             // Focus first link after animation starts
@@ -402,13 +402,13 @@ const navLinks = [
         }
 
         const closeMobileMenu = () => {
-            mobileMenu.setAttribute('aria-hidden', 'true')
+            mobileMenu.setAttribute('inert', '')
             menuToggle.setAttribute('aria-expanded', 'false')
             menuToggle.setAttribute('aria-label', 'Open menu')
         }
 
         menuToggle.addEventListener('click', () => {
-            const isOpen = mobileMenu.getAttribute('aria-hidden') === 'false'
+            const isOpen = !mobileMenu.hasAttribute('inert')
             if (isOpen) closeMobileMenu()
             else openMobileMenu()
         })
@@ -420,7 +420,7 @@ const navLinks = [
 
         // Close on Escape
         document.addEventListener('keydown', (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && mobileMenu.getAttribute('aria-hidden') === 'false') {
+            if (e.key === 'Escape' && !mobileMenu.hasAttribute('inert')) {
                 closeMobileMenu()
                 menuToggle.focus()
             }
@@ -428,7 +428,7 @@ const navLinks = [
 
         // Close on outside click
         document.addEventListener('click', (e: MouseEvent) => {
-            if (mobileMenu.getAttribute('aria-hidden') === 'false') {
+            if (!mobileMenu.hasAttribute('inert')) {
                 const header = menuToggle.closest('header')
                 if (header && !header.contains(e.target as Node)) {
                     closeMobileMenu()
