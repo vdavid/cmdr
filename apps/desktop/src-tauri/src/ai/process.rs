@@ -48,6 +48,8 @@ pub fn spawn_llama_server(ai_dir: &Path, model_filename: &str, port: u16) -> Res
         .arg(port.to_string())
         .arg("--host")
         .arg("127.0.0.1")
+        .arg("-c")
+        .arg("4096") // Context window — 4K is plenty for folder suggestions, prevents 27 GB KV cache
         .arg("--temp")
         .arg("0.6")
         .arg("--top-p")

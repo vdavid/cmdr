@@ -80,6 +80,9 @@ Frontend                    manager.rs              process.rs / download.rs / c
 **Decision**: `SIGTERM` then 5s wait then `SIGKILL` for process shutdown.
 **Why**: llama-server may be mid-inference holding GPU memory. `SIGTERM` gives it a chance to release resources cleanly. The 5s timeout prevents hanging on app quit if the server is stuck.
 
+**Decision**: Context window (`-c 4096`) explicitly set on llama-server.
+**Why**: Without `-c`, llama-server defaults to the model's trained max context (256K for Ministral), creating a ~27 GB KV cache. Folder suggestions need at most 2K context. 4K is generous and keeps memory under ~400 MB.
+
 **Decision**: Bundle pre-extracted individual binaries in `resources/ai/` instead of a `.tar.gz` archive.
 **Why**: Apple notarization inspects inside archives and rejects unsigned binaries. By extracting and signing at build time (in the Go download script when `APPLE_SIGNING_IDENTITY` is set), each binary is individually codesigned with hardened runtime + secure timestamp. This also removes the `tar` and `flate2` Rust dependencies — `extract.rs` just copies files instead of decompressing.
 
