@@ -28,7 +28,7 @@ import { listDirectoryStart } from '$lib/tauri-commands/file-listing'
 | `networking.ts`       | SMB host discovery, share listing, Keychain credential ops, mounting                                  |
 | `mtp.ts`              | Android MTP: device listing, connect/disconnect, file ops, transfer progress, volume copy             |
 | `licensing.ts`        | License status, activation, expiry, server validation                                                 |
-| `settings.ts`         | Port checking, file watcher debounce, indexing toggle, AI subsystem commands                          |
+| `settings.ts`         | Port checking, file watcher debounce, indexing toggle, MCP server control, AI subsystem commands      |
 | `tab.ts`              | Tab context menu: `showTabContextMenu`, `onTabContextAction`                                          |
 | `clipboard-files.ts`  | Clipboard file operations: copy/cut files to system clipboard, read/paste, clear cut state            |
 

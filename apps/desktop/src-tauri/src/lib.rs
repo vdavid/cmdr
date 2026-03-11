@@ -367,7 +367,7 @@ pub fn run() {
                 saved_settings.developer_mcp_enabled,
                 saved_settings.developer_mcp_port,
             );
-            mcp::start_mcp_server(app.handle().clone(), mcp_config);
+            mcp::start_mcp_server_background(app.handle().clone(), mcp_config);
 
             // Initialize AI manager (starts llama-server if model is installed)
             ai::manager::init(app.handle());
@@ -833,6 +833,9 @@ pub fn run() {
             ai::manager::opt_in_ai,
             ai::manager::is_ai_opted_out,
             ai::suggestions::get_folder_suggestions,
+            // MCP server live control
+            commands::mcp::set_mcp_enabled,
+            commands::mcp::set_mcp_port,
             // Settings commands
             commands::settings::check_port_available,
             commands::settings::find_available_port,

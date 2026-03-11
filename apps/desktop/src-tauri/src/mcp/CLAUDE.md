@@ -87,9 +87,13 @@ Binding to `0.0.0.0` would expose the server to the network. An attacker could q
 
 ## Gotchas
 
-### Server starts in background task
+### Server lifecycle is managed at runtime
 
-`start_mcp_server()` spawns a tokio task and returns immediately. If the server crashes, the app continues but MCP stops working. Check logs for "MCP server crashed" errors.
+`start_mcp_server()` binds the port and spawns a tokio task, storing the `JoinHandle` in a static `MCP_HANDLE`. The server can be started/stopped live via `set_mcp_enabled` and `set_mcp_port` Tauri commands — no app restart needed. `stop_mcp_server()` aborts the task (instant). `is_mcp_running()` checks whether the handle exists. At startup, `start_mcp_server_background()` wraps the async start in a fire-and-forget spawn. If the server crashes, the app continues but MCP stops working. Check logs for "MCP server crashed" errors.
+
+### Live MCP control only works from the settings window
+
+`McpServerSection.svelte` subscribes to `developer.mcpEnabled` and `developer.mcpPort` changes and calls the Tauri commands directly. The main window's `settings-applier.ts` intentionally does NOT handle these settings to avoid double-firing (both windows receive setting change events). This means if an MCP tool changes `developer.mcpEnabled` via the settings bridge while the settings window is closed, the setting is saved but the server state doesn't change until the next app restart. This is acceptable — an MCP tool toggling its own server is circular.
 
 ### State sync is best-effort
 

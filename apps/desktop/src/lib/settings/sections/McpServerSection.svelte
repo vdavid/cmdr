@@ -4,25 +4,83 @@
     import SettingSwitch from '../components/SettingSwitch.svelte'
     import SettingNumberInput from '../components/SettingNumberInput.svelte'
     import Button from '$lib/ui/Button.svelte'
-    import { getSetting, getSettingDefinition, setSetting } from '$lib/settings'
-    import { checkPortAvailable, findAvailablePort } from '$lib/tauri-commands'
+    import { getSetting, getSettingDefinition, setSetting, onSpecificSettingChange } from '$lib/settings'
+    import { checkPortAvailable, findAvailablePort, setMcpEnabled, setMcpPort } from '$lib/tauri-commands'
     import { createShouldShow } from '$lib/settings/settings-search'
+    import { getAppLogger } from '$lib/logging/logger'
+    import { onMount } from 'svelte'
 
     interface Props {
         searchQuery: string
     }
 
     const { searchQuery }: Props = $props()
+    const log = getAppLogger('mcp-settings')
 
     const shouldShow = $derived(createShouldShow(searchQuery))
 
-    const defaultDef = { label: '', description: '', requiresRestart: false }
+    const defaultDef = { label: '', description: '' }
     const mcpEnabledDef = getSettingDefinition('developer.mcpEnabled') ?? defaultDef
     const mcpPortDef = getSettingDefinition('developer.mcpPort') ?? defaultDef
 
     const mcpEnabled = $derived(getSetting('developer.mcpEnabled'))
+    let serverError = $state<string | null>(null)
     let portStatus = $state<'checking' | 'available' | 'unavailable' | null>(null)
     let suggestedPort = $state<number | null>(null)
+    let portDebounceTimer: ReturnType<typeof setTimeout> | undefined
+    // Skip exactly one change notification caused by our own revert on failure
+    let skipNextEnabledChange = false
+
+    onMount(() => {
+        const unsubEnabled = onSpecificSettingChange('developer.mcpEnabled', (_id, value) => {
+            if (skipNextEnabledChange) {
+                skipNextEnabledChange = false
+                return
+            }
+            void applyMcpEnabled(value)
+        })
+        const unsubPort = onSpecificSettingChange('developer.mcpPort', (_id, value) => {
+            debounceMcpPortChange(value)
+        })
+        return () => {
+            unsubEnabled()
+            unsubPort()
+            clearTimeout(portDebounceTimer)
+        }
+    })
+
+    async function applyMcpEnabled(enabled: boolean): Promise<void> {
+        serverError = null
+        const port = getSetting('developer.mcpPort')
+        try {
+            await setMcpEnabled(enabled, port)
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error)
+            log.error('Failed to toggle MCP server: {error}', { error: message })
+            serverError = message
+            // Revert the toggle so it reflects reality
+            skipNextEnabledChange = true
+            setSetting('developer.mcpEnabled', !enabled)
+        }
+    }
+
+    function debounceMcpPortChange(port: number): void {
+        clearTimeout(portDebounceTimer)
+        portDebounceTimer = setTimeout(() => {
+            void applyMcpPort(port)
+        }, 800)
+    }
+
+    async function applyMcpPort(port: number): Promise<void> {
+        serverError = null
+        try {
+            await setMcpPort(port)
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error)
+            log.error('Failed to change MCP port: {error}', { error: message })
+            serverError = message
+        }
+    }
 
     async function checkPort() {
         const port = getSetting('developer.mcpPort')
@@ -33,7 +91,6 @@
             portStatus = available ? 'available' : 'unavailable'
 
             if (!available) {
-                // Find an available port
                 suggestedPort = await findAvailablePort(port)
             } else {
                 suggestedPort = null
@@ -58,11 +115,14 @@
             id="developer.mcpEnabled"
             label={mcpEnabledDef.label}
             description={mcpEnabledDef.description}
-            requiresRestart={mcpEnabledDef.requiresRestart}
             {searchQuery}
         >
             <SettingSwitch id="developer.mcpEnabled" />
         </SettingRow>
+    {/if}
+
+    {#if serverError}
+        <div class="server-error">{serverError}</div>
     {/if}
 
     {#if shouldShow('developer.mcpPort')}
@@ -71,7 +131,6 @@
             label={mcpPortDef.label}
             description={mcpPortDef.description}
             disabled={!mcpEnabled}
-            requiresRestart={mcpPortDef.requiresRestart}
             split
             {searchQuery}
         >
@@ -128,5 +187,13 @@
         display: flex;
         align-items: center;
         gap: var(--spacing-sm);
+    }
+
+    .server-error {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        border-radius: var(--radius-sm);
+        font-size: var(--font-size-sm);
+        background: color-mix(in srgb, var(--color-error) 10%, transparent);
+        color: var(--color-error);
     }
 </style>

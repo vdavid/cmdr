@@ -211,10 +211,15 @@ silently failing. Costs one extra HMAC check on mismatch.
 
 Runtime: `hono`, `@noble/ed25519`, `resend` Dev: `wrangler`, `vitest`, `typescript`, `eslint`, `prettier`
 
-**Decision**: Paddle as Merchant of Record (not Stripe, Gumroad, LemonSqueezy, or Polar).
-**Why**: All-inclusive pricing (5% + $0.50, no hidden non-US or EU payout fees), aggregate monthly payouts (one invoice for accountant instead of per-transaction), handles global VAT/GST calculation and remittance, established reputation (Sketch, etc.). On a $29 sale: $1.95 fee → $27.05 net. At 30k sales, saves ~$7k/year vs LemonSqueezy. Stripe was rejected because solo-dev handling VAT in 27+ EU countries is impractical (Stripe is a payment processor, not an MoR).
+**Decision**: Paddle as Merchant of Record (not Stripe, Gumroad, LemonSqueezy, or Polar). **Why**: All-inclusive pricing
+(5% + $0.50, no hidden non-US or EU payout fees), aggregate monthly payouts (one invoice for accountant instead of
+per-transaction), handles global VAT/GST calculation and remittance, established reputation (Sketch, etc.). On a $29
+sale: $1.95 fee → $27.05 net. At 30k sales, saves ~$7k/year vs LemonSqueezy. Stripe was rejected because solo-dev
+handling VAT in 27+ EU countries is impractical (Stripe is a payment processor, not an MoR).
 
-**Decision**: BSL 1.1 license with free personal use (supersedes earlier AGPL + trial model).
-**Why**: The AGPL + trial model felt pushy for hobbyists (trial countdown, nagware). BSL gives friction-free personal use (no nags), clear commercial terms (businesses know they must pay), and simpler enforcement (title bar shows license type, honor system beats trial timers). Source converts to AGPL-3.0 after 3 years per release.
+**Decision**: BSL 1.1 license with free personal use (supersedes earlier AGPL + trial model). **Why**: The AGPL + trial
+model felt pushy for hobbyists (trial countdown, nagware). BSL gives friction-free personal use (no nags), clear
+commercial terms (businesses know they must pay), and simpler enforcement (title bar shows license type, honor system
+beats trial timers). Source converts to AGPL-3.0 after 3 years per release.
 
 See also: `apps/desktop/src/lib/licensing/CLAUDE.md` — full frontend licensing feature overview

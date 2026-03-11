@@ -19,5 +19,5 @@ mod tests;
 pub use config::McpConfig;
 pub use dialog_state::SoftDialogTracker;
 pub use pane_state::PaneStateStore;
-pub use server::start_mcp_server;
+pub use server::{is_mcp_running, start_mcp_server, start_mcp_server_background, stop_mcp_server};
 pub use settings_state::SettingsStateStore;

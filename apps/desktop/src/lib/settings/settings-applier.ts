@@ -81,7 +81,10 @@ function handleSettingChange(id: string, value: unknown): void {
             // Start or stop drive indexing
             void setIndexingEnabled(value as boolean)
             break
-        // Other settings that need immediate UI updates can be added here
+        // MCP server (developer.mcpEnabled, developer.mcpPort) is handled directly
+        // by McpServerSection.svelte in the settings window, not here. This avoids
+        // double-firing since both windows receive setting change events.
+        // Other settings that need immediate UI updates can be added here.
         // Date/time format and file size format are read on-demand when rendering,
         // so they don't need to trigger a re-render here
     }

@@ -9,6 +9,7 @@ pub mod icons;
 pub mod indexing;
 pub mod licensing;
 pub mod logging;
+pub mod mcp;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod mtp;
 #[cfg(any(target_os = "macos", target_os = "linux"))]

@@ -17,7 +17,8 @@ use futures_util::stream;
 use serde_json::{Value, json};
 use std::convert::Infallible;
 use std::net::SocketAddr;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex, RwLock};
+use tauri::async_runtime::JoinHandle;
 use tauri::{AppHandle, Runtime};
 use tower_http::cors::{Any, CorsLayer};
 use uuid::Uuid;
@@ -27,6 +28,9 @@ use super::executor::execute_tool;
 use super::protocol::{INVALID_PARAMS, INVALID_REQUEST, METHOD_NOT_FOUND, McpRequest, McpResponse, ServerCapabilities};
 use super::resources::{get_all_resources, read_resource};
 use super::tools::get_all_tools;
+
+/// Handle to the running MCP server task, if any.
+static MCP_HANDLE: Mutex<Option<JoinHandle<()>>> = Mutex::new(None);
 
 /// The current MCP protocol version we support.
 pub const PROTOCOL_VERSION: &str = "2025-11-25";
@@ -53,44 +57,82 @@ impl<R: Runtime> McpState<R> {
     }
 }
 
-/// Start the MCP server.
-pub fn start_mcp_server<R: Runtime + 'static>(app: AppHandle<R>, config: McpConfig) {
+/// Start the MCP server. Binds to the configured port and spawns the server task.
+/// Returns an error if the port is already in use or binding fails.
+pub async fn start_mcp_server<R: Runtime + 'static>(app: AppHandle<R>, config: McpConfig) -> Result<(), String> {
     if !config.enabled {
         log::info!("MCP server is disabled");
-        return;
+        return Ok(());
+    }
+
+    // Guard against double-start
+    if is_mcp_running() {
+        log::debug!("MCP server is already running, ignoring start request");
+        return Ok(());
     }
 
     let port = config.port;
     let state = Arc::new(McpState::new(app));
 
-    tauri::async_runtime::spawn(async move {
-        let cors = CorsLayer::new().allow_origin(Any).allow_methods(Any).allow_headers(Any);
+    let cors = CorsLayer::new().allow_origin(Any).allow_methods(Any).allow_headers(Any);
 
-        let app = Router::new()
-            .route("/mcp", post(handle_mcp_post::<R>))
-            .route("/mcp", get(handle_mcp_get))
-            .route("/mcp/health", get(health_check))
-            .layer(cors)
-            .with_state(state);
+    let router = Router::new()
+        .route("/mcp", post(handle_mcp_post::<R>))
+        .route("/mcp", get(handle_mcp_get))
+        .route("/mcp/health", get(health_check))
+        .layer(cors)
+        .with_state(state);
 
-        let addr = SocketAddr::from(([127, 0, 0, 1], port));
-        log::debug!("MCP server attempting to bind on http://{}", addr);
+    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+    log::debug!("MCP server attempting to bind on http://{}", addr);
 
-        let listener = match tokio::net::TcpListener::bind(addr).await {
-            Ok(l) => {
-                log::debug!("MCP server successfully bound to {}", addr);
-                l
-            }
-            Err(e) => {
-                log::error!("Failed to bind MCP server to {}: {}", addr, e);
-                return;
-            }
-        };
+    // Bind before spawning so we can report errors synchronously
+    let listener = tokio::net::TcpListener::bind(addr).await.map_err(|e| {
+        if e.kind() == std::io::ErrorKind::AddrInUse {
+            format!("Port {} is already in use. Try a different port?", port)
+        } else {
+            format!("Couldn't start the server on port {}. {}", port, e)
+        }
+    })?;
 
-        if let Err(e) = axum::serve(listener, app).await {
+    log::info!("MCP server listening on http://{}", addr);
+
+    let handle = tauri::async_runtime::spawn(async move {
+        if let Err(e) = axum::serve(listener, router).await {
             log::error!("MCP server crashed: {}", e);
         }
     });
+
+    if let Ok(mut guard) = MCP_HANDLE.lock() {
+        *guard = Some(handle);
+    }
+
+    Ok(())
+}
+
+/// Start the MCP server in a fire-and-forget manner (for app startup).
+/// Logs errors instead of returning them.
+pub fn start_mcp_server_background<R: Runtime + 'static>(app: AppHandle<R>, config: McpConfig) {
+    tauri::async_runtime::spawn(async move {
+        if let Err(e) = start_mcp_server(app, config).await {
+            log::error!("MCP server failed to start: {}", e);
+        }
+    });
+}
+
+/// Stop the MCP server if it's running.
+pub fn stop_mcp_server() {
+    if let Ok(mut guard) = MCP_HANDLE.lock()
+        && let Some(handle) = guard.take()
+    {
+        handle.abort();
+        log::info!("MCP server stopped");
+    }
+}
+
+/// Returns whether the MCP server task is currently running.
+pub fn is_mcp_running() -> bool {
+    MCP_HANDLE.lock().ok().is_some_and(|guard| guard.is_some())
 }
 
 /// Health check endpoint.

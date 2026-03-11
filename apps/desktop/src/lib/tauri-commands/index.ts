@@ -251,6 +251,8 @@ export type { RenameConflictFileInfo, RenameValidityResult } from './rename'
 export {
     checkPortAvailable,
     findAvailablePort,
+    setMcpEnabled,
+    setMcpPort,
     updateFileWatcherDebounce,
     updateServiceResolveTimeout,
     setIndexingEnabled,

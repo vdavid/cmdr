@@ -20,6 +20,7 @@ immediately to business-logic modules. No significant logic lives here.
 | `file_viewer.rs` | File viewer | Session lifecycle, line search, word wrap, menu state |
 | `ui.rs` | UI / menu | Context menu, Finder reveal, clipboard, Quick Look, Get Info, view mode, `set_menu_context` (enables/disables file-scoped menu items based on window focus) |
 | `settings.rs` | Settings | Port availability check, watcher debounce setting, menu accelerator updates |
+| `mcp.rs` | MCP server | `set_mcp_enabled`, `set_mcp_port` — live start/stop/port-change of the MCP server without app restart |
 | `licensing.rs` | Licensing | Status query, activation, expiry, reminder, key validation |
 | `indexing.rs` | Drive index | `start_drive_index`, `stop_drive_index`, `get_index_status`, `get_dir_stats`, `get_dir_stats_batch`, `prioritize_dir`, `cancel_nav_priority`, `clear_drive_index`, `set_indexing_enabled`. Uses `State<IndexManagerState>`. |
 | `clipboard.rs` | Clipboard file ops | `copy_files_to_clipboard`, `cut_files_to_clipboard`, `read_clipboard_files`, `clear_clipboard_cut_state`. macOS uses NSPasteboard via `clipboard::pasteboard`; non-macOS stubs return errors. |

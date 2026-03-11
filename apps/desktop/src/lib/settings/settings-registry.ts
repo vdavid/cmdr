@@ -445,7 +445,6 @@ export const settingsRegistry: SettingDefinition[] = [
         type: 'boolean',
         default: false,
         component: 'switch',
-        requiresRestart: true,
     },
     {
         id: 'developer.mcpPort',
@@ -461,7 +460,6 @@ export const settingsRegistry: SettingDefinition[] = [
             max: 65535,
             step: 1,
         },
-        requiresRestart: true,
     },
 
     // ========================================================================

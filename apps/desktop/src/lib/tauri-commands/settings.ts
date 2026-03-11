@@ -44,6 +44,20 @@ export async function updateServiceResolveTimeout(timeoutMs: number): Promise<vo
 }
 
 // ============================================================================
+// MCP server commands
+// ============================================================================
+
+/** Starts or stops the MCP server. Pass the current port so it binds correctly on enable. */
+export async function setMcpEnabled(enabled: boolean, port: number): Promise<void> {
+    await invoke('set_mcp_enabled', { enabled, port })
+}
+
+/** Restarts the MCP server on a new port. No-op if the server isn't currently running. */
+export async function setMcpPort(port: number): Promise<void> {
+    await invoke('set_mcp_port', { port })
+}
+
+// ============================================================================
 // Indexing commands
 // ============================================================================
 
