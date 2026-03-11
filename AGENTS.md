@@ -86,12 +86,6 @@ If you don't find these but need them, ask the user. Run the app in dev mode fir
 - **Always read** [style-guide.md](docs/style-guide.md) before touching code. Especially sentence case!
 - **Planning**: Use the `@plan` command when starting a feature.
 - **Wrapping up**: Use the `@wrap-up` command before finishing work.
-- **Keep docs alive**: If you touched a directory with a `CLAUDE.md`, re-read it before wrapping up. Update if your
-  changes affect architecture, decisions, or gotchas. A stale doc is worse than no doc.
-- **Pass on dead ends**: If something failed due to a wrong assumption, add a `Gotcha/Why` entry to the nearest
-  `CLAUDE.md`.
-- **Capturing decisions**: Add `Decision/Why` entries to the nearest colocated `CLAUDE.md`. If the decision has rich
-  evidence (benchmarks, detailed analysis), put the evidence in `docs/notes/` and link from the CLAUDE.md.
 - Cover your code with tests until you're confident. Don't go overboard. Test per milestone.
 
 Happy coding! 🦀✨
