@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
+	"syscall"
 )
 
 // App represents the application a check belongs to.
@@ -92,7 +94,29 @@ type CheckDefinition struct {
 	Run         CheckFunc
 }
 
+// processTracker keeps track of all running child processes so they can be
+// killed as a group on Ctrl+C. Each command is started with its own process
+// group (Setpgid), so killing -pgid cleans up all its descendants too.
+var processTracker = struct {
+	mu    sync.Mutex
+	procs map[*exec.Cmd]struct{}
+}{procs: make(map[*exec.Cmd]struct{})}
+
+// KillAllProcesses sends SIGTERM to the process group of every tracked child.
+func KillAllProcesses() {
+	processTracker.mu.Lock()
+	defer processTracker.mu.Unlock()
+	for cmd := range processTracker.procs {
+		if cmd.Process != nil {
+			// Kill the entire process group (negative PID).
+			_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGTERM)
+		}
+	}
+}
+
 // RunCommand executes a command and captures its output.
+// The command is started in its own process group so that all of its
+// descendants can be killed together on shutdown.
 func RunCommand(cmd *exec.Cmd, captureOutput bool) (string, error) {
 	var stdout, stderr bytes.Buffer
 	if captureOutput {
@@ -103,7 +127,23 @@ func RunCommand(cmd *exec.Cmd, captureOutput bool) (string, error) {
 		cmd.Stderr = os.Stderr
 	}
 
-	err := cmd.Run()
+	// Give the child its own process group so we can kill the whole tree.
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+
+	if err := cmd.Start(); err != nil {
+		return "", err
+	}
+
+	processTracker.mu.Lock()
+	processTracker.procs[cmd] = struct{}{}
+	processTracker.mu.Unlock()
+
+	err := cmd.Wait()
+
+	processTracker.mu.Lock()
+	delete(processTracker.procs, cmd)
+	processTracker.mu.Unlock()
+
 	output := stdout.String()
 	if stderr.Len() > 0 {
 		output += stderr.String()

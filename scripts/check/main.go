@@ -4,8 +4,10 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
 	"sort"
 	"strings"
+	"syscall"
 	"time"
 
 	"vmail/scripts/check/checks"
@@ -43,6 +45,15 @@ type cliFlags struct {
 }
 
 func main() {
+	// Kill all child process groups on Ctrl+C / SIGTERM so no orphans are left behind.
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sigCh
+		checks.KillAllProcesses()
+		os.Exit(130) // 128 + SIGINT(2)
+	}()
+
 	// Validate check configuration at startup to catch nickname collisions early
 	if err := checks.ValidateCheckNames(); err != nil {
 		printError("Bad check configuration: %v", err)
