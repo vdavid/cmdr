@@ -47,8 +47,8 @@
         if (rate <= 0) return ''
         const remaining = (aggTotal - aggCurrent) / rate
         if (remaining < 2) return 'Almost done'
-        if (remaining < 60) return `${Math.round(remaining)}s left`
-        return `${Math.round(remaining / 60)}m left`
+        if (remaining < 60) return `${String(Math.round(remaining))}s left`
+        return `${String(Math.round(remaining / 60))}m left`
     })
 
     const showProgressBar = $derived(

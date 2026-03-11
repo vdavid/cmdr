@@ -336,7 +336,7 @@ pub struct IndexManager {
     drive_watcher: Option<DriveWatcher>,
     /// Live event processing task (runs after reconciliation completes).
     /// Shared with spawned async tasks so they can store the handle.
-    live_event_task: Arc<tokio::sync::Mutex<Option<tauri::async_runtime::JoinHandle<()>>>>,
+    live_event_task: Arc<std::sync::Mutex<Option<tauri::async_runtime::JoinHandle<()>>>>,
     /// Tauri app handle for emitting events
     app: AppHandle,
     /// Whether a full scan is currently running. Shared with the completion handler.
@@ -381,7 +381,7 @@ impl IndexManager {
             micro_scans,
             scan_handle: None,
             drive_watcher: None,
-            live_event_task: Arc::new(tokio::sync::Mutex::new(None)),
+            live_event_task: Arc::new(std::sync::Mutex::new(None)),
             app,
             scanning: Arc::new(AtomicBool::new(false)),
         })
@@ -531,7 +531,7 @@ impl IndexManager {
             }
         });
         {
-            let mut guard = live_event_task_slot.blocking_lock();
+            let mut guard = live_event_task_slot.lock().unwrap();
             *guard = Some(handle);
         }
 
@@ -553,7 +553,7 @@ impl IndexManager {
                     }
                     mgr.drive_watcher = None;
                     {
-                        let mut task_guard = mgr.live_event_task.blocking_lock();
+                        let mut task_guard = mgr.live_event_task.lock().unwrap();
                         if let Some(task) = task_guard.take() {
                             task.abort();
                         }
@@ -793,8 +793,10 @@ impl IndexManager {
                     });
 
                     // Store the handle so shutdown() can wait for it to drain
-                    let mut guard = live_event_task_slot.lock().await;
-                    *guard = Some(handle);
+                    {
+                        let mut guard = live_event_task_slot.lock().unwrap();
+                        *guard = Some(handle);
+                    }
 
                     // Store scan metadata via writer
                     let now = std::time::SystemTime::now()
@@ -850,7 +852,7 @@ impl IndexManager {
 
         // Abort the live event processing task
         {
-            let mut guard = self.live_event_task.blocking_lock();
+            let mut guard = self.live_event_task.lock().unwrap();
             if let Some(task) = guard.take() {
                 task.abort();
             }
@@ -1006,19 +1008,18 @@ impl IndexManager {
         // 3. Wait for the event loop to drain (process final batch + UpdateLastEventId).
         //    Use block_in_place so we can .await the join handle without blocking the
         //    tokio runtime thread pool.
-        let live_event_task = Arc::clone(&self.live_event_task);
-        tokio::task::block_in_place(|| {
-            tauri::async_runtime::block_on(async {
-                let mut guard = live_event_task.lock().await;
-                if let Some(task) = guard.take() {
+        let task = self.live_event_task.lock().unwrap().take();
+        if let Some(task) = task {
+            tokio::task::block_in_place(|| {
+                tauri::async_runtime::block_on(async {
                     match tokio::time::timeout(Duration::from_secs(5), task).await {
                         Ok(Ok(())) => log::debug!("Live event loop drained successfully"),
                         Ok(Err(e)) => log::debug!("Live event loop task error: {e}"),
                         Err(_) => log::warn!("Live event loop drain timed out after 5s"),
                     }
-                }
+                });
             });
-        });
+        }
 
         // 4. Now shut down the writer (all final writes have been queued)
         self.writer.shutdown();

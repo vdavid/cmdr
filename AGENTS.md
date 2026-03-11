@@ -147,6 +147,7 @@ There are two MCP servers available to you:
 ## Things to avoid
 
 - ❌ Don't touch git, user handles commits manually. Unless explicitly asked to.
+- ❌ NEVER use `git stash`, `git checkout`, `git reset`, or any write operation on git. Multiple agents may be working on the codebase simultaneously — stashing or checking out will silently destroy another agent's uncommitted work. To test whether a failure is pre-existing, use `isolation: "worktree"` via the Agent tool, or simply check `git log` / `git blame`.
 - ❌ Don't add JSDoc that just repeats types or obvious function names
 - ❌ Don't ignore linter warnings (fix them or justify with a comment)
 - ❌ Don't add dependencies without checking license compatibility (`cargo deny check`)

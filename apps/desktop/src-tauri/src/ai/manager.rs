@@ -464,7 +464,12 @@ fn macos_memory_info() -> SystemMemoryInfo {
     // Free = everything not wired or app (includes file cache, inactive, purgeable, speculative)
     let free_bytes = total_bytes.saturating_sub(wired_bytes + app_bytes);
 
-    SystemMemoryInfo { total_bytes, wired_bytes, app_bytes, free_bytes }
+    SystemMemoryInfo {
+        total_bytes,
+        wired_bytes,
+        app_bytes,
+        free_bytes,
+    }
 }
 
 /// Stores provider + context size + OpenAI config in manager state.
