@@ -15,9 +15,10 @@ if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   exit 1
 fi
 
-# Check for uncommitted changes (CHANGELOG.md is allowed — it gets included in the release commit)
-if ! git diff --quiet -- ':!CHANGELOG.md' || ! git diff --staged --quiet -- ':!CHANGELOG.md'; then
-  echo "Error: Working tree has uncommitted changes (other than CHANGELOG.md). Commit or stash them first."
+# Check for uncommitted changes (CHANGELOG.md and roadmap are allowed — they get included in the release commit)
+EXCLUDE=(':!CHANGELOG.md' ':!apps/website/src/pages/roadmap.astro')
+if ! git diff --quiet -- "${EXCLUDE[@]}" || ! git diff --staged --quiet -- "${EXCLUDE[@]}"; then
+  echo "Error: Working tree has uncommitted changes (other than CHANGELOG.md and roadmap.astro). Commit or stash them first."
   exit 1
 fi
 
@@ -53,6 +54,7 @@ sed -i '' "s/## \[Unreleased\]/## [Unreleased]\n\n## [$VERSION] - $TODAY/" CHANG
 # Commit and tag (only files touched by this script)
 git add \
   CHANGELOG.md \
+  apps/website/src/pages/roadmap.astro \
   apps/desktop/package.json \
   apps/desktop/src-tauri/tauri.conf.json \
   apps/desktop/src-tauri/Cargo.toml \
