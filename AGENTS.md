@@ -1,5 +1,7 @@
 # Cmdr
 
+This file is for AI agents. Human contributors, see [CONTRIBUTING.md](CONTRIBUTING.md).
+
 Cmdr is an extremely fast AI-native file manager written in Rust, free forever for personal use on macOS (BSL license).
 Downloadable at [the website](https://getcmdr.com).
 
@@ -84,8 +86,6 @@ If you don't find these but need them, ask the user. Run the app in dev mode fir
 ## Workflow
 
 - **Always read** [style-guide.md](docs/style-guide.md) before touching code. Especially sentence case!
-- **Planning**: Use the `@plan` command when starting a feature.
-- **Wrapping up**: Use the `@wrap-up` command before finishing work.
 - Cover your code with tests until you're confident. Don't go overboard. Test per milestone.
 
 Happy coding! 🦀✨

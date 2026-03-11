@@ -3,6 +3,9 @@
 Thanks for your interest in contributing to Cmdr! The easiest way to contribute is to fork the repo, make your changes,
 and submit a PR. This doc will help you get started.
 
+Note: This doc is entirely for humans. AI agents always read [AGENTS.md](AGENTS.md) and the colocated `CLAUDE.md` files
+instead of this file.
+
 ## Dev setup
 
 The project uses [mise](https://mise.jdx.dev) for tool version management. It handles Node, pnpm, and Go versions. Rust
@@ -50,6 +53,15 @@ pnpm --filter @cmdr/desktop tauri dev
 ```
 
 Module paths follow the Rust crate structure: `cmdr_lib::mcp`, `cmdr_lib::network`, `cmdr_lib::licensing`, etc.
+
+## Workflow (Claude Code commands)
+
+These are slash commands for Claude Code (type `/command-name` in the CLI):
+
+- `/plan` — use when starting a feature
+- `/wrap-up` — use before finishing work
+- `/release` — prepare a release (changelog, versioning, roadmap)
+- `/commit-draft` — draft a commit message for staged changes
 
 ## Tooling
 
