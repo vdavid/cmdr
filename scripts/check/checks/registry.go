@@ -292,16 +292,6 @@ var AllChecks = []CheckDefinition{
 		Run:         RunLicenseServerTests,
 	},
 
-	// Monorepo-wide checks
-	{
-		ID:          "pnpm-audit",
-		DisplayName: "pnpm audit",
-		App:         AppOther,
-		Tech:        "📦 pnpm",
-		DependsOn:   nil,
-		Run:         RunPnpmAudit,
-	},
-
 	// Scripts - Go checks
 	{
 		ID:          "scripts-go-gofmt",

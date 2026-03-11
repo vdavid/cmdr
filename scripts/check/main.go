@@ -242,14 +242,10 @@ func printFailure(failedChecks []string) {
 // needsPnpmInstall returns true if any of the checks require pnpm dependencies.
 func needsPnpmInstall(checksToRun []checks.CheckDefinition) bool {
 	for _, check := range checksToRun {
-		// Checks that need pnpm: Svelte, Astro, TS (license-server), and pnpm-audit
+		// Checks that need pnpm: Svelte, Astro, TS (license-server)
 		switch check.App {
 		case checks.AppDesktop, checks.AppWebsite, checks.AppLicenseServer:
 			return true
-		case checks.AppOther:
-			if check.ID == "pnpm-audit" {
-				return true
-			}
 		}
 	}
 	return false

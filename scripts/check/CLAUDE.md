@@ -162,7 +162,6 @@ tests, type checkers before tests.
 | Website | Docker | docker-build |
 | License server | TS | prettier, eslint, typecheck, tests |
 | Scripts | Go | gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, deadcode, go-tests |
-| Other | pnpm | pnpm-audit |
 | Other | Metrics | file-length (warn-only) |
 
 ## Output format

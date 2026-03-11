@@ -286,6 +286,12 @@ The check runner and E2E testing docs live colocated with their code:
 - Linux E2E (Docker, VNC, Ubuntu VM): [`apps/desktop/test/e2e-linux/CLAUDE.md`](../apps/desktop/test/e2e-linux/CLAUDE.md)
 - macOS E2E (CrabNebula): [`apps/desktop/test/e2e-macos/CLAUDE.md`](../apps/desktop/test/e2e-macos/CLAUDE.md)
 
+### Dependency management
+
+[Renovate](https://docs.renovatebot.com/) (`renovate.json` in repo root) auto-updates all dependencies (npm, Cargo,
+Go). Weekly grouped PRs for non-major updates (auto-merge), monthly for major (manual review). Security vulnerability
+patches get immediate auto-merging PRs regardless of schedule.
+
 ### External services
 
 | Doc | Purpose |

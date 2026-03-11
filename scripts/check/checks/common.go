@@ -181,6 +181,23 @@ func indentOutput(output string) string {
 	return result.String()
 }
 
+// EnsurePnpmDependencies runs pnpm install to ensure all dependencies are installed.
+// In CI mode, uses --frozen-lockfile to fail if lockfile is out of sync.
+func EnsurePnpmDependencies(ctx *CheckContext) error {
+	args := []string{"install"}
+	if ctx.CI {
+		args = append(args, "--frozen-lockfile")
+	}
+
+	cmd := exec.Command("pnpm", args...)
+	cmd.Dir = ctx.RootDir
+	output, err := RunCommand(cmd, true)
+	if err != nil {
+		return fmt.Errorf("pnpm install failed:\n%s", indentOutput(output))
+	}
+	return nil
+}
+
 // Pluralize returns singular if count is 1, plural otherwise.
 // Example: Pluralize(1, "file", "files") returns "file"
 // Example: Pluralize(5, "file", "files") returns "files"
