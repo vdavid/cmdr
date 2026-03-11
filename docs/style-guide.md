@@ -1,6 +1,6 @@
 # Style guide
 
-Writing and code styles.
+Writing, code, and design styles.
 
 ## Writing
 
@@ -77,13 +77,65 @@ Only add JSDoc that actually adds info. No tautologies.
 - ❌ DO NOT repeat TypeScript types in `@param`/`@returns`.
 - ✅ USE JSDoc to mark caveats, tricky/unusual solutions, formats (`YYYY-MM-DD`), and constraints (`must end with /`)
 
+### TypeScript
+
+- Only functional components and modules. No classes.
+- Don't use `any` type. ESLint will error.
+- Prefer functional programming (map, reduce, some, forEach) and pure functions wherever it makes sense.
+- Use `const` for everything, unless it makes the code unnecessarily verbose.
+- Start function names with a verb, unless unidiomatic in the specific case.
+- Use `camelCase` for variable and constant names, including module-level constants.
+- Put constants closest to where they are used. If only used in one function, put it in that function.
+- For maps, try to name them like `somethingToSomethingElseMap`. That avoids unnecessary comments.
+- Keep interfaces minimal: only export what you must export.
+
+### Svelte 5
+
+- `$state()` can only live in `.svelte` or `.svelte.ts` files, not plain `.ts`.
+- Template arrow function closures need explicit type annotations to avoid `any` args from Svelte's event system.
+- When extracting logic from `.svelte` to `.ts`, use callback-based deps (getters) rather than threading reactive state.
+
+### Rust
+
+- Max 120 char lines, 4-space indent, cognitive complexity threshold: 15, enforced by clippy.
+
+### CSS
+
+- `html { font-size: 16px; }` is set so `1rem = 16px`. Use `px` by default but can use `rem` if it's more descriptive.
+- Use variables for colors, spacing, and the such, in `app.css`.
+- Always think about accessibility when designing, and dark + light modes.
+
+## Design
+
+- Always make features extremely user-friendly.
+- Always apply radical transparency: make the internals of what's happening available. Hide the details from the surface
+  so the main UI is not cluttered.
+- For longer processes: 1. show a progress indicator (an anim), 2. a progress bar and counter if we know the end state
+  (for example, how many files we're loading), and 3. a time estimate if we have a guess how long it'll take.
+- Always keep accessibility in mind. Features should be available to people with impaired vision, hearing, and cognitive
+  disabilities.
+- All actions longer than ~1 second should be immediately cancelable, canceling not just the UI but any background
+  processes as well, to avoid wasting the user's resources.
+- Write _elegant_ code. Not quick code, not overengineered code, but elegant code. If you need to choose between a small
+  refactor that leads to a slightly better architecture or a larger refactor that leads to a near-perfect architecture,
+  choose the larger refactor.
+- When shortcuts are available for a feature, always display the shortcut in a tooltip or somewhere less prominent than
+  the main UI.
+- **Platform-native, not generic.** The app should look and feel as if it was specifically made for the user's OS. Never
+  generalize user-facing text, labels, or behavior to be "cross-platform" — instead, fork by OS. On macOS, say "Finder",
+  "Trash", "System Settings". On Linux, say "file manager", "Trash" (FreeDesktop spec), and use DE-specific terminology
+  where possible. Windows (later) gets its own native terms too. This applies to error messages, menu labels, tooltips,
+  and any user-visible string. Use `isMacOS()` / `cfg(target_os)` to branch — a few extra lines of platform-specific
+  text are always better than one watered-down generic string.
+
 ## Git
 
 ### Commit messages
 
-- Title: Optional prefix like "Bugfix: ", "Docs: ", "Tooling: ", "File viewer: ", etc. Max 50 chars. Capture the IMPACT 
+- Title: Optional prefix like "Bugfix: ", "Docs: ", "Tooling: ", "File viewer: ", etc. Max 50 chars. Capture the IMPACT
   of the change, not the tech details.
-- Body: A few bullets of details if needed. No word wrap — don't hard-wrap body lines at 72 chars or any other width. Let the terminal/viewer wrap naturally. Enclose entities in ``. No co-author.
+- Body: A few bullets of details if needed. No word wrap — don't hard-wrap body lines at 72 chars or any other width.
+  Let the terminal/viewer wrap naturally. Enclose entities in ``. No co-author.
 
 ### PRs
 
@@ -97,4 +149,4 @@ Only add JSDoc that actually adds info. No tautologies.
 ### Guides
 
 See [this diff](https://github.com/vdavid/cmdr/commit/13ad8f3#diff-795210f) before writing guides. This diff shows how
-we like our guides formatted. (Before: was AI-written. After: matching our standards for conciseness and clarity.)   
+we like our guides formatted. (Before: was AI-written. After: matching our standards for conciseness and clarity.)

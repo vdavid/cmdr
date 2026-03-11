@@ -1,10 +1,8 @@
 # Cmdr
 
 Cmdr is an extremely fast AI-native file manager written in Rust, free forever for personal use on macOS (BSL license).
-Cmdr is for folks who love a rock-solid, keyboard-driven, two-pane file manager with a modern UI in 2026.
 Downloadable at [the website](https://getcmdr.com).
 
-Running:
 - Dev server: `pnpm dev` at repo root
 - Prod build: `pnpm build` at repo root
 
@@ -25,220 +23,75 @@ Core structure:
         - `src/` - Svelte frontend. Uses SvelteKit with static adapter. TypeScript strict mode. Tailwind v4.
             - `lib/` - Components
             - `routes/` - Routes
-        - `src-tauri/` - Latest Rust, Tauri 2, serde, notify, tokio. Complexity threshold: 15. Code width: 120, 4 spaces
+        - `src-tauri/` - Latest Rust, Tauri 2, serde, notify, tokio
         - `static/` - Static assets
         - `test/` - Vitest unit tests
-    - `license-server/` - Cloudflare Worker (Hono). Receives Paddle webhooks, generates&validates Ed25519-signed keys.
+    - `license-server/` - Cloudflare Worker (Hono). Receives Paddle webhooks, generates & validates Ed25519-signed keys.
     - `website/` - Marketing website (getcmdr.com)
-- `/scripts/check/` - Go-based unified check runner (replaces individual scripts)
+- `/scripts/check/` - Go-based unified check runner
 - `/docs/` - Dev docs
     - `guides/` - How-to guides
     - `notes/` - Temporary reference notes (benchmarks, analysis) linked from CLAUDE.md files
     - `tooling/` - Internal tooling docs
-    - `architecture.md` - Map of all subsystems with links to their `CLAUDE.md` files ← You probably want to know this!
-    - `style-guide.md` - Writing and code style rules
+    - `architecture.md` - Map of all subsystems with links to their `CLAUDE.md` files
+    - `style-guide.md` - Writing, code, and design style rules
     - `security.md` - Security policies
 - Feature-level docs live in **colocated `CLAUDE.md` files** next to the code (for example,
   `src/lib/settings/CLAUDE.md`). Claude Code auto-discovers these. See `docs/architecture.md` for the full map.
 
-## Testing & checking
+## Testing
 
-Run the smallest set of checks possible for efficiency while maintaining confidence.
-
-- Running a Rust test: `cd apps/desktop/src-tauri && cargo nextest run <test_name>`.
-- Running a Svelte test: `cd apps/desktop && pnpm vitest run -t "<test_name>"`
-- Running all Rust/Svelte tests: `./scripts/check.sh --rust` or `--svelte`
-- Running specific checks `/scripts/check.sh --check {desktop-svelte-prettier|desktop-svelte-eslint|stylelint|css-unused
-  |svelte-check|import-cycles|knip|type-drift|svelte-tests|desktop-smoke|e2e-linux-typecheck|desktop-e2e-linux (slow)|rustfmt|clippy
-  |cargo-audit|cargo-deny|cargo-udeps|jscpd-rust|cfg-gate|rust-tests|rust-tests-linux (slow)|license-server-prettier
-  |license-server-eslint|license-server-typecheck|license-server-tests|gofmt|go-vet|staticcheck|ineffassign|misspell
-  |gocyclo|nilaway|deadcode|go-tests|website-prettier|website-eslint|website-typecheck|website-build
-  |website-e2e|html-validate|docker-build|file-length}` (can use multiple `--check` flags or even a comma-separated list)
-- Run all: `./scripts/check.sh`. Runs all tests, linters, and formatters (with auto fixing) for all apps.
-- **E2E testing**: Docker E2E, Playwright smoke tests, VNC debugging, fixture system — see the colocated
-  CLAUDE.md files in `apps/desktop/test/e2e-linux/` and `apps/desktop/test/e2e-macos/`
-- **Ubuntu test VM**: SSH access, toolchain, and agent one-liners are in
-  `apps/desktop/test/e2e-linux/CLAUDE.md` § "Ubuntu test VM".
-- See also `./scripts/check.sh --help`
-- **CI**: Runs automatically on PRs and pushes to main, but only for changed files. To run all checks regardless of
-  changes: Actions → CI → "Run workflow" → select branch → Run workflow.
+- Rust test: `cd apps/desktop/src-tauri && cargo nextest run <test_name>`
+- Svelte test: `cd apps/desktop && pnpm vitest run -t "<test_name>"`
+- All Rust/Svelte tests: `./scripts/check.sh --rust` or `--svelte`
+- Specific checks: `./scripts/check.sh --check <name>` (use `--help` for the full list, or multiple `--check` flags)
+- All checks: `./scripts/check.sh`
+- E2E: See colocated CLAUDE.md files in `apps/desktop/test/e2e-linux/` and `apps/desktop/test/e2e-macos/`
+- Ubuntu test VM: See `apps/desktop/test/e2e-linux/CLAUDE.md` § "Ubuntu test VM"
+- CI: Runs on PRs and pushes to main for changed files. Full run: Actions → CI → "Run workflow".
 
 ## Debugging
 
-- **Data directories (IMPORTANT — dev and prod are separate!)**:
-    - **Prod**: `~/Library/Application Support/com.veszelovszki.cmdr/`
-    - **Dev**: `~/Library/Application Support/com.veszelovszki.cmdr-dev/`
-    - This is set by `resolved_app_data_dir()` in `src-tauri/src/config.rs` (appends `-dev` in debug builds).
-      Settings, index DBs, font metrics, AI models, and license data all live here. When debugging data issues,
-      always check the right directory for the mode you're running. Deleting the wrong one is a real risk.
-- **Unified logging**: Frontend and backend logs appear together in the terminal and in a shared log file at
-  `~/Library/Logs/com.veszelovszki.cmdr/`. The log file is also accessible from Settings > Logging > "Open log file".
-- **Svelte/TypeScript**: Use LogTape via `getAppLogger('feature')` from `$lib/logging/logger`. Levels: debug, info, warn, error.
-  Dev mode shows info+, prod shows error+ only. Enable debug for a feature by adding to `debugCategories` in logger.ts.
-- **Rust**: Uses `tauri-plugin-log` with `RUST_LOG` var. Default: info. Example: `RUST_LOG=cmdr_lib::network=debug pnpm dev`.
-  It's usually worth adding `,smb=warn,sspi=warn,info` too to suppress some excessive logging from smb, unless you're
-  debugging SMB issues.
-- **Logging guide**: Full reference with `RUST_LOG` recipes for every subsystem: [docs/tooling/logging.md](docs/tooling/logging.md)
-- **Log levels** (applies to both Rust and TypeScript):
-    - **debug**: Internal details useful when investigating a specific subsystem. Routine startup steps, periodic
-      background activity, intermediate state. Leave debug logs in the code if they are well-scoped to a feature.
-    - **info**: Noteworthy standard behavior that an operator would want to see in production. User-initiated actions
-      (settings saved, index cleared), rare events (schema migration, update available), and important state transitions.
-      If it happens every startup without user interaction, it's probably debug, not info.
-    - **warn**: Something unexpected that the app recovered from (fallback used, retry needed, config missing).
-    - **error**: Something failed and couldn't be recovered. Requires attention.
-- When ran with `pnpm dev`, Cmdr hot reloads on file changes for both front-end and back-end (Tauri rebuilds and
-  restarts the app for Rust changes). Takes max 15s for back-end changes, max 3s on front-end.
+- **Data dirs (dev and prod are separate!)**: Prod: `~/Library/Application Support/com.veszelovszki.cmdr/`,
+  Dev: `~/Library/Application Support/com.veszelovszki.cmdr-dev/`. Set by `resolved_app_data_dir()` in
+  `src-tauri/src/config.rs`.
+- **Logging**: Frontend and backend logs appear together in terminal and in
+  `~/Library/Logs/com.veszelovszki.cmdr/`. Full reference with `RUST_LOG` recipes:
+  [docs/tooling/logging.md](docs/tooling/logging.md).
+- **Hot reload**: `pnpm dev` hot-reloads. Max 15s for Rust, max 3s for frontend.
 
 ## MCP
 
-There are two MCP servers available to you:
-- "cmdr" to control the app (high level).
-- "tauri" to access Tauri (low level).
-  If you don't find these but need them, ask the user for them!
-  Run the app in dev mode, then use these for control, screenshots, and logs.
+Two MCP servers available: "cmdr" (high-level app control) and "tauri" (low-level Tauri access).
+If you don't find these but need them, ask the user. Run the app in dev mode first.
 
-## Common tasks and reminders
+## Critical rules
 
-- Capturing decisions: add `Decision/Why` entries to the nearest colocated `CLAUDE.md` file. If the decision has rich
+- ❌ NEVER use `git stash`, `git checkout`, `git reset`, or any git write operation unless explicitly asked. Multiple
+  agents may be working simultaneously.
+- ❌ NEVER add dependencies without checking license compatibility (`cargo deny check`) and verifying the latest version
+  from npm/crates.io/GitHub. Never trust training data for versions.
+- ❌ When adding code that loads remote content (`fetch`, `iframe`), ask whether to disable in dev mode.
+  `withGlobalTauri: true` in dev mode is a security risk.
+- ❌ When testing the Tauri app, DO NOT USE THE BROWSER. Use the MCP servers.
+- ❌ Don't ignore linter warnings — fix them or justify with a comment.
+- Always use CSS variables defined in `apps/desktop/src/app.css`. Stylelint catches undefined/hallucinated variables.
+- **Coverage allowlist is a last resort.** Extract pure functions and test them. Only allowlist what genuinely can't be
+  tested. Name the specific untestable API in the reason.
+- When adding a new user-facing action, add it to `command-registry.ts` and `handleCommandExecute` in `+page.svelte`.
+- If you added a new Tauri command touching the filesystem, check `docs/architecture.md` § Platform constraints.
+
+## Workflow
+
+- **Always read** [style-guide.md](docs/style-guide.md) before touching code. Especially sentence case!
+- **Planning**: Use the `@plan` command when starting a feature.
+- **Wrapping up**: Use the `@wrap-up` command before finishing work.
+- **Keep docs alive**: If you touched a directory with a `CLAUDE.md`, re-read it before wrapping up. Update if your
+  changes affect architecture, decisions, or gotchas. A stale doc is worse than no doc.
+- **Pass on dead ends**: If something failed due to a wrong assumption, add a `Gotcha/Why` entry to the nearest
+  `CLAUDE.md`.
+- **Capturing decisions**: Add `Decision/Why` entries to the nearest colocated `CLAUDE.md`. If the decision has rich
   evidence (benchmarks, detailed analysis), put the evidence in `docs/notes/` and link from the CLAUDE.md.
-- Adding new dependencies: NEVER rely on your training data! ALWAYS use npm/ncu, or another source to find the latest
-  versions of libraries. Check out their GitHub, too, and see if they are active. Check Google/Reddit for the latest
-  best solutions!
-- ALWAYS read the [full style guide](docs/style-guide.md) before touching the repo!
-- When writing CSS, ALWAYS use variables defined in `apps/desktop/src/app.css`. Stylelint catches
-  undefined/hallucinated CSS variables.
-- Always cover your code with tests until you're confident in your implementation!
-- **Coverage allowlist is a last resort.** There's no point in testing wiring, that's for sure. But in the case of real
-  logic, extract pure functions to a `.ts` file and test them. Only allowlist what can't be tested (Tauri IPC wrappers,
-  DOM-only code, pure UI components with no logic). Name the specific untestable API calls in the reason.
-  "Depends on Tauri" isn't enough.
-- When adding new code that loads remote content (like `fetch` from external URLs or `iframe`), always ask the user
-  whether to **disable** that functionality in dev mode, and use static/mock data instead. It's because we use
-  `withGlobalTauri: true` in dev mode for MCP Server Tauri, which is a security risk.
-- When testing the Tauri app, DO NOT USE THE BROWSER. It won't work. Use the MCP servers. If they fail, ask for help.
-
-## Design guidelines
-
-- Always make features extremely user-friendly.
-- Always apply radical transparency: make the internals of what's happening available. Hide the details from the surface
-  so the main UI is not cluttered.
-- For longer processes: 1. show a progress indicator (an anim), 2. a progress bar and counter if we know the end state
-  (for example, how many files we're loading), and 3. a time estimate if we have a guess how long it'll take.
-- Always keep accessibility in mind. Features should be available to people with impaired vision, hearing, and cognitive
-  disabilities.
-- All actions longer than, say, 1 second should be immediately cancelable, canceling not just the UI but any background
-  processes as well, to avoid wasting the user's resources.
-- Write _elegant_ code. Not quick code, not overengineered code, but elegant code. If you need to choose between a small
-  refactor that leads to a slightly better architecture or a larger refactor that leads to a near-perfect architecture,
-  choose the larger refactor.
-- When shortcuts are available for a feature, always display the shortcut in a tooltip or somewhere, less prominent than
-  the main UI.
-- **Platform-native, not generic.** The app should look and feel as if it was specifically made for the user's OS. Never
-  generalize user-facing text, labels, or behavior to be "cross-platform" — instead, fork by OS. On macOS, say "Finder",
-  "Trash", "System Settings". On Linux, say "file manager", "Trash" (FreeDesktop spec), and use DE-specific terminology
-  where possible. Windows (later) gets its own native terms too. This applies to error messages, menu labels, tooltips,
-  and any user-visible string. Use `isMacOS()` / `cfg(target_os)` to branch — a few extra lines of platform-specific
-  text are always better than one watered-down generic string.
-
-## Checklist for new features
-
-- When adding a new user-facing action (file operation, tab operation, view toggle, etc.), always add a corresponding
-  entry to `command-registry.ts` and a `case` in `handleCommandExecute` in `+page.svelte`. This keeps the command
-  palette complete.
-
-## Things to avoid
-
-- ❌ Don't touch git, user handles commits manually. Unless explicitly asked to.
-- ❌ NEVER use `git stash`, `git checkout`, `git reset`, or any write operation on git. Multiple agents may be working on the codebase simultaneously — stashing or checking out will silently destroy another agent's uncommitted work. To test whether a failure is pre-existing, use `isolation: "worktree"` via the Agent tool, or simply check `git log` / `git blame`.
-- ❌ Don't add JSDoc that just repeats types or obvious function names
-- ❌ Don't ignore linter warnings (fix them or justify with a comment)
-- ❌ Don't add dependencies without checking license compatibility (`cargo deny check`)
-- ❌ Don't hard-wrap commit message body lines (no 72-char wrap). Write each bullet as one continuous line.
-
-### TypeScript
-
-- Only functional components and modules. No classes.
-- Don't use classes. Use functional components/modules.
-- Don't use `any` type. ESLint will error.
-- Prefer functional programming (map, reduce, some, forEach) and pure functions wherever it makes sense.
-- Use `const` for everything, unless it makes the code unnecessarily verbose.
-- Start function names with a verb, unless unidiomatic in the specific case.
-- Use `camelCase` for variable and constant names, including module-level constants.
-- Put constants closest to where they are used. If a constant is only used in one function, put it in that function.
-- For maps, try to name them like `somethingToSomeethingElseMap`. That avoids unnecessary comments.
-- Keep interfaces minimal: only export what you must export.
-
-### Svelte 5
-
-- `$state()` can only live in `.svelte` or `.svelte.ts` files, not plain `.ts`.
-- Template arrow function closures need explicit type annotations to avoid `any` args from Svelte's event system.
-- When extracting logic from `.svelte` to `.ts`, use callback-based deps (getters) rather than threading reactive state.
-
-### Rust
-
-- Max 120 char lines, 4-space indent, cognitive complexity threshold: 15, enforced by clippy.
-
-### CSS
-
-- `html { font-size: 16px; }` is set so `1rem = 16px`. Use `px` by default but can use `rem` if it's more descriptive.
-- Use variables for colors, spacing, and the such, in `app.css`.
-- Always think about accessibility when designing, and dark+light modes.
-
-## Planning
-
-- When getting oriented, consider the docs: `docs` folder and `CLAUDE.md` files in each directory.
-- When coming up with a plan for a development, save it to `docs/specs/{feature}-plan.md` in this repo (we clean out old
-  plans every few weeks/months, git history remembers them).
-- Don't enter "Plan mode" unless specifically asked to.
-- When writing a plan, always capture the INTENTION behind the plan, not just the steps. That way, the implementing
-  agent or human will know the "why"s behind the decisions and can adapt dynamically if it makes an unexpected discovery
-  during implementation.
-- Also create an accompanying task list that fully covers but doesn't duplicate the plan on a high level.
-  If all items on the task list are honestly marked as done, the plan is fully implemented in great quality.
-  Tasks should be one-liners, grouped by milestones. Include docs, testing, and running all necessary checks.
-
-## Development
-
-- Always tick off tasks as they are done when using a task list.
-- Never stash anything or touch git any any non-read-only way except when explicitly asked to. Another agent might
-  always be working on the codebase at the same time.
-- When testing, consider using Rust/Go tests, Vitest, Playwright, and manual tests with the MCP servers, whatever is
-  needed to feel confident about the development. Do this per milestone. Don't go overboard with unit tests. Test
-  exactly so that you feel confident.
-- **Keep docs alive**: If you touched files in a directory that has a `CLAUDE.md`, you MUST re-read it before wrapping
-  up and verify its claims still hold. Update it if your changes affect architecture, key decisions, or gotchas —
-  especially `Decision/Why` and `Gotcha/Why` entries. A stale doc is worse than no doc: the next agent will trust it
-  and make wrong decisions. Don't update for trivial changes. If there is no `CLAUDE.md` file yet but you want to
-  capture high-level info about a module or feature, create one.
-- **Pass on dead ends**: If you tried something that failed due to a wrong assumption about the codebase (wrong path,
-  wrong command, wrong host, wrong tool), add a `Gotcha/Why` entry to the nearest `CLAUDE.md` immediately. The next
-  agent will hit the same wall. Examples: "dist/ doesn't exist on the server — the site is inside the Docker
-  container", "wrangler login doesn't work in CI — use CLOUDFLARE_API_TOKEN", "Bash tool subshells don't inherit
-  from .zshenv". If there's no CLAUDE.md nearby, create one.
-
-Always do a last round of checks before wrapping up:
-
-1. Looking back at this work, do you think this will be convenient to maintain this later?
-2. Will this lead to superb UX for the end-user, with sufficient transparency into the work that's happening?
-3. Is this as fast as possible, adhering to the "blazing fast" promise we have?
-4. Discuss with the user anything that's not great, or fix if straightforward then GOTO point 1.
-5. If you added a new Tauri command or IPC call that touches the filesystem, check `docs/architecture.md` § Platform constraints.
-6. For every directory you touched that has a `CLAUDE.md`: re-read it, verify it still matches the code, and update
-   any `Decision/Why` or `Gotcha/Why` entries your changes invalidated. Updating the doc is as important as the code
-   change itself.
-7. Did you have to reverse-engineer a flow, state machine, or async lifecycle that isn't documented? If so, add a
-   brief section (5–10 lines) to the nearest `CLAUDE.md` so the next agent doesn't have to re-discover it.
-
-## Useful references
-
-- [Tauri docs](https://tauri.app/v2/)
-- [Svelte 5 docs](https://svelte.dev/docs/svelte/overview)
-- [SvelteKit docs](https://svelte.dev/docs/kit/introduction)
-- [Cargo-deny docs](https://embarkstudios.github.io/cargo-deny/)
-- [Style guide](docs/style-guide.md) - Keep this in mind! Especially "Sentence case" for titles and labels!
-- [Tooling and infrastructure](docs/architecture.md#tooling-and-infrastructure) - Per-service docs for Hetzner VPS,
-  Umami, Cloudflare, PostHog, Paddle, ngrok, and more. Each is a focused file in `docs/tooling/`. `gh` is not
-  described, but it also just works! ONLY do read-only stuff with these unless specifically asked to make changes.
+- Cover your code with tests until you're confident. Don't go overboard. Test per milestone.
 
 Happy coding! 🦀✨
