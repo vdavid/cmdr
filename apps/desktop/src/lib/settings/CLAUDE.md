@@ -38,19 +38,31 @@ Single source of truth for all settings. Each `SettingDefinition` contains:
 `UpdatesSection`, `ThemesSection`, `AdvancedSection`, `DriveIndexingSection`, `AiSection`, `LicenseSection`.
 
 `AiSection` is a hybrid special section (like `LicenseSection` above): it combines dynamic runtime state from the
-backend (via `getAiRuntimeStatus()` and Tauri events) with registry settings (`ai.provider`, `ai.openaiApiKey`, etc.).
-It conditionally renders provider-specific content, handles auto-stop/start of the local server on provider switch, and
-debounces context size changes with a 2-second restart delay.
+backend (via `getAiRuntimeStatus()` and Tauri events) with registry settings (`ai.provider`, `ai.cloudProvider`,
+`ai.cloudProviderConfigs`, etc.). It conditionally renders provider-specific content, handles auto-stop/start of the
+local server on provider switch. Context size changes are not auto-applied; the user must click an explicit "Apply"
+button, which triggers a server restart. A RAM gauge (stacked bar) shows memory usage relative to system total, with
+warning icons at >70% and >90% projected usage. System memory info is polled every 5 seconds via
+`get_system_memory_info`. The "Cloud / API" provider mode uses a preset dropdown (`cloud-providers.ts`) with
+per-provider API key storage in a JSON blob (`ai.cloudProviderConfigs`). Old flat settings (`ai.openaiApiKey`,
+`ai.openaiBaseUrl`, `ai.openaiModel`) are migrated on first load. The Cloud/API section includes a two-step connection
+check (`check_ai_connection` Tauri command) that auto-triggers on API key or base URL changes (1s debounce), fetches
+available models from the `/models` endpoint, and shows connection status (connected, auth error, unreachable). When
+models are available, the Model field becomes a combobox with filtered dropdown; otherwise it's a plain text input.
 
 ### Components (`components/`)
 
 11 reusable setting UI primitives used by section components: `SettingsSection` (wrapper providing shared section title
 and action button styles), `SettingRow`, `SettingSwitch`, `SettingSelect`, `SettingSlider`, `SettingNumberInput`,
-`SettingPasswordInput`, `SettingRadioGroup`, `SettingToggleGroup`, `SettingsSidebar`, `SettingsContent`. Also
-`SectionSummary` for collapsed-section previews.
+`SettingPasswordInput` (supports both settings-store-driven and controlled/external value+onchange modes),
+`SettingRadioGroup`, `SettingToggleGroup`, `SettingsSidebar`, `SettingsContent`. Also `SectionSummary` for
+collapsed-section previews.
 
 ### Other files
 
+- **cloud-providers.ts** — Cloud provider preset definitions (OpenAI, Anthropic, Groq, etc.) and per-provider config
+  helpers (`getProviderConfigs`, `setProviderConfig`, `resolveCloudConfig`). Used by `AiSection` and the startup flow in
+  `+layout.svelte` to resolve the effective API key, base URL, and model before calling `configureAi`.
 - **settings-search.ts** — Fuzzy search over setting definitions; returns ranked matches with highlight ranges
 - **settings-applier.ts** — Listens for setting changes and applies side effects (CSS vars, backend config sync)
 - **network-settings.ts** — Network-specific setting helpers (proxy config, SMB auth defaults)

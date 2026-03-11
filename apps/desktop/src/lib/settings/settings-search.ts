@@ -212,7 +212,7 @@ export function getMatchingSections(query: string): Set<string> {
     // Check if query matches AI-related terms
     if (query.trim()) {
         const aiKeywords =
-            'ai artificial intelligence llm model openai api key local llama server provider context memory'
+            'ai artificial intelligence llm model openai api key local llama server provider context memory cloud anthropic groq together fireworks mistral ollama deepseek xai perplexity openrouter gemini azure lm-studio custom service'
         const lowerQuery = query.toLowerCase()
         if (aiKeywords.split(' ').some((kw) => kw.startsWith(lowerQuery)) || lowerQuery === 'ai') {
             sections.add('AI')

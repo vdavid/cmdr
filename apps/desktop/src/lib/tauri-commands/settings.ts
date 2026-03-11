@@ -73,6 +73,24 @@ export async function getDirStatsBatch(paths: string[]): Promise<(DirStats | nul
 }
 
 // ============================================================================
+// System memory
+// ============================================================================
+
+/** System RAM breakdown in bytes. */
+export interface SystemMemoryInfo {
+    totalBytes: number
+    /** Memory actively used by processes (app + wired + compressed on macOS). */
+    usedBytes: number
+    /** Memory available for new allocations (free + inactive + purgeable on macOS). */
+    availableBytes: number
+}
+
+/** Returns system RAM breakdown for the RAM gauge. */
+export async function getSystemMemoryInfo(): Promise<SystemMemoryInfo> {
+    return invoke<SystemMemoryInfo>('get_system_memory_info')
+}
+
+// ============================================================================
 // AI commands
 // ============================================================================
 
@@ -183,6 +201,19 @@ export async function stopAiServer(): Promise<void> {
 /** Starts the local llama-server with the given context size. */
 export async function startAiServer(ctxSize: number): Promise<void> {
     await invoke('start_ai_server', { ctxSize })
+}
+
+/** Result of checking connectivity to an AI API endpoint. */
+export interface AiConnectionCheckResult {
+    connected: boolean
+    authError: boolean
+    models: string[]
+    error: string | null
+}
+
+/** Checks connectivity to an AI API endpoint by calling GET {baseUrl}/models. */
+export async function checkAiConnection(baseUrl: string, apiKey: string): Promise<AiConnectionCheckResult> {
+    return invoke<AiConnectionCheckResult>('check_ai_connection', { baseUrl, apiKey })
 }
 
 // ============================================================================

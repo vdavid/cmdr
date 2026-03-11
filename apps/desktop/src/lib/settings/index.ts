@@ -62,5 +62,15 @@ export {
     sectionHasMatches,
 } from './settings-search'
 
+// Cloud provider presets
+export {
+    cloudProviderPresets,
+    getCloudProvider,
+    getProviderConfigs,
+    setProviderConfig,
+    resolveCloudConfig,
+} from './cloud-providers'
+export type { CloudProviderPreset, CloudProviderConfig } from './cloud-providers'
+
 // Network settings helpers
 export { getMountTimeoutMs, getNetworkTimeoutMs, getShareCacheTtlMs } from './network-settings'

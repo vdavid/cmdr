@@ -126,6 +126,9 @@ There are two MCP servers available to you:
   disabilities.
 - All actions longer than, say, 1 second should be immediately cancelable, canceling not just the UI but any background
   processes as well, to avoid wasting the user's resources.
+- Write _elegant_ code. Not quick code, not overengineered code, but elegant code. If you need to choose between a small
+  refactor that leads to a slightly better architecture or a larger refactor that leads to a near-perfect architecture,
+  choose the larger refactor.
 - When shortcuts are available for a feature, always display the shortcut in a tooltip or somewhere, less prominent than
   the main UI.
 - **Platform-native, not generic.** The app should look and feel as if it was specifically made for the user's OS. Never

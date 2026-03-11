@@ -13,8 +13,10 @@ vi.mock('./ai-state.svelte', () => ({
 import { getAiState, handleDownload, handleCancel, handleDismiss, handleOptOut, handleGotIt } from './ai-state.svelte'
 import AiToastContent from './AiToastContent.svelte'
 
+type AiNotificationState = 'hidden' | 'offer' | 'downloading' | 'installing' | 'ready' | 'starting'
+
 let mockState = {
-    notificationState: 'hidden' as string,
+    notificationState: 'hidden' as AiNotificationState,
     downloadProgress: null as { bytesDownloaded: number; totalBytes: number; speed: number; etaSeconds: number } | null,
     progressText: '',
     modelInfo: {
@@ -22,6 +24,8 @@ let mockState = {
         displayName: 'Ministral 3B',
         sizeBytes: 2147023008,
         sizeFormatted: '2.1 GB',
+        kvBytesPerToken: 106496,
+        baseOverheadBytes: 3500000000,
     },
 }
 
@@ -43,6 +47,8 @@ describe('AiToastContent', () => {
                 displayName: 'Ministral 3B',
                 sizeBytes: 2147023008,
                 sizeFormatted: '2.1 GB',
+                kvBytesPerToken: 106496,
+                baseOverheadBytes: 3500000000,
             },
         }
         vi.mocked(getAiState).mockReturnValue(mockState)

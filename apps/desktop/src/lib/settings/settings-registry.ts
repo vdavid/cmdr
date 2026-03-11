@@ -5,6 +5,7 @@
 import type { SettingDefinition, SettingId, SettingsValues } from './types'
 import { SettingValidationError } from './types'
 import { isMacOS } from '$lib/shortcuts/key-capture'
+import { cloudProviderPresets } from './cloud-providers'
 
 // ============================================================================
 // Settings Definitions
@@ -332,7 +333,7 @@ export const settingsRegistry: SettingDefinition[] = [
         constraints: {
             options: [
                 { value: 'off', label: 'Off' },
-                { value: 'openai-compatible', label: 'OpenAI-compatible' },
+                { value: 'openai-compatible', label: 'Cloud / API' },
                 { value: 'local', label: 'Local LLM' },
             ],
         },
@@ -365,6 +366,48 @@ export const settingsRegistry: SettingDefinition[] = [
         keywords: ['model', 'gpt', 'openai', 'name'],
         type: 'string',
         default: 'gpt-4o-mini',
+        component: 'text-input',
+    },
+    {
+        id: 'ai.cloudProvider',
+        section: ['AI'],
+        label: 'Service',
+        description: 'Which cloud AI service to use.',
+        keywords: [
+            'cloud',
+            'provider',
+            'service',
+            'openai',
+            'anthropic',
+            'groq',
+            'together',
+            'fireworks',
+            'mistral',
+            'ollama',
+            'deepseek',
+            'xai',
+            'perplexity',
+            'openrouter',
+            'gemini',
+            'azure',
+            'lm-studio',
+            'custom',
+        ],
+        type: 'enum',
+        default: 'openai',
+        component: 'select',
+        constraints: {
+            options: cloudProviderPresets.map((p) => ({ value: p.id, label: p.name })),
+        },
+    },
+    {
+        id: 'ai.cloudProviderConfigs',
+        section: ['AI'],
+        label: 'Provider configurations',
+        description: 'Per-provider API keys and model settings.',
+        keywords: [],
+        type: 'string',
+        default: '{}',
         component: 'text-input',
     },
     {

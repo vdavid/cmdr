@@ -270,8 +270,18 @@ export {
     configureAi,
     stopAiServer,
     startAiServer,
+    checkAiConnection,
+    getSystemMemoryInfo,
 } from './settings'
-export type { AiStatus, AiDownloadProgress, AiModelInfo, AiRuntimeStatus, DirStats } from './settings'
+export type {
+    AiStatus,
+    AiDownloadProgress,
+    AiModelInfo,
+    AiRuntimeStatus,
+    AiConnectionCheckResult,
+    DirStats,
+    SystemMemoryInfo,
+} from './settings'
 
 // Tab context menu
 export { showTabContextMenu, onTabContextAction } from './tab'

@@ -199,8 +199,13 @@ pub fn cancel_ai_download() {
 }
 
 /// Uninstalls the AI model and binary, resets state.
+/// Async because `stop_process` can block up to 5 seconds (SIGTERM + wait + SIGKILL).
 #[tauri::command]
-pub fn uninstall_ai() {
+pub async fn uninstall_ai() {
+    tauri::async_runtime::spawn_blocking(uninstall_ai_sync).await.ok();
+}
+
+fn uninstall_ai_sync() {
     let mut manager = MANAGER.lock_ignore_poison();
     if let Some(ref mut m) = *manager {
         // Stop server if running
@@ -359,6 +364,30 @@ pub fn get_ai_runtime_status() -> AiRuntimeStatus {
     }
 }
 
+/// System memory info returned to frontend for the RAM gauge.
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SystemMemoryInfo {
+    pub total_bytes: u64,
+    /// Memory actively used by processes (app + wired + compressed on macOS).
+    pub used_bytes: u64,
+    /// Memory available for new allocations (free + inactive + purgeable on macOS).
+    pub available_bytes: u64,
+}
+
+/// Returns system memory info (total, used by processes, and available).
+/// Uses the `sysinfo` crate for cross-platform accuracy.
+#[tauri::command]
+pub fn get_system_memory_info() -> SystemMemoryInfo {
+    let mut sys = sysinfo::System::new();
+    sys.refresh_memory();
+    SystemMemoryInfo {
+        total_bytes: sys.total_memory(),
+        used_bytes: sys.used_memory(),
+        available_bytes: sys.available_memory(),
+    }
+}
+
 /// Stores provider + context size + OpenAI config in manager state.
 /// If provider is `local` and model is installed and hardware is supported, starts the server
 /// in a background task. If provider is NOT `local` and a server is running, stops it.
@@ -497,6 +526,116 @@ pub fn start_ai_server<R: Runtime>(app: AppHandle<R>, ctx_size: u32) -> Result<(
     Ok(())
 }
 
+/// Result of checking connectivity to an AI API endpoint.
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiConnectionCheckResult {
+    pub connected: bool,
+    pub auth_error: bool,
+    pub models: Vec<String>,
+    pub error: Option<String>,
+}
+
+/// Checks connectivity to an AI API endpoint by calling GET {base_url}/models.
+/// Returns connection status, auth status, and available model list.
+#[tauri::command]
+pub async fn check_ai_connection(base_url: String, api_key: String) -> AiConnectionCheckResult {
+    let url = format!("{}/models", base_url.trim_end_matches('/'));
+
+    let client = match reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+    {
+        Ok(c) => c,
+        Err(e) => {
+            return AiConnectionCheckResult {
+                connected: false,
+                auth_error: false,
+                models: vec![],
+                error: Some(format!("Can't create HTTP client: {e}")),
+            };
+        }
+    };
+
+    let mut request = client.get(&url);
+    if !api_key.is_empty() {
+        request = request.header("Authorization", format!("Bearer {api_key}"));
+    }
+
+    let response = match request.send().await {
+        Ok(r) => r,
+        Err(e) => {
+            let msg = if e.is_timeout() {
+                String::from("Can't reach server (timed out)")
+            } else if e.is_connect() {
+                String::from("Can't reach server")
+            } else {
+                format!("Can't reach server: {e}")
+            };
+            return AiConnectionCheckResult {
+                connected: false,
+                auth_error: false,
+                models: vec![],
+                error: Some(msg),
+            };
+        }
+    };
+
+    let status = response.status();
+
+    if status == reqwest::StatusCode::UNAUTHORIZED || status == reqwest::StatusCode::FORBIDDEN {
+        return AiConnectionCheckResult {
+            connected: true,
+            auth_error: true,
+            models: vec![],
+            error: Some(String::from("API key is invalid")),
+        };
+    }
+
+    if status == reqwest::StatusCode::OK {
+        let body = response.text().await.unwrap_or_default();
+        // Try parsing OpenAI-style response: { "data": [{ "id": "model-name" }, ...] }
+        let models = parse_model_ids(&body);
+        return AiConnectionCheckResult {
+            connected: true,
+            auth_error: false,
+            models,
+            error: None,
+        };
+    }
+
+    // Other HTTP error
+    let body = response.text().await.unwrap_or_default();
+    let body_preview = if body.len() > 200 {
+        format!("{}...", &body[..200])
+    } else {
+        body
+    };
+    AiConnectionCheckResult {
+        connected: true,
+        auth_error: false,
+        models: vec![],
+        error: Some(format!("HTTP {status}: {body_preview}")),
+    }
+}
+
+/// Parses model IDs from an OpenAI-compatible /models response.
+/// Returns empty vec on parse failure (connected but can't list models).
+fn parse_model_ids(body: &str) -> Vec<String> {
+    #[derive(serde::Deserialize)]
+    struct ModelsResponse {
+        data: Vec<ModelEntry>,
+    }
+    #[derive(serde::Deserialize)]
+    struct ModelEntry {
+        id: String,
+    }
+
+    serde_json::from_str::<ModelsResponse>(body)
+        .map(|r| r.data.into_iter().map(|m| m.id).collect())
+        .unwrap_or_default()
+}
+
 /// Formats bytes as GB with one decimal place (like "4.3 GB").
 fn format_bytes_gb(bytes: u64) -> String {
     let gb = bytes as f64 / 1_000_000_000.0;
@@ -633,6 +772,7 @@ async fn do_download<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
     // Step 1: Extract llama-server from bundled archive (instant, no download needed)
     let binary_path = ai_dir.join(LLAMA_SERVER_BINARY);
     if !binary_path.exists() {
+        let _ = app.emit("ai-extracting", ());
         extract_bundled_llama_server(app, &ai_dir)?;
     }
 
@@ -660,7 +800,8 @@ async fn do_download<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
 
     download_file(app, model.url, &model_path, is_cancel_requested).await?;
 
-    // Verify download integrity by checking file size
+    // Step 3: Verify download integrity by checking file size
+    let _ = app.emit("ai-verifying", ());
     let actual_size = fs::metadata(&model_path)
         .map(|m| m.len())
         .map_err(|e| format!("Failed to read downloaded model file: {e}"))?;

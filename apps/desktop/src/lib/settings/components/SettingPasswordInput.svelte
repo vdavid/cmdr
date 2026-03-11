@@ -8,25 +8,41 @@
         placeholder?: string
         ariaLabel?: string
         disabled?: boolean
+        /** External value (bypasses settings store when provided alongside `onchange`). */
+        value?: string
+        /** Called when the value changes. When provided, the component uses this instead of the settings store. */
+        onchange?: (value: string) => void
     }
 
-    const { id, placeholder = '', ariaLabel, disabled = false }: Props = $props()
+    const { id, placeholder = '', ariaLabel, disabled = false, value: externalValue, onchange }: Props = $props()
 
-    let value = $state(getSetting(id) as string)
+    let internalValue = $state(onchange ? (externalValue ?? '') : (getSetting(id) as string))
     let revealed = $state(false)
     let focused = $state(false)
 
-    // Subscribe to setting changes (for external resets)
+    // Keep internal value in sync with external value when controlled
+    $effect(() => {
+        if (onchange && externalValue !== undefined) {
+            internalValue = externalValue
+        }
+    })
+
+    // Subscribe to setting changes (for external resets) — only in uncontrolled mode
     onMount(() => {
+        if (onchange) return
         return onSpecificSettingChange(id, (_id, newValue) => {
-            value = newValue as string
+            internalValue = newValue as string
         })
     })
 
     function handleInput(event: Event) {
         const input = event.target as HTMLInputElement
-        value = input.value
-        setSetting(id, input.value as SettingsValues[typeof id])
+        internalValue = input.value
+        if (onchange) {
+            onchange(input.value)
+        } else {
+            setSetting(id, input.value as SettingsValues[typeof id])
+        }
     }
 
     function toggleReveal() {
@@ -44,7 +60,7 @@
     // When focused, use native password masking for secure input.
     // When revealed, show the full value as plain text.
     const inputType = $derived(focused && !revealed ? 'password' : 'text')
-    const displayValue = $derived(revealed || focused ? value : maskValue(value))
+    const displayValue = $derived(revealed || focused ? internalValue : maskValue(internalValue))
 
     const toggleTooltip = $derived(revealed ? 'Hide value' : 'Show value')
 </script>

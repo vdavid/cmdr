@@ -464,10 +464,8 @@ Add `{ name: 'AI', path: ['AI'] }` to `specialSections` in `SettingsSidebar.svel
 
 - Keychain storage for API key
 - Model selection UI (switching between Ministral 3B and Falcon H1R 7B)
-- Actual memory usage display (reading process RSS — the estimate is good enough for now)
 - Onboarding flow rework (making OpenAI-compatible the default recommended path)
 - Streaming responses
-- OpenAI-compatible provider health check / connection test button
 
 ## Task list
 
@@ -544,3 +542,21 @@ Build a high-quality, reusable password input component before the AI section ne
   replacing `use_real_ai()`, provider routing in suggestions, `opted_out` is legacy
 - [x] Update `CLAUDE.md` in `src/lib/settings/` to add AiSection and SettingPasswordInput to the component/section lists
 - [x] Run check suite: `./scripts/check.sh --check clippy --check rustfmt --check svelte-check --check desktop-svelte-eslint --check desktop-svelte-prettier --check rust-tests --check svelte-tests`
+
+### Milestone 5: Cloud / API UX improvements
+
+- [x] Create `cloud-providers.ts` with 15 provider presets (OpenAI, Anthropic, Google Gemini, Groq, Together AI,
+  Fireworks AI, Mistral, OpenRouter, DeepSeek, xAI, Perplexity, Azure OpenAI, Ollama, LM Studio, Custom)
+- [x] Rename toggle label from "OpenAI-compatible" to "Cloud / API"
+- [x] Add `ai.cloudProvider` (enum) + `ai.cloudProviderConfigs` (JSON blob) settings with per-provider storage
+- [x] Add migration from old flat `ai.openaiApiKey`/`ai.openaiBaseUrl`/`ai.openaiModel` to new schema
+- [x] Build provider preset dropdown with read-only endpoint display (editable for Custom/Azure)
+- [x] Add `check_ai_connection` Tauri command (validates endpoint + fetches model list)
+- [x] Implement two-step connection check: auto-triggers on key/URL change (1s debounce), shows inline status
+- [x] Build model combobox: dropdown from `/v1/models` response with type-ahead, text input fallback
+- [x] Add `get_system_memory_info` Tauri command (macOS: sysctl + host_statistics64, Linux: /proc/meminfo)
+- [x] Build RAM gauge: 4-segment stacked bar (other / cmdr current / projected / free) relative to system total
+- [x] Add warning icons at >70% (orange) and >90% (red) projected RAM usage with tooltips
+- [x] Replace auto-debounce with explicit "Apply" button for context size changes
+- [x] Update CLAUDE.md files for new commands, components, and architectural changes
+- [x] All checks pass: clippy, rustfmt, svelte-check, eslint, prettier, rust-tests, svelte-tests

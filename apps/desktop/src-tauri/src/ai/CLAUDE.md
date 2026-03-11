@@ -21,7 +21,7 @@ Three provider modes:
 
 ### Tauri commands
 
-Core: `get_ai_status`, `get_ai_model_info`, `get_ai_runtime_status`, `configure_ai`, `start_ai_server`, `stop_ai_server`, `start_ai_download`, `cancel_ai_download`, `get_folder_suggestions`.
+Core: `get_ai_status`, `get_ai_model_info`, `get_ai_runtime_status`, `configure_ai`, `start_ai_server`, `stop_ai_server`, `check_ai_connection`, `start_ai_download`, `cancel_ai_download`, `get_folder_suggestions`.
 Legacy (still wired, used by toast): `uninstall_ai`, `dismiss_ai_offer`, `opt_out_ai`, `opt_in_ai`, `is_ai_opted_out`.
 
 ## Startup flow
@@ -47,6 +47,17 @@ Frontend loads
 - `off` -> returns empty
 - `local` -> uses local llama-server (if running)
 - `openai-compatible` -> builds `AiBackend::OpenAi` from stored config, calls `chat_completion`
+
+## Download/install event sequence
+
+`do_download()` emits events for each install step so the frontend can show progress:
+1. `ai-extracting` -- binary extraction from bundled archive (usually instant)
+2. `ai-download-progress` (repeated) -- model download with bytes/total/speed/eta
+3. `ai-verifying` -- file size verification after download completes
+4. `ai-installing` -- server startup begins (health check polling)
+5. `ai-install-complete` -- server is healthy and ready
+
+The frontend (`AiSection.svelte`) tracks `installStep` state and displays "Step N of 4" labels.
 
 ## Key patterns
 

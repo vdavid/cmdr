@@ -1,16 +1,11 @@
 {
     "$schema": "https://unpkg.com/knip@5/schema.json",
     "ignoreBinaries": ["only-allow"],
-    "ignore": [
-        "src/routes/+layout.ts",
-        "src/lib/tauri-commands/**",
-        "src/lib/indexing/index-events.ts",
-        "src/lib/indexing/index-priority.ts"
-    ],
+    "ignore": ["src/lib/tauri-commands/**"],
     "ignoreDependencies": [
+        "oxlint",
         "@tauri-apps/cli",
         "@testing-library/svelte",
-        "@sveltejs/adapter-static",
         "prettier-plugin-svelte",
         "@wdio/globals",
         "@wdio/local-runner",

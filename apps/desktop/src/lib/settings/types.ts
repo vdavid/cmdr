@@ -124,6 +124,8 @@ export interface SettingsValues {
     'ai.openaiBaseUrl': string
     'ai.openaiModel': string
     'ai.localContextSize': AiLocalContextSize
+    'ai.cloudProvider': string
+    'ai.cloudProviderConfigs': string // JSON blob
 
     // Developer
     'developer.mcpEnabled': boolean

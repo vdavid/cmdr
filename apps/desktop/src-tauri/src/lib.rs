@@ -823,6 +823,8 @@ pub fn run() {
             ai::manager::configure_ai,
             ai::manager::start_ai_server,
             ai::manager::stop_ai_server,
+            ai::manager::check_ai_connection,
+            ai::manager::get_system_memory_info,
             ai::manager::start_ai_download,
             ai::manager::cancel_ai_download,
             ai::manager::dismiss_ai_offer,
