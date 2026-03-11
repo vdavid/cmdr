@@ -278,11 +278,15 @@ fn ensure_root_sentinel(conn: &Connection) -> Result<(), IndexStoreError> {
 }
 
 /// Apply WAL-mode pragmas for performance.
-fn apply_pragmas(conn: &Connection) -> Result<(), IndexStoreError> {
+fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), IndexStoreError> {
+    if !readonly {
+        conn.execute_batch(
+            "PRAGMA auto_vacuum = INCREMENTAL;
+             PRAGMA journal_mode = WAL;",
+        )?;
+    }
     conn.execute_batch(
-        "PRAGMA auto_vacuum = INCREMENTAL;
-         PRAGMA journal_mode = WAL;
-         PRAGMA synchronous = NORMAL;
+        "PRAGMA synchronous = NORMAL;
          PRAGMA cache_size = -16384;",
     )?;
     Ok(())
@@ -400,7 +404,7 @@ impl IndexStore {
     fn try_open(db_path: &Path) -> Result<Self, IndexStoreError> {
         let conn = Connection::open(db_path)?;
         register_platform_case_collation(&conn)?;
-        apply_pragmas(&conn)?;
+        apply_pragmas(&conn, false)?;
         create_tables(&conn)?;
 
         // Check schema version
@@ -445,7 +449,7 @@ impl IndexStore {
 
         let conn = Connection::open(db_path)?;
         register_platform_case_collation(&conn)?;
-        apply_pragmas(&conn)?;
+        apply_pragmas(&conn, false)?;
         create_tables(&conn)?;
         conn.execute(
             "INSERT OR REPLACE INTO meta (key, value) VALUES (?1, ?2)",
@@ -463,17 +467,17 @@ impl IndexStore {
     pub fn open_write_connection(db_path: &Path) -> Result<Connection, IndexStoreError> {
         let conn = Connection::open(db_path)?;
         register_platform_case_collation(&conn)?;
-        apply_pragmas(&conn)?;
+        apply_pragmas(&conn, false)?;
         Ok(conn)
     }
 
-    /// Open a read-only connection with WAL pragmas and `platform_case` collation.
+    /// Open a read-only connection with per-connection pragmas and `platform_case` collation.
     ///
     /// Never contends with the writer thread's write lock.
     pub fn open_read_connection(db_path: &Path) -> Result<Connection, IndexStoreError> {
         let conn = Connection::open_with_flags(db_path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)?;
         register_platform_case_collation(&conn)?;
-        apply_pragmas(&conn)?;
+        apply_pragmas(&conn, true)?;
         Ok(conn)
     }
 
