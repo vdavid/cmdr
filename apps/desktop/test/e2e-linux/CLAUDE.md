@@ -226,11 +226,16 @@ If mise tool versions change (check `.mise.toml`), update the paths above. Find 
 ### Common tasks
 
 ```bash
-cd ~/cmdr && WEBKIT_DISABLE_COMPOSITING_MODE=1 pnpm dev                          # dev mode (with hot reload)
-cd ~/cmdr/apps/desktop && WEBKIT_DISABLE_COMPOSITING_MODE=1 pnpm test:e2e:linux:native  # E2E tests natively
-cd ~/cmdr && ./scripts/check.sh                              # all checks
-RUST_LOG=debug pnpm dev                                      # debug logging
+cd ~/cmdr && WEBKIT_DISABLE_COMPOSITING_MODE=1 pnpm dev                                 # dev mode (with hot reload)
+cd ~/cmdr/apps/desktop && pnpm tauri build --no-bundle                                   # release build for E2E
+cd ~/cmdr/apps/desktop && WEBKIT_DISABLE_COMPOSITING_MODE=1 pnpm test:e2e:linux:native   # E2E tests natively
+cd ~/cmdr && ./scripts/check.sh                                                          # all checks
+RUST_LOG=debug pnpm dev                                                                  # debug logging
 ```
+
+**You must use `pnpm tauri build --no-bundle`, not `cargo build --release`.** The Tauri CLI adds the `custom-protocol`
+feature which embeds the frontend into the binary. Without it, the binary tries to load from `devUrl`
+(`http://localhost:1420`) and you get a white screen with "Cannot connect to localhost: Connection refused."
 
 The `WEBKIT_DISABLE_COMPOSITING_MODE=1` env var skips GPU compositing in the VM (avoids ~50s startup stall from
 software-emulated GPU). Real Linux machines with a GPU don't need this.
@@ -238,14 +243,24 @@ software-emulated GPU). Real Linux machines with a GPU don't need this.
 ### VM troubleshooting
 
 - **Shared folder not mounted**: `sudo mount -a`
-- **node_modules bind mounts not active**: `mountpoint -q ~/cmdr/node_modules || sudo mount -a`. **Never run
-  `pnpm install` or `cargo build` without verifying first** — Linux binaries will leak into the macOS shared filesystem
-  and corrupt the host's `node_modules` / `target`. Recovery: activate mounts, then on VM:
+- **Bind mounts not active** (node_modules or target): The VM bind-mounts `~/cmdr-target`, `~/cmdr-node-modules/root`,
+  and `~/cmdr-node-modules/desktop` over the shared VirtioFS paths. These can silently become inactive after a reboot or
+  mount failure. Always check before building or running tests:
+  `mountpoint -q /mnt/cmdr/cmdr/target && mountpoint -q /mnt/cmdr/cmdr/node_modules && echo OK || sudo mount -a`.
+  **Never run `pnpm install` or `cargo build` without verifying** — Linux binaries will leak into the macOS shared
+  filesystem and corrupt the host's `node_modules` / `target`. Recovery: activate mounts, then on VM:
   `rm -rf ~/cmdr-node-modules/root/* ~/cmdr-node-modules/desktop/* && cd ~/cmdr && pnpm install`, and on macOS:
   `rm -rf node_modules apps/desktop/node_modules && pnpm install`
+- **E2E: "No such file or directory" for the Cmdr binary**: The `target/` bind mount is inactive. The binary was built
+  into `~/cmdr-target/release/Cmdr` but the wdio config looks at `/mnt/cmdr/cmdr/target/release/Cmdr`. Fix:
+  `sudo mount -a`. Quick workaround: `TAURI_BINARY=~/cmdr-target/release/Cmdr pnpm test:e2e:linux:native`.
 - **VM IP changed**: Check inside VM: `ip addr show | grep 'inet ' | grep -v 127.0.0.1`
 - **pnpm/node not found**: `eval "$(mise activate bash)"` (interactive) or use the explicit PATH from "Running commands
   via SSH" above (non-interactive)
+- **White screen "Cannot connect to localhost"**: The release binary was built with `cargo build --release` instead of
+  `pnpm tauri build --no-bundle`. See "Common tasks" above for why.
+- **`@tauri-apps/cli` native binding not found**: The VM's `node_modules` are stale. Reinstall:
+  `rm -rf ~/cmdr-node-modules/root/* ~/cmdr-node-modules/desktop/* && cd ~/cmdr && pnpm install`
 - **"OS file watch limit reached"**: Cmdr's indexer + Warp Terminal together can exhaust the default inotify limit
   (65,536), especially on VirtioFS mounts with large `node_modules`/`target` trees. The VM has
   `fs.inotify.max_user_watches=524288` set in `/etc/sysctl.d/99-inotify.conf`. If it gets reset, re-apply with:
