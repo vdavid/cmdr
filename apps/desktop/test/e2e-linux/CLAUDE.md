@@ -165,18 +165,20 @@ For GUI interaction (pressing keys, clicking), use the VM window in UTM directly
 
 ### File layout
 
-| Path                          | What                                       |
-| ----------------------------- | ------------------------------------------ |
-| `/mnt/cmdr/cmdr`              | VirtioFS mount of the macOS `cmdr` repo    |
-| `~/cmdr`                      | Symlink to `/mnt/cmdr/cmdr`                |
-| `~/cmdr-node-modules/root`    | VM-local `node_modules` for monorepo root  |
-| `~/cmdr-node-modules/desktop` | VM-local `node_modules` for `apps/desktop` |
+| Path                          | What                                        |
+| ----------------------------- | ------------------------------------------- |
+| `/mnt/cmdr/cmdr`              | VirtioFS mount of the macOS `cmdr` repo     |
+| `~/cmdr`                      | Symlink to `/mnt/cmdr/cmdr`                 |
+| `~/cmdr-node-modules/root`    | VM-local `node_modules` for monorepo root   |
+| `~/cmdr-node-modules/desktop` | VM-local `node_modules` for `apps/desktop`  |
+| `~/cmdr-target`               | VM-local `target/` for Rust build artifacts |
 
 The macOS `cmdr` directory is shared via UTM's VirtioFS (`/etc/fstab`: `share /mnt/cmdr virtiofs defaults 0 0`). Edits
 on either side are instant — Vite HMR picks up changes in ~1-3s.
 
-Linux and macOS need different native binaries in `node_modules`. The VM bind-mounts local directories over the shared
-`node_modules` paths (configured in `/etc/fstab`). Rebuild with:
+Linux and macOS need different native binaries in `node_modules` and `target/`. The VM bind-mounts local directories
+over the shared paths (configured in `/etc/fstab`). This prevents Linux binaries from contaminating the macOS filesystem
+and avoids cross-platform cargo cache thrashing. Rebuild node_modules with:
 `rm -rf ~/cmdr-node-modules/root/* ~/cmdr-node-modules/desktop/* && cd ~/cmdr && pnpm install`
 
 ### Toolchain
@@ -189,21 +191,33 @@ apt.
 
 ### Running commands via SSH (for agents)
 
-`mise activate` doesn't work in non-interactive SSH one-liners. Use explicit PATH setup instead. Also, `DISPLAY=:0` must
-be set — without it, `@wdio/xvfb` (bundled with `@wdio/local-runner`) auto-wraps worker processes with `xvfb-run`, which
-breaks Node.js IPC channels (`Error: write EINVAL` on `process.send()`).
+`mise activate` doesn't work in non-interactive SSH one-liners. Use explicit PATH setup instead. Three env vars are
+required:
 
-**Always run `pnpm install` first** — the VM bind-mounts its own `node_modules` over the shared macOS ones, so they need
-to be kept in sync with the lockfile separately.
+- `DISPLAY=:0` — without it, `@wdio/xvfb` (bundled with `@wdio/local-runner`) auto-wraps worker processes with
+  `xvfb-run`, which breaks Node.js IPC channels (`Error: write EINVAL` on `process.send()`).
+- `XAUTHORITY` — SSH sessions don't inherit X11 auth. Point it to the Mutter Xwayland auth file (path changes on each
+  login, so use a `find` command).
+- `WEBKIT_DISABLE_COMPOSITING_MODE=1` — skips GPU compositing (see "Common tasks" below).
+
+**Always verify bind mounts first, then run `pnpm install`** — the VM bind-mounts its own `node_modules` and `target`
+over the shared macOS ones. If these mounts aren't active, `pnpm install` will write Linux binaries into the macOS
+filesystem and corrupt the host's `node_modules`. The bind mounts are in `/etc/fstab` with systemd dependencies on the
+VirtioFS mount, so they should activate on boot — but always verify.
 
 ```bash
 # SSH one-liner setup (paste this prefix before any command)
 MISE_PATH="/home/veszelovszki/.local/share/mise/installs"
 export PATH="$MISE_PATH/node/25.6.0/bin:$MISE_PATH/pnpm/10.29.2:$MISE_PATH/go/1.25.7/bin:$PATH"
 export DISPLAY=:0
+export XAUTHORITY=$(find /run/user/1000/ -name ".mutter-Xwaylandauth.*" 2>/dev/null | head -1)
+export WEBKIT_DISABLE_COMPOSITING_MODE=1
+
+# CRITICAL: verify bind mounts before any pnpm install or cargo build
+mountpoint -q ~/cmdr/node_modules || { echo "FATAL: bind mounts not active — run: sudo mount -a"; exit 1; }
 
 # Run E2E tests via SSH (full one-liner)
-ssh veszelovszki@192.168.1.97 'MISE_PATH="/home/veszelovszki/.local/share/mise/installs" && export PATH="$MISE_PATH/node/25.6.0/bin:$MISE_PATH/pnpm/10.29.2:$MISE_PATH/go/1.25.7/bin:$PATH" && export DISPLAY=:0 && cd ~/cmdr && pnpm install && cd apps/desktop && pnpm test:e2e:linux:native'
+ssh veszelovszki@192.168.1.97 'MISE_PATH="/home/veszelovszki/.local/share/mise/installs" && export PATH="$MISE_PATH/node/25.6.0/bin:$MISE_PATH/pnpm/10.29.2:$MISE_PATH/go/1.25.7/bin:$PATH" && export DISPLAY=:0 && export XAUTHORITY=$(find /run/user/1000/ -name ".mutter-Xwaylandauth.*" 2>/dev/null | head -1) && export WEBKIT_DISABLE_COMPOSITING_MODE=1 && mountpoint -q ~/cmdr/node_modules || { echo "FATAL: bind mounts not active — run: sudo mount -a"; exit 1; } && cd ~/cmdr && pnpm install && cd apps/desktop && pnpm test:e2e:linux:native'
 ```
 
 If mise tool versions change (check `.mise.toml`), update the paths above. Find installed paths with `mise where node`,
@@ -212,8 +226,8 @@ If mise tool versions change (check `.mise.toml`), update the paths above. Find 
 ### Common tasks
 
 ```bash
-cd ~/cmdr && WEBKIT_DISABLE_COMPOSITING_MODE=1 pnpm dev     # dev mode (with hot reload)
-cd ~/cmdr/apps/desktop && pnpm test:e2e:linux:native         # E2E tests natively
+cd ~/cmdr && WEBKIT_DISABLE_COMPOSITING_MODE=1 pnpm dev                          # dev mode (with hot reload)
+cd ~/cmdr/apps/desktop && WEBKIT_DISABLE_COMPOSITING_MODE=1 pnpm test:e2e:linux:native  # E2E tests natively
 cd ~/cmdr && ./scripts/check.sh                              # all checks
 RUST_LOG=debug pnpm dev                                      # debug logging
 ```
@@ -224,10 +238,18 @@ software-emulated GPU). Real Linux machines with a GPU don't need this.
 ### VM troubleshooting
 
 - **Shared folder not mounted**: `sudo mount -a`
-- **node_modules bind mounts not active**: `mountpoint -q ~/cmdr/node_modules || sudo mount -a`
+- **node_modules bind mounts not active**: `mountpoint -q ~/cmdr/node_modules || sudo mount -a`. **Never run
+  `pnpm install` or `cargo build` without verifying first** — Linux binaries will leak into the macOS shared filesystem
+  and corrupt the host's `node_modules` / `target`. Recovery: activate mounts, then on VM:
+  `rm -rf ~/cmdr-node-modules/root/* ~/cmdr-node-modules/desktop/* && cd ~/cmdr && pnpm install`, and on macOS:
+  `rm -rf node_modules apps/desktop/node_modules && pnpm install`
 - **VM IP changed**: Check inside VM: `ip addr show | grep 'inet ' | grep -v 127.0.0.1`
 - **pnpm/node not found**: `eval "$(mise activate bash)"` (interactive) or use the explicit PATH from "Running commands
   via SSH" above (non-interactive)
+- **"OS file watch limit reached"**: Cmdr's indexer + Warp Terminal together can exhaust the default inotify limit
+  (65,536), especially on VirtioFS mounts with large `node_modules`/`target` trees. The VM has
+  `fs.inotify.max_user_watches=524288` set in `/etc/sysctl.d/99-inotify.conf`. If it gets reset, re-apply with:
+  `echo "fs.inotify.max_user_watches=524288" | sudo tee /etc/sysctl.d/99-inotify.conf && sudo sysctl -p /etc/sysctl.d/99-inotify.conf`
 
 ## Files
 
