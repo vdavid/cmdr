@@ -1,5 +1,4 @@
 import { check, type Update } from '@tauri-apps/plugin-updater'
-import { relaunch } from '@tauri-apps/plugin-process'
 import { getVersion } from '@tauri-apps/api/app'
 import { getSetting, onSpecificSettingChange } from '$lib/settings/settings-store'
 import { getAppLogger } from '$lib/logging/logger'
@@ -55,10 +54,6 @@ export async function checkForUpdates(): Promise<void> {
         updateState.error = error instanceof Error ? error.message : String(error)
         log.error('Check failed: {error}', { error: updateState.error })
     }
-}
-
-export async function restartToUpdate(): Promise<void> {
-    await relaunch()
 }
 
 export function startUpdateChecker(): () => void {

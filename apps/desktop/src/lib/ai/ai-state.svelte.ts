@@ -13,8 +13,6 @@ import {
     type AiStatus,
 } from '$lib/tauri-commands'
 import { getSetting, setSetting } from '$lib/settings'
-import { addToast, dismissToast } from '$lib/ui/toast'
-import AiToastContent from './AiToastContent.svelte'
 
 type AiNotificationState = 'hidden' | 'offer' | 'downloading' | 'installing' | 'ready' | 'starting'
 
@@ -34,14 +32,6 @@ const aiState = $state<AiStateData>({
 
 export function getAiState(): AiStateData {
     return aiState
-}
-
-function syncAiToast(): void {
-    if (aiState.notificationState === 'hidden') {
-        dismissToast('ai')
-    } else {
-        addToast(AiToastContent, { id: 'ai', dismissal: 'persistent' })
-    }
 }
 
 export async function initAiState(): Promise<() => void> {
@@ -64,25 +54,21 @@ export async function initAiState(): Promise<() => void> {
     const unlistenInstalling = await listen('ai-installing', () => {
         aiState.notificationState = 'installing'
         aiState.downloadProgress = null
-        syncAiToast()
     })
 
     const unlistenComplete = await listen('ai-install-complete', () => {
         aiState.notificationState = 'ready'
         aiState.downloadProgress = null
-        syncAiToast()
     })
 
     // Listen for server starting (shown on app startup when model already downloaded)
     const unlistenStarting = await listen('ai-starting', () => {
         aiState.notificationState = 'starting'
-        syncAiToast()
     })
 
     // Listen for server ready (hides the "starting" notification)
     const unlistenServerReady = await listen('ai-server-ready', () => {
         aiState.notificationState = 'hidden'
-        syncAiToast()
     })
 
     return () => {
@@ -99,14 +85,12 @@ export async function handleDownload(): Promise<void> {
     setSetting('ai.provider', 'local')
     aiState.notificationState = 'downloading'
     aiState.downloadProgress = { bytesDownloaded: 0, totalBytes: 0, speed: 0, etaSeconds: 0 }
-    syncAiToast()
     try {
         await startAiDownload()
     } catch {
         // On error or cancel, reset to offer state
         aiState.notificationState = 'offer'
         aiState.downloadProgress = null
-        syncAiToast()
     }
 }
 
@@ -114,24 +98,20 @@ export async function handleCancel(): Promise<void> {
     await cancelAiDownload()
     aiState.notificationState = 'offer'
     aiState.downloadProgress = null
-    syncAiToast()
 }
 
 export async function handleDismiss(): Promise<void> {
     await dismissAiOffer()
     aiState.notificationState = 'hidden'
-    syncAiToast()
 }
 
 export async function handleOptOut(): Promise<void> {
     await optOutAi()
     aiState.notificationState = 'hidden'
-    syncAiToast()
 }
 
 export function handleGotIt(): void {
     aiState.notificationState = 'hidden'
-    syncAiToast()
 }
 
 function updateNotificationFromStatus(status: AiStatus): void {
@@ -145,7 +125,6 @@ function updateNotificationFromStatus(status: AiStatus): void {
         default:
             aiState.notificationState = 'hidden'
     }
-    syncAiToast()
 }
 
 function formatProgressText(progress: AiDownloadProgress): string {

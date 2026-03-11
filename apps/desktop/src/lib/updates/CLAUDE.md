@@ -31,9 +31,9 @@ idle ──check()──► checking ──update found──► downloading ─
 
 When `status` becomes `'ready'`, the updater calls
 `addToast(UpdateToastContent, { id: 'update', dismissal: 'persistent' })` to show the restart prompt via the global
-toast system. `UpdateToastContent.svelte` renders the toast body and handles the "Later" button by calling
-`dismissToast('update')`. There is no local `$state` dismissed flag — dismissal is managed entirely by the toast
-infrastructure.
+toast system. `UpdateToastContent.svelte` renders the toast body, calls `relaunch()` directly from
+`@tauri-apps/plugin-process` for the restart action, and handles the "Later" button by calling `dismissToast('update')`.
+There is no local `$state` dismissed flag — dismissal is managed entirely by the toast infrastructure.
 
 ## Key decisions
 

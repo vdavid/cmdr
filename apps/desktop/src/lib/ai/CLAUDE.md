@@ -5,14 +5,16 @@ llama-server process, inference client with provider routing).
 
 ## Architecture
 
-- **State**: `ai-state.svelte.ts` — Reactive AI status, download progress, Tauri event listeners, toast sync
+- **State**: `ai-state.svelte.ts` — Reactive AI status, download progress, Tauri event listeners
+- **Toast wiring**: `ai-toast-sync.svelte.ts` — Reactively syncs state to toast via `$effect`
 - **Toast content**: `AiToastContent.svelte` — Install flow UI (offer → downloading → installing → ready)
 - **Backend**: See `src-tauri/src/ai/` for model download, llama-server lifecycle, inference client
 
-`ai-state.svelte.ts` exposes a `syncAiToast()` helper that all state transitions call. It adds or dismisses the `'ai'`
-toast via `addToast(AiToastContent, { id: 'ai', ... })` / `dismissToast('ai')` based on the current AI status.
-`AiToastContent.svelte` reads `aiState` reactively and renders the appropriate state UI. `initAiState()` is called from
-`+layout.svelte` (not from the toast component).
+`ai-state.svelte.ts` manages state and exports handlers. `ai-toast-sync.svelte.ts` uses a `$effect` to reactively watch
+`aiState.notificationState` and sync the toast — no manual notification needed after state mutations.
+`AiToastContent.svelte` imports `getAiState` and handlers directly from `ai-state.svelte.ts`. No circular dependency
+because `ai-state.svelte.ts` never imports from `ai-toast-sync.svelte.ts` or `AiToastContent.svelte`. `initAiState()`
+and `initAiToastSync()` are both called from `+layout.svelte`.
 
 ## Key decisions
 

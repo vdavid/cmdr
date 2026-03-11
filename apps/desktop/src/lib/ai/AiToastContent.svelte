@@ -1,4 +1,5 @@
 <script lang="ts">
+    import Button from '$lib/ui/Button.svelte'
     import {
         getAiState,
         handleCancel,
@@ -7,7 +8,6 @@
         handleGotIt,
         handleOptOut,
     } from './ai-state.svelte'
-    import Button from '$lib/ui/Button.svelte'
 
     const aiState = getAiState()
 </script>
@@ -58,7 +58,13 @@
         <span class="ai-description">Try creating a new folder (F7) to see AI-powered name suggestions.</span>
     </div>
     <div class="ai-actions">
-        <Button variant="primary" size="mini" onclick={handleGotIt}>Got it</Button>
+        <Button
+            variant="primary"
+            size="mini"
+            onclick={() => {
+                handleGotIt()
+            }}>Got it</Button
+        >
     </div>
 {:else if aiState.notificationState === 'starting'}
     <div class="ai-content">

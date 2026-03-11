@@ -1,10 +1,10 @@
 <script lang="ts">
-    import { restartToUpdate } from './updater.svelte'
+    import { relaunch } from '@tauri-apps/plugin-process'
     import { dismissToast } from '$lib/ui/toast'
     import Button from '$lib/ui/Button.svelte'
 
     function handleRestart() {
-        void restartToUpdate()
+        void relaunch()
     }
 
     function handleDismiss() {

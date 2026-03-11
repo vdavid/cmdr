@@ -19,8 +19,9 @@
         type MtpExclusiveAccessErrorEvent,
         type MtpPermissionErrorEvent,
     } from '$lib/tauri-commands'
-    import { getSetting } from '$lib/settings'
+    import { getSetting, resolveCloudConfig } from '$lib/settings'
     import { initAiState } from '$lib/ai/ai-state.svelte'
+    import { initAiToastSync } from '$lib/ai/ai-toast-sync.svelte'
     import ToastContainer from '$lib/ui/toast/ToastContainer.svelte'
     import { MtpPermissionDialog, PtpcameradDialog } from '$lib/mtp'
     import type { Snippet } from 'svelte'
@@ -102,12 +103,16 @@
             await initSettingsApplier()
 
             // Push AI config to backend (triggers server start if provider is local + model installed)
+            const resolvedConfig = resolveCloudConfig(
+                getSetting('ai.cloudProvider'),
+                getSetting('ai.cloudProviderConfigs'),
+            )
             void configureAi(
                 getSetting('ai.provider'),
                 Number(getSetting('ai.localContextSize')),
-                getSetting('ai.openaiApiKey'),
-                getSetting('ai.openaiBaseUrl'),
-                getSetting('ai.openaiModel'),
+                resolvedConfig.apiKey,
+                resolvedConfig.baseUrl,
+                resolvedConfig.model,
             )
 
             // Read system accent color from macOS and listen for changes
@@ -132,6 +137,7 @@
 
             // Initialize AI state and event listeners (shows offer toast if eligible)
             aiCleanup = await initAiState()
+            initAiToastSync()
 
             // Cancel all active write operations on page unload (hot-reload, close, navigation)
             window.addEventListener('beforeunload', () => {
