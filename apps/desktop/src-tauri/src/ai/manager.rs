@@ -8,8 +8,8 @@
 use super::download::{cleanup_partial, download_file};
 use super::extract::{LLAMA_SERVER_BINARY, REQUIRED_DYLIB, extract_bundled_llama_server};
 use super::process::{
-    SERVER_LOG_FILENAME, find_available_port, is_process_alive, log_diagnostics, read_log_tail, spawn_llama_server,
-    stop_process,
+    SERVER_LOG_FILENAME, find_available_port, is_process_alive, kill_and_reap_in_background, kill_process,
+    log_diagnostics, read_log_tail, spawn_llama_server,
 };
 use super::{AiState, AiStatus, ModelInfo, get_default_model, get_model_by_id, is_local_ai_supported};
 use crate::ignore_poison::IgnorePoison;
@@ -79,7 +79,7 @@ pub fn init<R: Runtime>(app: &AppHandle<R>) {
     {
         if is_process_alive(pid) {
             log::info!("AI manager: stopping orphaned llama-server (PID {pid}) from previous session");
-            stop_process(pid);
+            kill_process(pid); // Can't reap — it's a child of the old app process, not ours
         } else {
             log::debug!("AI manager: clearing dead PID {pid} from previous session");
         }
@@ -97,12 +97,13 @@ pub fn init<R: Runtime>(app: &AppHandle<R>) {
 }
 
 /// Shuts down the AI server. Called on app quit.
+/// Fire-and-forget SIGKILL — the app is exiting so no need to reap the zombie.
 pub fn shutdown() {
     let mut manager = MANAGER.lock_ignore_poison();
     if let Some(ref mut m) = *manager
         && let Some(pid) = m.child_pid.take()
     {
-        stop_process(pid);
+        kill_process(pid);
     }
 }
 
@@ -199,7 +200,7 @@ pub fn cancel_ai_download() {
 }
 
 /// Uninstalls the AI model and binary, resets state.
-/// Async because `stop_process` can block up to 5 seconds (SIGTERM + wait + SIGKILL).
+/// Async because file deletion may block briefly.
 #[tauri::command]
 pub async fn uninstall_ai() {
     tauri::async_runtime::spawn_blocking(uninstall_ai_sync).await.ok();
@@ -210,7 +211,7 @@ fn uninstall_ai_sync() {
     if let Some(ref mut m) = *manager {
         // Stop server if running
         if let Some(pid) = m.child_pid.take() {
-            stop_process(pid);
+            kill_and_reap_in_background(pid);
         }
 
         // Delete files
@@ -517,7 +518,7 @@ pub fn configure_ai<R: Runtime>(
         if let Some(ref mut m) = *manager
             && let Some(pid) = m.child_pid.take()
         {
-            stop_process(pid);
+            kill_and_reap_in_background(pid);
             m.state.port = None;
             m.state.pid = None;
             save_state(&m.ai_dir, &m.state);
@@ -557,7 +558,7 @@ pub fn stop_ai_server() {
         && let Some(pid) = m.child_pid.take()
     {
         log::info!("AI: stopping server (PID {pid})");
-        stop_process(pid);
+        kill_and_reap_in_background(pid);
         m.state.port = None;
         m.state.pid = None;
         save_state(&m.ai_dir, &m.state);

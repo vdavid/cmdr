@@ -102,38 +102,32 @@ pub fn find_available_port() -> Option<u16> {
         .map(|addr| addr.port())
 }
 
-/// Gracefully stops a process by PID, escalating to SIGKILL if needed.
-pub fn stop_process(pid: u32) {
+/// Sends SIGKILL to a process. Returns immediately (~0.5ms).
+///
+/// Use for fire-and-forget scenarios (app quit, orphan cleanup from previous sessions).
+/// llama-server is stateless — SIGKILL is safe. macOS reclaims all GPU/Metal/mmap resources
+/// on process death regardless of signal. The llama.cpp test suite itself uses SIGKILL.
+pub fn kill_process(pid: u32) {
     #[cfg(unix)]
-    {
-        use std::time::Duration;
-
-        // Send SIGTERM
-        unsafe {
-            libc::kill(pid as i32, libc::SIGTERM);
-        }
-
-        // Wait up to 5s for graceful shutdown
-        let start = std::time::Instant::now();
-        while start.elapsed() < Duration::from_secs(5) {
-            // Check if process is still alive
-            let result = unsafe { libc::kill(pid as i32, 0) };
-            if result != 0 {
-                return; // Process is gone
-            }
-            std::thread::sleep(Duration::from_millis(100));
-        }
-
-        // Force kill
-        unsafe {
-            libc::kill(pid as i32, libc::SIGKILL);
-        }
+    unsafe {
+        libc::kill(pid as i32, libc::SIGKILL);
     }
-
     #[cfg(not(unix))]
     {
         let _ = pid;
     }
+}
+
+/// Sends SIGKILL and reaps the zombie in a background thread.
+///
+/// Use during normal operation (settings switch, explicit stop) so zombies don't
+/// accumulate over long-running sessions.
+pub fn kill_and_reap_in_background(pid: u32) {
+    kill_process(pid);
+    #[cfg(unix)]
+    std::thread::spawn(move || unsafe {
+        libc::waitpid(pid as i32, std::ptr::null_mut(), 0);
+    });
 }
 
 /// Returns true if the process with the given PID is still running.

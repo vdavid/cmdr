@@ -15,7 +15,7 @@ Three provider modes:
 | `manager.rs` | Central coordinator. Global `Mutex<Option<ManagerState>>` singleton. Most Tauri commands live here. Stores provider + OpenAI config in `ManagerState`. |
 | `download.rs` | HTTP streaming download with Range-based resume. Emits `ai-download-progress` events (200ms throttle). Cooperative cancellation via function parameter (`Fn() -> bool`). |
 | `extract.rs` | Copies bundled `llama-server` binary + dylibs from `resources/ai/` to the AI data dir. Sets Unix permissions, handles symlinks. |
-| `process.rs` | Spawns child process with `DYLD_LIBRARY_PATH` set. SIGTERM -> 5s wait -> SIGKILL. Port discovery via `bind(:0)`. Takes `ctx_size` param. |
+| `process.rs` | Spawns child process with `DYLD_LIBRARY_PATH` set. Instant SIGKILL to stop (llama-server is stateless; macOS reclaims all GPU/mmap resources). `kill_process` for fire-and-forget (quit, orphans), `kill_and_reap_in_background` for normal operation (reaps zombie in bg thread). Port discovery via `bind(:0)`. Takes `ctx_size` param. |
 | `client.rs` | reqwest client with `AiBackend` enum: `Local { port }` or `OpenAi { api_key, base_url, model }`. Routes requests accordingly. |
 | `suggestions.rs` | Builds few-shot prompt from listing cache, routes to configured backend, sanitizes response. |
 
