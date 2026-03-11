@@ -187,6 +187,28 @@ Managed by [mise](https://mise.jdx.dev/) — versions from `.mise.toml`. Always 
 Rust via rustup (`rust-toolchain.toml`), Node/pnpm/Go via mise. System packages (Tauri prereqs, WebKitGTK dev libs) via
 apt.
 
+### Running commands via SSH (for agents)
+
+`mise activate` doesn't work in non-interactive SSH one-liners. Use explicit PATH setup instead. Also, `DISPLAY=:0` must
+be set — without it, `@wdio/xvfb` (bundled with `@wdio/local-runner`) auto-wraps worker processes with `xvfb-run`, which
+breaks Node.js IPC channels (`Error: write EINVAL` on `process.send()`).
+
+**Always run `pnpm install` first** — the VM bind-mounts its own `node_modules` over the shared macOS ones, so they need
+to be kept in sync with the lockfile separately.
+
+```bash
+# SSH one-liner setup (paste this prefix before any command)
+MISE_PATH="/home/veszelovszki/.local/share/mise/installs"
+export PATH="$MISE_PATH/node/25.6.0/bin:$MISE_PATH/pnpm/10.29.2:$MISE_PATH/go/1.25.7/bin:$PATH"
+export DISPLAY=:0
+
+# Run E2E tests via SSH (full one-liner)
+ssh veszelovszki@192.168.1.97 'MISE_PATH="/home/veszelovszki/.local/share/mise/installs" && export PATH="$MISE_PATH/node/25.6.0/bin:$MISE_PATH/pnpm/10.29.2:$MISE_PATH/go/1.25.7/bin:$PATH" && export DISPLAY=:0 && cd ~/cmdr && pnpm install && cd apps/desktop && pnpm test:e2e:linux:native'
+```
+
+If mise tool versions change (check `.mise.toml`), update the paths above. Find installed paths with `mise where node`,
+`mise where pnpm`, etc.
+
 ### Common tasks
 
 ```bash
@@ -204,7 +226,8 @@ software-emulated GPU). Real Linux machines with a GPU don't need this.
 - **Shared folder not mounted**: `sudo mount -a`
 - **node_modules bind mounts not active**: `mountpoint -q ~/cmdr/node_modules || sudo mount -a`
 - **VM IP changed**: Check inside VM: `ip addr show | grep 'inet ' | grep -v 127.0.0.1`
-- **pnpm/node not found**: `eval "$(mise activate bash)"`
+- **pnpm/node not found**: `eval "$(mise activate bash)"` (interactive) or use the explicit PATH from "Running commands
+  via SSH" above (non-interactive)
 
 ## Files
 

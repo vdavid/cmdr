@@ -57,6 +57,8 @@ Run the smallest set of checks possible for efficiency while maintaining confide
 - Run all: `./scripts/check.sh`. Runs all tests, linters, and formatters (with auto fixing) for all apps.
 - **E2E testing**: Docker E2E, Playwright smoke tests, VNC debugging, fixture system — see the colocated
   CLAUDE.md files in `apps/desktop/test/e2e-linux/` and `apps/desktop/test/e2e-macos/`
+- **Ubuntu test VM**: SSH access, toolchain, and agent one-liners are in
+  `apps/desktop/test/e2e-linux/CLAUDE.md` § "Ubuntu test VM".
 - See also `./scripts/check.sh --help`
 - **CI**: Runs automatically on PRs and pushes to main, but only for changed files. To run all checks regardless of
   changes: Actions → CI → "Run workflow" → select branch → Run workflow.
