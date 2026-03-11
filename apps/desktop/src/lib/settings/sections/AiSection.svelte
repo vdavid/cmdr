@@ -35,6 +35,7 @@
         type SystemMemoryInfo,
     } from '$lib/tauri-commands'
     import { createShouldShow } from '$lib/settings/settings-search'
+    import { computeGaugeSegments } from './ram-gauge-utils'
     import { getAppLogger } from '$lib/logging/logger'
 
     interface Props {
@@ -565,66 +566,9 @@
     const showApplyButton = $derived(pendingContextSize !== activeContextSize && serverRunning && !isRestarting)
 
     // RAM gauge segments (percentages of total RAM)
-    // Left-to-right: other | retained AI | change (freed or added) | free (bar background)
-    // "retained AI" = AI memory that stays after applying the new context size
-    // "change" = freed (shrinking, green) or added (growing, gold 50%)
-    // Segments: System | Other apps | Cmdr AI (retained/added/freed) | Free
-    // All segments sum to <= 100%; remainder is the bar background (free memory).
-    const gaugeSegments = $derived.by(() => {
-        if (!systemMemory || systemMemory.totalBytes === 0) return null
-
-        const total = systemMemory.totalBytes
-        const usedByProcesses = systemMemory.usedBytes
-        const availableBytes = systemMemory.availableBytes
-
-        // System = kernel overhead, wired, compressed (not attributed to any process)
-        const systemBytes = Math.max(0, total - usedByProcesses - availableBytes)
-        // Other apps = all process memory minus our AI estimate
-        const otherAppsBytes = Math.max(0, usedByProcesses - currentAiMemoryBytes)
-
-        const systemPercent = (systemBytes / total) * 100
-        const otherAppsPercent = (otherAppsBytes / total) * 100
-        const delta = projectedAiMemoryBytes - currentAiMemoryBytes
-
-        // When shrinking: split current AI into "retained" (projected) + "freed" (|delta|)
-        // When growing: current AI stays, delta is added after it
-        // When unchanged: just current AI
-        let retainedAiPercent: number
-        let addedPercent: number
-        let freedPercent: number
-
-        if (delta > 0) {
-            retainedAiPercent = (currentAiMemoryBytes / total) * 100
-            addedPercent = (delta / total) * 100
-            freedPercent = 0
-        } else if (delta < 0) {
-            retainedAiPercent = (projectedAiMemoryBytes / total) * 100
-            addedPercent = 0
-            freedPercent = (Math.abs(delta) / total) * 100
-        } else {
-            retainedAiPercent = (currentAiMemoryBytes / total) * 100
-            addedPercent = 0
-            freedPercent = 0
-        }
-
-        // Clamp so segments never exceed 100% total
-        const segmentTotal = systemPercent + otherAppsPercent + retainedAiPercent + addedPercent + freedPercent
-        const scale = segmentTotal > 100 ? 100 / segmentTotal : 1
-
-        const totalProjectedUsage = systemBytes + otherAppsBytes + projectedAiMemoryBytes
-
-        return {
-            systemPercent: systemPercent * scale,
-            otherAppsPercent: otherAppsPercent * scale,
-            retainedAiPercent: retainedAiPercent * scale,
-            addedPercent: addedPercent * scale,
-            freedPercent: freedPercent * scale,
-            totalProjectedUsageRatio: totalProjectedUsage / total,
-            systemBytes,
-            otherAppsBytes,
-            availableBytes,
-        }
-    })
+    const gaugeSegments = $derived(
+        systemMemory ? computeGaugeSegments(systemMemory, currentAiMemoryBytes, projectedAiMemoryBytes) : null,
+    )
 
     // Warning state based on projected usage
     const warningLevel = $derived.by((): 'none' | 'caution' | 'danger' => {
@@ -1127,7 +1071,7 @@
                             {/if}
                             <span class="ram-legend-item"
                                 ><span class="ram-legend-swatch ram-free-space"></span>Free {formatMemoryGb(
-                                    gaugeSegments.availableBytes,
+                                    gaugeSegments.freeBytes,
                                 )}</span
                             >
                         </div>

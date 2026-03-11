@@ -76,13 +76,15 @@ export async function getDirStatsBatch(paths: string[]): Promise<(DirStats | nul
 // System memory
 // ============================================================================
 
-/** System RAM breakdown in bytes. */
+/** System RAM breakdown in bytes. Categories are non-overlapping and sum to `totalBytes`. */
 export interface SystemMemoryInfo {
     totalBytes: number
-    /** Memory actively used by processes (app + wired + compressed on macOS). */
-    usedBytes: number
-    /** Memory available for new allocations (free + inactive + purgeable on macOS). */
-    availableBytes: number
+    /** Wired + compressor-occupied memory (kernel, drivers — can't be freed). */
+    wiredBytes: number
+    /** App memory: active + inactive - purgeable (process memory the user can free by quitting apps). */
+    appBytes: number
+    /** Free: free + purgeable + speculative (available for new allocations). */
+    freeBytes: number
 }
 
 /** Returns system RAM breakdown for the RAM gauge. */
