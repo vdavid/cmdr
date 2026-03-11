@@ -45,8 +45,6 @@
             return 'No license – only personal use allowed'
         }
         switch (status.type) {
-            case 'supporter':
-                return 'Personal license – thanks for your support ❤️'
             case 'commercial':
                 if (status.licenseType === 'commercial_perpetual') {
                     return `Perpetual commercial license for ${status.organizationName || 'your organization'}`
@@ -61,25 +59,12 @@
         }
     }
 
-    // Determine if we should show the license purchase/upgrade link
+    // Determine if we should show the license purchase link
     function shouldShowLicenseLink(): boolean {
         if (!status) return true
         if (status.type === 'personal') return true
         if (status.type === 'expired') return true
-        // Supporter shows "upgrade" to commercial
-        if (status.type === 'supporter') return true
         return false
-    }
-
-    // Label varies by license state: "Get a license" for unlicensed, "Upgrade" for supporters
-    function getLicenseLinkLabel(): string {
-        if (status?.type === 'supporter') return 'Upgrade'
-        return 'Get a license'
-    }
-
-    // Determine if we should show the commercial upgrade prompt (for supporters)
-    function shouldShowCommercialPrompt(): boolean {
-        return status?.type === 'supporter'
     }
 
     function handleLinkClick(url: string) {
@@ -117,14 +102,6 @@
 
             <div class="license-info">
                 <p class="license-description">{getLicenseDescription()}</p>
-                {#if shouldShowCommercialPrompt()}
-                    <p class="commercial-prompt">
-                        Also using Cmdr for work? You must <a
-                            href="https://getcmdr.com/pricing"
-                            onclick={handleLinkClick('https://getcmdr.com/pricing')}>upgrade to a commercial license</a
-                        >.
-                    </p>
-                {/if}
             </div>
 
             <p class="ai-attribution">AI powered by Falcon-H1R-7B by Technology Innovation Institute (TII)</p>
@@ -134,7 +111,7 @@
                 {#if shouldShowLicenseLink()}
                     <span class="separator">•</span>
                     <a href="https://getcmdr.com/pricing" onclick={handleLinkClick('https://getcmdr.com/pricing')}
-                        >{getLicenseLinkLabel()}</a
+                        >Get a license</a
                     >
                 {/if}
                 <span class="separator">•</span>
@@ -219,22 +196,6 @@
         font-size: var(--font-size-md);
         line-height: 1.5;
         margin: 0;
-    }
-
-    .commercial-prompt {
-        color: var(--color-text-secondary);
-        font-size: var(--font-size-md);
-        line-height: 1.5;
-        margin: var(--spacing-md) 0 0;
-    }
-
-    .commercial-prompt a {
-        color: var(--color-accent);
-        text-decoration: underline;
-    }
-
-    .commercial-prompt a:hover {
-        color: var(--color-accent-hover);
     }
 
     .ai-attribution {

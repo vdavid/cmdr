@@ -22,10 +22,6 @@ Rows by `status.type`:
 - **Validity**: "Valid until {date}" for subscriptions, "Perpetual — updates until {date}" for perpetual with `expiresAt`, "Perpetual" if no `expiresAt`, "Active" only as absolute last resort
 - **License key**: `existingLicense.shortCode` if available, otherwise omit the row entirely
 
-**`supporter`:**
-- **License type**: "Supporter"
-- **License key**: `existingLicense.shortCode` if available, otherwise omit
-
 **`expired`:**
 - **Organization**: `status.organizationName` (omit row if null)
 - **Validity**: "Expired on {date}"
@@ -59,7 +55,6 @@ Also fix the existing gap: `reset_license` doesn't delete `STORE_KEY_SHORT_CODE`
 Add a small helper function in the dialog that maps `status` to a display string:
 - `status.type === 'commercial'` + `status.licenseType === 'commercial_subscription'` -> "Commercial subscription"
 - `status.type === 'commercial'` + `status.licenseType === 'commercial_perpetual'` -> "Commercial perpetual"
-- `status.type === 'supporter'` -> "Supporter"
 - `status.type === 'expired'` -> omit (no type row shown)
 
 ### 6. Fix activation bug after license reset
@@ -113,6 +108,6 @@ Use a real Paddle test license (any type) for manual testing. Mock mode only ove
 4. Test "Use a different key": click it, see confirmation, click "Continue", verify dialog switches to activation input
 5. After reset + close (without entering a new key), verify window title reverts to personal-use state
 6. Re-activate to confirm the full round trip works — About window must show the correct commercial status
-7. Code review the supporter/expired template branches (not easily testable with real licenses, but low risk — just conditional text)
+7. Code review the expired template branch (not easily testable with real licenses, but low risk — just conditional text)
 8. `./scripts/check.sh --check clippy --check svelte-check --check desktop-svelte-eslint --check desktop-svelte-prettier`
 9. Update `apps/desktop/src/lib/licensing/CLAUDE.md` if any decisions/gotchas changed

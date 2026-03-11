@@ -66,7 +66,6 @@
     function getLicenseTypeLabel(licenseType: string | null | undefined): string | null {
         if (licenseType === 'commercial_perpetual') return 'Commercial perpetual'
         if (licenseType === 'commercial_subscription') return 'Commercial subscription'
-        if (licenseType === 'supporter') return 'Supporter'
         return null
     }
 
@@ -164,9 +163,6 @@
                 expiresAt: null,
             }
         }
-        if (info.licenseType === 'supporter') {
-            return { type: 'supporter', showCommercialReminder: false }
-        }
         return null
     }
 
@@ -226,7 +222,7 @@
             }
 
             // Step 3: Decide whether to commit (persist) the key based on server response.
-            if (newStatus?.type === 'commercial' || newStatus?.type === 'supporter') {
+            if (newStatus?.type === 'commercial') {
                 await commitLicense(verifyResult.fullKey, verifyResult.shortCode)
                 setPendingVerification(false)
                 setCachedStatus(newStatus)

@@ -202,7 +202,7 @@ export function getMatchingSections(query: string): Set<string> {
 
     // Check if query matches license-related terms
     if (query.trim()) {
-        const licenseKeywords = 'license key activation commercial supporter personal upgrade buy purchase pricing'
+        const licenseKeywords = 'license key activation commercial personal upgrade buy purchase pricing'
         const lowerQuery = query.toLowerCase()
         if (licenseKeywords.includes(lowerQuery) || 'license'.includes(lowerQuery)) {
             sections.add('License')

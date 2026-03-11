@@ -484,11 +484,8 @@
                 expiredAt = licenseStatus.expiredAt
             }
 
-            // Check if we need to show commercial reminder for personal/supporter users
-            if (
-                (licenseStatus.type === 'personal' || licenseStatus.type === 'supporter') &&
-                licenseStatus.showCommercialReminder
-            ) {
+            // Check if we need to show commercial reminder for personal users
+            if (licenseStatus.type === 'personal' && licenseStatus.showCommercialReminder) {
                 showCommercialReminder = true
             }
 

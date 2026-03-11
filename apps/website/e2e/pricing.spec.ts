@@ -10,12 +10,11 @@ test.describe('Pricing page', () => {
         await expect(heading).toContainText(/free forever for personal use/i)
     })
 
-    test('displays all four pricing tiers', async ({ page }) => {
+    test('displays all three pricing tiers', async ({ page }) => {
         await page.goto('/pricing')
 
         // Check for all tier names (use exact match to avoid matching h1)
         await expect(page.getByRole('heading', { name: 'Personal', exact: true })).toBeVisible()
-        await expect(page.getByRole('heading', { name: 'Supporter', exact: true })).toBeVisible()
         await expect(page.getByRole('heading', { name: 'Commercial', exact: true })).toBeVisible()
         await expect(page.getByRole('heading', { name: 'Perpetual', exact: true })).toBeVisible()
     })
@@ -25,7 +24,6 @@ test.describe('Pricing page', () => {
 
         const content = await page.textContent('body')
         expect(content).toContain('Free')
-        expect(content).toContain('$10')
         expect(content).toContain('$59')
         expect(content).toContain('$199')
     })
@@ -43,16 +41,13 @@ test.describe('Pricing page', () => {
         await page.goto('/pricing')
 
         // Find buy buttons by their text content
-        const supporterButton = page.getByRole('button', { name: /buy supporter/i })
         const commercialButton = page.getByRole('button', { name: /buy commercial/i })
         const perpetualButton = page.getByRole('button', { name: /buy perpetual/i })
 
-        await expect(supporterButton).toBeVisible()
         await expect(commercialButton).toBeVisible()
         await expect(perpetualButton).toBeVisible()
 
         // Verify buttons have the correct data attributes for Paddle
-        await expect(supporterButton).toHaveAttribute('data-paddle-price', 'supporter')
         await expect(commercialButton).toHaveAttribute('data-paddle-price', 'commercialSubscription')
         await expect(perpetualButton).toHaveAttribute('data-paddle-price', 'commercialPerpetual')
     })

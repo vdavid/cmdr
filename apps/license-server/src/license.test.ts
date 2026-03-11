@@ -130,7 +130,7 @@ describe('generateLicenseKey', () => {
             email: 'original@test.com',
             transactionId: 'txn_original',
             issuedAt: '2026-01-08T12:00:00Z',
-            type: 'supporter',
+            type: 'commercial_subscription',
         }
 
         const key = await generateLicenseKey(licenseData, privateKeyHex)
@@ -141,7 +141,7 @@ describe('generateLicenseKey', () => {
             email: 'hacker@evil.com',
             transactionId: 'txn_original',
             issuedAt: '2026-01-08T12:00:00Z',
-            type: 'supporter',
+            type: 'commercial_subscription',
         }
         const tamperedPayload = JSON.stringify(tamperedData)
         const tamperedPayloadBytes = new TextEncoder().encode(tamperedPayload)
@@ -179,10 +179,10 @@ describe('generateLicenseKey', () => {
         const privateKeyHex = Buffer.from(privateKey).toString('hex')
 
         const licenseData: LicenseData = {
-            email: 'supporter@example.com',
-            transactionId: 'txn_supporter',
+            email: 'user@example.com',
+            transactionId: 'txn_no_org',
             issuedAt: '2026-01-08T12:00:00Z',
-            type: 'supporter',
+            type: 'commercial_subscription',
             // organizationName intentionally omitted
         }
 
@@ -192,7 +192,7 @@ describe('generateLicenseKey', () => {
         const decoded = JSON.parse(payloadJson) as LicenseData
 
         expect(decoded.organizationName).toBeUndefined()
-        expect(decoded.type).toBe('supporter')
+        expect(decoded.type).toBe('commercial_subscription')
     })
 
     it('protects organizationName from tampering', async () => {

@@ -29,7 +29,7 @@ export async function loadLicenseStatus(): Promise<LicenseStatus> {
     licenseState.cachedStatus = status
 
     // Derive pending verification: license exists and is non-personal, but server has never confirmed it
-    if (status.type === 'commercial' || status.type === 'supporter') {
+    if (status.type === 'commercial') {
         const validated = await hasLicenseBeenValidated()
         licenseState.pendingVerification = !validated
     } else {

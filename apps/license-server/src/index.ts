@@ -35,7 +35,6 @@ type Bindings = {
     // "sandbox" (default) or "live" — controls which Paddle API to use for /validate
     PADDLE_ENVIRONMENT?: string
     // Price IDs for license type mapping
-    PRICE_ID_SUPPORTER?: string
     PRICE_ID_COMMERCIAL_SUBSCRIPTION?: string
     PRICE_ID_COMMERCIAL_PERPETUAL?: string
 }
@@ -377,7 +376,6 @@ async function processCompletedTransaction(payload: PaddleWebhookPayload, env: B
 
     // Determine license type from price ID
     const priceIds: PriceIdMapping = {
-        supporter: env.PRICE_ID_SUPPORTER,
         commercialSubscription: env.PRICE_ID_COMMERCIAL_SUBSCRIPTION,
         commercialPerpetual: env.PRICE_ID_COMMERCIAL_PERPETUAL,
     }
@@ -386,8 +384,7 @@ async function processCompletedTransaction(payload: PaddleWebhookPayload, env: B
         : 'commercial_subscription'
 
     // Get organization name: prefer customer's business name, fall back to custom_data
-    const organizationName =
-        licenseType !== 'supporter' ? (customer.businessName ?? purchaseData.organizationName) : undefined
+    const organizationName = customer.businessName ?? purchaseData.organizationName
 
     // Generate and send license(s) - one per quantity
     // If email fails after KV writes, we intentionally don't mark the transaction as processed

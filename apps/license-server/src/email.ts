@@ -85,8 +85,6 @@ interface EmailParams {
 
 function getLicenseDescription(type: LicenseType | undefined, orgName?: string): string {
     switch (type) {
-        case 'supporter':
-            return 'Your supporter license is valid forever for personal use. Love you! ❤️'
         case 'commercial_subscription':
             return orgName
                 ? `Your commercial license for ${orgName} is valid for one year and will auto-renew.`

@@ -47,7 +47,6 @@ API key the server uses. Set to `"sandbox"` by default (from `wrangler.toml`). T
 | `PADDLE_WEBHOOK_SECRET_LIVE`       | —                                | Live secret                       |
 | `PADDLE_API_KEY_SANDBOX`           | Sandbox API key                  | —                                 |
 | `PADDLE_API_KEY_LIVE`              | —                                | Live API key                      |
-| `PRICE_ID_SUPPORTER`               | Sandbox price ID                 | Live price ID                     |
 | `PRICE_ID_COMMERCIAL_SUBSCRIPTION` | Sandbox price ID                 | Live price ID                     |
 | `PRICE_ID_COMMERCIAL_PERPETUAL`    | Sandbox price ID                 | Live price ID                     |
 | `ED25519_PRIVATE_KEY`              | Private key hex                  | Same private key hex              |
@@ -90,7 +89,7 @@ modulo bias (max unbiased byte = `256 - (256 % 31)`).
 **License key format:** `base64(JSON payload).base64(Ed25519 signature)`. Payload contains: email, transactionId,
 issuedAt, type, organizationName.
 
-**License types:** `supporter` | `commercial_subscription` | `commercial_perpetual`
+**License types:** `commercial_subscription` | `commercial_perpetual`
 
 **Idempotency:** 7-day KV entry per transaction. If email throws after KV writes but before the idempotency key is set,
 Paddle's retry re-generates and re-sends — intentional design.
@@ -151,9 +150,9 @@ curl -X POST http://localhost:8787/admin/generate \
   -d '{"email":"test@example.com","type":"commercial_subscription","organizationName":"Test Corp"}'
 ```
 
-Returns `code` (short code like `CMDR-ABCD-EFGH-1234`) and `type`. Change `type` to `commercial_perpetual` or
-`supporter` for other license types. These keys use synthetic transaction IDs (`manual-*`), so they won't pass server
-validation via `/validate` — they're for offline crypto + UI testing only.
+Returns `code` (short code like `CMDR-ABCD-EFGH-1234`) and `type`. Change `type` to `commercial_perpetual` for a
+perpetual license. These keys use synthetic transaction IDs (`manual-*`), so they won't pass server validation via
+`/validate` — they're for offline crypto + UI testing only.
 
 For end-to-end testing including `/validate`, use the Paddle sandbox checkout flow (see
 [README.md](README.md#testing-paddle-checkout)).
@@ -184,9 +183,8 @@ Deployed to `license.getcmdr.com` via Cloudflare custom domain (declared in `wra
 
 ## Business rules
 
-**Supporter tax_mode is `internal`, commercial prices are `external`.** Intentional: we absorb tax for personal
-supporters as a goodwill gesture, but commercial customers pay tax on top. This is configured per-price in the Paddle
-dashboard (both sandbox and live). Don't "fix" this to make them consistent.
+**Commercial prices use `external` tax_mode.** Commercial customers pay tax on top of the listed price. This is
+configured per-price in the Paddle dashboard (both sandbox and live).
 
 ## Key decisions
 

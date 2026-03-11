@@ -35,10 +35,6 @@ describe('getLicenseTypeLabel', () => {
         )
     })
 
-    it('should return "Supporter" for supporter', () => {
-        expect(getLicenseTypeLabel(makeLicenseInfo({ licenseType: 'supporter' }))).toBe('Supporter')
-    })
-
     it('should return "Personal (free)" for unknown licenseType', () => {
         expect(getLicenseTypeLabel(makeLicenseInfo({ licenseType: 'unknown_type' }))).toBe('Personal (free)')
     })
@@ -88,11 +84,6 @@ describe('getStatusText', () => {
 
     it('should return null for personal status', () => {
         const status: LicenseStatus = { type: 'personal', showCommercialReminder: false }
-        expect(getStatusText(status)).toBeNull()
-    })
-
-    it('should return null for supporter status', () => {
-        const status: LicenseStatus = { type: 'supporter', showCommercialReminder: false }
         expect(getStatusText(status)).toBeNull()
     })
 

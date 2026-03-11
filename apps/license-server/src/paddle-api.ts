@@ -200,21 +200,16 @@ function mapPaddleStatus(paddleStatus: string): 'active' | 'expired' | 'canceled
  * This mapping needs to be updated when products are created in Paddle.
  */
 export function getLicenseTypeFromPriceId(priceId: string, priceIds: PriceIdMapping): LicenseType | null {
-    if (priceIds.supporter && priceId === priceIds.supporter) {
-        return 'supporter'
-    }
     if (priceIds.commercialSubscription && priceId === priceIds.commercialSubscription) {
         return 'commercial_subscription'
     }
     if (priceIds.commercialPerpetual && priceId === priceIds.commercialPerpetual) {
         return 'commercial_perpetual'
     }
-    // Legacy: treat unknown price IDs as commercial subscription for backwards compat
-    return 'commercial_subscription'
+    return null
 }
 
 export interface PriceIdMapping {
-    supporter?: string
     commercialSubscription?: string
     commercialPerpetual?: string
 }

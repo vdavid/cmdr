@@ -3,12 +3,11 @@
 import { invoke } from '@tauri-apps/api/core'
 
 /** License types */
-export type LicenseType = 'supporter' | 'commercial_subscription' | 'commercial_perpetual'
+export type LicenseType = 'commercial_subscription' | 'commercial_perpetual'
 
 /** Application license status */
 export type LicenseStatus =
     | { type: 'personal'; showCommercialReminder: boolean }
-    | { type: 'supporter'; showCommercialReminder: boolean }
     | { type: 'commercial'; licenseType: LicenseType; organizationName: string | null; expiresAt: string | null }
     | { type: 'expired'; organizationName: string | null; expiredAt: string; showModal: boolean }
 
@@ -90,7 +89,7 @@ export function parseActivationError(e: unknown): LicenseActivationError | null 
 
 /**
  * Gets the current application license status.
- * @returns Current license status (personal, supporter, commercial, or expired)
+ * @returns Current license status (personal, commercial, or expired)
  */
 export async function getLicenseStatus(): Promise<LicenseStatus> {
     return invoke<LicenseStatus>('get_license_status')

@@ -18,12 +18,11 @@ License keys are self-contained: `base64(JSON payload).base64(Ed25519 signature)
 
 ```
 Personal { show_commercial_reminder }   — no license
-Supporter { show_commercial_reminder }  — personal badge
 Commercial { license_type, organization_name, expires_at }
 Expired { organization_name, expired_at, show_modal }
 ```
 
-`LicenseType`: `Supporter`, `CommercialSubscription`, `CommercialPerpetual`.
+`LicenseType`: `CommercialSubscription`, `CommercialPerpetual`.
 
 ## Two-layer caching
 
@@ -49,7 +48,7 @@ return VerifyResult         ← LicenseInfo + full_key + short_code (nothing sto
 Frontend: validateLicenseWithServer(transactionId)
   |                                   ↑ passed explicitly since key isn't stored yet
   v
-Server says active/supporter → commitLicense(fullKey, shortCode) → persist + onSuccess
+Server says active            → commitLicense(fullKey, shortCode) → persist + onSuccess
 Server says expired          → commitLicense(fullKey, shortCode) → persist + show error
 Server says invalid          → DON'T commit. Show error. Nothing stored.
 Network error                → commitLicense(fullKey, shortCode) → persist + fallback
@@ -69,7 +68,7 @@ Legacy `activate_license`/`activate_license_async` wrappers still exist for back
 - Short codes: `CMDR-XXXX-XXXX-XXXX` (3 segments × 4 alphanumeric chars after CMDR prefix).
 - Key format: `base64(JSON).base64(signature)` — split on single `.`.
 - Public key embedded at compile time as hex in `verification.rs` (`PUBLIC_KEY_HEX`).
-- Mock values (`CMDR_MOCK_LICENSE`): `personal`, `personal_reminder`, `supporter`, `supporter_reminder`, `commercial`, `perpetual`, `expired`, `expired_no_modal`.
+- Mock values (`CMDR_MOCK_LICENSE`): `personal`, `personal_reminder`, `commercial`, `perpetual`, `expired`, `expired_no_modal`.
 - Key gen: see [license server CLAUDE.md](../../../../apps/license-server/CLAUDE.md) and
   [README.md](../../../../apps/license-server/README.md#first-time-setup) for the full setup.
 
@@ -103,7 +102,7 @@ Legacy `activate_license`/`activate_license_async` wrappers still exist for back
 **Why**: During activation, the key isn't stored yet, so the function can't read the transaction ID from the store. The frontend passes it explicitly. For periodic re-validation (7-day cycle), the parameter is `None` and the function falls back to reading from the stored license. This avoids storing the key just to read the transaction ID back.
 
 **Decision**: `CMDR_MOCK_LICENSE` env var bypasses all license logic including server calls.
-**Why**: License UX testing requires seeing every state (personal, supporter, commercial, expired, with/without modals). Without mocking, you'd need real license keys for each variant and a running license server. The mock skips network entirely, making UI development fast.
+**Why**: License UX testing requires seeing every state (personal, commercial, expired, with/without modals). Without mocking, you'd need real license keys for each variant and a running license server. The mock skips network entirely, making UI development fast.
 
 ## Gotchas
 

@@ -68,6 +68,7 @@ percentage-based, not pixel-based.
 radio group, or combobox — anything that benefits from consistent horizontal alignment.
 
 **When NOT to use `split`:**
+
 - Switches (too small; 50-50 wastes space and doesn't improve alignment)
 - Toggle groups (multi-button controls that may not fit in 50% width at narrow window sizes)
 - Full-width custom layouts (keyboard shortcuts table, license card, advanced auto-generated rows)

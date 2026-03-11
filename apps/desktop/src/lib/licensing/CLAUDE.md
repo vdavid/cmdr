@@ -9,7 +9,7 @@ for offline validation (no server call needed after activation).
 
 - `licensing-store.svelte.ts` — state management, validation trigger
 - `LicenseKeyDialog.svelte` — license key entry + details view (key-value display, "Use a different key" reset flow)
-- `CommercialReminderModal.svelte` — 30-day reminder for personal/supporter users
+- `CommercialReminderModal.svelte` — 30-day reminder for personal users
 - `ExpirationModal.svelte` — shown when commercial license expires
 - `AboutWindow.svelte` — displays current license status
 
@@ -23,7 +23,6 @@ for offline validation (no server call needed after activation).
 ## License types
 
 - **Personal** — free forever. Shows "Personal use only" in title bar. Commercial reminder every 30 days.
-- **Supporter** — $10 one-time. Same as Personal but with a badge in About window. Commercial reminder every 30 days.
 - **Commercial subscription** — $59/year. Server validation every 7 days. 14-day grace on network failure.
 - **Commercial perpetual** — $199 one-time. No periodic validation. 3 years of updates.
 - **Expired** — subscription expired. Shows modal once, then reverts to Personal behavior.
@@ -69,7 +68,7 @@ dismiss). The About window and modals read the cached value on mount.
 - **`handleActivate` uses verify/commit split** — calls `verifyLicense()` first (nothing stored), then
   `validateLicenseWithServer(transactionId)` passing the transaction ID explicitly, then decides whether to call
   `commitLicense()`. Four outcomes:
-    1. Server confirms active (commercial/supporter) → `commitLicense()` + `onSuccess()`.
+    1. Server confirms active (commercial) → `commitLicense()` + `onSuccess()`.
     2. Server says expired → `commitLicense()` + inline error with expiry date (key IS valid, just expired).
     3. Server says invalid (returns `personal` type) → DON'T commit. Nothing stored. Tracks `serverInvalidRetryCount`
        for escalating messaging. Cancel and X just close (no cleanup needed).

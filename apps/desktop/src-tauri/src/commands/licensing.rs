@@ -2,7 +2,7 @@
 
 use crate::licensing;
 
-/// Get the current app status (personal, supporter, commercial, or expired).
+/// Get the current app status (personal, commercial, or expired).
 #[tauri::command]
 pub fn get_license_status(app: tauri::AppHandle) -> licensing::AppStatus {
     licensing::get_app_status(&app)

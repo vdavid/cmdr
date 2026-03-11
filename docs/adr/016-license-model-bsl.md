@@ -32,12 +32,13 @@ We wanted:
 
 ### Pricing tiers
 
-| Tier                    | Price    | Commercial?     |
-|-------------------------|----------|-----------------|
-| Personal                | Free     | No              |
-| Supporter               | $10      | No (badge only) |
-| Commercial subscription | $59/year | Yes             |
-| Commercial perpetual    | $199     | Yes             |
+| Tier                    | Price    | Commercial? |
+|-------------------------|----------|-------------|
+| Personal                | Free     | No          |
+| Commercial subscription | $59/year | Yes         |
+| Commercial perpetual    | $199     | Yes         |
+
+> **Note:** The Supporter tier ($10, badge only) was originally included but has been removed. Cmdr now has only Personal (free) and Commercial (subscription/perpetual) tiers.
 
 ### Enforcement
 

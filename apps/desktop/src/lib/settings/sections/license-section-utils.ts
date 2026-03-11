@@ -4,7 +4,6 @@ export function getLicenseTypeLabel(licenseInfo: LicenseInfo | null): string {
     if (!licenseInfo) return 'Personal (free)'
     if (licenseInfo.licenseType === 'commercial_perpetual') return 'Commercial perpetual'
     if (licenseInfo.licenseType === 'commercial_subscription') return 'Commercial subscription'
-    if (licenseInfo.licenseType === 'supporter') return 'Supporter'
     return 'Personal (free)'
 }
 

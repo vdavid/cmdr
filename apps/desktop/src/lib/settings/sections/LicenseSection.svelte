@@ -64,8 +64,7 @@
                     <span
                         class="info-value"
                         class:status-expired={licenseStatus?.type === 'expired'}
-                        class:status-active={licenseStatus?.type === 'commercial' ||
-                            licenseStatus?.type === 'supporter'}>{statusText}</span
+                        class:status-active={licenseStatus?.type === 'commercial'}>{statusText}</span
                     >
                 </div>
             {/if}

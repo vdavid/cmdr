@@ -9,7 +9,6 @@ const paddleConfig = {
     clientToken: import.meta.env.PUBLIC_PADDLE_CLIENT_TOKEN ?? '',
     environment: (import.meta.env.PUBLIC_PADDLE_ENVIRONMENT ?? 'sandbox') as 'sandbox' | 'live',
     priceIds: {
-        supporter: import.meta.env.PUBLIC_PADDLE_PRICE_ID_SUPPORTER ?? '',
         commercialSubscription: import.meta.env.PUBLIC_PADDLE_PRICE_ID_COMMERCIAL_SUBSCRIPTION ?? '',
         commercialPerpetual: import.meta.env.PUBLIC_PADDLE_PRICE_ID_COMMERCIAL_PERPETUAL ?? '',
     },
@@ -37,7 +36,7 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
         </div>
 
         <!-- Pricing Cards -->
-        <div class="mb-16 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div class="mb-16 grid gap-6 md:grid-cols-3">
             <!-- Personal (Free) -->
             <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
                 <div class="mb-4">
@@ -67,44 +66,6 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
                     </li>
                 </ul>
                 <div class="text-center text-sm text-[var(--color-text-tertiary)]">Just download and use it</div>
-            </div>
-
-            <!-- Supporter -->
-            <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
-                <div class="mb-4">
-                    <h3 class="text-lg font-semibold text-[var(--color-text-primary)]">Supporter</h3>
-                    <p class="text-sm text-[var(--color-text-tertiary)]">Show some love ❤️</p>
-                </div>
-                <div class="mb-6">
-                    <span class="text-3xl font-bold text-[var(--color-text-primary)]">$10</span>
-                    <span class="text-[var(--color-text-tertiary)]"> one-time</span>
-                </div>
-                <ul class="mb-6 space-y-2 text-sm text-[var(--color-text-secondary)]">
-                    <li class="flex items-start gap-2">
-                        <span class="text-[var(--color-accent)]">✓</span>
-                        Everything in Personal
-                    </li>
-                    <li class="flex items-start gap-2">
-                        <span class="text-[var(--color-accent)]">✓</span>
-                        "Supporter" badge in app
-                    </li>
-                    <li class="flex items-start gap-2">
-                        <span class="text-[var(--color-accent)]">✓</span>
-                        Warm fuzzy feeling
-                    </li>
-                    <li class="flex items-start gap-2">
-                        <span class="text-[var(--color-text-tertiary)]">✗</span>
-                        <span class="text-[var(--color-text-tertiary)]">Commercial use</span>
-                    </li>
-                </ul>
-                <button
-                    type="button"
-                    data-paddle-price="supporter"
-                    disabled={!isPaddleConfigured}
-                    class="block w-full cursor-pointer rounded-lg border border-[var(--color-border)] py-2 text-center text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-elevated)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                    Buy supporter pack
-                </button>
             </div>
 
             <!-- Commercial Subscription -->
@@ -428,9 +389,6 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
                     let pendingPriceId = null
                     let triggerButton = null
 
-                    // Commercial price keys that require org name
-                    const commercialPriceKeys = ['commercialSubscription', 'commercialPerpetual']
-
                     // Focus trap for modal
                     var focusableSelector = 'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
@@ -499,22 +457,16 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
                         window.Paddle.Checkout.open(checkoutOptions)
                     }
 
-                    // Handle buy button clicks
+                    // Handle buy button clicks — all plans go through the org name modal
                     document.querySelectorAll('[data-paddle-price]').forEach(function (button) {
                         button.addEventListener('click', function () {
                             const priceKey = button.dataset.paddlePrice
                             const priceId = paddleConfig.priceIds[priceKey]
                             if (!priceId) return
 
-                            // Commercial plans need org name first
-                            if (commercialPriceKeys.includes(priceKey)) {
-                                pendingPriceId = priceId
-                                triggerButton = button
-                                showModal()
-                            } else {
-                                // Personal/supporter plans open Paddle directly
-                                openPaddleCheckout(priceId, null, null)
-                            }
+                            pendingPriceId = priceId
+                            triggerButton = button
+                            showModal()
                         })
                     })
 

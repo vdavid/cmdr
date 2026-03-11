@@ -86,12 +86,6 @@ Release date: ${latestRelease.pub_date.split('T')[0]}
 - Automatic updates
 - No commercial use
 
-### Supporter ($10 one-time)
-
-- Everything in Personal
-- "Supporter" badge in the app
-- No commercial use
-
 ### Commercial ($59/year)
 
 - All features included

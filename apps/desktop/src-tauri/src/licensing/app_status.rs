@@ -1,7 +1,7 @@
 //! Application license status and validation.
 //!
 //! This module handles:
-//! - License status checking (personal, supporter, commercial)
+//! - License status checking (personal, commercial)
 //! - Server-side validation for subscription status
 //! - Caching for offline use (30-day grace period)
 //! - Mock mode for local testing
@@ -31,7 +31,6 @@ const STORE_KEY_REMINDER_LAST_DISMISSED: &str = "commercial_reminder_last_dismis
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum LicenseType {
-    Supporter,
     CommercialSubscription,
     CommercialPerpetual,
 }
@@ -43,12 +42,6 @@ pub enum AppStatus {
     /// No license - personal use only.
     #[serde(rename_all = "camelCase")]
     Personal {
-        /// Whether to show the commercial license reminder modal.
-        show_commercial_reminder: bool,
-    },
-    /// Supporter license (personal use with badge).
-    #[serde(rename_all = "camelCase")]
-    Supporter {
         /// Whether to show the commercial license reminder modal.
         show_commercial_reminder: bool,
     },
@@ -211,9 +204,10 @@ fn response_to_app_status(
 }
 
 /// Convert string to LicenseType.
+///
+/// Legacy "supporter" keys are treated as personal (returns `None`).
 pub fn string_to_license_type(s: &str) -> Option<LicenseType> {
     match s {
-        "supporter" => Some(LicenseType::Supporter),
         "commercial_subscription" => Some(LicenseType::CommercialSubscription),
         "commercial_perpetual" => Some(LicenseType::CommercialPerpetual),
         _ => None,
@@ -230,9 +224,6 @@ fn to_app_status(
 ) -> AppStatus {
     match status {
         "active" => match license_type {
-            Some(LicenseType::Supporter) => AppStatus::Supporter {
-                show_commercial_reminder: should_show_commercial_reminder(app),
-            },
             Some(lt) => AppStatus::Commercial {
                 license_type: lt,
                 organization_name,
@@ -418,7 +409,6 @@ pub fn update_cached_status(
 pub fn get_window_title(status: &AppStatus) -> String {
     match status {
         AppStatus::Personal { .. } => "Cmdr – Personal use only".to_string(),
-        AppStatus::Supporter { .. } => "Cmdr – Personal".to_string(),
         AppStatus::Commercial { .. } => "Cmdr".to_string(),
         AppStatus::Expired { .. } => "Cmdr – Personal use only".to_string(),
     }
@@ -453,8 +443,6 @@ fn current_timestamp() -> u64 {
 /// Set CMDR_MOCK_LICENSE to one of:
 /// - "personal" - No license (no reminder)
 /// - "personal_reminder" - No license (shows commercial reminder modal)
-/// - "supporter" - Supporter badge (no reminder)
-/// - "supporter_reminder" - Supporter badge (shows commercial reminder modal)
 /// - "commercial" - Active commercial subscription
 /// - "perpetual" - Active perpetual license
 /// - "expired" - Expired subscription (shows modal)
@@ -470,10 +458,11 @@ fn get_mock_status(_app: &tauri::AppHandle) -> Option<AppStatus> {
         "personal_reminder" => Some(AppStatus::Personal {
             show_commercial_reminder: true,
         }),
-        "supporter" => Some(AppStatus::Supporter {
+        // Legacy: treat "supporter" / "supporter_reminder" as Personal
+        "supporter" => Some(AppStatus::Personal {
             show_commercial_reminder: false,
         }),
-        "supporter_reminder" => Some(AppStatus::Supporter {
+        "supporter_reminder" => Some(AppStatus::Personal {
             show_commercial_reminder: true,
         }),
         "commercial" => Some(AppStatus::Commercial {
@@ -521,14 +510,6 @@ mod tests {
     }
 
     #[test]
-    fn test_get_window_title_supporter() {
-        let status = AppStatus::Supporter {
-            show_commercial_reminder: false,
-        };
-        assert_eq!(get_window_title(&status), "Cmdr – Personal");
-    }
-
-    #[test]
     fn test_get_window_title_commercial() {
         let status = AppStatus::Commercial {
             license_type: LicenseType::CommercialSubscription,
@@ -560,7 +541,6 @@ mod tests {
 
     #[test]
     fn test_license_type_serialization() {
-        assert_eq!(serde_json::to_string(&LicenseType::Supporter).unwrap(), "\"supporter\"");
         assert_eq!(
             serde_json::to_string(&LicenseType::CommercialSubscription).unwrap(),
             "\"commercial_subscription\""
@@ -579,16 +559,6 @@ mod tests {
         let json = serde_json::to_string(&status).unwrap();
         assert!(json.contains("\"type\":\"personal\""));
         assert!(json.contains("\"showCommercialReminder\":true"));
-    }
-
-    #[test]
-    fn test_app_status_supporter_serialization() {
-        let status = AppStatus::Supporter {
-            show_commercial_reminder: false,
-        };
-        let json = serde_json::to_string(&status).unwrap();
-        assert!(json.contains("\"type\":\"supporter\""));
-        assert!(json.contains("\"showCommercialReminder\":false"));
     }
 
     #[test]

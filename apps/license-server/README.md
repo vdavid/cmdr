@@ -27,8 +27,7 @@ in [CLAUDE.md](CLAUDE.md).
 4. **Resend**: Create API key at https://resend.com/api-keys. Add `getcmdr.com` domain at https://resend.com/domains
    (adds DNS records to Cloudflare automatically).
 5. **Paddle**: Create accounts at https://paddle.com (live) and https://sandbox-vendors.paddle.com (sandbox).
-6. **Paddle (both environments)**: Create product "Cmdr" (standard tax category), then three prices:
-    - Personal supporter: $10, one-time
+6. **Paddle (both environments)**: Create product "Cmdr" (standard tax category), then two prices:
     - Commercial subscription: $59/year
     - Commercial perpetual: $199, one-time
 7. **Paddle (both environments)**: Create notification destination → webhook URL, subscribe to `transaction.completed`.
@@ -44,7 +43,6 @@ in [CLAUDE.md](CLAUDE.md).
     npx wrangler secret put ED25519_PRIVATE_KEY
     npx wrangler secret put RESEND_API_KEY
     npx wrangler secret put PADDLE_ENVIRONMENT              # "live"
-    npx wrangler secret put PRICE_ID_SUPPORTER              # live price ID
     npx wrangler secret put PRICE_ID_COMMERCIAL_SUBSCRIPTION # live price ID
     npx wrangler secret put PRICE_ID_COMMERCIAL_PERPETUAL   # live price ID
     ```

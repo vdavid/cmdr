@@ -20,7 +20,7 @@ A cryptographically valid key proves we signed it. The server confirms whether t
 - `"active"` → success, show About window with commercial status
 - `"expired"` → store key, show in-dialog message about expiry with renewal link
 - `"invalid"` / network failure → store key, derive status from `LicenseInfo` payload fields (license type + org name
-  from the signed key), call `onSuccess()` if the payload indicates a commercial or supporter license. The 7-day
+  from the signed key), call `onSuccess()` if the payload indicates a commercial license. The 7-day
   re-validation cycle will retry the server check later.
 
 **The license details view should be self-contained from activation data** — show org name and license type from
@@ -60,11 +60,11 @@ validity text (since expiry is server-sourced, not in the payload).
 `handleActivate` currently calls `activateLicense()` then `validateLicenseWithServer()` and blindly calls `onSuccess()`.
 Change it to inspect the server response:
 
-- **`status.type === 'commercial'` or `status.type === 'supporter'`**: call `onSuccess()`.
+- **`status.type === 'commercial'`**: call `onSuccess()`.
 - **`status.type === 'expired'`**: show inline error with expiry date and renewal link. Don't call `onSuccess()`.
 - **`status.type === 'personal'` (server said "invalid")**: the server actively rejected the key. Construct a fallback
   status from `LicenseInfo` fields (license type + org name from the signed payload). If the payload indicates a
-  commercial or supporter license, call `onSuccess()` — the key is cryptographically valid, the server just doesn't
+  commercial license, call `onSuccess()` — the key is cryptographically valid, the server just doesn't
   recognize it (for example, Paddle lag). Otherwise show a "couldn't verify" message.
 - **Network error (catch block)**: same fallback — construct status from `LicenseInfo` payload. Show a brief note that
   server verification will happen later, but don't block the user. Different UX message from the "invalid" case:

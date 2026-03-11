@@ -17,7 +17,7 @@ const LICENSE_SERVER_URL: &str = "https://license.getcmdr.com";
 pub struct ValidationResponse {
     pub status: String, // "active", "expired", "invalid"
     #[serde(rename = "type")]
-    pub license_type: Option<String>, // "supporter", "commercial_subscription", "commercial_perpetual"
+    pub license_type: Option<String>, // "commercial_subscription", "commercial_perpetual"
     #[serde(rename = "organizationName")]
     pub organization_name: Option<String>,
     #[serde(rename = "expiresAt")]
