@@ -99,6 +99,14 @@ row intentionally spans the full width.
 
 ## Key decisions
 
+### Why hybrid declarative registry with custom UI?
+
+JSON schema → generated UI was rejected (loses per-section UX polish). Manual pages + parser script was rejected (parser
+is a second source of truth that drifts on refactors). Full architectural enforcement was overkill for a solo dev +
+agents workflow. The hybrid approach gives: search that works perfectly (registry IS the search index), full UX freedom
+per section, single source of truth for metadata, and CI catches missing UI or orphaned registry entries automatically.
+UI components use Ark UI (see `../ui/CLAUDE.md`).
+
 ### Why separate shortcuts from settings?
 
 Settings and shortcuts have different access patterns. Settings are mostly static config loaded at startup. Shortcuts

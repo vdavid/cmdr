@@ -110,6 +110,11 @@ from pre-computed item sizes. Partial failure is supported: if some items fail, 
 | `scan-preview-error` | Preview scan failed |
 | `scan-preview-cancelled` | Preview scan cancelled |
 
+## Key decisions
+
+**Decision**: Keep `exacl` crate for ACL copy in chunked copies (not custom FFI bindings).
+**Why**: `exacl` adds zero new transitive dependencies (all of its deps — `bitflags`, `log`, `scopeguard`, `uuid` — are already in our tree). It provides cross-platform ACL support (macOS, Linux, FreeBSD) and full ACL parsing/manipulation for potential future UI features. The crate appears unmaintained (last release Feb 2024) but ACL APIs are stable and don't change. Our usage is best-effort with graceful fallback — if `exacl` ever breaks, files still copy, they just lose ACLs. MIT licensed (compatible with BSL).
+
 ## Dependencies
 
 - `crate::file_system::volume` — `Volume` trait, `SpaceInfo`, `ScanConflict` (used by `volume_copy`)

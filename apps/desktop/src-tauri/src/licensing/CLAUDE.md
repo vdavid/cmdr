@@ -74,6 +74,9 @@ Legacy `activate_license`/`activate_license_async` wrappers still exist for back
 
 ## Key decisions
 
+**Decision**: BSL 1.1 license model — free personal use, paid commercial ($59/year or $199 perpetual), converts to AGPL-3.0 after 3 years.
+**Why**: The earlier AGPL + trial model felt pushy for hobbyists (trial countdown, nagware, trivial bypass). BSL gives friction-free personal use (no nags ever), clear commercial terms, and simpler enforcement (title bar shows license type). "Source-available" positioning avoids confusing "open source but not really" messaging. Machine IDs are not tracked — one license works on unlimited personal machines.
+
 **Decision**: Ed25519 offline verification with the public key compiled in, rather than server-side-only validation.
 **Why**: A file manager must work offline. If license checks required a network call, the app would degrade or nag every time the user is on a plane or behind a restrictive firewall. Offline crypto verification means the license works instantly and permanently, with server calls only needed to check subscription expiry status.
 

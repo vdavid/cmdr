@@ -34,6 +34,25 @@ Discover, browse, and mount SMB network shares. Works on macOS and Linux.
 
 ## Key decisions
 
+### `NetFSMountURLAsync` for SMB mounting (not `mount_smbfs` CLI)
+
+Non-blocking (UI stays responsive), credentials passed via secure API (not exposed in process list), native Keychain
+integration, and structured error codes instead of parsing stderr. Requires custom Rust FFI bindings for NetFS.framework.
+Linux uses `gio mount` (GVFS) instead.
+
+### Custom auth UI with Keychain integration (not system dialog)
+
+Full UX control (login form appears in-pane), smart defaults (pre-fill username from connection history), and
+guest/credentials toggle. Uses `security-framework` crate for Keychain access. Passwords never stored in our settings
+file — only in Keychain. Linux uses `keyring` crate (Secret Service) with encrypted file fallback.
+
+### `smb-rs` for SMB share enumeration (not `pavao`/libsmbclient or `smbutil`)
+
+MIT license (compatible with BSL, allows dual-licensing for enterprise), pure Rust (no C dependencies), async-native
+(built on tokio), and cross-platform (macOS, Linux, Windows). `pavao` (libsmbclient wrapper) was rejected for its GPLv3
+license. `smbutil` CLI was rejected for fragile text parsing and process spawning. Fallback to `smbutil`/`smbclient` is
+available for older Samba servers where smb-rs's RPC fails.
+
 ### Always use IP when available
 
 smb-rs doesn't resolve `.local` hostnames reliably (std lib DNS doesn't handle mDNS). Always pass resolved IP from mDNS discovery. If IP unavailable, use derived hostname (`service_name_to_hostname`).

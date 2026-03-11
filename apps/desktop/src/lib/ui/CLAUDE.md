@@ -81,6 +81,15 @@ Call `dismissTransientToasts()` on pane navigation to clear stale feedback.
 single `command` string prop. Handles clipboard internally (`copyToClipboard` with `navigator.clipboard` fallback).
 Parent controls spacing via its own wrapper. Used in `PtpcameradDialog`, `MtpPermissionDialog`, and `ShareBrowser`.
 
+## Ark UI
+
+Uses `@ark-ui/svelte` as the headless component library for complex interactive components (Dialog, Tabs, Select,
+Checkbox, Switch, Slider, Radio Group, etc.). Chosen over Bits UI and Melt UI for: 45+ components (vs ~20-25), clean
+tree-shaking (1.33 MB unpacked), Zag.js FSM robustness (prevents invalid states), full focus/escape control (disable FSM
+defaults with `={false}`, implement custom logic in callbacks), and scoped CSS selectors
+(`[data-scope="dialog"][data-part="content"]`) that work with vanilla CSS. Team-maintained by Chakra UI team. Simple
+elements like `<Button>` are our own thin wrappers (a button needs no headless library).
+
 ## Key decisions
 
 **Decision**: Custom `ModalDialog` with manual overlay + drag logic instead of the native `<dialog>` element. **Why**:

@@ -42,6 +42,9 @@ immediately to business-logic modules. No significant logic lives here.
 - `IpcError` (`{ message: String, timedOut: bool }`) — for commands returning `Result<T, _>`. Use `blocking_result_with_timeout` or map `tokio::time::timeout` errors to `IpcError::timeout()`.
 The frontend has matching TypeScript types in `$lib/tauri-commands/ipc-types.ts` (`TimedOut<T>`, `IpcError`, `isIpcError`, `getIpcErrorMessage`). The old `blocking_with_timeout` is kept for `path_exists` and other commands where timeout distinction isn't needed.
 
+**Decision**: JSON for all Tauri IPC, not binary formats (MessagePack, Protobuf).
+**Why**: Benchmarked with real directory listings: MessagePack is 34-58% SLOWER than JSON despite being 17-19% smaller. Tauri serializes `Vec<u8>` as a JSON array of numbers, so binary data gets wrapped in JSON anyway, negating size benefits and adding extra decoding overhead. See [benchmark data](../../../../../docs/notes/json-ipc-benchmarks.md).
+
 **Decision**: No `commands/ai.rs` file -- AI commands register directly from `ai::manager` and `ai::suggestions`.
 **Why**: The AI subsystem has its own complex lifecycle (model loading, suggestion pipelines). Adding a thin wrapper in `commands/` would just be boilerplate forwarding. Registering directly keeps the AI command surface co-located with its implementation, which changes frequently.
 

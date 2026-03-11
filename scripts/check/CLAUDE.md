@@ -184,6 +184,20 @@ A check shows "BLOCKED" when its dependency failed. Fix the dependency first.
 
 Use `CommandExists()` to check if a tool is installed, and auto-install if possible via `EnsureGoTool`.
 
+## Key decisions
+
+**Decision**: Go instead of Bash for the check script.
+**Why**: Cross-platform support (especially Windows), type-safe, better error handling, and ability to build complex logic (parallel checks, dependency graph, colored output). Go is already in the toolchain via mise.
+
+**Decision**: `cargo-nextest` instead of `cargo test`.
+**Why**: Faster test execution (parallel by default), better output formatting, clearer failure messages. Auto-installed by the check script if missing.
+
+**Decision**: `cargo-deny` advisories check disabled; use `cargo-audit` instead.
+**Why**: Tauri's transitive dependencies (gtk3-rs, unic-*, fxhash, proc-macro-error, etc.) trigger unmaintained-crate advisories we can't control. `cargo-audit` still catches critical security vulnerabilities. License, bans, and sources checks in `cargo-deny` remain active. See comment in `src-tauri/deny.toml`.
+
+**Decision**: Auto-fix locally, check-only in CI.
+**Why**: Developers get instant fixes locally (less friction), CI ensures code is properly formatted before merge. Controlled by the `--ci` flag.
+
 ## Dependencies
 
 `golang.org/x/term`, `golang.org/x/sys` (transitive). Go 1.25.

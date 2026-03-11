@@ -82,6 +82,6 @@ temporarily change the default payment link to `http://localhost:3333` in the sa
 
 ## Architecture decisions
 
-- [ADR 014: Payment provider choice](../../docs/adr/014-payment-provider-paddle.md)
-- [ADR 016: License model](../../docs/adr/016-license-model-bsl.md)
+- Payment provider: Paddle (Merchant of Record) — see [CLAUDE.md](CLAUDE.md) for rationale
+- License model: BSL 1.1 with free personal use — see [CLAUDE.md](CLAUDE.md)
 - [CLAUDE.md](CLAUDE.md) — full technical reference

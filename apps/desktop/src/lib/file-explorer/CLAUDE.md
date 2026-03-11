@@ -123,6 +123,22 @@ Core explorer UI components:
   from DualPaneExplorer via factory pattern
 - **rename-flow.svelte.ts** — Rename flow logic (validation, conflict/extension dialogs) extracted from FilePane
 
+## Key decisions
+
+**Decision**: Scoped CSS for file explorer list components, Tailwind elsewhere. **Why**: File lists render 50k+ items.
+Scoped CSS produces smaller DOM (no repetitive utility classes on each file entry), enabling faster rendering and lower
+memory. Guideline: if a component renders >100 repeated items, prefer scoped CSS.
+
+**Decision**: Icon registry pattern — `iconId` refs in file entries, separate `get_icons()` call, frontend caches.
+**Why**: 50k JPEG files would otherwise transmit 50k identical icon blobs (~100-200MB). Instead, file entries carry only
+an `iconId` (like `"ext:jpg"`), and a separate IPC call fetches unique icons. Frontend caches icons in IndexedDB across
+sessions.
+
+**Decision**: Non-reactive `FileDataStore` — only visible range (~50-100 items) enters Svelte reactivity. **Why**:
+Loading 20k+ files into Svelte `$state` causes 9+ second freezes (Svelte tracks the full array internally even with
+virtual scrolling). Storing data outside reactivity and slicing only visible items reduces reactivity cost from O(total)
+to O(visible). See [benchmarks](../../../../../docs/notes/non-reactive-file-store.md).
+
 ## Tabs (`tabs/`)
 
 Each pane has an independent tab bar. Tabs use `{#key}` for clean FilePane recreation on switch (cold load, no warm

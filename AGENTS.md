@@ -32,8 +32,8 @@ Core structure:
     - `website/` - Marketing website (getcmdr.com)
 - `/scripts/check/` - Go-based unified check runner (replaces individual scripts)
 - `/docs/` - Dev docs
-    - `adr/` - Architecture decision records
     - `guides/` - How-to guides
+    - `notes/` - Temporary reference notes (benchmarks, analysis) linked from CLAUDE.md files
     - `tooling/` - Internal tooling docs
     - `architecture.md` - Map of all subsystems with links to their `CLAUDE.md` files ← You probably want to know this!
     - `style-guide.md` - Writing and code style rules
@@ -100,7 +100,8 @@ There are two MCP servers available to you:
 
 ## Common tasks and reminders
 
-- Capturing decisions: see [here](docs/guides/creating-adrs.md). When choosing between competing tech or processes.
+- Capturing decisions: add `Decision/Why` entries to the nearest colocated `CLAUDE.md` file. If the decision has rich
+  evidence (benchmarks, detailed analysis), put the evidence in `docs/notes/` and link from the CLAUDE.md.
 - Adding new dependencies: NEVER rely on your training data! ALWAYS use npm/ncu, or another source to find the latest
   versions of libraries. Check out their GitHub, too, and see if they are active. Check Google/Reddit for the latest
   best solutions!

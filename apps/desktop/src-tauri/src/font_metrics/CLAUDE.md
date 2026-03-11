@@ -39,7 +39,7 @@ METRICS_CACHE: LazyLock<RwLock<HashMap<String, FontMetrics>>>
 **Decision**: Frontend measures character widths via Canvas API and ships them to Rust over IPC, rather than Rust measuring fonts directly.
 **Why**: Rust has no access to the system's font rendering stack. The browser's Canvas API uses the exact same font rasterizer the user sees, so the measurements match pixel-perfectly. Any Rust-side font library would need to load font files, handle system font resolution, and might produce slightly different widths than what the browser actually renders.
 
-**Decision**: Binary format (bincode2) on disk instead of JSON.
+**Decision**: Binary format (bincode2, a maintained fork of the original bincode) on disk instead of JSON.
 **Why**: A full Latin character set produces ~4,000 code-point-to-width entries. As JSON that's ~100 KB with key quoting overhead. Bincode compresses this to ~26 KB and deserializes in microseconds vs. milliseconds for JSON parsing. Since this file is only read by Rust (never human-edited), readability doesn't matter.
 
 **Decision**: `RwLock` for the metrics cache instead of `Mutex`.

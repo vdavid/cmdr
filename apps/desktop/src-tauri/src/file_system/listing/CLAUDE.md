@@ -83,6 +83,9 @@ Frontend                          Backend
 **Decision**: File watcher starts AFTER listing complete
 **Why**: Watcher diffs rely on cached entries. Starting before cache is populated would miss initial state.
 
+**Decision**: File metadata tiers — Tier 1-2 eagerly (stat + uid→name), Tier 3-4 deferred.
+**Why**: With 50k+ files, each metadata piece has different performance cost. Tier 1 (name, size, dates, permissions) is free from a single `stat()`. Tier 2 (owner name, symlink target) is ~1μs and cacheable. Tier 3 (macOS Spotlight/NSURL metadata) costs ~50-100μs/file. Tier 4 (EXIF, PDF) costs 1-100ms+ and reads file content. See [full tier table](../../../../../../docs/notes/file-metadata-tiers.md).
+
 ## Gotchas
 
 **Gotcha**: Background task runs to completion even if cancelled on frontend
