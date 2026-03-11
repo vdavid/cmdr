@@ -7,6 +7,43 @@ and we use [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-03-12
+
+### Added
+
+- Add AI settings with three providers (off / cloud API / local LLM), 15 cloud presets with per-provider key storage, connection check, model combobox, RAM gauge, and context size control ([b41365b](https://github.com/vdavid/cmdr/commit/b41365b), [abfc248](https://github.com/vdavid/cmdr/commit/abfc248), [423e669](https://github.com/vdavid/cmdr/commit/423e669))
+- Add live MCP server start/stop in Settings — no app restart needed ([e0c55e7](https://github.com/vdavid/cmdr/commit/e0c55e7))
+- Add stale index detection with user notification toast and automatic rescan ([b590a54](https://github.com/vdavid/cmdr/commit/b590a54))
+- Add device tracking for license abuse detection with fair use terms in ToS ([cf4f913](https://github.com/vdavid/cmdr/commit/cf4f913))
+- Add license section to Settings with status display, action buttons, and dynamic labels across the app ([39cf7b4](https://github.com/vdavid/cmdr/commit/39cf7b4))
+- Switch updater to v2 format (.tar.zst) for smaller archives and faster decompression ([00249f4](https://github.com/vdavid/cmdr/commit/00249f4))
+- Improve app icon for macOS Sequoia ([cc80d28](https://github.com/vdavid/cmdr/commit/cc80d28))
+
+### Changed
+
+- Remove supporter license tier — legacy keys gracefully map to Personal ([c0a63f5](https://github.com/vdavid/cmdr/commit/c0a63f5))
+- Split Settings UI horizontally 50-50% ([9493f88](https://github.com/vdavid/cmdr/commit/9493f88))
+- Rename settings file from `settings-v2.json` to `settings.json` ([d987cc8](https://github.com/vdavid/cmdr/commit/d987cc8))
+
+### Fixed
+
+- Fix startup panic from `blocking_lock` in async context ([f9855ca](https://github.com/vdavid/cmdr/commit/f9855ca))
+- Fix SQLite write pragmas running on read-only connections, causing panic in subtree scans ([a53a275](https://github.com/vdavid/cmdr/commit/a53a275))
+- Fix llama-server not stopping on app quit, keeping stale PIDs alive, and using excessive memory (256k → 4k default context) ([eae70f1](https://github.com/vdavid/cmdr/commit/eae70f1), [ffcbc81](https://github.com/vdavid/cmdr/commit/ffcbc81), [e45c742](https://github.com/vdavid/cmdr/commit/e45c742))
+- Fix Settings UI freezing for ~5s when stopping AI server — instant SIGKILL for stateless llama-server ([2af7ee8](https://github.com/vdavid/cmdr/commit/2af7ee8))
+- Fix dev and prod app data clashing on same machine — dev now uses separate data directory and MCP port ([b8b058a](https://github.com/vdavid/cmdr/commit/b8b058a))
+- Fix fallback path resolution falling to `/` instead of `~` ([8d7c644](https://github.com/vdavid/cmdr/commit/8d7c644))
+- Fix indexing: 100x faster aggregation via in-memory accumulation, DB auto vacuum, truncate before full scan, live index size in Settings ([47a2e8e](https://github.com/vdavid/cmdr/commit/47a2e8e), [cad1af5](https://github.com/vdavid/cmdr/commit/cad1af5), [aff2046](https://github.com/vdavid/cmdr/commit/aff2046), [96323e9](https://github.com/vdavid/cmdr/commit/96323e9))
+- Fix FSEvents storms causing high memory pressure — mimalloc allocator, 1s dedup window, reduced SQLite cache and channel buffers ([207ddee](https://github.com/vdavid/cmdr/commit/207ddee))
+
+### Non-app
+
+- Docs: replace 19 ADRs with colocated Decision/Why entries in 11 CLAUDE.md files, slim down AGENTS.md from 245 to 93 lines, add `@wrap-up` and `@plan` commands ([ccf5cc7](https://github.com/vdavid/cmdr/commit/ccf5cc7), [d297a1a](https://github.com/vdavid/cmdr/commit/d297a1a), [0595796](https://github.com/vdavid/cmdr/commit/0595796))
+- Website: show version + file size on all download buttons, fix Intel/Apple detection flicker, fix a11y warning, fix Umami script collision ([bd17056](https://github.com/vdavid/cmdr/commit/bd17056), [ec35b1f](https://github.com/vdavid/cmdr/commit/ec35b1f), [55c950e](https://github.com/vdavid/cmdr/commit/55c950e), [0ad03f4](https://github.com/vdavid/cmdr/commit/0ad03f4))
+- Tooling: add html-validate and circular dep checks, pass kill signals in checker script, remove pnpm audit check ([3dbd5af](https://github.com/vdavid/cmdr/commit/3dbd5af), [4bead2b](https://github.com/vdavid/cmdr/commit/4bead2b), [ce3eae1](https://github.com/vdavid/cmdr/commit/ce3eae1), [2c588bf](https://github.com/vdavid/cmdr/commit/2c588bf))
+- Refactors: extract volume grouping, menu platform code, viewer scroll/search; eliminate all circular deps ([7740fbc](https://github.com/vdavid/cmdr/commit/7740fbc), [8522e71](https://github.com/vdavid/cmdr/commit/8522e71), [e16bd91](https://github.com/vdavid/cmdr/commit/e16bd91), [7ed1cea](https://github.com/vdavid/cmdr/commit/7ed1cea))
+- Add missing tests across multiple modules ([b53ce59](https://github.com/vdavid/cmdr/commit/b53ce59))
+
 ## [0.6.1] - 2026-03-10
 
 ### Added
