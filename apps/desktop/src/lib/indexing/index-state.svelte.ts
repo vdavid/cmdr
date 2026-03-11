@@ -12,6 +12,13 @@ let scanning = $state(false)
 let entriesScanned = $state(0)
 let dirsFound = $state(0)
 
+// Aggregation state
+let aggregating = $state(false)
+let aggregationPhase = $state('')
+let aggregationCurrent = $state(0)
+let aggregationTotal = $state(0)
+let aggregationStartedAt = $state(0)
+
 // Reactive getters
 export function isScanning(): boolean {
     return scanning
@@ -25,10 +32,38 @@ export function getDirsFound(): number {
     return dirsFound
 }
 
+export function isAggregating(): boolean {
+    return aggregating
+}
+
+export function getAggregationPhase(): string {
+    return aggregationPhase
+}
+
+export function getAggregationCurrent(): number {
+    return aggregationCurrent
+}
+
+export function getAggregationTotal(): number {
+    return aggregationTotal
+}
+
+export function getAggregationStartedAt(): number {
+    return aggregationStartedAt
+}
+
 /** Reset scan counters (called on new scan start). */
 function resetCounters() {
     entriesScanned = 0
     dirsFound = 0
+}
+
+function resetAggregation() {
+    aggregating = false
+    aggregationPhase = ''
+    aggregationCurrent = 0
+    aggregationTotal = 0
+    aggregationStartedAt = 0
 }
 
 const rescanReasonToMessage: Record<string, string> = {
@@ -76,8 +111,25 @@ export async function initIndexState(): Promise<void> {
         scanning = false
         entriesScanned = event.payload.totalEntries
         dirsFound = event.payload.totalDirs
+        resetAggregation()
     })
     unlistenHandles.push(unlistenComplete)
+
+    const unlistenAggregation = await listen<{
+        phase: string
+        current: number
+        total: number
+    }>('index-aggregation-progress', (event) => {
+        const { phase, current, total } = event.payload
+        if (!aggregating) {
+            aggregating = true
+            aggregationStartedAt = Date.now()
+        }
+        aggregationPhase = phase
+        aggregationCurrent = current
+        aggregationTotal = total
+    })
+    unlistenHandles.push(unlistenAggregation)
 
     const unlistenRescan = await listen<{
         volumeId: string

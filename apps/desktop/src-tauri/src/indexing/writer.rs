@@ -4,16 +4,41 @@
 //! This eliminates contention between the full scan, micro-scans, and watcher updates.
 //! Reads happen on separate connections (WAL mode allows concurrent reads).
 
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::mpsc;
 use std::thread;
 use std::time::Instant;
 
+use serde::Serialize;
+use tauri::{AppHandle, Emitter};
 use tokio::sync::oneshot;
 
-use crate::indexing::aggregator;
+use crate::indexing::aggregator::{self, AggregationPhase, AggregationProgress};
 use crate::indexing::store::{EntryRow, IndexStore, IndexStoreError};
+
+// ── Aggregation progress events ──────────────────────────────────────
+
+/// Tauri event payload for aggregation progress updates.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct AggregationProgressEvent {
+    phase: &'static str,
+    current: u64,
+    total: u64,
+}
+
+fn phase_to_str(phase: AggregationPhase) -> &'static str {
+    match phase {
+        AggregationPhase::SavingEntries => "saving_entries",
+        AggregationPhase::LoadingDirectories => "loading",
+        AggregationPhase::Sorting => "sorting",
+        AggregationPhase::Computing => "computing",
+        AggregationPhase::Writing => "writing",
+    }
+}
 
 // ── Messages ─────────────────────────────────────────────────────────
 
@@ -89,6 +114,10 @@ pub struct IndexWriter {
     thread_handle: Arc<std::sync::Mutex<Option<thread::JoinHandle<()>>>>,
     /// Path to the database file (needed by scanner for ScanContext init).
     db_path: PathBuf,
+    /// Expected total entries from the scan, set by the caller when the scan
+    /// completes. The writer thread reads this to report flushing progress as
+    /// it processes remaining `InsertEntriesV2` batches.
+    expected_total_entries: Arc<AtomicU64>,
 }
 
 impl IndexWriter {
@@ -96,19 +125,24 @@ impl IndexWriter {
     ///
     /// Opens a WAL-mode write connection to the DB at `db_path`, spawns a
     /// `std::thread` (blocking I/O, not tokio), and returns a handle.
-    pub fn spawn(db_path: &Path) -> Result<Self, IndexStoreError> {
+    /// If `app_handle` is provided, the writer emits `index-aggregation-progress`
+    /// events during `ComputeAllAggregates`.
+    pub fn spawn(db_path: &Path, app_handle: Option<AppHandle>) -> Result<Self, IndexStoreError> {
         let conn = IndexStore::open_write_connection(db_path)?;
         let (sender, receiver) = mpsc::sync_channel::<WriteMessage>(WRITER_CHANNEL_CAPACITY);
+        let expected_total_entries = Arc::new(AtomicU64::new(0));
+        let expected_total_clone = Arc::clone(&expected_total_entries);
 
         let handle = thread::Builder::new()
             .name("index-writer".into())
-            .spawn(move || writer_loop(conn, receiver))
+            .spawn(move || writer_loop(conn, receiver, app_handle, expected_total_clone))
             .map_err(IndexStoreError::Io)?;
 
         Ok(Self {
             sender,
             thread_handle: Arc::new(std::sync::Mutex::new(Some(handle))),
             db_path: db_path.to_path_buf(),
+            expected_total_entries,
         })
     }
 
@@ -116,6 +150,12 @@ impl IndexWriter {
     /// temporary connection for `ScanContext` initialization.
     pub fn db_path(&self) -> PathBuf {
         self.db_path.clone()
+    }
+
+    /// Set the expected total entries from a completed scan. The writer thread
+    /// reads this to report flushing progress as it drains `InsertEntriesV2`.
+    pub fn set_expected_total_entries(&self, total: u64) {
+        self.expected_total_entries.store(total, Ordering::Relaxed);
     }
 
     /// Send a message to the writer thread. Blocks if the channel is full
@@ -279,17 +319,77 @@ impl WriterStats {
     }
 }
 
+/// In-memory accumulation of direct children stats, built during InsertEntriesV2.
+///
+/// Eliminates the two expensive full-table-scan SQL queries in the aggregator
+/// (`bulk_get_children_stats_by_id` and `bulk_get_child_dir_ids`) by tracking
+/// the same information incrementally as entries are inserted.
+struct AccumulatorMaps {
+    /// `parent_id -> (file_size_sum, file_count, dir_count)` — direct children only.
+    direct_stats: HashMap<i64, (u64, u64, u64)>,
+    /// `parent_id -> Vec<child_dir_id>` — direct child directories only.
+    child_dirs: HashMap<i64, Vec<i64>>,
+    /// Running count of entries inserted so far (for flushing progress).
+    entries_inserted: u64,
+}
+
+impl AccumulatorMaps {
+    fn new() -> Self {
+        Self {
+            direct_stats: HashMap::new(),
+            child_dirs: HashMap::new(),
+            entries_inserted: 0,
+        }
+    }
+
+    /// Accumulate stats from a batch of inserted entries.
+    fn accumulate(&mut self, entries: &[EntryRow]) {
+        self.entries_inserted += entries.len() as u64;
+        for entry in entries {
+            let stats = self.direct_stats.entry(entry.parent_id).or_insert((0, 0, 0));
+            if entry.is_directory {
+                stats.2 += 1;
+                self.child_dirs.entry(entry.parent_id).or_default().push(entry.id);
+            } else {
+                stats.0 += entry.size.unwrap_or(0);
+                stats.1 += 1;
+            }
+        }
+    }
+
+    fn clear(&mut self) {
+        self.direct_stats.clear();
+        self.child_dirs.clear();
+        self.entries_inserted = 0;
+    }
+}
+
 /// Main loop for the writer thread.
 ///
 /// Processes messages sequentially from the mpsc channel. Each message is
-/// handled in order, ensuring all writes are serialized.
-fn writer_loop(conn: rusqlite::Connection, receiver: mpsc::Receiver<WriteMessage>) {
+/// handled in order, ensuring all writes are serialized. Maintains in-memory
+/// accumulator maps during InsertEntriesV2 to skip expensive SQL queries
+/// when ComputeAllAggregates arrives.
+fn writer_loop(
+    conn: rusqlite::Connection,
+    receiver: mpsc::Receiver<WriteMessage>,
+    app_handle: Option<AppHandle>,
+    expected_total_entries: Arc<AtomicU64>,
+) {
     log::debug!("Writer: thread started");
     let mut stats = WriterStats::new();
+    let mut accumulator = AccumulatorMaps::new();
 
     for msg in &receiver {
         stats.record(&msg);
-        if process_message(&conn, msg, &stats) {
+        if process_message(
+            &conn,
+            msg,
+            &stats,
+            &mut accumulator,
+            &app_handle,
+            &expected_total_entries,
+        ) {
             log::debug!("Writer: shutdown after processing {} messages", stats.current.total);
             return;
         }
@@ -302,12 +402,20 @@ fn writer_loop(conn: rusqlite::Connection, receiver: mpsc::Receiver<WriteMessage
     );
 }
 
-/// Process a single non-`UpdateDirStats` message. Returns `true` if the thread should exit.
-fn process_message(conn: &rusqlite::Connection, msg: WriteMessage, stats: &WriterStats) -> bool {
+/// Process a single message. Returns `true` if the thread should exit.
+fn process_message(
+    conn: &rusqlite::Connection,
+    msg: WriteMessage,
+    stats: &WriterStats,
+    accumulator: &mut AccumulatorMaps,
+    app_handle: &Option<AppHandle>,
+    expected_total_entries: &AtomicU64,
+) -> bool {
     match msg {
         // ── Integer-keyed variants ───────────────────────────────────
         WriteMessage::InsertEntriesV2(entries) => {
             let count = entries.len();
+            accumulator.accumulate(&entries);
             let t = Instant::now();
             if let Err(e) = IndexStore::insert_entries_v2_batch(conn, &entries) {
                 log::warn!("Index writer: insert_entries_v2_batch failed: {e}");
@@ -315,6 +423,20 @@ fn process_message(conn: &rusqlite::Connection, msg: WriteMessage, stats: &Write
             let elapsed = t.elapsed().as_millis();
             if elapsed > 100 {
                 log::debug!("Writer: insert_entries_v2_batch ({count} entries) took {elapsed}ms");
+            }
+            // Emit flushing progress when we know the expected total
+            let expected = expected_total_entries.load(Ordering::Relaxed);
+            if expected > 0
+                && let Some(app) = app_handle
+            {
+                let _ = app.emit(
+                    "index-aggregation-progress",
+                    AggregationProgressEvent {
+                        phase: phase_to_str(AggregationPhase::SavingEntries),
+                        current: accumulator.entries_inserted,
+                        total: expected,
+                    },
+                );
             }
         }
         WriteMessage::UpsertEntryV2 {
@@ -406,6 +528,8 @@ fn process_message(conn: &rusqlite::Connection, msg: WriteMessage, stats: &Write
             propagate_delta_by_id(conn, entry_id, size_delta, file_count_delta, dir_count_delta);
         }
         WriteMessage::TruncateData => {
+            accumulator.clear();
+            expected_total_entries.store(0, Ordering::Relaxed);
             let t = Instant::now();
             match conn.execute_batch(
                 "DELETE FROM dir_stats; DELETE FROM entries; INSERT OR IGNORE INTO entries (id, parent_id, name, is_directory, is_symlink) VALUES (1, 0, '', 1, 0);",
@@ -425,11 +549,31 @@ fn process_message(conn: &rusqlite::Connection, msg: WriteMessage, stats: &Write
         }
         WriteMessage::ComputeAllAggregates => {
             let t = Instant::now();
-            match aggregator::compute_all_aggregates(conn) {
+            let use_maps = !accumulator.direct_stats.is_empty();
+            log::info!(
+                "ComputeAllAggregates: using {} (direct_stats={} parents, child_dirs={} parents)",
+                if use_maps { "in-memory maps" } else { "SQL fallback" },
+                accumulator.direct_stats.len(),
+                accumulator.child_dirs.len(),
+            );
+            let mut on_progress = build_progress_callback(app_handle);
+            let result = if !use_maps {
+                aggregator::compute_all_aggregates_reported(conn, &mut on_progress)
+            } else {
+                aggregator::compute_all_aggregates_with_maps(
+                    conn,
+                    &accumulator.direct_stats,
+                    &accumulator.child_dirs,
+                    &mut on_progress,
+                )
+            };
+            // Maps are consumed; clear to free memory
+            accumulator.clear();
+            match result {
                 Ok(count) => {
-                    log::debug!(
-                        "Index writer: computed aggregates for {count} directories ({}ms)",
-                        t.elapsed().as_millis(),
+                    log::info!(
+                        "ComputeAllAggregates: done — {count} directories in {:.1}s",
+                        t.elapsed().as_secs_f64(),
                     );
                 }
                 Err(e) => log::warn!("Index writer: compute_all_aggregates failed: {e}"),
@@ -487,6 +631,23 @@ fn process_message(conn: &rusqlite::Connection, msg: WriteMessage, stats: &Write
         WriteMessage::Shutdown => return true,
     }
     false
+}
+
+/// Build a progress callback that emits `index-aggregation-progress` events via the AppHandle.
+/// If no AppHandle is available, returns a no-op closure.
+fn build_progress_callback(app_handle: &Option<AppHandle>) -> impl FnMut(AggregationProgress) + '_ {
+    move |progress: AggregationProgress| {
+        if let Some(app) = app_handle {
+            let _ = app.emit(
+                "index-aggregation-progress",
+                AggregationProgressEvent {
+                    phase: phase_to_str(progress.phase),
+                    current: progress.current,
+                    total: progress.total,
+                },
+            );
+        }
+    }
 }
 
 /// Walk the parent_id chain upward, updating dir_stats for each ancestor.
@@ -567,7 +728,7 @@ mod tests {
     #[test]
     fn spawn_and_shutdown() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path).unwrap();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
         writer.shutdown();
         // Give the thread a moment to process shutdown
         thread::sleep(Duration::from_millis(50));
@@ -582,7 +743,7 @@ mod tests {
     #[test]
     fn insert_entries_v2_via_writer() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path).unwrap();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
 
         let entries = vec![EntryRow {
             id: 10,
@@ -608,7 +769,7 @@ mod tests {
     #[test]
     fn upsert_entry_v2_insert_and_update() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path).unwrap();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
 
         // Insert via UpsertEntryV2 (entry doesn't exist yet)
         writer
@@ -647,7 +808,7 @@ mod tests {
     #[test]
     fn delete_entry_by_id_via_writer() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path).unwrap();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
 
         // Insert an entry
         let entries = vec![EntryRow {
@@ -675,7 +836,7 @@ mod tests {
     #[test]
     fn delete_subtree_by_id_via_writer() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path).unwrap();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
 
         // Build a tree: ROOT -> dir(10) -> file(11) + subdir(12)
         let entries = vec![
@@ -725,7 +886,7 @@ mod tests {
     #[test]
     fn delete_entry_by_id_auto_propagates_delta() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path).unwrap();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
 
         // Insert a parent dir and a file
         let entries = vec![
@@ -785,7 +946,7 @@ mod tests {
     #[test]
     fn delete_subtree_by_id_auto_propagates_delta() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path).unwrap();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
 
         // Build tree: ROOT(1) -> root_dir(10) -> sub(11) -> file.txt(12, 300 bytes)
         let entries = vec![
@@ -866,7 +1027,7 @@ mod tests {
     #[test]
     fn propagate_delta_by_id_via_writer() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path).unwrap();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
 
         // Insert a directory to propagate to
         let entries = vec![EntryRow {
@@ -917,7 +1078,7 @@ mod tests {
     #[test]
     fn delete_entry_by_id_for_nonexistent_skips_propagation() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path).unwrap();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
 
         // Insert a directory and pre-populate its dir_stats
         let entries = vec![EntryRow {
@@ -960,7 +1121,7 @@ mod tests {
     #[test]
     fn get_entry_count_via_writer() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path).unwrap();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
 
         // Insert using integer-keyed API (simpler, no path resolution needed)
         let entries = vec![
@@ -1001,7 +1162,7 @@ mod tests {
     #[test]
     fn update_meta_via_writer() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path).unwrap();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
 
         writer
             .send(WriteMessage::UpdateMeta {
@@ -1025,7 +1186,7 @@ mod tests {
     #[tokio::test]
     async fn flush_confirms_prior_writes() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path).unwrap();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
 
         // Insert using integer-keyed API
         let entries = vec![EntryRow {
@@ -1053,7 +1214,7 @@ mod tests {
     #[test]
     fn update_last_event_id_via_writer() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path).unwrap();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
 
         writer.send(WriteMessage::UpdateLastEventId(12345)).unwrap();
         writer.shutdown();
@@ -1067,7 +1228,7 @@ mod tests {
     #[test]
     fn db_path_is_available() {
         let (db_path, _dir) = setup_db();
-        let writer = IndexWriter::spawn(&db_path).unwrap();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
         assert_eq!(writer.db_path(), db_path);
         writer.shutdown();
     }

@@ -13,14 +13,57 @@ use rusqlite::{Connection, params};
 
 use crate::indexing::store::{DirStatsById, IndexStore, IndexStoreError, resolve_path};
 
-/// Compute `dir_stats` for ALL directories in the DB (bottom-up, deepest first).
+/// Progress phases reported during full aggregation.
+/// Wired up by the progress-reporting layer.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AggregationPhase {
+    /// Flushing remaining entry batches from the writer channel to DB.
+    SavingEntries,
+    /// Loading directory IDs from DB (fast).
+    LoadingDirectories,
+    /// Topological sort (fast, ~1s).
+    Sorting,
+    /// Bottom-up recursive computation.
+    Computing,
+    /// Batch-writing dir_stats rows to DB.
+    Writing,
+}
+
+/// Progress update emitted during aggregation.
+/// Wired up by the progress-reporting layer.
+#[derive(Debug, Clone)]
+pub struct AggregationProgress {
+    pub phase: AggregationPhase,
+    /// Current item within the phase (0-based).
+    pub current: u64,
+    /// Total items in the phase (0 if unknown).
+    pub total: u64,
+}
+
+impl AggregationProgress {
+    pub(crate) fn new(phase: AggregationPhase, current: u64, total: u64) -> Self {
+        Self { phase, current, total }
+    }
+}
+
+/// Convenience wrapper: compute all aggregates without progress reporting.
 ///
-/// Called after a full scan completes. Loads all directory `(id, parent_id)` pairs,
-/// topologically sorts them (leaves first), and computes recursive stats in memory
-/// using two bulk SQL queries (direct children stats + child directory relationships).
-/// The root sentinel (id=1) is included naturally. Returns the number of directories processed.
+/// Used by tests and as a simple entry point. Delegates to `compute_all_aggregates_reported`
+/// with a no-op callback.
+#[cfg(test)]
 pub fn compute_all_aggregates(conn: &Connection) -> Result<u64, IndexStoreError> {
+    compute_all_aggregates_reported(conn, &mut |_| {})
+}
+
+/// Same as `compute_all_aggregates` but calls `on_progress` at each phase transition
+/// and periodically during the compute/write loops.
+pub fn compute_all_aggregates_reported(
+    conn: &Connection,
+    on_progress: &mut dyn FnMut(AggregationProgress),
+) -> Result<u64, IndexStoreError> {
     let start = std::time::Instant::now();
+
+    on_progress(AggregationProgress::new(AggregationPhase::LoadingDirectories, 0, 0));
 
     // Load all directory (id, parent_id) pairs including root sentinel
     let dir_entries = load_all_directory_ids(conn)?;
@@ -48,9 +91,59 @@ pub fn compute_all_aggregates(conn: &Connection) -> Result<u64, IndexStoreError>
         start.elapsed().as_secs_f64()
     );
 
-    // Topological sort: leaves first (bottom-up order)
-    let sorted = topological_sort_bottom_up(&dir_entries);
+    compute_and_write(conn, &dir_entries, &direct_stats, &child_dirs_map, on_progress)
+}
 
+/// Compute `dir_stats` for ALL directories using pre-built in-memory maps.
+///
+/// Called by the writer thread with maps accumulated during `InsertEntriesV2`
+/// processing. Skips the two expensive bulk SQL queries (full-table scans)
+/// that dominate aggregation time on large indexes.
+/// Falls back to `compute_all_aggregates` if the maps are empty (edge case).
+pub fn compute_all_aggregates_with_maps(
+    conn: &Connection,
+    direct_stats: &HashMap<i64, (u64, u64, u64)>,
+    child_dirs: &HashMap<i64, Vec<i64>>,
+    on_progress: &mut dyn FnMut(AggregationProgress),
+) -> Result<u64, IndexStoreError> {
+    on_progress(AggregationProgress::new(AggregationPhase::LoadingDirectories, 0, 0));
+
+    let dir_entries = load_all_directory_ids(conn)?;
+    if dir_entries.is_empty() {
+        return Ok(0);
+    }
+
+    log::debug!(
+        "Aggregation (with maps): starting bottom-up computation for {} directories \
+         (direct_stats={}, child_dirs={})",
+        dir_entries.len(),
+        direct_stats.len(),
+        child_dirs.len(),
+    );
+
+    compute_and_write(conn, &dir_entries, direct_stats, child_dirs, on_progress)
+}
+
+/// Shared core: topological sort, bottom-up computation, batch write.
+///
+/// Calls `on_progress` at phase transitions and every ~1% during compute/write loops.
+fn compute_and_write(
+    conn: &Connection,
+    dir_entries: &[(i64, i64)],
+    direct_stats: &HashMap<i64, (u64, u64, u64)>,
+    child_dirs_map: &HashMap<i64, Vec<i64>>,
+    on_progress: &mut dyn FnMut(AggregationProgress),
+) -> Result<u64, IndexStoreError> {
+    let start = std::time::Instant::now();
+    let dir_count = dir_entries.len() as u64;
+
+    on_progress(AggregationProgress::new(AggregationPhase::Sorting, 0, dir_count));
+    let sorted = topological_sort_bottom_up(dir_entries);
+
+    // Report every ~1% of progress, but at least every 1000 items
+    let compute_report_interval = (dir_count / 100).max(1000).min(dir_count.max(1)) as usize;
+
+    on_progress(AggregationProgress::new(AggregationPhase::Computing, 0, dir_count));
     let mut computed: HashMap<i64, DirStatsById> = HashMap::with_capacity(sorted.len());
 
     for (i, &dir_id) in sorted.iter().enumerate() {
@@ -81,7 +174,12 @@ pub fn compute_all_aggregates(conn: &Connection) -> Result<u64, IndexStoreError>
             },
         );
 
-        if (i + 1) % 100_000 == 0 {
+        if (i + 1) % compute_report_interval == 0 {
+            on_progress(AggregationProgress::new(
+                AggregationPhase::Computing,
+                (i + 1) as u64,
+                dir_count,
+            ));
             log::debug!(
                 "Aggregation: processed {}/{dir_count} directories ({:.1}s)",
                 i + 1,
@@ -94,9 +192,17 @@ pub fn compute_all_aggregates(conn: &Connection) -> Result<u64, IndexStoreError>
     log::debug!("Aggregation: writing {} dir_stats rows to DB...", computed.len());
     let all_stats: Vec<DirStatsById> = computed.into_values().collect();
     let count = all_stats.len() as u64;
+    let total_chunks = count.div_ceil(1000);
+    let write_report_interval = (total_chunks / 100).max(1) as usize;
 
-    for chunk in all_stats.chunks(1000) {
+    on_progress(AggregationProgress::new(AggregationPhase::Writing, 0, count));
+
+    for (chunk_idx, chunk) in all_stats.chunks(1000).enumerate() {
         IndexStore::upsert_dir_stats_by_id(conn, chunk)?;
+        if (chunk_idx + 1) % write_report_interval == 0 {
+            let written = ((chunk_idx + 1) as u64 * 1000).min(count);
+            on_progress(AggregationProgress::new(AggregationPhase::Writing, written, count));
+        }
     }
 
     log::debug!(

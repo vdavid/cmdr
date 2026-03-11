@@ -372,8 +372,8 @@ pub fn run() {
             // Initialize AI manager (starts llama-server if model is installed)
             ai::manager::init(app.handle());
 
-            // Register indexing state (does not start scanning until explicitly started)
-            indexing::init(app.handle());
+            // Initialize indexing state (does not start scanning until explicitly started)
+            indexing::init();
 
             // Auto-start indexing unless user disabled it in settings
             if indexing::should_auto_start(saved_settings.indexing_enabled) {

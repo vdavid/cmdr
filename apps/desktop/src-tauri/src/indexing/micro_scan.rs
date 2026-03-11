@@ -308,7 +308,7 @@ mod tests {
         let dir = tempfile::tempdir().expect("temp dir");
         let db_path = dir.path().join("test-micro.db");
         let _store = IndexStore::open(&db_path).expect("open store");
-        let writer = IndexWriter::spawn(&db_path).expect("spawn writer");
+        let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
         (writer, dir)
     }
 

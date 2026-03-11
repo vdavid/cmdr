@@ -578,7 +578,7 @@ mod tests {
         let dir = tempfile::tempdir().expect("failed to create temp dir");
         let db_path = dir.path().join("test-index.db");
         let _store = IndexStore::open(&db_path).expect("failed to open store");
-        let writer = IndexWriter::spawn(&db_path).expect("failed to spawn writer");
+        let writer = IndexWriter::spawn(&db_path, None).expect("failed to spawn writer");
         (writer, db_path, dir)
     }
 

@@ -22,6 +22,11 @@ Rust counterpart: `apps/desktop/src-tauri/src/indexing/`
 isScanning(): boolean
 getEntriesScanned(): number
 getDirsFound(): number
+isAggregating(): boolean
+getAggregationPhase(): string       // 'saving_entries' | 'loading' | 'sorting' | 'computing' | 'writing'
+getAggregationCurrent(): number
+getAggregationTotal(): number
+getAggregationStartedAt(): number   // Date.now() timestamp
 initIndexState(): Promise<void>     // call once at app mount
 destroyIndexState(): void           // call at app teardown
 
@@ -35,14 +40,16 @@ cancelNavPriority(path: string): Promise<void>
 
 ## Scan state (`index-state.svelte.ts`)
 
-Module-level `$state` variables (`scanning`, `entriesScanned`, `dirsFound`) react to four Tauri events:
+Module-level `$state` variables (`scanning`, `entriesScanned`, `dirsFound`, `aggregating`, `aggregationPhase`,
+`aggregationCurrent`, `aggregationTotal`, `aggregationStartedAt`) react to five Tauri events:
 
-| Event                       | Payload                                             | Effect                                       |
-| --------------------------- | --------------------------------------------------- | -------------------------------------------- |
-| `index-scan-started`        | `{ volumeId }`                                      | `scanning = true`, counters reset            |
-| `index-scan-progress`       | `{ volumeId, entriesScanned, dirsFound }`           | Update counters                              |
-| `index-scan-complete`       | `{ volumeId, totalEntries, totalDirs, durationMs }` | `scanning = false`, set final counts         |
-| `index-rescan-notification` | `{ volumeId, reason, details }`                     | Show info toast with reason-specific message |
+| Event                        | Payload                                             | Effect                                                  |
+| ---------------------------- | --------------------------------------------------- | ------------------------------------------------------- |
+| `index-scan-started`         | `{ volumeId }`                                      | `scanning = true`, counters reset                       |
+| `index-scan-progress`        | `{ volumeId, entriesScanned, dirsFound }`           | Update counters                                         |
+| `index-scan-complete`        | `{ volumeId, totalEntries, totalDirs, durationMs }` | `scanning = false`, set final counts, reset aggregation |
+| `index-rescan-notification`  | `{ volumeId, reason, details }`                     | Show info toast with reason-specific message            |
+| `index-aggregation-progress` | `{ phase, current, total }`                         | `aggregating = true`, update phase/progress/ETA         |
 
 **Startup race condition**: The Rust indexer starts in Tauri's `setup()` hook before the frontend registers listeners.
 `initIndexState` uses a "listen first, then query" pattern: registers event listeners, then calls `get_index_status` IPC
@@ -71,9 +78,16 @@ yet initialized.
 
 ## Scan status overlay (`ScanStatusOverlay.svelte`)
 
-Rendered in the top-right corner of the main window while `isScanning()` is true. Uses `pointer-events: none` so it
-never blocks clicks. Displays a CSS spinner and a live label like `Scanning... 42,000 entries, 1,200 dirs`. Uses
-`formatNumber` from selection-info-utils for number formatting (uses `'en-US'` locale, hardcoded via
+Rendered in the top-right corner of the main window while `isScanning()` or `isAggregating()` is true. Uses
+`pointer-events: none` so it never blocks clicks. Two modes:
+
+- **Scan phase**: Spinner + live label like `Scanning... 42,000 entries, 1,200 dirs`.
+- **Aggregation phase**: Spinner + phase label (for example, "Computing directory sizes...") + progress bar with real %
+  and ETA estimate. Phases: `saving_entries` (flushing writer backlog), `loading`, `sorting` (no progress bar),
+  `computing`, `writing` (progress bar on `saving_entries`, `computing`, and `writing`). ETA is computed from elapsed
+  time and current/total ratio. Progress bar uses `--color-accent` fill with smooth CSS transition.
+
+Uses `formatNumber` from selection-info-utils for number formatting (uses `'en-US'` locale, hardcoded via
 `toLocaleString('en-US')`).
 
 ## Key decisions

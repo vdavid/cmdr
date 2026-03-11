@@ -29,7 +29,7 @@ use reconciler::EventReconciler;
 use scanner::ScanConfig;
 use serde::{Deserialize, Serialize};
 use store::{DirStats, IndexStatus, IndexStore};
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Emitter};
 use watcher::DriveWatcher;
 use writer::{IndexWriter, WriteMessage};
 
@@ -39,29 +39,35 @@ use crate::file_system::listing::FileEntry;
 
 pub use micro_scan::ScanPriority as PubScanPriority;
 
-// ── Global read-only index store for enrichment ──────────────────────
+// ── Indexing state machine ────────────────────────────────────────────
 
-/// Global read-only index store, set when IndexManager is created.
-/// Used by `enrich_entries_with_index` to avoid passing AppHandle through
-/// the listing pipeline. Holds a separate read connection (WAL allows it).
-/// Uses `std::sync::Mutex` (not `RwLock`) because `IndexStore` contains a
-/// `rusqlite::Connection` which is `Send` but not `Sync`.
-static GLOBAL_INDEX_STORE: LazyLock<std::sync::Mutex<Option<IndexStore>>> =
-    LazyLock::new(|| std::sync::Mutex::new(None));
+/// Lifecycle phases of the indexing system. Single source of truth for
+/// whether indexing is active and what capabilities are available.
+pub(crate) enum IndexPhase {
+    /// Indexing is not active (disabled by user, not yet started, or shut down).
+    Disabled,
+    /// IndexManager created, `resume_or_scan()` is running. A temporary read
+    /// store is available for enrichment and status queries while initialization
+    /// completes.
+    Initializing { store: IndexStore },
+    /// Fully operational: scanning, watching, enrichment, IPC all work.
+    Running(Box<IndexManager>),
+    /// Shutdown in progress (transitional, cleanup running).
+    ShuttingDown,
+}
 
-/// Set the global read-only index store. Called from `IndexManager::new`.
-fn set_global_index_store(store: IndexStore) {
-    if let Ok(mut guard) = GLOBAL_INDEX_STORE.lock() {
-        *guard = Some(store);
+impl IndexPhase {
+    /// Borrow the read-only store if one is available in this phase.
+    fn store(&self) -> Option<&IndexStore> {
+        match self {
+            IndexPhase::Initializing { store, .. } => Some(store),
+            IndexPhase::Running(mgr) => Some(mgr.store()),
+            _ => None,
+        }
     }
 }
 
-/// Clear the global read-only index store. Called on shutdown/clear.
-fn clear_global_index_store() {
-    if let Ok(mut guard) = GLOBAL_INDEX_STORE.lock() {
-        *guard = None;
-    }
-}
+static INDEXING: LazyLock<std::sync::Mutex<IndexPhase>> = LazyLock::new(|| std::sync::Mutex::new(IndexPhase::Disabled));
 
 /// Enrich directory entries with recursive size data from the index.
 ///
@@ -75,14 +81,14 @@ fn clear_global_index_store() {
 /// dir `(id, name)` pairs via `idx_parent_name`, then batch-fetches their
 /// `dir_stats` by integer IDs. Two indexed queries total.
 pub fn enrich_entries_with_index(entries: &mut [FileEntry]) {
-    let guard = match GLOBAL_INDEX_STORE.try_lock() {
+    let guard = match INDEXING.try_lock() {
         Ok(g) => g,
         Err(_) => {
-            log::debug!("Index enrichment skipped: store lock is held (background verification likely in progress)");
+            log::debug!("Index enrichment skipped: state lock is held");
             return;
         }
     };
-    let store = match guard.as_ref() {
+    let store = match guard.store() {
         Some(s) => s,
         None => return,
     };
@@ -304,22 +310,13 @@ pub struct IndexStatusResponse {
     pub db_file_size: Option<u64>,
 }
 
-// ── Global state ─────────────────────────────────────────────────────
-
-/// Tauri-managed state wrapping the optional IndexManager.
-///
-/// Uses `std::sync::Mutex` (not tokio) because `IndexStore` holds a
-/// `rusqlite::Connection` which is `Send` but not `Sync`. The std Mutex
-/// provides the `Sync` guarantee needed for `tauri::State`.
-pub struct IndexManagerState(pub std::sync::Mutex<Option<IndexManager>>);
-
 // ── IndexManager ─────────────────────────────────────────────────────
 
 /// Central coordinator for the drive indexing system.
 ///
 /// Owns the SQLite store (reads), the writer thread (writes), the path resolver
 /// (LRU-cached path→ID mapping), the scanner handle, and the micro-scan manager.
-/// Exposed to Tauri commands via `IndexManagerState`.
+/// Accessed by module-level functions that lock the `INDEXING` static.
 pub struct IndexManager {
     /// Volume ID (for example, "root" for /)
     volume_id: String,
@@ -337,8 +334,9 @@ pub struct IndexManager {
     scan_handle: Option<scanner::ScanHandle>,
     /// FSEvents watcher (started alongside scan, persists after scan completes)
     drive_watcher: Option<DriveWatcher>,
-    /// Live event processing task (runs after reconciliation completes)
-    live_event_task: Option<tauri::async_runtime::JoinHandle<()>>,
+    /// Live event processing task (runs after reconciliation completes).
+    /// Shared with spawned async tasks so they can store the handle.
+    live_event_task: Arc<tokio::sync::Mutex<Option<tauri::async_runtime::JoinHandle<()>>>>,
     /// Tauri app handle for emitting events
     app: AppHandle,
     /// Whether a full scan is currently running. Shared with the completion handler.
@@ -346,6 +344,11 @@ pub struct IndexManager {
 }
 
 impl IndexManager {
+    /// Borrow the read-only SQLite store.
+    pub(crate) fn store(&self) -> &IndexStore {
+        &self.store
+    }
+
     /// Create a new IndexManager for a volume.
     ///
     /// Opens (or creates) the SQLite database, spawns the writer thread,
@@ -357,17 +360,12 @@ impl IndexManager {
 
         let store = IndexStore::open(&db_path).map_err(|e| format!("Failed to open index store: {e}"))?;
 
-        let writer = IndexWriter::spawn(&db_path).map_err(|e| format!("Failed to spawn index writer: {e}"))?;
+        let writer = IndexWriter::spawn(&db_path, Some(app.clone()))
+            .map_err(|e| format!("Failed to spawn index writer: {e}"))?;
 
         let micro_scans = MicroScanManager::new(writer.clone(), 3);
 
         let path_resolver = PathResolver::new();
-
-        // Open a separate read connection for global enrichment (used by get_file_range)
-        match IndexStore::open(&db_path) {
-            Ok(global_store) => set_global_index_store(global_store),
-            Err(e) => log::warn!("Failed to open global index read connection: {e}"),
-        }
 
         log::debug!(
             "IndexManager created for volume '{volume_id}' at {}",
@@ -383,7 +381,7 @@ impl IndexManager {
             micro_scans,
             scan_handle: None,
             drive_watcher: None,
-            live_event_task: None,
+            live_event_task: Arc::new(tokio::sync::Mutex::new(None)),
             app,
             scanning: Arc::new(AtomicBool::new(false)),
         })
@@ -504,6 +502,7 @@ impl IndexManager {
         let app = self.app.clone();
         let volume_id = self.volume_id.clone();
         let micro_scans = self.micro_scans.clone();
+        let live_event_task_slot = Arc::clone(&self.live_event_task);
 
         // We need a way for the replay loop to signal "journal unavailable, need full scan".
         // Use a oneshot channel: if the replay detects a gap, it sends a signal.
@@ -511,7 +510,8 @@ impl IndexManager {
 
         // Use tauri::async_runtime::spawn because indexing can start from the
         // synchronous Tauri setup() hook where no Tokio runtime context exists.
-        tauri::async_runtime::spawn(async move {
+        // Store the handle so shutdown() can wait for it to drain.
+        let handle = tauri::async_runtime::spawn(async move {
             let result = run_replay_event_loop(
                 event_rx,
                 writer.clone(),
@@ -530,30 +530,33 @@ impl IndexManager {
                 log::warn!("Replay event loop error: {e}");
             }
         });
+        {
+            let mut guard = live_event_task_slot.blocking_lock();
+            *guard = Some(handle);
+        }
 
         // Spawn a task that watches for the fallback signal and triggers a full scan if needed.
-        // This runs on the IndexManagerState through Tauri's managed state.
-        let app_fallback = self.app.clone();
         tauri::async_runtime::spawn(async move {
             if fallback_rx.await.is_ok() {
                 log::warn!("Journal replay detected gap, initiating full scan fallback");
-                // Re-acquire the IndexManager through Tauri state and start a fresh scan
-                let state = app_fallback.state::<IndexManagerState>();
-                let mut guard = match state.0.lock() {
+                let mut guard = match INDEXING.lock() {
                     Ok(g) => g,
                     Err(e) => {
                         log::warn!("Failed to lock state for fallback scan: {e}");
                         return;
                     }
                 };
-                if let Some(mgr) = guard.as_mut() {
+                if let IndexPhase::Running(mgr) = &mut *guard {
                     // Stop the current watcher (replay detected it's useless)
                     if let Some(ref mut watcher) = mgr.drive_watcher {
                         watcher.stop();
                     }
                     mgr.drive_watcher = None;
-                    if let Some(task) = mgr.live_event_task.take() {
-                        task.abort();
+                    {
+                        let mut task_guard = mgr.live_event_task.blocking_lock();
+                        if let Some(task) = task_guard.take() {
+                            task.abort();
+                        }
                     }
 
                     if let Err(e) = mgr.start_scan() {
@@ -586,7 +589,7 @@ impl IndexManager {
         if let Err(e) = self.writer.send(WriteMessage::TruncateData) {
             log::warn!("Failed to send TruncateData: {e}");
         }
-        if let Err(e) = self.writer.flush_blocking() {
+        if let Err(e) = tokio::task::block_in_place(|| self.writer.flush_blocking()) {
             log::warn!("Failed to flush after TruncateData: {e}");
         }
 
@@ -661,6 +664,7 @@ impl IndexManager {
         let writer = self.writer.clone();
         let micro_scans = self.micro_scans.clone();
         let scanning = Arc::clone(&self.scanning);
+        let live_event_task_slot = Arc::clone(&self.live_event_task);
         tauri::async_runtime::spawn(async move {
             // Wait for scan to complete
             let join_result = tokio::task::spawn_blocking(move || join_handle.join()).await;
@@ -712,6 +716,37 @@ impl IndexManager {
                         );
                     }
 
+                    // Emit scan-complete first, then start the flushing phase.
+                    // Order matters: the frontend's scan-complete handler calls
+                    // resetAggregation(), so the saving_entries event must come
+                    // after to avoid being immediately cleared.
+                    let _ = app.emit(
+                        "index-scan-complete",
+                        IndexScanCompleteEvent {
+                            volume_id: volume_id.clone(),
+                            total_entries: summary.total_entries,
+                            total_dirs: summary.total_dirs,
+                            duration_ms: summary.duration_ms,
+                        },
+                    );
+
+                    // Tell the writer how many entries the scan produced, so it
+                    // can report flushing progress as it drains remaining
+                    // InsertEntriesV2 batches from the channel.
+                    writer.set_expected_total_entries(summary.total_entries);
+
+                    // Emit an initial saving_entries event so the UI shows
+                    // progress immediately (the writer may still be processing
+                    // a backlog of InsertEntriesV2 messages).
+                    let _ = app.emit(
+                        "index-aggregation-progress",
+                        serde_json::json!({
+                            "phase": "saving_entries",
+                            "current": 0,
+                            "total": summary.total_entries,
+                        }),
+                    );
+
                     // Flush the writer to ensure all scan batches are committed
                     // before opening the read connection. Without this, the WAL
                     // snapshot may not include the latest InsertEntriesV2 batches,
@@ -729,6 +764,14 @@ impl IndexManager {
                         }
                     };
 
+                    // Set a baseline last_event_id so there's always a valid
+                    // event ID even if no live events were buffered during the scan.
+                    // The reconciler will overwrite this with a higher ID if any
+                    // post-scan events exist.
+                    if scan_start_event_id > 0 {
+                        let _ = writer.send(WriteMessage::UpdateLastEventId(scan_start_event_id));
+                    }
+
                     // Replay events that arrived after the scan read their paths
                     match reconciler.replay(scan_start_event_id, &replay_conn, &writer, &app) {
                         Ok(last_id) => {
@@ -745,20 +788,13 @@ impl IndexManager {
                     // Step 5: Start live event processing loop
                     let writer_live = writer.clone();
                     let app_live = app.clone();
-                    tauri::async_runtime::spawn(async move {
+                    let handle = tauri::async_runtime::spawn(async move {
                         run_live_event_loop(event_rx, reconciler, writer_live, app_live).await;
                     });
 
-                    // Emit completion event
-                    let _ = app.emit(
-                        "index-scan-complete",
-                        IndexScanCompleteEvent {
-                            volume_id: volume_id.clone(),
-                            total_entries: summary.total_entries,
-                            total_dirs: summary.total_dirs,
-                            duration_ms: summary.duration_ms,
-                        },
-                    );
+                    // Store the handle so shutdown() can wait for it to drain
+                    let mut guard = live_event_task_slot.lock().await;
+                    *guard = Some(handle);
 
                     // Store scan metadata via writer
                     let now = std::time::SystemTime::now()
@@ -813,8 +849,11 @@ impl IndexManager {
         self.drive_watcher = None;
 
         // Abort the live event processing task
-        if let Some(task) = self.live_event_task.take() {
-            task.abort();
+        {
+            let mut guard = self.live_event_task.blocking_lock();
+            if let Some(task) = guard.take() {
+                task.abort();
+            }
         }
 
         let micro_scans = self.micro_scans.clone();
@@ -944,11 +983,51 @@ impl IndexManager {
         self.store.db_path()
     }
 
-    /// Shut down the indexing system. Cancels all scans and stops the writer.
+    /// Shut down the indexing system gracefully.
+    ///
+    /// Sequence: stop watcher (closes the channel sender) → wait for the event
+    /// loop to drain its final batch and send `UpdateLastEventId` → shut down
+    /// the writer. This ensures `last_event_id` is up-to-date on next restart.
     pub fn shutdown(&mut self) {
-        self.stop_scan();
+        // 1. Cancel active scan and stop micro-scans (but don't abort event loop)
+        if let Some(ref handle) = self.scan_handle {
+            handle.cancel();
+        }
+        self.scan_handle = None;
+        self.scanning.store(false, Ordering::Relaxed);
+
+        // 2. Stop the watcher. Dropping the sender closes the channel, which
+        //    causes event_rx.recv() to return None in the event loop.
+        if let Some(ref mut watcher) = self.drive_watcher {
+            watcher.stop();
+        }
+        self.drive_watcher = None;
+
+        // 3. Wait for the event loop to drain (process final batch + UpdateLastEventId).
+        //    Use block_in_place so we can .await the join handle without blocking the
+        //    tokio runtime thread pool.
+        let live_event_task = Arc::clone(&self.live_event_task);
+        tokio::task::block_in_place(|| {
+            tauri::async_runtime::block_on(async {
+                let mut guard = live_event_task.lock().await;
+                if let Some(task) = guard.take() {
+                    match tokio::time::timeout(Duration::from_secs(5), task).await {
+                        Ok(Ok(())) => log::debug!("Live event loop drained successfully"),
+                        Ok(Err(e)) => log::debug!("Live event loop task error: {e}"),
+                        Err(_) => log::warn!("Live event loop drain timed out after 5s"),
+                    }
+                }
+            });
+        });
+
+        // 4. Now shut down the writer (all final writes have been queued)
         self.writer.shutdown();
-        clear_global_index_store();
+
+        let micro_scans = self.micro_scans.clone();
+        tauri::async_runtime::spawn(async move {
+            micro_scans.cancel_all().await;
+        });
+
         log::debug!("IndexManager shut down for volume '{}'", self.volume_id);
     }
 }
@@ -1588,9 +1667,9 @@ async fn run_background_verification(
         if !verify_result.new_dir_paths.is_empty() {
             // Brief lock: resolve paths → IDs and batch-read dir_stats
             let dir_deltas: Vec<(i64, store::DirStatsById)> = {
-                let guard = GLOBAL_INDEX_STORE.lock();
+                let guard = INDEXING.lock();
                 if let Ok(ref guard) = guard
-                    && let Some(store) = guard.as_ref()
+                    && let Some(store) = guard.store()
                 {
                     let conn = store.read_conn();
                     let mut deltas = Vec::new();
@@ -1665,7 +1744,7 @@ struct VerifyResult {
 /// "parent directory modified" without individual removal events. Similarly,
 /// new children may not get individual creation events.
 ///
-/// Two-phase approach to minimize `GLOBAL_INDEX_STORE` lock hold time:
+/// Two-phase approach to minimize `INDEXING` lock hold time:
 ///
 /// **Phase 1 (lock held briefly):** Resolve each affected path to its entry ID,
 /// list children as `EntryRow` (integer-keyed), and snapshot into a `HashMap`.
@@ -1683,7 +1762,7 @@ fn verify_affected_dirs(affected_paths: &std::collections::HashSet<String>, writ
     // ── Phase 1: Bulk-read DB state under the lock ───────────────────
     // Snapshot: parent_path → (parent_id, Vec<EntryRow>)
     let db_snapshot: std::collections::HashMap<String, (i64, Vec<store::EntryRow>)> = {
-        let guard = match GLOBAL_INDEX_STORE.lock() {
+        let guard = match INDEXING.lock() {
             Ok(g) => g,
             Err(_) => {
                 return VerifyResult {
@@ -1693,7 +1772,7 @@ fn verify_affected_dirs(affected_paths: &std::collections::HashSet<String>, writ
                 };
             }
         };
-        let store = match guard.as_ref() {
+        let store = match guard.store() {
             Some(s) => s,
             None => {
                 return VerifyResult {
@@ -1831,13 +1910,11 @@ fn verify_affected_dirs(affected_paths: &std::collections::HashSet<String>, writ
 
 // ── Initialization ───────────────────────────────────────────────────
 
-/// Register the `IndexManagerState` in Tauri's managed state.
-///
-/// Call during app setup. Does NOT start scanning (that requires explicit
-/// `start_indexing()`).
-pub fn init(app: &AppHandle) {
-    app.manage(IndexManagerState(std::sync::Mutex::new(None)));
-    log::debug!("Indexing state registered");
+/// Force-initialize the INDEXING static. Called during app setup so the
+/// LazyLock is ready before any async tasks access it.
+pub fn init() {
+    drop(INDEXING.lock());
+    log::debug!("Indexing state initialized");
 }
 
 /// Whether indexing should auto-start on launch.
@@ -1858,69 +1935,208 @@ pub fn should_auto_start(indexing_enabled: Option<bool>) -> bool {
 ///
 /// Called when the user disables indexing via settings. The index stays on disk
 /// but no scanning or watching runs. Directory sizes revert to `<dir>`.
-pub fn stop_indexing(app: &AppHandle) -> Result<(), String> {
-    let state = app.state::<IndexManagerState>();
-    let mut guard = state.0.lock().map_err(|e| format!("Failed to lock state: {e}"))?;
+pub fn stop_indexing() -> Result<(), String> {
+    let mut guard = INDEXING.lock().map_err(|e| format!("Failed to lock state: {e}"))?;
 
-    if let Some(mut mgr) = guard.take() {
-        mgr.shutdown();
-        log::info!("Indexing stopped (DB preserved on disk)");
+    match std::mem::replace(&mut *guard, IndexPhase::ShuttingDown) {
+        IndexPhase::Running(mut mgr) => {
+            mgr.shutdown();
+            *guard = IndexPhase::Disabled;
+            log::info!("Indexing stopped (DB preserved on disk)");
+        }
+        IndexPhase::Initializing { .. } => {
+            *guard = IndexPhase::Disabled;
+            log::info!("Indexing stopped during initialization");
+        }
+        other => {
+            *guard = other; // put it back, wasn't running
+        }
     }
 
     Ok(())
 }
 
-/// Create the IndexManager for the root volume, store it in managed state,
-/// and auto-start indexing (resume from existing index or fresh scan).
+/// Create the IndexManager for the root volume and auto-start indexing
+/// (resume from existing index or fresh scan).
 ///
 /// Call after `init()`. On startup this checks for an existing index: if found,
 /// it replays the FSEvents journal from the stored `last_event_id`; otherwise
 /// it starts a fresh full scan.
 pub fn start_indexing(app: &AppHandle) -> Result<(), String> {
-    // Start memory watchdog before indexing to catch runaway memory from the start
+    log::info!("start_indexing: begin");
     memory_watchdog::start(app.clone());
 
     let mut manager = IndexManager::new("root".to_string(), PathBuf::from("/"), app.clone())?;
 
-    // Resume from existing index or start a fresh scan
-    manager.resume_or_scan()?;
+    // Transition to Initializing: open a temporary store so enrichment
+    // and status queries work while resume_or_scan() runs.
+    {
+        let init_store = IndexStore::open(manager.db_path()).map_err(|e| format!("Failed to open init store: {e}"))?;
+        let mut guard = INDEXING.lock().map_err(|e| format!("Failed to lock state: {e}"))?;
+        *guard = IndexPhase::Initializing { store: init_store };
+    }
 
-    let state = app.state::<IndexManagerState>();
-    let mut guard = state.0.lock().map_err(|e| format!("Failed to lock state: {e}"))?;
-    *guard = Some(manager);
+    let scan_result = manager.resume_or_scan();
 
-    log::debug!("Indexing system initialized for root volume");
+    // Re-lock and check: if someone called stop_indexing() while we were
+    // inside resume_or_scan(), the phase is now Disabled. Respect that —
+    // shut down the manager instead of overwriting with Running.
+    let mut guard = INDEXING.lock().map_err(|e| format!("Failed to lock state: {e}"))?;
+    match (&*guard, scan_result) {
+        (IndexPhase::Initializing { .. }, Ok(())) => {
+            *guard = IndexPhase::Running(Box::new(manager));
+            log::info!("start_indexing: done — IndexManager is Running");
+        }
+        (IndexPhase::Initializing { .. }, Err(e)) => {
+            *guard = IndexPhase::Disabled;
+            return Err(e);
+        }
+        (_, Ok(())) => {
+            // Phase changed (e.g. stop_indexing set Disabled). Don't override.
+            log::info!("start_indexing: phase changed during init, shutting down manager");
+            manager.shutdown();
+        }
+        (_, Err(e)) => {
+            log::warn!("start_indexing: resume_or_scan failed and phase changed: {e}");
+            manager.shutdown();
+        }
+    }
+
     Ok(())
 }
 
 /// Stop all scans, shut down the writer, delete the DB file, and reset state.
 ///
-/// After this call the `IndexManagerState` holds `None`. Call `start_indexing()`
-/// to create a fresh index.
-pub fn clear_index(app: &AppHandle) -> Result<(), String> {
-    let state = app.state::<IndexManagerState>();
-    let mut guard = state.0.lock().map_err(|e| format!("Failed to lock state: {e}"))?;
+/// Call `start_indexing()` to create a fresh index afterward.
+pub fn clear_index() -> Result<(), String> {
+    let mut guard = INDEXING.lock().map_err(|e| format!("Failed to lock state: {e}"))?;
 
-    if let Some(mut mgr) = guard.take() {
-        let db_path = mgr.db_path().to_path_buf();
-        mgr.shutdown();
+    match std::mem::replace(&mut *guard, IndexPhase::ShuttingDown) {
+        IndexPhase::Running(mut mgr) => {
+            let db_path = mgr.db_path().to_path_buf();
+            mgr.shutdown();
+            *guard = IndexPhase::Disabled;
 
-        // Delete DB file and WAL/SHM sidecars
-        for path in [
-            db_path.clone(),
-            db_path.with_extension("db-wal"),
-            db_path.with_extension("db-shm"),
-        ] {
-            if path.exists() {
-                std::fs::remove_file(&path).map_err(|e| format!("Failed to delete {}: {e}", path.display()))?;
+            // Delete DB file and WAL/SHM sidecars
+            for path in [
+                db_path.clone(),
+                db_path.with_extension("db-wal"),
+                db_path.with_extension("db-shm"),
+            ] {
+                if path.exists() {
+                    std::fs::remove_file(&path).map_err(|e| format!("Failed to delete {}: {e}", path.display()))?;
+                }
             }
+            log::info!("Drive index cleared (DB deleted)");
         }
-        log::info!("Drive index cleared (DB deleted)");
-    } else {
-        log::info!("Drive index clear requested but indexing was not initialized");
+        other => {
+            *guard = other;
+            log::info!("Drive index clear requested but indexing was not active");
+        }
     }
 
     Ok(())
+}
+
+// ── Module-level public API (called by IPC commands) ─────────────────
+
+/// Get the current indexing status.
+pub fn get_status() -> Result<IndexStatusResponse, String> {
+    let guard = INDEXING.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
+    match &*guard {
+        IndexPhase::Disabled | IndexPhase::ShuttingDown => Ok(IndexStatusResponse {
+            initialized: false,
+            scanning: false,
+            entries_scanned: 0,
+            dirs_found: 0,
+            index_status: None,
+            db_file_size: None,
+        }),
+        IndexPhase::Initializing { store, .. } => {
+            let db_file_size = store.db_file_size().ok();
+            let index_status = store.get_index_status().ok();
+            Ok(IndexStatusResponse {
+                initialized: true,
+                scanning: true,
+                entries_scanned: 0,
+                dirs_found: 0,
+                index_status,
+                db_file_size,
+            })
+        }
+        IndexPhase::Running(mgr) => mgr.get_status(),
+    }
+}
+
+/// Look up recursive stats for a single directory.
+pub fn get_dir_stats(path: &str) -> Result<Option<DirStats>, String> {
+    let mut guard = INDEXING.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
+    match &mut *guard {
+        IndexPhase::Running(mgr) => mgr.get_dir_stats(path),
+        _ => Err("Indexing not initialized".to_string()),
+    }
+}
+
+/// Batch lookup of dir_stats for multiple paths.
+pub fn get_dir_stats_batch(paths: &[String]) -> Result<Vec<Option<DirStats>>, String> {
+    let mut guard = INDEXING.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
+    match &mut *guard {
+        IndexPhase::Running(mgr) => mgr.get_dir_stats_batch(paths),
+        _ => Err("Indexing not initialized".to_string()),
+    }
+}
+
+/// Request a priority micro-scan for a directory.
+pub fn prioritize_dir(path: &str, priority: ScanPriority) -> Result<(), String> {
+    let guard = INDEXING.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
+    match &*guard {
+        IndexPhase::Running(mgr) => {
+            mgr.prioritize_dir(path, priority);
+            Ok(())
+        }
+        _ => Err("Indexing not initialized".to_string()),
+    }
+}
+
+/// Cancel current-directory micro-scans.
+pub fn cancel_nav_priority(path: &str) -> Result<(), String> {
+    let guard = INDEXING.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
+    match &*guard {
+        IndexPhase::Running(mgr) => {
+            mgr.cancel_nav_priority(path);
+            Ok(())
+        }
+        _ => Err("Indexing not initialized".to_string()),
+    }
+}
+
+/// Force a fresh full scan (for debug/manual trigger).
+pub fn force_scan() -> Result<(), String> {
+    let mut guard = INDEXING.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
+    match &mut *guard {
+        IndexPhase::Running(mgr) => mgr.start_scan(),
+        _ => Err("Indexing not initialized".to_string()),
+    }
+}
+
+/// Stop the active scan without shutting down the manager.
+pub fn stop_scan() -> Result<(), String> {
+    let mut guard = INDEXING.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
+    match &mut *guard {
+        IndexPhase::Running(mgr) => {
+            mgr.stop_scan();
+            Ok(())
+        }
+        _ => Err("Indexing not initialized".to_string()),
+    }
+}
+
+/// Check whether indexing is active (initializing or running).
+pub fn is_active() -> bool {
+    INDEXING
+        .lock()
+        .map(|g| matches!(&*g, IndexPhase::Initializing { .. } | IndexPhase::Running(_)))
+        .unwrap_or(false)
 }
 
 // ── Tests ────────────────────────────────────────────────────────────

@@ -887,7 +887,7 @@ mod tests {
         let dir = tempfile::tempdir().expect("temp dir");
         let db_path = dir.path().join("test-reconciler.db");
         let _store = IndexStore::open(&db_path).expect("open store");
-        let writer = IndexWriter::spawn(&db_path).expect("spawn writer");
+        let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
         let conn = IndexStore::open_write_connection(&db_path).expect("open read conn");
         (writer, dir, conn)
     }

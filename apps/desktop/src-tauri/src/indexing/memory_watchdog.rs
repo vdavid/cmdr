@@ -70,7 +70,7 @@ async fn run_watchdog(app: tauri::AppHandle) {
             );
 
             // Stop indexing
-            if let Err(e) = super::stop_indexing(&app) {
+            if let Err(e) = super::stop_indexing() {
                 log::error!("Memory watchdog: stop_indexing failed: {e}");
             }
             return;
