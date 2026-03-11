@@ -19,7 +19,7 @@
 use rusqlite::{Connection, OptionalExtension, params};
 use std::path::{Path, PathBuf};
 
-const SCHEMA_VERSION: &str = "3";
+const SCHEMA_VERSION: &str = "4";
 
 /// Root entry sentinel ID. All top-level entries have `parent_id = ROOT_ID`.
 pub const ROOT_ID: i64 = 1;
@@ -280,7 +280,8 @@ fn ensure_root_sentinel(conn: &Connection) -> Result<(), IndexStoreError> {
 /// Apply WAL-mode pragmas for performance.
 fn apply_pragmas(conn: &Connection) -> Result<(), IndexStoreError> {
     conn.execute_batch(
-        "PRAGMA journal_mode = WAL;
+        "PRAGMA auto_vacuum = INCREMENTAL;
+         PRAGMA journal_mode = WAL;
          PRAGMA synchronous = NORMAL;
          PRAGMA cache_size = -16384;",
     )?;

@@ -415,6 +415,10 @@ fn process_message(conn: &rusqlite::Connection, msg: WriteMessage, stats: &Write
                         "Writer: truncated entries + dir_stats ({}ms)",
                         t.elapsed().as_millis(),
                     );
+                    // Reclaim free pages from the truncation
+                    if let Err(e) = conn.execute_batch("PRAGMA incremental_vacuum;") {
+                        log::warn!("Writer: incremental_vacuum after truncate failed: {e}");
+                    }
                 }
                 Err(e) => log::warn!("Writer: truncate failed: {e}"),
             }

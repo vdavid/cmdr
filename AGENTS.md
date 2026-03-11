@@ -63,6 +63,12 @@ Run the smallest set of checks possible for efficiency while maintaining confide
 
 ## Debugging
 
+- **Data directories (IMPORTANT — dev and prod are separate!)**:
+    - **Prod**: `~/Library/Application Support/com.veszelovszki.cmdr/`
+    - **Dev**: `~/Library/Application Support/com.veszelovszki.cmdr-dev/`
+    - This is set by `resolved_app_data_dir()` in `src-tauri/src/config.rs` (appends `-dev` in debug builds).
+      Settings, index DBs, font metrics, AI models, and license data all live here. When debugging data issues,
+      always check the right directory for the mode you're running. Deleting the wrong one is a real risk.
 - **Unified logging**: Frontend and backend logs appear together in the terminal and in a shared log file at
   `~/Library/Logs/com.veszelovszki.cmdr/`. The log file is also accessible from Settings > Logging > "Open log file".
 - **Svelte/TypeScript**: Use LogTape via `getAppLogger('feature')` from `$lib/logging/logger`. Levels: debug, info, warn, error.

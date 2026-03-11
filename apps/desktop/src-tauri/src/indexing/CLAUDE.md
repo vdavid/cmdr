@@ -66,18 +66,22 @@ All writes go through a dedicated `std::thread` via a bounded `sync_channel` (20
 
 Reads happen on separate WAL connections (any thread). The global read-only store (`GLOBAL_INDEX_STORE`) provides enrichment without passing `AppHandle` through the listing pipeline.
 
-### SQLite schema (v3: integer-keyed)
+### SQLite schema (v4: integer-keyed, incremental vacuum)
 
-One DB per volume: `~/Library/Application Support/com.veszelovszki.cmdr/index-{volume_id}.db`
+One DB per volume. **Dev and prod use separate directories** (see AGENTS.md § Debugging):
+- **Prod**: `~/Library/Application Support/com.veszelovszki.cmdr/index-{volume_id}.db`
+- **Dev**: `~/Library/Application Support/com.veszelovszki.cmdr-dev/index-{volume_id}.db`
 
 Three tables:
 - `entries` (id INTEGER PK, parent_id, name COLLATE platform_case, is_directory, is_symlink, size, modified_at) with unique index `idx_parent_name(parent_id, name)`. Root sentinel: id=1, parent_id=0, name="".
 - `dir_stats` (entry_id INTEGER PK, recursive_size, recursive_file_count, recursive_dir_count)
 - `meta` (key TEXT PK, value TEXT) WITHOUT ROWID
 
-WAL mode, 16 MB page cache. Custom `platform_case` collation registered on every connection: case-insensitive + NFD normalization on macOS, binary on Linux. **Opening the DB with the sqlite3 CLI will fail** on queries touching the name column (the collation isn't registered).
+WAL mode, 16 MB page cache, `auto_vacuum = INCREMENTAL` (free pages reclaimed via `PRAGMA incremental_vacuum` after truncation). Custom `platform_case` collation registered on every connection: case-insensitive + NFD normalization on macOS, binary on Linux. **Opening the DB with the sqlite3 CLI will fail** on queries touching the name column (the collation isn't registered).
 
-**Schema v3**: Bumped from v2 to force DB rebuild after fixing orphan entry bug. Scanner, writer, aggregator, reconciler, enrichment, and IPC commands all fully migrated to integer keys. `IndexManager` owns a `PathResolver` for LRU-cached path→ID resolution in IPC commands (`get_dir_stats`, `get_dir_stats_batch`). Enrichment uses integer-keyed fast path: resolve parent once → batch child dir stats by ID. Reconciler sends integer-keyed messages exclusively. Old path-keyed `WriteMessage` variants and backward-compat shims (`ScannedEntry`, `DirStats`) still exist for post-replay verification — cleanup in milestone 6.
+History of changes:
+- **Schema v3**: Bumped from v2 to force DB rebuild after fixing orphan entry bug. Scanner, writer, aggregator, reconciler, enrichment, and IPC commands all fully migrated to integer keys. `IndexManager` owns a `PathResolver` for LRU-cached path→ID resolution in IPC commands (`get_dir_stats`, `get_dir_stats_batch`). Enrichment uses integer-keyed fast path: resolve parent once → batch child dir stats by ID. Reconciler sends integer-keyed messages exclusively. Old path-keyed `WriteMessage` variants and backward-compat shims (`ScannedEntry`, `DirStats`) still exist for post-replay verification — cleanup in milestone 6.
+- **Schema v4**: Bumped from v3 to enable `auto_vacuum = INCREMENTAL` (requires DB rebuild since the pragma must be set before table creation).
 
 ## How to test
 
