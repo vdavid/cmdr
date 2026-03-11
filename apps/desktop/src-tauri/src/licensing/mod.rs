@@ -4,6 +4,7 @@
 //! The public key is embedded at compile time.
 
 mod app_status;
+mod device_id;
 mod validation_client;
 mod verification;
 

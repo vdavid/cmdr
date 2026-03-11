@@ -96,7 +96,7 @@ Release date: ${latestRelease.pub_date.split('T')[0]}
 
 - All features included
 - Commercial use allowed
-- Per user, unlimited machines
+- Per user, your own devices
 - Auto-renews annually
 - Discounted from $79 for the first 1,000 licenses
 
@@ -104,7 +104,7 @@ Release date: ${latestRelease.pub_date.split('T')[0]}
 
 - All features included
 - Commercial use allowed
-- Per user, unlimited machines
+- Per user, your own devices
 - Three years of updates included
 - Keep using your version forever after updates expire
 - Renew updates at a reduced rate

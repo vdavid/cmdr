@@ -23,6 +23,7 @@ interface SubscriptionResult {
     status: 'active' | 'expired' | 'canceled'
     expiresAt: string | null
     customData: { organizationName?: string } | null
+    customerId: string | null
 }
 
 /** Thrown when the Paddle API is unreachable or returns a server error (not a "not found"). */
@@ -47,14 +48,17 @@ export async function getSubscriptionStatus(
     const txnResult = await fetchTransaction(baseUrl, transactionId, config.apiKey)
     if (!txnResult) return null
 
+    const customData = txnResult.customData?.organizationName
+        ? { organizationName: txnResult.customData.organizationName }
+        : null
+
     // If no subscription, it's a one-time purchase (always active)
     if (!txnResult.subscriptionId) {
         return {
             status: 'active',
             expiresAt: null,
-            customData: txnResult.customData?.organizationName
-                ? { organizationName: txnResult.customData.organizationName }
-                : null,
+            customData,
+            customerId: txnResult.customerId,
         }
     }
 
@@ -64,9 +68,8 @@ export async function getSubscriptionStatus(
     return {
         status: subResult.status,
         expiresAt: subResult.expiresAt ?? null,
-        customData: txnResult.customData?.organizationName
-            ? { organizationName: txnResult.customData.organizationName }
-            : null,
+        customData,
+        customerId: txnResult.customerId,
     }
 }
 
@@ -78,7 +81,11 @@ async function fetchTransaction(
     baseUrl: string,
     transactionId: string,
     apiKey: string,
-): Promise<{ subscriptionId: string | undefined; customData: { organizationName?: string } | undefined } | null> {
+): Promise<{
+    subscriptionId: string | undefined
+    customData: { organizationName?: string } | undefined
+    customerId: string | null
+} | null> {
     let response: Response
     try {
         response = await fetch(`${baseUrl}/transactions/${transactionId}`, {
@@ -132,6 +139,7 @@ async function fetchSubscription(
 function extractTransactionData(json: unknown): {
     subscriptionId: string | undefined
     customData: { organizationName?: string } | undefined
+    customerId: string | null
 } | null {
     if (!json || typeof json !== 'object') return null
     const obj = json as Record<string, unknown>
@@ -140,6 +148,7 @@ function extractTransactionData(json: unknown): {
     const data = obj.data as Record<string, unknown>
 
     const subscriptionId = typeof data.subscription_id === 'string' ? data.subscription_id : undefined
+    const customerId = typeof data.customer_id === 'string' ? data.customer_id : null
 
     let customData: { organizationName?: string } | undefined
     if (data.custom_data && typeof data.custom_data === 'object') {
@@ -149,7 +158,7 @@ function extractTransactionData(json: unknown): {
         }
     }
 
-    return { subscriptionId, customData }
+    return { subscriptionId, customData, customerId }
 }
 
 /** Extract subscription data from Paddle API response */

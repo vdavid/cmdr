@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { generateLicenseKey, generateShortCode, isValidShortCode, licenseTypes, type LicenseType } from './license'
-import { sendLicenseEmail } from './email'
+import { sendDeviceCountAlert, sendLicenseEmail } from './email'
 import { constantTimeEqual, verifyPaddleWebhookMulti } from './paddle'
 import {
     getSubscriptionStatus,
@@ -10,12 +10,15 @@ import {
     type ValidationResponse,
     type PriceIdMapping,
 } from './paddle-api'
+import { pruneStaleDevices, shouldAlert, type DeviceSet } from './device-tracking'
 
 type Bindings = {
     // KV namespace for license code -> full key mappings
     LICENSE_CODES: KVNamespace
     // Analytics Engine for download tracking
     DOWNLOADS: AnalyticsEngineDataset
+    // Analytics Engine for device count tracking (fair use monitoring)
+    DEVICE_COUNTS: AnalyticsEngineDataset
     // Paddle webhook secrets (both optional to support gradual rollout)
     PADDLE_WEBHOOK_SECRET_LIVE?: string
     PADDLE_WEBHOOK_SECRET_SANDBOX?: string
@@ -114,58 +117,174 @@ app.post('/activate', async (c) => {
     })
 })
 
+const maxDeviceIdLength = 200
+const deviceAlertThreshold = 6
+
 // Validate license - called by app to check subscription status
 app.post('/validate', async (c) => {
-    const { transactionId } = await c.req.json<{ transactionId?: string }>()
+    const body = await c.req.json<{ transactionId?: string; deviceId?: string }>()
+    const { response, trackingPromise } = await handleValidation(body.transactionId, body.deviceId, c.env)
+    if (trackingPromise) {
+        c.executionCtx.waitUntil(trackingPromise)
+    }
+    return c.json(response.body, response.status)
+})
 
-    if (!transactionId || typeof transactionId !== 'string') {
-        return c.json(invalidResponse())
+/** Track a device for fair use monitoring. Never throws to callers (errors are logged). */
+async function trackDevice(params: {
+    seatTransactionId: string
+    baseTransactionId: string
+    customerId: string | undefined
+    deviceId: string
+    kv: KVNamespace
+    deviceCounts: AnalyticsEngineDataset
+    paddleConfig: { apiKey: string; environment: 'sandbox' | 'live' }
+    resendApiKey: string
+}): Promise<void> {
+    const kvKey = `devices:${params.seatTransactionId}`
+    const now = new Date().toISOString()
+
+    // Read current device set
+    const stored = await params.kv.get<DeviceSet>(kvKey, 'json')
+    const deviceSet: DeviceSet = stored ?? { devices: {} }
+
+    // Add/update the device entry
+    deviceSet.devices[params.deviceId] = now
+
+    // Prune stale entries (older than 90 days)
+    deviceSet.devices = pruneStaleDevices(deviceSet.devices, 90)
+
+    const deviceCount = Object.keys(deviceSet.devices).length
+
+    // Write Analytics Engine data point (fire-and-forget, non-blocking)
+    params.deviceCounts.writeDataPoint({
+        indexes: [params.seatTransactionId],
+        blobs: [params.seatTransactionId, params.deviceId],
+        doubles: [deviceCount],
+    })
+
+    // Alert if threshold crossed and not recently alerted
+    if (shouldAlert(deviceCount, deviceSet.lastAlertedAt, deviceAlertThreshold)) {
+        let customerEmail = 'unknown'
+        if (params.customerId) {
+            const customer = await getCustomerDetails(params.customerId, params.paddleConfig)
+            if (customer) {
+                customerEmail = customer.email
+            }
+        }
+
+        await sendDeviceCountAlert({
+            seatTransactionId: params.seatTransactionId,
+            baseTransactionId: params.baseTransactionId,
+            deviceCount,
+            customerEmail,
+            resendApiKey: params.resendApiKey,
+            paddleEnvironment: params.paddleConfig.environment,
+        })
+
+        deviceSet.lastAlertedAt = now
     }
 
-    if (transactionId.length > maxTransactionIdLength) {
-        return c.json(invalidResponse())
-    }
+    // Single KV write (includes lastAlertedAt if alert was sent)
+    await params.kv.put(kvKey, JSON.stringify(deviceSet))
+}
 
-    // Strip multi-seat suffix (e.g. "txn_abc-2" → "txn_abc") — Paddle only knows the base transaction ID.
-    // The suffix is our own convention from generateAndSendLicenses for quantity > 1.
-    const baseTransactionId = transactionId.replace(/-\d+$/, '')
-
-    // Determine which Paddle environment to use
-    const paddleConfig = getPaddleConfig(c.env)
-    if (!paddleConfig) {
-        console.error('No Paddle API key configured')
-        return c.json({ error: 'upstream_error' }, 502)
-    }
-
+/** Fetch subscription status, returning an error response on failure. */
+async function fetchSubscriptionResult(
+    baseTransactionId: string,
+    paddleConfig: { apiKey: string; environment: 'sandbox' | 'live' },
+): Promise<
+    | { ok: true; result: NonNullable<Awaited<ReturnType<typeof getSubscriptionStatus>>> }
+    | { ok: false; body: ValidationResponse | { error: string }; status: 200 | 502 }
+> {
     let result
     try {
         result = await getSubscriptionStatus(baseTransactionId, paddleConfig)
     } catch (error) {
         if (error instanceof PaddleApiError) {
             console.error('Paddle API error during validation:', error.message)
-            return c.json({ error: 'upstream_error' }, 502)
+            return { ok: false, body: { error: 'upstream_error' }, status: 502 }
         }
         throw error
     }
 
     if (!result) {
-        return c.json(invalidResponse())
+        return { ok: false, body: invalidResponse(), status: 200 }
     }
 
-    // Determine license type from cached data (we don't have price ID here)
-    // For now, assume commercial_subscription for subscriptions, commercial_perpetual otherwise
+    return { ok: true, result }
+}
+
+/** Core validation logic, extracted to keep route handler complexity low. */
+async function handleValidation(
+    transactionId: string | undefined,
+    deviceId: string | undefined,
+    env: Bindings,
+): Promise<{
+    response: { body: ValidationResponse | { error: string }; status: 200 | 502 }
+    trackingPromise: Promise<void> | null
+}> {
+    if (!transactionId || typeof transactionId !== 'string' || transactionId.length > maxTransactionIdLength) {
+        return { response: { body: invalidResponse(), status: 200 }, trackingPromise: null }
+    }
+
+    const baseTransactionId = transactionId.replace(/-\d+$/, '')
+
+    const paddleConfig = getPaddleConfig(env)
+    if (!paddleConfig) {
+        console.error('No Paddle API key configured')
+        return { response: { body: { error: 'upstream_error' }, status: 502 }, trackingPromise: null }
+    }
+
+    const fetchResult = await fetchSubscriptionResult(baseTransactionId, paddleConfig)
+    if (!fetchResult.ok) {
+        return { response: { body: fetchResult.body, status: fetchResult.status }, trackingPromise: null }
+    }
+
+    const { result } = fetchResult
     const hasExpiration = result.expiresAt !== null
     const licenseType: LicenseType = hasExpiration ? 'commercial_subscription' : 'commercial_perpetual'
 
-    const response: ValidationResponse = {
+    const body: ValidationResponse = {
         status: result.status === 'canceled' ? 'expired' : result.status,
         type: licenseType,
         organizationName: result.customData?.organizationName ?? null,
         expiresAt: result.expiresAt,
     }
 
-    return c.json(response)
-})
+    // Device tracking: runs after the response is sent via waitUntil, never affects latency
+    const validDeviceId = isValidDeviceId(deviceId)
+    const trackingPromise = validDeviceId
+        ? trackDeviceSafe({
+              seatTransactionId: transactionId,
+              baseTransactionId,
+              customerId: result.customerId ?? undefined,
+              deviceId: validDeviceId,
+              kv: env.LICENSE_CODES,
+              deviceCounts: env.DEVICE_COUNTS,
+              paddleConfig,
+              resendApiKey: env.RESEND_API_KEY,
+          })
+        : null
+
+    return { response: { body, status: 200 }, trackingPromise }
+}
+
+function isValidDeviceId(deviceId: unknown): string | null {
+    if (typeof deviceId === 'string' && deviceId.length > 0 && deviceId.length <= maxDeviceIdLength) {
+        return deviceId
+    }
+    return null
+}
+
+/** Wraps trackDevice in a try/catch so it never affects the validation response. */
+async function trackDeviceSafe(params: Parameters<typeof trackDevice>[0]): Promise<void> {
+    try {
+        await trackDevice(params)
+    } catch (error) {
+        console.error('Device tracking error (non-fatal):', error instanceof Error ? error.message : String(error))
+    }
+}
 
 /** Helper to create invalid response */
 function invalidResponse(): ValidationResponse {

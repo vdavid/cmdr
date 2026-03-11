@@ -52,6 +52,8 @@ tauri-plugin-fs = "2.4.4"
 alphanumeric-sort = "1.5"
 chrono = "0.4"
 ed25519-dalek = { version = "2.1", features = ["rand_core"] }
+# Device ID hashing for fair-use license tracking
+sha2 = "0.10.9"
 tauri-plugin-log = "2"
 log = "0.4"
 # Memory allocator: returns memory to OS faster than system malloc, reduces fragmentation

@@ -40,6 +40,8 @@ pub enum ValidationOutcome {
 #[serde(rename_all = "camelCase")]
 struct ValidationRequest {
     transaction_id: String,
+    /// Hashed device identifier for fair-use tracking. `None` if the platform UUID couldn't be read.
+    device_id: Option<String>,
 }
 
 /// Response from the /activate endpoint.
@@ -152,6 +154,7 @@ pub async fn validate_with_server(transaction_id: &str) -> ValidationOutcome {
         .post(&url)
         .json(&ValidationRequest {
             transaction_id: transaction_id.to_string(),
+            device_id: super::device_id::get_device_id(),
         })
         .send()
         .await
@@ -193,9 +196,22 @@ mod tests {
     fn test_validation_request_serialization() {
         let request = ValidationRequest {
             transaction_id: "txn_123".to_string(),
+            device_id: None,
         };
         let json = serde_json::to_string(&request).unwrap();
         assert!(json.contains("\"transactionId\":\"txn_123\""));
+        assert!(json.contains("\"deviceId\":null"));
+    }
+
+    #[test]
+    fn test_validation_request_serialization_with_device_id() {
+        let request = ValidationRequest {
+            transaction_id: "txn_456".to_string(),
+            device_id: Some("v1:abc123".to_string()),
+        };
+        let json = serde_json::to_string(&request).unwrap();
+        assert!(json.contains("\"transactionId\":\"txn_456\""));
+        assert!(json.contains("\"deviceId\":\"v1:abc123\""));
     }
 
     #[test]

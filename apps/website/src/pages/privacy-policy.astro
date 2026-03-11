@@ -5,7 +5,7 @@ import LegalLayout from '../layouts/LegalLayout.astro'
 <LegalLayout
     title="Privacy policy"
     description="How Cmdr collects, uses, and protects your personal data. GDPR compliant."
-    lastUpdated="2026-03-08"
+    lastUpdated="2026-03-11"
 >
     <p>
         Your privacy matters to us a lot. This policy explains what data we collect, why, and how we protect it. We've
@@ -68,7 +68,9 @@ import LegalLayout from '../layouts/LegalLayout.astro'
     <ul>
         <li>
             <strong>License key</strong>: stored locally on your machine. The app verifies it cryptographically offline,
-            and periodically checks our server to see if your subscription has expired or been extended.
+            and periodically checks our server to see if your subscription has expired or been extended. During these
+            checks, we also send a hashed device identifier so we can detect key sharing. We don't use this to track you
+            or your activity, only to count distinct devices per license.
         </li>
         <li>
             <strong>Organization name</strong>: for commercial licenses, we store the organization name you provide at
@@ -77,8 +79,9 @@ import LegalLayout from '../layouts/LegalLayout.astro'
     </ul>
 
     <p>
-        That's it. The desktop app has <strong>no telemetry</strong>—it doesn't report usage statistics, feature usage,
-        or anything else back to us. The only network calls it makes are license validation and checking for updates.
+        That's it. The desktop app has <strong>no usage telemetry</strong>—it doesn't report which features you use, how
+        often you use them, or anything like that. The only network calls it makes are license validation (including the
+        device identifier mentioned above) and checking for updates.
     </p>
 
     <h3>What we DON'T collect</h3>

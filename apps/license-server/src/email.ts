@@ -1,6 +1,71 @@
 import { Resend } from 'resend'
 import type { LicenseType } from './license'
 
+interface DeviceCountAlertParams {
+    seatTransactionId: string
+    baseTransactionId: string
+    deviceCount: number
+    customerEmail: string
+    resendApiKey: string
+    paddleEnvironment: 'sandbox' | 'live'
+}
+
+export async function sendDeviceCountAlert(params: DeviceCountAlertParams): Promise<void> {
+    const resend = new Resend(params.resendApiKey)
+    const paddleDomain = params.paddleEnvironment === 'sandbox' ? 'sandbox-vendors.paddle.com' : 'vendors.paddle.com'
+    const paddleUrl = `https://${paddleDomain}/transactions-v2/${params.baseTransactionId}`
+
+    await resend.emails.send({
+        from: 'Cmdr License Alerts <noreply@getcmdr.com>',
+        to: 'legal@getcmdr.com',
+        subject: `Device count alert: ${params.seatTransactionId} (${String(params.deviceCount)} devices)`,
+        html: `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h2 style="color: #d97706;">Device count alert</h2>
+
+    <table style="border-collapse: collapse; width: 100%; margin: 16px 0;">
+        <tr>
+            <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-weight: bold;">Seat transaction ID</td>
+            <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-family: monospace;">${escapeHtml(params.seatTransactionId)}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-weight: bold;">Base transaction</td>
+            <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-family: monospace;">
+                <a href="${escapeHtml(paddleUrl)}" style="color: #2563eb;">${escapeHtml(params.baseTransactionId)}</a>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-weight: bold;">Device count</td>
+            <td style="padding: 8px 12px; border: 1px solid #e5e7eb;"><strong style="color: #dc2626;">${String(params.deviceCount)}</strong></td>
+        </tr>
+        <tr>
+            <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-weight: bold;">Customer email</td>
+            <td style="padding: 8px 12px; border: 1px solid #e5e7eb;">${escapeHtml(params.customerEmail)}</td>
+        </tr>
+    </table>
+
+    <h3>Next steps</h3>
+    <ol>
+        <li>Query Analytics Engine to check the pattern: is device count growing or did it spike once?</li>
+        <li>Send a friendly email from <code style="background: #f3f4f6; padding: 2px 4px; border-radius: 3px;">support@getcmdr.com</code> asking if they need additional seats.</li>
+        <li>If no response after two weeks, follow up once more.</li>
+        <li>If still unresolved, consider suspending the subscription via Paddle (last resort).</li>
+    </ol>
+
+    <p style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 13px; color: #6b7280;">
+        This alert was generated automatically by the Cmdr license server. Re-alerts are suppressed for 30 days per seat.
+    </p>
+</body>
+</html>
+        `.trim(),
+    })
+}
+
 const htmlEscapeMap: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
 
 function escapeHtml(text: string): string {

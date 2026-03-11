@@ -41,10 +41,10 @@ Current version: ${version}
 
 ## Pricing
 
-- **Personal**: Free forever. All features, unlimited machines, automatic updates. No commercial use.
+- **Personal**: Free forever. All features, your own devices, automatic updates. No commercial use.
 - **Supporter**: $10 one-time. Everything in Personal plus a "Supporter" badge in the app.
-- **Commercial**: $59/year (discounted from $79 for first 1,000 licenses). All features, commercial use, per user, unlimited machines.
-- **Perpetual**: $199 one-time. All features, commercial use, per user, unlimited machines, three years of updates.
+- **Commercial**: $59/year (discounted from $79 for first 1,000 licenses). All features, commercial use, per user, your own devices.
+- **Perpetual**: $199 one-time. All features, commercial use, per user, your own devices, three years of updates.
 
 ## System requirements
 

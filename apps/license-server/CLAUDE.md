@@ -12,7 +12,9 @@ license keys, stores short activation codes in KV, and emails keys via Resend.
 | `src/paddle.ts`                             | HMAC-SHA256 webhook verification, `constantTimeEqual`         |
 | `src/paddle-api.ts`                         | Paddle REST client: transaction/subscription/customer fetch   |
 | `src/email.ts`                              | Resend email delivery (HTML + plain text, multi-seat support) |
+| `src/device-tracking.ts`                    | Device set helpers: prune stale devices, alert threshold      |
 | `src/license.test.ts`, `src/paddle.test.ts` | Vitest tests                                                  |
+| `src/device-tracking.test.ts`               | Tests for device tracking helpers                             |
 | `scripts/generate-keys.js`                  | Ed25519 key pair generation (run once at setup)               |
 | `scripts/setup-cf-infra.sh`                 | Cloudflare KV namespace provisioning                          |
 
@@ -74,6 +76,8 @@ App activation: POST /activate → KV.get(shortCode) → return fullKey
 Subscription validation: POST /validate → Paddle API transactions + subscriptions
   → HTTP 200 + ValidationResponse on success or invalid transaction (Paddle 404)
   → HTTP 502 + { error: "upstream_error" } if Paddle API unreachable or returns server error
+  → if deviceId present: track device in KV (devices:{seatTransactionId}), log to Analytics Engine
+  → if device count >= 6 and not recently alerted: send alert email to legal@getcmdr.com
 
 Download redirect: GET /download/:version/:arch → log to Analytics Engine → 302 to GitHub Releases
 ```
@@ -109,6 +113,13 @@ status on transient Paddle outages instead of overwriting a valid "active" cache
 **Download tracking:** Uses Cloudflare Analytics Engine (binding: `DOWNLOADS`, dataset: `cmdr_downloads`).
 `writeDataPoint` is fire-and-forget. Data schema: indexes=[version], blobs=[version, arch, country, continent],
 doubles=[1]. Query via CF Analytics Engine SQL API.
+
+**Device tracking (fair use):** On each `/validate` call with a `deviceId`, the server tracks the device in KV
+(`devices:{seatTransactionId}`) and logs to Analytics Engine (binding: `DEVICE_COUNTS`, dataset: `cmdr_device_counts`).
+Devices older than 90 days are pruned on each write. If 6+ devices are active and no alert was sent in the past 30 days,
+an internal email is sent to `legal@getcmdr.com` via Resend. Device tracking is fire-and-forget and never affects the
+validation response. The KV value stores a `DeviceSet` with device hashes mapped to last-seen timestamps plus an
+optional `lastAlertedAt`. See `docs/specs/fair-use-device-tracking-plan.md` for the full plan.
 
 ## Local development
 

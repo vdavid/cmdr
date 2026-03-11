@@ -22,6 +22,11 @@ id = "64418f5cb33e4c629fe0ccf51be76399"
 binding = "DOWNLOADS"
 dataset = "cmdr_downloads"
 
+# Analytics Engine for device count tracking (fair use monitoring)
+[[analytics_engine_datasets]]
+binding = "DEVICE_COUNTS"
+dataset = "cmdr_device_counts"
+
 [vars]
 # Non-secret config
 PRODUCT_NAME = "Cmdr"
