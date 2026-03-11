@@ -1,0 +1,16 @@
+Prepare a release based on docs/guides/releasing.md.
+
+1. Prerequisite: Run `gh secret list` and verify that `TAURI_SIGNING_PRIVATE_KEY` and
+   `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` both exist. If either is missing, warn the user and stop.
+2. Update @CHANGELOG.md based on git commits since last release.
+   - Read the file first to match its style.
+   - Commits have title + body — read all!
+   - You can link multiple commits for changelog items if needed.
+   - List major but non-app changes in a "Non-app" section.
+3. Suggest updates to the roadmap.
+   - Read @apps/website/src/pages/roadmap.astro as well. Is there anything to tick off (with a date!) or a major
+     development worth mentioning?
+4. Based on the changes, advise what the next version should be (patch: bug fixes, minor: new features, major: major
+   launches), and give the user the `./scripts/release.sh x.x.x` command to run.
+5. Remind the user: after running the script, push with `git push origin main --tags` and track the build at
+   https://github.com/vdavid/cmdr/actions.
