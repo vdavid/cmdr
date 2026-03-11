@@ -72,6 +72,7 @@
             description={mcpPortDef.description}
             disabled={!mcpEnabled}
             requiresRestart={mcpPortDef.requiresRestart}
+            split
             {searchQuery}
         >
             <div class="port-setting">

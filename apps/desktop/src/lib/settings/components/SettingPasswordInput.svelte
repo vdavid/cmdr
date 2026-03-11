@@ -137,6 +137,7 @@
         display: flex;
         align-items: center;
         min-width: 180px;
+        width: 100%;
         border: 1px solid var(--color-border);
         border-radius: var(--radius-sm);
         background: var(--color-bg-primary);

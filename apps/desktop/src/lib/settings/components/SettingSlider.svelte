@@ -115,7 +115,8 @@
         display: flex;
         align-items: center;
         gap: var(--spacing-sm);
-        min-width: 280px;
+        min-width: 0;
+        width: 100%;
     }
 
     /* The root needs explicit sizing for Ark UI slider to work */

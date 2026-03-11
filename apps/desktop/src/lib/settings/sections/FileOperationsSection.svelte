@@ -27,6 +27,7 @@
             id="fileOperations.allowFileExtensionChanges"
             label={extensionChangesDef.label}
             description={extensionChangesDef.description}
+            split
             {searchQuery}
         >
             <SettingRadioGroup id="fileOperations.allowFileExtensionChanges" />
@@ -38,6 +39,7 @@
             id="fileOperations.progressUpdateInterval"
             label={progressIntervalDef.label}
             description={progressIntervalDef.description}
+            split
             {searchQuery}
         >
             <SettingSlider id="fileOperations.progressUpdateInterval" unit="ms" />
@@ -49,6 +51,7 @@
             id="fileOperations.maxConflictsToShow"
             label={maxConflictsDef.label}
             description={maxConflictsDef.description}
+            split
             {searchQuery}
         >
             <SettingSelect id="fileOperations.maxConflictsToShow" />

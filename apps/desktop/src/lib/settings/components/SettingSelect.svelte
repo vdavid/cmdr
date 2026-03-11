@@ -207,6 +207,7 @@
 <style>
     .select-wrapper {
         min-width: 180px;
+        width: 100%;
     }
 
     .custom-input-wrapper {
@@ -257,7 +258,7 @@
         justify-content: space-between;
         gap: var(--spacing-sm);
         padding: var(--spacing-xs) var(--spacing-sm);
-        min-width: 180px;
+        width: 100%;
         border: 1px solid var(--color-border);
         border-radius: var(--radius-sm);
         background: var(--color-bg-primary);

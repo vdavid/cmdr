@@ -78,30 +78,28 @@
     {/if}
 
     <div class="index-info">
-        <div class="info-row">
+        <div class="index-row">
             <span class="info-label">Index size</span>
-            <span class="info-value">
-                {#if dbFileSize != null}
-                    {formatFileSize(dbFileSize)}
-                {:else}
-                    No index
-                {/if}
-            </span>
+            <div class="index-controls">
+                <Button
+                    variant="secondary"
+                    size="mini"
+                    onclick={handleClearIndex}
+                    disabled={clearing || dbFileSize == null}
+                >
+                    {clearing ? 'Clearing...' : 'Clear index'}
+                </Button>
+                <span class="info-value">
+                    {#if dbFileSize != null}
+                        {formatFileSize(dbFileSize)}
+                    {:else}
+                        No index
+                    {/if}
+                </span>
+            </div>
         </div>
 
-        <div class="clear-action">
-            <Button
-                variant="secondary"
-                size="mini"
-                onclick={handleClearIndex}
-                disabled={clearing || dbFileSize == null}
-            >
-                {clearing ? 'Clearing...' : 'Clear index'}
-            </Button>
-            <span class="clear-description">
-                Deletes the index database. A fresh scan starts next time indexing is enabled.
-            </span>
-        </div>
+        <p class="clear-description">Deletes the index database. A fresh scan starts next time indexing is enabled.</p>
 
         {#if clearError}
             <div class="clear-error">{clearError}</div>
@@ -112,18 +110,26 @@
 <style>
     .index-info {
         padding: var(--spacing-sm) 0;
+        border-bottom: 1px solid var(--color-border-subtle);
     }
 
-    .info-row {
-        display: flex;
+    .index-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
         align-items: center;
-        justify-content: space-between;
-        padding: var(--spacing-xs) 0;
+        gap: var(--spacing-md);
     }
 
     .info-label {
         font-weight: 500;
         color: var(--color-text-primary);
+    }
+
+    .index-controls {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--spacing-sm);
     }
 
     .info-value {
@@ -132,16 +138,11 @@
         font-size: var(--font-size-sm);
     }
 
-    .clear-action {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
-        margin-top: var(--spacing-sm);
-    }
-
     .clear-description {
-        color: var(--color-text-tertiary);
+        margin: var(--spacing-xs) 0 0;
+        color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
+        line-height: 1.4;
     }
 
     .clear-error {

@@ -64,7 +64,7 @@
 
 <SettingsSection title="Appearance">
     {#if shouldShow('appearance.appColor')}
-        <SettingRow id="appearance.appColor" label={appColorDef.label} description="" {searchQuery}>
+        <SettingRow id="appearance.appColor" label={appColorDef.label} description="" split {searchQuery}>
             {#snippet descriptionContent()}
                 To change your system theme color, go to
                 <button type="button" class="appearance-link" onclick={() => void openAppearanceSettings()}
@@ -131,6 +131,7 @@
             id="appearance.fileSizeFormat"
             label={fileSizeDef.label}
             description={fileSizeDef.description}
+            split
             {searchQuery}
         >
             <SettingSelect id="appearance.fileSizeFormat" />
@@ -142,6 +143,7 @@
             id="appearance.dateTimeFormat"
             label={dateTimeDef.label}
             description={dateTimeDef.description}
+            split
             {searchQuery}
         >
             <div class="date-time-setting">
@@ -265,8 +267,9 @@
     }
 
     .date-time-setting {
-        /* Fixed width to prevent layout shift when custom content appears */
-        width: 250px;
+        /* Fill the split column; min-width prevents collapse */
+        width: 100%;
+        min-width: 200px;
     }
 
     .custom-format {

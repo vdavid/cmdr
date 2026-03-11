@@ -433,6 +433,7 @@
         try {
             await startAiDownload()
         } catch (e) {
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- set by handleCancelDownload() during the await
             if (downloadCancelledByUser) {
                 logger.info('AI download cancelled by user')
             } else {
@@ -716,6 +717,7 @@
                     id="ai.cloudProvider"
                     label="Service"
                     description="Which cloud AI service to use."
+                    split
                     {searchQuery}
                 >
                     <select
@@ -741,6 +743,7 @@
                 id="ai.cloudProviderConfigs"
                 label="Endpoint"
                 description="API endpoint URL for the selected service."
+                split
                 {searchQuery}
             >
                 {#if showEditableBaseUrl}
@@ -775,6 +778,7 @@
                     id="ai.cloudProviderConfigs"
                     label="API key"
                     description="Your API key for this service."
+                    split
                     {searchQuery}
                 >
                     <SettingPasswordInput
@@ -794,6 +798,7 @@
                 id="ai.cloudProviderConfigs"
                 label="Model"
                 description="The model name to use for completions."
+                split
                 {searchQuery}
             >
                 {#if availableModels.length > 0}
@@ -980,6 +985,7 @@
                     id="ai.localContextSize"
                     label="Context window"
                     description="Number of tokens the local model can process at once. Larger values use more memory."
+                    split
                     {searchQuery}
                 >
                     <div class="context-size-controls">
@@ -1200,7 +1206,7 @@
 
     /* Cloud provider select */
     .cloud-provider-select {
-        min-width: 180px;
+        width: 100%;
         padding: var(--spacing-sm) var(--spacing-md);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-sm);
@@ -1227,7 +1233,7 @@
 
     /* Text input (same style as other setting inputs) */
     .text-input {
-        min-width: 180px;
+        width: 100%;
         padding: var(--spacing-sm) var(--spacing-md);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-sm);
@@ -1491,11 +1497,12 @@
     /* Model combobox */
     .combobox-wrapper {
         position: relative;
+        width: 100%;
     }
 
     .combobox-input-wrapper {
         position: relative;
-        display: inline-flex;
+        display: flex;
         align-items: center;
     }
 

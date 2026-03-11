@@ -58,6 +58,24 @@ and action button styles), `SettingRow`, `SettingSwitch`, `SettingSelect`, `Sett
 `SettingRadioGroup`, `SettingToggleGroup`, `SettingsSidebar`, `SettingsContent`. Also `SectionSummary` for
 collapsed-section previews.
 
+### 50-50 split layout guideline
+
+`SettingRow` has a `split` prop that enforces a 50-50 grid layout (label left, control right). This keeps left edges of
+controls vertically aligned across rows for visual consistency. The settings window is resizable, so the split is
+percentage-based, not pixel-based.
+
+**When to use `split`:** Setting rows where the control is a select, text input, password input, slider, number input,
+radio group, or combobox — anything that benefits from consistent horizontal alignment.
+
+**When NOT to use `split`:**
+- Switches (too small; 50-50 wastes space and doesn't improve alignment)
+- Toggle groups (multi-button controls that may not fit in 50% width at narrow window sizes)
+- Full-width custom layouts (keyboard shortcuts table, license card, advanced auto-generated rows)
+
+**When adding a new setting row**, decide if it should use `split` based on the rules above. If the control is a
+dropdown, text field, slider, or similar right-aligned input, add `split` to `<SettingRow>`. Description text below each
+row intentionally spans the full width.
+
 ### Other files
 
 - **cloud-providers.ts** — Cloud provider preset definitions (OpenAI, Anthropic, Groq, etc.) and per-provider config

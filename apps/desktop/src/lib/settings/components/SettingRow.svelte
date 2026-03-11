@@ -12,6 +12,8 @@
         disabled?: boolean
         disabledReason?: string
         requiresRestart?: boolean
+        /** When true, label and control each take 50% width for consistent vertical alignment across rows. */
+        split?: boolean
         searchQuery?: string
         children: Snippet
         descriptionContent?: Snippet
@@ -24,6 +26,7 @@
         disabled = false,
         disabledReason,
         requiresRestart = false,
+        split = false,
         searchQuery = '',
         children,
         descriptionContent,
@@ -54,7 +57,7 @@
 </script>
 
 <div class="setting-row" class:disabled>
-    <div class="setting-header">
+    <div class="setting-header" class:split>
         <div class="setting-label-wrapper">
             <label class="setting-label" for={id}
                 >{#each labelSegments as segment, i (i)}{#if segment.matched}<mark class="search-highlight"
@@ -118,6 +121,13 @@
         gap: var(--spacing-md);
     }
 
+    .setting-header.split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        align-items: center;
+        gap: var(--spacing-md);
+    }
+
     .setting-label-wrapper {
         display: flex;
         align-items: center;
@@ -166,6 +176,12 @@
 
     .setting-control {
         flex-shrink: 0;
+    }
+
+    .split .setting-control {
+        /* Let controls stretch to fill the right column */
+        min-width: 0;
+        width: 100%;
     }
 
     .setting-description {
