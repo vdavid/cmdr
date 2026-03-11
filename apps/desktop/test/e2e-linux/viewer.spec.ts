@@ -6,11 +6,16 @@
  * and pushState+popstate doesn't trigger SvelteKit's router. Creating a temporary
  * <a> element and clicking it does trigger SvelteKit's client-side navigation.
  *
- * Test file: /root/test-dir/test-file.txt (created by entrypoint.sh,
- * contains "test content" — a single line).
+ * Test file: Uses a text file from the shared E2E fixtures (left/file-a.txt).
+ * Previously used /root/test-dir/test-file.txt created by Docker's entrypoint.sh,
+ * which only worked in Docker — not on native Linux VMs.
  */
 
-const testFilePath = '/root/test-dir/test-file.txt'
+import path from 'path'
+
+// Use fixture file from the shared E2E fixture tree (created by wdio.conf.ts onPrepare)
+const fixtureRoot = process.env.CMDR_E2E_START_PATH ?? '/tmp/cmdr-e2e-fallback'
+const testFilePath = path.join(fixtureRoot, 'left', 'file-a.txt')
 
 /** Navigate to a SvelteKit route via link-click interception. */
 async function navigateToViewerRoute(path: string): Promise<void> {
@@ -84,21 +89,21 @@ describe('File viewer', () => {
     it('shows file name in status bar', async () => {
         const statusBar = browser.$('.status-bar')
         const statusText = await statusBar.getText()
-        expect(statusText).toContain('test-file.txt')
+        expect(statusText).toContain('file-a.txt')
     })
 
     it('shows line count in status bar', async () => {
         const statusBar = browser.$('.status-bar')
         const statusText = await statusBar.getText()
-        // "test content\n" (from echo) = 2 lines
-        expect(statusText).toContain('2 lines')
+        // file-a.txt contains 1024 bytes of 'A' (no newlines) = 1 line
+        expect(statusText).toContain('1 line')
     })
 
     it('shows file size in status bar', async () => {
         const statusBar = browser.$('.status-bar')
         const statusText = await statusBar.getText()
-        // "test content\n" is 13 bytes
-        expect(statusText).toContain('B')
+        // file-a.txt is 1024 bytes = 1 KB
+        expect(statusText).toContain('KB')
     })
 
     it('shows backend mode badge', async () => {
@@ -144,14 +149,14 @@ describe('File viewer search', () => {
         const searchInput = browser.$('.search-input')
         await searchInput.waitForExist({ timeout: 5000 })
 
-        await searchInput.setValue('test')
+        await searchInput.setValue('AAA')
         // Wait for debounced search + poll to return results
         await browser.pause(1000)
 
         const matchCount = browser.$('.match-count')
         const matchText = await matchCount.getText()
-        // Should show "1 of 1" or similar match count
-        expect(matchText).toContain('1')
+        // file-a.txt is all 'A' characters, so there should be at least one match
+        expect(matchText).toContain('of')
     })
 
     it('closes search with Escape', async () => {

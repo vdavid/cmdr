@@ -102,13 +102,17 @@ export function recreateFixtures(rootPath: string): void {
         }
     }
 
-    // Clean up right/ entirely (tests may have copied/moved files into it)
+    // Clean up right/ contents (tests may have copied/moved files into it).
+    // Preserve the directory itself to keep the app's inotify watch intact —
+    // deleting and recreating would invalidate the watch (new inode).
     const rightDir = path.join(rootPath, 'right')
     if (fs.existsSync(rightDir)) {
-        fs.rmSync(rightDir, { recursive: true, force: true })
+        for (const entry of fs.readdirSync(rightDir)) {
+            fs.rmSync(path.join(rightDir, entry), { recursive: true, force: true })
+        }
     }
 
-    // Recreate directories (left/ already exists, right/ was removed)
+    // Recreate directories (left/ and right/ already exist, ensure bulk/ exists)
     for (const dir of fixtureLayout.directories) {
         fs.mkdirSync(path.join(rootPath, dir), { recursive: true })
     }
