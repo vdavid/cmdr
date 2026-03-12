@@ -79,6 +79,8 @@ const rescanReasonToMessage: Record<string, string> = {
         'Heavy filesystem activity overwhelmed the event buffer. Running a fresh scan to stay accurate.',
     incomplete_previous_scan:
         "The previous scan didn't finish (the app may have been closed). Restarting the scan from scratch.",
+    watcher_channel_overflow:
+        'A burst of filesystem activity overflowed the watcher channel. Running a fresh scan to stay accurate.',
 }
 
 // Event listener cleanup handles

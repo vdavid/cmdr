@@ -12,14 +12,13 @@
 //! `DriveWatcher::start` returns `WatcherError::StreamCreate` and
 //! `current_event_id` returns `0`.
 
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+
 #[cfg(target_os = "macos")]
 use std::path::Path;
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-use std::sync::Arc;
 #[cfg(target_os = "macos")]
 use std::sync::atomic::AtomicU64;
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-use std::sync::atomic::{AtomicBool, Ordering};
 #[cfg(target_os = "macos")]
 use std::time::Duration;
 
@@ -109,6 +108,8 @@ pub struct DriveWatcher {
     running: Arc<AtomicBool>,
     /// Last processed event ID (atomically updated as events arrive).
     last_event_id: Arc<AtomicU64>,
+    /// Set to `true` when the FSEvents channel overflows and events are dropped.
+    overflow: Arc<AtomicBool>,
     /// Handle to abort the FSEvents run loop thread.
     handler: Option<EventStreamHandler>,
     /// Task that reads the event stream and forwards events.
@@ -149,6 +150,8 @@ impl DriveWatcher {
         )
         .map_err(WatcherError::Io)?;
 
+        let overflow = event_stream.overflow_flag();
+
         log::debug!("DriveWatcher started on {} (sinceWhen={since_when})", root.display());
 
         // Spawn a task to read the async event stream and forward events.
@@ -178,6 +181,7 @@ impl DriveWatcher {
         Ok(Self {
             running,
             last_event_id,
+            overflow,
             handler: Some(handler),
             forward_task: Some(forward_task),
         })
@@ -211,6 +215,11 @@ impl DriveWatcher {
     #[allow(dead_code, reason = "cross-platform API; used on other platforms")]
     pub fn is_running(&self) -> bool {
         self.running.load(Ordering::Relaxed)
+    }
+
+    /// Returns a shared handle to the overflow flag for passing to async tasks.
+    pub fn overflow_flag(&self) -> Arc<AtomicBool> {
+        Arc::clone(&self.overflow)
     }
 }
 
@@ -327,6 +336,13 @@ impl DriveWatcher {
     pub fn is_running(&self) -> bool {
         self.running.load(Ordering::Relaxed)
     }
+
+    /// Returns a shared handle to the overflow flag for passing to async tasks.
+    /// Linux never overflows (backpressure via `blocking_send`), but the API is
+    /// cross-platform.
+    pub fn overflow_flag(&self) -> Arc<AtomicBool> {
+        Arc::new(AtomicBool::new(false))
+    }
 }
 
 #[cfg(target_os = "linux")]
@@ -433,6 +449,10 @@ impl DriveWatcher {
     #[allow(dead_code, reason = "cross-platform API; used on other platforms")]
     pub fn is_running(&self) -> bool {
         false
+    }
+
+    pub fn overflow_flag(&self) -> Arc<AtomicBool> {
+        Arc::new(AtomicBool::new(false))
     }
 }
 

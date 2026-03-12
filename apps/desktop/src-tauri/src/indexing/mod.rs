@@ -273,6 +273,8 @@ pub enum RescanReason {
     ReconcilerBufferOverflow,
     /// Previous scan didn't complete (app crashed or was force-quit).
     IncompletePreviousScan,
+    /// FSEvents channel overflowed — events were dropped.
+    WatcherChannelOverflow,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -469,8 +471,10 @@ impl IndexManager {
         let (event_tx, event_rx) = tokio::sync::mpsc::channel(WATCHER_CHANNEL_CAPACITY);
         let current_id = watcher::current_event_id();
 
+        let watcher_overflow: Option<Arc<AtomicBool>>;
         match DriveWatcher::start(&self.volume_root, since_event_id, event_tx) {
             Ok(watcher) => {
+                watcher_overflow = Some(watcher.overflow_flag());
                 self.drive_watcher = Some(watcher);
                 log::debug!("DriveWatcher started for replay (sinceWhen={since_event_id}, current={current_id})");
             }
@@ -523,6 +527,7 @@ impl IndexManager {
                 },
                 fallback_tx,
                 micro_scans,
+                watcher_overflow,
             )
             .await;
 
@@ -597,12 +602,16 @@ impl IndexManager {
         let (event_tx, event_rx) = tokio::sync::mpsc::channel(WATCHER_CHANNEL_CAPACITY);
         let scan_start_event_id = watcher::current_event_id();
 
+        // watcher_overflow is None if the watcher failed to start (non-fatal).
+        let watcher_overflow: Option<Arc<AtomicBool>>;
         match DriveWatcher::start(&self.volume_root, 0, event_tx) {
             Ok(watcher) => {
+                watcher_overflow = Some(watcher.overflow_flag());
                 self.drive_watcher = Some(watcher);
                 log::debug!("DriveWatcher started (scan_start_event_id={scan_start_event_id})");
             }
             Err(e) => {
+                watcher_overflow = None;
                 // Watcher failure is non-fatal: scan works without it, just no live updates
                 log::warn!("Failed to start DriveWatcher (scan will proceed without watcher): {e}");
             }
@@ -665,6 +674,7 @@ impl IndexManager {
         let micro_scans = self.micro_scans.clone();
         let scanning = Arc::clone(&self.scanning);
         let live_event_task_slot = Arc::clone(&self.live_event_task);
+        let watcher_overflow_flag = watcher_overflow;
         tauri::async_runtime::spawn(async move {
             // Wait for scan to complete
             let join_result = tokio::task::spawn_blocking(move || join_handle.join()).await;
@@ -714,6 +724,22 @@ impl IndexManager {
                              activity was happening during the scan."
                                 .to_string(),
                         );
+                    }
+
+                    // Check if the FSEvents channel overflowed (events dropped
+                    // before reaching the forward task). If so, our buffered events
+                    // are incomplete — the reconciler replay will miss changes.
+                    // We still proceed (the scan data itself is fine), but log a
+                    // warning. The live event loop will detect the overflow flag
+                    // and trigger a rescan at that point, since a fresh scan is
+                    // the only way to recover from dropped events.
+                    if let Some(ref flag) = watcher_overflow_flag {
+                        if flag.load(Ordering::Relaxed) {
+                            log::info!(
+                                "FSEvents channel overflowed during scan — some watcher \
+                                 events were dropped. Live event loop will trigger a rescan."
+                            );
+                        }
                     }
 
                     // Emit scan-complete first, then start the flushing phase.
@@ -794,8 +820,13 @@ impl IndexManager {
                     // Step 5: Start live event processing loop
                     let writer_live = writer.clone();
                     let app_live = app.clone();
+                    let volume_id_live = volume_id.clone();
+                    let overflow_live = watcher_overflow_flag.clone();
                     let handle = tauri::async_runtime::spawn(async move {
-                        run_live_event_loop(event_rx, reconciler, writer_live, app_live).await;
+                        run_live_event_loop(
+                            event_rx, reconciler, writer_live, app_live,
+                            volume_id_live, overflow_live,
+                        ).await;
                     });
 
                     // Store the handle so shutdown() can wait for it to drain
@@ -1118,6 +1149,8 @@ async fn run_live_event_loop(
     mut reconciler: EventReconciler,
     writer: IndexWriter,
     app: AppHandle,
+    volume_id: String,
+    watcher_overflow: Option<Arc<AtomicBool>>,
 ) {
     log::debug!("Live event processing started");
 
@@ -1177,6 +1210,28 @@ async fn run_live_event_loop(
                 }
             }
             _ = flush_interval.tick() => {
+                // Check if the FSEvents channel overflowed — events were dropped
+                // between FSEvents and our forward task. The only safe recovery is
+                // a full rescan.
+                if let Some(ref flag) = watcher_overflow {
+                    if flag.load(Ordering::Relaxed) {
+                        emit_rescan_notification(
+                            &app,
+                            &volume_id,
+                            RescanReason::WatcherChannelOverflow,
+                            format!(
+                                "The filesystem watcher's event channel overflowed after \
+                                 {event_count} live events. Some file changes were lost."
+                            ),
+                        );
+                        // Drain and discard remaining events — they're a partial
+                        // picture and processing them before a rescan is pointless.
+                        event_rx.close();
+                        while event_rx.recv().await.is_some() {}
+                        break;
+                    }
+                }
+
                 process_live_batch(
                     &mut pending_events, &mut reconciler, &conn,
                     &writer, &mut pending_paths,
@@ -1272,6 +1327,7 @@ async fn run_replay_event_loop(
     config: ReplayConfig,
     fallback_tx: tokio::sync::oneshot::Sender<()>,
     micro_scans: MicroScanManager,
+    watcher_overflow: Option<Arc<AtomicBool>>,
 ) -> Result<(), String> {
     let ReplayConfig {
         volume_id,
@@ -1584,6 +1640,28 @@ async fn run_replay_event_loop(
                 }
             }
             _ = flush_interval.tick() => {
+                // Check if the FSEvents channel overflowed
+                if let Some(ref flag) = watcher_overflow {
+                    if flag.load(Ordering::Relaxed) {
+                        emit_rescan_notification(
+                            &app,
+                            &volume_id,
+                            RescanReason::WatcherChannelOverflow,
+                            format!(
+                                "The filesystem watcher's event channel overflowed after \
+                                 {event_count} replay + {live_count} live events. Some file \
+                                 changes were lost."
+                            ),
+                        );
+                        if let Some(tx) = fallback_tx.take() {
+                            let _ = tx.send(());
+                        }
+                        event_rx.close();
+                        while event_rx.recv().await.is_some() {}
+                        return Ok(());
+                    }
+                }
+
                 process_live_batch(
                     &mut live_pending_events, &mut reconciler, &conn,
                     &writer, &mut live_pending_paths,
