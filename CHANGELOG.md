@@ -5,7 +5,11 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 and we use [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.7.1] - 2026-03-12
+
+### Fixed
+
+- Fix scan overlay stuck at 100% after directory size aggregation ([2842e92](https://github.com/vdavid/cmdr/commit/2842e92))
 
 ## [0.7.0] - 2026-03-12
 
