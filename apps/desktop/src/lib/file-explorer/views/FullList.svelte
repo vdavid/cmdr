@@ -466,10 +466,7 @@
                                         >
                                     {/if}
                                 {:else if scanning}
-                                    <span class="size-scanning">
-                                        <span class="spinner spinner-xs"></span>
-                                        Scanning...
-                                    </span>
+                                    <span class="size-scanning">Scanning...</span>
                                 {:else}
                                     <span class="size-dir">&lt;dir&gt;</span>
                                 {/if}
@@ -579,9 +576,6 @@
     }
 
     .size-scanning {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
         color: var(--color-text-tertiary);
         font-size: var(--font-size-xs);
         white-space: nowrap;
