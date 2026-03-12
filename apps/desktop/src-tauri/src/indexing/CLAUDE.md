@@ -8,7 +8,7 @@ Full design: `docs/specs/drive-indexing/plan.md`
 
 ### Module structure
 
-- **mod.rs** -- Public API: `init()`, `start_indexing()`, `stop_indexing()`, `clear_index()`, `enrich_entries_with_index()`. `IndexManager` coordinates all subsystems, owns a `PathResolver` (LRU-cached path→ID mapping) for IPC commands. Global read-only store for enrichment. Enrichment uses an integer-keyed fast path: resolve parent dir once → batch-fetch child dir stats by ID → match by name. Falls back to individual path resolution for edge cases.
+- **mod.rs** -- Public API: `init()`, `start_indexing()`, `stop_indexing()`, `clear_index()`, `enrich_entries_with_index()`. `IndexManager` coordinates all subsystems, owns a `PathResolver` (LRU-cached path→ID mapping) for IPC commands. `ReadPool` provides lock-free thread-local read connections for enrichment and verification. Enrichment uses an integer-keyed fast path: resolve parent dir once → batch-fetch child dir stats by ID → match by name. Falls back to individual path resolution for edge cases.
 - **store.rs** -- SQLite schema v2 (integer-keyed entries, dir_stats by entry_id, meta), platform_case collation, read queries, DB open/migrate. Schema version check: mismatch triggers drop+rebuild. Both path-keyed (backward compat) and integer-keyed APIs.
 - **path_resolver.rs** -- `PathResolver`: resolves filesystem paths to integer entry IDs via component-by-component walk with full-path LRU cache (50K entries). Case-aware `CacheKey` on macOS (NFD + case fold). Prefix-based invalidation for deletes/renames.
 - **memory_watchdog.rs** -- Background task monitoring resident memory via `mach_task_info` (macOS). Warns at 8 GB, stops indexing at 16 GB, emits `index-memory-warning` event to frontend. No-op stub on non-macOS. Started from `start_indexing()`.
@@ -64,7 +64,7 @@ Enrichment (every get_file_range call):
 
 All writes go through a dedicated `std::thread` via a bounded `sync_channel` (20K capacity). When the channel is full, senders block (backpressure). The writer thread owns the write connection and processes messages in order, prioritizing `UpdateDirStats` over `InsertEntries` for responsive micro-scan results.
 
-Reads happen on separate WAL connections (any thread). The global read-only store (`GLOBAL_INDEX_STORE`) provides enrichment without passing `AppHandle` through the listing pipeline.
+Reads happen on separate WAL connections (any thread). A `ReadPool` provides thread-local read connections for enrichment and verification without contending on the `INDEXING` state-machine mutex.
 
 ### SQLite schema (v4: integer-keyed, incremental vacuum)
 
@@ -140,7 +140,7 @@ Key test files are alongside each module (test functions within `#[cfg(test)]` b
 
 **Writer-side delete-with-propagation**: Both path-keyed (`DeleteEntry`/`DeleteSubtree`) and integer-keyed (`DeleteEntryById`/`DeleteSubtreeById`) handlers in the writer automatically read old data before deleting and propagate accurate negative deltas. The integer-keyed variants use `propagate_delta_by_id` which walks the `parent_id` chain via `get_parent_id` lookups. This means every deletion -- replay, live, verification -- gets correct dir_stats updates without callers needing to send separate `PropagateDelta` messages.
 
-**Post-replay verification is bidirectional**: `verify_affected_dirs` checks both directions: (1) stale entries in DB but not on disk (sends `DeleteEntry`/`DeleteSubtree`), and (2) missing entries on disk but not in DB (sends `UpsertEntry` + `PropagateDelta` for files, collects directory paths for `scan_subtree`). New directories are scanned and their subtree totals propagated up the ancestor chain. Uses a two-phase pattern: Phase 1 holds the `GLOBAL_INDEX_STORE` lock for bulk SQLite reads into a `HashMap` (can take seconds with hundreds of affected dirs), Phase 2 does all disk I/O without any lock. `enrich_entries_with_index` uses `try_lock` to avoid blocking on Phase 1.
+**Post-replay verification is bidirectional**: `verify_affected_dirs` checks both directions: (1) stale entries in DB but not on disk (sends `DeleteEntry`/`DeleteSubtree`), and (2) missing entries on disk but not in DB (sends `UpsertEntry` + `PropagateDelta` for files, collects directory paths for `scan_subtree`). New directories are scanned and their subtree totals propagated up the ancestor chain. Uses a two-phase pattern: Phase 1 uses `ReadPool` for lock-free bulk SQLite reads into a `HashMap`, Phase 2 does all disk I/O without any lock. `run_background_verification`'s dir-stat reads also use `ReadPool`. No `INDEXING` lock is held during verification.
 
 **Schema version mismatch drops the DB**: If `schema_version` in meta doesn't match what the code expects, the entire DB is deleted and rebuilt. No migration path (it's a cache, not user data).
 
@@ -148,7 +148,7 @@ Key test files are alongside each module (test functions within `#[cfg(test)]` b
 
 **Scan cancellation leaves partial data**: By design. `scan_completed_at` not set in meta, so next startup detects incomplete scan and runs fresh. No cleanup needed.
 
-**Global read-only store uses `std::sync::Mutex`**: Not `RwLock`, because `rusqlite::Connection` is `Send` but not `Sync`. `enrich_entries_with_index` uses `try_lock` to avoid blocking the listing pipeline when `verify_affected_dirs` Phase 1 holds the lock during startup (hundreds of serial SQLite queries for affected dirs). If the lock is busy, enrichment is skipped and retried on subsequent `get_file_range` calls.
+**`ReadPool` replaces `INDEXING` lock for all read-only DB access**: Enrichment (`enrich_entries_with_index`), verification Phase 1 (`verify_affected_dirs`), and background verification dir-stat reads all use `get_read_pool()` + `pool.with_conn()` — thread-local SQLite connections with no lock contention. The `INDEXING` mutex now guards only lifecycle transitions and IPC commands that need `PathResolver`. `with_conn` uses `thread_local!` storage, so callers must not have `.await` points between obtaining the pool and completing the closure (async task migration would break thread affinity).
 
 **Progress events use `tauri::async_runtime::spawn`**: Not `tokio::spawn`, because indexing can start from Tauri's synchronous `setup()` hook where no Tokio runtime context exists.
 

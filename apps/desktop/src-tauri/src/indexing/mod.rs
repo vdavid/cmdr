@@ -17,11 +17,14 @@ pub(crate) mod scanner;
 mod verifier; // Placeholder: per-navigation background readdir diff (future milestone)
 pub(crate) mod watcher;
 
+use std::cell::RefCell;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::LazyLock;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::Duration;
+
+use rusqlite::Connection;
 
 use micro_scan::{MicroScanManager, ScanPriority};
 use path_resolver::PathResolver;
@@ -56,41 +59,78 @@ pub(crate) enum IndexPhase {
     ShuttingDown,
 }
 
-impl IndexPhase {
-    /// Borrow the read-only store if one is available in this phase.
-    fn store(&self) -> Option<&IndexStore> {
-        match self {
-            IndexPhase::Initializing { store, .. } => Some(store),
-            IndexPhase::Running(mgr) => Some(mgr.store()),
-            _ => None,
-        }
+static INDEXING: LazyLock<std::sync::Mutex<IndexPhase>> = LazyLock::new(|| std::sync::Mutex::new(IndexPhase::Disabled));
+
+// ── Read pool (lock-free enrichment reads) ──────────────────────────
+
+struct ReadPool {
+    db_path: PathBuf,
+    /// Incremented on shutdown/clear. Thread-local connections check this to detect staleness.
+    generation: AtomicU64,
+}
+
+thread_local! {
+    static THREAD_CONN: RefCell<Option<(PathBuf, u64, Connection)>> = RefCell::new(None);
+}
+
+impl ReadPool {
+    fn new(db_path: PathBuf) -> Result<Self, store::IndexStoreError> {
+        let _ = IndexStore::open_read_connection(&db_path)?; // Validate openable
+        Ok(Self { db_path, generation: AtomicU64::new(0) })
+    }
+
+    /// Invalidate all thread-local connections. Next `with_conn` call reopens.
+    fn invalidate(&self) {
+        self.generation.fetch_add(1, Ordering::Release);
+    }
+
+    /// Run `f` with a thread-local read connection.
+    ///
+    /// SAFETY constraint: must be called from synchronous code only. In async
+    /// contexts, tasks can migrate between threads at .await points, which
+    /// would make the thread-local connection unreliable. All current callers
+    /// (`enrich_entries_with_index`, `verify_affected_dirs` Phase 1) are synchronous.
+    fn with_conn<T>(&self, f: impl FnOnce(&Connection) -> T) -> Result<T, String> {
+        let current_gen = self.generation.load(Ordering::Acquire);
+        THREAD_CONN.with(|cell| {
+            let mut slot = cell.borrow_mut();
+            // Reuse if same path + same generation; otherwise reopen
+            let needs_reopen = match slot.as_ref() {
+                Some((p, g, _)) => p != &self.db_path || *g != current_gen,
+                None => true,
+            };
+            if needs_reopen {
+                let conn = IndexStore::open_read_connection(&self.db_path)
+                    .map_err(|e| format!("{e}"))?;
+                *slot = Some((self.db_path.clone(), current_gen, conn));
+            }
+            Ok(f(&slot.as_ref().unwrap().2))
+        })
     }
 }
 
-static INDEXING: LazyLock<std::sync::Mutex<IndexPhase>> = LazyLock::new(|| std::sync::Mutex::new(IndexPhase::Disabled));
+static READ_POOL: LazyLock<std::sync::Mutex<Option<Arc<ReadPool>>>> =
+    LazyLock::new(|| std::sync::Mutex::new(None));
+
+/// Clone the pool Arc. Lock held for nanoseconds — just an Arc clone.
+fn get_read_pool() -> Option<Arc<ReadPool>> {
+    READ_POOL.lock().ok()?.as_ref().cloned()
+}
 
 /// Enrich directory entries with recursive size data from the index.
 ///
 /// Called from `get_file_range` on every page fetch. Does nothing if
-/// indexing is not initialized. Uses `try_lock` to avoid blocking the
-/// listing pipeline when background verification holds the lock at startup.
-/// Skipped enrichment is retried on subsequent fetches.
+/// indexing is not initialized. Uses a `ReadPool` for lock-free DB reads,
+/// so enrichment never blocks on the `INDEXING` state-machine mutex.
 ///
 /// **Integer-keyed optimization**: Instead of resolving each directory path
 /// individually, resolves the common parent directory once, gets all child
 /// dir `(id, name)` pairs via `idx_parent_name`, then batch-fetches their
 /// `dir_stats` by integer IDs. Two indexed queries total.
 pub fn enrich_entries_with_index(entries: &mut [FileEntry]) {
-    let guard = match INDEXING.try_lock() {
-        Ok(g) => g,
-        Err(_) => {
-            log::debug!("Index enrichment skipped: state lock is held");
-            return;
-        }
-    };
-    let store = match guard.store() {
-        Some(s) => s,
-        None => return,
+    let pool = match get_read_pool() {
+        Some(p) => p,
+        None => return, // Indexing not initialized
     };
 
     // Find directory entries that need enrichment
@@ -115,16 +155,19 @@ pub fn enrich_entries_with_index(entries: &mut [FileEntry]) {
     };
 
     // Use the integer-keyed fast path: resolve parent once, batch-fetch child stats
-    if let Err(e) = enrich_via_parent_id(entries, store, &parent_path) {
-        log::debug!("Index enrichment (integer-keyed) failed: {e}, trying path-based fallback");
+    if let Err(e) = pool.with_conn(|conn| {
+        enrich_via_parent_id_on(entries, conn, &parent_path)
+    }).and_then(|r| r) {
+        log::debug!("Enrichment fast path failed: {e}, trying fallback");
         // Fallback: resolve each path individually (handles mixed-parent edge cases)
-        enrich_via_individual_paths(entries, store);
+        let _ = pool.with_conn(|conn| {
+            enrich_via_individual_paths_on(entries, conn)
+        });
     }
 }
 
 /// Fast path: resolve parent dir → id, get child dir IDs, batch-fetch stats.
-fn enrich_via_parent_id(entries: &mut [FileEntry], store: &IndexStore, parent_path: &str) -> Result<(), String> {
-    let conn = store.read_conn();
+fn enrich_via_parent_id_on(entries: &mut [FileEntry], conn: &Connection, parent_path: &str) -> Result<(), String> {
 
     // Resolve parent directory path → entry ID (one tree walk, almost always cached)
     let parent_id = match store::resolve_path(conn, parent_path).map_err(|e| format!("{e}"))? {
@@ -169,8 +212,7 @@ fn enrich_via_parent_id(entries: &mut [FileEntry], store: &IndexStore, parent_pa
 }
 
 /// Fallback: resolve each directory path individually (handles mixed-parent entries).
-fn enrich_via_individual_paths(entries: &mut [FileEntry], store: &IndexStore) {
-    let conn = store.read_conn();
+fn enrich_via_individual_paths_on(entries: &mut [FileEntry], conn: &Connection) {
 
     // Resolve each dir path → entry_id, then batch-fetch stats
     let mut id_to_path: Vec<(i64, String)> = Vec::new();
@@ -346,11 +388,6 @@ pub struct IndexManager {
 }
 
 impl IndexManager {
-    /// Borrow the read-only SQLite store.
-    pub(crate) fn store(&self) -> &IndexStore {
-        &self.store
-    }
-
     /// Create a new IndexManager for a volume.
     ///
     /// Opens (or creates) the SQLite database, spawns the writer thread,
@@ -1750,40 +1787,42 @@ async fn run_background_verification(
         // upward. Resolve each new dir path to its entry ID, read the computed
         // dir_stats, and send PropagateDeltaById to the parent.
         if !verify_result.new_dir_paths.is_empty() {
-            // Brief lock: resolve paths → IDs and batch-read dir_stats
-            let dir_deltas: Vec<(i64, store::DirStatsById)> = {
-                let guard = INDEXING.lock();
-                if let Ok(ref guard) = guard
-                    && let Some(store) = guard.store()
-                {
-                    let conn = store.read_conn();
-                    let mut deltas = Vec::new();
-                    for dir_path in &verify_result.new_dir_paths {
-                        let entry_id = match store::resolve_path(conn, dir_path) {
-                            Ok(Some(id)) => id,
-                            _ => continue,
-                        };
-                        let parent_id = match IndexStore::get_parent_id(conn, entry_id) {
-                            Ok(Some(pid)) => pid,
-                            _ => continue,
-                        };
-                        let stats = IndexStore::get_dir_stats_by_id(conn, entry_id)
-                            .ok()
-                            .flatten()
-                            .unwrap_or(store::DirStatsById {
-                                entry_id,
-                                recursive_size: 0,
-                                recursive_file_count: 0,
-                                recursive_dir_count: 0,
-                            });
-                        deltas.push((parent_id, stats));
-                    }
-                    deltas
-                } else {
-                    Vec::new()
-                }
-                // guard dropped here
-            };
+            // Resolve paths → IDs and batch-read dir_stats via ReadPool.
+            // Note: although `run_background_verification` is async, `pool.with_conn()`
+            // is safe here because the closure contains no `.await` points — the task
+            // cannot migrate threads mid-closure, so thread-local storage is reliable.
+            let dir_deltas: Vec<(i64, store::DirStatsById)> =
+                match get_read_pool().and_then(|pool| {
+                    pool.with_conn(|conn| {
+                        let mut deltas = Vec::new();
+                        for dir_path in &verify_result.new_dir_paths {
+                            let entry_id = match store::resolve_path(conn, dir_path) {
+                                Ok(Some(id)) => id,
+                                _ => continue,
+                            };
+                            let parent_id =
+                                match IndexStore::get_parent_id(conn, entry_id) {
+                                    Ok(Some(pid)) => pid,
+                                    _ => continue,
+                                };
+                            let stats = IndexStore::get_dir_stats_by_id(conn, entry_id)
+                                .ok()
+                                .flatten()
+                                .unwrap_or(store::DirStatsById {
+                                    entry_id,
+                                    recursive_size: 0,
+                                    recursive_file_count: 0,
+                                    recursive_dir_count: 0,
+                                });
+                            deltas.push((parent_id, stats));
+                        }
+                        deltas
+                    })
+                    .ok()
+                }) {
+                    Some(deltas) => deltas,
+                    None => Vec::new(),
+                };
 
             for (parent_id, stats) in &dir_deltas {
                 let _ = writer.send(WriteMessage::PropagateDeltaById {
@@ -1829,11 +1868,11 @@ struct VerifyResult {
 /// "parent directory modified" without individual removal events. Similarly,
 /// new children may not get individual creation events.
 ///
-/// Two-phase approach to minimize `INDEXING` lock hold time:
+/// Two-phase approach — no `INDEXING` lock needed:
 ///
-/// **Phase 1 (lock held briefly):** Resolve each affected path to its entry ID,
+/// **Phase 1 (ReadPool, no lock):** Resolve each affected path to its entry ID,
 /// list children as `EntryRow` (integer-keyed), and snapshot into a `HashMap`.
-/// Then drop the lock. Only SQLite reads, no disk I/O.
+/// Uses `get_read_pool()` + `pool.with_conn()` for lock-free DB reads.
 ///
 /// **Phase 2 (no lock):** Walk the snapshot, check the filesystem
 /// (`Path::exists`, `read_dir`, `symlink_metadata`), and send corrections to
@@ -1844,50 +1883,50 @@ struct VerifyResult {
 ///    New files also get `PropagateDeltaById`. New directories are collected
 ///    in `new_dir_paths` for the caller to scan via `scan_subtree`.
 fn verify_affected_dirs(affected_paths: &std::collections::HashSet<String>, writer: &IndexWriter) -> VerifyResult {
-    // ── Phase 1: Bulk-read DB state under the lock ───────────────────
+    // ── Phase 1: Bulk-read DB state via ReadPool (no INDEXING lock) ──
     // Snapshot: parent_path → (parent_id, Vec<EntryRow>)
-    let db_snapshot: std::collections::HashMap<String, (i64, Vec<store::EntryRow>)> = {
-        let guard = match INDEXING.lock() {
-            Ok(g) => g,
-            Err(_) => {
-                return VerifyResult {
-                    stale_count: 0,
-                    new_file_count: 0,
-                    new_dir_paths: Vec::new(),
-                };
-            }
-        };
-        let store = match guard.store() {
-            Some(s) => s,
-            None => {
-                return VerifyResult {
-                    stale_count: 0,
-                    new_file_count: 0,
-                    new_dir_paths: Vec::new(),
-                };
-            }
-        };
-
-        let conn = store.read_conn();
-        let mut snapshot = std::collections::HashMap::with_capacity(affected_paths.len());
-        for parent_path in affected_paths {
-            let parent_id = match store::resolve_path(conn, parent_path) {
-                Ok(Some(id)) => id,
-                _ => continue, // Path not in index, skip
+    let pool = match get_read_pool() {
+        Some(p) => p,
+        None => {
+            return VerifyResult {
+                stale_count: 0,
+                new_file_count: 0,
+                new_dir_paths: Vec::new(),
             };
-            match store.list_children(parent_id) {
-                Ok(entries) => {
-                    snapshot.insert(parent_path.clone(), (parent_id, entries));
-                }
-                Err(_) => {
-                    // Insert empty vec so Phase 2 still checks disk for new entries
-                    snapshot.insert(parent_path.clone(), (parent_id, Vec::new()));
+        }
+    };
+
+    let db_snapshot: std::collections::HashMap<String, (i64, Vec<store::EntryRow>)> =
+        match pool.with_conn(|conn| {
+            let mut snapshot =
+                std::collections::HashMap::with_capacity(affected_paths.len());
+            for parent_path in affected_paths {
+                let parent_id = match store::resolve_path(conn, parent_path) {
+                    Ok(Some(id)) => id,
+                    _ => continue, // Path not in index, skip
+                };
+                match IndexStore::list_children_on(parent_id, conn) {
+                    Ok(entries) => {
+                        snapshot.insert(parent_path.clone(), (parent_id, entries));
+                    }
+                    Err(_) => {
+                        // Insert empty vec so Phase 2 still checks disk for new entries
+                        snapshot.insert(parent_path.clone(), (parent_id, Vec::new()));
+                    }
                 }
             }
-        }
-        snapshot
-        // guard dropped here — lock released before any disk I/O
-    };
+            snapshot
+        }) {
+            Ok(snapshot) => snapshot,
+            Err(e) => {
+                log::warn!("verify_affected_dirs: ReadPool error: {e}");
+                return VerifyResult {
+                    stale_count: 0,
+                    new_file_count: 0,
+                    new_dir_paths: Vec::new(),
+                };
+            }
+        };
 
     // ── Phase 2: Filesystem checks without the lock ──────────────────
     let mut stale_count = 0u64;
@@ -2021,6 +2060,11 @@ pub fn should_auto_start(indexing_enabled: Option<bool>) -> bool {
 /// Called when the user disables indexing via settings. The index stays on disk
 /// but no scanning or watching runs. Directory sizes revert to `<dir>`.
 pub fn stop_indexing() -> Result<(), String> {
+    // Invalidate ReadPool before shutdown so thread-local connections are discarded.
+    if let Some(pool) = READ_POOL.lock().unwrap().take() {
+        pool.invalidate();
+    }
+
     let mut guard = INDEXING.lock().map_err(|e| format!("Failed to lock state: {e}"))?;
 
     match std::mem::replace(&mut *guard, IndexPhase::ShuttingDown) {
@@ -2053,6 +2097,13 @@ pub fn start_indexing(app: &AppHandle) -> Result<(), String> {
 
     let mut manager = IndexManager::new("root".to_string(), PathBuf::from("/"), app.clone())?;
 
+    // Install ReadPool early so enrichment works during the Initializing phase.
+    let pool = Arc::new(
+        ReadPool::new(manager.db_path().to_path_buf())
+            .map_err(|e| format!("Failed to create read pool: {e}"))?,
+    );
+    *READ_POOL.lock().unwrap() = Some(pool);
+
     // Transition to Initializing: open a temporary store so enrichment
     // and status queries work while resume_or_scan() runs.
     {
@@ -2074,6 +2125,9 @@ pub fn start_indexing(app: &AppHandle) -> Result<(), String> {
         }
         (IndexPhase::Initializing { .. }, Err(e)) => {
             *guard = IndexPhase::Disabled;
+            if let Some(pool) = READ_POOL.lock().unwrap().take() {
+                pool.invalidate();
+            }
             return Err(e);
         }
         (_, Ok(())) => {
@@ -2094,6 +2148,11 @@ pub fn start_indexing(app: &AppHandle) -> Result<(), String> {
 ///
 /// Call `start_indexing()` to create a fresh index afterward.
 pub fn clear_index() -> Result<(), String> {
+    // Invalidate ReadPool before deleting DB files so thread-local connections are discarded.
+    if let Some(pool) = READ_POOL.lock().unwrap().take() {
+        pool.invalidate();
+    }
+
     let mut guard = INDEXING.lock().map_err(|e| format!("Failed to lock state: {e}"))?;
 
     match std::mem::replace(&mut *guard, IndexPhase::ShuttingDown) {
@@ -2381,7 +2440,7 @@ mod tests {
         ];
 
         // Use the integer-keyed fast path
-        let result = enrich_via_parent_id(&mut file_entries, &store, "/projects");
+        let result = enrich_via_parent_id_on(&mut file_entries, store.read_conn(), "/projects");
         assert!(result.is_ok(), "enrich_via_parent_id should succeed: {result:?}");
 
         // Verify enrichment results
@@ -2432,7 +2491,7 @@ mod tests {
         let mut file_entries = vec![make_file_entry("docs", "/docs", true)];
 
         // Use the individual path fallback
-        enrich_via_individual_paths(&mut file_entries, &store);
+        enrich_via_individual_paths_on(&mut file_entries, store.read_conn());
 
         let docs = &file_entries[0];
         assert_eq!(docs.recursive_size, Some(500));
@@ -2445,7 +2504,7 @@ mod tests {
     fn enrich_entries_empty_list() {
         let (store, _conn, _dir) = open_temp_store();
         let mut entries: Vec<FileEntry> = Vec::new();
-        enrich_via_individual_paths(&mut entries, &store);
+        enrich_via_individual_paths_on(&mut entries, store.read_conn());
     }
 
     /// Test that enrichment handles entries with no matching index data.
@@ -2453,7 +2512,7 @@ mod tests {
     fn enrich_entries_no_matching_index() {
         let (store, _conn, _dir) = open_temp_store();
         let mut entries = vec![make_file_entry("nonexistent", "/nonexistent", true)];
-        enrich_via_individual_paths(&mut entries, &store);
+        enrich_via_individual_paths_on(&mut entries, store.read_conn());
         assert_eq!(entries[0].recursive_size, None, "unindexed dir should remain None");
     }
 
@@ -2588,7 +2647,7 @@ mod tests {
 
         // Phase 2: Enrich a listing of /home children
         let mut listing = vec![make_file_entry("user", "/home/user", true)];
-        let result = enrich_via_parent_id(&mut listing, &store, "/home");
+        let result = enrich_via_parent_id_on(&mut listing, store.read_conn(), "/home");
         assert!(result.is_ok());
         assert_eq!(listing[0].recursive_size, Some(1000));
         assert_eq!(listing[0].recursive_file_count, Some(1));
@@ -2616,7 +2675,7 @@ mod tests {
 
         // Phase 4: Re-enrich after watcher event
         let mut listing2 = vec![make_file_entry("user", "/home/user", true)];
-        let result2 = enrich_via_parent_id(&mut listing2, &store, "/home");
+        let result2 = enrich_via_parent_id_on(&mut listing2, store.read_conn(), "/home");
         assert!(result2.is_ok());
         assert_eq!(listing2[0].recursive_size, Some(1500), "should reflect new file");
         assert_eq!(listing2[0].recursive_file_count, Some(2));
@@ -2681,7 +2740,7 @@ mod tests {
             make_file_entry("Users", "/Users", true),
         ];
 
-        let result = enrich_via_parent_id(&mut listing, &store, "/");
+        let result = enrich_via_parent_id_on(&mut listing, store.read_conn(), "/");
         assert!(result.is_ok());
 
         assert_eq!(listing[0].recursive_size, Some(5000));
@@ -2689,5 +2748,156 @@ mod tests {
 
         assert_eq!(listing[1].recursive_size, Some(0));
         assert_eq!(listing[1].recursive_dir_count, Some(1));
+    }
+
+    // ── ReadPool and contention tests ────────────────────────────────
+
+    /// Helper: populate a temp DB with a small tree and aggregates for ReadPool tests.
+    /// Returns (db_path, TempDir). The TempDir must be kept alive to prevent cleanup.
+    fn setup_db_for_pool() -> (PathBuf, tempfile::TempDir) {
+        let dir = tempfile::tempdir().expect("create temp dir");
+        let db_path = dir.path().join("pool-test.db");
+        let _store = IndexStore::open(&db_path).expect("open store");
+        let conn = IndexStore::open_write_connection(&db_path).expect("write conn");
+        let entries = vec![
+            EntryRow {
+                id: 2,
+                parent_id: ROOT_ID,
+                name: "projects".into(),
+                is_directory: true,
+                is_symlink: false,
+                size: None,
+                modified_at: None,
+            },
+            EntryRow {
+                id: 3,
+                parent_id: 2,
+                name: "file.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                size: Some(42),
+                modified_at: None,
+            },
+        ];
+        IndexStore::insert_entries_v2_batch(&conn, &entries).expect("insert");
+        aggregator::compute_all_aggregates(&conn).expect("aggregates");
+        (db_path, dir)
+    }
+
+    /// Key regression test: enrichment succeeds even while INDEXING is locked.
+    /// Before the ReadPool fix, `enrich_entries_with_index` used `try_lock()` on
+    /// INDEXING and silently skipped when the lock was held.
+    #[test]
+    fn enrichment_under_contention() {
+        let (db_path, _dir) = setup_db_for_pool();
+        let pool = Arc::new(ReadPool::new(db_path).expect("create pool"));
+
+        // Install pool into READ_POOL so `enrich_entries_with_index` can find it
+        *READ_POOL.lock().unwrap() = Some(Arc::clone(&pool));
+
+        // Hold INDEXING.lock() on a background thread for 2 seconds
+        let lock_handle = std::thread::spawn(|| {
+            let guard = INDEXING.lock().unwrap();
+            std::thread::sleep(Duration::from_secs(2));
+            drop(guard);
+        });
+
+        // Give the locker thread time to acquire
+        std::thread::sleep(Duration::from_millis(50));
+
+        // Enrich on this thread — must succeed despite INDEXING being locked
+        let mut entries = vec![make_file_entry("projects", "/projects", true)];
+        enrich_entries_with_index(&mut entries);
+
+        assert_eq!(entries[0].recursive_size, Some(42), "enrichment should work under contention");
+        assert_eq!(entries[0].recursive_file_count, Some(1));
+
+        lock_handle.join().unwrap();
+
+        // Clean up global state
+        *READ_POOL.lock().unwrap() = None;
+    }
+
+    /// Thread-local connection reuse: calling `with_conn` twice from the same
+    /// thread should reuse the cached connection (same raw pointer).
+    #[test]
+    fn read_pool_connection_reuse() {
+        let (db_path, _dir) = setup_db_for_pool();
+        let pool = ReadPool::new(db_path).expect("create pool");
+
+        let ptr1 = pool
+            .with_conn(|conn| conn as *const Connection as usize)
+            .expect("first call");
+        let ptr2 = pool
+            .with_conn(|conn| conn as *const Connection as usize)
+            .expect("second call");
+
+        assert_eq!(ptr1, ptr2, "same thread should reuse the cached connection");
+    }
+
+    /// After `invalidate()`, the next `with_conn` opens a fresh connection.
+    #[test]
+    fn read_pool_generation_invalidation() {
+        let (db_path, _dir) = setup_db_for_pool();
+        let pool = ReadPool::new(db_path.clone()).expect("create pool");
+
+        // Warm up the thread-local connection
+        pool.with_conn(|_| ()).expect("before invalidation");
+
+        // Verify the cached generation is 0
+        let gen_before = THREAD_CONN.with(|cell| {
+            cell.borrow().as_ref().map(|(_, g, _)| *g).unwrap()
+        });
+        assert_eq!(gen_before, 0);
+
+        pool.invalidate();
+
+        // After invalidation, the pool generation is 1 but the cached
+        // thread-local still holds generation 0. The next with_conn must
+        // detect the mismatch and reopen.
+        pool.with_conn(|_| ()).expect("after invalidation");
+
+        let gen_after = THREAD_CONN.with(|cell| {
+            cell.borrow().as_ref().map(|(_, g, _)| *g).unwrap()
+        });
+        assert_eq!(gen_after, 1, "invalidation should force a new connection with bumped generation");
+    }
+
+    /// Multiple threads can call `with_conn` concurrently without errors.
+    #[test]
+    fn read_pool_cross_thread_reads() {
+        let (db_path, _dir) = setup_db_for_pool();
+        let pool = Arc::new(ReadPool::new(db_path).expect("create pool"));
+
+        let handles: Vec<_> = (0..8)
+            .map(|_| {
+                let p = Arc::clone(&pool);
+                std::thread::spawn(move || {
+                    p.with_conn(|conn| {
+                        let stats = IndexStore::get_dir_stats_by_id(conn, 2).expect("query");
+                        assert!(stats.is_some(), "each thread should read the data");
+                        assert_eq!(stats.unwrap().recursive_size, 42);
+                    })
+                    .expect("with_conn should succeed");
+                })
+            })
+            .collect();
+
+        for h in handles {
+            h.join().expect("thread should not panic");
+        }
+    }
+
+    /// After clearing READ_POOL, `enrich_entries_with_index` returns early
+    /// without panic and leaves entries unenriched.
+    #[test]
+    fn shutdown_enrichment_returns_early() {
+        // Ensure READ_POOL is empty (simulate post-shutdown state)
+        *READ_POOL.lock().unwrap() = None;
+
+        let mut entries = vec![make_file_entry("stuff", "/stuff", true)];
+        enrich_entries_with_index(&mut entries);
+
+        assert_eq!(entries[0].recursive_size, None, "unenriched after shutdown");
     }
 }

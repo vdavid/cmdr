@@ -896,7 +896,7 @@ pub fn run() {
                     // wry 0.54+ registers WryWebView lazily, so it's only available after
                     // the first webview is created (which happens between setup() and Ready).
                     #[cfg(target_os = "macos")]
-                    drag_image_detection::install(app.handle().clone());
+                    drag_image_detection::install(app.clone());
                 }
                 tauri::RunEvent::Exit => {
                     ai::manager::shutdown();

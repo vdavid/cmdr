@@ -522,6 +522,7 @@ impl IndexStore {
     // ── Read methods (integer-keyed, new API) ────────────────────────
 
     /// List children of a directory by parent entry ID.
+    #[cfg(test)]
     pub fn list_children(&self, parent_id: i64) -> Result<Vec<EntryRow>, IndexStoreError> {
         Self::list_children_on(parent_id, &self.read_conn)
     }
