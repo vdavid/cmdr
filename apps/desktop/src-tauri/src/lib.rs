@@ -836,6 +836,7 @@ pub fn run() {
             // MCP server live control
             commands::mcp::set_mcp_enabled,
             commands::mcp::set_mcp_port,
+            commands::mcp::get_mcp_running,
             // Settings commands
             commands::settings::check_port_available,
             commands::settings::find_available_port,

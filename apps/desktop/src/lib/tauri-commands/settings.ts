@@ -57,6 +57,11 @@ export async function setMcpPort(port: number): Promise<void> {
     await invoke('set_mcp_port', { port })
 }
 
+/** Returns whether the MCP server is currently running. */
+export async function getMcpRunning(): Promise<boolean> {
+    return invoke<boolean>('get_mcp_running')
+}
+
 // ============================================================================
 // Indexing commands
 // ============================================================================

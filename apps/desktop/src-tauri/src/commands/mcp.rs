@@ -29,3 +29,9 @@ pub async fn set_mcp_port<R: Runtime + 'static>(app: AppHandle<R>, port: u16) ->
     let config = mcp::McpConfig::from_settings_and_env(Some(true), Some(port));
     mcp::start_mcp_server(app, config).await
 }
+
+/// Returns whether the MCP server is currently running.
+#[tauri::command]
+pub fn get_mcp_running() -> bool {
+    mcp::is_mcp_running()
+}
