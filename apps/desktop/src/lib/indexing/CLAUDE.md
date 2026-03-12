@@ -84,9 +84,10 @@ Rendered in the top-right corner of the main window while `isScanning()` or `isA
 
 - **Scan phase**: Spinner + live label like `Scanning... 42,000 entries, 1,200 dirs`.
 - **Aggregation phase**: Spinner + phase label (for example, "Computing directory sizes...") + progress bar with real %
-  and ETA estimate. Phases: `saving_entries` (flushing writer backlog), `loading`, `sorting` (no progress bar),
-  `computing`, `writing` (progress bar on `saving_entries`, `computing`, and `writing`). ETA is computed from elapsed
-  time and current/total ratio. Progress bar uses `--color-accent` fill with smooth CSS transition.
+  and ETA estimate. Phases: `saving_entries` (flushing writer backlog), `rebuilding_index` (single SQL operation, no
+  progress bar, shows "Usually takes 2–3 minutes" hint), `loading`, `sorting` (no progress bar), `computing`, `writing`
+  (progress bar on `saving_entries`, `computing`, and `writing`). ETA is computed from elapsed time and current/total
+  ratio, reset on phase transitions. Progress bar uses `--color-accent` fill with smooth CSS transition.
 
 Uses `formatNumber` from selection-info-utils for number formatting (uses `'en-US'` locale, hardcoded via
 `toLocaleString('en-US')`).

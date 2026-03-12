@@ -37,6 +37,7 @@ fn phase_to_str(phase: AggregationPhase) -> &'static str {
         AggregationPhase::Sorting => "sorting",
         AggregationPhase::Computing => "computing",
         AggregationPhase::Writing => "writing",
+        AggregationPhase::RebuildingIndex => "rebuilding_index",
     }
 }
 
@@ -589,16 +590,26 @@ fn process_message(
             }
         }
         WriteMessage::RecreateNameIndex => {
+            // Emit progress so the UI shows "Rebuilding index..." instead of
+            // staying stuck at "Saving entries 100%". total=0 signals no
+            // progress bar (this is a single atomic SQL operation).
+            if let Some(app) = app_handle {
+                let _ = app.emit(
+                    "index-aggregation-progress",
+                    AggregationProgressEvent {
+                        phase: phase_to_str(AggregationPhase::RebuildingIndex),
+                        current: 0,
+                        total: 0,
+                    },
+                );
+            }
             let t = Instant::now();
-            if let Err(e) = conn.execute_batch(
-                "CREATE UNIQUE INDEX IF NOT EXISTS idx_parent_name ON entries (parent_id, name)",
-            ) {
+            if let Err(e) =
+                conn.execute_batch("CREATE UNIQUE INDEX IF NOT EXISTS idx_parent_name ON entries (parent_id, name)")
+            {
                 log::warn!("Writer: CREATE INDEX idx_parent_name failed: {e}");
             } else {
-                log::info!(
-                    "Writer: recreated idx_parent_name ({}ms)",
-                    t.elapsed().as_millis(),
-                );
+                log::info!("Writer: recreated idx_parent_name ({}ms)", t.elapsed().as_millis(),);
             }
         }
         WriteMessage::ComputeAllAggregates => {

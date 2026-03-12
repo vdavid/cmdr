@@ -123,9 +123,11 @@ export async function initIndexState(): Promise<void> {
         total: number
     }>('index-aggregation-progress', (event) => {
         const { phase, current, total } = event.payload
+        if (!aggregating || phase !== aggregationPhase) {
+            aggregationStartedAt = Date.now()
+        }
         if (!aggregating) {
             aggregating = true
-            aggregationStartedAt = Date.now()
         }
         aggregationPhase = phase
         aggregationCurrent = current

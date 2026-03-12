@@ -27,6 +27,8 @@ pub enum AggregationPhase {
     Computing,
     /// Batch-writing dir_stats rows to DB.
     Writing,
+    /// Rebuilding the `idx_parent_name` index after bulk inserts.
+    RebuildingIndex,
 }
 
 /// Progress update emitted during aggregation.
