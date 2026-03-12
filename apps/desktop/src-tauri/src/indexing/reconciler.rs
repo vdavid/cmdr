@@ -16,7 +16,7 @@
 //! `UpsertEntryV2`, `DeleteEntryById`, `DeleteSubtreeById`, `PropagateDeltaById`.
 //! The reconciler holds a read connection (`rusqlite::Connection`) for path resolution.
 
-use std::collections::HashSet;
+use std::collections::{HashSet, VecDeque};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -26,8 +26,7 @@ use rusqlite::Connection;
 use tauri::{AppHandle, Emitter};
 
 use crate::indexing::firmlinks;
-use crate::indexing::scanner;
-use crate::indexing::store::{self};
+use crate::indexing::store::{self, IndexStore};
 use crate::indexing::watcher::FsChangeEvent;
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 use crate::indexing::DEBUG_STATS;
@@ -249,32 +248,43 @@ impl EventReconciler {
         let writer = writer.clone();
         let rescan_active = Arc::clone(&self.rescan_active);
 
-        log::info!("MustScanSubDirs: rescan starting for {}", path.display());
+        log::info!("MustScanSubDirs: reconcile starting for {}", path.display());
 
         tokio::task::spawn_blocking(move || {
-            let start = Instant::now();
             let cancelled = AtomicBool::new(false);
-            match scanner::scan_subtree(&path, &writer, &cancelled) {
+            let conn = match IndexStore::open_write_connection(&writer.db_path()) {
+                Ok(c) => c,
+                Err(e) => {
+                    log::warn!("MustScanSubDirs: couldn't open read connection for {} — {e}", path.display());
+                    rescan_active.store(false, Ordering::Relaxed);
+                    return;
+                }
+            };
+
+            match reconcile_subtree(&path, &conn, &writer, &cancelled) {
                 Ok(summary) => {
-                    let duration = start.elapsed();
-                    if duration.as_secs() > 10 {
+                    if summary.duration.as_secs() > 10 {
                         log::warn!(
-                            "MustScanSubDirs: rescan slow for {} ({} entries, {}s)",
+                            "MustScanSubDirs: reconcile slow for {} (+{} -{} ~{}, {}s)",
                             path.display(),
-                            summary.total_entries,
-                            duration.as_secs(),
+                            summary.added,
+                            summary.removed,
+                            summary.updated,
+                            summary.duration.as_secs(),
                         );
                     } else {
                         log::info!(
-                            "MustScanSubDirs: rescan complete for {} ({} entries, {}ms)",
+                            "MustScanSubDirs: reconcile complete for {} (+{} -{} ~{}, {}ms)",
                             path.display(),
-                            summary.total_entries,
-                            summary.duration_ms,
+                            summary.added,
+                            summary.removed,
+                            summary.updated,
+                            summary.duration.as_millis(),
                         );
                     }
                 }
                 Err(e) => {
-                    log::warn!("MustScanSubDirs: rescan failed for {} — {e}", path.display());
+                    log::warn!("MustScanSubDirs: reconcile failed for {} — {e}", path.display());
                 }
             }
 
@@ -299,6 +309,203 @@ impl EventReconciler {
     pub fn is_buffering(&self) -> bool {
         self.buffering
     }
+}
+
+// ── Subtree reconciliation ───────────────────────────────────────────
+
+/// Summary of a subtree reconciliation.
+pub(super) struct ReconcileSummary {
+    pub added: u64,
+    pub removed: u64,
+    pub updated: u64,
+    pub duration: std::time::Duration,
+}
+
+/// Reconcile a subtree by diffing the filesystem against the DB directory-by-directory.
+///
+/// Unlike `scanner::scan_subtree` which deletes all descendants then re-inserts,
+/// this function walks each directory, compares children by name, and only writes
+/// the differences. Safe to interrupt at any point — the DB is never in a
+/// partially-deleted state.
+pub(super) fn reconcile_subtree(
+    root: &Path,
+    conn: &Connection,
+    writer: &IndexWriter,
+    cancelled: &AtomicBool,
+) -> Result<ReconcileSummary, String> {
+    let start = Instant::now();
+    let mut added: u64 = 0;
+    let mut removed: u64 = 0;
+    let mut updated: u64 = 0;
+
+    let root_str = firmlinks::normalize_path(&root.to_string_lossy());
+    let root_id = match store::resolve_path(conn, &root_str) {
+        Ok(Some(id)) => id,
+        Ok(None) => {
+            log::debug!("reconcile_subtree: root not in DB, skipping: {root_str}");
+            return Ok(ReconcileSummary { added: 0, removed: 0, updated: 0, duration: start.elapsed() });
+        }
+        Err(e) => return Err(format!("resolve_path for root: {e}")),
+    };
+
+    let mut queue: VecDeque<(PathBuf, i64)> = VecDeque::new();
+    queue.push_back((root.to_path_buf(), root_id));
+
+    // Collect newly-created directories so we can flush the writer, resolve their IDs,
+    // and then queue them for recursive processing.
+    let mut new_dir_paths: Vec<PathBuf> = Vec::new();
+
+    while let Some((dir_path, dir_id)) = queue.pop_front() {
+        if cancelled.load(Ordering::Relaxed) {
+            break;
+        }
+
+        let fs_children = match read_fs_children(&dir_path) {
+            Some(c) => c,
+            None => continue,
+        };
+
+        let db_children = IndexStore::list_children_on(dir_id, conn)
+            .map_err(|e| format!("list_children_on({dir_id}): {e}"))?;
+
+        let mut db_by_name: std::collections::HashMap<String, &store::EntryRow> =
+            std::collections::HashMap::with_capacity(db_children.len());
+        for row in &db_children {
+            db_by_name.insert(store::normalize_for_comparison(&row.name), row);
+        }
+
+        let mut matched_db_keys: HashSet<String> = HashSet::with_capacity(fs_children.len());
+
+        for (name, meta, is_symlink) in &fs_children {
+            let norm_name = store::normalize_for_comparison(name);
+            let is_dir = meta.is_dir();
+
+            if let Some(db_row) = db_by_name.get(&norm_name) {
+                matched_db_keys.insert(norm_name);
+
+                let changed = if is_dir || *is_symlink {
+                    entry_modified_at(meta) != db_row.modified_at
+                } else {
+                    let (fs_size, fs_mtime) = entry_size_and_mtime(meta);
+                    fs_size != db_row.size || fs_mtime != db_row.modified_at
+                };
+
+                if changed {
+                    let (size, modified_at) = if is_dir || *is_symlink {
+                        (None, entry_modified_at(meta))
+                    } else {
+                        entry_size_and_mtime(meta)
+                    };
+                    let _ = writer.send(WriteMessage::UpsertEntryV2 {
+                        parent_id: dir_id,
+                        name: name.clone(),
+                        is_directory: is_dir,
+                        is_symlink: *is_symlink,
+                        size,
+                        modified_at,
+                    });
+                    updated += 1;
+                }
+
+                if is_dir && !is_symlink {
+                    queue.push_back((dir_path.join(name), db_row.id));
+                }
+            } else {
+                let (size, modified_at) = if is_dir || *is_symlink {
+                    (None, entry_modified_at(meta))
+                } else {
+                    entry_size_and_mtime(meta)
+                };
+                let _ = writer.send(WriteMessage::UpsertEntryV2 {
+                    parent_id: dir_id,
+                    name: name.clone(),
+                    is_directory: is_dir,
+                    is_symlink: *is_symlink,
+                    size,
+                    modified_at,
+                });
+
+                if is_dir {
+                    let _ = writer.send(WriteMessage::PropagateDeltaById {
+                        entry_id: dir_id,
+                        size_delta: 0,
+                        file_count_delta: 0,
+                        dir_count_delta: 1,
+                    });
+                } else if let Some(sz) = size {
+                    let _ = writer.send(WriteMessage::PropagateDeltaById {
+                        entry_id: dir_id,
+                        size_delta: sz as i64,
+                        file_count_delta: 1,
+                        dir_count_delta: 0,
+                    });
+                }
+                added += 1;
+
+                if is_dir && !is_symlink {
+                    new_dir_paths.push(dir_path.join(name));
+                }
+            }
+        }
+
+        for row in &db_children {
+            let norm_name = store::normalize_for_comparison(&row.name);
+            if !matched_db_keys.contains(&norm_name) {
+                if row.is_directory {
+                    let _ = writer.send(WriteMessage::DeleteSubtreeById(row.id));
+                } else {
+                    let _ = writer.send(WriteMessage::DeleteEntryById(row.id));
+                }
+                removed += 1;
+            }
+        }
+
+        // If we found new directories and the queue is empty (current level done),
+        // flush the writer so the read connection can resolve the new IDs.
+        if !new_dir_paths.is_empty() && queue.is_empty() {
+            if let Err(e) = writer.flush_blocking() {
+                log::warn!("reconcile_subtree: flush failed: {e}");
+            }
+            for new_dir in new_dir_paths.drain(..) {
+                let path_str = firmlinks::normalize_path(&new_dir.to_string_lossy());
+                if let Ok(Some(id)) = store::resolve_path(conn, &path_str) {
+                    queue.push_back((new_dir, id));
+                }
+            }
+        }
+    }
+
+    Ok(ReconcileSummary { added, removed, updated, duration: start.elapsed() })
+}
+
+/// Read and filter filesystem children of a directory.
+fn read_fs_children(dir_path: &Path) -> Option<Vec<(String, std::fs::Metadata, bool)>> {
+    let read_dir = match std::fs::read_dir(dir_path) {
+        Ok(rd) => rd,
+        Err(e) => {
+            log::debug!("reconcile_subtree: can't read {}: {e}", dir_path.display());
+            return None;
+        }
+    };
+
+    let mut children = Vec::new();
+    for entry in read_dir {
+        let entry = match entry {
+            Ok(e) => e,
+            Err(_) => continue,
+        };
+        let name = entry.file_name().to_string_lossy().to_string();
+        let child_path = dir_path.join(&name);
+        let normalized_child = firmlinks::normalize_path(&child_path.to_string_lossy());
+        if should_exclude(&normalized_child) {
+            continue;
+        }
+        if let Ok(meta) = std::fs::symlink_metadata(&child_path) {
+            let is_symlink = meta.is_symlink();
+            children.push((name, meta, is_symlink));
+        }
+    }
+    Some(children)
 }
 
 // ── Event processing ─────────────────────────────────────────────────
@@ -881,6 +1088,147 @@ mod tests {
         assert!(result.is_some());
 
         writer.shutdown();
+    }
+
+    // ── Subtree reconciliation tests ──────────────────────────────
+
+    #[test]
+    fn reconcile_new_file() {
+        let (writer, dir, conn) = setup_test_writer();
+        let db_path = dir.path().join("test-reconciler.db");
+
+        let test_dir = non_excluded_tempdir();
+        let file_path = test_dir.path().join("new_file.txt");
+        std::fs::write(&file_path, "hello reconcile").unwrap();
+
+        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy());
+
+        let cancelled = AtomicBool::new(false);
+        let result = reconcile_subtree(test_dir.path(), &conn, &writer, &cancelled);
+        assert!(result.is_ok());
+        let summary = result.unwrap();
+        assert_eq!(summary.added, 1);
+        assert_eq!(summary.removed, 0);
+
+        writer.flush_blocking().unwrap();
+        writer.shutdown();
+        std::thread::sleep(std::time::Duration::from_millis(100));
+
+        let store = IndexStore::open(&db_path).unwrap();
+        let parent_str = test_dir.path().to_string_lossy().to_string();
+        let parent_id = store::resolve_path(store.read_conn(), &parent_str).unwrap().unwrap();
+        let entries = store.list_children(parent_id).unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].name, "new_file.txt");
+        assert!(entries[0].size.unwrap_or(0) > 0);
+    }
+
+    #[test]
+    fn reconcile_deleted_file() {
+        let (writer, dir, conn) = setup_test_writer();
+        let db_path = dir.path().join("test-reconciler.db");
+
+        let test_dir = non_excluded_tempdir();
+
+        // Insert the test dir and a file entry into the DB, but don't create the file on disk
+        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy());
+        {
+            let wconn = IndexStore::open_write_connection(&db_path).unwrap();
+            let parent_str = test_dir.path().to_string_lossy().to_string();
+            let parent_id = store::resolve_path(&wconn, &parent_str).unwrap().unwrap();
+            IndexStore::insert_entry_v2(&wconn, parent_id, "ghost.txt", false, false, Some(42), Some(1000)).unwrap();
+        }
+
+        let cancelled = AtomicBool::new(false);
+        let result = reconcile_subtree(test_dir.path(), &conn, &writer, &cancelled);
+        assert!(result.is_ok());
+        let summary = result.unwrap();
+        assert_eq!(summary.removed, 1);
+        assert_eq!(summary.added, 0);
+
+        writer.flush_blocking().unwrap();
+        writer.shutdown();
+        std::thread::sleep(std::time::Duration::from_millis(100));
+
+        let store = IndexStore::open(&db_path).unwrap();
+        let parent_str = test_dir.path().to_string_lossy().to_string();
+        let parent_id = store::resolve_path(store.read_conn(), &parent_str).unwrap().unwrap();
+        let entries = store.list_children(parent_id).unwrap();
+        assert!(entries.is_empty(), "ghost entry should be removed from DB");
+    }
+
+    #[test]
+    fn reconcile_unchanged() {
+        let (writer, dir, conn) = setup_test_writer();
+        let db_path = dir.path().join("test-reconciler.db");
+
+        let test_dir = non_excluded_tempdir();
+        let file_path = test_dir.path().join("stable.txt");
+        std::fs::write(&file_path, "no changes").unwrap();
+
+        // Insert the directory into the DB
+        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy());
+
+        // Get the file's actual metadata and insert a matching DB entry
+        let meta = std::fs::symlink_metadata(&file_path).unwrap();
+        let (size, mtime) = entry_size_and_mtime(&meta);
+        {
+            let wconn = IndexStore::open_write_connection(&db_path).unwrap();
+            let parent_str = test_dir.path().to_string_lossy().to_string();
+            let parent_id = store::resolve_path(&wconn, &parent_str).unwrap().unwrap();
+            IndexStore::insert_entry_v2(&wconn, parent_id, "stable.txt", false, false, size, mtime).unwrap();
+        }
+
+        let cancelled = AtomicBool::new(false);
+        let result = reconcile_subtree(test_dir.path(), &conn, &writer, &cancelled);
+        assert!(result.is_ok());
+        let summary = result.unwrap();
+        assert_eq!(summary.added, 0);
+        assert_eq!(summary.removed, 0);
+        assert_eq!(summary.updated, 0);
+
+        writer.shutdown();
+    }
+
+    #[test]
+    fn reconcile_modified_file() {
+        let (writer, dir, conn) = setup_test_writer();
+        let db_path = dir.path().join("test-reconciler.db");
+
+        let test_dir = non_excluded_tempdir();
+        let file_path = test_dir.path().join("changed.txt");
+        std::fs::write(&file_path, "original content").unwrap();
+
+        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy());
+
+        // Insert DB entry with stale metadata (different size)
+        {
+            let wconn = IndexStore::open_write_connection(&db_path).unwrap();
+            let parent_str = test_dir.path().to_string_lossy().to_string();
+            let parent_id = store::resolve_path(&wconn, &parent_str).unwrap().unwrap();
+            IndexStore::insert_entry_v2(&wconn, parent_id, "changed.txt", false, false, Some(999), Some(0)).unwrap();
+        }
+
+        let cancelled = AtomicBool::new(false);
+        let result = reconcile_subtree(test_dir.path(), &conn, &writer, &cancelled);
+        assert!(result.is_ok());
+        let summary = result.unwrap();
+        assert_eq!(summary.updated, 1);
+        assert_eq!(summary.added, 0);
+        assert_eq!(summary.removed, 0);
+
+        writer.flush_blocking().unwrap();
+        writer.shutdown();
+        std::thread::sleep(std::time::Duration::from_millis(100));
+
+        // Verify the DB entry was updated with real metadata
+        let store = IndexStore::open(&db_path).unwrap();
+        let parent_str = test_dir.path().to_string_lossy().to_string();
+        let parent_id = store::resolve_path(store.read_conn(), &parent_str).unwrap().unwrap();
+        let entries = store.list_children(parent_id).unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_ne!(entries[0].size, Some(999), "size should have been updated");
+        assert_ne!(entries[0].modified_at, Some(0), "mtime should have been updated");
     }
 
     // ── Test helpers ─────────────────────────────────────────────────
