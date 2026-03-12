@@ -130,7 +130,10 @@ fn get_read_pool() -> Option<Arc<ReadPool>> {
 pub fn enrich_entries_with_index(entries: &mut [FileEntry]) {
     let pool = match get_read_pool() {
         Some(p) => p,
-        None => return, // Indexing not initialized
+        None => {
+            log::debug!("enrich: no read pool");
+            return;
+        }
     };
 
     // Find directory entries that need enrichment
@@ -138,6 +141,8 @@ pub fn enrich_entries_with_index(entries: &mut [FileEntry]) {
     if !has_dirs {
         return;
     }
+
+    let dir_count = entries.iter().filter(|e| e.is_directory && !e.is_symlink).count();
 
     // Determine the common parent directory from the first directory entry.
     // All entries in a listing share the same parent (they're siblings).
@@ -154,6 +159,8 @@ pub fn enrich_entries_with_index(entries: &mut [FileEntry]) {
         None => return,
     };
 
+    log::debug!("enrich: {dir_count} dirs under {parent_path}");
+
     // Use the integer-keyed fast path: resolve parent once, batch-fetch child stats
     if let Err(e) = pool.with_conn(|conn| {
         enrich_via_parent_id_on(entries, conn, &parent_path)
@@ -164,6 +171,9 @@ pub fn enrich_entries_with_index(entries: &mut [FileEntry]) {
             enrich_via_individual_paths_on(entries, conn)
         });
     }
+
+    let enriched = entries.iter().filter(|e| e.is_directory && !e.is_symlink && e.recursive_size.is_some()).count();
+    log::debug!("enrich: {enriched}/{dir_count} dirs got sizes");
 }
 
 /// Fast path: resolve parent dir → id, get child dir IDs, batch-fetch stats.
