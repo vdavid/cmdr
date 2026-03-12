@@ -98,6 +98,9 @@ pub enum WriteMessage {
     BeginTransaction,
     /// Commit the current explicit transaction.
     CommitTransaction,
+    /// Periodic housekeeping: reclaim free pages from deletes/rescans.
+    /// Sent by a background timer, not counted in WriterStats.
+    IncrementalVacuum,
     /// Shut down the writer thread.
     Shutdown,
 }
@@ -381,7 +384,9 @@ fn writer_loop(
     let mut accumulator = AccumulatorMaps::new();
 
     for msg in &receiver {
-        stats.record(&msg);
+        if !matches!(msg, WriteMessage::IncrementalVacuum) {
+            stats.record(&msg);
+        }
         if process_message(
             &conn,
             msg,
@@ -627,6 +632,19 @@ fn process_message(
                 log::warn!("Index writer: COMMIT failed: {e}");
             }
             log::debug!("Writer: COMMIT transaction ({}ms)", t.elapsed().as_millis());
+        }
+        WriteMessage::IncrementalVacuum => {
+            match conn.pragma_query_value(None, "freelist_count", |row| row.get::<_, i64>(0)) {
+                Ok(free) if free > 0 => {
+                    if let Err(e) = conn.execute_batch("PRAGMA incremental_vacuum(2000)") {
+                        log::warn!("Writer: incremental_vacuum failed: {e}");
+                    } else {
+                        log::debug!("Writer: incremental_vacuum reclaimed up to 2000 of {free} free pages");
+                    }
+                }
+                Ok(_) => {} // No free pages, nothing to do
+                Err(e) => log::warn!("Writer: freelist_count query failed: {e}"),
+            }
         }
         WriteMessage::Shutdown => return true,
     }

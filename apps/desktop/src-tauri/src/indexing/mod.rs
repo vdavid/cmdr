@@ -2114,6 +2114,10 @@ pub fn start_indexing(app: &AppHandle) -> Result<(), String> {
 
     let scan_result = manager.resume_or_scan();
 
+    // Clone the writer before moving manager into the state machine, so we
+    // can hand it to the vacuum timer if startup succeeds.
+    let writer_for_vacuum = manager.writer.clone();
+
     // Re-lock and check: if someone called stop_indexing() while we were
     // inside resume_or_scan(), the phase is now Disabled. Respect that —
     // shut down the manager instead of overwriting with Running.
@@ -2122,6 +2126,17 @@ pub fn start_indexing(app: &AppHandle) -> Result<(), String> {
         (IndexPhase::Initializing { .. }, Ok(())) => {
             *guard = IndexPhase::Running(Box::new(manager));
             log::info!("start_indexing: done — IndexManager is Running");
+
+            // Periodic incremental vacuum: reclaim free pages from deletes/rescans
+            // every 30s. Stops automatically when the writer channel closes.
+            tauri::async_runtime::spawn(async move {
+                loop {
+                    tokio::time::sleep(Duration::from_secs(30)).await;
+                    if writer_for_vacuum.send(WriteMessage::IncrementalVacuum).is_err() {
+                        break;
+                    }
+                }
+            });
         }
         (IndexPhase::Initializing { .. }, Err(e)) => {
             *guard = IndexPhase::Disabled;
