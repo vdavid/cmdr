@@ -213,8 +213,7 @@ jobs:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               run: |
                   TAG="${{ github.ref_name }}"
-                  gh release delete-asset "$TAG" latest.json --yes || true
-                  gh release upload "$TAG" /tmp/latest.json
+                  gh release upload "$TAG" /tmp/latest.json --clobber
 
             - name: Update release body with changelog
               env:
