@@ -87,19 +87,31 @@ pnpm test                         # to run frontend tests
 
 ## Linux testing (Ubuntu VM)
 
-The Linux E2E tests run against the real Tauri app with WebKitGTK. Since macOS doesn't have a WebDriver for WKWebView,
-you need a Linux environment. We use a UTM virtual machine (Apple Virtualization) with Ubuntu, connected to the LAN at
-`192.168.1.97`. The macOS repo is shared via VirtioFS so edits on either side are instant.
+The Linux E2E tests run against the real Tauri app with WebKitGTK.
+Since macOS doesn't have a WebDriver for WKWebView, we need a Linux environment.
+We use a UTM virtual machine (Apple Virtualization) with Ubuntu, connected to the LAN at `192.168.1.97`.
+The macOS repo is shared via VirtioFS so edits on either side are instant, but uses custom bind mounts to avoid
+`node_modules` and build folders overwriting each other between the host mac and the VM.
+
+How to use it for testing the app:
+
+1. Start the VM
+2. `cd ~/cmdr`
+3. `pnpm install` if it's been a while or you've added new deps
+4. `mountpoint /mnt/cmdr/cmdr/target && mountpoint /mnt/cmdr/cmdr/node_modules` to verify the bind mounts are healthy
+    - If either mountpoint check fails, run `sudo mount -a` and re-check.
+5. `eval "$(mise activate bash)"` to activate mise. It sets up Node/pnpm/Go — not available in the default SSH shell.
+
+From here, either **run the app** or **run E2E tests**:
 
 ```bash
-ssh veszelovszki@192.168.1.97
-eval "$(mise activate bash)"
+# a) Run the app (dev mode with hot reload)
+cd ~/cmdr
+WEBKIT_DISABLE_COMPOSITING_MODE=1 pnpm dev
+
+# b) Run E2E tests (build first, then test)
 cd ~/cmdr/apps/desktop
-
-# Build the app (needed after Rust or Svelte changes)
 pnpm tauri build --no-bundle
-
-# Run the native E2E tests (same codepath as CI)
 pnpm test:e2e:linux:native
 ```
 
