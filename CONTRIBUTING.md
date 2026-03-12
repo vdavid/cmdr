@@ -126,7 +126,8 @@ For an universal installer:
 
 - `rustup target add x86_64-apple-darwin` once
 - Then `cd apps/desktop && pnpm tauri build --target universal-apple-darwin` each time.
-- Then the binary is at `apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle/dmg/Cmdr_0.1.0_universal.dmg`
+- Then the binary is at
+  `apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle/dmg/Cmdr_0.1.0_universal.dmg`
 
 ## Agent integration (MCP)
 
@@ -149,12 +150,15 @@ This snippet will likely come handy:
 
 ```json
 {
-    "mcpServers": {
-        "tauri": {
-            "command": "npx",
-            "args": ["-y", "@hypothesi/tauri-mcp-server"]
-        }
+  "mcpServers": {
+    "tauri": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@hypothesi/tauri-mcp-server"
+      ]
     }
+  }
 }
 ```
 
@@ -232,6 +236,27 @@ See [ngrok.md](docs/tooling/ngrok.md) for API recipes.
 To run the license server locally (for testing license activation, generating test keys, etc.), you need a `.dev.vars`
 file with Paddle and Resend secrets. See the [license server README](apps/license-server/README.md#local-development)
 for the full setup. Ask a maintainer for the current values if you don't have dashboard access.
+
+## Self-hosted GitHub Actions macOS runner (maintainers)
+
+The release workflow runs on a self-hosted macOS runner and can save a bunch of GitHub Actions credits.
+
+To set one up:
+
+1. Go to [repo](https://github.com/vdavid/cmdr) → **Settings** → **Actions** → **Runners** → **New self-hosted runner**
+2. Select **macOS** and **ARM64**
+3. Follow GitHub's instructions to download, configure, and register the runner, and run it to test it works.
+4. Quit it, then install it as a launchd service so it starts on boot:
+   ```bash
+   ./svc.sh install
+   ./svc.sh start
+   ```
+5. Make sure the runner has all build dependencies: Rust (`rustup`), Node, pnpm, Go (all via `mise install`), and Xcode
+   CLI tools. You need these to build the app anyway.
+6. Prevent sleep in **System Settings → Energy** so the runner stays available during releases.
+
+The runner auto-receives the labels `self-hosted`, `macOS`, `ARM64`, which the release workflow matches on. Apple
+Silicon can cross-compile x86_64 and universal builds, so a single ARM64 runner handles all three architectures. Yay!
 
 ## Infrastructure access (maintainers)
 
