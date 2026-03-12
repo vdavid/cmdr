@@ -205,7 +205,7 @@ impl std::error::Error for IndexStoreError {}
 ///
 /// Must be called on every connection before any table creation or query,
 /// because custom collations are not persisted in the DB file.
-fn register_platform_case_collation(conn: &Connection) -> Result<(), IndexStoreError> {
+pub fn register_platform_case_collation(conn: &Connection) -> Result<(), IndexStoreError> {
     conn.create_collation("platform_case", platform_case_compare)?;
     Ok(())
 }

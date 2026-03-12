@@ -16,6 +16,10 @@ automation = ["dep:tauri-plugin-automation"]
 name = "Cmdr"
 path = "src/main.rs"
 
+[[bin]]
+name = "index_query"
+path = "src/bin/index_query.rs"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]

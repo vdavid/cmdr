@@ -80,7 +80,7 @@ mod file_system;
 pub(crate) mod file_viewer;
 mod font_metrics;
 pub mod icons;
-mod indexing;
+pub mod indexing;
 pub mod licensing;
 #[cfg(target_os = "linux")]
 pub(crate) mod linux_distro;
