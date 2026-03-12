@@ -78,6 +78,26 @@ const {
             })}
         />
 
+        {/* Prevent light-mode FOUC: set background before first paint */}
+        <style is:inline>
+            @media (prefers-color-scheme: light) {
+                html:not([data-force-dark]) { background-color: #fafaf8; }
+            }
+        </style>
+
+        {/* Hide newsletter icon before first paint if user already subscribed/dismissed */}
+        <script is:inline>
+            try {
+                if (
+                    localStorage.getItem('newsletter-subscribed') === 'true' ||
+                    localStorage.getItem('newsletter-dismissed') === 'true' ||
+                    localStorage.getItem('newsletter-cta-dismissed') === 'true'
+                ) {
+                    document.documentElement.classList.add('newsletter-hidden')
+                }
+            } catch (e) {}
+        </script>
+
         {/* Umami analytics — self-hosted, cookieless */}
         {
             import.meta.env.PUBLIC_UMAMI_WEBSITE_ID && (

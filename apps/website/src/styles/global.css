@@ -61,6 +61,11 @@ body {
     overflow-x: hidden;
 }
 
+/* Hide newsletter elements before JS hydration if user already subscribed/dismissed */
+.newsletter-hidden [data-newsletter-nav] {
+    display: none;
+}
+
 /* Selection */
 ::selection {
     background-color: var(--color-accent);
