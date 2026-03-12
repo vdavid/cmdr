@@ -19,9 +19,10 @@
         "minWidth": 950,
         "minHeight": 550,
         "visible": false,
+        "titleBarStyle": "Overlay",
         "trafficLightPosition": {
           "x": 9,
-          "y": 17
+          "y": 11
         },
         "hiddenTitle": true,
         "acceptFirstMouse": true
