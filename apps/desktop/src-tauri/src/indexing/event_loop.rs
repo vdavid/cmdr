@@ -509,6 +509,10 @@ pub(super) async fn run_replay_event_loop(
 
     log::info!("Replay: switching to live mode");
     micro_scans.set_replay_active(false);
+    // The index is already complete after a successful replay — mark micro-scans
+    // as superseded so they don't fire destructive scan_subtree calls when the
+    // user navigates directories.
+    micro_scans.mark_full_scan_complete().await;
     let mut reconciler = EventReconciler::new();
     reconciler.switch_to_live();
 
