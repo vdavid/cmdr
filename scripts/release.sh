@@ -15,6 +15,9 @@ if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   exit 1
 fi
 
+# Pull latest main to avoid push rejection after tagging
+git pull --rebase origin main
+
 # Check for uncommitted changes (CHANGELOG.md and roadmap are allowed — they get included in the release commit)
 EXCLUDE=(':!CHANGELOG.md' ':!apps/website/src/pages/roadmap.astro')
 if ! git diff --quiet -- "${EXCLUDE[@]}" || ! git diff --staged --quiet -- "${EXCLUDE[@]}"; then
@@ -22,11 +25,16 @@ if ! git diff --quiet -- "${EXCLUDE[@]}" || ! git diff --staged --quiet -- "${EX
   exit 1
 fi
 
-# Check CHANGELOG.md has unreleased content
+# Check CHANGELOG.md has an [Unreleased] section with content
+if ! grep -q '## \[Unreleased\]' CHANGELOG.md; then
+  echo "Error: CHANGELOG.md has no [Unreleased] section."
+  echo "Add a '## [Unreleased]' heading with release notes before the first versioned section."
+  exit 1
+fi
 UNRELEASED_CONTENT=$(sed -n '/## \[Unreleased\]/,/## \[/p' CHANGELOG.md | sed '1d;$d' | grep -v '^$' || true)
 if [[ -z "$UNRELEASED_CONTENT" ]]; then
-  echo "Error: CHANGELOG.md has no entries under [Unreleased]."
-  echo "Add release notes before releasing!"
+  echo "Error: The [Unreleased] section in CHANGELOG.md is empty."
+  echo "Add release notes under it before releasing!"
   exit 1
 fi
 
@@ -47,9 +55,9 @@ cd ../../..
 sed -i '' "s/^version = \".*\"/version = \"$VERSION\"/" apps/desktop/src-tauri/Cargo.toml
 (cd apps/desktop/src-tauri && cargo update --workspace --quiet)
 
-# Update CHANGELOG.md: rename [Unreleased] to [version] and add new [Unreleased]
+# Update CHANGELOG.md: replace [Unreleased] with the versioned heading
 TODAY=$(date +%Y-%m-%d)
-sed -i '' "s/## \[Unreleased\]/## [Unreleased]\n\n## [$VERSION] - $TODAY/" CHANGELOG.md
+sed -i '' "s/## \[Unreleased\]/## [$VERSION] - $TODAY/" CHANGELOG.md
 
 # Commit and tag (only files touched by this script)
 git add \

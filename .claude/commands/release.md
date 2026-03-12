@@ -7,6 +7,9 @@ Prepare a release based on docs/guides/releasing.md.
    - Commits have title + body — read all!
    - You can link multiple commits for changelog items if needed.
    - List major but non-app changes in a "Non-app" section.
+   - **Add a `## [Unreleased]` heading** right after the format preamble (before the first versioned section), then put
+     entries under it. The release script replaces this heading with the versioned one. The committed changelog has no
+     `[Unreleased]` section between releases — you're creating it fresh each time.
 3. Suggest updates to the roadmap.
    - Read @apps/website/src/pages/roadmap.astro as well. Is there anything to tick off (with a date!) or a major
      development worth mentioning?
