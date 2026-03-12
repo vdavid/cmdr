@@ -77,6 +77,7 @@
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
     import { resolveValidPath } from '../navigation/path-navigation'
     import { prioritizeDir } from '$lib/indexing'
+    import { homeDir } from '@tauri-apps/api/path'
     import { getVolumeSpace, type VolumeSpaceInfo } from '$lib/tauri-commands'
     import type { UnreachableState } from '../tabs/tab-types'
     import { getDiskUsageLevel, getUsedPercent, formatBarTooltip } from '../disk-space-utils'
@@ -176,6 +177,33 @@
 
     // Check if we're viewing the network (special virtual volume)
     const isNetworkView = $derived(volumeId === 'network')
+
+    // User's home directory path (e.g. "/Users/veszelovszki"), fetched once on mount
+    let userHomePath = $state('')
+
+    // Display path shown in the breadcrumb after the volume name.
+    // For the root volume: replaces the home dir prefix with "~", otherwise shows absolute path.
+    // For other volumes: shows path relative to the volume root.
+    const breadcrumbDisplayPath = $derived.by(() => {
+        if (isMtpVolumeId(volumeId)) return getMtpDisplayPath(currentPath)
+
+        // For non-root volumes, strip the volume path prefix
+        if (volumePath !== '/') {
+            return currentPath.startsWith(volumePath) ? currentPath.slice(volumePath.length) || '/' : currentPath
+        }
+
+        // Root volume: paths starting with ~ are already user-friendly
+        if (currentPath.startsWith('~')) return currentPath
+
+        // Root volume with absolute path: replace home dir prefix with ~
+        if (userHomePath && currentPath.startsWith(userHomePath)) {
+            const rest = currentPath.slice(userHomePath.length)
+            return rest ? '~' + rest : '~'
+        }
+
+        // Root volume, outside home dir: show absolute path as-is
+        return currentPath
+    })
 
     // Check if we're viewing an MTP device
     const isMtpView = $derived(isMtpVolumeId(volumeId))
@@ -1456,6 +1484,11 @@
     // both local and MTP changes, providing smooth incremental updates.
 
     onMount(() => {
+        // Fetch user home dir for breadcrumb display (~ substitution)
+        void homeDir().then((h) => {
+            userHomePath = h.endsWith('/') ? h.slice(0, -1) : h
+        })
+
         // Skip directory loading for:
         // - Network views (they handle their own data via NetworkBrowser/ShareBrowser)
         // - Device-only MTP views (they need connection first, handled by auto-connect effect)
@@ -1564,13 +1597,7 @@
             {currentPath}
             onVolumeChange={handleVolumeChangeFromBreadcrumb}
         />
-        <span class="path"
-            >{isMtpView
-                ? getMtpDisplayPath(currentPath)
-                : currentPath.startsWith(volumePath)
-                  ? currentPath.slice(volumePath.length) || '/'
-                  : currentPath}</span
-        >
+        <span class="path">{breadcrumbDisplayPath}</span>
     </div>
     <div class="content">
         {#if unreachable}
