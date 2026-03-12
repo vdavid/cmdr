@@ -137,6 +137,11 @@ block2 = "0.6"
 security-framework = "3.2"
 # Drive indexing: macOS FSEvents watcher with event IDs and sinceWhen replay
 cmdr-fsevent-stream = { path = "../../../crates/fsevent-stream" }
+# Custom updater: signature verification, tarball extraction, version comparison
+minisign-verify = "0.2"
+flate2 = "1"
+tar = "0.4"
+semver = "1"
 
 # CrabNebula automation plugin for macOS E2E testing (optional, feature-gated)
 tauri-plugin-automation = { version = "0.1", optional = true }

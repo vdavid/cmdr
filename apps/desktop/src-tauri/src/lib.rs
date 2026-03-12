@@ -48,6 +48,10 @@ use cocoon as _;
 #[cfg(not(debug_assertions))]
 use tauri_plugin_mcp_bridge as _;
 //noinspection ALL
+// tauri_plugin_updater is only registered on non-macOS (custom updater handles macOS)
+#[cfg(target_os = "macos")]
+use tauri_plugin_updater as _;
+//noinspection ALL
 // security_framework is used in network/keychain.rs for Keychain integration
 #[cfg(target_os = "macos")]
 use security_framework as _;
@@ -99,6 +103,8 @@ mod permissions;
 #[cfg(target_os = "linux")]
 mod permissions_linux;
 mod settings;
+#[cfg(target_os = "macos")]
+mod updater;
 #[cfg(target_os = "macos")]
 mod volumes;
 #[cfg(target_os = "linux")]
@@ -172,7 +178,9 @@ pub fn run() {
     #[cfg(feature = "automation")]
     let builder = builder.plugin(tauri_plugin_automation::init());
 
-    // Skip updater plugin in CI to avoid network dependency and latency during E2E tests
+    // Skip Tauri updater plugin on macOS (custom updater preserves TCC permissions)
+    // and in CI (avoids network dependency and latency during E2E tests)
+    #[cfg(not(target_os = "macos"))]
     let builder = if std::env::var("CI").is_ok() {
         builder
     } else {
@@ -352,6 +360,10 @@ pub fn run() {
                 use tauri::TitleBarStyle;
                 let _ = window.set_title_bar_style(TitleBarStyle::Visible);
             }
+
+            // Initialize custom updater state (shared between download and install commands)
+            #[cfg(target_os = "macos")]
+            app.manage(updater::UpdateState::new());
 
             // Initialize pane state store for MCP context tools
             app.manage(mcp::PaneStateStore::new());
@@ -866,6 +878,13 @@ pub fn run() {
             commands::clipboard::read_clipboard_files,
             commands::clipboard::read_clipboard_text,
             commands::clipboard::clear_clipboard_cut_state,
+            // Custom updater commands (macOS rsync-into-bundle, preserves TCC permissions)
+            #[cfg(target_os = "macos")]
+            updater::check_for_update,
+            #[cfg(target_os = "macos")]
+            updater::download_update,
+            #[cfg(target_os = "macos")]
+            updater::install_update,
         ])
         .on_window_event(|window, event| {
             // When the main window is closed, quit the entire app (including settings/debug/viewer windows)
