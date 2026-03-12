@@ -861,6 +861,10 @@ impl IndexManager {
                         }
                     }
 
+                    // Backfill dir_stats for any directories created by the replay
+                    // that didn't go through the full aggregation pass.
+                    let _ = writer.send(WriteMessage::BackfillMissingDirStats);
+
                     // Switch to live mode
                     reconciler.switch_to_live();
 
@@ -1601,6 +1605,10 @@ async fn run_replay_event_loop(
     } else if !affected_paths.is_empty() {
         reconciler::emit_dir_updated(&app, affected_paths.iter().cloned().collect());
     }
+
+    // Backfill dir_stats for any directories created by the replay
+    // that didn't go through a full aggregation pass.
+    let _ = writer.send(WriteMessage::BackfillMissingDirStats);
 
     // ── Switch to live mode immediately (before verification) ────────
 

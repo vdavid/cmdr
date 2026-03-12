@@ -301,6 +301,107 @@ pub fn compute_subtree_aggregates(conn: &Connection, root: &str) -> Result<u64, 
     Ok(count)
 }
 
+/// Backfill `dir_stats` for directories that have entries but no stats row.
+///
+/// Finds all directories missing a `dir_stats` row and computes their stats
+/// bottom-up. This catches directories created by reconciler/live events
+/// after the last full aggregation. Returns the number of dirs backfilled.
+pub fn backfill_missing_dir_stats(conn: &Connection) -> Result<u64, IndexStoreError> {
+    // Find directories without dir_stats
+    let missing_ids = load_dirs_missing_stats(conn)?;
+    if missing_ids.is_empty() {
+        return Ok(0);
+    }
+
+    let start = std::time::Instant::now();
+    let count = missing_ids.len();
+    log::debug!("Backfill: {count} directories missing dir_stats, computing...");
+
+    // Load ALL directory entries for the topological sort (we need the full
+    // tree structure to compute bottom-up correctly, since a missing dir's
+    // children may also be missing).
+    let all_dir_entries = load_all_directory_ids(conn)?;
+
+    // Build direct_stats and child_dirs maps scoped to the missing dirs
+    // and their descendants. We use the full-table bulk queries since the
+    // missing dirs can be scattered across the tree.
+    let direct_stats = bulk_get_children_stats_by_id(conn)?;
+    let child_dirs_map = bulk_get_child_dir_ids(conn)?;
+
+    // Topological sort all dirs (we need correct ordering)
+    let sorted = topological_sort_bottom_up(&all_dir_entries);
+
+    // Build set of missing IDs for fast lookup
+    let missing_set: std::collections::HashSet<i64> = missing_ids.into_iter().collect();
+
+    // Compute stats bottom-up for ALL dirs, but only write the missing ones.
+    // We need to compute all because a missing dir's stats depend on its
+    // children (which might have existing stats in the DB or might also be
+    // missing).
+    let mut computed: HashMap<i64, DirStatsById> = HashMap::with_capacity(sorted.len());
+    let mut to_write: Vec<DirStatsById> = Vec::with_capacity(count);
+
+    for &dir_id in &sorted {
+        let (file_size_sum, file_count, child_dir_count) =
+            direct_stats.get(&dir_id).copied().unwrap_or((0, 0, 0));
+
+        let mut recursive_size = file_size_sum;
+        let mut recursive_file_count = file_count;
+        let mut recursive_dir_count = child_dir_count;
+
+        if let Some(children) = child_dirs_map.get(&dir_id) {
+            for &child_id in children {
+                // Prefer freshly computed stats, fall back to existing DB stats
+                if let Some(child_stats) = computed.get(&child_id) {
+                    recursive_size += child_stats.recursive_size;
+                    recursive_file_count += child_stats.recursive_file_count;
+                    recursive_dir_count += child_stats.recursive_dir_count;
+                } else if let Ok(Some(db_stats)) = IndexStore::get_dir_stats_by_id(conn, child_id) {
+                    recursive_size += db_stats.recursive_size;
+                    recursive_file_count += db_stats.recursive_file_count;
+                    recursive_dir_count += db_stats.recursive_dir_count;
+                }
+            }
+        }
+
+        let stats = DirStatsById {
+            entry_id: dir_id,
+            recursive_size,
+            recursive_file_count,
+            recursive_dir_count,
+        };
+
+        if missing_set.contains(&dir_id) {
+            to_write.push(stats.clone());
+        }
+        computed.insert(dir_id, stats);
+    }
+
+    // Batch-write only the missing stats
+    for chunk in to_write.chunks(1000) {
+        IndexStore::upsert_dir_stats_by_id(conn, chunk)?;
+    }
+
+    log::debug!(
+        "Backfill: wrote {} dir_stats rows in {:.1}s",
+        to_write.len(),
+        start.elapsed().as_secs_f64(),
+    );
+
+    Ok(to_write.len() as u64)
+}
+
+/// Load directory IDs that have entries but no `dir_stats` row.
+fn load_dirs_missing_stats(conn: &Connection) -> Result<Vec<i64>, IndexStoreError> {
+    let mut stmt = conn.prepare(
+        "SELECT e.id FROM entries e
+         LEFT JOIN dir_stats ds ON ds.entry_id = e.id
+         WHERE e.is_directory = 1 AND ds.entry_id IS NULL",
+    )?;
+    let rows = stmt.query_map([], |row| row.get::<_, i64>(0))?;
+    rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+}
+
 // ── Internal helpers ─────────────────────────────────────────────────
 
 /// Load all directory `(id, parent_id)` pairs from the entries table.
@@ -687,6 +788,67 @@ mod tests {
     fn subtree_aggregation_nonexistent_root() {
         let (conn, _dir) = open_temp_conn();
         let count = compute_subtree_aggregates(&conn, "/nonexistent").unwrap();
+        assert_eq!(count, 0);
+    }
+
+    // ── backfill_missing_dir_stats tests ─────────────────────────────
+
+    #[test]
+    fn backfill_fills_missing_stats() {
+        let (conn, _dir) = open_temp_conn();
+
+        // Tree: /a (id=2) with /a/f.txt (id=3, 100 bytes), /a/sub (id=4), /a/sub/g.txt (id=5, 200)
+        insert_entries(
+            &conn,
+            &[
+                make_dir(2, ROOT_ID, "a"),
+                make_file(3, 2, "f.txt", 100),
+                make_dir(4, 2, "sub"),
+                make_file(5, 4, "g.txt", 200),
+            ],
+        );
+
+        // Only compute stats for /a/sub (id=4) — leave /a (id=2) and root (id=1) missing
+        IndexStore::upsert_dir_stats_by_id(
+            &conn,
+            &[DirStatsById {
+                entry_id: 4,
+                recursive_size: 200,
+                recursive_file_count: 1,
+                recursive_dir_count: 0,
+            }],
+        )
+        .unwrap();
+
+        // Backfill should fill in root sentinel (id=1) and /a (id=2)
+        let count = backfill_missing_dir_stats(&conn).unwrap();
+        assert_eq!(count, 2); // root sentinel + /a
+
+        // /a should now have correct recursive stats
+        let a_stats = get_stats(&conn, 2).unwrap();
+        assert_eq!(a_stats.recursive_size, 300); // 100 + 200
+        assert_eq!(a_stats.recursive_file_count, 2);
+        assert_eq!(a_stats.recursive_dir_count, 1);
+
+        // Root sentinel should also be correct
+        let root_stats = get_stats(&conn, ROOT_ID).unwrap();
+        assert_eq!(root_stats.recursive_size, 300);
+    }
+
+    #[test]
+    fn backfill_noop_when_all_stats_present() {
+        let (conn, _dir) = open_temp_conn();
+
+        insert_entries(
+            &conn,
+            &[make_dir(2, ROOT_ID, "a"), make_file(3, 2, "f.txt", 100)],
+        );
+
+        // Compute all stats first
+        compute_all_aggregates(&conn).unwrap();
+
+        // Backfill should find nothing to do
+        let count = backfill_missing_dir_stats(&conn).unwrap();
         assert_eq!(count, 0);
     }
 

@@ -17,7 +17,7 @@ use tauri::{AppHandle, Emitter};
 use tokio::sync::oneshot;
 
 use crate::indexing::aggregator::{self, AggregationPhase, AggregationProgress};
-use crate::indexing::store::{EntryRow, IndexStore, IndexStoreError};
+use crate::indexing::store::{DirStatsById, EntryRow, IndexStore, IndexStoreError};
 
 // ── Aggregation progress events ──────────────────────────────────────
 
@@ -98,6 +98,10 @@ pub enum WriteMessage {
     BeginTransaction,
     /// Commit the current explicit transaction.
     CommitTransaction,
+    /// Backfill dir_stats for directories that have entries but no stats row.
+    /// Happens after reconciler replay or cold-start replay to catch dirs
+    /// created by events that ran after the last full aggregation.
+    BackfillMissingDirStats,
     /// Periodic housekeeping: reclaim free pages from deletes/rescans.
     /// Sent by a background timer, not counted in WriterStats.
     IncrementalVacuum,
@@ -475,6 +479,24 @@ fn process_message(
                             log::debug!(
                                 "Writer: UpsertEntryV2 inserted \"{name}\" (parent_id={parent_id}) → id={new_id}"
                             );
+                            // Initialize empty dir_stats for new directories so enrichment
+                            // always has a row. Subsequent PropagateDeltaById calls from
+                            // child events will update it incrementally.
+                            if is_directory {
+                                if let Err(e) = IndexStore::upsert_dir_stats_by_id(
+                                    conn,
+                                    &[DirStatsById {
+                                        entry_id: new_id,
+                                        recursive_size: 0,
+                                        recursive_file_count: 0,
+                                        recursive_dir_count: 0,
+                                    }],
+                                ) {
+                                    log::warn!(
+                                        "Writer: init dir_stats for new dir id={new_id} failed: {e}"
+                                    );
+                                }
+                            }
                         }
                         Err(e) => {
                             log::warn!("Index writer: insert_entry_v2 failed for {name}: {e}");
@@ -632,6 +654,21 @@ fn process_message(
                 log::warn!("Index writer: COMMIT failed: {e}");
             }
             log::debug!("Writer: COMMIT transaction ({}ms)", t.elapsed().as_millis());
+        }
+        WriteMessage::BackfillMissingDirStats => {
+            let t = Instant::now();
+            match aggregator::backfill_missing_dir_stats(conn) {
+                Ok(0) => {
+                    log::debug!("BackfillMissingDirStats: no dirs missing stats");
+                }
+                Ok(count) => {
+                    log::info!(
+                        "BackfillMissingDirStats: computed stats for {count} dirs in {:.1}s",
+                        t.elapsed().as_secs_f64(),
+                    );
+                }
+                Err(e) => log::warn!("BackfillMissingDirStats failed: {e}"),
+            }
         }
         WriteMessage::IncrementalVacuum => {
             match conn.pragma_query_value(None, "freelist_count", |row| row.get::<_, i64>(0)) {
@@ -821,6 +858,39 @@ mod tests {
         assert_eq!(children.len(), 1);
         assert_eq!(children[0].name, "new.txt");
         assert_eq!(children[0].size, Some(512), "size should be updated to 512");
+    }
+
+    #[test]
+    fn upsert_entry_v2_initializes_dir_stats_for_new_dirs() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+        // Insert a new directory via UpsertEntryV2
+        writer
+            .send(WriteMessage::UpsertEntryV2 {
+                parent_id: ROOT_ID,
+                name: "newdir".into(),
+                is_directory: true,
+                is_symlink: false,
+                size: None,
+                modified_at: None,
+            })
+            .unwrap();
+        writer.shutdown();
+        thread::sleep(Duration::from_millis(100));
+
+        // The new directory should have a zero-valued dir_stats row
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        let dir_id = IndexStore::resolve_component(&conn, ROOT_ID, "newdir")
+            .unwrap()
+            .expect("newdir should exist");
+
+        let stats = IndexStore::get_dir_stats_by_id(&conn, dir_id).unwrap();
+        assert!(stats.is_some(), "new dir should have dir_stats");
+        let stats = stats.unwrap();
+        assert_eq!(stats.recursive_size, 0);
+        assert_eq!(stats.recursive_file_count, 0);
+        assert_eq!(stats.recursive_dir_count, 0);
     }
 
     #[test]
