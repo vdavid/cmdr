@@ -24,13 +24,16 @@ pub(super) struct ReadPool {
 }
 
 thread_local! {
-    pub(super) static THREAD_CONN: RefCell<Option<(PathBuf, u64, Connection)>> = RefCell::new(None);
+    pub(super) static THREAD_CONN: RefCell<Option<(PathBuf, u64, Connection)>> = const { RefCell::new(None) };
 }
 
 impl ReadPool {
     pub(super) fn new(db_path: PathBuf) -> Result<Self, IndexStoreError> {
         let _ = IndexStore::open_read_connection(&db_path)?; // Validate openable
-        Ok(Self { db_path, generation: AtomicU64::new(0) })
+        Ok(Self {
+            db_path,
+            generation: AtomicU64::new(0),
+        })
     }
 
     /// Invalidate all thread-local connections. Next `with_conn` call reopens.
@@ -54,8 +57,7 @@ impl ReadPool {
                 None => true,
             };
             if needs_reopen {
-                let conn = IndexStore::open_read_connection(&self.db_path)
-                    .map_err(|e| format!("{e}"))?;
+                let conn = IndexStore::open_read_connection(&self.db_path).map_err(|e| format!("{e}"))?;
                 *slot = Some((self.db_path.clone(), current_gen, conn));
             }
             Ok(f(&slot.as_ref().unwrap().2))
@@ -116,23 +118,28 @@ pub fn enrich_entries_with_index(entries: &mut [FileEntry]) {
     log::debug!("enrich: {dir_count} dirs under {parent_path}");
 
     // Use the integer-keyed fast path: resolve parent once, batch-fetch child stats
-    if let Err(e) = pool.with_conn(|conn| {
-        enrich_via_parent_id_on(entries, conn, &parent_path)
-    }).and_then(|r| r) {
+    if let Err(e) = pool
+        .with_conn(|conn| enrich_via_parent_id_on(entries, conn, &parent_path))
+        .and_then(|r| r)
+    {
         log::debug!("Enrichment fast path failed: {e}, trying fallback");
         // Fallback: resolve each path individually (handles mixed-parent edge cases)
-        let _ = pool.with_conn(|conn| {
-            enrich_via_individual_paths_on(entries, conn)
-        });
+        let _ = pool.with_conn(|conn| enrich_via_individual_paths_on(entries, conn));
     }
 
-    let enriched = entries.iter().filter(|e| e.is_directory && !e.is_symlink && e.recursive_size.is_some()).count();
+    let enriched = entries
+        .iter()
+        .filter(|e| e.is_directory && !e.is_symlink && e.recursive_size.is_some())
+        .count();
     log::debug!("enrich: {enriched}/{dir_count} dirs got sizes");
 }
 
 /// Fast path: resolve parent dir → id, get child dir IDs, batch-fetch stats.
-pub(super) fn enrich_via_parent_id_on(entries: &mut [FileEntry], conn: &Connection, parent_path: &str) -> Result<(), String> {
-
+pub(super) fn enrich_via_parent_id_on(
+    entries: &mut [FileEntry],
+    conn: &Connection,
+    parent_path: &str,
+) -> Result<(), String> {
     // Resolve parent directory path → entry ID (one tree walk, almost always cached)
     let parent_id = match store::resolve_path(conn, parent_path).map_err(|e| format!("{e}"))? {
         Some(id) => id,
@@ -177,7 +184,6 @@ pub(super) fn enrich_via_parent_id_on(entries: &mut [FileEntry], conn: &Connecti
 
 /// Fallback: resolve each directory path individually (handles mixed-parent entries).
 pub(super) fn enrich_via_individual_paths_on(entries: &mut [FileEntry], conn: &Connection) {
-
     // Resolve each dir path → entry_id, then batch-fetch stats
     let mut id_to_path: Vec<(i64, String)> = Vec::new();
     for entry in entries.iter().filter(|e| e.is_directory && !e.is_symlink) {

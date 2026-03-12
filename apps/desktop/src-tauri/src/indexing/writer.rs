@@ -482,8 +482,8 @@ fn process_message(
                             // Initialize empty dir_stats for new directories so enrichment
                             // always has a row. Subsequent PropagateDeltaById calls from
                             // child events will update it incrementally.
-                            if is_directory {
-                                if let Err(e) = IndexStore::upsert_dir_stats_by_id(
+                            if is_directory
+                                && let Err(e) = IndexStore::upsert_dir_stats_by_id(
                                     conn,
                                     &[DirStatsById {
                                         entry_id: new_id,
@@ -491,11 +491,9 @@ fn process_message(
                                         recursive_file_count: 0,
                                         recursive_dir_count: 0,
                                     }],
-                                ) {
-                                    log::warn!(
-                                        "Writer: init dir_stats for new dir id={new_id} failed: {e}"
-                                    );
-                                }
+                                )
+                            {
+                                log::warn!("Writer: init dir_stats for new dir id={new_id} failed: {e}");
                             }
                         }
                         Err(e) => {

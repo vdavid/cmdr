@@ -1127,7 +1127,9 @@ mod tests {
         ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy());
         {
             let wconn = IndexStore::open_write_connection(&db_path).unwrap();
-            let parent_id = store::resolve_path(&wconn, &test_dir.path().to_string_lossy()).unwrap().unwrap();
+            let parent_id = store::resolve_path(&wconn, &test_dir.path().to_string_lossy())
+                .unwrap()
+                .unwrap();
             IndexStore::insert_entry_v2(&wconn, parent_id, "still_here.txt", false, false, Some(100), None).unwrap();
         }
 
@@ -1145,7 +1147,11 @@ mod tests {
             .unwrap()
             .unwrap();
         let children = store.list_children(parent_id).unwrap();
-        assert_eq!(children.len(), 1, "file should still be in DB — removal was a false alarm");
+        assert_eq!(
+            children.len(),
+            1,
+            "file should still be in DB — removal was a false alarm"
+        );
         assert_eq!(children[0].name, "still_here.txt");
     }
 

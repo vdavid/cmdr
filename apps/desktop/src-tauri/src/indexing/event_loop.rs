@@ -7,6 +7,7 @@ use std::time::Duration;
 use rusqlite::Connection;
 use tauri::{AppHandle, Emitter};
 
+use super::DEBUG_STATS;
 use super::enrichment::get_read_pool;
 use super::events::{IndexReplayProgressEvent, RescanReason, emit_rescan_notification};
 use super::firmlinks;
@@ -16,7 +17,6 @@ use super::scanner;
 use super::store::{self, IndexStore};
 use super::watcher;
 use super::writer::{IndexWriter, WriteMessage};
-use super::DEBUG_STATS;
 
 // ── Live event loop ──────────────────────────────────────────────────
 
@@ -192,8 +192,8 @@ pub(super) async fn run_live_event_loop(
                 // Check if the FSEvents channel overflowed — events were dropped
                 // between FSEvents and our forward task. The only safe recovery is
                 // a full rescan.
-                if let Some(ref flag) = watcher_overflow {
-                    if flag.load(Ordering::Relaxed) {
+                if let Some(ref flag) = watcher_overflow
+                    && flag.load(Ordering::Relaxed) {
                         emit_rescan_notification(
                             &app,
                             &volume_id,
@@ -209,7 +209,6 @@ pub(super) async fn run_live_event_loop(
                         while event_rx.recv().await.is_some() {}
                         break;
                     }
-                }
 
                 process_live_batch(
                     &mut pending_events, &mut reconciler, &conn,
@@ -591,8 +590,8 @@ pub(super) async fn run_replay_event_loop(
             }
             _ = flush_interval.tick() => {
                 // Check if the FSEvents channel overflowed
-                if let Some(ref flag) = watcher_overflow {
-                    if flag.load(Ordering::Relaxed) {
+                if let Some(ref flag) = watcher_overflow
+                    && flag.load(Ordering::Relaxed) {
                         emit_rescan_notification(
                             &app,
                             &volume_id,
@@ -610,7 +609,6 @@ pub(super) async fn run_replay_event_loop(
                         while event_rx.recv().await.is_some() {}
                         return Ok(());
                     }
-                }
 
                 process_live_batch(
                     &mut live_pending_events, &mut reconciler, &conn,
@@ -634,11 +632,7 @@ pub(super) async fn run_replay_event_loop(
 /// Called after live mode starts so the app is responsive immediately.
 /// Corrections found by verification go through the writer channel,
 /// which serializes them with live writes.
-pub(super) async fn run_background_verification(
-    affected_paths: HashSet<String>,
-    writer: IndexWriter,
-    app: AppHandle,
-) {
+pub(super) async fn run_background_verification(affected_paths: HashSet<String>, writer: IndexWriter, app: AppHandle) {
     let verify_start = std::time::Instant::now();
     log::debug!(
         "Background verification started ({} affected dirs)",
@@ -704,8 +698,8 @@ pub(super) async fn run_background_verification(
             // Note: although `run_background_verification` is async, `pool.with_conn()`
             // is safe here because the closure contains no `.await` points — the task
             // cannot migrate threads mid-closure, so thread-local storage is reliable.
-            let dir_deltas: Vec<(i64, store::DirStatsById)> =
-                match get_read_pool().and_then(|pool| {
+            let dir_deltas: Vec<(i64, store::DirStatsById)> = get_read_pool()
+                .and_then(|pool| {
                     pool.with_conn(|conn| {
                         let mut deltas = Vec::new();
                         for dir_path in &verify_result.new_dir_paths {
@@ -713,11 +707,10 @@ pub(super) async fn run_background_verification(
                                 Ok(Some(id)) => id,
                                 _ => continue,
                             };
-                            let parent_id =
-                                match IndexStore::get_parent_id(conn, entry_id) {
-                                    Ok(Some(pid)) => pid,
-                                    _ => continue,
-                                };
+                            let parent_id = match IndexStore::get_parent_id(conn, entry_id) {
+                                Ok(Some(pid)) => pid,
+                                _ => continue,
+                            };
                             let stats = IndexStore::get_dir_stats_by_id(conn, entry_id)
                                 .ok()
                                 .flatten()
@@ -732,10 +725,8 @@ pub(super) async fn run_background_verification(
                         deltas
                     })
                     .ok()
-                }) {
-                    Some(deltas) => deltas,
-                    None => Vec::new(),
-                };
+                })
+                .unwrap_or_default();
 
             for (parent_id, stats) in &dir_deltas {
                 let _ = writer.send(WriteMessage::PropagateDeltaById {
@@ -809,37 +800,35 @@ fn verify_affected_dirs(affected_paths: &HashSet<String>, writer: &IndexWriter) 
         }
     };
 
-    let db_snapshot: HashMap<String, (i64, Vec<store::EntryRow>)> =
-        match pool.with_conn(|conn| {
-            let mut snapshot =
-                HashMap::with_capacity(affected_paths.len());
-            for parent_path in affected_paths {
-                let parent_id = match store::resolve_path(conn, parent_path) {
-                    Ok(Some(id)) => id,
-                    _ => continue, // Path not in index, skip
-                };
-                match IndexStore::list_children_on(parent_id, conn) {
-                    Ok(entries) => {
-                        snapshot.insert(parent_path.clone(), (parent_id, entries));
-                    }
-                    Err(_) => {
-                        // Insert empty vec so Phase 2 still checks disk for new entries
-                        snapshot.insert(parent_path.clone(), (parent_id, Vec::new()));
-                    }
+    let db_snapshot: HashMap<String, (i64, Vec<store::EntryRow>)> = match pool.with_conn(|conn| {
+        let mut snapshot = HashMap::with_capacity(affected_paths.len());
+        for parent_path in affected_paths {
+            let parent_id = match store::resolve_path(conn, parent_path) {
+                Ok(Some(id)) => id,
+                _ => continue, // Path not in index, skip
+            };
+            match IndexStore::list_children_on(parent_id, conn) {
+                Ok(entries) => {
+                    snapshot.insert(parent_path.clone(), (parent_id, entries));
+                }
+                Err(_) => {
+                    // Insert empty vec so Phase 2 still checks disk for new entries
+                    snapshot.insert(parent_path.clone(), (parent_id, Vec::new()));
                 }
             }
-            snapshot
-        }) {
-            Ok(snapshot) => snapshot,
-            Err(e) => {
-                log::warn!("verify_affected_dirs: ReadPool error: {e}");
-                return VerifyResult {
-                    stale_count: 0,
-                    new_file_count: 0,
-                    new_dir_paths: Vec::new(),
-                };
-            }
-        };
+        }
+        snapshot
+    }) {
+        Ok(snapshot) => snapshot,
+        Err(e) => {
+            log::warn!("verify_affected_dirs: ReadPool error: {e}");
+            return VerifyResult {
+                stale_count: 0,
+                new_file_count: 0,
+                new_dir_paths: Vec::new(),
+            };
+        }
+    };
 
     // ── Phase 2: Filesystem checks without the lock ──────────────────
     let mut stale_count = 0u64;

@@ -342,8 +342,7 @@ pub fn backfill_missing_dir_stats(conn: &Connection) -> Result<u64, IndexStoreEr
     let mut to_write: Vec<DirStatsById> = Vec::with_capacity(count);
 
     for &dir_id in &sorted {
-        let (file_size_sum, file_count, child_dir_count) =
-            direct_stats.get(&dir_id).copied().unwrap_or((0, 0, 0));
+        let (file_size_sum, file_count, child_dir_count) = direct_stats.get(&dir_id).copied().unwrap_or((0, 0, 0));
 
         let mut recursive_size = file_size_sum;
         let mut recursive_file_count = file_count;
@@ -839,10 +838,7 @@ mod tests {
     fn backfill_noop_when_all_stats_present() {
         let (conn, _dir) = open_temp_conn();
 
-        insert_entries(
-            &conn,
-            &[make_dir(2, ROOT_ID, "a"), make_file(3, 2, "f.txt", 100)],
-        );
+        insert_entries(&conn, &[make_dir(2, ROOT_ID, "a"), make_file(3, 2, "f.txt", 100)]);
 
         // Compute all stats first
         compute_all_aggregates(&conn).unwrap();

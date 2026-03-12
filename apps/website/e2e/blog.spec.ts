@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test'
 
 /** Newest post (appears first on blog index) */
-const newestSlug = 'index-db-shrunk-7x-with-one-schema-change'
-const newestTitle = 'Index DB shrunk 7x with one schema change'
+const newestSlug = 'replacing-tauri-updater-for-perfect-ux'
+const newestTitle = "Replacing Tauri's updater for perfect update UX"
 
 /** Post used for individual post page tests */
 const slug = 'cmdr-will-track-your-entire-file-system'
@@ -24,10 +24,10 @@ test.describe('Blog', () => {
     test('blog index shows excerpt, not full post', async ({ page }) => {
         await page.goto('/blog')
         const article = page.locator('article').first()
-        // Excerpt content should be visible (newest post: index-db-shrunk-7x)
-        await expect(article.locator('.blog-content')).toContainText('540 MB')
+        // Excerpt content should be visible (newest post: replacing-tauri-updater)
+        await expect(article.locator('.blog-content')).toContainText('uninstall your app')
         // Content after the <!-- more --> marker should not appear
-        await expect(article.locator('.blog-content')).not.toContainText('paths as primary keys')
+        await expect(article.locator('.blog-content')).not.toContainText('rabbit hole')
     })
 
     test('blog index has "Read more" link to full post', async ({ page }) => {

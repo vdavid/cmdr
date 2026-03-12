@@ -67,10 +67,10 @@
         const unsubEnabled = onSpecificSettingChange('developer.mcpEnabled', (_id, value) => {
             // Ignore echoes from our own syncState calls (sync + cross-window).
             // A real user toggle always changes the value away from the current server state.
-            if ((value as boolean) === serverRunning) return
-            enqueue(() => applyMcpEnabled(value as boolean))
+            if (value === serverRunning) return
+            enqueue(() => applyMcpEnabled(value))
         })
-        const unsubPort = onSpecificSettingChange('developer.mcpPort', (_id, _value) => {
+        const unsubPort = onSpecificSettingChange('developer.mcpPort', () => {
             debounceMcpPortChange()
         })
         return () => {

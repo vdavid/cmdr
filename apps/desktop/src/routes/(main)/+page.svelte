@@ -986,9 +986,7 @@
     {#if isMacOS()}
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div class="title-bar" class:dev-mode={import.meta.env.DEV} onmousedown={handleTitleBarMouseDown}>
-            <span class="title-text"
-                >{import.meta.env.DEV ? `DEV MODE - ${windowTitle} - DEV MODE` : windowTitle}</span
-            >
+            <span class="title-text">{import.meta.env.DEV ? `DEV MODE - ${windowTitle} - DEV MODE` : windowTitle}</span>
         </div>
     {/if}
 

@@ -81,7 +81,9 @@ const {
         {/* Prevent light-mode FOUC: set background before first paint */}
         <style is:inline>
             @media (prefers-color-scheme: light) {
-                html:not([data-force-dark]) { background-color: #fafaf8; }
+                html:not([data-force-dark]) {
+                    background-color: #fafaf8;
+                }
             }
         </style>
 

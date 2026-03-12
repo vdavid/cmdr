@@ -941,8 +941,9 @@ impl IndexStore {
 
     /// Count directories in the index.
     pub fn get_dir_count(conn: &Connection) -> Result<u64, IndexStoreError> {
-        let count: u64 =
-            conn.query_row("SELECT COUNT(*) FROM entries WHERE is_directory = 1", [], |row| row.get(0))?;
+        let count: u64 = conn.query_row("SELECT COUNT(*) FROM entries WHERE is_directory = 1", [], |row| {
+            row.get(0)
+        })?;
         Ok(count)
     }
 

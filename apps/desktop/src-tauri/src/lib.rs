@@ -890,14 +890,14 @@ pub fn run() {
         })
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
-        .run(|app, event| {
+        .run(|_app, event| {
             match event {
                 tauri::RunEvent::Ready => {
                     // Install drag image detection swizzle now that the webview exists.
                     // wry 0.54+ registers WryWebView lazily, so it's only available after
                     // the first webview is created (which happens between setup() and Ready).
                     #[cfg(target_os = "macos")]
-                    drag_image_detection::install(app.clone());
+                    drag_image_detection::install(_app.clone());
                 }
                 tauri::RunEvent::Exit => {
                     ai::manager::shutdown();

@@ -29,10 +29,9 @@ use std::sync::LazyLock;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::Duration;
 
-use enrichment::{ReadPool, READ_POOL};
+use enrichment::{READ_POOL, ReadPool};
 use event_loop::{
-    JOURNAL_GAP_THRESHOLD, WATCHER_CHANNEL_CAPACITY,
-    ReplayConfig, run_live_event_loop, run_replay_event_loop,
+    JOURNAL_GAP_THRESHOLD, ReplayConfig, WATCHER_CHANNEL_CAPACITY, run_live_event_loop, run_replay_event_loop,
 };
 use micro_scan::{MicroScanManager, ScanPriority};
 use path_resolver::PathResolver;
@@ -539,13 +538,13 @@ impl IndexManager {
                     // warning. The live event loop will detect the overflow flag
                     // and trigger a rescan at that point, since a fresh scan is
                     // the only way to recover from dropped events.
-                    if let Some(ref flag) = watcher_overflow_flag {
-                        if flag.load(Ordering::Relaxed) {
-                            log::info!(
-                                "FSEvents channel overflowed during scan — some watcher \
+                    if let Some(ref flag) = watcher_overflow_flag
+                        && flag.load(Ordering::Relaxed)
+                    {
+                        log::info!(
+                            "FSEvents channel overflowed during scan — some watcher \
                                  events were dropped. Live event loop will trigger a rescan."
-                            );
-                        }
+                        );
                     }
 
                     // Emit scan-complete first, then start the flushing phase.
@@ -634,9 +633,14 @@ impl IndexManager {
                     let overflow_live = watcher_overflow_flag.clone();
                     let handle = tauri::async_runtime::spawn(async move {
                         run_live_event_loop(
-                            event_rx, reconciler, writer_live, app_live,
-                            volume_id_live, overflow_live,
-                        ).await;
+                            event_rx,
+                            reconciler,
+                            writer_live,
+                            app_live,
+                            volume_id_live,
+                            overflow_live,
+                        )
+                        .await;
                     });
 
                     // Store the handle so shutdown() can wait for it to drain
@@ -977,8 +981,7 @@ pub fn start_indexing(app: &AppHandle) -> Result<(), String> {
 
     // Install ReadPool early so enrichment works during the Initializing phase.
     let pool = Arc::new(
-        ReadPool::new(manager.db_path().to_path_buf())
-            .map_err(|e| format!("Failed to create read pool: {e}"))?,
+        ReadPool::new(manager.db_path().to_path_buf()).map_err(|e| format!("Failed to create read pool: {e}"))?,
     );
     *READ_POOL.lock().unwrap() = Some(pool);
 
@@ -1234,12 +1237,12 @@ pub fn is_active() -> bool {
 mod tests {
     use super::*;
     use crate::file_system::listing::FileEntry;
-    use enrichment::{THREAD_CONN, enrich_via_parent_id_on, enrich_via_individual_paths_on};
+    use enrichment::{THREAD_CONN, enrich_via_individual_paths_on, enrich_via_parent_id_on};
     use rusqlite::Connection;
     use store::{DirStatsById, EntryRow, IndexStore, ROOT_ID};
 
     /// Helper: open a temp store and write connection for testing.
-    fn open_temp_store() -> (IndexStore, rusqlite::Connection, tempfile::TempDir) {
+    fn open_temp_store() -> (IndexStore, Connection, tempfile::TempDir) {
         let dir = tempfile::tempdir().expect("create temp dir");
         let db_path = dir.path().join("test-index.db");
         let store = IndexStore::open(&db_path).expect("open store");
@@ -1756,7 +1759,11 @@ mod tests {
         let mut entries = vec![make_file_entry("projects", "/projects", true)];
         enrich_entries_with_index(&mut entries);
 
-        assert_eq!(entries[0].recursive_size, Some(42), "enrichment should work under contention");
+        assert_eq!(
+            entries[0].recursive_size,
+            Some(42),
+            "enrichment should work under contention"
+        );
         assert_eq!(entries[0].recursive_file_count, Some(1));
 
         lock_handle.join().unwrap();
@@ -1792,9 +1799,7 @@ mod tests {
         pool.with_conn(|_| ()).expect("before invalidation");
 
         // Verify the cached generation is 0
-        let gen_before = THREAD_CONN.with(|cell| {
-            cell.borrow().as_ref().map(|(_, g, _)| *g).unwrap()
-        });
+        let gen_before = THREAD_CONN.with(|cell| cell.borrow().as_ref().map(|(_, g, _)| *g).unwrap());
         assert_eq!(gen_before, 0);
 
         pool.invalidate();
@@ -1804,10 +1809,11 @@ mod tests {
         // detect the mismatch and reopen.
         pool.with_conn(|_| ()).expect("after invalidation");
 
-        let gen_after = THREAD_CONN.with(|cell| {
-            cell.borrow().as_ref().map(|(_, g, _)| *g).unwrap()
-        });
-        assert_eq!(gen_after, 1, "invalidation should force a new connection with bumped generation");
+        let gen_after = THREAD_CONN.with(|cell| cell.borrow().as_ref().map(|(_, g, _)| *g).unwrap());
+        assert_eq!(
+            gen_after, 1,
+            "invalidation should force a new connection with bumped generation"
+        );
     }
 
     /// Multiple threads can call `with_conn` concurrently without errors.
