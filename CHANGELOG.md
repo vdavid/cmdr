@@ -16,7 +16,6 @@ and we use [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 - Add stale index detection with user notification toast and automatic rescan ([b590a54](https://github.com/vdavid/cmdr/commit/b590a54))
 - Add device tracking for license abuse detection with fair use terms in ToS ([cf4f913](https://github.com/vdavid/cmdr/commit/cf4f913))
 - Add license section to Settings with status display, action buttons, and dynamic labels across the app ([39cf7b4](https://github.com/vdavid/cmdr/commit/39cf7b4))
-- Switch updater to v2 format (.tar.zst) for smaller archives and faster decompression ([00249f4](https://github.com/vdavid/cmdr/commit/00249f4))
 - Improve app icon for macOS Sequoia ([cc80d28](https://github.com/vdavid/cmdr/commit/cc80d28))
 
 ### Changed
