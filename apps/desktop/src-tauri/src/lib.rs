@@ -870,6 +870,7 @@ pub fn run() {
                 && window.label() == "main"
             {
                 ai::manager::shutdown();
+                mcp::stop_mcp_server();
                 #[cfg(any(target_os = "macos", target_os = "linux"))]
                 network::mdns_discovery::stop_discovery();
                 window.app_handle().exit(0);
@@ -879,6 +880,7 @@ pub fn run() {
                 && window.label() == "main"
             {
                 ai::manager::shutdown();
+                mcp::stop_mcp_server();
                 #[cfg(any(target_os = "macos", target_os = "linux"))]
                 network::mdns_discovery::stop_discovery();
             }
@@ -888,6 +890,7 @@ pub fn run() {
         .run(|_app, event| {
             if let tauri::RunEvent::Exit = event {
                 ai::manager::shutdown();
+                mcp::stop_mcp_server();
                 #[cfg(any(target_os = "macos", target_os = "linux"))]
                 network::mdns_discovery::stop_discovery();
             }
