@@ -755,6 +755,12 @@ impl IndexManager {
                         log::warn!("Reconciler: writer flush before replay failed: {e}");
                     }
 
+                    // Signal that aggregation (and entry flushing) is complete.
+                    // The flush above drains all queued writes including
+                    // ComputeAllAggregates, so by this point the UI can dismiss
+                    // the progress overlay.
+                    let _ = app.emit("index-aggregation-complete", ());
+
                     // Open a read connection for path resolution during replay
                     let replay_conn = match IndexStore::open_write_connection(&writer.db_path()) {
                         Ok(c) => c,

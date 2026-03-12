@@ -131,6 +131,11 @@ export async function initIndexState(): Promise<void> {
     })
     unlistenHandles.push(unlistenAggregation)
 
+    const unlistenAggComplete = await listen<null>('index-aggregation-complete', () => {
+        resetAggregation()
+    })
+    unlistenHandles.push(unlistenAggComplete)
+
     const unlistenRescan = await listen<{
         volumeId: string
         reason: string

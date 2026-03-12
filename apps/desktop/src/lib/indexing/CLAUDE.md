@@ -41,7 +41,7 @@ cancelNavPriority(path: string): Promise<void>
 ## Scan state (`index-state.svelte.ts`)
 
 Module-level `$state` variables (`scanning`, `entriesScanned`, `dirsFound`, `aggregating`, `aggregationPhase`,
-`aggregationCurrent`, `aggregationTotal`, `aggregationStartedAt`) react to five Tauri events:
+`aggregationCurrent`, `aggregationTotal`, `aggregationStartedAt`) react to six Tauri events:
 
 | Event                        | Payload                                             | Effect                                                  |
 | ---------------------------- | --------------------------------------------------- | ------------------------------------------------------- |
@@ -50,6 +50,7 @@ Module-level `$state` variables (`scanning`, `entriesScanned`, `dirsFound`, `agg
 | `index-scan-complete`        | `{ volumeId, totalEntries, totalDirs, durationMs }` | `scanning = false`, set final counts, reset aggregation |
 | `index-rescan-notification`  | `{ volumeId, reason, details }`                     | Show info toast with reason-specific message            |
 | `index-aggregation-progress` | `{ phase, current, total }`                         | `aggregating = true`, update phase/progress/ETA         |
+| `index-aggregation-complete` | `()`                                                | Reset aggregation state, dismiss overlay                |
 
 **Startup race condition**: The Rust indexer starts in Tauri's `setup()` hook before the frontend registers listeners.
 `initIndexState` uses a "listen first, then query" pattern: registers event listeners, then calls `get_index_status` IPC
