@@ -599,6 +599,15 @@ impl IndexManager {
                     // the progress overlay.
                     let _ = app.emit("index-aggregation-complete", ());
 
+                    // Tell the frontend to refresh all visible listings — directory
+                    // sizes are now available for the first time after a full scan.
+                    let _ = app.emit(
+                        "index-dir-updated",
+                        IndexDirUpdatedEvent {
+                            paths: vec!["/".to_string()],
+                        },
+                    );
+
                     // Open a read connection for path resolution during replay
                     let replay_conn = match IndexStore::open_write_connection(&writer.db_path()) {
                         Ok(c) => c,
