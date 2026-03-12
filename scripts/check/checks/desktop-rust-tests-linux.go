@@ -3,6 +3,8 @@ package checks
 import (
 	"fmt"
 	"os/exec"
+	"regexp"
+	"strings"
 )
 
 // RunRustTestsLinux runs Rust tests in a Linux Docker container.
@@ -29,7 +31,34 @@ func RunRustTestsLinux(ctx *CheckContext) (CheckResult, error) {
 		"sh", "-c", "apt-get update && apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libacl1-dev && cargo test --no-fail-fast")
 	output, err := RunCommand(cmd, true)
 	if err != nil {
-		return CheckResult{}, fmt.Errorf("rust tests failed on Linux\n%s", indentOutput(output))
+		return CheckResult{}, fmt.Errorf("rust tests failed on Linux\n%s", indentOutput(trimBuildNoise(output)))
 	}
 	return Success("All tests passed on Linux"), nil
+}
+
+var compilingLineRe = regexp.MustCompile(`(?m)^\s*Compiling \w+ v`)
+
+// trimBuildNoise strips apt-get and cargo compilation output, keeping
+// everything after the last "Compiling ..." line. Falls back to the
+// last 50 lines if no Compiling line is found (e.g. build failure).
+func trimBuildNoise(output string) string {
+	locs := compilingLineRe.FindAllStringIndex(output, -1)
+	if len(locs) > 0 {
+		lastEnd := locs[len(locs)-1][1]
+		// Find the end of that line
+		nl := strings.IndexByte(output[lastEnd:], '\n')
+		if nl >= 0 {
+			trimmed := strings.TrimLeft(output[lastEnd+nl+1:], "\n")
+			if trimmed != "" {
+				return trimmed
+			}
+		}
+	}
+
+	// Fallback: show last 50 lines
+	lines := strings.Split(output, "\n")
+	if len(lines) > 50 {
+		return strings.Join(lines[len(lines)-50:], "\n")
+	}
+	return output
 }
