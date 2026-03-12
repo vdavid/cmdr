@@ -92,26 +92,53 @@ pub async fn check_rename_validity(
 }
 
 /// Renames a file or directory. When `force` is true, proceeds even if the destination exists.
+///
+/// When `volume_id` is provided and not `"root"`, routes through the Volume trait
+/// (needed for MTP and other non-local volumes). Otherwise uses `std::fs::rename`.
 #[tauri::command]
-pub async fn rename_file(from: String, to: String, force: bool) -> Result<(), IpcError> {
-    let from_expanded = expand_tilde(&from);
-    let to_expanded = expand_tilde(&to);
-    let from_path = PathBuf::from(&from_expanded);
-    let to_path = PathBuf::from(&to_expanded);
+pub async fn rename_file(from: String, to: String, force: bool, volume_id: Option<String>) -> Result<(), IpcError> {
+    let volume_id_str = volume_id.unwrap_or_else(|| "root".to_string());
 
-    tokio::time::timeout(
-        Duration::from_secs(5),
-        tokio::task::spawn_blocking(move || {
-            if !force && from_path != to_path && std::fs::symlink_metadata(&to_path).is_ok() {
-                return Err(format!("'{}' already exists", to_path.display()));
-            }
-            std::fs::rename(&from_path, &to_path).map_err(|e| format!("Rename failed: {}", e))
-        }),
-    )
-    .await
-    .map_err(|_| IpcError::timeout())?
-    .map_err(|e| IpcError::from_err(format!("Task failed: {}", e)))?
-    .map_err(IpcError::from_err)
+    if volume_id_str != "root" {
+        // Volume-aware rename (MTP and other non-local volumes)
+        let volume = crate::file_system::get_volume_manager()
+            .get(&volume_id_str)
+            .ok_or_else(|| IpcError::from_err(format!("Volume '{}' not found", volume_id_str)))?;
+
+        let from_path = PathBuf::from(&from);
+        let to_path = PathBuf::from(&to);
+
+        tokio::time::timeout(
+            Duration::from_secs(5),
+            tokio::task::spawn_blocking(move || {
+                volume.rename(&from_path, &to_path, force).map_err(|e| format!("{}", e))
+            }),
+        )
+        .await
+        .map_err(|_| IpcError::timeout())?
+        .map_err(|e| IpcError::from_err(format!("Task failed: {}", e)))?
+        .map_err(IpcError::from_err)
+    } else {
+        // Local filesystem rename
+        let from_expanded = expand_tilde(&from);
+        let to_expanded = expand_tilde(&to);
+        let from_path = PathBuf::from(&from_expanded);
+        let to_path = PathBuf::from(&to_expanded);
+
+        tokio::time::timeout(
+            Duration::from_secs(5),
+            tokio::task::spawn_blocking(move || {
+                if !force && from_path != to_path && std::fs::symlink_metadata(&to_path).is_ok() {
+                    return Err(format!("'{}' already exists", to_path.display()));
+                }
+                std::fs::rename(&from_path, &to_path).map_err(|e| format!("Rename failed: {}", e))
+            }),
+        )
+        .await
+        .map_err(|_| IpcError::timeout())?
+        .map_err(|e| IpcError::from_err(format!("Task failed: {}", e)))?
+        .map_err(IpcError::from_err)
+    }
 }
 
 /// Synchronous permission check implementation.
@@ -430,6 +457,7 @@ mod tests {
             old.to_string_lossy().to_string(),
             new.to_string_lossy().to_string(),
             false,
+            None,
         )
         .await;
         assert!(result.is_ok());
@@ -450,6 +478,7 @@ mod tests {
             old.to_string_lossy().to_string(),
             new.to_string_lossy().to_string(),
             false,
+            None,
         )
         .await;
         assert!(result.is_err());
@@ -471,6 +500,7 @@ mod tests {
             old.to_string_lossy().to_string(),
             new.to_string_lossy().to_string(),
             true,
+            None,
         )
         .await;
         assert!(result.is_ok());

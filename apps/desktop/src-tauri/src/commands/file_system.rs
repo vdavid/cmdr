@@ -340,16 +340,23 @@ pub async fn move_files(
 }
 
 /// Recursively deletes files and directories. Same events as `copy_files`.
+/// When `volume_id` is provided and is not "root", routes through the Volume trait.
 #[tauri::command]
 pub async fn delete_files(
     app: tauri::AppHandle,
     sources: Vec<String>,
+    volume_id: Option<String>,
     config: Option<WriteOperationConfig>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
-    let sources: Vec<PathBuf> = sources.iter().map(|s| PathBuf::from(expand_tilde(s))).collect();
+    let is_local = volume_id.as_deref().unwrap_or("root") == "root";
+    let sources: Vec<PathBuf> = if is_local {
+        sources.iter().map(|s| PathBuf::from(expand_tilde(s))).collect()
+    } else {
+        sources.iter().map(PathBuf::from).collect()
+    };
     let config = config.unwrap_or_default();
 
-    ops_delete_files_start(app, sources, config).await
+    ops_delete_files_start(app, sources, config, volume_id).await
 }
 
 /// Moves files to macOS Trash. Same events as `copy_files` but with `operationType: trash`.

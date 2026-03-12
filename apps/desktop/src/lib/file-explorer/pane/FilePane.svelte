@@ -341,6 +341,7 @@
         getCurrentPath: () => currentPath,
         getCursorIndex: () => cursorIndex,
         getShowHiddenFiles: () => showHiddenFiles,
+        getVolumeId: () => volumeId,
         getEntryUnderCursor,
         onRequestFocus: () => onRequestFocus?.(),
     })

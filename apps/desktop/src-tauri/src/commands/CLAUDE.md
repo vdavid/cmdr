@@ -61,6 +61,7 @@ The frontend has matching TypeScript types in `$lib/tauri-commands/ipc-types.ts`
 - **`expand_tilde`** is applied conditionally: for `list_directory` it's gated on `volume_id == "root"`, but for write operations (copy, move, delete, scan preview) it's always applied. MTP and network volume paths must never be tilde-expanded.
 - **AI commands** are registered directly from `ai::manager` and `ai::suggestions` — there is no `commands/ai.rs` file.
 - **Platform gates.** `volumes` is macOS-only; `mtp` and `network` are macOS+Linux; `volumes_linux` is Linux-only. Individual functions also use `#[cfg]` where behaviour differs (e.g., `sync_status`).
+- **`delete_files` and `rename_file` accept `volume_id`.** When set to a non-root volume, `delete_files` routes to the volume-aware delete path and skips local `validate_sources` (MTP virtual paths fail `symlink_metadata`). `rename_file` passes `volume_id` through for MTP rename support; permission checks are skipped for non-root volumes.
 - **`start_selection_drag`** requires the main thread. It uses `app.run_on_main_thread()` plus a `std::sync::mpsc` channel to return the result synchronously.
 - **`list_shares_with_credentials`** has `#[allow(clippy::too_many_arguments)]` because Tauri command parameters must be top-level arguments — no struct bundling.
 - **`set_menu_context` and Close tab (⌘W).** When the main window loses focus, `set_menu_context("other")` disables all

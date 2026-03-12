@@ -26,8 +26,8 @@ export function checkRenameValidity(dir: string, oldName: string, newName: strin
     return invoke<RenameValidityResult>('check_rename_validity', { dir, oldName, newName })
 }
 
-export function renameFile(from: string, to: string, force: boolean): Promise<void> {
-    return invoke('rename_file', { from, to, force })
+export function renameFile(from: string, to: string, force: boolean, volumeId?: string): Promise<void> {
+    return invoke('rename_file', { from, to, force, volumeId })
 }
 
 export function moveToTrash(path: string): Promise<void> {

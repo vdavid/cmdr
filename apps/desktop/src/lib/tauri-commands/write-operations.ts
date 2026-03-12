@@ -121,8 +121,9 @@ export async function moveFiles(
 export async function deleteFiles(
     sources: string[],
     config?: WriteOperationConfig,
+    volumeId?: string,
 ): Promise<WriteOperationStartResult> {
-    return invoke<WriteOperationStartResult>('delete_files', { sources, config: config ?? {} })
+    return invoke<WriteOperationStartResult>('delete_files', { sources, volumeId, config: config ?? {} })
 }
 
 /** Moves files to macOS Trash. Same events as copyFiles but with operationType: trash. */

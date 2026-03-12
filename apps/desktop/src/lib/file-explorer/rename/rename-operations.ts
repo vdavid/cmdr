@@ -33,6 +33,7 @@ export async function executeRenameSave(
     trimmedName: string,
     extensionPolicy: ExtensionChangePolicy,
     skipExtensionCheck?: boolean,
+    volumeId?: string,
 ): Promise<RenameResult> {
     // No-op if name unchanged
     if (trimmedName === target.originalName) {
@@ -52,37 +53,48 @@ export async function executeRenameSave(
         }
     }
 
-    // Backend validity check (authoritative, checks conflicts via inode comparison)
-    let validity: RenameValidityResult
-    try {
-        validity = await checkRenameValidity(target.parentPath, target.originalName, trimmedName)
-    } catch (e) {
-        return { type: 'error', message: getIpcErrorMessage(e) }
-    }
+    // Skip permission and validity checks for MTP volumes — they use symlink_metadata
+    // which doesn't work on MTP virtual paths.
+    const isMtp = volumeId?.startsWith('mtp-') ?? false
 
-    if (!validity.valid) {
-        return { type: 'error', message: validity.error?.message ?? 'Invalid filename' }
-    }
+    if (!isMtp) {
+        // Backend validity check (authoritative, checks conflicts via inode comparison)
+        let validity: RenameValidityResult
+        try {
+            validity = await checkRenameValidity(target.parentPath, target.originalName, trimmedName)
+        } catch (e) {
+            return { type: 'error', message: getIpcErrorMessage(e) }
+        }
 
-    // Conflict detected (and not a case-only rename of the same file)
-    if (validity.hasConflict && !validity.isCaseOnlyRename) {
-        return { type: 'conflict', validity }
+        if (!validity.valid) {
+            return { type: 'error', message: validity.error?.message ?? 'Invalid filename' }
+        }
+
+        // Conflict detected (and not a case-only rename of the same file)
+        if (validity.hasConflict && !validity.isCaseOnlyRename) {
+            return { type: 'conflict', validity }
+        }
     }
 
     // Perform the rename
-    return performRename(target, trimmedName, false)
+    return performRename(target, trimmedName, false, volumeId)
 }
 
 /**
  * Performs the actual rename call.
  * @param force - If true, overwrites the destination (used after conflict resolution).
  */
-export async function performRename(target: RenameTarget, newName: string, force: boolean): Promise<RenameResult> {
+export async function performRename(
+    target: RenameTarget,
+    newName: string,
+    force: boolean,
+    volumeId?: string,
+): Promise<RenameResult> {
     const fromPath = target.path
     const toPath = target.parentPath + '/' + newName
 
     try {
-        await renameFile(fromPath, toPath, force)
+        await renameFile(fromPath, toPath, force, volumeId)
         return { type: 'success', newName }
     } catch (e) {
         if (isIpcError(e) && e.timedOut) {

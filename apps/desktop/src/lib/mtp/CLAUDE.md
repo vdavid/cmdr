@@ -47,11 +47,11 @@ On Linux, USB device files need udev rules to grant user access. When `open_devi
 
 The udev rules file is at `src-tauri/resources/99-cmdr-mtp.rules` (for deb/rpm packaging).
 
-### No Volume trait integration (yet)
+### Volume trait integration
 
-MTP operations use dedicated Tauri commands (`listMtpDirectory`, `uploadToMtp`, `downloadFromMtp`, etc.) instead of
-unified Volume API. This was intentional (spec "Option B") — unblocks MTP without waiting for Volume refactor. Future:
-integrate with Volume trait.
+MTP volumes implement the `Volume` trait. Browsing, `create_directory`, `delete`, `rename`, copy (F5), move (F6), and
+delete (F8) all route through the Volume abstraction. Clipboard operations (Cmd+C/V/X) remain blocked because the system
+clipboard requires local file paths, which MTP virtual paths can't provide — the UI suggests F5/F6 instead.
 
 ## Gotchas
 

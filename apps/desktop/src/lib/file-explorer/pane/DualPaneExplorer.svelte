@@ -1483,18 +1483,6 @@
             return
         }
 
-        // MTP move guard: move to/from MTP not yet supported
-        if (operationType === 'move') {
-            const sourceVolId = getPaneVolumeId(focusedPane)
-            if (sourceVolId.startsWith('mtp-') || destVolId.startsWith('mtp-')) {
-                dialogs.showAlert(
-                    'Not supported yet',
-                    "Move between MTP devices isn't supported yet. You can use copy instead.",
-                )
-                return
-            }
-        }
-
         await openUnifiedTransferDialog(operationType, sourcePaneRef, focusedPane)
     }
 
@@ -1532,7 +1520,7 @@
         if (!state) return
 
         if (state.volumeId.startsWith('mtp-')) {
-            addToast("Clipboard copy isn't supported for MTP devices yet")
+            addToast('Use F5 to copy files from MTP devices')
             return
         }
 
@@ -1556,7 +1544,7 @@
         if (!state) return
 
         if (state.volumeId.startsWith('mtp-')) {
-            addToast("Clipboard cut isn't supported for MTP devices yet")
+            addToast('Use F6 to move files from MTP devices')
             return
         }
 
@@ -1586,7 +1574,7 @@
 
             const volumeId = getPaneVolumeId(focusedPane)
             if (volumeId.startsWith('mtp-')) {
-                addToast("Paste isn't supported for MTP devices yet")
+                addToast('Use F5 to copy files to MTP devices')
                 return
             }
 
@@ -1605,7 +1593,7 @@
                 sortColumn: sortBy,
                 sortOrder,
                 previewId: null,
-                sourceVolumeId: destVolId,
+                sourceVolumeId: DEFAULT_VOLUME_ID,
                 destVolumeId: destVolId,
             })
 

@@ -41,7 +41,7 @@ use std::time::Duration;
 use uuid::Uuid;
 
 use copy::copy_files_with_progress;
-use delete::delete_files_with_progress;
+use delete::{delete_files_with_progress, delete_volume_files_with_progress};
 #[cfg(not(test))]
 use helpers::{
     validate_destination, validate_destination_not_inside_source, validate_destination_writable,
@@ -258,14 +258,31 @@ pub async fn move_files_start(
 
 /// Starts a delete operation in the background.
 ///
-/// Recursively deletes files and directories.
+/// Recursively deletes files and directories. When `volume_id` is provided and
+/// is not the default volume, routes through `delete_volume_files_with_progress`
+/// which uses the Volume trait (needed for MTP and other non-local volumes).
 pub async fn delete_files_start(
     app: tauri::AppHandle,
     sources: Vec<PathBuf>,
     config: WriteOperationConfig,
+    volume_id: Option<String>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
-    // Validate inputs
-    validate_sources(&sources)?;
+    // Resolve volume for non-default volume IDs
+    let volume_id_str = volume_id.unwrap_or_else(|| "root".to_string());
+    let volume = if volume_id_str != "root" {
+        Some(
+            crate::file_system::get_volume_manager()
+                .get(&volume_id_str)
+                .ok_or_else(|| WriteOperationError::IoError {
+                    path: volume_id_str.clone(),
+                    message: format!("Volume '{}' not found", volume_id_str),
+                })?,
+        )
+    } else {
+        // Only validate sources on local filesystem — MTP paths can't be checked with symlink_metadata
+        validate_sources(&sources)?;
+        None
+    };
 
     let operation_id = Uuid::new_v4().to_string();
     let state = Arc::new(WriteOperationState {
@@ -293,7 +310,11 @@ pub async fn delete_files_start(
         let app_for_error = app.clone();
 
         let result = tokio::task::spawn_blocking(move || {
-            delete_files_with_progress(&app, &operation_id_for_spawn, &state, &sources, &config)
+            if let Some(vol) = volume {
+                delete_volume_files_with_progress(vol, &app, &operation_id_for_spawn, &state, &sources, &config)
+            } else {
+                delete_files_with_progress(&app, &operation_id_for_spawn, &state, &sources, &config)
+            }
         })
         .await;
 

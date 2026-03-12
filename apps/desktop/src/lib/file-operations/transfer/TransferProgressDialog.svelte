@@ -112,6 +112,14 @@
     const operationGerund = $derived(operationGerundMap[operationType])
     const isDeleteOrTrash = $derived(operationType === 'delete' || operationType === 'trash')
 
+    /** Whether this is a move involving an MTP volume (implemented as copy + delete). */
+    const isMtpMove = $derived(
+        operationType === 'move' && (sourceVolumeId.startsWith('mtp-') || (destVolumeId ?? '').startsWith('mtp-')),
+    )
+
+    /** Tracks which phase of an MTP move we're in: 'copy' first, then 'delete'. */
+    let mtpMovePhase = $state<'copy' | 'delete'>('copy')
+
     /** Minimum display time (ms) to prevent jarring one-frame flash. */
     const MIN_DISPLAY_MS = 400
 
@@ -191,16 +199,43 @@
         return { bytesPerSecond, estimatedSecondsRemaining }
     })
 
-    // Progress stages for visualization — the active phase label adapts to operation type
+    // Progress stages for visualization — the active phase label adapts to operation type.
+    // MTP moves show three stages: Scanning → Copying → Removing source.
     const activePhaseId = $derived<WriteOperationPhase>(
         operationType === 'delete' ? 'deleting' : operationType === 'trash' ? 'trashing' : 'copying',
     )
-    const stages = $derived<{ id: WriteOperationPhase; label: string }[]>([
-        { id: 'scanning', label: 'Scanning' },
-        { id: activePhaseId, label: operationGerund },
-    ])
+    const stages = $derived<{ id: WriteOperationPhase | 'mtp-delete'; label: string }[]>(
+        isMtpMove
+            ? [
+                  { id: 'scanning', label: 'Scanning' },
+                  { id: 'copying', label: 'Copying' },
+                  { id: 'mtp-delete', label: 'Removing source' },
+              ]
+            : [
+                  { id: 'scanning', label: 'Scanning' },
+                  { id: activePhaseId, label: operationGerund },
+              ],
+    )
 
-    function getStageStatus(stageId: WriteOperationPhase): 'done' | 'active' | 'pending' {
+    function getStageStatus(stageId: WriteOperationPhase | 'mtp-delete'): 'done' | 'active' | 'pending' {
+        if (isMtpMove) {
+            // MTP move has three stages: scanning → copying → mtp-delete.
+            // Map the current backend phase + mtpMovePhase to a stage index.
+            let currentIndex: number
+            if (mtpMovePhase === 'delete') {
+                // In delete phase: scanning and copying are done, mtp-delete is active
+                currentIndex = 2
+            } else if (phase === 'scanning') {
+                currentIndex = 0
+            } else {
+                currentIndex = 1
+            }
+            const stageIndex = stages.findIndex((s) => s.id === stageId)
+            if (stageIndex < currentIndex) return 'done'
+            if (stageIndex === currentIndex) return 'active'
+            return 'pending'
+        }
+
         const currentIndex = stages.findIndex((s) => s.id === phase)
         const stageIndex = stages.findIndex((s) => s.id === stageId)
 
@@ -228,6 +263,9 @@
         bytesTotal = event.bytesTotal
     }
 
+    /** Accumulated totals from the copy phase of an MTP move, added to the final result. */
+    let mtpMoveCopyResult = { filesProcessed: 0, bytesProcessed: 0 }
+
     function handleComplete(event: WriteCompleteEvent) {
         if (!filterEvent({ type: 'complete', event })) return
 
@@ -237,17 +275,35 @@
             bytesProcessed: event.bytesProcessed,
         })
 
+        // MTP move, copy phase done → start the delete phase to remove source files
+        if (isMtpMove && mtpMovePhase === 'copy') {
+            log.info('MTP move copy phase done, starting delete phase for {count} source files', {
+                count: sourcePaths.length,
+            })
+            mtpMoveCopyResult = {
+                filesProcessed: event.filesProcessed,
+                bytesProcessed: event.bytesProcessed,
+            }
+            cleanup()
+            void startMtpMoveDeletePhase()
+            return
+        }
+
         cleanup()
+
+        // For MTP move delete phase, combine totals from both phases
+        const totalFiles = isMtpMove ? mtpMoveCopyResult.filesProcessed : event.filesProcessed
+        const totalBytes = isMtpMove ? mtpMoveCopyResult.bytesProcessed : event.bytesProcessed
 
         // Enforce minimum display time to prevent jarring one-frame flash
         const elapsed = Date.now() - startTime
         const delay = Math.max(0, MIN_DISPLAY_MS - elapsed)
         if (delay > 0) {
             setTimeout(() => {
-                onComplete(event.filesProcessed, event.bytesProcessed)
+                onComplete(totalFiles, totalBytes)
             }, delay)
         } else {
-            onComplete(event.filesProcessed, event.bytesProcessed)
+            onComplete(totalFiles, totalBytes)
         }
     }
 
@@ -257,6 +313,19 @@
         log.error('{op} error: {errorType}', { op: operationLabel, errorType: event.error.type, error: event.error })
 
         cleanup()
+
+        // MTP move delete phase error: copy succeeded, but source removal hit a problem.
+        // The user has files in both places — safer than losing data.
+        if (isMtpMove && mtpMovePhase === 'delete') {
+            const errorMessage = 'message' in event.error ? event.error.message : event.error.type
+            onError({
+                type: 'io_error',
+                path: 'path' in event.error ? event.error.path : (sourcePaths[0] ?? ''),
+                message: `Copied successfully, but couldn't remove some source files: ${errorMessage}`,
+            })
+            return
+        }
+
         onError(event.error)
     }
 
@@ -320,9 +389,23 @@
             return trashFiles(sourcePaths, itemSizes, { progressIntervalMs, previewId })
         }
         if (operationType === 'delete') {
-            return deleteFiles(sourcePaths, { progressIntervalMs, sortColumn, sortOrder, previewId })
+            return deleteFiles(sourcePaths, { progressIntervalMs, sortColumn, sortOrder, previewId }, sourceVolumeId)
         }
         if (operationType === 'move') {
+            // MTP move: phase 1 is copy, phase 2 (delete) starts after copy completes
+            if (isMtpMove) {
+                return copyBetweenVolumes(
+                    sourceVolumeId,
+                    sourcePaths,
+                    destVolumeId ?? DEFAULT_VOLUME_ID,
+                    destinationPath ?? '',
+                    {
+                        conflictResolution,
+                        progressIntervalMs,
+                        maxConflictsToShow,
+                    },
+                )
+            }
             return moveFiles(sourcePaths, destinationPath ?? '', {
                 conflictResolution,
                 progressIntervalMs,
@@ -354,6 +437,63 @@
                       maxConflictsToShow,
                   },
               )
+    }
+
+    /** Starts the delete phase of an MTP move after the copy phase completes. */
+    async function startMtpMoveDeletePhase() {
+        mtpMovePhase = 'delete'
+        operationId = null
+        pendingEvents = []
+
+        // Reset progress counters for the delete phase
+        phase = 'scanning'
+        currentFile = null
+        filesDone = 0
+        filesTotal = 0
+        bytesDone = 0
+        bytesTotal = 0
+
+        log.info('Starting MTP move delete phase: removing {count} source files', {
+            count: sourcePaths.length,
+        })
+
+        // Subscribe to events before starting the delete operation
+        unlisteners.push(await onWriteProgress(handleProgress))
+        unlisteners.push(await onWriteComplete(handleComplete))
+        unlisteners.push(await onWriteError(handleError))
+        unlisteners.push(await onWriteCancelled(handleCancelled))
+        unlisteners.push(await onWriteConflict(handleConflict))
+
+        try {
+            const progressIntervalMs = getSetting('fileOperations.progressUpdateInterval')
+            const result = await deleteFiles(sourcePaths, { progressIntervalMs, sortColumn, sortOrder }, sourceVolumeId)
+
+            operationId = result.operationId
+            log.info('MTP move delete phase started with operationId: {operationId}', {
+                operationId,
+            })
+
+            if (destroyed) {
+                log.info('Dialog destroyed before delete operationId arrived — cancelling op={operationId}', {
+                    operationId,
+                })
+                void cancelWriteOperation(operationId, true)
+                cleanup()
+                return
+            }
+
+            replayBufferedEvents()
+        } catch (err: unknown) {
+            log.error("MTP move delete phase couldn't start: {error}", { error: err })
+            cleanup()
+            // Copy succeeded but delete didn't start — report success for the copy part.
+            // The user keeps files in both places (safe default).
+            onError({
+                type: 'io_error',
+                path: sourcePaths[0] ?? '',
+                message: `Copied successfully, but couldn't remove the source files: ${String(err)}`,
+            })
+        }
     }
 
     async function startOperation() {
@@ -511,6 +651,8 @@
             Rolling back...
         {:else if conflictEvent}
             File already exists
+        {:else if isMtpMove && mtpMovePhase === 'delete'}
+            Removing source files...
         {:else}
             {operationGerund}...
         {/if}
@@ -685,7 +827,7 @@
         <!-- Action buttons -->
         <div class="button-row">
             <Button variant="secondary" onclick={() => handleCancel(false)} disabled={isCancelling}>Cancel</Button>
-            {#if !isDeleteOrTrash}
+            {#if !isDeleteOrTrash && !(isMtpMove && mtpMovePhase === 'delete')}
                 <span use:tooltip={'Cancel and delete any partial target files created'}>
                     <Button variant="danger" onclick={() => handleCancel(true)} disabled={isCancelling}>Rollback</Button
                     >

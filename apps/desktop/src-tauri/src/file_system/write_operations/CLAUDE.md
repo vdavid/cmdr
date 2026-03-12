@@ -19,7 +19,7 @@ network mounts, cross-filesystem moves, and name/path length limits.
 | `scan.rs` | `scan_sources` (recursive walk, emits progress), `dry_run_scan`, scan preview subsystem (`start_scan_preview`, `cancel_scan_preview`). |
 | `copy.rs` | `copy_files_with_progress`: scan → disk space check → per-file copy via `copy_single_item`. `CopyTransaction` for rollback. |
 | `move_op.rs` | Same-fs: `fs::rename`. Cross-fs: copy to `.cmdr-staging-<uuid>`, atomic rename, delete sources. |
-| `delete.rs` | Scan, delete files first, then directories in reverse/deepest-first order. Not rollbackable. |
+| `delete.rs` | Scan, delete files first, then directories in reverse/deepest-first order. Not rollbackable. Also contains `delete_volume_files_with_progress` for non-local volumes (MTP): scans via `volume.list_directory()`, deletes via `volume.delete()` per item. |
 | `trash.rs` | `move_to_trash_sync()` (macOS: ObjC `trashItemAtURL`; Linux: `trash` crate; reused by `commands/rename.rs`) and `trash_files_with_progress()` (batch trash with per-item progress, cancellation, partial failure). Uses `symlink_metadata()` for existence checks (handles dangling symlinks). |
 | `copy_strategy.rs` | Strategy selection per file: network FS → chunked copy; overwrite → temp+rename; macOS → `copyfile(3)`; Linux → `copy_file_range(2)`. |
 | `macos_copy.rs` | FFI to macOS `copyfile(3)`. Preserves xattrs, ACLs, resource forks, Finder metadata. Supports APFS `clonefile`. |
@@ -111,6 +111,9 @@ from pre-computed item sizes. Partial failure is supported: if some items fail, 
 | `scan-preview-cancelled` | Preview scan cancelled |
 
 ## Key decisions
+
+**Decision**: `delete_files_start` routes to either `delete_files_with_progress` (local, uses `walkdir` + `fs::remove_file`) or `delete_volume_files_with_progress` (non-local, uses `Volume` trait) based on `volume_id`.
+**Why**: MTP volumes can't use `walkdir` or `fs::remove_*`. Rather than refactoring the existing local delete to go through the Volume trait (which would add overhead for local ops), we keep the fast local path and add a parallel volume-aware path. Both emit identical events so the frontend progress dialog works unchanged.
 
 **Decision**: Keep `exacl` crate for ACL copy in chunked copies (not custom FFI bindings).
 **Why**: `exacl` adds zero new transitive dependencies (all of its deps — `bitflags`, `log`, `scopeguard`, `uuid` — are already in our tree). It provides cross-platform ACL support (macOS, Linux, FreeBSD) and full ACL parsing/manipulation for potential future UI features. The crate appears unmaintained (last release Feb 2024) but ACL APIs are stable and don't change. Our usage is best-effort with graceful fallback — if `exacl` ever breaks, files still copy, they just lose ACLs. MIT licensed (compatible with BSL).

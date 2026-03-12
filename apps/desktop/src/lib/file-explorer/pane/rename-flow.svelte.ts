@@ -17,6 +17,7 @@ export interface RenameFlowDeps {
     getCurrentPath: () => string
     getCursorIndex: () => number
     getShowHiddenFiles: () => boolean
+    getVolumeId: () => string
     getEntryUnderCursor: () => FileEntry | undefined
     onRequestFocus: () => void
 }
@@ -119,8 +120,15 @@ export function createRenameFlow(deps: RenameFlowDeps) {
 
         const trimmedName = rename.getTrimmedName()
         const extensionPolicy = getSetting('fileOperations.allowFileExtensionChanges')
+        const currentVolumeId = deps.getVolumeId()
 
-        const result = await executeRenameSave(target, trimmedName, extensionPolicy, skipExtensionCheck)
+        const result = await executeRenameSave(
+            target,
+            trimmedName,
+            extensionPolicy,
+            skipExtensionCheck,
+            currentVolumeId,
+        )
         handleRenameResult(result, trimmedName)
     }
 
@@ -157,13 +165,18 @@ export function createRenameFlow(deps: RenameFlowDeps) {
                 renameSiblingNames = names
             })
 
-            void checkPermission(entry.path).then((errorMsg) => {
-                if (errorMsg && rename.active && rename.target?.path === entry.path) {
-                    rename.cancel()
-                    addToast(errorMsg, { level: 'error' })
-                    onRequestFocus()
-                }
-            })
+            // Skip permission check for MTP volumes — it uses symlink_metadata
+            // which doesn't work on MTP virtual paths.
+            const currentVolumeId = deps.getVolumeId()
+            if (!currentVolumeId.startsWith('mtp-')) {
+                void checkPermission(entry.path).then((errorMsg) => {
+                    if (errorMsg && rename.active && rename.target?.path === entry.path) {
+                        rename.cancel()
+                        addToast(errorMsg, { level: 'error' })
+                        onRequestFocus()
+                    }
+                })
+            }
         },
 
         cancelRename(): void {
@@ -233,11 +246,13 @@ export function createRenameFlow(deps: RenameFlowDeps) {
                 return
             }
 
+            const currentVolumeId = deps.getVolumeId()
+
             switch (resolution) {
                 case 'overwrite-trash': {
                     const conflictPath = target.parentPath + '/' + trimmedName
                     void moveToTrash(conflictPath)
-                        .then(() => performRename(target, trimmedName, true))
+                        .then(() => performRename(target, trimmedName, true, currentVolumeId))
                         .then((result) => {
                             handleRenameResult(result, trimmedName)
                         })
@@ -257,7 +272,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
                     break
                 }
                 case 'overwrite-delete':
-                    void performRename(target, trimmedName, true).then((result) => {
+                    void performRename(target, trimmedName, true, currentVolumeId).then((result) => {
                         handleRenameResult(result, trimmedName)
                     })
                     break

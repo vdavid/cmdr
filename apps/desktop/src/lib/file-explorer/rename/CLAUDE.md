@@ -120,6 +120,9 @@ trimmed value.
 - **App-level shortcut suppression**: While rename active, Cmd+C/A/Z/X/V work as text editing shortcuts (not app
   commands). Implemented by setting flag in keyboard handler (same mechanism as dialogs). Other shortcuts (Cmd+O, arrow
   keys, etc.) are suppressed.
+- **MTP volume ID threading**: `rename-operations.ts` passes `volumeId` through to `renameFile` and
+  `checkRenamePermission`. Permission checks are skipped for non-root volumes (MTP doesn't support Unix `access()`
+  checks).
 - **Refresh timing**: File watcher event arrives asynchronously. `moveCursorToNewFolder()` pattern: subscribe to
   `directory-diff`, wait 50ms after event for listing cache update, then query `findFileIndex()`. Cleanup listener after
   3s timeout.
