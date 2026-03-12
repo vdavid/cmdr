@@ -985,8 +985,10 @@
 <div class="page-container">
     {#if isMacOS()}
         <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div class="title-bar" onmousedown={handleTitleBarMouseDown}>
-            <span class="title-text">{windowTitle}</span>
+        <div class="title-bar" class:dev-mode={import.meta.env.DEV} onmousedown={handleTitleBarMouseDown}>
+            <span class="title-text"
+                >{import.meta.env.DEV ? `DEV MODE - ${windowTitle} - DEV MODE` : windowTitle}</span
+            >
         </div>
     {/if}
 
@@ -1050,6 +1052,16 @@
         padding-top: 2px;
         background-color: var(--color-bg-secondary);
         flex-shrink: 0;
+        position: relative;
+    }
+
+    /*noinspection CssUnusedSymbol*/
+    .title-bar.dev-mode::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-color: rgba(255, 105, 180, 0.6);
+        pointer-events: none;
     }
 
     .title-text {
