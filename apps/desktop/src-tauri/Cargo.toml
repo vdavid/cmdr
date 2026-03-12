@@ -132,7 +132,7 @@ objc2-app-kit = { version = "0.3", features = [
 block2 = "0.6"
 security-framework = "3.2"
 # Drive indexing: macOS FSEvents watcher with event IDs and sinceWhen replay
-cmdr-fsevent-stream = { git = "https://github.com/vdavid/cmdr-fsevent-stream", rev = "3a02f0d" }
+cmdr-fsevent-stream = { path = "../../../crates/fsevent-stream" }
 
 # CrabNebula automation plugin for macOS E2E testing (optional, feature-gated)
 tauri-plugin-automation = { version = "0.1", optional = true }

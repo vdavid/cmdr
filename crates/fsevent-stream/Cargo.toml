@@ -1,0 +1,40 @@
+[package]
+name = "cmdr-fsevent-stream"
+version = "0.3.0"
+authors = ["LightQuantum <self@lightquantum.me>", "David Veszelovszki <david@veszelovszki.com>"]
+edition = "2021"
+rust-version = "1.70"
+description = "Stream-based FSEvent API bindings. Fork of fsevent-stream, maintained for Cmdr."
+license = "MIT"
+keywords = ["filesystem", "events", "watch", "notify", "macos"]
+repository = "https://github.com/vdavid/cmdr-fsevent-stream"
+readme = "README.md"
+exclude = [
+    ".github/**/*",
+    ".gitignore",
+    ".mergify.yml",
+    "Justfile"
+]
+
+[features]
+default = ["tokio"]
+tokio = ["tokio1", "tokio-stream"]
+async-std = ["async-std1"]
+
+[dependencies]
+async-std1 = { package = "async-std", version = "1.10", default-features = false, features = ["std"], optional = true }
+bitflags = "2.6"
+core-foundation = "0.10"
+futures-core = "0.3"
+futures-util = "0.3"
+log = "0.4"
+once_cell = "1.19"
+tokio-stream = { version = "0.1", optional = true }
+tokio1 = { package = "tokio", version = "1.14", features = ["sync"], optional = true }
+
+[dev-dependencies]
+async-std1 = { package = "async-std", version = "1.10", features = ["attributes"] }
+libc = "0.2"
+pretty_env_logger = "0.5"
+tempfile = "3.12"
+tokio1 = { package = "tokio", version = "1.14", features = ["rt-multi-thread", "sync", "macros"] }
