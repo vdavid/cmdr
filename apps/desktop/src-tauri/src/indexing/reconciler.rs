@@ -25,11 +25,11 @@ use std::time::Instant;
 use rusqlite::Connection;
 use tauri::{AppHandle, Emitter};
 
+use crate::indexing::DEBUG_STATS;
 use crate::indexing::firmlinks;
 use crate::indexing::store::{self, IndexStore};
 use crate::indexing::watcher::FsChangeEvent;
 use crate::indexing::writer::{IndexWriter, WriteMessage};
-use crate::indexing::DEBUG_STATS;
 
 // ── Exclusion check ──────────────────────────────────────────────────
 
@@ -255,7 +255,10 @@ impl EventReconciler {
             let conn = match IndexStore::open_write_connection(&writer.db_path()) {
                 Ok(c) => c,
                 Err(e) => {
-                    log::warn!("MustScanSubDirs: couldn't open read connection for {} — {e}", path.display());
+                    log::warn!(
+                        "MustScanSubDirs: couldn't open read connection for {} — {e}",
+                        path.display()
+                    );
                     rescan_active.store(false, Ordering::Relaxed);
                     return;
                 }
@@ -343,7 +346,12 @@ pub(super) fn reconcile_subtree(
         Ok(Some(id)) => id,
         Ok(None) => {
             log::debug!("reconcile_subtree: root not in DB, skipping: {root_str}");
-            return Ok(ReconcileSummary { added: 0, removed: 0, updated: 0, duration: start.elapsed() });
+            return Ok(ReconcileSummary {
+                added: 0,
+                removed: 0,
+                updated: 0,
+                duration: start.elapsed(),
+            });
         }
         Err(e) => return Err(format!("resolve_path for root: {e}")),
     };
@@ -365,8 +373,8 @@ pub(super) fn reconcile_subtree(
             None => continue,
         };
 
-        let db_children = IndexStore::list_children_on(dir_id, conn)
-            .map_err(|e| format!("list_children_on({dir_id}): {e}"))?;
+        let db_children =
+            IndexStore::list_children_on(dir_id, conn).map_err(|e| format!("list_children_on({dir_id}): {e}"))?;
 
         let mut db_by_name: std::collections::HashMap<String, &store::EntryRow> =
             std::collections::HashMap::with_capacity(db_children.len());
@@ -475,7 +483,12 @@ pub(super) fn reconcile_subtree(
         }
     }
 
-    Ok(ReconcileSummary { added, removed, updated, duration: start.elapsed() })
+    Ok(ReconcileSummary {
+        added,
+        removed,
+        updated,
+        duration: start.elapsed(),
+    })
 }
 
 /// Read and filter filesystem children of a directory.
@@ -549,22 +562,29 @@ pub(super) fn process_fs_event(event: &FsChangeEvent, conn: &Connection, writer:
 
 /// Handle a file/directory removal event.
 ///
-/// Resolves the path to an entry ID and sends `DeleteSubtreeById` (dirs) or
-/// `DeleteEntryById` (files) to the writer. If the path can't be resolved
-/// (entry already gone from the DB), the event is silently skipped.
-/// The writer auto-propagates accurate negative deltas after reading old data from the DB.
+/// FSEvents can deliver `item_removed` for paths that still exist on disk
+/// (e.g., atomic file swaps, coalesced events with OR'd flags). To avoid
+/// deleting live entries, we stat the path first: if it exists, delegate to
+/// `handle_creation_or_modification` (which upserts). Only delete from the DB
+/// when the path is truly gone from the filesystem.
 fn handle_removal(
     normalized: &str,
     conn: &Connection,
     event: &FsChangeEvent,
     writer: &IndexWriter,
-    affected: Vec<String>,
+    mut affected: Vec<String>,
 ) -> Option<Vec<String>> {
-    // Resolve path to entry ID so we can send integer-keyed deletes
+    // Check if the path actually exists on disk before deleting from the DB.
+    if Path::new(normalized).symlink_metadata().is_ok() {
+        // Path still exists — treat as a modification, not a removal.
+        let parent_path = compute_parent_path(normalized);
+        return handle_creation_or_modification(normalized, &parent_path, conn, event, writer, &mut affected);
+    }
+
+    // Path is truly gone — resolve and delete from DB
     let entry_id = match store::resolve_path(conn, normalized) {
         Ok(Some(id)) => id,
         Ok(None) => {
-            // Entry not in DB -- already deleted or never indexed, skip
             log::debug!("Reconciler: removal for unknown path, skipping: {normalized}");
             return Some(affected);
         }
@@ -1088,6 +1108,45 @@ mod tests {
         assert!(result.is_some());
 
         writer.shutdown();
+    }
+
+    /// Removal event for a path that STILL EXISTS on disk should upsert, not delete.
+    /// This is the key regression test for the false-removal bug: FSEvents can deliver
+    /// item_removed for paths that were atomically swapped or had coalesced flags.
+    #[test]
+    fn removal_event_for_existing_path_upserts_instead_of_deleting() {
+        let (writer, dir, conn) = setup_test_writer();
+        let db_path = dir.path().join("test-reconciler.db");
+
+        // Create a real file on disk (must be outside excluded paths)
+        let test_dir = non_excluded_tempdir();
+        let real_file = test_dir.path().join("still_here.txt");
+        std::fs::write(&real_file, "I exist!").unwrap();
+
+        // Pre-populate DB with the parent directory chain + the file
+        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy());
+        {
+            let wconn = IndexStore::open_write_connection(&db_path).unwrap();
+            let parent_id = store::resolve_path(&wconn, &test_dir.path().to_string_lossy()).unwrap().unwrap();
+            IndexStore::insert_entry_v2(&wconn, parent_id, "still_here.txt", false, false, Some(100), None).unwrap();
+        }
+
+        // Send a removal event even though the file exists on disk
+        let event = make_event(&real_file.to_string_lossy(), 99, removed_file_flags());
+        process_fs_event(&event, &conn, &writer);
+
+        std::thread::sleep(std::time::Duration::from_millis(200));
+        writer.shutdown();
+        std::thread::sleep(std::time::Duration::from_millis(100));
+
+        // The file should still be in the DB (upserted, not deleted)
+        let store = IndexStore::open(&db_path).unwrap();
+        let parent_id = store::resolve_path(store.read_conn(), &test_dir.path().to_string_lossy())
+            .unwrap()
+            .unwrap();
+        let children = store.list_children(parent_id).unwrap();
+        assert_eq!(children.len(), 1, "file should still be in DB — removal was a false alarm");
+        assert_eq!(children[0].name, "still_here.txt");
     }
 
     // ── Subtree reconciliation tests ──────────────────────────────
