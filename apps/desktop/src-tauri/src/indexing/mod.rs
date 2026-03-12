@@ -117,6 +117,59 @@ fn get_read_pool() -> Option<Arc<ReadPool>> {
     READ_POOL.lock().ok()?.as_ref().cloned()
 }
 
+// ── Debug stats (shared atomics for the debug window) ────────────────
+
+/// Shared counters for MustScanSubDirs events and live FS events.
+/// Updated by event loops, read by the debug status IPC command.
+struct DebugStats {
+    must_scan_sub_dirs_count: AtomicU64,
+    must_scan_rescans_completed: AtomicU64,
+    live_event_count: AtomicU64,
+    watcher_active: AtomicBool,
+    /// Recent MustScanSubDirs paths: (timestamp, path). Ring buffer.
+    recent_must_scan_paths: std::sync::Mutex<Vec<(String, String)>>,
+}
+
+impl DebugStats {
+    fn new() -> Self {
+        Self {
+            must_scan_sub_dirs_count: AtomicU64::new(0),
+            must_scan_rescans_completed: AtomicU64::new(0),
+            live_event_count: AtomicU64::new(0),
+            watcher_active: AtomicBool::new(false),
+            recent_must_scan_paths: std::sync::Mutex::new(Vec::new()),
+        }
+    }
+
+    fn record_must_scan(&self, path: &str) {
+        self.must_scan_sub_dirs_count.fetch_add(1, Ordering::Relaxed);
+        if let Ok(mut paths) = self.recent_must_scan_paths.lock() {
+            let now = chrono::Local::now().format("%H:%M:%S%.3f").to_string();
+            paths.push((now, path.to_string()));
+            if paths.len() > 50 {
+                let excess = paths.len() - 50;
+                paths.drain(..excess);
+            }
+        }
+    }
+
+    fn record_rescan_completed(&self) {
+        self.must_scan_rescans_completed.fetch_add(1, Ordering::Relaxed);
+    }
+
+    fn reset(&self) {
+        self.must_scan_sub_dirs_count.store(0, Ordering::Relaxed);
+        self.must_scan_rescans_completed.store(0, Ordering::Relaxed);
+        self.live_event_count.store(0, Ordering::Relaxed);
+        self.watcher_active.store(false, Ordering::Relaxed);
+        if let Ok(mut paths) = self.recent_must_scan_paths.lock() {
+            paths.clear();
+        }
+    }
+}
+
+static DEBUG_STATS: LazyLock<DebugStats> = LazyLock::new(DebugStats::new);
+
 /// Enrich directory entries with recursive size data from the index.
 ///
 /// Called from `get_file_range` on every page fetch. Does nothing if
@@ -364,6 +417,32 @@ pub struct IndexStatusResponse {
     pub db_file_size: Option<u64>,
 }
 
+/// Extended debug status for the debug window. Includes live DB counts
+/// and MustScanSubDirs tracking.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IndexDebugStatusResponse {
+    /// Base status (same as `get_index_status`)
+    #[serde(flatten)]
+    pub base: IndexStatusResponse,
+    /// Whether the filesystem watcher is active
+    pub watcher_active: bool,
+    /// Total live FS events received since indexing started
+    pub live_event_count: u64,
+    /// Total MustScanSubDirs events received
+    pub must_scan_count: u64,
+    /// Total MustScanSubDirs rescans completed
+    pub must_scan_rescans_completed: u64,
+    /// Live entry count from the DB
+    pub live_entry_count: Option<u64>,
+    /// Live directory count from the DB
+    pub live_dir_count: Option<u64>,
+    /// Directories that have dir_stats rows
+    pub dirs_with_stats: Option<u64>,
+    /// Recent MustScanSubDirs paths: (timestamp, path)
+    pub recent_must_scan_paths: Vec<(String, String)>,
+}
+
 // ── IndexManager ─────────────────────────────────────────────────────
 
 /// Central coordinator for the drive indexing system.
@@ -482,17 +561,17 @@ impl IndexManager {
                         return self.start_scan();
                     }
 
-                    log::debug!(
-                        "Existing index found (scan_completed_at={}, last_event_id={last_event_id}), \
-                         attempting sinceWhen replay",
-                        status.scan_completed_at.as_deref().unwrap_or("?"),
+                    let current_id = watcher::current_event_id();
+                    let gap = current_id.saturating_sub(last_event_id);
+                    log::info!(
+                        "Startup: cold-start replay (last_event_id={last_event_id}, current={current_id}, gap={gap})",
                     );
                     return self.start_replay(last_event_id);
                 }
             }
-            log::debug!("Existing index found but no last_event_id, starting fresh scan");
+            log::info!("Startup: fresh scan (existing index has no last_event_id)");
         } else if status.scan_completed_at.is_some() {
-            log::debug!("Existing index found, starting rescan (no event replay on this platform)");
+            log::info!("Startup: full rescan (no event replay on this platform)");
         } else if status.last_event_id.is_some() {
             emit_rescan_notification(
                 &self.app,
@@ -503,7 +582,7 @@ impl IndexManager {
                     .to_string(),
             );
         } else {
-            log::debug!("No existing index, starting fresh scan");
+            log::info!("Startup: fresh scan (no existing index)");
         }
 
         self.start_scan()
@@ -523,7 +602,8 @@ impl IndexManager {
             Ok(watcher) => {
                 watcher_overflow = Some(watcher.overflow_flag());
                 self.drive_watcher = Some(watcher);
-                log::debug!("DriveWatcher started for replay (sinceWhen={since_event_id}, current={current_id})");
+                DEBUG_STATS.watcher_active.store(true, Ordering::Relaxed);
+                log::info!("Replay: watcher started (since_event_id={since_event_id}, current={current_id})");
             }
             Err(e) => {
                 emit_rescan_notification(
@@ -655,7 +735,8 @@ impl IndexManager {
             Ok(watcher) => {
                 watcher_overflow = Some(watcher.overflow_flag());
                 self.drive_watcher = Some(watcher);
-                log::debug!("DriveWatcher started (scan_start_event_id={scan_start_event_id})");
+                DEBUG_STATS.watcher_active.store(true, Ordering::Relaxed);
+                log::info!("Scan: watcher started (scan_start_event_id={scan_start_event_id})");
             }
             Err(e) => {
                 watcher_overflow = None;
@@ -742,11 +823,11 @@ impl IndexManager {
 
             match result {
                 Ok(Ok(summary)) => {
-                    log::debug!(
-                        "Volume scan complete: {} entries, {} dirs, {}ms",
+                    log::info!(
+                        "Scan: complete ({} entries, {} dirs, {:.1}s)",
                         summary.total_entries,
                         summary.total_dirs,
-                        summary.duration_ms,
+                        summary.duration_ms as f64 / 1000.0,
                     );
 
                     // Step 4: Reconcile buffered watcher events
@@ -759,7 +840,7 @@ impl IndexManager {
                         reconciler.buffer_event(event);
                         buffered_count += 1;
                     }
-                    log::debug!("Reconciler: buffered {buffered_count} events during scan");
+                    log::info!("Reconciler: {buffered_count} events buffered during scan");
 
                     if reconciler.did_buffer_overflow() {
                         emit_rescan_notification(
@@ -854,7 +935,7 @@ impl IndexManager {
                     // Replay events that arrived after the scan read their paths
                     match reconciler.replay(scan_start_event_id, &replay_conn, &writer, &app) {
                         Ok(last_id) => {
-                            log::debug!("Reconciler: replay complete (last_event_id={last_id})");
+                            log::info!("Reconciler: post-scan replay complete (last_event_id={last_id})");
                         }
                         Err(e) => {
                             log::warn!("Reconciler: replay failed: {e}");
@@ -938,6 +1019,8 @@ impl IndexManager {
         }
         self.drive_watcher = None;
 
+        DEBUG_STATS.reset();
+
         // Abort the live event processing task
         {
             let mut guard = self.live_event_task.lock().unwrap();
@@ -974,6 +1057,34 @@ impl IndexManager {
             dirs_found,
             index_status: Some(index_status),
             db_file_size,
+        })
+    }
+
+    /// Get extended debug status including live DB counts and event stats.
+    pub fn get_debug_status(&self) -> Result<IndexDebugStatusResponse, String> {
+        let base = self.get_status()?;
+        let conn = self.store.read_conn();
+
+        let live_entry_count = IndexStore::get_entry_count(conn).ok();
+        let live_dir_count = IndexStore::get_dir_count(conn).ok();
+        let dirs_with_stats = IndexStore::get_dirs_with_stats_count(conn).ok();
+
+        let recent_must_scan_paths = DEBUG_STATS
+            .recent_must_scan_paths
+            .lock()
+            .map(|p| p.clone())
+            .unwrap_or_default();
+
+        Ok(IndexDebugStatusResponse {
+            base,
+            watcher_active: DEBUG_STATS.watcher_active.load(Ordering::Relaxed),
+            live_event_count: DEBUG_STATS.live_event_count.load(Ordering::Relaxed),
+            must_scan_count: DEBUG_STATS.must_scan_sub_dirs_count.load(Ordering::Relaxed),
+            must_scan_rescans_completed: DEBUG_STATS.must_scan_rescans_completed.load(Ordering::Relaxed),
+            live_entry_count,
+            live_dir_count,
+            dirs_with_stats,
+            recent_must_scan_paths,
         })
     }
 
@@ -1117,7 +1228,7 @@ impl IndexManager {
             micro_scans.cancel_all().await;
         });
 
-        log::debug!("IndexManager shut down for volume '{}'", self.volume_id);
+        log::info!("IndexManager: shut down for volume '{}'", self.volume_id);
     }
 }
 
@@ -1203,7 +1314,7 @@ async fn run_live_event_loop(
     volume_id: String,
     watcher_overflow: Option<Arc<AtomicBool>>,
 ) {
-    log::debug!("Live event processing started");
+    log::info!("Live event processing: started");
 
     // Open a read connection for path resolution (integer-keyed lookups)
     let db_path = writer.db_path();
@@ -1239,6 +1350,7 @@ async fn run_live_event_loop(
                             })
                             .or_insert(deduped_event);
                         event_count += 1;
+                        DEBUG_STATS.live_event_count.store(event_count, Ordering::Relaxed);
                         if event_count.is_multiple_of(10_000) {
                             log::debug!(
                                 "Live event processing: {event_count} events received \
@@ -1294,7 +1406,7 @@ async fn run_live_event_loop(
         }
     }
 
-    log::debug!("Live event processing stopped after {event_count} events");
+    log::info!("Live event processing: stopped ({event_count} events)");
 }
 
 /// Drain the pending events map, process each through the reconciler, and
@@ -1302,7 +1414,7 @@ async fn run_live_event_loop(
 fn process_live_batch(
     pending_events: &mut std::collections::HashMap<String, watcher::FsChangeEvent>,
     reconciler: &mut EventReconciler,
-    conn: &rusqlite::Connection,
+    conn: &Connection,
     writer: &IndexWriter,
     pending_paths: &mut std::collections::HashSet<String>,
 ) {
@@ -1385,7 +1497,7 @@ async fn run_replay_event_loop(
         since_event_id,
         estimated_total,
     } = config;
-    log::debug!("Replay event processing started (since_event_id={since_event_id})");
+    log::info!("Replay: started (since_event_id={since_event_id}, estimated_total={estimated_total:?})");
 
     // Open a read connection for path resolution (integer-keyed lookups)
     let db_path = writer.db_path();
@@ -1457,7 +1569,7 @@ async fn run_replay_event_loop(
 
         // HistoryDone marks end of replay phase
         if event.flags.history_done {
-            log::debug!("Replay: HistoryDone received after {event_count} events");
+            log::info!("Replay: HistoryDone received after {event_count} events");
 
             // Process the HistoryDone event itself (it may carry other flags)
             if let Some(paths) = reconciler::process_fs_event(&event, &conn, &writer)
@@ -1571,15 +1683,12 @@ async fn run_replay_event_loop(
     }
 
     // Flush: wait for the writer to commit all replay data
-    let flush_start = std::time::Instant::now();
     match writer.flush().await {
         Ok(()) => {
-            let flush_ms = flush_start.elapsed().as_millis();
-            log::debug!(
-                "Replay complete: {event_count} events, {} affected dirs, {flush_ms}ms writer flush, \
-                 {}ms total",
+            log::info!(
+                "Replay: complete ({event_count} events, {} affected dirs, {:.1}s)",
                 affected_paths.len(),
-                replay_start.elapsed().as_millis(),
+                replay_start.elapsed().as_secs_f64(),
             );
         }
         Err(e) => {
@@ -1612,9 +1721,8 @@ async fn run_replay_event_loop(
 
     // ── Switch to live mode immediately (before verification) ────────
 
-    log::debug!("Replay: switching to live mode");
+    log::info!("Replay: switching to live mode");
     micro_scans.set_replay_active(false);
-    log::debug!("Replay: micro-scans re-enabled for live mode");
     let mut reconciler = EventReconciler::new();
     reconciler.switch_to_live();
 
@@ -1728,7 +1836,7 @@ async fn run_replay_event_loop(
         }
     }
 
-    log::debug!("Replay event loop stopped ({event_count} replay + {live_count} live events)");
+    log::info!("Replay event loop: stopped ({event_count} replay + {live_count} live events)");
     Ok(())
 }
 
@@ -2242,6 +2350,58 @@ pub fn get_status() -> Result<IndexStatusResponse, String> {
             })
         }
         IndexPhase::Running(mgr) => mgr.get_status(),
+    }
+}
+
+/// Get extended debug status for the debug window.
+pub fn get_debug_status() -> Result<IndexDebugStatusResponse, String> {
+    let guard = INDEXING.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
+    match &*guard {
+        IndexPhase::Disabled | IndexPhase::ShuttingDown => {
+            let base = IndexStatusResponse {
+                initialized: false,
+                scanning: false,
+                entries_scanned: 0,
+                dirs_found: 0,
+                index_status: None,
+                db_file_size: None,
+            };
+            Ok(IndexDebugStatusResponse {
+                base,
+                watcher_active: false,
+                live_event_count: 0,
+                must_scan_count: 0,
+                must_scan_rescans_completed: 0,
+                live_entry_count: None,
+                live_dir_count: None,
+                dirs_with_stats: None,
+                recent_must_scan_paths: Vec::new(),
+            })
+        }
+        IndexPhase::Initializing { store, .. } => {
+            let db_file_size = store.db_file_size().ok();
+            let index_status = store.get_index_status().ok();
+            let base = IndexStatusResponse {
+                initialized: true,
+                scanning: true,
+                entries_scanned: 0,
+                dirs_found: 0,
+                index_status,
+                db_file_size,
+            };
+            Ok(IndexDebugStatusResponse {
+                base,
+                watcher_active: DEBUG_STATS.watcher_active.load(Ordering::Relaxed),
+                live_event_count: 0,
+                must_scan_count: 0,
+                must_scan_rescans_completed: 0,
+                live_entry_count: None,
+                live_dir_count: None,
+                dirs_with_stats: None,
+                recent_must_scan_paths: Vec::new(),
+            })
+        }
+        IndexPhase::Running(mgr) => mgr.get_debug_status(),
     }
 }
 

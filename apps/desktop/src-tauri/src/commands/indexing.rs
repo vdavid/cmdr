@@ -4,7 +4,7 @@
 
 use tauri::AppHandle;
 
-use crate::indexing::{self, IndexStatusResponse, PubScanPriority, store::DirStats};
+use crate::indexing::{self, IndexDebugStatusResponse, IndexStatusResponse, PubScanPriority, store::DirStats};
 
 #[tauri::command]
 pub async fn start_drive_index(app: AppHandle) -> Result<(), String> {
@@ -54,6 +54,12 @@ pub async fn cancel_nav_priority(path: String) -> Result<(), String> {
 #[tauri::command]
 pub async fn clear_drive_index() -> Result<(), String> {
     indexing::clear_index()
+}
+
+/// Extended debug status for the debug window (dev only).
+#[tauri::command]
+pub async fn get_index_debug_status() -> Result<IndexDebugStatusResponse, String> {
+    indexing::get_debug_status()
 }
 
 /// Toggle drive indexing on/off based on the user's setting.

@@ -30,6 +30,7 @@ use crate::indexing::scanner;
 use crate::indexing::store::{self};
 use crate::indexing::watcher::FsChangeEvent;
 use crate::indexing::writer::{IndexWriter, WriteMessage};
+use crate::indexing::DEBUG_STATS;
 
 // ── Exclusion check ──────────────────────────────────────────────────
 
@@ -147,7 +148,7 @@ impl EventReconciler {
         let mut last_event_id = scan_start_event_id;
         let mut affected_paths: Vec<String> = Vec::new();
 
-        log::debug!("Reconciler: replaying {total} buffered events (scan_start_event_id={scan_start_event_id})");
+        log::info!("Reconciler: replaying {total} buffered events (scan_start_event_id={scan_start_event_id})");
 
         for event in &self.buffer {
             // Skip events that the scan already covered
@@ -173,7 +174,7 @@ impl EventReconciler {
             let _ = writer.send(WriteMessage::UpdateLastEventId(last_event_id));
         }
 
-        log::debug!("Reconciler: replayed {processed}/{total} events (last_event_id={last_event_id})");
+        log::info!("Reconciler: replayed {processed}/{total} events (last_event_id={last_event_id})");
         Ok(last_event_id)
     }
 
@@ -183,7 +184,7 @@ impl EventReconciler {
         self.buffer_overflow = false;
         self.buffer.clear();
         self.buffer.shrink_to_fit();
-        log::debug!("Reconciler: switched to live mode");
+        log::info!("Reconciler: switched to live mode");
     }
 
     /// Process a single event in live mode.
@@ -222,6 +223,7 @@ impl EventReconciler {
 
     /// Queue a MustScanSubDirs rescan, throttled to max 1 concurrent.
     pub(super) fn queue_must_scan_sub_dirs(&mut self, path: PathBuf, writer: &IndexWriter) {
+        DEBUG_STATS.record_must_scan(&path.to_string_lossy());
         self.pending_rescans.insert(path.clone());
 
         if self.rescan_active.load(Ordering::Relaxed) {
@@ -247,7 +249,7 @@ impl EventReconciler {
         let writer = writer.clone();
         let rescan_active = Arc::clone(&self.rescan_active);
 
-        log::debug!("Reconciler: starting MustScanSubDirs rescan for {}", path.display());
+        log::info!("MustScanSubDirs: rescan starting for {}", path.display());
 
         tokio::task::spawn_blocking(move || {
             let start = Instant::now();
@@ -257,14 +259,14 @@ impl EventReconciler {
                     let duration = start.elapsed();
                     if duration.as_secs() > 10 {
                         log::warn!(
-                            "Reconciler: MustScanSubDirs rescan for {} took {}s ({} entries)",
+                            "MustScanSubDirs: rescan slow for {} ({} entries, {}s)",
                             path.display(),
-                            duration.as_secs(),
                             summary.total_entries,
+                            duration.as_secs(),
                         );
                     } else {
-                        log::debug!(
-                            "Reconciler: MustScanSubDirs rescan for {} completed: {} entries, {}ms",
+                        log::info!(
+                            "MustScanSubDirs: rescan complete for {} ({} entries, {}ms)",
                             path.display(),
                             summary.total_entries,
                             summary.duration_ms,
@@ -272,10 +274,11 @@ impl EventReconciler {
                     }
                 }
                 Err(e) => {
-                    log::warn!("Reconciler: MustScanSubDirs rescan for {} failed: {e}", path.display());
+                    log::warn!("MustScanSubDirs: rescan failed for {} — {e}", path.display());
                 }
             }
 
+            DEBUG_STATS.record_rescan_completed();
             rescan_active.store(false, Ordering::Relaxed);
         });
     }

@@ -934,9 +934,25 @@ impl IndexStore {
     }
 
     /// Count the total number of entries in the index.
-    #[cfg(test)]
     pub fn get_entry_count(conn: &Connection) -> Result<u64, IndexStoreError> {
         let count: u64 = conn.query_row("SELECT COUNT(*) FROM entries", [], |row| row.get(0))?;
+        Ok(count)
+    }
+
+    /// Count directories in the index.
+    pub fn get_dir_count(conn: &Connection) -> Result<u64, IndexStoreError> {
+        let count: u64 =
+            conn.query_row("SELECT COUNT(*) FROM entries WHERE is_directory = 1", [], |row| row.get(0))?;
+        Ok(count)
+    }
+
+    /// Count directories that have dir_stats rows.
+    pub fn get_dirs_with_stats_count(conn: &Connection) -> Result<u64, IndexStoreError> {
+        let count: u64 = conn.query_row(
+            "SELECT COUNT(*) FROM dir_stats ds JOIN entries e ON e.id = ds.entry_id WHERE e.is_directory = 1",
+            [],
+            |row| row.get(0),
+        )?;
         Ok(count)
     }
 

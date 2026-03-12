@@ -857,6 +857,7 @@ pub fn run() {
             commands::indexing::cancel_nav_priority,
             commands::indexing::clear_drive_index,
             commands::indexing::set_indexing_enabled,
+            commands::indexing::get_index_debug_status,
             // E2E test support
             commands::e2e::get_e2e_start_path,
             // Clipboard file operations
