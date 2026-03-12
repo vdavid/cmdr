@@ -92,6 +92,14 @@ pub enum WriteMessage {
     /// Used before a full rescan on a stale DB to avoid slow `INSERT OR REPLACE`
     /// on a populated table with the expensive `platform_case` collation.
     TruncateData,
+    /// Drop `idx_parent_name` before a full scan's bulk inserts.
+    /// Eliminates expensive `platform_case` collation during B-tree maintenance.
+    /// The scanner sends `RecreateNameIndex` after all entries are inserted.
+    DropNameIndex,
+    /// Recreate `idx_parent_name` after bulk inserts complete (or scan cancellation).
+    /// Must be sent before live-mode writes resume, since `UpsertEntryV2` and
+    /// `resolve_component` depend on this index.
+    RecreateNameIndex,
     /// Begin an explicit SQLite transaction.
     /// All subsequent writes are batched until `CommitTransaction`.
     /// Dramatically reduces fsync overhead for bulk operations (replay).
@@ -570,6 +578,27 @@ fn process_message(
                     }
                 }
                 Err(e) => log::warn!("Writer: truncate failed: {e}"),
+            }
+        }
+        WriteMessage::DropNameIndex => {
+            let t = Instant::now();
+            if let Err(e) = conn.execute_batch("DROP INDEX IF EXISTS idx_parent_name") {
+                log::warn!("Writer: DROP INDEX idx_parent_name failed: {e}");
+            } else {
+                log::info!("Writer: dropped idx_parent_name ({}ms)", t.elapsed().as_millis());
+            }
+        }
+        WriteMessage::RecreateNameIndex => {
+            let t = Instant::now();
+            if let Err(e) = conn.execute_batch(
+                "CREATE UNIQUE INDEX IF NOT EXISTS idx_parent_name ON entries (parent_id, name)",
+            ) {
+                log::warn!("Writer: CREATE INDEX idx_parent_name failed: {e}");
+            } else {
+                log::info!(
+                    "Writer: recreated idx_parent_name ({}ms)",
+                    t.elapsed().as_millis(),
+                );
             }
         }
         WriteMessage::ComputeAllAggregates => {

@@ -402,6 +402,13 @@ impl IndexManager {
             log::warn!("Failed to flush after TruncateData: {e}");
         }
 
+        // Drop the unique name index before bulk inserts. Without it, each INSERT
+        // only touches the integer PK B-tree. The index is recreated by the scanner
+        // thread after all entries are inserted (or after cancellation).
+        if let Err(e) = self.writer.send(WriteMessage::DropNameIndex) {
+            log::warn!("Failed to send DropNameIndex: {e}");
+        }
+
         // Step 1: Start the FSEvents watcher BEFORE the scan so we don't miss events
         let (event_tx, event_rx) = tokio::sync::mpsc::channel(WATCHER_CHANNEL_CAPACITY);
         let scan_start_event_id = watcher::current_event_id();

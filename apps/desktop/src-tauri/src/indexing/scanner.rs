@@ -201,6 +201,12 @@ pub fn scan_volume(
                 true, // volume scan: root always maps to ROOT_ID
             );
 
+            // Always recreate the name index after bulk inserts, whether the
+            // scan completed or was cancelled. Live-mode writes need it.
+            if let Err(e) = writer.send(WriteMessage::RecreateNameIndex) {
+                log::warn!("Scanner: failed to send RecreateNameIndex: {e}");
+            }
+
             // Trigger full aggregation if scan completed without cancellation
             if let Ok(ref s) = summary
                 && !s.was_cancelled
