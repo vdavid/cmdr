@@ -15,15 +15,18 @@ if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   exit 1
 fi
 
-# Pull latest main to avoid push rejection after tagging
-git pull --rebase origin main
-
 # Check for uncommitted changes (CHANGELOG.md and roadmap are allowed — they get included in the release commit)
 EXCLUDE=(':!CHANGELOG.md' ':!apps/website/src/pages/roadmap.astro')
 if ! git diff --quiet -- "${EXCLUDE[@]}" || ! git diff --staged --quiet -- "${EXCLUDE[@]}"; then
   echo "Error: Working tree has uncommitted changes (other than CHANGELOG.md and roadmap.astro). Commit or stash them first."
   exit 1
 fi
+
+# Stage allowed files before rebase so they don't block it
+git add CHANGELOG.md apps/website/src/pages/roadmap.astro 2>/dev/null || true
+
+# Pull latest main to avoid push rejection after tagging
+git pull --rebase origin main
 
 # Check CHANGELOG.md has an [Unreleased] section with content
 if ! grep -q '## \[Unreleased\]' CHANGELOG.md; then

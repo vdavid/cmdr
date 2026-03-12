@@ -5,6 +5,33 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 and we use [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-03-13
+
+### Added
+
+- Add custom macOS updater that preserves Full Disk Access permissions across updates — syncs files into existing `.app` bundle instead of replacing it, with privilege escalation when needed ([190a637](https://github.com/vdavid/cmdr/commit/190a637))
+- Add MTP delete, rename, and move operations with full progress, cancellation, and dry-run support ([812ad07](https://github.com/vdavid/cmdr/commit/812ad07))
+- Add breadcrumb improvements: path displays "/" prefix, abbreviates home directory to "~" ([44b7105](https://github.com/vdavid/cmdr/commit/44b7105))
+- Add auto-rescan on FSEvents channel overflow with user notification toast ([ca7cece](https://github.com/vdavid/cmdr/commit/ca7cece))
+- Add index debug dashboard with live DB stats, watcher status, event rate sparkline, and `MustScanSubDirs` log ([7510ec3](https://github.com/vdavid/cmdr/commit/7510ec3))
+
+### Fixed
+
+- Fix indexing: interrupt-safe reconciler replaces destructive `MustScanSubDirs` handling, stop micro-scans after cold-start replay, faster bulk inserts by dropping/recreating index, fix false FSEvents deletions, fix missing dir sizes after replay, eliminate enrichment lock contention, periodic DB vacuum ([31df59e](https://github.com/vdavid/cmdr/commit/31df59e), [981b311](https://github.com/vdavid/cmdr/commit/981b311), [da74290](https://github.com/vdavid/cmdr/commit/da74290), [f0c225f](https://github.com/vdavid/cmdr/commit/f0c225f), [bf0b47f](https://github.com/vdavid/cmdr/commit/bf0b47f), [d125a24](https://github.com/vdavid/cmdr/commit/d125a24), [67684bb](https://github.com/vdavid/cmdr/commit/67684bb))
+- Fix drag swizzle failing on wry 0.54+ — moved install to `RunEvent::Ready` after webview creation ([2680bae](https://github.com/vdavid/cmdr/commit/2680bae))
+- Fix MCP live start/stop UX: query backend state as ground truth, serialize operations, auto-check port availability, unified status messages ([f4c107a](https://github.com/vdavid/cmdr/commit/f4c107a))
+- Fix MCP server not stopping on app quit ([61fe290](https://github.com/vdavid/cmdr/commit/61fe290))
+- Fix traffic light position in production builds ([b74ed39](https://github.com/vdavid/cmdr/commit/b74ed39))
+- Fix scan overlay showing stale state — refresh UI after full scan completes ([218bcb9](https://github.com/vdavid/cmdr/commit/218bcb9))
+
+### Non-app
+
+- Vendor `cmdr-fsevent-stream` fork into monorepo as workspace crate ([8b937a6](https://github.com/vdavid/cmdr/commit/8b937a6))
+- Website: fix two FOUC flickers on page load (light mode flash, newsletter icon flash) ([8c21ac7](https://github.com/vdavid/cmdr/commit/8c21ac7))
+- Tooling: self-hosted macOS GitHub Actions runner ([665f63a](https://github.com/vdavid/cmdr/commit/665f63a)), index DB query tool ([37f1062](https://github.com/vdavid/cmdr/commit/37f1062)), extract website deploy workflow ([5744636](https://github.com/vdavid/cmdr/commit/5744636)), trim Linux test output ([b9d0ef2](https://github.com/vdavid/cmdr/commit/b9d0ef2)), fix release script ([190bfe9](https://github.com/vdavid/cmdr/commit/190bfe9), [233c8dd](https://github.com/vdavid/cmdr/commit/233c8dd))
+- Refactors: split indexing `mod.rs` into `enrichment.rs`, `event_loop.rs`, `events.rs` ([bb7d57f](https://github.com/vdavid/cmdr/commit/bb7d57f))
+- Dev: pink title bar to distinguish dev from prod ([d2c9ae4](https://github.com/vdavid/cmdr/commit/d2c9ae4))
+
 ## [0.7.1] - 2026-03-12
 
 ### Fixed
