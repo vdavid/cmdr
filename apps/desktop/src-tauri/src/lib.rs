@@ -286,9 +286,10 @@ pub fn run() {
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             network::known_shares::load_known_shares(app.handle());
 
-            // Install drag image detection swizzle (macOS only)
-            #[cfg(target_os = "macos")]
-            drag_image_detection::install(app.handle().clone());
+            // Drag image detection swizzle is installed in RunEvent::Ready (not here)
+            // because wry 0.54+ registers the WryWebView ObjC class lazily — it doesn't
+            // exist in the runtime until the first webview is created, which happens after
+            // setup() returns.
 
             // Observe system accent color changes and emit events to frontend
             #[cfg(target_os = "macos")]
@@ -888,12 +889,22 @@ pub fn run() {
         })
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
-        .run(|_app, event| {
-            if let tauri::RunEvent::Exit = event {
-                ai::manager::shutdown();
-                mcp::stop_mcp_server();
-                #[cfg(any(target_os = "macos", target_os = "linux"))]
-                network::mdns_discovery::stop_discovery();
+        .run(|app, event| {
+            match event {
+                tauri::RunEvent::Ready => {
+                    // Install drag image detection swizzle now that the webview exists.
+                    // wry 0.54+ registers WryWebView lazily, so it's only available after
+                    // the first webview is created (which happens between setup() and Ready).
+                    #[cfg(target_os = "macos")]
+                    drag_image_detection::install(app.handle().clone());
+                }
+                tauri::RunEvent::Exit => {
+                    ai::manager::shutdown();
+                    mcp::stop_mcp_server();
+                    #[cfg(any(target_os = "macos", target_os = "linux"))]
+                    network::mdns_discovery::stop_discovery();
+                }
+                _ => {}
             }
         });
 }
