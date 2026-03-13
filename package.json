@@ -4,8 +4,8 @@
     "packageManager": "pnpm@10.32.1",
     "scripts": {
         "preinstall": "npx only-allow pnpm",
-        "dev": "RUST_LOG=smb=warn,sspi=warn,${RUST_LOG:-info} pnpm --filter @cmdr/desktop tauri dev --config src-tauri/tauri.dev.conf.json",
-        "dev:ai-debug": "RUST_LOG=smb=warn,sspi=warn,cmdr_lib::ai=debug,${RUST_LOG:-info} pnpm --filter @cmdr/desktop tauri dev --config src-tauri/tauri.dev.conf.json",
+        "dev": "RUST_LOG=smb=warn,sspi=warn,${RUST_LOG:-info} pnpm --filter @cmdr/desktop tauri dev",
+        "dev:ai-debug": "RUST_LOG=smb=warn,sspi=warn,cmdr_lib::ai=debug,${RUST_LOG:-info} pnpm --filter @cmdr/desktop tauri dev",
         "build": "pnpm --filter @cmdr/desktop tauri build",
         "dev:website": "pnpm --filter @cmdr/website dev",
         "build:website": "pnpm --filter @cmdr/website build",
