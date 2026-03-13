@@ -632,8 +632,11 @@ fn process_message(
                     &mut on_progress,
                 )
             };
-            // Maps are consumed; clear to free memory
+            // Maps are consumed; clear to free memory.
+            // Reset expected_total so micro-scan inserts don't emit
+            // spurious saving_entries progress events after the full scan.
             accumulator.clear();
+            expected_total_entries.store(0, Ordering::Relaxed);
             match result {
                 Ok(count) => {
                     log::info!(

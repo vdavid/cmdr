@@ -608,6 +608,31 @@ impl IndexManager {
                         },
                     );
 
+                    // Store scan metadata now, before the reconciler replay which
+                    // can fail (e.g. "database is locked") and cause an early return.
+                    // Without this, scan_completed_at is never persisted and the next
+                    // startup triggers a full rescan of the entire volume.
+                    let now = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .map(|d| d.as_secs().to_string())
+                        .unwrap_or_default();
+                    let _ = writer.send(WriteMessage::UpdateMeta {
+                        key: "scan_completed_at".to_string(),
+                        value: now,
+                    });
+                    let _ = writer.send(WriteMessage::UpdateMeta {
+                        key: "scan_duration_ms".to_string(),
+                        value: summary.duration_ms.to_string(),
+                    });
+                    let _ = writer.send(WriteMessage::UpdateMeta {
+                        key: "total_entries".to_string(),
+                        value: summary.total_entries.to_string(),
+                    });
+                    let _ = writer.send(WriteMessage::UpdateMeta {
+                        key: "volume_path".to_string(),
+                        value: "/".to_string(),
+                    });
+
                     // Open a read connection for path resolution during replay
                     let replay_conn = match IndexStore::open_write_connection(&writer.db_path()) {
                         Ok(c) => c,
@@ -664,28 +689,6 @@ impl IndexManager {
                         let mut guard = live_event_task_slot.lock().unwrap();
                         *guard = Some(handle);
                     }
-
-                    // Store scan metadata via writer
-                    let now = std::time::SystemTime::now()
-                        .duration_since(std::time::UNIX_EPOCH)
-                        .map(|d| d.as_secs().to_string())
-                        .unwrap_or_default();
-                    let _ = writer.send(WriteMessage::UpdateMeta {
-                        key: "scan_completed_at".to_string(),
-                        value: now,
-                    });
-                    let _ = writer.send(WriteMessage::UpdateMeta {
-                        key: "scan_duration_ms".to_string(),
-                        value: summary.duration_ms.to_string(),
-                    });
-                    let _ = writer.send(WriteMessage::UpdateMeta {
-                        key: "total_entries".to_string(),
-                        value: summary.total_entries.to_string(),
-                    });
-                    let _ = writer.send(WriteMessage::UpdateMeta {
-                        key: "volume_path".to_string(),
-                        value: "/".to_string(),
-                    });
 
                     // Mark micro-scans as superseded (full scan data is authoritative)
                     micro_scans.mark_full_scan_complete().await;
