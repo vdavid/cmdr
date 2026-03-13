@@ -91,6 +91,7 @@ export async function initIndexState(): Promise<void> {
     const unlistenStarted = await listen<{ volumeId: string }>('index-scan-started', () => {
         scanning = true
         resetCounters()
+        resetAggregation()
     })
     unlistenHandles.push(unlistenStarted)
 
@@ -113,7 +114,6 @@ export async function initIndexState(): Promise<void> {
         scanning = false
         entriesScanned = event.payload.totalEntries
         dirsFound = event.payload.totalDirs
-        resetAggregation()
     })
     unlistenHandles.push(unlistenComplete)
 

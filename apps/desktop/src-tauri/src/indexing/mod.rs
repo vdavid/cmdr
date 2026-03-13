@@ -573,18 +573,6 @@ impl IndexManager {
                     // InsertEntriesV2 batches from the channel.
                     writer.set_expected_total_entries(summary.total_entries);
 
-                    // Emit an initial saving_entries event so the UI shows
-                    // progress immediately (the writer may still be processing
-                    // a backlog of InsertEntriesV2 messages).
-                    let _ = app.emit(
-                        "index-aggregation-progress",
-                        serde_json::json!({
-                            "phase": "saving_entries",
-                            "current": 0,
-                            "total": summary.total_entries,
-                        }),
-                    );
-
                     // Flush the writer to ensure all scan batches are committed
                     // before opening the read connection. Without this, the WAL
                     // snapshot may not include the latest InsertEntriesV2 batches,

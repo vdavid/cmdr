@@ -64,7 +64,7 @@
             <div class="agg-content">
                 <span class="scan-label">{aggLabel}</span>
                 {#if aggPhase === 'rebuilding_index'}
-                    <span class="phase-hint">Usually takes 2–3 minutes</span>
+                    <span class="phase-hint">Usually less than a minute</span>
                 {:else if showProgressBar}
                     <div class="progress-row">
                         <div
