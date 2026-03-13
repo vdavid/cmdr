@@ -621,7 +621,12 @@ impl IndexManager {
                     }
 
                     // Replay events that arrived after the scan read their paths
-                    match reconciler.replay(scan_start_event_id, &replay_conn, &writer, &app) {
+                    match reconciler.replay(
+                        scan_start_event_id,
+                        &replay_conn,
+                        &writer,
+                        &mut |paths| reconciler::emit_dir_updated(&app, paths),
+                    ) {
                         Ok(last_id) => {
                             log::info!("Reconciler: post-scan replay complete (last_event_id={last_id})");
                         }
