@@ -5,6 +5,7 @@ How to release a new version of Cmdr. Use the `/release` command to start.
 ## Prerequisites
 
 - `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` in GitHub secrets
+- Self-hosted runner: `create-dmg` must be installed (`brew install create-dmg`)
 
 ## How updates work
 
@@ -63,3 +64,10 @@ body, commits to main, and triggers a website deploy. If it fails:
   (someone else edited `latest.json`), it needs manual resolution.
 - **Website deploy webhook failed**: re-trigger manually by pushing any commit to main, or SSH into
   the server and run the deploy script.
+
+### Tauri bundles unexpected binaries
+
+Tauri's bundler includes all `[[bin]]` targets from the cmdr package, not just the main `Cmdr` binary.
+Dev-only tools must live in separate workspace crates (like `crates/index-query/`) to stay out of the
+bundle. Non-`.rs` files in `src/bin/` (like `CLAUDE.md`) also confuse the bundler — it strips the
+extension and tries to bundle the result as a binary.
