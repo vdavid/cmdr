@@ -622,7 +622,7 @@ impl IndexManager {
                     });
 
                     // Open a read connection for path resolution during replay
-                    let replay_conn = match IndexStore::open_write_connection(&writer.db_path()) {
+                    let replay_conn = match IndexStore::open_read_connection(&writer.db_path()) {
                         Ok(c) => c,
                         Err(e) => {
                             log::warn!("Reconciler: failed to open read connection for replay: {e}");
