@@ -98,6 +98,7 @@ Key test files are alongside each module (test functions within `#[cfg(test)]` b
 - Firmlinks: path normalization, edge cases
 - Writer: message processing, priority handling
 - mod.rs: end-to-end integration (scan → aggregate → enrich → watcher update → re-enrich), enrichment fast path, fallback, root-level enrichment
+- stress_tests.rs: concurrency stress tests — concurrent scan + replay, concurrent batch inserts, concurrent scan + enrichment reads, live event storm + reads, lifecycle transitions under load
 
 ## Key decisions
 

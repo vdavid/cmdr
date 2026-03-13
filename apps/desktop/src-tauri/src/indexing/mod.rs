@@ -18,6 +18,9 @@ pub(crate) mod scanner;
 mod verifier; // Placeholder: per-navigation background readdir diff (future milestone)
 pub(crate) mod watcher;
 
+#[cfg(test)]
+mod stress_tests;
+
 pub use enrichment::enrich_entries_with_index;
 pub use events::*;
 
@@ -1045,15 +1048,14 @@ pub fn get_dir_stats(path: &str) -> Result<Option<DirStats>, String> {
     let normalized = firmlinks::normalize_path(path);
 
     pool.with_conn(|conn| {
-        let entry_id = match store::resolve_path(conn, &normalized)
-            .map_err(|e| format!("Couldn't resolve path: {e}"))?
-        {
-            Some(id) => id,
-            None => return Ok(None),
-        };
+        let entry_id =
+            match store::resolve_path(conn, &normalized).map_err(|e| format!("Couldn't resolve path: {e}"))? {
+                Some(id) => id,
+                None => return Ok(None),
+            };
 
-        let stats = IndexStore::get_dir_stats_by_id(conn, entry_id)
-            .map_err(|e| format!("Couldn't get dir stats: {e}"))?;
+        let stats =
+            IndexStore::get_dir_stats_by_id(conn, entry_id).map_err(|e| format!("Couldn't get dir stats: {e}"))?;
 
         Ok(stats.map(|s| DirStats {
             path: normalized.clone(),
@@ -1074,9 +1076,7 @@ pub fn get_dir_stats_batch(paths: &[String]) -> Result<Vec<Option<DirStats>>, St
 
         for (i, path) in paths.iter().enumerate() {
             let normalized = firmlinks::normalize_path(path);
-            match store::resolve_path(conn, &normalized)
-                .map_err(|e| format!("Couldn't resolve path: {e}"))?
-            {
+            match store::resolve_path(conn, &normalized).map_err(|e| format!("Couldn't resolve path: {e}"))? {
                 Some(id) => {
                     id_to_idx.push((id, i, normalized));
                     results.push(None);
