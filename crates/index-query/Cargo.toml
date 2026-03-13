@@ -1,0 +1,9 @@
+[package]
+name = "index-query"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+cmdr = { path = "../../apps/desktop/src-tauri" }
+rusqlite = { version = "0.32", features = ["bundled", "collation"] }

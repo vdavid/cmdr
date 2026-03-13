@@ -4,7 +4,7 @@
 //! so the standard `sqlite3` CLI can't query it. This tool registers the
 //! collation and runs an arbitrary SQL query.
 //!
-//! Usage: cargo run --bin index_query -- <db_path> <sql>
+//! Usage: cargo run -p index-query -- <db_path> <sql>
 
 use rusqlite::{Connection, OpenFlags};
 
