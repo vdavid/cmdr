@@ -76,8 +76,6 @@ jobs:
                     > ~/private_keys/AuthKey_${APPLE_API_KEY}.p8
 
             - name: Build, sign, and notarize
-              id: build_attempt_1
-              continue-on-error: true
               uses: tauri-apps/tauri-action@73fb865345c54760d875b94642314f8c0c894afa # v0
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -96,34 +94,6 @@ jobs:
                   releaseName: 'Cmdr ${{ github.ref_name }}'
                   releaseBody: 'See CHANGELOG.md for details.'
                   releaseDraft: false
-
-            - name: Build, sign, and notarize (retry)
-              id: build_attempt_2
-              if: steps.build_attempt_1.outcome == 'failure'
-              uses: tauri-apps/tauri-action@73fb865345c54760d875b94642314f8c0c894afa # v0
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                  TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-                  TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-                  APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-                  APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-                  APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-                  APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
-                  APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
-                  APPLE_API_KEY_PATH: ~/private_keys/AuthKey_${{ secrets.APPLE_API_KEY }}.p8
-              with:
-                  projectPath: ./apps/desktop
-                  args: --target ${{ matrix.target }}
-                  tagName: ${{ github.ref_name }}
-                  releaseName: 'Cmdr ${{ github.ref_name }}'
-                  releaseBody: 'See CHANGELOG.md for details.'
-                  releaseDraft: false
-
-            - name: Verify build succeeded
-              if: steps.build_attempt_1.outcome == 'failure' && steps.build_attempt_2.outcome == 'failure'
-              run: |
-                  echo "Both build attempts failed"
-                  exit 1
 
             - name: Clean up keychain
               if: always()
