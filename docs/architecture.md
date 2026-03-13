@@ -122,7 +122,7 @@ Dev workflow docs and external service references. All in `docs/tooling/`.
 |-----|---------|
 | [logging.md](tooling/logging.md) | Unified logging, `RUST_LOG` recipes for every subsystem |
 | [css-health-checks.md](tooling/css-health-checks.md) | Stylelint + Go-based unused CSS checker |
-| [src-tauri/src/bin/CLAUDE.md](../apps/desktop/src-tauri/src/bin/CLAUDE.md) | `index_query` — query index DB with `platform_case` collation (`sqlite3` can't) |
+| [index-query.md](tooling/index-query.md) | `index_query` — query index DB with `platform_case` collation (`sqlite3` can't) |
 
 The check runner and E2E testing docs live colocated with their code:
 - Check runner: [`scripts/check/CLAUDE.md`](../scripts/check/CLAUDE.md)

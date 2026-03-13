@@ -63,7 +63,7 @@ Core structure:
 - **Hot reload**: `pnpm dev` hot-reloads. Max 15s for Rust, max 3s for frontend.
 - **Index DB queries**: The index SQLite DB uses a custom `platform_case` collation, so the `sqlite3` CLI can't query
   it. Use `cargo run --bin index_query -- <db_path> "<sql>"` instead. See
-  [`src-tauri/src/bin/CLAUDE.md`](apps/desktop/src-tauri/src/bin/CLAUDE.md) for examples and DB paths.
+  [docs/tooling/index-query.md](docs/tooling/index-query.md) for examples and DB paths.
 
 ## MCP
 

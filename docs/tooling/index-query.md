@@ -1,8 +1,4 @@
-# Dev binaries
-
-Cargo binary targets that depend on `cmdr_lib`. Source lives here because Cargo requires `[[bin]]` sources under the package root.
-
-## index_query
+# index_query
 
 Query the drive index SQLite database with the `platform_case` collation registered. The standard `sqlite3` CLI can't query these DBs because the custom collation isn't available.
 
