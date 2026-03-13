@@ -107,7 +107,7 @@ Key test files are alongside each module (test functions within `#[cfg(test)]` b
 
 **Enrichment uses integer-keyed batch lookup**: Instead of N individual `resolve_path()` calls (one per directory in the listing), `enrich_entries_with_index` resolves the parent directory once, queries `list_child_dir_ids_and_names(parent_id)` for all child dir IDs, then `get_dir_stats_batch_by_ids()`. Two indexed queries total instead of N. Falls back to individual path resolution for edge cases (for example, mixed-parent entries).
 
-**IPC boundary stays path-based**: Frontend sends filesystem paths, backend resolves path→ID internally via `store::resolve_path()`. No frontend changes needed.
+**IPC boundary stays path-based**: Frontend sends filesystem paths, backend resolves path→ID internally via `store::resolve_path()`. No frontend changes needed. IPC dir stats queries (`get_dir_stats`, `get_dir_stats_batch`) use `ReadPool` for lock-free reads, same as enrichment.
 
 **Physical sizes (`st_blocks * 512`)**: More meaningful for disk usage than logical size. May overcount ~10-20% for APFS clones (shared blocks). Volume usage bar uses `statfs()` for true totals.
 
@@ -153,7 +153,7 @@ Key test files are alongside each module (test functions within `#[cfg(test)]` b
 
 **Scan cancellation leaves partial data**: By design. `scan_completed_at` not set in meta, so next startup detects incomplete scan and runs fresh. No cleanup needed.
 
-**`ReadPool` replaces `INDEXING` lock for all read-only DB access**: Enrichment (`enrich_entries_with_index` in `enrichment.rs`), verification Phase 1 (`verify_affected_dirs` in `event_loop.rs`), and background verification dir-stat reads all use `get_read_pool()` + `pool.with_conn()` — thread-local SQLite connections with no lock contention. The `INDEXING` mutex now guards only lifecycle transitions and IPC commands needing the `IndexManager`'s read connection. `with_conn` uses `thread_local!` storage, so callers must not have `.await` points between obtaining the pool and completing the closure (async task migration would break thread affinity).
+**`ReadPool` replaces `INDEXING` lock for all read-only DB access**: Enrichment (`enrich_entries_with_index` in `enrichment.rs`), verification Phase 1 (`verify_affected_dirs` in `event_loop.rs`), background verification dir-stat reads, and IPC dir stats queries (`get_dir_stats`, `get_dir_stats_batch` in `mod.rs`) all use `get_read_pool()` + `pool.with_conn()` — thread-local SQLite connections with no lock contention. The `INDEXING` mutex now guards only lifecycle transitions (start, stop, clear, status). `with_conn` uses `thread_local!` storage, so callers must not have `.await` points between obtaining the pool and completing the closure (async task migration would break thread affinity).
 
 **Progress events use `tauri::async_runtime::spawn`**: Not `tokio::spawn`, because indexing can start from Tauri's synchronous `setup()` hook where no Tokio runtime context exists.
 

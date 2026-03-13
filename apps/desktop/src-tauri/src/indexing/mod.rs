@@ -27,7 +27,7 @@ use std::sync::LazyLock;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::Duration;
 
-use enrichment::{READ_POOL, ReadPool};
+use enrichment::{READ_POOL, ReadPool, get_read_pool};
 use event_loop::{
     JOURNAL_GAP_THRESHOLD, ReplayConfig, WATCHER_CHANNEL_CAPACITY, run_live_event_loop, run_replay_event_loop,
 };
@@ -116,8 +116,7 @@ use events::emit_rescan_notification;
 
 /// Central coordinator for the drive indexing system.
 ///
-/// Owns the SQLite store (reads), the writer thread (writes), the path resolver
-/// (LRU-cached path→ID mapping) and the scanner handle.
+/// Owns the SQLite store (reads), the writer thread (writes), and the scanner handle.
 /// Accessed by module-level functions that lock the `INDEXING` static.
 pub struct IndexManager {
     /// Volume ID (for example, "root" for /)
@@ -746,70 +745,6 @@ impl IndexManager {
         })
     }
 
-    /// Look up recursive stats for a single directory.
-    ///
-    /// Resolves the path to an entry ID via `store::resolve_path`,
-    /// then fetches `dir_stats` by integer ID.
-    pub fn get_dir_stats(&self, path: &str) -> Result<Option<DirStats>, String> {
-        let normalized = firmlinks::normalize_path(path);
-        let conn = self.store.read_conn();
-
-        let entry_id =
-            match store::resolve_path(conn, &normalized).map_err(|e| format!("Failed to resolve path: {e}"))? {
-                Some(id) => id,
-                None => return Ok(None),
-            };
-
-        let stats =
-            IndexStore::get_dir_stats_by_id(conn, entry_id).map_err(|e| format!("Failed to get dir stats: {e}"))?;
-
-        Ok(stats.map(|s| DirStats {
-            path: normalized,
-            recursive_size: s.recursive_size,
-            recursive_file_count: s.recursive_file_count,
-            recursive_dir_count: s.recursive_dir_count,
-        }))
-    }
-
-    /// Batch lookup of dir_stats for multiple paths.
-    ///
-    /// Resolves each path to an entry ID via `store::resolve_path`,
-    /// then batch-fetches `dir_stats` by integer IDs.
-    pub fn get_dir_stats_batch(&self, paths: &[String]) -> Result<Vec<Option<DirStats>>, String> {
-        let conn = self.store.read_conn();
-
-        let mut results = Vec::with_capacity(paths.len());
-        let mut id_to_idx: Vec<(i64, usize, String)> = Vec::new();
-
-        for (i, path) in paths.iter().enumerate() {
-            let normalized = firmlinks::normalize_path(path);
-            match store::resolve_path(conn, &normalized).map_err(|e| format!("Failed to resolve path: {e}"))? {
-                Some(id) => {
-                    id_to_idx.push((id, i, normalized));
-                    results.push(None); // Placeholder, filled below
-                }
-                None => results.push(None),
-            }
-        }
-
-        if !id_to_idx.is_empty() {
-            let ids: Vec<i64> = id_to_idx.iter().map(|(id, _, _)| *id).collect();
-            let stats_batch = IndexStore::get_dir_stats_batch_by_ids(conn, &ids)
-                .map_err(|e| format!("Failed to get dir stats batch: {e}"))?;
-
-            for ((_, idx, normalized), stats_opt) in id_to_idx.into_iter().zip(stats_batch) {
-                results[idx] = stats_opt.map(|s| DirStats {
-                    path: normalized,
-                    recursive_size: s.recursive_size,
-                    recursive_file_count: s.recursive_file_count,
-                    recursive_dir_count: s.recursive_dir_count,
-                });
-            }
-        }
-
-        Ok(results)
-    }
-
     /// Return the DB file path for this index.
     pub fn db_path(&self) -> &Path {
         self.store.db_path()
@@ -1106,20 +1041,67 @@ pub fn get_debug_status() -> Result<IndexDebugStatusResponse, String> {
 
 /// Look up recursive stats for a single directory.
 pub fn get_dir_stats(path: &str) -> Result<Option<DirStats>, String> {
-    let guard = INDEXING.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
-    match &*guard {
-        IndexPhase::Running(mgr) => mgr.get_dir_stats(path),
-        _ => Err("Indexing not initialized".to_string()),
-    }
+    let pool = get_read_pool().ok_or_else(|| "Indexing not initialized".to_string())?;
+    let normalized = firmlinks::normalize_path(path);
+
+    pool.with_conn(|conn| {
+        let entry_id = match store::resolve_path(conn, &normalized)
+            .map_err(|e| format!("Couldn't resolve path: {e}"))?
+        {
+            Some(id) => id,
+            None => return Ok(None),
+        };
+
+        let stats = IndexStore::get_dir_stats_by_id(conn, entry_id)
+            .map_err(|e| format!("Couldn't get dir stats: {e}"))?;
+
+        Ok(stats.map(|s| DirStats {
+            path: normalized.clone(),
+            recursive_size: s.recursive_size,
+            recursive_file_count: s.recursive_file_count,
+            recursive_dir_count: s.recursive_dir_count,
+        }))
+    })?
 }
 
 /// Batch lookup of dir_stats for multiple paths.
 pub fn get_dir_stats_batch(paths: &[String]) -> Result<Vec<Option<DirStats>>, String> {
-    let guard = INDEXING.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
-    match &*guard {
-        IndexPhase::Running(mgr) => mgr.get_dir_stats_batch(paths),
-        _ => Err("Indexing not initialized".to_string()),
-    }
+    let pool = get_read_pool().ok_or_else(|| "Indexing not initialized".to_string())?;
+
+    pool.with_conn(|conn| {
+        let mut results = Vec::with_capacity(paths.len());
+        let mut id_to_idx: Vec<(i64, usize, String)> = Vec::new();
+
+        for (i, path) in paths.iter().enumerate() {
+            let normalized = firmlinks::normalize_path(path);
+            match store::resolve_path(conn, &normalized)
+                .map_err(|e| format!("Couldn't resolve path: {e}"))?
+            {
+                Some(id) => {
+                    id_to_idx.push((id, i, normalized));
+                    results.push(None);
+                }
+                None => results.push(None),
+            }
+        }
+
+        if !id_to_idx.is_empty() {
+            let ids: Vec<i64> = id_to_idx.iter().map(|(id, _, _)| *id).collect();
+            let stats_batch = IndexStore::get_dir_stats_batch_by_ids(conn, &ids)
+                .map_err(|e| format!("Couldn't get dir stats batch: {e}"))?;
+
+            for ((_, idx, normalized), stats_opt) in id_to_idx.into_iter().zip(stats_batch) {
+                results[idx] = stats_opt.map(|s| DirStats {
+                    path: normalized,
+                    recursive_size: s.recursive_size,
+                    recursive_file_count: s.recursive_file_count,
+                    recursive_dir_count: s.recursive_dir_count,
+                });
+            }
+        }
+
+        Ok(results)
+    })?
 }
 
 /// Force a fresh full scan (for debug/manual trigger).
