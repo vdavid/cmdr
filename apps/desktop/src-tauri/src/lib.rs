@@ -865,8 +865,6 @@ pub fn run() {
             commands::indexing::get_index_status,
             commands::indexing::get_dir_stats,
             commands::indexing::get_dir_stats_batch,
-            commands::indexing::prioritize_dir,
-            commands::indexing::cancel_nav_priority,
             commands::indexing::clear_drive_index,
             commands::indexing::set_indexing_enabled,
             commands::indexing::get_index_debug_status,

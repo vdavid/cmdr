@@ -1,7 +1,6 @@
 # Indexing (frontend)
 
-Frontend bridge to the Rust drive indexer. Owns reactive scan state, Tauri event listeners, priority-scan IPC, and the
-scan status overlay.
+Frontend bridge to the Rust drive indexer. Owns reactive scan state, Tauri event listeners, and the scan status overlay.
 
 Rust counterpart: `apps/desktop/src-tauri/src/indexing/`
 
@@ -12,7 +11,6 @@ Rust counterpart: `apps/desktop/src-tauri/src/indexing/`
 | `index.ts`                 | Public API barrel export                                         |
 | `index-state.svelte.ts`    | Module-level `$state` for scan progress; listens for scan events |
 | `index-events.ts`          | Listens for `index-dir-updated`, calls back with updated paths   |
-| `index-priority.ts`        | IPC wrappers for priority micro-scans                            |
 | `ScanStatusOverlay.svelte` | Floating top-right spinner + live counters during scan           |
 
 ## Public API (`index.ts`)
@@ -32,10 +30,6 @@ destroyIndexState(): void           // call at app teardown
 
 // Directory update events
 initIndexEvents(onDirUpdated: (paths: string[]) => void): Promise<UnlistenFn>
-
-// Priority micro-scans
-prioritizeDir(path: string, priority: 'user_selected' | 'current_dir'): Promise<void>
-cancelNavPriority(path: string): Promise<void>
 ```
 
 ## Scan state (`index-state.svelte.ts`)
@@ -67,16 +61,6 @@ with a batch of paths — multiple paths during DB replay, typically one path du
 `DualPaneExplorer` calls this and checks each path against the current directory of each pane using a path-prefix
 comparison (relies on trailing-slash normalization).
 
-## Priority micro-scans (`index-priority.ts`)
-
-| Priority        | When used                       |
-| --------------- | ------------------------------- |
-| `user_selected` | Cursor moves onto a directory   |
-| `current_dir`   | User navigates into a directory |
-
-Both `prioritizeDir` and `cancelNavPriority` silently swallow all errors — indexing may be disabled in settings or not
-yet initialized.
-
 ## Scan status overlay (`ScanStatusOverlay.svelte`)
 
 Rendered in the top-right corner of the main window while `isScanning()` or `isAggregating()` is true. Uses
@@ -99,16 +83,6 @@ Tauri's `setup()` hook, which runs before the frontend mounts. If we registered 
 have a race window where `index-scan-started` fires between the query and the listener registration, leaving the UI
 stuck on "not scanning". Registering listeners first closes this gap — any event that fires during or after the query is
 caught.
-
-**Decision**: All priority/cancel IPC calls silently swallow errors. **Why**: Indexing is an optional subsystem — it may
-be disabled in settings, not yet initialized (setup hook hasn't finished), or unavailable on certain volumes. Bubbling
-these errors would require every call site to handle a "not available" state, adding noise for a best-effort
-optimization feature.
-
-**Decision**: Two priority levels (`user_selected` vs `current_dir`) instead of a single "prioritize" call. **Why**: The
-Rust indexer uses these to decide queue ordering. `current_dir` (user navigated into a folder) gets higher priority than
-`user_selected` (cursor hovered over a folder). `cancelNavPriority` only cancels `current_dir` scans on navigate-away,
-leaving `user_selected` scans running — the user might navigate back.
 
 **Decision**: Scan overlay uses `pointer-events: none`. **Why**: The overlay sits in the top-right corner over the file
 list. Without `pointer-events: none`, it would intercept clicks on files near the corner. The overlay is purely

@@ -1,7 +1,7 @@
 //! Single-writer thread for all SQLite index writes.
 //!
 //! All writes go through a dedicated `std::thread` that owns the write connection.
-//! This eliminates contention between the full scan, micro-scans, and watcher updates.
+//! This eliminates contention between the full scan, subtree scans, and watcher updates.
 //! Reads happen on separate connections (WAL mode allows concurrent reads).
 
 use std::collections::HashMap;
@@ -77,7 +77,7 @@ pub enum WriteMessage {
     },
     /// Full scan complete: trigger bottom-up aggregation for all directories.
     ComputeAllAggregates,
-    /// Micro-scan complete: trigger aggregation for a subtree only.
+    /// Subtree scan complete: trigger aggregation for a subtree only.
     ComputeSubtreeAggregates { root: String },
     /// Store the last processed FSEvents event ID.
     UpdateLastEventId(u64),
@@ -633,7 +633,7 @@ fn process_message(
                 )
             };
             // Maps are consumed; clear to free memory.
-            // Reset expected_total so micro-scan inserts don't emit
+            // Reset expected_total so subtree-scan inserts don't emit
             // spurious saving_entries progress events after the full scan.
             accumulator.clear();
             expected_total_entries.store(0, Ordering::Relaxed);

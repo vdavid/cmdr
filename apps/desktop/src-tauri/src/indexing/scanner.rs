@@ -224,7 +224,7 @@ pub fn scan_volume(
 
 /// Synchronous subtree scan. Runs in the caller's thread.
 ///
-/// Used by micro-scans and `MustScanSubDirs` handling. After scanning, sends
+/// Used by post-replay background verification. After scanning, sends
 /// `ComputeSubtreeAggregates` to the writer.
 pub fn scan_subtree(root: &Path, writer: &IndexWriter, cancelled: &AtomicBool) -> Result<ScanSummary, ScanError> {
     let progress = Arc::new(ScanProgress::new());

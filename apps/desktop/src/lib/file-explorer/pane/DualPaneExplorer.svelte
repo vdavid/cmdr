@@ -113,7 +113,7 @@
         getSelfDragFileInfos,
         endSelfDragSession,
     } from '../drag/drag-drop'
-    import { initIndexEvents, prioritizeDir, cancelNavPriority } from '$lib/indexing/index'
+    import { initIndexEvents } from '$lib/indexing/index'
     import { getDirectorySortMode } from '$lib/settings/reactive-settings.svelte'
     import { resolveDropTarget } from '../drag/drop-target-hit-testing'
     import DragOverlay from '../drag/DragOverlay.svelte'
@@ -381,8 +381,6 @@
             saveTabsForPaneSide(pane)
             saveAppStatus({ [paneKey(pane, 'path')]: path })
             void saveLastUsedPathForVolume(activeTab.volumeId, path)
-            void cancelNavPriority(activeTab.path)
-            void prioritizeDir(path, 'current_dir')
             return
         }
 
@@ -391,18 +389,11 @@
 
     /** Applies a path change to the active tab in-place (the normal non-pinned flow). */
     function applyPathChange(pane: 'left' | 'right', path: string) {
-        const oldPath = getPanePath(pane)
         setPanePath(pane, path)
         setPaneHistory(pane, pushPath(getPaneHistory(pane), path))
         saveAppStatus({ [paneKey(pane, 'path')]: path })
         void saveLastUsedPathForVolume(getPaneVolumeId(pane), path)
         saveTabsForPaneSide(pane)
-
-        // Update index priorities: cancel old dir, prioritize new dir
-        if (oldPath !== path) {
-            void cancelNavPriority(oldPath)
-            void prioritizeDir(path, 'current_dir')
-        }
 
         // Restore cursor from tab state if available (happens after cold-load on tab switch)
         const activeTab = getActiveTab(getTabMgr(pane))
@@ -536,8 +527,6 @@
 
                 saveTabsForPaneSide(pane)
                 focusedPane = pane
-                void cancelNavPriority(oldPath)
-                void prioritizeDir(targetPath, 'current_dir')
                 saveAppStatus({
                     [paneKey(pane, 'volumeId')]: volumeId,
                     [paneKey(pane, 'path')]: targetPath,
@@ -555,8 +544,6 @@
         setPaneHistory(pane, push(getPaneHistory(pane), { volumeId, path: targetPath }))
         focusedPane = pane
 
-        void cancelNavPriority(oldPath)
-        void prioritizeDir(targetPath, 'current_dir')
         saveAppStatus({
             [paneKey(pane, 'volumeId')]: volumeId,
             [paneKey(pane, 'path')]: targetPath,
@@ -584,7 +571,6 @@
             if (betterPath !== targetPath && betterPath !== getPanePath(pane)) {
                 setPanePath(pane, betterPath)
                 setPaneHistory(pane, push(getPaneHistory(pane), { volumeId, path: betterPath }))
-                void prioritizeDir(betterPath, 'current_dir')
                 saveAppStatus({ [paneKey(pane, 'path')]: betterPath })
                 saveTabsForPaneSide(pane)
             }
@@ -1176,10 +1162,6 @@
             if (pane === focusedPane && tabId === mgr.activeTabId) syncPinTabMenu()
         })
 
-        // Prioritize scanning the initial directories of both panes
-        void prioritizeDir(leftPath, 'current_dir')
-        void prioritizeDir(rightPath, 'current_dir')
-
         // Register drag-and-drop target handler for external and pane-to-pane drops
         unlistenDragDrop = await getCurrentWebview().onDragDropEvent((event) => {
             const { type } = event.payload
@@ -1246,15 +1228,8 @@
         newHistory: NavigationHistory,
         targetPath: string,
     ) {
-        const oldPath = getPanePath(pane)
         const entry = getCurrentEntry(newHistory)
         const paneRef = getPaneRef(pane)
-
-        // Update index priorities: cancel old dir, prioritize new dir
-        if (oldPath !== targetPath) {
-            void cancelNavPriority(oldPath)
-            void prioritizeDir(targetPath, 'current_dir')
-        }
 
         setPaneHistory(pane, newHistory)
         setPanePath(pane, targetPath)

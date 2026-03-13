@@ -14,7 +14,6 @@ pub mod store;
 pub mod writer;
 
 mod memory_watchdog;
-mod micro_scan;
 mod reconciler;
 pub(crate) mod scanner;
 mod verifier; // Placeholder: per-navigation background readdir diff (future milestone)
@@ -33,7 +32,6 @@ use enrichment::{READ_POOL, ReadPool};
 use event_loop::{
     JOURNAL_GAP_THRESHOLD, ReplayConfig, WATCHER_CHANNEL_CAPACITY, run_live_event_loop, run_replay_event_loop,
 };
-use micro_scan::{MicroScanManager, ScanPriority};
 use path_resolver::PathResolver;
 use reconciler::EventReconciler;
 use scanner::ScanConfig;
@@ -41,10 +39,6 @@ use store::{DirStats, IndexStore};
 use tauri::{AppHandle, Emitter};
 use watcher::DriveWatcher;
 use writer::{IndexWriter, WriteMessage};
-
-// ── Re-exports for commands ──────────────────────────────────────────
-
-pub use micro_scan::ScanPriority as PubScanPriority;
 
 // ── Indexing state machine ────────────────────────────────────────────
 
@@ -125,7 +119,7 @@ use events::emit_rescan_notification;
 /// Central coordinator for the drive indexing system.
 ///
 /// Owns the SQLite store (reads), the writer thread (writes), the path resolver
-/// (LRU-cached path→ID mapping), the scanner handle, and the micro-scan manager.
+/// (LRU-cached path→ID mapping) and the scanner handle.
 /// Accessed by module-level functions that lock the `INDEXING` static.
 pub struct IndexManager {
     /// Volume ID (for example, "root" for /)
@@ -138,8 +132,6 @@ pub struct IndexManager {
     writer: IndexWriter,
     /// Path resolver with LRU cache for path → entry ID resolution
     path_resolver: PathResolver,
-    /// Micro-scan manager
-    micro_scans: MicroScanManager,
     /// Handle to the active full scan (if running)
     scan_handle: Option<scanner::ScanHandle>,
     /// FSEvents watcher (started alongside scan, persists after scan completes)
@@ -157,7 +149,7 @@ impl IndexManager {
     /// Create a new IndexManager for a volume.
     ///
     /// Opens (or creates) the SQLite database, spawns the writer thread,
-    /// and sets up the micro-scan manager.
+    /// and initializes the path resolver.
     pub fn new(volume_id: String, volume_root: PathBuf, app: AppHandle) -> Result<Self, String> {
         let data_dir = crate::config::resolved_app_data_dir(&app)?;
 
@@ -167,8 +159,6 @@ impl IndexManager {
 
         let writer = IndexWriter::spawn(&db_path, Some(app.clone()))
             .map_err(|e| format!("Failed to spawn index writer: {e}"))?;
-
-        let micro_scans = MicroScanManager::new(writer.clone(), 3);
 
         let path_resolver = PathResolver::new();
 
@@ -183,7 +173,6 @@ impl IndexManager {
             store,
             writer,
             path_resolver,
-            micro_scans,
             scan_handle: None,
             drive_watcher: None,
             live_event_task: Arc::new(std::sync::Mutex::new(None)),
@@ -301,15 +290,10 @@ impl IndexManager {
             None
         };
 
-        // Suppress micro-scans during replay to avoid sending writes into the
-        // writer's active BEGIN IMMEDIATE transaction.
-        self.micro_scans.set_replay_active(true);
-
         // Spawn the replay event processing loop
         let writer = self.writer.clone();
         let app = self.app.clone();
         let volume_id = self.volume_id.clone();
-        let micro_scans = self.micro_scans.clone();
         let live_event_task_slot = Arc::clone(&self.live_event_task);
 
         // We need a way for the replay loop to signal "journal unavailable, need full scan".
@@ -330,7 +314,6 @@ impl IndexManager {
                     estimated_total,
                 },
                 fallback_tx,
-                micro_scans,
                 watcher_overflow,
             )
             .await;
@@ -483,7 +466,6 @@ impl IndexManager {
         let volume_id = self.volume_id.clone();
         let app = self.app.clone();
         let writer = self.writer.clone();
-        let micro_scans = self.micro_scans.clone();
         let scanning = Arc::clone(&self.scanning);
         let live_event_task_slot = Arc::clone(&self.live_event_task);
         let watcher_overflow_flag = watcher_overflow;
@@ -677,9 +659,6 @@ impl IndexManager {
                         let mut guard = live_event_task_slot.lock().unwrap();
                         *guard = Some(handle);
                     }
-
-                    // Mark micro-scans as superseded (full scan data is authoritative)
-                    micro_scans.mark_full_scan_complete().await;
                 }
                 Ok(Err(e)) => {
                     log::warn!("Volume scan failed: {e}");
@@ -694,7 +673,7 @@ impl IndexManager {
         Ok(())
     }
 
-    /// Stop the active full scan, watcher, and all micro-scans.
+    /// Stop the active full scan and watcher.
     pub fn stop_scan(&mut self) {
         if let Some(ref handle) = self.scan_handle {
             handle.cancel();
@@ -717,11 +696,6 @@ impl IndexManager {
                 task.abort();
             }
         }
-
-        let micro_scans = self.micro_scans.clone();
-        tauri::async_runtime::spawn(async move {
-            micro_scans.cancel_all().await;
-        });
     }
 
     /// Get the current index status.
@@ -848,26 +822,6 @@ impl IndexManager {
         Ok(results)
     }
 
-    /// Request a priority micro-scan for a directory.
-    pub fn prioritize_dir(&self, path: &str, priority: ScanPriority) {
-        let normalized = firmlinks::normalize_path(path);
-        let path_buf = PathBuf::from(normalized);
-        let micro_scans = self.micro_scans.clone();
-        tauri::async_runtime::spawn(async move {
-            micro_scans.request_scan(path_buf, priority).await;
-        });
-    }
-
-    /// Cancel current-directory micro-scans (called on navigate-away).
-    pub fn cancel_nav_priority(&self, path: &str) {
-        let normalized = firmlinks::normalize_path(path);
-        let path_buf = PathBuf::from(normalized);
-        let micro_scans = self.micro_scans.clone();
-        tauri::async_runtime::spawn(async move {
-            micro_scans.cancel_current_dir_scans(&path_buf).await;
-        });
-    }
-
     /// Return the DB file path for this index.
     pub fn db_path(&self) -> &Path {
         self.store.db_path()
@@ -879,7 +833,7 @@ impl IndexManager {
     /// loop to drain its final batch and send `UpdateLastEventId` → shut down
     /// the writer. This ensures `last_event_id` is up-to-date on next restart.
     pub fn shutdown(&mut self) {
-        // 1. Cancel active scan and stop micro-scans (but don't abort event loop)
+        // 1. Cancel active scan (but don't abort event loop)
         if let Some(ref handle) = self.scan_handle {
             handle.cancel();
         }
@@ -912,11 +866,6 @@ impl IndexManager {
         // 4. Now shut down the writer (all final writes have been queued)
         self.writer.shutdown();
 
-        let micro_scans = self.micro_scans.clone();
-        tauri::async_runtime::spawn(async move {
-            micro_scans.cancel_all().await;
-        });
-
         log::info!("IndexManager: shut down for volume '{}'", self.volume_id);
     }
 }
@@ -944,7 +893,7 @@ pub fn should_auto_start(indexing_enabled: Option<bool>) -> bool {
     true
 }
 
-/// Stop all scans, watcher, and micro-scans without deleting the DB.
+/// Stop all scans and watcher without deleting the DB.
 ///
 /// Called when the user disables indexing via settings. The index stays on disk
 /// but no scanning or watching runs. Directory sizes revert to `<dir>`.
@@ -1181,30 +1130,6 @@ pub fn get_dir_stats_batch(paths: &[String]) -> Result<Vec<Option<DirStats>>, St
     let mut guard = INDEXING.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
     match &mut *guard {
         IndexPhase::Running(mgr) => mgr.get_dir_stats_batch(paths),
-        _ => Err("Indexing not initialized".to_string()),
-    }
-}
-
-/// Request a priority micro-scan for a directory.
-pub fn prioritize_dir(path: &str, priority: ScanPriority) -> Result<(), String> {
-    let guard = INDEXING.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
-    match &*guard {
-        IndexPhase::Running(mgr) => {
-            mgr.prioritize_dir(path, priority);
-            Ok(())
-        }
-        _ => Err("Indexing not initialized".to_string()),
-    }
-}
-
-/// Cancel current-directory micro-scans.
-pub fn cancel_nav_priority(path: &str) -> Result<(), String> {
-    let guard = INDEXING.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
-    match &*guard {
-        IndexPhase::Running(mgr) => {
-            mgr.cancel_nav_priority(path);
-            Ok(())
-        }
         _ => Err("Indexing not initialized".to_string()),
     }
 }

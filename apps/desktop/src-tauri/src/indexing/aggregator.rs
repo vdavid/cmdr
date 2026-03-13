@@ -2,7 +2,7 @@
 //!
 //! Three modes:
 //! - **Full aggregation**: after a full scan, compute `dir_stats` for every directory (deepest first).
-//! - **Subtree aggregation**: after a micro-scan, compute `dir_stats` only under a given root.
+//! - **Subtree aggregation**: after a subtree scan, compute `dir_stats` only under a given root.
 //! - **Delta propagation**: after a watcher event, walk up the ancestor chain updating counts.
 //!
 //! All queries use the integer-keyed schema v2 (`id`, `parent_id`, `entry_id`).
@@ -217,7 +217,7 @@ fn compute_and_write(
 
 /// Compute `dir_stats` for directories under `root` only (bottom-up).
 ///
-/// Called after a micro-scan completes. Resolves the root path to an entry ID,
+/// Called after a subtree scan completes. Resolves the root path to an entry ID,
 /// uses a recursive CTE to collect subtree directory IDs, then computes stats
 /// bottom-up. Returns the number of directories processed.
 pub fn compute_subtree_aggregates(conn: &Connection, root: &str) -> Result<u64, IndexStoreError> {

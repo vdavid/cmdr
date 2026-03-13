@@ -11,7 +11,6 @@ use super::DEBUG_STATS;
 use super::enrichment::get_read_pool;
 use super::events::{IndexReplayProgressEvent, RescanReason, emit_rescan_notification};
 use super::firmlinks;
-use super::micro_scan::MicroScanManager;
 use super::reconciler::{self, EventReconciler};
 use super::scanner;
 use super::store::{self, IndexStore};
@@ -274,7 +273,6 @@ pub(super) async fn run_replay_event_loop(
     app: AppHandle,
     config: ReplayConfig,
     fallback_tx: tokio::sync::oneshot::Sender<()>,
-    micro_scans: MicroScanManager,
     watcher_overflow: Option<Arc<AtomicBool>>,
 ) -> Result<(), String> {
     let ReplayConfig {
@@ -339,8 +337,6 @@ pub(super) async fn run_replay_event_loop(
                         event.event_id - since_event_id,
                     ),
                 );
-                // Re-enable micro-scans before falling back to full scan
-                micro_scans.set_replay_active(false);
                 if let Some(tx) = fallback_tx.take() {
                     let _ = tx.send(());
                 }
@@ -421,7 +417,6 @@ pub(super) async fn run_replay_event_loop(
                      toggled."
                 ),
             );
-            micro_scans.set_replay_active(false);
             if let Some(tx) = fallback_tx.take() {
                 let _ = tx.send(());
             }
@@ -508,11 +503,6 @@ pub(super) async fn run_replay_event_loop(
     // ── Switch to live mode immediately (before verification) ────────
 
     log::info!("Replay: switching to live mode");
-    micro_scans.set_replay_active(false);
-    // The index is already complete after a successful replay — mark micro-scans
-    // as superseded so they don't fire destructive scan_subtree calls when the
-    // user navigates directories.
-    micro_scans.mark_full_scan_complete().await;
     let mut reconciler = EventReconciler::new();
     reconciler.switch_to_live();
 

@@ -121,7 +121,7 @@ pub trait VolumeScanner: Send + Sync {
 
     /// Synchronous subtree scan. Runs in the caller's thread.
     ///
-    /// Used by micro-scans and `MustScanSubDirs` handling.
+    /// Used by post-replay background verification.
     fn scan_subtree(&self, root: &Path, writer: &IndexWriter, cancelled: &AtomicBool)
     -> Result<ScanSummary, ScanError>;
 }

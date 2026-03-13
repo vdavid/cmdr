@@ -76,7 +76,6 @@
     import * as benchmark from '$lib/benchmark'
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
     import { resolveValidPath } from '../navigation/path-navigation'
-    import { prioritizeDir } from '$lib/indexing'
     import { homeDir } from '@tauri-apps/api/path'
     import { getVolumeSpace, type VolumeSpaceInfo } from '$lib/tauri-commands'
     import type { UnreachableState } from '../tabs/tab-types'
@@ -1120,12 +1119,6 @@
         if (e.key === ' ') {
             e.preventDefault()
             selection.toggleAt(cursorIndex, hasParent)
-
-            // Request index priority scan when selecting a directory
-            const entry = getEntryUnderCursor()
-            if (entry?.isDirectory && entry.name !== '..') {
-                void prioritizeDir(entry.path, 'user_selected')
-            }
 
             return true
         }

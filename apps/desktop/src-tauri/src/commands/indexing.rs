@@ -4,7 +4,7 @@
 
 use tauri::AppHandle;
 
-use crate::indexing::{self, IndexDebugStatusResponse, IndexStatusResponse, PubScanPriority, store::DirStats};
+use crate::indexing::{self, IndexDebugStatusResponse, IndexStatusResponse, store::DirStats};
 
 #[tauri::command]
 pub async fn start_drive_index(app: AppHandle) -> Result<(), String> {
@@ -34,21 +34,6 @@ pub async fn get_dir_stats(path: String) -> Result<Option<DirStats>, String> {
 #[tauri::command]
 pub async fn get_dir_stats_batch(paths: Vec<String>) -> Result<Vec<Option<DirStats>>, String> {
     indexing::get_dir_stats_batch(&paths)
-}
-
-#[tauri::command]
-pub async fn prioritize_dir(path: String, priority: String) -> Result<(), String> {
-    let priority = match priority.as_str() {
-        "user_selected" => PubScanPriority::UserSelected,
-        "current_dir" => PubScanPriority::CurrentDir,
-        _ => return Err(format!("Invalid priority: {priority}")),
-    };
-    indexing::prioritize_dir(&path, priority)
-}
-
-#[tauri::command]
-pub async fn cancel_nav_priority(path: String) -> Result<(), String> {
-    indexing::cancel_nav_priority(&path)
 }
 
 #[tauri::command]

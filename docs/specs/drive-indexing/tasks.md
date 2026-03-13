@@ -91,7 +91,7 @@ See also: [plan.md](plan.md), [research.md](research.md), [benchmarks.md](benchm
 - [x] Add `scanner()` and `watcher()` optional methods to `Volume` trait (default `None`)
 - [x] Implement `VolumeScanner` for `LocalPosixVolume` (wraps jwalk)
 - [x] Implement `VolumeWatcher` for `LocalPosixVolume` (wraps cmdr-fsevent-stream)
-- [ ] Refactor indexing module to use traits instead of direct crate calls (deferred: threading `Box<dyn VolumeScanner>` through `MicroScanManager`, `EventReconciler`, and `IndexManager` is medium-complexity for no immediate gain -- only `LocalPosixVolume` supports scanning. The traits exist and work; the indirection can be added when a second scannable volume type arrives.)
+- [ ] Refactor indexing module to use traits instead of direct crate calls (deferred: threading `Box<dyn VolumeScanner>` through `EventReconciler` and `IndexManager` is medium-complexity for no immediate gain -- only `LocalPosixVolume` supports scanning. The traits exist and work; the indirection can be added when a second scannable volume type arrives.)
 - [x] Verify existing volume types still work (MTP, InMemory, SMB)
 
 ## Milestone 8: Polish + checks

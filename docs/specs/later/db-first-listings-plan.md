@@ -155,8 +155,8 @@ this pattern but is:
 2. **Scoped to a single directory** (not a set of affected paths)
 3. **Updates the LISTING_CACHE** in addition to the DB (so the current listing reflects corrections)
 
-The verifier cancels on navigate-away (like `CurrentDir` micro-scans) — if the user navigates elsewhere before
-verification completes, there's no point finishing.
+The verifier cancels on navigate-away — if the user navigates elsewhere before verification completes, there's no
+point finishing.
 
 **Cancellation safety:** Each writer message (`DeleteEntry`, `UpsertEntry`, `PropagateDelta`) is processed atomically by
 the writer thread. If verification is cancelled mid-way, some corrections are committed and some aren't. The uncommitted

@@ -83,7 +83,7 @@ impl ScanContext {
     ///
     /// `is_volume_root`: true for full volume scans (always maps root → ROOT_ID).
     /// When false (subtree scans), resolves the root's actual entry ID from the DB.
-    /// Returns an error if the root isn't indexed yet (for example, a micro-scan
+    /// Returns an error if the root isn't indexed yet (for example, a subtree scan
     /// racing with an ongoing full scan — the full scan will cover it).
     pub fn new(conn: &Connection, root: &Path, is_volume_root: bool) -> Result<Self, IndexStoreError> {
         // Only volume-root scans need to create the sentinel — subtree scans
