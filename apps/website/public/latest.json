@@ -1,24 +1,24 @@
 {
-    "version": "0.7.1",
+    "version": "0.8.0",
     "dmgSizes": {
-        "aarch64": 29801204,
-        "x86_64": 32330303,
-        "universal": 45208225
+        "aarch64": 30559445,
+        "x86_64": 31686737,
+        "universal": 45445989
     },
-    "notes": "### Fixed\n\n- Fix scan overlay stuck at 100% after directory size aggregation ([2842e92](https://github.com/vdavid/cmdr/commit/2842e92))\n",
-    "pub_date": "2026-03-12T10:05:25Z",
+    "notes": "### Added\n\n- Add custom macOS updater that preserves Full Disk Access permissions across updates — syncs files into existing `.app` bundle instead of replacing it, with privilege escalation when needed ([190a637](https://github.com/vdavid/cmdr/commit/190a637))\n- Add MTP delete, rename, and move operations with full progress, cancellation, and dry-run support ([812ad07](https://github.com/vdavid/cmdr/commit/812ad07))\n- Add breadcrumb improvements: path displays \"/\" prefix, abbreviates home directory to \"~\" ([44b7105](https://github.com/vdavid/cmdr/commit/44b7105))\n- Add auto-rescan on FSEvents channel overflow with user notification toast ([ca7cece](https://github.com/vdavid/cmdr/commit/ca7cece))\n- Add index debug dashboard with live DB stats, watcher status, event rate sparkline, and `MustScanSubDirs` log ([7510ec3](https://github.com/vdavid/cmdr/commit/7510ec3))\n\n### Fixed\n\n- Fix indexing: interrupt-safe reconciler replaces destructive `MustScanSubDirs` handling, stop micro-scans after cold-start replay, faster bulk inserts by dropping/recreating index, fix false FSEvents deletions, fix missing dir sizes after replay, eliminate enrichment lock contention, periodic DB vacuum ([31df59e](https://github.com/vdavid/cmdr/commit/31df59e), [981b311](https://github.com/vdavid/cmdr/commit/981b311), [da74290](https://github.com/vdavid/cmdr/commit/da74290), [f0c225f](https://github.com/vdavid/cmdr/commit/f0c225f), [bf0b47f](https://github.com/vdavid/cmdr/commit/bf0b47f), [d125a24](https://github.com/vdavid/cmdr/commit/d125a24), [67684bb](https://github.com/vdavid/cmdr/commit/67684bb))\n- Fix drag swizzle failing on wry 0.54+ — moved install to `RunEvent::Ready` after webview creation ([2680bae](https://github.com/vdavid/cmdr/commit/2680bae))\n- Fix MCP live start/stop UX: query backend state as ground truth, serialize operations, auto-check port availability, unified status messages ([f4c107a](https://github.com/vdavid/cmdr/commit/f4c107a))\n- Fix MCP server not stopping on app quit ([61fe290](https://github.com/vdavid/cmdr/commit/61fe290))\n- Fix traffic light position in production builds ([b74ed39](https://github.com/vdavid/cmdr/commit/b74ed39))\n- Fix scan overlay showing stale state — refresh UI after full scan completes ([218bcb9](https://github.com/vdavid/cmdr/commit/218bcb9))\n\n### Non-app\n\n- Vendor `cmdr-fsevent-stream` fork into monorepo as workspace crate ([8b937a6](https://github.com/vdavid/cmdr/commit/8b937a6))\n- Website: fix two FOUC flickers on page load (light mode flash, newsletter icon flash) ([8c21ac7](https://github.com/vdavid/cmdr/commit/8c21ac7))\n- Tooling: self-hosted macOS GitHub Actions runner ([665f63a](https://github.com/vdavid/cmdr/commit/665f63a)), index DB query tool ([37f1062](https://github.com/vdavid/cmdr/commit/37f1062)), extract website deploy workflow ([5744636](https://github.com/vdavid/cmdr/commit/5744636)), trim Linux test output ([b9d0ef2](https://github.com/vdavid/cmdr/commit/b9d0ef2)), fix release script ([190bfe9](https://github.com/vdavid/cmdr/commit/190bfe9), [233c8dd](https://github.com/vdavid/cmdr/commit/233c8dd))\n- Refactors: split indexing `mod.rs` into `enrichment.rs`, `event_loop.rs`, `events.rs` ([bb7d57f](https://github.com/vdavid/cmdr/commit/bb7d57f))\n- Dev: pink title bar to distinguish dev from prod ([d2c9ae4](https://github.com/vdavid/cmdr/commit/d2c9ae4))\n",
+    "pub_date": "2026-03-13T06:44:30Z",
     "platforms": {
         "darwin-universal": {
-            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRS2pCYTdOaDlnb3VVWW0yUXhqbVFkSW12ek9QemtQQVBZZ3A5bU1mVFVQdy9UY2I3K3hGWURmUEVqbDFBc3Q0WHZPM3R3QlJVeWhmaWxWODhRSzFmNGVCS3hBTXJKMVFBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzczMzA0NDk1CWZpbGU6Q21kci5hcHAudGFyLmd6CmJXV3NlUjdIS214MUc1NE1wYWhOL0tienNUQ3NKc0NZVXdaSGc5T1ZwdDl6Y2VMYXZnSVdtSGx4blNHVGpBQXFOTEIxT0U1UENLYlM5UmlCYjB4ZUJnPT0K",
-            "url": "https://github.com/vdavid/cmdr/releases/download/v0.7.1/Cmdr_universal.app.tar.gz"
+            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRS2pCYTdOaDlnb2x0bjhVYXowY3Q4czRLYVVhWG80R0Y3V1JKRU5XL1laLzI3anN3ME00cU43UU5jQlFBeU1tOGx4OWlMU1QrVkl2Yld2bm9zS1I4bThRWXlLOCtDMFFVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzczMzg0MjQ0CWZpbGU6Q21kci5hcHAudGFyLmd6CkorbTRKU3BOK0EzNThOZXg5VWlBWFpaMzMwczdlUHlxZjN3SVBEYzlnVVVaR3o5YnljSWlBQjQyalpuOTlWQ3NpbStGc0lMM3JTQnRBakR5ZDQwaEJRPT0K",
+            "url": "https://github.com/vdavid/cmdr/releases/download/v0.8.0/Cmdr_universal.app.tar.gz"
         },
         "darwin-aarch64": {
-            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRS2pCYTdOaDlnb2wrZkdqN21jVFgvSGpnU0dHTEJVazgwSWduZ1BWdkdxNjN1Y3NlQ1B2OXpRcjNJS3lUSlJ1Y1d1Wmhyb2hQR1YxcksvZDc0M1BUcWUvNnBHTGM4RXdNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzczMzAzOTUwCWZpbGU6Q21kci5hcHAudGFyLmd6CndtSW5MWk90N3NCc1Zrem1QWkhERjA5MjlzOHYvY0dpV3ZGSDFjZWtqWGRodUlTdE00YlMvcHVxS0JPNW1UZWpxS1JLUS9sZ0tEVG4wUWlkUk1LNERBPT0K",
-            "url": "https://github.com/vdavid/cmdr/releases/download/v0.7.1/Cmdr_aarch64.app.tar.gz"
+            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRS2pCYTdOaDlnb2hZLy9mSXpoQ09ONWtPYkNXZk14a2llTm85OXBvYmtoTGxGOUVNUWFWRUhkdkl2dDV3T3JtZklBd3Ura3U4ckppVDQ4bk0wYnh4cmZVbXJrYmFLZ1FNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzczMzgzNTc0CWZpbGU6Q21kci5hcHAudGFyLmd6Ck5OeGVuKzNDTUUwanRQSEM1TVJzSXpORE5iaXZ3b3pqalNXSWtQcDVES29kNWV0ZDIrQVZHN0Jra2I3SVdvaE9PNVdQYWRPOVgrbDFWMU12SHlMYkRnPT0K",
+            "url": "https://github.com/vdavid/cmdr/releases/download/v0.8.0/Cmdr_aarch64.app.tar.gz"
         },
         "darwin-x86_64": {
-            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRS2pCYTdOaDlnb2hTV2wzeGpocy9ZOHpjVUpsQ2Rwdm14NWN1V3pIaHIvQWR4K2N1bVNrQ0lEVEtvVkhrN2dobnZRS0xnM04xNWExTk5pRVRicEdoMmdPSkprWVhHZ3dBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzczMzAzOTU0CWZpbGU6Q21kci5hcHAudGFyLmd6CjhBVU9mc212VXE3K1diUXZLKzhWc1gzdXpIZWZpR2k4RDBDQlFleWZCU3lVeGJ5NVFtQlVBQXR4MFdHYW82VWNxUWJuWWZDTHRkSHF4YlBlUW4wTUNBPT0K",
-            "url": "https://github.com/vdavid/cmdr/releases/download/v0.7.1/Cmdr_x64.app.tar.gz"
+            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRS2pCYTdOaDlnb2dwWWJDaHRteWhvcXM1RDBMOHhrQlJoVnVtTXJrKzI2dm93Qi90Q1BIc05MTldLR3FxWEsvNVQ1WkdKTldHbVAvQ3VGVWxVZ1lVU05kY3hLcXZiZGdFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzczMzgzODk4CWZpbGU6Q21kci5hcHAudGFyLmd6CjMxSlBmekFWczQyeUliejB3Tm80eEQzTUtpSjI4K21kd3VUTEFtRVJ2SlF5bzF5QmlqY1lucmhGZGhWcHJmam8vSWFMalBtL0dyVjhNQk1FN1IrVUNnPT0K",
+            "url": "https://github.com/vdavid/cmdr/releases/download/v0.8.0/Cmdr_x64.app.tar.gz"
         }
     }
 }
