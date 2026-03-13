@@ -399,6 +399,12 @@ pub(super) fn reconcile_subtree(
                 };
 
                 if changed {
+                    // If the entry changed from directory to file (or vice versa),
+                    // delete the old subtree first to avoid orphaning children.
+                    if db_row.is_directory != is_dir && db_row.is_directory {
+                        let _ = writer.send(WriteMessage::DeleteSubtreeById(db_row.id));
+                    }
+
                     let (size, modified_at) = if is_dir || *is_symlink {
                         (None, entry_modified_at(meta))
                     } else {
@@ -993,10 +999,8 @@ mod tests {
         let result = process_fs_event(&event, &conn, &writer);
         assert!(result.is_some());
 
-        // Give writer time to process
-        std::thread::sleep(std::time::Duration::from_millis(200));
+        writer.flush_blocking().unwrap();
         writer.shutdown();
-        std::thread::sleep(std::time::Duration::from_millis(100));
 
         // Verify the entry was written to DB
         let store = IndexStore::open(&db_path).unwrap();
@@ -1024,9 +1028,8 @@ mod tests {
         let result = process_fs_event(&event, &conn, &writer);
         assert!(result.is_some());
 
-        std::thread::sleep(std::time::Duration::from_millis(200));
+        writer.flush_blocking().unwrap();
         writer.shutdown();
-        std::thread::sleep(std::time::Duration::from_millis(100));
 
         let store = IndexStore::open(&db_path).unwrap();
         let gone_id = store::resolve_path(store.read_conn(), "/gone").unwrap().unwrap();
@@ -1056,9 +1059,8 @@ mod tests {
         let paths = result.unwrap();
         assert!(!paths.is_empty());
 
-        std::thread::sleep(std::time::Duration::from_millis(200));
+        writer.flush_blocking().unwrap();
         writer.shutdown();
-        std::thread::sleep(std::time::Duration::from_millis(100));
 
         let store = IndexStore::open(&db_path).unwrap();
         let parent = test_dir.path().to_string_lossy().to_string();
@@ -1086,9 +1088,8 @@ mod tests {
         let event = make_event("/parent/removed_dir", 80, removed_dir_flags());
         process_fs_event(&event, &conn, &writer);
 
-        std::thread::sleep(std::time::Duration::from_millis(200));
+        writer.flush_blocking().unwrap();
         writer.shutdown();
-        std::thread::sleep(std::time::Duration::from_millis(100));
 
         let store = IndexStore::open(&db_path).unwrap();
         let parent_id = store::resolve_path(store.read_conn(), "/parent").unwrap().unwrap();
@@ -1137,9 +1138,8 @@ mod tests {
         let event = make_event(&real_file.to_string_lossy(), 99, removed_file_flags());
         process_fs_event(&event, &conn, &writer);
 
-        std::thread::sleep(std::time::Duration::from_millis(200));
+        writer.flush_blocking().unwrap();
         writer.shutdown();
-        std::thread::sleep(std::time::Duration::from_millis(100));
 
         // The file should still be in the DB (upserted, not deleted)
         let store = IndexStore::open(&db_path).unwrap();
@@ -1153,6 +1153,178 @@ mod tests {
             "file should still be in DB — removal was a false alarm"
         );
         assert_eq!(children[0].name, "still_here.txt");
+    }
+
+    // ── Atomic swap: event with both item_removed AND item_created ──
+
+    /// When FSEvents delivers a single event with both item_removed=true and
+    /// item_created=true (atomic file swap), the file should be upserted, not
+    /// deleted. process_fs_event checks item_removed first, but handle_removal
+    /// stats the path: if the file exists on disk, it delegates to upsert.
+    #[test]
+    fn atomic_swap_event_upserts_existing_file() {
+        let (writer, dir, conn) = setup_test_writer();
+        let db_path = dir.path().join("test-reconciler.db");
+
+        let test_dir = non_excluded_tempdir();
+        let file_path = test_dir.path().join("swapped.txt");
+        std::fs::write(&file_path, "new content after swap").unwrap();
+
+        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy());
+        {
+            let wconn = IndexStore::open_write_connection(&db_path).unwrap();
+            let parent_id = store::resolve_path(&wconn, &test_dir.path().to_string_lossy())
+                .unwrap()
+                .unwrap();
+            IndexStore::insert_entry_v2(&wconn, parent_id, "swapped.txt", false, false, Some(50), Some(1000)).unwrap();
+        }
+
+        // Both item_removed and item_created set (atomic swap scenario)
+        let flags = FsEventFlags {
+            item_removed: true,
+            item_created: true,
+            item_is_file: true,
+            ..Default::default()
+        };
+        let event = make_event(&file_path.to_string_lossy(), 120, flags);
+        let result = process_fs_event(&event, &conn, &writer);
+        assert!(result.is_some());
+
+        writer.flush_blocking().unwrap();
+        writer.shutdown();
+
+        // The file should still be in the DB (upserted, not deleted)
+        let store = IndexStore::open(&db_path).unwrap();
+        let parent_id = store::resolve_path(store.read_conn(), &test_dir.path().to_string_lossy())
+            .unwrap()
+            .unwrap();
+        let children = store.list_children(parent_id).unwrap();
+        assert_eq!(children.len(), 1, "file should be upserted, not deleted (atomic swap)");
+        assert_eq!(children[0].name, "swapped.txt");
+    }
+
+    // ── MustScanSubDirs uses reconcile, not destructive reinsert ──
+
+    /// MustScanSubDirs for a directory that exists in the DB with children and
+    /// on disk unchanged should preserve all children. reconcile_subtree diffs
+    /// the filesystem against the DB rather than deleting and reinserting.
+    /// Regression for 31df59e.
+    #[test]
+    fn must_scan_sub_dirs_preserves_existing_children() {
+        let (writer, dir, conn) = setup_test_writer();
+        let db_path = dir.path().join("test-reconciler.db");
+
+        // Create a directory with children on disk
+        let test_dir = non_excluded_tempdir();
+        let sub_dir = test_dir.path().join("subdir");
+        std::fs::create_dir(&sub_dir).unwrap();
+        std::fs::write(sub_dir.join("child1.txt"), "aaa").unwrap();
+        std::fs::write(sub_dir.join("child2.txt"), "bbb").unwrap();
+
+        // Populate DB with the directory tree matching disk
+        ensure_path_in_db(&db_path, &sub_dir.to_string_lossy());
+        {
+            let wconn = IndexStore::open_write_connection(&db_path).unwrap();
+            let sub_id = store::resolve_path(&wconn, &sub_dir.to_string_lossy())
+                .unwrap()
+                .unwrap();
+
+            let meta1 = std::fs::symlink_metadata(sub_dir.join("child1.txt")).unwrap();
+            let (size1, mtime1) = entry_size_and_mtime(&meta1);
+            IndexStore::insert_entry_v2(&wconn, sub_id, "child1.txt", false, false, size1, mtime1).unwrap();
+
+            let meta2 = std::fs::symlink_metadata(sub_dir.join("child2.txt")).unwrap();
+            let (size2, mtime2) = entry_size_and_mtime(&meta2);
+            IndexStore::insert_entry_v2(&wconn, sub_id, "child2.txt", false, false, size2, mtime2).unwrap();
+        }
+
+        // Run reconcile_subtree (what MustScanSubDirs triggers)
+        let cancelled = AtomicBool::new(false);
+        let result = reconcile_subtree(&sub_dir, &conn, &writer, &cancelled);
+        assert!(result.is_ok());
+        let summary = result.unwrap();
+        assert_eq!(summary.added, 0, "no new entries expected");
+        assert_eq!(summary.removed, 0, "no entries should be removed");
+
+        writer.flush_blocking().unwrap();
+        writer.shutdown();
+
+        // Verify all children are still in the DB
+        let store = IndexStore::open(&db_path).unwrap();
+        let sub_id = store::resolve_path(store.read_conn(), &sub_dir.to_string_lossy())
+            .unwrap()
+            .unwrap();
+        let children = store.list_children(sub_id).unwrap();
+        assert_eq!(children.len(), 2, "both children should remain after reconcile");
+        let names: Vec<&str> = children.iter().map(|c| c.name.as_str()).collect();
+        assert!(names.contains(&"child1.txt"));
+        assert!(names.contains(&"child2.txt"));
+    }
+
+    // ── False removal of a directory ──────────────────────────────
+
+    /// item_removed for a DIRECTORY that still exists on disk should upsert,
+    /// not delete. This is more damaging than the file case because
+    /// DeleteSubtreeById wipes the entire subtree. Regression for f0c225f.
+    #[test]
+    fn removal_event_for_existing_directory_upserts_not_deletes() {
+        let (writer, dir, conn) = setup_test_writer();
+        let db_path = dir.path().join("test-reconciler.db");
+
+        // Create a directory with a child on disk
+        let test_dir = non_excluded_tempdir();
+        let target_dir = test_dir.path().join("still_here");
+        std::fs::create_dir(&target_dir).unwrap();
+        std::fs::write(target_dir.join("precious.txt"), "don't delete me").unwrap();
+
+        // Populate DB with the directory tree
+        ensure_path_in_db(&db_path, &target_dir.to_string_lossy());
+        {
+            let wconn = IndexStore::open_write_connection(&db_path).unwrap();
+            let dir_id = store::resolve_path(&wconn, &target_dir.to_string_lossy())
+                .unwrap()
+                .unwrap();
+            IndexStore::insert_entry_v2(&wconn, dir_id, "precious.txt", false, false, Some(100), Some(1000)).unwrap();
+        }
+
+        // Send a false removal event for the directory (item_is_dir)
+        let flags = FsEventFlags {
+            item_removed: true,
+            item_is_dir: true,
+            ..Default::default()
+        };
+        let event = make_event(&target_dir.to_string_lossy(), 150, flags);
+        let result = process_fs_event(&event, &conn, &writer);
+        assert!(result.is_some());
+
+        writer.flush_blocking().unwrap();
+        writer.shutdown();
+
+        // The directory should still be in the DB
+        let store = IndexStore::open(&db_path).unwrap();
+        let parent_id = store::resolve_path(store.read_conn(), &test_dir.path().to_string_lossy())
+            .unwrap()
+            .unwrap();
+        let parent_children = store.list_children(parent_id).unwrap();
+        assert_eq!(
+            parent_children.len(),
+            1,
+            "directory should still exist in DB (false removal, stat-before-delete)"
+        );
+        assert_eq!(parent_children[0].name, "still_here");
+        assert!(parent_children[0].is_directory);
+
+        // The child should also still be in the DB (no subtree wipe)
+        let dir_id = store::resolve_path(store.read_conn(), &target_dir.to_string_lossy())
+            .unwrap()
+            .unwrap();
+        let dir_children = store.list_children(dir_id).unwrap();
+        assert_eq!(
+            dir_children.len(),
+            1,
+            "child file should survive — DeleteSubtreeById must not have been sent"
+        );
+        assert_eq!(dir_children[0].name, "precious.txt");
     }
 
     // ── Subtree reconciliation tests ──────────────────────────────
@@ -1177,7 +1349,6 @@ mod tests {
 
         writer.flush_blocking().unwrap();
         writer.shutdown();
-        std::thread::sleep(std::time::Duration::from_millis(100));
 
         let store = IndexStore::open(&db_path).unwrap();
         let parent_str = test_dir.path().to_string_lossy().to_string();
@@ -1213,7 +1384,6 @@ mod tests {
 
         writer.flush_blocking().unwrap();
         writer.shutdown();
-        std::thread::sleep(std::time::Duration::from_millis(100));
 
         let store = IndexStore::open(&db_path).unwrap();
         let parent_str = test_dir.path().to_string_lossy().to_string();
@@ -1284,7 +1454,6 @@ mod tests {
 
         writer.flush_blocking().unwrap();
         writer.shutdown();
-        std::thread::sleep(std::time::Duration::from_millis(100));
 
         // Verify the DB entry was updated with real metadata
         let store = IndexStore::open(&db_path).unwrap();
@@ -1296,6 +1465,188 @@ mod tests {
         assert_ne!(entries[0].modified_at, Some(0), "mtime should have been updated");
     }
 
+    // ── Nested directory reconciliation tests ──────────────────────
+
+    /// reconcile_subtree with one new nested dir + child tests the flush+re-resolve
+    /// cycle: the reconciler must flush the new directory to the writer, then
+    /// re-resolve its ID before inserting the child.
+    #[test]
+    fn reconcile_subtree_new_nested_dir_with_child() {
+        let (writer, dir, conn) = setup_test_writer();
+        let db_path = dir.path().join("test-reconciler.db");
+
+        let test_dir = non_excluded_tempdir();
+        let parent = test_dir.path().join("parent");
+        std::fs::create_dir(&parent).unwrap();
+        let new_dir = parent.join("new_dir");
+        std::fs::create_dir(&new_dir).unwrap();
+        std::fs::write(new_dir.join("child.txt"), "nested child").unwrap();
+
+        // DB only knows about /parent/ — new_dir and child.txt are unknown
+        ensure_path_in_db(&db_path, &parent.to_string_lossy());
+
+        let cancelled = AtomicBool::new(false);
+        let result = reconcile_subtree(&parent, &conn, &writer, &cancelled);
+        assert!(result.is_ok());
+        let summary = result.unwrap();
+        assert_eq!(summary.added, 2, "new_dir and child.txt should both be added");
+        assert_eq!(summary.removed, 0);
+
+        writer.flush_blocking().unwrap();
+        writer.shutdown();
+
+        // Verify both entries exist with correct parent relationships
+        let store = IndexStore::open(&db_path).unwrap();
+        let parent_id = store::resolve_path(store.read_conn(), &parent.to_string_lossy())
+            .unwrap()
+            .unwrap();
+        let parent_children = store.list_children(parent_id).unwrap();
+        assert_eq!(parent_children.len(), 1);
+        assert_eq!(parent_children[0].name, "new_dir");
+        assert!(parent_children[0].is_directory);
+
+        let new_dir_id = store::resolve_path(store.read_conn(), &new_dir.to_string_lossy())
+            .unwrap()
+            .unwrap();
+        let new_dir_children = store.list_children(new_dir_id).unwrap();
+        assert_eq!(new_dir_children.len(), 1);
+        assert_eq!(new_dir_children[0].name, "child.txt");
+        assert!(!new_dir_children[0].is_directory);
+    }
+
+    /// Directory replaced by a file on disk: the old directory entry should become
+    /// a file entry and the old directory's children should be cleaned up.
+    ///
+    /// This may reveal a latent bug: `reconcile_subtree` compares by normalized
+    /// name and detects that `is_directory` changed. When a dir becomes a file,
+    /// the reconciler deletes the old subtree before upserting the replacement,
+    /// preventing orphaned children.
+    #[test]
+    fn reconcile_subtree_dir_replaced_by_file() {
+        let (writer, dir, conn) = setup_test_writer();
+        let db_path = dir.path().join("test-reconciler.db");
+
+        let test_dir = non_excluded_tempdir();
+        let parent = test_dir.path().join("parent");
+        std::fs::create_dir(&parent).unwrap();
+
+        // On disk: /parent/item is now a regular file
+        std::fs::write(parent.join("item"), "I am a file now").unwrap();
+
+        // DB: /parent/item/ is a directory with a child
+        ensure_path_in_db(&db_path, &parent.to_string_lossy());
+        {
+            let wconn = IndexStore::open_write_connection(&db_path).unwrap();
+            let parent_id = store::resolve_path(&wconn, &parent.to_string_lossy())
+                .unwrap()
+                .unwrap();
+            let item_id =
+                IndexStore::insert_entry_v2(&wconn, parent_id, "item", true, false, None, None).unwrap();
+            IndexStore::insert_entry_v2(&wconn, item_id, "child.txt", false, false, Some(50), None).unwrap();
+        }
+
+        let cancelled = AtomicBool::new(false);
+        let result = reconcile_subtree(&parent, &conn, &writer, &cancelled);
+        assert!(result.is_ok());
+        let summary = result.unwrap();
+
+        // The reconciler should see "item" as matching by name, but changed.
+        // It sends an UpsertEntryV2 with is_directory=false. That's 1 update.
+        // The old child.txt is never visited because a file has no children to recurse into.
+        assert_eq!(summary.updated, 1, "item should be updated (dir -> file)");
+
+        writer.flush_blocking().unwrap();
+        writer.shutdown();
+
+        let store = IndexStore::open(&db_path).unwrap();
+        let parent_id = store::resolve_path(store.read_conn(), &parent.to_string_lossy())
+            .unwrap()
+            .unwrap();
+        let children = store.list_children(parent_id).unwrap();
+        assert_eq!(children.len(), 1, "parent should have exactly one child (item)");
+        assert_eq!(children[0].name, "item");
+
+        let item_id = children[0].id;
+        let item_children = store.list_children(item_id).unwrap();
+
+        assert!(
+            !children[0].is_directory,
+            "item should now be a file, not a directory"
+        );
+        assert!(
+            item_children.is_empty(),
+            "file entry should have no children — old directory's child.txt should be cleaned up"
+        );
+    }
+
+    /// reconcile_subtree with 3+ levels of new nested directories tests the
+    /// multi-level flush cycle: each BFS level must be flushed and re-resolved
+    /// before the next level's parents can be resolved.
+    #[test]
+    fn reconcile_subtree_deep_nested_dirs() {
+        let (writer, dir, conn) = setup_test_writer();
+        let db_path = dir.path().join("test-reconciler.db");
+
+        let test_dir = non_excluded_tempdir();
+        let root_dir = test_dir.path().join("root_dir");
+        std::fs::create_dir(&root_dir).unwrap();
+
+        // Create 3 levels of new dirs + a file: root_dir/a/b/c/file.txt
+        let dir_a = root_dir.join("a");
+        let dir_b = dir_a.join("b");
+        let dir_c = dir_b.join("c");
+        std::fs::create_dir_all(&dir_c).unwrap();
+        std::fs::write(dir_c.join("file.txt"), "deep content").unwrap();
+
+        // DB only knows about /root_dir/ — everything inside is new
+        ensure_path_in_db(&db_path, &root_dir.to_string_lossy());
+
+        let cancelled = AtomicBool::new(false);
+        let result = reconcile_subtree(&root_dir, &conn, &writer, &cancelled);
+        assert!(result.is_ok());
+        let summary = result.unwrap();
+        assert_eq!(summary.added, 4, "dirs a, b, c and file.txt should all be added");
+        assert_eq!(summary.removed, 0);
+
+        writer.flush_blocking().unwrap();
+        writer.shutdown();
+
+        // Verify the full path chain exists with correct parent->child relationships
+        let store = IndexStore::open(&db_path).unwrap();
+
+        let root_id = store::resolve_path(store.read_conn(), &root_dir.to_string_lossy())
+            .unwrap()
+            .unwrap();
+        let root_children = store.list_children(root_id).unwrap();
+        assert_eq!(root_children.len(), 1);
+        assert_eq!(root_children[0].name, "a");
+        assert!(root_children[0].is_directory);
+
+        let a_id = store::resolve_path(store.read_conn(), &dir_a.to_string_lossy())
+            .unwrap()
+            .unwrap();
+        let a_children = store.list_children(a_id).unwrap();
+        assert_eq!(a_children.len(), 1);
+        assert_eq!(a_children[0].name, "b");
+        assert!(a_children[0].is_directory);
+
+        let b_id = store::resolve_path(store.read_conn(), &dir_b.to_string_lossy())
+            .unwrap()
+            .unwrap();
+        let b_children = store.list_children(b_id).unwrap();
+        assert_eq!(b_children.len(), 1);
+        assert_eq!(b_children[0].name, "c");
+        assert!(b_children[0].is_directory);
+
+        let c_id = store::resolve_path(store.read_conn(), &dir_c.to_string_lossy())
+            .unwrap()
+            .unwrap();
+        let c_children = store.list_children(c_id).unwrap();
+        assert_eq!(c_children.len(), 1);
+        assert_eq!(c_children[0].name, "file.txt");
+        assert!(!c_children[0].is_directory);
+    }
+
     // ── Test helpers ─────────────────────────────────────────────────
 
     /// Set up a writer and a read connection for tests.
@@ -1304,7 +1655,7 @@ mod tests {
         let db_path = dir.path().join("test-reconciler.db");
         let _store = IndexStore::open(&db_path).expect("open store");
         let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
-        let conn = IndexStore::open_write_connection(&db_path).expect("open read conn");
+        let conn = IndexStore::open_write_connection(&db_path).expect("open WAL conn for reads");
         (writer, dir, conn)
     }
 

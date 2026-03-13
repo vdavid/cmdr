@@ -927,3 +927,114 @@ fn verify_affected_dirs(affected_paths: &HashSet<String>, writer: &IndexWriter) 
         new_dir_paths,
     }
 }
+
+// ── Tests ────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_event(path: &str, event_id: u64, flags: watcher::FsEventFlags) -> watcher::FsChangeEvent {
+        watcher::FsChangeEvent {
+            path: path.to_string(),
+            event_id,
+            flags,
+        }
+    }
+
+    /// Merging created+removed: `item_removed` wins (priority-based merge),
+    /// dropping `item_created`. The reconciler's stat-before-delete in
+    /// `handle_removal` compensates: if the file still exists on disk, it
+    /// upserts instead of deleting. Regression coverage for f0c225f.
+    #[test]
+    fn merge_created_then_removed_prioritizes_removed() {
+        let created = make_event(
+            "/test/file.txt",
+            100,
+            watcher::FsEventFlags {
+                item_created: true,
+                item_is_file: true,
+                ..Default::default()
+            },
+        );
+        let removed = make_event(
+            "/test/file.txt",
+            200,
+            watcher::FsEventFlags {
+                item_removed: true,
+                item_is_file: true,
+                ..Default::default()
+            },
+        );
+
+        let merged = merge_fs_events(&created, &removed);
+
+        assert!(merged.flags.item_removed, "item_removed should be set");
+        assert!(!merged.flags.item_created, "item_created is dropped — removed wins");
+        assert!(merged.flags.item_is_file, "item_is_file should be preserved");
+        assert_eq!(merged.event_id, 200, "higher event_id should be kept");
+    }
+
+    /// Same as above but with events in reverse order: removed first, then
+    /// created. `item_removed` still wins.
+    #[test]
+    fn merge_removed_then_created_prioritizes_removed() {
+        let removed = make_event(
+            "/test/file.txt",
+            100,
+            watcher::FsEventFlags {
+                item_removed: true,
+                item_is_file: true,
+                ..Default::default()
+            },
+        );
+        let created = make_event(
+            "/test/file.txt",
+            200,
+            watcher::FsEventFlags {
+                item_created: true,
+                item_is_file: true,
+                ..Default::default()
+            },
+        );
+
+        let merged = merge_fs_events(&removed, &created);
+
+        assert!(merged.flags.item_removed, "item_removed should be set");
+        assert!(!merged.flags.item_created, "item_created is dropped — removed wins");
+        assert!(merged.flags.item_is_file, "item_is_file should be preserved");
+        assert_eq!(merged.event_id, 200, "higher event_id should be kept");
+    }
+
+    /// When merging, the higher event_id should always win regardless of
+    /// which event is "existing" vs "incoming".
+    #[test]
+    fn merge_keeps_higher_event_id() {
+        let older = make_event(
+            "/test/file.txt",
+            300,
+            watcher::FsEventFlags {
+                item_modified: true,
+                item_is_file: true,
+                ..Default::default()
+            },
+        );
+        let newer = make_event(
+            "/test/file.txt",
+            100,
+            watcher::FsEventFlags {
+                item_modified: true,
+                item_is_file: true,
+                ..Default::default()
+            },
+        );
+
+        // existing=older (300), incoming=newer (100)
+        let merged = merge_fs_events(&older, &newer);
+        assert_eq!(merged.event_id, 300, "higher event_id should be kept");
+
+        // existing=newer (100), incoming=older (300)
+        let merged = merge_fs_events(&newer, &older);
+        assert_eq!(merged.event_id, 300, "higher event_id should be kept");
+    }
+}
