@@ -1037,4 +1037,249 @@ mod tests {
         let merged = merge_fs_events(&newer, &older);
         assert_eq!(merged.event_id, 300, "higher event_id should be kept");
     }
+
+    // ── merge_fs_events dedup/flag tests ─────────────────────────────
+
+    /// Three events for the same path merge into one with the highest
+    /// priority flag and the highest event_id.
+    #[test]
+    fn merge_three_events_same_path_keeps_highest_priority() {
+        let modified = make_event(
+            "/test/file.txt",
+            10,
+            watcher::FsEventFlags {
+                item_modified: true,
+                item_is_file: true,
+                ..Default::default()
+            },
+        );
+        let created = make_event(
+            "/test/file.txt",
+            20,
+            watcher::FsEventFlags {
+                item_created: true,
+                item_is_file: true,
+                ..Default::default()
+            },
+        );
+        let modified2 = make_event(
+            "/test/file.txt",
+            30,
+            watcher::FsEventFlags {
+                item_modified: true,
+                item_is_file: true,
+                ..Default::default()
+            },
+        );
+
+        // Simulate HashMap-style dedup: fold sequentially
+        let merged = merge_fs_events(&modified, &created);
+        let merged = merge_fs_events(&merged, &modified2);
+
+        assert!(merged.flags.item_created, "item_created should survive (higher priority than modified)");
+        assert!(!merged.flags.item_modified, "item_modified is subsumed by item_created");
+        assert_eq!(merged.event_id, 30, "highest event_id should be kept");
+    }
+
+    /// Events for different paths are preserved independently when stored
+    /// in a HashMap keyed by path (the live event loop's dedup strategy).
+    #[test]
+    fn distinct_paths_are_all_preserved() {
+        let paths = ["/a.txt", "/b.txt", "/c.txt", "/d/e.txt", "/f/g/h.txt"];
+        let mut map = HashMap::<String, watcher::FsChangeEvent>::new();
+
+        for (i, path) in paths.iter().enumerate() {
+            let event = make_event(
+                path,
+                (i + 1) as u64,
+                watcher::FsEventFlags {
+                    item_modified: true,
+                    item_is_file: true,
+                    ..Default::default()
+                },
+            );
+            map.entry(path.to_string())
+                .and_modify(|existing| {
+                    *existing = merge_fs_events(existing, &event);
+                })
+                .or_insert(event);
+        }
+
+        assert_eq!(map.len(), paths.len(), "each distinct path should have its own entry");
+        for path in &paths {
+            assert!(map.contains_key(*path), "map should contain {path}");
+        }
+    }
+
+    /// `must_scan_sub_dirs` always wins when merged with other flags.
+    #[test]
+    fn merge_must_scan_sub_dirs_wins_over_modified() {
+        let modified = make_event(
+            "/test/dir",
+            10,
+            watcher::FsEventFlags {
+                item_modified: true,
+                item_is_dir: true,
+                ..Default::default()
+            },
+        );
+        let must_scan = make_event(
+            "/test/dir",
+            20,
+            watcher::FsEventFlags {
+                must_scan_sub_dirs: true,
+                item_is_dir: true,
+                ..Default::default()
+            },
+        );
+
+        // must_scan_sub_dirs incoming
+        let merged = merge_fs_events(&modified, &must_scan);
+        assert!(merged.flags.must_scan_sub_dirs, "must_scan_sub_dirs should win");
+        assert_eq!(merged.event_id, 20);
+
+        // must_scan_sub_dirs existing
+        let merged = merge_fs_events(&must_scan, &modified);
+        assert!(merged.flags.must_scan_sub_dirs, "must_scan_sub_dirs should win regardless of order");
+        assert_eq!(merged.event_id, 20);
+    }
+
+    /// `must_scan_sub_dirs` wins even when the other event has `item_removed`.
+    #[test]
+    fn merge_must_scan_sub_dirs_wins_over_removed() {
+        let removed = make_event(
+            "/test/dir",
+            10,
+            watcher::FsEventFlags {
+                item_removed: true,
+                item_is_dir: true,
+                ..Default::default()
+            },
+        );
+        let must_scan = make_event(
+            "/test/dir",
+            20,
+            watcher::FsEventFlags {
+                must_scan_sub_dirs: true,
+                item_is_dir: true,
+                ..Default::default()
+            },
+        );
+
+        let merged = merge_fs_events(&removed, &must_scan);
+        assert!(merged.flags.must_scan_sub_dirs, "must_scan_sub_dirs should win over item_removed");
+    }
+
+    // ── EventReconciler buffer overflow tests ────────────────────────
+
+    /// Buffering exactly MAX_BUFFER_CAPACITY (500K) events does NOT
+    /// trigger overflow. Adding one more does.
+    #[test]
+    fn buffer_capacity_boundary() {
+        // MAX_BUFFER_CAPACITY is 500_000 (private to reconciler.rs)
+        let cap = 500_000usize;
+        let mut reconciler = EventReconciler::new();
+
+        for i in 0..cap {
+            reconciler.buffer_event(make_event("/test/file.txt", i as u64, watcher::FsEventFlags {
+                item_modified: true,
+                item_is_file: true,
+                ..Default::default()
+            }));
+        }
+
+        assert_eq!(reconciler.buffer_len(), cap, "buffer should hold exactly MAX_BUFFER_CAPACITY events");
+        assert!(!reconciler.did_buffer_overflow(), "should not overflow at exactly MAX_BUFFER_CAPACITY");
+
+        // One more triggers overflow
+        reconciler.buffer_event(make_event("/test/overflow.txt", cap as u64, watcher::FsEventFlags {
+            item_modified: true,
+            item_is_file: true,
+            ..Default::default()
+        }));
+
+        assert!(reconciler.did_buffer_overflow(), "should overflow after exceeding MAX_BUFFER_CAPACITY");
+        assert_eq!(reconciler.buffer_len(), 0, "buffer should be cleared on overflow");
+    }
+
+    /// After overflow, subsequent buffer_event calls are no-ops.
+    #[test]
+    fn buffer_overflow_drops_further_events() {
+        let cap = 500_000usize;
+        let mut reconciler = EventReconciler::new();
+
+        // Fill to capacity + 1 to trigger overflow
+        for i in 0..=cap {
+            reconciler.buffer_event(make_event("/test/file.txt", i as u64, watcher::FsEventFlags {
+                item_modified: true,
+                item_is_file: true,
+                ..Default::default()
+            }));
+        }
+        assert!(reconciler.did_buffer_overflow());
+
+        // Further events are silently dropped
+        reconciler.buffer_event(make_event("/test/new.txt", 999_999, watcher::FsEventFlags {
+            item_created: true,
+            item_is_file: true,
+            ..Default::default()
+        }));
+        assert_eq!(reconciler.buffer_len(), 0, "buffer should remain empty after overflow");
+    }
+
+    /// `did_buffer_overflow()` returns true after overflow, but
+    /// `switch_to_live()` resets it. This matches the production flow:
+    /// overflow is checked (and acted on) BEFORE `switch_to_live()`.
+    #[test]
+    fn overflow_flag_is_readable_before_switch_to_live() {
+        let cap = 500_000usize;
+        let mut reconciler = EventReconciler::new();
+
+        for i in 0..=cap {
+            reconciler.buffer_event(make_event("/test/file.txt", i as u64, watcher::FsEventFlags {
+                item_modified: true,
+                item_is_file: true,
+                ..Default::default()
+            }));
+        }
+
+        // Overflow is observable before switch_to_live
+        assert!(reconciler.did_buffer_overflow(), "overflow flag should be set");
+
+        // switch_to_live resets it (by design: the caller already consumed the flag)
+        reconciler.switch_to_live();
+        assert!(!reconciler.did_buffer_overflow(), "switch_to_live should reset overflow flag");
+        assert!(!reconciler.is_buffering(), "should be in live mode");
+    }
+
+    /// Buffering mode transitions: new -> buffering, switch_to_live ->
+    /// live, buffer_event is no-op in live mode.
+    #[test]
+    fn buffering_mode_transitions() {
+        let mut reconciler = EventReconciler::new();
+
+        // Starts in buffering mode
+        assert!(reconciler.is_buffering());
+
+        // Buffer works
+        reconciler.buffer_event(make_event("/a.txt", 1, watcher::FsEventFlags {
+            item_created: true,
+            item_is_file: true,
+            ..Default::default()
+        }));
+        assert_eq!(reconciler.buffer_len(), 1);
+
+        // Switch to live
+        reconciler.switch_to_live();
+        assert!(!reconciler.is_buffering());
+        assert_eq!(reconciler.buffer_len(), 0, "buffer cleared on switch");
+
+        // buffer_event is no-op in live mode
+        reconciler.buffer_event(make_event("/b.txt", 2, watcher::FsEventFlags {
+            item_created: true,
+            item_is_file: true,
+            ..Default::default()
+        }));
+        assert_eq!(reconciler.buffer_len(), 0, "buffer_event should be no-op in live mode");
+    }
 }
