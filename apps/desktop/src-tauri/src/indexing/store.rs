@@ -227,8 +227,7 @@ fn platform_case_compare(a: &str, b: &str) -> std::cmp::Ordering {
     a.cmp(b)
 }
 
-/// Normalize a string for case-insensitive comparison (for cache keys).
-/// Public so `PathResolver` can use the same normalization.
+/// Normalize a string for case-insensitive comparison.
 #[cfg(target_os = "macos")]
 pub fn normalize_for_comparison(s: &str) -> String {
     use unicode_normalization::UnicodeNormalization;

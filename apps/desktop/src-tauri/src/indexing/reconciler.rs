@@ -1537,11 +1537,8 @@ mod tests {
         ensure_path_in_db(&db_path, &parent.to_string_lossy());
         {
             let wconn = IndexStore::open_write_connection(&db_path).unwrap();
-            let parent_id = store::resolve_path(&wconn, &parent.to_string_lossy())
-                .unwrap()
-                .unwrap();
-            let item_id =
-                IndexStore::insert_entry_v2(&wconn, parent_id, "item", true, false, None, None).unwrap();
+            let parent_id = store::resolve_path(&wconn, &parent.to_string_lossy()).unwrap().unwrap();
+            let item_id = IndexStore::insert_entry_v2(&wconn, parent_id, "item", true, false, None, None).unwrap();
             IndexStore::insert_entry_v2(&wconn, item_id, "child.txt", false, false, Some(50), None).unwrap();
         }
 
@@ -1569,10 +1566,7 @@ mod tests {
         let item_id = children[0].id;
         let item_children = store.list_children(item_id).unwrap();
 
-        assert!(
-            !children[0].is_directory,
-            "item should now be a file, not a directory"
-        );
+        assert!(!children[0].is_directory, "item should now be a file, not a directory");
         assert!(
             item_children.is_empty(),
             "file entry should have no children — old directory's child.txt should be cleaned up"
@@ -1697,9 +1691,7 @@ mod tests {
         let mut reconciler = EventReconciler::new();
         reconciler.buffer_event(make_event(&file_path.to_string_lossy(), 20, created_file_flags()));
 
-        let result = reconciler
-            .replay(10, &conn, &writer, &mut |_| {})
-            .unwrap();
+        let result = reconciler.replay(10, &conn, &writer, &mut |_| {}).unwrap();
 
         writer.flush_blocking().unwrap();
         writer.shutdown();
@@ -1731,9 +1723,7 @@ mod tests {
         reconciler.buffer_event(make_event(&file_a.to_string_lossy(), 15, created_file_flags()));
         reconciler.buffer_event(make_event(&file_b.to_string_lossy(), 25, created_file_flags()));
 
-        let result = reconciler
-            .replay(10, &conn, &writer, &mut |_| {})
-            .unwrap();
+        let result = reconciler.replay(10, &conn, &writer, &mut |_| {}).unwrap();
 
         writer.flush_blocking().unwrap();
         writer.shutdown();

@@ -72,8 +72,6 @@ walkdir = "2"
 # Drive indexing: parallel directory walker, SQLite store, and macOS FSEvents watcher
 jwalk = "0.8"
 rusqlite = { version = "0.32", features = ["bundled", "collation"] }
-# Drive indexing: LRU cache for path→entry_id resolution
-lru = "0.16"
 # For chunked copy metadata preservation (network filesystems)
 xattr = "1"
 filetime = "0.2"

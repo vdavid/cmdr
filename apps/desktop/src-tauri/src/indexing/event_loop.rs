@@ -1076,7 +1076,10 @@ mod tests {
         let merged = merge_fs_events(&modified, &created);
         let merged = merge_fs_events(&merged, &modified2);
 
-        assert!(merged.flags.item_created, "item_created should survive (higher priority than modified)");
+        assert!(
+            merged.flags.item_created,
+            "item_created should survive (higher priority than modified)"
+        );
         assert!(!merged.flags.item_modified, "item_modified is subsumed by item_created");
         assert_eq!(merged.event_id, 30, "highest event_id should be kept");
     }
@@ -1140,7 +1143,10 @@ mod tests {
 
         // must_scan_sub_dirs existing
         let merged = merge_fs_events(&must_scan, &modified);
-        assert!(merged.flags.must_scan_sub_dirs, "must_scan_sub_dirs should win regardless of order");
+        assert!(
+            merged.flags.must_scan_sub_dirs,
+            "must_scan_sub_dirs should win regardless of order"
+        );
         assert_eq!(merged.event_id, 20);
     }
 
@@ -1167,7 +1173,10 @@ mod tests {
         );
 
         let merged = merge_fs_events(&removed, &must_scan);
-        assert!(merged.flags.must_scan_sub_dirs, "must_scan_sub_dirs should win over item_removed");
+        assert!(
+            merged.flags.must_scan_sub_dirs,
+            "must_scan_sub_dirs should win over item_removed"
+        );
     }
 
     // ── EventReconciler buffer overflow tests ────────────────────────
@@ -1181,24 +1190,42 @@ mod tests {
         let mut reconciler = EventReconciler::new();
 
         for i in 0..cap {
-            reconciler.buffer_event(make_event("/test/file.txt", i as u64, watcher::FsEventFlags {
+            reconciler.buffer_event(make_event(
+                "/test/file.txt",
+                i as u64,
+                watcher::FsEventFlags {
+                    item_modified: true,
+                    item_is_file: true,
+                    ..Default::default()
+                },
+            ));
+        }
+
+        assert_eq!(
+            reconciler.buffer_len(),
+            cap,
+            "buffer should hold exactly MAX_BUFFER_CAPACITY events"
+        );
+        assert!(
+            !reconciler.did_buffer_overflow(),
+            "should not overflow at exactly MAX_BUFFER_CAPACITY"
+        );
+
+        // One more triggers overflow
+        reconciler.buffer_event(make_event(
+            "/test/overflow.txt",
+            cap as u64,
+            watcher::FsEventFlags {
                 item_modified: true,
                 item_is_file: true,
                 ..Default::default()
-            }));
-        }
+            },
+        ));
 
-        assert_eq!(reconciler.buffer_len(), cap, "buffer should hold exactly MAX_BUFFER_CAPACITY events");
-        assert!(!reconciler.did_buffer_overflow(), "should not overflow at exactly MAX_BUFFER_CAPACITY");
-
-        // One more triggers overflow
-        reconciler.buffer_event(make_event("/test/overflow.txt", cap as u64, watcher::FsEventFlags {
-            item_modified: true,
-            item_is_file: true,
-            ..Default::default()
-        }));
-
-        assert!(reconciler.did_buffer_overflow(), "should overflow after exceeding MAX_BUFFER_CAPACITY");
+        assert!(
+            reconciler.did_buffer_overflow(),
+            "should overflow after exceeding MAX_BUFFER_CAPACITY"
+        );
         assert_eq!(reconciler.buffer_len(), 0, "buffer should be cleared on overflow");
     }
 
@@ -1210,20 +1237,28 @@ mod tests {
 
         // Fill to capacity + 1 to trigger overflow
         for i in 0..=cap {
-            reconciler.buffer_event(make_event("/test/file.txt", i as u64, watcher::FsEventFlags {
-                item_modified: true,
-                item_is_file: true,
-                ..Default::default()
-            }));
+            reconciler.buffer_event(make_event(
+                "/test/file.txt",
+                i as u64,
+                watcher::FsEventFlags {
+                    item_modified: true,
+                    item_is_file: true,
+                    ..Default::default()
+                },
+            ));
         }
         assert!(reconciler.did_buffer_overflow());
 
         // Further events are silently dropped
-        reconciler.buffer_event(make_event("/test/new.txt", 999_999, watcher::FsEventFlags {
-            item_created: true,
-            item_is_file: true,
-            ..Default::default()
-        }));
+        reconciler.buffer_event(make_event(
+            "/test/new.txt",
+            999_999,
+            watcher::FsEventFlags {
+                item_created: true,
+                item_is_file: true,
+                ..Default::default()
+            },
+        ));
         assert_eq!(reconciler.buffer_len(), 0, "buffer should remain empty after overflow");
     }
 
@@ -1236,11 +1271,15 @@ mod tests {
         let mut reconciler = EventReconciler::new();
 
         for i in 0..=cap {
-            reconciler.buffer_event(make_event("/test/file.txt", i as u64, watcher::FsEventFlags {
-                item_modified: true,
-                item_is_file: true,
-                ..Default::default()
-            }));
+            reconciler.buffer_event(make_event(
+                "/test/file.txt",
+                i as u64,
+                watcher::FsEventFlags {
+                    item_modified: true,
+                    item_is_file: true,
+                    ..Default::default()
+                },
+            ));
         }
 
         // Overflow is observable before switch_to_live
@@ -1248,7 +1287,10 @@ mod tests {
 
         // switch_to_live resets it (by design: the caller already consumed the flag)
         reconciler.switch_to_live();
-        assert!(!reconciler.did_buffer_overflow(), "switch_to_live should reset overflow flag");
+        assert!(
+            !reconciler.did_buffer_overflow(),
+            "switch_to_live should reset overflow flag"
+        );
         assert!(!reconciler.is_buffering(), "should be in live mode");
     }
 
@@ -1262,11 +1304,15 @@ mod tests {
         assert!(reconciler.is_buffering());
 
         // Buffer works
-        reconciler.buffer_event(make_event("/a.txt", 1, watcher::FsEventFlags {
-            item_created: true,
-            item_is_file: true,
-            ..Default::default()
-        }));
+        reconciler.buffer_event(make_event(
+            "/a.txt",
+            1,
+            watcher::FsEventFlags {
+                item_created: true,
+                item_is_file: true,
+                ..Default::default()
+            },
+        ));
         assert_eq!(reconciler.buffer_len(), 1);
 
         // Switch to live
@@ -1275,11 +1321,15 @@ mod tests {
         assert_eq!(reconciler.buffer_len(), 0, "buffer cleared on switch");
 
         // buffer_event is no-op in live mode
-        reconciler.buffer_event(make_event("/b.txt", 2, watcher::FsEventFlags {
-            item_created: true,
-            item_is_file: true,
-            ..Default::default()
-        }));
+        reconciler.buffer_event(make_event(
+            "/b.txt",
+            2,
+            watcher::FsEventFlags {
+                item_created: true,
+                item_is_file: true,
+                ..Default::default()
+            },
+        ));
         assert_eq!(reconciler.buffer_len(), 0, "buffer_event should be no-op in live mode");
     }
 }

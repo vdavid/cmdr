@@ -9,7 +9,6 @@ mod enrichment;
 mod event_loop;
 mod events;
 pub mod firmlinks;
-pub mod path_resolver;
 pub mod store;
 pub mod writer;
 
@@ -32,7 +31,6 @@ use enrichment::{READ_POOL, ReadPool};
 use event_loop::{
     JOURNAL_GAP_THRESHOLD, ReplayConfig, WATCHER_CHANNEL_CAPACITY, run_live_event_loop, run_replay_event_loop,
 };
-use path_resolver::PathResolver;
 use reconciler::EventReconciler;
 use scanner::ScanConfig;
 use store::{DirStats, IndexStore};
@@ -130,8 +128,6 @@ pub struct IndexManager {
     store: IndexStore,
     /// Writer handle for sending writes
     writer: IndexWriter,
-    /// Path resolver with LRU cache for path → entry ID resolution
-    path_resolver: PathResolver,
     /// Handle to the active full scan (if running)
     scan_handle: Option<scanner::ScanHandle>,
     /// FSEvents watcher (started alongside scan, persists after scan completes)
@@ -160,8 +156,6 @@ impl IndexManager {
         let writer = IndexWriter::spawn(&db_path, Some(app.clone()))
             .map_err(|e| format!("Failed to spawn index writer: {e}"))?;
 
-        let path_resolver = PathResolver::new();
-
         log::debug!(
             "IndexManager created for volume '{volume_id}' at {}",
             volume_root.display()
@@ -172,7 +166,6 @@ impl IndexManager {
             volume_root,
             store,
             writer,
-            path_resolver,
             scan_handle: None,
             drive_watcher: None,
             live_event_task: Arc::new(std::sync::Mutex::new(None)),
@@ -621,12 +614,9 @@ impl IndexManager {
                     }
 
                     // Replay events that arrived after the scan read their paths
-                    match reconciler.replay(
-                        scan_start_event_id,
-                        &replay_conn,
-                        &writer,
-                        &mut |paths| reconciler::emit_dir_updated(&app, paths),
-                    ) {
+                    match reconciler.replay(scan_start_event_id, &replay_conn, &writer, &mut |paths| {
+                        reconciler::emit_dir_updated(&app, paths)
+                    }) {
                         Ok(last_id) => {
                             log::info!("Reconciler: post-scan replay complete (last_event_id={last_id})");
                         }
@@ -758,20 +748,17 @@ impl IndexManager {
 
     /// Look up recursive stats for a single directory.
     ///
-    /// Resolves the path to an entry ID using the `PathResolver` (LRU-cached),
+    /// Resolves the path to an entry ID via `store::resolve_path`,
     /// then fetches `dir_stats` by integer ID.
-    pub fn get_dir_stats(&mut self, path: &str) -> Result<Option<DirStats>, String> {
+    pub fn get_dir_stats(&self, path: &str) -> Result<Option<DirStats>, String> {
         let normalized = firmlinks::normalize_path(path);
         let conn = self.store.read_conn();
 
-        let entry_id = match self
-            .path_resolver
-            .resolve(conn, &normalized)
-            .map_err(|e| format!("Failed to resolve path: {e}"))?
-        {
-            Some(id) => id,
-            None => return Ok(None),
-        };
+        let entry_id =
+            match store::resolve_path(conn, &normalized).map_err(|e| format!("Failed to resolve path: {e}"))? {
+                Some(id) => id,
+                None => return Ok(None),
+            };
 
         let stats =
             IndexStore::get_dir_stats_by_id(conn, entry_id).map_err(|e| format!("Failed to get dir stats: {e}"))?;
@@ -786,9 +773,9 @@ impl IndexManager {
 
     /// Batch lookup of dir_stats for multiple paths.
     ///
-    /// Resolves each path to an entry ID using the `PathResolver` (LRU-cached),
+    /// Resolves each path to an entry ID via `store::resolve_path`,
     /// then batch-fetches `dir_stats` by integer IDs.
-    pub fn get_dir_stats_batch(&mut self, paths: &[String]) -> Result<Vec<Option<DirStats>>, String> {
+    pub fn get_dir_stats_batch(&self, paths: &[String]) -> Result<Vec<Option<DirStats>>, String> {
         let conn = self.store.read_conn();
 
         let mut results = Vec::with_capacity(paths.len());
@@ -796,11 +783,7 @@ impl IndexManager {
 
         for (i, path) in paths.iter().enumerate() {
             let normalized = firmlinks::normalize_path(path);
-            match self
-                .path_resolver
-                .resolve(conn, &normalized)
-                .map_err(|e| format!("Failed to resolve path: {e}"))?
-            {
+            match store::resolve_path(conn, &normalized).map_err(|e| format!("Failed to resolve path: {e}"))? {
                 Some(id) => {
                     id_to_idx.push((id, i, normalized));
                     results.push(None); // Placeholder, filled below
@@ -1123,8 +1106,8 @@ pub fn get_debug_status() -> Result<IndexDebugStatusResponse, String> {
 
 /// Look up recursive stats for a single directory.
 pub fn get_dir_stats(path: &str) -> Result<Option<DirStats>, String> {
-    let mut guard = INDEXING.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
-    match &mut *guard {
+    let guard = INDEXING.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
+    match &*guard {
         IndexPhase::Running(mgr) => mgr.get_dir_stats(path),
         _ => Err("Indexing not initialized".to_string()),
     }
@@ -1132,8 +1115,8 @@ pub fn get_dir_stats(path: &str) -> Result<Option<DirStats>, String> {
 
 /// Batch lookup of dir_stats for multiple paths.
 pub fn get_dir_stats_batch(paths: &[String]) -> Result<Vec<Option<DirStats>>, String> {
-    let mut guard = INDEXING.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
-    match &mut *guard {
+    let guard = INDEXING.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
+    match &*guard {
         IndexPhase::Running(mgr) => mgr.get_dir_stats_batch(paths),
         _ => Err("Indexing not initialized".to_string()),
     }
@@ -1445,47 +1428,6 @@ mod tests {
         let names: std::collections::HashSet<&str> = child_dirs.iter().map(|(_, n)| n.as_str()).collect();
         assert!(names.contains("dir_a"));
         assert!(names.contains("dir_b"));
-    }
-
-    /// Test the PathResolver integration for dir stats lookups.
-    #[test]
-    fn path_resolver_for_dir_stats() {
-        let (store, conn, _dir) = open_temp_store();
-
-        let entries = vec![
-            EntryRow {
-                id: 2,
-                parent_id: ROOT_ID,
-                name: "src".into(),
-                is_directory: true,
-                is_symlink: false,
-                size: None,
-                modified_at: None,
-            },
-            EntryRow {
-                id: 3,
-                parent_id: 2,
-                name: "main.rs".into(),
-                is_directory: false,
-                is_symlink: false,
-                size: Some(1000),
-                modified_at: None,
-            },
-        ];
-        IndexStore::insert_entries_v2_batch(&conn, &entries).expect("insert");
-        aggregator::compute_all_aggregates(&conn).expect("aggregates");
-
-        let mut resolver = PathResolver::new();
-        let entry_id = resolver.resolve(store.read_conn(), "/src").expect("resolve");
-        assert_eq!(entry_id, Some(2));
-
-        let stats = IndexStore::get_dir_stats_by_id(store.read_conn(), 2).expect("stats");
-        assert!(stats.is_some());
-        assert_eq!(stats.unwrap().recursive_size, 1000);
-
-        // Second resolve should hit LRU cache (no DB access)
-        let cached_id = resolver.resolve(store.read_conn(), "/src").expect("cached");
-        assert_eq!(cached_id, Some(2));
     }
 
     /// End-to-end: scan -> aggregate -> enrich -> simulate watcher event -> re-enrich -> verify.
