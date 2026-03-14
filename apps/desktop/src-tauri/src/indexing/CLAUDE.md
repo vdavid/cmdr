@@ -20,7 +20,7 @@ Full design: `docs/specs/drive-indexing/plan.md`
 - **watcher.rs** -- Drive-level filesystem watcher. macOS: FSEvents via `cmdr-fsevent-stream` with event IDs and `sinceWhen` replay. Linux: `notify` crate (inotify backend) with recursive watching and synthetic event counter. Other platforms: stub. `supports_event_replay()` lets callers branch on whether journal replay is available.
 - **reconciler.rs** -- Buffers FSEvents during scan (capped at 500K events; overflow sets `buffer_overflow` flag forcing full rescan), replays after scan completes using event IDs to skip stale events. Processes live events for file creates/removes/modifies using integer-keyed write messages (`UpsertEntryV2`, `DeleteEntryById`, `DeleteSubtreeById`, `PropagateDeltaById`). Resolves filesystem paths to entry IDs via `store::resolve_path()` using a read connection passed by callers. Key functions (`process_fs_event`, `emit_dir_updated`) are `pub(super)` so `mod.rs` can call them directly during cold-start replay. `reconcile_subtree()` handles MustScanSubDirs by diffing filesystem vs DB directory-by-directory instead of delete-then-reinsert, making it safe to interrupt at any point.
 - **firmlinks.rs** -- Parses `/usr/share/firmlinks`, builds prefix map, normalizes paths. Converts `/System/Volumes/Data/Users/foo` to `/Users/foo`.
-- **verifier.rs** -- Placeholder for per-navigation background readdir diff (future milestone).
+- **verifier.rs** -- Per-navigation background readdir diff. On each directory navigation, `trigger_verification()` (called from `streaming.rs` and `operations.rs` after enrichment) checks dedup/debounce via static `VerifierState` (in-flight set + recent timestamps), then spawns an async task that: (1) reads DB children via `ReadPool`, (2) reads disk via `read_dir`, (3) diffs by normalized name, sending `UpsertEntryV2`/`DeleteEntryById`/`DeleteSubtreeById`/`PropagateDeltaById` corrections to the writer. New directories are flushed then scanned via `scan_subtree` with delta propagation. Debounce: 30s per path, max 2 concurrent verifications. Only runs after initial scan is complete (checks `scanning` flag). `invalidate()` clears state on shutdown/clear.
 
 IPC commands in `commands/indexing.rs` -- thin wrappers over `IndexManager` methods.
 
@@ -59,6 +59,14 @@ Enrichment (every get_file_range call):
   |-- get_dir_stats_batch_by_ids(child_ids) → batch stats
   |-- Match by normalized name → populate FileEntry.recursive_size/file_count/dir_count
   |-- Fallback: individual path resolution if fast path fails (mixed-parent edge case)
+  |
+Navigation verification (after enrichment):
+  |-- trigger_verification(path) → checks IndexPhase::Running, extracts writer/app/scanning
+  |-- verifier::maybe_verify() → dedup/debounce check, spawns async task
+  |-- verify_and_correct(): ReadPool → resolve_path + list_children_on → DB snapshot
+  |-- read_dir → disk snapshot, diff by normalize_for_comparison
+  |-- Corrections: UpsertEntryV2, DeleteEntryById/DeleteSubtreeById, PropagateDeltaById
+  |-- New dirs: flush → scan_subtree → flush → propagate deltas → emit_dir_updated
 ```
 
 ### Single-writer architecture
@@ -147,7 +155,7 @@ Key test files are alongside each module (test functions within `#[cfg(test)]` b
 
 **Schema version mismatch drops the DB**: If `schema_version` in meta doesn't match what the code expects, the entire DB is deleted and rebuilt. No migration path (it's a cache, not user data).
 
-**`verifier.rs` is a placeholder**: Per-navigation readdir diff is a future milestone. Currently just a TODO comment.
+**Verifier debounce is per-path, not global**: Each directory path gets its own 30s cooldown. Navigating to a different directory triggers a fresh verification even if another one just completed. `MAX_CONCURRENT_VERIFICATIONS` (2) prevents overloading the writer channel.
 
 **Dirs created by reconciler/live events must get `dir_stats` immediately**: `UpsertEntryV2` inserts a zero-valued `dir_stats` row when creating a new directory. Without this, directories created after the last full aggregation have no `dir_stats` and show no sizes in the UI. `BackfillMissingDirStats` runs after reconciler replay and cold-start replay as a catch-up pass for any dirs that slipped through (for example, from older code before this fix). The zero-init + backfill combination guarantees every directory always has a `dir_stats` row.
 

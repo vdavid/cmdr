@@ -92,6 +92,7 @@ pub fn list_directory_start_with_volume(
     // so that sort-by-size works correctly for directories.
     let mut all_entries = all_entries;
     crate::indexing::enrich_entries_with_index(&mut all_entries);
+    crate::indexing::trigger_verification(&path.to_string_lossy());
 
     // Sort the entries
     sort_entries(&mut all_entries, sort_by, sort_order, dir_sort_mode);

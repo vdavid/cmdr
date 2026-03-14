@@ -338,6 +338,7 @@ fn read_directory_with_progress(
     // Enrich directory entries with index data (recursive_size etc.) before sorting,
     // so that sort-by-size works correctly for directories.
     crate::indexing::enrich_entries_with_index(&mut entries);
+    crate::indexing::trigger_verification(&path.to_string_lossy());
 
     // Sort entries
     benchmark::log_event("sort START");

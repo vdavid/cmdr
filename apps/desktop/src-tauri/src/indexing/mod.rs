@@ -15,7 +15,7 @@ pub mod writer;
 mod memory_watchdog;
 mod reconciler;
 pub(crate) mod scanner;
-mod verifier; // Placeholder: per-navigation background readdir diff (future milestone)
+mod verifier;
 pub(crate) mod watcher;
 
 #[cfg(test)]
@@ -812,11 +812,30 @@ pub fn should_auto_start(indexing_enabled: Option<bool>) -> bool {
     true
 }
 
+/// Trigger background verification of a directory against the index DB.
+/// Called after enrichment on each navigation. No-op if indexing is not running.
+pub fn trigger_verification(dir_path: &str) {
+    let guard = match INDEXING.lock() {
+        Ok(g) => g,
+        Err(_) => return,
+    };
+    if let IndexPhase::Running(ref mgr) = *guard {
+        let writer = mgr.writer.clone();
+        let app = mgr.app.clone();
+        let scanning = mgr.scanning.load(Ordering::Relaxed);
+        let dir_path = dir_path.to_string();
+        drop(guard);
+        verifier::maybe_verify(dir_path, writer, app, scanning);
+    }
+}
+
 /// Stop all scans and watcher without deleting the DB.
 ///
 /// Called when the user disables indexing via settings. The index stays on disk
 /// but no scanning or watching runs. Directory sizes revert to `<dir>`.
 pub fn stop_indexing() -> Result<(), String> {
+    verifier::invalidate();
+
     // Invalidate ReadPool before shutdown so thread-local connections are discarded.
     if let Some(pool) = READ_POOL.lock().unwrap().take() {
         pool.invalidate();
@@ -919,6 +938,8 @@ pub fn start_indexing(app: &AppHandle) -> Result<(), String> {
 ///
 /// Call `start_indexing()` to create a fresh index afterward.
 pub fn clear_index() -> Result<(), String> {
+    verifier::invalidate();
+
     // Invalidate ReadPool before deleting DB files so thread-local connections are discarded.
     if let Some(pool) = READ_POOL.lock().unwrap().take() {
         pool.invalidate();
@@ -1132,7 +1153,7 @@ pub fn is_active() -> bool {
 mod tests {
     use super::*;
     use crate::file_system::listing::FileEntry;
-    use enrichment::{THREAD_CONN, enrich_via_individual_paths_on, enrich_via_parent_id_on};
+    use enrichment::{READ_POOL_TEST_MUTEX, THREAD_CONN, enrich_via_individual_paths_on, enrich_via_parent_id_on};
     use rusqlite::Connection;
     use store::{DirStatsById, EntryRow, IndexStore, ROOT_ID};
 
@@ -1593,6 +1614,7 @@ mod tests {
     /// INDEXING and silently skipped when the lock was held.
     #[test]
     fn enrichment_under_contention() {
+        let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
         let (db_path, _dir) = setup_db_for_pool();
         let pool = Arc::new(ReadPool::new(db_path).expect("create pool"));
 
@@ -1699,6 +1721,7 @@ mod tests {
     /// without panic and leaves entries unenriched.
     #[test]
     fn shutdown_enrichment_returns_early() {
+        let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
         // Ensure READ_POOL is empty (simulate post-shutdown state)
         *READ_POOL.lock().unwrap() = None;
 

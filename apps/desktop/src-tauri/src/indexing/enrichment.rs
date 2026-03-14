@@ -68,6 +68,10 @@ impl ReadPool {
 pub(super) static READ_POOL: LazyLock<std::sync::Mutex<Option<Arc<ReadPool>>>> =
     LazyLock::new(|| std::sync::Mutex::new(None));
 
+/// Tests that touch `READ_POOL` must hold this lock to avoid races with parallel test threads.
+#[cfg(test)]
+pub(super) static READ_POOL_TEST_MUTEX: LazyLock<std::sync::Mutex<()>> = LazyLock::new(|| std::sync::Mutex::new(()));
+
 /// Clone the pool Arc. Lock held for nanoseconds — just an Arc clone.
 pub(super) fn get_read_pool() -> Option<Arc<ReadPool>> {
     READ_POOL.lock().ok()?.as_ref().cloned()
