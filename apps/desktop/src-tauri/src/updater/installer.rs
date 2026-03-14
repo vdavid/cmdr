@@ -165,13 +165,26 @@ fn sync_remaining(src_root: &Path, dest_root: &Path, all_src_paths: &HashSet<Pat
 }
 
 /// Copies a file, creating parent directories as needed.
+///
+/// Uses atomic rename (write to temp file, then rename) instead of in-place overwrite.
+/// This creates a new inode, which prevents macOS's kernel code signing cache from
+/// validating the new binary's pages against the old binary's cached code directory.
 fn copy_file_creating_dirs(src: &Path, dest: &Path) -> Result<(), String> {
     if let Some(parent) = dest.parent()
         && !parent.exists()
     {
         fs::create_dir_all(parent).map_err(|e| format!("Couldn't create dir {}: {e}", parent.display()))?;
     }
-    fs::copy(src, dest).map_err(|e| format!("Couldn't copy {} -> {}: {e}", src.display(), dest.display()))?;
+
+    // Write to a temp file in the same directory, then atomically rename.
+    // This ensures the destination gets a new inode, avoiding stale kernel code signing cache.
+    let temp = dest.with_extension("cmdr-update-tmp");
+    fs::copy(src, &temp).map_err(|e| format!("Couldn't copy {} -> {}: {e}", src.display(), temp.display()))?;
+    fs::rename(&temp, dest).map_err(|e| {
+        // Clean up temp file on rename failure
+        let _ = fs::remove_file(&temp);
+        format!("Couldn't rename {} -> {}: {e}", temp.display(), dest.display())
+    })?;
     Ok(())
 }
 

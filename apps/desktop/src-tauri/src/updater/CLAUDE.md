@@ -38,6 +38,12 @@ signatures use base64(minisign-text-format) encoding, matching Tauri's internal 
 `do shell script ... with administrator privileges` shows the native macOS auth dialog. `rsync` is used because it
 expresses the full sync (copy + delete stale) in a single shell command.
 
+**Decision**: Atomic rename (write to temp file, then `rename()`) instead of in-place `fs::copy`.
+**Why**: `fs::copy` overwrites the destination in-place, keeping the same inode. macOS's kernel code signing cache
+keys on inode — it validates the new binary's pages against the old binary's cached code directory, causing
+`SIGKILL (Code Signature Invalid)` on launch. Atomic rename creates a new inode, forcing a fresh validation.
+The admin-privilege path (`rsync -a`) already uses atomic rename by default.
+
 ## Key patterns and gotchas
 
 - **macOS-only.** The module, command registrations, and `UpdateState` are all gated with `#[cfg(target_os = "macos")]`.
