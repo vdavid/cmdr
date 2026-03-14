@@ -43,10 +43,10 @@ impl ReadPool {
 
     /// Run `f` with a thread-local read connection.
     ///
-    /// SAFETY constraint: must be called from synchronous code only. In async
-    /// contexts, tasks can migrate between threads at .await points, which
-    /// would make the thread-local connection unreliable. All current callers
-    /// (`enrich_entries_with_index`, `verify_affected_dirs` Phase 1) are synchronous.
+    /// Thread-local safety: the `&Connection` can't escape the closure because
+    /// `T` is lifetime-independent of the `&Connection` borrow. This means
+    /// callers can't hold the connection across `.await` points (the compiler
+    /// rejects it), so async task migration can't break thread affinity.
     pub(super) fn with_conn<T>(&self, f: impl FnOnce(&Connection) -> T) -> Result<T, String> {
         let current_gen = self.generation.load(Ordering::Acquire);
         THREAD_CONN.with(|cell| {
