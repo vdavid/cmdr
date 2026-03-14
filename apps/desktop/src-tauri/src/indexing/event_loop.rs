@@ -49,6 +49,13 @@ const MAX_PENDING_RESCANS: usize = 1_000;
 /// FDA was toggled and the app suddenly sees millions of previously hidden paths.
 const REPLAY_EVENT_COUNT_LIMIT: u64 = 1_000_000;
 
+/// Replay events are deduplicated by normalized path in batches of this
+/// size before processing. Dramatically reduces CPU when the FSEvents
+/// journal contains many duplicate events for the same path (for example,
+/// SQLite journal files, browser cache). Matches the `UpdateLastEventId`
+/// batching cadence.
+const REPLAY_DEDUP_BATCH_SIZE: u64 = 1_000;
+
 /// Configuration for a replay event loop.
 pub(super) struct ReplayConfig {
     pub(super) volume_id: String,
@@ -320,6 +327,11 @@ pub(super) async fn run_replay_event_loop(
 
     // ── Phase 1: Replay (before HistoryDone) ─────────────────────────
 
+    // Deduplicate events by normalized path before processing, same as
+    // the live event loop. Flushed every REPLAY_DEDUP_BATCH_SIZE events.
+    let mut replay_pending = HashMap::<String, watcher::FsChangeEvent>::new();
+    let mut deduped_total = 0u64;
+
     while let Some(event) = event_rx.recv().await {
         // Check for journal gap on the first event
         if !first_event_checked {
@@ -353,6 +365,15 @@ pub(super) async fn run_replay_event_loop(
         if event.flags.history_done {
             log::info!("Replay: HistoryDone received after {event_count} events");
 
+            // Flush remaining deduplicated events before leaving Phase 1
+            deduped_total += flush_replay_batch(
+                &mut replay_pending,
+                &conn,
+                &writer,
+                &mut affected_paths,
+                &mut affected_paths_overflow,
+            ) as u64;
+
             // Process the HistoryDone event itself (it may carry other flags)
             if let Some(paths) = reconciler::process_fs_event(&event, &conn, &writer)
                 && !affected_paths_overflow
@@ -385,20 +406,20 @@ pub(super) async fn run_replay_event_loop(
             continue;
         }
 
-        // Process event and collect affected paths
-        if let Some(paths) = reconciler::process_fs_event(&event, &conn, &writer)
-            && !affected_paths_overflow
-        {
-            affected_paths.extend(paths);
-            if affected_paths.len() >= MAX_AFFECTED_PATHS {
-                log::warn!(
-                    "Replay: affected paths cap reached ({MAX_AFFECTED_PATHS}). \
-                         Will emit a full refresh notification instead of individual paths."
-                );
-                affected_paths_overflow = true;
-                affected_paths.clear();
-            }
-        }
+        // Accumulate into dedup buffer instead of processing immediately.
+        // Same pattern as the live event loop: normalize path, merge flags.
+        let normalized = firmlinks::normalize_path(&event.path);
+        let deduped_event = watcher::FsChangeEvent {
+            path: normalized.clone(),
+            event_id: event.event_id,
+            flags: event.flags.clone(),
+        };
+        replay_pending
+            .entry(normalized)
+            .and_modify(|existing| {
+                *existing = merge_fs_events(existing, &deduped_event);
+            })
+            .or_insert(deduped_event);
 
         last_event_id = event.event_id;
         event_count += 1;
@@ -423,11 +444,20 @@ pub(super) async fn run_replay_event_loop(
             return Ok(());
         }
 
-        // Batch UpdateLastEventId every 1000 events (reduces writer load ~10x)
-        if event_count.is_multiple_of(1000)
-            && let Err(e) = writer.send(WriteMessage::UpdateLastEventId(last_event_id))
-        {
-            log::warn!("Replay: UpdateLastEventId send failed: {e}");
+        // Flush dedup buffer and batch UpdateLastEventId
+        if event_count.is_multiple_of(REPLAY_DEDUP_BATCH_SIZE) {
+            deduped_total += flush_replay_batch(
+                &mut replay_pending,
+                &conn,
+                &writer,
+                &mut affected_paths,
+                &mut affected_paths_overflow,
+            ) as u64;
+            if last_event_id > since_event_id
+                && let Err(e) = writer.send(WriteMessage::UpdateLastEventId(last_event_id))
+            {
+                log::warn!("Replay: UpdateLastEventId send failed: {e}");
+            }
         }
 
         // Emit progress every 500ms during replay
@@ -450,6 +480,14 @@ pub(super) async fn run_replay_event_loop(
     }
 
     // ── Phase 2: After HistoryDone ───────────────────────────────────
+
+    if deduped_total < event_count {
+        log::info!(
+            "Replay: deduplicated {event_count} raw events to {deduped_total} unique \
+             ({:.0}% reduction)",
+            (1.0 - deduped_total as f64 / event_count.max(1) as f64) * 100.0,
+        );
+    }
 
     // Send final UpdateLastEventId
     if last_event_id > since_event_id
@@ -749,6 +787,35 @@ pub(super) async fn run_background_verification(affected_paths: HashSet<String>,
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
+
+/// Drain the replay dedup buffer, process each event through the
+/// reconciler, and collect affected paths. Returns the number of
+/// deduplicated events processed.
+fn flush_replay_batch(
+    pending: &mut HashMap<String, watcher::FsChangeEvent>,
+    conn: &Connection,
+    writer: &IndexWriter,
+    affected_paths: &mut HashSet<String>,
+    affected_paths_overflow: &mut bool,
+) -> usize {
+    let count = pending.len();
+    for (_path, event) in pending.drain() {
+        if let Some(paths) = reconciler::process_fs_event(&event, conn, writer)
+            && !*affected_paths_overflow
+        {
+            affected_paths.extend(paths);
+            if affected_paths.len() >= MAX_AFFECTED_PATHS {
+                log::warn!(
+                    "Replay: affected paths cap reached ({MAX_AFFECTED_PATHS}). \
+                     Will emit a full refresh notification instead of individual paths."
+                );
+                *affected_paths_overflow = true;
+                affected_paths.clear();
+            }
+        }
+    }
+    count
+}
 
 /// Result of `verify_affected_dirs`.
 struct VerifyResult {
@@ -1331,5 +1398,212 @@ mod tests {
             },
         ));
         assert_eq!(reconciler.buffer_len(), 0, "buffer_event should be no-op in live mode");
+    }
+
+    // ── Replay dedup tests ───────────────────────────────────────────
+
+    /// Replay dedup: 500 removal events for the same path (like a SQLite
+    /// journal file) collapse to a single merged event.
+    #[test]
+    fn replay_dedup_collapses_duplicate_events() {
+        let mut pending = HashMap::<String, watcher::FsChangeEvent>::new();
+
+        for i in 0..500 {
+            let path = "/Users/test/Library/peewee-sqlite.db-journal".to_string();
+            let event = make_event(
+                &path,
+                1000 + i,
+                watcher::FsEventFlags {
+                    item_removed: true,
+                    item_is_file: true,
+                    ..Default::default()
+                },
+            );
+            pending
+                .entry(path)
+                .and_modify(|existing| {
+                    *existing = merge_fs_events(existing, &event);
+                })
+                .or_insert(event);
+        }
+
+        assert_eq!(pending.len(), 1, "500 events for same path should collapse to 1");
+        let merged = pending.values().next().unwrap();
+        assert_eq!(merged.event_id, 1499, "highest event_id should be kept");
+        assert!(merged.flags.item_removed, "item_removed flag should be preserved");
+    }
+
+    /// Replay dedup: events for different paths are all preserved while
+    /// duplicates within each path are merged.
+    #[test]
+    fn replay_dedup_preserves_distinct_paths_merges_duplicates() {
+        let mut pending = HashMap::<String, watcher::FsChangeEvent>::new();
+
+        // 100 events: 10 paths x 10 events each
+        for path_idx in 0..10u64 {
+            for event_idx in 0..10u64 {
+                let path = format!("/path/{path_idx}/file.txt");
+                let event = make_event(
+                    &path,
+                    path_idx * 10 + event_idx,
+                    watcher::FsEventFlags {
+                        item_modified: true,
+                        item_is_file: true,
+                        ..Default::default()
+                    },
+                );
+                pending
+                    .entry(path)
+                    .and_modify(|existing| {
+                        *existing = merge_fs_events(existing, &event);
+                    })
+                    .or_insert(event);
+            }
+        }
+
+        assert_eq!(pending.len(), 10, "10 unique paths should be preserved");
+        for path_idx in 0..10u64 {
+            let path = format!("/path/{path_idx}/file.txt");
+            let event = &pending[&path];
+            assert_eq!(
+                event.event_id,
+                path_idx * 10 + 9,
+                "each path should keep its highest event_id"
+            );
+        }
+    }
+
+    /// Replay dedup: mixed create/modify/remove events for the same path
+    /// merge with correct flag priority (removed wins).
+    #[test]
+    fn replay_dedup_mixed_events_merge_correctly() {
+        let mut pending = HashMap::<String, watcher::FsChangeEvent>::new();
+        let path = "/test/file.txt".to_string();
+
+        let events = [
+            (
+                1,
+                watcher::FsEventFlags {
+                    item_created: true,
+                    item_is_file: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                2,
+                watcher::FsEventFlags {
+                    item_modified: true,
+                    item_is_file: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                3,
+                watcher::FsEventFlags {
+                    item_modified: true,
+                    item_is_file: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                4,
+                watcher::FsEventFlags {
+                    item_removed: true,
+                    item_is_file: true,
+                    ..Default::default()
+                },
+            ),
+        ];
+
+        for (id, flags) in events {
+            let event = make_event(&path, id, flags);
+            pending
+                .entry(path.clone())
+                .and_modify(|existing| {
+                    *existing = merge_fs_events(existing, &event);
+                })
+                .or_insert(event);
+        }
+
+        assert_eq!(pending.len(), 1);
+        let merged = &pending[&path];
+        assert!(merged.flags.item_removed, "removed should win over created+modified");
+        assert!(
+            !merged.flags.item_created,
+            "created should be dropped when removed wins"
+        );
+        assert_eq!(merged.event_id, 4, "highest event_id should be kept");
+    }
+
+    /// Replay dedup: simulates realistic event storm with a mix of high-churn
+    /// paths (SQLite journals, Chrome cache) and unique paths. Verifies the
+    /// dedup ratio matches expectations.
+    #[test]
+    fn replay_dedup_realistic_event_storm() {
+        let mut pending = HashMap::<String, watcher::FsChangeEvent>::new();
+        let mut raw_count = 0u64;
+
+        // 500 events for a SQLite journal (same path, rapid create/delete)
+        for i in 0..500 {
+            let path = "/Users/test/Library/aw-server/peewee-sqlite.db-journal".to_string();
+            let event = make_event(
+                &path,
+                i,
+                watcher::FsEventFlags {
+                    item_removed: true,
+                    item_is_file: true,
+                    ..Default::default()
+                },
+            );
+            pending
+                .entry(path)
+                .and_modify(|e| *e = merge_fs_events(e, &event))
+                .or_insert(event);
+            raw_count += 1;
+        }
+
+        // 200 events for Chrome cache (20 different todelete_ files, 10 events each)
+        for file_idx in 0..20 {
+            for event_idx in 0..10 {
+                let path = format!("/Users/test/Library/Chrome/todelete_{file_idx:04x}");
+                let event = make_event(
+                    &path,
+                    500 + file_idx * 10 + event_idx,
+                    watcher::FsEventFlags {
+                        item_removed: true,
+                        item_is_file: true,
+                        ..Default::default()
+                    },
+                );
+                pending
+                    .entry(path)
+                    .and_modify(|e| *e = merge_fs_events(e, &event))
+                    .or_insert(event);
+                raw_count += 1;
+            }
+        }
+
+        // 50 unique file modifications (no duplicates)
+        for i in 0..50 {
+            let path = format!("/Users/test/projects/file_{i}.rs");
+            let event = make_event(
+                &path,
+                700 + i,
+                watcher::FsEventFlags {
+                    item_modified: true,
+                    item_is_file: true,
+                    ..Default::default()
+                },
+            );
+            pending
+                .entry(path)
+                .and_modify(|e| *e = merge_fs_events(e, &event))
+                .or_insert(event);
+            raw_count += 1;
+        }
+
+        assert_eq!(raw_count, 750, "should have 750 raw events");
+        // 1 (journal) + 20 (chrome) + 50 (unique) = 71 unique paths
+        assert_eq!(pending.len(), 71, "should deduplicate to 71 unique paths");
     }
 }
