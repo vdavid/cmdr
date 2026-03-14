@@ -5,6 +5,18 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 and we use [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Fix indexing: lock-free dir stats reads (bypass `INDEXING` mutex), remove redundant `PathResolver` LRU cache with latent staleness bug, remove broken micro-scans, fix "DB is locked" in post-scan reconciler, fix overlay race during index rebuild, fix lost scan metadata causing full rescan on every restart, fix dir→file replacement leaving orphaned children ([50bd4fa](https://github.com/vdavid/cmdr/commit/50bd4fa), [44abfd1](https://github.com/vdavid/cmdr/commit/44abfd1), [7319c5c](https://github.com/vdavid/cmdr/commit/7319c5c), [26785fc](https://github.com/vdavid/cmdr/commit/26785fc), [795e48b](https://github.com/vdavid/cmdr/commit/795e48b), [424eedb](https://github.com/vdavid/cmdr/commit/424eedb), [dbccec1](https://github.com/vdavid/cmdr/commit/dbccec1), [8f87a4f](https://github.com/vdavid/cmdr/commit/8f87a4f))
+- Fix traffic light position in production builds ([7551df2](https://github.com/vdavid/cmdr/commit/7551df2))
+
+### Non-app
+
+- Indexing: add concurrency stress tests, event loop tests, and reconciler tests ([3ad3adc](https://github.com/vdavid/cmdr/commit/3ad3adc), [8a084cd](https://github.com/vdavid/cmdr/commit/8a084cd), [dbccec1](https://github.com/vdavid/cmdr/commit/dbccec1))
+- Docs: `ReadPool` thread safety correction, release gotchas from v0.8.0 ([a6b5c0a](https://github.com/vdavid/cmdr/commit/a6b5c0a), [4aaa53f](https://github.com/vdavid/cmdr/commit/4aaa53f))
+
 ## [0.8.0] - 2026-03-13
 
 ### Added
