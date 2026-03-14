@@ -144,16 +144,18 @@ export type DirSizeDisplayState = 'dir' | 'scanning' | 'size' | 'size-stale'
  * Determine the display state for a directory's size column.
  *
  * Rules:
- * - Has recursiveSize + scanning active -> 'size-stale' (show size with stale warning)
- * - Has recursiveSize + not scanning   -> 'size' (show formatted size)
- * - No recursiveSize + scanning active -> 'scanning' (show spinner)
- * - No recursiveSize + not scanning    -> 'dir' (show <dir> placeholder)
+ * - Has recursiveSize + indexing active -> 'size-stale' (show size with stale warning)
+ * - Has recursiveSize + not indexing    -> 'size' (show formatted size)
+ * - No recursiveSize + indexing active  -> 'scanning' (show spinner)
+ * - No recursiveSize + not indexing     -> 'dir' (show <dir> placeholder)
+ *
+ * "Indexing active" means scanning OR aggregating — sizes aren't ready until aggregation finishes.
  */
-export function getDirSizeDisplayState(recursiveSize: number | undefined, scanning: boolean): DirSizeDisplayState {
+export function getDirSizeDisplayState(recursiveSize: number | undefined, indexing: boolean): DirSizeDisplayState {
     if (recursiveSize !== undefined) {
-        return scanning ? 'size-stale' : 'size'
+        return indexing ? 'size-stale' : 'size'
     }
-    return scanning ? 'scanning' : 'dir'
+    return indexing ? 'scanning' : 'dir'
 }
 
 /**

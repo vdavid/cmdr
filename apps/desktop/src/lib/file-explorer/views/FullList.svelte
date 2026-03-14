@@ -18,7 +18,7 @@
         updateIndexSizesInPlace,
     } from './file-list-utils'
     import { formatSizeTriads, formatNumber, pluralize } from '../selection/selection-info-utils'
-    import { isScanning } from '$lib/indexing/index-state.svelte'
+    import { isScanning, isAggregating } from '$lib/indexing/index-state.svelte'
     import {
         getVisibleItemsCount as getVisibleItemsCountUtil,
         getVirtualizationBufferRows,
@@ -112,8 +112,8 @@
     // Measures multiple sample dates to find the maximum width needed.
     const dateColumnWidth = $derived(measureDateColumnWidth(formatDateTime))
 
-    // Drive index scanning state — used to show spinner in dir size column
-    const scanning = $derived(isScanning())
+    // Drive index state — show spinner while scanning OR aggregating (sizes aren't ready until aggregation finishes)
+    const indexing = $derived(isScanning() || isAggregating())
 
     // ==== Virtual scrolling state ====
     let scrollContainer: HTMLDivElement | undefined = $state()
@@ -445,7 +445,7 @@
                                       file.recursiveSize,
                                       file.recursiveFileCount ?? 0,
                                       file.recursiveDirCount ?? 0,
-                                      scanning,
+                                      indexing,
                                       formatFileSize,
                                       formatNumber,
                                       pluralize,
@@ -459,13 +459,13 @@
                                     {#each formatSizeTriads(file.recursiveSize) as triad, i (i)}
                                         <span class={triad.tierClass}>{triad.value}</span>
                                     {/each}
-                                    {#if scanning}
+                                    {#if indexing}
                                         <span
                                             class="size-stale"
                                             use:tooltip={'Might be outdated. Currently scanning...'}>⚠️</span
                                         >
                                     {/if}
-                                {:else if scanning}
+                                {:else if indexing}
                                     <span class="size-scanning">Scanning...</span>
                                 {:else}
                                     <span class="size-dir">&lt;dir&gt;</span>

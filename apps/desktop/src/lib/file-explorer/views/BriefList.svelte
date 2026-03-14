@@ -21,7 +21,7 @@
     import { getRowHeight, formatFileSize } from '$lib/settings/reactive-settings.svelte'
     import { getSetting } from '$lib/settings/settings-store'
     import { formatNumber, pluralize } from '../selection/selection-info-utils'
-    import { isScanning } from '$lib/indexing/index-state.svelte'
+    import { isScanning, isAggregating } from '$lib/indexing/index-state.svelte'
     import { iconCacheCleared } from '$lib/icon-cache'
     import { tooltip } from '$lib/tooltip/tooltip'
     import type { RenameState } from '../rename/rename-state.svelte'
@@ -93,8 +93,8 @@
     let cachedRange = $state({ start: 0, end: 0 })
     let isFetching = $state(false)
 
-    // Drive index scanning state — used for directory size tooltips
-    const scanning = $derived(isScanning())
+    // Drive index state — show spinner while scanning OR aggregating (sizes aren't ready until aggregation finishes)
+    const indexing = $derived(isScanning() || isAggregating())
 
     // ==== Layout constants ====
     // Row height is reactive based on UI density setting
@@ -436,9 +436,9 @@
         if (!file.isDirectory) return undefined
         if (file.recursiveSize !== undefined) {
             const sizeInfo = `${formatFileSize(file.recursiveSize)} · ${formatNumber(file.recursiveFileCount ?? 0)} ${pluralize(file.recursiveFileCount ?? 0, 'file', 'files')} · ${formatNumber(file.recursiveDirCount ?? 0)} ${pluralize(file.recursiveDirCount ?? 0, 'folder', 'folders')}`
-            return scanning ? `${sizeInfo} — Might be outdated` : sizeInfo
+            return indexing ? `${sizeInfo} — Might be outdated` : sizeInfo
         }
-        if (scanning) return 'Scanning...'
+        if (indexing) return 'Scanning...'
         return undefined
     }
 

@@ -166,7 +166,7 @@
     let unlistenDragImageSize: UnlistenFn | undefined
     let unlistenDragModifiers: UnlistenFn | undefined
     let unlistenIndexEvents: UnlistenFn | undefined
-    let unlistenIndexScanComplete: UnlistenFn | undefined
+    let unlistenIndexAggregationComplete: UnlistenFn | undefined
     let unlistenMcpActivateTab: UnlistenFn | undefined
     let unlistenMcpPinTab: UnlistenFn | undefined
 
@@ -1130,8 +1130,8 @@
         // Listen for index directory updates to refresh panes when sizes change
         unlistenIndexEvents = await initIndexEvents(handleIndexDirUpdated)
 
-        // Refresh both panes when scan completes (aggregation just finished, all sizes available)
-        unlistenIndexScanComplete = await listen('index-scan-complete', () => {
+        // Refresh both panes when aggregation completes (all dir_stats are now in the DB)
+        unlistenIndexAggregationComplete = await listen('index-aggregation-complete', () => {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call
             getPaneRef('left')?.refreshIndexSizes?.()
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call
@@ -1283,7 +1283,7 @@
         unlistenDragModifiers?.()
         unlistenDragDrop?.()
         unlistenIndexEvents?.()
-        unlistenIndexScanComplete?.()
+        unlistenIndexAggregationComplete?.()
         unlistenMcpActivateTab?.()
         unlistenMcpPinTab?.()
         if (tabSyncTimer) clearTimeout(tabSyncTimer)
