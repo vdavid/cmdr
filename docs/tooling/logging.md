@@ -86,7 +86,7 @@ RUST_LOG=trace pnpm dev
 
 ## Log file
 
-- **Location**: `~/Library/Logs/com.veszelovszki.cmdr/`
+- **Location**: Prod: `~/Library/Logs/com.veszelovszki.cmdr/`, Dev: `~/Library/Logs/com.veszelovszki.cmdr-dev/`
 - Contains both Rust and frontend logs
 - **Rotation**: 50 MB max, old files kept
 - Accessible from **Settings > Logging > "Open log file"**

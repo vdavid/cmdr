@@ -210,11 +210,22 @@ pub fn run() {
                 }
             }
 
+            // In debug builds, log to a `-dev` suffixed directory to match
+            // the data dir separation in config::resolved_app_data_dir.
+            let log_target = if cfg!(debug_assertions) {
+                let log_dir = dirs::home_dir()
+                    .expect("home dir")
+                    .join("Library/Logs/com.veszelovszki.cmdr-dev");
+                Target::new(TargetKind::Folder {
+                    path: log_dir,
+                    file_name: None,
+                })
+            } else {
+                Target::new(TargetKind::LogDir { file_name: None })
+            };
+
             let mut builder = tauri_plugin_log::Builder::new()
-                .targets([
-                    Target::new(TargetKind::Stdout),
-                    Target::new(TargetKind::LogDir { file_name: None }),
-                ])
+                .targets([Target::new(TargetKind::Stdout), log_target])
                 .rotation_strategy(RotationStrategy::KeepAll)
                 .max_file_size(50_000_000) // 50 MB
                 .format(|out, message, record| {
