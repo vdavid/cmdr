@@ -15,7 +15,7 @@
 use rusqlite::{Connection, OptionalExtension, params};
 use std::path::{Path, PathBuf};
 
-const SCHEMA_VERSION: &str = "5";
+const SCHEMA_VERSION: &str = "6";
 
 /// Root entry sentinel ID. All top-level entries have `parent_id = ROOT_ID`.
 pub const ROOT_ID: i64 = 1;
@@ -237,6 +237,35 @@ pub fn normalize_for_comparison(s: &str) -> String {
 
 // ── Schema ───────────────────────────────────────────────────────────
 
+#[cfg(target_os = "macos")]
+const CREATE_TABLES_SQL: &str = "
+    CREATE TABLE IF NOT EXISTS entries (
+        id           INTEGER PRIMARY KEY,
+        parent_id    INTEGER NOT NULL,
+        name         TEXT    NOT NULL COLLATE platform_case,
+        name_folded  TEXT    NOT NULL DEFAULT '',
+        is_directory INTEGER NOT NULL DEFAULT 0,
+        is_symlink   INTEGER NOT NULL DEFAULT 0,
+        size         INTEGER,
+        modified_at  INTEGER
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_parent_name_folded ON entries (parent_id, name_folded);
+
+    CREATE TABLE IF NOT EXISTS dir_stats (
+        entry_id             INTEGER PRIMARY KEY,
+        recursive_size       INTEGER NOT NULL DEFAULT 0,
+        recursive_file_count INTEGER NOT NULL DEFAULT 0,
+        recursive_dir_count  INTEGER NOT NULL DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS meta (
+        key   TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+    ) WITHOUT ROWID;
+";
+
+#[cfg(not(target_os = "macos"))]
 const CREATE_TABLES_SQL: &str = "
     CREATE TABLE IF NOT EXISTS entries (
         id           INTEGER PRIMARY KEY,
@@ -248,7 +277,7 @@ const CREATE_TABLES_SQL: &str = "
         modified_at  INTEGER
     );
 
-    CREATE INDEX IF NOT EXISTS idx_parent ON entries (parent_id);
+    CREATE INDEX IF NOT EXISTS idx_parent_name ON entries (parent_id, name);
 
     CREATE TABLE IF NOT EXISTS dir_stats (
         entry_id             INTEGER PRIMARY KEY,
@@ -265,10 +294,11 @@ const CREATE_TABLES_SQL: &str = "
 
 /// Insert the root sentinel entry if it doesn't exist.
 fn ensure_root_sentinel(conn: &Connection) -> Result<(), IndexStoreError> {
-    conn.execute(
-        "INSERT OR IGNORE INTO entries (id, parent_id, name, is_directory) VALUES (?1, ?2, '', 1)",
-        params![ROOT_ID, ROOT_PARENT_ID],
-    )?;
+    #[cfg(target_os = "macos")]
+    let sql = "INSERT OR IGNORE INTO entries (id, parent_id, name, name_folded, is_directory) VALUES (?1, ?2, '', '', 1)";
+    #[cfg(not(target_os = "macos"))]
+    let sql = "INSERT OR IGNORE INTO entries (id, parent_id, name, is_directory) VALUES (?1, ?2, '', 1)";
+    conn.execute(sql, params![ROOT_ID, ROOT_PARENT_ID])?;
     Ok(())
 }
 
@@ -653,16 +683,27 @@ impl IndexStore {
 
     /// Resolve a path component under a given parent. Returns the child entry ID.
     pub fn resolve_component(conn: &Connection, parent_id: i64, name: &str) -> Result<Option<i64>, IndexStoreError> {
-        let mut stmt = conn.prepare_cached("SELECT id, name FROM entries WHERE parent_id = ?1")?;
-        let mut rows = stmt.query(params![parent_id])?;
-        while let Some(row) = rows.next()? {
-            let child_id: i64 = row.get(0)?;
-            let child_name: String = row.get(1)?;
-            if platform_case_compare(&child_name, name) == std::cmp::Ordering::Equal {
-                return Ok(Some(child_id));
-            }
+        #[cfg(target_os = "macos")]
+        {
+            let mut stmt = conn.prepare_cached(
+                "SELECT id FROM entries WHERE parent_id = ?1 AND name_folded = ?2 LIMIT 1",
+            )?;
+            let folded = normalize_for_comparison(name);
+            let result = stmt
+                .query_row(params![parent_id, folded], |row| row.get::<_, i64>(0))
+                .optional()?;
+            Ok(result)
         }
-        Ok(None)
+        #[cfg(not(target_os = "macos"))]
+        {
+            let mut stmt = conn.prepare_cached(
+                "SELECT id FROM entries WHERE parent_id = ?1 AND name = ?2 LIMIT 1",
+            )?;
+            let result = stmt
+                .query_row(params![parent_id, name], |row| row.get::<_, i64>(0))
+                .optional()?;
+            Ok(result)
+        }
     }
 
     /// Reconstruct the full path for an entry by walking up the parent chain.
@@ -683,18 +724,38 @@ impl IndexStore {
         size: Option<u64>,
         modified_at: Option<u64>,
     ) -> Result<i64, IndexStoreError> {
-        conn.execute(
-            "INSERT INTO entries (parent_id, name, is_directory, is_symlink, size, modified_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-            params![
-                parent_id,
-                name,
-                is_directory as i32,
-                is_symlink as i32,
-                size,
-                modified_at
-            ],
-        )?;
+        #[cfg(target_os = "macos")]
+        {
+            let name_folded = normalize_for_comparison(name);
+            conn.execute(
+                "INSERT INTO entries (parent_id, name, name_folded, is_directory, is_symlink, size, modified_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                params![
+                    parent_id,
+                    name,
+                    name_folded,
+                    is_directory as i32,
+                    is_symlink as i32,
+                    size,
+                    modified_at
+                ],
+            )?;
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            conn.execute(
+                "INSERT INTO entries (parent_id, name, is_directory, is_symlink, size, modified_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                params![
+                    parent_id,
+                    name,
+                    is_directory as i32,
+                    is_symlink as i32,
+                    size,
+                    modified_at
+                ],
+            )?;
+        }
         Ok(conn.last_insert_rowid())
     }
 
@@ -708,11 +769,32 @@ impl IndexStore {
             // Plain INSERT: the only unique constraint is the integer PK (`id`), and
             // ScanContext assigns unique IDs, so conflicts shouldn't occur. The table is
             // truncated before full scans and descendants are deleted before subtree scans.
+            #[cfg(target_os = "macos")]
+            let mut stmt = tx.prepare_cached(
+                "INSERT INTO entries (id, parent_id, name, name_folded, is_directory, is_symlink, size, modified_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            )?;
+            #[cfg(not(target_os = "macos"))]
             let mut stmt = tx.prepare_cached(
                 "INSERT INTO entries (id, parent_id, name, is_directory, is_symlink, size, modified_at)
                  VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
             )?;
             for e in entries {
+                #[cfg(target_os = "macos")]
+                {
+                    let name_folded = normalize_for_comparison(&e.name);
+                    stmt.execute(params![
+                        e.id,
+                        e.parent_id,
+                        e.name,
+                        name_folded,
+                        e.is_directory as i32,
+                        e.is_symlink as i32,
+                        e.size,
+                        e.modified_at,
+                    ])?;
+                }
+                #[cfg(not(target_os = "macos"))]
                 stmt.execute(params![
                     e.id,
                     e.parent_id,
@@ -748,6 +830,12 @@ impl IndexStore {
     /// Rename an entry (update its name).
     #[cfg(test)]
     pub fn rename_entry(conn: &Connection, id: i64, new_name: &str) -> Result<(), IndexStoreError> {
+        #[cfg(target_os = "macos")]
+        conn.execute(
+            "UPDATE entries SET name = ?1, name_folded = ?2 WHERE id = ?3",
+            params![new_name, normalize_for_comparison(new_name), id],
+        )?;
+        #[cfg(not(target_os = "macos"))]
         conn.execute("UPDATE entries SET name = ?1 WHERE id = ?2", params![new_name, id])?;
         Ok(())
     }
@@ -1669,6 +1757,61 @@ mod tests {
         let entry = IndexStore::get_entry_by_id(&conn, 101).unwrap().unwrap();
         assert_eq!(entry.name, "file.txt");
         assert_eq!(entry.size, Some(42));
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn resolve_component_case_insensitive() {
+        let (_store, dir) = open_temp_store();
+        let db_path = dir.path().join("test-index.db");
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+
+        let users_id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None).unwrap();
+
+        // Different casings should all resolve to the same ID
+        assert_eq!(IndexStore::resolve_component(&conn, ROOT_ID, "users").unwrap(), Some(users_id));
+        assert_eq!(IndexStore::resolve_component(&conn, ROOT_ID, "USERS").unwrap(), Some(users_id));
+        assert_eq!(IndexStore::resolve_component(&conn, ROOT_ID, "uSeRs").unwrap(), Some(users_id));
+
+        // Nonexistent name returns None
+        assert_eq!(IndexStore::resolve_component(&conn, ROOT_ID, "nonexistent").unwrap(), None);
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn name_folded_populated_on_single_insert() {
+        let (_store, dir) = open_temp_store();
+        let db_path = dir.path().join("test-index.db");
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+
+        let name = "MyFolder";
+        let id = IndexStore::insert_entry_v2(&conn, ROOT_ID, name, true, false, None, None).unwrap();
+
+        let folded: String = conn
+            .query_row("SELECT name_folded FROM entries WHERE id = ?1", params![id], |row| row.get(0))
+            .unwrap();
+        assert_eq!(folded, normalize_for_comparison(name));
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn name_folded_populated_on_batch_insert() {
+        let (_store, dir) = open_temp_store();
+        let db_path = dir.path().join("test-index.db");
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+
+        let entries = vec![
+            EntryRow { id: 200, parent_id: ROOT_ID, name: "Documents".into(), is_directory: true, is_symlink: false, size: None, modified_at: None },
+            EntryRow { id: 201, parent_id: 200, name: "Café.txt".into(), is_directory: false, is_symlink: false, size: Some(10), modified_at: None },
+        ];
+        IndexStore::insert_entries_v2_batch(&conn, &entries).unwrap();
+
+        for e in &entries {
+            let folded: String = conn
+                .query_row("SELECT name_folded FROM entries WHERE id = ?1", params![e.id], |row| row.get(0))
+                .unwrap();
+            assert_eq!(folded, normalize_for_comparison(&e.name));
+        }
     }
 
     #[test]
