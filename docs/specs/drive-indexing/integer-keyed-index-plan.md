@@ -1,5 +1,7 @@
 # Integer-keyed drive index
 
+> **Note (schema v5):** The composite `UNIQUE INDEX idx_parent_name(parent_id, name)` described in this plan has been replaced with a simple `INDEX idx_parent(parent_id)`. The composite index with `platform_case` collation was extremely slow to build (~25 min for 5.1M entries). `resolve_path`/`resolve_component` now query all children by `parent_id` and match names in Rust via `platform_case_compare`. See the indexing `CLAUDE.md` for current schema details.
+
 Replace the path-keyed SQLite schema with integer-keyed parent-child tree to reduce DB size ~6x (3.85 GB → ~600 MB).
 
 ## Motivation

@@ -264,9 +264,8 @@ fn check_db_consistency(conn: &Connection) {
 fn concurrent_scan_with_buffered_events_and_replay() {
     let (writer, read_conn, _dir) = setup_writer();
 
-    // Phase 1: simulate start_scan — truncate + drop index
+    // Phase 1: simulate start_scan — truncate
     writer.send(WriteMessage::TruncateData).unwrap();
-    writer.send(WriteMessage::DropNameIndex).unwrap();
     writer.flush_blocking().unwrap();
 
     // Build a synthetic tree: 3 levels, 3 dirs/level, 4 files/dir, 1KB each
@@ -289,8 +288,7 @@ fn concurrent_scan_with_buffered_events_and_replay() {
         for chunk in tree.chunks(batch_size) {
             writer_a.send(WriteMessage::InsertEntriesV2(chunk.to_vec())).unwrap();
         }
-        // Post-scan: recreate the name index and compute aggregates
-        writer_a.send(WriteMessage::RecreateNameIndex).unwrap();
+        // Post-scan: compute aggregates
         writer_a.send(WriteMessage::ComputeAllAggregates).unwrap();
         writer_a.flush_blocking().unwrap();
     });
@@ -427,7 +425,6 @@ fn concurrent_batch_inserts_with_aggregation() {
     let (writer, _read_conn, _dir) = setup_writer();
 
     writer.send(WriteMessage::TruncateData).unwrap();
-    writer.send(WriteMessage::DropNameIndex).unwrap();
     writer.flush_blocking().unwrap();
 
     // Build 4 independent subtrees, each rooted under ROOT_ID with
@@ -501,8 +498,7 @@ fn concurrent_batch_inserts_with_aggregation() {
         h.join().expect("sender thread panicked");
     }
 
-    // Recreate index and compute aggregates
-    writer.send(WriteMessage::RecreateNameIndex).unwrap();
+    // Compute aggregates
     writer.send(WriteMessage::ComputeAllAggregates).unwrap();
     writer.flush_blocking().unwrap();
 
@@ -548,14 +544,12 @@ fn concurrent_scan_with_enrichment_reads() {
 
     // Phase 1: populate initial tree
     writer.send(WriteMessage::TruncateData).unwrap();
-    writer.send(WriteMessage::DropNameIndex).unwrap();
     writer.flush_blocking().unwrap();
 
     let tree = build_synthetic_tree(3, 3, 4, 1024);
     for chunk in tree.chunks(20) {
         writer.send(WriteMessage::InsertEntriesV2(chunk.to_vec())).unwrap();
     }
-    writer.send(WriteMessage::RecreateNameIndex).unwrap();
     writer.send(WriteMessage::ComputeAllAggregates).unwrap();
     writer.flush_blocking().unwrap();
 
@@ -678,7 +672,6 @@ fn live_event_storm_with_concurrent_reads() {
 
     // Phase 1: build and index a full tree
     writer.send(WriteMessage::TruncateData).unwrap();
-    writer.send(WriteMessage::DropNameIndex).unwrap();
     writer.flush_blocking().unwrap();
 
     let tree = build_synthetic_tree(2, 4, 5, 512);
@@ -687,7 +680,6 @@ fn live_event_storm_with_concurrent_reads() {
     for chunk in tree.chunks(20) {
         writer.send(WriteMessage::InsertEntriesV2(chunk.to_vec())).unwrap();
     }
-    writer.send(WriteMessage::RecreateNameIndex).unwrap();
     writer.send(WriteMessage::ComputeAllAggregates).unwrap();
     writer.flush_blocking().unwrap();
 
@@ -875,26 +867,23 @@ fn lifecycle_transitions_under_load() {
     let db_path = writer.db_path();
 
     writer.send(WriteMessage::TruncateData).unwrap();
-    writer.send(WriteMessage::DropNameIndex).unwrap();
     writer.flush_blocking().unwrap();
 
     let tree = build_synthetic_tree(2, 3, 5, 1024);
     for chunk in tree.chunks(20) {
         writer.send(WriteMessage::InsertEntriesV2(chunk.to_vec())).unwrap();
     }
-    writer.send(WriteMessage::RecreateNameIndex).unwrap();
     writer.send(WriteMessage::ComputeAllAggregates).unwrap();
     writer.flush_blocking().unwrap();
 
     check_db_consistency(&read_conn);
 
     // ── Phase 2: start a scan but shutdown before completion ────────
-    // Send TruncateData + DropNameIndex + entry batches, then immediately
-    // send Shutdown without waiting. The writer must exit cleanly even
-    // with pending writes in the channel.
+    // Send TruncateData + entry batches, then immediately send Shutdown
+    // without waiting. The writer must exit cleanly even with pending
+    // writes in the channel.
 
     writer.send(WriteMessage::TruncateData).unwrap();
-    writer.send(WriteMessage::DropNameIndex).unwrap();
 
     let tree2 = build_synthetic_tree(2, 3, 5, 2048);
     for chunk in tree2.chunks(10) {
@@ -924,7 +913,6 @@ fn lifecycle_transitions_under_load() {
 
     // Do a complete fresh scan to bring DB to a consistent state.
     writer2.send(WriteMessage::TruncateData).unwrap();
-    writer2.send(WriteMessage::DropNameIndex).unwrap();
     writer2.flush_blocking().unwrap();
 
     let tree3 = build_synthetic_tree(2, 3, 5, 512);
@@ -932,7 +920,6 @@ fn lifecycle_transitions_under_load() {
     for chunk in tree3.chunks(20) {
         writer2.send(WriteMessage::InsertEntriesV2(chunk.to_vec())).unwrap();
     }
-    writer2.send(WriteMessage::RecreateNameIndex).unwrap();
     writer2.send(WriteMessage::ComputeAllAggregates).unwrap();
     writer2.flush_blocking().unwrap();
 
@@ -967,7 +954,6 @@ fn lifecycle_transitions_under_load() {
         for chunk in small_tree.chunks(10) {
             w.send(WriteMessage::InsertEntriesV2(chunk.to_vec())).unwrap();
         }
-        w.send(WriteMessage::RecreateNameIndex).unwrap();
         w.send(WriteMessage::ComputeAllAggregates).unwrap();
 
         // shutdown() joins the thread, ensuring it fully exits and

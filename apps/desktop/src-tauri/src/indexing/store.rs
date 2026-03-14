@@ -11,15 +11,11 @@
 //! at connection init that matches the filesystem's case/normalization rules:
 //! - **macOS**: case-insensitive + NFD normalization (matching APFS)
 //! - **Linux**: binary comparison (matching ext4/btrfs)
-//!
-//! **Tooling note**: Opening the DB with the `sqlite3` CLI or any tool that
-//! doesn't register the `platform_case` collation will fail on queries touching
-//! the `name` column or `idx_parent_name` index.
 
 use rusqlite::{Connection, OptionalExtension, params};
 use std::path::{Path, PathBuf};
 
-const SCHEMA_VERSION: &str = "4";
+const SCHEMA_VERSION: &str = "5";
 
 /// Root entry sentinel ID. All top-level entries have `parent_id = ROOT_ID`.
 pub const ROOT_ID: i64 = 1;
@@ -252,7 +248,7 @@ const CREATE_TABLES_SQL: &str = "
         modified_at  INTEGER
     );
 
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_parent_name ON entries (parent_id, name);
+    CREATE INDEX IF NOT EXISTS idx_parent ON entries (parent_id);
 
     CREATE TABLE IF NOT EXISTS dir_stats (
         entry_id             INTEGER PRIMARY KEY,
@@ -359,12 +355,7 @@ pub fn resolve_path(conn: &Connection, path: &str) -> Result<Option<i64>, IndexS
         if component.is_empty() {
             continue;
         }
-        let mut stmt =
-            conn.prepare_cached("SELECT id FROM entries WHERE parent_id = ?1 AND name = ?2 COLLATE platform_case")?;
-        match stmt
-            .query_row(params![current_id, component], |row| row.get::<_, i64>(0))
-            .optional()?
-        {
+        match IndexStore::resolve_component(conn, current_id, component)? {
             Some(id) => current_id = id,
             None => return Ok(None),
         }
@@ -662,12 +653,16 @@ impl IndexStore {
 
     /// Resolve a path component under a given parent. Returns the child entry ID.
     pub fn resolve_component(conn: &Connection, parent_id: i64, name: &str) -> Result<Option<i64>, IndexStoreError> {
-        let mut stmt =
-            conn.prepare_cached("SELECT id FROM entries WHERE parent_id = ?1 AND name = ?2 COLLATE platform_case")?;
-        let result = stmt
-            .query_row(params![parent_id, name], |row| row.get::<_, i64>(0))
-            .optional()?;
-        Ok(result)
+        let mut stmt = conn.prepare_cached("SELECT id, name FROM entries WHERE parent_id = ?1")?;
+        let mut rows = stmt.query(params![parent_id])?;
+        while let Some(row) = rows.next()? {
+            let child_id: i64 = row.get(0)?;
+            let child_name: String = row.get(1)?;
+            if platform_case_compare(&child_name, name) == std::cmp::Ordering::Equal {
+                return Ok(Some(child_id));
+            }
+        }
+        Ok(None)
     }
 
     /// Reconstruct the full path for an entry by walking up the parent chain.
@@ -710,8 +705,11 @@ impl IndexStore {
         }
         let tx = conn.unchecked_transaction()?;
         {
+            // Plain INSERT: the only unique constraint is the integer PK (`id`), and
+            // ScanContext assigns unique IDs, so conflicts shouldn't occur. The table is
+            // truncated before full scans and descendants are deleted before subtree scans.
             let mut stmt = tx.prepare_cached(
-                "INSERT OR REPLACE INTO entries (id, parent_id, name, is_directory, is_symlink, size, modified_at)
+                "INSERT INTO entries (id, parent_id, name, is_directory, is_symlink, size, modified_at)
                  VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
             )?;
             for e in entries {
@@ -1627,11 +1625,12 @@ mod tests {
         assert_eq!(resolve_path(&conn, "/USERS").unwrap(), Some(users_id));
         assert_eq!(resolve_path(&conn, "/Users").unwrap(), Some(users_id));
 
-        // The unique index should prevent inserting a case-variant name under the same parent
+        // With idx_parent (non-unique), case-variant names are allowed at the SQL level.
+        // Deduplication is handled by the scanner/reconciler, not by a DB constraint.
         let result = IndexStore::insert_entry_v2(&conn, ROOT_ID, "users", true, false, None, None);
         assert!(
-            result.is_err(),
-            "Should fail due to case-insensitive unique constraint on macOS"
+            result.is_ok(),
+            "No unique constraint on (parent_id, name) — dedup is done in application code"
         );
     }
 

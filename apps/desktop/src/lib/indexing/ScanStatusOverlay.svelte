@@ -34,7 +34,6 @@
         sorting: 'Sorting directories...',
         computing: 'Computing directory sizes...',
         writing: 'Saving directory sizes...',
-        rebuilding_index: 'Rebuilding index...',
     }
 
     const aggLabel = $derived(phaseToLabel[aggPhase] ?? 'Computing directory sizes...')
@@ -63,9 +62,7 @@
         {#if aggregating}
             <div class="agg-content">
                 <span class="scan-label">{aggLabel}</span>
-                {#if aggPhase === 'rebuilding_index'}
-                    <span class="phase-hint">Usually less than a minute</span>
-                {:else if showProgressBar}
+                {#if showProgressBar}
                     <div class="progress-row">
                         <div
                             class="progress-bar"
@@ -148,10 +145,5 @@
 
     .progress-eta {
         color: var(--color-text-tertiary);
-    }
-
-    .phase-hint {
-        color: var(--color-text-tertiary);
-        font-size: var(--font-size-xs);
     }
 </style>

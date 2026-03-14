@@ -37,7 +37,6 @@ fn phase_to_str(phase: AggregationPhase) -> &'static str {
         AggregationPhase::Sorting => "sorting",
         AggregationPhase::Computing => "computing",
         AggregationPhase::Writing => "writing",
-        AggregationPhase::RebuildingIndex => "rebuilding_index",
     }
 }
 
@@ -90,17 +89,8 @@ pub enum WriteMessage {
     /// The writer responds through the channel after processing this message.
     Flush(oneshot::Sender<()>),
     /// Truncate `entries` and `dir_stats` tables, preserving `meta`.
-    /// Used before a full rescan on a stale DB to avoid slow `INSERT OR REPLACE`
-    /// on a populated table with the expensive `platform_case` collation.
+    /// Used before a full rescan so the scan starts from a clean slate.
     TruncateData,
-    /// Drop `idx_parent_name` before a full scan's bulk inserts.
-    /// Eliminates expensive `platform_case` collation during B-tree maintenance.
-    /// The scanner sends `RecreateNameIndex` after all entries are inserted.
-    DropNameIndex,
-    /// Recreate `idx_parent_name` after bulk inserts complete (or scan cancellation).
-    /// Must be sent before live-mode writes resume, since `UpsertEntryV2` and
-    /// `resolve_component` depend on this index.
-    RecreateNameIndex,
     /// Begin an explicit SQLite transaction.
     /// All subsequent writes are batched until `CommitTransaction`.
     /// Dramatically reduces fsync overhead for bulk operations (replay).
@@ -579,37 +569,6 @@ fn process_message(
                     }
                 }
                 Err(e) => log::warn!("Writer: truncate failed: {e}"),
-            }
-        }
-        WriteMessage::DropNameIndex => {
-            let t = Instant::now();
-            if let Err(e) = conn.execute_batch("DROP INDEX IF EXISTS idx_parent_name") {
-                log::warn!("Writer: DROP INDEX idx_parent_name failed: {e}");
-            } else {
-                log::info!("Writer: dropped idx_parent_name ({}ms)", t.elapsed().as_millis());
-            }
-        }
-        WriteMessage::RecreateNameIndex => {
-            // Emit progress so the UI shows "Rebuilding index..." instead of
-            // staying stuck at "Saving entries 100%". total=0 signals no
-            // progress bar (this is a single atomic SQL operation).
-            if let Some(app) = app_handle {
-                let _ = app.emit(
-                    "index-aggregation-progress",
-                    AggregationProgressEvent {
-                        phase: phase_to_str(AggregationPhase::RebuildingIndex),
-                        current: 0,
-                        total: 0,
-                    },
-                );
-            }
-            let t = Instant::now();
-            if let Err(e) =
-                conn.execute_batch("CREATE UNIQUE INDEX IF NOT EXISTS idx_parent_name ON entries (parent_id, name)")
-            {
-                log::warn!("Writer: CREATE INDEX idx_parent_name failed: {e}");
-            } else {
-                log::info!("Writer: recreated idx_parent_name ({}ms)", t.elapsed().as_millis(),);
             }
         }
         WriteMessage::ComputeAllAggregates => {

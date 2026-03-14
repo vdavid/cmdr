@@ -81,7 +81,7 @@ pub(super) fn get_read_pool() -> Option<Arc<ReadPool>> {
 ///
 /// **Integer-keyed optimization**: Instead of resolving each directory path
 /// individually, resolves the common parent directory once, gets all child
-/// dir `(id, name)` pairs via `idx_parent_name`, then batch-fetches their
+/// dir `(id, name)` pairs via `idx_parent`, then batch-fetches their
 /// `dir_stats` by integer IDs. Two indexed queries total.
 pub fn enrich_entries_with_index(entries: &mut [FileEntry]) {
     let pool = match get_read_pool() {
