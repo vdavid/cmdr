@@ -90,7 +90,7 @@ vi.mock('$lib/tauri-commands', () => ({
         timedOut: false,
     }),
     getDefaultVolumeId: vi.fn().mockResolvedValue('root'),
-    getVolumeSpace: vi.fn().mockResolvedValue({ data: null, timedOut: false }),
+    getVolumeSpace: vi.fn().mockResolvedValue({ data: { totalBytes: 500_000_000_000, availableBytes: 200_000_000_000 }, timedOut: false }),
     refreshListing: vi.fn().mockResolvedValue({ data: null, timedOut: false }),
     getIcons: vi.fn().mockResolvedValue({ data: {}, timedOut: false }),
     refreshDirectoryIcons: vi.fn().mockResolvedValue({ data: {}, timedOut: false }),

@@ -15,4 +15,4 @@ Lead a team of Opus agents to deliver on this plan.
 - In the end, ask +1 Opus agent to do a thorough review of the execution, and flag if anything is skipped, broken,
   incomplete, etc.
 - Have +1 Opus agent run `./scripts/check.sh --include-slow` in the end and make sure that it's 100% green, even if
-  checks fail on unrelated things. We want a clean slate. 
+  checks fail on unrelated things. We want a clean slate.
