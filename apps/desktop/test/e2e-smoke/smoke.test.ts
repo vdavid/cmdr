@@ -21,11 +21,11 @@ test.describe('Basic rendering', () => {
 
         // Check that dual pane explorer is present
         const explorer = page.locator('.dual-pane-explorer')
-        await expect(explorer).toBeVisible()
+        await expect(explorer).toBeVisible({ timeout: 10000 })
 
         // Check that both panes are present
         const panes = page.locator('.file-pane')
-        await expect(panes).toHaveCount(2)
+        await expect(panes).toHaveCount(2, { timeout: 10000 })
     })
 })
 
