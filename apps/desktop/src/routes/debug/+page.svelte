@@ -30,6 +30,14 @@
         lastEventId: string | null
     }
 
+    interface PhaseRecord {
+        phase: 'replaying' | 'scanning' | 'aggregating' | 'reconciling' | 'live' | 'idle'
+        startedAt: string
+        durationMs: number | null
+        trigger: string
+        stats: [string, string][]
+    }
+
     interface IndexDebugStatus {
         initialized: boolean
         scanning: boolean
@@ -45,16 +53,16 @@
         liveDirCount: number | null
         dirsWithStats: number | null
         recentMustScanPaths: [string, string][]
+        activityPhase: 'replaying' | 'scanning' | 'aggregating' | 'reconciling' | 'live' | 'idle'
+        phaseStartedAt: string
+        phaseDurationMs: number
+        phaseHistory: PhaseRecord[]
+        verifying: boolean
+        dbMainSize: number | null
+        dbWalSize: number | null
+        dbPageCount: number | null
+        dbFreelistCount: number | null
     }
-
-    interface IndexLogEntry {
-        time: string
-        event: string
-        detail: string
-    }
-
-    /** Rolling event rate buckets: events per second for the last 60 seconds */
-    const EVENT_RATE_BUCKETS = 60
 
     let pageElement: HTMLDivElement | undefined = $state()
     let isDarkMode = $state(true)
@@ -67,15 +75,8 @@
 
     // Drive index state
     let debugStatus = $state<IndexDebugStatus | null>(null)
-    let indexLog = $state<IndexLogEntry[]>([])
     let indexMessage = $state('')
     let indexPollInterval: ReturnType<typeof setInterval> | undefined
-    let indexUnlisteners: (() => void)[] = []
-
-    // Event rate tracking (frontend-side, from events we observe)
-    let eventRateBuckets = $state<number[]>(new Array<number>(EVENT_RATE_BUCKETS).fill(0))
-    let currentBucketEvents = 0
-    let rateInterval: ReturnType<typeof setInterval> | undefined
 
     onMount(async () => {
         // Hide the loading screen
@@ -117,48 +118,17 @@
             // Not in Tauri environment
         }
 
-        // Drive index: poll status and set up event listeners
+        // Drive index: poll status
         await pollDebugStatus()
         indexPollInterval = setInterval(() => {
             void pollDebugStatus()
         }, 2000)
-
-        // Event rate bucket rotation: shift every second
-        rateInterval = setInterval(() => {
-            eventRateBuckets = [...eventRateBuckets.slice(1), currentBucketEvents]
-            currentBucketEvents = 0
-        }, 1000)
-
-        try {
-            const { listen: listenEvent } = await import('@tauri-apps/api/event')
-            const eventNames = [
-                'index-scan-started',
-                'index-scan-progress',
-                'index-scan-complete',
-                'index-dir-updated',
-                'index-replay-progress',
-                'index-aggregation-progress',
-                'index-aggregation-complete',
-                'index-rescan-notification',
-            ]
-            for (const name of eventNames) {
-                const unsub = await listenEvent(name, (event: { payload: unknown }) => {
-                    appendIndexLog(name, JSON.stringify(event.payload))
-                    currentBucketEvents++
-                })
-                indexUnlisteners.push(unsub)
-            }
-        } catch {
-            // Not in Tauri environment
-        }
     })
 
     onDestroy(() => {
         unlisten?.()
         if (indexPollInterval) clearInterval(indexPollInterval)
-        if (rateInterval) clearInterval(rateInterval)
-        for (const unsub of indexUnlisteners) unsub()
-        indexUnlisteners = []
+        if (phaseTickInterval) clearInterval(phaseTickInterval)
     })
 
     async function handleThemeToggle() {
@@ -196,12 +166,6 @@
         } catch {
             // Indexing not available
         }
-    }
-
-    function appendIndexLog(event: string, detail: string) {
-        const now = new Date()
-        const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}.${String(now.getMilliseconds()).padStart(3, '0')}`
-        indexLog = [...indexLog.slice(-99), { time, event, detail }]
     }
 
     async function handleStartScan() {
@@ -245,6 +209,109 @@
         return n.toLocaleString('en-US')
     }
 
+    function formatTimestamp(unixStr: string | null): string {
+        if (unixStr === null) return 'N/A'
+        const unix = parseInt(unixStr, 10)
+        if (isNaN(unix)) return unixStr
+        const d = new Date(unix * 1000)
+        const now = new Date()
+        const diffMs = now.getTime() - d.getTime()
+        const diffMins = Math.floor(diffMs / 60_000)
+        const diffHours = Math.floor(diffMs / 3_600_000)
+        const diffDays = Math.floor(diffMs / 86_400_000)
+
+        const time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+        const date = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+
+        let ago: string
+        if (diffMins < 1) ago = 'just now'
+        else if (diffMins < 60) ago = `${String(diffMins)}m ago`
+        else if (diffHours < 24) ago = `${String(diffHours)}h ago`
+        else ago = `${String(diffDays)}d ago`
+
+        if (diffDays === 0) return `${time} (${ago})`
+        return `${date} ${time} (${ago})`
+    }
+
+    // Phase timeline ticking duration
+    let phaseDurationTick = $state(0)
+    let lastPhaseDurationMs = $state(-1)
+    let phaseTickInterval: ReturnType<typeof setInterval> | undefined
+
+    // Start the 1-second tick for current phase duration
+    onMount(() => {
+        phaseTickInterval = setInterval(() => {
+            phaseDurationTick++
+        }, 1000)
+    })
+
+    // When phaseDurationMs changes from a poll, reset the tick counter
+    $effect(() => {
+        if (debugStatus?.phaseDurationMs !== undefined && debugStatus.phaseDurationMs !== lastPhaseDurationMs) {
+            lastPhaseDurationMs = debugStatus.phaseDurationMs
+            phaseDurationTick = 0
+        }
+    })
+
+    const phaseTooltipMap: Record<string, string> = {
+        replaying: 'Processing FSEvents journal from cold start',
+        scanning: 'Full volume directory walk',
+        aggregating: 'Computing directory sizes',
+        reconciling: 'Replaying buffered events from during scan',
+        live: 'Processing real-time filesystem events',
+        idle: 'Waiting for filesystem changes',
+    }
+
+    type PhaseStyle = 'active' | 'ready' | 'neutral'
+
+    function phaseStyle(phase: string): PhaseStyle {
+        if (phase === 'live') return 'ready'
+        if (phase === 'idle') return 'neutral'
+        return 'active'
+    }
+
+    function isActivePhase(phase: string): boolean {
+        return phase === 'scanning' || phase === 'replaying' || phase === 'aggregating' || phase === 'reconciling'
+    }
+
+    function formatPhaseDurationMs(ms: number): string {
+        if (ms < 1000) return `${String(ms)}ms`
+        if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`
+        if (ms < 3_600_000) {
+            const mins = Math.floor(ms / 60_000)
+            const secs = Math.floor((ms % 60_000) / 1000)
+            return `${String(mins)}m ${String(secs).padStart(2, '0')}s`
+        }
+        const hrs = Math.floor(ms / 3_600_000)
+        const mins = Math.floor((ms % 3_600_000) / 60_000)
+        return `${String(hrs)}h ${String(mins).padStart(2, '0')}m`
+    }
+
+    function formatPhaseStats(stats: [string, string][]): string {
+        const map = new Map(stats)
+        const raw = map.get('raw_events')
+        const unique = map.get('unique_events')
+        const dedup = map.get('dedup_pct')
+        if (raw && unique && dedup) {
+            return `${Number(raw).toLocaleString('en-US')} raw → ${Number(unique).toLocaleString('en-US')} unique (${dedup}% dedup)`
+        }
+        const entries = map.get('total_entries')
+        const dirs = map.get('total_dirs')
+        if (entries && dirs) {
+            return `${Number(entries).toLocaleString('en-US')} entries, ${Number(dirs).toLocaleString('en-US')} dirs`
+        }
+        if (stats.length === 0) return ''
+        return stats.map(([k, v]) => `${k}: ${v}`).join(', ')
+    }
+
+    function currentPhaseLiveStat(status: IndexDebugStatus): string {
+        if (status.activityPhase === 'scanning') return `${formatCount(status.entriesScanned)} entries scanned`
+        if (status.activityPhase === 'live') return `${formatCount(status.liveEventCount)} live events`
+        return ''
+    }
+
+    const currentPhaseDurationMs = $derived(debugStatus ? debugStatus.phaseDurationMs + phaseDurationTick * 1000 : 0)
+
     /** Format a history entry for display */
     function formatEntry(entry: HistoryEntry): string {
         if (entry.networkHost) {
@@ -258,29 +325,6 @@
         }
         return lastPart || entry.path
     }
-
-    /** Build sparkline SVG path from event rate buckets */
-    function sparklinePath(buckets: number[]): string {
-        const max = Math.max(...buckets, 1)
-        const w = 100
-        const h = 100
-        const step = w / (buckets.length - 1)
-        const points = buckets.map((v, i) => `${(i * step).toFixed(1)},${(h - (v / max) * h).toFixed(1)}`)
-        return `M${points.join(' L')}`
-    }
-
-    /** Build sparkline area fill path */
-    function sparklineArea(buckets: number[]): string {
-        const max = Math.max(...buckets, 1)
-        const w = 100
-        const h = 100
-        const step = w / (buckets.length - 1)
-        const points = buckets.map((v, i) => `${(i * step).toFixed(1)},${(h - (v / max) * h).toFixed(1)}`)
-        return `M0,${String(h)} L${points.join(' L')} L${String(w)},${String(h)} Z`
-    }
-
-    const maxEventRate = $derived(Math.max(...eventRateBuckets, 1))
-    const totalRecentEvents = $derived(eventRateBuckets.reduce((a: number, b: number) => a + b, 0))
 </script>
 
 <div
@@ -309,29 +353,102 @@
         <section class="debug-section">
             <h2>Drive index</h2>
             <div class="index-panel">
-                <!-- Scan + watcher status row -->
+                <!-- Current phase card + watcher + verifying -->
                 <div class="index-status-row">
                     <div class="index-status">
                         {#if debugStatus === null}
                             <span class="status-badge neutral">Loading...</span>
-                        {:else if debugStatus.scanning}
-                            <span class="status-badge active">
-                                <span class="spinner spinner-sm"></span>
-                                Scanning {formatCount(debugStatus.entriesScanned)} entries
-                            </span>
-                        {:else if debugStatus.initialized}
-                            <span class="status-badge ready">Idle</span>
                         {:else}
-                            <span class="status-badge neutral">Not initialized</span>
+                            <span
+                                class="status-badge {phaseStyle(debugStatus.activityPhase)}"
+                                use:tooltip={{
+                                    text: debugStatus.phaseStartedAt
+                                        ? `Trigger: ${debugStatus.phaseHistory.length > 0 ? (debugStatus.phaseHistory[debugStatus.phaseHistory.length - 1]?.trigger ?? '') : ''}`
+                                        : '',
+                                }}
+                            >
+                                {#if isActivePhase(debugStatus.activityPhase)}
+                                    <span class="spinner spinner-sm"></span>
+                                {/if}
+                                {debugStatus.activityPhase.charAt(0).toUpperCase() + debugStatus.activityPhase.slice(1)}
+                                <span
+                                    class="phase-duration"
+                                    use:tooltip={{ text: `${String(currentPhaseDurationMs)}ms` }}
+                                >
+                                    {formatPhaseDurationMs(currentPhaseDurationMs)}
+                                </span>
+                            </span>
+                            {@const liveStat = currentPhaseLiveStat(debugStatus)}
+                            {#if liveStat}
+                                <span class="phase-live-stat">{liveStat}</span>
+                            {/if}
                         {/if}
                     </div>
                     <div class="index-status">
                         {#if debugStatus?.watcherActive}
-                            <span class="status-badge ready">Watcher on</span>
+                            <span
+                                class="status-badge ready"
+                                use:tooltip={{
+                                    text: 'FSEvents watcher is active — receiving live filesystem change notifications',
+                                }}>Watcher on</span
+                            >
                         {:else}
-                            <span class="status-badge neutral">Watcher off</span>
+                            <span class="status-badge neutral" use:tooltip={{ text: 'FSEvents watcher is not running' }}
+                                >Watcher off</span
+                            >
                         {/if}
                     </div>
+                    {#if debugStatus?.verifying}
+                        <div class="index-status">
+                            <span
+                                class="status-badge active"
+                                use:tooltip={{ text: 'Background post-replay directory verification' }}
+                            >
+                                <span class="spinner spinner-sm"></span>
+                                Verifying
+                            </span>
+                        </div>
+                    {/if}
+                </div>
+
+                <!-- Phase timeline -->
+                <div class="index-sub-header">Phase timeline</div>
+                <div class="phase-timeline">
+                    {#if debugStatus === null || debugStatus.phaseHistory.length === 0}
+                        <p class="no-history">No phase history</p>
+                    {:else}
+                        {#each debugStatus.phaseHistory as record, i (record.startedAt + record.phase)}
+                            {@const isCurrent = i === debugStatus.phaseHistory.length - 1 && record.durationMs === null}
+                            <div class="phase-timeline-row" class:phase-current={isCurrent}>
+                                <span class="phase-time">{record.startedAt.substring(0, 8)}</span>
+                                <span class="phase-name" use:tooltip={{ text: phaseTooltipMap[record.phase] ?? '' }}
+                                    >{record.phase.charAt(0).toUpperCase() + record.phase.slice(1)}</span
+                                >
+                                <span
+                                    class="phase-dur"
+                                    use:tooltip={{
+                                        text:
+                                            record.durationMs !== null
+                                                ? `${String(record.durationMs)}ms`
+                                                : `${String(currentPhaseDurationMs)}ms`,
+                                    }}
+                                >
+                                    {#if record.durationMs !== null}
+                                        {formatPhaseDurationMs(record.durationMs)}
+                                    {:else}
+                                        {formatPhaseDurationMs(currentPhaseDurationMs)}
+                                    {/if}
+                                </span>
+                                <span class="phase-stats">
+                                    {#if isCurrent}
+                                        <span class="phase-now-marker">now</span>
+                                    {:else}
+                                        {formatPhaseStats(record.stats)}
+                                    {/if}
+                                </span>
+                            </div>
+                        {/each}
+                    {/if}
                 </div>
 
                 <!-- Action buttons -->
@@ -348,20 +465,44 @@
                     <div class="index-sub-header">Database</div>
                     <div class="index-meta">
                         <div class="index-meta-row">
-                            <span class="index-meta-label">Entries</span>
+                            <span class="index-meta-label"
+                                >Entries <span
+                                    class="info-icon"
+                                    use:tooltip={{ text: 'Total files and directories in the index DB' }}>i</span
+                                ></span
+                            >
                             <span class="index-meta-value">{formatCount(debugStatus.liveEntryCount)}</span>
                         </div>
                         <div class="index-meta-row">
-                            <span class="index-meta-label">Directories</span>
+                            <span class="index-meta-label"
+                                >Directories <span
+                                    class="info-icon"
+                                    use:tooltip={{ text: 'Total directories (subset of entries)' }}>i</span
+                                ></span
+                            >
                             <span class="index-meta-value">{formatCount(debugStatus.liveDirCount)}</span>
                         </div>
                         <div class="index-meta-row">
-                            <span class="index-meta-label">Dirs with stats</span>
+                            <span class="index-meta-label"
+                                >Dirs with stats <span
+                                    class="info-icon"
+                                    use:tooltip={{
+                                        text: 'Directories that have computed recursive size/count aggregates',
+                                    }}>i</span
+                                ></span
+                            >
                             <span class="index-meta-value">{formatCount(debugStatus.dirsWithStats)}</span>
                         </div>
                         {#if debugStatus.liveDirCount !== null && debugStatus.dirsWithStats !== null}
                             <div class="index-meta-row">
-                                <span class="index-meta-label">Dirs missing stats</span>
+                                <span class="index-meta-label"
+                                    >Dirs missing stats <span
+                                        class="info-icon"
+                                        use:tooltip={{
+                                            text: 'Directories without aggregates — will show no size in the UI until backfilled',
+                                        }}>i</span
+                                    ></span
+                                >
                                 <span class="index-meta-value"
                                     >{formatCount(debugStatus.liveDirCount - debugStatus.dirsWithStats)}</span
                                 >
@@ -369,13 +510,25 @@
                         {/if}
                         {#if debugStatus.indexStatus?.scanCompletedAt}
                             <div class="index-meta-row">
-                                <span class="index-meta-label">Last scan</span>
-                                <span class="index-meta-value">{debugStatus.indexStatus.scanCompletedAt}</span>
+                                <span class="index-meta-label"
+                                    >Last scan <span
+                                        class="info-icon"
+                                        use:tooltip={{ text: 'When the last full volume scan completed' }}>i</span
+                                    ></span
+                                >
+                                <span class="index-meta-value"
+                                    >{formatTimestamp(debugStatus.indexStatus.scanCompletedAt)}</span
+                                >
                             </div>
                         {/if}
                         {#if debugStatus.indexStatus?.scanDurationMs}
                             <div class="index-meta-row">
-                                <span class="index-meta-label">Scan duration</span>
+                                <span class="index-meta-label"
+                                    >Scan duration <span
+                                        class="info-icon"
+                                        use:tooltip={{ text: 'How long the last full scan took (wall clock)' }}>i</span
+                                    ></span
+                                >
                                 <span class="index-meta-value"
                                     >{formatDuration(debugStatus.indexStatus.scanDurationMs)}</span
                                 >
@@ -383,8 +536,47 @@
                         {/if}
                         {#if debugStatus.dbFileSize !== null}
                             <div class="index-meta-row">
-                                <span class="index-meta-label">Database size</span>
-                                <span class="index-meta-value">{formatDbSize(debugStatus.dbFileSize)}</span>
+                                <span class="index-meta-label"
+                                    >DB size <span
+                                        class="info-icon"
+                                        use:tooltip={{ text: 'Total on-disk size: main DB file + WAL + SHM' }}>i</span
+                                    ></span
+                                >
+                                <span class="index-meta-value">
+                                    {formatDbSize(debugStatus.dbFileSize)}
+                                    {#if debugStatus.dbMainSize !== null}
+                                        <span class="db-breakdown"
+                                            >(main: {formatDbSize(
+                                                debugStatus.dbMainSize,
+                                            )}{#if debugStatus.dbWalSize !== null && debugStatus.dbWalSize > 0}, WAL: {formatDbSize(
+                                                    debugStatus.dbWalSize,
+                                                )}{/if})</span
+                                        >
+                                    {/if}
+                                </span>
+                            </div>
+                        {/if}
+                        {#if debugStatus.dbPageCount !== null}
+                            <div class="index-meta-row">
+                                <span class="index-meta-label"
+                                    >DB pages <span
+                                        class="info-icon"
+                                        use:tooltip={{
+                                            text: 'SQLite pages: total allocated vs freelist (unused, reclaimable with VACUUM)',
+                                        }}>i</span
+                                    ></span
+                                >
+                                <span class="index-meta-value">
+                                    {formatCount(debugStatus.dbPageCount)}
+                                    {#if debugStatus.dbFreelistCount !== null && debugStatus.dbFreelistCount > 0}
+                                        <span class="db-breakdown"
+                                            >({formatCount(debugStatus.dbFreelistCount)} free, {(
+                                                (debugStatus.dbFreelistCount / debugStatus.dbPageCount) *
+                                                100
+                                            ).toFixed(1)}%)</span
+                                        >
+                                    {/if}
+                                </span>
                             </div>
                         {/if}
                     </div>
@@ -395,70 +587,40 @@
                     <div class="index-sub-header">Event statistics</div>
                     <div class="index-meta">
                         <div class="index-meta-row">
-                            <span class="index-meta-label">Live FS events</span>
+                            <span class="index-meta-label"
+                                >Live FS events <span
+                                    class="info-icon"
+                                    use:tooltip={{
+                                        text: 'Total FSEvents received since indexing started this session',
+                                    }}>i</span
+                                ></span
+                            >
                             <span class="index-meta-value">{formatCount(debugStatus.liveEventCount)}</span>
                         </div>
                         <div class="index-meta-row">
-                            <span class="index-meta-label">MustScanSubDirs</span>
+                            <span class="index-meta-label"
+                                >MustScanSubDirs <span
+                                    class="info-icon"
+                                    use:tooltip={{
+                                        text: 'FSEvents with MustScanSubDirs flag — means the OS coalesced events and a full subtree rescan is needed',
+                                    }}>i</span
+                                ></span
+                            >
                             <span class="index-meta-value">{formatCount(debugStatus.mustScanCount)}</span>
                         </div>
                         <div class="index-meta-row">
-                            <span class="index-meta-label">Rescans completed</span>
+                            <span class="index-meta-label"
+                                >Rescans completed <span
+                                    class="info-icon"
+                                    use:tooltip={{
+                                        text: 'Number of MustScanSubDirs subtree rescans that have finished processing',
+                                    }}>i</span
+                                ></span
+                            >
                             <span class="index-meta-value">{formatCount(debugStatus.mustScanRescansCompleted)}</span>
                         </div>
                     </div>
                 {/if}
-
-                <!-- Event rate sparkline -->
-                <div class="index-sub-header">
-                    Event rate
-                    <span class="index-sub-header-detail">
-                        (last 60s: {totalRecentEvents} events, peak {maxEventRate}/s)
-                    </span>
-                </div>
-                <div class="sparkline-container">
-                    <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="sparkline-svg">
-                        <path d={sparklineArea(eventRateBuckets)} class="sparkline-area" />
-                        <path d={sparklinePath(eventRateBuckets)} class="sparkline-line" />
-                    </svg>
-                    <div class="sparkline-labels">
-                        <span>0</span>
-                        <span>{maxEventRate}/s</span>
-                    </div>
-                </div>
-
-                <!-- MustScanSubDirs tracking -->
-                {#if debugStatus && debugStatus.recentMustScanPaths.length > 0}
-                    <div class="index-sub-header">Recent MustScanSubDirs paths</div>
-                    <div class="must-scan-log">
-                        {#each debugStatus.recentMustScanPaths as [time, path] (`${time}-${path}`)}
-                            <div class="must-scan-entry">
-                                <span class="index-log-time">{time}</span>
-                                <span class="must-scan-path" use:tooltip={{ text: path, overflowOnly: true }}
-                                    >{path}</span
-                                >
-                            </div>
-                        {/each}
-                    </div>
-                {/if}
-
-                <!-- Live event log -->
-                <div class="index-sub-header">Event log</div>
-                <div class="index-log">
-                    {#if indexLog.length === 0}
-                        <p class="no-history">No events yet</p>
-                    {:else}
-                        {#each indexLog as entry (entry.time + entry.event)}
-                            <div class="index-log-entry">
-                                <span class="index-log-time">{entry.time}</span>
-                                <span class="index-log-event">{entry.event}</span>
-                                <span class="index-log-detail" use:tooltip={{ text: entry.detail, overflowOnly: true }}
-                                    >{entry.detail}</span
-                                >
-                            </div>
-                        {/each}
-                    {/if}
-                </div>
             </div>
         </section>
 
@@ -821,6 +983,78 @@
         color: var(--color-text-tertiary);
     }
 
+    .phase-duration {
+        font-weight: 400;
+        margin-left: 4px;
+        font-family: var(--font-mono);
+    }
+
+    .phase-live-stat {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
+        margin-left: 8px;
+    }
+
+    /* Phase timeline */
+    .phase-timeline {
+        max-height: 160px;
+        overflow-y: auto;
+        background: var(--color-bg-primary);
+        border-radius: var(--radius-sm);
+        padding: 6px;
+        font-size: var(--font-size-xs);
+        font-family: var(--font-mono);
+    }
+
+    .phase-timeline-row {
+        display: flex;
+        gap: 10px;
+        padding: 2px 0;
+        line-height: 1.4;
+        color: var(--color-text-tertiary);
+    }
+
+    .phase-timeline-row.phase-current {
+        color: var(--color-text-primary);
+        font-weight: 600;
+    }
+
+    .phase-time {
+        flex-shrink: 0;
+        width: 60px;
+    }
+
+    .phase-name {
+        flex-shrink: 0;
+        width: 85px;
+    }
+
+    .phase-dur {
+        flex-shrink: 0;
+        width: 70px;
+        text-align: right;
+    }
+
+    .phase-stats {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: var(--color-text-secondary);
+    }
+
+    .phase-current .phase-stats {
+        color: var(--color-text-primary);
+    }
+
+    .phase-now-marker {
+        color: var(--color-accent);
+        font-weight: 600;
+    }
+
+    .phase-now-marker::before {
+        content: '\2190 ';
+    }
+
     .index-actions {
         display: flex;
         align-items: center;
@@ -855,12 +1089,6 @@
         margin-top: 4px;
     }
 
-    .index-sub-header-detail {
-        font-weight: 400;
-        text-transform: none;
-        letter-spacing: normal;
-    }
-
     .index-meta {
         display: flex;
         flex-direction: column;
@@ -883,104 +1111,33 @@
         font-family: var(--font-mono);
     }
 
-    /* Sparkline chart */
-    .sparkline-container {
-        position: relative;
-        height: 48px;
-        background: var(--color-bg-primary);
-        border-radius: var(--radius-sm);
-        overflow: hidden;
-    }
-
-    .sparkline-svg {
-        width: 100%;
-        height: 100%;
-    }
-
-    .sparkline-line {
-        fill: none;
-        stroke: var(--color-accent);
-        stroke-width: 1.5;
-        vector-effect: non-scaling-stroke;
-    }
-
-    .sparkline-area {
-        fill: color-mix(in srgb, var(--color-accent) 15%, transparent);
-    }
-
-    .sparkline-labels {
-        position: absolute;
-        top: 0;
-        right: 4px;
-        bottom: 0;
-        display: flex;
-        flex-direction: column-reverse;
-        justify-content: space-between;
-        font-size: 9px;
-        font-family: var(--font-mono);
+    .info-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 14px;
+        height: 14px;
+        font-size: 10px;
+        font-weight: 600;
+        font-style: italic;
+        font-family: var(--font-system), sans-serif;
+        border-radius: 50%;
+        background: var(--color-bg-tertiary);
         color: var(--color-text-tertiary);
-        pointer-events: none;
-        padding: 2px 0;
+        cursor: help;
+        vertical-align: middle;
+        margin-left: 2px;
     }
 
-    /* MustScanSubDirs log */
-    .must-scan-log {
-        max-height: 120px;
-        overflow-y: auto;
+    .info-icon:hover {
         background: var(--color-bg-primary);
-        border-radius: var(--radius-sm);
-        padding: 6px;
-        font-size: var(--font-size-xs);
-        font-family: var(--font-mono);
-    }
-
-    .must-scan-entry {
-        display: flex;
-        gap: 6px;
-        padding: 1px 0;
-        line-height: 1.4;
-    }
-
-    .must-scan-path {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        color: var(--color-accent);
-    }
-
-    /* Event log */
-    .index-log {
-        max-height: 200px;
-        overflow-y: auto;
-        background: var(--color-bg-primary);
-        border-radius: var(--radius-sm);
-        padding: 6px;
-        font-size: var(--font-size-xs);
-        font-family: var(--font-mono);
-    }
-
-    .index-log-entry {
-        display: flex;
-        gap: 6px;
-        padding: 2px 0;
-        line-height: 1.4;
-    }
-
-    .index-log-time {
-        flex-shrink: 0;
-        color: var(--color-text-tertiary);
-    }
-
-    .index-log-event {
-        flex-shrink: 0;
-        color: var(--color-accent);
-    }
-
-    .index-log-detail {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
         color: var(--color-text-secondary);
+    }
+
+    .db-breakdown {
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-xs);
+        margin-left: 4px;
     }
 
     /* Toast debug styles */

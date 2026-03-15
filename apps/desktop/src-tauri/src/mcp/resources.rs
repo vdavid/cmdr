@@ -45,6 +45,12 @@ pub fn get_all_resources() -> Vec<Resource> {
             description: "List of dialog types that can be opened and their parameters".to_string(),
             mime_type: "text/yaml".to_string(),
         },
+        Resource {
+            uri: "cmdr://indexing".to_string(),
+            name: "Indexing status".to_string(),
+            description: "Current drive indexing phase, timeline history, and database stats".to_string(),
+            mime_type: "text/plain".to_string(),
+        },
     ]
 }
 
@@ -326,6 +332,10 @@ pub fn read_resource<R: Runtime>(app: &tauri::AppHandle<R>, uri: &str) -> Result
             let yaml = build_available_dialogs_yaml(app);
             (yaml, "text/yaml")
         }
+        "cmdr://indexing" => {
+            let text = build_indexing_status_text();
+            (text, "text/plain")
+        }
         _ => return Err(format!("Unknown resource URI: {}", uri)),
     };
 
@@ -336,6 +346,137 @@ pub fn read_resource<R: Runtime>(app: &tauri::AppHandle<R>, uri: &str) -> Result
     })
 }
 
+/// Format a duration in milliseconds as a human-readable string.
+fn format_duration_human(ms: u64) -> String {
+    if ms < 1_000 {
+        format!("{}ms", ms)
+    } else if ms < 60_000 {
+        let secs = ms as f64 / 1000.0;
+        format!("{:.1}s", secs)
+    } else if ms < 3_600_000 {
+        let mins = ms / 60_000;
+        let secs = (ms % 60_000) / 1000;
+        if secs == 0 {
+            format!("{}m", mins)
+        } else {
+            format!("{}m {:02}s", mins, secs)
+        }
+    } else {
+        let hours = ms / 3_600_000;
+        let mins = (ms % 3_600_000) / 60_000;
+        format!("{}h {:02}m", hours, mins)
+    }
+}
+
+/// Build a plain-text summary of the indexing status for the MCP resource.
+fn build_indexing_status_text() -> String {
+    let status = match crate::indexing::get_debug_status() {
+        Ok(s) => s,
+        Err(e) => return format!("Couldn't read indexing status: {e}"),
+    };
+
+    let mut lines = Vec::new();
+
+    // Current phase
+    let duration_str = format_duration_human(status.phase_duration_ms);
+    lines.push(format!("Phase: {} ({})", status.activity_phase, duration_str));
+
+    // Trigger
+    if let Some(last) = status.phase_history.last()
+        && !last.trigger.is_empty()
+    {
+        lines.push(format!("Trigger: {}", last.trigger));
+    }
+
+    // Verifying
+    lines.push(format!("Verifying: {}", if status.verifying { "yes" } else { "no" }));
+
+    // Watcher + live events
+    lines.push(format!(
+        "Watcher: {}, {} live events",
+        if status.watcher_active { "on" } else { "off" },
+        status.live_event_count,
+    ));
+
+    // DB stats
+    if let (Some(entries), Some(dirs)) = (status.live_entry_count, status.live_dir_count) {
+        let total_size_str = status
+            .base
+            .db_file_size
+            .map(|s| format!(", {}", format_size(s)))
+            .unwrap_or_default();
+        lines.push(format!(
+            "DB: {} entries, {} dirs{}",
+            format_number(entries),
+            format_number(dirs),
+            total_size_str
+        ));
+
+        // Breakdown: main + WAL + pages
+        let mut breakdown = Vec::new();
+        if let Some(main) = status.db_main_size {
+            breakdown.push(format!("main: {}", format_size(main)));
+        }
+        if let Some(wal) = status.db_wal_size
+            && wal > 0
+        {
+            breakdown.push(format!("WAL: {}", format_size(wal)));
+        }
+        if let (Some(pages), Some(free)) = (status.db_page_count, status.db_freelist_count)
+            && free > 0
+        {
+            breakdown.push(format!("{} pages, {} free", format_number(pages), format_number(free)));
+        }
+        if !breakdown.is_empty() {
+            lines.push(format!("    ({})", breakdown.join(", ")));
+        }
+    }
+
+    // Phase history
+    if status.phase_history.len() > 1
+        || (status.phase_history.len() == 1 && status.phase_history[0].duration_ms.is_some())
+    {
+        lines.push(String::new());
+        lines.push("History:".to_string());
+        for (i, record) in status.phase_history.iter().enumerate() {
+            let is_current = i == status.phase_history.len() - 1 && record.duration_ms.is_none();
+            let duration_str = match record.duration_ms {
+                Some(ms) => format!("{:>8}", format_duration_human(ms)),
+                None => format!("{:>8}", format_duration_human(status.phase_duration_ms)),
+            };
+            let phase_name = format!("{:<14}", record.phase.to_string());
+            let mut line = format!("  {}  {} {}", record.started_at, phase_name, duration_str);
+
+            // Append stats summary
+            if !record.stats.is_empty() {
+                let stats_str: Vec<String> = record.stats.iter().map(|(k, v)| format!("{}={}", k, v)).collect();
+                line.push_str(&format!("  {}", stats_str.join(", ")));
+            }
+
+            if is_current {
+                line.push_str("  <- now");
+            }
+
+            lines.push(line);
+        }
+    }
+
+    lines.join("\n")
+}
+
+/// Format a number with comma separators.
+fn format_number(n: u64) -> String {
+    let s = n.to_string();
+    let mut result = String::new();
+    for (i, c) in s.chars().rev().enumerate() {
+        if i > 0 && i % 3 == 0 {
+            result.push(',');
+        }
+        result.push(c);
+    }
+    result.chars().rev().collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -343,7 +484,7 @@ mod tests {
     #[test]
     fn test_resource_count() {
         let resources = get_all_resources();
-        assert_eq!(resources.len(), 2);
+        assert_eq!(resources.len(), 3);
     }
 
     #[test]
@@ -363,10 +504,15 @@ mod tests {
     }
 
     #[test]
-    fn test_all_resources_have_yaml_mime_type() {
+    fn test_all_resources_have_valid_mime_type() {
         let resources = get_all_resources();
         for resource in resources {
-            assert_eq!(resource.mime_type, "text/yaml");
+            assert!(
+                resource.mime_type == "text/yaml" || resource.mime_type == "text/plain",
+                "Resource '{}' has unexpected mime type: {}",
+                resource.uri,
+                resource.mime_type
+            );
         }
     }
 
@@ -565,5 +711,26 @@ mod tests {
         };
         let yaml = build_pane_yaml(&state, "  ");
         assert!(!yaml.contains("tabs:"));
+    }
+
+    #[test]
+    fn test_format_duration_human() {
+        assert_eq!(format_duration_human(0), "0ms");
+        assert_eq!(format_duration_human(500), "500ms");
+        assert_eq!(format_duration_human(1_000), "1.0s");
+        assert_eq!(format_duration_human(47_100), "47.1s");
+        assert_eq!(format_duration_human(60_000), "1m");
+        assert_eq!(format_duration_human(252_000), "4m 12s");
+        assert_eq!(format_duration_human(3_600_000), "1h 00m");
+        assert_eq!(format_duration_human(3_723_000), "1h 02m");
+    }
+
+    #[test]
+    fn test_format_number() {
+        assert_eq!(format_number(0), "0");
+        assert_eq!(format_number(999), "999");
+        assert_eq!(format_number(1_000), "1,000");
+        assert_eq!(format_number(142_301), "142,301");
+        assert_eq!(format_number(1_000_000), "1,000,000");
     }
 }

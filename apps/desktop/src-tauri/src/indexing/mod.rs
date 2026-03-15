@@ -71,16 +71,32 @@ struct DebugStats {
     watcher_active: AtomicBool,
     /// Recent MustScanSubDirs paths: (timestamp, path). Ring buffer.
     recent_must_scan_paths: std::sync::Mutex<Vec<(String, String)>>,
+    /// Timeline of indexing phases. Append-only, capped at 20 entries.
+    phase_history: std::sync::Mutex<Vec<PhaseRecord>>,
+    /// When the current phase started (for duration computation).
+    phase_started: std::sync::Mutex<Option<std::time::Instant>>,
+    /// Whether background verification is running concurrently.
+    verifying: AtomicBool,
 }
 
 impl DebugStats {
     fn new() -> Self {
+        let now = chrono::Local::now().format("%H:%M:%S%.3f").to_string();
         Self {
             must_scan_sub_dirs_count: AtomicU64::new(0),
             must_scan_rescans_completed: AtomicU64::new(0),
             live_event_count: AtomicU64::new(0),
             watcher_active: AtomicBool::new(false),
             recent_must_scan_paths: std::sync::Mutex::new(Vec::new()),
+            phase_history: std::sync::Mutex::new(vec![PhaseRecord {
+                phase: ActivityPhase::Idle,
+                started_at: now,
+                duration_ms: None,
+                trigger: "app launch".to_string(),
+                stats: Vec::new(),
+            }]),
+            phase_started: std::sync::Mutex::new(Some(std::time::Instant::now())),
+            verifying: AtomicBool::new(false),
         }
     }
 
@@ -107,6 +123,64 @@ impl DebugStats {
         self.watcher_active.store(false, Ordering::Relaxed);
         if let Ok(mut paths) = self.recent_must_scan_paths.lock() {
             paths.clear();
+        }
+        let now = chrono::Local::now().format("%H:%M:%S%.3f").to_string();
+        if let Ok(mut history) = self.phase_history.lock() {
+            history.clear();
+            history.push(PhaseRecord {
+                phase: ActivityPhase::Idle,
+                started_at: now,
+                duration_ms: None,
+                trigger: "reset".to_string(),
+                stats: Vec::new(),
+            });
+        }
+        if let Ok(mut started) = self.phase_started.lock() {
+            *started = Some(std::time::Instant::now());
+        }
+        self.verifying.store(false, Ordering::Relaxed);
+    }
+
+    fn set_phase(&self, phase: ActivityPhase, trigger: &str) {
+        let now_formatted = chrono::Local::now().format("%H:%M:%S%.3f").to_string();
+        let now_instant = std::time::Instant::now();
+
+        if let Ok(mut history) = self.phase_history.lock() {
+            // Close the current (last) entry if it's still in progress
+            if let Some(last) = history.last_mut()
+                && last.duration_ms.is_none()
+                && let Ok(started) = self.phase_started.lock()
+                && let Some(start) = *started
+            {
+                last.duration_ms = Some(start.elapsed().as_millis() as u64);
+            }
+
+            // Append new phase
+            history.push(PhaseRecord {
+                phase,
+                started_at: now_formatted,
+                duration_ms: None,
+                trigger: trigger.to_string(),
+                stats: Vec::new(),
+            });
+
+            // Cap at 20 entries
+            if history.len() > 20 {
+                let excess = history.len() - 20;
+                history.drain(..excess);
+            }
+        }
+
+        if let Ok(mut started) = self.phase_started.lock() {
+            *started = Some(now_instant);
+        }
+    }
+
+    fn close_phase_with_stats(&self, stats: Vec<(&str, String)>) {
+        if let Ok(mut history) = self.phase_history.lock()
+            && let Some(last) = history.last_mut()
+        {
+            last.stats = stats.into_iter().map(|(k, v)| (k.to_string(), v)).collect();
         }
     }
 }
@@ -219,7 +293,7 @@ impl IndexManager {
                                  The app likely hasn't run for a long time."
                             ),
                         );
-                        return self.start_scan();
+                        return self.start_scan("stale index — journal gap too large");
                     }
 
                     let current_id = watcher::current_event_id();
@@ -246,7 +320,15 @@ impl IndexManager {
             log::info!("Startup: fresh scan (no existing index)");
         }
 
-        self.start_scan()
+        // Determine the trigger string for the scan phase
+        let trigger = if status.last_event_id.is_some() && status.scan_completed_at.is_none() {
+            "incomplete previous scan"
+        } else if status.scan_completed_at.is_some() {
+            "full rescan (no event replay on this platform)"
+        } else {
+            "fresh scan"
+        };
+        self.start_scan(trigger)
     }
 
     /// Resume from an existing index by replaying FSEvents journal since `since_event_id`.
@@ -264,6 +346,11 @@ impl IndexManager {
                 watcher_overflow = Some(watcher.overflow_flag());
                 self.drive_watcher = Some(watcher);
                 DEBUG_STATS.watcher_active.store(true, Ordering::Relaxed);
+                let gap = current_id.saturating_sub(since_event_id);
+                DEBUG_STATS.set_phase(
+                    ActivityPhase::Replaying,
+                    &format!("app launch, ~{gap} pending FSEvents"),
+                );
                 log::info!("Replay: watcher started (since_event_id={since_event_id}, current={current_id})");
             }
             Err(e) => {
@@ -273,7 +360,7 @@ impl IndexManager {
                     RescanReason::WatcherStartFailed,
                     format!("DriveWatcher failed to start for replay: {e}"),
                 );
-                return self.start_scan();
+                return self.start_scan("watcher failed to start for replay");
             }
         }
 
@@ -346,7 +433,7 @@ impl IndexManager {
                         }
                     }
 
-                    if let Err(e) = mgr.start_scan() {
+                    if let Err(e) = mgr.start_scan("journal replay detected gap") {
                         log::warn!("Fallback full scan failed: {e}");
                     }
                 }
@@ -364,7 +451,7 @@ impl IndexManager {
     /// 3. Start the full scan
     /// 4. On scan completion: replay buffered events, switch to live mode
     /// 5. Live events processed continuously until shutdown
-    pub fn start_scan(&mut self) -> Result<(), String> {
+    pub fn start_scan(&mut self, scan_trigger: &str) -> Result<(), String> {
         if self.scanning.load(Ordering::Relaxed) {
             return Err("Scan already running".to_string());
         }
@@ -407,6 +494,8 @@ impl IndexManager {
                 volume_id: self.volume_id.clone(),
             },
         );
+
+        DEBUG_STATS.set_phase(ActivityPhase::Scanning, scan_trigger);
 
         // Step 2: Start the full scan
         let config = ScanConfig {
@@ -484,6 +573,13 @@ impl IndexManager {
                         summary.duration_ms as f64 / 1000.0,
                     );
 
+                    DEBUG_STATS.close_phase_with_stats(vec![
+                        ("entries", summary.total_entries.to_string()),
+                        ("dirs", summary.total_dirs.to_string()),
+                        ("duration_s", format!("{:.1}", summary.duration_ms as f64 / 1000.0)),
+                    ]);
+                    DEBUG_STATS.set_phase(ActivityPhase::Aggregating, "post-scan");
+
                     // Step 4: Reconcile buffered watcher events
                     let mut reconciler = EventReconciler::new();
 
@@ -557,6 +653,9 @@ impl IndexManager {
                     // the progress overlay.
                     let _ = app.emit("index-aggregation-complete", ());
 
+                    DEBUG_STATS.close_phase_with_stats(vec![]);
+                    DEBUG_STATS.set_phase(ActivityPhase::Reconciling, "post-scan");
+
                     // Tell the frontend to refresh all visible listings — directory
                     // sizes are now available for the first time after a full scan.
                     let _ = app.emit(
@@ -627,6 +726,9 @@ impl IndexManager {
                     // Switch to live mode
                     reconciler.switch_to_live();
 
+                    DEBUG_STATS.close_phase_with_stats(vec![("buffered_events", buffered_count.to_string())]);
+                    DEBUG_STATS.set_phase(ActivityPhase::Live, "post-scan reconciliation complete");
+
                     // Step 5: Start live event processing loop
                     let writer_live = writer.clone();
                     let app_live = app.clone();
@@ -665,6 +767,8 @@ impl IndexManager {
 
     /// Stop the active full scan and watcher.
     pub fn stop_scan(&mut self) {
+        DEBUG_STATS.set_phase(ActivityPhase::Idle, "stopped");
+
         if let Some(ref handle) = self.scan_handle {
             handle.cancel();
         }
@@ -728,6 +832,14 @@ impl IndexManager {
             .map(|p| p.clone())
             .unwrap_or_default();
 
+        let (activity_phase, phase_started_at, phase_duration_ms, phase_history) = Self::read_phase_timeline();
+
+        let db_main_size = self.store.db_main_size().ok();
+        let db_wal_size = self.store.db_wal_size().ok();
+        let (db_page_count, db_freelist_count) = IndexStore::db_page_stats(conn)
+            .map(|(p, f)| (Some(p), Some(f)))
+            .unwrap_or((None, None));
+
         Ok(IndexDebugStatusResponse {
             base,
             watcher_active: DEBUG_STATS.watcher_active.load(Ordering::Relaxed),
@@ -738,7 +850,35 @@ impl IndexManager {
             live_dir_count,
             dirs_with_stats,
             recent_must_scan_paths,
+            activity_phase,
+            phase_started_at,
+            phase_duration_ms,
+            phase_history,
+            verifying: DEBUG_STATS.verifying.load(Ordering::Relaxed),
+            db_main_size,
+            db_wal_size,
+            db_page_count,
+            db_freelist_count,
         })
+    }
+
+    /// Read the current phase timeline from DebugStats.
+    fn read_phase_timeline() -> (ActivityPhase, String, u64, Vec<PhaseRecord>) {
+        let history = DEBUG_STATS.phase_history.lock().map(|h| h.clone()).unwrap_or_default();
+
+        let (activity_phase, phase_started_at) = history
+            .last()
+            .map(|r| (r.phase.clone(), r.started_at.clone()))
+            .unwrap_or((ActivityPhase::Idle, String::new()));
+
+        let phase_duration_ms = DEBUG_STATS
+            .phase_started
+            .lock()
+            .ok()
+            .and_then(|s| s.map(|i| i.elapsed().as_millis() as u64))
+            .unwrap_or(0);
+
+        (activity_phase, phase_started_at, phase_duration_ms, history)
     }
 
     /// Return the DB file path for this index.
@@ -752,6 +892,8 @@ impl IndexManager {
     /// loop to drain its final batch and send `UpdateLastEventId` → shut down
     /// the writer. This ensures `last_event_id` is up-to-date on next restart.
     pub fn shutdown(&mut self) {
+        DEBUG_STATS.set_phase(ActivityPhase::Idle, "shutdown");
+
         // 1. Cancel active scan (but don't abort event loop)
         if let Some(ref handle) = self.scan_handle {
             handle.cancel();
@@ -814,19 +956,23 @@ pub fn should_auto_start(indexing_enabled: Option<bool>) -> bool {
 
 /// Trigger background verification of a directory against the index DB.
 /// Called after enrichment on each navigation. No-op if indexing is not running.
+/// Fully fire-and-forget: the INDEXING lock is acquired on a spawned task,
+/// so it never blocks the caller (navigation thread).
 pub fn trigger_verification(dir_path: &str) {
-    let guard = match INDEXING.lock() {
-        Ok(g) => g,
-        Err(_) => return,
-    };
-    if let IndexPhase::Running(ref mgr) = *guard {
-        let writer = mgr.writer.clone();
-        let app = mgr.app.clone();
-        let scanning = mgr.scanning.load(Ordering::Relaxed);
-        let dir_path = dir_path.to_string();
-        drop(guard);
-        verifier::maybe_verify(dir_path, writer, app, scanning);
-    }
+    let dir_path = dir_path.to_string();
+    tauri::async_runtime::spawn(async move {
+        let guard = match INDEXING.lock() {
+            Ok(g) => g,
+            Err(_) => return,
+        };
+        if let IndexPhase::Running(ref mgr) = *guard {
+            let writer = mgr.writer.clone();
+            let app = mgr.app.clone();
+            let scanning = mgr.scanning.load(Ordering::Relaxed);
+            drop(guard);
+            verifier::maybe_verify(dir_path, writer, app, scanning);
+        }
+    });
 }
 
 /// Stop all scans and watcher without deleting the DB.
@@ -1017,6 +1163,8 @@ pub fn get_debug_status() -> Result<IndexDebugStatusResponse, String> {
                 index_status: None,
                 db_file_size: None,
             };
+            let (activity_phase, phase_started_at, phase_duration_ms, phase_history) =
+                IndexManager::read_phase_timeline();
             Ok(IndexDebugStatusResponse {
                 base,
                 watcher_active: false,
@@ -1027,6 +1175,15 @@ pub fn get_debug_status() -> Result<IndexDebugStatusResponse, String> {
                 live_dir_count: None,
                 dirs_with_stats: None,
                 recent_must_scan_paths: Vec::new(),
+                activity_phase,
+                phase_started_at,
+                phase_duration_ms,
+                phase_history,
+                verifying: false,
+                db_main_size: None,
+                db_wal_size: None,
+                db_page_count: None,
+                db_freelist_count: None,
             })
         }
         IndexPhase::Initializing { store, .. } => {
@@ -1040,6 +1197,14 @@ pub fn get_debug_status() -> Result<IndexDebugStatusResponse, String> {
                 index_status,
                 db_file_size,
             };
+            let (activity_phase, phase_started_at, phase_duration_ms, phase_history) =
+                IndexManager::read_phase_timeline();
+            let db_main_size = store.db_main_size().ok();
+            let db_wal_size = store.db_wal_size().ok();
+            let conn = store.read_conn();
+            let (db_page_count, db_freelist_count) = IndexStore::db_page_stats(conn)
+                .map(|(p, f)| (Some(p), Some(f)))
+                .unwrap_or((None, None));
             Ok(IndexDebugStatusResponse {
                 base,
                 watcher_active: DEBUG_STATS.watcher_active.load(Ordering::Relaxed),
@@ -1050,6 +1215,15 @@ pub fn get_debug_status() -> Result<IndexDebugStatusResponse, String> {
                 live_dir_count: None,
                 dirs_with_stats: None,
                 recent_must_scan_paths: Vec::new(),
+                activity_phase,
+                phase_started_at,
+                phase_duration_ms,
+                phase_history,
+                verifying: DEBUG_STATS.verifying.load(Ordering::Relaxed),
+                db_main_size,
+                db_wal_size,
+                db_page_count,
+                db_freelist_count,
             })
         }
         IndexPhase::Running(mgr) => mgr.get_debug_status(),
@@ -1122,7 +1296,7 @@ pub fn get_dir_stats_batch(paths: &[String]) -> Result<Vec<Option<DirStats>>, St
 pub fn force_scan() -> Result<(), String> {
     let mut guard = INDEXING.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
     match &mut *guard {
-        IndexPhase::Running(mgr) => mgr.start_scan(),
+        IndexPhase::Running(mgr) => mgr.start_scan("manual start"),
         _ => Err("Indexing not initialized".to_string()),
     }
 }

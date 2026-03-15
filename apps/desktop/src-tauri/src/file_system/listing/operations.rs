@@ -165,7 +165,10 @@ pub fn get_file_range(
         .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
 
     // Filter entries if not including hidden
-    let mut entries: Vec<FileEntry> = if include_hidden {
+    // Cache entries are already enriched by the path that stored them (streaming,
+    // watcher update, re-sort). Index freshness is handled separately by
+    // `index-dir-updated` → `refreshIndexSizes` → `getDirStatsBatch`.
+    let entries: Vec<FileEntry> = if include_hidden {
         let end = (start + count).min(listing.entries.len());
         listing.entries[start..end].to_vec()
     } else {
@@ -174,8 +177,6 @@ pub fn get_file_range(
         let end = (start + count).min(visible.len());
         visible[start..end].iter().cloned().cloned().collect()
     };
-
-    crate::indexing::enrich_entries_with_index(&mut entries);
 
     Ok(entries)
 }

@@ -295,7 +295,8 @@ const CREATE_TABLES_SQL: &str = "
 /// Insert the root sentinel entry if it doesn't exist.
 fn ensure_root_sentinel(conn: &Connection) -> Result<(), IndexStoreError> {
     #[cfg(target_os = "macos")]
-    let sql = "INSERT OR IGNORE INTO entries (id, parent_id, name, name_folded, is_directory) VALUES (?1, ?2, '', '', 1)";
+    let sql =
+        "INSERT OR IGNORE INTO entries (id, parent_id, name, name_folded, is_directory) VALUES (?1, ?2, '', '', 1)";
     #[cfg(not(target_os = "macos"))]
     let sql = "INSERT OR IGNORE INTO entries (id, parent_id, name, is_directory) VALUES (?1, ?2, '', 1)";
     conn.execute(sql, params![ROOT_ID, ROOT_PARENT_ID])?;
@@ -539,6 +540,25 @@ impl IndexStore {
         Ok(main + wal + shm)
     }
 
+    /// Return the main DB file size (excluding WAL/SHM).
+    pub fn db_main_size(&self) -> Result<u64, IndexStoreError> {
+        Ok(std::fs::metadata(&self.db_path)?.len())
+    }
+
+    /// Return the WAL file size.
+    pub fn db_wal_size(&self) -> Result<u64, IndexStoreError> {
+        Ok(std::fs::metadata(format!("{}-wal", self.db_path.display()))
+            .map(|m| m.len())
+            .unwrap_or(0))
+    }
+
+    /// Return SQLite page_count and freelist_count.
+    pub fn db_page_stats(conn: &Connection) -> Result<(u64, u64), IndexStoreError> {
+        let page_count: u64 = conn.pragma_query_value(None, "page_count", |r| r.get(0))?;
+        let freelist: u64 = conn.pragma_query_value(None, "freelist_count", |r| r.get(0))?;
+        Ok((page_count, freelist))
+    }
+
     // ── Read methods (integer-keyed, new API) ────────────────────────
 
     /// List children of a directory by parent entry ID.
@@ -685,9 +705,8 @@ impl IndexStore {
     pub fn resolve_component(conn: &Connection, parent_id: i64, name: &str) -> Result<Option<i64>, IndexStoreError> {
         #[cfg(target_os = "macos")]
         {
-            let mut stmt = conn.prepare_cached(
-                "SELECT id FROM entries WHERE parent_id = ?1 AND name_folded = ?2 LIMIT 1",
-            )?;
+            let mut stmt =
+                conn.prepare_cached("SELECT id FROM entries WHERE parent_id = ?1 AND name_folded = ?2 LIMIT 1")?;
             let folded = normalize_for_comparison(name);
             let result = stmt
                 .query_row(params![parent_id, folded], |row| row.get::<_, i64>(0))
@@ -696,9 +715,7 @@ impl IndexStore {
         }
         #[cfg(not(target_os = "macos"))]
         {
-            let mut stmt = conn.prepare_cached(
-                "SELECT id FROM entries WHERE parent_id = ?1 AND name = ?2 LIMIT 1",
-            )?;
+            let mut stmt = conn.prepare_cached("SELECT id FROM entries WHERE parent_id = ?1 AND name = ?2 LIMIT 1")?;
             let result = stmt
                 .query_row(params![parent_id, name], |row| row.get::<_, i64>(0))
                 .optional()?;
@@ -1769,12 +1786,24 @@ mod tests {
         let users_id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None).unwrap();
 
         // Different casings should all resolve to the same ID
-        assert_eq!(IndexStore::resolve_component(&conn, ROOT_ID, "users").unwrap(), Some(users_id));
-        assert_eq!(IndexStore::resolve_component(&conn, ROOT_ID, "USERS").unwrap(), Some(users_id));
-        assert_eq!(IndexStore::resolve_component(&conn, ROOT_ID, "uSeRs").unwrap(), Some(users_id));
+        assert_eq!(
+            IndexStore::resolve_component(&conn, ROOT_ID, "users").unwrap(),
+            Some(users_id)
+        );
+        assert_eq!(
+            IndexStore::resolve_component(&conn, ROOT_ID, "USERS").unwrap(),
+            Some(users_id)
+        );
+        assert_eq!(
+            IndexStore::resolve_component(&conn, ROOT_ID, "uSeRs").unwrap(),
+            Some(users_id)
+        );
 
         // Nonexistent name returns None
-        assert_eq!(IndexStore::resolve_component(&conn, ROOT_ID, "nonexistent").unwrap(), None);
+        assert_eq!(
+            IndexStore::resolve_component(&conn, ROOT_ID, "nonexistent").unwrap(),
+            None
+        );
     }
 
     #[cfg(target_os = "macos")]
@@ -1788,7 +1817,9 @@ mod tests {
         let id = IndexStore::insert_entry_v2(&conn, ROOT_ID, name, true, false, None, None).unwrap();
 
         let folded: String = conn
-            .query_row("SELECT name_folded FROM entries WHERE id = ?1", params![id], |row| row.get(0))
+            .query_row("SELECT name_folded FROM entries WHERE id = ?1", params![id], |row| {
+                row.get(0)
+            })
             .unwrap();
         assert_eq!(folded, normalize_for_comparison(name));
     }
@@ -1801,14 +1832,32 @@ mod tests {
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
         let entries = vec![
-            EntryRow { id: 200, parent_id: ROOT_ID, name: "Documents".into(), is_directory: true, is_symlink: false, size: None, modified_at: None },
-            EntryRow { id: 201, parent_id: 200, name: "Café.txt".into(), is_directory: false, is_symlink: false, size: Some(10), modified_at: None },
+            EntryRow {
+                id: 200,
+                parent_id: ROOT_ID,
+                name: "Documents".into(),
+                is_directory: true,
+                is_symlink: false,
+                size: None,
+                modified_at: None,
+            },
+            EntryRow {
+                id: 201,
+                parent_id: 200,
+                name: "Café.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                size: Some(10),
+                modified_at: None,
+            },
         ];
         IndexStore::insert_entries_v2_batch(&conn, &entries).unwrap();
 
         for e in &entries {
             let folded: String = conn
-                .query_row("SELECT name_folded FROM entries WHERE id = ?1", params![e.id], |row| row.get(0))
+                .query_row("SELECT name_folded FROM entries WHERE id = ?1", params![e.id], |row| {
+                    row.get(0)
+                })
                 .unwrap();
             assert_eq!(folded, normalize_for_comparison(&e.name));
         }

@@ -699,16 +699,10 @@
         const loadPath = path
         const loadSelectName = selectName
 
-        // CRITICAL: Wait for browser to actually PAINT the loading state before IPC call
-        // tick() only flushes Svelte render, requestAnimationFrame waits for paint
-        // Double-RAF ensures we wait for both the render AND the paint to complete
-        await new Promise<void>((resolve) => {
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    resolve()
-                })
-            })
-        })
+        // Loading state is set synchronously above; Svelte will render it on the next
+        // microtask. The IPC call below is non-blocking (spawns a background task and
+        // returns immediately), so no double-RAF paint wait is needed.
+        await tick()
 
         try {
             // Generate listingId first and set up listeners BEFORE starting the streaming
@@ -717,67 +711,39 @@
             listingId = newListingId
             lastSequence = 0
 
-            // Subscribe to opening event (emitted before read_dir - slow for network folders)
-            unlistenOpening = await listen<ListingOpeningEvent>('listing-opening', (event) => {
-                if (event.payload.listingId === newListingId && thisGeneration === loadGeneration) {
-                    openingFolder = true
-                }
-            })
-
-            // Subscribe to progress events
-            unlistenProgress = await listen<ListingProgressEvent>('listing-progress', (event) => {
-                if (event.payload.listingId === newListingId && thisGeneration === loadGeneration) {
-                    loadingCount = event.payload.loadedCount
-                }
-            })
-
-            // Subscribe to read-complete event (read_dir finished, now sorting/caching)
-            unlistenReadComplete = await listen<ListingReadCompleteEvent>('listing-read-complete', (event) => {
-                if (event.payload.listingId === newListingId && thisGeneration === loadGeneration) {
-                    finalizingCount = event.payload.totalCount
-                }
-            })
-
-            // Subscribe to completion event
-            unlistenComplete = await listen<ListingCompleteEvent>('listing-complete', (event) => {
-                if (event.payload.listingId === newListingId && thisGeneration === loadGeneration) {
-                    void handleListingComplete(event.payload, loadPath, loadSelectName)
-                }
-            })
-
-            // Subscribe to error event
-            unlistenError = await listen<ListingErrorEvent>('listing-error', (event) => {
-                if (event.payload.listingId === newListingId && thisGeneration === loadGeneration) {
-                    // For MTP volumes, trigger fallback on error (device likely disconnected)
-                    if (isMtpView) {
-                        error = event.payload.message
-                        listingId = ''
-                        totalCount = 0
-                        loading = false
-                        openingFolder = false
-                        loadingCount = undefined
-                        finalizingCount = undefined
-                        log.warn('MTP listing error, triggering fallback: {error}', {
-                            error: event.payload.message,
-                        })
-                        onMtpFatalError?.(event.payload.message)
-                        return
+            // Register all event listeners in parallel (no ordering dependency between them)
+            ;[
+                unlistenOpening,
+                unlistenProgress,
+                unlistenReadComplete,
+                unlistenComplete,
+                unlistenError,
+                unlistenCancelled,
+            ] = await Promise.all([
+                listen<ListingOpeningEvent>('listing-opening', (event) => {
+                    if (event.payload.listingId === newListingId && thisGeneration === loadGeneration) {
+                        openingFolder = true
                     }
-
-                    // For local volumes, check if the path was deleted
-                    void pathExists(loadPath).then((exists) => {
-                        if (!exists) {
-                            // Path is gone — auto-navigate to nearest valid parent
-                            log.info('Listing error for deleted path, navigating to valid parent: {path}', {
-                                path: loadPath,
-                            })
-                            void resolveValidPath(loadPath).then((validPath) => {
-                                const target = validPath ?? volumePath
-                                currentPath = target
-                                void loadDirectory(target)
-                            })
-                        } else {
-                            // Path exists but has another error (permission denied, etc.)
+                }),
+                listen<ListingProgressEvent>('listing-progress', (event) => {
+                    if (event.payload.listingId === newListingId && thisGeneration === loadGeneration) {
+                        loadingCount = event.payload.loadedCount
+                    }
+                }),
+                listen<ListingReadCompleteEvent>('listing-read-complete', (event) => {
+                    if (event.payload.listingId === newListingId && thisGeneration === loadGeneration) {
+                        finalizingCount = event.payload.totalCount
+                    }
+                }),
+                listen<ListingCompleteEvent>('listing-complete', (event) => {
+                    if (event.payload.listingId === newListingId && thisGeneration === loadGeneration) {
+                        void handleListingComplete(event.payload, loadPath, loadSelectName)
+                    }
+                }),
+                listen<ListingErrorEvent>('listing-error', (event) => {
+                    if (event.payload.listingId === newListingId && thisGeneration === loadGeneration) {
+                        // For MTP volumes, trigger fallback on error (device likely disconnected)
+                        if (isMtpView) {
                             error = event.payload.message
                             listingId = ''
                             totalCount = 0
@@ -785,22 +751,49 @@
                             openingFolder = false
                             loadingCount = undefined
                             finalizingCount = undefined
+                            log.warn('MTP listing error, triggering fallback: {error}', {
+                                error: event.payload.message,
+                            })
+                            onMtpFatalError?.(event.payload.message)
+                            return
                         }
-                    })
-                }
-            })
 
-            // Subscribe to cancelled event
-            unlistenCancelled = await listen<ListingCancelledEvent>('listing-cancelled', (event) => {
-                if (event.payload.listingId === newListingId && thisGeneration === loadGeneration) {
-                    // Cancellation handled by onCancelLoading callback
-                    listingId = ''
-                    loading = false
-                    openingFolder = false
-                    loadingCount = undefined
-                    finalizingCount = undefined
-                }
-            })
+                        // For local volumes, check if the path was deleted
+                        void pathExists(loadPath).then((exists) => {
+                            if (!exists) {
+                                // Path is gone — auto-navigate to nearest valid parent
+                                log.info('Listing error for deleted path, navigating to valid parent: {path}', {
+                                    path: loadPath,
+                                })
+                                void resolveValidPath(loadPath).then((validPath) => {
+                                    const target = validPath ?? volumePath
+                                    currentPath = target
+                                    void loadDirectory(target)
+                                })
+                            } else {
+                                // Path exists but has another error (permission denied, etc.)
+                                error = event.payload.message
+                                listingId = ''
+                                totalCount = 0
+                                loading = false
+                                openingFolder = false
+                                loadingCount = undefined
+                                finalizingCount = undefined
+                            }
+                        })
+                    }
+                }),
+                listen<ListingCancelledEvent>('listing-cancelled', (event) => {
+                    if (event.payload.listingId === newListingId && thisGeneration === loadGeneration) {
+                        // Cancellation handled by onCancelLoading callback
+                        listingId = ''
+                        loading = false
+                        openingFolder = false
+                        loadingCount = undefined
+                        finalizingCount = undefined
+                    }
+                }),
+            ])
 
             // Now start streaming listing - listeners are already set up
             benchmark.logEvent('IPC listDirectoryStart CALL')

@@ -74,6 +74,9 @@ Frontend                          Backend
 **Decision**: Sorting happens AFTER read, BEFORE caching
 **Why**: Frontend expects sorted order. Sorting 50k entries takes ~15ms (fast enough). Done in background task after all entries collected.
 
+**Decision**: Enrichment at cache-write time, not on `get_file_range`
+**Why**: All paths that store entries in `LISTING_CACHE` (streaming, watcher update, re-sort) enrich before storing. Index freshness is handled event-driven: `index-dir-updated` → `refreshIndexSizes` → `getDirStatsBatch` (a separate IPC path that bypasses `get_file_range`). Re-enriching on every page fetch was redundant.
+
 **Decision**: Hidden files filtering in Rust, not frontend
 **Why**: Cannot know visible count until all files read. APIs accept `include_hidden: bool`, filter during `get_file_range()` iteration.
 

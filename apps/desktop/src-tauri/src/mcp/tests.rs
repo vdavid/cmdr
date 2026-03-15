@@ -133,8 +133,8 @@ fn test_resource_count() {
     let resources = get_all_resources();
     assert_eq!(
         resources.len(),
-        2,
-        "Expected 2 resources (cmdr://state and cmdr://dialogs/available)"
+        3,
+        "Expected 3 resources (cmdr://state, cmdr://dialogs/available, cmdr://indexing)"
     );
 }
 
@@ -168,20 +168,21 @@ fn test_no_duplicate_resource_uris() {
 #[test]
 fn test_resources_exist() {
     let resources = get_all_resources();
-    let expected_uris = ["cmdr://state", "cmdr://dialogs/available"];
+    let expected_uris = ["cmdr://state", "cmdr://dialogs/available", "cmdr://indexing"];
     for uri in expected_uris {
         assert!(resources.iter().any(|r| r.uri == uri), "Missing resource: {}", uri);
     }
 }
 
 #[test]
-fn test_all_resources_have_yaml_mime_type() {
+fn test_all_resources_have_valid_mime_type() {
     let resources = get_all_resources();
     for resource in resources {
-        assert_eq!(
-            resource.mime_type, "text/yaml",
-            "Resource {} should have text/yaml mime type",
-            resource.uri
+        assert!(
+            resource.mime_type == "text/yaml" || resource.mime_type == "text/plain",
+            "Resource {} has unexpected mime type: {}",
+            resource.uri,
+            resource.mime_type
         );
     }
 }

@@ -540,6 +540,20 @@ pub(super) async fn run_replay_event_loop(
 
     // ── Switch to live mode immediately (before verification) ────────
 
+    DEBUG_STATS.close_phase_with_stats(vec![
+        ("raw_events", event_count.to_string()),
+        ("unique_events", deduped_total.to_string()),
+        (
+            "dedup_pct",
+            format!(
+                "{:.0}",
+                (1.0 - deduped_total as f64 / event_count.max(1) as f64) * 100.0
+            ),
+        ),
+        ("affected_dirs", affected_paths.len().to_string()),
+    ]);
+    DEBUG_STATS.set_phase(super::ActivityPhase::Live, "post-replay");
+
     log::info!("Replay: switching to live mode");
     let mut reconciler = EventReconciler::new();
     reconciler.switch_to_live();
@@ -665,6 +679,7 @@ pub(super) async fn run_replay_event_loop(
 /// Corrections found by verification go through the writer channel,
 /// which serializes them with live writes.
 pub(super) async fn run_background_verification(affected_paths: HashSet<String>, writer: IndexWriter, app: AppHandle) {
+    DEBUG_STATS.verifying.store(true, Ordering::Relaxed);
     let verify_start = std::time::Instant::now();
     log::debug!(
         "Background verification started ({} affected dirs)",
@@ -780,6 +795,7 @@ pub(super) async fn run_background_verification(affected_paths: HashSet<String>,
         reconciler::emit_dir_updated(&app, corrected_paths);
     }
 
+    DEBUG_STATS.verifying.store(false, Ordering::Relaxed);
     log::debug!(
         "Background verification completed in {}ms",
         verify_start.elapsed().as_millis(),

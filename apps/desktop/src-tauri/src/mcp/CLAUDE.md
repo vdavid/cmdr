@@ -34,6 +34,7 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 
 - `cmdr://state`: Complete app state in YAML (both panes, volumes, dialogs)
 - `cmdr://dialogs/available`: Static metadata about available dialogs
+- `cmdr://indexing`: Drive indexing status in plain text (current phase, timeline history, DB stats). Calls `indexing::get_debug_status()` and formats as human-readable text.
 
 ### Executor (`executor.rs`)
 
