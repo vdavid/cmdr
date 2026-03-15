@@ -5,6 +5,21 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 and we use [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.2] - 2026-03-15
+
+### Fixed
+
+- Fix crash on launch after auto-update — `fs::copy` overwrote files in-place keeping the same inode, causing macOS kernel code signing cache to SIGKILL the app. Now writes to a temp file then `rename()` for a fresh inode ([dec8457](https://github.com/vdavid/cmdr/commit/dec8457))
+- Fix indexing: per-navigation verifier catches index drift via background readdir diffs with 30s debounce, excluded system paths (`/System`, `/dev`) no longer inserted as empty stubs, unified exclusion checks across scanner/reconciler/verifier ([7afe71b](https://github.com/vdavid/cmdr/commit/7afe71b), [9434ee6](https://github.com/vdavid/cmdr/commit/9434ee6))
+- Fix dir size display during indexing — show "Scanning..." during aggregation phase, refresh panes on aggregation-complete instead of scan-complete ([a6a123d](https://github.com/vdavid/cmdr/commit/a6a123d))
+- Fix navigation latency — fire-and-forget verification (no mutex block), parallelize 6 sequential `listen()` calls, remove redundant index enrichment from `get_file_range` ([8f3ce55](https://github.com/vdavid/cmdr/commit/8f3ce55))
+- Fix indexing performance: replace composite index with integer-only (25 min → seconds for 5.1M entries), add `name_folded` column for O(log n) path resolution, deduplicate replay events (99% reduction in high-churn scenarios) ([b94b611](https://github.com/vdavid/cmdr/commit/b94b611), [7ac477b](https://github.com/vdavid/cmdr/commit/7ac477b), [4fe5bb4](https://github.com/vdavid/cmdr/commit/4fe5bb4))
+
+### Non-app
+
+- Tooling: separate dev and prod log dirs, fix Linux Rust test output capture, fix smoke test timeout ([8429123](https://github.com/vdavid/cmdr/commit/8429123), [2181ad5](https://github.com/vdavid/cmdr/commit/2181ad5), [de5236b](https://github.com/vdavid/cmdr/commit/de5236b))
+- Docs: improve agent instructions ([71f365b](https://github.com/vdavid/cmdr/commit/71f365b))
+
 ## [0.8.1] - 2026-03-14
 
 ### Fixed
