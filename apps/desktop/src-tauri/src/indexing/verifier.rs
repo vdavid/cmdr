@@ -422,6 +422,18 @@ mod tests {
     use std::thread;
     use std::time::Duration;
 
+    /// Create a temp dir in the crate root instead of `/tmp/`.
+    /// On Linux, `/tmp/` is in `EXCLUDED_PREFIXES`, so `should_exclude`
+    /// filters out entries under it — breaking verifier tests that add
+    /// new files/dirs and expect them to appear in the diff.
+    fn test_tempdir() -> tempfile::TempDir {
+        let base = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        tempfile::Builder::new()
+            .prefix("cmdr-test-")
+            .tempdir_in(base)
+            .expect("create temp dir")
+    }
+
     fn setup_writer() -> (IndexWriter, std::path::PathBuf, tempfile::TempDir) {
         let dir = tempfile::tempdir().expect("create temp dir");
         let db_path = dir.path().join("test-index.db");
@@ -488,7 +500,7 @@ mod tests {
     #[test]
     fn verify_clean_directory() {
         let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
-        let fs_root = tempfile::tempdir().expect("fs root");
+        let fs_root = test_tempdir();
         fs::write(fs_root.path().join("file1.txt"), "hello").unwrap();
         fs::create_dir(fs_root.path().join("subdir")).unwrap();
 
@@ -515,7 +527,7 @@ mod tests {
     #[test]
     fn verify_detects_new_file() {
         let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
-        let fs_root = tempfile::tempdir().expect("fs root");
+        let fs_root = test_tempdir();
         fs::write(fs_root.path().join("file1.txt"), "hello").unwrap();
 
         let (writer, db_path, _db_dir) = setup_writer();
@@ -542,7 +554,7 @@ mod tests {
     #[test]
     fn verify_detects_deleted_file() {
         let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
-        let fs_root = tempfile::tempdir().expect("fs root");
+        let fs_root = test_tempdir();
         fs::write(fs_root.path().join("file1.txt"), "hello").unwrap();
         fs::write(fs_root.path().join("file2.txt"), "world").unwrap();
 
@@ -571,7 +583,7 @@ mod tests {
     #[test]
     fn verify_detects_modified_file() {
         let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
-        let fs_root = tempfile::tempdir().expect("fs root");
+        let fs_root = test_tempdir();
         // Write a small initial file
         fs::write(fs_root.path().join("file1.txt"), "x").unwrap();
 
@@ -607,7 +619,7 @@ mod tests {
     #[test]
     fn verify_detects_new_directory() {
         let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
-        let fs_root = tempfile::tempdir().expect("fs root");
+        let fs_root = test_tempdir();
         fs::write(fs_root.path().join("file1.txt"), "hello").unwrap();
 
         let (writer, db_path, _db_dir) = setup_writer();
@@ -635,7 +647,7 @@ mod tests {
     #[test]
     fn verify_detects_deleted_directory() {
         let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
-        let fs_root = tempfile::tempdir().expect("fs root");
+        let fs_root = test_tempdir();
         fs::write(fs_root.path().join("file1.txt"), "hello").unwrap();
         let subdir = fs_root.path().join("subdir");
         fs::create_dir(&subdir).unwrap();
@@ -668,7 +680,7 @@ mod tests {
     #[test]
     fn verify_type_change_dir_to_file() {
         let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
-        let fs_root = tempfile::tempdir().expect("fs root");
+        let fs_root = test_tempdir();
         let subdir = fs_root.path().join("subdir");
         fs::create_dir(&subdir).unwrap();
         fs::write(subdir.join("nested.txt"), "nested").unwrap();
@@ -754,7 +766,7 @@ mod tests {
     #[test]
     fn verify_empty_directory() {
         let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
-        let fs_root = tempfile::tempdir().expect("fs root");
+        let fs_root = test_tempdir();
         // Empty directory, no files
 
         let (writer, db_path, _db_dir) = setup_writer();
