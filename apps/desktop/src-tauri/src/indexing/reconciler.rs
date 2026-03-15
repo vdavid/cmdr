@@ -27,51 +27,10 @@ use tauri::{AppHandle, Emitter};
 
 use crate::indexing::DEBUG_STATS;
 use crate::indexing::firmlinks;
+use crate::indexing::scanner;
 use crate::indexing::store::{self, IndexStore};
 use crate::indexing::watcher::FsChangeEvent;
 use crate::indexing::writer::{IndexWriter, WriteMessage};
-
-// ── Exclusion check ──────────────────────────────────────────────────
-
-/// Re-use the scanner's exclusion logic for watcher events.
-/// Inlined here to avoid making scanner::should_exclude pub.
-fn should_exclude(path: &str) -> bool {
-    use crate::indexing::scanner::default_exclusions;
-
-    // Check explicit exclusion prefixes
-    let exclusions = default_exclusions();
-    for prefix in &exclusions {
-        if path.starts_with(prefix.as_str()) {
-            return true;
-        }
-        let prefix_no_slash = prefix.trim_end_matches('/');
-        if path == prefix_no_slash {
-            return true;
-        }
-    }
-
-    // macOS: /System/ paths -- allow only firmlinked ones
-    #[cfg(target_os = "macos")]
-    if path.starts_with("/System/") || path == "/System" {
-        const FIRMLINKED_SYSTEM_PREFIXES: &[&str] = &[
-            "/System/Library/Caches",
-            "/System/Library/Assets",
-            "/System/Library/PreinstalledAssets",
-            "/System/Library/AssetsV2",
-            "/System/Library/PreinstalledAssetsV2",
-            "/System/Library/CoreServices/CoreTypes.bundle/Contents/Library",
-            "/System/Library/Speech",
-        ];
-        for allowed in FIRMLINKED_SYSTEM_PREFIXES {
-            if path.starts_with(allowed) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    false
-}
 
 // ── EventReconciler ──────────────────────────────────────────────────
 
@@ -516,7 +475,7 @@ fn read_fs_children(dir_path: &Path) -> Option<Vec<(String, std::fs::Metadata, b
         let name = entry.file_name().to_string_lossy().to_string();
         let child_path = dir_path.join(&name);
         let normalized_child = firmlinks::normalize_path(&child_path.to_string_lossy());
-        if should_exclude(&normalized_child) {
+        if scanner::should_exclude(&normalized_child) {
             continue;
         }
         if let Ok(meta) = std::fs::symlink_metadata(&child_path) {
@@ -538,7 +497,7 @@ pub(super) fn process_fs_event(event: &FsChangeEvent, conn: &Connection, writer:
     let normalized = firmlinks::normalize_path(&event.path);
 
     // Skip excluded paths
-    if should_exclude(&normalized) {
+    if scanner::should_exclude(&normalized) {
         return None;
     }
 

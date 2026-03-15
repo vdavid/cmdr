@@ -939,6 +939,11 @@ fn verify_affected_dirs(affected_paths: &HashSet<String>, writer: &IndexWriter) 
                 continue;
             }
 
+            // Skip excluded system paths (e.g. /System, /dev, /Volumes)
+            if scanner::should_exclude(&normalized) {
+                continue;
+            }
+
             let metadata = match std::fs::symlink_metadata(&child_path) {
                 Ok(m) => m,
                 Err(_) => continue,

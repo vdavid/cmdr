@@ -531,8 +531,9 @@ fn flush_batch(batch: &mut Vec<EntryRow>, writer: &IndexWriter) -> Result<(), Sc
         .map_err(|e| ScanError::WriterSend(e.to_string()))
 }
 
-/// Build the default exclusion list. Public for tests and future configurability.
-pub fn default_exclusions() -> Vec<String> {
+/// Build the default exclusion list for tests.
+#[cfg(test)]
+fn default_exclusions() -> Vec<String> {
     EXCLUDED_PREFIXES.iter().map(|s| (*s).to_string()).collect()
 }
 

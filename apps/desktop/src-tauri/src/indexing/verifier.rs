@@ -205,6 +205,12 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
     for (key, disk_entry) in &disk_map {
         match db_map.get(key) {
             None => {
+                // Skip excluded system paths (e.g. /System, /dev, /Volumes)
+                let child_path = format!("{}/{}", parent_prefix, disk_entry.name);
+                if scanner::should_exclude(&child_path) {
+                    continue;
+                }
+
                 // New entry on disk
                 let _ = writer.send(WriteMessage::UpsertEntryV2 {
                     parent_id,
