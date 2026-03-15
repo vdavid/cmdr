@@ -26,7 +26,8 @@ fi
 git add CHANGELOG.md apps/website/src/pages/roadmap.astro 2>/dev/null || true
 
 # Pull latest main to avoid push rejection after tagging
-git pull --rebase origin main
+# --autostash: temporarily stashes staged changelog/roadmap changes so rebase can proceed
+git pull --rebase --autostash origin main
 
 # Check CHANGELOG.md has an [Unreleased] section with content
 if ! grep -q '## \[Unreleased\]' CHANGELOG.md; then
