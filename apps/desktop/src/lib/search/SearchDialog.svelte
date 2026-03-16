@@ -4,6 +4,10 @@
      *
      * Follows the command palette pattern (custom overlay, not ModalDialog).
      * Searches the in-memory index by filename (wildcards), size, and date.
+     *
+     * Input layout:
+     * - Manual mode: single pattern row with Search + Ask AI buttons
+     * - AI mode: two rows — AI prompt row (top) + pattern row (bottom)
      */
     import { onMount, onDestroy, tick } from 'svelte'
     import { SvelteSet } from 'svelte/reactivity'
@@ -58,6 +62,8 @@
         setIsAiMode,
         getAiStatus,
         setAiStatus,
+        getAiPrompt,
+        setAiPrompt,
         buildSearchQuery,
         resetSearchState,
         type SizeFilter,
@@ -74,7 +80,8 @@
 
     const { onNavigate, onClose }: Props = $props()
 
-    let inputElement: HTMLInputElement | undefined = $state()
+    let aiPromptInputElement: HTMLInputElement | undefined = $state()
+    let patternInputElement: HTMLInputElement | undefined = $state()
     let dialogElement: HTMLDivElement | undefined = $state()
     let resultsContainer: HTMLDivElement | undefined = $state()
     let hoveredIndex = $state<number | null>(null)
@@ -100,6 +107,7 @@
     const isIndexAvailable = $derived(getIsIndexAvailable())
     const isAiMode = $derived(getIsAiMode())
     const aiStatus = $derived(getAiStatus())
+    const aiPrompt = $derived(getAiPrompt())
     const scanning = $derived(isScanning())
     const entriesScanned = $derived(getEntriesScanned())
 
@@ -118,6 +126,15 @@
     function getIconUrl(iconId: string): string | undefined {
         void _iconVersion
         return getCachedIcon(iconId)
+    }
+
+    /** Focuses the appropriate input based on current mode. */
+    function focusActiveInput(): void {
+        if (isAiMode) {
+            aiPromptInputElement?.focus()
+        } else {
+            patternInputElement?.focus()
+        }
     }
 
     onMount(async () => {
@@ -146,7 +163,7 @@
         }
 
         await tick()
-        inputElement?.focus()
+        focusActiveInput()
     })
 
     onDestroy(() => {
@@ -186,14 +203,20 @@
 
     function toggleAiMode(): void {
         const newMode = !getIsAiMode()
+        if (newMode) {
+            // Entering AI mode: move current pattern text to AI prompt
+            setAiPrompt(getNamePattern())
+            setNamePattern('')
+        } else {
+            // Exiting AI mode: keep pattern, clear AI prompt
+            setAiPrompt('')
+        }
         setIsAiMode(newMode)
         aiError = ''
         setAiStatus('')
-        if (!newMode) {
-            // Switching back to manual mode — clear AI status
-            setNamePattern('')
-        }
-        inputElement?.focus()
+        void tick().then(() => {
+            focusActiveInput()
+        })
     }
 
     /** Applies AI-returned size filters to the UI state. Returns true if any were applied. */
@@ -238,8 +261,9 @@
         return true
     }
 
-    async function executeAiSearch(): Promise<void> {
-        const query = getNamePattern().trim()
+    /** Runs the AI translation for a given query text, populates filters, and auto-runs search. */
+    async function executeAiSearch(queryText: string): Promise<void> {
+        const query = queryText.trim()
         if (!query) return
 
         aiError = ''
@@ -278,6 +302,12 @@
             }
 
             setAiStatus('')
+            hasSearched = true
+
+            // After AI response + search, focus results for keyboard nav
+            await tick()
+            const firstResult = resultsContainer?.querySelector('.result-row') as HTMLElement | null
+            firstResult?.focus()
         } catch (e: unknown) {
             aiError = typeof e === 'string' ? e : e instanceof Error ? e.message : String(e)
             setAiStatus('')
@@ -294,10 +324,15 @@
         return { value: String(Math.round((bytes / 1024) * 100) / 100), unit: 'KB' }
     }
 
-    function handleNameInput(e: Event): void {
+    function handlePatternInput(e: Event): void {
         const target = e.target as HTMLInputElement
         setNamePattern(target.value)
         scheduleSearch()
+    }
+
+    function handleAiPromptInput(e: Event): void {
+        const target = e.target as HTMLInputElement
+        setAiPrompt(target.value)
     }
 
     function handleSizeFilterChange(e: Event): void {
@@ -360,16 +395,14 @@
         return true
     }
 
-    /** Handles Enter key in the search dialog. */
-    function handleEnterKey(): void {
-        if (isAiMode) {
-            void executeAiSearch()
-        } else if (cursorIndex < results.length) {
-            onNavigate(results[cursorIndex].path)
-        } else {
-            // Bypass debounce — run search immediately
-            void executeSearch()
-        }
+    /** Returns true if the active element is the AI prompt input. */
+    function isInAiPromptInput(): boolean {
+        return document.activeElement === aiPromptInputElement
+    }
+
+    /** Returns true if the active element is the pattern input. */
+    function isInPatternInput(): boolean {
+        return document.activeElement === patternInputElement
     }
 
     function handleKeyDown(e: KeyboardEvent): void {
@@ -381,6 +414,23 @@
         if (e.key === 'l' && e.metaKey && !e.shiftKey && !e.altKey) {
             e.preventDefault()
             if (showAiButton) toggleAiMode()
+            return
+        }
+
+        // ⌘Enter triggers AI search from anywhere
+        if (e.key === 'Enter' && e.metaKey && !e.shiftKey && !e.altKey) {
+            e.preventDefault()
+            if (!showAiButton) return
+            if (isAiMode) {
+                // In AI mode: submit the AI prompt
+                void executeAiSearch(getAiPrompt())
+            } else {
+                // In manual mode: one-shot AI search with current pattern text
+                const text = getNamePattern()
+                if (text.trim()) {
+                    void executeAiSearch(text)
+                }
+            }
             return
         }
 
@@ -405,6 +455,22 @@
                 e.preventDefault()
                 handleEnterKey()
                 break
+        }
+    }
+
+    /** Handles plain Enter key based on which input is focused. */
+    function handleEnterKey(): void {
+        if (isAiMode && isInAiPromptInput()) {
+            // Enter in AI prompt row: run AI search
+            void executeAiSearch(getAiPrompt())
+        } else if (isInPatternInput()) {
+            // Enter in pattern row: run manual search immediately
+            void executeSearch()
+        } else if (cursorIndex < results.length) {
+            // Enter with results focused: navigate
+            onNavigate(results[cursorIndex].path)
+        } else {
+            void executeSearch()
         }
     }
 
@@ -472,8 +538,39 @@
 >
     <div class="search-dialog" bind:this={dialogElement}>
         <h2 id="search-dialog-title" class="sr-only">Search files</h2>
-        <!-- Input row -->
-        <div class="input-row">
+
+        <!-- AI prompt row (visible only in AI mode) -->
+        {#if isAiMode}
+            <div class="input-row ai-prompt-row">
+                <span class="row-label ai-label">AI</span>
+                <input
+                    bind:this={aiPromptInputElement}
+                    type="text"
+                    class="name-input"
+                    placeholder="Describe what you're looking for..."
+                    value={aiPrompt}
+                    oninput={handleAiPromptInput}
+                    disabled={inputsDisabled}
+                    aria-label="Natural language search query"
+                    spellcheck="false"
+                    autocomplete="off"
+                    autocapitalize="off"
+                />
+                {#if showAiButton}
+                    <button
+                        class="action-button ai-active"
+                        onclick={() => void executeAiSearch(getAiPrompt())}
+                        disabled={inputsDisabled || !aiPrompt.trim()}
+                        title="Ask AI (Enter)"
+                    >
+                        Ask AI
+                    </button>
+                {/if}
+            </div>
+        {/if}
+
+        <!-- Pattern / search row (always visible) -->
+        <div class="input-row" class:pattern-row-ai-mode={isAiMode}>
             <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5" />
                 <line
@@ -487,28 +584,35 @@
                 />
             </svg>
             <input
-                bind:this={inputElement}
+                bind:this={patternInputElement}
                 type="text"
                 class="name-input"
-                placeholder={isAiMode
-                    ? "Describe what you're looking for..."
-                    : 'Filename pattern (use * and ? as wildcards)'}
+                class:ai-highlight={highlightedFields.has('name')}
+                placeholder="Filename pattern (use * and ? as wildcards)"
                 value={namePattern}
-                oninput={handleNameInput}
+                oninput={handlePatternInput}
                 disabled={inputsDisabled}
-                aria-label={isAiMode ? 'Natural language search query' : 'Filename pattern'}
+                aria-label="Filename pattern"
                 spellcheck="false"
                 autocomplete="off"
                 autocapitalize="off"
             />
-            {#if showAiButton}
+            <button
+                class="action-button"
+                onclick={() => void executeSearch()}
+                disabled={inputsDisabled}
+                title="Search (Enter)"
+            >
+                Search
+            </button>
+            {#if showAiButton && !isAiMode}
                 <button
-                    class="ai-button"
-                    class:ai-active={isAiMode}
+                    class="action-button"
                     onclick={toggleAiMode}
-                    title={isAiMode ? 'Switch to manual mode' : 'Ask AI (⌘L)'}
+                    disabled={inputsDisabled}
+                    title="Ask AI (⌘L)"
                 >
-                    {isAiMode ? 'Manual' : 'Ask AI'}
+                    Ask AI
                 </button>
             {/if}
         </div>
@@ -726,7 +830,7 @@
         overflow: hidden;
     }
 
-    /* Input row */
+    /* Input rows */
     .input-row {
         display: flex;
         align-items: center;
@@ -734,6 +838,45 @@
         border-bottom: 1px solid var(--color-border-strong);
         background: var(--color-bg-primary);
         gap: var(--spacing-sm);
+    }
+
+    /* AI prompt row styling — subtle left accent border */
+    .ai-prompt-row {
+        border-left: 2px solid var(--color-accent);
+        background: var(--color-bg-secondary);
+        animation: slide-down 150ms ease-out;
+    }
+
+    @keyframes slide-down {
+        from {
+            max-height: 0;
+            opacity: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+
+        to {
+            max-height: 60px;
+            opacity: 1;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .ai-prompt-row {
+            animation: none;
+        }
+    }
+
+    .row-label {
+        flex-shrink: 0;
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
+        font-weight: 500;
+        user-select: none;
+    }
+
+    .ai-label {
+        color: var(--color-accent);
     }
 
     .search-icon {
@@ -755,7 +898,14 @@
         color: var(--color-text-tertiary);
     }
 
-    .ai-button {
+    .name-input.ai-highlight {
+        background: var(--color-accent-subtle);
+        border-radius: var(--radius-sm);
+        transition: background 1.5s ease-out;
+    }
+
+    /* Shared button style for Search and Ask AI */
+    .action-button {
         flex-shrink: 0;
         padding: var(--spacing-xxs) var(--spacing-sm);
         font-size: var(--font-size-sm);
@@ -767,12 +917,16 @@
         white-space: nowrap;
     }
 
-    .ai-button:disabled {
+    .action-button:disabled {
         opacity: 0.5;
         cursor: not-allowed;
     }
 
-    .ai-button.ai-active {
+    .action-button:not(:disabled):hover {
+        background: var(--color-bg-tertiary, var(--color-bg-primary));
+    }
+
+    .action-button.ai-active {
         background: var(--color-accent-subtle);
         border-color: var(--color-accent);
         color: var(--color-text-primary);

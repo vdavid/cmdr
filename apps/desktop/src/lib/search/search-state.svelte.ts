@@ -31,9 +31,10 @@ let cursorIndex = $state(0)
 // Index availability — false when indexing is disabled or not started
 let isIndexAvailable = $state(true)
 
-// AI mode (M3 placeholder)
+// AI mode
 let isAiMode = $state(false)
 let aiStatus = $state('')
+let aiPrompt = $state('')
 
 // Getters
 export function getIsIndexReady(): boolean {
@@ -90,6 +91,9 @@ export function getIsAiMode(): boolean {
 export function getAiStatus(): string {
     return aiStatus
 }
+export function getAiPrompt(): string {
+    return aiPrompt
+}
 
 // Setters
 export function setIsIndexReady(value: boolean): void {
@@ -145,6 +149,9 @@ export function setIsAiMode(value: boolean): void {
 }
 export function setAiStatus(value: string): void {
     aiStatus = value
+}
+export function setAiPrompt(value: string): void {
+    aiPrompt = value
 }
 
 /** Converts size input + unit to bytes. Returns undefined if empty or invalid. */
@@ -228,5 +235,6 @@ export function resetSearchState(): void {
     isIndexAvailable = true
     isAiMode = false
     aiStatus = ''
+    aiPrompt = ''
     isSearching = false
 }
