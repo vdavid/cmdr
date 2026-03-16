@@ -51,7 +51,13 @@ struct ChatCompletionRequest {
     messages: Vec<ChatMessage>,
     temperature: f32,
     top_p: f32,
-    max_tokens: u32,
+    /// OpenAI newer models require `max_completion_tokens`; local LLMs use `max_tokens`.
+    /// This field is set to `None` in both cases — the correct key is injected after
+    /// serialization in `chat_completion()`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    max_tokens: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    max_completion_tokens: Option<u32>,
     stream: bool,
 }
 
@@ -103,6 +109,13 @@ pub async fn chat_completion(
         ),
     };
 
+    // OpenAI's newer models reject `max_tokens` and require `max_completion_tokens`.
+    // Local LLM servers (llama.cpp, Ollama) still expect `max_tokens`.
+    let (max_tokens, max_completion_tokens) = match backend {
+        AiBackend::Local { .. } => (Some(options.max_tokens), None),
+        AiBackend::OpenAi { .. } => (None, Some(options.max_tokens)),
+    };
+
     let request_body = ChatCompletionRequest {
         model: model_name,
         messages: vec![
@@ -117,7 +130,8 @@ pub async fn chat_completion(
         ],
         temperature: options.temperature,
         top_p: options.top_p,
-        max_tokens: options.max_tokens,
+        max_tokens,
+        max_completion_tokens,
         stream: false,
     };
 
