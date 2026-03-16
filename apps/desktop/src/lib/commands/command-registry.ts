@@ -34,6 +34,17 @@ export const commands: Command[] = [
     { id: 'app.settings', name: 'Open settings', scope: 'App', showInPalette: true, shortcuts: ['⌘,'] },
 
     // ============================================================================
+    // Main window - Search
+    // ============================================================================
+    {
+        id: 'search.open',
+        name: 'Search files',
+        scope: 'Main window',
+        showInPalette: true,
+        shortcuts: ['⌘F', '⌥F7'],
+    },
+
+    // ============================================================================
     // Main window - View commands
     // ============================================================================
     {

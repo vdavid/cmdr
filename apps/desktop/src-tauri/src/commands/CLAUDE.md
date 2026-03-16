@@ -24,6 +24,7 @@ immediately to business-logic modules. No significant logic lives here.
 | `licensing.rs` | Licensing | Status query, activation, expiry, reminder, key validation |
 | `indexing.rs` | Drive index | `start_drive_index`, `stop_drive_index`, `get_index_status`, `get_dir_stats`, `get_dir_stats_batch`, `clear_drive_index`, `set_indexing_enabled`, `get_index_debug_status` (dev-only extended stats). Uses `State<IndexManagerState>`. |
 | `clipboard.rs` | Clipboard file ops | `copy_files_to_clipboard`, `cut_files_to_clipboard`, `read_clipboard_files`, `clear_clipboard_cut_state`. macOS uses NSPasteboard via `clipboard::pasteboard`; non-macOS stubs return errors. |
+| `search.rs` | Drive search | `prepare_search_index`, `search_files`, `release_search_index`, `translate_search_query`. Thin wrappers over `indexing::search` module. Post-filters directory sizes after `fill_directory_sizes`. |
 | `sync_status.rs` | Cloud sync status | `get_sync_status` — macOS delegates to `file_system::sync_status`; non-macOS returns empty map via `#[cfg]` on the function itself (not the module). |
 
 ## Key decisions

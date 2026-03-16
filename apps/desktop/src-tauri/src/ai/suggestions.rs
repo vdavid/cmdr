@@ -3,7 +3,7 @@
 //! Builds a prompt from the current directory listing, calls the configured AI backend,
 //! and parses the response into validated folder name suggestions.
 
-use super::client::AiBackend;
+use super::client::{AiBackend, ChatCompletionOptions};
 use crate::file_system::get_file_at;
 
 /// Maximum number of file names to include in the prompt context.
@@ -148,7 +148,16 @@ async fn get_suggestions_from_backend(
     log::debug!("AI suggestions: calling AI with {} files in context", file_names.len());
     log::trace!("AI suggestions: prompt:\n{prompt}");
 
-    match super::client::chat_completion(&backend, &prompt).await {
+    let options = ChatCompletionOptions {
+        system_prompt: String::from(
+            "You are a pattern-matching assistant. Carefully observe the style, language, and formatting of existing items, then generate new items that match exactly. Output only what is requested, no formatting or explanation.",
+        ),
+        temperature: 0.6,
+        max_tokens: 150,
+        top_p: 0.95,
+    };
+
+    match super::client::chat_completion(&backend, &prompt, &options).await {
         Ok(response) => {
             log::trace!("AI suggestions: raw response:\n{response}");
             let suggestions = parse_suggestions(&response, &file_names);

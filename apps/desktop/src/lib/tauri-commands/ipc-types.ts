@@ -39,3 +39,65 @@ export function getIpcErrorMessage(error: unknown): string {
     if (error instanceof Error) return error.message
     return String(error)
 }
+
+// ============================================================================
+// Search types
+// ============================================================================
+
+export type PatternType = 'glob' | 'regex'
+
+export interface SearchQuery {
+    namePattern?: string
+    patternType: PatternType
+    minSize?: number
+    maxSize?: number
+    modifiedAfter?: number
+    modifiedBefore?: number
+    isDirectory?: boolean
+    limit: number
+}
+
+export interface SearchResult {
+    entries: SearchResultEntry[]
+    totalCount: number
+}
+
+export interface SearchResultEntry {
+    name: string
+    path: string
+    parentPath: string
+    isDirectory: boolean
+    size?: number
+    modifiedAt?: number
+    iconId: string
+}
+
+export interface PrepareResult {
+    ready: boolean
+    entryCount: number
+}
+
+export interface TranslatedQuery {
+    namePattern?: string
+    patternType: string
+    minSize?: number
+    maxSize?: number
+    modifiedAfter?: number
+    modifiedBefore?: number
+    isDirectory?: boolean
+}
+
+export interface TranslateDisplay {
+    namePattern?: string
+    patternType?: string
+    minSize?: number
+    maxSize?: number
+    modifiedAfter?: string
+    modifiedBefore?: string
+    isDirectory?: boolean
+}
+
+export interface TranslateResult {
+    query: TranslatedQuery
+    display: TranslateDisplay
+}

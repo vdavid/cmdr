@@ -13,9 +13,9 @@ use super::{
     EDIT_COPY_ID, EDIT_CUT_ID, EDIT_ID, EDIT_PASTE_ID, EDIT_PASTE_MOVE_ID, ENTER_LICENSE_KEY_ID, FILE_COPY_ID,
     FILE_DELETE_ID, FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GET_INFO_ID,
     GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID, MenuItems, NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID, PIN_TAB_MENU_ID, PREV_TAB_ID,
-    QUICK_LOOK_ID, RENAME_ID, SELECT_ALL_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SWAP_PANES_ID,
-    SWITCH_PANE_ID, VIEW_MODE_BRIEF_ID, VIEW_MODE_FULL_ID, ViewMode, build_sort_submenu, copy_path_accelerator,
-    register_item, show_in_file_manager_accelerator, show_in_file_manager_label,
+    QUICK_LOOK_ID, RENAME_ID, SEARCH_FILES_ID, SELECT_ALL_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID,
+    SWAP_PANES_ID, SWITCH_PANE_ID, VIEW_MODE_BRIEF_ID, VIEW_MODE_FULL_ID, ViewMode, build_sort_submenu,
+    copy_path_accelerator, register_item, show_in_file_manager_accelerator, show_in_file_manager_label,
 };
 
 pub(crate) fn build_menu_macos<R: Runtime>(
@@ -118,6 +118,7 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     let deselect_all_item = MenuItem::with_id(app, DESELECT_ALL_ID, "Deselect all", true, Some("Cmd+Shift+A"))?;
     let copy_path_item = MenuItem::with_id(app, COPY_PATH_ID, "Copy path", true, Some(copy_path_accelerator()))?;
     let copy_filename_item = MenuItem::with_id(app, COPY_FILENAME_ID, "Copy filename", true, None::<&str>)?;
+    let search_files_item = MenuItem::with_id(app, SEARCH_FILES_ID, "Search files", true, Some("Cmd+F"))?;
 
     let edit_menu = Submenu::with_items(
         app,
@@ -137,6 +138,8 @@ pub(crate) fn build_menu_macos<R: Runtime>(
             &PredefinedMenuItem::separator(app)?,
             &copy_path_item,
             &copy_filename_item,
+            &PredefinedMenuItem::separator(app)?,
+            &search_files_item,
         ],
     )?;
     menu.append(&edit_menu)?;
@@ -281,7 +284,8 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     register_item(&mut items, QUICK_LOOK_ID, &quick_look_item, &file_menu, 14);
 
     // Edit menu positions: undo(0), redo(1), sep(2), cut(3), copy(4), paste(5), move_here(6),
-    // sep(7), select_all(8), deselect_all(9), sep(10), copy_path(11), copy_filename(12)
+    // sep(7), select_all(8), deselect_all(9), sep(10), copy_path(11), copy_filename(12),
+    // sep(13), search_files(14)
     register_item(&mut items, EDIT_CUT_ID, &edit_cut_item, &edit_menu, 3);
     register_item(&mut items, EDIT_COPY_ID, &edit_copy_item, &edit_menu, 4);
     register_item(&mut items, EDIT_PASTE_ID, &edit_paste_item, &edit_menu, 5);
@@ -290,6 +294,7 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     register_item(&mut items, DESELECT_ALL_ID, &deselect_all_item, &edit_menu, 9);
     register_item(&mut items, COPY_PATH_ID, &copy_path_item, &edit_menu, 11);
     register_item(&mut items, COPY_FILENAME_ID, &copy_filename_item, &edit_menu, 12);
+    register_item(&mut items, SEARCH_FILES_ID, &search_files_item, &edit_menu, 14);
 
     // View menu positions: full(0), brief(1), sep(2), hidden(3), sort(4), sep(5),
     // switch(6), swap(7), sep(8), palette(9)
@@ -453,6 +458,7 @@ fn set_macos_menu_icons_inner() {
                 ("Deselect all", "circle"),
                 ("Copy path", "link"),
                 ("Copy filename", "textformat"),
+                ("Search files", "magnifyingglass"),
             ],
             "View" => {
                 // Also apply icons to the "Sort by" submenu items

@@ -26,6 +26,7 @@ All under `apps/desktop/src/lib/`.
 | `logging/` | Unified logging: LogTape config, batching bridge to Rust, verbose toggle |
 | `ai/` | Local LLM features (folder suggestions), download flow |
 | `indexing/` | Drive index state, events, priority triggers, scan status overlay |
+| `search/` | Whole-drive file search dialog (glob/regex, size/date filters, AI mode) |
 | `mtp/` | MTP (Android device) file browsing UI |
 | `onboarding/` | Full Disk Access prompt for first-launch onboarding |
 | `ui/` | Shared UI primitives: ModalDialog, Button, AlertDialog, LoadingIcon, Notification, dialog registry |
@@ -49,6 +50,7 @@ All under `apps/desktop/src-tauri/src/`.
 | `licensing/` | Ed25519 license verification, server validation |
 | `settings/` | Settings persistence (tauri-plugin-store) |
 | `indexing/` | Background drive indexing (SQLite, jwalk, FSEvents), recursive directory sizes |
+| `indexing/search.rs` | In-memory search index for whole-drive file search (lazy load, rayon parallel scan, glob/regex) |
 | `font_metrics/` | Binary font metrics cache, per-directory width calculation |
 | `volumes/` | Volume abstraction (local, network, MTP), scanner/watcher traits |
 | `stubs/` | Linux compilation stubs for macOS-only modules (used by Docker E2E pipeline) |
@@ -66,6 +68,18 @@ All under `apps/desktop/src-tauri/src/`.
 | `apps/license-server/` | Cloudflare Worker + Hono. Paddle webhooks, Ed25519 key generation. See [CLAUDE.md](../apps/license-server/CLAUDE.md) (technical reference) and [README](../apps/license-server/README.md) (first-time setup) |
 | `apps/website/` | getcmdr.com marketing site (Astro + Tailwind v4). See [README](../apps/website/README.md) and [CLAUDE.md](../apps/website/CLAUDE.md) |
 | `scripts/check/` | Go unified check runner (~40 checks, parallel with dependency graph) |
+
+## Search
+
+Whole-drive file search powered by the index DB. The search index loads all entries into memory (~600 MB for 5M files), scans them with rayon in parallel, and returns results sorted by recency. The index is loaded lazily when the search dialog opens and dropped after idle timeout.
+
+**Backend** (`indexing/search.rs`): `SearchIndex` holds a `Vec<SearchEntry>` + `id_to_index` HashMap. `search()` is a pure function accepting a `SearchQuery` (glob/regex pattern, size/date filters, directory flag, limit) and returning `SearchResult` with path-reconstructed entries. `WRITER_GENERATION` (in `writer.rs`) tracks DB mutations; stale indexes trigger background reload.
+
+**IPC** (`commands/search.rs`): Four commands: `prepare_search_index` (starts async load, emits `search-index-ready` event), `search_files` (returns empty if not loaded), `release_search_index` (starts 5-min idle timer, cancels in-progress loads), `translate_search_query` (AI natural language → structured filters).
+
+**Lifecycle**: Load on dialog open (2-3s for 5M rows with cancellation check every 100K rows) -> search while loaded -> idle timeout (5 min) or backstop timeout (10 min) drops the index.
+
+See `docs/specs/drive-search-plan.md` for the full design.
 
 ## Cross-cutting patterns
 

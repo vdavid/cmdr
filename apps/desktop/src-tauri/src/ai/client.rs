@@ -70,10 +70,22 @@ struct ChatChoiceMessage {
     content: String,
 }
 
+/// Options for a chat completion request.
+pub struct ChatCompletionOptions {
+    pub system_prompt: String,
+    pub temperature: f32,
+    pub max_tokens: u32,
+    pub top_p: f32,
+}
+
 /// Sends a chat completion request to an AI backend (local or OpenAI-compatible).
 ///
 /// Returns the assistant's response text, or an error.
-pub async fn chat_completion(backend: &AiBackend, prompt: &str) -> Result<String, AiError> {
+pub async fn chat_completion(
+    backend: &AiBackend,
+    prompt: &str,
+    options: &ChatCompletionOptions,
+) -> Result<String, AiError> {
     let (url, model_name, auth_header) = match backend {
         AiBackend::Local { port } => (
             format!("http://127.0.0.1:{port}/v1/chat/completions"),
@@ -96,18 +108,16 @@ pub async fn chat_completion(backend: &AiBackend, prompt: &str) -> Result<String
         messages: vec![
             ChatMessage {
                 role: String::from("system"),
-                content: String::from(
-                    "You are a pattern-matching assistant. Carefully observe the style, language, and formatting of existing items, then generate new items that match exactly. Output only what is requested, no formatting or explanation.",
-                ),
+                content: options.system_prompt.clone(),
             },
             ChatMessage {
                 role: String::from("user"),
                 content: prompt.to_string(),
             },
         ],
-        temperature: 0.6,
-        top_p: 0.95,
-        max_tokens: 150, // Just need 5 folder names
+        temperature: options.temperature,
+        top_p: options.top_p,
+        max_tokens: options.max_tokens,
         stream: false,
     };
 

@@ -116,6 +116,8 @@ const menuCommands = [
     // Panes
     'pane.switch',
     'pane.swap',
+    // Search
+    'search.open',
     // Navigation
     'nav.back',
     'nav.forward',

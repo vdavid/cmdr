@@ -298,3 +298,16 @@ export {
     clearClipboardCutState,
 } from './clipboard-files'
 export type { ClipboardReadResult } from './clipboard-files'
+
+// Search (whole-drive file search)
+export { prepareSearchIndex, searchFiles, releaseSearchIndex, translateSearchQuery, onSearchIndexReady } from './search'
+export type {
+    PatternType,
+    SearchQuery,
+    SearchResult,
+    SearchResultEntry,
+    PrepareResult,
+    TranslateResult,
+    TranslatedQuery,
+    TranslateDisplay,
+} from './ipc-types'

@@ -9,6 +9,7 @@ mod enrichment;
 mod event_loop;
 mod events;
 pub mod firmlinks;
+pub(crate) mod search;
 pub mod store;
 pub mod writer;
 
@@ -22,6 +23,7 @@ pub(crate) mod watcher;
 mod stress_tests;
 
 pub use enrichment::enrich_entries_with_index;
+pub(crate) use enrichment::{ReadPool, get_read_pool};
 pub use events::*;
 
 use std::path::{Path, PathBuf};
@@ -30,7 +32,7 @@ use std::sync::LazyLock;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::Duration;
 
-use enrichment::{READ_POOL, ReadPool, get_read_pool};
+use enrichment::READ_POOL;
 use event_loop::{
     JOURNAL_GAP_THRESHOLD, ReplayConfig, WATCHER_CHANNEL_CAPACITY, run_live_event_loop, run_replay_event_loop,
 };

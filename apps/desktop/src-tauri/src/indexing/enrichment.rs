@@ -17,7 +17,7 @@ use crate::file_system::listing::FileEntry;
 
 // ── Read pool (lock-free enrichment reads) ──────────────────────────
 
-pub(super) struct ReadPool {
+pub(crate) struct ReadPool {
     db_path: PathBuf,
     /// Incremented on shutdown/clear. Thread-local connections check this to detect staleness.
     generation: AtomicU64,
@@ -28,7 +28,7 @@ thread_local! {
 }
 
 impl ReadPool {
-    pub(super) fn new(db_path: PathBuf) -> Result<Self, IndexStoreError> {
+    pub(crate) fn new(db_path: PathBuf) -> Result<Self, IndexStoreError> {
         let _ = IndexStore::open_read_connection(&db_path)?; // Validate openable
         Ok(Self {
             db_path,
@@ -47,7 +47,7 @@ impl ReadPool {
     /// `T` is lifetime-independent of the `&Connection` borrow. This means
     /// callers can't hold the connection across `.await` points (the compiler
     /// rejects it), so async task migration can't break thread affinity.
-    pub(super) fn with_conn<T>(&self, f: impl FnOnce(&Connection) -> T) -> Result<T, String> {
+    pub(crate) fn with_conn<T>(&self, f: impl FnOnce(&Connection) -> T) -> Result<T, String> {
         let current_gen = self.generation.load(Ordering::Acquire);
         THREAD_CONN.with(|cell| {
             let mut slot = cell.borrow_mut();
@@ -73,7 +73,7 @@ pub(super) static READ_POOL: LazyLock<std::sync::Mutex<Option<Arc<ReadPool>>>> =
 pub(super) static READ_POOL_TEST_MUTEX: LazyLock<std::sync::Mutex<()>> = LazyLock::new(|| std::sync::Mutex::new(()));
 
 /// Clone the pool Arc. Lock held for nanoseconds — just an Arc clone.
-pub(super) fn get_read_pool() -> Option<Arc<ReadPool>> {
+pub(crate) fn get_read_pool() -> Option<Arc<ReadPool>> {
     READ_POOL.lock().ok()?.as_ref().cloned()
 }
 

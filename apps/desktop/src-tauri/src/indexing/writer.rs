@@ -40,6 +40,15 @@ fn phase_to_str(phase: AggregationPhase) -> &'static str {
     }
 }
 
+// ── Writer generation (for search index staleness detection) ─────────
+
+/// Monotonically increasing generation counter, bumped on every mutation
+/// (`InsertEntriesV2`, `UpsertEntryV2`, `DeleteEntryById`, `DeleteSubtreeById`,
+/// `TruncateData`). The search index stores the generation it was loaded at;
+/// a mismatch triggers a background reload. Initialized to 1 (not 0) to avoid
+/// ambiguity with a freshly constructed search index.
+pub(crate) static WRITER_GENERATION: AtomicU64 = AtomicU64::new(1);
+
 // ── Messages ─────────────────────────────────────────────────────────
 
 /// Capacity of the bounded writer channel. When full, senders block,
@@ -432,6 +441,7 @@ fn process_message(
             if elapsed > 100 {
                 log::debug!("Writer: insert_entries_v2_batch ({count} entries) took {elapsed}ms");
             }
+            WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
             // Emit flushing progress when we know the expected total
             let expected = expected_total_entries.load(Ordering::Relaxed);
             if expected > 0
@@ -504,6 +514,7 @@ fn process_message(
                     log::warn!("Index writer: resolve_component failed for {name}: {e}");
                 }
             }
+            WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
         }
         WriteMessage::DeleteEntryById(entry_id) => {
             // Read old entry before deleting to get accurate delta
@@ -520,6 +531,7 @@ fn process_message(
                 };
                 propagate_delta_by_id(conn, entry.parent_id, size_delta, file_delta, dir_delta);
             }
+            WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
         }
         WriteMessage::DeleteSubtreeById(root_id) => {
             // Read subtree totals before deleting to get accurate delta
@@ -535,6 +547,7 @@ fn process_message(
                 let dir_delta = -(dir_count as i32);
                 propagate_delta_by_id(conn, pid, size_delta, file_delta, dir_delta);
             }
+            WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
         }
         WriteMessage::DeleteDescendantsById(root_id) => {
             // No delta propagation: the subtree will be immediately re-scanned and
@@ -570,6 +583,7 @@ fn process_message(
                 }
                 Err(e) => log::warn!("Writer: truncate failed: {e}"),
             }
+            WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
         }
         WriteMessage::ComputeAllAggregates => {
             let t = Instant::now();

@@ -879,6 +879,11 @@ pub fn run() {
             commands::indexing::clear_drive_index,
             commands::indexing::set_indexing_enabled,
             commands::indexing::get_index_debug_status,
+            // Drive search commands
+            commands::search::prepare_search_index,
+            commands::search::search_files,
+            commands::search::release_search_index,
+            commands::search::translate_search_query,
             // E2E test support
             commands::e2e::get_e2e_start_path,
             // Clipboard file operations

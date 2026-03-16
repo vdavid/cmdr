@@ -43,6 +43,9 @@ pub const EDIT_PASTE_MOVE_ID: &str = "edit_paste_move";
 /// Menu item ID for command palette.
 pub const COMMAND_PALETTE_ID: &str = "command_palette";
 
+/// Menu item ID for Search files.
+pub const SEARCH_FILES_ID: &str = "search_files";
+
 /// Menu item ID for Switch Pane.
 pub const SWITCH_PANE_ID: &str = "switch_pane";
 
@@ -82,6 +85,7 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         ENTER_LICENSE_KEY_ID => Some(("app.licenseKey", CommandScope::App)),
         SETTINGS_ID => Some(("app.settings", CommandScope::App)),
         COMMAND_PALETTE_ID => Some(("app.commandPalette", CommandScope::FileScoped)),
+        SEARCH_FILES_ID => Some(("search.open", CommandScope::FileScoped)),
 
         // Pane commands (file-scoped)
         SWITCH_PANE_ID => Some(("pane.switch", CommandScope::FileScoped)),
@@ -141,6 +145,7 @@ pub fn command_id_to_menu_id(command_id: &str) -> Option<&'static str> {
         "app.licenseKey" => Some(ENTER_LICENSE_KEY_ID),
         "app.settings" => Some(SETTINGS_ID),
         "app.commandPalette" => Some(COMMAND_PALETTE_ID),
+        "search.open" => Some(SEARCH_FILES_ID),
         "pane.switch" => Some(SWITCH_PANE_ID),
         "pane.swap" => Some(SWAP_PANES_ID),
         "nav.back" => Some(GO_BACK_ID),
@@ -888,6 +893,7 @@ mod tests {
             "tab.prev",
             "tab.togglePin",
             "tab.closeOthers",
+            "search.open",
             "file.rename",
             "file.edit",
             "file.view",

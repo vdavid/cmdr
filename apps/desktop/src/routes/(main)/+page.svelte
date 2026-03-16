@@ -8,6 +8,7 @@
     import AboutWindow from '$lib/licensing/AboutWindow.svelte'
     import LicenseKeyDialog from '$lib/licensing/LicenseKeyDialog.svelte'
     import CommandPalette from '$lib/command-palette/CommandPalette.svelte'
+    import SearchDialog from '$lib/search/SearchDialog.svelte'
     import ScanStatusOverlay from '$lib/indexing/ScanStatusOverlay.svelte'
     import { initPathLimits } from '$lib/utils/filename-validation'
     import { initIndexState, destroyIndexState } from '$lib/indexing/index'
@@ -105,6 +106,7 @@
     let showAboutWindow = $state(false)
     let showLicenseKeyDialog = $state(false)
     let showCommandPalette = $state(false)
+    let showSearchDialog = $state(false)
     let explorerRef: ExplorerAPI | undefined = $state()
     let windowTitle = $state('Cmdr')
     const showFunctionKeyBar = $state(true)
@@ -409,6 +411,7 @@
     function isModalDialogOpen(): boolean {
         return (
             showCommandPalette ||
+            showSearchDialog ||
             showAboutWindow ||
             showLicenseKeyDialog ||
             showExpiredModal ||
@@ -616,6 +619,25 @@
         showCommandPalette = false
     }
 
+    function handleSearchDialogClose() {
+        showSearchDialog = false
+    }
+
+    function handleSearchNavigate(path: string) {
+        showSearchDialog = false
+        // Navigate the focused pane to the file's parent directory, selecting the file
+        const lastSlash = path.lastIndexOf('/')
+        const parentDir = lastSlash > 0 ? path.slice(0, lastSlash) : '/'
+        const fileName = path.slice(lastSlash + 1)
+        const pane = explorerRef?.getFocusedPane() ?? 'left'
+        // navigateToPath on FilePane accepts (path, selectName)
+        // DualPaneExplorer's navigateToPath only accepts (pane, path) without selectName,
+        // so we navigate then move cursor by name
+        explorerRef?.navigateToPath(pane, parentDir)
+        // After navigation completes, move cursor to the file
+        void explorerRef?.moveCursor(pane, fileName)
+    }
+
     function handleFnView() {
         void explorerRef?.openViewerForCursor()
     }
@@ -663,6 +685,12 @@
 
             case 'app.commandPalette':
                 showCommandPalette = true
+                return
+
+            case 'search.open':
+                if (!showSearchDialog) {
+                    showSearchDialog = true
+                }
                 return
 
             case 'app.settings':
@@ -1001,6 +1029,10 @@
 
         {#if showCommandPalette}
             <CommandPalette onExecute={handleCommandExecute} onClose={handleCommandPaletteClose} />
+        {/if}
+
+        {#if showSearchDialog}
+            <SearchDialog onNavigate={handleSearchNavigate} onClose={handleSearchDialogClose} />
         {/if}
 
         {#if showExpiredModal}
