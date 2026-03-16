@@ -78,22 +78,26 @@ fn is_downloading(path: &Path) -> bool {
 
 /// Gets a boolean ubiquitous item property from NSURL.
 fn get_ubiquitous_bool(path: &Path, key: &str) -> Option<bool> {
-    use objc2::rc::Retained;
+    use objc2::rc::{Retained, autoreleasepool};
     use objc2_foundation::{NSNumber, NSString, NSURL};
 
-    let path_str = path.to_str()?;
-    let ns_path = NSString::from_str(path_str);
-    let url = NSURL::fileURLWithPath(&ns_path);
+    // Drain autoreleased ObjC objects (NSURL, NSString) created per call.
+    // Called from rayon par_iter threads that lack AppKit's autorelease pool.
+    autoreleasepool(|_| {
+        let path_str = path.to_str()?;
+        let ns_path = NSString::from_str(path_str);
+        let url = NSURL::fileURLWithPath(&ns_path);
 
-    let key = NSString::from_str(key);
-    let mut value: Option<Retained<objc2::runtime::AnyObject>> = None;
-    let success = unsafe { url.getResourceValue_forKey_error(&mut value, &key) };
+        let key = NSString::from_str(key);
+        let mut value: Option<Retained<objc2::runtime::AnyObject>> = None;
+        let success = unsafe { url.getResourceValue_forKey_error(&mut value, &key) };
 
-    if success.is_ok() {
-        value.and_then(|obj| obj.downcast::<NSNumber>().ok().map(|n| n.boolValue()))
-    } else {
-        None
-    }
+        if success.is_ok() {
+            value.and_then(|obj| obj.downcast::<NSNumber>().ok().map(|n| n.boolValue()))
+        } else {
+            None
+        }
+    })
 }
 
 /// Gets sync status for multiple paths in parallel.

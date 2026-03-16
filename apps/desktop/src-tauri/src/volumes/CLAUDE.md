@@ -80,6 +80,9 @@ The `path_to_id` logic (keep only alphanumeric + `-`, lowercase, `/` → `"root"
 **Gotcha**: Watcher registers/unregisters volumes with `VolumeManager` directly, creating tight coupling to `file_system::get_volume_manager()`
 **Why**: When a volume mounts, it must be immediately available for file operations. Emitting just a Tauri event and letting the frontend trigger registration would introduce a race window where operations fail because the volume isn't registered yet. Direct registration ensures atomicity — by the time the frontend receives `volume-mounted`, the volume is already usable.
 
+**Gotcha**: `get_main_volume`, `get_attached_volumes`, and `get_volume_space` wrap their bodies in `objc2::rc::autoreleasepool`
+**Why**: These functions are called from `spawn_blocking` threads (via `blocking_with_timeout_flag` in commands). Without an autorelease pool, the `NSFileManager`, `NSURL`, `NSString`, and `NSNumber` objects created per call accumulate in a default pool that is never drained, causing memory leaks over hours.
+
 ## Dependencies
 
 External: `notify`, `dirs`, `objc2`, `objc2_foundation`

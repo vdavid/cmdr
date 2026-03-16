@@ -22,8 +22,8 @@ use super::writer::WRITER_GENERATION;
 pub struct SearchEntry {
     pub id: i64,
     pub parent_id: i64,
-    pub name_offset: u32,  // byte offset into SearchIndex.names
-    pub name_len: u16,     // byte length (max filename 255 chars = up to 765 bytes UTF-8)
+    pub name_offset: u32, // byte offset into SearchIndex.names
+    pub name_len: u16,    // byte length (max filename 255 chars = up to 765 bytes UTF-8)
     pub is_directory: bool,
     pub size: Option<u64>,
     pub modified_at: Option<u64>,
@@ -33,7 +33,7 @@ pub struct SearchEntry {
 
 #[derive(Debug)]
 pub struct SearchIndex {
-    pub names: String,              // arena: all filenames concatenated
+    pub names: String, // arena: all filenames concatenated
     pub entries: Vec<SearchEntry>,
     pub id_to_index: HashMap<i64, usize>,
     pub generation: u64,
@@ -139,7 +139,10 @@ pub fn load_search_index(pool: &ReadPool, cancel: &AtomicBool) -> Result<SearchI
             id_to_index.insert(entry.id, i);
         }
 
-        log::debug!("Search index loaded: {row_count} entries, generation {generation}, took {:?}", t.elapsed());
+        log::debug!(
+            "Search index loaded: {row_count} entries, generation {generation}, took {:?}",
+            t.elapsed()
+        );
         Ok(SearchIndex {
             names,
             entries,
@@ -209,12 +212,15 @@ pub fn summarize_query(query: &SearchQuery) -> String {
     let mut parts = Vec::new();
 
     // Name pattern
-    if let Some(ref pattern) = query.name_pattern {
-        if !pattern.is_empty() {
-            let suffix = if query.pattern_type == PatternType::Regex { " (regex)" } else { "" };
+    if let Some(ref pattern) = query.name_pattern
+        && !pattern.is_empty() {
+            let suffix = if query.pattern_type == PatternType::Regex {
+                " (regex)"
+            } else {
+                ""
+            };
             parts.push(format!("\"{pattern}\"{suffix}"));
         }
-    }
 
     // Size filters
     match (query.min_size, query.max_size) {
@@ -227,7 +233,11 @@ pub fn summarize_query(query: &SearchQuery) -> String {
     // Date filters
     match (query.modified_after, query.modified_before) {
         (Some(after), Some(before)) => {
-            parts.push(format!("last mod {}–{}", format_timestamp(after), format_timestamp(before)));
+            parts.push(format!(
+                "last mod {}–{}",
+                format_timestamp(after),
+                format_timestamp(before)
+            ));
         }
         (Some(after), None) => parts.push(format!("last mod after {}", format_timestamp(after))),
         (None, Some(before)) => parts.push(format!("last mod before {}", format_timestamp(before))),
@@ -256,16 +266,32 @@ fn format_size(bytes: u64) -> String {
 
     if bytes >= TB {
         let val = bytes as f64 / TB as f64;
-        if val.fract() == 0.0 { format!("{} TB", val as u64) } else { format!("{val:.1} TB") }
+        if val.fract() == 0.0 {
+            format!("{} TB", val as u64)
+        } else {
+            format!("{val:.1} TB")
+        }
     } else if bytes >= GB {
         let val = bytes as f64 / GB as f64;
-        if val.fract() == 0.0 { format!("{} GB", val as u64) } else { format!("{val:.1} GB") }
+        if val.fract() == 0.0 {
+            format!("{} GB", val as u64)
+        } else {
+            format!("{val:.1} GB")
+        }
     } else if bytes >= MB {
         let val = bytes as f64 / MB as f64;
-        if val.fract() == 0.0 { format!("{} MB", val as u64) } else { format!("{val:.1} MB") }
+        if val.fract() == 0.0 {
+            format!("{} MB", val as u64)
+        } else {
+            format!("{val:.1} MB")
+        }
     } else if bytes >= KB {
         let val = bytes as f64 / KB as f64;
-        if val.fract() == 0.0 { format!("{} KB", val as u64) } else { format!("{val:.1} KB") }
+        if val.fract() == 0.0 {
+            format!("{} KB", val as u64)
+        } else {
+            format!("{val:.1} KB")
+        }
     } else {
         format!("{bytes} B")
     }
@@ -356,7 +382,9 @@ pub fn search(index: &SearchIndex, query: &SearchQuery) -> Result<SearchResult, 
 
             // Name pattern filter
             if let Some(ref re) = compiled_pattern
-                && !re.is_match(&index.names[entry.name_offset as usize..entry.name_offset as usize + entry.name_len as usize])
+                && !re.is_match(
+                    &index.names[entry.name_offset as usize..entry.name_offset as usize + entry.name_len as usize],
+                )
             {
                 return false;
             }
@@ -466,7 +494,13 @@ pub fn search(index: &SearchIndex, query: &SearchQuery) -> Result<SearchResult, 
         })
         .collect();
 
-    log::debug!("Search completed: {} → {} matches (returning {}), took {:?}", summarize_query(query), total_count, entries.len(), t.elapsed());
+    log::debug!(
+        "Search completed: {} → {} matches (returning {}), took {:?}",
+        summarize_query(query),
+        total_count,
+        entries.len(),
+        t.elapsed()
+    );
     Ok(SearchResult { entries, total_count })
 }
 
@@ -498,7 +532,11 @@ pub fn fill_directory_sizes(result: &mut SearchResult, pool: &ReadPool) {
             }
         }
     });
-    log::debug!("Filled directory sizes for {} dirs, took {:?}", dir_indices.len(), t.elapsed());
+    log::debug!(
+        "Filled directory sizes for {} dirs, took {:?}",
+        dir_indices.len(),
+        t.elapsed()
+    );
 }
 
 // ── Path reconstruction ──────────────────────────────────────────────
@@ -709,7 +747,16 @@ mod tests {
 
     fn make_test_index() -> SearchIndex {
         let mut names = String::new();
-        let test_names = ["", "Users", "alice", "report.pdf", "photo.jpg", "notes.txt", "Documents", "Q1-report.pdf"];
+        let test_names = [
+            "",
+            "Users",
+            "alice",
+            "report.pdf",
+            "photo.jpg",
+            "notes.txt",
+            "Documents",
+            "Q1-report.pdf",
+        ];
         let offsets: Vec<(u32, u16)> = test_names.iter().map(|n| arena_push(&mut names, n)).collect();
 
         let entries = vec![
@@ -1359,7 +1406,15 @@ mod tests {
 
     #[test]
     fn summarize_size_range() {
-        let q = make_query(None, PatternType::Glob, Some(1024 * 1024), Some(5 * 1024 * 1024 * 1024), None, None, None);
+        let q = make_query(
+            None,
+            PatternType::Glob,
+            Some(1024 * 1024),
+            Some(5 * 1024 * 1024 * 1024),
+            None,
+            None,
+            None,
+        );
         assert_eq!(summarize_query(&q), "size 1 MB\u{2013}5 GB");
     }
 
@@ -1379,7 +1434,15 @@ mod tests {
 
     #[test]
     fn summarize_date_range() {
-        let q = make_query(None, PatternType::Glob, None, None, Some(1_735_689_600), Some(1_772_323_200), None);
+        let q = make_query(
+            None,
+            PatternType::Glob,
+            None,
+            None,
+            Some(1_735_689_600),
+            Some(1_772_323_200),
+            None,
+        );
         assert_eq!(summarize_query(&q), "last mod 2025-01-01\u{2013}2026-03-01");
     }
 
@@ -1417,7 +1480,15 @@ mod tests {
 
     #[test]
     fn summarize_size_gb() {
-        let q = make_query(None, PatternType::Glob, Some(1024 * 1024 * 1024), None, None, None, None);
+        let q = make_query(
+            None,
+            PatternType::Glob,
+            Some(1024 * 1024 * 1024),
+            None,
+            None,
+            None,
+            None,
+        );
         assert_eq!(summarize_query(&q), "size >= 1 GB");
     }
 

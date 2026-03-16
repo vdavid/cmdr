@@ -399,14 +399,30 @@ fn writer_loop(
         if !matches!(msg, WriteMessage::IncrementalVacuum) {
             stats.record(&msg);
         }
-        if process_message(
+        // macOS: drain autoreleased ObjC objects each iteration.
+        // app.emit() serializes through WebKit's Cocoa bridge, creating NSData/NSInvocation
+        // objects that accumulate without a pool on this std::thread::spawn thread.
+        #[cfg(target_os = "macos")]
+        let should_exit = objc2::rc::autoreleasepool(|_| {
+            process_message(
+                &conn,
+                msg,
+                &stats,
+                &mut accumulator,
+                &app_handle,
+                &expected_total_entries,
+            )
+        });
+        #[cfg(not(target_os = "macos"))]
+        let should_exit = process_message(
             &conn,
             msg,
             &stats,
             &mut accumulator,
             &app_handle,
             &expected_total_entries,
-        ) {
+        );
+        if should_exit {
             log::debug!("Writer: shutdown after processing {} messages", stats.current.total);
             return;
         }

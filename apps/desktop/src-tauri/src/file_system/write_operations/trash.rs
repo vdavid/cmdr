@@ -26,23 +26,28 @@ use super::types::{
 /// are handled correctly (the link itself exists even if its target doesn't).
 #[cfg(target_os = "macos")]
 pub fn move_to_trash_sync(path: &Path) -> Result<(), String> {
+    use objc2::rc::autoreleasepool;
     use objc2_foundation::{NSFileManager, NSString, NSURL};
 
     if fs::symlink_metadata(path).is_err() {
         return Err(format!("'{}' doesn't exist", path.display()));
     }
 
-    let path_str = path.to_string_lossy();
-    let ns_path = NSString::from_str(&path_str);
-    let url = NSURL::fileURLWithPath(&ns_path);
-    let file_manager = NSFileManager::defaultManager();
+    // Drain autoreleased ObjC objects (NSURL, NSString, NSFileManager internals).
+    // Called from spawn_blocking threads that lack AppKit's autorelease pool.
+    autoreleasepool(|_| {
+        let path_str = path.to_string_lossy();
+        let ns_path = NSString::from_str(&path_str);
+        let url = NSURL::fileURLWithPath(&ns_path);
+        let file_manager = NSFileManager::defaultManager();
 
-    // trashItemAtURL:resultingItemURL:error: moves the item to Trash.
-    // We pass None for resultingItemURL since we don't need the trash location.
-    file_manager
-        .trashItemAtURL_resultingItemURL_error(&url, None)
-        .map_err(|e| format!("Failed to move to trash: {}", e))?;
-    Ok(())
+        // trashItemAtURL:resultingItemURL:error: moves the item to Trash.
+        // We pass None for resultingItemURL since we don't need the trash location.
+        file_manager
+            .trashItemAtURL_resultingItemURL_error(&url, None)
+            .map_err(|e| format!("Failed to move to trash: {}", e))?;
+        Ok(())
+    })
 }
 
 #[cfg(target_os = "linux")]

@@ -7,6 +7,8 @@
 use crate::config::ICON_SIZE;
 use base64::Engine;
 use image::{DynamicImage, ImageFormat, imageops::FilterType};
+#[cfg(target_os = "macos")]
+use objc2::rc::autoreleasepool;
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::io::Cursor;
@@ -159,36 +161,55 @@ pub fn get_icons(icon_ids: Vec<String>, use_app_icons_for_documents: bool) -> Ha
             continue;
         }
 
-        // Not cached, fetch it
-        // For extension-based icons on macOS, use fresh fetch if app icons are enabled
+        // macOS: drain autoreleased ObjC objects per iteration
+        // (fetch_fresh_extension_icon and fetch_icon_for_path call ObjC APIs)
         #[cfg(target_os = "macos")]
-        if use_app_icons_for_documents
-            && let Some(ext) = icon_id.strip_prefix("ext:")
-            && let Some(data_url) = fetch_fresh_extension_icon(ext, true)
-        {
-            cache_icon(icon_id.clone(), data_url.clone());
-            result.insert(icon_id, data_url);
-            continue;
-        }
+        let fetched = autoreleasepool(|_| {
+            if use_app_icons_for_documents
+                && let Some(ext) = icon_id.strip_prefix("ext:")
+                && let Some(data_url) = fetch_fresh_extension_icon(ext, true)
+            {
+                return Some(data_url);
+            }
 
-        // Silence unused variable warning when not on macOS
+            if let Some(sample_path) = get_sample_path_for_icon_id(&icon_id)
+                && let Some(data_url) = fetch_icon_for_path(&sample_path)
+            {
+                return Some(data_url);
+            }
+            None
+        });
+
         #[cfg(not(target_os = "macos"))]
-        let _ = use_app_icons_for_documents;
+        let fetched = {
+            // Silence unused variable warning when not on macOS
+            let _ = use_app_icons_for_documents;
 
-        // Linux: look up directly from XDG icon theme (no temp files needed)
-        #[cfg(target_os = "linux")]
-        if let Some(img) = crate::linux_icons::get_icon_for_id(&icon_id, ICON_SIZE as u16)
-            && let Some(data_url) = image_to_data_url(&img)
-        {
-            cache_icon(icon_id.clone(), data_url.clone());
-            result.insert(icon_id, data_url);
-            continue;
-        }
+            // Linux: look up directly from XDG icon theme (no temp files needed)
+            #[cfg(target_os = "linux")]
+            if let Some(img) = crate::linux_icons::get_icon_for_id(&icon_id, ICON_SIZE as u16)
+                && let Some(data_url) = image_to_data_url(&img)
+            {
+                Some(data_url)
+            } else if let Some(sample_path) = get_sample_path_for_icon_id(&icon_id)
+                && let Some(data_url) = fetch_icon_for_path(&sample_path)
+            {
+                Some(data_url)
+            } else {
+                None
+            }
 
-        // macOS/Windows: use sample file approach (Launch Services / Shell)
-        if let Some(sample_path) = get_sample_path_for_icon_id(&icon_id)
-            && let Some(data_url) = fetch_icon_for_path(&sample_path)
-        {
+            #[cfg(not(target_os = "linux"))]
+            if let Some(sample_path) = get_sample_path_for_icon_id(&icon_id)
+                && let Some(data_url) = fetch_icon_for_path(&sample_path)
+            {
+                Some(data_url)
+            } else {
+                None
+            }
+        };
+
+        if let Some(data_url) = fetched {
             cache_icon(icon_id.clone(), data_url.clone());
             result.insert(icon_id, data_url);
         }
@@ -249,9 +270,22 @@ pub fn refresh_icons_for_directory(
         let ext_results: Vec<(String, Option<String>)> = extensions
             .par_iter()
             .map(|ext| {
-                let icon_id = format!("ext:{}", ext.to_lowercase());
-                let data_url = fetch_fresh_extension_icon(ext, use_app_icons_for_documents);
-                (icon_id, data_url)
+                // macOS: drain autoreleased ObjC objects per rayon thread iteration
+                // (UTType/Launch Services/NSWorkspace calls accumulate otherwise)
+                #[cfg(target_os = "macos")]
+                {
+                    autoreleasepool(|_| {
+                        let icon_id = format!("ext:{}", ext.to_lowercase());
+                        let data_url = fetch_fresh_extension_icon(ext, use_app_icons_for_documents);
+                        (icon_id, data_url)
+                    })
+                }
+                #[cfg(not(target_os = "macos"))]
+                {
+                    let icon_id = format!("ext:{}", ext.to_lowercase());
+                    let data_url = fetch_fresh_extension_icon(ext, use_app_icons_for_documents);
+                    (icon_id, data_url)
+                }
             })
             .collect();
 
@@ -268,10 +302,22 @@ pub fn refresh_icons_for_directory(
         let dir_results: Vec<(String, Option<String>)> = directory_paths
             .par_iter()
             .map(|path| {
-                let path_buf = PathBuf::from(path);
-                let data_url = fetch_icon_for_path(&path_buf);
-                // Use path as the icon ID for directories
-                (format!("path:{}", path), data_url)
+                // macOS: drain autoreleased ObjC objects per rayon thread iteration
+                // (NSWorkspace.iconForFile calls accumulate otherwise)
+                #[cfg(target_os = "macos")]
+                {
+                    autoreleasepool(|_| {
+                        let path_buf = PathBuf::from(path);
+                        let data_url = fetch_icon_for_path(&path_buf);
+                        (format!("path:{}", path), data_url)
+                    })
+                }
+                #[cfg(not(target_os = "macos"))]
+                {
+                    let path_buf = PathBuf::from(path);
+                    let data_url = fetch_icon_for_path(&path_buf);
+                    (format!("path:{}", path), data_url)
+                }
             })
             .collect();
 

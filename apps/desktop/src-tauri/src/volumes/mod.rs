@@ -196,100 +196,110 @@ fn get_favorites() -> Vec<LocationInfo> {
 
 /// Get the main boot volume.
 fn get_main_volume() -> Option<LocationInfo> {
+    use objc2::rc::autoreleasepool;
     use objc2_foundation::{NSArray, NSFileManager, NSURL, NSVolumeEnumerationOptions};
 
-    let file_manager = NSFileManager::defaultManager();
-    let options = NSVolumeEnumerationOptions::SkipHiddenVolumes;
+    // Drain autoreleased ObjC objects (NSFileManager, NSArray, NSURL).
+    // Called from spawn_blocking threads that lack AppKit's autorelease pool.
+    autoreleasepool(|_| {
+        let file_manager = NSFileManager::defaultManager();
+        let options = NSVolumeEnumerationOptions::SkipHiddenVolumes;
 
-    let volume_urls: Option<objc2::rc::Retained<NSArray<NSURL>>> =
-        file_manager.mountedVolumeURLsIncludingResourceValuesForKeys_options(None, options);
+        let volume_urls: Option<objc2::rc::Retained<NSArray<NSURL>>> =
+            file_manager.mountedVolumeURLsIncludingResourceValuesForKeys_options(None, options);
 
-    let urls = volume_urls?;
+        let urls = volume_urls?;
 
-    for url in urls.iter() {
-        let path_str = url.path()?;
-        let path = path_str.to_string();
+        for url in urls.iter() {
+            let path_str = url.path()?;
+            let path = path_str.to_string();
 
-        // Root volume
-        if path == "/" {
-            let name = get_volume_name(&url, &path);
-            let fs_type = get_fs_type("/");
-            let supports_trash = supports_trash_for_fs_type(fs_type.as_deref());
-            return Some(LocationInfo {
-                id: DEFAULT_VOLUME_ID.to_string(),
-                name,
-                path,
-                category: LocationCategory::MainVolume,
-                icon: get_icon_for_path("/"),
-                is_ejectable: false,
-                fs_type,
-                supports_trash,
-            });
+            // Root volume
+            if path == "/" {
+                let name = get_volume_name(&url, &path);
+                let fs_type = get_fs_type("/");
+                let supports_trash = supports_trash_for_fs_type(fs_type.as_deref());
+                return Some(LocationInfo {
+                    id: DEFAULT_VOLUME_ID.to_string(),
+                    name,
+                    path,
+                    category: LocationCategory::MainVolume,
+                    icon: get_icon_for_path("/"),
+                    is_ejectable: false,
+                    fs_type,
+                    supports_trash,
+                });
+            }
         }
-    }
-    None
+        None
+    })
 }
 
 /// Get attached volumes (external drives, USB, etc.).
 pub fn get_attached_volumes() -> Vec<LocationInfo> {
+    use objc2::rc::autoreleasepool;
     use objc2_foundation::{NSArray, NSFileManager, NSURL, NSVolumeEnumerationOptions};
 
-    let file_manager = NSFileManager::defaultManager();
-    let options = NSVolumeEnumerationOptions::SkipHiddenVolumes;
+    // Drain autoreleased ObjC objects (NSFileManager, NSArray, NSURL).
+    // Called from spawn_blocking threads that lack AppKit's autorelease pool.
+    autoreleasepool(|_| {
+        let file_manager = NSFileManager::defaultManager();
+        let options = NSVolumeEnumerationOptions::SkipHiddenVolumes;
 
-    let volume_urls: Option<objc2::rc::Retained<NSArray<NSURL>>> =
-        file_manager.mountedVolumeURLsIncludingResourceValuesForKeys_options(None, options);
+        let volume_urls: Option<objc2::rc::Retained<NSArray<NSURL>>> =
+            file_manager.mountedVolumeURLsIncludingResourceValuesForKeys_options(None, options);
 
-    let Some(urls) = volume_urls else {
-        return vec![];
-    };
+        let Some(urls) = volume_urls else {
+            return vec![];
+        };
 
-    let mut volumes = Vec::new();
+        let mut volumes = Vec::new();
 
-    for url in urls.iter() {
-        let Some(path_str) = url.path() else { continue };
-        let path = path_str.to_string();
+        for url in urls.iter() {
+            let Some(path_str) = url.path() else { continue };
+            let path = path_str.to_string();
 
-        // Skip root (already handled as main volume)
-        if path == "/" {
-            continue;
+            // Skip root (already handled as main volume)
+            if path == "/" {
+                continue;
+            }
+
+            // Skip system volumes
+            if path.starts_with("/System") || path.contains("/Preboot") || path.contains("/Recovery") {
+                continue;
+            }
+
+            // Skip cloud storage (handled separately)
+            if path.contains("/Library/CloudStorage") {
+                continue;
+            }
+
+            // Only include /Volumes/* paths (actual mounted volumes)
+            if !path.starts_with("/Volumes/") {
+                continue;
+            }
+
+            let name = get_volume_name(&url, &path);
+            let is_ejectable = get_bool_resource(&url, "NSURLVolumeIsEjectableKey").unwrap_or(false);
+            let fs_type = get_fs_type(&path);
+            let supports_trash = supports_trash_for_fs_type(fs_type.as_deref());
+
+            volumes.push(LocationInfo {
+                id: path_to_id(&path),
+                name,
+                path: path.clone(),
+                category: LocationCategory::AttachedVolume,
+                icon: get_icon_for_path(&path),
+                is_ejectable,
+                fs_type,
+                supports_trash,
+            });
         }
 
-        // Skip system volumes
-        if path.starts_with("/System") || path.contains("/Preboot") || path.contains("/Recovery") {
-            continue;
-        }
-
-        // Skip cloud storage (handled separately)
-        if path.contains("/Library/CloudStorage") {
-            continue;
-        }
-
-        // Only include /Volumes/* paths (actual mounted volumes)
-        if !path.starts_with("/Volumes/") {
-            continue;
-        }
-
-        let name = get_volume_name(&url, &path);
-        let is_ejectable = get_bool_resource(&url, "NSURLVolumeIsEjectableKey").unwrap_or(false);
-        let fs_type = get_fs_type(&path);
-        let supports_trash = supports_trash_for_fs_type(fs_type.as_deref());
-
-        volumes.push(LocationInfo {
-            id: path_to_id(&path),
-            name,
-            path: path.clone(),
-            category: LocationCategory::AttachedVolume,
-            icon: get_icon_for_path(&path),
-            is_ejectable,
-            fs_type,
-            supports_trash,
-        });
-    }
-
-    // Sort alphabetically
-    volumes.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
-    volumes
+        // Sort alphabetically
+        volumes.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+        volumes
+    })
 }
 
 /// Get cloud drives (Dropbox, iCloud, Google Drive, etc.).
@@ -493,18 +503,23 @@ pub struct VolumeSpaceInfo {
 
 /// Get space information for a volume containing the given path.
 pub fn get_volume_space(path: &str) -> Option<VolumeSpaceInfo> {
+    use objc2::rc::autoreleasepool;
     use objc2_foundation::NSURL;
 
-    let url = NSURL::fileURLWithPath(&objc2_foundation::NSString::from_str(path));
+    // Drain autoreleased ObjC objects (NSURL, NSString, NSNumber).
+    // Called from spawn_blocking threads that lack AppKit's autorelease pool.
+    autoreleasepool(|_| {
+        let url = NSURL::fileURLWithPath(&objc2_foundation::NSString::from_str(path));
 
-    let total = get_u64_resource(&url, "NSURLVolumeTotalCapacityKey")?;
-    let available = get_u64_resource(&url, "NSURLVolumeAvailableCapacityForImportantUsageKey")
-        .filter(|&v| v > 0)
-        .or_else(|| get_u64_resource(&url, "NSURLVolumeAvailableCapacityKey"))?;
+        let total = get_u64_resource(&url, "NSURLVolumeTotalCapacityKey")?;
+        let available = get_u64_resource(&url, "NSURLVolumeAvailableCapacityForImportantUsageKey")
+            .filter(|&v| v > 0)
+            .or_else(|| get_u64_resource(&url, "NSURLVolumeAvailableCapacityKey"))?;
 
-    Some(VolumeSpaceInfo {
-        total_bytes: total,
-        available_bytes: available,
+        Some(VolumeSpaceInfo {
+            total_bytes: total,
+            available_bytes: available,
+        })
     })
 }
 
