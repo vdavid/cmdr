@@ -13,8 +13,6 @@ use regex::RegexBuilder;
 use serde::{Deserialize, Serialize};
 
 use super::enrichment::ReadPool;
-#[cfg(any(not(target_os = "macos"), test))]
-use super::store;
 use super::store::{IndexStore, ROOT_ID};
 use super::writer::WRITER_GENERATION;
 
@@ -25,7 +23,6 @@ pub struct SearchEntry {
     pub id: i64,
     pub parent_id: i64,
     pub name: String,
-    pub name_folded: String,
     pub is_directory: bool,
     pub size: Option<u64>,
     pub modified_at: Option<u64>,
@@ -80,22 +77,19 @@ pub(crate) fn touch_activity() {
 
 /// Load all entries from the index DB into an in-memory `SearchIndex`.
 ///
-/// Uses platform-conditional SQL: macOS reads `name_folded` from the DB,
-/// Linux computes it via `store::normalize_for_comparison`.
+/// `name_folded` is NOT loaded — the search pattern is normalized instead
+/// (NFD on macOS) to avoid ~5.1M extra String allocations and ~300 MB of memory.
 pub fn load_search_index(pool: &ReadPool, cancel: &AtomicBool) -> Result<SearchIndex, String> {
     pool.with_conn(|conn| {
         let t = std::time::Instant::now();
         let generation = WRITER_GENERATION.load(Ordering::Relaxed);
 
-        #[cfg(target_os = "macos")]
-        let sql = "SELECT id, parent_id, name, name_folded, is_directory, size, modified_at FROM entries";
-        #[cfg(not(target_os = "macos"))]
         let sql = "SELECT id, parent_id, name, is_directory, size, modified_at FROM entries";
 
         let mut stmt = conn.prepare(sql).map_err(|e| format!("Prepare failed: {e}"))?;
 
+        // Phase 1: Load all entries into Vec (sequential writes to contiguous memory)
         let mut entries = Vec::with_capacity(5_000_000);
-        let mut id_to_index = HashMap::with_capacity(5_000_000);
 
         let mut rows = stmt.query([]).map_err(|e| format!("Query failed: {e}"))?;
         let mut row_count = 0usize;
@@ -105,50 +99,27 @@ pub fn load_search_index(pool: &ReadPool, cancel: &AtomicBool) -> Result<SearchI
                 return Err("Load cancelled".to_string());
             }
 
-            #[cfg(target_os = "macos")]
-            let entry = {
-                let id: i64 = row.get(0).map_err(|e| format!("{e}"))?;
-                let parent_id: i64 = row.get(1).map_err(|e| format!("{e}"))?;
-                let name: String = row.get(2).map_err(|e| format!("{e}"))?;
-                let name_folded: String = row.get(3).map_err(|e| format!("{e}"))?;
-                let is_directory: bool = row.get(4).map_err(|e| format!("{e}"))?;
-                let size: Option<u64> = row.get(5).map_err(|e| format!("{e}"))?;
-                let modified_at: Option<u64> = row.get(6).map_err(|e| format!("{e}"))?;
-                SearchEntry {
-                    id,
-                    parent_id,
-                    name,
-                    name_folded,
-                    is_directory,
-                    size,
-                    modified_at,
-                }
-            };
-
-            #[cfg(not(target_os = "macos"))]
-            let entry = {
-                let id: i64 = row.get(0).map_err(|e| format!("{e}"))?;
-                let parent_id: i64 = row.get(1).map_err(|e| format!("{e}"))?;
-                let name: String = row.get(2).map_err(|e| format!("{e}"))?;
-                let is_directory: bool = row.get(3).map_err(|e| format!("{e}"))?;
-                let size: Option<u64> = row.get(4).map_err(|e| format!("{e}"))?;
-                let modified_at: Option<u64> = row.get(5).map_err(|e| format!("{e}"))?;
-                let name_folded = store::normalize_for_comparison(&name);
-                SearchEntry {
-                    id,
-                    parent_id,
-                    name,
-                    name_folded,
-                    is_directory,
-                    size,
-                    modified_at,
-                }
-            };
-
-            let idx = entries.len();
-            id_to_index.insert(entry.id, idx);
-            entries.push(entry);
+            let id: i64 = row.get(0).map_err(|e| format!("{e}"))?;
+            let parent_id: i64 = row.get(1).map_err(|e| format!("{e}"))?;
+            let name: String = row.get(2).map_err(|e| format!("{e}"))?;
+            let is_directory: bool = row.get(3).map_err(|e| format!("{e}"))?;
+            let size: Option<u64> = row.get(4).map_err(|e| format!("{e}"))?;
+            let modified_at: Option<u64> = row.get(5).map_err(|e| format!("{e}"))?;
+            entries.push(SearchEntry {
+                id,
+                parent_id,
+                name,
+                is_directory,
+                size,
+                modified_at,
+            });
             row_count += 1;
+        }
+
+        // Phase 2: Build id_to_index from completed Vec (sequential reads + HashMap writes)
+        let mut id_to_index = HashMap::with_capacity(entries.len());
+        for (i, entry) in entries.iter().enumerate() {
+            id_to_index.insert(entry.id, i);
         }
 
         log::debug!("Search index loaded: {row_count} entries, generation {generation}, took {:?}", t.elapsed());
@@ -243,9 +214,18 @@ pub fn search(index: &SearchIndex, query: &SearchQuery) -> Result<SearchResult, 
     // Compile pattern
     let compiled_pattern = match &query.name_pattern {
         Some(pattern) if !pattern.is_empty() => {
+            // On macOS, NFD-normalize the pattern before conversion/compilation.
+            // APFS filenames are stored in NFD, so matching a NFD-normalized pattern
+            // against `name` with case_insensitive(true) gives correct results
+            // without needing a separate `name_folded` field.
+            #[cfg(target_os = "macos")]
+            let pattern = {
+                use unicode_normalization::UnicodeNormalization;
+                pattern.nfd().collect::<String>()
+            };
             let regex_str = match query.pattern_type {
-                PatternType::Glob => glob_to_regex(pattern),
-                PatternType::Regex => pattern.clone(),
+                PatternType::Glob => glob_to_regex(&pattern),
+                PatternType::Regex => pattern.to_string(),
             };
             let re = RegexBuilder::new(&regex_str)
                 .case_insensitive(cfg!(target_os = "macos"))
@@ -269,7 +249,7 @@ pub fn search(index: &SearchIndex, query: &SearchQuery) -> Result<SearchResult, 
 
             // Name pattern filter
             if let Some(ref re) = compiled_pattern
-                && !re.is_match(&entry.name_folded)
+                && !re.is_match(&entry.name)
             {
                 return false;
             }
@@ -556,7 +536,6 @@ mod tests {
                 id: 1,
                 parent_id: 0,
                 name: String::new(),
-                name_folded: String::new(),
                 is_directory: true,
                 size: None,
                 modified_at: None,
@@ -565,7 +544,6 @@ mod tests {
                 id: 2,
                 parent_id: 1,
                 name: "Users".to_string(),
-                name_folded: store::normalize_for_comparison("Users"),
                 is_directory: true,
                 size: None,
                 modified_at: Some(1000),
@@ -574,7 +552,6 @@ mod tests {
                 id: 3,
                 parent_id: 2,
                 name: "alice".to_string(),
-                name_folded: store::normalize_for_comparison("alice"),
                 is_directory: true,
                 size: None,
                 modified_at: Some(2000),
@@ -583,7 +560,6 @@ mod tests {
                 id: 4,
                 parent_id: 3,
                 name: "report.pdf".to_string(),
-                name_folded: store::normalize_for_comparison("report.pdf"),
                 is_directory: false,
                 size: Some(1_000_000),
                 modified_at: Some(3000),
@@ -592,7 +568,6 @@ mod tests {
                 id: 5,
                 parent_id: 3,
                 name: "photo.jpg".to_string(),
-                name_folded: store::normalize_for_comparison("photo.jpg"),
                 is_directory: false,
                 size: Some(5_000_000),
                 modified_at: Some(4000),
@@ -601,7 +576,6 @@ mod tests {
                 id: 6,
                 parent_id: 3,
                 name: "notes.txt".to_string(),
-                name_folded: store::normalize_for_comparison("notes.txt"),
                 is_directory: false,
                 size: Some(500),
                 modified_at: Some(5000),
@@ -610,7 +584,6 @@ mod tests {
                 id: 7,
                 parent_id: 2,
                 name: "Documents".to_string(),
-                name_folded: store::normalize_for_comparison("Documents"),
                 is_directory: true,
                 size: None,
                 modified_at: Some(1500),
@@ -619,7 +592,6 @@ mod tests {
                 id: 8,
                 parent_id: 7,
                 name: "Q1-report.pdf".to_string(),
-                name_folded: store::normalize_for_comparison("Q1-report.pdf"),
                 is_directory: false,
                 size: Some(2_000_000),
                 modified_at: Some(6000),
