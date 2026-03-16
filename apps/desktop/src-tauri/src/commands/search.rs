@@ -76,6 +76,7 @@ pub async fn prepare_search_index(app: tauri::AppHandle) -> Result<PrepareResult
         }
         *guard = Some(SearchIndexState {
             index: Arc::new(search::SearchIndex {
+                names: String::new(),
                 entries: Vec::new(),
                 id_to_index: HashMap::new(),
                 generation: 0, // sentinel: never matches a real generation

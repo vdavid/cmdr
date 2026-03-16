@@ -22,7 +22,8 @@ use super::writer::WRITER_GENERATION;
 pub struct SearchEntry {
     pub id: i64,
     pub parent_id: i64,
-    pub name: String,
+    pub name_offset: u32,  // byte offset into SearchIndex.names
+    pub name_len: u16,     // byte length (max filename 255 chars = up to 765 bytes UTF-8)
     pub is_directory: bool,
     pub size: Option<u64>,
     pub modified_at: Option<u64>,
@@ -32,9 +33,17 @@ pub struct SearchEntry {
 
 #[derive(Debug)]
 pub struct SearchIndex {
+    pub names: String,              // arena: all filenames concatenated
     pub entries: Vec<SearchEntry>,
     pub id_to_index: HashMap<i64, usize>,
     pub generation: u64,
+}
+
+impl SearchIndex {
+    /// Get the filename for an entry from the arena buffer.
+    fn name(&self, entry: &SearchEntry) -> &str {
+        &self.names[entry.name_offset as usize..entry.name_offset as usize + entry.name_len as usize]
+    }
 }
 
 pub(crate) struct SearchIndexState {
@@ -89,6 +98,8 @@ pub fn load_search_index(pool: &ReadPool, cancel: &AtomicBool) -> Result<SearchI
         let mut stmt = conn.prepare(sql).map_err(|e| format!("Prepare failed: {e}"))?;
 
         // Phase 1: Load all entries into Vec (sequential writes to contiguous memory)
+        // Arena-allocate all filenames into a single String to avoid per-entry heap allocations.
+        let mut names = String::with_capacity(100_000_000); // ~5M entries × ~20 bytes avg
         let mut entries = Vec::with_capacity(5_000_000);
 
         let mut rows = stmt.query([]).map_err(|e| format!("Query failed: {e}"))?;
@@ -101,14 +112,20 @@ pub fn load_search_index(pool: &ReadPool, cancel: &AtomicBool) -> Result<SearchI
 
             let id: i64 = row.get(0).map_err(|e| format!("{e}"))?;
             let parent_id: i64 = row.get(1).map_err(|e| format!("{e}"))?;
-            let name: String = row.get(2).map_err(|e| format!("{e}"))?;
+            // Borrow directly from SQLite's internal buffer via ValueRef — zero heap allocations.
+            let name_ref = row.get_ref(2).map_err(|e| format!("{e}"))?;
+            let name_str = name_ref.as_str().map_err(|e| format!("{e}"))?;
+            let name_offset = names.len() as u32;
+            let name_len = name_str.len() as u16;
+            names.push_str(name_str);
             let is_directory: bool = row.get(3).map_err(|e| format!("{e}"))?;
             let size: Option<u64> = row.get(4).map_err(|e| format!("{e}"))?;
             let modified_at: Option<u64> = row.get(5).map_err(|e| format!("{e}"))?;
             entries.push(SearchEntry {
                 id,
                 parent_id,
-                name,
+                name_offset,
+                name_len,
                 is_directory,
                 size,
                 modified_at,
@@ -124,6 +141,7 @@ pub fn load_search_index(pool: &ReadPool, cancel: &AtomicBool) -> Result<SearchI
 
         log::debug!("Search index loaded: {row_count} entries, generation {generation}, took {:?}", t.elapsed());
         Ok(SearchIndex {
+            names,
             entries,
             id_to_index,
             generation,
@@ -249,7 +267,7 @@ pub fn search(index: &SearchIndex, query: &SearchQuery) -> Result<SearchResult, 
 
             // Name pattern filter
             if let Some(ref re) = compiled_pattern
-                && !re.is_match(&entry.name)
+                && !re.is_match(&index.names[entry.name_offset as usize..entry.name_offset as usize + entry.name_len as usize])
             {
                 return false;
             }
@@ -344,9 +362,10 @@ pub fn search(index: &SearchIndex, query: &SearchQuery) -> Result<SearchResult, 
                 }
                 None => path.clone(),
             };
-            let icon_id = derive_icon_id(&entry.name, entry.is_directory);
+            let entry_name = index.name(entry);
+            let icon_id = derive_icon_id(entry_name, entry.is_directory);
             SearchResultEntry {
-                name: entry.name.clone(),
+                name: entry_name.to_string(),
                 path,
                 parent_path,
                 is_directory: entry.is_directory,
@@ -412,10 +431,11 @@ fn reconstruct_path_from_index(index: &SearchIndex, entry_id: i64) -> String {
         match index.id_to_index.get(&current_id) {
             Some(&idx) => {
                 let entry = &index.entries[idx];
-                if entry.name.is_empty() {
+                let name = index.name(entry);
+                if name.is_empty() {
                     break; // root sentinel
                 }
-                components.push(entry.name.as_str());
+                components.push(name);
                 current_id = entry.parent_id;
             }
             None => break, // orphan or missing parent
@@ -530,12 +550,25 @@ mod tests {
 
     // ── Helper: build a small in-memory index ────────────────────────
 
+    /// Helper: push a name into the arena and return (offset, len).
+    fn arena_push(names: &mut String, name: &str) -> (u32, u16) {
+        let offset = names.len() as u32;
+        let len = name.len() as u16;
+        names.push_str(name);
+        (offset, len)
+    }
+
     fn make_test_index() -> SearchIndex {
+        let mut names = String::new();
+        let test_names = ["", "Users", "alice", "report.pdf", "photo.jpg", "notes.txt", "Documents", "Q1-report.pdf"];
+        let offsets: Vec<(u32, u16)> = test_names.iter().map(|n| arena_push(&mut names, n)).collect();
+
         let entries = vec![
             SearchEntry {
                 id: 1,
                 parent_id: 0,
-                name: String::new(),
+                name_offset: offsets[0].0,
+                name_len: offsets[0].1,
                 is_directory: true,
                 size: None,
                 modified_at: None,
@@ -543,7 +576,8 @@ mod tests {
             SearchEntry {
                 id: 2,
                 parent_id: 1,
-                name: "Users".to_string(),
+                name_offset: offsets[1].0,
+                name_len: offsets[1].1,
                 is_directory: true,
                 size: None,
                 modified_at: Some(1000),
@@ -551,7 +585,8 @@ mod tests {
             SearchEntry {
                 id: 3,
                 parent_id: 2,
-                name: "alice".to_string(),
+                name_offset: offsets[2].0,
+                name_len: offsets[2].1,
                 is_directory: true,
                 size: None,
                 modified_at: Some(2000),
@@ -559,7 +594,8 @@ mod tests {
             SearchEntry {
                 id: 4,
                 parent_id: 3,
-                name: "report.pdf".to_string(),
+                name_offset: offsets[3].0,
+                name_len: offsets[3].1,
                 is_directory: false,
                 size: Some(1_000_000),
                 modified_at: Some(3000),
@@ -567,7 +603,8 @@ mod tests {
             SearchEntry {
                 id: 5,
                 parent_id: 3,
-                name: "photo.jpg".to_string(),
+                name_offset: offsets[4].0,
+                name_len: offsets[4].1,
                 is_directory: false,
                 size: Some(5_000_000),
                 modified_at: Some(4000),
@@ -575,7 +612,8 @@ mod tests {
             SearchEntry {
                 id: 6,
                 parent_id: 3,
-                name: "notes.txt".to_string(),
+                name_offset: offsets[5].0,
+                name_len: offsets[5].1,
                 is_directory: false,
                 size: Some(500),
                 modified_at: Some(5000),
@@ -583,7 +621,8 @@ mod tests {
             SearchEntry {
                 id: 7,
                 parent_id: 2,
-                name: "Documents".to_string(),
+                name_offset: offsets[6].0,
+                name_len: offsets[6].1,
                 is_directory: true,
                 size: None,
                 modified_at: Some(1500),
@@ -591,7 +630,8 @@ mod tests {
             SearchEntry {
                 id: 8,
                 parent_id: 7,
-                name: "Q1-report.pdf".to_string(),
+                name_offset: offsets[7].0,
+                name_len: offsets[7].1,
                 is_directory: false,
                 size: Some(2_000_000),
                 modified_at: Some(6000),
@@ -602,6 +642,7 @@ mod tests {
             id_to_index.insert(e.id, i);
         }
         SearchIndex {
+            names,
             entries,
             id_to_index,
             generation: 1,
