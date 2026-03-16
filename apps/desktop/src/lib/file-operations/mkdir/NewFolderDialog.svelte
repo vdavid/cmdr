@@ -419,6 +419,6 @@
     .suggestion-item:focus-visible {
         outline: 2px solid var(--color-accent);
         outline-offset: 1px;
-        box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1);
+        box-shadow: var(--shadow-focus-contrast);
     }
 </style>

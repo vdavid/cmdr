@@ -850,13 +850,7 @@
     .viewer-action-btn:focus-visible {
         outline: 2px solid var(--color-accent);
         outline-offset: 1px;
-        box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1);
-    }
-
-    @media (prefers-color-scheme: dark) {
-        .viewer-action-btn:focus-visible {
-            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.08);
-        }
+        box-shadow: var(--shadow-focus-contrast);
     }
 
     .viewer-action-secondary {

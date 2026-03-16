@@ -200,7 +200,7 @@
     .palette-overlay {
         position: fixed;
         inset: 0;
-        background: rgba(0, 0, 0, 0.5);
+        background: var(--color-overlay);
         backdrop-filter: blur(2px);
         display: flex;
         justify-content: center;
@@ -258,7 +258,7 @@
 
     /* Hover state - just a subtle overlay */
     .result-item.is-hovered {
-        background: rgba(255, 255, 255, 0.06);
+        background: var(--color-tint-hover);
     }
 
     /* Cursor state - accent-tinted highlight */
@@ -279,7 +279,7 @@
 
     /* Match highlight - macOS Spotlight-style with visible background */
     .match-highlight {
-        background: rgba(255, 255, 255, 0.25);
+        background: var(--color-tint-hover-strong);
         color: inherit;
         border-radius: var(--radius-sm);
         /* stylelint-disable-next-line declaration-property-value-disallowed-list */
@@ -290,7 +290,7 @@
 
     /* When item is under cursor, make the match highlight even more visible */
     .result-item.is-under-cursor .match-highlight {
-        background: rgba(255, 255, 255, 0.35);
+        background: color-mix(in srgb, white, transparent 65%);
     }
 
     .shortcuts {
@@ -300,18 +300,5 @@
         flex-shrink: 0;
     }
 
-    /* Support light mode */
-    @media (prefers-color-scheme: light) {
-        .result-item.is-hovered {
-            background: rgba(0, 0, 0, 0.04);
-        }
-
-        .match-highlight {
-            background: rgba(0, 0, 0, 0.15);
-        }
-
-        .result-item.is-under-cursor .match-highlight {
-            background: rgba(255, 255, 255, 0.4);
-        }
-    }
+    /* Light mode overrides handled by design tokens (--color-tint-hover, --color-tint-hover-strong) */
 </style>

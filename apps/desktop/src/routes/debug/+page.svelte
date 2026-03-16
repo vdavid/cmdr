@@ -779,7 +779,7 @@
 </div>
 
 <style>
-    /* stylelint-disable declaration-property-value-disallowed-list -- Dev utility page */
+    /* stylelint-disable declaration-property-value-disallowed-list, declaration-property-value-allowed-list, color-no-hex -- Dev utility page */
     .debug-container {
         display: flex;
         flex-direction: column;

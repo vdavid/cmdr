@@ -62,8 +62,8 @@
         max-width: 320px;
         padding: var(--spacing-md) var(--spacing-md);
         border-radius: var(--radius-lg);
-        background: rgba(30, 30, 30, 0.9);
-        color: rgba(255, 255, 255, 0.92);
+        background: color-mix(in srgb, var(--color-drag-overlay-bg), transparent 10%);
+        color: color-mix(in srgb, white, transparent 8%);
         font-family: var(--font-system), sans-serif;
         font-size: var(--font-size-xs);
         line-height: 1.5;
@@ -115,19 +115,19 @@
     }
 
     .is-summary {
-        color: rgba(255, 255, 255, 0.55);
+        color: color-mix(in srgb, white, transparent 45%);
         font-style: italic;
     }
 
     .action-line {
         margin-top: var(--spacing-sm);
         padding-top: var(--spacing-sm);
-        border-top: 1px solid rgba(255, 255, 255, 0.15);
+        border-top: 1px solid color-mix(in srgb, white, transparent 85%);
         font-weight: 500;
         color: var(--color-accent);
     }
 
     .action-line.is-warning {
-        color: rgba(255, 255, 255, 0.4);
+        color: color-mix(in srgb, white, transparent 60%);
     }
 </style>

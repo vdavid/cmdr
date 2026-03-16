@@ -151,7 +151,7 @@
         width: 80px;
         height: 80px;
         margin: 0 auto var(--spacing-lg);
-        background: linear-gradient(135deg, #4a9eff, #7c3aed);
+        background: linear-gradient(135deg, var(--color-cmdr-blue), var(--color-cmdr-purple));
         border-radius: var(--radius-lg);
         display: flex;
         align-items: center;

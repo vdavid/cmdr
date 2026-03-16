@@ -210,7 +210,7 @@
         /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         margin-bottom: -1px;
         z-index: 1;
-        box-shadow: 0 0 4px rgba(0, 0, 0, 0.04);
+        box-shadow: 0 0 4px color-mix(in srgb, black, transparent 96%);
     }
 
     /* Accent top border on active tab */
@@ -229,7 +229,7 @@
     @media (prefers-color-scheme: dark) {
         .tab.active {
             background-color: color-mix(in oklch, var(--color-bg-primary), var(--color-accent) 7%);
-            box-shadow: 0 0 4px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 0 4px color-mix(in srgb, black, transparent 85%);
         }
     }
 
@@ -329,7 +329,7 @@
         background: none;
         color: var(--color-text-tertiary);
         font-size: var(--font-size-sm);
-        font-weight: 300;
+        font-weight: 400;
         cursor: default;
         transition:
             background-color var(--transition-fast),

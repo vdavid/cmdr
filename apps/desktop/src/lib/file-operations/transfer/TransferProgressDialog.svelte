@@ -874,7 +874,7 @@
 
     .checkmark {
         font-size: var(--font-size-md);
-        font-weight: bold;
+        font-weight: 600;
     }
 
     .dot {
@@ -1111,7 +1111,6 @@
         font-size: var(--font-size-sm);
         font-weight: 500;
         padding: var(--spacing-sm) var(--spacing-lg);
-        cursor: pointer;
         transition: all var(--transition-base);
     }
 

@@ -635,10 +635,4 @@
         vertical-align: middle;
         margin-right: var(--spacing-xs);
     }
-
-    @keyframes spin {
-        to {
-            transform: rotate(360deg);
-        }
-    }
 </style>

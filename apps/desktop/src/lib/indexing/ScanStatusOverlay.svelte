@@ -101,7 +101,7 @@
         font-size: var(--font-size-xs);
         color: var(--color-text-secondary);
         pointer-events: none;
-        opacity: 0.85;
+        opacity: 0.8;
         z-index: var(--z-sticky);
     }
 

@@ -764,7 +764,7 @@
         background: var(--color-text-tertiary);
         color: var(--color-bg-primary);
         font-size: var(--font-size-xs);
-        font-weight: bold;
+        font-weight: 600;
         cursor: default;
         display: none;
         align-items: center;

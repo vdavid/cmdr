@@ -300,14 +300,12 @@
         align-items: center;
         gap: var(--spacing-sm);
         padding: var(--spacing-sm) 0;
-        cursor: pointer;
     }
 
     .radio-option input[type='radio'] {
         width: 16px;
         height: 16px;
         accent-color: var(--color-accent);
-        cursor: pointer;
     }
 
     .radio-label {
@@ -369,14 +367,12 @@
         align-items: center;
         gap: var(--spacing-sm);
         padding: var(--spacing-sm) 0;
-        cursor: pointer;
     }
 
     .checkbox-option input[type='checkbox'] {
         width: 16px;
         height: 16px;
         accent-color: var(--color-accent);
-        cursor: pointer;
     }
 
     .checkbox-label {
@@ -400,16 +396,10 @@
     .spinner {
         width: 14px;
         height: 14px;
-        border: 2px solid rgba(255, 255, 255, 0.3);
+        border: 2px solid color-mix(in srgb, white, transparent 70%);
         border-top-color: white;
         border-radius: var(--radius-full);
         animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-        to {
-            transform: rotate(360deg);
-        }
     }
 
     /* Screen reader only */

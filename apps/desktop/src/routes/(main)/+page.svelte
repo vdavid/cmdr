@@ -1090,7 +1090,7 @@
         content: '';
         position: absolute;
         inset: 0;
-        background-color: rgba(255, 105, 180, 0.6);
+        background-color: color-mix(in srgb, hotpink, transparent 40%);
         pointer-events: none;
     }
 

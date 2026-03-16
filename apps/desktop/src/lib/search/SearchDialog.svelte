@@ -606,12 +606,7 @@
                 Search
             </button>
             {#if showAiButton && !isAiMode}
-                <button
-                    class="action-button"
-                    onclick={toggleAiMode}
-                    disabled={inputsDisabled}
-                    title="Ask AI (⌘L)"
-                >
+                <button class="action-button" onclick={toggleAiMode} disabled={inputsDisabled} title="Ask AI (⌘L)">
                     Ask AI
                 </button>
             {/if}
@@ -810,7 +805,7 @@
     .search-overlay {
         position: fixed;
         inset: 0;
-        background: rgba(0, 0, 0, 0.5);
+        background: var(--color-overlay);
         backdrop-filter: blur(2px);
         display: flex;
         justify-content: center;
@@ -913,7 +908,6 @@
         border-radius: var(--radius-sm);
         background: var(--color-bg-secondary);
         color: var(--color-text-secondary);
-        cursor: pointer;
         white-space: nowrap;
     }
 
@@ -923,7 +917,7 @@
     }
 
     .action-button:not(:disabled):hover {
-        background: var(--color-bg-tertiary, var(--color-bg-primary));
+        background: var(--color-bg-tertiary);
     }
 
     .action-button.ai-active {
@@ -1071,7 +1065,6 @@
         padding: var(--spacing-xs) var(--spacing-md);
         font-size: var(--font-size-sm);
         color: var(--color-text-primary);
-        cursor: pointer;
     }
 
     .result-row.is-under-cursor {
@@ -1079,7 +1072,7 @@
     }
 
     .result-row.is-hovered {
-        background: rgba(255, 255, 255, 0.06);
+        background: var(--color-tint-hover);
     }
 
     .result-icon {
@@ -1169,10 +1162,5 @@
         margin: var(--spacing-xs) 0 0;
     }
 
-    /* Light mode support */
-    @media (prefers-color-scheme: light) {
-        .result-row.is-hovered {
-            background: rgba(0, 0, 0, 0.04);
-        }
-    }
+    /* Light mode handled by --color-tint-hover token */
 </style>

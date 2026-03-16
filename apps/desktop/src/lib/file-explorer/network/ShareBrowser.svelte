@@ -556,7 +556,6 @@
         background: none;
         border: 1px solid transparent;
         border-radius: var(--radius-sm);
-        cursor: pointer;
     }
 
     .forget-password-btn:hover {

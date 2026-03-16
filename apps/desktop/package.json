@@ -78,6 +78,7 @@
         "prettier-plugin-svelte": "^3.5.1",
         "stylelint": "^16.26.1",
         "stylelint-config-standard": "^39.0.1",
+        "stylelint-declaration-block-no-ignored-properties": "2.8.0",
         "stylelint-value-no-unknown-custom-properties": "^6.1.1",
         "svelte": "^5.53.7",
         "svelte-check": "^4.4.4",

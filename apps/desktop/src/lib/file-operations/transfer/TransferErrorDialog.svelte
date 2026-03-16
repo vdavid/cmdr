@@ -155,7 +155,6 @@
         color: var(--color-text-tertiary);
         background: none;
         border: none;
-        cursor: pointer;
         transition: color var(--transition-base);
     }
 

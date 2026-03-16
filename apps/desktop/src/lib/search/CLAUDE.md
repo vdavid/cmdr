@@ -42,8 +42,8 @@ hidden.
 
 **Split input in AI mode**: In manual mode, a single pattern row with Search + Ask AI buttons. In AI mode, the input
 splits into two rows: an AI prompt row (top, with "AI" label and accent border) and a pattern row (bottom, with search
-icon). Enter in the AI prompt row triggers AI translation; Enter in the pattern row runs manual search. `⌘L` or the
-"Ask AI" button toggles between modes. `⌘Enter` from anywhere triggers a one-shot AI search without toggling mode.
+icon). Enter in the AI prompt row triggers AI translation; Enter in the pattern row runs manual search. `⌘L` or the "Ask
+AI" button toggles between modes. `⌘Enter` from anywhere triggers a one-shot AI search without toggling mode.
 
 **AI prompt state**: `aiPrompt` in `search-state.svelte.ts` holds the natural language query separately from
 `namePattern` (the glob/regex pattern). When entering AI mode, current pattern text moves to `aiPrompt`; when exiting,

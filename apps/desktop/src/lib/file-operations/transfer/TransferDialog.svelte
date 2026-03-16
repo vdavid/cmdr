@@ -560,16 +560,10 @@
         margin-left: var(--spacing-xs);
     }
 
-    @keyframes spin {
-        to {
-            transform: rotate(360deg);
-        }
-    }
-
     .scan-checkmark {
         color: var(--color-allow);
         font-size: var(--font-size-md);
-        font-weight: bold;
+        font-weight: 600;
         margin-left: var(--spacing-xs);
     }
 

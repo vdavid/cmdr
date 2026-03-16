@@ -6,9 +6,20 @@ const __dirname = dirname(__filename)
 
 export default {
     extends: ['stylelint-config-standard'],
-    plugins: ['stylelint-value-no-unknown-custom-properties'],
+    plugins: ['stylelint-value-no-unknown-custom-properties', 'stylelint-declaration-block-no-ignored-properties'],
     customSyntax: 'postcss-html',
+    overrides: [
+        {
+            files: ['**/app.css'],
+            rules: {
+                'color-no-hex': null,
+                'function-disallowed-list': null,
+            },
+        },
+    ],
     rules: {
+        'color-no-hex': true,
+        'function-disallowed-list': ['rgba', 'rgb', 'hsl', 'hsla'],
         'csstools/value-no-unknown-custom-properties': [
             true,
             {
@@ -24,6 +35,12 @@ export default {
             'border-radius': ['/\\dpx/'],
             'z-index': ['/^\\d{2,}/'],
             'font-family': ['/^(?!var\\(|inherit|unset|initial)/'],
+            cursor: ['pointer'],
+        },
+        'declaration-no-important': true,
+        'declaration-property-value-allowed-list': {
+            'font-weight': ['400', '500', '600', 'normal', 'inherit'],
+            opacity: ['/^(0|0\\.3|0\\.4|0\\.5|0\\.6|0\\.7|0\\.8|1|inherit)$/'],
         },
         'custom-property-pattern': '^(color|spacing|font|radius|shadow|transition|z)-.+',
         'declaration-block-no-duplicate-custom-properties': true,
@@ -38,6 +55,7 @@ export default {
         'font-family-no-duplicate-names': null,
         'declaration-property-value-keyword-no-deprecated': null,
         'declaration-block-no-redundant-longhand-properties': null,
+        'plugin/declaration-block-no-ignored-properties': true,
         'comment-empty-line-before': null,
         'color-function-alias-notation': null,
         'keyframes-name-pattern': null,
