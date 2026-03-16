@@ -40,7 +40,7 @@
         height: 20px;
         background: var(--color-bg-tertiary);
         border-radius: var(--radius-full);
-        padding: 2px;
+        padding: var(--spacing-xxs);
         cursor: default;
         transition: background-color var(--transition-base);
     }

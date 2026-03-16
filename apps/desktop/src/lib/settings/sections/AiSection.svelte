@@ -1420,13 +1420,13 @@
         display: flex;
         flex-wrap: wrap;
         gap: var(--spacing-sm) var(--spacing-md);
-        margin-top: 4px;
+        margin-top: var(--spacing-xs);
     }
 
     .ram-legend-item {
         display: flex;
         align-items: center;
-        gap: 4px;
+        gap: var(--spacing-xs);
         font-size: var(--font-size-xs);
         color: var(--color-text-tertiary);
     }
@@ -1507,7 +1507,7 @@
     }
 
     .combobox-input {
-        padding-right: 28px;
+        padding-right: var(--spacing-2xl);
     }
 
     .combobox-toggle {
@@ -1518,7 +1518,7 @@
         color: var(--color-text-secondary);
         cursor: default;
         font-size: var(--font-size-sm);
-        padding: 2px 4px;
+        padding: var(--spacing-xxs) var(--spacing-xs);
         line-height: 1;
     }
 
@@ -1527,7 +1527,7 @@
         top: 100%;
         left: 0;
         right: 0;
-        margin-top: 2px;
+        margin-top: var(--spacing-xxs);
         background: var(--color-bg-primary);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-sm);

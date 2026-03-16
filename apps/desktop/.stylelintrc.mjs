@@ -19,6 +19,7 @@ export default {
         // Forbid var() with fallback values - all colors should be in app.css
         'declaration-property-value-disallowed-list': {
             '/.*/': ['/var\\(--[\\w-]+\\s*,/'],
+            '/^(padding|margin|gap|row-gap|column-gap)(-\\w+)?$/': ['/\\d+px/'],
             'font-size': ['/\\dpx/'],
             'border-radius': ['/\\dpx/'],
             'z-index': ['/^\\d{2,}/'],

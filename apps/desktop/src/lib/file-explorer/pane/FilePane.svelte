@@ -1748,7 +1748,7 @@
     }
 
     .header {
-        padding: 2px var(--spacing-sm);
+        padding: var(--spacing-xxs) var(--spacing-sm);
         background-color: var(--color-bg-secondary);
         border-bottom: 1px solid var(--color-border-strong);
         font-size: var(--font-size-sm);

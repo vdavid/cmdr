@@ -60,7 +60,7 @@
         z-index: var(--z-notification);
         pointer-events: none;
         max-width: 320px;
-        padding: 10px 14px;
+        padding: var(--spacing-md) var(--spacing-md);
         border-radius: var(--radius-lg);
         background: rgba(30, 30, 30, 0.9);
         color: rgba(255, 255, 255, 0.92);
@@ -88,10 +88,11 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         padding: 1px 0;
         display: flex;
         align-items: center;
-        gap: 4px;
+        gap: var(--spacing-xs);
     }
 
     .name-icon {

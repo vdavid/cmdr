@@ -101,7 +101,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 12px;
+        gap: var(--spacing-md);
     }
 
     .error-icon {
@@ -115,7 +115,7 @@
     }
 
     .error-content {
-        padding: 0 24px 16px;
+        padding: 0 var(--spacing-xl) var(--spacing-lg);
     }
 
     .message {
@@ -150,7 +150,7 @@
         display: flex;
         align-items: center;
         gap: var(--spacing-sm);
-        padding: 4px 0;
+        padding: var(--spacing-xs) 0;
         font-size: var(--font-size-sm);
         color: var(--color-text-tertiary);
         background: none;
@@ -185,7 +185,7 @@
 
     .details-text {
         width: 100%;
-        padding: var(--spacing-sm) 10px;
+        padding: var(--spacing-sm) var(--spacing-md);
         font-size: var(--font-size-sm);
         font-family: var(--font-mono);
         color: var(--color-text-secondary);
@@ -206,8 +206,8 @@
 
     .button-row {
         display: flex;
-        gap: 12px;
+        gap: var(--spacing-md);
         justify-content: center;
-        padding: 0 24px 20px;
+        padding: 0 var(--spacing-xl) var(--spacing-xl);
     }
 </style>

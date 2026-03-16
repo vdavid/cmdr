@@ -338,7 +338,7 @@
 
     .field-input {
         width: 100%;
-        padding: 10px 12px;
+        padding: var(--spacing-md) var(--spacing-md);
         border: 1px solid var(--color-border-strong);
         border-radius: var(--radius-md);
         background-color: var(--color-bg-primary);
@@ -388,13 +388,13 @@
         display: flex;
         justify-content: flex-end;
         gap: var(--spacing-md);
-        margin-top: 20px;
+        margin-top: var(--spacing-xl);
     }
 
     .btn-content {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: var(--spacing-sm);
     }
 
     .spinner {
@@ -418,6 +418,7 @@
         width: 1px;
         height: 1px;
         padding: 0;
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         margin: -1px;
         overflow: hidden;
         clip-path: inset(50%);

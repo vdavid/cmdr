@@ -332,11 +332,12 @@
     }
 
     .format-help li {
-        margin-bottom: 2px;
+        margin-bottom: var(--spacing-xxs);
     }
 
     .format-help code {
         background: var(--color-bg-tertiary);
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         padding: 1px 4px;
         border-radius: var(--radius-xs);
         font-family: var(--font-mono);

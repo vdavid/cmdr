@@ -45,7 +45,7 @@
     .sortable-header {
         display: flex;
         align-items: center;
-        gap: 4px;
+        gap: var(--spacing-xs);
         padding: 0 var(--spacing-xs);
         background: transparent;
         border: none;

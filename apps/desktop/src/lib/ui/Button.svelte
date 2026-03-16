@@ -57,12 +57,14 @@
 
     /* === Size: regular === */
     .btn-regular {
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- Button height target: 32px */
         padding: 7px 20px;
         font-size: var(--font-size-md);
     }
 
     /* === Size: mini === */
     .btn-mini {
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- Mini button height target: 22px */
         padding: 3px 12px;
         font-size: var(--font-size-sm);
         border-radius: var(--radius-sm);

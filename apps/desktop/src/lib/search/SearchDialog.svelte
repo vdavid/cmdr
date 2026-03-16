@@ -744,7 +744,7 @@
 
     .ai-button {
         flex-shrink: 0;
-        padding: 2px var(--spacing-sm);
+        padding: var(--spacing-xxs) var(--spacing-sm);
         font-size: var(--font-size-sm);
         border: 1px solid var(--color-border-strong);
         border-radius: var(--radius-sm);
@@ -801,6 +801,7 @@
 
     .filter-select {
         font-size: var(--font-size-sm);
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         padding: 1px 4px;
         border: 1px solid var(--color-border-strong);
         border-radius: var(--radius-sm);
@@ -811,6 +812,7 @@
 
     .filter-input {
         font-size: var(--font-size-sm);
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         padding: 1px 4px;
         border: 1px solid var(--color-border-strong);
         border-radius: var(--radius-sm);
@@ -839,7 +841,7 @@
     .filter-group.ai-highlight {
         background: var(--color-accent-subtle);
         border-radius: var(--radius-sm);
-        padding: 2px 4px;
+        padding: var(--spacing-xxs) var(--spacing-xs);
         transition: background 1.5s ease-out;
     }
 
@@ -936,6 +938,7 @@
         width: 1px;
         height: 1px;
         padding: 0;
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         margin: -1px;
         overflow: hidden;
         clip-path: inset(50%);

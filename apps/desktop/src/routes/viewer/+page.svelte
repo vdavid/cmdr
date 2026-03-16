@@ -618,7 +618,7 @@
     .search-input {
         flex: 1;
         max-width: 300px;
-        padding: 3px 8px;
+        padding: var(--spacing-xxs) var(--spacing-sm);
         border: 1px solid var(--color-border-strong);
         border-radius: var(--radius-sm);
         background: var(--color-bg-primary);
@@ -641,7 +641,7 @@
 
     .search-spinner {
         vertical-align: text-bottom;
-        margin-right: 2px;
+        margin-right: var(--spacing-xxs);
     }
 
     .search-progress {
@@ -673,7 +673,7 @@
         color: var(--color-text-primary);
         font-size: var(--font-size-sm);
         font-weight: 500;
-        padding: 2px var(--spacing-xs);
+        padding: var(--spacing-xxs) var(--spacing-xs);
         line-height: 1;
         transition: all var(--transition-base);
     }
@@ -763,7 +763,9 @@
     mark {
         background: var(--color-highlight);
         border-radius: var(--radius-xs);
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         padding: 0 1px;
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         margin: 0 -1px;
     }
 
@@ -784,6 +786,7 @@
     }
 
     .backend-badge {
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         padding: 1px 4px;
         border-radius: var(--radius-sm);
         background: var(--color-bg-tertiary);
@@ -828,6 +831,7 @@
     }
 
     .viewer-action-btn {
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- Button height target: matches mini button */
         padding: 3px 12px;
         font-size: var(--font-size-sm);
         font-weight: 500;

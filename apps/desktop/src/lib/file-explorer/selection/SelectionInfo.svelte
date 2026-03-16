@@ -282,7 +282,7 @@
     .selection-info {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: var(--spacing-sm);
         padding: var(--spacing-xs) var(--spacing-sm);
         font-family: var(--font-system), sans-serif;
         font-size: calc(var(--font-size-sm) * 0.95);

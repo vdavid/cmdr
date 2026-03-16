@@ -112,7 +112,7 @@
     .agg-content {
         display: flex;
         flex-direction: column;
-        gap: 3px;
+        gap: var(--spacing-xxs);
         min-width: 160px;
     }
 

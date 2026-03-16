@@ -80,7 +80,7 @@
     }
 
     .info {
-        margin: 0 0 20px;
+        margin: 0 0 var(--spacing-xl);
         font-size: var(--font-size-md);
         color: var(--color-text-tertiary);
         line-height: 1.5;
@@ -88,7 +88,7 @@
 
     .actions {
         display: flex;
-        gap: 12px;
+        gap: var(--spacing-md);
         justify-content: flex-end;
     }
 </style>

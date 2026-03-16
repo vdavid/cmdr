@@ -527,11 +527,11 @@
         cursor: default;
         font-weight: 500;
         color: var(--color-text-primary);
-        padding: 2px 4px;
+        padding: var(--spacing-xxs) var(--spacing-xs);
         border-radius: var(--radius-sm);
         display: inline-flex;
         align-items: center;
-        gap: 4px;
+        gap: var(--spacing-xs);
     }
 
     .volume-name:hover {
@@ -560,7 +560,7 @@
 
     .path-separator {
         color: var(--color-text-tertiary);
-        margin: 0 4px;
+        margin: 0 var(--spacing-xs);
         font-size: var(--font-size-xs);
     }
 
@@ -568,7 +568,7 @@
         position: absolute;
         top: 100%;
         left: 0;
-        margin-top: 4px;
+        margin-top: var(--spacing-xs);
         min-width: 220px;
         max-height: calc(100vh - 30px); /* Fallback — overridden dynamically by fitDropdownToViewport() */
         overflow-y: auto;
@@ -577,14 +577,14 @@
         border-radius: var(--radius-md);
         box-shadow: var(--shadow-md);
         z-index: var(--z-dropdown);
-        padding: 4px 0;
+        padding: var(--spacing-xs) 0;
     }
 
     .category-label {
         font-size: var(--font-size-sm);
         font-weight: 500;
         color: var(--color-text-tertiary);
-        padding: 8px 12px 4px;
+        padding: var(--spacing-sm) var(--spacing-md) var(--spacing-xs);
         text-transform: uppercase;
         /*noinspection CssNonIntegerLengthInPixels*/
         letter-spacing: 0.5px;
@@ -593,13 +593,13 @@
     .category-separator {
         height: 1px;
         background-color: var(--color-border-strong);
-        margin: 4px 8px;
+        margin: var(--spacing-xs) var(--spacing-sm);
     }
 
     .volume-item {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: var(--spacing-sm);
         padding: var(--spacing-sm) var(--spacing-md);
         cursor: default;
     }
@@ -653,6 +653,7 @@
         display: flex;
         align-items: center;
         gap: var(--spacing-sm);
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         padding: 0 var(--spacing-md) var(--spacing-xs) calc(14px + var(--spacing-sm) + 16px + var(--spacing-sm));
     }
 

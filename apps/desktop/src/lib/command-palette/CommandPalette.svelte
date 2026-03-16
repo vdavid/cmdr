@@ -282,7 +282,9 @@
         background: rgba(255, 255, 255, 0.25);
         color: inherit;
         border-radius: var(--radius-sm);
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         padding: 1px 2px;
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         margin: 0 -2px;
     }
 

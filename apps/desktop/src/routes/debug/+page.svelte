@@ -779,6 +779,7 @@
 </div>
 
 <style>
+    /* stylelint-disable declaration-property-value-disallowed-list -- Dev utility page */
     .debug-container {
         display: flex;
         flex-direction: column;

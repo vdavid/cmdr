@@ -68,8 +68,8 @@
     .always-allow {
         display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 0 24px 16px;
+        gap: var(--spacing-sm);
+        padding: 0 var(--spacing-xl) var(--spacing-lg);
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
         cursor: default;
@@ -82,8 +82,8 @@
 
     .button-row {
         display: flex;
-        gap: 12px;
+        gap: var(--spacing-md);
         justify-content: center;
-        padding: 0 24px 20px;
+        padding: 0 var(--spacing-xl) var(--spacing-xl);
     }
 </style>

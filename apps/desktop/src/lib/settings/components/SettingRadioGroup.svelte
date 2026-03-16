@@ -91,7 +91,7 @@
         border-radius: var(--radius-full);
         background: var(--color-bg-primary);
         flex-shrink: 0;
-        margin-top: 2px;
+        margin-top: var(--spacing-xxs);
         transition: all var(--transition-base);
     }
 
@@ -117,7 +117,7 @@
     :global(.radio-text) {
         display: flex;
         flex-direction: column;
-        gap: 2px;
+        gap: var(--spacing-xxs);
     }
 
     .radio-label {
@@ -131,7 +131,7 @@
     }
 
     .custom-content {
-        margin-left: 24px;
+        margin-left: var(--spacing-xl);
         margin-top: var(--spacing-xs);
         margin-bottom: var(--spacing-sm);
     }

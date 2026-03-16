@@ -161,6 +161,7 @@
         min-width: 0;
         align-items: end;
         overflow: hidden;
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         gap: 1px;
     }
 
@@ -206,6 +207,7 @@
         font-weight: 500;
         /* Extend down 1px to cover the tab-bar bottom border */
         height: 25px;
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         margin-bottom: -1px;
         z-index: 1;
         box-shadow: 0 0 4px rgba(0, 0, 0, 0.04);
@@ -250,11 +252,11 @@
     }
 
     .tab.pinned {
-        padding-left: 24px;
+        padding-left: var(--spacing-xl);
     }
 
     .tab.unreachable {
-        padding-left: 22px;
+        padding-left: var(--spacing-xl);
     }
 
     .warning-icon {
@@ -321,7 +323,7 @@
         justify-content: center;
         width: 24px;
         height: 20px;
-        margin-bottom: 3px;
+        margin-bottom: var(--spacing-xxs);
         border: none;
         border-radius: var(--radius-sm);
         background: none;

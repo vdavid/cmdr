@@ -447,9 +447,9 @@
     .volume-selector {
         display: flex;
         align-items: center;
-        gap: 12px;
-        padding: 0 24px;
-        margin-bottom: 12px;
+        gap: var(--spacing-md);
+        padding: 0 var(--spacing-xl);
+        margin-bottom: var(--spacing-md);
     }
 
     .volume-select {
@@ -480,7 +480,7 @@
 
     .path-input {
         width: 100%;
-        padding: 10px var(--spacing-md);
+        padding: var(--spacing-md) var(--spacing-md);
         font-size: var(--font-size-md);
         font-family: var(--font-system) sans-serif;
         background: var(--color-bg-primary);
@@ -517,7 +517,7 @@
         display: flex;
         gap: var(--spacing-md);
         justify-content: center;
-        padding: 0 var(--spacing-xl) 20px;
+        padding: 0 var(--spacing-xl) var(--spacing-xl);
     }
 
     /* Scan stats */
@@ -533,7 +533,7 @@
     .scan-stat {
         display: flex;
         align-items: baseline;
-        gap: 4px;
+        gap: var(--spacing-xs);
     }
 
     .scan-value {
@@ -557,7 +557,7 @@
         border-top-color: transparent;
         border-radius: var(--radius-full);
         animation: spin 0.8s linear infinite;
-        margin-left: 4px;
+        margin-left: var(--spacing-xs);
     }
 
     @keyframes spin {
@@ -570,7 +570,7 @@
         color: var(--color-allow);
         font-size: var(--font-size-md);
         font-weight: bold;
-        margin-left: 4px;
+        margin-left: var(--spacing-xs);
     }
 
     /* Conflicts checking */
@@ -634,7 +634,7 @@
     }
 
     .toggle-option {
-        padding: 5px var(--spacing-lg);
+        padding: var(--spacing-xs) var(--spacing-lg);
         font-size: var(--font-size-sm);
         font-weight: 500;
         border: 1px solid var(--color-border-strong);

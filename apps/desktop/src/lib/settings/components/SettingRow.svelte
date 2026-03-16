@@ -158,7 +158,7 @@
     .disabled-badge,
     .restart-badge {
         font-size: var(--font-size-xs);
-        padding: 2px var(--spacing-xs);
+        padding: var(--spacing-xxs) var(--spacing-xs);
         border-radius: var(--radius-sm);
         font-weight: 500;
     }
@@ -194,7 +194,7 @@
     .search-highlight {
         background-color: var(--color-highlight);
         color: inherit;
-        padding: 0 2px;
+        padding: 0 var(--spacing-xxs);
         border-radius: var(--radius-xs);
     }
 </style>

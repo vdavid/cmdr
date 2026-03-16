@@ -552,7 +552,7 @@
 
     .license-input {
         width: 100%;
-        padding: var(--spacing-md) 14px;
+        padding: var(--spacing-md);
         font-size: var(--font-size-md);
         font-family: var(--font-system), sans-serif;
         background: var(--color-bg-primary);

@@ -205,7 +205,7 @@
         align-items: center;
         justify-content: center;
         height: 100%;
-        gap: 12px;
+        gap: var(--spacing-md);
         color: var(--color-text-secondary);
     }
 

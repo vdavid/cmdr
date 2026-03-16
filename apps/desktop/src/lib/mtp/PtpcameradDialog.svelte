@@ -97,7 +97,7 @@
 
     .explanation code {
         background: var(--color-bg-tertiary);
-        padding: 2px var(--spacing-xs);
+        padding: var(--spacing-xxs) var(--spacing-xs);
         border-radius: var(--radius-sm);
         font-family: var(--font-mono);
         font-size: var(--font-size-sm);
@@ -108,7 +108,7 @@
     }
 
     .help-text {
-        margin: 0 0 20px;
+        margin: 0 0 var(--spacing-xl);
         font-size: var(--font-size-sm);
         color: var(--color-text-tertiary);
         line-height: 1.5;
@@ -116,7 +116,7 @@
 
     .help-text kbd {
         background: var(--color-bg-tertiary);
-        padding: 2px var(--spacing-xs);
+        padding: var(--spacing-xxs) var(--spacing-xs);
         border-radius: var(--radius-sm);
         font-family: var(--font-system);
         font-size: var(--font-size-sm);

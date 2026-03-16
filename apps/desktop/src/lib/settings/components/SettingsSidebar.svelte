@@ -240,7 +240,7 @@
     .search-input {
         width: 100%;
         padding: var(--spacing-xs) var(--spacing-sm);
-        padding-right: 28px;
+        padding-right: var(--spacing-2xl);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-sm);
         background: var(--color-bg-primary);
@@ -268,7 +268,7 @@
         color: var(--color-text-tertiary);
         cursor: default;
         font-size: var(--font-size-lg);
-        padding: 2px var(--spacing-xs);
+        padding: var(--spacing-xxs) var(--spacing-xs);
         line-height: 1;
     }
 

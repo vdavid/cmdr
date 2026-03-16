@@ -131,6 +131,7 @@
         width: 1px;
         height: 1px;
         padding: 0;
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         margin: -1px;
         overflow: hidden;
         clip-path: inset(50%);
@@ -178,7 +179,7 @@
     }
 
     .version-info {
-        margin-bottom: 20px;
+        margin-bottom: var(--spacing-xl);
     }
 
     .version {
@@ -189,8 +190,8 @@
     .license-info {
         background: var(--color-bg-tertiary);
         border-radius: var(--radius-lg);
-        padding: var(--spacing-lg) 20px;
-        margin-bottom: 20px;
+        padding: var(--spacing-lg) var(--spacing-xl);
+        margin-bottom: var(--spacing-xl);
     }
 
     .license-description {
@@ -207,7 +208,7 @@
     }
 
     .links {
-        margin-bottom: 16px;
+        margin-bottom: var(--spacing-lg);
     }
 
     .links a {
@@ -222,7 +223,7 @@
 
     .separator {
         color: var(--color-text-secondary);
-        margin: 0 8px;
+        margin: 0 var(--spacing-sm);
     }
 
     .copyright {

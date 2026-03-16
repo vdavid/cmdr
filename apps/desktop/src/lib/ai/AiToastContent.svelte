@@ -77,7 +77,7 @@
     .ai-content {
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        gap: var(--spacing-xs);
     }
 
     .ai-title {
@@ -95,7 +95,7 @@
     .ai-hint {
         font-size: var(--font-size-xs);
         color: var(--color-text-tertiary);
-        margin-top: 4px;
+        margin-top: var(--spacing-xs);
     }
 
     .ai-progress-text {
@@ -110,7 +110,7 @@
         background: var(--color-bg-tertiary);
         border-radius: var(--radius-xs);
         overflow: hidden;
-        margin-top: 4px;
+        margin-top: var(--spacing-xs);
     }
 
     .progress-bar-fill {

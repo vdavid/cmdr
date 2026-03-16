@@ -591,7 +591,7 @@
     .network-status-bar {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: var(--spacing-sm);
         width: 100%;
         padding: var(--spacing-xs) var(--spacing-sm);
         font-family: var(--font-system), sans-serif;

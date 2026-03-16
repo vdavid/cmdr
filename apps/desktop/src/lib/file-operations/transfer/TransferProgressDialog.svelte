@@ -947,7 +947,7 @@
         display: flex;
         justify-content: space-between;
         font-size: var(--font-size-sm);
-        padding: 2px 0;
+        padding: var(--spacing-xxs) 0;
     }
 
     .stat-label {
@@ -977,7 +977,7 @@
         display: flex;
         gap: var(--spacing-md);
         justify-content: center;
-        padding: var(--spacing-lg) var(--spacing-xl) 20px;
+        padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-xl);
     }
 
     /* Rollback section */
@@ -1012,7 +1012,7 @@
 
     /* Conflict section */
     .conflict-section {
-        padding: var(--spacing-md) var(--spacing-xl) 20px;
+        padding: var(--spacing-md) var(--spacing-xl) var(--spacing-xl);
     }
 
     .conflict-filename {
@@ -1081,13 +1081,13 @@
     .conflict-buttons {
         display: flex;
         flex-direction: column;
-        gap: 8px;
-        margin-bottom: 16px;
+        gap: var(--spacing-sm);
+        margin-bottom: var(--spacing-lg);
     }
 
     .conflict-buttons-row {
         display: flex;
-        gap: 8px;
+        gap: var(--spacing-sm);
         justify-content: center;
     }
 
@@ -1099,7 +1099,7 @@
     .conflict-cancel {
         display: flex;
         justify-content: center;
-        padding-top: 12px;
+        padding-top: var(--spacing-md);
         border-top: 1px solid var(--color-border-strong);
     }
 

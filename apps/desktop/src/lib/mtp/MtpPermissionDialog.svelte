@@ -75,7 +75,7 @@
     }
 
     .help-text {
-        margin: 0 0 20px;
+        margin: 0 0 var(--spacing-xl);
         font-size: var(--font-size-sm);
         color: var(--color-text-tertiary);
         line-height: 1.5;

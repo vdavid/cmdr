@@ -132,8 +132,8 @@
 
     .file-comparison {
         display: flex;
-        gap: 12px;
-        padding: 0 24px 16px;
+        gap: var(--spacing-md);
+        padding: 0 var(--spacing-xl) var(--spacing-lg);
     }
 
     .file-card {
@@ -164,7 +164,7 @@
         display: flex;
         justify-content: space-between;
         align-items: baseline;
-        gap: 8px;
+        gap: var(--spacing-sm);
     }
 
     .meta-label {
@@ -185,12 +185,12 @@
 
     .button-row {
         display: flex;
-        gap: 12px;
+        gap: var(--spacing-md);
         justify-content: center;
-        padding: 0 24px 8px;
+        padding: 0 var(--spacing-xl) var(--spacing-sm);
     }
 
     .secondary-row {
-        padding-bottom: 20px;
+        padding-bottom: var(--spacing-xl);
     }
 </style>

@@ -138,6 +138,7 @@
         background: var(--color-bg-tertiary);
         color: var(--color-text-secondary);
         border-radius: var(--radius-sm);
-        padding: 1px 4px;
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
+        padding: 1px var(--spacing-xs);
     }
 </style>

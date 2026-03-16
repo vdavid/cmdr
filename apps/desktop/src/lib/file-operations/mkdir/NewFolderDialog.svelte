@@ -283,7 +283,7 @@
 
 <style>
     .dialog-body {
-        padding: 0 24px 20px;
+        padding: 0 var(--spacing-xl) var(--spacing-xl);
     }
 
     .subtitle {
@@ -304,7 +304,7 @@
 
     .name-input {
         width: 100%;
-        padding: 10px 12px;
+        padding: var(--spacing-md) var(--spacing-md);
         font-size: var(--font-size-md);
         font-family: var(--font-system) sans-serif;
         background: var(--color-bg-primary);
@@ -360,12 +360,12 @@
 
     .button-row {
         display: flex;
-        gap: 12px;
+        gap: var(--spacing-md);
         justify-content: center;
     }
 
     .ai-suggestions {
-        margin-bottom: 16px;
+        margin-bottom: var(--spacing-lg);
         min-height: 52px;
         text-align: center;
     }
@@ -396,7 +396,7 @@
     }
 
     .suggestion-item {
-        padding: var(--spacing-xs) 10px;
+        padding: var(--spacing-xs) var(--spacing-md);
         font-size: var(--font-size-sm);
         font-weight: 500;
         color: var(--color-text-secondary);

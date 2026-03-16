@@ -39,7 +39,7 @@
 
 <style>
     .alert-body {
-        padding: 0 24px 20px;
+        padding: 0 var(--spacing-xl) var(--spacing-xl);
     }
 
     .message {

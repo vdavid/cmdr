@@ -542,7 +542,7 @@
     /* In compact mode, use symmetric padding to match BriefList alignment */
     .full-list-container.is-compact .file-entry {
         padding-top: 0;
-        padding-bottom: 4px;
+        padding-bottom: var(--spacing-xs);
     }
 
     .file-entry.is-under-cursor {
@@ -571,7 +571,7 @@
     .size-stale {
         font-size: var(--font-size-xs);
         line-height: 1;
-        margin-left: 2px;
+        margin-left: var(--spacing-xxs);
         cursor: help;
     }
 

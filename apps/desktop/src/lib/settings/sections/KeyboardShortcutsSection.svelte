@@ -586,7 +586,7 @@
         position: absolute;
         top: 100%;
         left: 0;
-        margin-top: 2px;
+        margin-top: var(--spacing-xxs);
         font-size: var(--font-size-xs);
         color: var(--color-text-tertiary);
         opacity: 0;
@@ -612,7 +612,7 @@
         cursor: default;
         display: flex;
         align-items: center;
-        gap: 4px;
+        gap: var(--spacing-xs);
     }
 
     .filter-chip.active {
@@ -630,6 +630,7 @@
         background: var(--color-warning);
         color: white;
         font-size: var(--font-size-xs);
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         padding: 1px 5px;
         border-radius: var(--radius-lg);
         font-weight: 600;
@@ -727,8 +728,8 @@
     .shortcut-pill {
         display: inline-flex;
         align-items: center;
-        gap: 4px;
-        padding: 2px 8px;
+        gap: var(--spacing-xs);
+        padding: var(--spacing-xxs) var(--spacing-sm);
         background: var(--color-bg-tertiary);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-sm);

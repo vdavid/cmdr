@@ -230,14 +230,14 @@
     .search-highlight {
         background-color: var(--color-highlight);
         color: inherit;
-        padding: 0 2px;
+        padding: 0 var(--spacing-xxs);
         border-radius: var(--radius-xs);
     }
 
     .setting-description {
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
-        margin-top: 2px;
+        margin-top: var(--spacing-xxs);
     }
 
     .setting-default {
@@ -280,7 +280,7 @@
         height: 20px;
         background: var(--color-bg-tertiary);
         border-radius: var(--radius-full);
-        padding: 2px;
+        padding: var(--spacing-xxs);
         cursor: default;
         transition: background-color var(--transition-base);
     }

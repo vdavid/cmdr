@@ -1079,7 +1079,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        padding-top: 2px;
+        padding-top: var(--spacing-xxs);
         background-color: var(--color-bg-secondary);
         flex-shrink: 0;
         position: relative;
