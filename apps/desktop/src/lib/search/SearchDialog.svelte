@@ -109,6 +109,8 @@
 
     let aiError = $state('')
     let highlightedFields = new SvelteSet<string>()
+    /** True once the user has triggered at least one search (so we can distinguish "no query yet" from "0 results"). */
+    let hasSearched = $state(false)
 
     // Subscribe to icon cache version for reactivity
     const _iconVersion = $derived($iconCacheVersion)
@@ -167,6 +169,7 @@
         if (!getIsIndexReady()) return
 
         setIsSearching(true)
+        hasSearched = true
         try {
             const query = buildSearchQuery()
             const result = await searchFiles(query)
@@ -450,8 +453,8 @@
             return 'Loading index...'
         }
         if (isSearching) return 'Searching...'
-        if (totalCount === 0 && !namePattern.trim() && sizeFilter === 'any' && dateFilter === 'any') {
-            return `Ready (${formatEntryCount(indexEntryCount)} entries indexed)`
+        if (!hasSearched || (!namePattern.trim() && sizeFilter === 'any' && dateFilter === 'any')) {
+            return `Index ready (${formatEntryCount(indexEntryCount)} entries)`
         }
         if (totalCount === 0) return 'No results'
         return `${String(results.length)} of ${totalCount.toLocaleString()} results`
@@ -638,7 +641,17 @@
                         </p>
                     {/if}
                 </div>
-            {:else if results.length === 0 && isIndexReady && !isSearching && (namePattern.trim() || sizeFilter !== 'any' || dateFilter !== 'any')}
+            {:else if !isIndexReady}
+                <div class="loading-state">
+                    <span class="loading-pulse" aria-hidden="true"></span>
+                    Loading drive index...
+                </div>
+            {:else if isSearching && results.length === 0}
+                <div class="loading-state">
+                    <span class="loading-pulse" aria-hidden="true"></span>
+                    Searching...
+                </div>
+            {:else if results.length === 0 && hasSearched && !isSearching && (namePattern.trim() || sizeFilter !== 'any' || dateFilter !== 'any')}
                 <div class="no-results">No files found</div>
             {:else}
                 {#each results as entry, index (entry.path)}
@@ -849,6 +862,44 @@
     .results-container {
         overflow-y: auto;
         max-height: 400px;
+    }
+
+    .loading-state {
+        padding: var(--spacing-lg);
+        text-align: center;
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--spacing-sm);
+    }
+
+    .loading-pulse {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--color-text-tertiary);
+        animation: pulse 1.2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+        0%,
+        100% {
+            opacity: 0.3;
+        }
+
+        50% {
+            opacity: 1;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .loading-pulse {
+            animation: none;
+            opacity: 0.6;
+        }
     }
 
     .no-results {
