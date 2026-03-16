@@ -200,6 +200,84 @@ pub struct SearchResultEntry {
     pub entry_id: i64,
 }
 
+// ── Query summary ────────────────────────────────────────────────────
+
+/// Build a dense, human-readable summary of a `SearchQuery` for logging and display.
+///
+/// Examples: `"tes"`, `"*.pdf", dirs only`, `size >= 2 MB, last mod before 2026-03-01`
+pub fn summarize_query(query: &SearchQuery) -> String {
+    let mut parts = Vec::new();
+
+    // Name pattern
+    if let Some(ref pattern) = query.name_pattern {
+        if !pattern.is_empty() {
+            let suffix = if query.pattern_type == PatternType::Regex { " (regex)" } else { "" };
+            parts.push(format!("\"{pattern}\"{suffix}"));
+        }
+    }
+
+    // Size filters
+    match (query.min_size, query.max_size) {
+        (Some(min), Some(max)) => parts.push(format!("size {}–{}", format_size(min), format_size(max))),
+        (Some(min), None) => parts.push(format!("size >= {}", format_size(min))),
+        (None, Some(max)) => parts.push(format!("size <= {}", format_size(max))),
+        (None, None) => {}
+    }
+
+    // Date filters
+    match (query.modified_after, query.modified_before) {
+        (Some(after), Some(before)) => {
+            parts.push(format!("last mod {}–{}", format_timestamp(after), format_timestamp(before)));
+        }
+        (Some(after), None) => parts.push(format!("last mod after {}", format_timestamp(after))),
+        (None, Some(before)) => parts.push(format!("last mod before {}", format_timestamp(before))),
+        (None, None) => {}
+    }
+
+    // Directory filter
+    match query.is_directory {
+        Some(true) => parts.push("dirs only".to_string()),
+        Some(false) => parts.push("files only".to_string()),
+        None => {}
+    }
+
+    if parts.is_empty() {
+        "(all entries)".to_string()
+    } else {
+        parts.join(", ")
+    }
+}
+
+fn format_size(bytes: u64) -> String {
+    const KB: u64 = 1_024;
+    const MB: u64 = 1_024 * KB;
+    const GB: u64 = 1_024 * MB;
+    const TB: u64 = 1_024 * GB;
+
+    if bytes >= TB {
+        let val = bytes as f64 / TB as f64;
+        if val.fract() == 0.0 { format!("{} TB", val as u64) } else { format!("{val:.1} TB") }
+    } else if bytes >= GB {
+        let val = bytes as f64 / GB as f64;
+        if val.fract() == 0.0 { format!("{} GB", val as u64) } else { format!("{val:.1} GB") }
+    } else if bytes >= MB {
+        let val = bytes as f64 / MB as f64;
+        if val.fract() == 0.0 { format!("{} MB", val as u64) } else { format!("{val:.1} MB") }
+    } else if bytes >= KB {
+        let val = bytes as f64 / KB as f64;
+        if val.fract() == 0.0 { format!("{} KB", val as u64) } else { format!("{val:.1} KB") }
+    } else {
+        format!("{bytes} B")
+    }
+}
+
+fn format_timestamp(ts: u64) -> String {
+    let format = time::macros::format_description!("[year]-[month]-[day]");
+    time::OffsetDateTime::from_unix_timestamp(ts as i64)
+        .map(|dt| dt.format(&format).unwrap_or_else(|_| ts.to_string()))
+        .unwrap_or_else(|_| ts.to_string())
+}
+
 // ── Glob to regex conversion ─────────────────────────────────────────
 
 /// Convert a glob pattern to a regex pattern.
@@ -242,7 +320,18 @@ pub fn search(index: &SearchIndex, query: &SearchQuery) -> Result<SearchResult, 
                 pattern.nfd().collect::<String>()
             };
             let regex_str = match query.pattern_type {
-                PatternType::Glob => glob_to_regex(&pattern),
+                PatternType::Glob => {
+                    // If the user typed a plain string without wildcards, wrap it
+                    // in `*...*` so it behaves as a contains/substring match.
+                    // This matches the UX of Total Commander, Double Commander,
+                    // and most file-search dialogs: typing "tes" finds "test.rs".
+                    let glob = if !pattern.contains('*') && !pattern.contains('?') {
+                        format!("*{pattern}*")
+                    } else {
+                        pattern.to_string()
+                    };
+                    glob_to_regex(&glob)
+                }
                 PatternType::Regex => pattern.to_string(),
             };
             let re = RegexBuilder::new(&regex_str)
@@ -377,7 +466,7 @@ pub fn search(index: &SearchIndex, query: &SearchQuery) -> Result<SearchResult, 
         })
         .collect();
 
-    log::debug!("Search completed: {} matches (returning {}), took {:?}", total_count, entries.len(), t.elapsed());
+    log::debug!("Search completed: {} → {} matches (returning {}), took {:?}", summarize_query(query), total_count, entries.len(), t.elapsed());
     Ok(SearchResult { entries, total_count })
 }
 
@@ -548,6 +637,66 @@ mod tests {
         assert_eq!(glob_to_regex("readme"), "^readme$");
     }
 
+    // ── Wildcard-free glob auto-wrapping (contains match) ────────────
+
+    #[test]
+    fn search_glob_plain_text_matches_substring() {
+        let index = make_test_index();
+        let query = SearchQuery {
+            name_pattern: Some("ote".to_string()),
+            pattern_type: PatternType::Glob,
+            min_size: None,
+            max_size: None,
+            modified_after: None,
+            modified_before: None,
+            is_directory: None,
+            limit: 30,
+        };
+        let result = search(&index, &query).unwrap();
+        // "ote" should match "notes.txt" as a substring
+        assert_eq!(result.total_count, 1);
+        assert_eq!(result.entries[0].name, "notes.txt");
+    }
+
+    #[test]
+    fn search_glob_plain_text_matches_prefix() {
+        let index = make_test_index();
+        let query = SearchQuery {
+            name_pattern: Some("repo".to_string()),
+            pattern_type: PatternType::Glob,
+            min_size: None,
+            max_size: None,
+            modified_after: None,
+            modified_before: None,
+            is_directory: None,
+            limit: 30,
+        };
+        let result = search(&index, &query).unwrap();
+        // "repo" should match "report.pdf" and "Q1-report.pdf"
+        assert_eq!(result.total_count, 2);
+        assert!(result.entries.iter().all(|e| e.name.contains("report")));
+    }
+
+    #[test]
+    fn search_glob_with_wildcards_not_auto_wrapped() {
+        let index = make_test_index();
+        // Explicit glob with wildcard should NOT be auto-wrapped
+        let query = SearchQuery {
+            name_pattern: Some("report*".to_string()),
+            pattern_type: PatternType::Glob,
+            min_size: None,
+            max_size: None,
+            modified_after: None,
+            modified_before: None,
+            is_directory: None,
+            limit: 30,
+        };
+        let result = search(&index, &query).unwrap();
+        // "report*" matches "report.pdf" but NOT "Q1-report.pdf"
+        assert_eq!(result.total_count, 1);
+        assert_eq!(result.entries[0].name, "report.pdf");
+    }
+
     // ── Helper: build a small in-memory index ────────────────────────
 
     /// Helper: push a name into the arena and return (offset, len).
@@ -692,7 +841,9 @@ mod tests {
     fn search_glob_case_insensitive_macos() {
         let index = make_test_index();
         let query = SearchQuery {
-            name_pattern: Some("REPORT.PDF".to_string()),
+            // Use a wildcard pattern to test case-insensitivity specifically
+            // (without wildcards, auto-wrapping would turn this into a contains match)
+            name_pattern: Some("NOTES.*".to_string()),
             pattern_type: PatternType::Glob,
             min_size: None,
             max_size: None,
@@ -704,7 +855,7 @@ mod tests {
         let result = search(&index, &query).unwrap();
         // On macOS, matching is case-insensitive
         assert_eq!(result.total_count, 1);
-        assert_eq!(result.entries[0].name, "report.pdf");
+        assert_eq!(result.entries[0].name, "notes.txt");
     }
 
     // ── Regex matching ───────────────────────────────────────────────
@@ -1145,5 +1296,134 @@ mod tests {
         // is 100K so the first check is at row 0 (0 % 100K == 0). The load should be cancelled.
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("cancelled"));
+    }
+
+    // ── summarize_query ──────────────────────────────────────────────
+
+    fn make_query(
+        name_pattern: Option<&str>,
+        pattern_type: PatternType,
+        min_size: Option<u64>,
+        max_size: Option<u64>,
+        modified_after: Option<u64>,
+        modified_before: Option<u64>,
+        is_directory: Option<bool>,
+    ) -> SearchQuery {
+        SearchQuery {
+            name_pattern: name_pattern.map(|s| s.to_string()),
+            pattern_type,
+            min_size,
+            max_size,
+            modified_after,
+            modified_before,
+            is_directory,
+            limit: 30,
+        }
+    }
+
+    #[test]
+    fn summarize_empty_query() {
+        let q = make_query(None, PatternType::Glob, None, None, None, None, None);
+        assert_eq!(summarize_query(&q), "(all entries)");
+    }
+
+    #[test]
+    fn summarize_name_only() {
+        let q = make_query(Some("tes"), PatternType::Glob, None, None, None, None, None);
+        assert_eq!(summarize_query(&q), "\"tes\"");
+    }
+
+    #[test]
+    fn summarize_glob_pattern() {
+        let q = make_query(Some("*.pdf"), PatternType::Glob, None, None, None, None, None);
+        assert_eq!(summarize_query(&q), "\"*.pdf\"");
+    }
+
+    #[test]
+    fn summarize_regex_pattern() {
+        let q = make_query(Some("Q[1-4].*"), PatternType::Regex, None, None, None, None, None);
+        assert_eq!(summarize_query(&q), "\"Q[1-4].*\" (regex)");
+    }
+
+    #[test]
+    fn summarize_size_min() {
+        let q = make_query(None, PatternType::Glob, Some(2 * 1024 * 1024), None, None, None, None);
+        assert_eq!(summarize_query(&q), "size >= 2 MB");
+    }
+
+    #[test]
+    fn summarize_size_max() {
+        let q = make_query(None, PatternType::Glob, None, Some(500 * 1024), None, None, None);
+        assert_eq!(summarize_query(&q), "size <= 500 KB");
+    }
+
+    #[test]
+    fn summarize_size_range() {
+        let q = make_query(None, PatternType::Glob, Some(1024 * 1024), Some(5 * 1024 * 1024 * 1024), None, None, None);
+        assert_eq!(summarize_query(&q), "size 1 MB\u{2013}5 GB");
+    }
+
+    #[test]
+    fn summarize_date_after() {
+        // 2025-01-01 00:00:00 UTC = 1735689600
+        let q = make_query(None, PatternType::Glob, None, None, Some(1_735_689_600), None, None);
+        assert_eq!(summarize_query(&q), "last mod after 2025-01-01");
+    }
+
+    #[test]
+    fn summarize_date_before() {
+        // 2026-03-01 00:00:00 UTC = 1772265600
+        let q = make_query(None, PatternType::Glob, None, None, None, Some(1_772_323_200), None);
+        assert_eq!(summarize_query(&q), "last mod before 2026-03-01");
+    }
+
+    #[test]
+    fn summarize_date_range() {
+        let q = make_query(None, PatternType::Glob, None, None, Some(1_735_689_600), Some(1_772_323_200), None);
+        assert_eq!(summarize_query(&q), "last mod 2025-01-01\u{2013}2026-03-01");
+    }
+
+    #[test]
+    fn summarize_dirs_only() {
+        let q = make_query(Some("*.pdf"), PatternType::Glob, None, None, None, None, Some(true));
+        assert_eq!(summarize_query(&q), "\"*.pdf\", dirs only");
+    }
+
+    #[test]
+    fn summarize_files_only() {
+        let q = make_query(None, PatternType::Glob, None, None, None, None, Some(false));
+        assert_eq!(summarize_query(&q), "files only");
+    }
+
+    #[test]
+    fn summarize_combined() {
+        let q = make_query(
+            Some("tes"),
+            PatternType::Glob,
+            Some(2 * 1024 * 1024),
+            None,
+            None,
+            Some(1_772_323_200),
+            None,
+        );
+        assert_eq!(summarize_query(&q), "\"tes\", size >= 2 MB, last mod before 2026-03-01");
+    }
+
+    #[test]
+    fn summarize_size_bytes() {
+        let q = make_query(None, PatternType::Glob, Some(500), None, None, None, None);
+        assert_eq!(summarize_query(&q), "size >= 500 B");
+    }
+
+    #[test]
+    fn summarize_size_gb() {
+        let q = make_query(None, PatternType::Glob, Some(1024 * 1024 * 1024), None, None, None, None);
+        assert_eq!(summarize_query(&q), "size >= 1 GB");
+    }
+
+    #[test]
+    fn summarize_empty_name_pattern() {
+        let q = make_query(Some(""), PatternType::Glob, None, None, None, None, None);
+        assert_eq!(summarize_query(&q), "(all entries)");
     }
 }

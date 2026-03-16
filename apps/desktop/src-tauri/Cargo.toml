@@ -78,7 +78,7 @@ xattr = "1"
 filetime = "0.2"
 exacl = "0.12"
 sysinfo = { version = "0.38.4", default-features = false, features = ["system"] }
-time = { version = "0.3", features = ["parsing", "macros"] }
+time = { version = "0.3", features = ["parsing", "macros", "formatting"] }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
