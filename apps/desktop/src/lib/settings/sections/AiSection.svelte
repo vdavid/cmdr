@@ -1329,7 +1329,7 @@
         width: 100%;
         height: 4px;
         background: var(--color-bg-tertiary);
-        border-radius: 2px;
+        border-radius: var(--radius-xs);
         overflow: hidden;
         margin: var(--spacing-xs) 0;
     }
@@ -1337,7 +1337,7 @@
     .progress-bar-fill {
         height: 100%;
         background: var(--color-accent);
-        border-radius: 2px;
+        border-radius: var(--radius-xs);
         transition: width var(--transition-slow);
     }
 
@@ -1435,7 +1435,7 @@
         display: inline-block;
         width: 8px;
         height: 8px;
-        border-radius: 2px;
+        border-radius: var(--radius-xs);
     }
 
     .ram-free-space {
@@ -1534,7 +1534,7 @@
         box-shadow: var(--shadow-md);
         max-height: 200px;
         overflow-y: auto;
-        z-index: 10;
+        z-index: var(--z-sticky);
     }
 
     .combobox-option {

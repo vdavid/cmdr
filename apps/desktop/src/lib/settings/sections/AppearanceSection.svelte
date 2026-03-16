@@ -338,7 +338,7 @@
     .format-help code {
         background: var(--color-bg-tertiary);
         padding: 1px 4px;
-        border-radius: 2px;
+        border-radius: var(--radius-xs);
         font-family: var(--font-mono);
     }
 </style>

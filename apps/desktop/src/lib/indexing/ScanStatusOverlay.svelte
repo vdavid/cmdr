@@ -97,12 +97,12 @@
         padding: var(--spacing-xxs) var(--spacing-sm);
         background: var(--color-bg-secondary);
         border: 1px solid var(--color-border);
-        border-radius: 4px;
+        border-radius: var(--radius-sm);
         font-size: var(--font-size-xs);
         color: var(--color-text-secondary);
         pointer-events: none;
         opacity: 0.85;
-        z-index: 10;
+        z-index: var(--z-sticky);
     }
 
     .scan-label {
@@ -126,14 +126,14 @@
         flex: 1;
         height: 4px;
         background: var(--color-bg-tertiary);
-        border-radius: 2px;
+        border-radius: var(--radius-xs);
         overflow: hidden;
     }
 
     .progress-fill {
         height: 100%;
         background: var(--color-accent);
-        border-radius: 2px;
+        border-radius: var(--radius-xs);
         transition: width 0.3s ease-out;
     }
 

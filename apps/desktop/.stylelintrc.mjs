@@ -19,6 +19,10 @@ export default {
         // Forbid var() with fallback values - all colors should be in app.css
         'declaration-property-value-disallowed-list': {
             '/.*/': ['/var\\(--[\\w-]+\\s*,/'],
+            'font-size': ['/\\dpx/'],
+            'border-radius': ['/\\dpx/'],
+            'z-index': ['/^\\d{2,}/'],
+            'font-family': ['/^(?!var\\(|inherit|unset|initial)/'],
         },
         'custom-property-pattern': '^(color|spacing|font|radius|shadow|transition|z)-.+',
         'declaration-block-no-duplicate-custom-properties': true,

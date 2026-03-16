@@ -762,7 +762,7 @@
 
     mark {
         background: var(--color-highlight);
-        border-radius: 2px;
+        border-radius: var(--radius-xs);
         padding: 0 1px;
         margin: 0 -1px;
     }

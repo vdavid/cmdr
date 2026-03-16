@@ -195,6 +195,6 @@
         background-color: var(--color-highlight);
         color: inherit;
         padding: 0 2px;
-        border-radius: 2px;
+        border-radius: var(--radius-xs);
     }
 </style>

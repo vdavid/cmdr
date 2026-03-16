@@ -120,6 +120,7 @@
     --font-size-xl: 20px;
 
     /* === Border radius === */
+    --radius-xs: 2px;
     --radius-sm: 4px;
     --radius-md: 6px;
     --radius-lg: 8px;
@@ -276,10 +277,12 @@
     kbd,
     pre,
     samp {
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- CSS reset */
         font-family: monospace, monospace;
     }
 
     pre {
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- CSS reset */
         font-size: 1em;
     }
 
@@ -432,6 +435,7 @@ a:focus-visible,
  * This is intentional: we want macOS-native behavior, not web-browser behavior.
  */
 html {
+    /* stylelint-disable-next-line declaration-property-value-disallowed-list -- base size, not a component value */
     font-size: 16px;
 }
 

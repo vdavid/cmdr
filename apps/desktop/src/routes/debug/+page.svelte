@@ -1117,7 +1117,7 @@
         justify-content: center;
         width: 14px;
         height: 14px;
-        font-size: 10px;
+        font-size: var(--font-size-xs);
         font-weight: 600;
         font-style: italic;
         font-family: var(--font-system), sans-serif;

@@ -77,6 +77,7 @@
     }
 
     .sort-indicator {
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- below type scale, sort arrows */
         font-size: 8px;
         flex-shrink: 0;
     }

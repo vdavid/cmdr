@@ -66,6 +66,7 @@
         position: absolute;
         bottom: -2px;
         right: -2px;
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- below type scale, tiny badge */
         font-size: 8px;
         line-height: 1;
     }

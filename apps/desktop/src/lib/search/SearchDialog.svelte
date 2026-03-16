@@ -880,7 +880,7 @@
         align-items: center;
         justify-content: center;
         width: 16px;
-        font-size: 14px;
+        font-size: var(--font-size-md);
         line-height: 1;
     }
 
@@ -891,7 +891,7 @@
     }
 
     .icon-emoji {
-        font-size: 14px;
+        font-size: var(--font-size-md);
         line-height: 1;
     }
 

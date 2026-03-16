@@ -330,7 +330,7 @@
     }
 
     .stale-indicator {
-        font-size: 10px;
+        font-size: var(--font-size-xs);
         cursor: help;
     }
 </style>

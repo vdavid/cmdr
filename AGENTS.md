@@ -81,6 +81,8 @@ If you don't find these but need them, ask the user. Run the app in dev mode fir
 - ❌ When testing the Tauri app, DO NOT USE THE BROWSER. Use the MCP servers.
 - ❌ Don't ignore linter warnings — fix them or justify with a comment.
 - Always use CSS variables defined in `apps/desktop/src/app.css`. Stylelint catches undefined/hallucinated variables.
+- Never use raw `px` values for `font-size`, `border-radius`, `font-family`, or `z-index` >= 10. Use `var(--font-size-*)`,
+  `var(--radius-*)`, `var(--font-*)`, and `var(--z-*)` tokens. Stylelint enforces this.
 - **Coverage allowlist is a last resort.** Extract pure functions and test them. Only allowlist what genuinely can't be
   tested. Name the specific untestable API in the reason.
 - When adding a new user-facing action, add it to `command-registry.ts` and `handleCommandExecute` in `+page.svelte`.

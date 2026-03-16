@@ -108,7 +108,7 @@
         width: 100%;
         height: 4px;
         background: var(--color-bg-tertiary);
-        border-radius: 2px;
+        border-radius: var(--radius-xs);
         overflow: hidden;
         margin-top: 4px;
     }
@@ -116,7 +116,7 @@
     .progress-bar-fill {
         height: 100%;
         background: var(--color-accent);
-        border-radius: 2px;
+        border-radius: var(--radius-xs);
         transition: width var(--transition-slow);
     }
 

@@ -158,11 +158,13 @@
     }
 
     .icon-text {
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- decorative, outside type scale */
         font-size: 40px;
         color: white;
     }
 
     .app-name {
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- decorative, outside type scale */
         font-size: 28px;
         font-weight: 600;
         margin: 0 0 var(--spacing-xs);

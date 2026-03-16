@@ -73,7 +73,7 @@
     .handle {
         width: 3px;
         height: 24px;
-        border-radius: 2px;
+        border-radius: var(--radius-xs);
         background: var(--color-text-tertiary);
         opacity: 0;
         transition: opacity var(--transition-base);

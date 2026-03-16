@@ -137,14 +137,14 @@
         flex: 1;
         height: 4px;
         background: var(--color-bg-tertiary);
-        border-radius: 2px;
+        border-radius: var(--radius-xs);
         position: relative;
     }
 
     :global(.slider-range) {
         height: 100%;
         background: var(--color-accent);
-        border-radius: 2px;
+        border-radius: var(--radius-xs);
     }
 
     :global(.slider-thumb) {

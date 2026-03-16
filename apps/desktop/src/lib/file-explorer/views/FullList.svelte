@@ -569,7 +569,7 @@
     }
 
     .size-stale {
-        font-size: 10px;
+        font-size: var(--font-size-xs);
         line-height: 1;
         margin-left: 2px;
         cursor: help;

@@ -243,13 +243,13 @@ Tailwind's spacing scale (base 4px). No custom tokens needed.
 
 | Token | Value | Role |
 |-------|-------|------|
+| `--radius-xs` | 2px | Progress bars, search highlights, tiny swatches |
 | `--radius-sm` | 4px | Chips, inline tags, compact inputs |
 | `--radius-md` | 6px | Buttons, standard inputs |
 | `--radius-lg` | 8px | Dialogs, cards, larger containers |
 | `--radius-full` | 9999px | Circles, pills |
 
-Consolidate the existing 3px (10 uses) to `--radius-sm`. The scale intentionally uses small values — large radii look
-web-native, not macOS-native.
+The scale intentionally uses small values — large radii look web-native, not macOS-native.
 
 ### Website
 

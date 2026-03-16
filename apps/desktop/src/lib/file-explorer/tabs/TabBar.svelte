@@ -220,6 +220,7 @@
         right: 0;
         height: 2px;
         background-color: var(--color-accent);
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- partial radius, no token */
         border-radius: 1px 1px 0 0;
     }
 
