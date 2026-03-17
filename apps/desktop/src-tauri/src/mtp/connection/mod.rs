@@ -418,6 +418,57 @@ impl MtpConnectionManager {
             storages: entry.storages.clone(),
         })
     }
+
+    /// Queries live storage space from the device and updates the cache.
+    ///
+    /// Returns `(total_bytes, available_bytes)` freshly read from the device,
+    /// or `None` if the device/storage is not found or the query fails.
+    pub async fn get_live_storage_space(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+    ) -> Option<(u64, u64)> {
+        let device_arc = {
+            let devices = self.devices.lock().await;
+            devices.get(device_id)?.device.clone()
+        };
+
+        let device = match acquire_device_lock(&device_arc, device_id, "get_live_storage_space").await {
+            Ok(d) => d,
+            Err(e) => {
+                warn!("get_live_storage_space: failed to acquire lock: {:?}", e);
+                return None;
+            }
+        };
+
+        let mtp_storage_id = mtp_rs::ptp::StorageId(storage_id);
+        let storage = match device.storage(mtp_storage_id).await {
+            Ok(s) => s,
+            Err(e) => {
+                warn!("get_live_storage_space: failed to query storage {}: {:?}", storage_id, e);
+                return None;
+            }
+        };
+        let info = storage.info();
+        let total = info.max_capacity;
+        let available = info.free_space_bytes;
+
+        // Release the device lock before updating the cache
+        drop(device);
+
+        // Update cache so other consumers (e.g. volume breadcrumb) see fresh data too
+        {
+            let mut devices = self.devices.lock().await;
+            if let Some(entry) = devices.get_mut(device_id) {
+                if let Some(cached) = entry.storages.iter_mut().find(|s| s.id == storage_id) {
+                    cached.total_bytes = total;
+                    cached.available_bytes = available;
+                }
+            }
+        }
+
+        Some((total, available))
+    }
 }
 
 // Remaining impl blocks are in submodules:

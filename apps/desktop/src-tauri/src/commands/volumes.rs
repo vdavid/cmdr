@@ -51,7 +51,30 @@ pub async fn find_containing_volume(path: String) -> TimedOut<Option<VolumeInfo>
 
 /// Gets space information for a volume at the given path.
 /// Returns total and available bytes for the volume.
+/// For MTP paths (`mtp://`), fetches from the MTP connection manager instead of macOS NSURL.
 #[tauri::command]
 pub async fn get_volume_space(path: String) -> TimedOut<Option<VolumeSpaceInfo>> {
+    if let Some(space) = get_mtp_space_info(&path).await {
+        return TimedOut {
+            data: Some(space),
+            timed_out: false,
+        };
+    }
     blocking_with_timeout_flag(VOLUME_TIMEOUT, None, move || volumes::get_volume_space(&path)).await
+}
+
+/// Queries live MTP space info from a `mtp://{device_id}/{storage_id}/...` path.
+async fn get_mtp_space_info(path: &str) -> Option<VolumeSpaceInfo> {
+    let rest = path.strip_prefix("mtp://")?;
+    let mut parts = rest.splitn(3, '/');
+    let device_id = parts.next()?;
+    let storage_id: u32 = parts.next()?.parse().ok()?;
+
+    let (total_bytes, available_bytes) = crate::mtp::connection_manager()
+        .get_live_storage_space(device_id, storage_id)
+        .await?;
+    Some(VolumeSpaceInfo {
+        total_bytes,
+        available_bytes,
+    })
 }
