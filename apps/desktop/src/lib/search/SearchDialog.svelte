@@ -6,8 +6,8 @@
      * Searches the in-memory index by filename (wildcards), size, and date.
      *
      * Input layout:
-     * - Manual mode: single pattern row with Search + Ask AI buttons
-     * - AI mode: two rows — AI prompt row (top) + pattern row (bottom)
+     * - AI enabled: two rows — AI prompt row (top, focused) + pattern row (bottom)
+     * - AI disabled: single pattern row with Search button
      */
     import { onMount, onDestroy, tick } from 'svelte'
     import { SvelteSet } from 'svelte/reactivity'
@@ -58,17 +58,18 @@
         setIsSearching,
         getIsIndexAvailable,
         setIsIndexAvailable,
-        getIsAiMode,
-        setIsAiMode,
         getAiStatus,
         setAiStatus,
         getAiPrompt,
         setAiPrompt,
+        getPatternType,
+        setPatternType,
         buildSearchQuery,
         resetSearchState,
         type SizeFilter,
         type DateFilter,
         type SizeUnit,
+        type PatternType,
     } from './search-state.svelte'
 
     interface Props {
@@ -105,13 +106,14 @@
     const indexEntryCount = $derived(getIndexEntryCount())
     const isSearching = $derived(getIsSearching())
     const isIndexAvailable = $derived(getIsIndexAvailable())
-    const isAiMode = $derived(getIsAiMode())
     const aiStatus = $derived(getAiStatus())
     const aiPrompt = $derived(getAiPrompt())
+    const patternType = $derived(getPatternType())
     const scanning = $derived(isScanning())
     const entriesScanned = $derived(getEntriesScanned())
 
-    const showAiButton = $derived(getSetting('ai.provider') !== 'off' && isIndexAvailable)
+    /** Whether AI search is enabled (provider configured and index available). */
+    const aiEnabled = $derived(getSetting('ai.provider') !== 'off' && isIndexAvailable)
     /** Whether inputs/filters should be disabled (index not available or still scanning with no index). */
     const inputsDisabled = $derived(!isIndexAvailable)
 
@@ -128,9 +130,9 @@
         return getCachedIcon(iconId)
     }
 
-    /** Focuses the appropriate input based on current mode. */
+    /** Focuses the appropriate input based on whether AI is enabled. */
     function focusActiveInput(): void {
-        if (isAiMode) {
+        if (aiEnabled) {
             aiPromptInputElement?.focus()
         } else {
             patternInputElement?.focus()
@@ -183,10 +185,10 @@
 
     async function executeSearch(): Promise<void> {
         if (debounceTimer) clearTimeout(debounceTimer)
+        hasSearched = true
         if (!getIsIndexReady()) return
 
         setIsSearching(true)
-        hasSearched = true
         try {
             const query = buildSearchQuery()
             const result = await searchFiles(query)
@@ -199,24 +201,6 @@
         } finally {
             setIsSearching(false)
         }
-    }
-
-    function toggleAiMode(): void {
-        const newMode = !getIsAiMode()
-        if (newMode) {
-            // Entering AI mode: move current pattern text to AI prompt
-            setAiPrompt(getNamePattern())
-            setNamePattern('')
-        } else {
-            // Exiting AI mode: keep pattern, clear AI prompt
-            setAiPrompt('')
-        }
-        setIsAiMode(newMode)
-        aiError = ''
-        setAiStatus('')
-        void tick().then(() => {
-            focusActiveInput()
-        })
     }
 
     /** Applies AI-returned size filters to the UI state. Returns true if any were applied. */
@@ -282,6 +266,10 @@
                 setNamePattern(result.display.namePattern)
                 changed.add('name')
             }
+            if (result.display.patternType === 'regex' || result.display.patternType === 'glob') {
+                setPatternType(result.display.patternType as PatternType)
+                changed.add('patternType')
+            }
             if (applySizeFilters(result.display)) changed.add('size')
             if (applyDateFilters(result.display)) changed.add('date')
 
@@ -322,6 +310,11 @@
             return { value: String(Math.round((bytes / (1024 * 1024)) * 100) / 100), unit: 'MB' }
         }
         return { value: String(Math.round((bytes / 1024) * 100) / 100), unit: 'KB' }
+    }
+
+    function togglePatternType(): void {
+        setPatternType(getPatternType() === 'glob' ? 'regex' : 'glob')
+        scheduleSearch()
     }
 
     function handlePatternInput(e: Event): void {
@@ -410,26 +403,13 @@
 
         if (handleTabFocusTrap(e)) return
 
-        // ⌘L toggles AI mode
-        if (e.key === 'l' && e.metaKey && !e.shiftKey && !e.altKey) {
-            e.preventDefault()
-            if (showAiButton) toggleAiMode()
-            return
-        }
-
-        // ⌘Enter triggers AI search from anywhere
+        // ⌘Enter triggers AI search
         if (e.key === 'Enter' && e.metaKey && !e.shiftKey && !e.altKey) {
             e.preventDefault()
-            if (!showAiButton) return
-            if (isAiMode) {
-                // In AI mode: submit the AI prompt
-                void executeAiSearch(getAiPrompt())
-            } else {
-                // In manual mode: one-shot AI search with current pattern text
-                const text = getNamePattern()
-                if (text.trim()) {
-                    void executeAiSearch(text)
-                }
+            if (!aiEnabled) return
+            const prompt = getAiPrompt().trim()
+            if (prompt) {
+                void executeAiSearch(prompt)
             }
             return
         }
@@ -460,7 +440,7 @@
 
     /** Handles plain Enter key based on which input is focused. */
     function handleEnterKey(): void {
-        if (isAiMode && isInAiPromptInput()) {
+        if (isInAiPromptInput()) {
             // Enter in AI prompt row: run AI search
             void executeAiSearch(getAiPrompt())
         } else if (isInPatternInput()) {
@@ -512,18 +492,17 @@
             if (scanning) return 'Scan in progress...'
             return 'Drive index not available'
         }
-        if (!isIndexReady) {
-            if (indexEntryCount > 0) {
-                return `Loading index (${formatEntryCount(indexEntryCount)} entries)...`
+        if (isIndexReady) {
+            if (isSearching) return 'Searching...'
+            if (!hasSearched || (!namePattern.trim() && sizeFilter === 'any' && dateFilter === 'any')) {
+                return `Index ready (${formatEntryCount(indexEntryCount)} entries)`
             }
-            return 'Loading index...'
+            if (totalCount === 0) return 'No results'
+            return `${String(results.length)} of ${totalCount.toLocaleString()} results`
         }
-        if (isSearching) return 'Searching...'
-        if (!hasSearched || (!namePattern.trim() && sizeFilter === 'any' && dateFilter === 'any')) {
-            return `Index ready (${formatEntryCount(indexEntryCount)} entries)`
-        }
-        if (totalCount === 0) return 'No results'
-        return `${String(results.length)} of ${totalCount.toLocaleString()} results`
+        // Index loading — only show status if user has triggered a search
+        if (hasSearched) return 'Loading index...'
+        return ''
     }
 </script>
 
@@ -539,8 +518,8 @@
     <div class="search-dialog" bind:this={dialogElement}>
         <h2 id="search-dialog-title" class="sr-only">Search files</h2>
 
-        <!-- AI prompt row (visible only in AI mode) -->
-        {#if isAiMode}
+        <!-- AI prompt row (visible when AI is enabled) -->
+        {#if aiEnabled}
             <div class="input-row ai-prompt-row">
                 <span class="row-label ai-label">AI</span>
                 <input
@@ -556,21 +535,19 @@
                     autocomplete="off"
                     autocapitalize="off"
                 />
-                {#if showAiButton}
-                    <button
-                        class="action-button ai-active"
-                        onclick={() => void executeAiSearch(getAiPrompt())}
-                        disabled={inputsDisabled || !aiPrompt.trim()}
-                        title="Ask AI (Enter)"
-                    >
-                        Ask AI
-                    </button>
-                {/if}
+                <button
+                    class="action-button ai-active"
+                    onclick={() => void executeAiSearch(getAiPrompt())}
+                    disabled={inputsDisabled || !aiPrompt.trim()}
+                    title="Ask AI (⌘Enter)"
+                >
+                    Ask AI
+                </button>
             </div>
         {/if}
 
         <!-- Pattern / search row (always visible) -->
-        <div class="input-row" class:pattern-row-ai-mode={isAiMode}>
+        <div class="input-row">
             <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5" />
                 <line
@@ -588,7 +565,9 @@
                 type="text"
                 class="name-input"
                 class:ai-highlight={highlightedFields.has('name')}
-                placeholder="Filename pattern (use * and ? as wildcards)"
+                placeholder={patternType === 'regex'
+                    ? 'Regular expression pattern'
+                    : 'Filename pattern (use * and ? as wildcards)'}
                 value={namePattern}
                 oninput={handlePatternInput}
                 disabled={inputsDisabled}
@@ -598,6 +577,16 @@
                 autocapitalize="off"
             />
             <button
+                class="pattern-type-toggle"
+                class:ai-highlight={highlightedFields.has('patternType')}
+                onclick={togglePatternType}
+                disabled={inputsDisabled}
+                title="Toggle between glob and regex matching"
+                aria-label="Pattern type: {patternType === 'regex' ? 'Regex' : 'Glob'}"
+            >
+                {patternType === 'regex' ? 'Regex' : 'Glob'}
+            </button>
+            <button
                 class="action-button"
                 onclick={() => void executeSearch()}
                 disabled={inputsDisabled}
@@ -605,11 +594,6 @@
             >
                 Search
             </button>
-            {#if showAiButton && !isAiMode}
-                <button class="action-button" onclick={toggleAiMode} disabled={inputsDisabled} title="Ask AI (⌘L)">
-                    Ask AI
-                </button>
-            {/if}
         </div>
 
         <!-- AI status / error -->
@@ -740,7 +724,7 @@
                         </p>
                     {/if}
                 </div>
-            {:else if !isIndexReady}
+            {:else if !isIndexReady && hasSearched}
                 <div class="loading-state">
                     <span class="loading-pulse" aria-hidden="true"></span>
                     Loading drive index...
@@ -924,6 +908,36 @@
         background: var(--color-accent-subtle);
         border-color: var(--color-accent);
         color: var(--color-text-primary);
+    }
+
+    .pattern-type-toggle {
+        flex-shrink: 0;
+        padding: var(--spacing-xxs) var(--spacing-xs);
+        font-size: var(--font-size-xs);
+        border: 1px solid var(--color-border-strong);
+        border-radius: var(--radius-sm);
+        background: var(--color-bg-secondary);
+        color: var(--color-text-tertiary);
+        white-space: nowrap;
+        font-family: var(--font-mono);
+        min-width: 40px;
+        text-align: center;
+    }
+
+    .pattern-type-toggle:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .pattern-type-toggle:not(:disabled):hover {
+        background: var(--color-bg-tertiary);
+        color: var(--color-text-secondary);
+    }
+
+    .pattern-type-toggle.ai-highlight {
+        background: var(--color-accent-subtle);
+        border-radius: var(--radius-sm);
+        transition: background 1.5s ease-out;
     }
 
     .ai-status {

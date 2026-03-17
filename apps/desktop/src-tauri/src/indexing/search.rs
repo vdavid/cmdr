@@ -213,14 +213,15 @@ pub fn summarize_query(query: &SearchQuery) -> String {
 
     // Name pattern
     if let Some(ref pattern) = query.name_pattern
-        && !pattern.is_empty() {
-            let suffix = if query.pattern_type == PatternType::Regex {
-                " (regex)"
-            } else {
-                ""
-            };
-            parts.push(format!("\"{pattern}\"{suffix}"));
-        }
+        && !pattern.is_empty()
+    {
+        let suffix = if query.pattern_type == PatternType::Regex {
+            " (regex)"
+        } else {
+            ""
+        };
+        parts.push(format!("\"{pattern}\"{suffix}"));
+    }
 
     // Size filters
     match (query.min_size, query.max_size) {

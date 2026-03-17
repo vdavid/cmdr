@@ -2,6 +2,7 @@
 // Uses Svelte 5 runes ($state, $derived) following existing codebase patterns.
 
 import type { SearchResultEntry, PatternType, SearchQuery } from '$lib/tauri-commands'
+export type { PatternType }
 
 export type SizeFilter = 'any' | 'gte' | 'lte' | 'between'
 export type DateFilter = 'any' | 'after' | 'before' | 'between'
@@ -31,8 +32,10 @@ let cursorIndex = $state(0)
 // Index availability — false when indexing is disabled or not started
 let isIndexAvailable = $state(true)
 
-// AI mode
-let isAiMode = $state(false)
+// Pattern type (glob vs regex)
+let patternType = $state<PatternType>('glob')
+
+// AI state
 let aiStatus = $state('')
 let aiPrompt = $state('')
 
@@ -85,8 +88,8 @@ export function getCursorIndex(): number {
 export function getIsIndexAvailable(): boolean {
     return isIndexAvailable
 }
-export function getIsAiMode(): boolean {
-    return isAiMode
+export function getPatternType(): PatternType {
+    return patternType
 }
 export function getAiStatus(): string {
     return aiStatus
@@ -144,8 +147,8 @@ export function setCursorIndex(value: number): void {
 export function setIsIndexAvailable(value: boolean): void {
     isIndexAvailable = value
 }
-export function setIsAiMode(value: boolean): void {
-    isAiMode = value
+export function setPatternType(value: PatternType): void {
+    patternType = value
 }
 export function setAiStatus(value: string): void {
     aiStatus = value
@@ -204,7 +207,7 @@ function applyDateQuery(query: SearchQuery): void {
 /** Builds a SearchQuery from the current state. */
 export function buildSearchQuery(): SearchQuery {
     const query: SearchQuery = {
-        patternType: 'glob' as PatternType,
+        patternType,
         limit: 30,
     }
 
@@ -233,7 +236,7 @@ export function resetSearchState(): void {
     totalCount = 0
     cursorIndex = 0
     isIndexAvailable = true
-    isAiMode = false
+    patternType = 'glob'
     aiStatus = ''
     aiPrompt = ''
     isSearching = false

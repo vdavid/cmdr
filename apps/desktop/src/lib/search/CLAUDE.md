@@ -11,7 +11,7 @@ design: `docs/specs/drive-search-plan.md`.
 | File                     | Purpose                                                                       |
 | ------------------------ | ----------------------------------------------------------------------------- |
 | `SearchDialog.svelte`    | Dialog UI: input, filters, results list, keyboard nav, AI mode, accessibility |
-| `search-state.svelte.ts` | Module-level `$state` for query fields, results, index readiness, AI mode     |
+| `search-state.svelte.ts` | Module-level `$state` for query fields, results, index readiness, AI state    |
 | `search-state.test.ts`   | Vitest tests for state helpers (`parseSizeToBytes`, `buildSearchQuery`, etc.) |
 
 ## Data flow
@@ -40,14 +40,17 @@ independent.
 a message ("Drive index not ready...") with scan progress if available. Inputs and filters are disabled, AI button
 hidden.
 
-**Split input in AI mode**: In manual mode, a single pattern row with Search + Ask AI buttons. In AI mode, the input
-splits into two rows: an AI prompt row (top, with "AI" label and accent border) and a pattern row (bottom, with search
-icon). Enter in the AI prompt row triggers AI translation; Enter in the pattern row runs manual search. `⌘L` or the "Ask
-AI" button toggles between modes. `⌘Enter` from anywhere triggers a one-shot AI search without toggling mode.
+**AI row visibility**: When `ai.provider !== 'off'` and the index is available, the AI prompt row is always visible (top
+row, with "AI" label and accent border) and focused by default. The pattern row (bottom, with search icon) is always
+visible too. Enter in the AI prompt row triggers AI translation; Enter in the pattern row runs manual search. `⌘Enter`
+from anywhere triggers AI search. When AI is disabled, only the pattern row is shown.
 
 **AI prompt state**: `aiPrompt` in `search-state.svelte.ts` holds the natural language query separately from
-`namePattern` (the glob/regex pattern). When entering AI mode, current pattern text moves to `aiPrompt`; when exiting,
-`aiPrompt` is cleared but the pattern is kept.
+`namePattern` (the glob/regex pattern).
+
+**Deferred loading indicator**: The "Loading drive index..." message in the results area only appears when the user has
+triggered a search while the index is still loading. On initial open, the results area is empty (no loading message)
+since the user is still typing their query.
 
 ## Key decisions
 

@@ -13,6 +13,7 @@ import {
     setSizeValueMax,
     setSizeUnitMax,
     setDateValueMax,
+    setPatternType,
 } from './search-state.svelte'
 
 describe('parseSizeToBytes', () => {
@@ -143,5 +144,19 @@ describe('resetSearchState', () => {
         expect(query.namePattern).toBeUndefined()
         expect(query.minSize).toBeUndefined()
         expect(query.modifiedAfter).toBeUndefined()
+    })
+
+    it('uses regex pattern type when set', () => {
+        resetSearchState()
+        setPatternType('regex')
+        const query = buildSearchQuery()
+        expect(query.patternType).toBe('regex')
+    })
+
+    it('resets pattern type to glob on resetSearchState', () => {
+        setPatternType('regex')
+        resetSearchState()
+        const query = buildSearchQuery()
+        expect(query.patternType).toBe('glob')
     })
 })

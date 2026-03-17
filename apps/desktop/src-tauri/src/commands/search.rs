@@ -330,14 +330,81 @@ fn build_search_system_prompt() -> String {
          - \"modifiedBefore\": ISO date string\n\
          - \"isDirectory\": true for folders only, false for files only, omit for both\n\
          \n\
+         For regex patterns, use Rust `regex` crate syntax (PCRE-like but no lookahead/lookbehind, \
+         no backreferences, no \\d — use [0-9] instead). All regex is case-insensitive and unanchored \
+         (partial match) unless you add ^ or $.\n\
+         \n\
          Examples:\n\
          \"large pdfs\" → {{\"namePattern\": \"*.pdf\", \"patternType\": \"glob\", \"minSize\": 10485760}}\n\
-         \"quarterly reports\" → {{\"namePattern\": \"(?i).*(?:Q[1-4]|quarterly).*\\\\.pdf\", \"patternType\": \"regex\"}}\n\
+         \"quarterly reports\" → {{\"namePattern\": \"(Q[1-4]|quarterly).*\\.pdf\", \"patternType\": \"regex\"}}\n\
          \"photos from last month\" → {{\"namePattern\": \"*.jpg\", \"patternType\": \"glob\", \"modifiedAfter\": \"2026-02-15\"}}\n\
          \"folders bigger than 1gb\" → {{\"isDirectory\": true, \"minSize\": 1073741824}}\n\
          \n\
          Today's date is {today_str}. Return ONLY the JSON, no explanation."
     )
+}
+
+/// Strips markdown code fences from an LLM response and parses it as JSON.
+fn parse_ai_response(response: &str) -> Result<AiSearchQuery, String> {
+    let json_str = response.trim();
+    let json_str = json_str
+        .strip_prefix("```json")
+        .or_else(|| json_str.strip_prefix("```"))
+        .unwrap_or(json_str);
+    let json_str = json_str.strip_suffix("```").unwrap_or(json_str).trim();
+
+    serde_json::from_str(json_str)
+        .map_err(|_| "Couldn't understand that query. Try rephrasing or use the manual filters.".to_string())
+}
+
+/// Converts a parsed `AiSearchQuery` into the final `TranslateResult`.
+fn build_translate_result(ai_query: AiSearchQuery) -> Result<TranslateResult, String> {
+    let modified_after_ts = ai_query
+        .modified_after
+        .as_deref()
+        .map(iso_date_to_timestamp)
+        .transpose()?;
+    let modified_before_ts = ai_query
+        .modified_before
+        .as_deref()
+        .map(iso_date_to_timestamp)
+        .transpose()?;
+
+    let pattern_type = ai_query.pattern_type.clone().unwrap_or_else(|| "glob".to_string());
+
+    Ok(TranslateResult {
+        query: TranslatedQuery {
+            name_pattern: ai_query.name_pattern.clone(),
+            pattern_type: pattern_type.clone(),
+            min_size: ai_query.min_size,
+            max_size: ai_query.max_size,
+            modified_after: modified_after_ts,
+            modified_before: modified_before_ts,
+            is_directory: ai_query.is_directory,
+        },
+        display: TranslateDisplay {
+            name_pattern: ai_query.name_pattern,
+            pattern_type: Some(pattern_type),
+            min_size: ai_query.min_size,
+            max_size: ai_query.max_size,
+            modified_after: ai_query.modified_after,
+            modified_before: ai_query.modified_before,
+            is_directory: ai_query.is_directory,
+        },
+    })
+}
+
+/// If the AI returned a regex pattern, validates it against the `regex` crate.
+/// Returns `Ok(())` if valid or not a regex, `Err(message)` with the compile error otherwise.
+fn validate_regex_pattern(ai_query: &AiSearchQuery) -> Result<(), String> {
+    let is_regex = ai_query.pattern_type.as_deref().is_some_and(|t| t == "regex");
+    if !is_regex {
+        return Ok(());
+    }
+    if let Some(ref pattern) = ai_query.name_pattern {
+        regex::Regex::new(pattern).map_err(|e| format!("{e}"))?;
+    }
+    Ok(())
 }
 
 /// Translates a natural language search query into structured filters using the configured LLM.
@@ -377,51 +444,32 @@ pub async fn translate_search_query(natural_query: String) -> Result<TranslateRe
         .await
         .map_err(|e| format!("{e}"))?;
 
-    // Strip markdown code fences if LLM wraps the JSON
-    let json_str = response.trim();
-    let json_str = json_str
-        .strip_prefix("```json")
-        .or_else(|| json_str.strip_prefix("```"))
-        .unwrap_or(json_str);
-    let json_str = json_str.strip_suffix("```").unwrap_or(json_str).trim();
+    let mut ai_query = parse_ai_response(&response)?;
 
-    let ai_query: AiSearchQuery = serde_json::from_str(json_str)
-        .map_err(|_| "Couldn't understand that query. Try rephrasing or use the manual filters.".to_string())?;
+    // Validate regex patterns — retry once if invalid
+    if let Err(regex_error) = validate_regex_pattern(&ai_query) {
+        let pattern = ai_query.name_pattern.as_deref().unwrap_or("");
+        let retry_prompt = format!(
+            "You gave me this pattern: `{pattern}`, but it's not valid regex: {regex_error}. \
+             Please fix it using Rust `regex` crate syntax (no lookahead/lookbehind, no backreferences). \
+             Return the same JSON object with the corrected pattern."
+        );
 
-    // Convert ISO dates to timestamps
-    let modified_after_ts = ai_query
-        .modified_after
-        .as_deref()
-        .map(iso_date_to_timestamp)
-        .transpose()?;
-    let modified_before_ts = ai_query
-        .modified_before
-        .as_deref()
-        .map(iso_date_to_timestamp)
-        .transpose()?;
+        log::debug!("AI regex validation failed, retrying: {regex_error}");
 
-    let pattern_type = ai_query.pattern_type.clone().unwrap_or_else(|| "glob".to_string());
+        let retry_response = crate::ai::client::chat_completion(&backend, &retry_prompt, &options)
+            .await
+            .map_err(|e| format!("{e}"))?;
 
-    Ok(TranslateResult {
-        query: TranslatedQuery {
-            name_pattern: ai_query.name_pattern.clone(),
-            pattern_type: pattern_type.clone(),
-            min_size: ai_query.min_size,
-            max_size: ai_query.max_size,
-            modified_after: modified_after_ts,
-            modified_before: modified_before_ts,
-            is_directory: ai_query.is_directory,
-        },
-        display: TranslateDisplay {
-            name_pattern: ai_query.name_pattern,
-            pattern_type: Some(pattern_type),
-            min_size: ai_query.min_size,
-            max_size: ai_query.max_size,
-            modified_after: ai_query.modified_after,
-            modified_before: ai_query.modified_before,
-            is_directory: ai_query.is_directory,
-        },
-    })
+        ai_query = parse_ai_response(&retry_response)?;
+
+        // Validate the retry — if still invalid, return the error
+        if let Err(retry_error) = validate_regex_pattern(&ai_query) {
+            return Err(format!("AI generated invalid regex pattern: {retry_error}"));
+        }
+    }
+
+    build_translate_result(ai_query)
 }
 
 #[cfg(test)]
@@ -541,5 +589,105 @@ mod tests {
         assert!(prompt.contains("Return ONLY a JSON object"));
         // Should contain a date in YYYY-MM-DD format
         assert!(prompt.contains("20")); // Year starts with 20
+    }
+
+    #[test]
+    fn test_build_search_system_prompt_contains_regex_flavor() {
+        let prompt = build_search_system_prompt();
+        assert!(prompt.contains("Rust `regex` crate syntax"));
+        assert!(prompt.contains("no lookahead/lookbehind"));
+    }
+
+    #[test]
+    fn test_parse_ai_response_plain_json() {
+        let response = r#"{"namePattern": "*.pdf", "patternType": "glob"}"#;
+        let q = parse_ai_response(response).unwrap();
+        assert_eq!(q.name_pattern.as_deref(), Some("*.pdf"));
+        assert_eq!(q.pattern_type.as_deref(), Some("glob"));
+    }
+
+    #[test]
+    fn test_parse_ai_response_with_code_fences() {
+        let response = "```json\n{\"namePattern\": \"*.txt\"}\n```";
+        let q = parse_ai_response(response).unwrap();
+        assert_eq!(q.name_pattern.as_deref(), Some("*.txt"));
+    }
+
+    #[test]
+    fn test_parse_ai_response_invalid_json() {
+        assert!(parse_ai_response("not json at all").is_err());
+    }
+
+    #[test]
+    fn test_validate_regex_pattern_valid() {
+        let q = AiSearchQuery {
+            name_pattern: Some("[0-9]+\\.pdf".to_string()),
+            pattern_type: Some("regex".to_string()),
+            min_size: None,
+            max_size: None,
+            modified_after: None,
+            modified_before: None,
+            is_directory: None,
+        };
+        assert!(validate_regex_pattern(&q).is_ok());
+    }
+
+    #[test]
+    fn test_validate_regex_pattern_invalid() {
+        let q = AiSearchQuery {
+            name_pattern: Some("[unclosed".to_string()),
+            pattern_type: Some("regex".to_string()),
+            min_size: None,
+            max_size: None,
+            modified_after: None,
+            modified_before: None,
+            is_directory: None,
+        };
+        assert!(validate_regex_pattern(&q).is_err());
+    }
+
+    #[test]
+    fn test_validate_regex_pattern_glob_skips_validation() {
+        let q = AiSearchQuery {
+            name_pattern: Some("[unclosed".to_string()),
+            pattern_type: Some("glob".to_string()),
+            min_size: None,
+            max_size: None,
+            modified_after: None,
+            modified_before: None,
+            is_directory: None,
+        };
+        // Glob patterns aren't validated as regex
+        assert!(validate_regex_pattern(&q).is_ok());
+    }
+
+    #[test]
+    fn test_validate_regex_pattern_none_skips_validation() {
+        let q = AiSearchQuery {
+            name_pattern: None,
+            pattern_type: Some("regex".to_string()),
+            min_size: None,
+            max_size: None,
+            modified_after: None,
+            modified_before: None,
+            is_directory: None,
+        };
+        assert!(validate_regex_pattern(&q).is_ok());
+    }
+
+    #[test]
+    fn test_build_translate_result_with_regex() {
+        let q = AiSearchQuery {
+            name_pattern: Some("Q[1-4].*\\.pdf".to_string()),
+            pattern_type: Some("regex".to_string()),
+            min_size: None,
+            max_size: None,
+            modified_after: None,
+            modified_before: None,
+            is_directory: None,
+        };
+        let result = build_translate_result(q).unwrap();
+        assert_eq!(result.query.pattern_type, "regex");
+        assert_eq!(result.display.pattern_type.as_deref(), Some("regex"));
     }
 }
