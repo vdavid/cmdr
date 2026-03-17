@@ -559,6 +559,46 @@ Auto-dismiss after 4 seconds. Close button on hover.
 7. `prefers-reduced-motion` wraps all non-essential animation.
 8. Scrollbars stay native. Never style `::-webkit-scrollbar`.
 
+### Properties you don't need to set (app)
+
+The reset and global styles in `app.css` already establish these. Re-declaring them in components is redundant.
+
+**Already set on every element (`*` or `html, body`):**
+
+| Property | Global value | Set by |
+|---|---|---|
+| `margin` | `0` | Reset (`* { margin: 0 }`) |
+| `padding` | `0` | Reset (`* { padding: 0 }`) |
+| `box-sizing` | `border-box` | Reset (`html { box-sizing: border-box }` + `* { box-sizing: inherit }`) |
+| `cursor` | `default` | `html, body { cursor: default }` — inherited by all descendants |
+| `user-select` | `none` | `html, body { user-select: none }` |
+| `overscroll-behavior` | `none` | `* { overscroll-behavior: none }` |
+
+**Inherited from `body` (don't repeat on child elements unless overriding):**
+
+| Property | Global value |
+|---|---|
+| `color` | `var(--color-text-primary)` |
+| `font-size` | `16px` (via `html`) |
+| `font-family` | Inherited from browser default (system font) — set `var(--font-system)` only when needed |
+
+**CSS defaults you don't need to write:**
+
+| Declaration | Why it's redundant |
+|---|---|
+| `display: block` on `<div>` | That's the default |
+| `flex-direction: row` | Default for `display: flex` |
+| `align-items: stretch` | Default for `display: flex` |
+| `position: static` | That's the default |
+| `opacity: 1` | Default (except when transitioning from `opacity: 0`, where it's needed) |
+| `visibility: visible` | That's the default |
+| `font-style: normal` | Default (unless overriding an italic parent) |
+| `text-decoration: none` on non-links | That's the default |
+| `border: none` on `<div>` | Divs have no border by default |
+| `background: transparent` on `<div>` | Divs are transparent by default |
+
+When in doubt, check whether removing the declaration changes anything. If it doesn't, delete it.
+
 ### Website rules
 
 1. Geist Sans, self-hosted, variable weight.
