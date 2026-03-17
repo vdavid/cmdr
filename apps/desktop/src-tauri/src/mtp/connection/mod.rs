@@ -423,11 +423,7 @@ impl MtpConnectionManager {
     ///
     /// Returns `(total_bytes, available_bytes)` freshly read from the device,
     /// or `None` if the device/storage is not found or the query fails.
-    pub async fn get_live_storage_space(
-        &self,
-        device_id: &str,
-        storage_id: u32,
-    ) -> Option<(u64, u64)> {
+    pub async fn get_live_storage_space(&self, device_id: &str, storage_id: u32) -> Option<(u64, u64)> {
         let device_arc = {
             let devices = self.devices.lock().await;
             devices.get(device_id)?.device.clone()
@@ -445,7 +441,10 @@ impl MtpConnectionManager {
         let storage = match device.storage(mtp_storage_id).await {
             Ok(s) => s,
             Err(e) => {
-                warn!("get_live_storage_space: failed to query storage {}: {:?}", storage_id, e);
+                warn!(
+                    "get_live_storage_space: failed to query storage {}: {:?}",
+                    storage_id, e
+                );
                 return None;
             }
         };
@@ -459,11 +458,11 @@ impl MtpConnectionManager {
         // Update cache so other consumers (e.g. volume breadcrumb) see fresh data too
         {
             let mut devices = self.devices.lock().await;
-            if let Some(entry) = devices.get_mut(device_id) {
-                if let Some(cached) = entry.storages.iter_mut().find(|s| s.id == storage_id) {
-                    cached.total_bytes = total;
-                    cached.available_bytes = available;
-                }
+            if let Some(entry) = devices.get_mut(device_id)
+                && let Some(cached) = entry.storages.iter_mut().find(|s| s.id == storage_id)
+            {
+                cached.total_bytes = total;
+                cached.available_bytes = available;
             }
         }
 

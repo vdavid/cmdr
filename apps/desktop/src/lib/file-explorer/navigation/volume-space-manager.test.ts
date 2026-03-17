@@ -50,18 +50,26 @@ describe('fetchVolumeSpaces', () => {
         expect(mockGetVolumeSpace).not.toHaveBeenCalled()
     })
 
-    it('filters out non-physical volumes (favorites, cloud, network, mobile)', async () => {
+    it('filters out non-physical volumes (favorites, cloud, network)', async () => {
         mockGetVolumeSpace.mockResolvedValue({ data: spaceInfo, timedOut: false })
         const mgr = createVolumeSpaceManager()
         const vols = [
             makeVolume('fav', '/fav', 'favorite'),
             makeVolume('cloud', '/cloud', 'cloud_drive'),
             makeVolume('net', '/net', 'network'),
-            makeVolume('mob', '/mob', 'mobile_device'),
         ]
 
         await mgr.fetchVolumeSpaces(vols)
         expect(mockGetVolumeSpace).not.toHaveBeenCalled()
+    })
+
+    it('includes mobile_device volumes', async () => {
+        mockGetVolumeSpace.mockResolvedValue({ data: spaceInfo, timedOut: false })
+        const mgr = createVolumeSpaceManager()
+        const vols = [makeVolume('mob', '/mob', 'mobile_device')]
+
+        await mgr.fetchVolumeSpaces(vols)
+        expect(mockGetVolumeSpace).toHaveBeenCalledWith('/mob')
     })
 
     it('includes main_volume and attached_volume', async () => {
