@@ -47,7 +47,7 @@ const MAX_PENDING_RESCANS: usize = 1_000;
 /// If the number of events processed during replay exceeds this threshold,
 /// abort replay and fall back to a full scan. Safety net for scenarios where
 /// FDA was toggled and the app suddenly sees millions of previously hidden paths.
-const REPLAY_EVENT_COUNT_LIMIT: u64 = 1_000_000;
+const REPLAY_EVENT_COUNT_LIMIT: u64 = 10_000_000;
 
 /// Replay events are deduplicated by normalized path in batches of this
 /// size before processing. Dramatically reduces CPU when the FSEvents
