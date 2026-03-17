@@ -431,7 +431,7 @@ describe('mtp-store', () => {
             expect(volumes[0].isReadOnly).toBe(true)
         })
 
-        it('uses storage name only for single storage device', async () => {
+        it('uses device name for single storage device', async () => {
             vi.mocked(listMtpDevices).mockResolvedValue([mockDevice])
             vi.mocked(connectMtpDevice).mockResolvedValue(mockConnectedInfo)
             const { scanDevices, connect, getMtpVolumes } = await loadModule()
@@ -441,8 +441,8 @@ describe('mtp-store', () => {
 
             const volumes = getMtpVolumes()
             expect(volumes).toHaveLength(1)
-            // Single storage: use storage name, not "Device - Storage"
-            expect(volumes[0].name).toBe('Internal shared storage')
+            // Single storage: use device name, not storage name
+            expect(volumes[0].name).toBe('Pixel 8')
         })
     })
 

@@ -271,7 +271,14 @@ fn read_directory_with_progress(
     let app_for_progress = app.clone();
     let listing_id_for_progress = listing_id.to_string();
 
+    // Capture the Tokio runtime handle so the spawned thread can access it.
+    // This is needed for MTP volumes, which use `Handle::block_on` internally.
+    let runtime_handle = tokio::runtime::Handle::current();
+
     std::thread::spawn(move || {
+        // Enter the Tokio runtime context so `Handle::current()` works inside volumes
+        let _guard = runtime_handle.enter();
+
         let on_progress = |loaded_count: usize| {
             use tauri::Emitter;
             let _ = app_for_progress.emit(

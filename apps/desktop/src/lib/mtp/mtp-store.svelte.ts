@@ -402,7 +402,7 @@ export interface MtpVolume {
     deviceId: string
     /** Storage ID */
     storageId: number
-    /** Display name: "{DeviceName} - {StorageName}" or just storage name if device has one storage */
+    /** Display name: "{DeviceName} - {StorageName}" for multi-storage, or just device name for single storage */
     name: string
     /** Virtual path: "mtp://{deviceId}/{storageId}" */
     path: string
@@ -423,11 +423,11 @@ export function getMtpVolumes(): MtpVolume[] {
     for (const deviceState of state.devices.values()) {
         if (deviceState.connectionState === 'connected' && deviceState.storages.length > 0) {
             // Connected device with storages: create one volume per storage
-            const showDeviceName = deviceState.storages.length > 1
+            const hasMultipleStorages = deviceState.storages.length > 1
             for (const storage of deviceState.storages) {
-                const volumeName = showDeviceName
+                const volumeName = hasMultipleStorages
                     ? `${deviceState.displayName} - ${storage.name}`
-                    : storage.name || deviceState.displayName
+                    : deviceState.displayName || storage.name
 
                 volumes.push({
                     id: `${deviceState.device.id}:${String(storage.id)}`,
