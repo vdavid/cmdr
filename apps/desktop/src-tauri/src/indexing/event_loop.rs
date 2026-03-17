@@ -29,7 +29,7 @@ pub(super) const LIVE_FLUSH_INTERVAL_MS: u64 = 1000;
 /// Threshold for detecting a journal gap. If the first event ID received is
 /// more than this many IDs ahead of the stored `since_event_id`, we consider
 /// the journal unavailable and fall back to a full scan.
-pub(super) const JOURNAL_GAP_THRESHOLD: u64 = 1_000_000;
+pub(super) const JOURNAL_GAP_THRESHOLD: u64 = 10_000_000;
 
 /// Capacity of the watcher→event loop channel. Provides backpressure to
 /// FSEvents/inotify when the event loop can't keep up, preventing unbounded

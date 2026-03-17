@@ -35,7 +35,7 @@ App startup
   |-- start_indexing(): create IndexManager, open SQLite, spawn writer thread
   |-- resume_or_scan():
   |   |-- macOS: Has existing index + last_event_id?
-  |   |   |-- Pre-check: event gap > 1M? -> emit index-rescan-notification (StaleIndex), full scan
+  |   |   |-- Pre-check: event gap > 10M? -> emit index-rescan-notification (StaleIndex), full scan
   |   |   |-- Otherwise -> sinceWhen replay (FSEvents journal)
   |   |-- Linux: Always full rescan (no event journal; existing DB used for instant enrichment)
   |   |-- Incomplete previous scan (has data but no scan_completed_at)? -> notify + fresh scan
@@ -134,7 +134,7 @@ Key test files are alongside each module (test functions within `#[cfg(test)]` b
 
 **Subtree aggregation uses scoped queries**: `scoped_get_children_stats_by_id` and `scoped_get_child_dir_ids` in `aggregator.rs` use recursive CTEs scoped to the target subtree, not full-table scans. This keeps subtree aggregation O(subtree_size) regardless of total DB size.
 
-**Bounded buffers prevent OOM**: All buffers have capacity limits. FSEvents channel: 32K batches (bounded `try_send` in cmdr-fsevent-stream; overflow sets atomic flag, triggers rescan). Reconciler buffer: 500K events (overflow triggers full rescan). Writer channel: 20K messages (bounded `sync_channel`, backpressure). Replay `affected_paths`: 50K entries (overflow emits full refresh). Replay `pending_rescans`: 1K entries (overflow triggers full rescan). Replay event count: 1M events max (overflow falls back to full scan). Memory watchdog: warns at 8 GB, stops indexing at 16 GB. The index is a disposable cache, so dropping events and rescanning is always safe.
+**Bounded buffers prevent OOM**: All buffers have capacity limits. FSEvents channel: 32K batches (bounded `try_send` in cmdr-fsevent-stream; overflow sets atomic flag, triggers rescan). Reconciler buffer: 500K events (overflow triggers full rescan). Writer channel: 20K messages (bounded `sync_channel`, backpressure). Replay `affected_paths`: 50K entries (overflow emits full refresh). Replay `pending_rescans`: 1K entries (overflow triggers full rescan). Replay event count: 10M events max (overflow falls back to full scan). Memory watchdog: warns at 8 GB, stops indexing at 16 GB. The index is a disposable cache, so dropping events and rescanning is always safe.
 
 **Disposable cache pattern**: The index DB is a cache, not a source of truth. Any corruption or error triggers delete+rebuild. No user-facing errors for DB issues.
 
@@ -144,7 +144,7 @@ Key test files are alongside each module (test functions within `#[cfg(test)]` b
 
 **APFS firmlinks**: Scan from `/` only, skip `/System/Volumes/Data`. Normalize all paths via firmlink prefix map so DB lookups work regardless of how the user navigated to a path.
 
-**Rescan notification system (`RescanReason` enum)**: Every code path that falls back to a full rescan emits an `index-rescan-notification` event with a `RescanReason` variant and human-readable details. The frontend maps each reason to a user-friendly toast message. Eight reasons: `StaleIndex` (pre-check gap), `JournalGap` (in-loop gap), `ReplayOverflow` (>1M events), `TooManySubdirRescans` (>1K MustScanSubDirs), `WatcherStartFailed`, `ReconcilerBufferOverflow` (>500K buffered events during scan), `IncompletePreviousScan` (has data but no `scan_completed_at`), `WatcherChannelOverflow` (FSEvents channel full, events dropped). The pre-check in `resume_or_scan()` catches stale indexes before starting the FSEvents stream, preventing the cmdr-fsevent-stream channel (32K capacity, `try_send`) from being overwhelmed.
+**Rescan notification system (`RescanReason` enum)**: Every code path that falls back to a full rescan emits an `index-rescan-notification` event with a `RescanReason` variant and human-readable details. The frontend maps each reason to a user-friendly toast message. Eight reasons: `StaleIndex` (pre-check gap), `JournalGap` (in-loop gap), `ReplayOverflow` (>10M events), `TooManySubdirRescans` (>1K MustScanSubDirs), `WatcherStartFailed`, `ReconcilerBufferOverflow` (>500K buffered events during scan), `IncompletePreviousScan` (has data but no `scan_completed_at`), `WatcherChannelOverflow` (FSEvents channel full, events dropped). The pre-check in `resume_or_scan()` catches stale indexes before starting the FSEvents stream, preventing the cmdr-fsevent-stream channel (32K capacity, `try_send`) from being overwhelmed.
 
 ## Gotchas
 

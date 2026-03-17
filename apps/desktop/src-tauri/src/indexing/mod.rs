@@ -278,9 +278,9 @@ impl IndexManager {
                 let last_event_id: u64 = last_event_id_str.parse().unwrap_or(0);
                 if last_event_id > 0 {
                     // Pre-check: compare stored event ID with current system event ID.
-                    // If the gap is too large, skip replay entirely — the cmdr-fsevent-stream
-                    // channel (1024 capacity, try_send) would silently drop most events,
-                    // and replaying millions of events is slower than a fresh scan anyway.
+                    // If the gap is too large, skip replay entirely — replaying tens of
+                    // millions of events is slower than a fresh scan. The watcher channel
+                    // (32K capacity) has overflow detection as a secondary safety net.
                     let current_id = watcher::current_event_id();
                     if current_id > 0 && current_id > last_event_id + JOURNAL_GAP_THRESHOLD {
                         let gap = current_id - last_event_id;
