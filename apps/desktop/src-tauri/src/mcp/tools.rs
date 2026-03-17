@@ -365,6 +365,10 @@ fn get_search_tools() -> Vec<Tool> {
                         "enum": ["file", "dir"],
                         "description": "Filter by type. Omit for both."
                     },
+                    "scope": {
+                        "type": "string",
+                        "description": "Scope string: comma-separated paths, ! for excludes (for example, \"~/projects, !node_modules\")"
+                    },
                     "limit": {
                         "type": "integer",
                         "description": "Max results to return. Default: 30"
@@ -382,6 +386,10 @@ fn get_search_tools() -> Vec<Tool> {
                     "query": {
                         "type": "string",
                         "description": "Natural language search query (for example, \"recent invoices marked rymd\")"
+                    },
+                    "scope": {
+                        "type": "string",
+                        "description": "Scope string: comma-separated paths, ! for excludes (for example, \"~/projects, !node_modules\"). Merged with AI-inferred scope."
                     },
                     "limit": {
                         "type": "integer",

@@ -301,7 +301,14 @@ export {
 export type { ClipboardReadResult } from './clipboard-files'
 
 // Search (whole-drive file search)
-export { prepareSearchIndex, searchFiles, releaseSearchIndex, translateSearchQuery, onSearchIndexReady } from './search'
+export {
+    prepareSearchIndex,
+    searchFiles,
+    releaseSearchIndex,
+    translateSearchQuery,
+    parseSearchScope,
+    onSearchIndexReady,
+} from './search'
 export type {
     PatternType,
     SearchQuery,
@@ -311,4 +318,5 @@ export type {
     TranslateResult,
     TranslatedQuery,
     TranslateDisplay,
+    ParsedScope,
 } from './ipc-types'

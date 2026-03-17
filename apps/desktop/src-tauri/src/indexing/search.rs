@@ -5,15 +5,16 @@
 //! dialog opens and dropped after an idle timeout.
 
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, LazyLock, Mutex};
 
 use rayon::prelude::*;
-use regex::RegexBuilder;
+use regex::{Regex, RegexBuilder};
 use serde::{Deserialize, Serialize};
 
 use super::enrichment::ReadPool;
-use super::store::{IndexStore, ROOT_ID};
+use super::store::{self, IndexStore, ROOT_ID};
 use super::writer::WRITER_GENERATION;
 
 // ── Search entry (in-memory representation) ──────────────────────────
@@ -165,6 +166,10 @@ pub struct SearchQuery {
     pub modified_after: Option<u64>,
     pub modified_before: Option<u64>,
     pub is_directory: Option<bool>,
+    #[serde(default)]
+    pub include_paths: Option<Vec<String>>,
+    #[serde(default)]
+    pub exclude_dir_names: Option<Vec<String>>,
     #[serde(default = "default_limit")]
     pub limit: u32,
 }
@@ -329,11 +334,278 @@ pub fn glob_to_regex(glob: &str) -> String {
     regex
 }
 
+// ── Scope parsing ────────────────────────────────────────────────────
+
+/// Parsed search scope: which subtrees to include and which directory names/paths to exclude.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ParsedScope {
+    pub include_paths: Vec<String>,
+    pub exclude_patterns: Vec<String>,
+}
+
+/// Parse a comma-separated scope string into include paths and exclude patterns.
+///
+/// Syntax: `~/projects, !node_modules, !.git`
+/// - `~` expands to the user's home directory
+/// - `!` prefix means exclude
+/// - Quoted segments (single or double quotes) and backslash-escaped commas are supported
+pub fn parse_scope(input: &str) -> ParsedScope {
+    let segments = split_scope_segments(input);
+    let home = dirs::home_dir().map(|p| p.to_string_lossy().to_string());
+
+    let mut include_paths = Vec::new();
+    let mut exclude_patterns = Vec::new();
+
+    for seg in segments {
+        let trimmed = seg.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+
+        let (is_exclude, value) = if let Some(rest) = trimmed.strip_prefix('!') {
+            (true, rest.trim())
+        } else {
+            (false, trimmed)
+        };
+
+        // Expand ~ prefix
+        let expanded = if let Some(rest) = value.strip_prefix('~') {
+            if let Some(ref h) = home {
+                format!("{h}{rest}")
+            } else {
+                value.to_string()
+            }
+        } else {
+            value.to_string()
+        };
+
+        if is_exclude {
+            exclude_patterns.push(expanded);
+        } else {
+            include_paths.push(expanded);
+        }
+    }
+
+    ParsedScope {
+        include_paths,
+        exclude_patterns,
+    }
+}
+
+/// Split a scope string on commas, respecting quoting and backslash escapes.
+fn split_scope_segments(input: &str) -> Vec<String> {
+    let mut segments = Vec::new();
+    let mut current = String::new();
+    let mut chars = input.chars().peekable();
+    let mut in_quote: Option<char> = None;
+
+    while let Some(c) = chars.next() {
+        match c {
+            '\\' if in_quote.is_none() => {
+                // Backslash-escaped character: consume next char literally
+                if let Some(next) = chars.next() {
+                    current.push(next);
+                }
+            }
+            '"' | '\'' if in_quote.is_none() => {
+                in_quote = Some(c);
+            }
+            q if in_quote == Some(q) => {
+                in_quote = None;
+            }
+            ',' if in_quote.is_none() => {
+                segments.push(current.clone());
+                current.clear();
+            }
+            _ => {
+                current.push(c);
+            }
+        }
+    }
+    segments.push(current);
+    segments
+}
+
+// ── Scope filter (pre-resolved for the hot loop) ─────────────────────
+
+/// Pre-resolved scope filter for efficient ancestor-walk filtering during search.
+struct ScopeFilter {
+    /// Entry IDs that represent the include path roots. An entry passes if
+    /// any of its ancestors (including itself) is in this set.
+    include_ids: Option<HashSet<i64>>,
+    /// Compiled regex patterns for directory name exclusion (bare names).
+    exclude_name_patterns: Vec<Regex>,
+    /// Absolute path prefixes for path-based exclusion.
+    exclude_path_prefixes: Vec<String>,
+}
+
+impl ScopeFilter {
+    fn is_active(&self) -> bool {
+        self.include_ids.is_some() || !self.exclude_name_patterns.is_empty() || !self.exclude_path_prefixes.is_empty()
+    }
+
+    /// Check if an entry at `entry_idx` passes the scope filter by walking
+    /// the ancestor chain in the in-memory index.
+    fn matches(&self, index: &SearchIndex, entry_idx: usize) -> bool {
+        let entry = &index.entries[entry_idx];
+
+        // Include check: walk ancestors and check if any is in include_ids
+        if let Some(ref ids) = self.include_ids {
+            let mut found = false;
+            let mut current_id = entry.id;
+            loop {
+                if ids.contains(&current_id) {
+                    found = true;
+                    break;
+                }
+                if current_id == ROOT_ID || current_id == 0 {
+                    break;
+                }
+                match index.id_to_index.get(&current_id) {
+                    Some(&idx) => current_id = index.entries[idx].parent_id,
+                    None => break,
+                }
+            }
+            if !found {
+                return false;
+            }
+        }
+
+        // Exclude check: walk ancestors, check each name against patterns
+        if !self.exclude_name_patterns.is_empty() || !self.exclude_path_prefixes.is_empty() {
+            // For path-prefix excludes, reconstruct the path lazily
+            if !self.exclude_path_prefixes.is_empty() {
+                let path = reconstruct_path_from_index(index, entry.id);
+                for prefix in &self.exclude_path_prefixes {
+                    if path.starts_with(prefix.as_str()) {
+                        return false;
+                    }
+                }
+            }
+
+            // For bare-name excludes, walk ancestors and check directory names
+            if !self.exclude_name_patterns.is_empty() {
+                let mut current_id = entry.parent_id;
+                loop {
+                    if current_id == ROOT_ID || current_id == 0 {
+                        break;
+                    }
+                    match index.id_to_index.get(&current_id) {
+                        Some(&idx) => {
+                            let ancestor = &index.entries[idx];
+                            if ancestor.is_directory {
+                                let name = index.name(ancestor);
+                                for pat in &self.exclude_name_patterns {
+                                    if pat.is_match(name) {
+                                        return false;
+                                    }
+                                }
+                            }
+                            current_id = ancestor.parent_id;
+                        }
+                        None => break,
+                    }
+                }
+            }
+        }
+
+        true
+    }
+}
+
+/// Pre-resolve scope filter data from the query and index.
+fn prepare_scope_filter(query: &SearchQuery, index: &SearchIndex) -> ScopeFilter {
+    // Resolve include paths to entry IDs
+    let include_ids = query.include_paths.as_ref().and_then(|paths| {
+        if paths.is_empty() {
+            return None;
+        }
+        // Build a lookup table once for all path resolutions
+        let lookup = build_parent_name_lookup(index);
+        let mut ids = HashSet::new();
+        for path in paths {
+            if let Some(id) = resolve_path_in_index(path, &lookup) {
+                ids.insert(id);
+            }
+        }
+        if ids.is_empty() {
+            // No valid include paths resolved — include nothing
+            // Use a set with an impossible ID to force all entries to fail
+            ids.insert(i64::MIN);
+        }
+        Some(ids)
+    });
+
+    // Compile exclude patterns
+    let mut exclude_name_patterns = Vec::new();
+    let mut exclude_path_prefixes = Vec::new();
+
+    if let Some(ref patterns) = query.exclude_dir_names {
+        for pattern in patterns {
+            if pattern.contains('/') {
+                // Path-based exclude: treat as absolute prefix
+                exclude_path_prefixes.push(pattern.clone());
+            } else {
+                // Bare name: compile as glob pattern
+                let regex_str = glob_to_regex(pattern);
+                if let Ok(re) = RegexBuilder::new(&regex_str)
+                    .case_insensitive(cfg!(target_os = "macos"))
+                    .build()
+                {
+                    exclude_name_patterns.push(re);
+                }
+            }
+        }
+    }
+
+    ScopeFilter {
+        include_ids,
+        exclude_name_patterns,
+        exclude_path_prefixes,
+    }
+}
+
+/// Build a lookup table mapping `(parent_id, normalized_name) -> entry_id`
+/// for O(1) path component resolution. Only built when there are include
+/// paths to resolve.
+fn build_parent_name_lookup(index: &SearchIndex) -> HashMap<(i64, String), i64> {
+    let mut map = HashMap::with_capacity(index.entries.len());
+    for entry in &index.entries {
+        let name = index.name(entry);
+        let normalized = store::normalize_for_comparison(name);
+        map.insert((entry.parent_id, normalized), entry.id);
+    }
+    map
+}
+
+/// Resolve a filesystem path to an entry ID using a pre-built lookup table
+/// for O(1) per component instead of scanning all entries.
+fn resolve_path_in_index(path: &str, lookup: &HashMap<(i64, String), i64>) -> Option<i64> {
+    let path = path.strip_prefix('/').unwrap_or(path);
+    if path.is_empty() {
+        return Some(ROOT_ID);
+    }
+
+    let mut current_id = ROOT_ID;
+    for component in path.split('/') {
+        if component.is_empty() {
+            continue;
+        }
+        let normalized = store::normalize_for_comparison(component);
+        current_id = *lookup.get(&(current_id, normalized))?;
+    }
+    Some(current_id)
+}
+
 // ── Search execution ─────────────────────────────────────────────────
 
 /// Execute a search query against the in-memory index. Pure function.
 pub fn search(index: &SearchIndex, query: &SearchQuery) -> Result<SearchResult, String> {
     let t = std::time::Instant::now();
+    // Pre-resolve scope filter
+    let scope_filter = prepare_scope_filter(query, index);
+
     // Compile pattern
     let compiled_pattern = match &query.name_pattern {
         Some(pattern) if !pattern.is_empty() => {
@@ -375,7 +647,7 @@ pub fn search(index: &SearchIndex, query: &SearchQuery) -> Result<SearchResult, 
         .entries
         .par_iter()
         .enumerate()
-        .filter(|(_, entry)| {
+        .filter(|(i, entry)| {
             // Skip root sentinel
             if entry.id == ROOT_ID {
                 return false;
@@ -425,6 +697,11 @@ pub fn search(index: &SearchIndex, query: &SearchQuery) -> Result<SearchResult, 
                     Some(t) if t <= before => {}
                     _ => return false,
                 }
+            }
+
+            // Scope filter (ancestor walk — only for entries passing all other filters)
+            if scope_filter.is_active() && !scope_filter.matches(index, *i) {
+                return false;
             }
 
             true
@@ -689,6 +966,8 @@ mod tests {
             modified_after: None,
             modified_before: None,
             is_directory: None,
+            include_paths: None,
+            exclude_dir_names: None,
             limit: 30,
         };
         let result = search(&index, &query).unwrap();
@@ -708,6 +987,8 @@ mod tests {
             modified_after: None,
             modified_before: None,
             is_directory: None,
+            include_paths: None,
+            exclude_dir_names: None,
             limit: 30,
         };
         let result = search(&index, &query).unwrap();
@@ -728,6 +1009,8 @@ mod tests {
             modified_after: None,
             modified_before: None,
             is_directory: None,
+            include_paths: None,
+            exclude_dir_names: None,
             limit: 30,
         };
         let result = search(&index, &query).unwrap();
@@ -859,6 +1142,8 @@ mod tests {
             modified_after: None,
             modified_before: None,
             is_directory: None,
+            include_paths: None,
+            exclude_dir_names: None,
             limit: 30,
         };
         let result = search(&index, &query).unwrap();
@@ -877,6 +1162,8 @@ mod tests {
             modified_after: None,
             modified_before: None,
             is_directory: None,
+            include_paths: None,
+            exclude_dir_names: None,
             limit: 30,
         };
         let result = search(&index, &query).unwrap();
@@ -898,6 +1185,8 @@ mod tests {
             modified_after: None,
             modified_before: None,
             is_directory: None,
+            include_paths: None,
+            exclude_dir_names: None,
             limit: 30,
         };
         let result = search(&index, &query).unwrap();
@@ -919,6 +1208,8 @@ mod tests {
             modified_after: None,
             modified_before: None,
             is_directory: None,
+            include_paths: None,
+            exclude_dir_names: None,
             limit: 30,
         };
         let result = search(&index, &query).unwrap();
@@ -937,6 +1228,8 @@ mod tests {
             modified_after: None,
             modified_before: None,
             is_directory: None,
+            include_paths: None,
+            exclude_dir_names: None,
             limit: 30,
         };
         let result = search(&index, &query);
@@ -957,6 +1250,8 @@ mod tests {
             modified_after: None,
             modified_before: None,
             is_directory: Some(false),
+            include_paths: None,
+            exclude_dir_names: None,
             limit: 30,
         };
         let result = search(&index, &query).unwrap();
@@ -976,6 +1271,8 @@ mod tests {
             modified_after: None,
             modified_before: None,
             is_directory: Some(false),
+            include_paths: None,
+            exclude_dir_names: None,
             limit: 30,
         };
         let result = search(&index, &query).unwrap();
@@ -994,6 +1291,8 @@ mod tests {
             modified_after: None,
             modified_before: None,
             is_directory: Some(false),
+            include_paths: None,
+            exclude_dir_names: None,
             limit: 30,
         };
         let result = search(&index, &query).unwrap();
@@ -1014,6 +1313,8 @@ mod tests {
             modified_after: Some(4000),
             modified_before: None,
             is_directory: None,
+            include_paths: None,
+            exclude_dir_names: None,
             limit: 30,
         };
         let result = search(&index, &query).unwrap();
@@ -1032,6 +1333,8 @@ mod tests {
             modified_after: None,
             modified_before: Some(2000),
             is_directory: None,
+            include_paths: None,
+            exclude_dir_names: None,
             limit: 30,
         };
         let result = search(&index, &query).unwrap();
@@ -1050,6 +1353,8 @@ mod tests {
             modified_after: Some(3000),
             modified_before: Some(5000),
             is_directory: None,
+            include_paths: None,
+            exclude_dir_names: None,
             limit: 30,
         };
         let result = search(&index, &query).unwrap();
@@ -1070,6 +1375,8 @@ mod tests {
             modified_after: None,
             modified_before: None,
             is_directory: None,
+            include_paths: None,
+            exclude_dir_names: None,
             limit: 30,
         };
         let result = search(&index, &query).unwrap();
@@ -1090,6 +1397,8 @@ mod tests {
             modified_after: None,
             modified_before: None,
             is_directory: None,
+            include_paths: None,
+            exclude_dir_names: None,
             limit: 30,
         };
         let result = search(&index, &query).unwrap();
@@ -1112,6 +1421,8 @@ mod tests {
             modified_after: None,
             modified_before: None,
             is_directory: None,
+            include_paths: None,
+            exclude_dir_names: None,
             limit: 3,
         };
         let result = search(&index, &query).unwrap();
@@ -1132,6 +1443,8 @@ mod tests {
             modified_after: None,
             modified_before: None,
             is_directory: Some(true),
+            include_paths: None,
+            exclude_dir_names: None,
             limit: 30,
         };
         let result = search(&index, &query).unwrap();
@@ -1151,6 +1464,8 @@ mod tests {
             modified_after: None,
             modified_before: None,
             is_directory: Some(false),
+            include_paths: None,
+            exclude_dir_names: None,
             limit: 30,
         };
         let result = search(&index, &query).unwrap();
@@ -1215,6 +1530,8 @@ mod tests {
             modified_after: Some(1000),
             modified_before: None,
             is_directory: None,
+            include_paths: None,
+            exclude_dir_names: None,
             limit: 30,
         };
         let json = serde_json::to_string(&query).unwrap();
@@ -1323,6 +1640,8 @@ mod tests {
             modified_after: None,
             modified_before: None,
             is_directory: None,
+            include_paths: None,
+            exclude_dir_names: None,
             limit: 30,
         };
         let result = search(&index, &query).unwrap();
@@ -1365,6 +1684,8 @@ mod tests {
             modified_after,
             modified_before,
             is_directory,
+            include_paths: None,
+            exclude_dir_names: None,
             limit: 30,
         }
     }
@@ -1497,5 +1818,337 @@ mod tests {
     fn summarize_empty_name_pattern() {
         let q = make_query(Some(""), PatternType::Glob, None, None, None, None, None);
         assert_eq!(summarize_query(&q), "(all entries)");
+    }
+
+    // ── parse_scope ─────────────────────────────────────────────────
+
+    #[test]
+    fn parse_scope_basic_include() {
+        let scope = parse_scope("~/projects");
+        let home = dirs::home_dir().unwrap().to_string_lossy().to_string();
+        assert_eq!(scope.include_paths, vec![format!("{home}/projects")]);
+        assert!(scope.exclude_patterns.is_empty());
+    }
+
+    #[test]
+    fn parse_scope_basic_exclude() {
+        let scope = parse_scope("!node_modules");
+        assert!(scope.include_paths.is_empty());
+        assert_eq!(scope.exclude_patterns, vec!["node_modules"]);
+    }
+
+    #[test]
+    fn parse_scope_mixed() {
+        let scope = parse_scope("~/projects, !node_modules, !.git");
+        let home = dirs::home_dir().unwrap().to_string_lossy().to_string();
+        assert_eq!(scope.include_paths, vec![format!("{home}/projects")]);
+        assert_eq!(scope.exclude_patterns, vec!["node_modules", ".git"]);
+    }
+
+    #[test]
+    fn parse_scope_multiple_includes() {
+        let scope = parse_scope("~/projects, ~/Documents");
+        let home = dirs::home_dir().unwrap().to_string_lossy().to_string();
+        assert_eq!(
+            scope.include_paths,
+            vec![format!("{home}/projects"), format!("{home}/Documents")]
+        );
+    }
+
+    #[test]
+    fn parse_scope_quoted_commas_double() {
+        let scope = parse_scope("\"path,with,commas\"");
+        assert_eq!(scope.include_paths, vec!["path,with,commas"]);
+    }
+
+    #[test]
+    fn parse_scope_quoted_commas_single() {
+        let scope = parse_scope("'path,with,commas'");
+        assert_eq!(scope.include_paths, vec!["path,with,commas"]);
+    }
+
+    #[test]
+    fn parse_scope_backslash_escaped_commas() {
+        let scope = parse_scope("path\\,with\\,commas");
+        assert_eq!(scope.include_paths, vec!["path,with,commas"]);
+    }
+
+    #[test]
+    fn parse_scope_empty_segments() {
+        let scope = parse_scope("~/projects, , !.git");
+        let home = dirs::home_dir().unwrap().to_string_lossy().to_string();
+        assert_eq!(scope.include_paths, vec![format!("{home}/projects")]);
+        assert_eq!(scope.exclude_patterns, vec![".git"]);
+    }
+
+    #[test]
+    fn parse_scope_bare_exclude_wildcard() {
+        let scope = parse_scope("!.*");
+        assert_eq!(scope.exclude_patterns, vec![".*"]);
+    }
+
+    #[test]
+    fn parse_scope_absolute_exclude_path() {
+        let scope = parse_scope("!/Users/alice/Downloads");
+        assert_eq!(scope.exclude_patterns, vec!["/Users/alice/Downloads"]);
+    }
+
+    #[test]
+    fn parse_scope_empty_input() {
+        let scope = parse_scope("");
+        assert!(scope.include_paths.is_empty());
+        assert!(scope.exclude_patterns.is_empty());
+    }
+
+    #[test]
+    fn parse_scope_whitespace_trimming() {
+        let scope = parse_scope("  ~/projects  ,  !node_modules  ");
+        let home = dirs::home_dir().unwrap().to_string_lossy().to_string();
+        assert_eq!(scope.include_paths, vec![format!("{home}/projects")]);
+        assert_eq!(scope.exclude_patterns, vec!["node_modules"]);
+    }
+
+    // ── Scope filtering in search ───────────────────────────────────
+
+    /// Build a test index representing:
+    /// /Users/alice/projects/app.rs         (id=9)
+    /// /Users/alice/projects/node_modules/pkg.json (id=11)
+    /// /Users/alice/.git/config             (id=13)
+    fn make_scope_test_index() -> SearchIndex {
+        let mut names = String::new();
+        let test_names = [
+            "",             // 0: root
+            "Users",        // 1
+            "alice",        // 2
+            "projects",     // 3
+            "app.rs",       // 4
+            "node_modules", // 5
+            "pkg.json",     // 6
+            ".git",         // 7
+            "config",       // 8
+        ];
+        let offsets: Vec<(u32, u16)> = test_names.iter().map(|n| arena_push(&mut names, n)).collect();
+
+        let entries = vec![
+            SearchEntry {
+                id: 1,
+                parent_id: 0,
+                name_offset: offsets[0].0,
+                name_len: offsets[0].1,
+                is_directory: true,
+                size: None,
+                modified_at: None,
+            },
+            SearchEntry {
+                id: 2,
+                parent_id: 1,
+                name_offset: offsets[1].0,
+                name_len: offsets[1].1,
+                is_directory: true,
+                size: None,
+                modified_at: Some(1000),
+            },
+            SearchEntry {
+                id: 3,
+                parent_id: 2,
+                name_offset: offsets[2].0,
+                name_len: offsets[2].1,
+                is_directory: true,
+                size: None,
+                modified_at: Some(2000),
+            },
+            SearchEntry {
+                id: 4,
+                parent_id: 3,
+                name_offset: offsets[3].0,
+                name_len: offsets[3].1,
+                is_directory: true,
+                size: None,
+                modified_at: Some(3000),
+            },
+            SearchEntry {
+                id: 9,
+                parent_id: 4,
+                name_offset: offsets[4].0,
+                name_len: offsets[4].1,
+                is_directory: false,
+                size: Some(1000),
+                modified_at: Some(4000),
+            },
+            SearchEntry {
+                id: 10,
+                parent_id: 4,
+                name_offset: offsets[5].0,
+                name_len: offsets[5].1,
+                is_directory: true,
+                size: None,
+                modified_at: Some(5000),
+            },
+            SearchEntry {
+                id: 11,
+                parent_id: 10,
+                name_offset: offsets[6].0,
+                name_len: offsets[6].1,
+                is_directory: false,
+                size: Some(500),
+                modified_at: Some(6000),
+            },
+            SearchEntry {
+                id: 12,
+                parent_id: 3,
+                name_offset: offsets[7].0,
+                name_len: offsets[7].1,
+                is_directory: true,
+                size: None,
+                modified_at: Some(7000),
+            },
+            SearchEntry {
+                id: 13,
+                parent_id: 12,
+                name_offset: offsets[8].0,
+                name_len: offsets[8].1,
+                is_directory: false,
+                size: Some(200),
+                modified_at: Some(8000),
+            },
+        ];
+        let mut id_to_index = HashMap::new();
+        for (i, e) in entries.iter().enumerate() {
+            id_to_index.insert(e.id, i);
+        }
+        SearchIndex {
+            names,
+            entries,
+            id_to_index,
+            generation: 1,
+        }
+    }
+
+    #[test]
+    fn search_with_include_path_filter() {
+        let index = make_scope_test_index();
+        let query = SearchQuery {
+            name_pattern: None,
+            pattern_type: PatternType::Glob,
+            min_size: None,
+            max_size: None,
+            modified_after: None,
+            modified_before: None,
+            is_directory: Some(false),
+            include_paths: Some(vec!["/Users/alice/projects".to_string()]),
+            exclude_dir_names: None,
+            limit: 30,
+        };
+        let result = search(&index, &query).unwrap();
+        // Should find app.rs and pkg.json (both under /Users/alice/projects)
+        // but NOT config (under /Users/alice/.git)
+        assert_eq!(result.total_count, 2);
+        let names: Vec<&str> = result.entries.iter().map(|e| e.name.as_str()).collect();
+        assert!(names.contains(&"app.rs"));
+        assert!(names.contains(&"pkg.json"));
+    }
+
+    #[test]
+    fn search_with_exclude_pattern() {
+        let index = make_scope_test_index();
+        let query = SearchQuery {
+            name_pattern: None,
+            pattern_type: PatternType::Glob,
+            min_size: None,
+            max_size: None,
+            modified_after: None,
+            modified_before: None,
+            is_directory: Some(false),
+            include_paths: None,
+            exclude_dir_names: Some(vec!["node_modules".to_string()]),
+            limit: 30,
+        };
+        let result = search(&index, &query).unwrap();
+        // Should find app.rs and config, but NOT pkg.json (under node_modules)
+        assert_eq!(result.total_count, 2);
+        let names: Vec<&str> = result.entries.iter().map(|e| e.name.as_str()).collect();
+        assert!(names.contains(&"app.rs"));
+        assert!(names.contains(&"config"));
+        assert!(!names.contains(&"pkg.json"));
+    }
+
+    #[test]
+    fn search_with_include_and_exclude() {
+        let index = make_scope_test_index();
+        let query = SearchQuery {
+            name_pattern: None,
+            pattern_type: PatternType::Glob,
+            min_size: None,
+            max_size: None,
+            modified_after: None,
+            modified_before: None,
+            is_directory: Some(false),
+            include_paths: Some(vec!["/Users/alice/projects".to_string()]),
+            exclude_dir_names: Some(vec!["node_modules".to_string()]),
+            limit: 30,
+        };
+        let result = search(&index, &query).unwrap();
+        // Only app.rs: under projects but not under node_modules
+        assert_eq!(result.total_count, 1);
+        assert_eq!(result.entries[0].name, "app.rs");
+    }
+
+    #[test]
+    fn search_with_wildcard_exclude() {
+        let index = make_scope_test_index();
+        let query = SearchQuery {
+            name_pattern: None,
+            pattern_type: PatternType::Glob,
+            min_size: None,
+            max_size: None,
+            modified_after: None,
+            modified_before: None,
+            is_directory: Some(false),
+            include_paths: None,
+            exclude_dir_names: Some(vec![".*".to_string()]),
+            limit: 30,
+        };
+        let result = search(&index, &query).unwrap();
+        // Should exclude config (under .git) but keep app.rs and pkg.json
+        assert_eq!(result.total_count, 2);
+        let names: Vec<&str> = result.entries.iter().map(|e| e.name.as_str()).collect();
+        assert!(names.contains(&"app.rs"));
+        assert!(names.contains(&"pkg.json"));
+        assert!(!names.contains(&"config"));
+    }
+
+    // ── Serde: new scope fields ─────────────────────────────────────
+
+    #[test]
+    fn serde_query_scope_fields_camel_case() {
+        let json = r#"{"namePattern":"*.rs","patternType":"glob","includePaths":["/Users/alice/projects"],"excludeDirNames":["node_modules",".git"],"limit":30}"#;
+        let query: SearchQuery = serde_json::from_str(json).unwrap();
+        assert_eq!(query.include_paths, Some(vec!["/Users/alice/projects".to_string()]));
+        assert_eq!(
+            query.exclude_dir_names,
+            Some(vec!["node_modules".to_string(), ".git".to_string()])
+        );
+    }
+
+    #[test]
+    fn serde_query_scope_fields_omitted() {
+        let json = r#"{"limit":30}"#;
+        let query: SearchQuery = serde_json::from_str(json).unwrap();
+        assert_eq!(query.include_paths, None);
+        assert_eq!(query.exclude_dir_names, None);
+    }
+
+    #[test]
+    fn serde_parsed_scope_roundtrip() {
+        let scope = ParsedScope {
+            include_paths: vec!["/Users/alice/projects".to_string()],
+            exclude_patterns: vec!["node_modules".to_string(), ".git".to_string()],
+        };
+        let json = serde_json::to_string(&scope).unwrap();
+        assert!(json.contains("includePaths"));
+        assert!(json.contains("excludePatterns"));
+        let deserialized: ParsedScope = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.include_paths, scope.include_paths);
+        assert_eq!(deserialized.exclude_patterns, scope.exclude_patterns);
     }
 }

@@ -908,6 +908,25 @@ async fn execute_search(params: &Value) -> ToolResult {
 
     let index = ensure_search_index().await?;
 
+    // Parse scope if provided
+    let scope_str = params.get("scope").and_then(|v| v.as_str());
+    let (include_paths, exclude_dir_names) = if let Some(scope) = scope_str {
+        let parsed = search::parse_scope(scope);
+        let inc = if parsed.include_paths.is_empty() {
+            None
+        } else {
+            Some(parsed.include_paths)
+        };
+        let exc = if parsed.exclude_patterns.is_empty() {
+            None
+        } else {
+            Some(parsed.exclude_patterns)
+        };
+        (inc, exc)
+    } else {
+        (None, None)
+    };
+
     let query = SearchQuery {
         name_pattern: pattern,
         pattern_type,
@@ -916,6 +935,8 @@ async fn execute_search(params: &Value) -> ToolResult {
         modified_after,
         modified_before,
         is_directory,
+        include_paths,
+        exclude_dir_names,
         limit,
     };
 
@@ -1004,6 +1025,24 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
 
     let translate_result = crate::commands::search::build_translate_result(ai_query).map_err(ToolError::internal)?;
 
+    // Start with AI-provided scope
+    let mut include_paths = translate_result.query.include_paths;
+    let mut exclude_dir_names = translate_result.query.exclude_dir_names;
+
+    // Merge caller-provided scope on top
+    let scope_str = params.get("scope").and_then(|v| v.as_str());
+    if let Some(scope) = scope_str {
+        let parsed = search::parse_scope(scope);
+        if !parsed.include_paths.is_empty() {
+            include_paths = Some(parsed.include_paths);
+        }
+        if !parsed.exclude_patterns.is_empty() {
+            let mut merged = exclude_dir_names.unwrap_or_default();
+            merged.extend(parsed.exclude_patterns);
+            exclude_dir_names = Some(merged);
+        }
+    }
+
     let query = SearchQuery {
         name_pattern: translate_result.query.name_pattern,
         pattern_type: if translate_result.query.pattern_type == "regex" {
@@ -1016,6 +1055,8 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
         modified_after: translate_result.query.modified_after,
         modified_before: translate_result.query.modified_before,
         is_directory: translate_result.query.is_directory,
+        include_paths,
+        exclude_dir_names,
         limit,
     };
 

@@ -1,7 +1,7 @@
 # Search (frontend)
 
-Whole-drive file search dialog. Searches the in-memory index by filename (glob/regex), size, and date filters. Optional
-AI mode translates natural language queries into structured filters.
+Whole-drive file search dialog. Searches the in-memory index by filename (glob/regex), size, date, and scope (folder
+include/exclude) filters. Optional AI mode translates natural language queries into structured filters.
 
 Backend: `src-tauri/src/indexing/search.rs` (in-memory index), `src-tauri/src/commands/search.rs` (IPC commands). Full
 design: `docs/specs/drive-search-plan.md`.
@@ -35,6 +35,10 @@ for results, Tab between filters) that would fight `ModalDialog`'s focus managem
 independent.
 
 **Live search with debounce**: 200ms debounce on any input change. Enter bypasses debounce for immediate search.
+
+**Scope field**: Between pattern and filter rows. Comma-separated folder paths with `!` prefix for exclusions. Parsed
+via `parseSearchScope()` IPC call in `executeSearch()` (async, so not part of `buildSearchQuery()`). ⌥F sets scope to
+the focused pane's current directory, ⌥D clears it. Info button `(i)` shows syntax help tooltip.
 
 **Index not available state**: When indexing is disabled or not started, `prepareSearchIndex()` errors. The dialog shows
 a message ("Drive index not ready...") with scan progress if available. Inputs and filters are disabled, AI button
@@ -71,7 +75,8 @@ state.
 
 ## Dependencies
 
-- `$lib/tauri-commands` -- `prepareSearchIndex`, `searchFiles`, `releaseSearchIndex`, `translateSearchQuery`
+- `$lib/tauri-commands` -- `prepareSearchIndex`, `searchFiles`, `releaseSearchIndex`, `translateSearchQuery`,
+  `parseSearchScope`
 - `$lib/indexing` -- `isScanning`, `getEntriesScanned` (scan progress for unavailable state)
 - `$lib/settings` -- `getSetting('ai.provider')` (AI button visibility)
 - CSS variables from `app.css` (`--z-modal`, `--color-accent-subtle`, `--color-bg-secondary`, etc.)

@@ -18,6 +18,7 @@
         searchFiles,
         releaseSearchIndex,
         translateSearchQuery,
+        parseSearchScope,
         onSearchIndexReady,
         formatBytes,
     } from '$lib/tauri-commands'
@@ -64,6 +65,8 @@
         setAiPrompt,
         getPatternType,
         setPatternType,
+        getScope,
+        setScope,
         buildSearchQuery,
         resetSearchState,
         type SizeFilter,
@@ -77,9 +80,11 @@
         onNavigate: (path: string) => void
         /** Called when dialog is closed */
         onClose: () => void
+        /** Current directory path of the focused pane (for ⌥F scope shortcut) */
+        currentFolderPath: string
     }
 
-    const { onNavigate, onClose }: Props = $props()
+    const { onNavigate, onClose, currentFolderPath }: Props = $props()
 
     let aiPromptInputElement: HTMLInputElement | undefined = $state()
     let patternInputElement: HTMLInputElement | undefined = $state()
@@ -141,6 +146,7 @@
     const aiStatus = $derived(getAiStatus())
     const aiPrompt = $derived(getAiPrompt())
     const patternType = $derived(getPatternType())
+    const scope = $derived(getScope())
     const scanning = $derived(isScanning())
     const entriesScanned = $derived(getEntriesScanned())
 
@@ -150,6 +156,7 @@
     const inputsDisabled = $derived(!isIndexAvailable)
 
     let aiError = $state('')
+    let showScopeInfo = $state(false)
     let highlightedFields = new SvelteSet<string>()
     /** True once the user has triggered at least one search (so we can distinguish "no query yet" from "0 results"). */
     let hasSearched = $state(false)
@@ -226,6 +233,13 @@
         setIsSearching(true)
         try {
             const query = buildSearchQuery()
+            // Parse scope and merge into query if non-empty
+            const scopeStr = getScope().trim()
+            if (scopeStr) {
+                const parsed = await parseSearchScope(scopeStr)
+                if (parsed.includePaths.length > 0) query.includePaths = parsed.includePaths
+                if (parsed.excludePatterns.length > 0) query.excludeDirNames = parsed.excludePatterns
+            }
             const result = await searchFiles(query)
             setResults(result.entries)
             setTotalCount(result.totalCount)
@@ -280,6 +294,40 @@
         return true
     }
 
+    /** Populates filter fields from AI response. Returns the set of changed field names. */
+    function applyAiFilters(result: {
+        display: {
+            namePattern?: string | null
+            patternType?: string | null
+            minSize?: number | null
+            maxSize?: number | null
+            modifiedAfter?: string | null
+            modifiedBefore?: string | null
+        }
+        query: { includePaths?: string[]; excludeDirNames?: string[] }
+    }): SvelteSet<string> {
+        const changed = new SvelteSet<string>()
+        if (result.display.namePattern != null) {
+            setNamePattern(result.display.namePattern)
+            changed.add('name')
+        }
+        if (result.display.patternType === 'regex' || result.display.patternType === 'glob') {
+            setPatternType(result.display.patternType as PatternType)
+            changed.add('patternType')
+        }
+        if (applySizeFilters(result.display)) changed.add('size')
+        if (applyDateFilters(result.display)) changed.add('date')
+
+        if (result.query.includePaths?.length || result.query.excludeDirNames?.length) {
+            const parts: string[] = []
+            if (result.query.includePaths) parts.push(...result.query.includePaths)
+            if (result.query.excludeDirNames) parts.push(...result.query.excludeDirNames.map((d: string) => `!${d}`))
+            setScope(parts.join(', '))
+            changed.add('scope')
+        }
+        return changed
+    }
+
     /** Runs the AI translation for a given query text, populates filters, and auto-runs search. */
     async function executeAiSearch(queryText: string): Promise<void> {
         const query = queryText.trim()
@@ -294,19 +342,7 @@
             const result = await translateSearchQuery(query)
             setAiStatus('Building query...')
 
-            // Populate filter fields from AI response
-            const changed = new SvelteSet<string>()
-
-            if (result.display.namePattern != null) {
-                setNamePattern(result.display.namePattern)
-                changed.add('name')
-            }
-            if (result.display.patternType === 'regex' || result.display.patternType === 'glob') {
-                setPatternType(result.display.patternType as PatternType)
-                changed.add('patternType')
-            }
-            if (applySizeFilters(result.display)) changed.add('size')
-            if (applyDateFilters(result.display)) changed.add('date')
+            const changed = applyAiFilters(result)
 
             // Brief highlight animation on changed fields
             highlightedFields = changed
@@ -316,16 +352,9 @@
 
             // Now run the actual search
             setAiStatus('Searching...')
-            if (getIsIndexReady()) {
-                const searchQuery = buildSearchQuery()
-                const searchResult = await searchFiles(searchQuery)
-                setResults(searchResult.entries)
-                setTotalCount(searchResult.totalCount)
-                setCursorIndex(0)
-            }
+            await executeSearch()
 
             setAiStatus('')
-            hasSearched = true
 
             // After AI response + search, focus results for keyboard nav
             await tick()
@@ -361,6 +390,12 @@
     function handleAiPromptInput(e: Event): void {
         const target = e.target as HTMLInputElement
         setAiPrompt(target.value)
+    }
+
+    function handleScopeInput(e: Event): void {
+        const target = e.target as HTMLInputElement
+        setScope(target.value)
+        scheduleSearch()
     }
 
     function handleSizeFilterChange(e: Event): void {
@@ -433,21 +468,51 @@
         return document.activeElement === patternInputElement
     }
 
+    /** Handles modifier-key shortcuts (⌥F, ⌥D, ⌘Enter). Returns true if handled. */
+    function handleModifierShortcuts(e: KeyboardEvent): boolean {
+        // ⌥F — set scope to current folder path
+        if (e.altKey && !e.metaKey && !e.shiftKey && e.key === 'f') {
+            e.preventDefault()
+            setScope(currentFolderPath)
+            scheduleSearch()
+            return true
+        }
+        // ⌥D — clear scope (search entire drive)
+        if (e.altKey && !e.metaKey && !e.shiftKey && e.key === 'd') {
+            e.preventDefault()
+            setScope('')
+            scheduleSearch()
+            return true
+        }
+        // ⌘Enter triggers AI search
+        if (e.key === 'Enter' && e.metaKey && !e.shiftKey && !e.altKey) {
+            e.preventDefault()
+            if (!aiEnabled) return true
+            const prompt = getAiPrompt().trim()
+            if (prompt) void executeAiSearch(prompt)
+            return true
+        }
+        return false
+    }
+
+    /** Handles arrow key navigation in the results list. */
+    function handleArrowNav(e: KeyboardEvent): void {
+        if (results.length === 0) return
+        e.preventDefault()
+        if (e.key === 'ArrowDown') {
+            setCursorIndex(Math.min(getCursorIndex() + 1, results.length - 1))
+        } else {
+            setCursorIndex(Math.max(getCursorIndex() - 1, 0))
+        }
+        hoveredIndex = null
+        scrollCursorIntoView()
+    }
+
     function handleKeyDown(e: KeyboardEvent): void {
         e.stopPropagation()
 
         if (handleTabFocusTrap(e)) return
-
-        // ⌘Enter triggers AI search
-        if (e.key === 'Enter' && e.metaKey && !e.shiftKey && !e.altKey) {
-            e.preventDefault()
-            if (!aiEnabled) return
-            const prompt = getAiPrompt().trim()
-            if (prompt) {
-                void executeAiSearch(prompt)
-            }
-            return
-        }
+        if (handleModifierShortcuts(e)) return
 
         switch (e.key) {
             case 'Escape':
@@ -455,20 +520,8 @@
                 onClose()
                 break
             case 'ArrowDown':
-                e.preventDefault()
-                if (results.length > 0) {
-                    setCursorIndex(Math.min(getCursorIndex() + 1, results.length - 1))
-                    hoveredIndex = null
-                    scrollCursorIntoView()
-                }
-                break
             case 'ArrowUp':
-                e.preventDefault()
-                if (results.length > 0) {
-                    setCursorIndex(Math.max(getCursorIndex() - 1, 0))
-                    hoveredIndex = null
-                    scrollCursorIntoView()
-                }
+                handleArrowNav(e)
                 break
             case 'Enter':
                 e.preventDefault()
@@ -643,6 +696,93 @@
                 title="Search (Enter)"
             >
                 Search
+            </button>
+        </div>
+
+        <!-- Scope row -->
+        <div class="input-row">
+            <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path
+                    d="M2 4.5V12.5C2 13.05 2.45 13.5 3 13.5H13C13.55 13.5 14 13.05 14 12.5V6.5C14 5.95 13.55 5.5 13 5.5H8L6.5 3.5H3C2.45 3.5 2 3.95 2 4.5Z"
+                    stroke="currentColor"
+                    stroke-width="1.3"
+                    fill="none"
+                />
+            </svg>
+            <input
+                type="text"
+                class="name-input"
+                class:ai-highlight={highlightedFields.has('scope')}
+                placeholder="All folders"
+                value={scope}
+                oninput={handleScopeInput}
+                disabled={inputsDisabled}
+                aria-label="Search scope"
+                spellcheck="false"
+                autocomplete="off"
+                autocapitalize="off"
+            />
+            <div class="scope-info-wrapper">
+                <button
+                    class="scope-info-button"
+                    onclick={() => {
+                        showScopeInfo = !showScopeInfo
+                    }}
+                    onblur={() => {
+                        showScopeInfo = false
+                    }}
+                    disabled={inputsDisabled}
+                    title="Scope syntax help"
+                    aria-label="Scope syntax help"
+                >
+                    i
+                </button>
+                {#if showScopeInfo}
+                    <div class="scope-info-tooltip" role="tooltip">
+                        <div class="scope-info-title">Search scope — which folders to search in</div>
+                        <div class="scope-info-desc">Comma-separated paths. Use ! to exclude.</div>
+                        <table class="scope-info-examples">
+                            <tbody>
+                                <tr><td><code>~/projects</code></td><td>Search in one folder</td></tr>
+                                <tr><td><code>~/projects, ~/Documents</code></td><td>Search in multiple folders</td></tr
+                                >
+                                <tr><td><code>!node_modules, !.git</code></td><td>Exclude folders by name</td></tr>
+                                <tr
+                                    ><td><code>~/projects, !node_modules</code></td><td>Combine include and exclude</td
+                                    ></tr
+                                >
+                                <tr><td><code>!.*</code></td><td>Exclude hidden folders</td></tr>
+                            </tbody>
+                        </table>
+                        <div class="scope-info-desc">
+                            Wildcards * and ? work in folder names.<br />Use quotes or backslash to escape commas.
+                        </div>
+                    </div>
+                {/if}
+            </div>
+            <button
+                class="pattern-type-toggle"
+                onclick={() => {
+                    setScope(currentFolderPath)
+                    scheduleSearch()
+                }}
+                disabled={inputsDisabled}
+                title="Scope to current folder (⌥F)"
+                aria-label="Scope to current folder"
+            >
+                ⌥F
+            </button>
+            <button
+                class="pattern-type-toggle"
+                onclick={() => {
+                    setScope('')
+                    scheduleSearch()
+                }}
+                disabled={inputsDisabled}
+                title="Search entire drive (⌥D)"
+                aria-label="Search entire drive"
+            >
+                ⌥D
             </button>
         </div>
 
@@ -1042,6 +1182,92 @@
         background: var(--color-accent-subtle);
         border-radius: var(--radius-sm);
         transition: background 1.5s ease-out;
+    }
+
+    /* Scope info button and tooltip */
+    .scope-info-wrapper {
+        position: relative;
+        flex-shrink: 0;
+    }
+
+    .scope-info-button {
+        width: 18px;
+        height: 18px;
+        border-radius: var(--radius-full);
+        border: 1px solid var(--color-border);
+        font-size: var(--font-size-xs);
+        font-style: italic;
+        font-family: var(--font-system);
+        color: var(--color-text-tertiary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+    }
+
+    .scope-info-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .scope-info-button:not(:disabled):hover {
+        border-color: var(--color-border-strong);
+        color: var(--color-text-secondary);
+    }
+
+    .scope-info-tooltip {
+        position: absolute;
+        bottom: calc(100% + var(--spacing-sm));
+        right: 0;
+        z-index: var(--z-tooltip);
+        background: var(--color-bg-tertiary);
+        color: var(--color-text-primary);
+        border: 1px solid var(--color-border-strong);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-md);
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- tooltip needs precise sizing */
+        padding: 10px 14px;
+        max-width: 420px;
+        width: max-content;
+    }
+
+    .scope-info-title {
+        font-size: var(--font-size-sm);
+        font-weight: 600;
+        margin-bottom: var(--spacing-xs);
+    }
+
+    .scope-info-desc {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        margin-bottom: var(--spacing-sm);
+    }
+
+    .scope-info-examples {
+        width: 100%;
+        border-spacing: 0;
+        margin-bottom: var(--spacing-sm);
+    }
+
+    .scope-info-examples td {
+        font-size: var(--font-size-sm);
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- table cell padding */
+        padding: 2px 0;
+        vertical-align: top;
+    }
+
+    .scope-info-examples td:first-child {
+        padding-right: var(--spacing-md);
+        white-space: nowrap;
+    }
+
+    .scope-info-examples code {
+        font-family: var(--font-mono);
+        font-size: var(--font-size-sm);
+    }
+
+    .scope-info-examples td:last-child {
+        color: var(--color-text-secondary);
     }
 
     .ai-status {

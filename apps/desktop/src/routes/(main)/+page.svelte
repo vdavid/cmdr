@@ -67,6 +67,7 @@
             pane: 'left' | 'right',
         ) => Promise<void>
         getFocusedPane: () => 'left' | 'right'
+        getFocusedPanePath: () => string
         getVolumes: () => { id: string; name: string; path: string }[]
         selectVolumeByIndex: (pane: 'left' | 'right', index: number) => Promise<boolean>
         selectVolumeByName: (pane: 'left' | 'right', name: string) => Promise<boolean>
@@ -1033,7 +1034,11 @@
         {/if}
 
         {#if showSearchDialog}
-            <SearchDialog onNavigate={handleSearchNavigate} onClose={handleSearchDialogClose} />
+            <SearchDialog
+                onNavigate={handleSearchNavigate}
+                onClose={handleSearchDialogClose}
+                currentFolderPath={explorerRef?.getFocusedPanePath() ?? '/'}
+            />
         {/if}
 
         {#if showExpiredModal}

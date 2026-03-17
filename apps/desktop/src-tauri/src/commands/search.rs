@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use crate::ai::client::{AiBackend, ChatCompletionOptions};
 use crate::indexing::get_read_pool;
 use crate::indexing::search::{
-    self, DIALOG_OPEN, SEARCH_INDEX, SearchIndexState, SearchQuery, SearchResult, drop_search_index,
+    self, DIALOG_OPEN, ParsedScope, SEARCH_INDEX, SearchIndexState, SearchQuery, SearchResult, drop_search_index,
     fill_directory_sizes, start_backstop_timer, start_idle_timer, touch_activity,
 };
 use crate::indexing::writer::WRITER_GENERATION;
@@ -250,6 +250,12 @@ pub async fn release_search_index() -> Result<(), String> {
     Ok(())
 }
 
+/// Parse a scope string into structured include/exclude data.
+#[tauri::command]
+pub fn parse_search_scope(scope: String) -> ParsedScope {
+    search::parse_scope(&scope)
+}
+
 // ============================================================================
 // AI search query translation
 // ============================================================================
@@ -265,6 +271,8 @@ pub(crate) struct AiSearchQuery {
     pub(crate) modified_after: Option<String>,
     pub(crate) modified_before: Option<String>,
     pub(crate) is_directory: Option<bool>,
+    pub(crate) search_paths: Option<Vec<String>>,
+    pub(crate) exclude_dirs: Option<Vec<String>>,
 }
 
 /// Human-readable field values returned alongside the structured query.
@@ -286,6 +294,8 @@ pub struct TranslatedQuery {
     pub modified_after: Option<u64>,
     pub modified_before: Option<u64>,
     pub is_directory: Option<bool>,
+    pub include_paths: Option<Vec<String>>,
+    pub exclude_dir_names: Option<Vec<String>>,
 }
 
 /// Human-readable values so the frontend can populate filter UI.
@@ -299,6 +309,8 @@ pub struct TranslateDisplay {
     pub modified_after: Option<String>,
     pub modified_before: Option<String>,
     pub is_directory: Option<bool>,
+    pub include_paths: Option<Vec<String>>,
+    pub exclude_dir_names: Option<Vec<String>>,
 }
 
 /// Converts an ISO date string (YYYY-MM-DD) to a unix timestamp (seconds since epoch).
@@ -318,27 +330,44 @@ pub(crate) fn build_search_system_prompt() -> String {
     let format = time::macros::format_description!("[year]-[month]-[day]");
     let today_str = today.format(&format).expect("date format always succeeds");
 
+    let one_year_ago = today.replace_year(today.year() - 1).unwrap_or(today);
+    let one_year_ago_str = one_year_ago.format(&format).expect("date format always succeeds");
+
     format!(
         "You translate natural language file search queries into structured JSON filters.\n\
          \n\
          Return ONLY a JSON object with these optional fields:\n\
-         - \"namePattern\": a filename pattern. Use glob (*, ?) for simple cases, regex for complex ones.\n\
-         - \"patternType\": \"glob\" or \"regex\" — specify which format you used for namePattern.\n\
-         - \"minSize\": size in bytes (e.g., 1048576 for 1 MB)\n\
-         - \"maxSize\": size in bytes\n\
-         - \"modifiedAfter\": ISO date string (e.g., \"2025-01-01\")\n\
-         - \"modifiedBefore\": ISO date string\n\
+         - \"namePattern\": filename pattern (glob or regex)\n\
+         - \"patternType\": \"glob\" or \"regex\"\n\
+         - \"minSize\"/\"maxSize\": size in bytes\n\
+         - \"modifiedAfter\"/\"modifiedBefore\": ISO date (YYYY-MM-DD)\n\
          - \"isDirectory\": true for folders only, false for files only, omit for both\n\
+         - \"searchPaths\": array of paths to search within (for example, [\"~/projects\"])\n\
+         - \"excludeDirs\": array of directory names to exclude (for example, [\"node_modules\", \".git\"])\n\
          \n\
-         For regex patterns, use Rust `regex` crate syntax (PCRE-like but no lookahead/lookbehind, \
-         no backreferences, no \\d — use [0-9] instead). All regex is case-insensitive and unanchored \
-         (partial match) unless you add ^ or $.\n\
+         Glob only supports * and ?. For multiple extensions or alternation, use regex.\n\
+         Regex: Rust `regex` crate syntax (no lookahead/lookbehind, no backreferences, \
+         no \\d — use [0-9]). Case-insensitive, unanchored unless you add ^ or $.\n\
+         \n\
+         Category mapping: \"documents\" → regex for .pdf/.doc/.docx/.txt/.odt/.xls/.xlsx, \
+         \"photos\"/\"images\" → .jpg/.jpeg/.png/.heic/.webp/.gif, \
+         \"videos\" → .mp4/.mov/.avi/.mkv/.webm, \
+         \"music\"/\"audio\" → .mp3/.m4a/.flac/.wav/.ogg/.aac.\n\
+         Size hints: \"big\"/\"large\"/\"huge\" → minSize 100 MB+, \"taking up space\" → minSize 500 MB+.\n\
+         If the user describes their naming convention (\"I name them...\", \"I mark them as...\", \
+         \"tagged with...\"), use that as the filename pattern.\n\
+         For code queries (programming languages, source files), auto-exclude: \
+         excludeDirs: [\"node_modules\", \".git\", \"__pycache__\", \"vendor\", \".venv\", \"target\", \"build\", \"dist\"].\n\
          \n\
          Examples:\n\
          \"large pdfs\" → {{\"namePattern\": \"*.pdf\", \"patternType\": \"glob\", \"minSize\": 10485760}}\n\
          \"quarterly reports\" → {{\"namePattern\": \"(Q[1-4]|quarterly).*\\.pdf\", \"patternType\": \"regex\"}}\n\
-         \"photos from last month\" → {{\"namePattern\": \"*.jpg\", \"patternType\": \"glob\", \"modifiedAfter\": \"2026-02-15\"}}\n\
+         \"photos from last month\" → {{\"namePattern\": \"\\\\.(jpg|jpeg|png|heic|webp|gif)$\", \"patternType\": \"regex\", \"modifiedAfter\": \"2026-02-15\"}}\n\
          \"folders bigger than 1gb\" → {{\"isDirectory\": true, \"minSize\": 1073741824}}\n\
+         \"screenshots from today\" → {{\"namePattern\": \"Screenshot.*\", \"patternType\": \"regex\", \"modifiedAfter\": \"{today_str}\"}}\n\
+         \"invoices I mark as rymd\" → {{\"namePattern\": \"*rymd*\", \"patternType\": \"glob\"}}\n\
+         \"documents older than a year\" → {{\"namePattern\": \"(\\\\.(pdf|doc|docx|txt|odt|xls|xlsx))$\", \"patternType\": \"regex\", \"modifiedBefore\": \"{one_year_ago_str}\"}}\n\
+         \"python files in my projects\" → {{\"namePattern\": \"*.py\", \"patternType\": \"glob\", \"searchPaths\": [\"~/projects\"], \"excludeDirs\": [\"node_modules\", \".git\", \"__pycache__\", \".venv\"]}}\n\
          \n\
          Today's date is {today_str}. Return ONLY the JSON, no explanation."
     )
@@ -372,6 +401,16 @@ pub(crate) fn build_translate_result(ai_query: AiSearchQuery) -> Result<Translat
 
     let pattern_type = ai_query.pattern_type.clone().unwrap_or_else(|| "glob".to_string());
 
+    // Expand ~ in search paths
+    let include_paths = ai_query.search_paths.map(|paths| {
+        paths
+            .into_iter()
+            .map(|p| crate::commands::file_system::expand_tilde(&p))
+            .collect::<Vec<_>>()
+    });
+
+    let exclude_dir_names = ai_query.exclude_dirs.clone();
+
     Ok(TranslateResult {
         query: TranslatedQuery {
             name_pattern: ai_query.name_pattern.clone(),
@@ -381,6 +420,8 @@ pub(crate) fn build_translate_result(ai_query: AiSearchQuery) -> Result<Translat
             modified_after: modified_after_ts,
             modified_before: modified_before_ts,
             is_directory: ai_query.is_directory,
+            include_paths: include_paths.clone(),
+            exclude_dir_names: exclude_dir_names.clone(),
         },
         display: TranslateDisplay {
             name_pattern: ai_query.name_pattern,
@@ -390,6 +431,8 @@ pub(crate) fn build_translate_result(ai_query: AiSearchQuery) -> Result<Translat
             modified_after: ai_query.modified_after,
             modified_before: ai_query.modified_before,
             is_directory: ai_query.is_directory,
+            include_paths,
+            exclude_dir_names,
         },
     })
 }
@@ -565,6 +608,8 @@ mod tests {
                 modified_after: Some(1_735_689_600),
                 modified_before: None,
                 is_directory: None,
+                include_paths: None,
+                exclude_dir_names: None,
             },
             display: TranslateDisplay {
                 name_pattern: Some("*.pdf".to_string()),
@@ -574,6 +619,8 @@ mod tests {
                 modified_after: Some("2025-01-01".to_string()),
                 modified_before: None,
                 is_directory: None,
+                include_paths: None,
+                exclude_dir_names: None,
             },
         };
         let json = serde_json::to_string(&result).unwrap();
@@ -628,6 +675,8 @@ mod tests {
             modified_after: None,
             modified_before: None,
             is_directory: None,
+            search_paths: None,
+            exclude_dirs: None,
         };
         assert!(validate_regex_pattern(&q).is_ok());
     }
@@ -642,6 +691,8 @@ mod tests {
             modified_after: None,
             modified_before: None,
             is_directory: None,
+            search_paths: None,
+            exclude_dirs: None,
         };
         assert!(validate_regex_pattern(&q).is_err());
     }
@@ -656,6 +707,8 @@ mod tests {
             modified_after: None,
             modified_before: None,
             is_directory: None,
+            search_paths: None,
+            exclude_dirs: None,
         };
         // Glob patterns aren't validated as regex
         assert!(validate_regex_pattern(&q).is_ok());
@@ -671,6 +724,8 @@ mod tests {
             modified_after: None,
             modified_before: None,
             is_directory: None,
+            search_paths: None,
+            exclude_dirs: None,
         };
         assert!(validate_regex_pattern(&q).is_ok());
     }
@@ -685,9 +740,67 @@ mod tests {
             modified_after: None,
             modified_before: None,
             is_directory: None,
+            search_paths: None,
+            exclude_dirs: None,
         };
         let result = build_translate_result(q).unwrap();
         assert_eq!(result.query.pattern_type, "regex");
         assert_eq!(result.display.pattern_type.as_deref(), Some("regex"));
+    }
+
+    #[test]
+    fn test_ai_search_query_deserialization_with_scope_fields() {
+        let json = r#"{
+            "namePattern": "*.py",
+            "patternType": "glob",
+            "searchPaths": ["~/projects", "~/work"],
+            "excludeDirs": ["node_modules", ".git", "__pycache__"]
+        }"#;
+        let q: AiSearchQuery = serde_json::from_str(json).unwrap();
+        assert_eq!(q.name_pattern.as_deref(), Some("*.py"));
+        let paths = q.search_paths.unwrap();
+        assert_eq!(paths.len(), 2);
+        assert_eq!(paths[0], "~/projects");
+        assert_eq!(paths[1], "~/work");
+        let excludes = q.exclude_dirs.unwrap();
+        assert_eq!(excludes.len(), 3);
+        assert_eq!(excludes[0], "node_modules");
+    }
+
+    #[test]
+    fn test_build_translate_result_with_search_paths_and_excludes() {
+        let q = AiSearchQuery {
+            name_pattern: Some("*.py".to_string()),
+            pattern_type: Some("glob".to_string()),
+            min_size: None,
+            max_size: None,
+            modified_after: None,
+            modified_before: None,
+            is_directory: None,
+            search_paths: Some(vec!["~/projects".to_string()]),
+            exclude_dirs: Some(vec!["node_modules".to_string(), ".git".to_string()]),
+        };
+        let result = build_translate_result(q).unwrap();
+
+        // search_paths should have ~ expanded
+        let paths = result.query.include_paths.unwrap();
+        assert!(!paths[0].starts_with('~'), "~ should be expanded");
+        assert!(paths[0].contains("projects"));
+
+        // exclude_dirs passed through
+        let excludes = result.query.exclude_dir_names.unwrap();
+        assert_eq!(excludes, vec!["node_modules", ".git"]);
+
+        // display should also have the values
+        assert!(result.display.include_paths.is_some());
+        assert!(result.display.exclude_dir_names.is_some());
+    }
+
+    #[test]
+    fn test_build_search_system_prompt_contains_scope_fields() {
+        let prompt = build_search_system_prompt();
+        assert!(prompt.contains("searchPaths"));
+        assert!(prompt.contains("excludeDirs"));
+        assert!(prompt.contains("node_modules"));
     }
 }

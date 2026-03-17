@@ -886,6 +886,7 @@ pub fn run() {
             commands::search::search_files,
             commands::search::release_search_index,
             commands::search::translate_search_query,
+            commands::search::parse_search_scope,
             // E2E test support
             commands::e2e::get_e2e_start_path,
             // Clipboard file operations

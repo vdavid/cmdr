@@ -54,6 +54,8 @@ export interface SearchQuery {
     modifiedAfter?: number
     modifiedBefore?: number
     isDirectory?: boolean
+    includePaths?: string[]
+    excludeDirNames?: string[]
     limit: number
 }
 
@@ -85,6 +87,8 @@ export interface TranslatedQuery {
     modifiedAfter: number | null
     modifiedBefore: number | null
     isDirectory: boolean | null
+    includePaths?: string[]
+    excludeDirNames?: string[]
 }
 
 export interface TranslateDisplay {
@@ -95,9 +99,16 @@ export interface TranslateDisplay {
     modifiedAfter: string | null
     modifiedBefore: string | null
     isDirectory: boolean | null
+    includePaths?: string[]
+    excludeDirNames?: string[]
 }
 
 export interface TranslateResult {
     query: TranslatedQuery
     display: TranslateDisplay
+}
+
+export interface ParsedScope {
+    includePaths: string[]
+    excludePatterns: string[]
 }

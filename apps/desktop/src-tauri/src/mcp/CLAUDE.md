@@ -29,7 +29,7 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 - Tabs (2): `activate_tab` (switch to a specific tab by pane + tab ID), `pin_tab` (pin/unpin a tab)
 - Dialogs (1): `dialog` (unified open/focus/close)
 - App (3): `switch_pane`, `swap_panes`, `quit`
-- Search (2): `search` (structured file search across the drive index), `ai_search` (natural language search using configured LLM)
+- Search (2): `search` (structured file search across the drive index, optional `scope` for path/exclude filtering), `ai_search` (natural language search using configured LLM, optional `scope` merged with AI-inferred scope)
 
 ### Resources (`resources.rs`)
 

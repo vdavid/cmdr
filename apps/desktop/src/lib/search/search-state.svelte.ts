@@ -39,6 +39,9 @@ let patternType = $state<PatternType>('glob')
 let aiStatus = $state('')
 let aiPrompt = $state('')
 
+// Scope (folder filter)
+let scope = $state('')
+
 // Getters
 export function getIsIndexReady(): boolean {
     return isIndexReady
@@ -96,6 +99,9 @@ export function getAiStatus(): string {
 }
 export function getAiPrompt(): string {
     return aiPrompt
+}
+export function getScope(): string {
+    return scope
 }
 
 // Setters
@@ -155,6 +161,9 @@ export function setAiStatus(value: string): void {
 }
 export function setAiPrompt(value: string): void {
     aiPrompt = value
+}
+export function setScope(value: string): void {
+    scope = value
 }
 
 /** Converts size input + unit to bytes. Returns undefined if empty or invalid. */
@@ -239,5 +248,6 @@ export function resetSearchState(): void {
     patternType = 'glob'
     aiStatus = ''
     aiPrompt = ''
+    scope = ''
     isSearching = false
 }

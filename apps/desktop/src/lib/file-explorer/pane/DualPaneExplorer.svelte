@@ -1895,6 +1895,11 @@
         return focusedPane
     }
 
+    /** Returns the current directory path of the focused pane. */
+    export function getFocusedPanePath(): string {
+        return getPanePath(focusedPane)
+    }
+
     /**
      * Get the list of available volumes.
      * Used by MCP volume.list tool.

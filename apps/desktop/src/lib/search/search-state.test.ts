@@ -14,6 +14,8 @@ import {
     setSizeUnitMax,
     setDateValueMax,
     setPatternType,
+    getScope,
+    setScope,
 } from './search-state.svelte'
 
 describe('parseSizeToBytes', () => {
@@ -176,5 +178,24 @@ describe('resetSearchState', () => {
         resetSearchState()
         const query = buildSearchQuery()
         expect(query.patternType).toBe('glob')
+    })
+})
+
+describe('scope state', () => {
+    it('defaults to empty string', () => {
+        resetSearchState()
+        expect(getScope()).toBe('')
+    })
+
+    it('stores and retrieves scope', () => {
+        resetSearchState()
+        setScope('~/projects, !node_modules')
+        expect(getScope()).toBe('~/projects, !node_modules')
+    })
+
+    it('resets scope on resetSearchState', () => {
+        setScope('~/Documents')
+        resetSearchState()
+        expect(getScope()).toBe('')
     })
 })
