@@ -776,26 +776,29 @@ impl IndexStore {
         Ok(conn.last_insert_rowid())
     }
 
-    /// Batch insert entries with pre-assigned IDs inside a transaction.
+    /// Batch insert entries with pre-assigned IDs inside a savepoint.
+    ///
+    /// Uses a savepoint instead of `unchecked_transaction()` so it nests correctly
+    /// inside explicit transactions (replay's `BEGIN IMMEDIATE`).
     pub fn insert_entries_v2_batch(conn: &Connection, entries: &[EntryRow]) -> Result<(), IndexStoreError> {
         if entries.is_empty() {
             return Ok(());
         }
-        let tx = conn.unchecked_transaction()?;
-        {
-            // Plain INSERT: the only unique constraint is the integer PK (`id`), and
-            // ScanContext assigns unique IDs, so conflicts shouldn't occur. The table is
-            // truncated before full scans and descendants are deleted before subtree scans.
-            #[cfg(target_os = "macos")]
-            let mut stmt = tx.prepare_cached(
-                "INSERT INTO entries (id, parent_id, name, name_folded, is_directory, is_symlink, size, modified_at)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-            )?;
-            #[cfg(not(target_os = "macos"))]
-            let mut stmt = tx.prepare_cached(
-                "INSERT INTO entries (id, parent_id, name, is_directory, is_symlink, size, modified_at)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-            )?;
+        conn.execute_batch("SAVEPOINT insert_entries")?;
+        // Plain INSERT: the only unique constraint is the integer PK (`id`), and
+        // ScanContext assigns unique IDs, so conflicts shouldn't occur. The table is
+        // truncated before full scans and descendants are deleted before subtree scans.
+        #[cfg(target_os = "macos")]
+        let mut stmt = conn.prepare_cached(
+            "INSERT INTO entries (id, parent_id, name, name_folded, is_directory, is_symlink, size, modified_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+        )?;
+        #[cfg(not(target_os = "macos"))]
+        let mut stmt = conn.prepare_cached(
+            "INSERT INTO entries (id, parent_id, name, is_directory, is_symlink, size, modified_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        )?;
+        let result: Result<(), IndexStoreError> = (|| {
             for e in entries {
                 #[cfg(target_os = "macos")]
                 {
@@ -822,9 +825,12 @@ impl IndexStore {
                     e.modified_at,
                 ])?;
             }
+            Ok(())
+        })();
+        match result {
+            Ok(()) => { conn.execute_batch("RELEASE insert_entries")?; Ok(()) }
+            Err(e) => { let _ = conn.execute_batch("ROLLBACK TO insert_entries"); Err(e) }
         }
-        tx.commit()?;
-        Ok(())
     }
 
     /// Update an existing entry by ID.
@@ -867,14 +873,17 @@ impl IndexStore {
         Ok(())
     }
 
-    /// Batch upsert dir_stats by entry ID inside a transaction.
+    /// Batch upsert dir_stats by entry ID inside a savepoint.
+    ///
+    /// Uses a savepoint instead of `unchecked_transaction()` so it nests correctly
+    /// inside explicit transactions (replay's `BEGIN IMMEDIATE`).
     pub fn upsert_dir_stats_by_id(conn: &Connection, stats: &[DirStatsById]) -> Result<(), IndexStoreError> {
         if stats.is_empty() {
             return Ok(());
         }
-        let tx = conn.unchecked_transaction()?;
-        {
-            let mut stmt = tx.prepare_cached(
+        conn.execute_batch("SAVEPOINT upsert_stats")?;
+        let result: Result<(), IndexStoreError> = (|| {
+            let mut stmt = conn.prepare_cached(
                 "INSERT OR REPLACE INTO dir_stats
                      (entry_id, recursive_size, recursive_file_count, recursive_dir_count)
                  VALUES (?1, ?2, ?3, ?4)",
@@ -887,9 +896,12 @@ impl IndexStore {
                     s.recursive_dir_count,
                 ])?;
             }
+            Ok(())
+        })();
+        match result {
+            Ok(()) => { conn.execute_batch("RELEASE upsert_stats")?; Ok(()) }
+            Err(e) => { let _ = conn.execute_batch("ROLLBACK TO upsert_stats"); Err(e) }
         }
-        tx.commit()?;
-        Ok(())
     }
 
     /// Set a meta key-value pair.

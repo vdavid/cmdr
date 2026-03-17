@@ -266,6 +266,11 @@ impl IndexManager {
     ///
     /// **No existing index:** Full scan via `start_scan()`.
     pub fn resume_or_scan(&mut self) -> Result<(), String> {
+        // Suppress verifier and other concurrent reads until replay/scan completes.
+        // start_scan() sets this again (harmless), and both scan and replay
+        // completion paths reset it to false.
+        self.scanning.store(true, Ordering::Relaxed);
+
         let status = self
             .store
             .get_index_status()
@@ -379,6 +384,7 @@ impl IndexManager {
         let app = self.app.clone();
         let volume_id = self.volume_id.clone();
         let live_event_task_slot = Arc::clone(&self.live_event_task);
+        let scanning = Arc::clone(&self.scanning);
 
         // We need a way for the replay loop to signal "journal unavailable, need full scan".
         // Use a oneshot channel: if the replay detects a gap, it sends a signal.
@@ -401,6 +407,9 @@ impl IndexManager {
                 watcher_overflow,
             )
             .await;
+
+            // Replay done (now in live mode) — allow verifier to run.
+            scanning.store(false, Ordering::Relaxed);
 
             if let Err(e) = result {
                 log::warn!("Replay event loop error: {e}");
