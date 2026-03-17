@@ -76,7 +76,9 @@ export function createVolumeSpaceManager(): VolumeSpaceManager {
     }
 
     async function fetchVolumeSpaces(vols: VolumeInfo[]): Promise<void> {
-        const physicalVolumes = vols.filter((v) => v.category === 'main_volume' || v.category === 'attached_volume')
+        const physicalVolumes = vols.filter(
+            (v) => v.category === 'main_volume' || v.category === 'attached_volume' || v.category === 'mobile_device',
+        )
         await Promise.all(
             physicalVolumes
                 .filter((v) => !volumeSpaceMap.has(v.id))
