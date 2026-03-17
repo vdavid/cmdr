@@ -231,6 +231,11 @@
         flex-shrink: 0;
     }
 
+    .search-input:focus {
+        border-bottom-color: var(--color-accent);
+        box-shadow: var(--shadow-focus);
+    }
+
     .search-input::placeholder {
         color: var(--color-text-tertiary);
     }

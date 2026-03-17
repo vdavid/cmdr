@@ -336,6 +336,26 @@ opacity fade.
 
 ## Component patterns
 
+### Focus indicators (app)
+
+Every interactive element needs a visible focus indicator. This is a keyboard-driven app, so all focus must be visible
+(use `:focus`, not `:focus-visible`, for inputs).
+
+| Element type | How focus is handled |
+|---|---|
+| Buttons | Global `button:focus-visible` rule in `app.css` — automatic, no per-component work needed |
+| Inputs, selects, textareas | Each component provides its own `:focus` rule: `border-color: var(--color-accent); box-shadow: var(--shadow-focus);` |
+| File list containers (BriefList, FullList) | Cursor/selection highlight serves as the focus indicator. `outline: none` is intentional |
+| Non-interactive containers (`<div>` without tabindex, or tabindex=-1) | May use `outline: none` freely — no focus indicator needed |
+
+**Standard pattern for inputs:** Set `outline: none` on the base selector, then pair it with a `:focus` rule that
+applies `border-color: var(--color-accent)` and `box-shadow: var(--shadow-focus)`. If the element has `border: none`,
+add `border: 1px solid transparent` to the base so the border-color change is visible on focus.
+
+**Why `:focus` instead of `:focus-visible`:** Browsers only apply `:focus-visible` to keyboard-initiated focus, hiding
+the ring on click. In a keyboard-first file manager, users constantly switch between mouse and keyboard mid-action —
+hiding the indicator on click would make the currently focused element invisible when they reach for the keyboard.
+
 ### File list (app — the primary surface)
 
 The file list is what users see 90% of the time. Every other component is secondary.
@@ -535,7 +555,7 @@ Auto-dismiss after 4 seconds. Close button on hover.
 3. All spacing via `--spacing-*` tokens. Never use arbitrary px values.
 4. Accent color is dynamic — never assume it's blue. Derive hover/subtle variants with `color-mix()`.
 5. Transitions default to `var(--transition-base)`. Only `--transition-fast` or `--transition-slow` with justification.
-6. Focus ring on every interactive element via `:focus-visible`. No bare `outline: none`.
+6. Focus indicator on every interactive element. No bare `outline: none` — see "Focus indicators" under Component patterns.
 7. `prefers-reduced-motion` wraps all non-essential animation.
 8. Scrollbars stay native. Never style `::-webkit-scrollbar`.
 

@@ -866,11 +866,16 @@
     .name-input {
         flex: 1;
         font-size: var(--font-size-md);
-        border: none;
+        border: 1px solid transparent;
         background: transparent;
         color: var(--color-text-primary);
         outline: none;
         min-width: 0;
+    }
+
+    .name-input:focus {
+        border-color: var(--color-accent);
+        box-shadow: var(--shadow-focus);
     }
 
     .name-input::placeholder {
@@ -985,6 +990,11 @@
         outline: none;
     }
 
+    .filter-select:focus {
+        border-color: var(--color-accent);
+        box-shadow: var(--shadow-focus);
+    }
+
     .filter-input {
         font-size: var(--font-size-sm);
         /* stylelint-disable-next-line declaration-property-value-disallowed-list */
@@ -994,6 +1004,11 @@
         background: var(--color-bg-primary);
         color: var(--color-text-primary);
         outline: none;
+    }
+
+    .filter-input:focus {
+        border-color: var(--color-accent);
+        box-shadow: var(--shadow-focus);
     }
 
     .size-input {
