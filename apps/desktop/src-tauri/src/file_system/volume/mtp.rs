@@ -112,8 +112,6 @@ impl Volume for MtpVolume {
             mtp_path
         );
 
-        // Get the tokio runtime handle - we're inside spawn_blocking,
-        // so block_on is safe here
         let handle = tokio::runtime::Handle::current();
 
         let start = std::time::Instant::now();
@@ -131,6 +129,48 @@ impl Volume for MtpVolume {
             ),
             Err(e) => debug!(
                 "MtpVolume::list_directory: failed in {:?}, error={:?}",
+                start.elapsed(),
+                e
+            ),
+        }
+
+        result.map_err(map_mtp_error)
+    }
+
+    fn list_directory_with_progress(
+        &self,
+        path: &Path,
+        on_progress: &dyn Fn(usize),
+    ) -> Result<Vec<FileEntry>, VolumeError> {
+        let mtp_path = self.to_mtp_path(path);
+        let device_id = self.device_id.clone();
+        let storage_id = self.storage_id;
+
+        debug!(
+            "MtpVolume::list_directory_with_progress: device={}, storage={}, input_path={}, mtp_path={}",
+            device_id,
+            storage_id,
+            path.display(),
+            mtp_path
+        );
+
+        let handle = tokio::runtime::Handle::current();
+
+        let start = std::time::Instant::now();
+        let result = handle.block_on(async move {
+            connection_manager()
+                .list_directory_with_progress(&device_id, storage_id, &mtp_path, on_progress)
+                .await
+        });
+
+        match &result {
+            Ok(entries) => debug!(
+                "MtpVolume::list_directory_with_progress: completed in {:?}, {} entries",
+                start.elapsed(),
+                entries.len()
+            ),
+            Err(e) => debug!(
+                "MtpVolume::list_directory_with_progress: failed in {:?}, error={:?}",
                 start.elapsed(),
                 e
             ),

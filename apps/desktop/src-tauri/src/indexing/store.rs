@@ -828,8 +828,14 @@ impl IndexStore {
             Ok(())
         })();
         match result {
-            Ok(()) => { conn.execute_batch("RELEASE insert_entries")?; Ok(()) }
-            Err(e) => { let _ = conn.execute_batch("ROLLBACK TO insert_entries"); Err(e) }
+            Ok(()) => {
+                conn.execute_batch("RELEASE insert_entries")?;
+                Ok(())
+            }
+            Err(e) => {
+                let _ = conn.execute_batch("ROLLBACK TO insert_entries");
+                Err(e)
+            }
         }
     }
 
@@ -899,8 +905,14 @@ impl IndexStore {
             Ok(())
         })();
         match result {
-            Ok(()) => { conn.execute_batch("RELEASE upsert_stats")?; Ok(()) }
-            Err(e) => { let _ = conn.execute_batch("ROLLBACK TO upsert_stats"); Err(e) }
+            Ok(()) => {
+                conn.execute_batch("RELEASE upsert_stats")?;
+                Ok(())
+            }
+            Err(e) => {
+                let _ = conn.execute_batch("ROLLBACK TO upsert_stats");
+                Err(e)
+            }
         }
     }
 

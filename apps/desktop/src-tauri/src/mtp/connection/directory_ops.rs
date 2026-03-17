@@ -21,6 +21,9 @@ static REQUEST_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::Atomic
 /// Tracks concurrent list_directory calls for debugging lock contention.
 static CONCURRENT_LIST_CALLS: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
 
+/// How often to call the progress callback (every N handles processed).
+const PROGRESS_INTERVAL: usize = 20;
+
 impl MtpConnectionManager {
     /// Lists the contents of a directory on an MTP device.
     ///
@@ -72,7 +75,56 @@ impl MtpConnectionManager {
         result
     }
 
+    /// Lists directory contents with a progress callback.
+    ///
+    /// Same as `list_directory`, but calls `on_progress(fetched_count)` periodically
+    /// during the per-object metadata fetch phase so callers can report incremental
+    /// progress to the UI.
+    ///
+    /// This is a separate method (not merged with `list_directory`) because the
+    /// `&dyn Fn(usize)` callback is not `Send`, and `list_directory` must produce
+    /// a `Send` future for use in Tauri commands and `tokio::spawn`.
+    pub async fn list_directory_with_progress(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        path: &str,
+        on_progress: &dyn Fn(usize),
+    ) -> Result<Vec<FileEntry>, MtpConnectionError> {
+        use std::sync::atomic::Ordering;
+
+        let request_id = REQUEST_COUNTER.fetch_add(1, Ordering::Relaxed);
+        let call_start = Instant::now();
+
+        let concurrent_before = CONCURRENT_LIST_CALLS.fetch_add(1, Ordering::Relaxed);
+        debug!(
+            "MTP list_directory_with_progress [req#{}]: START device={}, storage={}, path={}, concurrent_calls={}",
+            request_id,
+            device_id,
+            storage_id,
+            path,
+            concurrent_before + 1
+        );
+
+        let result = self
+            .list_directory_inner_with_progress(request_id, device_id, storage_id, path, call_start, on_progress)
+            .await;
+
+        let concurrent_after = CONCURRENT_LIST_CALLS.fetch_sub(1, Ordering::Relaxed);
+        debug!(
+            "MTP list_directory_with_progress [req#{}]: END total_time={:?}, concurrent_calls_remaining={}",
+            request_id,
+            call_start.elapsed(),
+            concurrent_after - 1
+        );
+
+        result
+    }
+
     /// Inner implementation of list_directory with detailed phase logging.
+    ///
+    /// Uses `storage.list_objects()` which blocks until all objects are fetched.
+    /// This produces a `Send` future, which is required by Tauri commands and `tokio::spawn`.
     async fn list_directory_inner(
         &self,
         request_id: u64,
@@ -233,19 +285,145 @@ impl MtpConnectionManager {
             usb_io_start.elapsed()
         );
 
-        let mut entries = Vec::with_capacity(object_infos.len());
+        let (entries, cache_updates) = convert_object_infos(&parent_path, &object_infos);
+
+        // Release device lock before updating cache
+        drop(storage);
+        drop(device);
+        let lock_held_duration = device_lock_acquired_at.elapsed();
+        debug!(
+            "MTP list_directory [req#{}]: released device USB lock after holding for {:?}",
+            request_id, lock_held_duration
+        );
+
+        let entries = self
+            .finalize_listing(
+                request_id,
+                device_id,
+                storage_id,
+                parent_path,
+                entries,
+                cache_updates,
+                call_start,
+            )
+            .await;
+        Ok(entries)
+    }
+
+    /// Inner implementation with progress callback.
+    ///
+    /// Uses `list_objects_stream()` to get the handle count upfront, then fetches
+    /// metadata per handle with periodic progress callbacks. This gives the UI
+    /// incremental feedback during MTP folder navigation.
+    ///
+    /// Only called from `block_on` (sync Volume trait), so no `Send` requirement.
+    async fn list_directory_inner_with_progress(
+        &self,
+        request_id: u64,
+        device_id: &str,
+        storage_id: u32,
+        path: &str,
+        call_start: Instant,
+        on_progress: &dyn Fn(usize),
+    ) -> Result<Vec<FileEntry>, MtpConnectionError> {
+        let parent_path = normalize_mtp_path(path);
+
+        // Check listing cache first
+        {
+            let devices = self.devices.lock().await;
+            if let Some(entry) = devices.get(device_id)
+                && let Ok(cache_map) = entry.listing_cache.read()
+                && let Some(storage_cache) = cache_map.get(&storage_id)
+                && let Some(cached) = storage_cache.listings.get(&parent_path)
+                && cached.cached_at.elapsed().as_secs() < LISTING_CACHE_TTL_SECS
+            {
+                debug!(
+                    "MTP list_directory_with_progress [req#{}]: cache HIT, returning {} entries",
+                    request_id,
+                    cached.entries.len()
+                );
+                return Ok(cached.entries.clone());
+            }
+        }
+
+        // Get the device and resolve path to handle
+        let (device_arc, parent_handle) = {
+            let devices = self.devices.lock().await;
+            let entry = devices.get(device_id).ok_or_else(|| MtpConnectionError::NotConnected {
+                device_id: device_id.to_string(),
+            })?;
+            let parent_handle = self.resolve_path_to_handle(entry, storage_id, path)?;
+            (Arc::clone(&entry.device), parent_handle)
+        };
+
+        // Acquire device USB lock
+        let device = acquire_device_lock(
+            &device_arc,
+            device_id,
+            &format!("list_directory_progress[req#{}]", request_id),
+        )
+        .await?;
+
+        // Get storage
+        let usb_io_start = Instant::now();
+        let storage = tokio::time::timeout(
+            Duration::from_secs(MTP_TIMEOUT_SECS),
+            device.storage(StorageId(storage_id)),
+        )
+        .await
+        .map_err(|_| MtpConnectionError::Timeout {
+            device_id: device_id.to_string(),
+        })?
+        .map_err(|e| map_mtp_error(e, device_id))?;
+
+        let parent_opt = if parent_handle == ObjectHandle::ROOT {
+            None
+        } else {
+            Some(parent_handle)
+        };
+
+        // Get streaming listing (fast — single USB transaction for GetObjectHandles)
+        let mut listing = tokio::time::timeout(
+            Duration::from_secs(MTP_TIMEOUT_SECS),
+            storage.list_objects_stream(parent_opt),
+        )
+        .await
+        .map_err(|_| MtpConnectionError::Timeout {
+            device_id: device_id.to_string(),
+        })?
+        .map_err(|e| map_mtp_error(e, device_id))?;
+
+        let total = listing.total();
+        debug!(
+            "MTP list_directory_with_progress [req#{}]: got {} handles in {:?}",
+            request_id,
+            total,
+            usb_io_start.elapsed()
+        );
+
+        // Fetch metadata per handle with progress reporting
+        let metadata_start = Instant::now();
+        let mut entries = Vec::with_capacity(total);
         let mut cache_updates: Vec<(PathBuf, ObjectHandle)> = Vec::new();
 
-        for info in object_infos {
+        while let Some(result) = listing.next().await {
+            let info = match result {
+                Ok(info) => info,
+                Err(e) => {
+                    debug!(
+                        "MTP list_directory_with_progress [req#{}]: skipping handle at index {}: {:?}",
+                        request_id,
+                        listing.fetched(),
+                        e
+                    );
+                    continue;
+                }
+            };
+
             let is_dir = info.format == mtp_rs::ptp::ObjectFormatCode::Association;
             let child_path = parent_path.join(&info.filename);
 
-            // Queue cache update
             cache_updates.push((child_path.clone(), info.handle));
-
-            // Convert MTP timestamps
-            let modified_at = info.modified.map(convert_mtp_datetime);
-            let created_at = info.created.map(convert_mtp_datetime);
 
             entries.push(FileEntry {
                 name: info.filename.clone(),
@@ -253,8 +431,8 @@ impl MtpConnectionManager {
                 is_directory: is_dir,
                 is_symlink: false,
                 size: if is_dir { None } else { Some(info.size) },
-                modified_at,
-                created_at,
+                modified_at: info.modified.map(convert_mtp_datetime),
+                created_at: info.created.map(convert_mtp_datetime),
                 added_at: None,
                 opened_at: None,
                 permissions: if is_dir { 0o755 } else { 0o644 },
@@ -266,17 +444,56 @@ impl MtpConnectionManager {
                 recursive_file_count: None,
                 recursive_dir_count: None,
             });
+
+            // Report progress periodically
+            let fetched = listing.fetched();
+            if fetched % PROGRESS_INTERVAL == 0 || fetched == total {
+                on_progress(entries.len());
+            }
         }
 
-        // Release device lock before updating cache
-        drop(storage);
-        drop(device);
-        let lock_held_duration = device_lock_acquired_at.elapsed();
         debug!(
-            "MTP list_directory [req#{}]: released device USB lock after holding for {:?}",
-            request_id, lock_held_duration
+            "MTP list_directory_with_progress [req#{}]: fetched {} objects ({} after filtering) in {:?}, USB I/O={:?}",
+            request_id,
+            total,
+            entries.len(),
+            metadata_start.elapsed(),
+            usb_io_start.elapsed()
         );
 
+        // Release device lock before cache updates
+        drop(storage);
+        drop(device);
+
+        let entries = self
+            .finalize_listing(
+                request_id,
+                device_id,
+                storage_id,
+                parent_path,
+                entries,
+                cache_updates,
+                call_start,
+            )
+            .await;
+        Ok(entries)
+    }
+
+    /// Update caches and sort entries after listing completes.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "internal helper, grouping into a struct would add complexity"
+    )]
+    async fn finalize_listing(
+        &self,
+        request_id: u64,
+        device_id: &str,
+        storage_id: u32,
+        parent_path: PathBuf,
+        mut entries: Vec<FileEntry>,
+        cache_updates: Vec<(PathBuf, ObjectHandle)>,
+        call_start: Instant,
+    ) -> Vec<FileEntry> {
         // Update path cache
         let cache_update_start = Instant::now();
         {
@@ -326,7 +543,8 @@ impl MtpConnectionManager {
             entries.len(),
             call_start.elapsed()
         );
-        Ok(entries)
+
+        entries
     }
 
     /// Invalidates the listing cache for a specific directory.
@@ -427,4 +645,42 @@ impl MtpConnectionManager {
             );
         }
     }
+}
+
+/// Converts a list of `ObjectInfo` into `FileEntry` values and path-to-handle cache updates.
+fn convert_object_infos(
+    parent_path: &Path,
+    object_infos: &[mtp_rs::ptp::ObjectInfo],
+) -> (Vec<FileEntry>, Vec<(PathBuf, ObjectHandle)>) {
+    let mut entries = Vec::with_capacity(object_infos.len());
+    let mut cache_updates = Vec::with_capacity(object_infos.len());
+
+    for info in object_infos {
+        let is_dir = info.format == mtp_rs::ptp::ObjectFormatCode::Association;
+        let child_path = parent_path.join(&info.filename);
+
+        cache_updates.push((child_path.clone(), info.handle));
+
+        entries.push(FileEntry {
+            name: info.filename.clone(),
+            path: child_path.to_string_lossy().to_string(),
+            is_directory: is_dir,
+            is_symlink: false,
+            size: if is_dir { None } else { Some(info.size) },
+            modified_at: info.modified.map(convert_mtp_datetime),
+            created_at: info.created.map(convert_mtp_datetime),
+            added_at: None,
+            opened_at: None,
+            permissions: if is_dir { 0o755 } else { 0o644 },
+            owner: String::new(),
+            group: String::new(),
+            icon_id: get_mtp_icon_id(is_dir, &info.filename),
+            extended_metadata_loaded: true,
+            recursive_size: None,
+            recursive_file_count: None,
+            recursive_dir_count: None,
+        });
+    }
+
+    (entries, cache_updates)
 }
