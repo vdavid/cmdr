@@ -1,7 +1,5 @@
 //! Settings-related commands.
 
-use std::net::TcpListener;
-
 use tauri::{AppHandle, Manager};
 
 use crate::file_system::update_debounce_ms;
@@ -16,20 +14,14 @@ use crate::network::mdns_discovery::update_resolve_timeout;
 /// Check if a port is available for binding.
 #[tauri::command]
 pub fn check_port_available(port: u16) -> bool {
-    TcpListener::bind(("127.0.0.1", port)).is_ok()
+    crate::net::is_port_available(port)
 }
 
 /// Find an available port starting from the given port.
 /// Scans up to 100 ports from the start port.
 #[tauri::command]
 pub fn find_available_port(start_port: u16) -> Option<u16> {
-    for offset in 0..100 {
-        let port = start_port.saturating_add(offset);
-        if check_port_available(port) {
-            return Some(port);
-        }
-    }
-    None
+    crate::net::find_available_port(start_port)
 }
 
 /// Updates the file watcher debounce duration in milliseconds.

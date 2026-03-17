@@ -61,17 +61,6 @@ impl<R: Runtime> McpState<R> {
     }
 }
 
-/// Find an available port starting from `start_port`, scanning up to 100 ports.
-fn find_available_port(start_port: u16) -> Option<u16> {
-    for offset in 0..100 {
-        let port = start_port.saturating_add(offset);
-        if std::net::TcpListener::bind(("127.0.0.1", port)).is_ok() {
-            return Some(port);
-        }
-    }
-    None
-}
-
 /// Start the MCP server. Binds to the configured port and spawns the server task.
 /// If the configured port is taken, auto-probes upward to find the next available port.
 pub async fn start_mcp_server<R: Runtime + 'static>(app: AppHandle<R>, config: McpConfig) -> Result<(), String> {
@@ -89,7 +78,7 @@ pub async fn start_mcp_server<R: Runtime + 'static>(app: AppHandle<R>, config: M
     let configured_port = config.port;
 
     // Auto-probe: if the configured port is taken, find the next available one
-    let port = find_available_port(configured_port)
+    let port = crate::net::find_available_port(configured_port)
         .ok_or_else(|| format!("No available port found starting from {}.", configured_port))?;
     if port != configured_port {
         log::info!(
@@ -126,6 +115,9 @@ pub async fn start_mcp_server<R: Runtime + 'static>(app: AppHandle<R>, config: M
         if let Err(e) = axum::serve(listener, router).await {
             log::error!("MCP server crashed: {}", e);
         }
+        // Server exited (crash or graceful shutdown) — reset port so
+        // is_mcp_running() and get_mcp_actual_port() reflect reality.
+        MCP_ACTUAL_PORT.store(0, Ordering::Relaxed);
     });
 
     if let Ok(mut guard) = MCP_HANDLE.lock() {
@@ -157,8 +149,10 @@ pub fn stop_mcp_server() {
 }
 
 /// Returns whether the MCP server task is currently running.
+/// Uses `MCP_ACTUAL_PORT` as the source of truth — the spawned task resets it
+/// to 0 when it exits (crash or graceful shutdown), so a non-zero port means running.
 pub fn is_mcp_running() -> bool {
-    MCP_HANDLE.lock().ok().is_some_and(|guard| guard.is_some())
+    MCP_ACTUAL_PORT.load(Ordering::Relaxed) != 0
 }
 
 /// Returns the port the MCP server is actually listening on, or `None` if not running.
