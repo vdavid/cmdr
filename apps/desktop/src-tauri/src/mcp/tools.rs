@@ -326,6 +326,75 @@ fn get_dialog_tools() -> Vec<Tool> {
     }]
 }
 
+/// Get search tools.
+fn get_search_tools() -> Vec<Tool> {
+    vec![
+        Tool {
+            name: "search".to_string(),
+            description: "Structured file search across the entire drive index".to_string(),
+            input_schema: json!({
+                "type": "object",
+                "properties": {
+                    "pattern": {
+                        "type": "string",
+                        "description": "Glob or regex filename pattern (for example, \"*.pdf\", \"report*\")"
+                    },
+                    "pattern_type": {
+                        "type": "string",
+                        "enum": ["glob", "regex"],
+                        "description": "Pattern type. Default: glob"
+                    },
+                    "min_size": {
+                        "type": "string",
+                        "description": "Minimum file size, human-readable (for example, \"1 MB\", \"500 KB\")"
+                    },
+                    "max_size": {
+                        "type": "string",
+                        "description": "Maximum file size, human-readable"
+                    },
+                    "modified_after": {
+                        "type": "string",
+                        "description": "ISO date, for example \"2025-01-01\""
+                    },
+                    "modified_before": {
+                        "type": "string",
+                        "description": "ISO date"
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": ["file", "dir"],
+                        "description": "Filter by type. Omit for both."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Max results to return. Default: 30"
+                    }
+                },
+                "required": []
+            }),
+        },
+        Tool {
+            name: "ai_search".to_string(),
+            description: "Natural language file search using the configured LLM to translate the query"
+                .to_string(),
+            input_schema: json!({
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Natural language search query (for example, \"recent invoices marked rymd\")"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Max results to return. Default: 30"
+                    }
+                },
+                "required": ["query"]
+            }),
+        },
+    ]
+}
+
 /// Get all available tools.
 pub fn get_all_tools() -> Vec<Tool> {
     let mut tools = Vec::new();
@@ -337,6 +406,7 @@ pub fn get_all_tools() -> Vec<Tool> {
     tools.extend(get_tab_tools());
     tools.extend(get_dialog_tools());
     tools.extend(get_app_tools());
+    tools.extend(get_search_tools());
     tools
 }
 
@@ -409,10 +479,17 @@ mod tests {
     }
 
     #[test]
+    fn test_search_tools_count() {
+        let tools = get_search_tools();
+        // search, ai_search
+        assert_eq!(tools.len(), 2);
+    }
+
+    #[test]
     fn test_all_tools_count() {
         let tools = get_all_tools();
-        // 6 nav + 2 cursor + 1 selection + 4 file_op + 3 view + 2 tab + 1 dialog + 3 app = 22
-        assert_eq!(tools.len(), 22);
+        // 6 nav + 2 cursor + 1 selection + 4 file_op + 3 view + 2 tab + 1 dialog + 3 app + 2 search = 24
+        assert_eq!(tools.len(), 24);
     }
 
     #[test]

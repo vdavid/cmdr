@@ -105,11 +105,11 @@ fn test_tool_input_schemas_are_valid() {
 #[test]
 fn test_total_tool_count() {
     let tools = get_all_tools();
-    // 6 nav + 2 cursor + 1 select + 4 file_op + 3 view + 2 tab + 1 dialog + 3 app = 22
+    // 6 nav + 2 cursor + 1 select + 4 file_op + 3 view + 2 tab + 1 dialog + 3 app + 2 search = 24
     assert_eq!(
         tools.len(),
-        22,
-        "Expected 22 tools, got {}. Did you add/remove tools?",
+        24,
+        "Expected 24 tools, got {}. Did you add/remove tools?",
         tools.len()
     );
 }

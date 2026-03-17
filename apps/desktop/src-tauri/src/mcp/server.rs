@@ -506,7 +506,7 @@ async fn process_request<R: Runtime>(
 
             let arguments = request.params.get("arguments").cloned().unwrap_or(json!({}));
 
-            let result = execute_tool(&state.app, name, &arguments);
+            let result = execute_tool(&state.app, name, &arguments).await;
 
             match result {
                 Ok(value) => (

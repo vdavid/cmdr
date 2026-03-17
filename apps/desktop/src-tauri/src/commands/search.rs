@@ -257,14 +257,14 @@ pub async fn release_search_index() -> Result<(), String> {
 /// Intermediate struct for LLM output — uses ISO date strings.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct AiSearchQuery {
-    name_pattern: Option<String>,
-    pattern_type: Option<String>,
-    min_size: Option<u64>,
-    max_size: Option<u64>,
-    modified_after: Option<String>,
-    modified_before: Option<String>,
-    is_directory: Option<bool>,
+pub(crate) struct AiSearchQuery {
+    pub(crate) name_pattern: Option<String>,
+    pub(crate) pattern_type: Option<String>,
+    pub(crate) min_size: Option<u64>,
+    pub(crate) max_size: Option<u64>,
+    pub(crate) modified_after: Option<String>,
+    pub(crate) modified_before: Option<String>,
+    pub(crate) is_directory: Option<bool>,
 }
 
 /// Human-readable field values returned alongside the structured query.
@@ -302,7 +302,7 @@ pub struct TranslateDisplay {
 }
 
 /// Converts an ISO date string (YYYY-MM-DD) to a unix timestamp (seconds since epoch).
-fn iso_date_to_timestamp(date_str: &str) -> Result<u64, String> {
+pub(crate) fn iso_date_to_timestamp(date_str: &str) -> Result<u64, String> {
     let format = time::macros::format_description!("[year]-[month]-[day]");
     let date = time::Date::parse(date_str, &format).map_err(|e| format!("Invalid date '{date_str}': {e}"))?;
     let datetime = date.with_hms(0, 0, 0).expect("midnight is always valid");
@@ -313,7 +313,7 @@ fn iso_date_to_timestamp(date_str: &str) -> Result<u64, String> {
     Ok(timestamp as u64)
 }
 
-fn build_search_system_prompt() -> String {
+pub(crate) fn build_search_system_prompt() -> String {
     let today = time::OffsetDateTime::now_utc().date();
     let format = time::macros::format_description!("[year]-[month]-[day]");
     let today_str = today.format(&format).expect("date format always succeeds");
@@ -345,7 +345,7 @@ fn build_search_system_prompt() -> String {
 }
 
 /// Strips markdown code fences from an LLM response and parses it as JSON.
-fn parse_ai_response(response: &str) -> Result<AiSearchQuery, String> {
+pub(crate) fn parse_ai_response(response: &str) -> Result<AiSearchQuery, String> {
     let json_str = response.trim();
     let json_str = json_str
         .strip_prefix("```json")
@@ -358,7 +358,7 @@ fn parse_ai_response(response: &str) -> Result<AiSearchQuery, String> {
 }
 
 /// Converts a parsed `AiSearchQuery` into the final `TranslateResult`.
-fn build_translate_result(ai_query: AiSearchQuery) -> Result<TranslateResult, String> {
+pub(crate) fn build_translate_result(ai_query: AiSearchQuery) -> Result<TranslateResult, String> {
     let modified_after_ts = ai_query
         .modified_after
         .as_deref()
@@ -396,7 +396,7 @@ fn build_translate_result(ai_query: AiSearchQuery) -> Result<TranslateResult, St
 
 /// If the AI returned a regex pattern, validates it against the `regex` crate.
 /// Returns `Ok(())` if valid or not a regex, `Err(message)` with the compile error otherwise.
-fn validate_regex_pattern(ai_query: &AiSearchQuery) -> Result<(), String> {
+pub(crate) fn validate_regex_pattern(ai_query: &AiSearchQuery) -> Result<(), String> {
     let is_regex = ai_query.pattern_type.as_deref().is_some_and(|t| t == "regex");
     if !is_regex {
         return Ok(());

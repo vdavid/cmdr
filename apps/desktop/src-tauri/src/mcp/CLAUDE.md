@@ -21,7 +21,7 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 
 ### Tools (`tools.rs`)
 
-22 semantic tools grouped by category:
+24 semantic tools grouped by category:
 - Navigation (6): `select_volume`, `nav_to_path`, `nav_to_parent`, `nav_back`, `nav_forward`, `scroll_to`
 - Cursor/Selection (3): `move_cursor`, `open_under_cursor`, `select`
 - File operations (4): `copy`, `delete`, `mkdir`, `refresh`
@@ -29,6 +29,7 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 - Tabs (2): `activate_tab` (switch to a specific tab by pane + tab ID), `pin_tab` (pin/unpin a tab)
 - Dialogs (1): `dialog` (unified open/focus/close)
 - App (3): `switch_pane`, `swap_panes`, `quit`
+- Search (2): `search` (structured file search across the drive index), `ai_search` (natural language search using configured LLM)
 
 ### Resources (`resources.rs`)
 
@@ -60,7 +61,7 @@ Frontend syncs state to these stores via Tauri commands (`update_left_pane_state
 
 ### Why agent-centric API?
 
-The original design mirrored keyboard shortcuts (43 tools like `nav_up`, `nav_down`). This forced agents to make dozens of calls to find a file. The agent-centric redesign (Jan 2026) consolidated to 22 semantic tools (`move_cursor(index=42)`, `nav_to_path("/Users")`). This reduced round-trips from 6+ reads to 1 (`cmdr://state` resource).
+The original design mirrored keyboard shortcuts (43 tools like `nav_up`, `nav_down`). This forced agents to make dozens of calls to find a file. The agent-centric redesign (Jan 2026) consolidated to 24 semantic tools (`move_cursor(index=42)`, `nav_to_path("/Users")`). This reduced round-trips from 6+ reads to 1 (`cmdr://state` resource).
 
 ### Why YAML over JSON for resources?
 
@@ -130,9 +131,9 @@ Settings window: full bridge (`mcp-settings-bridge.ts`) syncs all state and hand
 Main window: lightweight listener (`mcp-shortcuts-listener.ts`) only handles shortcut changes.
 This separation keeps main window overhead minimal.
 
-### Tool execution is synchronous
+### Tool execution is async but mostly synchronous
 
-`execute_tool()` is a synchronous function. Tools that trigger async operations (like `copy`, `mkdir`) return immediately after emitting the event. The tool result doesn't wait for the operation to complete. This is intentional—tools return "OK: Copy dialog opened" not "OK: Files copied".
+`execute_tool()` is an async function. Most tools are synchronous — they emit a Tauri event and return immediately (for example, "OK: Copy dialog opened" not "OK: Files copied"). The `search` and `ai_search` tools are truly async: they load the search index via `spawn_blocking` and (for `ai_search`) call the LLM API.
 
 ### Error codes are JSON-RPC standard
 

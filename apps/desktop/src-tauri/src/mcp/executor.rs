@@ -4,6 +4,8 @@
 //! All tools are designed to match user capabilities exactly.
 
 use std::path::Path;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use serde_json::{Value, json};
 use tauri::{AppHandle, Emitter, Manager, Runtime};
@@ -45,7 +47,7 @@ impl From<tauri::Error> for ToolError {
 }
 
 /// Execute a tool by name.
-pub fn execute_tool<R: Runtime>(app: &AppHandle<R>, name: &str, params: &Value) -> ToolResult {
+pub async fn execute_tool<R: Runtime>(app: &AppHandle<R>, name: &str, params: &Value) -> ToolResult {
     match name {
         // App commands
         "quit" => execute_quit(app),
@@ -73,6 +75,9 @@ pub fn execute_tool<R: Runtime>(app: &AppHandle<R>, name: &str, params: &Value) 
         "select" => execute_select_command(app, params),
         // Dialog command
         "dialog" => execute_dialog_command(app, params),
+        // Search commands
+        "search" => execute_search(params).await,
+        "ai_search" => execute_ai_search(params).await,
         _ => Err(ToolError::invalid_params(format!("Unknown tool: {name}"))),
     }
 }
@@ -662,6 +667,367 @@ fn execute_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_type: &str, path:
     }
 }
 
+// ── Search tools ──────────────────────────────────────────────────────
+
+use crate::indexing::search::{
+    self, DIALOG_OPEN, SEARCH_INDEX, SearchIndexState, SearchQuery, SearchResult,
+    fill_directory_sizes, format_size, format_timestamp, summarize_query,
+};
+use crate::indexing::search::PatternType;
+
+/// Ensure the search index is loaded. Returns the index or an error.
+async fn ensure_search_index() -> Result<Arc<search::SearchIndex>, ToolError> {
+    // Check if already loaded
+    {
+        let guard = SEARCH_INDEX.lock().map_err(|e| ToolError::internal(format!("{e}")))?;
+        if let Some(ref state) = *guard {
+            if state.index.entries.is_empty() && state.index.generation == 0 {
+                // Loading sentinel — wait briefly then check again
+            } else {
+                return Ok(state.index.clone());
+            }
+        }
+    }
+
+    // Not loaded — load synchronously via spawn_blocking
+    let pool = crate::indexing::get_read_pool().ok_or_else(|| {
+        ToolError::internal(
+            "Drive index not available. Make sure indexing is enabled and the initial scan has completed.",
+        )
+    })?;
+
+    DIALOG_OPEN.store(false, Ordering::Relaxed);
+
+    let cancel = Arc::new(AtomicBool::new(false));
+    let cancel_clone = cancel.clone();
+
+    let index = tokio::task::spawn_blocking(move || search::load_search_index(&pool, &cancel_clone))
+        .await
+        .map_err(|e| ToolError::internal(format!("Search index load failed: {e}")))?
+        .map_err(|e| ToolError::internal(format!("Search index load failed: {e}")))?;
+
+    let index = Arc::new(index);
+
+    // Store it for reuse (no timers for MCP — one-shot)
+    {
+        let mut guard = SEARCH_INDEX.lock().map_err(|e| ToolError::internal(format!("{e}")))?;
+        *guard = Some(SearchIndexState {
+            index: index.clone(),
+            idle_timer: None,
+            backstop_timer: None,
+            load_cancel: Some(cancel),
+        });
+    }
+
+    Ok(index)
+}
+
+/// Parse a human-readable size string into bytes.
+/// Supports B, KB, MB, GB, TB (case-insensitive, with or without space).
+fn parse_human_size(s: &str) -> Result<u64, ToolError> {
+    let s = s.trim();
+    // Find where the numeric part ends and the unit begins
+    let s_upper = s.to_uppercase();
+    let (num_str, unit) = if let Some(pos) = s_upper.find("TB") {
+        (&s[..pos], "TB")
+    } else if let Some(pos) = s_upper.find("GB") {
+        (&s[..pos], "GB")
+    } else if let Some(pos) = s_upper.find("MB") {
+        (&s[..pos], "MB")
+    } else if let Some(pos) = s_upper.find("KB") {
+        (&s[..pos], "KB")
+    } else if let Some(pos) = s_upper.find('B') {
+        (&s[..pos], "B")
+    } else {
+        // Try parsing as pure number (bytes)
+        let n: u64 = s.trim().parse().map_err(|_| {
+            ToolError::invalid_params(format!("Couldn't parse size: \"{s}\". Use a format like \"1 MB\" or \"500 KB\"."))
+        })?;
+        return Ok(n);
+    };
+
+    let num: f64 = num_str.trim().parse().map_err(|_| {
+        ToolError::invalid_params(format!("Couldn't parse size: \"{s}\". Use a format like \"1 MB\" or \"500 KB\"."))
+    })?;
+
+    let multiplier: u64 = match unit {
+        "B" => 1,
+        "KB" => 1_024,
+        "MB" => 1_024 * 1_024,
+        "GB" => 1_024 * 1_024 * 1_024,
+        "TB" => 1_024 * 1_024 * 1_024 * 1_024,
+        _ => unreachable!(),
+    };
+
+    Ok((num * multiplier as f64) as u64)
+}
+
+/// Format search results as a human-readable table.
+fn format_search_results(result: &SearchResult, limit: u32) -> String {
+    if result.entries.is_empty() {
+        return "No files found matching the query.".to_string();
+    }
+
+    let shown = result.entries.len().min(limit as usize);
+    let entries = &result.entries[..shown];
+
+    // Compute column widths
+    let max_name = entries.iter().map(|e| {
+        let display_name = if e.is_directory {
+            format!("{}/", e.name)
+        } else {
+            e.name.clone()
+        };
+        display_name.len()
+    }).max().unwrap_or(0).max(4);
+
+    let max_parent = entries.iter().map(|e| e.parent_path.len()).max().unwrap_or(0).max(4);
+
+    let mut lines = Vec::with_capacity(entries.len() + 1);
+    lines.push(format!("{} of {} results:", shown, result.total_count));
+
+    for entry in entries {
+        let display_name = if entry.is_directory {
+            format!("{}/", entry.name)
+        } else {
+            entry.name.clone()
+        };
+
+        let size_str = match entry.size {
+            Some(s) => format_size(s),
+            None => String::new(),
+        };
+
+        let date_str = match entry.modified_at {
+            Some(ts) => format_timestamp(ts),
+            None => String::new(),
+        };
+
+        lines.push(format!(
+            "  {:<name_w$}  {:<parent_w$}  {:>8}  {}",
+            display_name,
+            entry.parent_path,
+            size_str,
+            date_str,
+            name_w = max_name,
+            parent_w = max_parent,
+        ));
+    }
+
+    lines.join("\n")
+}
+
+/// Run search and post-process (fill dir sizes, post-filter, truncate).
+fn run_search_and_postprocess(
+    index: &search::SearchIndex,
+    query: &SearchQuery,
+) -> Result<SearchResult, ToolError> {
+    let mut result = search::search(index, query).map_err(|e| ToolError::internal(e))?;
+
+    // Fill directory sizes from the DB
+    if result.entries.iter().any(|e| e.is_directory) {
+        if let Some(pool) = crate::indexing::get_read_pool() {
+            fill_directory_sizes(&mut result, &pool);
+        }
+    }
+
+    // Post-filter: remove directories that don't match size criteria
+    let has_size_filter = query.min_size.is_some() || query.max_size.is_some();
+    if has_size_filter {
+        result.entries.retain(|e| {
+            if !e.is_directory {
+                return true;
+            }
+            if let Some(min) = query.min_size {
+                match e.size {
+                    Some(s) if s >= min => {}
+                    _ => return false,
+                }
+            }
+            if let Some(max) = query.max_size {
+                match e.size {
+                    Some(s) if s <= max => {}
+                    _ => return false,
+                }
+            }
+            true
+        });
+        result.total_count = result.entries.len() as u32;
+    }
+
+    // Truncate to limit
+    let limit = query.limit.min(1000) as usize;
+    if result.entries.len() > limit {
+        result.entries.truncate(limit);
+    }
+
+    Ok(result)
+}
+
+/// Execute the `search` tool.
+async fn execute_search(params: &Value) -> ToolResult {
+    let pattern = params.get("pattern").and_then(|v| v.as_str()).map(|s| s.to_string());
+    let pattern_type = match params.get("pattern_type").and_then(|v| v.as_str()) {
+        Some("regex") => PatternType::Regex,
+        _ => PatternType::Glob,
+    };
+    let min_size = params
+        .get("min_size")
+        .and_then(|v| v.as_str())
+        .map(parse_human_size)
+        .transpose()?;
+    let max_size = params
+        .get("max_size")
+        .and_then(|v| v.as_str())
+        .map(parse_human_size)
+        .transpose()?;
+    let modified_after = params
+        .get("modified_after")
+        .and_then(|v| v.as_str())
+        .map(crate::commands::search::iso_date_to_timestamp)
+        .transpose()
+        .map_err(|e| ToolError::invalid_params(e))?;
+    let modified_before = params
+        .get("modified_before")
+        .and_then(|v| v.as_str())
+        .map(crate::commands::search::iso_date_to_timestamp)
+        .transpose()
+        .map_err(|e| ToolError::invalid_params(e))?;
+    let is_directory = match params.get("type").and_then(|v| v.as_str()) {
+        Some("file") => Some(false),
+        Some("dir") => Some(true),
+        _ => None,
+    };
+    let limit = params.get("limit").and_then(|v| v.as_u64()).unwrap_or(30) as u32;
+
+    let index = ensure_search_index().await?;
+
+    let query = SearchQuery {
+        name_pattern: pattern,
+        pattern_type,
+        min_size,
+        max_size,
+        modified_after,
+        modified_before,
+        is_directory,
+        limit,
+    };
+
+    let query_clone = query.clone();
+    let index_clone = index.clone();
+    let result = tokio::task::spawn_blocking(move || run_search_and_postprocess(&index_clone, &query_clone))
+        .await
+        .map_err(|e| ToolError::internal(format!("Search failed: {e}")))??;
+
+    Ok(json!(format_search_results(&result, limit)))
+}
+
+/// Execute the `ai_search` tool.
+async fn execute_ai_search(params: &Value) -> ToolResult {
+    let natural_query = params
+        .get("query")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ToolError::invalid_params("Missing 'query' parameter"))?;
+    let limit = params.get("limit").and_then(|v| v.as_u64()).unwrap_or(30) as u32;
+
+    let index = ensure_search_index().await?;
+
+    // Get AI backend config
+    let provider = crate::ai::manager::get_provider();
+    let backend = match provider.as_str() {
+        "off" => {
+            return Err(ToolError::internal(
+                "AI is not configured. Enable an AI provider in settings.",
+            ));
+        }
+        "local" => {
+            let port = crate::ai::manager::get_port().ok_or_else(|| {
+                ToolError::internal("Local AI server isn't running. Start it in settings.")
+            })?;
+            crate::ai::client::AiBackend::Local { port }
+        }
+        "openai-compatible" => {
+            let (api_key, base_url, model) = crate::ai::manager::get_openai_config();
+            if api_key.is_empty() {
+                return Err(ToolError::internal(
+                    "OpenAI API key not configured. Add it in settings.",
+                ));
+            }
+            crate::ai::client::AiBackend::OpenAi {
+                api_key,
+                base_url,
+                model,
+            }
+        }
+        _ => return Err(ToolError::internal(format!("Unknown AI provider: {provider}"))),
+    };
+
+    let options = crate::ai::client::ChatCompletionOptions {
+        system_prompt: crate::commands::search::build_search_system_prompt(),
+        temperature: 0.3,
+        max_tokens: 200,
+        top_p: 0.9,
+    };
+
+    let response = crate::ai::client::chat_completion(&backend, natural_query, &options)
+        .await
+        .map_err(|e| ToolError::internal(format!("{e}")))?;
+
+    let mut ai_query = crate::commands::search::parse_ai_response(&response)
+        .map_err(|e| ToolError::internal(e))?;
+
+    // Validate regex patterns — retry once if invalid
+    if let Err(regex_error) = crate::commands::search::validate_regex_pattern(&ai_query) {
+        let pattern = ai_query.name_pattern.as_deref().unwrap_or("");
+        let retry_prompt = format!(
+            "You gave me this pattern: `{pattern}`, but it's not valid regex: {regex_error}. \
+             Please fix it using Rust `regex` crate syntax (no lookahead/lookbehind, no backreferences). \
+             Return the same JSON object with the corrected pattern."
+        );
+
+        let retry_response = crate::ai::client::chat_completion(&backend, &retry_prompt, &options)
+            .await
+            .map_err(|e| ToolError::internal(format!("{e}")))?;
+
+        ai_query = crate::commands::search::parse_ai_response(&retry_response)
+            .map_err(|e| ToolError::internal(e))?;
+
+        if let Err(retry_error) = crate::commands::search::validate_regex_pattern(&ai_query) {
+            return Err(ToolError::internal(format!(
+                "AI generated invalid regex pattern: {retry_error}"
+            )));
+        }
+    }
+
+    let translate_result = crate::commands::search::build_translate_result(ai_query)
+        .map_err(|e| ToolError::internal(e))?;
+
+    let query = SearchQuery {
+        name_pattern: translate_result.query.name_pattern,
+        pattern_type: if translate_result.query.pattern_type == "regex" {
+            PatternType::Regex
+        } else {
+            PatternType::Glob
+        },
+        min_size: translate_result.query.min_size,
+        max_size: translate_result.query.max_size,
+        modified_after: translate_result.query.modified_after,
+        modified_before: translate_result.query.modified_before,
+        is_directory: translate_result.query.is_directory,
+        limit,
+    };
+
+    let interpreted = summarize_query(&query);
+    let query_clone = query.clone();
+    let index_clone = index.clone();
+    let result = tokio::task::spawn_blocking(move || run_search_and_postprocess(&index_clone, &query_clone))
+        .await
+        .map_err(|e| ToolError::internal(format!("Search failed: {e}")))??;
+
+    let formatted = format_search_results(&result, limit);
+    Ok(json!(format!("Interpreted query: {interpreted}\n\n{formatted}")))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -704,5 +1070,91 @@ mod tests {
                 .any(|l| l.category == crate::volumes::LocationCategory::MainVolume),
             "Should have main volume"
         );
+    }
+
+    #[test]
+    fn test_parse_human_size_with_space() {
+        assert_eq!(parse_human_size("1 MB").unwrap(), 1_048_576);
+        assert_eq!(parse_human_size("500 KB").unwrap(), 512_000);
+        assert_eq!(parse_human_size("2 GB").unwrap(), 2_147_483_648);
+        assert_eq!(parse_human_size("1 TB").unwrap(), 1_099_511_627_776);
+        assert_eq!(parse_human_size("100 B").unwrap(), 100);
+    }
+
+    #[test]
+    fn test_parse_human_size_no_space() {
+        assert_eq!(parse_human_size("1MB").unwrap(), 1_048_576);
+        assert_eq!(parse_human_size("500KB").unwrap(), 512_000);
+        assert_eq!(parse_human_size("2GB").unwrap(), 2_147_483_648);
+    }
+
+    #[test]
+    fn test_parse_human_size_case_insensitive() {
+        assert_eq!(parse_human_size("1 mb").unwrap(), 1_048_576);
+        assert_eq!(parse_human_size("500 kb").unwrap(), 512_000);
+        assert_eq!(parse_human_size("1 Mb").unwrap(), 1_048_576);
+    }
+
+    #[test]
+    fn test_parse_human_size_decimal() {
+        assert_eq!(parse_human_size("1.5 MB").unwrap(), 1_572_864);
+        assert_eq!(parse_human_size("0.5 GB").unwrap(), 536_870_912);
+    }
+
+    #[test]
+    fn test_parse_human_size_invalid() {
+        assert!(parse_human_size("abc").is_err());
+        assert!(parse_human_size("MB").is_err());
+    }
+
+    #[test]
+    fn test_format_search_results_empty() {
+        let result = SearchResult {
+            entries: Vec::new(),
+            total_count: 0,
+        };
+        assert_eq!(format_search_results(&result, 30), "No files found matching the query.");
+    }
+
+    #[test]
+    fn test_format_search_results_with_entries() {
+        use crate::indexing::search::SearchResultEntry;
+        let result = SearchResult {
+            entries: vec![SearchResultEntry {
+                name: "test.pdf".to_string(),
+                path: "/Users/test/Documents/test.pdf".to_string(),
+                parent_path: "~/Documents".to_string(),
+                is_directory: false,
+                size: Some(340_000),
+                modified_at: Some(1_735_689_600),
+                icon_id: "pdf".to_string(),
+                entry_id: 1,
+            }],
+            total_count: 1,
+        };
+        let formatted = format_search_results(&result, 30);
+        assert!(formatted.contains("1 of 1 results:"));
+        assert!(formatted.contains("test.pdf"));
+        assert!(formatted.contains("~/Documents"));
+    }
+
+    #[test]
+    fn test_format_search_results_directory_trailing_slash() {
+        use crate::indexing::search::SearchResultEntry;
+        let result = SearchResult {
+            entries: vec![SearchResultEntry {
+                name: "Projects".to_string(),
+                path: "/Users/test/Projects".to_string(),
+                parent_path: "~".to_string(),
+                is_directory: true,
+                size: Some(1_200_000),
+                modified_at: Some(1_735_689_600),
+                icon_id: "dir".to_string(),
+                entry_id: 2,
+            }],
+            total_count: 1,
+        };
+        let formatted = format_search_results(&result, 30);
+        assert!(formatted.contains("Projects/"));
     }
 }

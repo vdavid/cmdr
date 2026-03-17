@@ -259,7 +259,7 @@ pub fn summarize_query(query: &SearchQuery) -> String {
     }
 }
 
-fn format_size(bytes: u64) -> String {
+pub(crate) fn format_size(bytes: u64) -> String {
     const KB: u64 = 1_024;
     const MB: u64 = 1_024 * KB;
     const GB: u64 = 1_024 * MB;
@@ -298,7 +298,7 @@ fn format_size(bytes: u64) -> String {
     }
 }
 
-fn format_timestamp(ts: u64) -> String {
+pub(crate) fn format_timestamp(ts: u64) -> String {
     let format = time::macros::format_description!("[year]-[month]-[day]");
     time::OffsetDateTime::from_unix_timestamp(ts as i64)
         .map(|dt| dt.format(&format).unwrap_or_else(|_| ts.to_string()))
