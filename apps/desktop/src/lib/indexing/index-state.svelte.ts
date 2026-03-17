@@ -200,6 +200,7 @@ export async function initIndexState(): Promise<void> {
         durationMs: number
     }>('index-replay-complete', () => {
         resetReplay()
+        scanning = false
     })
     unlistenHandles.push(unlistenReplayComplete)
 
