@@ -62,6 +62,11 @@ export async function getMcpRunning(): Promise<boolean> {
     return invoke<boolean>('get_mcp_running')
 }
 
+/** Returns the port the MCP server is actually listening on, or null if not running. */
+export async function getMcpPort(): Promise<number | null> {
+    return invoke<number | null>('get_mcp_port')
+}
+
 // ============================================================================
 // Indexing commands
 // ============================================================================

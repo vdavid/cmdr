@@ -11,6 +11,7 @@
         setMcpEnabled,
         setMcpPort,
         getMcpRunning,
+        getMcpPort,
     } from '$lib/tauri-commands'
     import { createShouldShow } from '$lib/settings/settings-search'
     import { getAppLogger } from '$lib/logging/logger'
@@ -51,7 +52,7 @@
         const running = await getMcpRunning()
         serverRunning = running
         if (running) {
-            runningPort = getSetting('developer.mcpPort')
+            runningPort = (await getMcpPort()) ?? getSetting('developer.mcpPort')
         } else {
             runningPort = null
         }
@@ -126,11 +127,6 @@
                 serverError = message
             }
             await syncState()
-            // If the server was stopped because the new port failed, show a warning instead of the raw error
-            if (!serverRunning) {
-                serverError = null
-                serverWarning = `Server turned off because port ${String(port)} is blocked`
-            }
             return
         }
 
@@ -197,7 +193,12 @@
         {:else if serverWarning}
             <div class="port-status warning">{serverWarning}</div>
         {:else if serverRunning && runningPort}
-            <div class="port-status active">Server is running on port {runningPort}</div>
+            <div class="port-status active">
+                Server is running on port {runningPort}
+                {#if runningPort !== getSetting('developer.mcpPort')}
+                    (port {getSetting('developer.mcpPort')} was in use)
+                {/if}
+            </div>
         {:else if portStatus === 'checking'}
             <div class="port-status checking">Checking port availability...</div>
         {:else if portStatus === 'available'}

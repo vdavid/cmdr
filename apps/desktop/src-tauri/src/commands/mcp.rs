@@ -35,3 +35,9 @@ pub async fn set_mcp_port<R: Runtime + 'static>(app: AppHandle<R>, port: u16) ->
 pub fn get_mcp_running() -> bool {
     mcp::is_mcp_running()
 }
+
+/// Returns the port the MCP server is actually listening on, or null if not running.
+#[tauri::command]
+pub fn get_mcp_port() -> Option<u16> {
+    mcp::get_mcp_actual_port()
+}

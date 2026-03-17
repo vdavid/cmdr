@@ -450,7 +450,7 @@ export const settingsRegistry: SettingDefinition[] = [
         id: 'developer.mcpPort',
         section: ['Developer', 'MCP server'],
         label: 'Port',
-        description: 'The port number for the MCP server. Default: 9224',
+        description: 'Preferred port for the MCP server. If in use, the next available port is used automatically.',
         keywords: ['port', 'mcp', 'network'],
         type: 'number',
         default: 9224,

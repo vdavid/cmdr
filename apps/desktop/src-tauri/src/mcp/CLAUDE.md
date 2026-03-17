@@ -9,7 +9,7 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 ### Server (`server.rs`)
 
 - Runs in a background tokio task spawned at app startup
-- Binds to `127.0.0.1:9225` in dev, `127.0.0.1:9224` in release (localhost only for security)
+- Binds to `127.0.0.1:9224` by default (localhost only for security). If the port is taken, auto-probes upward (up to 100 ports) to find an available one
 - Streamable HTTP transport (MCP spec 2025-11-25)
 - Endpoints: `POST /mcp` (JSON-RPC), `GET /mcp` (optional SSE), `GET /mcp/health`
 
@@ -43,7 +43,7 @@ Routes tool calls to implementations. Most tools emit Tauri events that trigger 
 
 ### Configuration (`config.rs`)
 
-Constants and configuration for the MCP server (port, bind address, transport settings).
+Constants and configuration for the MCP server (port, bind address, transport settings). Default port is 9224 for all build types (dev and prod use separate data dirs, so no collision risk).
 
 ### Dialog state (`dialog_state.rs`)
 
@@ -69,7 +69,7 @@ LLMs consume resources, not machines. YAML is 30-40% smaller and more readable. 
 
 ### Why plain text responses?
 
-Tool results are plain text (`"OK: Navigated to /Users"`, `"ERROR: Path not found"`), not JSON objects. This reduces token usage and is easier for LLMs to parse. Errors are still JSON-RPC error objects, but the `content` field is plain text.
+Tool results and resource content are consumed by LLMs, not parsed by code. Output doesn't need to be JSON, YAML, or any structured format — anything that reads well to a human and is concise works. Tool results are plain text (`"OK: Navigated to /Users"`, aligned columns for search results), resources use YAML or plain text. Errors are still JSON-RPC error objects, but the `content` field is plain text. Optimize for readability and token efficiency, not parseability.
 
 ### Why stateful architecture?
 
@@ -91,7 +91,7 @@ Binding to `0.0.0.0` would expose the server to the network. An attacker could q
 
 ### Server lifecycle is managed at runtime
 
-`start_mcp_server()` binds the port and spawns a tokio task, storing the `JoinHandle` in a static `MCP_HANDLE`. The server can be started/stopped live via `set_mcp_enabled` and `set_mcp_port` Tauri commands — no app restart needed. `stop_mcp_server()` aborts the task (instant). `is_mcp_running()` checks whether the handle exists. At startup, `start_mcp_server_background()` wraps the async start in a fire-and-forget spawn. If the server crashes, the app continues but MCP stops working. Check logs for "MCP server crashed" errors.
+`start_mcp_server()` binds the port and spawns a tokio task, storing the `JoinHandle` in a static `MCP_HANDLE`. If the configured port is taken, it auto-probes upward (up to 100 ports) and stores the actual bound port in `MCP_ACTUAL_PORT`. The frontend queries this via `get_mcp_port()` and shows a notice when it differs from the configured port. The server can be started/stopped live via `set_mcp_enabled` and `set_mcp_port` Tauri commands — no app restart needed. `stop_mcp_server()` aborts the task and resets `MCP_ACTUAL_PORT` to 0. `is_mcp_running()` checks whether the handle exists. At startup, `start_mcp_server_background()` wraps the async start in a fire-and-forget spawn. If the server crashes, the app continues but MCP stops working. Check logs for "MCP server crashed" errors.
 
 ### Live MCP control only works from the settings window
 

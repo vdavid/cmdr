@@ -669,11 +669,11 @@ fn execute_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_type: &str, path:
 
 // ── Search tools ──────────────────────────────────────────────────────
 
-use crate::indexing::search::{
-    self, DIALOG_OPEN, SEARCH_INDEX, SearchIndexState, SearchQuery, SearchResult,
-    fill_directory_sizes, format_size, format_timestamp, summarize_query,
-};
 use crate::indexing::search::PatternType;
+use crate::indexing::search::{
+    self, DIALOG_OPEN, SEARCH_INDEX, SearchIndexState, SearchQuery, SearchResult, fill_directory_sizes, format_size,
+    format_timestamp, summarize_query,
+};
 
 /// Ensure the search index is loaded. Returns the index or an error.
 async fn ensure_search_index() -> Result<Arc<search::SearchIndex>, ToolError> {
@@ -741,13 +741,17 @@ fn parse_human_size(s: &str) -> Result<u64, ToolError> {
     } else {
         // Try parsing as pure number (bytes)
         let n: u64 = s.trim().parse().map_err(|_| {
-            ToolError::invalid_params(format!("Couldn't parse size: \"{s}\". Use a format like \"1 MB\" or \"500 KB\"."))
+            ToolError::invalid_params(format!(
+                "Couldn't parse size: \"{s}\". Use a format like \"1 MB\" or \"500 KB\"."
+            ))
         })?;
         return Ok(n);
     };
 
     let num: f64 = num_str.trim().parse().map_err(|_| {
-        ToolError::invalid_params(format!("Couldn't parse size: \"{s}\". Use a format like \"1 MB\" or \"500 KB\"."))
+        ToolError::invalid_params(format!(
+            "Couldn't parse size: \"{s}\". Use a format like \"1 MB\" or \"500 KB\"."
+        ))
     })?;
 
     let multiplier: u64 = match unit {
@@ -772,14 +776,19 @@ fn format_search_results(result: &SearchResult, limit: u32) -> String {
     let entries = &result.entries[..shown];
 
     // Compute column widths
-    let max_name = entries.iter().map(|e| {
-        let display_name = if e.is_directory {
-            format!("{}/", e.name)
-        } else {
-            e.name.clone()
-        };
-        display_name.len()
-    }).max().unwrap_or(0).max(4);
+    let max_name = entries
+        .iter()
+        .map(|e| {
+            let display_name = if e.is_directory {
+                format!("{}/", e.name)
+            } else {
+                e.name.clone()
+            };
+            display_name.len()
+        })
+        .max()
+        .unwrap_or(0)
+        .max(4);
 
     let max_parent = entries.iter().map(|e| e.parent_path.len()).max().unwrap_or(0).max(4);
 
@@ -818,18 +827,14 @@ fn format_search_results(result: &SearchResult, limit: u32) -> String {
 }
 
 /// Run search and post-process (fill dir sizes, post-filter, truncate).
-fn run_search_and_postprocess(
-    index: &search::SearchIndex,
-    query: &SearchQuery,
-) -> Result<SearchResult, ToolError> {
-    let mut result = search::search(index, query).map_err(|e| ToolError::internal(e))?;
+fn run_search_and_postprocess(index: &search::SearchIndex, query: &SearchQuery) -> Result<SearchResult, ToolError> {
+    let mut result = search::search(index, query).map_err(ToolError::internal)?;
 
     // Fill directory sizes from the DB
-    if result.entries.iter().any(|e| e.is_directory) {
-        if let Some(pool) = crate::indexing::get_read_pool() {
+    if result.entries.iter().any(|e| e.is_directory)
+        && let Some(pool) = crate::indexing::get_read_pool() {
             fill_directory_sizes(&mut result, &pool);
         }
-    }
 
     // Post-filter: remove directories that don't match size criteria
     let has_size_filter = query.min_size.is_some() || query.max_size.is_some();
@@ -886,13 +891,13 @@ async fn execute_search(params: &Value) -> ToolResult {
         .and_then(|v| v.as_str())
         .map(crate::commands::search::iso_date_to_timestamp)
         .transpose()
-        .map_err(|e| ToolError::invalid_params(e))?;
+        .map_err(ToolError::invalid_params)?;
     let modified_before = params
         .get("modified_before")
         .and_then(|v| v.as_str())
         .map(crate::commands::search::iso_date_to_timestamp)
         .transpose()
-        .map_err(|e| ToolError::invalid_params(e))?;
+        .map_err(ToolError::invalid_params)?;
     let is_directory = match params.get("type").and_then(|v| v.as_str()) {
         Some("file") => Some(false),
         Some("dir") => Some(true),
@@ -941,9 +946,8 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
             ));
         }
         "local" => {
-            let port = crate::ai::manager::get_port().ok_or_else(|| {
-                ToolError::internal("Local AI server isn't running. Start it in settings.")
-            })?;
+            let port = crate::ai::manager::get_port()
+                .ok_or_else(|| ToolError::internal("Local AI server isn't running. Start it in settings."))?;
             crate::ai::client::AiBackend::Local { port }
         }
         "openai-compatible" => {
@@ -973,8 +977,7 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
         .await
         .map_err(|e| ToolError::internal(format!("{e}")))?;
 
-    let mut ai_query = crate::commands::search::parse_ai_response(&response)
-        .map_err(|e| ToolError::internal(e))?;
+    let mut ai_query = crate::commands::search::parse_ai_response(&response).map_err(ToolError::internal)?;
 
     // Validate regex patterns — retry once if invalid
     if let Err(regex_error) = crate::commands::search::validate_regex_pattern(&ai_query) {
@@ -989,8 +992,7 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
             .await
             .map_err(|e| ToolError::internal(format!("{e}")))?;
 
-        ai_query = crate::commands::search::parse_ai_response(&retry_response)
-            .map_err(|e| ToolError::internal(e))?;
+        ai_query = crate::commands::search::parse_ai_response(&retry_response).map_err(ToolError::internal)?;
 
         if let Err(retry_error) = crate::commands::search::validate_regex_pattern(&ai_query) {
             return Err(ToolError::internal(format!(
@@ -999,8 +1001,8 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
         }
     }
 
-    let translate_result = crate::commands::search::build_translate_result(ai_query)
-        .map_err(|e| ToolError::internal(e))?;
+    let translate_result =
+        crate::commands::search::build_translate_result(ai_query).map_err(ToolError::internal)?;
 
     let query = SearchQuery {
         name_pattern: translate_result.query.name_pattern,

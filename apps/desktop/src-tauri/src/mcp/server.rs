@@ -17,6 +17,7 @@ use futures_util::stream;
 use serde_json::{Value, json};
 use std::convert::Infallible;
 use std::net::SocketAddr;
+use std::sync::atomic::{AtomicU16, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
 use tauri::async_runtime::JoinHandle;
 use tauri::{AppHandle, Runtime};
@@ -31,6 +32,9 @@ use super::tools::get_all_tools;
 
 /// Handle to the running MCP server task, if any.
 static MCP_HANDLE: Mutex<Option<JoinHandle<()>>> = Mutex::new(None);
+
+/// The port the server is actually listening on (0 when not running).
+static MCP_ACTUAL_PORT: AtomicU16 = AtomicU16::new(0);
 
 /// The current MCP protocol version we support.
 pub const PROTOCOL_VERSION: &str = "2025-11-25";
@@ -57,8 +61,19 @@ impl<R: Runtime> McpState<R> {
     }
 }
 
+/// Find an available port starting from `start_port`, scanning up to 100 ports.
+fn find_available_port(start_port: u16) -> Option<u16> {
+    for offset in 0..100 {
+        let port = start_port.saturating_add(offset);
+        if std::net::TcpListener::bind(("127.0.0.1", port)).is_ok() {
+            return Some(port);
+        }
+    }
+    None
+}
+
 /// Start the MCP server. Binds to the configured port and spawns the server task.
-/// Returns an error if the port is already in use or binding fails.
+/// If the configured port is taken, auto-probes upward to find the next available port.
 pub async fn start_mcp_server<R: Runtime + 'static>(app: AppHandle<R>, config: McpConfig) -> Result<(), String> {
     if !config.enabled {
         log::info!("MCP server is disabled");
@@ -71,7 +86,19 @@ pub async fn start_mcp_server<R: Runtime + 'static>(app: AppHandle<R>, config: M
         return Ok(());
     }
 
-    let port = config.port;
+    let configured_port = config.port;
+
+    // Auto-probe: if the configured port is taken, find the next available one
+    let port = find_available_port(configured_port)
+        .ok_or_else(|| format!("No available port found starting from {}.", configured_port))?;
+    if port != configured_port {
+        log::info!(
+            "MCP server: port {} is in use, using port {} instead",
+            configured_port,
+            port
+        );
+    }
+
     let state = Arc::new(McpState::new(app));
 
     let cors = CorsLayer::new().allow_origin(Any).allow_methods(Any).allow_headers(Any);
@@ -87,15 +114,13 @@ pub async fn start_mcp_server<R: Runtime + 'static>(app: AppHandle<R>, config: M
     log::debug!("MCP server attempting to bind on http://{}", addr);
 
     // Bind before spawning so we can report errors synchronously
-    let listener = tokio::net::TcpListener::bind(addr).await.map_err(|e| {
-        if e.kind() == std::io::ErrorKind::AddrInUse {
-            format!("Port {} is already in use. Try a different port?", port)
-        } else {
-            format!("Couldn't start the server on port {}. {}", port, e)
-        }
-    })?;
+    let listener = tokio::net::TcpListener::bind(addr)
+        .await
+        .map_err(|e| format!("Couldn't start the server on port {}. {}", port, e))?;
 
     log::info!("MCP server listening on http://{}", addr);
+
+    MCP_ACTUAL_PORT.store(port, Ordering::Relaxed);
 
     let handle = tauri::async_runtime::spawn(async move {
         if let Err(e) = axum::serve(listener, router).await {
@@ -126,6 +151,7 @@ pub fn stop_mcp_server() {
         && let Some(handle) = guard.take()
     {
         handle.abort();
+        MCP_ACTUAL_PORT.store(0, Ordering::Relaxed);
         log::info!("MCP server stopped");
     }
 }
@@ -133,6 +159,12 @@ pub fn stop_mcp_server() {
 /// Returns whether the MCP server task is currently running.
 pub fn is_mcp_running() -> bool {
     MCP_HANDLE.lock().ok().is_some_and(|guard| guard.is_some())
+}
+
+/// Returns the port the MCP server is actually listening on, or `None` if not running.
+pub fn get_mcp_actual_port() -> Option<u16> {
+    let port = MCP_ACTUAL_PORT.load(Ordering::Relaxed);
+    if port == 0 { None } else { Some(port) }
 }
 
 /// Health check endpoint.

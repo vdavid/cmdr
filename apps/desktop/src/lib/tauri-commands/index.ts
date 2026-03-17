@@ -254,6 +254,7 @@ export {
     setMcpEnabled,
     setMcpPort,
     getMcpRunning,
+    getMcpPort,
     updateFileWatcherDebounce,
     updateServiceResolveTimeout,
     setIndexingEnabled,

@@ -36,13 +36,12 @@ impl McpConfig {
         // Priority for port:
         // 1. CMDR_MCP_PORT env var (explicit dev override)
         // 2. User setting (developer.mcpPort)
-        // 3. Default: 9225 in debug builds, 9224 in release
-        let default_port: u16 = if cfg!(debug_assertions) { 9225 } else { 9224 };
+        // 3. Default: 9224 (same for all build types — dev and prod use separate data dirs)
         let port = env::var("CMDR_MCP_PORT")
             .ok()
             .and_then(|v| v.parse().ok())
             .or(setting_port)
-            .unwrap_or(default_port);
+            .unwrap_or(9224);
 
         Self { enabled, port }
     }
@@ -85,10 +84,7 @@ mod tests {
     fn test_from_settings_with_no_settings() {
         // When no settings are provided, should use defaults
         let config = McpConfig::from_settings_and_env(None, None);
-        // Debug builds use port 9225 to avoid clashing with a running release build
-        #[cfg(debug_assertions)]
-        assert_eq!(config.port, 9225);
-        #[cfg(not(debug_assertions))]
+        // Default port is always 9224 regardless of build type
         assert_eq!(config.port, 9224);
         // In debug builds, enabled is true by default
         #[cfg(debug_assertions)]

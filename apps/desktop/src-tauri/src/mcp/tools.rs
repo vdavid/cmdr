@@ -375,8 +375,7 @@ fn get_search_tools() -> Vec<Tool> {
         },
         Tool {
             name: "ai_search".to_string(),
-            description: "Natural language file search using the configured LLM to translate the query"
-                .to_string(),
+            description: "Natural language file search using the configured LLM to translate the query".to_string(),
             input_schema: json!({
                 "type": "object",
                 "properties": {
