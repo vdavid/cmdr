@@ -6,12 +6,13 @@ Rust counterpart: `apps/desktop/src-tauri/src/indexing/`
 
 ## Files
 
-| File                       | Purpose                                                          |
-| -------------------------- | ---------------------------------------------------------------- |
-| `index.ts`                 | Public API barrel export                                         |
-| `index-state.svelte.ts`    | Module-level `$state` for scan progress; listens for scan events |
-| `index-events.ts`          | Listens for `index-dir-updated`, calls back with updated paths   |
-| `ScanStatusOverlay.svelte` | Floating top-right spinner + live counters during scan           |
+| File                         | Purpose                                                            |
+| ---------------------------- | ------------------------------------------------------------------ |
+| `index.ts`                   | Public API barrel export                                           |
+| `index-state.svelte.ts`      | Module-level `$state` for scan progress; listens for scan events   |
+| `index-events.ts`            | Listens for `index-dir-updated`, calls back with updated paths     |
+| `ScanStatusOverlay.svelte`   | Thin wrapper feeding scan/aggregation state into `ProgressOverlay` |
+| `ReplayStatusOverlay.svelte` | Thin wrapper feeding replay state into `ProgressOverlay`           |
 
 ## Public API (`index.ts`)
 
@@ -25,6 +26,10 @@ getAggregationPhase(): string       // 'saving_entries' | 'loading' | 'sorting' 
 getAggregationCurrent(): number
 getAggregationTotal(): number
 getAggregationStartedAt(): number   // Date.now() timestamp
+isReplaying(): boolean
+getReplayEventsProcessed(): number
+getReplayEstimatedTotal(): number
+getReplayStartedAt(): number        // Date.now() timestamp
 initIndexState(): Promise<void>     // call once at app mount
 destroyIndexState(): void           // call at app teardown
 
@@ -35,7 +40,8 @@ initIndexEvents(onDirUpdated: (paths: string[]) => void): Promise<UnlistenFn>
 ## Scan state (`index-state.svelte.ts`)
 
 Module-level `$state` variables (`scanning`, `entriesScanned`, `dirsFound`, `aggregating`, `aggregationPhase`,
-`aggregationCurrent`, `aggregationTotal`, `aggregationStartedAt`) react to six Tauri events:
+`aggregationCurrent`, `aggregationTotal`, `aggregationStartedAt`, `replaying`, `replayEventsProcessed`,
+`replayEstimatedTotal`, `replayStartedAt`) react to eight Tauri events:
 
 | Event                        | Payload                                             | Effect                                                  |
 | ---------------------------- | --------------------------------------------------- | ------------------------------------------------------- |
@@ -43,6 +49,8 @@ Module-level `$state` variables (`scanning`, `entriesScanned`, `dirsFound`, `agg
 | `index-scan-progress`        | `{ volumeId, entriesScanned, dirsFound }`           | Update counters                                         |
 | `index-scan-complete`        | `{ volumeId, totalEntries, totalDirs, durationMs }` | `scanning = false`, set final counts, reset aggregation |
 | `index-rescan-notification`  | `{ volumeId, reason, details }`                     | Show info toast with reason-specific message            |
+| `index-replay-progress`      | `{ volumeId, eventsProcessed, estimatedTotal }`     | `replaying = true` on first, update counters            |
+| `index-replay-complete`      | `{ volumeId, durationMs }`                          | Reset replay state                                      |
 | `index-aggregation-progress` | `{ phase, current, total }`                         | `aggregating = true`, update phase/progress/ETA         |
 | `index-aggregation-complete` | `()`                                                | Reset aggregation state, dismiss overlay                |
 
@@ -63,18 +71,28 @@ comparison (relies on trailing-slash normalization).
 
 ## Scan status overlay (`ScanStatusOverlay.svelte`)
 
-Rendered in the top-right corner of the main window while `isScanning()` or `isAggregating()` is true. Uses
-`pointer-events: none` so it never blocks clicks. Two modes:
+Thin wrapper that computes label, progress, and ETA from scan/aggregation state, then delegates rendering to
+`$lib/ui/ProgressOverlay.svelte`. Visible while `isScanning()` or `isAggregating()` is true.
 
-- **Scan phase**: Spinner + live label like `Scanning... 42,000 entries, 1,200 dirs`.
-- **Aggregation phase**: Spinner + phase label (for example, "Computing directory sizes...") + progress bar with real %
-  and ETA estimate. Phases: `saving_entries` (flushing writer backlog), `loading`, `sorting` (no progress bar),
-  `computing`, `writing` (progress bar on `saving_entries`, `computing`, and `writing`). ETA is computed from elapsed
-  time and current/total ratio, reset on phase transitions. Progress bar uses `--color-accent` fill with smooth CSS
-  transition.
+- **Scan phase**: Label only (compact layout, no progress bar). Shows "Scanning... 42,000 entries, 1,200 dirs".
+- **Aggregation phase**: Column layout with phase label + optional progress bar + ETA. Phases: `saving_entries`
+  (flushing writer backlog), `loading`, `sorting` (no progress bar), `computing`, `writing` (progress bar on
+  `saving_entries`, `computing`, and `writing`). ETA is computed from elapsed time and current/total ratio, reset on
+  phase transitions.
 
 Uses `formatNumber` from selection-info-utils for number formatting (uses `'en-US'` locale, hardcoded via
 `toLocaleString('en-US')`).
+
+## Replay status overlay (`ReplayStatusOverlay.svelte`)
+
+Thin wrapper that computes label, progress, and ETA from replay state, then delegates rendering to
+`$lib/ui/ProgressOverlay.svelte`. Visible when `isReplaying()` is true AND more than 4 seconds have elapsed since replay
+started, AND not currently scanning or aggregating (to avoid stacking overlays).
+
+- **Progress bar**: `eventsProcessed / estimatedTotal` ratio.
+- **ETA**: 50-50 blend of total-based ETA (elapsed extrapolation) and a sliding-window rate over the last ~5 seconds.
+  Falls back to whichever is available if one can't be computed yet.
+- **Detail**: Shows "{N} events processed" with locale formatting.
 
 ## Key decisions
 
@@ -98,3 +116,4 @@ No unit or integration tests exist for this module yet. Manual testing via the R
 - `$lib/tauri-commands` — `listen`, `UnlistenFn`
 - `$lib/ui/toast` — `addToast` (rescan notification toasts)
 - `$lib/file-explorer/selection/selection-info-utils` — `formatNumber` (overlay only)
+- `$lib/ui/ProgressOverlay.svelte` — reusable progress overlay component (used by `ScanStatusOverlay`)

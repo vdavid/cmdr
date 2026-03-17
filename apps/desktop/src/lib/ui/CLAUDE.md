@@ -4,15 +4,16 @@ Reusable UI components used across the entire desktop app.
 
 ## Key files
 
-| File                 | Purpose                                                                  |
-| -------------------- | ------------------------------------------------------------------------ |
-| `ModalDialog.svelte` | Central modal container: overlay, dragging, Escape, focus, MCP tracking  |
-| `dialog-registry.ts` | `SOFT_DIALOG_REGISTRY` array — single source of truth for all dialog IDs |
-| `Button.svelte`      | Styled button with variant and size props                                |
-| `CommandBox.svelte`  | Copyable terminal command (monospace + Copy button)                      |
-| `LoadingIcon.svelte` | Animated spinner with progressive status text                            |
-| `AlertDialog.svelte` | Single-action confirmation dialog built on `ModalDialog`                 |
-| `toast/`             | Centralized toast notification system — store, container, item           |
+| File                     | Purpose                                                                  |
+| ------------------------ | ------------------------------------------------------------------------ |
+| `ModalDialog.svelte`     | Central modal container: overlay, dragging, Escape, focus, MCP tracking  |
+| `dialog-registry.ts`     | `SOFT_DIALOG_REGISTRY` array — single source of truth for all dialog IDs |
+| `Button.svelte`          | Styled button with variant and size props                                |
+| `CommandBox.svelte`      | Copyable terminal command (monospace + Copy button)                      |
+| `LoadingIcon.svelte`     | Animated spinner with progressive status text                            |
+| `AlertDialog.svelte`     | Single-action confirmation dialog built on `ModalDialog`                 |
+| `ProgressOverlay.svelte` | Floating top-right progress indicator: spinner, progress bar, ETA        |
+| `toast/`                 | Centralized toast notification system — store, container, item           |
 
 ## ModalDialog
 
@@ -60,6 +61,27 @@ Progressive status text driven by props (mutually exclusive, evaluated top-down)
 
 `showCancelHint` adds "Press ESC to cancel and go back" below the spinner. The container uses a 400ms `fadeIn` animation
 where the first 50% is invisible (effectively 200ms before fade begins), avoiding flash for fast loads.
+
+## ProgressOverlay
+
+Floating top-right overlay for showing progress on long-running operations. Uses `pointer-events: none` so it never
+blocks clicks. Two layout modes:
+
+- **Label only** (`progress` omitted): Spinner + single-line label. Compact layout.
+- **With progress** (`progress` passed, even as `null`): Spinner + column layout with label, optional detail text,
+  optional progress bar + percentage + ETA. The column has `min-width: 160px` to give the progress bar enough room.
+
+Props:
+
+| Prop       | Type             | Notes                                                                         |
+| ---------- | ---------------- | ----------------------------------------------------------------------------- |
+| `visible`  | `boolean`        | Show/hide the overlay                                                         |
+| `label`    | `string`         | Main text (for example, "Scanning...", "Computing directory sizes...")        |
+| `detail`   | `string?`        | Secondary text (for example, "42,000 entries")                                |
+| `progress` | `number \| null` | 0–1 for determinate bar, `null` for no bar. Omit entirely for compact layout. |
+| `eta`      | `string \| null` | Pre-formatted ETA string (for example, "~2 min left")                         |
+
+Used by `ScanStatusOverlay` (indexing progress). Designed to also be used for replay progress.
 
 ## Toast system (`toast/`)
 

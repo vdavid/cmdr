@@ -44,6 +44,13 @@ pub struct IndexReplayProgressEvent {
     pub estimated_total: Option<u64>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IndexReplayCompleteEvent {
+    pub volume_id: String,
+    pub duration_ms: u64,
+}
+
 /// Why a full rescan was triggered instead of incremental replay.
 /// Sent to the frontend as `index-rescan-notification` so the UI can show
 /// a transparent, user-friendly toast.

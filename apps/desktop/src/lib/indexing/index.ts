@@ -8,6 +8,10 @@ export {
     getAggregationCurrent,
     getAggregationTotal,
     getAggregationStartedAt,
+    isReplaying,
+    getReplayEventsProcessed,
+    getReplayEstimatedTotal,
+    getReplayStartedAt,
     initIndexState,
     destroyIndexState,
 } from './index-state.svelte'

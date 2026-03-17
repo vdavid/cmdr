@@ -94,9 +94,9 @@ mod linux_icons;
 mod macos_icons;
 mod mcp;
 mod menu;
-mod net;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod mtp;
+mod net;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod network;
 #[cfg(target_os = "macos")]

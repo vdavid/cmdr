@@ -10,6 +10,7 @@
     import CommandPalette from '$lib/command-palette/CommandPalette.svelte'
     import SearchDialog from '$lib/search/SearchDialog.svelte'
     import ScanStatusOverlay from '$lib/indexing/ScanStatusOverlay.svelte'
+    import ReplayStatusOverlay from '$lib/indexing/ReplayStatusOverlay.svelte'
     import { initPathLimits } from '$lib/utils/filename-validation'
     import { initIndexState, destroyIndexState } from '$lib/indexing/index'
     import { initShortcutDispatch, destroyShortcutDispatch, lookupCommand } from '$lib/shortcuts/shortcut-dispatch'
@@ -1048,6 +1049,7 @@
         {:else if showApp}
             <DualPaneExplorer bind:this={explorerRef} />
             <ScanStatusOverlay />
+            <ReplayStatusOverlay />
         {/if}
     </div>
 

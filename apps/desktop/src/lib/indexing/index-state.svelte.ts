@@ -12,6 +12,12 @@ let scanning = $state(false)
 let entriesScanned = $state(0)
 let dirsFound = $state(0)
 
+// Replay state
+let replaying = $state(false)
+let replayEventsProcessed = $state(0)
+let replayEstimatedTotal = $state(0)
+let replayStartedAt = $state(0)
+
 // Aggregation state
 let aggregating = $state(false)
 let aggregationPhase = $state('')
@@ -52,6 +58,22 @@ export function getAggregationStartedAt(): number {
     return aggregationStartedAt
 }
 
+export function isReplaying(): boolean {
+    return replaying
+}
+
+export function getReplayEventsProcessed(): number {
+    return replayEventsProcessed
+}
+
+export function getReplayEstimatedTotal(): number {
+    return replayEstimatedTotal
+}
+
+export function getReplayStartedAt(): number {
+    return replayStartedAt
+}
+
 /** Reset scan counters (called on new scan start). */
 function resetCounters() {
     entriesScanned = 0
@@ -64,6 +86,13 @@ function resetAggregation() {
     aggregationCurrent = 0
     aggregationTotal = 0
     aggregationStartedAt = 0
+}
+
+function resetReplay() {
+    replaying = false
+    replayEventsProcessed = 0
+    replayEstimatedTotal = 0
+    replayStartedAt = 0
 }
 
 const rescanReasonToMessage: Record<string, string> = {
@@ -92,6 +121,7 @@ export async function initIndexState(): Promise<void> {
         scanning = true
         resetCounters()
         resetAggregation()
+        resetReplay()
     })
     unlistenHandles.push(unlistenStarted)
 
@@ -150,6 +180,28 @@ export async function initIndexState(): Promise<void> {
         addToast(message, { level: 'info', timeoutMs: 8000, id: 'index-rescan' })
     })
     unlistenHandles.push(unlistenRescan)
+
+    const unlistenReplayProgress = await listen<{
+        volumeId: string
+        eventsProcessed: number
+        estimatedTotal: number | null
+    }>('index-replay-progress', (event) => {
+        if (!replaying) {
+            replaying = true
+            replayStartedAt = Date.now()
+        }
+        replayEventsProcessed = event.payload.eventsProcessed
+        replayEstimatedTotal = event.payload.estimatedTotal ?? 0
+    })
+    unlistenHandles.push(unlistenReplayProgress)
+
+    const unlistenReplayComplete = await listen<{
+        volumeId: string
+        durationMs: number
+    }>('index-replay-complete', () => {
+        resetReplay()
+    })
+    unlistenHandles.push(unlistenReplayComplete)
 
     // Query current status to catch scans already in progress before the frontend loaded.
     // The scan starts in Tauri's setup() hook, so the 'index-scan-started' event may fire

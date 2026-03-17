@@ -9,7 +9,7 @@ use tauri::{AppHandle, Emitter};
 
 use super::DEBUG_STATS;
 use super::enrichment::get_read_pool;
-use super::events::{IndexReplayProgressEvent, RescanReason, emit_rescan_notification};
+use super::events::{IndexReplayCompleteEvent, IndexReplayProgressEvent, RescanReason, emit_rescan_notification};
 use super::firmlinks;
 use super::reconciler::{self, EventReconciler};
 use super::scanner;
@@ -522,6 +522,15 @@ pub(super) async fn run_replay_event_loop(
             volume_id: volume_id.clone(),
             events_processed: event_count,
             estimated_total,
+        },
+    );
+
+    // Emit replay complete
+    let _ = app.emit(
+        "index-replay-complete",
+        IndexReplayCompleteEvent {
+            volume_id: volume_id.clone(),
+            duration_ms: replay_start.elapsed().as_millis() as u64,
         },
     );
 

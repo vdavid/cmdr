@@ -207,6 +207,12 @@
         },
         "tauri-commands/search.ts": {
             "reason": "Tauri command wrappers, tested via integration"
+        },
+        "indexing/ReplayStatusOverlay.svelte": {
+            "reason": "UI overlay component, depends on Tauri event listeners"
+        },
+        "ui/ProgressOverlay.svelte": {
+            "reason": "Pure UI component, no logic to test beyond rendering"
         }
     }
 }

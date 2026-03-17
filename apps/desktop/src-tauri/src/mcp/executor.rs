@@ -832,9 +832,10 @@ fn run_search_and_postprocess(index: &search::SearchIndex, query: &SearchQuery) 
 
     // Fill directory sizes from the DB
     if result.entries.iter().any(|e| e.is_directory)
-        && let Some(pool) = crate::indexing::get_read_pool() {
-            fill_directory_sizes(&mut result, &pool);
-        }
+        && let Some(pool) = crate::indexing::get_read_pool()
+    {
+        fill_directory_sizes(&mut result, &pool);
+    }
 
     // Post-filter: remove directories that don't match size criteria
     let has_size_filter = query.min_size.is_some() || query.max_size.is_some();
@@ -1001,8 +1002,7 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
         }
     }
 
-    let translate_result =
-        crate::commands::search::build_translate_result(ai_query).map_err(ToolError::internal)?;
+    let translate_result = crate::commands::search::build_translate_result(ai_query).map_err(ToolError::internal)?;
 
     let query = SearchQuery {
         name_pattern: translate_result.query.name_pattern,
