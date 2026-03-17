@@ -160,7 +160,7 @@ export function setAiPrompt(value: string): void {
 /** Converts size input + unit to bytes. Returns undefined if empty or invalid. */
 export function parseSizeToBytes(value: string, unit: SizeUnit): number | undefined {
     const num = parseFloat(value)
-    if (isNaN(num) || num < 0) return undefined
+    if (isNaN(num) || num <= 0) return undefined
     const multipliers: Record<SizeUnit, number> = { KB: 1024, MB: 1024 * 1024, GB: 1024 * 1024 * 1024 }
     return Math.round(num * multipliers[unit])
 }

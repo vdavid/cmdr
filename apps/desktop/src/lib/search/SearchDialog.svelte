@@ -89,6 +89,38 @@
     let debounceTimer: ReturnType<typeof setTimeout> | undefined
     let unlistenReady: UnlistenFn | undefined
 
+    // Resizable column widths (px). Icon column is fixed at 24px.
+    const colWidths = $state({ name: 250, path: 350, size: 80, modified: 120 })
+    let dragCol: keyof typeof colWidths | null = null
+    let dragStartX = 0
+    let dragStartWidth = 0
+
+    const gridTemplate = $derived(
+        `24px ${String(colWidths.name)}px ${String(colWidths.path)}px ${String(colWidths.size)}px ${String(colWidths.modified)}px`,
+    )
+
+    function handleColumnDragStart(col: keyof typeof colWidths, e: MouseEvent): void {
+        e.preventDefault()
+        dragCol = col
+        dragStartX = e.clientX
+        dragStartWidth = colWidths[col]
+        document.addEventListener('mousemove', handleColumnDragMove)
+        document.addEventListener('mouseup', handleColumnDragEnd)
+    }
+
+    function handleColumnDragMove(e: MouseEvent): void {
+        if (!dragCol) return
+        const delta = e.clientX - dragStartX
+        const minWidth = dragCol === 'size' || dragCol === 'modified' ? 60 : 80
+        colWidths[dragCol] = Math.max(minWidth, dragStartWidth + delta)
+    }
+
+    function handleColumnDragEnd(): void {
+        dragCol = null
+        document.removeEventListener('mousemove', handleColumnDragMove)
+        document.removeEventListener('mouseup', handleColumnDragEnd)
+    }
+
     // Reactive derived state (read from search-state module)
     const namePattern = $derived(getNamePattern())
     const sizeFilter = $derived(getSizeFilter())
@@ -173,6 +205,9 @@
         releaseSearchIndex().catch(() => {})
         unlistenReady?.()
         if (debounceTimer) clearTimeout(debounceTimer)
+        // Clean up any in-progress column drag
+        document.removeEventListener('mousemove', handleColumnDragMove)
+        document.removeEventListener('mouseup', handleColumnDragEnd)
         resetSearchState()
     })
 
@@ -204,9 +239,9 @@
     }
 
     /** Applies AI-returned size filters to the UI state. Returns true if any were applied. */
-    function applySizeFilters(display: { minSize?: number; maxSize?: number }): boolean {
-        if (display.minSize === undefined && display.maxSize === undefined) return false
-        if (display.minSize !== undefined && display.maxSize !== undefined) {
+    function applySizeFilters(display: { minSize?: number | null; maxSize?: number | null }): boolean {
+        if (display.minSize == null && display.maxSize == null) return false
+        if (display.minSize != null && display.maxSize != null) {
             setSizeFilter('between')
             const { value: minVal, unit: minUnit } = bytesToDisplaySize(display.minSize)
             setSizeValue(minVal)
@@ -214,12 +249,12 @@
             const { value: maxVal, unit: maxUnit } = bytesToDisplaySize(display.maxSize)
             setSizeValueMax(maxVal)
             setSizeUnitMax(maxUnit)
-        } else if (display.minSize !== undefined) {
+        } else if (display.minSize != null) {
             setSizeFilter('gte')
             const { value, unit } = bytesToDisplaySize(display.minSize)
             setSizeValue(value)
             setSizeUnit(unit)
-        } else if (display.maxSize !== undefined) {
+        } else if (display.maxSize != null) {
             setSizeFilter('lte')
             const { value, unit } = bytesToDisplaySize(display.maxSize)
             setSizeValue(value)
@@ -229,16 +264,16 @@
     }
 
     /** Applies AI-returned date filters to the UI state. Returns true if any were applied. */
-    function applyDateFilters(display: { modifiedAfter?: string; modifiedBefore?: string }): boolean {
-        if (display.modifiedAfter === undefined && display.modifiedBefore === undefined) return false
-        if (display.modifiedAfter !== undefined && display.modifiedBefore !== undefined) {
+    function applyDateFilters(display: { modifiedAfter?: string | null; modifiedBefore?: string | null }): boolean {
+        if (display.modifiedAfter == null && display.modifiedBefore == null) return false
+        if (display.modifiedAfter != null && display.modifiedBefore != null) {
             setDateFilter('between')
             setDateValue(display.modifiedAfter)
             setDateValueMax(display.modifiedBefore)
-        } else if (display.modifiedAfter !== undefined) {
+        } else if (display.modifiedAfter != null) {
             setDateFilter('after')
             setDateValue(display.modifiedAfter)
-        } else if (display.modifiedBefore !== undefined) {
+        } else if (display.modifiedBefore != null) {
             setDateFilter('before')
             setDateValue(display.modifiedBefore)
         }
@@ -262,7 +297,7 @@
             // Populate filter fields from AI response
             const changed = new SvelteSet<string>()
 
-            if (result.display.namePattern !== undefined) {
+            if (result.display.namePattern != null) {
                 setNamePattern(result.display.namePattern)
                 changed.add('name')
             }
@@ -421,15 +456,19 @@
                 break
             case 'ArrowDown':
                 e.preventDefault()
-                setCursorIndex(Math.min(getCursorIndex() + 1, results.length - 1))
-                hoveredIndex = null
-                scrollCursorIntoView()
+                if (results.length > 0) {
+                    setCursorIndex(Math.min(getCursorIndex() + 1, results.length - 1))
+                    hoveredIndex = null
+                    scrollCursorIntoView()
+                }
                 break
             case 'ArrowUp':
                 e.preventDefault()
-                setCursorIndex(Math.max(getCursorIndex() - 1, 0))
-                hoveredIndex = null
-                scrollCursorIntoView()
+                if (results.length > 0) {
+                    setCursorIndex(Math.max(getCursorIndex() - 1, 0))
+                    hoveredIndex = null
+                    scrollCursorIntoView()
+                }
                 break
             case 'Enter':
                 e.preventDefault()
@@ -473,9 +512,20 @@
         }
     }
 
-    function formatSize(bytes: number | undefined): string {
-        if (bytes === undefined) return ''
+    function formatSize(bytes: number | null | undefined): string {
+        if (bytes == null) return ''
         return formatBytes(bytes)
+    }
+
+    /** Formats a unix timestamp (seconds) as YYYY-MM-DD. */
+    function formatDate(timestamp: number | null | undefined): string {
+        if (timestamp == null) return ''
+
+        const d = new Date(timestamp * 1000)
+        const year = d.getFullYear()
+        const month = String(d.getMonth() + 1).padStart(2, '0')
+        const day = String(d.getDate()).padStart(2, '0')
+        return `${String(year)}-${month}-${day}`
     }
 
     function formatEntryCount(count: number): string {
@@ -709,6 +759,51 @@
             </div>
         </div>
 
+        <!-- Column headers -->
+        <div class="column-header" style:grid-template-columns={gridTemplate}>
+            <span class="col-label col-icon"></span>
+            <span class="col-label">
+                Name
+                <span
+                    class="col-resize-handle"
+                    role="separator"
+                    onmousedown={(e: MouseEvent) => {
+                        handleColumnDragStart('name', e)
+                    }}
+                ></span>
+            </span>
+            <span class="col-label">
+                Path
+                <span
+                    class="col-resize-handle"
+                    role="separator"
+                    onmousedown={(e: MouseEvent) => {
+                        handleColumnDragStart('path', e)
+                    }}
+                ></span>
+            </span>
+            <span class="col-label col-right">
+                Size
+                <span
+                    class="col-resize-handle"
+                    role="separator"
+                    onmousedown={(e: MouseEvent) => {
+                        handleColumnDragStart('size', e)
+                    }}
+                ></span>
+            </span>
+            <span class="col-label col-right">
+                Modified
+                <span
+                    class="col-resize-handle"
+                    role="separator"
+                    onmousedown={(e: MouseEvent) => {
+                        handleColumnDragStart('modified', e)
+                    }}
+                ></span>
+            </span>
+        </div>
+
         <!-- Results list -->
         <div class="results-container" bind:this={resultsContainer} role="listbox" aria-label="Search results">
             {#if !isIndexAvailable}
@@ -742,6 +837,7 @@
                         class="result-row"
                         class:is-under-cursor={index === cursorIndex}
                         class:is-hovered={hoveredIndex === index && index !== cursorIndex}
+                        style:grid-template-columns={gridTemplate}
                         onclick={() => {
                             handleResultClick(index)
                         }}
@@ -773,6 +869,9 @@
                         <span class="result-size">
                             {formatSize(entry.size)}
                         </span>
+                        <span class="result-modified">
+                            {formatDate(entry.modifiedAt)}
+                        </span>
                     </div>
                 {/each}
             {/if}
@@ -802,7 +901,7 @@
         background: var(--color-bg-secondary);
         border: 1px solid var(--color-border-strong);
         border-radius: var(--radius-lg);
-        width: 680px;
+        width: 900px;
         display: flex;
         flex-direction: column;
         box-shadow: var(--shadow-lg);
@@ -1035,6 +1134,46 @@
         transition: background 1.5s ease-out;
     }
 
+    /* Column headers */
+    .column-header {
+        display: grid;
+        gap: var(--spacing-xs);
+        align-items: center;
+        padding: var(--spacing-xxs) var(--spacing-md);
+        border-bottom: 1px solid var(--color-border-strong);
+        user-select: none;
+    }
+
+    .col-label {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
+        position: relative;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .col-label.col-icon {
+        width: 24px;
+    }
+
+    .col-label.col-right {
+        text-align: right;
+    }
+
+    .col-resize-handle {
+        position: absolute;
+        top: 0;
+        right: -2px;
+        width: 5px;
+        height: 100%;
+        cursor: col-resize;
+    }
+
+    .col-resize-handle:hover {
+        background: var(--color-border-strong);
+    }
+
     /* Results list */
     .results-container {
         overflow-y: auto;
@@ -1088,7 +1227,6 @@
 
     .result-row {
         display: grid;
-        grid-template-columns: 20px 1fr auto auto;
         gap: var(--spacing-xs);
         align-items: center;
         padding: var(--spacing-xs) var(--spacing-md);
@@ -1136,14 +1274,17 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        max-width: 250px;
-        text-align: right;
     }
 
     .result-size {
         color: var(--color-text-secondary);
         white-space: nowrap;
-        min-width: 60px;
+        text-align: right;
+    }
+
+    .result-modified {
+        color: var(--color-text-tertiary);
+        white-space: nowrap;
         text-align: right;
     }
 

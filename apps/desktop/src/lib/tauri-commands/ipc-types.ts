@@ -67,8 +67,8 @@ export interface SearchResultEntry {
     path: string
     parentPath: string
     isDirectory: boolean
-    size?: number
-    modifiedAt?: number
+    size: number | null
+    modifiedAt: number | null
     iconId: string
 }
 
@@ -78,23 +78,23 @@ export interface PrepareResult {
 }
 
 export interface TranslatedQuery {
-    namePattern?: string
+    namePattern: string | null
     patternType: string
-    minSize?: number
-    maxSize?: number
-    modifiedAfter?: number
-    modifiedBefore?: number
-    isDirectory?: boolean
+    minSize: number | null
+    maxSize: number | null
+    modifiedAfter: number | null
+    modifiedBefore: number | null
+    isDirectory: boolean | null
 }
 
 export interface TranslateDisplay {
-    namePattern?: string
-    patternType?: string
-    minSize?: number
-    maxSize?: number
-    modifiedAfter?: string
-    modifiedBefore?: string
-    isDirectory?: boolean
+    namePattern: string | null
+    patternType: string | null
+    minSize: number | null
+    maxSize: number | null
+    modifiedAfter: string | null
+    modifiedBefore: string | null
+    isDirectory: boolean | null
 }
 
 export interface TranslateResult {

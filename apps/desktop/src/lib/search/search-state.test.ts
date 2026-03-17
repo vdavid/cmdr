@@ -44,6 +44,12 @@ describe('parseSizeToBytes', () => {
     it('returns undefined for negative values', () => {
         expect(parseSizeToBytes('-5', 'MB')).toBeUndefined()
     })
+
+    it('returns undefined for zero (not a useful filter)', () => {
+        expect(parseSizeToBytes('0', 'KB')).toBeUndefined()
+        expect(parseSizeToBytes('0', 'MB')).toBeUndefined()
+        expect(parseSizeToBytes('0', 'GB')).toBeUndefined()
+    })
 })
 
 describe('parseDateToTimestamp', () => {
@@ -112,6 +118,18 @@ describe('buildSearchQuery', () => {
         const query = buildSearchQuery()
         expect(query.minSize).toBe(1024 * 1024)
         expect(query.maxSize).toBe(10 * 1024 * 1024)
+    })
+
+    it('treats size "0" as no filter', () => {
+        resetSearchState()
+        setSizeFilter('between')
+        setSizeValue('0')
+        setSizeUnit('KB')
+        setSizeValueMax('0')
+        setSizeUnitMax('KB')
+        const query = buildSearchQuery()
+        expect(query.minSize).toBeUndefined()
+        expect(query.maxSize).toBeUndefined()
     })
 
     it('includes date after filter', () => {
