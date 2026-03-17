@@ -101,7 +101,7 @@ mime_guess = "2"
 
 [target.'cfg(any(target_os = "macos", target_os = "linux"))'.dependencies]
 # MTP (Android device) support via pure Rust implementation
-mtp-rs = "0.1.0"
+mtp-rs = "0.2.0"
 # USB hotplug detection for MTP device watcher
 nusb = "0.2.2"
 bytes = "1"
