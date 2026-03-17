@@ -266,11 +266,6 @@ impl IndexManager {
     ///
     /// **No existing index:** Full scan via `start_scan()`.
     pub fn resume_or_scan(&mut self) -> Result<(), String> {
-        // Suppress verifier and other concurrent reads until replay/scan completes.
-        // start_scan() sets this again (harmless), and both scan and replay
-        // completion paths reset it to false.
-        self.scanning.store(true, Ordering::Relaxed);
-
         let status = self
             .store
             .get_index_status()
@@ -378,6 +373,10 @@ impl IndexManager {
         } else {
             None
         };
+
+        // Suppress verifier until replay completes. The spawned task resets
+        // this to false when replay is done (or on fallback to full scan).
+        self.scanning.store(true, Ordering::Relaxed);
 
         // Spawn the replay event processing loop
         let writer = self.writer.clone();
