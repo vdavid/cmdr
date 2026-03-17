@@ -65,10 +65,56 @@ Core structure:
   it. Use `cargo run -p index-query -- <db_path> "<sql>"` instead. See
   [docs/tooling/index-query.md](docs/tooling/index-query.md) for examples and DB paths.
 
-## MCP
+## MCP (testing the running app)
 
-Two MCP servers available: "cmdr" (high-level app control) and "tauri" (low-level Tauri access).
-If you don't find these but need them, ask the user. Run the app in dev mode first.
+Two MCP servers are available when the app is running via `pnpm dev`:
+
+- **cmdr** (port 9224) — High-level app control: navigation, file operations, search, dialogs, state inspection. This
+  is the primary way to test and interact with the running app. Architecture docs: `src-tauri/src/mcp/CLAUDE.md`.
+- **tauri** (port 9223) — Low-level Tauri access: screenshots, DOM inspection, JS execution, IPC calls. Use for visual
+  verification and UI automation.
+
+### How to use the MCP servers
+
+**Prefer the wired-up MCP tools** (e.g. `mcp__cmdr__search`, `mcp__cmdr__nav_to_path`). These are available when
+Claude Code's MCP integration is connected. Always call `tools/list` first if you're unsure about parameter names.
+
+**Fallback: `./scripts/mcp-call.sh`** — a curl wrapper for Cmdr's MCP server:
+
+```bash
+# Search for files
+./scripts/mcp-call.sh search '{"pattern":"*.pdf","limit":5}'
+./scripts/mcp-call.sh ai_search '{"query":"recent invoices"}'
+
+# Navigate and inspect
+./scripts/mcp-call.sh nav_to_path '{"pane":"left","path":"/Users"}'
+./scripts/mcp-call.sh --read-resource 'cmdr://state'
+
+# Discover available tools and their parameter schemas
+./scripts/mcp-call.sh --list-tools
+```
+
+### Connection resilience
+
+The MCP server goes down during hot reloads (up to 15s for Rust changes, up to 3s for frontend changes). Multiple
+agents working simultaneously can trigger frequent reloads. Follow this escalation:
+
+1. **Try the wired-up MCP tools** (`mcp__cmdr__*`). If they work, use them.
+2. **If disconnected, try `./scripts/mcp-call.sh`** — it connects independently and may work when the MCP integration
+   is temporarily down.
+3. **If both fail, wait ~15 seconds and retry** — the app is probably mid-reload from a Rust change.
+4. **If still failing, ask the user** to stop other agents that may be triggering hot reloads, and report back when
+   it's clear.
+
+Do NOT retry in a tight loop. One retry after 15 seconds is enough before escalating.
+
+## Where to put instructions
+
+- **User-generic preferences** (e.g. "never use git stash", "don't take external actions without approval") →
+  `~/.claude/CLAUDE.md`. These apply across all projects.
+- **Project-specific instructions** → `AGENTS.md` (this file) for repo-wide rules, or colocated `CLAUDE.md` files for
+  module-specific docs. These are version-controlled and visible to all contributors.
+- **Don't use** the project-level `memory/MEMORY.md` for either category. It's not transparent and not in the repo.
 
 ## Critical rules
 
