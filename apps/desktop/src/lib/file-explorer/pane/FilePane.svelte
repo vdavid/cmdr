@@ -1240,14 +1240,29 @@
     // Track the previous volumeId to detect MTP connection completion
     let prevVolumeId = $state(volumeId)
 
-    // Update path when initialPath prop changes (for persistence loading)
-    // Skip for network views and device-only MTP views (not yet connected)
-    // Use untrack for currentPath so this effect only fires when initialPath changes,
-    // not when the user navigates (which changes currentPath before onPathChange is called)
+    // Reactive path loading — handles persistence restore AND MTP connection completion.
+    // One effect to avoid duplicate loadDirectory calls from overlapping triggers.
     $effect(() => {
         const newPath = initialPath // Track this
-        const curPath = untrack(() => currentPath) // Don't track this
-        // Load for local volumes and connected MTP views (not device-only)
+        const curPath = untrack(() => currentPath) // Don't track — user navigation changes this
+        const currentVolumeId = volumeId
+
+        // Case 1: MTP device just connected (device-only → storage-specific)
+        // This takes priority — the device just became browsable, always load.
+        const wasDeviceOnly = isMtpVolumeId(prevVolumeId) && !prevVolumeId.includes(':')
+        const isNowConnected = isMtpVolumeId(currentVolumeId) && currentVolumeId.includes(':')
+
+        if (wasDeviceOnly && isNowConnected) {
+            log.info('MTP volume connected, loading directory: {path}', { path: newPath })
+            currentPath = newPath
+            void loadDirectory(newPath)
+            prevVolumeId = currentVolumeId
+            return // Don't also fire the initialPath branch
+        }
+
+        prevVolumeId = currentVolumeId
+
+        // Case 2: initialPath changed for a loadable view (local volumes, connected MTP)
         if (!isNetworkView && !isMtpDeviceOnly && newPath !== curPath) {
             log.debug(
                 '[FilePane] initialPath effect: triggering loadDirectory, paneId={paneId}, newPath={newPath}, curPath={curPath}',
@@ -1256,32 +1271,14 @@
             currentPath = newPath
             void loadDirectory(newPath)
         }
-        // For device-only MTP views, just update the path (auto-connect will handle switching to storage)
+
+        // Case 3: Device-only MTP — just sync path, don't load (auto-connect handles transition)
         if (isMtpDeviceOnly && newPath !== curPath) {
             log.debug('[FilePane] initialPath effect (MTP device-only): updating path only, paneId={paneId}', {
                 paneId,
             })
             currentPath = newPath
         }
-    })
-
-    // Detect when MTP volume transitions from device-only to connected (has storage ID)
-    // This triggers loading after auto-connect completes
-    $effect(() => {
-        const wasDeviceOnly = isMtpVolumeId(prevVolumeId) && !prevVolumeId.includes(':')
-        const isNowConnected = isMtpVolumeId(volumeId) && volumeId.includes(':')
-
-        if (wasDeviceOnly && isNowConnected) {
-            log.info('MTP volume connected, loading directory: {path}', { path: initialPath })
-            log.debug(
-                '[FilePane] MTP volume transition effect: triggering loadDirectory, paneId={paneId}, prevVolumeId={prevVolumeId}, volumeId={volumeId}, initialPath={initialPath}',
-                { paneId, prevVolumeId, volumeId, initialPath },
-            )
-            currentPath = initialPath
-            void loadDirectory(initialPath)
-        }
-
-        prevVolumeId = volumeId
     })
 
     // Update global menu context when cursor position or focus changes (debounced — only matters for right-click)
