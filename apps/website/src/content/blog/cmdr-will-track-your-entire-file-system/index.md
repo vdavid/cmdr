@@ -11,7 +11,7 @@ Last night around 1 am—as you do—I was thinking about displaying dir sizes.
 First I thought I'd just do what all file managers do and only measure one at a time, and only on request.
 
 Then I wondered: "what if I used a file watcher to keep the results live?" And then it came to me: hey, what if I
-scanned the _entire drive_ on startup, and then watched for changes? Then we'd have a live index of the whole file
+scanned the _entire drive_ on startup, and then watched for changes? That gives you a live index of the whole file
 system, sitting in memory or a small DB.
 
 I thought there _obviously_ had to be some technical limitations that prevent this. But I asked the robots anyway
