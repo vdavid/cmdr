@@ -2,7 +2,9 @@
 import Layout from '../layouts/Layout.astro'
 import Header from '../components/Header.astro'
 import Hero from '../components/Hero.astro'
+import Story from '../components/Story.astro'
 import Features from '../components/Features.astro'
+import Testimonials from '../components/Testimonials.astro'
 import Download from '../components/Download.astro'
 import Footer from '../components/Footer.astro'
 import { version } from '../lib/release'
@@ -28,7 +30,9 @@ const softwareApplicationSchema = {
     <main>
         <script type="application/ld+json" set:html={JSON.stringify(softwareApplicationSchema)} />
         <Hero />
+        <Story />
         <Features />
+        <Testimonials />
         <Download />
     </main>
     <Footer />

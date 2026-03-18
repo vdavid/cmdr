@@ -1,0 +1,50 @@
+---
+const testimonials = [
+    {
+        quote: "I first used Norton Commander at 6, then was a huge Total Commander fan for ~20 years. When I switched to the Mac, all ~10 alternatives I tried were meh. Cmdr is the first actually promising one.",
+    },
+    {
+        quote: 'Whaaat? 100k files in 4 seconds? That is INSANE! With full icons, sizes, dates, everything. Try doing that in Whatever Commander!',
+    },
+    {
+        quote: "Live full-disk index and instant AI search with a private LLM? What a time to be alive! I wouldn't believe it works if I didn't build it myself. ;)",
+    },
+]
+---
+
+<section class="relative px-6 py-32">
+    <div class="mx-auto max-w-6xl">
+        <div class="mb-16 text-center">
+            <h2 class="mb-4 text-3xl font-bold md:text-4xl lg:text-5xl">What people are saying</h2>
+        </div>
+
+        <div class="grid gap-6 md:grid-cols-3">
+            {
+                testimonials.map((t) => (
+                    <div class="flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 transition-all duration-300 hover:border-[var(--color-accent)]/30">
+                        <span class="mb-2 text-4xl leading-none text-[var(--color-accent)]" aria-hidden="true">&ldquo;</span>
+                        <blockquote
+                            class="mb-8 flex-1 text-lg italic leading-relaxed text-[var(--color-text-secondary)]"
+                            set:html={`${t.quote}`}
+                        />
+                        <div class="flex items-center gap-3">
+                            <div class="rounded-full bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-accent)]/40 p-[2px]">
+                                <img
+                                    src="/images/david.jpg"
+                                    alt="David"
+                                    width="44"
+                                    height="44"
+                                    class="rounded-full"
+                                />
+                            </div>
+                            <div>
+                                <p class="font-semibold text-[var(--color-text-primary)]">David</p>
+                                <p class="text-sm text-[var(--color-text-tertiary)]">software eng</p>
+                            </div>
+                        </div>
+                    </div>
+                ))
+            }
+        </div>
+    </div>
+</section>
