@@ -599,19 +599,20 @@ fn resolve_ai_backend() -> Result<AiBackend, String> {
     }
 }
 
-/// Translates a natural language search query into structured filters using the configured LLM.
+/// Calls the LLM to translate a natural language query into search filters.
+/// Used by both the IPC command and the MCP executor.
 ///
 /// Pass 1 (no `preflight_context`): broad query using the standard system prompt.
 /// Pass 2 (with `preflight_context`): refinement prompt that includes real results from pass 1.
-#[tauri::command]
-pub async fn translate_search_query(
-    natural_query: String,
-    preflight_context: Option<PreflightContext>,
-) -> Result<TranslateResult, String> {
+/// Returns `(ai_query, preflight_summary)` — summary is `Some` only for pass 1.
+pub(crate) async fn call_ai_translate(
+    natural_query: &str,
+    preflight_context: Option<&PreflightContext>,
+) -> Result<(AiSearchQuery, Option<String>), String> {
     let backend = resolve_ai_backend()?;
 
-    let system_prompt = match &preflight_context {
-        Some(ctx) => build_refinement_system_prompt(&natural_query, ctx),
+    let system_prompt = match preflight_context {
+        Some(ctx) => build_refinement_system_prompt(natural_query, ctx),
         None => build_search_system_prompt(),
     };
 
@@ -622,7 +623,7 @@ pub async fn translate_search_query(
         top_p: 0.9,
     };
 
-    let response = crate::ai::client::chat_completion(&backend, &natural_query, &options)
+    let response = crate::ai::client::chat_completion(&backend, natural_query, &options)
         .await
         .map_err(|e| format!("{e}"))?;
 
@@ -657,6 +658,21 @@ pub async fn translate_search_query(
     } else {
         None
     };
+
+    Ok((ai_query, preflight_summary))
+}
+
+/// Translates a natural language search query into structured filters using the configured LLM.
+///
+/// Pass 1 (no `preflight_context`): broad query using the standard system prompt.
+/// Pass 2 (with `preflight_context`): refinement prompt that includes real results from pass 1.
+#[tauri::command]
+pub async fn translate_search_query(
+    natural_query: String,
+    preflight_context: Option<PreflightContext>,
+) -> Result<TranslateResult, String> {
+    let (ai_query, preflight_summary) =
+        call_ai_translate(&natural_query, preflight_context.as_ref()).await?;
 
     build_translate_result(ai_query, preflight_summary)
 }

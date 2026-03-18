@@ -952,89 +952,17 @@ async fn execute_search(params: &Value) -> ToolResult {
     Ok(json!(format_search_results(&result, limit)))
 }
 
-/// Execute the `ai_search` tool.
-async fn execute_ai_search(params: &Value) -> ToolResult {
-    let natural_query = params
-        .get("query")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| ToolError::invalid_params("Missing 'query' parameter"))?;
-    let limit = params.get("limit").and_then(|v| v.as_u64()).unwrap_or(30) as u32;
-
-    let index = ensure_search_index().await?;
-
-    // Get AI backend config
-    let provider = crate::ai::manager::get_provider();
-    let backend = match provider.as_str() {
-        "off" => {
-            return Err(ToolError::internal(
-                "AI is not configured. Enable an AI provider in settings.",
-            ));
-        }
-        "local" => {
-            let port = crate::ai::manager::get_port()
-                .ok_or_else(|| ToolError::internal("Local AI server isn't running. Start it in settings."))?;
-            crate::ai::client::AiBackend::Local { port }
-        }
-        "openai-compatible" => {
-            let (api_key, base_url, model) = crate::ai::manager::get_openai_config();
-            if api_key.is_empty() {
-                return Err(ToolError::internal(
-                    "OpenAI API key not configured. Add it in settings.",
-                ));
-            }
-            crate::ai::client::AiBackend::OpenAi {
-                api_key,
-                base_url,
-                model,
-            }
-        }
-        _ => return Err(ToolError::internal(format!("Unknown AI provider: {provider}"))),
-    };
-
-    let options = crate::ai::client::ChatCompletionOptions {
-        system_prompt: crate::commands::search::build_search_system_prompt(),
-        temperature: 0.3,
-        max_tokens: 200,
-        top_p: 0.9,
-    };
-
-    let response = crate::ai::client::chat_completion(&backend, natural_query, &options)
-        .await
-        .map_err(|e| ToolError::internal(format!("{e}")))?;
-
-    let mut ai_query = crate::commands::search::parse_ai_response(&response).map_err(ToolError::internal)?;
-
-    // Validate regex patterns — retry once if invalid
-    if let Err(regex_error) = crate::commands::search::validate_regex_pattern(&ai_query) {
-        let pattern = ai_query.name_pattern.as_deref().unwrap_or("");
-        let retry_prompt = format!(
-            "You gave me this pattern: `{pattern}`, but it's not valid regex: {regex_error}. \
-             Please fix it using Rust `regex` crate syntax (no lookahead/lookbehind, no backreferences). \
-             Return the same JSON object with the corrected pattern."
-        );
-
-        let retry_response = crate::ai::client::chat_completion(&backend, &retry_prompt, &options)
-            .await
-            .map_err(|e| ToolError::internal(format!("{e}")))?;
-
-        ai_query = crate::commands::search::parse_ai_response(&retry_response).map_err(ToolError::internal)?;
-
-        if let Err(retry_error) = crate::commands::search::validate_regex_pattern(&ai_query) {
-            return Err(ToolError::internal(format!(
-                "AI generated invalid regex pattern: {retry_error}"
-            )));
-        }
-    }
-
-    let translate_result =
-        crate::commands::search::build_translate_result(ai_query, None).map_err(ToolError::internal)?;
-
+/// Build a `SearchQuery` from a `TranslateResult`, merging in caller-provided scope.
+fn build_search_query_from_translate(
+    translate_result: &crate::commands::search::TranslateResult,
+    scope_str: Option<&str>,
+    limit: u32,
+) -> SearchQuery {
     // Start with AI-provided scope
-    let mut include_paths = translate_result.query.include_paths;
-    let mut exclude_dir_names = translate_result.query.exclude_dir_names;
+    let mut include_paths = translate_result.query.include_paths.clone();
+    let mut exclude_dir_names = translate_result.query.exclude_dir_names.clone();
 
     // Merge caller-provided scope on top
-    let scope_str = params.get("scope").and_then(|v| v.as_str());
     if let Some(scope) = scope_str {
         let parsed = search::parse_scope(scope);
         if !parsed.include_paths.is_empty() {
@@ -1047,8 +975,8 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
         }
     }
 
-    let query = SearchQuery {
-        name_pattern: translate_result.query.name_pattern,
+    SearchQuery {
+        name_pattern: translate_result.query.name_pattern.clone(),
         pattern_type: if translate_result.query.pattern_type == "regex" {
             PatternType::Regex
         } else {
@@ -1063,17 +991,96 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
         exclude_dir_names,
         limit,
         case_sensitive: translate_result.query.case_sensitive,
-    };
+    }
+}
 
-    let interpreted = summarize_query(&query);
-    let query_clone = query.clone();
+/// Execute the `ai_search` tool.
+///
+/// Two-pass flow:
+/// 1. Call LLM to translate natural language → structured query (pass 1)
+/// 2. Run search, check results
+/// 3. If >10 results, build preflight context and call LLM again (pass 2) for refinement
+async fn execute_ai_search(params: &Value) -> ToolResult {
+    let natural_query = params
+        .get("query")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ToolError::invalid_params("Missing 'query' parameter"))?;
+    let limit = params.get("limit").and_then(|v| v.as_u64()).unwrap_or(30) as u32;
+    let scope_str = params.get("scope").and_then(|v| v.as_str());
+
+    let index = ensure_search_index().await?;
+
+    // ── Pass 1: broad query ──────────────────────────────────────────
+    let (ai_query, preflight_summary) = crate::commands::search::call_ai_translate(natural_query, None)
+        .await
+        .map_err(ToolError::internal)?;
+
+    let preflight_summary = preflight_summary.unwrap_or_default();
+
+    let translate_result =
+        crate::commands::search::build_translate_result(ai_query, Some(preflight_summary.clone()))
+            .map_err(ToolError::internal)?;
+
+    let pass1_query = build_search_query_from_translate(&translate_result, scope_str, limit);
+
+    let pass1_query_clone = pass1_query.clone();
     let index_clone = index.clone();
-    let result = tokio::task::spawn_blocking(move || run_search_and_postprocess(&index_clone, &query_clone))
+    let pass1_result = tokio::task::spawn_blocking(move || run_search_and_postprocess(&index_clone, &pass1_query_clone))
         .await
         .map_err(|e| ToolError::internal(format!("Search failed: {e}")))??;
 
-    let formatted = format_search_results(&result, limit);
-    Ok(json!(format!("Interpreted query: {interpreted}\n\n{formatted}")))
+    let pass1_total = pass1_result.total_count;
+
+    // ── Check: skip pass 2 if results are already narrow or empty ────
+    if pass1_total <= 10 || pass1_total == 0 {
+        let interpreted = summarize_query(&pass1_query);
+        let formatted = format_search_results(&pass1_result, limit);
+        let output = format!(
+            "Preflight: {preflight_summary} \u{2192} {pass1_total} hits\n\nInterpreted query: {interpreted}\n\n{formatted}"
+        );
+        return Ok(json!(output));
+    }
+
+    // ── Pass 2: refine with preflight context ────────────────────────
+    let sample_entries: Vec<crate::commands::search::PreflightEntry> = pass1_result
+        .entries
+        .iter()
+        .take(20)
+        .map(|e| crate::commands::search::PreflightEntry {
+            name: e.name.clone(),
+            size: e.size,
+            modified_at: e.modified_at,
+            is_directory: e.is_directory,
+        })
+        .collect();
+
+    let preflight_context = crate::commands::search::PreflightContext {
+        total_count: pass1_total,
+        sample_entries,
+    };
+
+    let (refined_ai_query, _) =
+        crate::commands::search::call_ai_translate(natural_query, Some(&preflight_context))
+            .await
+            .map_err(ToolError::internal)?;
+
+    let refined_translate =
+        crate::commands::search::build_translate_result(refined_ai_query, None).map_err(ToolError::internal)?;
+
+    let pass2_query = build_search_query_from_translate(&refined_translate, scope_str, limit);
+
+    let interpreted = summarize_query(&pass2_query);
+    let pass2_query_clone = pass2_query.clone();
+    let index_clone = index.clone();
+    let pass2_result = tokio::task::spawn_blocking(move || run_search_and_postprocess(&index_clone, &pass2_query_clone))
+        .await
+        .map_err(|e| ToolError::internal(format!("Search failed: {e}")))??;
+
+    let formatted = format_search_results(&pass2_result, limit);
+    let output = format!(
+        "Preflight: {preflight_summary} \u{2192} {pass1_total} hits \u{00b7} Refined\n\nInterpreted query: {interpreted}\n\n{formatted}"
+    );
+    Ok(json!(output))
 }
 
 #[cfg(test)]
