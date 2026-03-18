@@ -172,6 +172,10 @@ pub struct SearchQuery {
     pub exclude_dir_names: Option<Vec<String>>,
     #[serde(default = "default_limit")]
     pub limit: u32,
+    /// Per-query case sensitivity override.
+    /// `None` = platform default (false on macOS, true on Linux).
+    #[serde(default)]
+    pub case_sensitive: Option<bool>,
 }
 
 fn default_limit() -> u32 {
@@ -254,6 +258,13 @@ pub fn summarize_query(query: &SearchQuery) -> String {
     match query.is_directory {
         Some(true) => parts.push("dirs only".to_string()),
         Some(false) => parts.push("files only".to_string()),
+        None => {}
+    }
+
+    // Case sensitivity (only show when explicitly set)
+    match query.case_sensitive {
+        Some(true) => parts.push("case-sensitive".to_string()),
+        Some(false) => parts.push("case-insensitive".to_string()),
         None => {}
     }
 
@@ -549,10 +560,12 @@ fn prepare_scope_filter(query: &SearchQuery, index: &SearchIndex) -> ScopeFilter
             } else {
                 // Bare name: compile as glob pattern
                 let regex_str = glob_to_regex(pattern);
-                if let Ok(re) = RegexBuilder::new(&regex_str)
-                    .case_insensitive(cfg!(target_os = "macos"))
-                    .build()
-                {
+                let case_insensitive = match query.case_sensitive {
+                    Some(true) => false,
+                    Some(false) => true,
+                    None => cfg!(target_os = "macos"),
+                };
+                if let Ok(re) = RegexBuilder::new(&regex_str).case_insensitive(case_insensitive).build() {
                     exclude_name_patterns.push(re);
                 }
             }
@@ -633,8 +646,13 @@ pub fn search(index: &SearchIndex, query: &SearchQuery) -> Result<SearchResult, 
                 }
                 PatternType::Regex => pattern.to_string(),
             };
+            let case_insensitive = match query.case_sensitive {
+                Some(true) => false,
+                Some(false) => true,
+                None => cfg!(target_os = "macos"),
+            };
             let re = RegexBuilder::new(&regex_str)
-                .case_insensitive(cfg!(target_os = "macos"))
+                .case_insensitive(case_insensitive)
                 .build()
                 .map_err(|e| format!("Invalid pattern: {e}"))?;
             Some(re)
@@ -969,6 +987,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             limit: 30,
+            case_sensitive: None,
         };
         let result = search(&index, &query).unwrap();
         // "ote" should match "notes.txt" as a substring
@@ -990,6 +1009,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             limit: 30,
+            case_sensitive: None,
         };
         let result = search(&index, &query).unwrap();
         // "repo" should match "report.pdf" and "Q1-report.pdf"
@@ -1012,6 +1032,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             limit: 30,
+            case_sensitive: None,
         };
         let result = search(&index, &query).unwrap();
         // "report*" matches "report.pdf" but NOT "Q1-report.pdf"
@@ -1145,6 +1166,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             limit: 30,
+            case_sensitive: None,
         };
         let result = search(&index, &query).unwrap();
         assert_eq!(result.total_count, 2);
@@ -1165,6 +1187,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             limit: 30,
+            case_sensitive: None,
         };
         let result = search(&index, &query).unwrap();
         assert_eq!(result.total_count, 1);
@@ -1188,6 +1211,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             limit: 30,
+            case_sensitive: None,
         };
         let result = search(&index, &query).unwrap();
         // On macOS, matching is case-insensitive
@@ -1211,6 +1235,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             limit: 30,
+            case_sensitive: None,
         };
         let result = search(&index, &query).unwrap();
         assert_eq!(result.total_count, 1);
@@ -1231,6 +1256,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             limit: 30,
+            case_sensitive: None,
         };
         let result = search(&index, &query);
         assert!(result.is_err());
@@ -1253,6 +1279,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             limit: 30,
+            case_sensitive: None,
         };
         let result = search(&index, &query).unwrap();
         // photo.jpg (5M) and Q1-report.pdf (2M)
@@ -1274,6 +1301,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             limit: 30,
+            case_sensitive: None,
         };
         let result = search(&index, &query).unwrap();
         assert_eq!(result.total_count, 1);
@@ -1294,6 +1322,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             limit: 30,
+            case_sensitive: None,
         };
         let result = search(&index, &query).unwrap();
         // report.pdf (1M) and Q1-report.pdf (2M)
@@ -1316,6 +1345,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             limit: 30,
+            case_sensitive: None,
         };
         let result = search(&index, &query).unwrap();
         // photo.jpg (4000), notes.txt (5000), Q1-report.pdf (6000)
@@ -1336,6 +1366,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             limit: 30,
+            case_sensitive: None,
         };
         let result = search(&index, &query).unwrap();
         // Users (1000), alice (2000), Documents (1500)
@@ -1356,6 +1387,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             limit: 30,
+            case_sensitive: None,
         };
         let result = search(&index, &query).unwrap();
         // report.pdf (3000), photo.jpg (4000), notes.txt (5000)
@@ -1378,6 +1410,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             limit: 30,
+            case_sensitive: None,
         };
         let result = search(&index, &query).unwrap();
         assert_eq!(result.total_count, 1);
@@ -1400,6 +1433,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             limit: 30,
+            case_sensitive: None,
         };
         let result = search(&index, &query).unwrap();
         // All entries except root sentinel (7 entries)
@@ -1424,6 +1458,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             limit: 3,
+            case_sensitive: None,
         };
         let result = search(&index, &query).unwrap();
         assert_eq!(result.entries.len(), 3);
@@ -1446,6 +1481,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             limit: 30,
+            case_sensitive: None,
         };
         let result = search(&index, &query).unwrap();
         // Users, alice, Documents (root excluded)
@@ -1467,6 +1503,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             limit: 30,
+            case_sensitive: None,
         };
         let result = search(&index, &query).unwrap();
         assert_eq!(result.total_count, 4);
@@ -1533,6 +1570,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             limit: 30,
+            case_sensitive: None,
         };
         let json = serde_json::to_string(&query).unwrap();
         assert!(json.contains("namePattern"));
@@ -1643,6 +1681,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             limit: 30,
+            case_sensitive: None,
         };
         let result = search(&index, &query).unwrap();
         assert_eq!(result.total_count, 1);
@@ -1687,6 +1726,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             limit: 30,
+            case_sensitive: None,
         }
     }
 
@@ -2038,6 +2078,7 @@ mod tests {
             include_paths: Some(vec!["/Users/alice/projects".to_string()]),
             exclude_dir_names: None,
             limit: 30,
+            case_sensitive: None,
         };
         let result = search(&index, &query).unwrap();
         // Should find app.rs and pkg.json (both under /Users/alice/projects)
@@ -2062,6 +2103,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: Some(vec!["node_modules".to_string()]),
             limit: 30,
+            case_sensitive: None,
         };
         let result = search(&index, &query).unwrap();
         // Should find app.rs and config, but NOT pkg.json (under node_modules)
@@ -2086,6 +2128,7 @@ mod tests {
             include_paths: Some(vec!["/Users/alice/projects".to_string()]),
             exclude_dir_names: Some(vec!["node_modules".to_string()]),
             limit: 30,
+            case_sensitive: None,
         };
         let result = search(&index, &query).unwrap();
         // Only app.rs: under projects but not under node_modules
@@ -2107,6 +2150,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: Some(vec![".*".to_string()]),
             limit: 30,
+            case_sensitive: None,
         };
         let result = search(&index, &query).unwrap();
         // Should exclude config (under .git) but keep app.rs and pkg.json

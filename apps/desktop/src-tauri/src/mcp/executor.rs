@@ -927,6 +927,8 @@ async fn execute_search(params: &Value) -> ToolResult {
         (None, None)
     };
 
+    let case_sensitive = params.get("caseSensitive").and_then(|v| v.as_bool());
+
     let query = SearchQuery {
         name_pattern: pattern,
         pattern_type,
@@ -938,6 +940,7 @@ async fn execute_search(params: &Value) -> ToolResult {
         include_paths,
         exclude_dir_names,
         limit,
+        case_sensitive,
     };
 
     let query_clone = query.clone();
@@ -1058,6 +1061,7 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
         include_paths,
         exclude_dir_names,
         limit,
+        case_sensitive: translate_result.query.case_sensitive,
     };
 
     let interpreted = summarize_query(&query);

@@ -26,6 +26,7 @@
     import type { UnlistenFn } from '$lib/tauri-commands'
     import { getSetting } from '$lib/settings'
     import { isScanning, getEntriesScanned } from '$lib/indexing'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import {
         getNamePattern,
         setNamePattern,
@@ -65,6 +66,8 @@
         setAiPrompt,
         getPatternType,
         setPatternType,
+        getCaseSensitive,
+        setCaseSensitive,
         getScope,
         setScope,
         buildSearchQuery,
@@ -146,6 +149,7 @@
     const aiStatus = $derived(getAiStatus())
     const aiPrompt = $derived(getAiPrompt())
     const patternType = $derived(getPatternType())
+    const caseSensitive = $derived(getCaseSensitive())
     const scope = $derived(getScope())
     const scanning = $derived(isScanning())
     const entriesScanned = $derived(getEntriesScanned())
@@ -156,7 +160,6 @@
     const inputsDisabled = $derived(!isIndexAvailable)
 
     let aiError = $state('')
-    let showScopeInfo = $state(false)
     let highlightedFields = new SvelteSet<string>()
     /** True once the user has triggered at least one search (so we can distinguish "no query yet" from "0 results"). */
     let hasSearched = $state(false)
@@ -178,8 +181,18 @@
         }
     }
 
+    /** Capture-phase Escape handler — fires before native elements (select, date picker) can consume the event. */
+    function handleEscapeCapture(e: KeyboardEvent): void {
+        if (e.key === 'Escape') {
+            e.preventDefault()
+            e.stopPropagation()
+            onClose()
+        }
+    }
+
     onMount(async () => {
         notifyDialogOpened('search').catch(() => {})
+        window.addEventListener('keydown', handleEscapeCapture, true)
 
         // Listen for index ready event
         unlistenReady = await onSearchIndexReady((entryCount: number) => {
@@ -211,6 +224,7 @@
         notifyDialogClosed('search').catch(() => {})
         releaseSearchIndex().catch(() => {})
         unlistenReady?.()
+        window.removeEventListener('keydown', handleEscapeCapture, true)
         if (debounceTimer) clearTimeout(debounceTimer)
         // Clean up any in-progress column drag
         document.removeEventListener('mousemove', handleColumnDragMove)
@@ -304,7 +318,7 @@
             modifiedAfter?: string | null
             modifiedBefore?: string | null
         }
-        query: { includePaths?: string[]; excludeDirNames?: string[] }
+        query: { includePaths?: string[]; excludeDirNames?: string[]; caseSensitive?: boolean }
     }): SvelteSet<string> {
         const changed = new SvelteSet<string>()
         if (result.display.namePattern != null) {
@@ -314,6 +328,10 @@
         if (result.display.patternType === 'regex' || result.display.patternType === 'glob') {
             setPatternType(result.display.patternType as PatternType)
             changed.add('patternType')
+        }
+        if (result.query.caseSensitive != null) {
+            setCaseSensitive(result.query.caseSensitive)
+            changed.add('caseSensitive')
         }
         if (applySizeFilters(result.display)) changed.add('size')
         if (applyDateFilters(result.display)) changed.add('date')
@@ -378,6 +396,11 @@
 
     function togglePatternType(): void {
         setPatternType(getPatternType() === 'glob' ? 'regex' : 'glob')
+        scheduleSearch()
+    }
+
+    function toggleCaseSensitive(): void {
+        setCaseSensitive(!getCaseSensitive())
         scheduleSearch()
     }
 
@@ -681,6 +704,17 @@
             />
             <button
                 class="pattern-type-toggle"
+                class:active={caseSensitive}
+                class:ai-highlight={highlightedFields.has('caseSensitive')}
+                onclick={toggleCaseSensitive}
+                disabled={inputsDisabled}
+                title={caseSensitive ? 'Case-sensitive' : 'Case-insensitive'}
+                aria-label={caseSensitive ? 'Case-sensitive' : 'Case-insensitive'}
+            >
+                Aa
+            </button>
+            <button
+                class="pattern-type-toggle"
                 class:ai-highlight={highlightedFields.has('patternType')}
                 onclick={togglePatternType}
                 disabled={inputsDisabled}
@@ -725,40 +759,26 @@
             <div class="scope-info-wrapper">
                 <button
                     class="scope-info-button"
-                    onclick={() => {
-                        showScopeInfo = !showScopeInfo
-                    }}
-                    onblur={() => {
-                        showScopeInfo = false
+                    use:tooltip={{
+                        html:
+                            '<div style="max-width:380px">' +
+                            '<div style="font-weight:600;margin-bottom:4px">Search scope — which folders to search in</div>' +
+                            '<div style="color:var(--color-text-secondary);margin-bottom:8px">Comma-separated paths. Use ! to exclude.</div>' +
+                            '<table style="border-spacing:0;margin-bottom:8px;width:100%">' +
+                            '<tr><td style="padding:2px 12px 2px 0;white-space:nowrap"><code>~/projects</code></td><td style="color:var(--color-text-secondary)">Search in one folder</td></tr>' +
+                            '<tr><td style="padding:2px 12px 2px 0;white-space:nowrap"><code>~/projects, ~/Documents</code></td><td style="color:var(--color-text-secondary)">Search in multiple folders</td></tr>' +
+                            '<tr><td style="padding:2px 12px 2px 0;white-space:nowrap"><code>!node_modules, !.git</code></td><td style="color:var(--color-text-secondary)">Exclude folders by name</td></tr>' +
+                            '<tr><td style="padding:2px 12px 2px 0;white-space:nowrap"><code>~/projects, !node_modules</code></td><td style="color:var(--color-text-secondary)">Combine include and exclude</td></tr>' +
+                            '<tr><td style="padding:2px 12px 2px 0;white-space:nowrap"><code>!.*</code></td><td style="color:var(--color-text-secondary)">Exclude hidden folders</td></tr>' +
+                            '</table>' +
+                            '<div style="color:var(--color-text-secondary)">Wildcards * and ? work in folder names.<br>Use quotes or backslash to escape commas.</div>' +
+                            '</div>',
                     }}
                     disabled={inputsDisabled}
-                    title="Scope syntax help"
                     aria-label="Scope syntax help"
                 >
                     i
                 </button>
-                {#if showScopeInfo}
-                    <div class="scope-info-tooltip" role="tooltip">
-                        <div class="scope-info-title">Search scope — which folders to search in</div>
-                        <div class="scope-info-desc">Comma-separated paths. Use ! to exclude.</div>
-                        <table class="scope-info-examples">
-                            <tbody>
-                                <tr><td><code>~/projects</code></td><td>Search in one folder</td></tr>
-                                <tr><td><code>~/projects, ~/Documents</code></td><td>Search in multiple folders</td></tr
-                                >
-                                <tr><td><code>!node_modules, !.git</code></td><td>Exclude folders by name</td></tr>
-                                <tr
-                                    ><td><code>~/projects, !node_modules</code></td><td>Combine include and exclude</td
-                                    ></tr
-                                >
-                                <tr><td><code>!.*</code></td><td>Exclude hidden folders</td></tr>
-                            </tbody>
-                        </table>
-                        <div class="scope-info-desc">
-                            Wildcards * and ? work in folder names.<br />Use quotes or backslash to escape commas.
-                        </div>
-                    </div>
-                {/if}
             </div>
             <button
                 class="pattern-type-toggle"
@@ -1028,8 +1048,7 @@
     .search-overlay {
         position: fixed;
         inset: 0;
-        background: var(--color-overlay);
-        backdrop-filter: blur(2px);
+        background: var(--color-overlay-light);
         display: flex;
         justify-content: center;
         align-items: flex-start;
@@ -1178,6 +1197,12 @@
         color: var(--color-text-secondary);
     }
 
+    .pattern-type-toggle.active {
+        background: var(--color-accent-subtle);
+        border-color: var(--color-accent);
+        color: var(--color-text-primary);
+    }
+
     .pattern-type-toggle.ai-highlight {
         background: var(--color-accent-subtle);
         border-radius: var(--radius-sm);
@@ -1212,61 +1237,6 @@
 
     .scope-info-button:not(:disabled):hover {
         border-color: var(--color-border-strong);
-        color: var(--color-text-secondary);
-    }
-
-    .scope-info-tooltip {
-        position: absolute;
-        bottom: calc(100% + var(--spacing-sm));
-        right: 0;
-        z-index: var(--z-tooltip);
-        background: var(--color-bg-tertiary);
-        color: var(--color-text-primary);
-        border: 1px solid var(--color-border-strong);
-        border-radius: var(--radius-md);
-        box-shadow: var(--shadow-md);
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- tooltip needs precise sizing */
-        padding: 10px 14px;
-        max-width: 420px;
-        width: max-content;
-    }
-
-    .scope-info-title {
-        font-size: var(--font-size-sm);
-        font-weight: 600;
-        margin-bottom: var(--spacing-xs);
-    }
-
-    .scope-info-desc {
-        font-size: var(--font-size-sm);
-        color: var(--color-text-secondary);
-        margin-bottom: var(--spacing-sm);
-    }
-
-    .scope-info-examples {
-        width: 100%;
-        border-spacing: 0;
-        margin-bottom: var(--spacing-sm);
-    }
-
-    .scope-info-examples td {
-        font-size: var(--font-size-sm);
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- table cell padding */
-        padding: 2px 0;
-        vertical-align: top;
-    }
-
-    .scope-info-examples td:first-child {
-        padding-right: var(--spacing-md);
-        white-space: nowrap;
-    }
-
-    .scope-info-examples code {
-        font-family: var(--font-mono);
-        font-size: var(--font-size-sm);
-    }
-
-    .scope-info-examples td:last-child {
         color: var(--color-text-secondary);
     }
 

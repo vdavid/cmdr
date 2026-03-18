@@ -369,6 +369,10 @@ fn get_search_tools() -> Vec<Tool> {
                         "type": "string",
                         "description": "Scope string: comma-separated paths, ! for excludes (for example, \"~/projects, !node_modules\")"
                     },
+                    "caseSensitive": {
+                        "type": "boolean",
+                        "description": "Case-sensitive matching. Default: false on macOS, true on Linux"
+                    },
                     "limit": {
                         "type": "integer",
                         "description": "Max results to return. Default: 30"

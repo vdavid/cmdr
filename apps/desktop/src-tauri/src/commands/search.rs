@@ -273,6 +273,7 @@ pub(crate) struct AiSearchQuery {
     pub(crate) is_directory: Option<bool>,
     pub(crate) search_paths: Option<Vec<String>>,
     pub(crate) exclude_dirs: Option<Vec<String>>,
+    pub(crate) case_sensitive: Option<bool>,
 }
 
 /// Human-readable field values returned alongside the structured query.
@@ -296,6 +297,7 @@ pub struct TranslatedQuery {
     pub is_directory: Option<bool>,
     pub include_paths: Option<Vec<String>>,
     pub exclude_dir_names: Option<Vec<String>>,
+    pub case_sensitive: Option<bool>,
 }
 
 /// Human-readable values so the frontend can populate filter UI.
@@ -311,6 +313,7 @@ pub struct TranslateDisplay {
     pub is_directory: Option<bool>,
     pub include_paths: Option<Vec<String>>,
     pub exclude_dir_names: Option<Vec<String>>,
+    pub case_sensitive: Option<bool>,
 }
 
 /// Converts an ISO date string (YYYY-MM-DD) to a unix timestamp (seconds since epoch).
@@ -344,6 +347,7 @@ pub(crate) fn build_search_system_prompt() -> String {
          - \"isDirectory\": true for folders only, false for files only, omit for both\n\
          - \"searchPaths\": array of paths to search within (for example, [\"~/projects\"])\n\
          - \"excludeDirs\": array of directory names to exclude (for example, [\"node_modules\", \".git\"])\n\
+         - \"caseSensitive\": true when exact casing matters (default: omit for platform default)\n\
          \n\
          Glob only supports * and ?. For multiple extensions or alternation, use regex.\n\
          Regex: Rust `regex` crate syntax (no lookahead/lookbehind, no backreferences, \
@@ -422,6 +426,7 @@ pub(crate) fn build_translate_result(ai_query: AiSearchQuery) -> Result<Translat
             is_directory: ai_query.is_directory,
             include_paths: include_paths.clone(),
             exclude_dir_names: exclude_dir_names.clone(),
+            case_sensitive: ai_query.case_sensitive,
         },
         display: TranslateDisplay {
             name_pattern: ai_query.name_pattern,
@@ -433,6 +438,7 @@ pub(crate) fn build_translate_result(ai_query: AiSearchQuery) -> Result<Translat
             is_directory: ai_query.is_directory,
             include_paths,
             exclude_dir_names,
+            case_sensitive: ai_query.case_sensitive,
         },
     })
 }
@@ -610,6 +616,7 @@ mod tests {
                 is_directory: None,
                 include_paths: None,
                 exclude_dir_names: None,
+                case_sensitive: None,
             },
             display: TranslateDisplay {
                 name_pattern: Some("*.pdf".to_string()),
@@ -621,6 +628,7 @@ mod tests {
                 is_directory: None,
                 include_paths: None,
                 exclude_dir_names: None,
+                case_sensitive: None,
             },
         };
         let json = serde_json::to_string(&result).unwrap();
@@ -677,6 +685,7 @@ mod tests {
             is_directory: None,
             search_paths: None,
             exclude_dirs: None,
+            case_sensitive: None,
         };
         assert!(validate_regex_pattern(&q).is_ok());
     }
@@ -693,6 +702,7 @@ mod tests {
             is_directory: None,
             search_paths: None,
             exclude_dirs: None,
+            case_sensitive: None,
         };
         assert!(validate_regex_pattern(&q).is_err());
     }
@@ -709,6 +719,7 @@ mod tests {
             is_directory: None,
             search_paths: None,
             exclude_dirs: None,
+            case_sensitive: None,
         };
         // Glob patterns aren't validated as regex
         assert!(validate_regex_pattern(&q).is_ok());
@@ -726,6 +737,7 @@ mod tests {
             is_directory: None,
             search_paths: None,
             exclude_dirs: None,
+            case_sensitive: None,
         };
         assert!(validate_regex_pattern(&q).is_ok());
     }
@@ -742,6 +754,7 @@ mod tests {
             is_directory: None,
             search_paths: None,
             exclude_dirs: None,
+            case_sensitive: None,
         };
         let result = build_translate_result(q).unwrap();
         assert_eq!(result.query.pattern_type, "regex");
@@ -779,6 +792,7 @@ mod tests {
             is_directory: None,
             search_paths: Some(vec!["~/projects".to_string()]),
             exclude_dirs: Some(vec!["node_modules".to_string(), ".git".to_string()]),
+            case_sensitive: None,
         };
         let result = build_translate_result(q).unwrap();
 
@@ -802,5 +816,6 @@ mod tests {
         assert!(prompt.contains("searchPaths"));
         assert!(prompt.contains("excludeDirs"));
         assert!(prompt.contains("node_modules"));
+        assert!(prompt.contains("caseSensitive"));
     }
 }

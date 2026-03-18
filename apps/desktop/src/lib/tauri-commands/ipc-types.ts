@@ -57,6 +57,7 @@ export interface SearchQuery {
     includePaths?: string[]
     excludeDirNames?: string[]
     limit: number
+    caseSensitive?: boolean
 }
 
 export interface SearchResult {
@@ -89,6 +90,7 @@ export interface TranslatedQuery {
     isDirectory: boolean | null
     includePaths?: string[]
     excludeDirNames?: string[]
+    caseSensitive?: boolean
 }
 
 export interface TranslateDisplay {
@@ -99,6 +101,7 @@ export interface TranslateDisplay {
     modifiedAfter: string | null
     modifiedBefore: string | null
     isDirectory: boolean | null
+    caseSensitive: boolean | null
     includePaths?: string[]
     excludeDirNames?: string[]
 }

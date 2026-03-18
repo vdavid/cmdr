@@ -35,6 +35,9 @@ let isIndexAvailable = $state(true)
 // Pattern type (glob vs regex)
 let patternType = $state<PatternType>('glob')
 
+// Case sensitivity
+let caseSensitive = $state(false)
+
 // AI state
 let aiStatus = $state('')
 let aiPrompt = $state('')
@@ -100,6 +103,9 @@ export function getAiStatus(): string {
 export function getAiPrompt(): string {
     return aiPrompt
 }
+export function getCaseSensitive(): boolean {
+    return caseSensitive
+}
 export function getScope(): string {
     return scope
 }
@@ -162,6 +168,9 @@ export function setAiStatus(value: string): void {
 export function setAiPrompt(value: string): void {
     aiPrompt = value
 }
+export function setCaseSensitive(value: boolean): void {
+    caseSensitive = value
+}
 export function setScope(value: string): void {
     scope = value
 }
@@ -220,6 +229,11 @@ export function buildSearchQuery(): SearchQuery {
         limit: 30,
     }
 
+    // Only include caseSensitive when explicitly set, so Rust uses the platform default (None)
+    if (caseSensitive) {
+        query.caseSensitive = true
+    }
+
     if (namePattern.trim()) {
         query.namePattern = namePattern.trim()
     }
@@ -246,6 +260,7 @@ export function resetSearchState(): void {
     cursorIndex = 0
     isIndexAvailable = true
     patternType = 'glob'
+    caseSensitive = false
     aiStatus = ''
     aiPrompt = ''
     scope = ''
