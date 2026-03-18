@@ -74,6 +74,8 @@
         setExcludeSystemDirs,
         getPreflightText,
         setPreflightText,
+        getCaveat,
+        setCaveat,
         systemDirNames,
         buildSearchQuery,
         resetSearchState,
@@ -158,6 +160,7 @@
     const scope = $derived(getScope())
     const excludeSystemDirs = $derived(getExcludeSystemDirs())
     const preflightText = $derived(getPreflightText())
+    const caveatText = $derived(getCaveat())
     const scanning = $derived(isScanning())
     const entriesScanned = $derived(getEntriesScanned())
 
@@ -474,6 +477,7 @@
         if (isStale()) return
 
         applyAiFiltersWithHighlight(pass2Result)
+        setCaveat(pass2Result.caveat ?? '')
         setPreflightText(`${summaryPrefix} → ${hitCount.toLocaleString()} hits · Refined`)
 
         setAiStatus('Searching...')
@@ -492,6 +496,7 @@
 
         aiError = ''
         setPreflightText('')
+        setCaveat('')
         const provider = getSetting('ai.provider')
         const providerLabel = provider === 'local' ? 'local LLM' : provider
 
@@ -501,6 +506,7 @@
 
         const pass1Summary = pass1Result.preflightSummary ?? ''
         setPreflightText(pass1Summary ? `Preflight: ${pass1Summary}` : '')
+        setCaveat(pass1Result.caveat ?? '')
         applyAiFiltersWithHighlight(pass1Result)
 
         // Phase 2: Run preflight search with broad filters
@@ -834,6 +840,9 @@
                     <span class="preflight-placeholder">AI will analyze results to refine your search</span>
                 {/if}
             </div>
+            {#if caveatText}
+                <div class="caveat-row">{caveatText}</div>
+            {/if}
         {/if}
 
         <!-- Pattern / search row (always visible) -->
@@ -1447,6 +1456,15 @@
     .preflight-placeholder {
         color: var(--color-text-tertiary);
         font-style: italic;
+    }
+
+    .caveat-row {
+        padding: var(--spacing-xs) var(--spacing-md);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
     }
 
     .ai-status {

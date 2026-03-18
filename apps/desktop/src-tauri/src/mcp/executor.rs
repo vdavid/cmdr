@@ -1116,8 +1116,13 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
         log::info!("MCP ai_search: pass 1 returned {pass1_total} hits, skipping pass 2");
         let interpreted = summarize_query(&pass1_query);
         let formatted = format_search_results(&pass1_result, limit);
+        let caveat_line = translate_result
+            .caveat
+            .as_deref()
+            .map(|c| format!("Note: {c}\n"))
+            .unwrap_or_default();
         let output = format!(
-            "Preflight: {preflight_summary} \u{2192} {pass1_total} hits\n\nInterpreted query: {interpreted}\n\n{formatted}"
+            "Preflight: {preflight_summary} \u{2192} {pass1_total} hits\n\nInterpreted query: {interpreted}\n{caveat_line}\n{formatted}"
         );
         log::debug!("MCP ai_search: returning pass 1 result, output length={}", output.len());
         return Ok(json!(output));
@@ -1197,8 +1202,13 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
         };
 
     let formatted = format_search_results(&pass2_result, limit);
+    let caveat_line = refined_translate
+        .caveat
+        .as_deref()
+        .map(|c| format!("Note: {c}\n"))
+        .unwrap_or_default();
     let output = format!(
-        "Preflight: {preflight_summary} \u{2192} {pass1_total} hits \u{00b7} Refined\n\nInterpreted query: {interpreted}\n\n{formatted}"
+        "Preflight: {preflight_summary} \u{2192} {pass1_total} hits \u{00b7} Refined\n\nInterpreted query: {interpreted}\n{caveat_line}\n{formatted}"
     );
     log::debug!("MCP ai_search: returning pass 2 result, output length={}", output.len());
     Ok(json!(output))

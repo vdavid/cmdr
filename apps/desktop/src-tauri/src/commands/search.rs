@@ -274,6 +274,7 @@ pub(crate) struct AiSearchQuery {
     pub(crate) search_paths: Option<Vec<String>>,
     pub(crate) exclude_dirs: Option<Vec<String>>,
     pub(crate) case_sensitive: Option<bool>,
+    pub(crate) caveat: Option<String>,
 }
 
 /// Preflight context from pass 1 results, sent back in pass 2 for refinement.
@@ -301,6 +302,7 @@ pub struct TranslateResult {
     pub query: TranslatedQuery,
     pub display: TranslateDisplay,
     pub preflight_summary: Option<String>,
+    pub caveat: Option<String>,
 }
 
 /// The structured query with unix timestamps, ready for `search_files`.
@@ -372,6 +374,9 @@ pub(crate) fn build_search_system_prompt() -> String {
          - \"searchPaths\": array of paths to search within (for example, [\"~/projects\"])\n\
          - \"excludeDirs\": array of directory names to exclude (for example, [\"node_modules\", \".git\"])\n\
          - \"caseSensitive\": true when exact casing matters (default: omit for platform default)\n\
+         - \"caveat\": if part of the query refers to file content, visual appearance, or anything \
+         not determinable from filename/size/date/path, briefly explain what was dropped and suggest \
+         how to narrow results. Omit if the query translates fully.\n\
          \n\
          Glob only supports * and ?. For multiple extensions or alternation, use regex.\n\
          Regex: Rust `regex` crate syntax (no lookahead/lookbehind, no backreferences, \
@@ -409,6 +414,7 @@ pub(crate) fn build_search_system_prompt() -> String {
          \"documents older than a year\" → {{\"namePattern\": \"\\\\.(pdf|doc|docx|txt|odt|xls|xlsx)$\", \"patternType\": \"regex\", \"modifiedBefore\": \"{one_year_ago_str}\"}}\n\
          \"python files in my projects\" → {{\"namePattern\": \"*.py\", \"patternType\": \"glob\", \"searchPaths\": [\"~/projects\"], \"excludeDirs\": [\"node_modules\", \".git\", \"__pycache__\", \".venv\"]}}\n\
          \"anything related to kubernetes\" → {{\"namePattern\": \"(k8s|kube|kubectl|helm|kubernetes)\", \"patternType\": \"regex\"}}\n\
+         \"photos of my cat\" → {{\"namePattern\": \"\\\\.(jpg|jpeg|png|heic|webp|gif)$\", \"patternType\": \"regex\", \"caveat\": \"Can't filter by photo content — add your naming convention if you have one (e.g. 'cat-*')\"}}\n\
          \n\
          Today's date is {today_str}. Return ONLY the JSON, no explanation."
     )
@@ -589,6 +595,8 @@ pub(crate) fn build_refinement_system_prompt(natural_query: &str, ctx: &Prefligh
          query unchanged. Don't fix what isn't broken.\n\
          - Never drop the core search term to broaden coverage. If the preflight searched for \
          \"websocket\" and found some results, keep \"websocket\" — don't generalize to all server files.\n\
+         - If the pass 1 query included a \"caveat\", preserve it if still applicable. Drop it only \
+         if the refinement resolved the limitation.\n\
          Return ONLY the refined JSON."
     )
 }
@@ -647,6 +655,7 @@ pub(crate) fn build_translate_result(
             case_sensitive: ai_query.case_sensitive,
         },
         preflight_summary,
+        caveat: ai_query.caveat,
     })
 }
 
@@ -937,6 +946,7 @@ mod tests {
                 case_sensitive: None,
             },
             preflight_summary: Some("*.pdf \u{00b7} size \u{2265} 1 MB".to_string()),
+            caveat: None,
         };
         let json = serde_json::to_string(&result).unwrap();
         assert!(json.contains("namePattern"));
@@ -994,6 +1004,7 @@ mod tests {
             search_paths: None,
             exclude_dirs: None,
             case_sensitive: None,
+            caveat: None,
         };
         assert!(validate_regex_pattern(&q).is_ok());
     }
@@ -1011,6 +1022,7 @@ mod tests {
             search_paths: None,
             exclude_dirs: None,
             case_sensitive: None,
+            caveat: None,
         };
         assert!(validate_regex_pattern(&q).is_err());
     }
@@ -1028,6 +1040,7 @@ mod tests {
             search_paths: None,
             exclude_dirs: None,
             case_sensitive: None,
+            caveat: None,
         };
         // Glob patterns aren't validated as regex
         assert!(validate_regex_pattern(&q).is_ok());
@@ -1046,6 +1059,7 @@ mod tests {
             search_paths: None,
             exclude_dirs: None,
             case_sensitive: None,
+            caveat: None,
         };
         assert!(validate_regex_pattern(&q).is_ok());
     }
@@ -1063,6 +1077,7 @@ mod tests {
             search_paths: None,
             exclude_dirs: None,
             case_sensitive: None,
+            caveat: None,
         };
         let result = build_translate_result(q, None).unwrap();
         assert_eq!(result.query.pattern_type, "regex");
@@ -1101,6 +1116,7 @@ mod tests {
             search_paths: Some(vec!["~/projects".to_string()]),
             exclude_dirs: Some(vec!["node_modules".to_string(), ".git".to_string()]),
             case_sensitive: None,
+            caveat: None,
         };
         let result = build_translate_result(q, None).unwrap();
 
@@ -1142,6 +1158,7 @@ mod tests {
             search_paths: None,
             exclude_dirs: None,
             case_sensitive: None,
+            caveat: None,
         };
         assert_eq!(summarize_ai_query(&q), "*resume*");
     }
@@ -1159,6 +1176,7 @@ mod tests {
             search_paths: None,
             exclude_dirs: None,
             case_sensitive: None,
+            caveat: None,
         };
         assert_eq!(summarize_ai_query(&q), "*.pdf \u{00b7} size \u{2265} 10 MB");
     }
@@ -1176,6 +1194,7 @@ mod tests {
             search_paths: None,
             exclude_dirs: None,
             case_sensitive: None,
+            caveat: None,
         };
         assert_eq!(summarize_ai_query(&q), "Screenshot.* (regex) \u{00b7} after 2026-03-16");
     }
@@ -1193,6 +1212,7 @@ mod tests {
             search_paths: None,
             exclude_dirs: None,
             case_sensitive: None,
+            caveat: None,
         };
         assert_eq!(summarize_ai_query(&q), "size \u{2265} 1 GB \u{00b7} dirs only");
     }
@@ -1210,6 +1230,7 @@ mod tests {
             search_paths: None,
             exclude_dirs: None,
             case_sensitive: None,
+            caveat: None,
         };
         assert_eq!(summarize_ai_query(&q), "(all entries)");
     }
@@ -1227,6 +1248,7 @@ mod tests {
             search_paths: None,
             exclude_dirs: None,
             case_sensitive: None,
+            caveat: None,
         };
         let summary = summarize_ai_query(&q);
         assert!(summary.contains("*.log"));
@@ -1355,6 +1377,7 @@ mod tests {
             search_paths: None,
             exclude_dirs: None,
             case_sensitive: None,
+            caveat: None,
         };
         let summary = "*.pdf".to_string();
         let result = build_translate_result(q, Some(summary.clone())).unwrap();
@@ -1374,6 +1397,7 @@ mod tests {
             search_paths: None,
             exclude_dirs: None,
             case_sensitive: None,
+            caveat: None,
         };
         let result = build_translate_result(q, None).unwrap();
         assert!(result.preflight_summary.is_none());
@@ -1444,5 +1468,26 @@ mod tests {
         let input = r#"{"k": "v"}"#;
         let fixed = fix_json_backslash_escapes(input);
         assert_eq!(fixed, input);
+    }
+
+    #[test]
+    fn test_ai_search_query_serde_roundtrip_with_caveat() {
+        let json = r#"{
+            "namePattern": "\\.(jpg|jpeg|png|heic)$",
+            "patternType": "regex",
+            "caveat": "Can't filter by photo content — add your naming convention if you have one"
+        }"#;
+        let q: AiSearchQuery = serde_json::from_str(json).unwrap();
+        assert_eq!(q.name_pattern.as_deref(), Some("\\.(jpg|jpeg|png|heic)$"));
+        assert_eq!(q.pattern_type.as_deref(), Some("regex"));
+        assert_eq!(
+            q.caveat.as_deref(),
+            Some("Can't filter by photo content — add your naming convention if you have one")
+        );
+
+        // Without caveat — field should be None
+        let json_no_caveat = r#"{"namePattern": "*.pdf"}"#;
+        let q2: AiSearchQuery = serde_json::from_str(json_no_caveat).unwrap();
+        assert!(q2.caveat.is_none());
     }
 }

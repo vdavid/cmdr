@@ -110,6 +110,7 @@ export interface TranslateResult {
     query: TranslatedQuery
     display: TranslateDisplay
     preflightSummary?: string
+    caveat?: string
 }
 
 export interface PreflightContext {
