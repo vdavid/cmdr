@@ -1,42 +1,42 @@
 ---
 const features = [
     {
-        icon: '/icons/brain.svg',
-        title: 'Natural language rename',
+        icon: '/icons/database.svg',
+        title: 'Live full-disk index',
         description:
-            'Type "make these lowercase and add date prefix" and watch it happen. No regex, no scripts, just words.',
-        highlight: true,
+            'Indexes your entire drive once in about 4 minutes. Then stays current forever, even across restarts.',
+    },
+    {
+        icon: '/icons/rocket.svg',
+        title: 'Blazing fast',
+        description:
+            'Built in Rust. Opens a 100k-file folder in 4 seconds with icons, sizes, and dates. Try that in Finder.',
+    },
+    {
+        icon: '/icons/keyboard.svg',
+        title: 'Keyboard-first',
+        description:
+            'Navigate, select, copy, move. All without touching your mouse. Two panes, tabs, command palette.',
     },
     {
         icon: '/icons/search.svg',
         title: 'Smart search',
         description:
             'Find files by describing them: "that PDF contract from last month" or "screenshots with error messages."',
-        highlight: true,
+        badge: 'Rough around the edges',
+    },
+    {
+        icon: '/icons/brain.svg',
+        title: 'Natural language rename',
+        description:
+            'Type "make these lowercase and add date prefix" and watch it happen. No regex, no scripts, just words.',
+        badge: 'Coming soon',
     },
     {
         icon: '/icons/zap.svg',
         title: 'AI batch operations',
         description: 'Organize hundreds of files with a single command. "Sort these into folders by project name."',
-        highlight: true,
-    },
-    {
-        icon: '/icons/keyboard.svg',
-        title: 'Keyboard-first',
-        description: 'Navigate, select, copy, move — all without touching your mouse. Just like the old days.',
-        highlight: false,
-    },
-    {
-        icon: '/icons/rocket.svg',
-        title: 'Blazing fast',
-        description: 'Built with Rust for native performance. Handles folders with 50,000+ files effortlessly.',
-        highlight: false,
-    },
-    {
-        icon: '/icons/folder.svg',
-        title: 'Two-pane layout',
-        description: 'See source and destination side by side. The classic layout that just works.',
-        highlight: false,
+        badge: 'Coming soon',
     },
 ]
 ---
@@ -46,10 +46,10 @@ const features = [
         <!-- Section header -->
         <div class="mb-16 text-center">
             <h2 class="mb-4 text-3xl font-bold md:text-4xl lg:text-5xl">
-                AI that <span class="gradient-text">actually helps</span>
+                Built for <span class="gradient-text">power users</span>
             </h2>
             <p class="mx-auto max-w-2xl text-lg text-[var(--color-text-secondary)]">
-                Not a chatbot. Not a gimmick. Real AI features that save you hours of tedious file work.
+                Fast, keyboard-driven, and getting smarter.
             </p>
         </div>
 
@@ -59,21 +59,22 @@ const features = [
                 features.map((feature) => (
                     <div
                         class:list={[
-                            'group rounded-2xl border p-8 transition-all duration-300',
-                            feature.highlight
+                            'group relative rounded-2xl border p-8 transition-all duration-300',
+                            feature.badge
                                 ? 'border-[var(--color-accent)]/30 bg-gradient-to-br from-[var(--color-surface)] to-[var(--color-accent)]/5 hover:border-[var(--color-accent)]/50'
                                 : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-accent)]/30 hover:bg-[var(--color-surface-elevated)]',
                         ]}
                     >
+                        {feature.badge && (
+                            <a
+                                href="/roadmap"
+                                class="absolute top-4 right-4 rounded-full bg-[var(--color-accent)]/20 px-2.5 py-1 text-xs font-medium text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/30"
+                            >
+                                {feature.badge}
+                            </a>
+                        )}
                         <img src={feature.icon} alt="" class="mb-4 size-10" />
-                        <h3 class="mb-2 text-xl font-semibold">
-                            {feature.title}
-                            {feature.highlight && (
-                                <span class="ml-2 rounded-full bg-[var(--color-accent)]/20 px-2 py-0.5 text-xs font-medium text-[var(--color-accent)]">
-                                    AI
-                                </span>
-                            )}
-                        </h3>
+                        <h3 class="mb-2 text-xl font-semibold">{feature.title}</h3>
                         <p class="text-[var(--color-text-secondary)]">{feature.description}</p>
                     </div>
                 ))
