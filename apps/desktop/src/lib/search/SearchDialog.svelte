@@ -19,6 +19,7 @@
         releaseSearchIndex,
         translateSearchQuery,
         parseSearchScope,
+        getSystemDirExcludes,
         onSearchIndexReady,
         formatBytes,
     } from '$lib/tauri-commands'
@@ -76,7 +77,6 @@
         setPreflightText,
         getCaveat,
         setCaveat,
-        systemDirNames,
         buildSearchQuery,
         resetSearchState,
         type SizeFilter,
@@ -103,6 +103,7 @@
     let hoveredIndex = $state<number | null>(null)
     let debounceTimer: ReturnType<typeof setTimeout> | undefined
     let unlistenReady: UnlistenFn | undefined
+    let systemDirExcludeTooltip = $state('Excludes common system and build folders')
 
     // Resizable column widths (px). Icon column is fixed at 24px.
     const colWidths = $state({ name: 250, path: 350, size: 80, modified: 120 })
@@ -227,6 +228,20 @@
             setIsIndexAvailable(false)
         }
 
+        // Load system dir exclude list for tooltip display
+        getSystemDirExcludes()
+            .then((dirs) => {
+                const shown = dirs.slice(0, 8)
+                const rest = dirs.length - shown.length
+                const list = shown.join(', ') + (rest > 0 ? `, +${String(rest)} more` : '')
+                systemDirExcludeTooltip =
+                    '<div style="max-width:360px">' +
+                    '<div style="font-weight:600;margin-bottom:4px">Exclude system and build folders</div>' +
+                    `<div style="color:var(--color-text-secondary)">${list}</div>` +
+                    '</div>'
+            })
+            .catch(() => {})
+
         await tick()
         focusActiveInput()
     })
@@ -264,15 +279,6 @@
                 const parsed = await parseSearchScope(scopeStr)
                 if (parsed.includePaths.length > 0) query.includePaths = parsed.includePaths
                 if (parsed.excludePatterns.length > 0) query.excludeDirNames = parsed.excludePatterns
-            }
-
-            // Merge system dir exclusions (avoid duplicates with user-specified excludes)
-            if (getExcludeSystemDirs()) {
-                const existing = new Set(query.excludeDirNames ?? [])
-                const toAdd = systemDirNames.filter((d) => !existing.has(d))
-                if (toAdd.length > 0) {
-                    query.excludeDirNames = [...(query.excludeDirNames ?? []), ...toAdd]
-                }
             }
             const result = await searchFiles(query)
             setResults(result.entries)
@@ -398,13 +404,6 @@
             const parsed = await parseSearchScope(scopeStr)
             if (parsed.includePaths.length > 0) preflightQuery.includePaths = parsed.includePaths
             if (parsed.excludePatterns.length > 0) preflightQuery.excludeDirNames = parsed.excludePatterns
-        }
-        if (getExcludeSystemDirs()) {
-            const existing = new Set(preflightQuery.excludeDirNames ?? [])
-            const toAdd = systemDirNames.filter((d) => !existing.has(d))
-            if (toAdd.length > 0) {
-                preflightQuery.excludeDirNames = [...(preflightQuery.excludeDirNames ?? []), ...toAdd]
-            }
         }
         return preflightQuery
     }
@@ -958,15 +957,7 @@
                 class:active={excludeSystemDirs}
                 onclick={toggleExcludeSystemDirs}
                 disabled={inputsDisabled}
-                use:tooltip={{
-                    html:
-                        '<div style="max-width:320px">' +
-                        '<div style="font-weight:600;margin-bottom:4px">Exclude system and build folders</div>' +
-                        '<div style="color:var(--color-text-secondary)">node_modules, .git, Caches, Logs, and ' +
-                        String(systemDirNames.length - 4) +
-                        ' more</div>' +
-                        '</div>',
-                }}
+                use:tooltip={{ html: systemDirExcludeTooltip }}
                 aria-label={excludeSystemDirs ? 'System folders excluded' : 'System folders included'}
             >
                 Filter

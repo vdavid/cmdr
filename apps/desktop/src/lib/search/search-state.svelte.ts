@@ -47,56 +47,10 @@ let caveat = $state('')
 // Scope (folder filter)
 let scope = $state('')
 
-// System/build directory exclusion toggle (on by default)
+// System/build directory exclusion toggle (on by default).
+// The actual exclude list lives in Rust: `SYSTEM_DIR_EXCLUDES` in `indexing/search.rs`.
+// The frontend only controls the boolean — Rust does the filtering.
 let excludeSystemDirs = $state(true)
-
-/** Common system, build, and cache directory names to exclude from search results. */
-export const systemDirNames = [
-    // Package managers & build tools
-    'node_modules',
-    '.pnpm-store',
-    '.npm',
-    '.yarn',
-    '.cargo',
-    '.m2',
-    '.gradle',
-    // VCS
-    '.git',
-    '.svn',
-    '.hg',
-    // Python
-    '__pycache__',
-    '.venv',
-    'venv',
-    '.tox',
-    // JS/TS build output
-    'build',
-    'dist',
-    '.next',
-    '.nuxt',
-    '.cache',
-    '.parcel-cache',
-    'target',
-    // macOS system & caches (granular — not Library or Application Support, those contain user data like Mail)
-    'Caches',
-    'CacheStorage',
-    'Cache',
-    'GPUCache',
-    'ScriptCache',
-    'GrShaderCache',
-    'ShaderCache',
-    'Logs',
-    'Cookies',
-    'WebKit',
-    'Saved Application State',
-    '.Trash',
-    '.Spotlight-V100',
-    '.fseventsd',
-    '.DocumentRevisions-V100',
-    // IDE workspace caches
-    'workspaceStorage',
-    'DerivedData',
-]
 
 // Getters
 export function getIsIndexReady(): boolean {
@@ -307,6 +261,10 @@ export function buildSearchQuery(): SearchQuery {
 
     if (namePattern.trim()) {
         query.namePattern = namePattern.trim()
+    }
+
+    if (!excludeSystemDirs) {
+        query.excludeSystemDirs = false
     }
 
     applySizeQuery(query)

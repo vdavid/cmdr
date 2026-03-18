@@ -256,6 +256,13 @@ pub fn parse_search_scope(scope: String) -> ParsedScope {
     search::parse_scope(&scope)
 }
 
+/// Returns the list of system/build/cache directory names excluded by default,
+/// for display in the UI tooltip.
+#[tauri::command]
+pub fn get_system_dir_excludes() -> &'static [&'static str] {
+    search::SYSTEM_DIR_EXCLUDES
+}
+
 // ============================================================================
 // AI search query translation
 // ============================================================================

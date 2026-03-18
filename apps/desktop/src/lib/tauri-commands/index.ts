@@ -307,6 +307,7 @@ export {
     releaseSearchIndex,
     translateSearchQuery,
     parseSearchScope,
+    getSystemDirExcludes,
     onSearchIndexReady,
 } from './search'
 export type {

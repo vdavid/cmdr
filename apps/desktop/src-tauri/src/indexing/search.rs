@@ -153,6 +153,57 @@ pub fn load_search_index(pool: &ReadPool, cancel: &AtomicBool) -> Result<SearchI
     })?
 }
 
+// ── System directory exclusions ──────────────────────────────────────
+
+/// Common system, build, and cache directory names excluded by default.
+/// Applied automatically when `SearchQuery::exclude_system_dirs` is not `Some(false)`.
+pub const SYSTEM_DIR_EXCLUDES: &[&str] = &[
+    // Package managers & build tools
+    "node_modules",
+    ".pnpm-store",
+    ".npm",
+    ".yarn",
+    ".cargo",
+    ".m2",
+    ".gradle",
+    // VCS
+    ".git",
+    ".svn",
+    ".hg",
+    // Python
+    "__pycache__",
+    ".venv",
+    "venv",
+    ".tox",
+    // JS/TS build output
+    "build",
+    "dist",
+    ".next",
+    ".nuxt",
+    ".cache",
+    ".parcel-cache",
+    "target",
+    // macOS system & caches
+    "Caches",
+    "CacheStorage",
+    "Cache",
+    "GPUCache",
+    "ScriptCache",
+    "GrShaderCache",
+    "ShaderCache",
+    "Logs",
+    "Cookies",
+    "WebKit",
+    "Saved Application State",
+    ".Trash",
+    ".Spotlight-V100",
+    ".fseventsd",
+    ".DocumentRevisions-V100",
+    // IDE workspace caches
+    "workspaceStorage",
+    "DerivedData",
+];
+
 // ── Query types ──────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -176,6 +227,10 @@ pub struct SearchQuery {
     /// `None` = platform default (false on macOS, true on Linux).
     #[serde(default)]
     pub case_sensitive: Option<bool>,
+    /// Whether to exclude common system/build/cache directories.
+    /// `None` or `Some(true)` = exclude, `Some(false)` = include everything.
+    #[serde(default)]
+    pub exclude_system_dirs: Option<bool>,
 }
 
 fn default_limit() -> u32 {
@@ -445,7 +500,13 @@ struct ScopeFilter {
     /// Entry IDs that represent the include path roots. An entry passes if
     /// any of its ancestors (including itself) is in this set.
     include_ids: Option<HashSet<i64>>,
-    /// Compiled regex patterns for directory name exclusion (bare names).
+    /// Exact directory names to exclude (O(1) HashSet lookup per ancestor level).
+    /// Stored normalized when `case_insensitive` is true.
+    exclude_exact_names: HashSet<String>,
+    /// Whether exclude name matching is case-insensitive.
+    case_insensitive: bool,
+    /// Compiled regex patterns for glob-based directory name exclusion.
+    /// Only used for user-specified patterns containing wildcards (* or ?).
     exclude_name_patterns: Vec<Regex>,
     /// Absolute path prefixes for path-based exclusion.
     exclude_path_prefixes: Vec<String>,
@@ -453,7 +514,10 @@ struct ScopeFilter {
 
 impl ScopeFilter {
     fn is_active(&self) -> bool {
-        self.include_ids.is_some() || !self.exclude_name_patterns.is_empty() || !self.exclude_path_prefixes.is_empty()
+        self.include_ids.is_some()
+            || !self.exclude_exact_names.is_empty()
+            || !self.exclude_name_patterns.is_empty()
+            || !self.exclude_path_prefixes.is_empty()
     }
 
     /// Check if an entry at `entry_idx` passes the scope filter by walking
@@ -483,8 +547,9 @@ impl ScopeFilter {
             }
         }
 
-        // Exclude check: walk ancestors, check each name against patterns
-        if !self.exclude_name_patterns.is_empty() || !self.exclude_path_prefixes.is_empty() {
+        // Exclude check: walk ancestors, check each name against exclusions
+        let has_name_excludes = !self.exclude_exact_names.is_empty() || !self.exclude_name_patterns.is_empty();
+        if has_name_excludes || !self.exclude_path_prefixes.is_empty() {
             // For path-prefix excludes, reconstruct the path lazily
             if !self.exclude_path_prefixes.is_empty() {
                 let path = reconstruct_path_from_index(index, entry.id);
@@ -496,7 +561,7 @@ impl ScopeFilter {
             }
 
             // For bare-name excludes, walk ancestors and check directory names
-            if !self.exclude_name_patterns.is_empty() {
+            if has_name_excludes {
                 let mut current_id = entry.parent_id;
                 loop {
                     if current_id == ROOT_ID || current_id == 0 {
@@ -507,6 +572,19 @@ impl ScopeFilter {
                             let ancestor = &index.entries[idx];
                             if ancestor.is_directory {
                                 let name = index.name(ancestor);
+                                // O(1) exact-name check (system dirs + simple user excludes)
+                                if !self.exclude_exact_names.is_empty() {
+                                    let excluded = if self.case_insensitive {
+                                        self.exclude_exact_names
+                                            .contains(&store::normalize_for_comparison(name))
+                                    } else {
+                                        self.exclude_exact_names.contains(name)
+                                    };
+                                    if excluded {
+                                        return false;
+                                    }
+                                }
+                                // Glob-pattern check (user wildcards only)
                                 for pat in &self.exclude_name_patterns {
                                     if pat.is_match(name) {
                                         return false;
@@ -548,32 +626,51 @@ fn prepare_scope_filter(query: &SearchQuery, index: &SearchIndex) -> ScopeFilter
         Some(ids)
     });
 
-    // Compile exclude patterns
+    // Build exclude filters from user-specified patterns and system dir list
+    let mut exclude_exact_names = HashSet::new();
     let mut exclude_name_patterns = Vec::new();
     let mut exclude_path_prefixes = Vec::new();
 
+    let case_insensitive = match query.case_sensitive {
+        Some(true) => false,
+        Some(false) => true,
+        None => cfg!(target_os = "macos"),
+    };
+
+    // User-specified excludes: wildcards → regex, plain names → exact HashSet
     if let Some(ref patterns) = query.exclude_dir_names {
         for pattern in patterns {
             if pattern.contains('/') {
-                // Path-based exclude: treat as absolute prefix
                 exclude_path_prefixes.push(pattern.clone());
-            } else {
-                // Bare name: compile as glob pattern
+            } else if pattern.contains('*') || pattern.contains('?') {
                 let regex_str = glob_to_regex(pattern);
-                let case_insensitive = match query.case_sensitive {
-                    Some(true) => false,
-                    Some(false) => true,
-                    None => cfg!(target_os = "macos"),
-                };
                 if let Ok(re) = RegexBuilder::new(&regex_str).case_insensitive(case_insensitive).build() {
                     exclude_name_patterns.push(re);
                 }
+            } else if case_insensitive {
+                exclude_exact_names.insert(store::normalize_for_comparison(pattern));
+            } else {
+                exclude_exact_names.insert(pattern.clone());
             }
+        }
+    }
+
+    // System dir excludes (unless explicitly disabled)
+    if query.exclude_system_dirs != Some(false) {
+        for &name in SYSTEM_DIR_EXCLUDES {
+            let key = if case_insensitive {
+                store::normalize_for_comparison(name)
+            } else {
+                name.to_string()
+            };
+            exclude_exact_names.insert(key);
         }
     }
 
     ScopeFilter {
         include_ids,
+        exclude_exact_names,
+        case_insensitive,
         exclude_name_patterns,
         exclude_path_prefixes,
     }
@@ -988,6 +1085,7 @@ mod tests {
             exclude_dir_names: None,
             limit: 30,
             case_sensitive: None,
+            exclude_system_dirs: Some(false),
         };
         let result = search(&index, &query).unwrap();
         // "ote" should match "notes.txt" as a substring
@@ -1010,6 +1108,7 @@ mod tests {
             exclude_dir_names: None,
             limit: 30,
             case_sensitive: None,
+            exclude_system_dirs: Some(false),
         };
         let result = search(&index, &query).unwrap();
         // "repo" should match "report.pdf" and "Q1-report.pdf"
@@ -1033,6 +1132,7 @@ mod tests {
             exclude_dir_names: None,
             limit: 30,
             case_sensitive: None,
+            exclude_system_dirs: Some(false),
         };
         let result = search(&index, &query).unwrap();
         // "report*" matches "report.pdf" but NOT "Q1-report.pdf"
@@ -1167,6 +1267,7 @@ mod tests {
             exclude_dir_names: None,
             limit: 30,
             case_sensitive: None,
+            exclude_system_dirs: Some(false),
         };
         let result = search(&index, &query).unwrap();
         assert_eq!(result.total_count, 2);
@@ -1188,6 +1289,7 @@ mod tests {
             exclude_dir_names: None,
             limit: 30,
             case_sensitive: None,
+            exclude_system_dirs: Some(false),
         };
         let result = search(&index, &query).unwrap();
         assert_eq!(result.total_count, 1);
@@ -1212,6 +1314,7 @@ mod tests {
             exclude_dir_names: None,
             limit: 30,
             case_sensitive: None,
+            exclude_system_dirs: Some(false),
         };
         let result = search(&index, &query).unwrap();
         // On macOS, matching is case-insensitive
@@ -1236,6 +1339,7 @@ mod tests {
             exclude_dir_names: None,
             limit: 30,
             case_sensitive: None,
+            exclude_system_dirs: Some(false),
         };
         let result = search(&index, &query).unwrap();
         assert_eq!(result.total_count, 1);
@@ -1257,6 +1361,7 @@ mod tests {
             exclude_dir_names: None,
             limit: 30,
             case_sensitive: None,
+            exclude_system_dirs: Some(false),
         };
         let result = search(&index, &query);
         assert!(result.is_err());
@@ -1280,6 +1385,7 @@ mod tests {
             exclude_dir_names: None,
             limit: 30,
             case_sensitive: None,
+            exclude_system_dirs: Some(false),
         };
         let result = search(&index, &query).unwrap();
         // photo.jpg (5M) and Q1-report.pdf (2M)
@@ -1302,6 +1408,7 @@ mod tests {
             exclude_dir_names: None,
             limit: 30,
             case_sensitive: None,
+            exclude_system_dirs: Some(false),
         };
         let result = search(&index, &query).unwrap();
         assert_eq!(result.total_count, 1);
@@ -1323,6 +1430,7 @@ mod tests {
             exclude_dir_names: None,
             limit: 30,
             case_sensitive: None,
+            exclude_system_dirs: Some(false),
         };
         let result = search(&index, &query).unwrap();
         // report.pdf (1M) and Q1-report.pdf (2M)
@@ -1346,6 +1454,7 @@ mod tests {
             exclude_dir_names: None,
             limit: 30,
             case_sensitive: None,
+            exclude_system_dirs: Some(false),
         };
         let result = search(&index, &query).unwrap();
         // photo.jpg (4000), notes.txt (5000), Q1-report.pdf (6000)
@@ -1367,6 +1476,7 @@ mod tests {
             exclude_dir_names: None,
             limit: 30,
             case_sensitive: None,
+            exclude_system_dirs: Some(false),
         };
         let result = search(&index, &query).unwrap();
         // Users (1000), alice (2000), Documents (1500)
@@ -1388,6 +1498,7 @@ mod tests {
             exclude_dir_names: None,
             limit: 30,
             case_sensitive: None,
+            exclude_system_dirs: Some(false),
         };
         let result = search(&index, &query).unwrap();
         // report.pdf (3000), photo.jpg (4000), notes.txt (5000)
@@ -1411,6 +1522,7 @@ mod tests {
             exclude_dir_names: None,
             limit: 30,
             case_sensitive: None,
+            exclude_system_dirs: Some(false),
         };
         let result = search(&index, &query).unwrap();
         assert_eq!(result.total_count, 1);
@@ -1434,6 +1546,7 @@ mod tests {
             exclude_dir_names: None,
             limit: 30,
             case_sensitive: None,
+            exclude_system_dirs: Some(false),
         };
         let result = search(&index, &query).unwrap();
         // All entries except root sentinel (7 entries)
@@ -1459,6 +1572,7 @@ mod tests {
             exclude_dir_names: None,
             limit: 3,
             case_sensitive: None,
+            exclude_system_dirs: Some(false),
         };
         let result = search(&index, &query).unwrap();
         assert_eq!(result.entries.len(), 3);
@@ -1482,6 +1596,7 @@ mod tests {
             exclude_dir_names: None,
             limit: 30,
             case_sensitive: None,
+            exclude_system_dirs: Some(false),
         };
         let result = search(&index, &query).unwrap();
         // Users, alice, Documents (root excluded)
@@ -1504,6 +1619,7 @@ mod tests {
             exclude_dir_names: None,
             limit: 30,
             case_sensitive: None,
+            exclude_system_dirs: Some(false),
         };
         let result = search(&index, &query).unwrap();
         assert_eq!(result.total_count, 4);
@@ -1571,6 +1687,7 @@ mod tests {
             exclude_dir_names: None,
             limit: 30,
             case_sensitive: None,
+            exclude_system_dirs: Some(false),
         };
         let json = serde_json::to_string(&query).unwrap();
         assert!(json.contains("namePattern"));
@@ -1682,6 +1799,7 @@ mod tests {
             exclude_dir_names: None,
             limit: 30,
             case_sensitive: None,
+            exclude_system_dirs: Some(false),
         };
         let result = search(&index, &query).unwrap();
         assert_eq!(result.total_count, 1);
@@ -1727,6 +1845,7 @@ mod tests {
             exclude_dir_names: None,
             limit: 30,
             case_sensitive: None,
+            exclude_system_dirs: Some(false),
         }
     }
 
@@ -2079,6 +2198,7 @@ mod tests {
             exclude_dir_names: None,
             limit: 30,
             case_sensitive: None,
+            exclude_system_dirs: Some(false),
         };
         let result = search(&index, &query).unwrap();
         // Should find app.rs and pkg.json (both under /Users/alice/projects)
@@ -2104,6 +2224,7 @@ mod tests {
             exclude_dir_names: Some(vec!["node_modules".to_string()]),
             limit: 30,
             case_sensitive: None,
+            exclude_system_dirs: Some(false),
         };
         let result = search(&index, &query).unwrap();
         // Should find app.rs and config, but NOT pkg.json (under node_modules)
@@ -2129,6 +2250,7 @@ mod tests {
             exclude_dir_names: Some(vec!["node_modules".to_string()]),
             limit: 30,
             case_sensitive: None,
+            exclude_system_dirs: Some(false),
         };
         let result = search(&index, &query).unwrap();
         // Only app.rs: under projects but not under node_modules
@@ -2151,6 +2273,7 @@ mod tests {
             exclude_dir_names: Some(vec![".*".to_string()]),
             limit: 30,
             case_sensitive: None,
+            exclude_system_dirs: Some(false),
         };
         let result = search(&index, &query).unwrap();
         // Should exclude config (under .git) but keep app.rs and pkg.json

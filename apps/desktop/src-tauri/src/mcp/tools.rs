@@ -373,6 +373,10 @@ fn get_search_tools() -> Vec<Tool> {
                         "type": "boolean",
                         "description": "Case-sensitive matching. Default: false on macOS, true on Linux"
                     },
+                    "excludeSystemDirs": {
+                        "type": "boolean",
+                        "description": "Exclude system/build/cache folders (node_modules, .git, Caches, etc). Default: true"
+                    },
                     "limit": {
                         "type": "integer",
                         "description": "Max results to return. Default: 30"

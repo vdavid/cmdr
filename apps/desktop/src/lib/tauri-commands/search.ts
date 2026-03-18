@@ -46,6 +46,11 @@ export async function parseSearchScope(scope: string): Promise<ParsedScope> {
     return invoke<ParsedScope>('parse_search_scope', { scope })
 }
 
+/** Returns the list of system/build/cache directory names excluded by default. */
+export async function getSystemDirExcludes(): Promise<string[]> {
+    return invoke<string[]>('get_system_dir_excludes')
+}
+
 /** Listens for the search index ready event (emitted after prepare completes loading). */
 export function onSearchIndexReady(handler: (entryCount: number) => void): Promise<UnlistenFn> {
     return listen<{ entryCount: number }>('search-index-ready', (event) => {

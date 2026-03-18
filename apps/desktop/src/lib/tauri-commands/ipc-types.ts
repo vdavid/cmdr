@@ -58,6 +58,7 @@ export interface SearchQuery {
     excludeDirNames?: string[]
     limit: number
     caseSensitive?: boolean
+    excludeSystemDirs?: boolean
 }
 
 export interface SearchResult {

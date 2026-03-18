@@ -948,6 +948,7 @@ async fn execute_search(params: &Value) -> ToolResult {
     };
 
     let case_sensitive = params.get("caseSensitive").and_then(|v| v.as_bool());
+    let exclude_system_dirs = params.get("excludeSystemDirs").and_then(|v| v.as_bool());
 
     let query = SearchQuery {
         name_pattern: pattern,
@@ -961,6 +962,7 @@ async fn execute_search(params: &Value) -> ToolResult {
         exclude_dir_names,
         limit,
         case_sensitive,
+        exclude_system_dirs,
     };
 
     let query_clone = query.clone();
@@ -972,34 +974,27 @@ async fn execute_search(params: &Value) -> ToolResult {
     Ok(json!(format_search_results(&result, limit)))
 }
 
-/// Build a `SearchQuery` from a `TranslateResult`, merging in caller-provided scope.
+/// Build a `SearchQuery` from a `TranslateResult`, merging in caller-provided scope
+/// and the LLM-suggested scope, then applying system directory exclusions.
 fn build_search_query_from_translate(
     translate_result: &crate::commands::search::TranslateResult,
     scope_str: Option<&str>,
     limit: u32,
 ) -> SearchQuery {
-    // Skip LLM-suggested scope (searchPaths/excludeDirs) for performance.
-    // Scope filtering walks ancestor chains for every entry, which can take 27-57s on large
-    // indexes and exceed the MCP client timeout. The LLM's path guesses are often wrong anyway.
-    if translate_result.query.include_paths.is_some() || translate_result.query.exclude_dir_names.is_some() {
-        log::debug!(
-            "MCP ai_search: skipping LLM-suggested scope for performance (include_paths={:?}, exclude_dir_names={:?})",
-            translate_result.query.include_paths,
-            translate_result.query.exclude_dir_names
-        );
-    }
+    // Start with LLM-suggested scope
+    let mut include_paths: Option<Vec<String>> = translate_result.query.include_paths.clone();
+    let mut exclude_dir_names: Option<Vec<String>> = translate_result.query.exclude_dir_names.clone();
 
-    // Only use caller-provided scope (the explicit `scope` parameter from the MCP request)
-    let mut include_paths: Option<Vec<String>> = None;
-    let mut exclude_dir_names: Option<Vec<String>> = None;
-
+    // Merge caller-provided scope (the explicit `scope` parameter from the MCP request)
     if let Some(scope) = scope_str {
         let parsed = search::parse_scope(scope);
         if !parsed.include_paths.is_empty() {
-            include_paths = Some(parsed.include_paths);
+            include_paths.get_or_insert_with(Vec::new).extend(parsed.include_paths);
         }
         if !parsed.exclude_patterns.is_empty() {
-            exclude_dir_names = Some(parsed.exclude_patterns);
+            exclude_dir_names
+                .get_or_insert_with(Vec::new)
+                .extend(parsed.exclude_patterns);
         }
     }
 
@@ -1019,6 +1014,7 @@ fn build_search_query_from_translate(
         exclude_dir_names,
         limit,
         case_sensitive: translate_result.query.case_sensitive,
+        exclude_system_dirs: None, // default = true
     }
 }
 
