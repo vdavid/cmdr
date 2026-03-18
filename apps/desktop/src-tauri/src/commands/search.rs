@@ -358,6 +358,11 @@ pub(crate) fn build_search_system_prompt() -> String {
     format!(
         "You translate natural language file search queries into structured JSON filters.\n\
          \n\
+         This is the FIRST PASS (preflight/discovery). Be slightly broad — cast a wider net to \
+         discover what's on disk. A second pass will refine using the actual results. Prefer \
+         simpler patterns that capture all plausible matches rather than precise ones that might \
+         miss files with unexpected naming.\n\
+         \n\
          Return ONLY a JSON object with these optional fields:\n\
          - \"namePattern\": filename pattern (glob or regex)\n\
          - \"patternType\": \"glob\" or \"regex\"\n\
@@ -403,6 +408,7 @@ pub(crate) fn build_search_system_prompt() -> String {
          \"env files\" → {{\"namePattern\": \"^\\\\.env(\\\\..+)?$\", \"patternType\": \"regex\"}}\n\
          \"documents older than a year\" → {{\"namePattern\": \"\\\\.(pdf|doc|docx|txt|odt|xls|xlsx)$\", \"patternType\": \"regex\", \"modifiedBefore\": \"{one_year_ago_str}\"}}\n\
          \"python files in my projects\" → {{\"namePattern\": \"*.py\", \"patternType\": \"glob\", \"searchPaths\": [\"~/projects\"], \"excludeDirs\": [\"node_modules\", \".git\", \"__pycache__\", \".venv\"]}}\n\
+         \"anything related to kubernetes\" → {{\"namePattern\": \"(k8s|kube|kubectl|helm|kubernetes)\", \"patternType\": \"regex\"}}\n\
          \n\
          Today's date is {today_str}. Return ONLY the JSON, no explanation."
     )
@@ -564,15 +570,25 @@ pub(crate) fn build_refinement_system_prompt(natural_query: &str, ctx: &Prefligh
     format!(
         "{base_prompt}\n\n\
          ---\n\n\
+         This is the SECOND PASS (refinement). The preflight query already ran and returned real results. \
+         Your job is to NARROW the results — remove false positives, never broaden.\n\n\
          {table}\n\n\
-         Examine these results carefully. The user asked: \"{natural_query}\"\n\n\
-         Refine your query based on what you see:\n\
-         - If results contain irrelevant files from specific directories (caches, indexes, build output), \
-         add those to \"excludeDirs\" to filter them out.\n\
-         - If an extension is ambiguous (e.g. .key matching both Keynote presentations and SSL keys), \
-         either remove it or tighten the pattern to distinguish them.\n\
-         - If results show the actual naming convention for what the user wants, match that pattern specifically.\n\
-         - If results are already precise, return the same query unchanged.\n\
+         The user asked: \"{natural_query}\"\n\n\
+         Rules for refinement:\n\
+         - ONLY narrow. Never add new extensions, weaken patterns, or remove constraints that \
+         were filtering correctly. If the preflight found 100 hits, the refined query should find \
+         ≤100, not more.\n\
+         - Study the NAMES in the results. If the relevant files share a naming pattern the preflight \
+         missed, use that pattern. If irrelevant files have a distinguishing trait (wrong extension, \
+         specific directory), exclude them.\n\
+         - If results contain noise from specific directories (caches, build output, indexes, \
+         node_modules), add those directory names to \"excludeDirs\".\n\
+         - If an extension is ambiguous (e.g. .key matching both Keynote and SSL keys), tighten \
+         the pattern or drop the ambiguous extension.\n\
+         - If the preflight results are already precise (mostly relevant files), return the same \
+         query unchanged. Don't fix what isn't broken.\n\
+         - Never drop the core search term to broaden coverage. If the preflight searched for \
+         \"websocket\" and found some results, keep \"websocket\" — don't generalize to all server files.\n\
          Return ONLY the refined JSON."
     )
 }
@@ -1291,7 +1307,7 @@ mod tests {
         assert!(prompt.contains("test.pdf"));
         // Contains the refinement instruction
         assert!(prompt.contains("find my resume"));
-        assert!(prompt.contains("Refine your query"));
+        assert!(prompt.contains("SECOND PASS (refinement)"));
     }
 
     #[test]
