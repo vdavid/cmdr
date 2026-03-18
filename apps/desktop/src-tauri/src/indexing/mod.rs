@@ -404,10 +404,12 @@ impl IndexManager {
                 },
                 fallback_tx,
                 watcher_overflow,
+                Arc::clone(&scanning),
             )
             .await;
 
-            // Replay done (now in live mode) — allow verifier to run.
+            // Live event loop ended (shutdown). Clear scanning as a safety net
+            // (normally cleared inside run_replay_event_loop after replay phase).
             scanning.store(false, Ordering::Relaxed);
 
             if let Err(e) = result {

@@ -281,6 +281,7 @@ pub(super) async fn run_replay_event_loop(
     config: ReplayConfig,
     fallback_tx: tokio::sync::oneshot::Sender<()>,
     watcher_overflow: Option<Arc<AtomicBool>>,
+    scanning: Arc<AtomicBool>,
 ) -> Result<(), String> {
     let ReplayConfig {
         volume_id,
@@ -562,6 +563,9 @@ pub(super) async fn run_replay_event_loop(
         ("affected_dirs", affected_paths.len().to_string()),
     ]);
     DEBUG_STATS.set_phase(super::ActivityPhase::Live, "post-replay");
+
+    // Replay done — allow verifier to run and report scanning=false to frontend.
+    scanning.store(false, Ordering::Relaxed);
 
     log::info!("Replay: switching to live mode");
     let mut reconciler = EventReconciler::new();

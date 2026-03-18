@@ -18,6 +18,10 @@ let replayEventsProcessed = $state(0)
 let replayEstimatedTotal = $state(0)
 let replayStartedAt = $state(0)
 
+// Monotonic counter bumped by every scan/replay event. Prevents the `get_index_status`
+// IPC response (which can arrive late) from overwriting state that an event already set.
+let eventVersion = 0
+
 // Aggregation state
 let aggregating = $state(false)
 let aggregationPhase = $state('')
@@ -118,6 +122,7 @@ const unlistenHandles: UnlistenFn[] = []
 /** Set up listeners for index scan events. Call once during app init. */
 export async function initIndexState(): Promise<void> {
     const unlistenStarted = await listen<{ volumeId: string }>('index-scan-started', () => {
+        eventVersion++
         scanning = true
         resetCounters()
         resetAggregation()
@@ -141,6 +146,7 @@ export async function initIndexState(): Promise<void> {
         totalDirs: number
         durationMs: number
     }>('index-scan-complete', (event) => {
+        eventVersion++
         scanning = false
         entriesScanned = event.payload.totalEntries
         dirsFound = event.payload.totalDirs
@@ -199,6 +205,7 @@ export async function initIndexState(): Promise<void> {
         volumeId: string
         durationMs: number
     }>('index-replay-complete', () => {
+        eventVersion++
         resetReplay()
         scanning = false
     })
@@ -207,6 +214,10 @@ export async function initIndexState(): Promise<void> {
     // Query current status to catch scans already in progress before the frontend loaded.
     // The scan starts in Tauri's setup() hook, so the 'index-scan-started' event may fire
     // before the frontend's event listeners are registered.
+    //
+    // Guard: snapshot eventVersion before the IPC call. If any scan/replay event arrived
+    // while the response was in flight, the event's state is more recent — skip the IPC result.
+    const versionBeforeIpc = eventVersion
     try {
         const status = await invoke<{
             initialized: boolean
@@ -216,7 +227,7 @@ export async function initIndexState(): Promise<void> {
             indexStatus: unknown
             dbFileSize: number | null
         }>('get_index_status')
-        if (status.scanning) {
+        if (status.scanning && eventVersion === versionBeforeIpc) {
             scanning = true
             entriesScanned = status.entriesScanned
             dirsFound = status.dirsFound
