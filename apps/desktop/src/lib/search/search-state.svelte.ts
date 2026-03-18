@@ -45,6 +45,27 @@ let aiPrompt = $state('')
 // Scope (folder filter)
 let scope = $state('')
 
+// System/build directory exclusion toggle (on by default)
+let excludeSystemDirs = $state(true)
+
+/** Common system, build, and cache directory names to exclude from search results. */
+export const systemDirNames = [
+    // Package managers & build tools
+    'node_modules', '.pnpm-store', '.npm', '.yarn', '.cargo', '.m2', '.gradle',
+    // VCS
+    '.git', '.svn', '.hg',
+    // Python
+    '__pycache__', '.venv', 'venv', '.tox',
+    // JS/TS build output
+    'build', 'dist', '.next', '.nuxt', '.cache', '.parcel-cache', 'target',
+    // macOS system & caches (granular — not Library or Application Support, those contain user data like Mail)
+    'Caches', 'CacheStorage', 'Cache', 'GPUCache', 'ScriptCache', 'GrShaderCache', 'ShaderCache',
+    'Logs', 'Cookies', 'WebKit', 'Saved Application State', '.Trash',
+    '.Spotlight-V100', '.fseventsd', '.DocumentRevisions-V100',
+    // IDE workspace caches
+    'workspaceStorage', 'DerivedData',
+]
+
 // Getters
 export function getIsIndexReady(): boolean {
     return isIndexReady
@@ -108,6 +129,9 @@ export function getCaseSensitive(): boolean {
 }
 export function getScope(): string {
     return scope
+}
+export function getExcludeSystemDirs(): boolean {
+    return excludeSystemDirs
 }
 
 // Setters
@@ -173,6 +197,9 @@ export function setCaseSensitive(value: boolean): void {
 }
 export function setScope(value: string): void {
     scope = value
+}
+export function setExcludeSystemDirs(value: boolean): void {
+    excludeSystemDirs = value
 }
 
 /** Converts size input + unit to bytes. Returns undefined if empty or invalid. */
@@ -264,5 +291,6 @@ export function resetSearchState(): void {
     aiStatus = ''
     aiPrompt = ''
     scope = ''
+    excludeSystemDirs = true
     isSearching = false
 }

@@ -70,6 +70,9 @@
         setCaseSensitive,
         getScope,
         setScope,
+        getExcludeSystemDirs,
+        setExcludeSystemDirs,
+        systemDirNames,
         buildSearchQuery,
         resetSearchState,
         type SizeFilter,
@@ -151,6 +154,7 @@
     const patternType = $derived(getPatternType())
     const caseSensitive = $derived(getCaseSensitive())
     const scope = $derived(getScope())
+    const excludeSystemDirs = $derived(getExcludeSystemDirs())
     const scanning = $derived(isScanning())
     const entriesScanned = $derived(getEntriesScanned())
 
@@ -253,6 +257,15 @@
                 const parsed = await parseSearchScope(scopeStr)
                 if (parsed.includePaths.length > 0) query.includePaths = parsed.includePaths
                 if (parsed.excludePatterns.length > 0) query.excludeDirNames = parsed.excludePatterns
+            }
+
+            // Merge system dir exclusions (avoid duplicates with user-specified excludes)
+            if (getExcludeSystemDirs()) {
+                const existing = new Set(query.excludeDirNames ?? [])
+                const toAdd = systemDirNames.filter((d) => !existing.has(d))
+                if (toAdd.length > 0) {
+                    query.excludeDirNames = [...(query.excludeDirNames ?? []), ...toAdd]
+                }
             }
             const result = await searchFiles(query)
             setResults(result.entries)
@@ -418,6 +431,11 @@
     function handleScopeInput(e: Event): void {
         const target = e.target as HTMLInputElement
         setScope(target.value)
+        scheduleSearch()
+    }
+
+    function toggleExcludeSystemDirs(): void {
+        setExcludeSystemDirs(!getExcludeSystemDirs())
         scheduleSearch()
     }
 
@@ -780,6 +798,23 @@
                     i
                 </button>
             </div>
+            <button
+                class="pattern-type-toggle"
+                class:active={excludeSystemDirs}
+                onclick={toggleExcludeSystemDirs}
+                disabled={inputsDisabled}
+                use:tooltip={{
+                    html:
+                        '<div style="max-width:320px">' +
+                        '<div style="font-weight:600;margin-bottom:4px">Exclude system and build folders</div>' +
+                        '<div style="color:var(--color-text-secondary)">node_modules, .git, Caches, Logs, and ' +
+                        String(systemDirNames.length - 4) + ' more</div>' +
+                        '</div>',
+                }}
+                aria-label={excludeSystemDirs ? 'System folders excluded' : 'System folders included'}
+            >
+                Filter
+            </button>
             <button
                 class="pattern-type-toggle"
                 onclick={() => {
