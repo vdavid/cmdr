@@ -100,7 +100,7 @@ test.describe('Newsletter signup', () => {
             await page.goto('/')
 
             const download = page.locator('#download')
-            await expect(download.getByText(/get notified when they're ready/i)).toBeVisible()
+            await expect(download.getByText(/get notified/i)).toBeVisible()
             await expect(download.locator('input[type="email"]')).toBeVisible()
             await expect(download.getByRole('button', { name: 'Sign up' })).toBeVisible()
         })

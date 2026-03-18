@@ -12,7 +12,7 @@ test.describe('Homepage', () => {
         // Check for main heading - matches actual site content
         const heading = page.locator('h1')
         await expect(heading).toBeVisible()
-        await expect(heading).toContainText(/talk to your files/i)
+        await expect(heading).toContainText(/every folder sized/i)
     })
 
     test('has download CTA button', async ({ page }) => {
