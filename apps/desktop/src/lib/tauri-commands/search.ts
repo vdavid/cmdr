@@ -2,7 +2,14 @@
 
 import { invoke } from '@tauri-apps/api/core'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
-import type { ParsedScope, PrepareResult, SearchQuery, SearchResult, TranslateResult } from './ipc-types'
+import type {
+    ParsedScope,
+    PreflightContext,
+    PrepareResult,
+    SearchQuery,
+    SearchResult,
+    TranslateResult,
+} from './ipc-types'
 
 /**
  * Starts loading the search index in the background.
@@ -24,8 +31,14 @@ export async function releaseSearchIndex(): Promise<void> {
 }
 
 /** Translates a natural language query into structured search filters using the configured LLM. */
-export async function translateSearchQuery(naturalQuery: string): Promise<TranslateResult> {
-    return invoke<TranslateResult>('translate_search_query', { naturalQuery })
+export async function translateSearchQuery(
+    naturalQuery: string,
+    preflightContext?: PreflightContext,
+): Promise<TranslateResult> {
+    return invoke<TranslateResult>('translate_search_query', {
+        naturalQuery,
+        preflightContext: preflightContext ?? null,
+    })
 }
 
 /** Parses a scope string into structured include/exclude data. */

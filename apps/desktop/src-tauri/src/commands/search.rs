@@ -276,12 +276,31 @@ pub(crate) struct AiSearchQuery {
     pub(crate) case_sensitive: Option<bool>,
 }
 
+/// Preflight context from pass 1 results, sent back in pass 2 for refinement.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PreflightContext {
+    pub total_count: u32,
+    pub sample_entries: Vec<PreflightEntry>,
+}
+
+/// A single entry from the preflight results.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PreflightEntry {
+    pub name: String,
+    pub size: Option<u64>,
+    pub modified_at: Option<u64>,
+    pub is_directory: bool,
+}
+
 /// Human-readable field values returned alongside the structured query.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TranslateResult {
     pub query: TranslatedQuery,
     pub display: TranslateDisplay,
+    pub preflight_summary: Option<String>,
 }
 
 /// The structured query with unix timestamps, ready for `search_files`.
@@ -390,8 +409,106 @@ pub(crate) fn parse_ai_response(response: &str) -> Result<AiSearchQuery, String>
         .map_err(|_| "Couldn't understand that query. Try rephrasing or use the manual filters.".to_string())
 }
 
+/// Generates a human-readable one-line summary of an AI search query.
+///
+/// Format: `*pattern* · size ≥ X · after YYYY-MM-DD` — only non-null fields, separated by ` · `.
+pub(crate) fn summarize_ai_query(q: &AiSearchQuery) -> String {
+    let mut parts = Vec::new();
+
+    if let Some(ref pat) = q.name_pattern {
+        let is_regex = q.pattern_type.as_deref().is_some_and(|t| t == "regex");
+        if is_regex {
+            parts.push(format!("{pat} (regex)"));
+        } else {
+            parts.push(pat.clone());
+        }
+    }
+
+    if let Some(min) = q.min_size {
+        parts.push(format!("size \u{2265} {}", search::format_size(min)));
+    }
+    if let Some(max) = q.max_size {
+        parts.push(format!("size \u{2264} {}", search::format_size(max)));
+    }
+
+    if let Some(ref after) = q.modified_after {
+        parts.push(format!("after {after}"));
+    }
+    if let Some(ref before) = q.modified_before {
+        parts.push(format!("before {before}"));
+    }
+
+    if let Some(true) = q.is_directory {
+        parts.push("dirs only".to_string());
+    } else if let Some(false) = q.is_directory {
+        parts.push("files only".to_string());
+    }
+
+    if parts.is_empty() {
+        "(all entries)".to_string()
+    } else {
+        parts.join(" \u{00b7} ")
+    }
+}
+
+/// Formats preflight entries into a compact text table for the LLM refinement prompt.
+pub(crate) fn format_preflight_table(ctx: &PreflightContext) -> String {
+    let mut lines = Vec::with_capacity(ctx.sample_entries.len() + 2);
+
+    lines.push(format!(
+        "Your initial query returned {} results. Here are the top {} by recency:",
+        ctx.total_count,
+        ctx.sample_entries.len()
+    ));
+    lines.push(String::new());
+
+    for entry in &ctx.sample_entries {
+        let name = if entry.is_directory {
+            let mut n = entry.name.clone();
+            n.push('/');
+            n
+        } else {
+            entry.name.clone()
+        };
+
+        // Truncate name at 45 chars (char-boundary-safe)
+        let display_name = if name.chars().count() > 45 {
+            let truncated: String = name.chars().take(42).collect();
+            format!("{truncated}...")
+        } else {
+            name
+        };
+
+        let size_str = entry.size.map(search::format_size).unwrap_or_default();
+
+        let date_str = entry.modified_at.map(search::format_timestamp).unwrap_or_default();
+
+        lines.push(format!("  {:<45} {:>8}   {}", display_name, size_str, date_str));
+    }
+
+    lines.join("\n")
+}
+
+/// Builds the refinement system prompt for pass 2 (with preflight context).
+pub(crate) fn build_refinement_system_prompt(natural_query: &str, ctx: &PreflightContext) -> String {
+    let base_prompt = build_search_system_prompt();
+    let table = format_preflight_table(ctx);
+
+    format!(
+        "{base_prompt}\n\n\
+         ---\n\n\
+         {table}\n\n\
+         Examine these results to understand the actual file naming patterns on this drive, \
+         then refine your query to precisely match what the user wants. \
+         The user asked: \"{natural_query}\""
+    )
+}
+
 /// Converts a parsed `AiSearchQuery` into the final `TranslateResult`.
-pub(crate) fn build_translate_result(ai_query: AiSearchQuery) -> Result<TranslateResult, String> {
+pub(crate) fn build_translate_result(
+    ai_query: AiSearchQuery,
+    preflight_summary: Option<String>,
+) -> Result<TranslateResult, String> {
     let modified_after_ts = ai_query
         .modified_after
         .as_deref()
@@ -440,6 +557,7 @@ pub(crate) fn build_translate_result(ai_query: AiSearchQuery) -> Result<Translat
             exclude_dir_names,
             case_sensitive: ai_query.case_sensitive,
         },
+        preflight_summary,
     })
 }
 
@@ -456,34 +574,49 @@ pub(crate) fn validate_regex_pattern(ai_query: &AiSearchQuery) -> Result<(), Str
     Ok(())
 }
 
-/// Translates a natural language search query into structured filters using the configured LLM.
-#[tauri::command]
-pub async fn translate_search_query(natural_query: String) -> Result<TranslateResult, String> {
+/// Resolves the AI backend from the current provider configuration.
+fn resolve_ai_backend() -> Result<AiBackend, String> {
     let provider = crate::ai::manager::get_provider();
-
-    let backend = match provider.as_str() {
-        "off" => return Err("AI is not configured. Enable an AI provider in settings.".to_string()),
+    match provider.as_str() {
+        "off" => Err("AI is not configured. Enable an AI provider in settings.".to_string()),
         "local" => {
             let port = crate::ai::manager::get_port()
                 .ok_or_else(|| "Local AI server isn't running. Start it in settings.".to_string())?;
-            AiBackend::Local { port }
+            Ok(AiBackend::Local { port })
         }
         "openai-compatible" => {
             let (api_key, base_url, model) = crate::ai::manager::get_openai_config();
             if api_key.is_empty() {
                 return Err("OpenAI API key not configured. Add it in settings.".to_string());
             }
-            AiBackend::OpenAi {
+            Ok(AiBackend::OpenAi {
                 api_key,
                 base_url,
                 model,
-            }
+            })
         }
-        _ => return Err(format!("Unknown AI provider: {provider}")),
+        _ => Err(format!("Unknown AI provider: {provider}")),
+    }
+}
+
+/// Translates a natural language search query into structured filters using the configured LLM.
+///
+/// Pass 1 (no `preflight_context`): broad query using the standard system prompt.
+/// Pass 2 (with `preflight_context`): refinement prompt that includes real results from pass 1.
+#[tauri::command]
+pub async fn translate_search_query(
+    natural_query: String,
+    preflight_context: Option<PreflightContext>,
+) -> Result<TranslateResult, String> {
+    let backend = resolve_ai_backend()?;
+
+    let system_prompt = match &preflight_context {
+        Some(ctx) => build_refinement_system_prompt(&natural_query, ctx),
+        None => build_search_system_prompt(),
     };
 
     let options = ChatCompletionOptions {
-        system_prompt: build_search_system_prompt(),
+        system_prompt,
         temperature: 0.3,
         max_tokens: 200,
         top_p: 0.9,
@@ -518,7 +651,14 @@ pub async fn translate_search_query(natural_query: String) -> Result<TranslateRe
         }
     }
 
-    build_translate_result(ai_query)
+    // Generate preflight summary only for pass 1 (no preflight context)
+    let preflight_summary = if preflight_context.is_none() {
+        Some(summarize_ai_query(&ai_query))
+    } else {
+        None
+    };
+
+    build_translate_result(ai_query, preflight_summary)
 }
 
 #[cfg(test)]
@@ -630,11 +770,13 @@ mod tests {
                 exclude_dir_names: None,
                 case_sensitive: None,
             },
+            preflight_summary: Some("*.pdf \u{00b7} size \u{2265} 1 MB".to_string()),
         };
         let json = serde_json::to_string(&result).unwrap();
         assert!(json.contains("namePattern"));
         assert!(json.contains("patternType"));
         assert!(json.contains("2025-01-01"));
+        assert!(json.contains("preflightSummary"));
     }
 
     #[test]
@@ -756,7 +898,7 @@ mod tests {
             exclude_dirs: None,
             case_sensitive: None,
         };
-        let result = build_translate_result(q).unwrap();
+        let result = build_translate_result(q, None).unwrap();
         assert_eq!(result.query.pattern_type, "regex");
         assert_eq!(result.display.pattern_type.as_deref(), Some("regex"));
     }
@@ -794,7 +936,7 @@ mod tests {
             exclude_dirs: Some(vec!["node_modules".to_string(), ".git".to_string()]),
             case_sensitive: None,
         };
-        let result = build_translate_result(q).unwrap();
+        let result = build_translate_result(q, None).unwrap();
 
         // search_paths should have ~ expanded
         let paths = result.query.include_paths.unwrap();
@@ -817,5 +959,257 @@ mod tests {
         assert!(prompt.contains("excludeDirs"));
         assert!(prompt.contains("node_modules"));
         assert!(prompt.contains("caseSensitive"));
+    }
+
+    // ── Preflight / two-pass tests ──────────────────────────────────────
+
+    #[test]
+    fn test_summarize_ai_query_name_only() {
+        let q = AiSearchQuery {
+            name_pattern: Some("*resume*".to_string()),
+            pattern_type: None,
+            min_size: None,
+            max_size: None,
+            modified_after: None,
+            modified_before: None,
+            is_directory: None,
+            search_paths: None,
+            exclude_dirs: None,
+            case_sensitive: None,
+        };
+        assert_eq!(summarize_ai_query(&q), "*resume*");
+    }
+
+    #[test]
+    fn test_summarize_ai_query_pattern_with_size() {
+        let q = AiSearchQuery {
+            name_pattern: Some("*.pdf".to_string()),
+            pattern_type: Some("glob".to_string()),
+            min_size: Some(10_485_760),
+            max_size: None,
+            modified_after: None,
+            modified_before: None,
+            is_directory: None,
+            search_paths: None,
+            exclude_dirs: None,
+            case_sensitive: None,
+        };
+        assert_eq!(summarize_ai_query(&q), "*.pdf \u{00b7} size \u{2265} 10 MB");
+    }
+
+    #[test]
+    fn test_summarize_ai_query_regex_with_date() {
+        let q = AiSearchQuery {
+            name_pattern: Some("Screenshot.*".to_string()),
+            pattern_type: Some("regex".to_string()),
+            min_size: None,
+            max_size: None,
+            modified_after: Some("2026-03-16".to_string()),
+            modified_before: None,
+            is_directory: None,
+            search_paths: None,
+            exclude_dirs: None,
+            case_sensitive: None,
+        };
+        assert_eq!(summarize_ai_query(&q), "Screenshot.* (regex) \u{00b7} after 2026-03-16");
+    }
+
+    #[test]
+    fn test_summarize_ai_query_size_and_dirs_only() {
+        let q = AiSearchQuery {
+            name_pattern: None,
+            pattern_type: None,
+            min_size: Some(1_073_741_824),
+            max_size: None,
+            modified_after: None,
+            modified_before: None,
+            is_directory: Some(true),
+            search_paths: None,
+            exclude_dirs: None,
+            case_sensitive: None,
+        };
+        assert_eq!(summarize_ai_query(&q), "size \u{2265} 1 GB \u{00b7} dirs only");
+    }
+
+    #[test]
+    fn test_summarize_ai_query_empty() {
+        let q = AiSearchQuery {
+            name_pattern: None,
+            pattern_type: None,
+            min_size: None,
+            max_size: None,
+            modified_after: None,
+            modified_before: None,
+            is_directory: None,
+            search_paths: None,
+            exclude_dirs: None,
+            case_sensitive: None,
+        };
+        assert_eq!(summarize_ai_query(&q), "(all entries)");
+    }
+
+    #[test]
+    fn test_summarize_ai_query_all_fields() {
+        let q = AiSearchQuery {
+            name_pattern: Some("*.log".to_string()),
+            pattern_type: Some("glob".to_string()),
+            min_size: Some(1_048_576),
+            max_size: Some(104_857_600),
+            modified_after: Some("2025-01-01".to_string()),
+            modified_before: Some("2025-12-31".to_string()),
+            is_directory: Some(false),
+            search_paths: None,
+            exclude_dirs: None,
+            case_sensitive: None,
+        };
+        let summary = summarize_ai_query(&q);
+        assert!(summary.contains("*.log"));
+        assert!(summary.contains("size \u{2265} 1 MB"));
+        assert!(summary.contains("size \u{2264} 100 MB"));
+        assert!(summary.contains("after 2025-01-01"));
+        assert!(summary.contains("before 2025-12-31"));
+        assert!(summary.contains("files only"));
+    }
+
+    #[test]
+    fn test_format_preflight_table_basic() {
+        let ctx = PreflightContext {
+            total_count: 806,
+            sample_entries: vec![
+                PreflightEntry {
+                    name: ".fastresume".to_string(),
+                    size: Some(4096),
+                    modified_at: Some(1_774_000_000),
+                    is_directory: false,
+                },
+                PreflightEntry {
+                    name: "Resume_2025_final.pdf".to_string(),
+                    size: Some(91_136),
+                    modified_at: Some(1_730_592_000),
+                    is_directory: false,
+                },
+                PreflightEntry {
+                    name: "reports".to_string(),
+                    size: Some(1024),
+                    modified_at: Some(1_724_000_000),
+                    is_directory: true,
+                },
+            ],
+        };
+
+        let table = format_preflight_table(&ctx);
+        assert!(table.contains("806 results"));
+        assert!(table.contains("top 3 by recency"));
+        assert!(table.contains(".fastresume"));
+        assert!(table.contains("Resume_2025_final.pdf"));
+        assert!(table.contains("reports/")); // directory gets trailing /
+    }
+
+    #[test]
+    fn test_format_preflight_table_name_truncation() {
+        let ctx = PreflightContext {
+            total_count: 1,
+            sample_entries: vec![PreflightEntry {
+                name: "a_very_long_filename_that_definitely_exceeds_45_characters_limit.pdf".to_string(),
+                size: Some(1024),
+                modified_at: Some(1_700_000_000),
+                is_directory: false,
+            }],
+        };
+
+        let table = format_preflight_table(&ctx);
+        assert!(table.contains("...")); // truncated
+    }
+
+    #[test]
+    fn test_build_refinement_system_prompt_includes_context() {
+        let ctx = PreflightContext {
+            total_count: 100,
+            sample_entries: vec![PreflightEntry {
+                name: "test.pdf".to_string(),
+                size: Some(1024),
+                modified_at: Some(1_700_000_000),
+                is_directory: false,
+            }],
+        };
+
+        let prompt = build_refinement_system_prompt("find my resume", &ctx);
+        // Contains the base prompt
+        assert!(prompt.contains("Return ONLY a JSON object"));
+        // Contains the preflight table
+        assert!(prompt.contains("100 results"));
+        assert!(prompt.contains("test.pdf"));
+        // Contains the refinement instruction
+        assert!(prompt.contains("find my resume"));
+        assert!(prompt.contains("refine your query"));
+    }
+
+    #[test]
+    fn test_preflight_context_serde_roundtrip() {
+        let json = r#"{
+            "totalCount": 42,
+            "sampleEntries": [
+                {
+                    "name": "test.txt",
+                    "size": 1024,
+                    "modifiedAt": 1700000000,
+                    "isDirectory": false
+                },
+                {
+                    "name": "docs",
+                    "size": null,
+                    "modifiedAt": null,
+                    "isDirectory": true
+                }
+            ]
+        }"#;
+        let ctx: PreflightContext = serde_json::from_str(json).unwrap();
+        assert_eq!(ctx.total_count, 42);
+        assert_eq!(ctx.sample_entries.len(), 2);
+        assert_eq!(ctx.sample_entries[0].name, "test.txt");
+        assert_eq!(ctx.sample_entries[0].size, Some(1024));
+        assert!(ctx.sample_entries[0].modified_at.is_some());
+        assert!(!ctx.sample_entries[0].is_directory);
+        assert_eq!(ctx.sample_entries[1].name, "docs");
+        assert!(ctx.sample_entries[1].size.is_none());
+        assert!(ctx.sample_entries[1].modified_at.is_none());
+        assert!(ctx.sample_entries[1].is_directory);
+    }
+
+    #[test]
+    fn test_build_translate_result_with_preflight_summary() {
+        let q = AiSearchQuery {
+            name_pattern: Some("*.pdf".to_string()),
+            pattern_type: Some("glob".to_string()),
+            min_size: None,
+            max_size: None,
+            modified_after: None,
+            modified_before: None,
+            is_directory: None,
+            search_paths: None,
+            exclude_dirs: None,
+            case_sensitive: None,
+        };
+        let summary = "*.pdf".to_string();
+        let result = build_translate_result(q, Some(summary.clone())).unwrap();
+        assert_eq!(result.preflight_summary, Some(summary));
+    }
+
+    #[test]
+    fn test_build_translate_result_without_preflight_summary() {
+        let q = AiSearchQuery {
+            name_pattern: Some("*.txt".to_string()),
+            pattern_type: None,
+            min_size: None,
+            max_size: None,
+            modified_after: None,
+            modified_before: None,
+            is_directory: None,
+            search_paths: None,
+            exclude_dirs: None,
+            case_sensitive: None,
+        };
+        let result = build_translate_result(q, None).unwrap();
+        assert!(result.preflight_summary.is_none());
     }
 }

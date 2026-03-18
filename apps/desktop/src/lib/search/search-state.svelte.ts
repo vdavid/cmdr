@@ -41,6 +41,7 @@ let caseSensitive = $state(false)
 // AI state
 let aiStatus = $state('')
 let aiPrompt = $state('')
+let preflightText = $state('')
 
 // Scope (folder filter)
 let scope = $state('')
@@ -51,19 +52,49 @@ let excludeSystemDirs = $state(true)
 /** Common system, build, and cache directory names to exclude from search results. */
 export const systemDirNames = [
     // Package managers & build tools
-    'node_modules', '.pnpm-store', '.npm', '.yarn', '.cargo', '.m2', '.gradle',
+    'node_modules',
+    '.pnpm-store',
+    '.npm',
+    '.yarn',
+    '.cargo',
+    '.m2',
+    '.gradle',
     // VCS
-    '.git', '.svn', '.hg',
+    '.git',
+    '.svn',
+    '.hg',
     // Python
-    '__pycache__', '.venv', 'venv', '.tox',
+    '__pycache__',
+    '.venv',
+    'venv',
+    '.tox',
     // JS/TS build output
-    'build', 'dist', '.next', '.nuxt', '.cache', '.parcel-cache', 'target',
+    'build',
+    'dist',
+    '.next',
+    '.nuxt',
+    '.cache',
+    '.parcel-cache',
+    'target',
     // macOS system & caches (granular — not Library or Application Support, those contain user data like Mail)
-    'Caches', 'CacheStorage', 'Cache', 'GPUCache', 'ScriptCache', 'GrShaderCache', 'ShaderCache',
-    'Logs', 'Cookies', 'WebKit', 'Saved Application State', '.Trash',
-    '.Spotlight-V100', '.fseventsd', '.DocumentRevisions-V100',
+    'Caches',
+    'CacheStorage',
+    'Cache',
+    'GPUCache',
+    'ScriptCache',
+    'GrShaderCache',
+    'ShaderCache',
+    'Logs',
+    'Cookies',
+    'WebKit',
+    'Saved Application State',
+    '.Trash',
+    '.Spotlight-V100',
+    '.fseventsd',
+    '.DocumentRevisions-V100',
     // IDE workspace caches
-    'workspaceStorage', 'DerivedData',
+    'workspaceStorage',
+    'DerivedData',
 ]
 
 // Getters
@@ -129,6 +160,9 @@ export function getCaseSensitive(): boolean {
 }
 export function getScope(): string {
     return scope
+}
+export function getPreflightText(): string {
+    return preflightText
 }
 export function getExcludeSystemDirs(): boolean {
     return excludeSystemDirs
@@ -197,6 +231,9 @@ export function setCaseSensitive(value: boolean): void {
 }
 export function setScope(value: string): void {
     scope = value
+}
+export function setPreflightText(text: string): void {
+    preflightText = text
 }
 export function setExcludeSystemDirs(value: boolean): void {
     excludeSystemDirs = value
@@ -290,6 +327,7 @@ export function resetSearchState(): void {
     caseSensitive = false
     aiStatus = ''
     aiPrompt = ''
+    preflightText = ''
     scope = ''
     excludeSystemDirs = true
     isSearching = false

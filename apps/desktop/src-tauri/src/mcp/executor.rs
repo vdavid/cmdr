@@ -1026,7 +1026,8 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
         }
     }
 
-    let translate_result = crate::commands::search::build_translate_result(ai_query).map_err(ToolError::internal)?;
+    let translate_result =
+        crate::commands::search::build_translate_result(ai_query, None).map_err(ToolError::internal)?;
 
     // Start with AI-provided scope
     let mut include_paths = translate_result.query.include_paths;
