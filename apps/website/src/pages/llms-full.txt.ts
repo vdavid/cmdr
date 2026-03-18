@@ -21,9 +21,9 @@ export async function GET(context: APIContext) {
 
     const body = `# Cmdr
 
-> The AI-native file manager for power users who want superpowers.
+> The fastest two-pane file manager for macOS. Every folder sized. Every file found.
 
-Cmdr is an extremely fast, keyboard-driven, two-pane file manager for macOS (Linux in alpha), built with Rust, Tauri 2, and Svelte 5. It lets you rename files with natural language, search by describing what you're looking for, and organize hundreds of files with a single command. Free forever for personal use, source-available under BSL 1.1.
+Cmdr is an extremely fast, keyboard-driven, two-pane file manager for macOS (Linux in alpha), built with Rust, Tauri 2, and Svelte 5. It indexes your entire drive in minutes, shows directory sizes everywhere, and offers instant search and keyboard-driven everything. AI features (smart search, natural language rename, batch operations) are in active development. Free forever for personal use, source-available under BSL 1.1.
 
 Current version: ${version}
 Release date: ${latestRelease.pub_date.split('T')[0]}
@@ -46,17 +46,17 @@ Release date: ${latestRelease.pub_date.split('T')[0]}
 
 ## Features
 
-### AI-powered features
-
-- **Natural language rename**: Type "make these lowercase and add date prefix" and watch it happen. No regex, no scripts, just words. Cmdr understands your intent and renames files accordingly.
-- **Smart search**: Find files by describing them in plain English: "that PDF contract from last month" or "screenshots with error messages." No need to remember exact file names.
-- **AI batch operations**: Organize hundreds of files with a single command. Tell Cmdr to "sort these into folders by project name" and it figures out the rest.
-
 ### Core features
 
-- **Keyboard-first**: Navigate, select, copy, move without touching your mouse. Every action has a keyboard shortcut, and you can customize them all.
-- **Blazing fast**: Built with Rust for native performance. Handles folders with 50,000+ files effortlessly. Startup is near-instant.
-- **Two-pane layout**: See source and destination side by side. The classic dual-pane layout that professional file managers have used for decades.
+- **Live full-disk index**: Indexes your entire drive once in about 4 minutes. Then stays current forever, even across restarts. Directory sizes everywhere.
+- **Blazing fast**: Built in Rust. Opens a 100k-file folder in 4 seconds with icons, sizes, and dates. Startup is near-instant.
+- **Keyboard-first**: Navigate, select, copy, move without touching your mouse. Two panes, tabs, command palette. Every action has a keyboard shortcut, and you can customize them all.
+
+### AI features (in active development)
+
+- **Smart search** (rough around the edges): Find files by describing them in plain English: "that PDF contract from last month" or "screenshots with error messages." No need to remember exact file names.
+- **Natural language rename** (coming soon): Type "make these lowercase and add date prefix" and watch it happen. No regex, no scripts, just words. Cmdr understands your intent and renames files accordingly.
+- **AI batch operations** (coming soon): Organize hundreds of files with a single command. Tell Cmdr to "sort these into folders by project name" and it figures out the rest.
 - **Tabs**: Multiple tabs per pane with pinning, persistence, and per-tab sorting.
 - **File viewer**: Built-in viewer for text files with search, syntax highlighting, and support for very large files.
 - **Drive indexing**: Index your drives for fast search with an efficient integer-keyed database schema.

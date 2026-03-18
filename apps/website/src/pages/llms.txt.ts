@@ -13,9 +13,9 @@ export async function GET(context: APIContext) {
 
     const body = `# Cmdr
 
-> The AI-native file manager for power users who want superpowers.
+> The fastest two-pane file manager for macOS. Every folder sized. Every file found.
 
-Cmdr is an extremely fast, keyboard-driven, two-pane file manager for macOS, built with Rust, Tauri 2, and Svelte 5. It lets you rename files with natural language, search by describing what you're looking for, and organize hundreds of files with a single command. Free forever for personal use, source-available under BSL 1.1.
+Cmdr is an extremely fast, keyboard-driven, two-pane file manager for macOS, built with Rust, Tauri 2, and Svelte 5. It indexes your entire drive in minutes, shows directory sizes everywhere, and offers instant search. Free forever for personal use, source-available under BSL 1.1.
 
 Current version: ${version}
 
@@ -32,12 +32,12 @@ Current version: ${version}
 
 ## Features
 
-- **Natural language rename**: Type "make these lowercase and add date prefix" and watch it happen. No regex, no scripts.
-- **Smart search**: Find files by describing them: "that PDF contract from last month" or "screenshots with error messages."
-- **AI batch operations**: Organize hundreds of files with a single command. "Sort these into folders by project name."
-- **Keyboard-first**: Navigate, select, copy, move without touching your mouse.
-- **Blazing fast**: Built with Rust for native performance. Handles folders with 50,000+ files effortlessly.
-- **Two-pane layout**: See source and destination side by side. The classic layout that works.
+- **Live full-disk index**: Indexes your entire drive once in about 4 minutes. Then stays current forever, even across restarts.
+- **Blazing fast**: Built in Rust. Opens a 100k-file folder in 4 seconds with icons, sizes, and dates.
+- **Keyboard-first**: Navigate, select, copy, move without touching your mouse. Two panes, tabs, command palette.
+- **Smart search** (rough around the edges): Find files by describing them: "that PDF contract from last month" or "screenshots with error messages."
+- **Natural language rename** (coming soon): Type "make these lowercase and add date prefix" and watch it happen. No regex, no scripts.
+- **AI batch operations** (coming soon): Organize hundreds of files with a single command. "Sort these into folders by project name."
 
 ## Pricing
 
