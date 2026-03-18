@@ -683,14 +683,23 @@ async fn ensure_search_index() -> Result<Arc<search::SearchIndex>, ToolError> {
         if let Some(ref state) = *guard {
             if state.index.entries.is_empty() && state.index.generation == 0 {
                 // Loading sentinel — wait briefly then check again
+                log::warn!("MCP ai_search: search index is in loading sentinel state (empty, gen=0), will reload");
             } else {
+                log::debug!(
+                    "MCP ai_search: search index already loaded, {} entries, gen={}",
+                    state.index.entries.len(),
+                    state.index.generation
+                );
                 return Ok(state.index.clone());
             }
+        } else {
+            log::debug!("MCP ai_search: search index not loaded, will load now");
         }
     }
 
     // Not loaded — load synchronously via spawn_blocking
     let pool = crate::indexing::get_read_pool().ok_or_else(|| {
+        log::error!("MCP ai_search: drive index not available (no read pool)");
         ToolError::internal(
             "Drive index not available. Make sure indexing is enabled and the initial scan has completed.",
         )
@@ -701,11 +710,22 @@ async fn ensure_search_index() -> Result<Arc<search::SearchIndex>, ToolError> {
     let cancel = Arc::new(AtomicBool::new(false));
     let cancel_clone = cancel.clone();
 
+    log::debug!("MCP ai_search: loading search index from DB...");
     let index = tokio::task::spawn_blocking(move || search::load_search_index(&pool, &cancel_clone))
         .await
-        .map_err(|e| ToolError::internal(format!("Search index load failed: {e}")))?
-        .map_err(|e| ToolError::internal(format!("Search index load failed: {e}")))?;
+        .map_err(|e| {
+            log::error!("MCP ai_search: search index load spawn_blocking failed: {e}");
+            ToolError::internal(format!("Search index load failed: {e}"))
+        })?
+        .map_err(|e| {
+            log::error!("MCP ai_search: search index load failed: {e}");
+            ToolError::internal(format!("Search index load failed: {e}"))
+        })?;
 
+    log::debug!(
+        "MCP ai_search: search index loaded from DB, {} entries",
+        index.entries.len()
+    );
     let index = Arc::new(index);
 
     // Store it for reuse (no timers for MCP — one-shot)
@@ -958,20 +978,28 @@ fn build_search_query_from_translate(
     scope_str: Option<&str>,
     limit: u32,
 ) -> SearchQuery {
-    // Start with AI-provided scope
-    let mut include_paths = translate_result.query.include_paths.clone();
-    let mut exclude_dir_names = translate_result.query.exclude_dir_names.clone();
+    // Skip LLM-suggested scope (searchPaths/excludeDirs) for performance.
+    // Scope filtering walks ancestor chains for every entry, which can take 27-57s on large
+    // indexes and exceed the MCP client timeout. The LLM's path guesses are often wrong anyway.
+    if translate_result.query.include_paths.is_some() || translate_result.query.exclude_dir_names.is_some() {
+        log::debug!(
+            "MCP ai_search: skipping LLM-suggested scope for performance (include_paths={:?}, exclude_dir_names={:?})",
+            translate_result.query.include_paths,
+            translate_result.query.exclude_dir_names
+        );
+    }
 
-    // Merge caller-provided scope on top
+    // Only use caller-provided scope (the explicit `scope` parameter from the MCP request)
+    let mut include_paths: Option<Vec<String>> = None;
+    let mut exclude_dir_names: Option<Vec<String>> = None;
+
     if let Some(scope) = scope_str {
         let parsed = search::parse_scope(scope);
         if !parsed.include_paths.is_empty() {
             include_paths = Some(parsed.include_paths);
         }
         if !parsed.exclude_patterns.is_empty() {
-            let mut merged = exclude_dir_names.unwrap_or_default();
-            merged.extend(parsed.exclude_patterns);
-            exclude_dir_names = Some(merged);
+            exclude_dir_names = Some(parsed.exclude_patterns);
         }
     }
 
@@ -1001,47 +1029,102 @@ fn build_search_query_from_translate(
 /// 2. Run search, check results
 /// 3. If >10 results, build preflight context and call LLM again (pass 2) for refinement
 async fn execute_ai_search(params: &Value) -> ToolResult {
-    let natural_query = params
-        .get("query")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| ToolError::invalid_params("Missing 'query' parameter"))?;
+    let natural_query = params.get("query").and_then(|v| v.as_str()).ok_or_else(|| {
+        log::warn!("MCP ai_search: missing 'query' parameter, returning error");
+        ToolError::invalid_params("Missing 'query' parameter")
+    })?;
     let limit = params.get("limit").and_then(|v| v.as_u64()).unwrap_or(30) as u32;
     let scope_str = params.get("scope").and_then(|v| v.as_str());
+    log::info!("MCP ai_search: handler entered, query={natural_query:?}, limit={limit}, scope={scope_str:?}");
 
-    let index = ensure_search_index().await?;
+    log::debug!("MCP ai_search: loading search index...");
+    let index = match ensure_search_index().await {
+        Ok(idx) => {
+            log::debug!("MCP ai_search: search index loaded, {} entries", idx.entries.len());
+            idx
+        }
+        Err(e) => {
+            log::error!("MCP ai_search: search index load failed: {}", e.message);
+            return Err(e);
+        }
+    };
 
     // ── Pass 1: broad query ──────────────────────────────────────────
-    let (ai_query, preflight_summary) = crate::commands::search::call_ai_translate(natural_query, None)
-        .await
-        .map_err(ToolError::internal)?;
+    log::debug!("MCP ai_search: calling call_ai_translate (pass 1) for query={natural_query:?}");
+    let (ai_query, preflight_summary) = match crate::commands::search::call_ai_translate(natural_query, None).await {
+        Ok(result) => {
+            log::debug!(
+                "MCP ai_search: call_ai_translate (pass 1) succeeded, preflight_summary={:?}",
+                result.1
+            );
+            result
+        }
+        Err(e) => {
+            log::error!("MCP ai_search: call_ai_translate (pass 1) failed: {e}");
+            return Err(ToolError::internal(e));
+        }
+    };
 
     let preflight_summary = preflight_summary.unwrap_or_default();
 
+    log::debug!("MCP ai_search: building translate result from AI query");
     let translate_result =
-        crate::commands::search::build_translate_result(ai_query, Some(preflight_summary.clone()))
-            .map_err(ToolError::internal)?;
+        match crate::commands::search::build_translate_result(ai_query, Some(preflight_summary.clone())) {
+            Ok(tr) => {
+                log::debug!(
+                    "MCP ai_search: translate result built, pattern={:?}, pattern_type={}",
+                    tr.query.name_pattern,
+                    tr.query.pattern_type
+                );
+                tr
+            }
+            Err(e) => {
+                log::error!("MCP ai_search: build_translate_result failed: {e}");
+                return Err(ToolError::internal(e));
+            }
+        };
 
     let pass1_query = build_search_query_from_translate(&translate_result, scope_str, limit);
 
+    log::debug!("MCP ai_search: running pass 1 search...");
     let pass1_query_clone = pass1_query.clone();
     let index_clone = index.clone();
-    let pass1_result = tokio::task::spawn_blocking(move || run_search_and_postprocess(&index_clone, &pass1_query_clone))
-        .await
-        .map_err(|e| ToolError::internal(format!("Search failed: {e}")))??;
+    let pass1_result =
+        match tokio::task::spawn_blocking(move || run_search_and_postprocess(&index_clone, &pass1_query_clone)).await {
+            Ok(Ok(result)) => {
+                log::info!(
+                    "MCP ai_search: pass 1 search completed, {} results (total_count={})",
+                    result.entries.len(),
+                    result.total_count
+                );
+                result
+            }
+            Ok(Err(e)) => {
+                log::error!("MCP ai_search: pass 1 search failed (postprocess): {}", e.message);
+                return Err(e);
+            }
+            Err(e) => {
+                log::error!("MCP ai_search: pass 1 spawn_blocking failed (task join): {e}");
+                return Err(ToolError::internal(format!("Search failed: {e}")));
+            }
+        };
 
     let pass1_total = pass1_result.total_count;
 
     // ── Check: skip pass 2 if results are already narrow or empty ────
     if pass1_total <= 10 || pass1_total == 0 {
+        log::info!("MCP ai_search: pass 1 returned {pass1_total} hits, skipping pass 2");
         let interpreted = summarize_query(&pass1_query);
         let formatted = format_search_results(&pass1_result, limit);
         let output = format!(
             "Preflight: {preflight_summary} \u{2192} {pass1_total} hits\n\nInterpreted query: {interpreted}\n\n{formatted}"
         );
+        log::debug!("MCP ai_search: returning pass 1 result, output length={}", output.len());
         return Ok(json!(output));
     }
 
     // ── Pass 2: refine with preflight context ────────────────────────
+    log::info!("MCP ai_search: pass 1 returned {pass1_total} hits, proceeding to pass 2 refinement");
     let sample_entries: Vec<crate::commands::search::PreflightEntry> = pass1_result
         .entries
         .iter()
@@ -1059,27 +1142,65 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
         sample_entries,
     };
 
+    log::debug!("MCP ai_search: calling call_ai_translate (pass 2) for refinement");
     let (refined_ai_query, _) =
-        crate::commands::search::call_ai_translate(natural_query, Some(&preflight_context))
-            .await
-            .map_err(ToolError::internal)?;
+        match crate::commands::search::call_ai_translate(natural_query, Some(&preflight_context)).await {
+            Ok(result) => {
+                log::debug!("MCP ai_search: call_ai_translate (pass 2) succeeded");
+                result
+            }
+            Err(e) => {
+                log::error!("MCP ai_search: call_ai_translate (pass 2) failed: {e}");
+                return Err(ToolError::internal(e));
+            }
+        };
 
-    let refined_translate =
-        crate::commands::search::build_translate_result(refined_ai_query, None).map_err(ToolError::internal)?;
+    log::debug!("MCP ai_search: building translate result from refined AI query");
+    let refined_translate = match crate::commands::search::build_translate_result(refined_ai_query, None) {
+        Ok(tr) => {
+            log::debug!(
+                "MCP ai_search: refined translate result built, pattern={:?}",
+                tr.query.name_pattern
+            );
+            tr
+        }
+        Err(e) => {
+            log::error!("MCP ai_search: build_translate_result (pass 2) failed: {e}");
+            return Err(ToolError::internal(e));
+        }
+    };
 
     let pass2_query = build_search_query_from_translate(&refined_translate, scope_str, limit);
 
     let interpreted = summarize_query(&pass2_query);
+    log::debug!("MCP ai_search: running pass 2 search...");
     let pass2_query_clone = pass2_query.clone();
     let index_clone = index.clone();
-    let pass2_result = tokio::task::spawn_blocking(move || run_search_and_postprocess(&index_clone, &pass2_query_clone))
-        .await
-        .map_err(|e| ToolError::internal(format!("Search failed: {e}")))??;
+    let pass2_result =
+        match tokio::task::spawn_blocking(move || run_search_and_postprocess(&index_clone, &pass2_query_clone)).await {
+            Ok(Ok(result)) => {
+                log::info!(
+                    "MCP ai_search: pass 2 search completed, {} results (total_count={})",
+                    result.entries.len(),
+                    result.total_count
+                );
+                result
+            }
+            Ok(Err(e)) => {
+                log::error!("MCP ai_search: pass 2 search failed (postprocess): {}", e.message);
+                return Err(e);
+            }
+            Err(e) => {
+                log::error!("MCP ai_search: pass 2 spawn_blocking failed (task join): {e}");
+                return Err(ToolError::internal(format!("Search failed: {e}")));
+            }
+        };
 
     let formatted = format_search_results(&pass2_result, limit);
     let output = format!(
         "Preflight: {preflight_summary} \u{2192} {pass1_total} hits \u{00b7} Refined\n\nInterpreted query: {interpreted}\n\n{formatted}"
     );
+    log::debug!("MCP ai_search: returning pass 2 result, output length={}", output.len());
     Ok(json!(output))
 }
 

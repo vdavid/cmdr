@@ -409,6 +409,10 @@ pub(crate) fn build_search_system_prompt() -> String {
 }
 
 /// Strips markdown code fences from an LLM response and parses it as JSON.
+///
+/// LLMs sometimes produce invalid JSON escape sequences in regex patterns (e.g. `\.` instead of
+/// `\\.`). Before parsing, we fix these by doubling any backslash that precedes a character that
+/// isn't a valid JSON escape target (`"`, `\`, `/`, `b`, `f`, `n`, `r`, `t`, `u`).
 pub(crate) fn parse_ai_response(response: &str) -> Result<AiSearchQuery, String> {
     let json_str = response.trim();
     let json_str = json_str
@@ -417,8 +421,59 @@ pub(crate) fn parse_ai_response(response: &str) -> Result<AiSearchQuery, String>
         .unwrap_or(json_str);
     let json_str = json_str.strip_suffix("```").unwrap_or(json_str).trim();
 
-    serde_json::from_str(json_str)
+    let fixed = fix_json_backslash_escapes(json_str);
+
+    serde_json::from_str(&fixed)
         .map_err(|_| "Couldn't understand that query. Try rephrasing or use the manual filters.".to_string())
+}
+
+/// Fix invalid JSON backslash escapes inside string values.
+///
+/// Scans character by character, tracking whether we're inside a JSON string (between unescaped
+/// `"`). When inside a string and we encounter `\` followed by a character that isn't a valid
+/// JSON escape (`"`, `\`, `/`, `b`, `f`, `n`, `r`, `t`, `u`), we insert an extra `\` to produce
+/// the valid escape `\\`.
+fn fix_json_backslash_escapes(input: &str) -> String {
+    let mut result = String::with_capacity(input.len() + 16);
+    let mut chars = input.chars().peekable();
+    let mut in_string = false;
+
+    while let Some(ch) = chars.next() {
+        if !in_string {
+            result.push(ch);
+            if ch == '"' {
+                in_string = true;
+            }
+        } else {
+            // Inside a JSON string
+            if ch == '"' {
+                // Unescaped quote ends the string
+                result.push(ch);
+                in_string = false;
+            } else if ch == '\\' {
+                // Look at what follows the backslash
+                if let Some(&next) = chars.peek() {
+                    if matches!(next, '"' | '\\' | '/' | 'b' | 'f' | 'n' | 'r' | 't' | 'u') {
+                        // Valid JSON escape — emit as-is
+                        result.push('\\');
+                        result.push(chars.next().unwrap());
+                    } else {
+                        // Invalid JSON escape (e.g. `\.`, `\d`, `\w`) — double the backslash
+                        result.push('\\');
+                        result.push('\\');
+                        // Don't consume `next` — it's a normal character
+                    }
+                } else {
+                    // Trailing backslash at end of input — emit as-is
+                    result.push('\\');
+                }
+            } else {
+                result.push(ch);
+            }
+        }
+    }
+
+    result
 }
 
 /// Generates a human-readable one-line summary of an AI search query.
@@ -627,7 +682,23 @@ pub(crate) async fn call_ai_translate(
     natural_query: &str,
     preflight_context: Option<&PreflightContext>,
 ) -> Result<(AiSearchQuery, Option<String>), String> {
-    let backend = resolve_ai_backend()?;
+    let pass_label = if preflight_context.is_some() {
+        "pass 2"
+    } else {
+        "pass 1"
+    };
+    log::debug!("MCP ai_search: call_ai_translate ({pass_label}) entered, query={natural_query:?}");
+
+    let backend = match resolve_ai_backend() {
+        Ok(b) => {
+            log::debug!("MCP ai_search: AI backend resolved successfully");
+            b
+        }
+        Err(e) => {
+            log::error!("MCP ai_search: resolve_ai_backend failed: {e}");
+            return Err(e);
+        }
+    };
 
     let system_prompt = match preflight_context {
         Some(ctx) => build_refinement_system_prompt(natural_query, ctx),
@@ -641,11 +712,36 @@ pub(crate) async fn call_ai_translate(
         top_p: 0.9,
     };
 
-    let response = crate::ai::client::chat_completion(&backend, natural_query, &options)
-        .await
-        .map_err(|e| format!("{e}"))?;
+    log::debug!("MCP ai_search: calling chat_completion ({pass_label})...");
+    let response = match crate::ai::client::chat_completion(&backend, natural_query, &options).await {
+        Ok(r) => {
+            log::debug!(
+                "MCP ai_search: chat_completion ({pass_label}) returned {} chars",
+                r.len()
+            );
+            log::debug!("MCP ai_search: chat_completion ({pass_label}) raw response: {r:?}");
+            r
+        }
+        Err(e) => {
+            log::error!("MCP ai_search: chat_completion ({pass_label}) failed: {e}");
+            return Err(format!("{e}"));
+        }
+    };
 
-    let mut ai_query = parse_ai_response(&response)?;
+    log::debug!("MCP ai_search: parsing AI response ({pass_label})...");
+    let mut ai_query = match parse_ai_response(&response) {
+        Ok(q) => {
+            log::debug!(
+                "MCP ai_search: parse_ai_response ({pass_label}) succeeded, pattern={:?}",
+                q.name_pattern
+            );
+            q
+        }
+        Err(e) => {
+            log::error!("MCP ai_search: parse_ai_response ({pass_label}) failed: {e}, raw response was: {response:?}");
+            return Err(e);
+        }
+    };
 
     // Validate regex patterns — retry once if invalid
     if let Err(regex_error) = validate_regex_pattern(&ai_query) {
@@ -656,16 +752,36 @@ pub(crate) async fn call_ai_translate(
              Return the same JSON object with the corrected pattern."
         );
 
-        log::debug!("AI regex validation failed, retrying: {regex_error}");
+        log::warn!("MCP ai_search: regex validation failed ({pass_label}), retrying: {regex_error}");
 
-        let retry_response = crate::ai::client::chat_completion(&backend, &retry_prompt, &options)
-            .await
-            .map_err(|e| format!("{e}"))?;
+        let retry_response = match crate::ai::client::chat_completion(&backend, &retry_prompt, &options).await {
+            Ok(r) => {
+                log::debug!("MCP ai_search: regex retry chat_completion returned {} chars", r.len());
+                r
+            }
+            Err(e) => {
+                log::error!("MCP ai_search: regex retry chat_completion failed: {e}");
+                return Err(format!("{e}"));
+            }
+        };
 
-        ai_query = parse_ai_response(&retry_response)?;
+        ai_query = match parse_ai_response(&retry_response) {
+            Ok(q) => {
+                log::debug!(
+                    "MCP ai_search: regex retry parse succeeded, pattern={:?}",
+                    q.name_pattern
+                );
+                q
+            }
+            Err(e) => {
+                log::error!("MCP ai_search: regex retry parse failed: {e}, raw response was: {retry_response:?}");
+                return Err(e);
+            }
+        };
 
         // Validate the retry — if still invalid, return the error
         if let Err(retry_error) = validate_regex_pattern(&ai_query) {
+            log::error!("MCP ai_search: regex still invalid after retry: {retry_error}");
             return Err(format!("AI generated invalid regex pattern: {retry_error}"));
         }
     }
@@ -677,6 +793,7 @@ pub(crate) async fn call_ai_translate(
         None
     };
 
+    log::debug!("MCP ai_search: call_ai_translate ({pass_label}) completed successfully");
     Ok((ai_query, preflight_summary))
 }
 
@@ -689,8 +806,7 @@ pub async fn translate_search_query(
     natural_query: String,
     preflight_context: Option<PreflightContext>,
 ) -> Result<TranslateResult, String> {
-    let (ai_query, preflight_summary) =
-        call_ai_translate(&natural_query, preflight_context.as_ref()).await?;
+    let (ai_query, preflight_summary) = call_ai_translate(&natural_query, preflight_context.as_ref()).await?;
 
     build_translate_result(ai_query, preflight_summary)
 }
@@ -1245,5 +1361,72 @@ mod tests {
         };
         let result = build_translate_result(q, None).unwrap();
         assert!(result.preflight_summary.is_none());
+    }
+
+    // ── JSON backslash escape fix tests ────────────────────────────────
+
+    #[test]
+    fn test_parse_ai_response_invalid_backslash_dot() {
+        // LLM returns `\.` which is not a valid JSON escape
+        let response =
+            r#"{"namePattern": "(presentation|slides|deck).*\.(pdf|ppt|pptx|key)$", "patternType": "regex"}"#;
+        let q = parse_ai_response(response).unwrap();
+        assert_eq!(
+            q.name_pattern.as_deref(),
+            Some(r"(presentation|slides|deck).*\.(pdf|ppt|pptx|key)$")
+        );
+        assert_eq!(q.pattern_type.as_deref(), Some("regex"));
+    }
+
+    #[test]
+    fn test_parse_ai_response_valid_double_backslash_dot() {
+        // Already valid JSON: `\\.` decodes to `\.`
+        let response = r#"{"namePattern": "\\.(ttf|otf|woff|woff2)$", "patternType": "regex"}"#;
+        let q = parse_ai_response(response).unwrap();
+        assert_eq!(q.name_pattern.as_deref(), Some(r"\.(ttf|otf|woff|woff2)$"));
+    }
+
+    #[test]
+    fn test_parse_ai_response_invalid_backslash_d() {
+        // `\d` is a common regex escape but invalid in JSON
+        let response = r#"{"namePattern": "\d{4}-\d{2}-\d{2}", "patternType": "regex"}"#;
+        let q = parse_ai_response(response).unwrap();
+        assert_eq!(q.name_pattern.as_deref(), Some(r"\d{4}-\d{2}-\d{2}"));
+    }
+
+    #[test]
+    fn test_parse_ai_response_valid_escapes_not_modified() {
+        // Valid JSON escapes: `\n`, `\"`, `\\` should NOT be doubled
+        let response = r#"{"namePattern": "line1\\nline2"}"#;
+        let q = parse_ai_response(response).unwrap();
+        // `\\n` in JSON source → `\n` in the parsed string (literal backslash + n)
+        assert_eq!(q.name_pattern.as_deref(), Some("line1\\nline2"));
+    }
+
+    #[test]
+    fn test_fix_json_backslash_escapes_preserves_valid() {
+        // All valid JSON escapes should pass through unchanged
+        let input = r#"{"a": "quote:\" backslash:\\ slash:\/ bs:\b ff:\f nl:\n cr:\r tab:\t uni:\u0041"}"#;
+        let fixed = fix_json_backslash_escapes(input);
+        assert_eq!(fixed, input);
+    }
+
+    #[test]
+    fn test_fix_json_backslash_escapes_fixes_invalid() {
+        // `\.` and `\w` are invalid JSON escapes → should become `\\.` and `\\w`
+        let input = r#"{"p": "\.\w"}"#;
+        let fixed = fix_json_backslash_escapes(input);
+        assert_eq!(fixed, r#"{"p": "\\.\\w"}"#);
+        // Verify the fixed string parses as valid JSON
+        let v: serde_json::Value = serde_json::from_str(&fixed).unwrap();
+        assert_eq!(v["p"].as_str().unwrap(), r"\.\w");
+    }
+
+    #[test]
+    fn test_fix_json_backslash_escapes_outside_strings() {
+        // Backslashes outside strings should not be touched (though unusual in JSON)
+        let input = r#"{"k": "v"}"#;
+        let fixed = fix_json_backslash_escapes(input);
+        assert_eq!(fixed, input);
     }
 }

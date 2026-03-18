@@ -532,17 +532,42 @@ async fn process_request<R: Runtime>(
 
             let arguments = request.params.get("arguments").cloned().unwrap_or(json!({}));
 
+            if name == "ai_search" {
+                log::debug!("MCP ai_search: tools/call received, id={:?}", request.id);
+            }
+
             let result = execute_tool(&state.app, name, &arguments).await;
 
             match result {
-                Ok(value) => (
-                    McpResponse::success(
-                        request.id,
-                        json!({"content": [{"type": "text", "text": format_tool_result(&value)}]}),
-                    ),
-                    None,
-                ),
-                Err(e) => (McpResponse::error(request.id, e.code, e.message), None),
+                Ok(ref value) => {
+                    if name == "ai_search" {
+                        let text = format_tool_result(value);
+                        log::debug!(
+                            "MCP ai_search: tools/call returning success, response length={}",
+                            text.len()
+                        );
+                        if text.is_empty() || text == "\"\"" || text == "null" {
+                            log::warn!("MCP ai_search: tools/call returning EMPTY/NULL response — this is the bug");
+                        }
+                    }
+                    (
+                        McpResponse::success(
+                            request.id,
+                            json!({"content": [{"type": "text", "text": format_tool_result(value)}]}),
+                        ),
+                        None,
+                    )
+                }
+                Err(e) => {
+                    if name == "ai_search" {
+                        log::error!(
+                            "MCP ai_search: tools/call returning error, code={}, message={}",
+                            e.code,
+                            e.message
+                        );
+                    }
+                    (McpResponse::error(request.id, e.code, e.message), None)
+                }
             }
         }
 
