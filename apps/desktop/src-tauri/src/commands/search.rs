@@ -372,24 +372,36 @@ pub(crate) fn build_search_system_prompt() -> String {
          Regex: Rust `regex` crate syntax (no lookahead/lookbehind, no backreferences, \
          no \\d — use [0-9]). Case-insensitive, unanchored unless you add ^ or $.\n\
          \n\
-         Category mapping: \"documents\" → regex for .pdf/.doc/.docx/.txt/.odt/.xls/.xlsx, \
-         \"photos\"/\"images\" → .jpg/.jpeg/.png/.heic/.webp/.gif, \
-         \"videos\" → .mp4/.mov/.avi/.mkv/.webm, \
-         \"music\"/\"audio\" → .mp3/.m4a/.flac/.wav/.ogg/.aac.\n\
-         Size hints: \"big\"/\"large\"/\"huge\" → minSize 100 MB+, \"taking up space\" → minSize 500 MB+.\n\
+         Category mapping — when the user mentions a category, ALWAYS filter by file extension:\n\
+         - \"documents\"/\"resume\"/\"CV\"/\"report\" → regex \\.(pdf|doc|docx|txt|odt|xls|xlsx)$\n\
+         - \"photos\"/\"images\" → regex \\.(jpg|jpeg|png|heic|webp|gif)$\n\
+         - \"screenshots\" → regex ^Screenshot.*\\.(png|jpg|heic)$ (macOS names them \"Screenshot YYYY-MM-DD at HH.MM.SS.png\")\n\
+         - \"videos\" → regex \\.(mp4|mov|avi|mkv|webm)$\n\
+         - \"music\"/\"audio\" → regex \\.(mp3|m4a|flac|wav|ogg|aac)$\n\
+         - \"env files\"/\"dotenv\"/\".env\" → regex ^\\.env(\\..+)?$ (matches .env, .env.local, .env.production)\n\
+         - \"config files\" → regex \\.(json|ya?ml|toml|ini|conf|cfg)$\n\n\
+         Size hints: \"big\"/\"large\" → minSize 100 MB, \"huge\" → minSize 500 MB, \
+         \"taking up space\" → minSize 50 MB.\n\
          If the user describes their naming convention (\"I name them...\", \"I mark them as...\", \
-         \"tagged with...\"), use that as the filename pattern.\n\
-         For code queries (programming languages, source files), auto-exclude: \
+         \"tagged with...\"), use that as the filename pattern — it's more reliable than descriptive words.\n\
+         When the user asks about a concept (\"my resume\", \"ssh keys\", \"env files with secrets\"), \
+         search by how these files are typically NAMED, not by descriptive words in the query. \
+         For example, \"env files with secrets\" means .env files (which contain secrets), not files with \"secret\" in the name.\n\
+         For code queries, auto-exclude: \
          excludeDirs: [\"node_modules\", \".git\", \"__pycache__\", \"vendor\", \".venv\", \"target\", \"build\", \"dist\"].\n\
+         Date math: \"yesterday\" = modifiedAfter one day before today + modifiedBefore today. \
+         \"this week\" = modifiedAfter last Monday. \"last month\" = modifiedAfter first of previous month.\n\
          \n\
          Examples:\n\
          \"large pdfs\" → {{\"namePattern\": \"*.pdf\", \"patternType\": \"glob\", \"minSize\": 10485760}}\n\
          \"quarterly reports\" → {{\"namePattern\": \"(Q[1-4]|quarterly).*\\.pdf\", \"patternType\": \"regex\"}}\n\
          \"photos from last month\" → {{\"namePattern\": \"\\\\.(jpg|jpeg|png|heic|webp|gif)$\", \"patternType\": \"regex\", \"modifiedAfter\": \"2026-02-15\"}}\n\
          \"folders bigger than 1gb\" → {{\"isDirectory\": true, \"minSize\": 1073741824}}\n\
-         \"screenshots from today\" → {{\"namePattern\": \"Screenshot.*\", \"patternType\": \"regex\", \"modifiedAfter\": \"{today_str}\"}}\n\
+         \"screenshots from today\" → {{\"namePattern\": \"^Screenshot.*\\\\.(png|jpg|heic)$\", \"patternType\": \"regex\", \"modifiedAfter\": \"{today_str}\"}}\n\
          \"invoices I mark as rymd\" → {{\"namePattern\": \"*rymd*\", \"patternType\": \"glob\"}}\n\
-         \"documents older than a year\" → {{\"namePattern\": \"(\\\\.(pdf|doc|docx|txt|odt|xls|xlsx))$\", \"patternType\": \"regex\", \"modifiedBefore\": \"{one_year_ago_str}\"}}\n\
+         \"my resume\" → {{\"namePattern\": \"(resume|cv).*\\\\.(pdf|docx?)$\", \"patternType\": \"regex\", \"searchPaths\": [\"~/Documents\", \"~/Downloads\", \"~/Desktop\"]}}\n\
+         \"env files\" → {{\"namePattern\": \"^\\\\.env(\\\\..+)?$\", \"patternType\": \"regex\"}}\n\
+         \"documents older than a year\" → {{\"namePattern\": \"\\\\.(pdf|doc|docx|txt|odt|xls|xlsx)$\", \"patternType\": \"regex\", \"modifiedBefore\": \"{one_year_ago_str}\"}}\n\
          \"python files in my projects\" → {{\"namePattern\": \"*.py\", \"patternType\": \"glob\", \"searchPaths\": [\"~/projects\"], \"excludeDirs\": [\"node_modules\", \".git\", \"__pycache__\", \".venv\"]}}\n\
          \n\
          Today's date is {today_str}. Return ONLY the JSON, no explanation."
@@ -498,9 +510,15 @@ pub(crate) fn build_refinement_system_prompt(natural_query: &str, ctx: &Prefligh
         "{base_prompt}\n\n\
          ---\n\n\
          {table}\n\n\
-         Examine these results to understand the actual file naming patterns on this drive, \
-         then refine your query to precisely match what the user wants. \
-         The user asked: \"{natural_query}\""
+         Examine these results carefully. The user asked: \"{natural_query}\"\n\n\
+         Refine your query based on what you see:\n\
+         - If results contain irrelevant files from specific directories (caches, indexes, build output), \
+         add those to \"excludeDirs\" to filter them out.\n\
+         - If an extension is ambiguous (e.g. .key matching both Keynote presentations and SSL keys), \
+         either remove it or tighten the pattern to distinguish them.\n\
+         - If results show the actual naming convention for what the user wants, match that pattern specifically.\n\
+         - If results are already precise, return the same query unchanged.\n\
+         Return ONLY the refined JSON."
     )
 }
 
@@ -1157,7 +1175,7 @@ mod tests {
         assert!(prompt.contains("test.pdf"));
         // Contains the refinement instruction
         assert!(prompt.contains("find my resume"));
-        assert!(prompt.contains("refine your query"));
+        assert!(prompt.contains("Refine your query"));
     }
 
     #[test]
