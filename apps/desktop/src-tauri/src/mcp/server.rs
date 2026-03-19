@@ -536,36 +536,23 @@ async fn process_request<R: Runtime>(
                 log::debug!("MCP ai_search: tools/call received, id={:?}", request.id);
             }
 
+            log::debug!("MCP: executing tool {name}");
             let result = execute_tool(&state.app, name, &arguments).await;
 
             match result {
                 Ok(ref value) => {
-                    if name == "ai_search" {
-                        let text = format_tool_result(value);
-                        log::debug!(
-                            "MCP ai_search: tools/call returning success, response length={}",
-                            text.len()
-                        );
-                        if text.is_empty() || text == "\"\"" || text == "null" {
-                            log::warn!("MCP ai_search: tools/call returning EMPTY/NULL response — this is the bug");
-                        }
-                    }
+                    let text = format_tool_result(value);
+                    log::debug!("MCP: tool {name} succeeded, response length={}", text.len());
                     (
                         McpResponse::success(
                             request.id,
-                            json!({"content": [{"type": "text", "text": format_tool_result(value)}]}),
+                            json!({"content": [{"type": "text", "text": text}]}),
                         ),
                         None,
                     )
                 }
                 Err(e) => {
-                    if name == "ai_search" {
-                        log::error!(
-                            "MCP ai_search: tools/call returning error, code={}, message={}",
-                            e.code,
-                            e.message
-                        );
-                    }
+                    log::warn!("MCP: tool {name} failed, code={}, message={}", e.code, e.message);
                     (McpResponse::error(request.id, e.code, e.message), None)
                 }
             }

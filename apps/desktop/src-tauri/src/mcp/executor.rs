@@ -1031,6 +1031,7 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
     })?;
     let limit = params.get("limit").and_then(|v| v.as_u64()).unwrap_or(30) as u32;
     let scope_str = params.get("scope").and_then(|v| v.as_str());
+    let total_t = std::time::Instant::now();
     log::info!("MCP ai_search: handler entered, query={natural_query:?}, limit={limit}, scope={scope_str:?}");
 
     log::debug!("MCP ai_search: loading search index...");
@@ -1047,17 +1048,19 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
 
     // ── Pass 1: broad query ──────────────────────────────────────────
     log::debug!("MCP ai_search: calling call_ai_translate (pass 1) for query={natural_query:?}");
+    let t = std::time::Instant::now();
     let (ai_query, preflight_summary) = match crate::commands::search::call_ai_translate(natural_query, None).await {
         Ok(result) => {
-            log::debug!(
-                "MCP ai_search: call_ai_translate (pass 1) succeeded, preflight_summary={:?}",
+            log::info!(
+                "MCP ai_search: call_ai_translate (pass 1) succeeded in {:.1}s, preflight_summary={:?}",
+                t.elapsed().as_secs_f64(),
                 result.1
             );
             result
         }
         Err(e) => {
-            log::error!("MCP ai_search: call_ai_translate (pass 1) failed: {e}");
-            return Err(ToolError::internal(e));
+            log::warn!("MCP ai_search: LLM call failed for query={natural_query:?}: {e}");
+            return Err(ToolError::internal(format!("AI translation failed: {e}")));
         }
     };
 
@@ -1083,13 +1086,15 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
     let pass1_query = build_search_query_from_translate(&translate_result, scope_str, limit);
 
     log::debug!("MCP ai_search: running pass 1 search...");
+    let t = std::time::Instant::now();
     let pass1_query_clone = pass1_query.clone();
     let index_clone = index.clone();
     let pass1_result =
         match tokio::task::spawn_blocking(move || run_search_and_postprocess(&index_clone, &pass1_query_clone)).await {
             Ok(Ok(result)) => {
                 log::info!(
-                    "MCP ai_search: pass 1 search completed, {} results (total_count={})",
+                    "MCP ai_search: pass 1 search completed in {:.1}s, {} results (total_count={})",
+                    t.elapsed().as_secs_f64(),
                     result.entries.len(),
                     result.total_count
                 );
@@ -1120,7 +1125,7 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
         let output = format!(
             "Preflight: {preflight_summary} \u{2192} {pass1_total} hits\n\nInterpreted query: {interpreted}\n{caveat_line}\n{formatted}"
         );
-        log::debug!("MCP ai_search: returning pass 1 result, output length={}", output.len());
+        log::info!("MCP ai_search: completed (pass 1 only) in {:.1}s, output length={}", total_t.elapsed().as_secs_f64(), output.len());
         return Ok(json!(output));
     }
 
@@ -1144,15 +1149,16 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
     };
 
     log::debug!("MCP ai_search: calling call_ai_translate (pass 2) for refinement");
+    let t = std::time::Instant::now();
     let (refined_ai_query, _) =
         match crate::commands::search::call_ai_translate(natural_query, Some(&preflight_context)).await {
             Ok(result) => {
-                log::debug!("MCP ai_search: call_ai_translate (pass 2) succeeded");
+                log::info!("MCP ai_search: call_ai_translate (pass 2) succeeded in {:.1}s", t.elapsed().as_secs_f64());
                 result
             }
             Err(e) => {
-                log::error!("MCP ai_search: call_ai_translate (pass 2) failed: {e}");
-                return Err(ToolError::internal(e));
+                log::warn!("MCP ai_search: LLM refinement call failed for query={natural_query:?}: {e}");
+                return Err(ToolError::internal(format!("AI refinement failed: {e}")));
             }
         };
 
@@ -1175,13 +1181,15 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
 
     let interpreted = summarize_query(&pass2_query);
     log::debug!("MCP ai_search: running pass 2 search...");
+    let t = std::time::Instant::now();
     let pass2_query_clone = pass2_query.clone();
     let index_clone = index.clone();
     let pass2_result =
         match tokio::task::spawn_blocking(move || run_search_and_postprocess(&index_clone, &pass2_query_clone)).await {
             Ok(Ok(result)) => {
                 log::info!(
-                    "MCP ai_search: pass 2 search completed, {} results (total_count={})",
+                    "MCP ai_search: pass 2 search completed in {:.1}s, {} results (total_count={})",
+                    t.elapsed().as_secs_f64(),
                     result.entries.len(),
                     result.total_count
                 );
@@ -1206,7 +1214,7 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
     let output = format!(
         "Preflight: {preflight_summary} \u{2192} {pass1_total} hits \u{00b7} Refined\n\nInterpreted query: {interpreted}\n{caveat_line}\n{formatted}"
     );
-    log::debug!("MCP ai_search: returning pass 2 result, output length={}", output.len());
+    log::info!("MCP ai_search: completed (pass 2) in {:.1}s, output length={}", total_t.elapsed().as_secs_f64(), output.len());
     Ok(json!(output))
 }
 

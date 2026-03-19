@@ -2,7 +2,6 @@
 //!
 //! Thin wrappers around `indexing::search` module functions, exposed to the frontend via Tauri commands.
 
-use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -75,12 +74,7 @@ pub async fn prepare_search_index(app: tauri::AppHandle) -> Result<PrepareResult
             });
         }
         *guard = Some(SearchIndexState {
-            index: Arc::new(search::SearchIndex {
-                names: String::new(),
-                entries: Vec::new(),
-                id_to_index: HashMap::new(),
-                generation: 0, // sentinel: never matches a real generation
-            }),
+            index: Arc::new(search::SearchIndex::empty()),
             idle_timer: None,
             backstop_timer: None,
             load_cancel: Some(cancel.clone()),
@@ -744,18 +738,20 @@ pub(crate) async fn call_ai_translate(
         top_p: 0.9,
     };
 
+    let t0 = std::time::Instant::now();
     log::debug!("MCP ai_search: calling chat_completion ({pass_label})...");
     let response = match crate::ai::client::chat_completion(&backend, natural_query, &options).await {
         Ok(r) => {
-            log::debug!(
-                "MCP ai_search: chat_completion ({pass_label}) returned {} chars",
-                r.len()
+            log::info!(
+                "AI search: chat_completion ({pass_label}) returned {} chars in {:.1}s",
+                r.len(),
+                t0.elapsed().as_secs_f64()
             );
             log::debug!("MCP ai_search: chat_completion ({pass_label}) raw response: {r:?}");
             r
         }
         Err(e) => {
-            log::error!("MCP ai_search: chat_completion ({pass_label}) failed: {e}");
+            log::warn!("AI search: chat_completion ({pass_label}) failed after {:.1}s for query={natural_query:?}: {e}", t0.elapsed().as_secs_f64());
             return Err(format!("{e}"));
         }
     };
@@ -792,7 +788,7 @@ pub(crate) async fn call_ai_translate(
                 r
             }
             Err(e) => {
-                log::error!("MCP ai_search: regex retry chat_completion failed: {e}");
+                log::warn!("AI search: regex retry chat_completion failed for query={natural_query:?}: {e}");
                 return Err(format!("{e}"));
             }
         };

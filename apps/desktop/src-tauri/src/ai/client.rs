@@ -116,6 +116,8 @@ pub async fn chat_completion(
         AiBackend::OpenAi { .. } => (None, Some(options.max_tokens)),
     };
 
+    log::debug!("AI chat_completion: sending request to {url} (model={model_name}, timeout=30s)");
+
     let request_body = ChatCompletionRequest {
         model: model_name,
         messages: vec![
@@ -136,7 +138,7 @@ pub async fn chat_completion(
     };
 
     let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(15))
+        .timeout(Duration::from_secs(30))
         .build()
         .map_err(|e| AiError::ServerError(e.to_string()))?;
 
@@ -154,6 +156,8 @@ pub async fn chat_completion(
             AiError::ServerError(e.to_string())
         }
     })?;
+
+    log::debug!("AI chat_completion: received response, status={}", response.status());
 
     if !response.status().is_success() {
         let status = response.status();

@@ -7,7 +7,7 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{Arc, LazyLock, Mutex};
+use std::sync::{Arc, LazyLock, Mutex, OnceLock};
 
 use rayon::prelude::*;
 use regex::{Regex, RegexBuilder};
@@ -37,13 +37,41 @@ pub struct SearchIndex {
     pub names: String, // arena: all filenames concatenated
     pub entries: Vec<SearchEntry>,
     pub id_to_index: HashMap<i64, usize>,
+    /// Lazily-built lookup for O(1) scope path resolution.
+    /// Built on first scoped search (adds ~20s for 5M entries), then cached.
+    parent_name_lookup: OnceLock<HashMap<(i64, String), i64>>,
     pub generation: u64,
 }
 
 impl SearchIndex {
+    /// Empty sentinel index used during async load.
+    pub fn empty() -> Self {
+        Self {
+            names: String::new(),
+            entries: Vec::new(),
+            id_to_index: HashMap::new(),
+            parent_name_lookup: OnceLock::new(),
+            generation: 0,
+        }
+    }
+
     /// Get the filename for an entry from the arena buffer.
     fn name(&self, entry: &SearchEntry) -> &str {
         &self.names[entry.name_offset as usize..entry.name_offset as usize + entry.name_len as usize]
+    }
+
+    /// Get or build the parent-name lookup table for scope path resolution.
+    fn parent_name_lookup(&self) -> &HashMap<(i64, String), i64> {
+        self.parent_name_lookup.get_or_init(|| {
+            let t = std::time::Instant::now();
+            let map = build_parent_name_lookup(&self.entries, &self.names);
+            log::info!(
+                "Search index: parent_name_lookup built in {:.1}s ({} entries)",
+                t.elapsed().as_secs_f64(),
+                map.len()
+            );
+            map
+        })
     }
 }
 
@@ -148,6 +176,7 @@ pub fn load_search_index(pool: &ReadPool, cancel: &AtomicBool) -> Result<SearchI
             names,
             entries,
             id_to_index,
+            parent_name_lookup: OnceLock::new(),
             generation,
         })
     })?
@@ -605,16 +634,14 @@ impl ScopeFilter {
 
 /// Pre-resolve scope filter data from the query and index.
 fn prepare_scope_filter(query: &SearchQuery, index: &SearchIndex) -> ScopeFilter {
-    // Resolve include paths to entry IDs
+    // Resolve include paths to entry IDs using the cached lookup table
     let include_ids = query.include_paths.as_ref().and_then(|paths| {
         if paths.is_empty() {
             return None;
         }
-        // Build a lookup table once for all path resolutions
-        let lookup = build_parent_name_lookup(index);
         let mut ids = HashSet::new();
         for path in paths {
-            if let Some(id) = resolve_path_in_index(path, &lookup) {
+            if let Some(id) = resolve_path_in_index(path, index.parent_name_lookup()) {
                 ids.insert(id);
             }
         }
@@ -677,12 +704,11 @@ fn prepare_scope_filter(query: &SearchQuery, index: &SearchIndex) -> ScopeFilter
 }
 
 /// Build a lookup table mapping `(parent_id, normalized_name) -> entry_id`
-/// for O(1) path component resolution. Only built when there are include
-/// paths to resolve.
-fn build_parent_name_lookup(index: &SearchIndex) -> HashMap<(i64, String), i64> {
-    let mut map = HashMap::with_capacity(index.entries.len());
-    for entry in &index.entries {
-        let name = index.name(entry);
+/// for O(1) path component resolution. Called once during index load.
+fn build_parent_name_lookup(entries: &[SearchEntry], names: &str) -> HashMap<(i64, String), i64> {
+    let mut map = HashMap::with_capacity(entries.len());
+    for entry in entries {
+        let name = &names[entry.name_offset as usize..entry.name_offset as usize + entry.name_len as usize];
         let normalized = store::normalize_for_comparison(name);
         map.insert((entry.parent_id, normalized), entry.id);
     }
@@ -1246,6 +1272,7 @@ mod tests {
             names,
             entries,
             id_to_index,
+            parent_name_lookup: OnceLock::new(),
             generation: 1,
         }
     }
@@ -2179,6 +2206,7 @@ mod tests {
             names,
             entries,
             id_to_index,
+            parent_name_lookup: OnceLock::new(),
             generation: 1,
         }
     }
