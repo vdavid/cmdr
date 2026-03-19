@@ -1023,7 +1023,7 @@ fn build_search_query_from_translate(
         exclude_dir_names,
         limit,
         case_sensitive: translate_result.query.case_sensitive,
-        exclude_system_dirs: None, // default = true
+        exclude_system_dirs: translate_result.query.exclude_system_dirs,
     }
 }
 
@@ -1125,6 +1125,47 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
                 return Err(ToolError::internal(format!("Search failed: {e}")));
             }
         };
+
+    // ── Fallback: if 0 results and LLM suggested searchPaths, retry without them ──
+    let (pass1_result, pass1_query) = if pass1_result.total_count == 0
+        && translate_result
+            .query
+            .include_paths
+            .as_ref()
+            .is_some_and(|p| !p.is_empty())
+    {
+        log::info!(
+            "MCP ai_search: pass 1 returned 0 results with searchPaths {:?}, retrying full-drive search",
+            translate_result.query.include_paths
+        );
+        let mut fallback_query = pass1_query;
+        fallback_query.include_paths = None;
+        fallback_query.include_path_ids = None;
+        let fallback_query_clone = fallback_query.clone();
+        let index_clone = index.clone();
+        let t = std::time::Instant::now();
+        match tokio::task::spawn_blocking(move || run_search_and_postprocess(&index_clone, &fallback_query_clone)).await
+        {
+            Ok(Ok(result)) => {
+                log::info!(
+                    "MCP ai_search: fallback full-drive search completed in {:.1}s, {} results",
+                    t.elapsed().as_secs_f64(),
+                    result.total_count
+                );
+                (result, fallback_query)
+            }
+            Ok(Err(e)) => {
+                log::error!("MCP ai_search: fallback search failed: {}", e.message);
+                return Err(e);
+            }
+            Err(e) => {
+                log::error!("MCP ai_search: fallback spawn_blocking failed: {e}");
+                return Err(ToolError::internal(format!("Search failed: {e}")));
+            }
+        }
+    } else {
+        (pass1_result, pass1_query)
+    };
 
     let pass1_total = pass1_result.total_count;
 

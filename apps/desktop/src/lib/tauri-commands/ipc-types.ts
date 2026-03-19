@@ -92,6 +92,7 @@ export interface TranslatedQuery {
     includePaths?: string[]
     excludeDirNames?: string[]
     caseSensitive?: boolean
+    excludeSystemDirs?: boolean
 }
 
 export interface TranslateDisplay {

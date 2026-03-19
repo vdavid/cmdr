@@ -282,6 +282,7 @@ pub(crate) struct AiSearchQuery {
     pub(crate) search_paths: Option<Vec<String>>,
     pub(crate) exclude_dirs: Option<Vec<String>>,
     pub(crate) case_sensitive: Option<bool>,
+    pub(crate) include_system_dirs: Option<bool>,
     pub(crate) caveat: Option<String>,
 }
 
@@ -327,6 +328,7 @@ pub struct TranslatedQuery {
     pub include_paths: Option<Vec<String>>,
     pub exclude_dir_names: Option<Vec<String>>,
     pub case_sensitive: Option<bool>,
+    pub exclude_system_dirs: Option<bool>,
 }
 
 /// Human-readable values so the frontend can populate filter UI.
@@ -382,6 +384,13 @@ pub(crate) fn build_search_system_prompt() -> String {
          - \"searchPaths\": array of paths to search within (for example, [\"~/projects\"])\n\
          - \"excludeDirs\": array of directory names to exclude (for example, [\"node_modules\", \".git\"])\n\
          - \"caseSensitive\": true when exact casing matters (default: omit for platform default)\n\
+         - \"includeSystemDirs\": set true when the query explicitly targets directories that are \
+         normally excluded (e.g. Logs, Caches, .Trash, node_modules, .git, build output). Default \
+         exclusion list: node_modules, .pnpm-store, .npm, .yarn, .cargo, .m2, .gradle, .git, .svn, \
+         .hg, __pycache__, .venv, venv, .tox, build, dist, .next, .nuxt, .cache, .parcel-cache, \
+         target, Caches, CacheStorage, Cache, GPUCache, ScriptCache, GrShaderCache, ShaderCache, \
+         Logs, Cookies, WebKit, Saved Application State, .Trash, .Spotlight-V100, .fseventsd, \
+         .DocumentRevisions-V100, workspaceStorage, DerivedData.\n\
          - \"caveat\": if part of the query refers to file content, visual appearance, or anything \
          not determinable from filename/size/date/path, briefly explain what was dropped and suggest \
          how to narrow results. Omit if the query translates fully.\n\
@@ -398,8 +407,12 @@ pub(crate) fn build_search_system_prompt() -> String {
          - \"music\"/\"audio\" → regex \\.(mp3|m4a|flac|wav|ogg|aac)$\n\
          - \"env files\"/\"dotenv\"/\".env\" → regex ^\\.env(\\..+)?$ (matches .env, .env.local, .env.production)\n\
          - \"config files\" → regex \\.(json|ya?ml|toml|ini|conf|cfg)$\n\n\
-         Size hints: \"big\"/\"large\" → minSize 100 MB, \"huge\" → minSize 500 MB, \
+         Size hints: \"biggest\"/\"largest\" → minSize 500 MB (user wants outliers). \
+         \"big\"/\"large\" → minSize 100 MB. \"huge\" → minSize 1 GB. \
          \"taking up space\" → minSize 50 MB.\n\
+         Results are sorted by recency, not by size. If the user asks for \"biggest\" or \"largest\", \
+         add a caveat: \"Results sorted by recency, not size — the very largest files may not appear first.\"\n\
+         When the user says \"not in X\", \"but not X\", \"excluding X\", or \"outside of X\", add X to `excludeDirs`.\n\
          If the user describes their naming convention (\"I name them...\", \"I mark them as...\", \
          \"tagged with...\"), use that as the filename pattern — it's more reliable than descriptive words.\n\
          When the user asks about a concept (\"my resume\", \"ssh keys\", \"env files with secrets\"), \
@@ -422,6 +435,8 @@ pub(crate) fn build_search_system_prompt() -> String {
          \"documents older than a year\" → {{\"namePattern\": \"\\\\.(pdf|doc|docx|txt|odt|xls|xlsx)$\", \"patternType\": \"regex\", \"modifiedBefore\": \"{one_year_ago_str}\"}}\n\
          \"python files in my projects\" → {{\"namePattern\": \"*.py\", \"patternType\": \"glob\", \"searchPaths\": [\"~/projects\"], \"excludeDirs\": [\"node_modules\", \".git\", \"__pycache__\", \".venv\"]}}\n\
          \"anything related to kubernetes\" → {{\"namePattern\": \"(k8s|kube|kubectl|helm|kubernetes)\", \"patternType\": \"regex\"}}\n\
+         \"package.json files but not in node_modules\" → {{\"namePattern\": \"^package\\\\.json$\", \"patternType\": \"regex\", \"excludeDirs\": [\"node_modules\"]}}\n\
+         \"log files eating disk space\" → {{\"namePattern\": \"\\\\.(log|out|err)$\", \"patternType\": \"regex\", \"minSize\": 52428800, \"includeSystemDirs\": true}}\n\
          \"photos of my cat\" → {{\"namePattern\": \"\\\\.(jpg|jpeg|png|heic|webp|gif)$\", \"patternType\": \"regex\", \"caveat\": \"Can't filter by photo content — add your naming convention if you have one (e.g. 'cat-*')\"}}\n\
          \n\
          Today's date is {today_str}. Return ONLY the JSON, no explanation."
@@ -649,6 +664,11 @@ pub(crate) fn build_translate_result(
             include_paths: include_paths.clone(),
             exclude_dir_names: exclude_dir_names.clone(),
             case_sensitive: ai_query.case_sensitive,
+            exclude_system_dirs: if ai_query.include_system_dirs == Some(true) {
+                Some(false)
+            } else {
+                None
+            },
         },
         display: TranslateDisplay {
             name_pattern: ai_query.name_pattern,
@@ -945,6 +965,7 @@ mod tests {
                 include_paths: None,
                 exclude_dir_names: None,
                 case_sensitive: None,
+                exclude_system_dirs: None,
             },
             display: TranslateDisplay {
                 name_pattern: Some("*.pdf".to_string()),
@@ -1017,6 +1038,7 @@ mod tests {
             search_paths: None,
             exclude_dirs: None,
             case_sensitive: None,
+            include_system_dirs: None,
             caveat: None,
         };
         assert!(validate_regex_pattern(&q).is_ok());
@@ -1035,6 +1057,7 @@ mod tests {
             search_paths: None,
             exclude_dirs: None,
             case_sensitive: None,
+            include_system_dirs: None,
             caveat: None,
         };
         assert!(validate_regex_pattern(&q).is_err());
@@ -1053,6 +1076,7 @@ mod tests {
             search_paths: None,
             exclude_dirs: None,
             case_sensitive: None,
+            include_system_dirs: None,
             caveat: None,
         };
         // Glob patterns aren't validated as regex
@@ -1072,6 +1096,7 @@ mod tests {
             search_paths: None,
             exclude_dirs: None,
             case_sensitive: None,
+            include_system_dirs: None,
             caveat: None,
         };
         assert!(validate_regex_pattern(&q).is_ok());
@@ -1090,6 +1115,7 @@ mod tests {
             search_paths: None,
             exclude_dirs: None,
             case_sensitive: None,
+            include_system_dirs: None,
             caveat: None,
         };
         let result = build_translate_result(q, None).unwrap();
@@ -1129,6 +1155,7 @@ mod tests {
             search_paths: Some(vec!["~/projects".to_string()]),
             exclude_dirs: Some(vec!["node_modules".to_string(), ".git".to_string()]),
             case_sensitive: None,
+            include_system_dirs: None,
             caveat: None,
         };
         let result = build_translate_result(q, None).unwrap();
@@ -1171,6 +1198,7 @@ mod tests {
             search_paths: None,
             exclude_dirs: None,
             case_sensitive: None,
+            include_system_dirs: None,
             caveat: None,
         };
         assert_eq!(summarize_ai_query(&q), "*resume*");
@@ -1189,6 +1217,7 @@ mod tests {
             search_paths: None,
             exclude_dirs: None,
             case_sensitive: None,
+            include_system_dirs: None,
             caveat: None,
         };
         assert_eq!(summarize_ai_query(&q), "*.pdf \u{00b7} size \u{2265} 10 MB");
@@ -1207,6 +1236,7 @@ mod tests {
             search_paths: None,
             exclude_dirs: None,
             case_sensitive: None,
+            include_system_dirs: None,
             caveat: None,
         };
         assert_eq!(summarize_ai_query(&q), "Screenshot.* (regex) \u{00b7} after 2026-03-16");
@@ -1225,6 +1255,7 @@ mod tests {
             search_paths: None,
             exclude_dirs: None,
             case_sensitive: None,
+            include_system_dirs: None,
             caveat: None,
         };
         assert_eq!(summarize_ai_query(&q), "size \u{2265} 1 GB \u{00b7} dirs only");
@@ -1243,6 +1274,7 @@ mod tests {
             search_paths: None,
             exclude_dirs: None,
             case_sensitive: None,
+            include_system_dirs: None,
             caveat: None,
         };
         assert_eq!(summarize_ai_query(&q), "(all entries)");
@@ -1261,6 +1293,7 @@ mod tests {
             search_paths: None,
             exclude_dirs: None,
             case_sensitive: None,
+            include_system_dirs: None,
             caveat: None,
         };
         let summary = summarize_ai_query(&q);
@@ -1390,6 +1423,7 @@ mod tests {
             search_paths: None,
             exclude_dirs: None,
             case_sensitive: None,
+            include_system_dirs: None,
             caveat: None,
         };
         let summary = "*.pdf".to_string();
@@ -1410,6 +1444,7 @@ mod tests {
             search_paths: None,
             exclude_dirs: None,
             case_sensitive: None,
+            include_system_dirs: None,
             caveat: None,
         };
         let result = build_translate_result(q, None).unwrap();

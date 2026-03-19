@@ -344,7 +344,12 @@
             modifiedAfter?: string | null
             modifiedBefore?: string | null
         }
-        query: { includePaths?: string[]; excludeDirNames?: string[]; caseSensitive?: boolean }
+        query: {
+            includePaths?: string[]
+            excludeDirNames?: string[]
+            caseSensitive?: boolean
+            excludeSystemDirs?: boolean
+        }
     }): SvelteSet<string> {
         const changed = new SvelteSet<string>()
         if (result.display.namePattern != null) {
@@ -358,6 +363,10 @@
         if (result.query.caseSensitive != null) {
             setCaseSensitive(result.query.caseSensitive)
             changed.add('caseSensitive')
+        }
+        if (result.query.excludeSystemDirs === false) {
+            setExcludeSystemDirs(false)
+            changed.add('excludeSystemDirs')
         }
         if (applySizeFilters(result.display)) changed.add('size')
         if (applyDateFilters(result.display)) changed.add('date')
@@ -485,6 +494,39 @@
         await focusFirstResult()
     }
 
+    /** When pass 1 gets 0 hits and the LLM guessed searchPaths, retry without include paths. */
+    async function aiSearchPathFallback(
+        pass1Result: Awaited<ReturnType<typeof translateSearchQuery>>,
+        summaryPrefix: string,
+        isStale: () => boolean,
+    ): Promise<boolean> {
+        const includePaths = pass1Result.query.includePaths
+        const hadIncludePaths = includePaths != null && includePaths.length > 0
+        if (!hadIncludePaths) return false
+
+        // Remove include paths from scope, keep only excludes (! prefixed)
+        const excludeOnly = getScope()
+            .split(',')
+            .map((s) => s.trim())
+            .filter((s) => s.startsWith('!'))
+            .join(', ')
+        setScope(excludeOnly)
+        setAiStatus('Retrying full-drive search...')
+        const fallbackQuery = await buildPreflightQuery()
+        try {
+            const fallbackResult = await searchFiles(fallbackQuery)
+            if (isStale()) return true
+            showResults(fallbackResult.entries, fallbackResult.totalCount)
+            const fallbackCount = fallbackResult.totalCount
+            setPreflightText(`${summaryPrefix} → 0 hits (path guess failed) → ${String(fallbackCount)} hits`)
+            setAiStatus('')
+            if (fallbackCount > 0) await focusFirstResult()
+            return true
+        } catch {
+            return false
+        }
+    }
+
     /** Runs the two-pass AI translation for a given query text, populates filters, and auto-runs search. */
     async function executeAiSearch(queryText: string): Promise<void> {
         const query = queryText.trim()
@@ -517,6 +559,7 @@
 
         // Phase 3: Check if refinement is needed
         if (hitCount === 0) {
+            if (await aiSearchPathFallback(pass1Result, summaryPrefix, isStale)) return
             showResults(preflightResult.entries, hitCount)
             setPreflightText(`${summaryPrefix} → 0 hits`)
             setAiStatus('')
