@@ -66,7 +66,8 @@ pub enum WriteMessage {
         name: String,
         is_directory: bool,
         is_symlink: bool,
-        size: Option<u64>,
+        logical_size: Option<u64>,
+        physical_size: Option<u64>,
         modified_at: Option<u64>,
     },
     /// Watcher: delete a single entry and its dir_stats by entry ID.
@@ -79,7 +80,8 @@ pub enum WriteMessage {
     /// Watcher: incremental delta propagation walking the parent_id chain.
     PropagateDeltaById {
         entry_id: i64,
-        size_delta: i64,
+        logical_size_delta: i64,
+        physical_size_delta: i64,
         file_count_delta: i32,
         dir_count_delta: i32,
     },
@@ -340,8 +342,8 @@ impl WriterStats {
 /// (`bulk_get_children_stats_by_id` and `bulk_get_child_dir_ids`) by tracking
 /// the same information incrementally as entries are inserted.
 struct AccumulatorMaps {
-    /// `parent_id -> (file_size_sum, file_count, dir_count)` — direct children only.
-    direct_stats: HashMap<i64, (u64, u64, u64)>,
+    /// `parent_id -> (logical_size_sum, physical_size_sum, file_count, dir_count)` — direct children only.
+    direct_stats: HashMap<i64, (u64, u64, u64, u64)>,
     /// `parent_id -> Vec<child_dir_id>` — direct child directories only.
     child_dirs: HashMap<i64, Vec<i64>>,
     /// Running count of entries inserted so far (for flushing progress).
@@ -361,13 +363,14 @@ impl AccumulatorMaps {
     fn accumulate(&mut self, entries: &[EntryRow]) {
         self.entries_inserted += entries.len() as u64;
         for entry in entries {
-            let stats = self.direct_stats.entry(entry.parent_id).or_insert((0, 0, 0));
+            let stats = self.direct_stats.entry(entry.parent_id).or_insert((0, 0, 0, 0));
             if entry.is_directory {
-                stats.2 += 1;
+                stats.3 += 1;
                 self.child_dirs.entry(entry.parent_id).or_default().push(entry.id);
             } else {
-                stats.0 += entry.size.unwrap_or(0);
-                stats.1 += 1;
+                stats.0 += entry.logical_size.unwrap_or(0);
+                stats.1 += entry.physical_size.unwrap_or(0);
+                stats.2 += 1;
             }
         }
     }
@@ -478,15 +481,22 @@ fn process_message(
             name,
             is_directory,
             is_symlink,
-            size,
+            logical_size,
+            physical_size,
             modified_at,
         } => {
             // Check if an entry already exists at (parent_id, name)
             match IndexStore::resolve_component(conn, parent_id, &name) {
                 Ok(Some(existing_id)) => {
-                    if let Err(e) =
-                        IndexStore::update_entry(conn, existing_id, is_directory, is_symlink, size, modified_at)
-                    {
+                    if let Err(e) = IndexStore::update_entry(
+                        conn,
+                        existing_id,
+                        is_directory,
+                        is_symlink,
+                        logical_size,
+                        physical_size,
+                        modified_at,
+                    ) {
                         log::warn!("Index writer: update_entry failed for id={existing_id}: {e}");
                     }
                 }
@@ -497,7 +507,8 @@ fn process_message(
                         &name,
                         is_directory,
                         is_symlink,
-                        size,
+                        logical_size,
+                        physical_size,
                         modified_at,
                     ) {
                         Ok(new_id) => {
@@ -512,7 +523,8 @@ fn process_message(
                                     conn,
                                     &[DirStatsById {
                                         entry_id: new_id,
-                                        recursive_size: 0,
+                                        recursive_logical_size: 0,
+                                        recursive_physical_size: 0,
                                         recursive_file_count: 0,
                                         recursive_dir_count: 0,
                                     }],
@@ -540,12 +552,24 @@ fn process_message(
             }
             // Auto-propagate accurate negative delta via parent_id chain
             if let Some(entry) = old_entry {
-                let (size_delta, file_delta, dir_delta) = if entry.is_directory {
-                    (0i64, 0i32, -1i32)
+                let (logical_delta, physical_delta, file_delta, dir_delta) = if entry.is_directory {
+                    (0i64, 0i64, 0i32, -1i32)
                 } else {
-                    (-(entry.size.unwrap_or(0) as i64), -1, 0)
+                    (
+                        -(entry.logical_size.unwrap_or(0) as i64),
+                        -(entry.physical_size.unwrap_or(0) as i64),
+                        -1,
+                        0,
+                    )
                 };
-                propagate_delta_by_id(conn, entry.parent_id, size_delta, file_delta, dir_delta);
+                propagate_delta_by_id(
+                    conn,
+                    entry.parent_id,
+                    logical_delta,
+                    physical_delta,
+                    file_delta,
+                    dir_delta,
+                );
             }
             WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
         }
@@ -557,11 +581,15 @@ fn process_message(
                 log::warn!("Index writer: delete_subtree_by_id failed for id={root_id}: {e}");
             }
             // Auto-propagate accurate negative delta via parent_id chain
-            if let (Some((total_size, file_count, dir_count)), Some(pid)) = (totals, parent_id) {
-                let size_delta = -(total_size as i64);
-                let file_delta = -(file_count as i32);
-                let dir_delta = -(dir_count as i32);
-                propagate_delta_by_id(conn, pid, size_delta, file_delta, dir_delta);
+            if let (Some((logical_size, physical_size, file_count, dir_count)), Some(pid)) = (totals, parent_id) {
+                propagate_delta_by_id(
+                    conn,
+                    pid,
+                    -(logical_size as i64),
+                    -(physical_size as i64),
+                    -(file_count as i32),
+                    -(dir_count as i32),
+                );
             }
             WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
         }
@@ -574,11 +602,19 @@ fn process_message(
         }
         WriteMessage::PropagateDeltaById {
             entry_id,
-            size_delta,
+            logical_size_delta,
+            physical_size_delta,
             file_count_delta,
             dir_count_delta,
         } => {
-            propagate_delta_by_id(conn, entry_id, size_delta, file_count_delta, dir_count_delta);
+            propagate_delta_by_id(
+                conn,
+                entry_id,
+                logical_size_delta,
+                physical_size_delta,
+                file_count_delta,
+                dir_count_delta,
+            );
         }
         WriteMessage::TruncateData => {
             accumulator.clear();
@@ -744,7 +780,14 @@ fn build_progress_callback(app_handle: &Option<AppHandle>) -> impl FnMut(Aggrega
 /// Uses direct SQL statements (no transaction) because this function is
 /// always called from within the writer thread, which may already be inside
 /// a `BEGIN IMMEDIATE` transaction (for example, during replay).
-fn propagate_delta_by_id(conn: &rusqlite::Connection, start_id: i64, size_delta: i64, file_delta: i32, dir_delta: i32) {
+fn propagate_delta_by_id(
+    conn: &rusqlite::Connection,
+    start_id: i64,
+    logical_size_delta: i64,
+    physical_size_delta: i64,
+    file_delta: i32,
+    dir_delta: i32,
+) {
     use crate::indexing::store::ROOT_ID;
 
     let mut current_id = start_id;
@@ -752,14 +795,16 @@ fn propagate_delta_by_id(conn: &rusqlite::Connection, start_id: i64, size_delta:
         // Read existing stats
         let existing = IndexStore::get_dir_stats_by_id(conn, current_id).ok().flatten();
 
-        let (new_size, new_files, new_dirs) = match existing {
+        let (new_logical, new_physical, new_files, new_dirs) = match existing {
             Some(s) => (
-                (s.recursive_size as i64 + size_delta).max(0) as u64,
+                (s.recursive_logical_size as i64 + logical_size_delta).max(0) as u64,
+                (s.recursive_physical_size as i64 + physical_size_delta).max(0) as u64,
                 (s.recursive_file_count as i64 + i64::from(file_delta)).max(0) as u64,
                 (s.recursive_dir_count as i64 + i64::from(dir_delta)).max(0) as u64,
             ),
             None => (
-                size_delta.max(0) as u64,
+                logical_size_delta.max(0) as u64,
+                physical_size_delta.max(0) as u64,
                 i64::from(file_delta).max(0) as u64,
                 i64::from(dir_delta).max(0) as u64,
             ),
@@ -767,9 +812,9 @@ fn propagate_delta_by_id(conn: &rusqlite::Connection, start_id: i64, size_delta:
 
         if let Err(e) = conn.execute(
             "INSERT OR REPLACE INTO dir_stats
-                 (entry_id, recursive_size, recursive_file_count, recursive_dir_count)
-             VALUES (?1, ?2, ?3, ?4)",
-            rusqlite::params![current_id, new_size, new_files, new_dirs],
+                 (entry_id, recursive_logical_size, recursive_physical_size, recursive_file_count, recursive_dir_count)
+             VALUES (?1, ?2, ?3, ?4, ?5)",
+            rusqlite::params![current_id, new_logical, new_physical, new_files, new_dirs],
         ) {
             log::warn!("propagate_delta_by_id: upsert failed for id={current_id}: {e}");
             break;
@@ -836,7 +881,8 @@ mod tests {
             name: "file.txt".into(),
             is_directory: false,
             is_symlink: false,
-            size: Some(1024),
+            logical_size: Some(1024),
+            physical_size: Some(1024),
             modified_at: Some(1700000000),
         }];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
@@ -847,7 +893,7 @@ mod tests {
         let children = store.list_children(ROOT_ID).unwrap();
         assert_eq!(children.len(), 1);
         assert_eq!(children[0].name, "file.txt");
-        assert_eq!(children[0].size, Some(1024));
+        assert_eq!(children[0].logical_size, Some(1024));
         assert_eq!(children[0].id, 10);
     }
 
@@ -863,7 +909,8 @@ mod tests {
                 name: "new.txt".into(),
                 is_directory: false,
                 is_symlink: false,
-                size: Some(256),
+                logical_size: Some(256),
+                physical_size: Some(256),
                 modified_at: Some(1700000000),
             })
             .unwrap();
@@ -876,7 +923,8 @@ mod tests {
                 name: "new.txt".into(),
                 is_directory: false,
                 is_symlink: false,
-                size: Some(512),
+                logical_size: Some(512),
+                physical_size: Some(512),
                 modified_at: Some(1700000001),
             })
             .unwrap();
@@ -887,7 +935,7 @@ mod tests {
         let children = store.list_children(ROOT_ID).unwrap();
         assert_eq!(children.len(), 1);
         assert_eq!(children[0].name, "new.txt");
-        assert_eq!(children[0].size, Some(512), "size should be updated to 512");
+        assert_eq!(children[0].logical_size, Some(512), "size should be updated to 512");
     }
 
     #[test]
@@ -902,7 +950,8 @@ mod tests {
                 name: "newdir".into(),
                 is_directory: true,
                 is_symlink: false,
-                size: None,
+                logical_size: None,
+                physical_size: None,
                 modified_at: None,
             })
             .unwrap();
@@ -918,7 +967,7 @@ mod tests {
         let stats = IndexStore::get_dir_stats_by_id(&conn, dir_id).unwrap();
         assert!(stats.is_some(), "new dir should have dir_stats");
         let stats = stats.unwrap();
-        assert_eq!(stats.recursive_size, 0);
+        assert_eq!(stats.recursive_logical_size, 0);
         assert_eq!(stats.recursive_file_count, 0);
         assert_eq!(stats.recursive_dir_count, 0);
     }
@@ -935,7 +984,8 @@ mod tests {
             name: "doomed.txt".into(),
             is_directory: false,
             is_symlink: false,
-            size: Some(100),
+            logical_size: Some(100),
+            physical_size: Some(100),
             modified_at: None,
         }];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
@@ -964,7 +1014,8 @@ mod tests {
                 name: "a".into(),
                 is_directory: true,
                 is_symlink: false,
-                size: None,
+                logical_size: None,
+                physical_size: None,
                 modified_at: None,
             },
             EntryRow {
@@ -973,7 +1024,8 @@ mod tests {
                 name: "b.txt".into(),
                 is_directory: false,
                 is_symlink: false,
-                size: Some(50),
+                logical_size: Some(50),
+                physical_size: Some(50),
                 modified_at: None,
             },
             EntryRow {
@@ -982,7 +1034,8 @@ mod tests {
                 name: "c".into(),
                 is_directory: true,
                 is_symlink: false,
-                size: None,
+                logical_size: None,
+                physical_size: None,
                 modified_at: None,
             },
         ];
@@ -1014,7 +1067,8 @@ mod tests {
                 name: "p".into(),
                 is_directory: true,
                 is_symlink: false,
-                size: None,
+                logical_size: None,
+                physical_size: None,
                 modified_at: None,
             },
             EntryRow {
@@ -1023,7 +1077,8 @@ mod tests {
                 name: "file.txt".into(),
                 is_directory: false,
                 is_symlink: false,
-                size: Some(500),
+                logical_size: Some(500),
+                physical_size: Some(500),
                 modified_at: None,
             },
         ];
@@ -1042,7 +1097,8 @@ mod tests {
                 &conn,
                 &[DirStatsById {
                     entry_id: 10,
-                    recursive_size: 500,
+                    recursive_logical_size: 500,
+                    recursive_physical_size: 500,
                     recursive_file_count: 1,
                     recursive_dir_count: 0,
                 }],
@@ -1057,7 +1113,7 @@ mod tests {
 
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
         let stats = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();
-        assert_eq!(stats.recursive_size, 0, "size should be 0 after file deletion");
+        assert_eq!(stats.recursive_logical_size, 0, "size should be 0 after file deletion");
         assert_eq!(stats.recursive_file_count, 0, "file count should be 0");
     }
 
@@ -1074,7 +1130,8 @@ mod tests {
                 name: "root".into(),
                 is_directory: true,
                 is_symlink: false,
-                size: None,
+                logical_size: None,
+                physical_size: None,
                 modified_at: None,
             },
             EntryRow {
@@ -1083,7 +1140,8 @@ mod tests {
                 name: "sub".into(),
                 is_directory: true,
                 is_symlink: false,
-                size: None,
+                logical_size: None,
+                physical_size: None,
                 modified_at: None,
             },
             EntryRow {
@@ -1092,7 +1150,8 @@ mod tests {
                 name: "file.txt".into(),
                 is_directory: false,
                 is_symlink: false,
-                size: Some(300),
+                logical_size: Some(300),
+                physical_size: Some(300),
                 modified_at: None,
             },
         ];
@@ -1107,13 +1166,15 @@ mod tests {
                 &[
                     DirStatsById {
                         entry_id: ROOT_ID,
-                        recursive_size: 300,
+                        recursive_logical_size: 300,
+                        recursive_physical_size: 300,
                         recursive_file_count: 1,
                         recursive_dir_count: 2,
                     },
                     DirStatsById {
                         entry_id: 10,
-                        recursive_size: 300,
+                        recursive_logical_size: 300,
+                        recursive_physical_size: 300,
                         recursive_file_count: 1,
                         recursive_dir_count: 1,
                     },
@@ -1131,13 +1192,13 @@ mod tests {
 
         // root_dir(10) should have lost: size=300, files=1, dirs=1
         let root_stats = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();
-        assert_eq!(root_stats.recursive_size, 0);
+        assert_eq!(root_stats.recursive_logical_size, 0);
         assert_eq!(root_stats.recursive_file_count, 0);
         assert_eq!(root_stats.recursive_dir_count, 0);
 
         // ROOT(1) should have lost: size=300, files=1, dirs=1
         let vol_stats = IndexStore::get_dir_stats_by_id(&conn, ROOT_ID).unwrap().unwrap();
-        assert_eq!(vol_stats.recursive_size, 0);
+        assert_eq!(vol_stats.recursive_logical_size, 0);
         assert_eq!(vol_stats.recursive_file_count, 0);
         assert_eq!(vol_stats.recursive_dir_count, 1); // root_dir(10) still exists
     }
@@ -1154,7 +1215,8 @@ mod tests {
             name: "home".into(),
             is_directory: true,
             is_symlink: false,
-            size: None,
+            logical_size: None,
+            physical_size: None,
             modified_at: None,
         }];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
@@ -1167,7 +1229,8 @@ mod tests {
                 &conn,
                 &[DirStatsById {
                     entry_id: 10,
-                    recursive_size: 1000,
+                    recursive_logical_size: 1000,
+                    recursive_physical_size: 1000,
                     recursive_file_count: 5,
                     recursive_dir_count: 1,
                 }],
@@ -1179,7 +1242,8 @@ mod tests {
         writer
             .send(WriteMessage::PropagateDeltaById {
                 entry_id: 10,
-                size_delta: 250,
+                logical_size_delta: 250,
+                physical_size_delta: 250,
                 file_count_delta: 1,
                 dir_count_delta: 0,
             })
@@ -1189,7 +1253,7 @@ mod tests {
 
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
         let result = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();
-        assert_eq!(result.recursive_size, 1250);
+        assert_eq!(result.recursive_logical_size, 1250);
         assert_eq!(result.recursive_file_count, 6);
     }
 
@@ -1205,7 +1269,8 @@ mod tests {
             name: "p".into(),
             is_directory: true,
             is_symlink: false,
-            size: None,
+            logical_size: None,
+            physical_size: None,
             modified_at: None,
         }];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
@@ -1217,7 +1282,8 @@ mod tests {
                 &conn,
                 &[DirStatsById {
                     entry_id: 10,
-                    recursive_size: 100,
+                    recursive_logical_size: 100,
+                    recursive_physical_size: 100,
                     recursive_file_count: 1,
                     recursive_dir_count: 0,
                 }],
@@ -1232,7 +1298,7 @@ mod tests {
 
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
         let stats = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();
-        assert_eq!(stats.recursive_size, 100, "stats should be unchanged");
+        assert_eq!(stats.recursive_logical_size, 100, "stats should be unchanged");
         assert_eq!(stats.recursive_file_count, 1);
     }
 
@@ -1249,7 +1315,8 @@ mod tests {
                 name: "a".into(),
                 is_directory: true,
                 is_symlink: false,
-                size: None,
+                logical_size: None,
+                physical_size: None,
                 modified_at: None,
             },
             EntryRow {
@@ -1258,7 +1325,8 @@ mod tests {
                 name: "b.txt".into(),
                 is_directory: false,
                 is_symlink: false,
-                size: Some(100),
+                logical_size: Some(100),
+                physical_size: Some(100),
                 modified_at: None,
             },
         ];
@@ -1313,7 +1381,8 @@ mod tests {
             name: "test.txt".into(),
             is_directory: false,
             is_symlink: false,
-            size: Some(512),
+            logical_size: Some(512),
+            physical_size: Some(512),
             modified_at: Some(1700000000),
         }];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
@@ -1324,7 +1393,7 @@ mod tests {
         let children = store.list_children(ROOT_ID).unwrap();
         assert_eq!(children.len(), 1);
         assert_eq!(children[0].name, "test.txt");
-        assert_eq!(children[0].size, Some(512));
+        assert_eq!(children[0].logical_size, Some(512));
 
         writer.shutdown();
     }

@@ -100,7 +100,8 @@ struct DiskEntry {
     name: String,
     is_dir: bool,
     is_symlink: bool,
-    size: Option<u64>,
+    logical_size: Option<u64>,
+    physical_size: Option<u64>,
     modified_at: Option<u64>,
 }
 
@@ -154,8 +155,8 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
 
         let is_dir = metadata.is_dir();
         let is_symlink = metadata.is_symlink();
-        let (size, modified_at) = if is_dir || is_symlink {
-            (None, reconciler::entry_modified_at(&metadata))
+        let (logical_size, physical_size, modified_at) = if is_dir || is_symlink {
+            (None, None, reconciler::entry_modified_at(&metadata))
         } else {
             reconciler::entry_size_and_mtime(&metadata)
         };
@@ -167,7 +168,8 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
                 name,
                 is_dir,
                 is_symlink,
-                size,
+                logical_size,
+                physical_size,
                 modified_at,
             },
         );
@@ -217,7 +219,8 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
                     name: disk_entry.name.clone(),
                     is_directory: disk_entry.is_dir,
                     is_symlink: disk_entry.is_symlink,
-                    size: disk_entry.size,
+                    logical_size: disk_entry.logical_size,
+                    physical_size: disk_entry.physical_size,
                     modified_at: disk_entry.modified_at,
                 });
 
@@ -228,10 +231,11 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
                         samples.push(format!("+/{}", disk_entry.name));
                     }
                 } else {
-                    if let Some(sz) = disk_entry.size {
+                    if let Some(sz) = disk_entry.logical_size {
                         let _ = writer.send(WriteMessage::PropagateDeltaById {
                             entry_id: parent_id,
-                            size_delta: sz as i64,
+                            logical_size_delta: sz as i64,
+                            physical_size_delta: disk_entry.physical_size.unwrap_or(0) as i64,
                             file_count_delta: 1,
                             dir_count_delta: 0,
                         });
@@ -255,16 +259,18 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
                         name: disk_entry.name.clone(),
                         is_directory: disk_entry.is_dir,
                         is_symlink: disk_entry.is_symlink,
-                        size: disk_entry.size,
+                        logical_size: disk_entry.logical_size,
+                        physical_size: disk_entry.physical_size,
                         modified_at: disk_entry.modified_at,
                     });
                     if disk_entry.is_dir {
                         let new_dir = format!("{}/{}", parent_prefix, disk_entry.name);
                         new_dir_paths.push(new_dir);
-                    } else if let Some(sz) = disk_entry.size {
+                    } else if let Some(sz) = disk_entry.logical_size {
                         let _ = writer.send(WriteMessage::PropagateDeltaById {
                             entry_id: parent_id,
-                            size_delta: sz as i64,
+                            logical_size_delta: sz as i64,
+                            physical_size_delta: disk_entry.physical_size.unwrap_or(0) as i64,
                             file_count_delta: 1,
                             dir_count_delta: 0,
                         });
@@ -281,22 +287,25 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
 
                 // Modified file: compare size and mtime
                 if !db_entry.is_directory {
-                    let size_changed = db_entry.size != disk_entry.size;
+                    let size_changed = db_entry.logical_size != disk_entry.logical_size;
                     let mtime_changed = db_entry.modified_at != disk_entry.modified_at;
                     if size_changed || mtime_changed {
-                        let old_size = db_entry.size.unwrap_or(0) as i64;
-                        let new_size = disk_entry.size.unwrap_or(0) as i64;
+                        let old_size = db_entry.logical_size.unwrap_or(0) as i64;
+                        let new_size = disk_entry.logical_size.unwrap_or(0) as i64;
                         let _ = writer.send(WriteMessage::UpsertEntryV2 {
                             parent_id,
                             name: disk_entry.name.clone(),
                             is_directory: false,
                             is_symlink: disk_entry.is_symlink,
-                            size: disk_entry.size,
+                            logical_size: disk_entry.logical_size,
+                            physical_size: disk_entry.physical_size,
                             modified_at: disk_entry.modified_at,
                         });
                         let _ = writer.send(WriteMessage::PropagateDeltaById {
                             entry_id: parent_id,
-                            size_delta: new_size - old_size,
+                            logical_size_delta: new_size - old_size,
+                            physical_size_delta: (disk_entry.physical_size.unwrap_or(0) as i64)
+                                - (db_entry.physical_size.unwrap_or(0) as i64),
                             file_count_delta: 0,
                             dir_count_delta: 0,
                         });
@@ -377,7 +386,8 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
                             .flatten()
                             .unwrap_or(store::DirStatsById {
                                 entry_id,
-                                recursive_size: 0,
+                                recursive_logical_size: 0,
+                                recursive_physical_size: 0,
                                 recursive_file_count: 0,
                                 recursive_dir_count: 0,
                             });
@@ -392,7 +402,8 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
         for (p_id, stats) in &dir_deltas {
             let _ = writer.send(WriteMessage::PropagateDeltaById {
                 entry_id: *p_id,
-                size_delta: stats.recursive_size as i64,
+                logical_size_delta: stats.recursive_logical_size as i64,
+                physical_size_delta: stats.recursive_physical_size as i64,
                 file_count_delta: stats.recursive_file_count as i32,
                 dir_count_delta: (stats.recursive_dir_count as i32) + 1,
             });
@@ -462,7 +473,7 @@ mod tests {
         for component in components {
             parent_id = match IndexStore::resolve_component(&conn, parent_id, component) {
                 Ok(Some(id)) => id,
-                _ => IndexStore::insert_entry_v2(&conn, parent_id, component, true, false, None, None).unwrap(),
+                _ => IndexStore::insert_entry_v2(&conn, parent_id, component, true, false, None, None, None).unwrap(),
             };
         }
         parent_id
@@ -475,8 +486,8 @@ mod tests {
             let metadata = fs::symlink_metadata(entry.path()).unwrap();
             let is_dir = metadata.is_dir();
             let is_symlink = metadata.is_symlink();
-            let (size, modified_at) = if is_dir || is_symlink {
-                (None, reconciler::entry_modified_at(&metadata))
+            let (logical_size, physical_size, modified_at) = if is_dir || is_symlink {
+                (None, None, reconciler::entry_modified_at(&metadata))
             } else {
                 reconciler::entry_size_and_mtime(&metadata)
             };
@@ -485,7 +496,8 @@ mod tests {
                 name,
                 is_directory: is_dir,
                 is_symlink,
-                size,
+                logical_size,
+                physical_size,
                 modified_at,
             });
         }
@@ -609,7 +621,8 @@ mod tests {
         let file1_after = children_after.iter().find(|e| e.name == "file1.txt").unwrap();
 
         assert!(!paths.is_empty());
-        let changed = file1_after.size != file1_before.size || file1_after.modified_at != file1_before.modified_at;
+        let changed = file1_after.logical_size != file1_before.logical_size
+            || file1_after.modified_at != file1_before.modified_at;
         assert!(changed, "file should show as modified after content change");
 
         remove_read_pool();

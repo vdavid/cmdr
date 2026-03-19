@@ -967,10 +967,10 @@ async fn execute_search(params: &Value) -> ToolResult {
     };
 
     // Resolve include paths to entry IDs via SQLite
-    if query.include_paths.as_ref().is_some_and(|p| !p.is_empty()) {
-        if let Some(pool) = crate::indexing::get_read_pool() {
-            search::resolve_include_paths(&mut query, &pool);
-        }
+    if query.include_paths.as_ref().is_some_and(|p| !p.is_empty())
+        && let Some(pool) = crate::indexing::get_read_pool()
+    {
+        search::resolve_include_paths(&mut query, &pool);
     }
 
     let query_clone = query.clone();
@@ -1095,10 +1095,10 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
     let mut pass1_query = build_search_query_from_translate(&translate_result, scope_str, limit);
 
     // Resolve include paths to entry IDs via SQLite
-    if pass1_query.include_paths.as_ref().is_some_and(|p| !p.is_empty()) {
-        if let Some(pool) = crate::indexing::get_read_pool() {
-            search::resolve_include_paths(&mut pass1_query, &pool);
-        }
+    if pass1_query.include_paths.as_ref().is_some_and(|p| !p.is_empty())
+        && let Some(pool) = crate::indexing::get_read_pool()
+    {
+        search::resolve_include_paths(&mut pass1_query, &pool);
     }
 
     log::debug!("MCP ai_search: running pass 1 search...");
@@ -1141,7 +1141,11 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
         let output = format!(
             "Preflight: {preflight_summary} \u{2192} {pass1_total} hits\n\nInterpreted query: {interpreted}\n{caveat_line}\n{formatted}"
         );
-        log::info!("MCP ai_search: completed (pass 1 only) in {:.1}s, output length={}", total_t.elapsed().as_secs_f64(), output.len());
+        log::info!(
+            "MCP ai_search: completed (pass 1 only) in {:.1}s, output length={}",
+            total_t.elapsed().as_secs_f64(),
+            output.len()
+        );
         return Ok(json!(output));
     }
 
@@ -1169,7 +1173,10 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
     let (refined_ai_query, _) =
         match crate::commands::search::call_ai_translate(natural_query, Some(&preflight_context)).await {
             Ok(result) => {
-                log::info!("MCP ai_search: call_ai_translate (pass 2) succeeded in {:.1}s", t.elapsed().as_secs_f64());
+                log::info!(
+                    "MCP ai_search: call_ai_translate (pass 2) succeeded in {:.1}s",
+                    t.elapsed().as_secs_f64()
+                );
                 result
             }
             Err(e) => {
@@ -1196,10 +1203,10 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
     let mut pass2_query = build_search_query_from_translate(&refined_translate, scope_str, limit);
 
     // Resolve include paths to entry IDs via SQLite
-    if pass2_query.include_paths.as_ref().is_some_and(|p| !p.is_empty()) {
-        if let Some(pool) = crate::indexing::get_read_pool() {
-            search::resolve_include_paths(&mut pass2_query, &pool);
-        }
+    if pass2_query.include_paths.as_ref().is_some_and(|p| !p.is_empty())
+        && let Some(pool) = crate::indexing::get_read_pool()
+    {
+        search::resolve_include_paths(&mut pass2_query, &pool);
     }
 
     let interpreted = summarize_query(&pass2_query);
@@ -1237,7 +1244,11 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
     let output = format!(
         "Preflight: {preflight_summary} \u{2192} {pass1_total} hits \u{00b7} Refined\n\nInterpreted query: {interpreted}\n{caveat_line}\n{formatted}"
     );
-    log::info!("MCP ai_search: completed (pass 2) in {:.1}s, output length={}", total_t.elapsed().as_secs_f64(), output.len());
+    log::info!(
+        "MCP ai_search: completed (pass 2) in {:.1}s, output length={}",
+        total_t.elapsed().as_secs_f64(),
+        output.len()
+    );
     Ok(json!(output))
 }
 

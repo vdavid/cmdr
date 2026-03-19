@@ -15,7 +15,7 @@
 use rusqlite::{Connection, OptionalExtension, params};
 use std::path::{Path, PathBuf};
 
-const SCHEMA_VERSION: &str = "6";
+const SCHEMA_VERSION: &str = "7";
 
 /// Root entry sentinel ID. All top-level entries have `parent_id = ROOT_ID`.
 pub const ROOT_ID: i64 = 1;
@@ -40,7 +40,8 @@ pub struct DirStats {
 #[derive(Debug, Clone)]
 pub struct DirStatsById {
     pub entry_id: i64,
-    pub recursive_size: u64,
+    pub recursive_logical_size: u64,
+    pub recursive_physical_size: u64,
     pub recursive_file_count: u64,
     pub recursive_dir_count: u64,
 }
@@ -54,7 +55,8 @@ pub struct EntryRow {
     pub name: String,
     pub is_directory: bool,
     pub is_symlink: bool,
-    pub size: Option<u64>,
+    pub logical_size: Option<u64>,
+    pub physical_size: Option<u64>,
     pub modified_at: Option<u64>,
 }
 
@@ -240,23 +242,25 @@ pub fn normalize_for_comparison(s: &str) -> String {
 #[cfg(target_os = "macos")]
 const CREATE_TABLES_SQL: &str = "
     CREATE TABLE IF NOT EXISTS entries (
-        id           INTEGER PRIMARY KEY,
-        parent_id    INTEGER NOT NULL,
-        name         TEXT    NOT NULL COLLATE platform_case,
-        name_folded  TEXT    NOT NULL DEFAULT '',
-        is_directory INTEGER NOT NULL DEFAULT 0,
-        is_symlink   INTEGER NOT NULL DEFAULT 0,
-        size         INTEGER,
-        modified_at  INTEGER
+        id            INTEGER PRIMARY KEY,
+        parent_id     INTEGER NOT NULL,
+        name          TEXT    NOT NULL COLLATE platform_case,
+        name_folded   TEXT    NOT NULL DEFAULT '',
+        is_directory  INTEGER NOT NULL DEFAULT 0,
+        is_symlink    INTEGER NOT NULL DEFAULT 0,
+        logical_size  INTEGER,
+        physical_size INTEGER,
+        modified_at   INTEGER
     );
 
     CREATE INDEX IF NOT EXISTS idx_parent_name_folded ON entries (parent_id, name_folded);
 
     CREATE TABLE IF NOT EXISTS dir_stats (
-        entry_id             INTEGER PRIMARY KEY,
-        recursive_size       INTEGER NOT NULL DEFAULT 0,
-        recursive_file_count INTEGER NOT NULL DEFAULT 0,
-        recursive_dir_count  INTEGER NOT NULL DEFAULT 0
+        entry_id                 INTEGER PRIMARY KEY,
+        recursive_logical_size   INTEGER NOT NULL DEFAULT 0,
+        recursive_physical_size  INTEGER NOT NULL DEFAULT 0,
+        recursive_file_count     INTEGER NOT NULL DEFAULT 0,
+        recursive_dir_count      INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS meta (
@@ -268,22 +272,24 @@ const CREATE_TABLES_SQL: &str = "
 #[cfg(not(target_os = "macos"))]
 const CREATE_TABLES_SQL: &str = "
     CREATE TABLE IF NOT EXISTS entries (
-        id           INTEGER PRIMARY KEY,
-        parent_id    INTEGER NOT NULL,
-        name         TEXT    NOT NULL COLLATE platform_case,
-        is_directory INTEGER NOT NULL DEFAULT 0,
-        is_symlink   INTEGER NOT NULL DEFAULT 0,
-        size         INTEGER,
-        modified_at  INTEGER
+        id            INTEGER PRIMARY KEY,
+        parent_id     INTEGER NOT NULL,
+        name          TEXT    NOT NULL COLLATE platform_case,
+        is_directory  INTEGER NOT NULL DEFAULT 0,
+        is_symlink    INTEGER NOT NULL DEFAULT 0,
+        logical_size  INTEGER,
+        physical_size INTEGER,
+        modified_at   INTEGER
     );
 
     CREATE INDEX IF NOT EXISTS idx_parent_name ON entries (parent_id, name);
 
     CREATE TABLE IF NOT EXISTS dir_stats (
-        entry_id             INTEGER PRIMARY KEY,
-        recursive_size       INTEGER NOT NULL DEFAULT 0,
-        recursive_file_count INTEGER NOT NULL DEFAULT 0,
-        recursive_dir_count  INTEGER NOT NULL DEFAULT 0
+        entry_id                 INTEGER PRIMARY KEY,
+        recursive_logical_size   INTEGER NOT NULL DEFAULT 0,
+        recursive_physical_size  INTEGER NOT NULL DEFAULT 0,
+        recursive_file_count     INTEGER NOT NULL DEFAULT 0,
+        recursive_dir_count      INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS meta (
@@ -570,7 +576,7 @@ impl IndexStore {
     /// List children of a directory by parent entry ID on a given connection.
     pub fn list_children_on(parent_id: i64, conn: &Connection) -> Result<Vec<EntryRow>, IndexStoreError> {
         let mut stmt = conn.prepare_cached(
-            "SELECT id, parent_id, name, is_directory, is_symlink, size, modified_at
+            "SELECT id, parent_id, name, is_directory, is_symlink, logical_size, physical_size, modified_at
              FROM entries WHERE parent_id = ?1",
         )?;
         let rows = stmt.query_map(params![parent_id], |row| {
@@ -580,8 +586,9 @@ impl IndexStore {
                 name: row.get(2)?,
                 is_directory: row.get::<_, i32>(3)? != 0,
                 is_symlink: row.get::<_, i32>(4)? != 0,
-                size: row.get(5)?,
-                modified_at: row.get(6)?,
+                logical_size: row.get(5)?,
+                physical_size: row.get(6)?,
+                modified_at: row.get(7)?,
             })
         })?;
         rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
@@ -605,7 +612,7 @@ impl IndexStore {
     /// Look up an entry by its integer ID.
     pub fn get_entry_by_id(conn: &Connection, id: i64) -> Result<Option<EntryRow>, IndexStoreError> {
         let mut stmt = conn.prepare_cached(
-            "SELECT id, parent_id, name, is_directory, is_symlink, size, modified_at
+            "SELECT id, parent_id, name, is_directory, is_symlink, logical_size, physical_size, modified_at
              FROM entries WHERE id = ?1",
         )?;
         let result = stmt
@@ -616,8 +623,9 @@ impl IndexStore {
                     name: row.get(2)?,
                     is_directory: row.get::<_, i32>(3)? != 0,
                     is_symlink: row.get::<_, i32>(4)? != 0,
-                    size: row.get(5)?,
-                    modified_at: row.get(6)?,
+                    logical_size: row.get(5)?,
+                    physical_size: row.get(6)?,
+                    modified_at: row.get(7)?,
                 })
             })
             .optional()?;
@@ -627,16 +635,17 @@ impl IndexStore {
     /// Look up dir_stats for a single entry by ID.
     pub fn get_dir_stats_by_id(conn: &Connection, entry_id: i64) -> Result<Option<DirStatsById>, IndexStoreError> {
         let mut stmt = conn.prepare_cached(
-            "SELECT entry_id, recursive_size, recursive_file_count, recursive_dir_count
+            "SELECT entry_id, recursive_logical_size, recursive_physical_size, recursive_file_count, recursive_dir_count
              FROM dir_stats WHERE entry_id = ?1",
         )?;
         let result = stmt
             .query_row(params![entry_id], |row| {
                 Ok(DirStatsById {
                     entry_id: row.get(0)?,
-                    recursive_size: row.get(1)?,
-                    recursive_file_count: row.get(2)?,
-                    recursive_dir_count: row.get(3)?,
+                    recursive_logical_size: row.get(1)?,
+                    recursive_physical_size: row.get(2)?,
+                    recursive_file_count: row.get(3)?,
+                    recursive_dir_count: row.get(4)?,
                 })
             })
             .optional()?;
@@ -667,7 +676,7 @@ impl IndexStore {
             .collect::<Vec<_>>()
             .join(", ");
         let sql = format!(
-            "SELECT entry_id, recursive_size, recursive_file_count, recursive_dir_count
+            "SELECT entry_id, recursive_logical_size, recursive_physical_size, recursive_file_count, recursive_dir_count
              FROM dir_stats WHERE entry_id IN ({placeholders})"
         );
         let mut stmt = conn.prepare(&sql)?;
@@ -677,9 +686,10 @@ impl IndexStore {
         let rows = stmt.query_map(&*param_values, |row| {
             Ok(DirStatsById {
                 entry_id: row.get(0)?,
-                recursive_size: row.get(1)?,
-                recursive_file_count: row.get(2)?,
-                recursive_dir_count: row.get(3)?,
+                recursive_logical_size: row.get(1)?,
+                recursive_physical_size: row.get(2)?,
+                recursive_file_count: row.get(3)?,
+                recursive_dir_count: row.get(4)?,
             })
         })?;
 
@@ -732,28 +742,34 @@ impl IndexStore {
     // ── Static write helpers (for the writer thread) ─────────────────
 
     /// Insert a single entry by integer keys. Returns the new entry's ID.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "refactoring to take &EntryRow would cascade into many callers"
+    )]
     pub fn insert_entry_v2(
         conn: &Connection,
         parent_id: i64,
         name: &str,
         is_directory: bool,
         is_symlink: bool,
-        size: Option<u64>,
+        logical_size: Option<u64>,
+        physical_size: Option<u64>,
         modified_at: Option<u64>,
     ) -> Result<i64, IndexStoreError> {
         #[cfg(target_os = "macos")]
         {
             let name_folded = normalize_for_comparison(name);
             conn.execute(
-                "INSERT INTO entries (parent_id, name, name_folded, is_directory, is_symlink, size, modified_at)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                "INSERT INTO entries (parent_id, name, name_folded, is_directory, is_symlink, logical_size, physical_size, modified_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
                 params![
                     parent_id,
                     name,
                     name_folded,
                     is_directory as i32,
                     is_symlink as i32,
-                    size,
+                    logical_size,
+                    physical_size,
                     modified_at
                 ],
             )?;
@@ -761,14 +777,15 @@ impl IndexStore {
         #[cfg(not(target_os = "macos"))]
         {
             conn.execute(
-                "INSERT INTO entries (parent_id, name, is_directory, is_symlink, size, modified_at)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                "INSERT INTO entries (parent_id, name, is_directory, is_symlink, logical_size, physical_size, modified_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
                 params![
                     parent_id,
                     name,
                     is_directory as i32,
                     is_symlink as i32,
-                    size,
+                    logical_size,
+                    physical_size,
                     modified_at
                 ],
             )?;
@@ -790,13 +807,13 @@ impl IndexStore {
         // truncated before full scans and descendants are deleted before subtree scans.
         #[cfg(target_os = "macos")]
         let mut stmt = conn.prepare_cached(
-            "INSERT INTO entries (id, parent_id, name, name_folded, is_directory, is_symlink, size, modified_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            "INSERT INTO entries (id, parent_id, name, name_folded, is_directory, is_symlink, logical_size, physical_size, modified_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
         )?;
         #[cfg(not(target_os = "macos"))]
         let mut stmt = conn.prepare_cached(
-            "INSERT INTO entries (id, parent_id, name, is_directory, is_symlink, size, modified_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            "INSERT INTO entries (id, parent_id, name, is_directory, is_symlink, logical_size, physical_size, modified_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
         )?;
         let result: Result<(), IndexStoreError> = (|| {
             for e in entries {
@@ -810,7 +827,8 @@ impl IndexStore {
                         name_folded,
                         e.is_directory as i32,
                         e.is_symlink as i32,
-                        e.size,
+                        e.logical_size,
+                        e.physical_size,
                         e.modified_at,
                     ])?;
                 }
@@ -821,7 +839,8 @@ impl IndexStore {
                     e.name,
                     e.is_directory as i32,
                     e.is_symlink as i32,
-                    e.size,
+                    e.logical_size,
+                    e.physical_size,
                     e.modified_at,
                 ])?;
             }
@@ -845,13 +864,14 @@ impl IndexStore {
         id: i64,
         is_directory: bool,
         is_symlink: bool,
-        size: Option<u64>,
+        logical_size: Option<u64>,
+        physical_size: Option<u64>,
         modified_at: Option<u64>,
     ) -> Result<(), IndexStoreError> {
         conn.execute(
-            "UPDATE entries SET is_directory = ?1, is_symlink = ?2, size = ?3, modified_at = ?4
-             WHERE id = ?5",
-            params![is_directory as i32, is_symlink as i32, size, modified_at, id],
+            "UPDATE entries SET is_directory = ?1, is_symlink = ?2, logical_size = ?3, physical_size = ?4, modified_at = ?5
+             WHERE id = ?6",
+            params![is_directory as i32, is_symlink as i32, logical_size, physical_size, modified_at, id],
         )?;
         Ok(())
     }
@@ -891,13 +911,14 @@ impl IndexStore {
         let result: Result<(), IndexStoreError> = (|| {
             let mut stmt = conn.prepare_cached(
                 "INSERT OR REPLACE INTO dir_stats
-                     (entry_id, recursive_size, recursive_file_count, recursive_dir_count)
-                 VALUES (?1, ?2, ?3, ?4)",
+                     (entry_id, recursive_logical_size, recursive_physical_size, recursive_file_count, recursive_dir_count)
+                 VALUES (?1, ?2, ?3, ?4, ?5)",
             )?;
             for s in stats {
                 stmt.execute(params![
                     s.entry_id,
-                    s.recursive_size,
+                    s.recursive_logical_size,
+                    s.recursive_physical_size,
                     s.recursive_file_count,
                     s.recursive_dir_count,
                 ])?;
@@ -965,16 +986,25 @@ impl IndexStore {
 
     /// Get aggregated child stats for a parent directory by entry ID.
     #[cfg(test)]
-    pub fn get_children_stats_by_id(conn: &Connection, parent_id: i64) -> Result<(u64, u64, u64), IndexStoreError> {
+    pub fn get_children_stats_by_id(
+        conn: &Connection,
+        parent_id: i64,
+    ) -> Result<(u64, u64, u64, u64), IndexStoreError> {
         let mut stmt = conn.prepare_cached(
             "SELECT
-                 COALESCE(SUM(CASE WHEN is_directory = 0 THEN size ELSE 0 END), 0),
+                 COALESCE(SUM(CASE WHEN is_directory = 0 THEN logical_size ELSE 0 END), 0),
+                 COALESCE(SUM(CASE WHEN is_directory = 0 THEN physical_size ELSE 0 END), 0),
                  COALESCE(SUM(CASE WHEN is_directory = 0 THEN 1 ELSE 0 END), 0),
                  COALESCE(SUM(CASE WHEN is_directory = 1 THEN 1 ELSE 0 END), 0)
              FROM entries WHERE parent_id = ?1",
         )?;
         let row = stmt.query_row(params![parent_id], |row| {
-            Ok((row.get::<_, u64>(0)?, row.get::<_, u64>(1)?, row.get::<_, u64>(2)?))
+            Ok((
+                row.get::<_, u64>(0)?,
+                row.get::<_, u64>(1)?,
+                row.get::<_, u64>(2)?,
+                row.get::<_, u64>(3)?,
+            ))
         })?;
         Ok(row)
     }
@@ -1039,8 +1069,8 @@ impl IndexStore {
         Ok(())
     }
 
-    /// Get total file size, file count, and directory count for a subtree by root entry ID.
-    pub fn get_subtree_totals_by_id(conn: &Connection, root_id: i64) -> Result<(u64, u64, u64), IndexStoreError> {
+    /// Get total logical size, physical size, file count, and directory count for a subtree.
+    pub fn get_subtree_totals_by_id(conn: &Connection, root_id: i64) -> Result<(u64, u64, u64, u64), IndexStoreError> {
         let mut stmt = conn.prepare_cached(
             "WITH RECURSIVE subtree(id) AS (
                 SELECT id FROM entries WHERE id = ?1
@@ -1048,13 +1078,19 @@ impl IndexStore {
                 SELECT e.id FROM entries e JOIN subtree s ON e.parent_id = s.id
             )
             SELECT
-                COALESCE(SUM(CASE WHEN e.is_directory = 0 THEN e.size ELSE 0 END), 0),
+                COALESCE(SUM(CASE WHEN e.is_directory = 0 THEN e.logical_size ELSE 0 END), 0),
+                COALESCE(SUM(CASE WHEN e.is_directory = 0 THEN e.physical_size ELSE 0 END), 0),
                 COALESCE(SUM(CASE WHEN e.is_directory = 0 THEN 1 ELSE 0 END), 0),
                 COALESCE(SUM(CASE WHEN e.is_directory = 1 THEN 1 ELSE 0 END), 0)
             FROM entries e WHERE e.id IN (SELECT id FROM subtree)",
         )?;
         let row = stmt.query_row(params![root_id], |row| {
-            Ok((row.get::<_, u64>(0)?, row.get::<_, u64>(1)?, row.get::<_, u64>(2)?))
+            Ok((
+                row.get::<_, u64>(0)?,
+                row.get::<_, u64>(1)?,
+                row.get::<_, u64>(2)?,
+                row.get::<_, u64>(3)?,
+            ))
         })?;
         Ok(row)
     }
@@ -1154,7 +1190,7 @@ mod tests {
 
     /// Helper: insert an entry using integer-keyed API. Returns the new ID.
     fn insert_entry(conn: &Connection, parent_id: i64, name: &str, is_dir: bool, size: Option<u64>) -> i64 {
-        IndexStore::insert_entry_v2(conn, parent_id, name, is_dir, false, size, None).unwrap()
+        IndexStore::insert_entry_v2(conn, parent_id, name, is_dir, false, size, size, None).unwrap()
     }
 
     #[test]
@@ -1192,7 +1228,7 @@ mod tests {
 
         let file = result.iter().find(|e| e.name == "a.txt").unwrap();
         assert!(!file.is_directory);
-        assert_eq!(file.size, Some(1024));
+        assert_eq!(file.logical_size, Some(1024));
 
         let dir = result.iter().find(|e| e.name == "docs").unwrap();
         assert!(dir.is_directory);
@@ -1211,7 +1247,8 @@ mod tests {
             &conn,
             &[DirStatsById {
                 entry_id: test_id,
-                recursive_size: 50_000,
+                recursive_logical_size: 50_000,
+                recursive_physical_size: 50_000,
                 recursive_file_count: 42,
                 recursive_dir_count: 5,
             }],
@@ -1219,7 +1256,7 @@ mod tests {
         .unwrap();
 
         let result = IndexStore::get_dir_stats_by_id(&conn, test_id).unwrap().unwrap();
-        assert_eq!(result.recursive_size, 50_000);
+        assert_eq!(result.recursive_logical_size, 50_000);
         assert_eq!(result.recursive_file_count, 42);
         assert_eq!(result.recursive_dir_count, 5);
     }
@@ -1238,13 +1275,15 @@ mod tests {
             &[
                 DirStatsById {
                     entry_id: a_id,
-                    recursive_size: 100,
+                    recursive_logical_size: 100,
+                    recursive_physical_size: 100,
                     recursive_file_count: 1,
                     recursive_dir_count: 0,
                 },
                 DirStatsById {
                     entry_id: b_id,
-                    recursive_size: 200,
+                    recursive_logical_size: 200,
+                    recursive_physical_size: 200,
                     recursive_file_count: 2,
                     recursive_dir_count: 1,
                 },
@@ -1257,8 +1296,8 @@ mod tests {
         assert!(result[0].is_some());
         assert!(result[1].is_none());
         assert!(result[2].is_some());
-        assert_eq!(result[0].as_ref().unwrap().recursive_size, 100);
-        assert_eq!(result[2].as_ref().unwrap().recursive_size, 200);
+        assert_eq!(result[0].as_ref().unwrap().recursive_logical_size, 100);
+        assert_eq!(result[2].as_ref().unwrap().recursive_logical_size, 200);
     }
 
     #[test]
@@ -1288,8 +1327,10 @@ mod tests {
         insert_entry(&conn, p_id, "f2.txt", false, Some(200));
         insert_entry(&conn, p_id, "sub", true, None);
 
-        let (total_size, file_count, dir_count) = IndexStore::get_children_stats_by_id(&conn, p_id).unwrap();
-        assert_eq!(total_size, 300);
+        let (logical_size, physical_size, file_count, dir_count) =
+            IndexStore::get_children_stats_by_id(&conn, p_id).unwrap();
+        assert_eq!(logical_size, 300);
+        assert_eq!(physical_size, 300);
         assert_eq!(file_count, 2);
         assert_eq!(dir_count, 1);
     }
@@ -1408,14 +1449,23 @@ mod tests {
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
         let test_id = insert_entry(&conn, ROOT_ID, "test", true, None);
-        let file_id =
-            IndexStore::insert_entry_v2(&conn, test_id, "file.txt", false, false, Some(512), Some(1700000000)).unwrap();
+        let file_id = IndexStore::insert_entry_v2(
+            &conn,
+            test_id,
+            "file.txt",
+            false,
+            false,
+            Some(512),
+            Some(512),
+            Some(1700000000),
+        )
+        .unwrap();
 
         let result = IndexStore::get_entry_by_id(&conn, file_id).unwrap();
         assert!(result.is_some());
         let found = result.unwrap();
         assert_eq!(found.name, "file.txt");
-        assert_eq!(found.size, Some(512));
+        assert_eq!(found.logical_size, Some(512));
         assert!(!found.is_directory);
     }
 
@@ -1436,17 +1486,26 @@ mod tests {
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
         let test_id = insert_entry(&conn, ROOT_ID, "test", true, None);
-        let file_id =
-            IndexStore::insert_entry_v2(&conn, test_id, "file.txt", false, false, Some(100), Some(1000)).unwrap();
+        let file_id = IndexStore::insert_entry_v2(
+            &conn,
+            test_id,
+            "file.txt",
+            false,
+            false,
+            Some(100),
+            Some(100),
+            Some(1000),
+        )
+        .unwrap();
 
         let result = IndexStore::get_entry_by_id(&conn, file_id).unwrap().unwrap();
-        assert_eq!(result.size, Some(100));
+        assert_eq!(result.logical_size, Some(100));
 
         // Update with new size
-        IndexStore::update_entry(&conn, file_id, false, false, Some(200), Some(2000)).unwrap();
+        IndexStore::update_entry(&conn, file_id, false, false, Some(200), Some(200), Some(2000)).unwrap();
 
         let result = IndexStore::get_entry_by_id(&conn, file_id).unwrap().unwrap();
-        assert_eq!(result.size, Some(200));
+        assert_eq!(result.logical_size, Some(200));
         assert_eq!(result.modified_at, Some(2000));
     }
 
@@ -1460,8 +1519,8 @@ mod tests {
         assert_eq!(resolve_path(&conn, "/").unwrap(), Some(ROOT_ID));
 
         // Insert /Users/test
-        let users_id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None).unwrap();
-        let test_id = IndexStore::insert_entry_v2(&conn, users_id, "test", true, false, None, None).unwrap();
+        let users_id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None, None).unwrap();
+        let test_id = IndexStore::insert_entry_v2(&conn, users_id, "test", true, false, None, None, None).unwrap();
 
         assert_eq!(resolve_path(&conn, "/Users").unwrap(), Some(users_id));
         assert_eq!(resolve_path(&conn, "/Users/test").unwrap(), Some(test_id));
@@ -1475,7 +1534,7 @@ mod tests {
         let db_path = dir.path().join("test-index.db");
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
-        let users_id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None).unwrap();
+        let users_id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None, None).unwrap();
         assert_eq!(resolve_path(&conn, "/Users/").unwrap(), Some(users_id));
     }
 
@@ -1485,15 +1544,24 @@ mod tests {
         let db_path = dir.path().join("test-index.db");
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
-        let id =
-            IndexStore::insert_entry_v2(&conn, ROOT_ID, "myfile.txt", false, false, Some(4096), Some(999)).unwrap();
+        let id = IndexStore::insert_entry_v2(
+            &conn,
+            ROOT_ID,
+            "myfile.txt",
+            false,
+            false,
+            Some(4096),
+            Some(4096),
+            Some(999),
+        )
+        .unwrap();
         assert!(id > ROOT_ID);
 
         let entry = IndexStore::get_entry_by_id(&conn, id).unwrap().unwrap();
         assert_eq!(entry.name, "myfile.txt");
         assert_eq!(entry.parent_id, ROOT_ID);
         assert!(!entry.is_directory);
-        assert_eq!(entry.size, Some(4096));
+        assert_eq!(entry.logical_size, Some(4096));
         assert_eq!(entry.modified_at, Some(999));
     }
 
@@ -1502,9 +1570,9 @@ mod tests {
         let (store, _dir) = open_temp_store();
         let write_conn = IndexStore::open_write_connection(store.db_path()).unwrap();
 
-        let dir_id = IndexStore::insert_entry_v2(&write_conn, ROOT_ID, "mydir", true, false, None, None).unwrap();
-        IndexStore::insert_entry_v2(&write_conn, dir_id, "a.txt", false, false, Some(100), None).unwrap();
-        IndexStore::insert_entry_v2(&write_conn, dir_id, "b.txt", false, false, Some(200), None).unwrap();
+        let dir_id = IndexStore::insert_entry_v2(&write_conn, ROOT_ID, "mydir", true, false, None, None, None).unwrap();
+        IndexStore::insert_entry_v2(&write_conn, dir_id, "a.txt", false, false, Some(100), Some(100), None).unwrap();
+        IndexStore::insert_entry_v2(&write_conn, dir_id, "b.txt", false, false, Some(200), Some(200), None).unwrap();
 
         let children = store.list_children(dir_id).unwrap();
         assert_eq!(children.len(), 2);
@@ -1516,11 +1584,21 @@ mod tests {
         let db_path = dir.path().join("test-index.db");
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
-        let id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "file.txt", false, false, Some(100), Some(1000)).unwrap();
+        let id = IndexStore::insert_entry_v2(
+            &conn,
+            ROOT_ID,
+            "file.txt",
+            false,
+            false,
+            Some(100),
+            Some(100),
+            Some(1000),
+        )
+        .unwrap();
 
-        IndexStore::update_entry(&conn, id, false, false, Some(999), Some(2000)).unwrap();
+        IndexStore::update_entry(&conn, id, false, false, Some(999), Some(999), Some(2000)).unwrap();
         let entry = IndexStore::get_entry_by_id(&conn, id).unwrap().unwrap();
-        assert_eq!(entry.size, Some(999));
+        assert_eq!(entry.logical_size, Some(999));
         assert_eq!(entry.modified_at, Some(2000));
     }
 
@@ -1530,9 +1608,10 @@ mod tests {
         let db_path = dir.path().join("test-index.db");
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
-        let dir_a = IndexStore::insert_entry_v2(&conn, ROOT_ID, "dir_a", true, false, None, None).unwrap();
-        let dir_b = IndexStore::insert_entry_v2(&conn, ROOT_ID, "dir_b", true, false, None, None).unwrap();
-        let file_id = IndexStore::insert_entry_v2(&conn, dir_a, "old.txt", false, false, Some(50), None).unwrap();
+        let dir_a = IndexStore::insert_entry_v2(&conn, ROOT_ID, "dir_a", true, false, None, None, None).unwrap();
+        let dir_b = IndexStore::insert_entry_v2(&conn, ROOT_ID, "dir_b", true, false, None, None, None).unwrap();
+        let file_id =
+            IndexStore::insert_entry_v2(&conn, dir_a, "old.txt", false, false, Some(50), Some(50), None).unwrap();
 
         // Rename
         IndexStore::rename_entry(&conn, file_id, "new.txt").unwrap();
@@ -1551,7 +1630,8 @@ mod tests {
         let db_path = dir.path().join("test-index.db");
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
-        let id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "file.txt", false, false, Some(100), None).unwrap();
+        let id =
+            IndexStore::insert_entry_v2(&conn, ROOT_ID, "file.txt", false, false, Some(100), Some(100), None).unwrap();
         assert!(IndexStore::get_entry_by_id(&conn, id).unwrap().is_some());
 
         IndexStore::delete_entry_by_id(&conn, id).unwrap();
@@ -1565,9 +1645,9 @@ mod tests {
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
         // Build tree: /a/b/c.txt
-        let a = IndexStore::insert_entry_v2(&conn, ROOT_ID, "a", true, false, None, None).unwrap();
-        let b = IndexStore::insert_entry_v2(&conn, a, "b", true, false, None, None).unwrap();
-        let c = IndexStore::insert_entry_v2(&conn, b, "c.txt", false, false, Some(42), None).unwrap();
+        let a = IndexStore::insert_entry_v2(&conn, ROOT_ID, "a", true, false, None, None, None).unwrap();
+        let b = IndexStore::insert_entry_v2(&conn, a, "b", true, false, None, None, None).unwrap();
+        let c = IndexStore::insert_entry_v2(&conn, b, "c.txt", false, false, Some(42), Some(42), None).unwrap();
 
         // Add dir_stats for a and b
         IndexStore::upsert_dir_stats_by_id(
@@ -1575,13 +1655,15 @@ mod tests {
             &[
                 DirStatsById {
                     entry_id: a,
-                    recursive_size: 42,
+                    recursive_logical_size: 42,
+                    recursive_physical_size: 42,
                     recursive_file_count: 1,
                     recursive_dir_count: 1,
                 },
                 DirStatsById {
                     entry_id: b,
-                    recursive_size: 42,
+                    recursive_logical_size: 42,
+                    recursive_physical_size: 42,
                     recursive_file_count: 1,
                     recursive_dir_count: 0,
                 },
@@ -1605,14 +1687,16 @@ mod tests {
         let db_path = dir.path().join("test-index.db");
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
-        let a = IndexStore::insert_entry_v2(&conn, ROOT_ID, "a", true, false, None, None).unwrap();
-        IndexStore::insert_entry_v2(&conn, a, "f1.txt", false, false, Some(100), None).unwrap();
-        IndexStore::insert_entry_v2(&conn, a, "f2.txt", false, false, Some(200), None).unwrap();
-        let b = IndexStore::insert_entry_v2(&conn, a, "b", true, false, None, None).unwrap();
-        IndexStore::insert_entry_v2(&conn, b, "f3.txt", false, false, Some(300), None).unwrap();
+        let a = IndexStore::insert_entry_v2(&conn, ROOT_ID, "a", true, false, None, None, None).unwrap();
+        IndexStore::insert_entry_v2(&conn, a, "f1.txt", false, false, Some(100), Some(100), None).unwrap();
+        IndexStore::insert_entry_v2(&conn, a, "f2.txt", false, false, Some(200), Some(200), None).unwrap();
+        let b = IndexStore::insert_entry_v2(&conn, a, "b", true, false, None, None, None).unwrap();
+        IndexStore::insert_entry_v2(&conn, b, "f3.txt", false, false, Some(300), Some(300), None).unwrap();
 
-        let (total_size, file_count, dir_count) = IndexStore::get_subtree_totals_by_id(&conn, a).unwrap();
-        assert_eq!(total_size, 600);
+        let (logical_size, physical_size, file_count, dir_count) =
+            IndexStore::get_subtree_totals_by_id(&conn, a).unwrap();
+        assert_eq!(logical_size, 600);
+        assert_eq!(physical_size, 600);
         assert_eq!(file_count, 3);
         assert_eq!(dir_count, 2); // a + b
     }
@@ -1623,12 +1707,13 @@ mod tests {
         let db_path = dir.path().join("test-index.db");
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
-        let dir_id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "mydir", true, false, None, None).unwrap();
+        let dir_id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "mydir", true, false, None, None, None).unwrap();
         IndexStore::upsert_dir_stats_by_id(
             &conn,
             &[DirStatsById {
                 entry_id: dir_id,
-                recursive_size: 12345,
+                recursive_logical_size: 12345,
+                recursive_physical_size: 12345,
                 recursive_file_count: 10,
                 recursive_dir_count: 3,
             }],
@@ -1636,7 +1721,7 @@ mod tests {
         .unwrap();
 
         let stats = IndexStore::get_dir_stats_by_id(&conn, dir_id).unwrap().unwrap();
-        assert_eq!(stats.recursive_size, 12345);
+        assert_eq!(stats.recursive_logical_size, 12345);
         assert_eq!(stats.recursive_file_count, 10);
         assert_eq!(stats.recursive_dir_count, 3);
     }
@@ -1647,21 +1732,23 @@ mod tests {
         let db_path = dir.path().join("test-index.db");
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
-        let d1 = IndexStore::insert_entry_v2(&conn, ROOT_ID, "d1", true, false, None, None).unwrap();
-        let d2 = IndexStore::insert_entry_v2(&conn, ROOT_ID, "d2", true, false, None, None).unwrap();
+        let d1 = IndexStore::insert_entry_v2(&conn, ROOT_ID, "d1", true, false, None, None, None).unwrap();
+        let d2 = IndexStore::insert_entry_v2(&conn, ROOT_ID, "d2", true, false, None, None, None).unwrap();
 
         IndexStore::upsert_dir_stats_by_id(
             &conn,
             &[
                 DirStatsById {
                     entry_id: d1,
-                    recursive_size: 100,
+                    recursive_logical_size: 100,
+                    recursive_physical_size: 100,
                     recursive_file_count: 1,
                     recursive_dir_count: 0,
                 },
                 DirStatsById {
                     entry_id: d2,
-                    recursive_size: 200,
+                    recursive_logical_size: 200,
+                    recursive_physical_size: 200,
                     recursive_file_count: 2,
                     recursive_dir_count: 1,
                 },
@@ -1674,8 +1761,8 @@ mod tests {
         assert!(result[0].is_some());
         assert!(result[1].is_none());
         assert!(result[2].is_some());
-        assert_eq!(result[0].as_ref().unwrap().recursive_size, 100);
-        assert_eq!(result[2].as_ref().unwrap().recursive_size, 200);
+        assert_eq!(result[0].as_ref().unwrap().recursive_logical_size, 100);
+        assert_eq!(result[2].as_ref().unwrap().recursive_logical_size, 200);
     }
 
     #[test]
@@ -1688,7 +1775,7 @@ mod tests {
         let next = IndexStore::get_next_id(&conn).unwrap();
         assert_eq!(next, 2);
 
-        IndexStore::insert_entry_v2(&conn, ROOT_ID, "file.txt", false, false, None, None).unwrap();
+        IndexStore::insert_entry_v2(&conn, ROOT_ID, "file.txt", false, false, None, None, None).unwrap();
         let next = IndexStore::get_next_id(&conn).unwrap();
         assert!(next >= 3);
     }
@@ -1701,9 +1788,9 @@ mod tests {
 
         assert_eq!(IndexStore::reconstruct_path(&conn, ROOT_ID).unwrap(), "/");
 
-        let users = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None).unwrap();
-        let foo = IndexStore::insert_entry_v2(&conn, users, "foo", true, false, None, None).unwrap();
-        let file = IndexStore::insert_entry_v2(&conn, foo, "bar.txt", false, false, Some(10), None).unwrap();
+        let users = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None, None).unwrap();
+        let foo = IndexStore::insert_entry_v2(&conn, users, "foo", true, false, None, None, None).unwrap();
+        let file = IndexStore::insert_entry_v2(&conn, foo, "bar.txt", false, false, Some(10), Some(10), None).unwrap();
 
         assert_eq!(IndexStore::reconstruct_path(&conn, users).unwrap(), "/Users");
         assert_eq!(IndexStore::reconstruct_path(&conn, foo).unwrap(), "/Users/foo");
@@ -1716,7 +1803,7 @@ mod tests {
         let db_path = dir.path().join("test-index.db");
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
-        let users = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None).unwrap();
+        let users = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None, None).unwrap();
         assert_eq!(
             IndexStore::resolve_component(&conn, ROOT_ID, "Users").unwrap(),
             Some(users)
@@ -1733,7 +1820,7 @@ mod tests {
         let db_path = dir.path().join("test-index.db");
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
-        let users = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None).unwrap();
+        let users = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None, None).unwrap();
         assert_eq!(IndexStore::get_parent_id(&conn, users).unwrap(), Some(ROOT_ID));
         assert_eq!(IndexStore::get_parent_id(&conn, ROOT_ID).unwrap(), Some(ROOT_PARENT_ID));
         assert_eq!(IndexStore::get_parent_id(&conn, 999999).unwrap(), None);
@@ -1747,7 +1834,7 @@ mod tests {
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
         // Insert "Users" dir
-        let users_id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None).unwrap();
+        let users_id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None, None).unwrap();
 
         // Resolve with different case should work on macOS
         assert_eq!(resolve_path(&conn, "/users").unwrap(), Some(users_id));
@@ -1756,7 +1843,7 @@ mod tests {
 
         // With idx_parent (non-unique), case-variant names are allowed at the SQL level.
         // Deduplication is handled by the scanner/reconciler, not by a DB constraint.
-        let result = IndexStore::insert_entry_v2(&conn, ROOT_ID, "users", true, false, None, None);
+        let result = IndexStore::insert_entry_v2(&conn, ROOT_ID, "users", true, false, None, None, None);
         assert!(
             result.is_ok(),
             "No unique constraint on (parent_id, name) — dedup is done in application code"
@@ -1776,7 +1863,8 @@ mod tests {
                 name: "dir1".into(),
                 is_directory: true,
                 is_symlink: false,
-                size: None,
+                logical_size: None,
+                physical_size: None,
                 modified_at: None,
             },
             EntryRow {
@@ -1785,7 +1873,8 @@ mod tests {
                 name: "file.txt".into(),
                 is_directory: false,
                 is_symlink: false,
-                size: Some(42),
+                logical_size: Some(42),
+                physical_size: Some(42),
                 modified_at: Some(1234),
             },
         ];
@@ -1797,7 +1886,7 @@ mod tests {
 
         let entry = IndexStore::get_entry_by_id(&conn, 101).unwrap().unwrap();
         assert_eq!(entry.name, "file.txt");
-        assert_eq!(entry.size, Some(42));
+        assert_eq!(entry.logical_size, Some(42));
     }
 
     #[cfg(target_os = "macos")]
@@ -1807,7 +1896,7 @@ mod tests {
         let db_path = dir.path().join("test-index.db");
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
-        let users_id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None).unwrap();
+        let users_id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None, None).unwrap();
 
         // Different casings should all resolve to the same ID
         assert_eq!(
@@ -1838,7 +1927,7 @@ mod tests {
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
         let name = "MyFolder";
-        let id = IndexStore::insert_entry_v2(&conn, ROOT_ID, name, true, false, None, None).unwrap();
+        let id = IndexStore::insert_entry_v2(&conn, ROOT_ID, name, true, false, None, None, None).unwrap();
 
         let folded: String = conn
             .query_row("SELECT name_folded FROM entries WHERE id = ?1", params![id], |row| {
@@ -1862,7 +1951,8 @@ mod tests {
                 name: "Documents".into(),
                 is_directory: true,
                 is_symlink: false,
-                size: None,
+                logical_size: None,
+                physical_size: None,
                 modified_at: None,
             },
             EntryRow {
@@ -1871,7 +1961,8 @@ mod tests {
                 name: "Café.txt".into(),
                 is_directory: false,
                 is_symlink: false,
-                size: Some(10),
+                logical_size: Some(10),
+                physical_size: Some(10),
                 modified_at: None,
             },
         ];
@@ -1893,13 +1984,14 @@ mod tests {
         let db_path = dir.path().join("test-index.db");
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
-        let dir_id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "mydir", true, false, None, None).unwrap();
-        IndexStore::insert_entry_v2(&conn, dir_id, "f1.txt", false, false, Some(100), None).unwrap();
-        IndexStore::insert_entry_v2(&conn, dir_id, "f2.txt", false, false, Some(200), None).unwrap();
-        IndexStore::insert_entry_v2(&conn, dir_id, "subdir", true, false, None, None).unwrap();
+        let dir_id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "mydir", true, false, None, None, None).unwrap();
+        IndexStore::insert_entry_v2(&conn, dir_id, "f1.txt", false, false, Some(100), Some(100), None).unwrap();
+        IndexStore::insert_entry_v2(&conn, dir_id, "f2.txt", false, false, Some(200), Some(200), None).unwrap();
+        IndexStore::insert_entry_v2(&conn, dir_id, "subdir", true, false, None, None, None).unwrap();
 
-        let (size, files, dirs) = IndexStore::get_children_stats_by_id(&conn, dir_id).unwrap();
-        assert_eq!(size, 300);
+        let (logical_size, physical_size, files, dirs) = IndexStore::get_children_stats_by_id(&conn, dir_id).unwrap();
+        assert_eq!(logical_size, 300);
+        assert_eq!(physical_size, 300);
         assert_eq!(files, 2);
         assert_eq!(dirs, 1);
     }
@@ -1915,7 +2007,7 @@ mod tests {
         let names = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"];
         let mut ids = Vec::new();
         for name in &names {
-            let id = IndexStore::insert_entry_v2(&conn, parent_id, name, true, false, None, None).unwrap();
+            let id = IndexStore::insert_entry_v2(&conn, parent_id, name, true, false, None, None, None).unwrap();
             ids.push(id);
             parent_id = id;
         }

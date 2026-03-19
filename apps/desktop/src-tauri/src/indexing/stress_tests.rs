@@ -55,7 +55,8 @@ fn build_synthetic_tree(levels: usize, dirs_per_level: usize, files_per_dir: usi
                     name: format!("dir_L{depth}_D{d}"),
                     is_directory: true,
                     is_symlink: false,
-                    size: None,
+                    logical_size: None,
+                    physical_size: None,
                     modified_at: None,
                 });
                 next_parents.push(dir_id);
@@ -71,7 +72,8 @@ fn build_synthetic_tree(levels: usize, dirs_per_level: usize, files_per_dir: usi
                     name: format!("file_L{depth}_F{f}.dat"),
                     is_directory: false,
                     is_symlink: false,
-                    size: Some(file_size),
+                    logical_size: Some(file_size),
+                    physical_size: Some(file_size),
                     modified_at: Some(1_700_000_000),
                 });
             }
@@ -91,7 +93,8 @@ fn build_synthetic_tree(levels: usize, dirs_per_level: usize, files_per_dir: usi
                 name: format!("file_leaf_F{f}.dat"),
                 is_directory: false,
                 is_symlink: false,
-                size: Some(file_size),
+                logical_size: Some(file_size),
+                physical_size: Some(file_size),
                 modified_at: Some(1_700_000_000),
             });
         }
@@ -153,7 +156,7 @@ fn check_db_consistency(conn: &Connection) {
     // Build in-memory tree, then compute expected stats bottom-up.
     let all_entries: Vec<EntryRow> = {
         let mut stmt = conn
-            .prepare("SELECT id, parent_id, name, is_directory, is_symlink, size, modified_at FROM entries")
+            .prepare("SELECT id, parent_id, name, is_directory, is_symlink, logical_size, physical_size, modified_at FROM entries")
             .unwrap();
         stmt.query_map([], |row| {
             Ok(EntryRow {
@@ -162,8 +165,9 @@ fn check_db_consistency(conn: &Connection) {
                 name: row.get(2)?,
                 is_directory: row.get::<_, i32>(3)? != 0,
                 is_symlink: row.get::<_, i32>(4)? != 0,
-                size: row.get(5)?,
-                modified_at: row.get(6)?,
+                logical_size: row.get(5)?,
+                physical_size: row.get(6)?,
+                modified_at: row.get(7)?,
             })
         })
         .unwrap()
@@ -185,7 +189,7 @@ fn check_db_consistency(conn: &Connection) {
             None => return (0, 0, 0),
         };
 
-        let mut size: u64 = 0;
+        let mut logical_size: u64 = 0;
         let mut file_count: u64 = 0;
         let mut dir_count: u64 = 0;
 
@@ -193,16 +197,16 @@ fn check_db_consistency(conn: &Connection) {
             if child.is_directory {
                 dir_count += 1;
                 let (s, fc, dc) = compute_expected(child.id, children_map);
-                size += s;
+                logical_size += s;
                 file_count += fc;
                 dir_count += dc;
             } else {
                 file_count += 1;
-                size += child.size.unwrap_or(0);
+                logical_size += child.logical_size.unwrap_or(0);
             }
         }
 
-        (size, file_count, dir_count)
+        (logical_size, file_count, dir_count)
     }
 
     // Check each directory's dir_stats
@@ -217,9 +221,9 @@ fn check_db_consistency(conn: &Connection) {
         let (expected_size, expected_files, expected_dirs) = compute_expected(entry.id, &children_map);
 
         assert_eq!(
-            stats.recursive_size, expected_size,
-            "dir_stats.recursive_size mismatch for id={}, name='{}': got {}, expected {}",
-            entry.id, entry.name, stats.recursive_size, expected_size
+            stats.recursive_logical_size, expected_size,
+            "dir_stats.recursive_logical_size mismatch for id={}, name='{}': got {}, expected {}",
+            entry.id, entry.name, stats.recursive_logical_size, expected_size
         );
         assert_eq!(
             stats.recursive_file_count, expected_files,
@@ -444,7 +448,8 @@ fn concurrent_batch_inserts_with_aggregation() {
                 name: format!("subtree_{subtree_idx}"),
                 is_directory: true,
                 is_symlink: false,
-                size: None,
+                logical_size: None,
+                physical_size: None,
                 modified_at: None,
             });
 
@@ -458,7 +463,8 @@ fn concurrent_batch_inserts_with_aggregation() {
                     name: format!("dir_{d}"),
                     is_directory: true,
                     is_symlink: false,
-                    size: None,
+                    logical_size: None,
+                    physical_size: None,
                     modified_at: None,
                 });
                 for f in 0..10 {
@@ -470,7 +476,8 @@ fn concurrent_batch_inserts_with_aggregation() {
                         name: format!("file_{f}.bin"),
                         is_directory: false,
                         is_symlink: false,
-                        size: Some(512),
+                        logical_size: Some(512),
+                        physical_size: Some(512),
                         modified_at: Some(1_700_000_000),
                     });
                 }
@@ -518,7 +525,7 @@ fn concurrent_batch_inserts_with_aggregation() {
         .unwrap()
         .expect("root should have dir_stats");
     assert_eq!(
-        root_stats.recursive_size,
+        root_stats.recursive_logical_size,
         4 * 50 * 512,
         "root recursive_size should be sum of all file sizes"
     );
@@ -574,7 +581,8 @@ fn concurrent_scan_with_enrichment_reads() {
                 name: format!("wave2_file_{i}.dat"),
                 is_directory: false,
                 is_symlink: false,
-                size: Some(2048),
+                logical_size: Some(2048),
+                physical_size: Some(2048),
                 modified_at: Some(1_700_001_000),
             }
         })

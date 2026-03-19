@@ -329,11 +329,10 @@ fn run_scan(
         let is_symlink = entry.file_type().is_symlink();
 
         // Get metadata for size and modified time
-        let (size, modified_at) = if is_dir || is_symlink {
-            (None, entry_modified_at(&path))
+        let (logical_size, physical_size, modified_at) = if is_dir || is_symlink {
+            (None, None, entry_modified_at(&path))
         } else {
-            let (sz, mtime) = entry_size_and_mtime(&path);
-            (sz, mtime)
+            entry_size_and_mtime(&path)
         };
 
         // Look up parent_id from the scan context
@@ -367,7 +366,8 @@ fn run_scan(
             name,
             is_directory: is_dir,
             is_symlink,
-            size,
+            logical_size,
+            physical_size,
             modified_at,
         };
 
@@ -453,24 +453,25 @@ pub(super) fn should_exclude(path_str: &str) -> bool {
     false
 }
 
-/// Get physical file size (st_blocks * 512) and modified time for a file.
+/// Get logical size, physical size (st_blocks * 512), and modified time for a file.
 #[cfg(unix)]
-fn entry_size_and_mtime(path: &Path) -> (Option<u64>, Option<u64>) {
+fn entry_size_and_mtime(path: &Path) -> (Option<u64>, Option<u64>, Option<u64>) {
     use std::os::unix::fs::MetadataExt;
     match std::fs::symlink_metadata(path) {
         Ok(meta) => {
+            let logical_size = meta.len();
             let blocks = meta.blocks();
             let physical_size = if blocks > 0 { blocks * 512 } else { meta.len() };
             let mtime = meta.mtime();
             let mtime_u64 = if mtime >= 0 { Some(mtime as u64) } else { None };
-            (Some(physical_size), mtime_u64)
+            (Some(logical_size), Some(physical_size), mtime_u64)
         }
-        Err(_) => (None, None),
+        Err(_) => (None, None, None),
     }
 }
 
 #[cfg(not(unix))]
-fn entry_size_and_mtime(path: &Path) -> (Option<u64>, Option<u64>) {
+fn entry_size_and_mtime(path: &Path) -> (Option<u64>, Option<u64>, Option<u64>) {
     match std::fs::symlink_metadata(path) {
         Ok(meta) => {
             let size = meta.len();
@@ -479,9 +480,9 @@ fn entry_size_and_mtime(path: &Path) -> (Option<u64>, Option<u64>) {
                 .ok()
                 .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
                 .map(|d| d.as_secs());
-            (Some(size), mtime)
+            (Some(size), Some(size), mtime)
         }
-        Err(_) => (None, None),
+        Err(_) => (None, None, None),
     }
 }
 
@@ -593,7 +594,7 @@ mod tests {
         for component in components {
             parent_id = match IndexStore::resolve_component(&conn, parent_id, component) {
                 Ok(Some(id)) => id,
-                _ => IndexStore::insert_entry_v2(&conn, parent_id, component, true, false, None, None).unwrap(),
+                _ => IndexStore::insert_entry_v2(&conn, parent_id, component, true, false, None, None, None).unwrap(),
             };
         }
     }
@@ -718,10 +719,13 @@ mod tests {
             "root should have 3 children: subdir, file1.txt, file2.txt"
         );
 
-        // Verify a file has a non-zero physical size
+        // Verify a file has a non-zero size
         let file1 = children.iter().find(|e| e.name == "file1.txt").unwrap();
         assert!(!file1.is_directory);
-        assert!(file1.size.unwrap_or(0) > 0, "file should have nonzero physical size");
+        assert!(
+            file1.logical_size.unwrap_or(0) > 0,
+            "file should have nonzero logical size"
+        );
     }
 
     #[test]
@@ -832,9 +836,13 @@ mod tests {
         let sized = children.iter().find(|e| e.name == "sized.bin").unwrap();
 
         // Physical size should be >= logical size (and a multiple of 512)
-        let phys = sized.size.unwrap();
+        let phys = sized.physical_size.unwrap();
         assert!(phys >= 8192, "physical size ({phys}) should be >= logical size (8192)");
         assert_eq!(phys % 512, 0, "physical size should be a multiple of 512");
+
+        // Logical size should be exactly 8192
+        let logical = sized.logical_size.unwrap();
+        assert_eq!(logical, 8192, "logical size should be exactly 8192");
     }
 
     #[test]
@@ -976,8 +984,9 @@ mod tests {
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
         // Insert a directory chain: ROOT → Volumes → "NO NAME"
-        let volumes_id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Volumes", true, false, None, None).unwrap();
-        let noname_id = IndexStore::insert_entry_v2(&conn, volumes_id, "NO NAME", true, false, None, None).unwrap();
+        let volumes_id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Volumes", true, false, None, None, None).unwrap();
+        let noname_id =
+            IndexStore::insert_entry_v2(&conn, volumes_id, "NO NAME", true, false, None, None, None).unwrap();
         assert_ne!(noname_id, ROOT_ID);
 
         // Create ScanContext for the subtree root

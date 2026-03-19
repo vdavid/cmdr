@@ -154,10 +154,10 @@ pub async fn search_files(mut query: SearchQuery) -> Result<SearchResult, String
     };
 
     // Resolve include paths to entry IDs via SQLite (microseconds, not 20s)
-    if query.include_paths.as_ref().is_some_and(|p| !p.is_empty()) {
-        if let Some(pool) = get_read_pool() {
-            search::resolve_include_paths(&mut query, &pool);
-        }
+    if query.include_paths.as_ref().is_some_and(|p| !p.is_empty())
+        && let Some(pool) = get_read_pool()
+    {
+        search::resolve_include_paths(&mut query, &pool);
     }
 
     // Run search on a blocking thread (rayon parallel scan)
@@ -758,7 +758,10 @@ pub(crate) async fn call_ai_translate(
             r
         }
         Err(e) => {
-            log::warn!("AI search: chat_completion ({pass_label}) failed after {:.1}s for query={natural_query:?}: {e}", t0.elapsed().as_secs_f64());
+            log::warn!(
+                "AI search: chat_completion ({pass_label}) failed after {:.1}s for query={natural_query:?}: {e}",
+                t0.elapsed().as_secs_f64()
+            );
             return Err(format!("{e}"));
         }
     };

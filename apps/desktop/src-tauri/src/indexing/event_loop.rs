@@ -776,7 +776,8 @@ pub(super) async fn run_background_verification(affected_paths: HashSet<String>,
                                 .flatten()
                                 .unwrap_or(store::DirStatsById {
                                     entry_id,
-                                    recursive_size: 0,
+                                    recursive_logical_size: 0,
+                                    recursive_physical_size: 0,
                                     recursive_file_count: 0,
                                     recursive_dir_count: 0,
                                 });
@@ -791,7 +792,8 @@ pub(super) async fn run_background_verification(affected_paths: HashSet<String>,
             for (parent_id, stats) in &dir_deltas {
                 let _ = writer.send(WriteMessage::PropagateDeltaById {
                     entry_id: *parent_id,
-                    size_delta: stats.recursive_size as i64,
+                    logical_size_delta: stats.recursive_logical_size as i64,
+                    physical_size_delta: stats.recursive_physical_size as i64,
                     file_count_delta: stats.recursive_file_count as i32,
                     dir_count_delta: (stats.recursive_dir_count as i32) + 1,
                 });
@@ -981,8 +983,8 @@ fn verify_affected_dirs(affected_paths: &HashSet<String>, writer: &IndexWriter) 
             let is_dir = metadata.is_dir();
             let is_symlink = metadata.is_symlink();
 
-            let (size, modified_at) = if is_dir || is_symlink {
-                (None, reconciler::entry_modified_at(&metadata))
+            let (logical_size, physical_size, modified_at) = if is_dir || is_symlink {
+                (None, None, reconciler::entry_modified_at(&metadata))
             } else {
                 reconciler::entry_size_and_mtime(&metadata)
             };
@@ -992,19 +994,21 @@ fn verify_affected_dirs(affected_paths: &HashSet<String>, writer: &IndexWriter) 
                 name,
                 is_directory: is_dir,
                 is_symlink,
-                size,
+                logical_size,
+                physical_size,
                 modified_at,
             });
 
             if is_dir {
                 log::debug!("verify_affected_dirs: new dir on disk: {normalized} (parent_id={parent_id})");
                 new_dir_paths.push(normalized);
-            } else if let Some(sz) = size {
+            } else if let Some(sz) = logical_size {
                 // UpsertEntryV2 inserts the entry; propagate its size delta up the
                 // ancestor chain starting from the parent.
                 let _ = writer.send(WriteMessage::PropagateDeltaById {
                     entry_id: *parent_id,
-                    size_delta: sz as i64,
+                    logical_size_delta: sz as i64,
+                    physical_size_delta: physical_size.unwrap_or(0) as i64,
                     file_count_delta: 1,
                     dir_count_delta: 0,
                 });

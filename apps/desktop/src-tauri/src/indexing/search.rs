@@ -55,7 +55,6 @@ impl SearchIndex {
     fn name(&self, entry: &SearchEntry) -> &str {
         &self.names[entry.name_offset as usize..entry.name_offset as usize + entry.name_len as usize]
     }
-
 }
 
 pub(crate) struct SearchIndexState {
@@ -105,7 +104,7 @@ pub fn load_search_index(pool: &ReadPool, cancel: &AtomicBool) -> Result<SearchI
         let t = std::time::Instant::now();
         let generation = WRITER_GENERATION.load(Ordering::Relaxed);
 
-        let sql = "SELECT id, parent_id, name, is_directory, size, modified_at FROM entries";
+        let sql = "SELECT id, parent_id, name, is_directory, logical_size, modified_at FROM entries";
 
         let mut stmt = conn.prepare(sql).map_err(|e| format!("Prepare failed: {e}"))?;
 
@@ -131,7 +130,7 @@ pub fn load_search_index(pool: &ReadPool, cancel: &AtomicBool) -> Result<SearchI
             let name_len = name_str.len() as u16;
             names.push_str(name_str);
             let is_directory: bool = row.get(3).map_err(|e| format!("{e}"))?;
-            let size: Option<u64> = row.get(4).map_err(|e| format!("{e}"))?;
+            let logical_size: Option<u64> = row.get(4).map_err(|e| format!("{e}"))?;
             let modified_at: Option<u64> = row.get(5).map_err(|e| format!("{e}"))?;
             entries.push(SearchEntry {
                 id,
@@ -139,7 +138,7 @@ pub fn load_search_index(pool: &ReadPool, cancel: &AtomicBool) -> Result<SearchI
                 name_offset,
                 name_len,
                 is_directory,
-                size,
+                size: logical_size,
                 modified_at,
             });
             row_count += 1;
@@ -928,7 +927,7 @@ pub fn fill_directory_sizes(result: &mut SearchResult, pool: &ReadPool) {
         if let Ok(stats_batch) = IndexStore::get_dir_stats_batch_by_ids(conn, &entry_ids) {
             for (i, &idx) in dir_indices.iter().enumerate() {
                 if let Some(Some(stats)) = stats_batch.get(i) {
-                    result.entries[idx].size = Some(stats.recursive_size);
+                    result.entries[idx].size = Some(stats.recursive_logical_size);
                 }
             }
         }
@@ -1789,8 +1788,8 @@ mod tests {
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
         // Insert test entries
-        let users_id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None).unwrap();
-        let alice_id = IndexStore::insert_entry_v2(&conn, users_id, "alice", true, false, None, None).unwrap();
+        let users_id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None, None).unwrap();
+        let alice_id = IndexStore::insert_entry_v2(&conn, users_id, "alice", true, false, None, None, None).unwrap();
         let _pdf_id = IndexStore::insert_entry_v2(
             &conn,
             alice_id,
@@ -1798,12 +1797,21 @@ mod tests {
             false,
             false,
             Some(1_000_000),
+            Some(1_000_000),
             Some(1700000000),
         )
         .unwrap();
-        let _txt_id =
-            IndexStore::insert_entry_v2(&conn, alice_id, "notes.txt", false, false, Some(500), Some(1700000100))
-                .unwrap();
+        let _txt_id = IndexStore::insert_entry_v2(
+            &conn,
+            alice_id,
+            "notes.txt",
+            false,
+            false,
+            Some(500),
+            Some(500),
+            Some(1700000100),
+        )
+        .unwrap();
 
         // Load the index using ReadPool
         let pool = ReadPool::new(db_path).unwrap();

@@ -296,7 +296,11 @@ impl SourceItemTracker {
         let source_path = top_level_source_path(file_info);
         let count = self.processed.entry(source_path.clone()).or_insert(0);
         *count += 1;
-        if self.totals.get(&source_path) == Some(count) { Some(source_path) } else { None }
+        if self.totals.get(&source_path) == Some(count) {
+            Some(source_path)
+        } else {
+            None
+        }
     }
 }
 

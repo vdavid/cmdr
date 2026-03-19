@@ -13,6 +13,9 @@ use rusqlite::{Connection, params};
 
 use crate::indexing::store::{DirStatsById, IndexStore, IndexStoreError, resolve_path};
 
+/// `parent_id -> (logical_size_sum, physical_size_sum, file_count, dir_count)`.
+type ChildrenStatsMap = HashMap<i64, (u64, u64, u64, u64)>;
+
 /// Progress phases reported during full aggregation.
 /// Wired up by the progress-reporting layer.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -102,7 +105,7 @@ pub fn compute_all_aggregates_reported(
 /// Falls back to `compute_all_aggregates` if the maps are empty (edge case).
 pub fn compute_all_aggregates_with_maps(
     conn: &Connection,
-    direct_stats: &HashMap<i64, (u64, u64, u64)>,
+    direct_stats: &ChildrenStatsMap,
     child_dirs: &HashMap<i64, Vec<i64>>,
     on_progress: &mut dyn FnMut(AggregationProgress),
 ) -> Result<u64, IndexStoreError> {
@@ -130,7 +133,7 @@ pub fn compute_all_aggregates_with_maps(
 fn compute_and_write(
     conn: &Connection,
     dir_entries: &[(i64, i64)],
-    direct_stats: &HashMap<i64, (u64, u64, u64)>,
+    direct_stats: &ChildrenStatsMap,
     child_dirs_map: &HashMap<i64, Vec<i64>>,
     on_progress: &mut dyn FnMut(AggregationProgress),
 ) -> Result<u64, IndexStoreError> {
@@ -147,9 +150,11 @@ fn compute_and_write(
     let mut computed: HashMap<i64, DirStatsById> = HashMap::with_capacity(sorted.len());
 
     for (i, &dir_id) in sorted.iter().enumerate() {
-        let (file_size_sum, file_count, child_dir_count) = direct_stats.get(&dir_id).copied().unwrap_or((0, 0, 0));
+        let (logical_size_sum, physical_size_sum, file_count, child_dir_count) =
+            direct_stats.get(&dir_id).copied().unwrap_or((0, 0, 0, 0));
 
-        let mut recursive_size = file_size_sum;
+        let mut recursive_logical_size = logical_size_sum;
+        let mut recursive_physical_size = physical_size_sum;
         let mut recursive_file_count = file_count;
         let mut recursive_dir_count = child_dir_count;
 
@@ -157,7 +162,8 @@ fn compute_and_write(
         if let Some(children) = child_dirs_map.get(&dir_id) {
             for &child_id in children {
                 if let Some(child_stats) = computed.get(&child_id) {
-                    recursive_size += child_stats.recursive_size;
+                    recursive_logical_size += child_stats.recursive_logical_size;
+                    recursive_physical_size += child_stats.recursive_physical_size;
                     recursive_file_count += child_stats.recursive_file_count;
                     recursive_dir_count += child_stats.recursive_dir_count;
                 }
@@ -168,7 +174,8 @@ fn compute_and_write(
             dir_id,
             DirStatsById {
                 entry_id: dir_id,
-                recursive_size,
+                recursive_logical_size,
+                recursive_physical_size,
                 recursive_file_count,
                 recursive_dir_count,
             },
@@ -254,16 +261,19 @@ pub fn compute_subtree_aggregates(conn: &Connection, root: &str) -> Result<u64, 
     let mut computed: HashMap<i64, DirStatsById> = HashMap::with_capacity(sorted.len());
 
     for &dir_id in &sorted {
-        let (file_size_sum, file_count, child_dir_count) = direct_stats.get(&dir_id).copied().unwrap_or((0, 0, 0));
+        let (logical_size_sum, physical_size_sum, file_count, child_dir_count) =
+            direct_stats.get(&dir_id).copied().unwrap_or((0, 0, 0, 0));
 
-        let mut recursive_size = file_size_sum;
+        let mut recursive_logical_size = logical_size_sum;
+        let mut recursive_physical_size = physical_size_sum;
         let mut recursive_file_count = file_count;
         let mut recursive_dir_count = child_dir_count;
 
         if let Some(children) = child_dirs_map.get(&dir_id) {
             for &child_id in children {
                 if let Some(child_stats) = computed.get(&child_id) {
-                    recursive_size += child_stats.recursive_size;
+                    recursive_logical_size += child_stats.recursive_logical_size;
+                    recursive_physical_size += child_stats.recursive_physical_size;
                     recursive_file_count += child_stats.recursive_file_count;
                     recursive_dir_count += child_stats.recursive_dir_count;
                 }
@@ -274,7 +284,8 @@ pub fn compute_subtree_aggregates(conn: &Connection, root: &str) -> Result<u64, 
             dir_id,
             DirStatsById {
                 entry_id: dir_id,
-                recursive_size,
+                recursive_logical_size,
+                recursive_physical_size,
                 recursive_file_count,
                 recursive_dir_count,
             },
@@ -342,9 +353,11 @@ pub fn backfill_missing_dir_stats(conn: &Connection) -> Result<u64, IndexStoreEr
     let mut to_write: Vec<DirStatsById> = Vec::with_capacity(count);
 
     for &dir_id in &sorted {
-        let (file_size_sum, file_count, child_dir_count) = direct_stats.get(&dir_id).copied().unwrap_or((0, 0, 0));
+        let (logical_size_sum, physical_size_sum, file_count, child_dir_count) =
+            direct_stats.get(&dir_id).copied().unwrap_or((0, 0, 0, 0));
 
-        let mut recursive_size = file_size_sum;
+        let mut recursive_logical_size = logical_size_sum;
+        let mut recursive_physical_size = physical_size_sum;
         let mut recursive_file_count = file_count;
         let mut recursive_dir_count = child_dir_count;
 
@@ -352,11 +365,13 @@ pub fn backfill_missing_dir_stats(conn: &Connection) -> Result<u64, IndexStoreEr
             for &child_id in children {
                 // Prefer freshly computed stats, fall back to existing DB stats
                 if let Some(child_stats) = computed.get(&child_id) {
-                    recursive_size += child_stats.recursive_size;
+                    recursive_logical_size += child_stats.recursive_logical_size;
+                    recursive_physical_size += child_stats.recursive_physical_size;
                     recursive_file_count += child_stats.recursive_file_count;
                     recursive_dir_count += child_stats.recursive_dir_count;
                 } else if let Ok(Some(db_stats)) = IndexStore::get_dir_stats_by_id(conn, child_id) {
-                    recursive_size += db_stats.recursive_size;
+                    recursive_logical_size += db_stats.recursive_logical_size;
+                    recursive_physical_size += db_stats.recursive_physical_size;
                     recursive_file_count += db_stats.recursive_file_count;
                     recursive_dir_count += db_stats.recursive_dir_count;
                 }
@@ -365,7 +380,8 @@ pub fn backfill_missing_dir_stats(conn: &Connection) -> Result<u64, IndexStoreEr
 
         let stats = DirStatsById {
             entry_id: dir_id,
-            recursive_size,
+            recursive_logical_size,
+            recursive_physical_size,
             recursive_file_count,
             recursive_dir_count,
         };
@@ -488,11 +504,12 @@ fn topological_sort_bottom_up(entries: &[(i64, i64)]) -> Vec<i64> {
 
 /// Bulk-load direct children stats for ALL parent IDs in a single SQL query.
 ///
-/// Returns a map: `parent_id -> (total_file_size, file_count, dir_count)`.
-fn bulk_get_children_stats_by_id(conn: &Connection) -> Result<HashMap<i64, (u64, u64, u64)>, IndexStoreError> {
+/// Returns a map: `parent_id -> (logical_size_sum, physical_size_sum, file_count, dir_count)`.
+fn bulk_get_children_stats_by_id(conn: &Connection) -> Result<ChildrenStatsMap, IndexStoreError> {
     let mut stmt = conn.prepare(
         "SELECT parent_id,
-                COALESCE(SUM(CASE WHEN is_directory = 0 THEN size ELSE 0 END), 0),
+                COALESCE(SUM(CASE WHEN is_directory = 0 THEN logical_size ELSE 0 END), 0),
+                COALESCE(SUM(CASE WHEN is_directory = 0 THEN physical_size ELSE 0 END), 0),
                 COALESCE(SUM(CASE WHEN is_directory = 0 THEN 1 ELSE 0 END), 0),
                 COALESCE(SUM(CASE WHEN is_directory = 1 THEN 1 ELSE 0 END), 0)
          FROM entries
@@ -504,13 +521,14 @@ fn bulk_get_children_stats_by_id(conn: &Connection) -> Result<HashMap<i64, (u64,
             row.get::<_, u64>(1)?,
             row.get::<_, u64>(2)?,
             row.get::<_, u64>(3)?,
+            row.get::<_, u64>(4)?,
         ))
     })?;
 
     let mut map = HashMap::new();
     for row in rows {
-        let (parent_id, size, files, dirs) = row?;
-        map.insert(parent_id, (size, files, dirs));
+        let (parent_id, logical_size, physical_size, files, dirs) = row?;
+        map.insert(parent_id, (logical_size, physical_size, files, dirs));
     }
     Ok(map)
 }
@@ -532,12 +550,9 @@ fn bulk_get_child_dir_ids(conn: &Connection) -> Result<HashMap<i64, Vec<i64>>, I
 
 /// Load direct children stats scoped to a subtree via recursive CTE.
 ///
-/// Returns a map: `parent_id -> (total_file_size, file_count, dir_count)`.
+/// Returns a map: `parent_id -> (logical_size_sum, physical_size_sum, file_count, dir_count)`.
 /// Only includes entries whose parent is within the subtree rooted at `root_id`.
-fn scoped_get_children_stats_by_id(
-    conn: &Connection,
-    root_id: i64,
-) -> Result<HashMap<i64, (u64, u64, u64)>, IndexStoreError> {
+fn scoped_get_children_stats_by_id(conn: &Connection, root_id: i64) -> Result<ChildrenStatsMap, IndexStoreError> {
     let mut stmt = conn.prepare(
         "WITH RECURSIVE subtree(id) AS (
             SELECT id FROM entries WHERE id = ?1
@@ -545,7 +560,8 @@ fn scoped_get_children_stats_by_id(
             SELECT e.id FROM entries e JOIN subtree s ON e.parent_id = s.id
         )
         SELECT e.parent_id,
-               COALESCE(SUM(CASE WHEN e.is_directory = 0 THEN e.size ELSE 0 END), 0),
+               COALESCE(SUM(CASE WHEN e.is_directory = 0 THEN e.logical_size ELSE 0 END), 0),
+               COALESCE(SUM(CASE WHEN e.is_directory = 0 THEN e.physical_size ELSE 0 END), 0),
                COALESCE(SUM(CASE WHEN e.is_directory = 0 THEN 1 ELSE 0 END), 0),
                COALESCE(SUM(CASE WHEN e.is_directory = 1 THEN 1 ELSE 0 END), 0)
         FROM entries e
@@ -558,12 +574,13 @@ fn scoped_get_children_stats_by_id(
             row.get::<_, u64>(1)?,
             row.get::<_, u64>(2)?,
             row.get::<_, u64>(3)?,
+            row.get::<_, u64>(4)?,
         ))
     })?;
     let mut map = HashMap::new();
     for row in rows {
-        let (parent_id, size, files, dirs) = row?;
-        map.insert(parent_id, (size, files, dirs));
+        let (parent_id, logical_size, physical_size, files, dirs) = row?;
+        map.insert(parent_id, (logical_size, physical_size, files, dirs));
     }
     Ok(map)
 }
@@ -623,7 +640,8 @@ mod tests {
             name: name.into(),
             is_directory: true,
             is_symlink: false,
-            size: None,
+            logical_size: None,
+            physical_size: None,
             modified_at: None,
         }
     }
@@ -635,7 +653,8 @@ mod tests {
             name: name.into(),
             is_directory: false,
             is_symlink: false,
-            size: Some(size),
+            logical_size: Some(size),
+            physical_size: Some(size),
             modified_at: None,
         }
     }
@@ -672,18 +691,18 @@ mod tests {
         assert_eq!(count, 3); // root sentinel + /root + /root/sub
 
         let sub_stats = get_stats(&conn, 5).unwrap();
-        assert_eq!(sub_stats.recursive_size, 50);
+        assert_eq!(sub_stats.recursive_logical_size, 50);
         assert_eq!(sub_stats.recursive_file_count, 1);
         assert_eq!(sub_stats.recursive_dir_count, 0);
 
         let root_dir_stats = get_stats(&conn, 2).unwrap();
-        assert_eq!(root_dir_stats.recursive_size, 350); // 100 + 200 + 50
+        assert_eq!(root_dir_stats.recursive_logical_size, 350); // 100 + 200 + 50
         assert_eq!(root_dir_stats.recursive_file_count, 3);
         assert_eq!(root_dir_stats.recursive_dir_count, 1);
 
         // Root sentinel (id=1) should have stats summing all top-level entries
         let sentinel_stats = get_stats(&conn, ROOT_ID).unwrap();
-        assert_eq!(sentinel_stats.recursive_size, 350);
+        assert_eq!(sentinel_stats.recursive_logical_size, 350);
         assert_eq!(sentinel_stats.recursive_file_count, 3);
         assert_eq!(sentinel_stats.recursive_dir_count, 2); // /root + /root/sub
     }
@@ -710,7 +729,7 @@ mod tests {
         // Each ancestor should have the file's size propagated up
         for &dir_id in &[5, 4, 3, 2] {
             let stats = get_stats(&conn, dir_id).unwrap();
-            assert_eq!(stats.recursive_size, 1000, "wrong size for id={dir_id}");
+            assert_eq!(stats.recursive_logical_size, 1000, "wrong size for id={dir_id}");
             assert_eq!(stats.recursive_file_count, 1, "wrong file count for id={dir_id}");
         }
 
@@ -740,7 +759,7 @@ mod tests {
         compute_all_aggregates(&conn).unwrap();
 
         let stats = get_stats(&conn, 2).unwrap();
-        assert_eq!(stats.recursive_size, 0);
+        assert_eq!(stats.recursive_logical_size, 0);
         assert_eq!(stats.recursive_file_count, 0);
         assert_eq!(stats.recursive_dir_count, 0);
     }
@@ -771,11 +790,11 @@ mod tests {
 
         // /b/sub should have stats
         let sub_stats = get_stats(&conn, 5).unwrap();
-        assert_eq!(sub_stats.recursive_size, 200);
+        assert_eq!(sub_stats.recursive_logical_size, 200);
 
         // /b should have stats
         let b_stats = get_stats(&conn, 4).unwrap();
-        assert_eq!(b_stats.recursive_size, 200);
+        assert_eq!(b_stats.recursive_logical_size, 200);
         assert_eq!(b_stats.recursive_file_count, 1);
         assert_eq!(b_stats.recursive_dir_count, 1);
 
@@ -812,7 +831,8 @@ mod tests {
             &conn,
             &[DirStatsById {
                 entry_id: 4,
-                recursive_size: 200,
+                recursive_logical_size: 200,
+                recursive_physical_size: 200,
                 recursive_file_count: 1,
                 recursive_dir_count: 0,
             }],
@@ -825,13 +845,13 @@ mod tests {
 
         // /a should now have correct recursive stats
         let a_stats = get_stats(&conn, 2).unwrap();
-        assert_eq!(a_stats.recursive_size, 300); // 100 + 200
+        assert_eq!(a_stats.recursive_logical_size, 300); // 100 + 200
         assert_eq!(a_stats.recursive_file_count, 2);
         assert_eq!(a_stats.recursive_dir_count, 1);
 
         // Root sentinel should also be correct
         let root_stats = get_stats(&conn, ROOT_ID).unwrap();
-        assert_eq!(root_stats.recursive_size, 300);
+        assert_eq!(root_stats.recursive_logical_size, 300);
     }
 
     #[test]

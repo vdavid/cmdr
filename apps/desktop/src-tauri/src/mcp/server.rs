@@ -544,10 +544,7 @@ async fn process_request<R: Runtime>(
                     let text = format_tool_result(value);
                     log::debug!("MCP: tool {name} succeeded, response length={}", text.len());
                     (
-                        McpResponse::success(
-                            request.id,
-                            json!({"content": [{"type": "text", "text": text}]}),
-                        ),
+                        McpResponse::success(request.id, json!({"content": [{"type": "text", "text": text}]})),
                         None,
                     )
                 }

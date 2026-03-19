@@ -353,8 +353,8 @@ pub(super) fn reconcile_subtree(
                 let changed = if is_dir || *is_symlink {
                     entry_modified_at(meta) != db_row.modified_at
                 } else {
-                    let (fs_size, fs_mtime) = entry_size_and_mtime(meta);
-                    fs_size != db_row.size || fs_mtime != db_row.modified_at
+                    let (fs_logical, _fs_physical, fs_mtime) = entry_size_and_mtime(meta);
+                    fs_logical != db_row.logical_size || fs_mtime != db_row.modified_at
                 };
 
                 if changed {
@@ -364,8 +364,8 @@ pub(super) fn reconcile_subtree(
                         let _ = writer.send(WriteMessage::DeleteSubtreeById(db_row.id));
                     }
 
-                    let (size, modified_at) = if is_dir || *is_symlink {
-                        (None, entry_modified_at(meta))
+                    let (logical_size, physical_size, modified_at) = if is_dir || *is_symlink {
+                        (None, None, entry_modified_at(meta))
                     } else {
                         entry_size_and_mtime(meta)
                     };
@@ -374,7 +374,8 @@ pub(super) fn reconcile_subtree(
                         name: name.clone(),
                         is_directory: is_dir,
                         is_symlink: *is_symlink,
-                        size,
+                        logical_size,
+                        physical_size,
                         modified_at,
                     });
                     updated += 1;
@@ -384,8 +385,8 @@ pub(super) fn reconcile_subtree(
                     queue.push_back((dir_path.join(name), db_row.id));
                 }
             } else {
-                let (size, modified_at) = if is_dir || *is_symlink {
-                    (None, entry_modified_at(meta))
+                let (logical_size, physical_size, modified_at) = if is_dir || *is_symlink {
+                    (None, None, entry_modified_at(meta))
                 } else {
                     entry_size_and_mtime(meta)
                 };
@@ -394,21 +395,24 @@ pub(super) fn reconcile_subtree(
                     name: name.clone(),
                     is_directory: is_dir,
                     is_symlink: *is_symlink,
-                    size,
+                    logical_size,
+                    physical_size,
                     modified_at,
                 });
 
                 if is_dir {
                     let _ = writer.send(WriteMessage::PropagateDeltaById {
                         entry_id: dir_id,
-                        size_delta: 0,
+                        logical_size_delta: 0,
+                        physical_size_delta: 0,
                         file_count_delta: 0,
                         dir_count_delta: 1,
                     });
-                } else if let Some(sz) = size {
+                } else if let Some(sz) = logical_size {
                     let _ = writer.send(WriteMessage::PropagateDeltaById {
                         entry_id: dir_id,
-                        size_delta: sz as i64,
+                        logical_size_delta: sz as i64,
+                        physical_size_delta: physical_size.unwrap_or(0) as i64,
                         file_count_delta: 1,
                         dir_count_delta: 0,
                     });
@@ -631,8 +635,8 @@ fn handle_creation_or_modification(
         .map(|n| n.to_string_lossy().to_string())
         .unwrap_or_default();
 
-    let (size, modified_at) = if is_dir || is_symlink {
-        (None, entry_modified_at(&metadata))
+    let (logical_size, physical_size, modified_at) = if is_dir || is_symlink {
+        (None, None, entry_modified_at(&metadata))
     } else {
         entry_size_and_mtime(&metadata)
     };
@@ -642,7 +646,8 @@ fn handle_creation_or_modification(
         name,
         is_directory: is_dir,
         is_symlink,
-        size,
+        logical_size,
+        physical_size,
         modified_at,
     });
 
@@ -653,14 +658,16 @@ fn handle_creation_or_modification(
         if is_dir {
             let _ = writer.send(WriteMessage::PropagateDeltaById {
                 entry_id: parent_id,
-                size_delta: 0,
+                logical_size_delta: 0,
+                physical_size_delta: 0,
                 file_count_delta: 0,
                 dir_count_delta: 1,
             });
-        } else if let Some(sz) = size {
+        } else if let Some(sz) = logical_size {
             let _ = writer.send(WriteMessage::PropagateDeltaById {
                 entry_id: parent_id,
-                size_delta: sz as i64,
+                logical_size_delta: sz as i64,
+                physical_size_delta: physical_size.unwrap_or(0) as i64,
                 file_count_delta: 1,
                 dir_count_delta: 0,
             });
@@ -706,26 +713,27 @@ fn collect_ancestor_paths(path: &str) -> Vec<String> {
     ancestors
 }
 
-/// Get physical file size and modified time from metadata.
+/// Get logical size, physical size, and modified time from metadata.
 #[cfg(unix)]
-pub(super) fn entry_size_and_mtime(metadata: &std::fs::Metadata) -> (Option<u64>, Option<u64>) {
+pub(super) fn entry_size_and_mtime(metadata: &std::fs::Metadata) -> (Option<u64>, Option<u64>, Option<u64>) {
     use std::os::unix::fs::MetadataExt;
+    let logical_size = metadata.len();
     let blocks = metadata.blocks();
     let physical_size = if blocks > 0 { blocks * 512 } else { metadata.len() };
     let mtime = metadata.mtime();
     let mtime_u64 = if mtime >= 0 { Some(mtime as u64) } else { None };
-    (Some(physical_size), mtime_u64)
+    (Some(logical_size), Some(physical_size), mtime_u64)
 }
 
 #[cfg(not(unix))]
-pub(super) fn entry_size_and_mtime(metadata: &std::fs::Metadata) -> (Option<u64>, Option<u64>) {
+pub(super) fn entry_size_and_mtime(metadata: &std::fs::Metadata) -> (Option<u64>, Option<u64>, Option<u64>) {
     let size = metadata.len();
     let mtime = metadata
         .modified()
         .ok()
         .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
         .map(|d| d.as_secs());
-    (Some(size), mtime)
+    (Some(size), Some(size), mtime)
 }
 
 /// Get modified time from metadata.
@@ -968,7 +976,7 @@ mod tests {
         let entries = store.list_children(parent_id).unwrap();
         assert_eq!(entries.len(), 1);
         assert_eq!(entries[0].name, "created.txt");
-        assert!(entries[0].size.unwrap_or(0) > 0);
+        assert!(entries[0].logical_size.unwrap_or(0) > 0);
     }
 
     #[test]
@@ -979,8 +987,9 @@ mod tests {
         // Pre-populate the parent dir and entry using integer-keyed inserts
         {
             let wconn = IndexStore::open_write_connection(&db_path).unwrap();
-            let gone_id = IndexStore::insert_entry_v2(&wconn, ROOT_ID, "gone", true, false, None, None).unwrap();
-            IndexStore::insert_entry_v2(&wconn, gone_id, "deleted.txt", false, false, Some(100), None).unwrap();
+            let gone_id = IndexStore::insert_entry_v2(&wconn, ROOT_ID, "gone", true, false, None, None, None).unwrap();
+            IndexStore::insert_entry_v2(&wconn, gone_id, "deleted.txt", false, false, Some(100), Some(100), None)
+                .unwrap();
         }
 
         let event = make_event("/gone/deleted.txt", 60, removed_file_flags());
@@ -1038,10 +1047,21 @@ mod tests {
         // Pre-populate with a directory subtree using integer-keyed inserts
         {
             let wconn = IndexStore::open_write_connection(&db_path).unwrap();
-            let parent_id = IndexStore::insert_entry_v2(&wconn, ROOT_ID, "parent", true, false, None, None).unwrap();
+            let parent_id =
+                IndexStore::insert_entry_v2(&wconn, ROOT_ID, "parent", true, false, None, None, None).unwrap();
             let removed_dir_id =
-                IndexStore::insert_entry_v2(&wconn, parent_id, "removed_dir", true, false, None, None).unwrap();
-            IndexStore::insert_entry_v2(&wconn, removed_dir_id, "child.txt", false, false, Some(50), None).unwrap();
+                IndexStore::insert_entry_v2(&wconn, parent_id, "removed_dir", true, false, None, None, None).unwrap();
+            IndexStore::insert_entry_v2(
+                &wconn,
+                removed_dir_id,
+                "child.txt",
+                false,
+                false,
+                Some(50),
+                Some(50),
+                None,
+            )
+            .unwrap();
         }
 
         let event = make_event("/parent/removed_dir", 80, removed_dir_flags());
@@ -1090,7 +1110,17 @@ mod tests {
             let parent_id = store::resolve_path(&wconn, &test_dir.path().to_string_lossy())
                 .unwrap()
                 .unwrap();
-            IndexStore::insert_entry_v2(&wconn, parent_id, "still_here.txt", false, false, Some(100), None).unwrap();
+            IndexStore::insert_entry_v2(
+                &wconn,
+                parent_id,
+                "still_here.txt",
+                false,
+                false,
+                Some(100),
+                Some(100),
+                None,
+            )
+            .unwrap();
         }
 
         // Send a removal event even though the file exists on disk
@@ -1135,7 +1165,17 @@ mod tests {
             let parent_id = store::resolve_path(&wconn, &test_dir.path().to_string_lossy())
                 .unwrap()
                 .unwrap();
-            IndexStore::insert_entry_v2(&wconn, parent_id, "swapped.txt", false, false, Some(50), Some(1000)).unwrap();
+            IndexStore::insert_entry_v2(
+                &wconn,
+                parent_id,
+                "swapped.txt",
+                false,
+                false,
+                Some(50),
+                Some(50),
+                Some(1000),
+            )
+            .unwrap();
         }
 
         // Both item_removed and item_created set (atomic swap scenario)
@@ -1189,12 +1229,12 @@ mod tests {
                 .unwrap();
 
             let meta1 = std::fs::symlink_metadata(sub_dir.join("child1.txt")).unwrap();
-            let (size1, mtime1) = entry_size_and_mtime(&meta1);
-            IndexStore::insert_entry_v2(&wconn, sub_id, "child1.txt", false, false, size1, mtime1).unwrap();
+            let (size1, _phys1, mtime1) = entry_size_and_mtime(&meta1);
+            IndexStore::insert_entry_v2(&wconn, sub_id, "child1.txt", false, false, size1, size1, mtime1).unwrap();
 
             let meta2 = std::fs::symlink_metadata(sub_dir.join("child2.txt")).unwrap();
-            let (size2, mtime2) = entry_size_and_mtime(&meta2);
-            IndexStore::insert_entry_v2(&wconn, sub_id, "child2.txt", false, false, size2, mtime2).unwrap();
+            let (size2, _phys2, mtime2) = entry_size_and_mtime(&meta2);
+            IndexStore::insert_entry_v2(&wconn, sub_id, "child2.txt", false, false, size2, size2, mtime2).unwrap();
         }
 
         // Run reconcile_subtree (what MustScanSubDirs triggers)
@@ -1243,7 +1283,17 @@ mod tests {
             let dir_id = store::resolve_path(&wconn, &target_dir.to_string_lossy())
                 .unwrap()
                 .unwrap();
-            IndexStore::insert_entry_v2(&wconn, dir_id, "precious.txt", false, false, Some(100), Some(1000)).unwrap();
+            IndexStore::insert_entry_v2(
+                &wconn,
+                dir_id,
+                "precious.txt",
+                false,
+                false,
+                Some(100),
+                Some(100),
+                Some(1000),
+            )
+            .unwrap();
         }
 
         // Send a false removal event for the directory (item_is_dir)
@@ -1315,7 +1365,7 @@ mod tests {
         let entries = store.list_children(parent_id).unwrap();
         assert_eq!(entries.len(), 1);
         assert_eq!(entries[0].name, "new_file.txt");
-        assert!(entries[0].size.unwrap_or(0) > 0);
+        assert!(entries[0].logical_size.unwrap_or(0) > 0);
     }
 
     #[test]
@@ -1331,7 +1381,17 @@ mod tests {
             let wconn = IndexStore::open_write_connection(&db_path).unwrap();
             let parent_str = test_dir.path().to_string_lossy().to_string();
             let parent_id = store::resolve_path(&wconn, &parent_str).unwrap().unwrap();
-            IndexStore::insert_entry_v2(&wconn, parent_id, "ghost.txt", false, false, Some(42), Some(1000)).unwrap();
+            IndexStore::insert_entry_v2(
+                &wconn,
+                parent_id,
+                "ghost.txt",
+                false,
+                false,
+                Some(42),
+                Some(42),
+                Some(1000),
+            )
+            .unwrap();
         }
 
         let cancelled = AtomicBool::new(false);
@@ -1365,12 +1425,12 @@ mod tests {
 
         // Get the file's actual metadata and insert a matching DB entry
         let meta = std::fs::symlink_metadata(&file_path).unwrap();
-        let (size, mtime) = entry_size_and_mtime(&meta);
+        let (size, _phys, mtime) = entry_size_and_mtime(&meta);
         {
             let wconn = IndexStore::open_write_connection(&db_path).unwrap();
             let parent_str = test_dir.path().to_string_lossy().to_string();
             let parent_id = store::resolve_path(&wconn, &parent_str).unwrap().unwrap();
-            IndexStore::insert_entry_v2(&wconn, parent_id, "stable.txt", false, false, size, mtime).unwrap();
+            IndexStore::insert_entry_v2(&wconn, parent_id, "stable.txt", false, false, size, size, mtime).unwrap();
         }
 
         let cancelled = AtomicBool::new(false);
@@ -1400,7 +1460,17 @@ mod tests {
             let wconn = IndexStore::open_write_connection(&db_path).unwrap();
             let parent_str = test_dir.path().to_string_lossy().to_string();
             let parent_id = store::resolve_path(&wconn, &parent_str).unwrap().unwrap();
-            IndexStore::insert_entry_v2(&wconn, parent_id, "changed.txt", false, false, Some(999), Some(0)).unwrap();
+            IndexStore::insert_entry_v2(
+                &wconn,
+                parent_id,
+                "changed.txt",
+                false,
+                false,
+                Some(999),
+                Some(999),
+                Some(0),
+            )
+            .unwrap();
         }
 
         let cancelled = AtomicBool::new(false);
@@ -1420,7 +1490,7 @@ mod tests {
         let parent_id = store::resolve_path(store.read_conn(), &parent_str).unwrap().unwrap();
         let entries = store.list_children(parent_id).unwrap();
         assert_eq!(entries.len(), 1);
-        assert_ne!(entries[0].size, Some(999), "size should have been updated");
+        assert_ne!(entries[0].logical_size, Some(999), "size should have been updated");
         assert_ne!(entries[0].modified_at, Some(0), "mtime should have been updated");
     }
 
@@ -1497,8 +1567,9 @@ mod tests {
         {
             let wconn = IndexStore::open_write_connection(&db_path).unwrap();
             let parent_id = store::resolve_path(&wconn, &parent.to_string_lossy()).unwrap().unwrap();
-            let item_id = IndexStore::insert_entry_v2(&wconn, parent_id, "item", true, false, None, None).unwrap();
-            IndexStore::insert_entry_v2(&wconn, item_id, "child.txt", false, false, Some(50), None).unwrap();
+            let item_id =
+                IndexStore::insert_entry_v2(&wconn, parent_id, "item", true, false, None, None, None).unwrap();
+            IndexStore::insert_entry_v2(&wconn, item_id, "child.txt", false, false, Some(50), Some(50), None).unwrap();
         }
 
         let cancelled = AtomicBool::new(false);
@@ -1802,7 +1873,8 @@ mod tests {
                 Some(id) => current_id = id,
                 None => {
                     current_id =
-                        IndexStore::insert_entry_v2(&conn, current_id, component, true, false, None, None).unwrap();
+                        IndexStore::insert_entry_v2(&conn, current_id, component, true, false, None, None, None)
+                            .unwrap();
                 }
             }
         }
