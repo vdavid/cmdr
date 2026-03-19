@@ -112,6 +112,16 @@
     // Measures multiple sample dates to find the maximum width needed.
     const dateColumnWidth = $derived(measureDateColumnWidth(formatDateTime))
 
+    /** Extracts display extension from a filename (no dot). Matches Rust sorting logic:
+     * dotfiles without secondary dot → empty, no extension → empty, otherwise last segment. */
+    function getDisplayExtension(name: string, isDirectory: boolean): string {
+        if (isDirectory) return ''
+        if (name.startsWith('.') && !name.slice(1).includes('.')) return ''
+        const dotPos = name.lastIndexOf('.')
+        if (dotPos <= 0 || dotPos === name.length - 1) return ''
+        return name.slice(dotPos + 1)
+    }
+
     // Drive index state — show spinner while scanning OR aggregating (sizes aren't ready until aggregation finishes)
     const indexing = $derived(isScanning() || isAggregating())
 
@@ -357,11 +367,18 @@
 
 <div class="full-list-container" class:is-focused={isFocused} class:is-compact={isCompact}>
     <!-- Header row with sortable columns (outside scroll container for correct height calculation) -->
-    <div class="header-row" style="grid-template-columns: 16px 1fr 115px {dateColumnWidth}px;">
+    <div class="header-row" style="grid-template-columns: 16px 1fr 60px 115px {dateColumnWidth}px;">
         <span class="header-icon"></span>
         <SortableHeader
             column="name"
             label="Name"
+            currentSortColumn={sortBy}
+            currentSortOrder={sortOrder}
+            onClick={onSortChange ?? (() => {})}
+        />
+        <SortableHeader
+            column="extension"
+            label="Ext"
             currentSortColumn={sortBy}
             currentSortOrder={sortOrder}
             onClick={onSortChange ?? (() => {})}
@@ -405,7 +422,7 @@
                         class:is-under-cursor={globalIndex === cursorIndex}
                         class:is-selected={selectedIndices.has(globalIndex)}
                         data-drop-target-path={file.isDirectory && file.name !== '..' ? file.path : undefined}
-                        style="height: {rowHeight}px; grid-template-columns: 16px 1fr 115px {dateColumnWidth}px;"
+                        style="height: {rowHeight}px; grid-template-columns: 16px 1fr 60px 115px {dateColumnWidth}px;"
                         onmousedown={(e: MouseEvent) => {
                             handleMouseDown(e, globalIndex)
                         }}
@@ -438,6 +455,7 @@
                         {:else}
                             <span class="col-name">{file.name}</span>
                         {/if}
+                        <span class="col-ext">{getDisplayExtension(file.name, file.isDirectory)}</span>
                         <span
                             class="col-size"
                             use:tooltip={file.isDirectory
@@ -559,6 +577,14 @@
         white-space: nowrap;
     }
 
+    .col-ext {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+    }
+
     .col-size {
         text-align: right;
         font-size: var(--font-size-sm);
@@ -587,6 +613,10 @@
     }
 
     .file-entry.is-selected .col-name {
+        color: var(--color-selection-fg);
+    }
+
+    .file-entry.is-selected .col-ext {
         color: var(--color-selection-fg);
     }
 
@@ -621,6 +651,10 @@
 
     /* Selection colors preserved even under cursor */
     .full-list-container.is-focused .file-entry.is-under-cursor.is-selected .col-name {
+        color: var(--color-selection-fg);
+    }
+
+    .full-list-container.is-focused .file-entry.is-under-cursor.is-selected .col-ext {
         color: var(--color-selection-fg);
     }
 
