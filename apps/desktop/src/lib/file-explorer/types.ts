@@ -189,14 +189,14 @@ export interface ListingStats {
     totalFiles: number
     /** Total number of directories */
     totalDirs: number
-    /** Total size of all files in bytes */
-    totalFileSize: number
+    /** Total size in bytes (files + directory recursive sizes) */
+    totalSize: number
     /** Number of selected files (if selected_indices provided) */
     selectedFiles?: number
     /** Number of selected directories (if selected_indices provided) */
     selectedDirs?: number
-    /** Total size of selected files in bytes (if selected_indices provided) */
-    selectedFileSize?: number
+    /** Total size of selected entries in bytes (files + directory recursive sizes, if selected_indices provided) */
+    selectedSize?: number
 }
 
 // ============================================================================

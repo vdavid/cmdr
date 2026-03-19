@@ -14,6 +14,7 @@ export {
     listDirectoryEnd,
     refreshListing,
     getListingStats,
+    refreshListingIndexSizes,
     startSelectionDrag,
     prepareSelfDragOverlay,
     clearSelfDragOverlay,

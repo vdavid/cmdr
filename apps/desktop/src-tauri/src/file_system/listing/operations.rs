@@ -489,14 +489,14 @@ pub struct ListingStats {
     /// Not including directories.
     pub total_files: usize,
     pub total_dirs: usize,
-    /// In bytes.
-    pub total_file_size: u64,
+    /// Total size in bytes (files + directory recursive sizes).
+    pub total_size: u64,
     /// Present only if `selected_indices` was provided.
     pub selected_files: Option<usize>,
     /// Present only if `selected_indices` was provided.
     pub selected_dirs: Option<usize>,
-    /// In bytes. Present only if `selected_indices` was provided.
-    pub selected_file_size: Option<u64>,
+    /// Total size of selected entries in bytes (files + directory recursive sizes). Present only if `selected_indices` was provided.
+    pub selected_size: Option<u64>,
 }
 
 /// Gets statistics about a cached listing.
@@ -524,21 +524,24 @@ pub fn get_listing_stats(
     // Calculate totals
     let mut total_files: usize = 0;
     let mut total_dirs: usize = 0;
-    let mut total_file_size: u64 = 0;
+    let mut total_size: u64 = 0;
 
     for entry in &visible_entries {
         if entry.is_directory {
             total_dirs += 1;
+            if let Some(size) = entry.recursive_size {
+                total_size += size;
+            }
         } else {
             total_files += 1;
             if let Some(size) = entry.size {
-                total_file_size += size;
+                total_size += size;
             }
         }
     }
 
     // Calculate selection stats if indices provided
-    let (selected_files, selected_dirs, selected_file_size) = if let Some(indices) = selected_indices {
+    let (selected_files, selected_dirs, selected_size) = if let Some(indices) = selected_indices {
         let mut sel_files: usize = 0;
         let mut sel_dirs: usize = 0;
         let mut sel_size: u64 = 0;
@@ -547,6 +550,9 @@ pub fn get_listing_stats(
             if let Some(entry) = visible_entries.get(idx) {
                 if entry.is_directory {
                     sel_dirs += 1;
+                    if let Some(size) = entry.recursive_size {
+                        sel_size += size;
+                    }
                 } else {
                     sel_files += 1;
                     if let Some(size) = entry.size {
@@ -564,9 +570,21 @@ pub fn get_listing_stats(
     Ok(ListingStats {
         total_files,
         total_dirs,
-        total_file_size,
+        total_size,
         selected_files,
         selected_dirs,
-        selected_file_size,
+        selected_size,
     })
+}
+
+/// Re-enriches directory entries in a cached listing with fresh index data.
+///
+/// Called when `index-dir-updated` fires so that subsequent `get_listing_stats`
+/// reads see up-to-date `recursive_size` values without needing a write lock.
+pub fn refresh_listing_index_sizes(listing_id: &str) -> Result<(), String> {
+    let mut cache = LISTING_CACHE.write().map_err(|_| "Failed to acquire cache lock")?;
+    if let Some(listing) = cache.get_mut(listing_id) {
+        crate::indexing::enrich_entries_with_index(&mut listing.entries);
+    }
+    Ok(())
 }

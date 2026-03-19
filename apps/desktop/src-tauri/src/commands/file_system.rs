@@ -19,8 +19,8 @@ use crate::file_system::{
     list_active_operations as ops_list_active_operations, list_directory_end as ops_list_directory_end,
     list_directory_start_streaming as ops_list_directory_start_streaming,
     list_directory_start_with_volume as ops_list_directory_start_with_volume, move_files_start as ops_move_files_start,
-    resort_listing as ops_resort_listing, scan_for_volume_copy as ops_scan_for_volume_copy,
-    trash_files_start as ops_trash_files_start,
+    refresh_listing_index_sizes as ops_refresh_listing_index_sizes, resort_listing as ops_resort_listing,
+    scan_for_volume_copy as ops_scan_for_volume_copy, trash_files_start as ops_trash_files_start,
 };
 use std::path::{Path, PathBuf};
 #[cfg(target_os = "macos")]
@@ -285,6 +285,12 @@ pub fn get_listing_stats(
     selected_indices: Option<Vec<usize>>,
 ) -> Result<ListingStats, String> {
     ops_get_listing_stats(&listing_id, include_hidden, selected_indices.as_deref())
+}
+
+/// Re-enriches cached listing entries with fresh drive index data.
+#[tauri::command]
+pub fn refresh_listing_index_sizes(listing_id: String) -> Result<(), String> {
+    ops_refresh_listing_index_sizes(&listing_id)
 }
 
 // ============================================================================

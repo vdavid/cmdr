@@ -30,6 +30,7 @@
         listen,
         onMtpDeviceRemoved,
         openFile,
+        refreshListingIndexSizes,
         showFileContextMenu,
         type UnlistenFn,
         updateMenuContext,
@@ -389,6 +390,10 @@
         const listRef = viewMode === 'brief' ? briefListRef : fullListRef
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         listRef?.refreshIndexSizes?.()
+        // Re-enrich backend cache entries so fetchListingStats sees fresh recursive_size values
+        if (listingId) {
+            void refreshListingIndexSizes(listingId).then(() => fetchListingStats())
+        }
     }
 
     export function getSwapState(): SwapState {

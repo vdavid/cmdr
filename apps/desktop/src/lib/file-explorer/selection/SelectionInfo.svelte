@@ -197,10 +197,10 @@
     // Computed values for selection summary
     const selectedFiles = $derived(stats?.selectedFiles ?? 0)
     const selectedDirs = $derived(stats?.selectedDirs ?? 0)
-    const selectedFileSize = $derived(stats?.selectedFileSize ?? 0)
+    const selectedSize = $derived(stats?.selectedSize ?? 0)
     const totalFiles = $derived(stats?.totalFiles ?? 0)
     const totalDirs = $derived(stats?.totalDirs ?? 0)
-    const totalFileSize = $derived(stats?.totalFileSize ?? 0)
+    const totalSize = $derived(stats?.totalSize ?? 0)
 
     const hasFiles = $derived(totalFiles > 0)
     const hasDirs = $derived(totalDirs > 0)
@@ -209,17 +209,15 @@
     // When directories are selected during scanning, sizes might be incomplete
     const showSelectionStale = $derived(scanning && selectedDirs > 0)
 
-    const sizePercentage = $derived(calculatePercentage(selectedFileSize, totalFileSize))
-    const filePercentage = $derived(calculatePercentage(selectedFiles, totalFiles))
-    const dirPercentage = $derived(calculatePercentage(selectedDirs, totalDirs))
+    const sizePercentage = $derived(calculatePercentage(selectedSize, totalSize))
 
     // Size triads for selection summary
-    const selectedSizeTriads = $derived(formatSizeTriads(selectedFileSize))
-    const totalSizeTriads = $derived(formatSizeTriads(totalFileSize))
+    const selectedSizeTriads = $derived(formatSizeTriads(selectedSize))
+    const totalSizeTriads = $derived(formatSizeTriads(totalSize))
 
     // Tooltip with human-readable sizes
     const selectionSizeTooltip = $derived(
-        hasFiles ? `${formatFileSize(selectedFileSize)} of ${formatFileSize(totalFileSize)}` : undefined,
+        totalSize > 0 ? `${formatFileSize(selectedSize)} of ${formatFileSize(totalSize)}` : undefined,
     )
 </script>
 
@@ -256,8 +254,15 @@
         <span class="summary-text" use:tooltip={selectionSizeTooltip}>
             {#if hasOnlyDirs}
                 <!-- Only dirs, no files -->
+                {#if totalSize > 0}
+                    {#each selectedSizeTriads as triad, i (i)}<span class={triad.tierClass}>{triad.value}</span>{/each}
+                    of
+                    {#each totalSizeTriads as triad, i (i)}<span class={triad.tierClass}>{triad.value}</span>{/each}
+                    ({sizePercentage}%) selected in
+                {/if}
                 {formatNumber(selectedDirs)} of {formatNumber(totalDirs)}
-                {pluralize(totalDirs, 'dir', 'dirs')} ({dirPercentage}%) selected.
+                {pluralize(totalDirs, 'dir', 'dirs')}{#if totalSize === 0}
+                    selected{/if}.
                 {#if showSelectionStale}
                     <span class="stale-indicator" use:tooltip={'Might be outdated. Currently scanning...'}>⚠️</span>
                 {/if}
@@ -267,9 +272,9 @@
                 of
                 {#each totalSizeTriads as triad, i (i)}<span class={triad.tierClass}>{triad.value}</span>{/each}
                 ({sizePercentage}%) selected in {formatNumber(selectedFiles)} of {formatNumber(totalFiles)}
-                {pluralize(totalFiles, 'file', 'files')} ({filePercentage}%){#if hasDirs}
+                {pluralize(totalFiles, 'file', 'files')}{#if hasDirs}
                     &nbsp;and {formatNumber(selectedDirs)} of {formatNumber(totalDirs)}
-                    {pluralize(totalDirs, 'dir', 'dirs')} ({dirPercentage}%){/if}.
+                    {pluralize(totalDirs, 'dir', 'dirs')}{/if}.
                 {#if showSelectionStale}
                     <span class="stale-indicator" use:tooltip={'Might be outdated. Currently scanning...'}>⚠️</span>
                 {/if}

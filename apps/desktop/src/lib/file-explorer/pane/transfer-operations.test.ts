@@ -129,7 +129,7 @@ describe('buildTransferPropsFromSelection', () => {
         vi.mocked(getListingStats).mockResolvedValueOnce({
             totalFiles: 2,
             totalDirs: 1,
-            totalFileSize: 1000,
+            totalSize: 1000,
             selectedFiles: 2,
             selectedDirs: 1,
         })
@@ -161,7 +161,7 @@ describe('buildTransferPropsFromSelection', () => {
         vi.mocked(getListingStats).mockResolvedValueOnce({
             totalFiles: 1,
             totalDirs: 0,
-            totalFileSize: 500,
+            totalSize: 500,
             selectedFiles: 1,
             selectedDirs: 0,
         })

@@ -165,6 +165,11 @@ export async function refreshListing(listingId: string): Promise<TimedOut<null>>
  * @param includeHidden - Whether to include hidden files in calculations.
  * @param selectedIndices - Optional indices of selected files to calculate selection stats.
  */
+/** Re-enriches cached listing entries with fresh drive index data (recursive_size). */
+export async function refreshListingIndexSizes(listingId: string): Promise<void> {
+    await invoke('refresh_listing_index_sizes', { listingId })
+}
+
 export async function getListingStats(
     listingId: string,
     includeHidden: boolean,

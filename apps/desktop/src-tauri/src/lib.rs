@@ -600,6 +600,7 @@ pub fn run() {
             commands::file_system::scan_volume_for_copy,
             commands::file_system::scan_volume_for_conflicts,
             commands::file_system::get_listing_stats,
+            commands::file_system::refresh_listing_index_sizes,
             commands::file_system::start_selection_drag,
             commands::file_system::prepare_self_drag_overlay,
             commands::file_system::clear_self_drag_overlay,

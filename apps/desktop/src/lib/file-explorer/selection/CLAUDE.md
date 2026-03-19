@@ -43,8 +43,12 @@ Status bar rendered below each pane. Four display modes via `$derived displayMod
 | `no-selection`      | Full mode, no selection — shows total file/dir counts    |
 | `file-info`         | Brief mode, no selection — shows name, size triads, date |
 
-Stale indicator (`⚠️`) appears in `selection-summary` when `isScanning()` is true and directories are selected (dir
-sizes may be incomplete).
+In `selection-summary` mode, directory recursive sizes are included in the size display when available (from the drive
+index). The `hasOnlyDirs` branch shows size triads when `totalSize > 0`; when sizes are unavailable (indexing off), it
+falls back to showing only dir count and percentage.
+
+Stale indicator (`⚠️`) appears in `selection-summary` when `isScanning()` is true and directories are selected, because
+dir sizes may be incomplete during scanning.
 
 Filename truncation in `file-info` mode uses a ResizeObserver + throwaway `<span>` measurement for middle truncation
 (preserves file extension). The truncation runs binary search via `getTruncatedName`, triggered reactively by
