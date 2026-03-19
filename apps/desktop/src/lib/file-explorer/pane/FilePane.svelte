@@ -587,6 +587,7 @@
                     path: entry.path,
                     isDirectory: entry.isDirectory,
                     size: entry.size,
+                    recursiveSize: entry.recursiveSize,
                     modified: entry.modifiedAt ? new Date(entry.modifiedAt * 1000).toISOString() : undefined,
                 })
             }

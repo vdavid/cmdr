@@ -12,6 +12,7 @@ export interface PaneFileEntry {
     path: string
     isDirectory: boolean
     size?: number
+    recursiveSize?: number
     modified?: string
 }
 

@@ -536,6 +536,7 @@ fn test_pane_state_store_update_left() {
             path: "/test/path/file1.txt".to_string(),
             is_directory: false,
             size: Some(1024),
+            recursive_size: None,
             modified: Some("2024-01-01T00:00:00Z".to_string()),
         }],
         cursor_index: 0,
@@ -596,6 +597,7 @@ fn test_pane_state_cursor_index_bounds() {
             path: "/test/file1.txt".to_string(),
             is_directory: false,
             size: None,
+            recursive_size: None,
             modified: None,
         }],
         cursor_index: 999, // Out of bounds
@@ -628,6 +630,7 @@ fn test_file_entry_serialization() {
         path: "/path/to/test.txt".to_string(),
         is_directory: false,
         size: Some(42),
+        recursive_size: None,
         modified: Some("2024-01-01T00:00:00Z".to_string()),
     };
 
@@ -644,6 +647,7 @@ fn test_file_entry_optional_fields_omitted() {
         path: "/path/dir".to_string(),
         is_directory: true,
         size: None,
+        recursive_size: None,
         modified: None,
     };
 
@@ -677,6 +681,7 @@ fn test_unicode_in_file_entries() {
         path: "/path/文件.txt".to_string(),
         is_directory: false,
         size: Some(100),
+        recursive_size: None,
         modified: None,
     };
 
@@ -693,6 +698,7 @@ fn test_special_chars_in_file_paths() {
             path: "/path/file with spaces.txt".to_string(),
             is_directory: false,
             size: None,
+            recursive_size: None,
             modified: None,
         },
         FileEntry {
@@ -700,6 +706,7 @@ fn test_special_chars_in_file_paths() {
             path: "/path/file'with'quotes.txt".to_string(),
             is_directory: false,
             size: None,
+            recursive_size: None,
             modified: None,
         },
         FileEntry {
@@ -707,6 +714,7 @@ fn test_special_chars_in_file_paths() {
             path: "/path/file\"doublequotes\".txt".to_string(),
             is_directory: false,
             size: None,
+            recursive_size: None,
             modified: None,
         },
     ];
@@ -750,6 +758,7 @@ fn test_large_file_count() {
             path: format!("/test/file{i:04}.txt"),
             is_directory: false,
             size: Some(i as u64 * 100),
+            recursive_size: None,
             modified: None,
         })
         .collect();
@@ -867,6 +876,7 @@ fn test_null_bytes_in_paths() {
         path: "/path/file\x00hidden.txt".to_string(),
         is_directory: false,
         size: None,
+        recursive_size: None,
         modified: None,
     };
 

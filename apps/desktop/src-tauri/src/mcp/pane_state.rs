@@ -26,6 +26,8 @@ pub struct FileEntry {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub size: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub recursive_size: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub modified: Option<String>,
 }
 
@@ -164,6 +166,7 @@ mod tests {
                 path: "/tmp/test.txt".to_string(),
                 is_directory: false,
                 size: Some(100),
+                recursive_size: None,
                 modified: None,
             }],
             cursor_index: 0,

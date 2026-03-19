@@ -76,6 +76,8 @@ fn format_file_compact(
     if include_details {
         if let Some(size) = file.size {
             parts.push(format_size(size));
+        } else if let Some(recursive_size) = file.recursive_size {
+            parts.push(format_size(recursive_size));
         }
         if let Some(ref modified) = file.modified {
             parts.push(modified.clone());
@@ -158,6 +160,8 @@ fn build_pane_yaml(state: &PaneState, indent: &str) -> String {
         lines.push(format!("{}  name: {}", indent, cursor_file.name));
         if let Some(size) = cursor_file.size {
             lines.push(format!("{}  size: {}", indent, format_size(size)));
+        } else if let Some(recursive_size) = cursor_file.recursive_size {
+            lines.push(format!("{}  size: {}", indent, format_size(recursive_size)));
         }
         if let Some(ref modified) = cursor_file.modified {
             lines.push(format!("{}  modified: {}", indent, modified));
@@ -542,6 +546,7 @@ mod tests {
             path: "/tmp/test.txt".to_string(),
             is_directory: false,
             size: Some(1024),
+            recursive_size: None,
             modified: Some("2024-01-15".to_string()),
         };
 
@@ -567,10 +572,23 @@ mod tests {
             path: "/tmp/docs".to_string(),
             is_directory: true,
             size: None,
+            recursive_size: None,
             modified: None,
         };
         let formatted = format_file_compact(&dir, 1, false, false, false);
         assert_eq!(formatted, "i:1 d docs");
+
+        // Directory with recursive size
+        let dir_with_size = FileEntry {
+            name: "src".to_string(),
+            path: "/tmp/src".to_string(),
+            is_directory: true,
+            size: None,
+            recursive_size: Some(169),
+            modified: Some("2026-03-19T17:33:53.000Z".to_string()),
+        };
+        let formatted = format_file_compact(&dir_with_size, 5, false, false, true);
+        assert_eq!(formatted, "i:5 d src 169B 2026-03-19T17:33:53.000Z");
     }
 
     #[test]
@@ -585,6 +603,7 @@ mod tests {
                     path: "/Users/test/file1.txt".to_string(),
                     is_directory: false,
                     size: Some(100),
+                    recursive_size: None,
                     modified: Some("2024-01-15".to_string()),
                 },
                 FileEntry {
@@ -592,6 +611,7 @@ mod tests {
                     path: "/Users/test/folder".to_string(),
                     is_directory: true,
                     size: None,
+                    recursive_size: None,
                     modified: None,
                 },
             ],
