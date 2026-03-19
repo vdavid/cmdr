@@ -131,7 +131,7 @@ pub async fn prepare_search_index(app: tauri::AppHandle) -> Result<PrepareResult
 
 /// Search the in-memory index. Returns empty if not loaded yet.
 #[tauri::command]
-pub async fn search_files(query: SearchQuery) -> Result<SearchResult, String> {
+pub async fn search_files(mut query: SearchQuery) -> Result<SearchResult, String> {
     touch_activity();
 
     let index = {
@@ -152,6 +152,13 @@ pub async fn search_files(query: SearchQuery) -> Result<SearchResult, String> {
             }
         }
     };
+
+    // Resolve include paths to entry IDs via SQLite (microseconds, not 20s)
+    if query.include_paths.as_ref().is_some_and(|p| !p.is_empty()) {
+        if let Some(pool) = get_read_pool() {
+            search::resolve_include_paths(&mut query, &pool);
+        }
+    }
 
     // Run search on a blocking thread (rayon parallel scan)
     let query_clone = query.clone();

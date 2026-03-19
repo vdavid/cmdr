@@ -7,7 +7,7 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{Arc, LazyLock, Mutex, OnceLock};
+use std::sync::{Arc, LazyLock, Mutex};
 
 use rayon::prelude::*;
 use regex::{Regex, RegexBuilder};
@@ -37,9 +37,6 @@ pub struct SearchIndex {
     pub names: String, // arena: all filenames concatenated
     pub entries: Vec<SearchEntry>,
     pub id_to_index: HashMap<i64, usize>,
-    /// Lazily-built lookup for O(1) scope path resolution.
-    /// Built on first scoped search (adds ~20s for 5M entries), then cached.
-    parent_name_lookup: OnceLock<HashMap<(i64, String), i64>>,
     pub generation: u64,
 }
 
@@ -50,7 +47,6 @@ impl SearchIndex {
             names: String::new(),
             entries: Vec::new(),
             id_to_index: HashMap::new(),
-            parent_name_lookup: OnceLock::new(),
             generation: 0,
         }
     }
@@ -60,19 +56,6 @@ impl SearchIndex {
         &self.names[entry.name_offset as usize..entry.name_offset as usize + entry.name_len as usize]
     }
 
-    /// Get or build the parent-name lookup table for scope path resolution.
-    fn parent_name_lookup(&self) -> &HashMap<(i64, String), i64> {
-        self.parent_name_lookup.get_or_init(|| {
-            let t = std::time::Instant::now();
-            let map = build_parent_name_lookup(&self.entries, &self.names);
-            log::info!(
-                "Search index: parent_name_lookup built in {:.1}s ({} entries)",
-                t.elapsed().as_secs_f64(),
-                map.len()
-            );
-            map
-        })
-    }
 }
 
 pub(crate) struct SearchIndexState {
@@ -176,7 +159,6 @@ pub fn load_search_index(pool: &ReadPool, cancel: &AtomicBool) -> Result<SearchI
             names,
             entries,
             id_to_index,
-            parent_name_lookup: OnceLock::new(),
             generation,
         })
     })?
@@ -250,6 +232,10 @@ pub struct SearchQuery {
     pub include_paths: Option<Vec<String>>,
     #[serde(default)]
     pub exclude_dir_names: Option<Vec<String>>,
+    /// Pre-resolved entry IDs for `include_paths`. Populated server-side
+    /// before calling `search()` — not sent from the frontend/MCP.
+    #[serde(skip)]
+    pub include_path_ids: Option<Vec<i64>>,
     #[serde(default = "default_limit")]
     pub limit: u32,
     /// Per-query case sensitivity override.
@@ -633,25 +619,22 @@ impl ScopeFilter {
 }
 
 /// Pre-resolve scope filter data from the query and index.
-fn prepare_scope_filter(query: &SearchQuery, index: &SearchIndex) -> ScopeFilter {
-    // Resolve include paths to entry IDs using the cached lookup table
-    let include_ids = query.include_paths.as_ref().and_then(|paths| {
-        if paths.is_empty() {
-            return None;
-        }
-        let mut ids = HashSet::new();
-        for path in paths {
-            if let Some(id) = resolve_path_in_index(path, index.parent_name_lookup()) {
-                ids.insert(id);
-            }
-        }
+fn prepare_scope_filter(query: &SearchQuery) -> ScopeFilter {
+    // Use pre-resolved include path IDs (resolved via SQLite before search())
+    let include_ids = if let Some(ref ids) = query.include_path_ids {
         if ids.is_empty() {
-            // No valid include paths resolved — include nothing
-            // Use a set with an impossible ID to force all entries to fail
-            ids.insert(i64::MIN);
+            None
+        } else {
+            Some(ids.iter().copied().collect::<HashSet<i64>>())
         }
-        Some(ids)
-    });
+    } else if query.include_paths.as_ref().is_some_and(|p| !p.is_empty()) {
+        // include_paths present but include_path_ids not set — this shouldn't happen.
+        // Resolve was expected to happen at the call site before search().
+        log::warn!("search: include_paths present but include_path_ids not pre-resolved; scope will be ignored");
+        None
+    } else {
+        None
+    };
 
     // Build exclude filters from user-specified patterns and system dir list
     let mut exclude_exact_names = HashSet::new();
@@ -703,35 +686,34 @@ fn prepare_scope_filter(query: &SearchQuery, index: &SearchIndex) -> ScopeFilter
     }
 }
 
-/// Build a lookup table mapping `(parent_id, normalized_name) -> entry_id`
-/// for O(1) path component resolution. Called once during index load.
-fn build_parent_name_lookup(entries: &[SearchEntry], names: &str) -> HashMap<(i64, String), i64> {
-    let mut map = HashMap::with_capacity(entries.len());
-    for entry in entries {
-        let name = &names[entry.name_offset as usize..entry.name_offset as usize + entry.name_len as usize];
-        let normalized = store::normalize_for_comparison(name);
-        map.insert((entry.parent_id, normalized), entry.id);
-    }
-    map
-}
-
-/// Resolve a filesystem path to an entry ID using a pre-built lookup table
-/// for O(1) per component instead of scanning all entries.
-fn resolve_path_in_index(path: &str, lookup: &HashMap<(i64, String), i64>) -> Option<i64> {
-    let path = path.strip_prefix('/').unwrap_or(path);
-    if path.is_empty() {
-        return Some(ROOT_ID);
-    }
-
-    let mut current_id = ROOT_ID;
-    for component in path.split('/') {
-        if component.is_empty() {
-            continue;
-        }
-        let normalized = store::normalize_for_comparison(component);
-        current_id = *lookup.get(&(current_id, normalized))?;
-    }
-    Some(current_id)
+/// Resolve `include_paths` to entry IDs via SQLite and set `include_path_ids`
+/// on the query. Call this before `search()` when the query has `include_paths`.
+pub fn resolve_include_paths(query: &mut SearchQuery, pool: &ReadPool) {
+    let paths = match query.include_paths.as_ref() {
+        Some(p) if !p.is_empty() => p.clone(),
+        _ => return,
+    };
+    let ids = pool
+        .with_conn(|conn| {
+            let mut resolved = Vec::with_capacity(paths.len());
+            for path in &paths {
+                match store::resolve_path(conn, path) {
+                    Ok(Some(id)) => resolved.push(id),
+                    Ok(None) => log::debug!("search: include path not found in index: {path}"),
+                    Err(e) => log::warn!("search: failed to resolve include path {path}: {e}"),
+                }
+            }
+            if resolved.is_empty() {
+                // No valid include paths resolved — use impossible ID to force all entries to fail
+                resolved.push(i64::MIN);
+            }
+            resolved
+        })
+        .unwrap_or_else(|e| {
+            log::warn!("search: ReadPool error resolving include paths: {e}");
+            vec![i64::MIN]
+        });
+    query.include_path_ids = Some(ids);
 }
 
 // ── Search execution ─────────────────────────────────────────────────
@@ -740,7 +722,7 @@ fn resolve_path_in_index(path: &str, lookup: &HashMap<(i64, String), i64>) -> Op
 pub fn search(index: &SearchIndex, query: &SearchQuery) -> Result<SearchResult, String> {
     let t = std::time::Instant::now();
     // Pre-resolve scope filter
-    let scope_filter = prepare_scope_filter(query, index);
+    let scope_filter = prepare_scope_filter(query);
 
     // Compile pattern
     let compiled_pattern = match &query.name_pattern {
@@ -1109,6 +1091,7 @@ mod tests {
             is_directory: None,
             include_paths: None,
             exclude_dir_names: None,
+            include_path_ids: None,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -1132,6 +1115,7 @@ mod tests {
             is_directory: None,
             include_paths: None,
             exclude_dir_names: None,
+            include_path_ids: None,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -1156,6 +1140,7 @@ mod tests {
             is_directory: None,
             include_paths: None,
             exclude_dir_names: None,
+            include_path_ids: None,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -1272,7 +1257,6 @@ mod tests {
             names,
             entries,
             id_to_index,
-            parent_name_lookup: OnceLock::new(),
             generation: 1,
         }
     }
@@ -1292,6 +1276,7 @@ mod tests {
             is_directory: None,
             include_paths: None,
             exclude_dir_names: None,
+            include_path_ids: None,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -1314,6 +1299,7 @@ mod tests {
             is_directory: None,
             include_paths: None,
             exclude_dir_names: None,
+            include_path_ids: None,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -1339,6 +1325,7 @@ mod tests {
             is_directory: None,
             include_paths: None,
             exclude_dir_names: None,
+            include_path_ids: None,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -1364,6 +1351,7 @@ mod tests {
             is_directory: None,
             include_paths: None,
             exclude_dir_names: None,
+            include_path_ids: None,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -1386,6 +1374,7 @@ mod tests {
             is_directory: None,
             include_paths: None,
             exclude_dir_names: None,
+            include_path_ids: None,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -1410,6 +1399,7 @@ mod tests {
             is_directory: Some(false),
             include_paths: None,
             exclude_dir_names: None,
+            include_path_ids: None,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -1433,6 +1423,7 @@ mod tests {
             is_directory: Some(false),
             include_paths: None,
             exclude_dir_names: None,
+            include_path_ids: None,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -1455,6 +1446,7 @@ mod tests {
             is_directory: Some(false),
             include_paths: None,
             exclude_dir_names: None,
+            include_path_ids: None,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -1479,6 +1471,7 @@ mod tests {
             is_directory: None,
             include_paths: None,
             exclude_dir_names: None,
+            include_path_ids: None,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -1501,6 +1494,7 @@ mod tests {
             is_directory: None,
             include_paths: None,
             exclude_dir_names: None,
+            include_path_ids: None,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -1523,6 +1517,7 @@ mod tests {
             is_directory: None,
             include_paths: None,
             exclude_dir_names: None,
+            include_path_ids: None,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -1547,6 +1542,7 @@ mod tests {
             is_directory: None,
             include_paths: None,
             exclude_dir_names: None,
+            include_path_ids: None,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -1571,6 +1567,7 @@ mod tests {
             is_directory: None,
             include_paths: None,
             exclude_dir_names: None,
+            include_path_ids: None,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -1597,6 +1594,7 @@ mod tests {
             is_directory: None,
             include_paths: None,
             exclude_dir_names: None,
+            include_path_ids: None,
             limit: 3,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -1621,6 +1619,7 @@ mod tests {
             is_directory: Some(true),
             include_paths: None,
             exclude_dir_names: None,
+            include_path_ids: None,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -1644,6 +1643,7 @@ mod tests {
             is_directory: Some(false),
             include_paths: None,
             exclude_dir_names: None,
+            include_path_ids: None,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -1712,6 +1712,7 @@ mod tests {
             is_directory: None,
             include_paths: None,
             exclude_dir_names: None,
+            include_path_ids: None,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -1824,6 +1825,7 @@ mod tests {
             is_directory: None,
             include_paths: None,
             exclude_dir_names: None,
+            include_path_ids: None,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -1870,6 +1872,7 @@ mod tests {
             is_directory,
             include_paths: None,
             exclude_dir_names: None,
+            include_path_ids: None,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -2206,7 +2209,6 @@ mod tests {
             names,
             entries,
             id_to_index,
-            parent_name_lookup: OnceLock::new(),
             generation: 1,
         }
     }
@@ -2224,6 +2226,7 @@ mod tests {
             is_directory: Some(false),
             include_paths: Some(vec!["/Users/alice/projects".to_string()]),
             exclude_dir_names: None,
+            include_path_ids: Some(vec![4]),
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -2250,6 +2253,7 @@ mod tests {
             is_directory: Some(false),
             include_paths: None,
             exclude_dir_names: Some(vec!["node_modules".to_string()]),
+            include_path_ids: None,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -2276,6 +2280,7 @@ mod tests {
             is_directory: Some(false),
             include_paths: Some(vec!["/Users/alice/projects".to_string()]),
             exclude_dir_names: Some(vec!["node_modules".to_string()]),
+            include_path_ids: Some(vec![4]),
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -2299,6 +2304,7 @@ mod tests {
             is_directory: Some(false),
             include_paths: None,
             exclude_dir_names: Some(vec![".*".to_string()]),
+            include_path_ids: None,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),

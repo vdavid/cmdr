@@ -950,7 +950,7 @@ async fn execute_search(params: &Value) -> ToolResult {
     let case_sensitive = params.get("caseSensitive").and_then(|v| v.as_bool());
     let exclude_system_dirs = params.get("excludeSystemDirs").and_then(|v| v.as_bool());
 
-    let query = SearchQuery {
+    let mut query = SearchQuery {
         name_pattern: pattern,
         pattern_type,
         min_size,
@@ -960,10 +960,18 @@ async fn execute_search(params: &Value) -> ToolResult {
         is_directory,
         include_paths,
         exclude_dir_names,
+        include_path_ids: None,
         limit,
         case_sensitive,
         exclude_system_dirs,
     };
+
+    // Resolve include paths to entry IDs via SQLite
+    if query.include_paths.as_ref().is_some_and(|p| !p.is_empty()) {
+        if let Some(pool) = crate::indexing::get_read_pool() {
+            search::resolve_include_paths(&mut query, &pool);
+        }
+    }
 
     let query_clone = query.clone();
     let index_clone = index.clone();
@@ -1010,6 +1018,7 @@ fn build_search_query_from_translate(
         modified_after: translate_result.query.modified_after,
         modified_before: translate_result.query.modified_before,
         is_directory: translate_result.query.is_directory,
+        include_path_ids: None,
         include_paths,
         exclude_dir_names,
         limit,
@@ -1083,7 +1092,14 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
             }
         };
 
-    let pass1_query = build_search_query_from_translate(&translate_result, scope_str, limit);
+    let mut pass1_query = build_search_query_from_translate(&translate_result, scope_str, limit);
+
+    // Resolve include paths to entry IDs via SQLite
+    if pass1_query.include_paths.as_ref().is_some_and(|p| !p.is_empty()) {
+        if let Some(pool) = crate::indexing::get_read_pool() {
+            search::resolve_include_paths(&mut pass1_query, &pool);
+        }
+    }
 
     log::debug!("MCP ai_search: running pass 1 search...");
     let t = std::time::Instant::now();
@@ -1177,7 +1193,14 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
         }
     };
 
-    let pass2_query = build_search_query_from_translate(&refined_translate, scope_str, limit);
+    let mut pass2_query = build_search_query_from_translate(&refined_translate, scope_str, limit);
+
+    // Resolve include paths to entry IDs via SQLite
+    if pass2_query.include_paths.as_ref().is_some_and(|p| !p.is_empty()) {
+        if let Some(pool) = crate::indexing::get_read_pool() {
+            search::resolve_include_paths(&mut pass2_query, &pool);
+        }
+    }
 
     let interpreted = summarize_query(&pass2_query);
     log::debug!("MCP ai_search: running pass 2 search...");
