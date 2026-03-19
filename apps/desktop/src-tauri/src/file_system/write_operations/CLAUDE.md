@@ -104,6 +104,7 @@ from pre-computed item sizes. Partial failure is supported: if some items fail, 
 | `write-complete` | Operation finished successfully |
 | `write-cancelled` | Operation cancelled (includes `rolled_back` flag) |
 | `write-error` | Operation failed |
+| `write-source-item-done` | All files for a top-level source item processed (for gradual deselection) |
 | `dry-run-complete` | `config.dry_run == true` (returns `DryRunResult`) |
 | `scan-preview-progress` | During `start_scan_preview` |
 | `scan-preview-complete` | Preview scan finished |

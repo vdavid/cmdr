@@ -4,7 +4,9 @@
 //! files starting with "." from directory listings.
 
 use super::caching::{CachedListing, LISTING_CACHE};
-use super::operations::{find_file_index, get_file_at, get_file_range, get_total_count, list_directory_end};
+use super::operations::{
+    find_file_index, find_file_indices, get_file_at, get_file_range, get_total_count, list_directory_end,
+};
 use super::sorting::DirectorySortMode;
 use super::{FileEntry, SortColumn, SortOrder};
 use crate::file_system::volume::{InMemoryVolume, Volume};
@@ -495,4 +497,133 @@ fn test_directory_with_no_hidden_files() {
 
     assert_eq!(count_with, 2, "Both files should be counted");
     assert_eq!(count_without, 2, "Both files should be counted (none are hidden)");
+}
+
+// ============================================================================
+// Tests for find_file_indices (batch name→index lookup)
+// ============================================================================
+
+/// Helper: inserts entries into the listing cache and returns the listing ID.
+fn insert_test_listing(id: &str, entries: Vec<FileEntry>) -> String {
+    let listing_id = id.to_string();
+    let mut cache = LISTING_CACHE.write().unwrap();
+    cache.insert(
+        listing_id.clone(),
+        CachedListing {
+            volume_id: "test".to_string(),
+            path: std::path::PathBuf::from("/"),
+            entries,
+            sort_by: SortColumn::Name,
+            sort_order: SortOrder::Ascending,
+            directory_sort_mode: DirectorySortMode::LikeFiles,
+        },
+    );
+    listing_id
+}
+
+#[test]
+fn test_find_file_indices_basic_lookup() {
+    let volume = create_test_volume();
+    let entries = volume.list_directory(Path::new("")).unwrap();
+    let listing_id = insert_test_listing("test-find-indices-basic", entries);
+
+    let names = vec!["Documents".to_string(), "file.txt".to_string()];
+    let result = find_file_indices(&listing_id, &names, true).unwrap();
+
+    list_directory_end(&listing_id);
+
+    assert_eq!(result.len(), 2);
+    assert!(result.contains_key("Documents"));
+    assert!(result.contains_key("file.txt"));
+    // Indices must match the singular find_file_index
+    // (We already tested the volume has these entries)
+}
+
+#[test]
+fn test_find_file_indices_hidden_filtering() {
+    let volume = create_test_volume();
+    let entries = volume.list_directory(Path::new("")).unwrap();
+    let listing_id = insert_test_listing("test-find-indices-hidden", entries);
+
+    let names = vec![
+        ".gitignore".to_string(),
+        "Documents".to_string(),
+        ".hidden_file".to_string(),
+    ];
+
+    let with_hidden = find_file_indices(&listing_id, &names, true).unwrap();
+    let without_hidden = find_file_indices(&listing_id, &names, false).unwrap();
+
+    list_directory_end(&listing_id);
+
+    assert_eq!(with_hidden.len(), 3, "All 3 found when hidden included");
+    assert_eq!(without_hidden.len(), 1, "Only Documents found when hidden excluded");
+    assert!(without_hidden.contains_key("Documents"));
+}
+
+#[test]
+fn test_find_file_indices_names_not_in_listing() {
+    let volume = create_test_volume();
+    let entries = volume.list_directory(Path::new("")).unwrap();
+    let listing_id = insert_test_listing("test-find-indices-missing", entries);
+
+    let names = vec!["nonexistent.txt".to_string(), "also_missing".to_string()];
+    let result = find_file_indices(&listing_id, &names, true).unwrap();
+
+    list_directory_end(&listing_id);
+
+    assert!(result.is_empty(), "No names should be found");
+}
+
+#[test]
+fn test_find_file_indices_empty_names() {
+    let volume = create_test_volume();
+    let entries = volume.list_directory(Path::new("")).unwrap();
+    let listing_id = insert_test_listing("test-find-indices-empty", entries);
+
+    let names: Vec<String> = vec![];
+    let result = find_file_indices(&listing_id, &names, true).unwrap();
+
+    list_directory_end(&listing_id);
+
+    assert!(result.is_empty(), "Empty input should produce empty output");
+}
+
+#[test]
+fn test_find_file_indices_duplicate_names_in_input() {
+    let volume = create_test_volume();
+    let entries = volume.list_directory(Path::new("")).unwrap();
+    let listing_id = insert_test_listing("test-find-indices-dupes", entries);
+
+    let names = vec!["file.txt".to_string(), "file.txt".to_string(), "Documents".to_string()];
+    let result = find_file_indices(&listing_id, &names, true).unwrap();
+
+    list_directory_end(&listing_id);
+
+    // Duplicates in input collapse to one key in output
+    assert_eq!(result.len(), 2);
+    assert!(result.contains_key("file.txt"));
+    assert!(result.contains_key("Documents"));
+}
+
+#[test]
+fn test_find_file_indices_consistent_with_find_file_index() {
+    let volume = create_test_volume();
+    let entries = volume.list_directory(Path::new("")).unwrap();
+    let listing_id = insert_test_listing("test-find-indices-consistent", entries);
+
+    let names = vec!["Documents".to_string(), "file.txt".to_string(), "readme.md".to_string()];
+    let batch = find_file_indices(&listing_id, &names, false).unwrap();
+
+    for name in &names {
+        let single = find_file_index(&listing_id, name, false).unwrap();
+        assert_eq!(
+            batch.get(name.as_str()).copied(),
+            single,
+            "Batch and single must agree for '{}'",
+            name
+        );
+    }
+
+    list_directory_end(&listing_id);
 }

@@ -11,8 +11,8 @@ pub(crate) mod streaming;
 // These re-exports make the types available both externally and locally in this module
 pub use metadata::{ExtendedMetadata, FileEntry};
 pub use operations::{
-    ListingStartResult, ListingStats, ResortResult, find_file_index, get_file_at, get_file_range, get_listing_stats,
-    get_max_filename_width, get_total_count, list_directory_end, list_directory_start_with_volume,
+    ListingStartResult, ListingStats, ResortResult, find_file_index, find_file_indices, get_file_at, get_file_range,
+    get_listing_stats, get_max_filename_width, get_total_count, list_directory_end, list_directory_start_with_volume,
     refresh_listing_index_sizes, resort_listing,
 };
 pub use reading::{get_single_entry, list_directory_core, list_directory_core_with_progress};

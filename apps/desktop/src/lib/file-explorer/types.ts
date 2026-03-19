@@ -398,6 +398,12 @@ export interface WriteErrorEvent {
     error: WriteOperationError
 }
 
+/** Emitted when all files belonging to a top-level source item have been processed. */
+export interface WriteSourceItemDoneEvent {
+    operationId: string
+    sourcePath: string
+}
+
 /** Cancelled event payload for write operations. */
 export interface WriteCancelledEvent {
     operationId: string

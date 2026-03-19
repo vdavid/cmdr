@@ -135,6 +135,18 @@ export async function findFileIndex(listingId: string, name: string, includeHidd
 }
 
 /**
+ * Finds the indices of multiple files by name in a cached listing (batch version of `findFileIndex`).
+ * Returns only found names as keys; removed files are absent from the map.
+ */
+export async function findFileIndices(
+    listingId: string,
+    names: string[],
+    includeHidden: boolean,
+): Promise<Record<string, number>> {
+    return invoke<Record<string, number>>('find_file_indices', { listingId, names, includeHidden })
+}
+
+/**
  * Gets a single file at the given index.
  * @param listingId - The listing ID from listDirectoryStart.
  * @param index - Index of the file to get.

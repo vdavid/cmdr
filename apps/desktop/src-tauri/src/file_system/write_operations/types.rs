@@ -95,6 +95,15 @@ pub struct WriteErrorEvent {
     pub error: WriteOperationError,
 }
 
+/// Emitted when all files belonging to a top-level source item have been processed.
+/// Used by the frontend for gradual deselection during operations.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WriteSourceItemDoneEvent {
+    pub operation_id: String,
+    pub source_path: String,
+}
+
 /// Cancelled event payload.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

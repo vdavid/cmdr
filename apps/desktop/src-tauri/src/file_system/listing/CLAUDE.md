@@ -52,7 +52,8 @@ Frontend                          Backend
 1. `list_directory_start_streaming()` receives listing ID from frontend, spawns task
 2. Background task reads directory, sorts, stores in cache
 3. Frontend calls `get_file_range()` for visible entries (on-demand)
-4. `list_directory_end()` stops watcher, removes from cache
+4. Frontend calls `find_file_indices()` to batch-resolve file names to indices (used by selection adjustment during operations)
+5. `list_directory_end()` stops watcher, removes from cache
 
 **Concurrency**: Multiple listings can coexist (different panes, rapid navigation). Each has unique ID.
 

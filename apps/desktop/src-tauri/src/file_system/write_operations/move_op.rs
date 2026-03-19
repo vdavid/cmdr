@@ -9,11 +9,11 @@ use std::time::Instant;
 
 use super::copy::copy_single_item;
 use super::helpers::{is_same_filesystem, resolve_conflict, safe_overwrite_dir, spawn_async_sync};
-use super::scan::{handle_dry_run, scan_sources};
+use super::scan::{SourceItemTracker, handle_dry_run, scan_sources};
 use super::state::{CopyTransaction, WriteOperationState, update_operation_status};
 use super::types::{
     ConflictResolution, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig,
-    WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
+    WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 
 // ============================================================================
@@ -139,6 +139,14 @@ fn move_with_rename(
         }
 
         files_done += 1;
+
+        let _ = app.emit(
+            "write-source-item-done",
+            WriteSourceItemDoneEvent {
+                operation_id: operation_id.to_string(),
+                source_path: source.display().to_string(),
+            },
+        );
     }
 
     // Spawn async sync for durability (non-blocking)
@@ -226,6 +234,8 @@ fn move_with_staging(
         scan_result.files.len()
     );
 
+    let mut tracker = SourceItemTracker::new(&scan_result.files);
+
     let copy_result: Result<(), WriteOperationError> = (|| {
         for file_info in &scan_result.files {
             log::debug!(
@@ -253,6 +263,16 @@ fn move_with_staging(
                 &mut apply_to_all_resolution,
                 &mut created_dirs,
             )?;
+
+            if let Some(source_path) = tracker.record(file_info) {
+                let _ = app.emit(
+                    "write-source-item-done",
+                    WriteSourceItemDoneEvent {
+                        operation_id: operation_id.to_string(),
+                        source_path: source_path.display().to_string(),
+                    },
+                );
+            }
         }
         Ok(())
     })();
@@ -408,6 +428,14 @@ fn delete_sources_after_move(
                     message: e.to_string(),
                 })?;
             }
+
+            let _ = app.emit(
+                "write-source-item-done",
+                WriteSourceItemDoneEvent {
+                    operation_id: operation_id.to_string(),
+                    source_path: source.display().to_string(),
+                },
+            );
         }
     }
 

@@ -13,7 +13,7 @@ use super::helpers::spawn_async_sync;
 use super::state::{WriteOperationState, update_operation_status};
 use super::types::{
     WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationError, WriteOperationPhase,
-    WriteOperationType, WriteProgressEvent,
+    WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 
 // ============================================================================
@@ -143,6 +143,14 @@ pub(super) fn trash_files_with_progress(
                 {
                     bytes_done += size;
                 }
+
+                let _ = app.emit(
+                    "write-source-item-done",
+                    WriteSourceItemDoneEvent {
+                        operation_id: operation_id.to_string(),
+                        source_path: source.display().to_string(),
+                    },
+                );
             }
             Err(e) => {
                 errors.push(TrashItemError {

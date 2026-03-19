@@ -15,11 +15,11 @@ use super::copy_strategy::copy_file_with_strategy;
 use super::helpers::{
     is_same_file, resolve_conflict, run_cancellable, spawn_async_sync, validate_disk_space, validate_path_length,
 };
-use super::scan::{handle_dry_run, scan_sources, take_cached_scan_result};
+use super::scan::{SourceItemTracker, handle_dry_run, scan_sources, take_cached_scan_result};
 use super::state::{CopyTransaction, WriteOperationState, update_operation_status};
 use super::types::{
     ConflictResolution, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig,
-    WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
+    WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 
 // ============================================================================
@@ -180,6 +180,8 @@ pub(super) fn copy_files_with_progress(
         scan_result.files.len()
     );
 
+    let mut tracker = SourceItemTracker::new(&scan_result.files);
+
     let result: Result<(), WriteOperationError> = (|| {
         for file_info in &scan_result.files {
             log::debug!(
@@ -206,6 +208,16 @@ pub(super) fn copy_files_with_progress(
                 &mut apply_to_all_resolution,
                 &mut created_dirs,
             )?;
+
+            if let Some(source_path) = tracker.record(file_info) {
+                let _ = app.emit(
+                    "write-source-item-done",
+                    WriteSourceItemDoneEvent {
+                        operation_id: operation_id.to_string(),
+                        source_path: source_path.display().to_string(),
+                    },
+                );
+            }
         }
         Ok(())
     })();

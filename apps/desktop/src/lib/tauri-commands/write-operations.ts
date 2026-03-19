@@ -24,6 +24,7 @@ import type {
     WriteOperationError,
     WriteOperationStartResult,
     WriteProgressEvent,
+    WriteSourceItemDoneEvent,
 } from '../file-explorer/types'
 
 export type { Event, UnlistenFn }
@@ -39,6 +40,7 @@ export type {
     WriteOperationError,
     WriteOperationStartResult,
     WriteProgressEvent,
+    WriteSourceItemDoneEvent,
     ConflictInfo,
     DryRunResult,
     OperationStatus,

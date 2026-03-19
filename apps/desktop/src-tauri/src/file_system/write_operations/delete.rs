@@ -7,11 +7,11 @@ use std::sync::atomic::Ordering;
 use std::time::Instant;
 
 use super::helpers::spawn_async_sync;
-use super::scan::scan_sources;
+use super::scan::{SourceItemTracker, scan_sources};
 use super::state::{WriteOperationState, update_operation_status};
 use super::types::{
     DryRunResult, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig, WriteOperationError,
-    WriteOperationPhase, WriteOperationType, WriteProgressEvent,
+    WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 use crate::file_system::volume::Volume;
 
@@ -60,6 +60,8 @@ pub(super) fn delete_files_with_progress(
     let mut bytes_done = 0u64;
     let mut last_progress_time = Instant::now();
 
+    let mut tracker = SourceItemTracker::new(&scan_result.files);
+
     // Delete files
     for file_info in &scan_result.files {
         // Check cancellation
@@ -88,6 +90,16 @@ pub(super) fn delete_files_with_progress(
 
         files_done += 1;
         bytes_done += file_size;
+
+        if let Some(source_path) = tracker.record(file_info) {
+            let _ = app.emit(
+                "write-source-item-done",
+                WriteSourceItemDoneEvent {
+                    operation_id: operation_id.to_string(),
+                    source_path: source_path.display().to_string(),
+                },
+            );
+        }
 
         // Emit progress
         if last_progress_time.elapsed() >= state.progress_interval {

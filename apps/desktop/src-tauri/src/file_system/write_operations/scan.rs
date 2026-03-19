@@ -248,6 +248,58 @@ fn walk_dir_recursive<E>(
     Ok(())
 }
 
+/// Builds a map from top-level source path to the number of files it contains in the scan result.
+///
+/// Each `FileInfo` has a `source_root` (the parent of the top-level source) and a `path` (the full file path).
+/// The top-level source is reconstructed as `source_root + first component of (path relative to source_root)`.
+pub(super) fn build_source_file_counts(files: &[FileInfo]) -> std::collections::HashMap<PathBuf, usize> {
+    let mut counts = std::collections::HashMap::new();
+    for file_info in files {
+        let top_level_source = top_level_source_path(file_info);
+        *counts.entry(top_level_source).or_insert(0) += 1;
+    }
+    counts
+}
+
+/// Reconstructs the top-level source path from a `FileInfo`.
+///
+/// For a file at `/home/user/docs/mydir/sub/file.txt` with `source_root = /home/user/docs`,
+/// returns `/home/user/docs/mydir`.
+/// For a single file `/home/user/docs/file.txt` with `source_root = /home/user/docs`,
+/// returns `/home/user/docs/file.txt`.
+pub(super) fn top_level_source_path(file_info: &FileInfo) -> PathBuf {
+    if let Ok(relative) = file_info.path.strip_prefix(&file_info.source_root)
+        && let Some(first_component) = relative.components().next()
+    {
+        return file_info.source_root.join(first_component);
+    }
+    // Fallback: use the path itself (shouldn't happen with well-formed FileInfo)
+    file_info.path.clone()
+}
+
+/// Tracks per-source-item file counts and emits when all files for a source are done.
+pub(super) struct SourceItemTracker {
+    totals: std::collections::HashMap<PathBuf, usize>,
+    processed: std::collections::HashMap<PathBuf, usize>,
+}
+
+impl SourceItemTracker {
+    pub fn new(files: &[FileInfo]) -> Self {
+        Self {
+            totals: build_source_file_counts(files),
+            processed: std::collections::HashMap::new(),
+        }
+    }
+
+    /// Records a processed file. Returns `Some(source_path)` when all files for that source are done.
+    pub fn record(&mut self, file_info: &FileInfo) -> Option<PathBuf> {
+        let source_path = top_level_source_path(file_info);
+        let count = self.processed.entry(source_path.clone()).or_insert(0);
+        *count += 1;
+        if self.totals.get(&source_path) == Some(count) { Some(source_path) } else { None }
+    }
+}
+
 /// Tries to get cached scan results for a preview, removing them from cache.
 pub(super) fn take_cached_scan_result(preview_id: &str) -> Option<ScanResult> {
     if let Ok(mut cache) = SCAN_PREVIEW_RESULTS.write() {
@@ -716,4 +768,63 @@ pub(super) fn handle_dry_run(
 
     let _ = app.emit("dry-run-complete", result);
     Ok(true)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::super::state::FileInfo;
+    use super::*;
+
+    fn make_file_info(path: &str, source_root: &str) -> FileInfo {
+        FileInfo {
+            path: PathBuf::from(path),
+            source_root: PathBuf::from(source_root),
+            size: 100,
+            modified: 0,
+            created: 0,
+            is_symlink: false,
+        }
+    }
+
+    #[test]
+    fn test_top_level_source_path_file() {
+        let fi = make_file_info("/home/user/docs/file.txt", "/home/user/docs");
+        assert_eq!(top_level_source_path(&fi), PathBuf::from("/home/user/docs/file.txt"));
+    }
+
+    #[test]
+    fn test_top_level_source_path_nested() {
+        let fi = make_file_info("/home/user/docs/mydir/sub/file.txt", "/home/user/docs");
+        assert_eq!(top_level_source_path(&fi), PathBuf::from("/home/user/docs/mydir"));
+    }
+
+    #[test]
+    fn test_build_source_file_counts_mixed() {
+        let files = vec![
+            make_file_info("/home/docs/file1.txt", "/home/docs"),
+            make_file_info("/home/docs/mydir/a.txt", "/home/docs"),
+            make_file_info("/home/docs/mydir/b.txt", "/home/docs"),
+            make_file_info("/home/docs/mydir/sub/c.txt", "/home/docs"),
+            make_file_info("/home/docs/other/x.txt", "/home/docs"),
+        ];
+        let counts = build_source_file_counts(&files);
+        assert_eq!(counts.len(), 3);
+        assert_eq!(counts[&PathBuf::from("/home/docs/file1.txt")], 1);
+        assert_eq!(counts[&PathBuf::from("/home/docs/mydir")], 3);
+        assert_eq!(counts[&PathBuf::from("/home/docs/other")], 1);
+    }
+
+    #[test]
+    fn test_build_source_file_counts_empty() {
+        let counts = build_source_file_counts(&[]);
+        assert!(counts.is_empty());
+    }
+
+    #[test]
+    fn test_build_source_file_counts_single_file() {
+        let files = vec![make_file_info("/tmp/a.txt", "/tmp")];
+        let counts = build_source_file_counts(&files);
+        assert_eq!(counts.len(), 1);
+        assert_eq!(counts[&PathBuf::from("/tmp/a.txt")], 1);
+    }
 }

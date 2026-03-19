@@ -6,6 +6,7 @@
 #![allow(dead_code, reason = "Boilerplate for future use")]
 
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use uuid::Uuid;
 
@@ -240,6 +241,38 @@ pub fn find_file_index(listing_id: &str, name: &str, include_hidden: bool) -> Re
         let visible: Vec<&FileEntry> = listing.entries.iter().filter(|e| is_visible(e)).collect();
         Ok(visible.iter().position(|e| e.name == name))
     }
+}
+
+/// Finds the indices of multiple files by name in a cached listing (batch version of `find_file_index`).
+///
+/// Single pass over cached entries, O(entries + names). Returns only found names as keys.
+pub fn find_file_indices(
+    listing_id: &str,
+    names: &[String],
+    include_hidden: bool,
+) -> Result<HashMap<String, usize>, String> {
+    let cache = LISTING_CACHE.read().map_err(|_| "Failed to acquire cache lock")?;
+
+    let listing = cache
+        .get(listing_id)
+        .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
+
+    let lookup: std::collections::HashSet<&str> = names.iter().map(|n| n.as_str()).collect();
+    let mut result = HashMap::with_capacity(names.len());
+
+    let entries: Box<dyn Iterator<Item = &FileEntry>> = if include_hidden {
+        Box::new(listing.entries.iter())
+    } else {
+        Box::new(listing.entries.iter().filter(|e| is_visible(e)))
+    };
+
+    for (idx, entry) in entries.enumerate() {
+        if lookup.contains(entry.name.as_str()) {
+            result.insert(entry.name.clone(), idx);
+        }
+    }
+
+    Ok(result)
 }
 
 /// Gets a single file at the given index.

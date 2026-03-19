@@ -20,11 +20,30 @@ Dual-pane file explorer with keyboard-driven navigation, file selection, sorting
 - **Write operations receive indices** — backend resolves to paths from cached listing
 - **Visual**: `--color-selection-fg` (yellow foreground)
 
+### Operation lifecycle
+
+- **Snapshot** — when an operation is confirmed, FilePane snapshots selected file names into `operationSelectedNames`
+  (or `'all'` sentinel if all selected)
+- **Diff-driven adjustment** — on each `directory-diff` during an operation, selection is re-resolved via
+  `findFileIndices` batch IPC. A `diffGeneration` counter discards stale async results.
+- **Source-item-done deselection** — `write-source-item-done` events individually deselect completed items (for copy and
+  other ops that don't trigger diffs)
+- **Clear on complete/error** — safety net clears all selection on the source pane
+- **Cancel behavior** — selection reflects survivors. For `'all'` sentinel: calls `selectAll()` (move/delete/trash) or
+  leaves untouched (copy)
+
 ### Gotchas
 
 - **Parent offset** — when `hasParent`, frontend indices = backend indices + 1
 - **Range shrinking** — moving cursor back toward anchor removes items no longer in range
 - **Optimization flag** — `allSelected: true` avoids sending 500k indices over IPC
+- **`allSelected` + cancel** — calls `selectAll()` for move/delete/trash (source listing changed), leaves untouched for
+  copy (source listing unchanged)
+- **Both panes same directory** — only source pane selection is adjusted; the other pane's selection may become stale
+- **Snapshot timing** — must happen at confirm, not when progress dialog opens (same-FS moves are instant and may
+  complete before dialog)
+- **Snapshot covers clipboard paste** — `startTransferProgress` also snapshots, not just `handleTransferConfirm` /
+  `handleDeleteConfirm`
 
 ## Navigation (`navigation/`)
 

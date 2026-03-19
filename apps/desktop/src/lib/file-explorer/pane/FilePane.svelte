@@ -19,6 +19,7 @@
     import {
         cancelListing,
         findFileIndex,
+        findFileIndices,
         pathExists,
         getFileAt,
         getListingStats,
@@ -41,6 +42,8 @@
     } from '$lib/tauri-commands'
     import type { ViewMode } from '$lib/app-status-store'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import { buildFrontendIndices, extractFilename } from '../operations/selection-adjustment'
+    import type { WriteSourceItemDoneEvent } from '../types'
 
     /** State snapshot for swapping panes without backend calls. */
     export interface SwapState {
@@ -153,6 +156,11 @@
             debouncedSyncMcp.call()
         },
     })
+
+    // Operation snapshot: tracks which files were selected when an operation started,
+    // so the diff handler can adjust selection as files disappear.
+    let operationSelectedNames = $state<string[] | 'all' | null>(null)
+    let diffGeneration = 0 // NOT $state — only used in async callbacks, never for rendering
 
     // Rename state (inline rename editor)
     const rename = createRenameState()
@@ -329,6 +337,32 @@
 
     export function selectRange(startIndex: number, endIndex: number): void {
         selection.selectRange(startIndex, endIndex, hasParent)
+    }
+
+    /** Snapshots the current selection as file names for diff-driven adjustment during operations. */
+    export async function snapshotSelectionForOperation(): Promise<void> {
+        if (selection.isAllSelected(hasParent, effectiveTotalCount)) {
+            operationSelectedNames = 'all'
+            return
+        }
+
+        const indices = selection.getSelectedIndices()
+        const names: string[] = []
+        for (const frontendIndex of indices) {
+            const backendIndex = hasParent ? frontendIndex - 1 : frontendIndex
+            if (backendIndex < 0) continue
+            const entry = await getFileAt(listingId, backendIndex, includeHidden)
+            if (entry) names.push(entry.name)
+        }
+        operationSelectedNames = names
+    }
+
+    /** Clears the operation snapshot and invalidates in-flight findFileIndices callbacks. Returns the previous value. */
+    export function clearOperationSnapshot(): string[] | 'all' | null {
+        const prev = operationSelectedNames
+        operationSelectedNames = null
+        diffGeneration++
+        return prev
     }
 
     // ==== Rename flow (logic in rename-flow.svelte.ts) ====
@@ -1367,6 +1401,41 @@
 
                 void fetchEntryUnderCursor()
                 void fetchListingStats()
+
+                // Diff-driven selection adjustment: re-resolve selected names to new indices
+                if (operationSelectedNames !== null && operationSelectedNames !== 'all') {
+                    diffGeneration++
+                    const myGeneration = diffGeneration
+                    void findFileIndices(listingId, operationSelectedNames, includeHidden).then((nameToIndexMap) => {
+                        if (myGeneration !== diffGeneration) return
+                        selection.setSelectedIndices(buildFrontendIndices(nameToIndexMap, hasParent))
+                    })
+                }
+            })
+        })
+
+        return () => {
+            void listenerPromise
+                .then((unsub) => {
+                    unsub()
+                })
+                .catch(() => {})
+        }
+    })
+
+    // Listen for write-source-item-done events (gradual deselection as each source completes).
+    // No operationId filter needed: only one write op runs at a time, and only the pane with
+    // an active snapshot (operationSelectedNames) processes events.
+    $effect(() => {
+        const listenerPromise = listen<WriteSourceItemDoneEvent>('write-source-item-done', (event) => {
+            // Only process when we have an active operation with explicit name tracking
+            if (!Array.isArray(operationSelectedNames)) return
+
+            const filename = extractFilename(event.payload.sourcePath)
+            void findFileIndex(listingId, filename, includeHidden).then((backendIndex) => {
+                if (backendIndex === null) return
+                const frontendIndex = hasParent ? backendIndex + 1 : backendIndex
+                selection.selectedIndices.delete(frontendIndex)
             })
         })
 

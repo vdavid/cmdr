@@ -13,11 +13,11 @@ use crate::file_system::{
     cancel_all_write_operations as ops_cancel_all_write_operations, cancel_listing as ops_cancel_listing,
     cancel_write_operation as ops_cancel_write_operation, copy_between_volumes as ops_copy_between_volumes,
     copy_files_start as ops_copy_files_start, delete_files_start as ops_delete_files_start,
-    find_file_index as ops_find_file_index, get_file_at as ops_get_file_at, get_file_range as ops_get_file_range,
-    get_listing_stats as ops_get_listing_stats, get_max_filename_width as ops_get_max_filename_width,
-    get_operation_status as ops_get_operation_status, get_total_count as ops_get_total_count, get_volume_manager,
-    list_active_operations as ops_list_active_operations, list_directory_end as ops_list_directory_end,
-    list_directory_start_streaming as ops_list_directory_start_streaming,
+    find_file_index as ops_find_file_index, find_file_indices as ops_find_file_indices, get_file_at as ops_get_file_at,
+    get_file_range as ops_get_file_range, get_listing_stats as ops_get_listing_stats,
+    get_max_filename_width as ops_get_max_filename_width, get_operation_status as ops_get_operation_status,
+    get_total_count as ops_get_total_count, get_volume_manager, list_active_operations as ops_list_active_operations,
+    list_directory_end as ops_list_directory_end, list_directory_start_streaming as ops_list_directory_start_streaming,
     list_directory_start_with_volume as ops_list_directory_start_with_volume, move_files_start as ops_move_files_start,
     refresh_listing_index_sizes as ops_refresh_listing_index_sizes, resort_listing as ops_resort_listing,
     scan_for_volume_copy as ops_scan_for_volume_copy, trash_files_start as ops_trash_files_start,
@@ -255,6 +255,15 @@ pub fn get_max_filename_width(listing_id: String, include_hidden: bool) -> Resul
 #[tauri::command]
 pub fn find_file_index(listing_id: String, name: String, include_hidden: bool) -> Result<Option<usize>, String> {
     ops_find_file_index(&listing_id, &name, include_hidden)
+}
+
+#[tauri::command]
+pub fn find_file_indices(
+    listing_id: String,
+    names: Vec<String>,
+    include_hidden: bool,
+) -> Result<std::collections::HashMap<String, usize>, String> {
+    ops_find_file_indices(&listing_id, &names, include_hidden)
 }
 
 #[tauri::command]

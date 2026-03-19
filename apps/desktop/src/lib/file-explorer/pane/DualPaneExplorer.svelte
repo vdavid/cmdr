@@ -233,6 +233,7 @@
         getLeftPaneRef: () => paneRefs.left,
         getRightPaneRef: () => paneRefs.right,
         getFocusedPaneRef: () => getPaneRef(focusedPane),
+        getFocusedPaneSide: () => focusedPane,
         getShowHiddenFiles: () => showHiddenFiles,
         onRefocus: () => containerElement?.focus(),
     })
@@ -1563,6 +1564,9 @@
                 operationType,
                 sourcePaths: result.paths,
                 sourceFolderPath,
+                // Clipboard files don't belong to a specific pane — pick the opposite as best guess.
+                // Harmless if wrong: it just clears selection on the non-destination pane.
+                sourcePaneSide: focusedPane === 'left' ? 'right' : 'left',
                 destinationPath: destPath,
                 direction: focusedPane === 'left' ? 'left' : 'right',
                 sortColumn: sortBy,

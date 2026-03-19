@@ -14,6 +14,7 @@ export interface TransferProgressPropsData {
     operationType: TransferOperationType
     sourcePaths: string[]
     sourceFolderPath: string
+    sourcePaneSide: 'left' | 'right'
     /** Not applicable for delete/trash */
     destinationPath?: string
     /** Not applicable for delete/trash */
@@ -64,6 +65,7 @@ export interface DialogStateDeps {
     getLeftPaneRef: () => FilePane | undefined
     getRightPaneRef: () => FilePane | undefined
     getFocusedPaneRef: () => FilePane | undefined
+    getFocusedPaneSide: () => 'left' | 'right'
     getShowHiddenFiles: () => boolean
     onRefocus: () => void
 }
@@ -99,6 +101,36 @@ export function createDialogState(deps: DialogStateDeps) {
     // Delete dialog state
     let showDeleteDialog = $state(false)
     let deleteDialogProps = $state<DeleteDialogPropsData | null>(null)
+
+    function getSourcePaneRef(): FilePane | undefined {
+        return transferProgressProps?.sourcePaneSide === 'left' ? deps.getLeftPaneRef() : deps.getRightPaneRef()
+    }
+
+    function clearSourcePaneSelection(): void {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        getSourcePaneRef()?.clearSelection?.()
+    }
+
+    function snapshotSourcePaneSelection(): void {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        void getSourcePaneRef()?.snapshotSelectionForOperation?.()
+    }
+
+    /** Adjusts source pane selection after a cancelled operation based on the snapshot state. */
+    function adjustSelectionAfterCancel(op: TransferOperationType): void {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const prevSnapshot = getSourcePaneRef()?.clearOperationSnapshot?.() as string[] | 'all' | null | undefined
+        if (prevSnapshot === 'all' && op !== 'copy') {
+            // Re-select all survivors (move/delete/trash changed the source listing)
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            getSourcePaneRef()?.selectAll?.()
+        } else if (prevSnapshot == null) {
+            // No snapshot taken — fall back to milestone 1 behavior
+            clearSourcePaneSelection()
+        }
+        // For 'all' + copy: source listing unchanged, existing indices still valid
+        // For array snapshot: selection already reflects survivors from diff-driven adjustment
+    }
 
     /** Refreshes panes after a transfer completes — for move/delete/trash, refresh both panes. */
     function refreshPanesAfterTransfer() {
@@ -184,6 +216,7 @@ export function createDialogState(deps: DialogStateDeps) {
         /** Opens the progress dialog directly, skipping the destination picker (used by clipboard paste). */
         startTransferProgress(props: TransferProgressPropsData) {
             transferProgressProps = props
+            snapshotSourcePaneSelection()
             showTransferProgressDialog = true
         },
 
@@ -212,6 +245,7 @@ export function createDialogState(deps: DialogStateDeps) {
                 operationType,
                 sourcePaths: transferDialogProps.sourcePaths,
                 sourceFolderPath: transferDialogProps.sourceFolderPath,
+                sourcePaneSide: transferDialogProps.direction === 'right' ? 'left' : 'right',
                 destinationPath: destination,
                 direction: transferDialogProps.direction,
                 sortColumn: transferDialogProps.sortColumn,
@@ -221,6 +255,7 @@ export function createDialogState(deps: DialogStateDeps) {
                 destVolumeId: transferDialogProps.destVolumeId,
                 conflictResolution,
             }
+            snapshotSourcePaneSelection()
 
             showTransferDialog = false
             transferDialogProps = null
@@ -249,12 +284,14 @@ export function createDialogState(deps: DialogStateDeps) {
                 operationType: opType,
                 sourcePaths: deleteDialogProps.sourcePaths,
                 sourceFolderPath: deleteDialogProps.sourceFolderPath,
+                sourcePaneSide: deps.getFocusedPaneSide(),
                 sortColumn: deleteDialogProps.sortColumn,
                 sortOrder: deleteDialogProps.sortOrder,
                 previewId,
                 sourceVolumeId: deleteDialogProps.sourceVolumeId,
                 itemSizes,
             }
+            snapshotSourcePaneSelection()
 
             showDeleteDialog = false
             deleteDialogProps = null
@@ -279,6 +316,9 @@ export function createDialogState(deps: DialogStateDeps) {
             addToast(toastMessage)
 
             refreshPanesAfterTransfer()
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            getSourcePaneRef()?.clearOperationSnapshot?.()
+            clearSourcePaneSelection()
 
             showTransferProgressDialog = false
             transferProgressProps = null
@@ -291,6 +331,7 @@ export function createDialogState(deps: DialogStateDeps) {
             log.info(`${opLabel} cancelled after ${String(filesProcessed)} files`)
 
             refreshPanesAfterTransfer()
+            adjustSelectionAfterCancel(op)
 
             showTransferProgressDialog = false
             transferProgressProps = null
@@ -307,6 +348,9 @@ export function createDialogState(deps: DialogStateDeps) {
             })
 
             refreshPanesAfterTransfer()
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            getSourcePaneRef()?.clearOperationSnapshot?.()
+            clearSourcePaneSelection()
 
             showTransferProgressDialog = false
             transferProgressProps = null
