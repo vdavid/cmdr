@@ -269,7 +269,7 @@ pub fn get_system_dir_excludes() -> &'static [&'static str] {
 // ============================================================================
 
 /// Intermediate struct for LLM output — uses ISO date strings.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct AiSearchQuery {
     pub(crate) name_pattern: Option<String>,
@@ -292,6 +292,9 @@ pub(crate) struct AiSearchQuery {
 pub struct PreflightContext {
     pub total_count: u32,
     pub sample_entries: Vec<PreflightEntry>,
+    /// The raw JSON query from pass 1, so the refinement prompt can show the LLM what it produced.
+    #[serde(default)]
+    pub pass1_query_json: Option<String>,
 }
 
 /// A single entry from the preflight results.
@@ -596,11 +599,17 @@ pub(crate) fn build_refinement_system_prompt(natural_query: &str, ctx: &Prefligh
     let base_prompt = build_search_system_prompt();
     let table = format_preflight_table(ctx);
 
+    let pass1_section = match &ctx.pass1_query_json {
+        Some(json) => format!("Your pass 1 query was:\n```json\n{json}\n```\n\n"),
+        None => String::new(),
+    };
+
     format!(
         "{base_prompt}\n\n\
          ---\n\n\
          This is the SECOND PASS (refinement). The preflight query already ran and returned real results. \
          Your job is to NARROW the results — remove false positives, never broaden.\n\n\
+         {pass1_section}\
          {table}\n\n\
          The user asked: \"{natural_query}\"\n\n\
          Rules for refinement:\n\
@@ -618,8 +627,12 @@ pub(crate) fn build_refinement_system_prompt(natural_query: &str, ctx: &Prefligh
          query unchanged. Don't fix what isn't broken.\n\
          - Never drop the core search term to broaden coverage. If the preflight searched for \
          \"websocket\" and found some results, keep \"websocket\" — don't generalize to all server files.\n\
-         - If the pass 1 query included a \"caveat\", preserve it if still applicable. Drop it only \
-         if the refinement resolved the limitation.\n\
+         - PRESERVE these flags from pass 1 — do not drop them:\n\
+           * \"includeSystemDirs\": if pass 1 set it to true, you MUST keep it true.\n\
+           * \"excludeDirs\": keep all entries from pass 1, you may add more but never remove.\n\
+           * \"searchPaths\": keep unless the path resolved to 0 results.\n\
+           * \"caseSensitive\": preserve the pass 1 value.\n\
+           * \"caveat\": preserve if still applicable.\n\
          Return ONLY the refined JSON."
     )
 }
@@ -1309,6 +1322,7 @@ mod tests {
     fn test_format_preflight_table_basic() {
         let ctx = PreflightContext {
             total_count: 806,
+            pass1_query_json: None,
             sample_entries: vec![
                 PreflightEntry {
                     name: ".fastresume".to_string(),
@@ -1343,6 +1357,7 @@ mod tests {
     fn test_format_preflight_table_name_truncation() {
         let ctx = PreflightContext {
             total_count: 1,
+            pass1_query_json: None,
             sample_entries: vec![PreflightEntry {
                 name: "a_very_long_filename_that_definitely_exceeds_45_characters_limit.pdf".to_string(),
                 size: Some(1024),
@@ -1359,6 +1374,7 @@ mod tests {
     fn test_build_refinement_system_prompt_includes_context() {
         let ctx = PreflightContext {
             total_count: 100,
+            pass1_query_json: Some(r#"{"namePattern":"*resume*","patternType":"glob"}"#.to_string()),
             sample_entries: vec![PreflightEntry {
                 name: "test.pdf".to_string(),
                 size: Some(1024),
@@ -1376,6 +1392,12 @@ mod tests {
         // Contains the refinement instruction
         assert!(prompt.contains("find my resume"));
         assert!(prompt.contains("SECOND PASS (refinement)"));
+        // Contains the pass 1 query JSON
+        assert!(prompt.contains("Your pass 1 query was:"));
+        assert!(prompt.contains("*resume*"));
+        // Contains the flag preservation rule
+        assert!(prompt.contains("includeSystemDirs"));
+        assert!(prompt.contains("PRESERVE these flags"));
     }
 
     #[test]

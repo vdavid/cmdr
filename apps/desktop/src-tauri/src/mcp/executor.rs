@@ -1075,6 +1075,9 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
 
     let preflight_summary = preflight_summary.unwrap_or_default();
 
+    // Capture pass-1 query as JSON for the refinement prompt
+    let pass1_query_json = serde_json::to_string_pretty(&ai_query).ok();
+
     log::debug!("MCP ai_search: building translate result from AI query");
     let translate_result =
         match crate::commands::search::build_translate_result(ai_query, Some(preflight_summary.clone())) {
@@ -1207,6 +1210,7 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
     let preflight_context = crate::commands::search::PreflightContext {
         total_count: pass1_total,
         sample_entries,
+        pass1_query_json,
     };
 
     log::debug!("MCP ai_search: calling call_ai_translate (pass 2) for refinement");
@@ -1250,7 +1254,6 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
         search::resolve_include_paths(&mut pass2_query, &pool);
     }
 
-    let interpreted = summarize_query(&pass2_query);
     log::debug!("MCP ai_search: running pass 2 search...");
     let t = std::time::Instant::now();
     let pass2_query_clone = pass2_query.clone();
@@ -1276,14 +1279,27 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
             }
         };
 
-    let formatted = format_search_results(&pass2_result, limit);
+    // Regression guard: if pass 2 broadened results instead of narrowing, discard it
+    let (final_result, final_query, refined_label) = if pass2_result.total_count > pass1_total {
+        log::warn!(
+            "MCP ai_search: pass 2 returned {} hits (> pass 1's {}), discarding refinement",
+            pass2_result.total_count,
+            pass1_total
+        );
+        (pass1_result, pass1_query, "Refined (pass 2 discarded)")
+    } else {
+        (pass2_result, pass2_query, "Refined")
+    };
+
+    let interpreted = summarize_query(&final_query);
+    let formatted = format_search_results(&final_result, limit);
     let caveat_line = refined_translate
         .caveat
         .as_deref()
         .map(|c| format!("Note: {c}\n"))
         .unwrap_or_default();
     let output = format!(
-        "Preflight: {preflight_summary} \u{2192} {pass1_total} hits \u{00b7} Refined\n\nInterpreted query: {interpreted}\n{caveat_line}\n{formatted}"
+        "Preflight: {preflight_summary} \u{2192} {pass1_total} hits \u{00b7} {refined_label}\n\nInterpreted query: {interpreted}\n{caveat_line}\n{formatted}"
     );
     log::info!(
         "MCP ai_search: completed (pass 2) in {:.1}s, output length={}",

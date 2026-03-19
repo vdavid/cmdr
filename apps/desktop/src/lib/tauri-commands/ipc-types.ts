@@ -118,6 +118,7 @@ export interface TranslateResult {
 export interface PreflightContext {
     totalCount: number
     sampleEntries: PreflightEntry[]
+    pass1QueryJson?: string
 }
 
 export interface PreflightEntry {

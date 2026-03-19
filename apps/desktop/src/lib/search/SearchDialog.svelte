@@ -460,6 +460,7 @@
         hitCount: number,
         entries: Awaited<ReturnType<typeof searchFiles>>['entries'],
         summaryPrefix: string,
+        pass1QueryJson: string | undefined,
         isStale: () => boolean,
     ): Promise<void> {
         setAiStatus('Refining query...')
@@ -471,6 +472,7 @@
                 modifiedAt: e.modifiedAt,
                 isDirectory: e.isDirectory,
             })),
+            pass1QueryJson,
         }
 
         let pass2Result
@@ -579,7 +581,8 @@
         setPreflightText(`${summaryPrefix} → ${hitCount.toLocaleString()} hits · Refining...`)
 
         // Phase 4–5: Refinement and final search
-        await aiPhase4Refine(query, hitCount, preflightResult.entries, summaryPrefix, isStale)
+        const pass1QueryJson = JSON.stringify(pass1Result.query)
+        await aiPhase4Refine(query, hitCount, preflightResult.entries, summaryPrefix, pass1QueryJson, isStale)
     }
 
     function bytesToDisplaySize(bytes: number): { value: string; unit: 'KB' | 'MB' | 'GB' } {
