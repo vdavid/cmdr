@@ -111,6 +111,7 @@
     const operationLabel = $derived(operationLabelMap[operationType])
     const operationGerund = $derived(operationGerundMap[operationType])
     const isDeleteOrTrash = $derived(operationType === 'delete' || operationType === 'trash')
+    const isCopy = $derived(operationType === 'copy')
 
     /** Whether this is a move involving an MTP volume (implemented as copy + delete). */
     const isMtpMove = $derived(
@@ -738,24 +739,33 @@
 
             <!-- Cancel at bottom -->
             <div class="conflict-cancel">
-                <button
-                    class="danger-text"
-                    onclick={() => handleCancel(true)}
-                    disabled={isCancelling || isResolvingConflict}
-                >
-                    Rollback
-                </button>
+                {#if isCopy}
+                    <button
+                        class="danger-text"
+                        onclick={() => handleCancel(true)}
+                        disabled={isCancelling || isResolvingConflict}
+                    >
+                        Rollback
+                    </button>
+                {:else}
+                    <button
+                        class="danger-text"
+                        onclick={() => handleCancel(false)}
+                        disabled={isCancelling || isResolvingConflict}
+                    >
+                        Cancel
+                    </button>
+                {/if}
             </div>
         </div>
-    {:else if !isDeleteOrTrash && isRollingBack}
-        <!-- Rollback in progress (copy/move only) -->
+    {:else if isCopy && isRollingBack}
+        <!-- Rollback in progress (copy only) -->
         <div class="rollback-section">
             <div class="rollback-indicator">
                 <span class="spinner spinner-md rollback-spinner"></span>
             </div>
             <p class="rollback-message">
-                Deleting {filesDone}
-                {operationType === 'copy' ? 'copied' : 'partially moved'} files...
+                Deleting {filesDone} copied files...
             </p>
         </div>
     {:else}
@@ -827,7 +837,7 @@
         <!-- Action buttons -->
         <div class="button-row">
             <Button variant="secondary" onclick={() => handleCancel(false)} disabled={isCancelling}>Cancel</Button>
-            {#if !isDeleteOrTrash && !(isMtpMove && mtpMovePhase === 'delete')}
+            {#if isCopy}
                 <span use:tooltip={'Cancel and delete any partial target files created'}>
                     <Button variant="danger" onclick={() => handleCancel(true)} disabled={isCancelling}>Rollback</Button
                     >
