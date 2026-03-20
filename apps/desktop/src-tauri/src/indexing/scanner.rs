@@ -7,6 +7,7 @@
 //! Scan exclusions (macOS system directories, virtual filesystems) are filtered via
 //! jwalk's `process_read_dir` callback so excluded subtrees are never descended into.
 
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -257,6 +258,9 @@ fn run_scan(
     let mut batch: Vec<EntryRow> = Vec::with_capacity(batch_size);
     let mut total_entries: u64 = 0;
     let mut total_dirs: u64 = 0;
+    // Tracks inodes with nlink > 1 so each hardlinked file's size is counted only once.
+    // Files with nlink == 1 (the vast majority) skip the set entirely.
+    let mut seen_inodes: HashSet<u64> = HashSet::new();
 
     // Initialize the scan context: seed root mapping and get next_id from DB.
     // Volume-root scans need a write connection (to create the root sentinel).
@@ -332,7 +336,13 @@ fn run_scan(
         let (logical_size, physical_size, modified_at) = if is_dir || is_symlink {
             (None, None, entry_modified_at(&path))
         } else {
-            entry_size_and_mtime(&path)
+            let (ls, ps, mtime, ino, nlink) = entry_size_and_mtime(&path);
+            // Deduplicate hardlinks: if nlink > 1, only count each inode's size once
+            if nlink > 1 && !seen_inodes.insert(ino) {
+                (None, None, mtime)
+            } else {
+                (ls, ps, mtime)
+            }
         };
 
         // Look up parent_id from the scan context
@@ -453,9 +463,9 @@ pub(super) fn should_exclude(path_str: &str) -> bool {
     false
 }
 
-/// Get logical size, physical size (st_blocks * 512), and modified time for a file.
+/// Get logical size, physical size (st_blocks * 512), modified time, inode, and nlink for a file.
 #[cfg(unix)]
-fn entry_size_and_mtime(path: &Path) -> (Option<u64>, Option<u64>, Option<u64>) {
+fn entry_size_and_mtime(path: &Path) -> (Option<u64>, Option<u64>, Option<u64>, u64, u64) {
     use std::os::unix::fs::MetadataExt;
     match std::fs::symlink_metadata(path) {
         Ok(meta) => {
@@ -464,14 +474,14 @@ fn entry_size_and_mtime(path: &Path) -> (Option<u64>, Option<u64>, Option<u64>) 
             let physical_size = if blocks > 0 { blocks * 512 } else { meta.len() };
             let mtime = meta.mtime();
             let mtime_u64 = if mtime >= 0 { Some(mtime as u64) } else { None };
-            (Some(logical_size), Some(physical_size), mtime_u64)
+            (Some(logical_size), Some(physical_size), mtime_u64, meta.ino(), meta.nlink())
         }
-        Err(_) => (None, None, None),
+        Err(_) => (None, None, None, 0, 1),
     }
 }
 
 #[cfg(not(unix))]
-fn entry_size_and_mtime(path: &Path) -> (Option<u64>, Option<u64>, Option<u64>) {
+fn entry_size_and_mtime(path: &Path) -> (Option<u64>, Option<u64>, Option<u64>, u64, u64) {
     match std::fs::symlink_metadata(path) {
         Ok(meta) => {
             let size = meta.len();
@@ -480,9 +490,9 @@ fn entry_size_and_mtime(path: &Path) -> (Option<u64>, Option<u64>, Option<u64>) 
                 .ok()
                 .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
                 .map(|d| d.as_secs());
-            (Some(size), Some(size), mtime)
+            (Some(size), Some(size), mtime, 0, 1)
         }
-        Err(_) => (None, None, None),
+        Err(_) => (None, None, None, 0, 1),
     }
 }
 
