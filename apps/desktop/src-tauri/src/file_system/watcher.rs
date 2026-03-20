@@ -8,7 +8,7 @@ use notify_debouncer_full::{
     notify::{RecommendedWatcher, RecursiveMode},
 };
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::sync::{LazyLock, RwLock};
 use std::time::Duration;
@@ -45,6 +45,8 @@ pub struct DiffChange {
     #[serde(rename = "type")]
     pub change_type: String,
     pub entry: FileEntry,
+    /// Position in the sorted listing: old listing for `"remove"`, new listing for `"add"`/`"modify"`.
+    pub index: usize,
 }
 
 /// Diff event sent to frontend
@@ -244,37 +246,39 @@ pub fn compute_diff(old: &[FileEntry], new: &[FileEntry]) -> Vec<DiffChange> {
     let mut changes = Vec::new();
 
     // Create lookup maps by path
-    let old_map: HashMap<&str, &FileEntry> = old.iter().map(|e| (e.path.as_str(), e)).collect();
-    let new_map: HashMap<&str, &FileEntry> = new.iter().map(|e| (e.path.as_str(), e)).collect();
+    let old_map: HashMap<&str, &FileEntry> =
+        old.iter().map(|e| (e.path.as_str(), e)).collect();
+    let new_map: HashSet<&str> = new.iter().map(|e| e.path.as_str()).collect();
 
-    // Find additions and modifications
-    for new_entry in new {
+    // Find additions and modifications (index refers to position in new listing)
+    for (new_index, new_entry) in new.iter().enumerate() {
         match old_map.get(new_entry.path.as_str()) {
             None => {
-                // New entry - addition
                 changes.push(DiffChange {
                     change_type: "add".to_string(),
                     entry: new_entry.clone(),
+                    index: new_index,
                 });
             }
             Some(old_entry) => {
-                // Exists in both - check if modified
                 if is_entry_modified(old_entry, new_entry) {
                     changes.push(DiffChange {
                         change_type: "modify".to_string(),
                         entry: new_entry.clone(),
+                        index: new_index,
                     });
                 }
             }
         }
     }
 
-    // Find removals
-    for old_entry in old {
-        if !new_map.contains_key(old_entry.path.as_str()) {
+    // Find removals (index refers to position in old listing)
+    for (old_index, old_entry) in old.iter().enumerate() {
+        if !new_map.contains(old_entry.path.as_str()) {
             changes.push(DiffChange {
                 change_type: "remove".to_string(),
                 entry: old_entry.clone(),
+                index: old_index,
             });
         }
     }
@@ -289,75 +293,4 @@ fn is_entry_modified(old: &FileEntry, new: &FileEntry) -> bool {
         || old.permissions != new.permissions
         || old.is_directory != new.is_directory
         || old.is_symlink != new.is_symlink
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn make_entry(name: &str, size: Option<u64>) -> FileEntry {
-        FileEntry {
-            name: name.to_string(),
-            path: format!("/test/{}", name),
-            is_directory: false,
-            is_symlink: false,
-            size,
-            physical_size: None,
-            modified_at: None,
-            created_at: None,
-            added_at: None,
-            opened_at: None,
-            permissions: 0o644,
-            owner: "user".to_string(),
-            group: "group".to_string(),
-            icon_id: "ext:txt".to_string(),
-            extended_metadata_loaded: true,
-            recursive_size: None,
-            recursive_physical_size: None,
-            recursive_file_count: None,
-            recursive_dir_count: None,
-        }
-    }
-
-    #[test]
-    fn test_compute_diff_addition() {
-        let old = vec![make_entry("a.txt", Some(100))];
-        let new = vec![make_entry("a.txt", Some(100)), make_entry("b.txt", Some(200))];
-
-        let diff = compute_diff(&old, &new);
-        assert_eq!(diff.len(), 1);
-        assert_eq!(diff[0].change_type, "add");
-        assert_eq!(diff[0].entry.name, "b.txt");
-    }
-
-    #[test]
-    fn test_compute_diff_removal() {
-        let old = vec![make_entry("a.txt", Some(100)), make_entry("b.txt", Some(200))];
-        let new = vec![make_entry("a.txt", Some(100))];
-
-        let diff = compute_diff(&old, &new);
-        assert_eq!(diff.len(), 1);
-        assert_eq!(diff[0].change_type, "remove");
-        assert_eq!(diff[0].entry.name, "b.txt");
-    }
-
-    #[test]
-    fn test_compute_diff_modification() {
-        let old = vec![make_entry("a.txt", Some(100))];
-        let new = vec![make_entry("a.txt", Some(200))]; // Size changed
-
-        let diff = compute_diff(&old, &new);
-        assert_eq!(diff.len(), 1);
-        assert_eq!(diff[0].change_type, "modify");
-        assert_eq!(diff[0].entry.size, Some(200));
-    }
-
-    #[test]
-    fn test_compute_diff_no_change() {
-        let old = vec![make_entry("a.txt", Some(100))];
-        let new = vec![make_entry("a.txt", Some(100))];
-
-        let diff = compute_diff(&old, &new);
-        assert!(diff.is_empty());
-    }
 }

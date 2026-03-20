@@ -99,6 +99,8 @@ export interface DiffChange {
     type: 'add' | 'remove' | 'modify'
     /** The affected file entry */
     entry: FileEntry
+    /** Position in the sorted listing: old listing for `remove`, new listing for `add`/`modify`. */
+    index: number
 }
 
 /**

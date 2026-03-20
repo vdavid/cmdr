@@ -45,6 +45,7 @@ fn test_compute_diff_addition() {
     assert_eq!(diff.len(), 1);
     assert_eq!(diff[0].change_type, "add");
     assert_eq!(diff[0].entry.name, "b.txt");
+    assert_eq!(diff[0].index, 1); // index in new listing
 }
 
 #[test]
@@ -56,6 +57,7 @@ fn test_compute_diff_removal() {
     assert_eq!(diff.len(), 1);
     assert_eq!(diff[0].change_type, "remove");
     assert_eq!(diff[0].entry.name, "b.txt");
+    assert_eq!(diff[0].index, 1); // index in old listing
 }
 
 #[test]
@@ -67,6 +69,7 @@ fn test_compute_diff_modification() {
     assert_eq!(diff.len(), 1);
     assert_eq!(diff[0].change_type, "modify");
     assert_eq!(diff[0].entry.size, Some(200));
+    assert_eq!(diff[0].index, 0); // index in new listing
 }
 
 #[test]
