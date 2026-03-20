@@ -224,6 +224,7 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
                     modified_at: disk_entry.modified_at,
                 });
 
+                // UpsertEntryV2 auto-propagates deltas in the writer.
                 if disk_entry.is_dir {
                     let new_dir = format!("{}/{}", parent_prefix, disk_entry.name);
                     new_dir_paths.push(new_dir);
@@ -231,15 +232,6 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
                         samples.push(format!("+/{}", disk_entry.name));
                     }
                 } else {
-                    if let Some(sz) = disk_entry.logical_size {
-                        let _ = writer.send(WriteMessage::PropagateDeltaById {
-                            entry_id: parent_id,
-                            logical_size_delta: sz as i64,
-                            physical_size_delta: disk_entry.physical_size.unwrap_or(0) as i64,
-                            file_count_delta: 1,
-                            dir_count_delta: 0,
-                        });
-                    }
                     new_file_count += 1;
                     if samples.len() < 5 {
                         samples.push(format!("+{}", disk_entry.name));
@@ -263,17 +255,10 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
                         physical_size: disk_entry.physical_size,
                         modified_at: disk_entry.modified_at,
                     });
+                    // UpsertEntryV2 auto-propagates deltas in the writer.
                     if disk_entry.is_dir {
                         let new_dir = format!("{}/{}", parent_prefix, disk_entry.name);
                         new_dir_paths.push(new_dir);
-                    } else if let Some(sz) = disk_entry.logical_size {
-                        let _ = writer.send(WriteMessage::PropagateDeltaById {
-                            entry_id: parent_id,
-                            logical_size_delta: sz as i64,
-                            physical_size_delta: disk_entry.physical_size.unwrap_or(0) as i64,
-                            file_count_delta: 1,
-                            dir_count_delta: 0,
-                        });
                     }
                     stale_count += 1;
                     if !disk_entry.is_dir {
@@ -286,12 +271,11 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
                 }
 
                 // Modified file: compare size and mtime
+                // Modified file: UpsertEntryV2 auto-propagates the size delta.
                 if !db_entry.is_directory {
                     let size_changed = db_entry.logical_size != disk_entry.logical_size;
                     let mtime_changed = db_entry.modified_at != disk_entry.modified_at;
                     if size_changed || mtime_changed {
-                        let old_size = db_entry.logical_size.unwrap_or(0) as i64;
-                        let new_size = disk_entry.logical_size.unwrap_or(0) as i64;
                         let _ = writer.send(WriteMessage::UpsertEntryV2 {
                             parent_id,
                             name: disk_entry.name.clone(),
@@ -300,14 +284,6 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
                             logical_size: disk_entry.logical_size,
                             physical_size: disk_entry.physical_size,
                             modified_at: disk_entry.modified_at,
-                        });
-                        let _ = writer.send(WriteMessage::PropagateDeltaById {
-                            entry_id: parent_id,
-                            logical_size_delta: new_size - old_size,
-                            physical_size_delta: (disk_entry.physical_size.unwrap_or(0) as i64)
-                                - (db_entry.physical_size.unwrap_or(0) as i64),
-                            file_count_delta: 0,
-                            dir_count_delta: 0,
                         });
                         modified_count += 1;
                         if samples.len() < 5 {
@@ -405,7 +381,7 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
                 logical_size_delta: stats.recursive_logical_size as i64,
                 physical_size_delta: stats.recursive_physical_size as i64,
                 file_count_delta: stats.recursive_file_count as i32,
-                dir_count_delta: (stats.recursive_dir_count as i32) + 1,
+                dir_count_delta: stats.recursive_dir_count as i32,
             });
         }
     }

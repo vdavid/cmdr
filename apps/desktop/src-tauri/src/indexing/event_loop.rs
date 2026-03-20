@@ -795,7 +795,7 @@ pub(super) async fn run_background_verification(affected_paths: HashSet<String>,
                     logical_size_delta: stats.recursive_logical_size as i64,
                     physical_size_delta: stats.recursive_physical_size as i64,
                     file_count_delta: stats.recursive_file_count as i32,
-                    dir_count_delta: (stats.recursive_dir_count as i32) + 1,
+                    dir_count_delta: stats.recursive_dir_count as i32,
                 });
             }
 
@@ -999,19 +999,11 @@ fn verify_affected_dirs(affected_paths: &HashSet<String>, writer: &IndexWriter) 
                 modified_at,
             });
 
+            // UpsertEntryV2 auto-propagates deltas in the writer.
             if is_dir {
                 log::debug!("verify_affected_dirs: new dir on disk: {normalized} (parent_id={parent_id})");
                 new_dir_paths.push(normalized);
-            } else if let Some(sz) = logical_size {
-                // UpsertEntryV2 inserts the entry; propagate its size delta up the
-                // ancestor chain starting from the parent.
-                let _ = writer.send(WriteMessage::PropagateDeltaById {
-                    entry_id: *parent_id,
-                    logical_size_delta: sz as i64,
-                    physical_size_delta: physical_size.unwrap_or(0) as i64,
-                    file_count_delta: 1,
-                    dir_count_delta: 0,
-                });
+            } else {
                 new_file_count += 1;
             }
         }

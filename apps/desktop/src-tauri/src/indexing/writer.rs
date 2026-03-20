@@ -485,9 +485,14 @@ fn process_message(
             physical_size,
             modified_at,
         } => {
-            // Check if an entry already exists at (parent_id, name)
+            // Check if an entry already exists at (parent_id, name).
+            // Auto-propagates size deltas to ancestor dir_stats on both
+            // insert and update, so callers never need a separate
+            // PropagateDeltaById for upserted entries.
             match IndexStore::resolve_component(conn, parent_id, &name) {
                 Ok(Some(existing_id)) => {
+                    // Read old entry to compute delta after update
+                    let old_entry = IndexStore::get_entry_by_id(conn, existing_id).ok().flatten();
                     if let Err(e) = IndexStore::update_entry(
                         conn,
                         existing_id,
@@ -498,6 +503,26 @@ fn process_message(
                         modified_at,
                     ) {
                         log::warn!("Index writer: update_entry failed for id={existing_id}: {e}");
+                    } else if let Some(old) = old_entry {
+                        // Type change (file↔dir) via update is not supported — callers must
+                        // delete+insert for type changes so counts propagate correctly.
+                        if old.is_directory != is_directory {
+                            log::warn!(
+                                "Writer: UpsertEntryV2 type change detected for id={existing_id} \
+                                 (was_dir={}, now_dir={is_directory}). Callers should delete+insert instead.",
+                                old.is_directory
+                            );
+                        }
+                        // Propagate size delta if anything changed
+                        let old_logical = old.logical_size.unwrap_or(0) as i64;
+                        let new_logical = logical_size.unwrap_or(0) as i64;
+                        let old_physical = old.physical_size.unwrap_or(0) as i64;
+                        let new_physical = physical_size.unwrap_or(0) as i64;
+                        let logical_delta = new_logical - old_logical;
+                        let physical_delta = new_physical - old_physical;
+                        if logical_delta != 0 || physical_delta != 0 {
+                            propagate_delta_by_id(conn, parent_id, logical_delta, physical_delta, 0, 0);
+                        }
                     }
                 }
                 Ok(None) => {
@@ -515,11 +540,10 @@ fn process_message(
                             log::debug!(
                                 "Writer: UpsertEntryV2 inserted \"{name}\" (parent_id={parent_id}) → id={new_id}"
                             );
-                            // Initialize empty dir_stats for new directories so enrichment
-                            // always has a row. Subsequent PropagateDeltaById calls from
-                            // child events will update it incrementally.
-                            if is_directory
-                                && let Err(e) = IndexStore::upsert_dir_stats_by_id(
+                            if is_directory {
+                                // Initialize empty dir_stats for new directories so enrichment
+                                // always has a row. Child events will update it incrementally.
+                                if let Err(e) = IndexStore::upsert_dir_stats_by_id(
                                     conn,
                                     &[DirStatsById {
                                         entry_id: new_id,
@@ -528,9 +552,18 @@ fn process_message(
                                         recursive_file_count: 0,
                                         recursive_dir_count: 0,
                                     }],
-                                )
-                            {
-                                log::warn!("Writer: init dir_stats for new dir id={new_id} failed: {e}");
+                                ) {
+                                    log::warn!("Writer: init dir_stats for new dir id={new_id} failed: {e}");
+                                }
+                                propagate_delta_by_id(conn, parent_id, 0, 0, 0, 1);
+                            } else {
+                                let logical = logical_size.unwrap_or(0) as i64;
+                                let physical = physical_size.unwrap_or(0) as i64;
+                                if logical != 0 || physical != 0 {
+                                    propagate_delta_by_id(conn, parent_id, logical, physical, 1, 0);
+                                } else {
+                                    propagate_delta_by_id(conn, parent_id, 0, 0, 1, 0);
+                                }
                             }
                         }
                         Err(e) => {
@@ -1418,5 +1451,174 @@ mod tests {
         let writer = IndexWriter::spawn(&db_path, None).unwrap();
         assert_eq!(writer.db_path(), db_path);
         writer.shutdown();
+    }
+
+    #[test]
+    fn upsert_entry_v2_auto_propagates_delta_on_insert() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+        // Insert a parent directory and pre-populate its dir_stats
+        let entries = vec![EntryRow {
+            id: 10,
+            parent_id: ROOT_ID,
+            name: "home".into(),
+            is_directory: true,
+            is_symlink: false,
+            logical_size: None,
+            physical_size: None,
+            modified_at: None,
+        }];
+        writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
+        thread::sleep(Duration::from_millis(100));
+
+        {
+            let conn = IndexStore::open_write_connection(&db_path).unwrap();
+            IndexStore::upsert_dir_stats_by_id(
+                &conn,
+                &[DirStatsById {
+                    entry_id: 10,
+                    recursive_logical_size: 0,
+                    recursive_physical_size: 0,
+                    recursive_file_count: 0,
+                    recursive_dir_count: 0,
+                }],
+            )
+            .unwrap();
+        }
+
+        // Insert a new file via UpsertEntryV2 — should auto-propagate to parent
+        writer
+            .send(WriteMessage::UpsertEntryV2 {
+                parent_id: 10,
+                name: "doc.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                logical_size: Some(500),
+                physical_size: Some(500),
+                modified_at: Some(1700000000),
+            })
+            .unwrap();
+        writer.shutdown();
+        thread::sleep(Duration::from_millis(100));
+
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        let stats = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();
+        assert_eq!(stats.recursive_logical_size, 500, "parent should have file's size");
+        assert_eq!(stats.recursive_file_count, 1, "parent should count the new file");
+        assert_eq!(stats.recursive_dir_count, 0);
+    }
+
+    #[test]
+    fn upsert_entry_v2_auto_propagates_delta_on_update() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+        // Insert parent dir with dir_stats
+        let entries = vec![EntryRow {
+            id: 10,
+            parent_id: ROOT_ID,
+            name: "home".into(),
+            is_directory: true,
+            is_symlink: false,
+            logical_size: None,
+            physical_size: None,
+            modified_at: None,
+        }];
+        writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
+        thread::sleep(Duration::from_millis(100));
+
+        {
+            let conn = IndexStore::open_write_connection(&db_path).unwrap();
+            IndexStore::upsert_dir_stats_by_id(
+                &conn,
+                &[DirStatsById {
+                    entry_id: 10,
+                    recursive_logical_size: 200,
+                    recursive_physical_size: 200,
+                    recursive_file_count: 1,
+                    recursive_dir_count: 0,
+                }],
+            )
+            .unwrap();
+        }
+
+        // Insert a file via UpsertEntryV2
+        writer
+            .send(WriteMessage::UpsertEntryV2 {
+                parent_id: 10,
+                name: "doc.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                logical_size: Some(200),
+                physical_size: Some(200),
+                modified_at: Some(1700000000),
+            })
+            .unwrap();
+        thread::sleep(Duration::from_millis(100));
+
+        // Update the same file with a larger size — should propagate +100 delta
+        writer
+            .send(WriteMessage::UpsertEntryV2 {
+                parent_id: 10,
+                name: "doc.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                logical_size: Some(300),
+                physical_size: Some(300),
+                modified_at: Some(1700000001),
+            })
+            .unwrap();
+        writer.shutdown();
+        thread::sleep(Duration::from_millis(100));
+
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        let stats = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();
+        // Initial 200 + insert propagated 200 + update propagated +100 = 500
+        assert_eq!(stats.recursive_logical_size, 500, "parent should reflect insert + update deltas");
+        assert_eq!(stats.recursive_file_count, 2, "file_count: 1 initial + 1 from insert");
+    }
+
+    #[test]
+    fn upsert_entry_v2_auto_propagates_dir_count_on_new_dir() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+        // Pre-populate root dir_stats
+        {
+            let conn = IndexStore::open_write_connection(&db_path).unwrap();
+            IndexStore::upsert_dir_stats_by_id(
+                &conn,
+                &[DirStatsById {
+                    entry_id: ROOT_ID,
+                    recursive_logical_size: 0,
+                    recursive_physical_size: 0,
+                    recursive_file_count: 0,
+                    recursive_dir_count: 0,
+                }],
+            )
+            .unwrap();
+        }
+
+        // Insert a new directory via UpsertEntryV2
+        writer
+            .send(WriteMessage::UpsertEntryV2 {
+                parent_id: ROOT_ID,
+                name: "projects".into(),
+                is_directory: true,
+                is_symlink: false,
+                logical_size: None,
+                physical_size: None,
+                modified_at: None,
+            })
+            .unwrap();
+        writer.shutdown();
+        thread::sleep(Duration::from_millis(100));
+
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        let stats = IndexStore::get_dir_stats_by_id(&conn, ROOT_ID).unwrap().unwrap();
+        assert_eq!(stats.recursive_dir_count, 1, "root should count the new dir");
+        assert_eq!(stats.recursive_file_count, 0);
+        assert_eq!(stats.recursive_logical_size, 0);
     }
 }

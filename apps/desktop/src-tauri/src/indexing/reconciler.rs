@@ -400,23 +400,7 @@ pub(super) fn reconcile_subtree(
                     modified_at,
                 });
 
-                if is_dir {
-                    let _ = writer.send(WriteMessage::PropagateDeltaById {
-                        entry_id: dir_id,
-                        logical_size_delta: 0,
-                        physical_size_delta: 0,
-                        file_count_delta: 0,
-                        dir_count_delta: 1,
-                    });
-                } else if let Some(sz) = logical_size {
-                    let _ = writer.send(WriteMessage::PropagateDeltaById {
-                        entry_id: dir_id,
-                        logical_size_delta: sz as i64,
-                        physical_size_delta: physical_size.unwrap_or(0) as i64,
-                        file_count_delta: 1,
-                        dir_count_delta: 0,
-                    });
-                }
+                // UpsertEntryV2 auto-propagates deltas in the writer.
                 added += 1;
 
                 if is_dir && !is_symlink {
@@ -651,32 +635,12 @@ fn handle_creation_or_modification(
         modified_at,
     });
 
-    // Propagate delta for newly created entries.
-    // Start propagation from the parent directory (parent_id), since that's
-    // the first ancestor whose dir_stats need updating.
-    if event.flags.item_created {
-        if is_dir {
-            let _ = writer.send(WriteMessage::PropagateDeltaById {
-                entry_id: parent_id,
-                logical_size_delta: 0,
-                physical_size_delta: 0,
-                file_count_delta: 0,
-                dir_count_delta: 1,
-            });
-        } else if let Some(sz) = logical_size {
-            let _ = writer.send(WriteMessage::PropagateDeltaById {
-                entry_id: parent_id,
-                logical_size_delta: sz as i64,
-                physical_size_delta: physical_size.unwrap_or(0) as i64,
-                file_count_delta: 1,
-                dir_count_delta: 0,
-            });
-        }
+    // UpsertEntryV2 auto-propagates deltas in the writer, so no separate
+    // PropagateDeltaById needed here.
 
-        // For new directories, also add them to affected paths
-        if is_dir {
-            affected.push(normalized.to_string());
-        }
+    // For new directories, add them to affected paths for downstream processing
+    if event.flags.item_created && is_dir {
+        affected.push(normalized.to_string());
     }
 
     Some(affected.clone())
