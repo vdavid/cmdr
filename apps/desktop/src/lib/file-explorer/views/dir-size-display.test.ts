@@ -9,7 +9,7 @@ import {
     buildDirSizeTooltip,
     getDisplaySize,
     buildFileSizeTooltip,
-    sizesDifferSignificantly,
+    hasSizeMismatch,
 } from './full-list-utils'
 
 // Mock settings store (required by full-list-utils)
@@ -138,19 +138,27 @@ describe('buildDirSizeTooltip', () => {
         expect(html).toContain('2.0 KB')
     })
 
-    it('shows both sizes on separate lines when physical differs significantly', () => {
+    it('always shows both sizes when physical is available', () => {
+        const result = buildDirSizeTooltip(1000000, 1000005, 10, 3, false, formatSize, formatNum, plural)
+        const html = tooltipHtml(result)
+        expect(html).toContain('Content:')
+        expect(html).toContain('1000000 bytes')
+        expect(html).toContain('On disk:')
+        expect(html).toContain('1000005 bytes')
+    })
+
+    it('shows both sizes when physical differs significantly', () => {
         const result = buildDirSizeTooltip(1000000, 800000, 10, 3, false, formatSize, formatNum, plural)
         const html = tooltipHtml(result)
         expect(html).toContain('Content:')
         expect(html).toContain('1000000 bytes')
         expect(html).toContain('On disk:')
         expect(html).toContain('800000 bytes')
-        // Both size lines should be on separate lines from counts
         expect(html).toContain('<br>')
     })
 
-    it('shows single size when physical is similar', () => {
-        const html = tooltipHtml(buildDirSizeTooltip(1000000, 1000005, 10, 3, false, formatSize, formatNum, plural))
+    it('shows single size when physical is unavailable', () => {
+        const html = tooltipHtml(buildDirSizeTooltip(1000000, undefined, 10, 3, false, formatSize, formatNum, plural))
         expect(html).toContain('1000000 bytes')
         expect(html).not.toContain('Content:')
         expect(html).not.toContain('On disk:')
@@ -200,36 +208,62 @@ describe('getDisplaySize', () => {
 })
 
 // ============================================================================
-// sizesDifferSignificantly
+// hasSizeMismatch
 // ============================================================================
 
-describe('sizesDifferSignificantly', () => {
-    it('returns false when both are zero', () => {
-        expect(sizesDifferSignificantly(0, 0)).toBe(false)
+describe('hasSizeMismatch', () => {
+    it('returns false when logical is undefined', () => {
+        expect(hasSizeMismatch(undefined, 500_000_000)).toBe(false)
     })
 
-    it('returns true when one is zero and the other is not', () => {
-        expect(sizesDifferSignificantly(0, 100)).toBe(true)
-        expect(sizesDifferSignificantly(100, 0)).toBe(true)
+    it('returns false when physical is undefined', () => {
+        expect(hasSizeMismatch(500_000_000, undefined)).toBe(false)
     })
 
-    it('returns false when values are equal', () => {
-        expect(sizesDifferSignificantly(1000, 1000)).toBe(false)
+    it('returns false when both are undefined', () => {
+        expect(hasSizeMismatch(undefined, undefined)).toBe(false)
     })
 
-    it('returns false when difference is at the 1% boundary', () => {
-        // 1% of 10000 = 100; difference of 100 → ratio = 0.01 → not >0.01
-        expect(sizesDifferSignificantly(10000, 10100)).toBe(false)
+    it('returns false when logical is zero', () => {
+        expect(hasSizeMismatch(0, 500_000_000)).toBe(false)
     })
 
-    it('returns true when difference exceeds 1%', () => {
-        // difference = 200, larger = 10200, ratio = 200/10200 ≈ 0.0196 > 0.01
-        expect(sizesDifferSignificantly(10000, 10200)).toBe(true)
-        expect(sizesDifferSignificantly(10200, 10000)).toBe(true)
+    it('returns false when physical is zero', () => {
+        expect(hasSizeMismatch(500_000_000, 0)).toBe(false)
     })
 
-    it('returns true for large relative difference', () => {
-        expect(sizesDifferSignificantly(100, 200)).toBe(true)
+    it('returns false when sizes are equal', () => {
+        expect(hasSizeMismatch(1_000_000_000, 1_000_000_000)).toBe(false)
+    })
+
+    it('returns true when both thresholds are met (50% and 200 MB)', () => {
+        // 600 MB logical, 300 MB physical → diff = 300 MB (>200 MB), 300/300 = 100% (>50%)
+        expect(hasSizeMismatch(600_000_000, 300_000_000)).toBe(true)
+        expect(hasSizeMismatch(300_000_000, 600_000_000)).toBe(true)
+    })
+
+    it('returns false when only percentage threshold is met but not absolute', () => {
+        // 300 MB logical, 100 MB physical → diff = 200 MB, 200/100 = 200% (>50%)
+        // BUT diff = 200 MB which is exactly 200_000_000, need >= so this is true
+        // Use smaller values: 100 MB vs 50 MB → diff = 50 MB (<200 MB), 50/50 = 100% (>50%)
+        expect(hasSizeMismatch(100_000_000, 50_000_000)).toBe(false)
+    })
+
+    it('returns false when only absolute threshold is met but not percentage', () => {
+        // 1 GB logical, 800 MB physical → diff = 200 MB (>=200 MB), but 200/800 = 25% (<50%)
+        expect(hasSizeMismatch(1_000_000_000, 800_000_000)).toBe(false)
+    })
+
+    it('returns true at exact boundary (200 MB diff, 50% relative)', () => {
+        // 600 MB logical, 400 MB physical → diff = 200 MB (>=200 MB), 200/400 = 50% (>=50%)
+        expect(hasSizeMismatch(600_000_000, 400_000_000)).toBe(true)
+    })
+
+    it('returns false just under the absolute boundary', () => {
+        // 599_999_999 logical, 399_999_999 physical → diff = 200_000_000, 200M/400M = 50%
+        // Actually that's at boundary. Use: diff = 199_999_999
+        // 599_999_999 logical, 400_000_000 physical → diff = 199_999_999 (<200 MB)
+        expect(hasSizeMismatch(599_999_999, 400_000_000)).toBe(false)
     })
 })
 
@@ -255,7 +289,7 @@ describe('buildFileSizeTooltip', () => {
         expect(html).toContain('2048 bytes')
     })
 
-    it('shows both sizes on separate lines when they differ significantly', () => {
+    it('always shows both sizes when both are available', () => {
         const result = buildFileSizeTooltip(1000000, 800000, formatSize)
         const html = tooltipHtml(result)
         expect(html).toContain('Content:')
@@ -265,15 +299,17 @@ describe('buildFileSizeTooltip', () => {
         expect(html).toContain('<br>')
     })
 
-    it('shows single size when sizes are similar', () => {
+    it('shows both sizes even when sizes are similar', () => {
         const html = tooltipHtml(buildFileSizeTooltip(1000000, 1000005, formatSize))
+        expect(html).toContain('Content:')
         expect(html).toContain('1000000 bytes')
-        expect(html).not.toContain('Content:')
+        expect(html).toContain('On disk:')
+        expect(html).toContain('1000005 bytes')
     })
 
-    it('shows single size when sizes are equal', () => {
+    it('shows both sizes even when sizes are equal', () => {
         const html = tooltipHtml(buildFileSizeTooltip(500, 500, formatSize))
-        expect(html).toContain('500 bytes')
-        expect(html).not.toContain('Content:')
+        expect(html).toContain('Content:')
+        expect(html).toContain('On disk:')
     })
 })

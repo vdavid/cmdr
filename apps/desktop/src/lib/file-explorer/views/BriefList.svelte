@@ -18,8 +18,8 @@
         refetchIconsForEntries,
         updateIndexSizesInPlace,
     } from './file-list-utils'
-    import { buildDirSizeTooltip } from './full-list-utils'
-    import { getRowHeight, formatFileSize } from '$lib/settings/reactive-settings.svelte'
+    import { buildDirSizeTooltip, hasSizeMismatch } from './full-list-utils'
+    import { getRowHeight, formatFileSize, getSizeMismatchWarning } from '$lib/settings/reactive-settings.svelte'
     import { getSetting } from '$lib/settings/settings-store'
     import { formatNumber, pluralize } from '../selection/selection-info-utils'
     import { isScanning, isAggregating } from '$lib/indexing/index-state.svelte'
@@ -432,21 +432,31 @@
         }
     })
 
+    // Size mismatch warning setting
+    const showSizeMismatchWarning = $derived(getSizeMismatchWarning())
+
     /** Build tooltip for a directory entry showing recursive size info. */
     function buildDirTooltip(file: FileEntry): string | { html: string } | undefined {
         if (!file.isDirectory) return undefined
-        return (
-            buildDirSizeTooltip(
-                file.recursiveSize,
-                file.recursivePhysicalSize,
-                file.recursiveFileCount ?? 0,
-                file.recursiveDirCount ?? 0,
-                indexing,
-                formatFileSize,
-                formatNumber,
-                pluralize,
-            ) || undefined
+        const base = buildDirSizeTooltip(
+            file.recursiveSize,
+            file.recursivePhysicalSize,
+            file.recursiveFileCount ?? 0,
+            file.recursiveDirCount ?? 0,
+            indexing,
+            formatFileSize,
+            formatNumber,
+            pluralize,
         )
+        if (!base) return undefined
+
+        // Prepend mismatch warning when applicable
+        if (showSizeMismatchWarning && hasSizeMismatch(file.recursiveSize, file.recursivePhysicalSize)) {
+            const baseHtml = typeof base === 'object' ? base.html : base
+            return { html: 'Content and on-disk sizes differ significantly.<br><br>' + baseHtml }
+        }
+
+        return base
     }
 
     // Report visible range to parent for MCP state sync

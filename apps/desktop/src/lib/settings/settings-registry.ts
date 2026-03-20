@@ -146,6 +146,18 @@ export const settingsRegistry: SettingDefinition[] = [
         },
     },
 
+    {
+        id: 'listing.sizeMismatchWarning',
+        section: ['General', 'Listing'],
+        label: 'Size mismatch warning',
+        description:
+            'Shows a warning icon on folders where content and on-disk sizes differ by more than 50% and 200 MB.',
+        keywords: ['size', 'mismatch', 'warning', 'alert', 'disk', 'content', 'difference'],
+        type: 'boolean',
+        default: true,
+        component: 'switch',
+    },
+
     // ========================================================================
     // General › File operations
     // ========================================================================

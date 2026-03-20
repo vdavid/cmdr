@@ -30,6 +30,7 @@ let useAppIconsForDocuments = $state<boolean>(true)
 let directorySortMode = $state<DirectorySortMode>('likeFiles')
 let appColor = $state<AppColor>('cmdr-gold')
 let sizeDisplay = $state<SizeDisplayMode>('smart')
+let sizeMismatchWarning = $state<boolean>(true)
 
 let initialized = false
 let unsubscribe: (() => void) | undefined
@@ -54,6 +55,7 @@ export async function initReactiveSettings(): Promise<void> {
         directorySortMode = getSetting('listing.directorySortMode')
         appColor = getSetting('appearance.appColor')
         sizeDisplay = getSetting('listing.sizeDisplay')
+        sizeMismatchWarning = getSetting('listing.sizeMismatchWarning')
 
         // Subscribe to changes (including cross-window changes)
         unsubscribe = onSettingChange((id, value) => {
@@ -91,6 +93,9 @@ export async function initReactiveSettings(): Promise<void> {
                     break
                 case 'listing.sizeDisplay':
                     sizeDisplay = value as SizeDisplayMode
+                    break
+                case 'listing.sizeMismatchWarning':
+                    sizeMismatchWarning = value as boolean
                     break
             }
         })
@@ -143,6 +148,11 @@ export function getIsCmdrGold(): boolean {
 /** Get current size display mode (smart, logical, or physical) */
 export function getSizeDisplayMode(): SizeDisplayMode {
     return sizeDisplay
+}
+
+/** Get whether the size mismatch warning icon is enabled */
+export function getSizeMismatchWarning(): boolean {
+    return sizeMismatchWarning
 }
 
 // ============================================================================

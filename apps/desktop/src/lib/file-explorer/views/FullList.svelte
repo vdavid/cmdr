@@ -26,6 +26,7 @@
         buildDirSizeTooltip,
         buildFileSizeTooltip,
         getDisplaySize,
+        hasSizeMismatch,
     } from './full-list-utils'
     import {
         getRowHeight,
@@ -33,10 +34,11 @@
         formatDateTime,
         formatFileSize,
         getSizeDisplayMode,
+        getSizeMismatchWarning,
     } from '$lib/settings/reactive-settings.svelte'
     import { iconCacheCleared } from '$lib/icon-cache'
     import { tooltip } from '$lib/tooltip/tooltip'
-    import { Hourglass } from '@lucide/svelte'
+    import { Hourglass, CircleAlert } from '@lucide/svelte'
     import type { RenameState } from '../rename/rename-state.svelte'
 
     interface Props {
@@ -128,6 +130,9 @@
 
     // Size display mode (smart/logical/physical)
     const sizeDisplayMode = $derived(getSizeDisplayMode())
+
+    // Size mismatch warning setting
+    const showSizeMismatchWarning = $derived(getSizeMismatchWarning())
 
     // Drive index state — show spinner while scanning OR aggregating (sizes aren't ready until aggregation finishes)
     const indexing = $derived(isScanning() || isAggregating())
@@ -494,6 +499,30 @@
                                             ><Hourglass size={12} color="var(--color-accent)" /></span
                                         >
                                     {/if}
+                                    {#if showSizeMismatchWarning && hasSizeMismatch(file.recursiveSize, file.recursivePhysicalSize)}
+                                        {@const dirTooltip = buildDirSizeTooltip(
+                                            file.recursiveSize,
+                                            file.recursivePhysicalSize,
+                                            file.recursiveFileCount ?? 0,
+                                            file.recursiveDirCount ?? 0,
+                                            indexing,
+                                            formatFileSize,
+                                            formatNumber,
+                                            pluralize,
+                                        )}
+                                        {@const dirTooltipHtml =
+                                            typeof dirTooltip === 'object' ? dirTooltip.html : dirTooltip}
+                                        <span
+                                            class="size-mismatch"
+                                            use:tooltip={{
+                                                html:
+                                                    'Content and on-disk sizes differ significantly.<br><br>' +
+                                                    dirTooltipHtml,
+                                            }}
+                                        >
+                                            <CircleAlert size={12} color="var(--color-accent)" />
+                                        </span>
+                                    {/if}
                                 {:else if indexing}
                                     <span class="size-scanning">Scanning...</span>
                                 {:else}
@@ -606,6 +635,14 @@
     }
 
     .size-stale {
+        display: inline-flex;
+        align-items: center;
+        vertical-align: middle;
+        margin-left: var(--spacing-xxs);
+        cursor: help;
+    }
+
+    .size-mismatch {
         display: inline-flex;
         align-items: center;
         vertical-align: middle;

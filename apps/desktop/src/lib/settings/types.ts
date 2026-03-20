@@ -97,6 +97,7 @@ export interface SettingsValues {
     // Listing
     'listing.directorySortMode': DirectorySortMode
     'listing.sizeDisplay': SizeDisplayMode
+    'listing.sizeMismatchWarning': boolean
 
     // File operations
     'fileOperations.allowFileExtensionChanges': ExtensionChangePolicy

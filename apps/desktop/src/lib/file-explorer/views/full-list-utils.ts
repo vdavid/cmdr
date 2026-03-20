@@ -152,11 +152,16 @@ export function getDisplaySize(
     return logical ?? physical
 }
 
-/** Whether two sizes differ enough to show both (>1% difference). */
-export function sizesDifferSignificantly(a: number, b: number): boolean {
-    if (a === 0 && b === 0) return false
-    const larger = Math.max(a, b)
-    return Math.abs(a - b) / larger > 0.01
+/**
+ * Whether content and on-disk sizes differ enough to warrant a warning icon.
+ * Both conditions must be true: ≥50% relative difference AND ≥200 MB absolute difference.
+ */
+export function hasSizeMismatch(logical: number | undefined, physical: number | undefined): boolean {
+    if (logical === undefined || physical === undefined) return false
+    if (logical === 0 || physical === 0) return false
+    const diff = Math.abs(logical - physical)
+    const smaller = Math.min(logical, physical)
+    return diff >= smaller * 0.5 && diff >= 200_000_000
 }
 
 /** Formats a byte count as colored HTML digit triads (same colors as the size column). */
@@ -172,8 +177,8 @@ function sizeLineHtml(label: string, bytes: number, formatSize: (b: number) => s
 }
 
 /**
- * Build a rich HTML tooltip for a file showing both content and on-disk sizes when they differ.
- * Returns a plain string when only one size is available, or an `{ html }` object for rich display.
+ * Build a rich HTML tooltip for a file showing both content and on-disk sizes.
+ * Always shows both lines when both sizes are available. Falls back to a single line otherwise.
  */
 export function buildFileSizeTooltip(
     logical: number | undefined,
@@ -181,7 +186,7 @@ export function buildFileSizeTooltip(
     formatSize: (bytes: number) => string,
 ): string | { html: string } {
     if (logical === undefined && physical === undefined) return ''
-    if (logical !== undefined && physical !== undefined && sizesDifferSignificantly(logical, physical)) {
+    if (logical !== undefined && physical !== undefined) {
         return {
             html: `${sizeLineHtml('Content', logical, formatSize)}<br>${sizeLineHtml('On disk', physical, formatSize)}`,
         }
@@ -193,7 +198,7 @@ export function buildFileSizeTooltip(
 
 /**
  * Build a rich HTML tooltip for the selection summary bar.
- * Shows "Selected" and "Of total" lines, with a separate "On disk" section when sizes differ.
+ * Shows "Selected" and "Of total" lines, with a separate "On disk" section when physical sizes are available.
  */
 export function buildSelectionSizeTooltip(
     selectedLogical: number,
@@ -207,10 +212,7 @@ export function buildSelectionSizeTooltip(
     const selLine = (label: string, bytes: number) => `${label}: ${formatSize(bytes)} (${formatBytesHtml(bytes)} bytes)`
     const lines: string[] = [selLine('Selected', selectedLogical), selLine('Of total', totalLogical)]
 
-    const showDisk =
-        sizesDifferSignificantly(selectedLogical, selectedPhysical) ||
-        sizesDifferSignificantly(totalLogical, totalPhysical)
-    if (showDisk) {
+    if (totalPhysical > 0) {
         lines.push('', 'On disk:', selLine('Selected', selectedPhysical), selLine('Of total', totalPhysical))
     }
 
@@ -268,7 +270,7 @@ export function buildDirSizeTooltip(
         const lines: string[] = []
 
         // Size lines with colored byte triads
-        if (recursivePhysicalSize !== undefined && sizesDifferSignificantly(recursiveSize, recursivePhysicalSize)) {
+        if (recursivePhysicalSize !== undefined) {
             lines.push(sizeLineHtml('Content', recursiveSize, formatSize))
             lines.push(sizeLineHtml('On disk', recursivePhysicalSize, formatSize))
         } else {

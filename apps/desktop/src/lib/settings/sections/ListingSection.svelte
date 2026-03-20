@@ -2,6 +2,7 @@
     import SettingsSection from '../components/SettingsSection.svelte'
     import SettingRow from '../components/SettingRow.svelte'
     import SettingToggleGroup from '../components/SettingToggleGroup.svelte'
+    import SettingSwitch from '../components/SettingSwitch.svelte'
     import { getSettingDefinition } from '$lib/settings'
     import { createShouldShow } from '$lib/settings/settings-search'
 
@@ -15,6 +16,7 @@
 
     const dirSortDef = getSettingDefinition('listing.directorySortMode') ?? { label: '', description: '' }
     const sizeDisplayDef = getSettingDefinition('listing.sizeDisplay') ?? { label: '', description: '' }
+    const sizeMismatchDef = getSettingDefinition('listing.sizeMismatchWarning') ?? { label: '', description: '' }
 </script>
 
 <SettingsSection title="Listing">
@@ -36,6 +38,16 @@
             {searchQuery}
         >
             <SettingToggleGroup id="listing.sizeDisplay" />
+        </SettingRow>
+    {/if}
+    {#if shouldShow('listing.sizeMismatchWarning')}
+        <SettingRow
+            id="listing.sizeMismatchWarning"
+            label={sizeMismatchDef.label}
+            description={sizeMismatchDef.description}
+            {searchQuery}
+        >
+            <SettingSwitch id="listing.sizeMismatchWarning" />
         </SettingRow>
     {/if}
 </SettingsSection>
