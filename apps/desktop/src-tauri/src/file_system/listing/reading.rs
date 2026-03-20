@@ -108,6 +108,7 @@ fn list_directory_core_impl(
                     is_directory: false,
                     is_symlink,
                     size: None,
+                    physical_size: None,
                     modified_at: None,
                     created_at: None,
                     added_at: None,
@@ -122,6 +123,7 @@ fn list_directory_core_impl(
                     },
                     extended_metadata_loaded: true, // Nothing to load for broken entries
                     recursive_size: None,
+                    recursive_physical_size: None,
                     recursive_file_count: None,
                     recursive_dir_count: None,
                 });
@@ -199,12 +201,19 @@ pub fn get_single_entry(path: &Path) -> Result<FileEntry, std::io::Error> {
     let owner = get_owner_name(uid);
     let group = get_group_name(gid);
 
+    let physical_size = if metadata.is_file() {
+        Some(metadata.blocks() * 512)
+    } else {
+        None
+    };
+
     Ok(FileEntry {
         name: name.clone(),
         path: path.to_string_lossy().to_string(),
         is_directory: is_dir,
         is_symlink,
         size: if metadata.is_file() { Some(metadata.len()) } else { None },
+        physical_size,
         modified_at: modified,
         created_at: created,
         added_at: None,
@@ -215,6 +224,7 @@ pub fn get_single_entry(path: &Path) -> Result<FileEntry, std::io::Error> {
         icon_id: get_icon_id(is_dir, is_symlink, &name),
         extended_metadata_loaded: false,
         recursive_size: None,
+        recursive_physical_size: None,
         recursive_file_count: None,
         recursive_dir_count: None,
     })
@@ -258,12 +268,19 @@ pub(crate) fn process_dir_entry(entry: &fs::DirEntry) -> Option<FileEntry> {
     let owner = get_owner_name(uid);
     let group = get_group_name(gid);
 
+    let physical_size = if metadata.is_file() {
+        Some(metadata.blocks() * 512)
+    } else {
+        None
+    };
+
     Some(FileEntry {
         name: name.clone(),
         path: entry.path().to_string_lossy().to_string(),
         is_directory: is_dir,
         is_symlink,
         size: if metadata.is_file() { Some(metadata.len()) } else { None },
+        physical_size,
         modified_at: modified,
         created_at: created,
         added_at: None,
@@ -274,6 +291,7 @@ pub(crate) fn process_dir_entry(entry: &fs::DirEntry) -> Option<FileEntry> {
         icon_id: get_icon_id(is_dir, is_symlink, &name),
         extended_metadata_loaded: false,
         recursive_size: None,
+        recursive_physical_size: None,
         recursive_file_count: None,
         recursive_dir_count: None,
     })

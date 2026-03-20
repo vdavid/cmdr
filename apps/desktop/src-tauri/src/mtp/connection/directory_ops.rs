@@ -431,6 +431,7 @@ impl MtpConnectionManager {
                 is_directory: is_dir,
                 is_symlink: false,
                 size: if is_dir { None } else { Some(info.size) },
+                physical_size: None,
                 modified_at: info.modified.map(convert_mtp_datetime),
                 created_at: info.created.map(convert_mtp_datetime),
                 added_at: None,
@@ -441,6 +442,7 @@ impl MtpConnectionManager {
                 icon_id: get_mtp_icon_id(is_dir, &info.filename),
                 extended_metadata_loaded: true,
                 recursive_size: None,
+                recursive_physical_size: None,
                 recursive_file_count: None,
                 recursive_dir_count: None,
             });
@@ -667,6 +669,7 @@ fn convert_object_infos(
             is_directory: is_dir,
             is_symlink: false,
             size: if is_dir { None } else { Some(info.size) },
+            physical_size: None,
             modified_at: info.modified.map(convert_mtp_datetime),
             created_at: info.created.map(convert_mtp_datetime),
             added_at: None,
@@ -677,6 +680,7 @@ fn convert_object_infos(
             icon_id: get_mtp_icon_id(is_dir, &info.filename),
             extended_metadata_loaded: true,
             recursive_size: None,
+            recursive_physical_size: None,
             recursive_file_count: None,
             recursive_dir_count: None,
         });

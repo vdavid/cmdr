@@ -24,12 +24,15 @@
         getVirtualizationBufferRows,
         measureDateColumnWidth,
         buildDirSizeTooltip,
+        buildFileSizeTooltip,
+        getDisplaySize,
     } from './full-list-utils'
     import {
         getRowHeight,
         getIsCompactDensity,
         formatDateTime,
         formatFileSize,
+        getSizeDisplayMode,
     } from '$lib/settings/reactive-settings.svelte'
     import { iconCacheCleared } from '$lib/icon-cache'
     import { tooltip } from '$lib/tooltip/tooltip'
@@ -121,6 +124,9 @@
         if (dotPos <= 0 || dotPos === name.length - 1) return ''
         return name.slice(dotPos + 1)
     }
+
+    // Size display mode (smart/logical/physical)
+    const sizeDisplayMode = $derived(getSizeDisplayMode())
 
     // Drive index state — show spinner while scanning OR aggregating (sizes aren't ready until aggregation finishes)
     const indexing = $derived(isScanning() || isAggregating())
@@ -415,6 +421,12 @@
             <div class="virtual-window" style="transform: translateY({virtualWindow.offset}px);">
                 {#each visibleFiles as { file, globalIndex } (file.path)}
                     {@const syncIcon = getSyncIconPath(syncStatusMap[file.path])}
+                    {@const dirDisplaySize = file.isDirectory
+                        ? getDisplaySize(file.recursiveSize, file.recursivePhysicalSize, sizeDisplayMode)
+                        : undefined}
+                    {@const fileDisplaySize = !file.isDirectory
+                        ? getDisplaySize(file.size, file.physicalSize, sizeDisplayMode)
+                        : undefined}
                     <!-- svelte-ignore a11y_interactive_supports_focus -->
                     <div
                         id={`file-${String(globalIndex)}`}
@@ -461,6 +473,7 @@
                             use:tooltip={file.isDirectory
                                 ? buildDirSizeTooltip(
                                       file.recursiveSize,
+                                      file.recursivePhysicalSize,
                                       file.recursiveFileCount ?? 0,
                                       file.recursiveDirCount ?? 0,
                                       indexing,
@@ -468,13 +481,11 @@
                                       formatNumber,
                                       pluralize,
                                   )
-                                : file.size !== undefined
-                                  ? formatFileSize(file.size)
-                                  : ''}
+                                : buildFileSizeTooltip(file.size, file.physicalSize, formatFileSize)}
                         >
                             {#if file.isDirectory}
-                                {#if file.recursiveSize !== undefined}
-                                    {#each formatSizeTriads(file.recursiveSize) as triad, i (i)}
+                                {#if dirDisplaySize !== undefined}
+                                    {#each formatSizeTriads(dirDisplaySize) as triad, i (i)}
                                         <span class={triad.tierClass}>{triad.value}</span>
                                     {/each}
                                     {#if indexing}
@@ -488,8 +499,8 @@
                                 {:else}
                                     <span class="size-dir">&lt;dir&gt;</span>
                                 {/if}
-                            {:else if file.size !== undefined}
-                                {#each formatSizeTriads(file.size) as triad, i (i)}
+                            {:else if fileDisplaySize !== undefined}
+                                {#each formatSizeTriads(fileDisplaySize) as triad, i (i)}
                                     <span class={triad.tierClass}>{triad.value}</span>
                                 {/each}
                             {/if}

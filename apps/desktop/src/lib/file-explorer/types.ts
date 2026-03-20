@@ -4,6 +4,7 @@ export interface FileEntry {
     isDirectory: boolean
     isSymlink: boolean
     size?: number
+    physicalSize?: number
     modifiedAt?: number
     createdAt?: number
     /** When the file was added to its current directory (macOS only) */
@@ -17,6 +18,7 @@ export interface FileEntry {
     /** Whether extended metadata (addedAt, openedAt) has been loaded */
     extendedMetadataLoaded: boolean
     recursiveSize?: number
+    recursivePhysicalSize?: number
     recursiveFileCount?: number
     recursiveDirCount?: number
 }
@@ -189,14 +191,18 @@ export interface ListingStats {
     totalFiles: number
     /** Total number of directories */
     totalDirs: number
-    /** Total size in bytes (files + directory recursive sizes) */
+    /** Total logical size in bytes (files + directory recursive sizes) */
     totalSize: number
+    /** Total physical (on-disk) size in bytes */
+    totalPhysicalSize: number
     /** Number of selected files (if selected_indices provided) */
     selectedFiles?: number
     /** Number of selected directories (if selected_indices provided) */
     selectedDirs?: number
-    /** Total size of selected entries in bytes (files + directory recursive sizes, if selected_indices provided) */
+    /** Total logical size of selected entries in bytes (if selected_indices provided) */
     selectedSize?: number
+    /** Total physical size of selected entries in bytes (if selected_indices provided) */
+    selectedPhysicalSize?: number
 }
 
 // ============================================================================

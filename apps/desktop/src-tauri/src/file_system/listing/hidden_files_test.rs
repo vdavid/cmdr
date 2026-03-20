@@ -21,6 +21,7 @@ fn make_entry(name: &str, is_dir: bool) -> FileEntry {
         is_directory: is_dir,
         is_symlink: false,
         size: if is_dir { None } else { Some(100) },
+        physical_size: None,
         modified_at: Some(1_700_000_000),
         created_at: Some(1_700_000_000),
         added_at: None,
@@ -31,6 +32,7 @@ fn make_entry(name: &str, is_dir: bool) -> FileEntry {
         icon_id: if is_dir { "dir".to_string() } else { "file".to_string() },
         extended_metadata_loaded: true,
         recursive_size: None,
+        recursive_physical_size: None,
         recursive_file_count: None,
         recursive_dir_count: None,
     }

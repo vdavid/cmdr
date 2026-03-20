@@ -74,6 +74,9 @@ pub struct FileEntry {
     pub is_directory: bool,
     pub is_symlink: bool,
     pub size: Option<u64>,
+    /// Physical size on disk in bytes (st_blocks * 512 on Unix, same as size on other platforms)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub physical_size: Option<u64>,
     pub modified_at: Option<u64>,
     pub created_at: Option<u64>,
     /// When the file was added to its current directory (macOS only)
@@ -91,6 +94,9 @@ pub struct FileEntry {
     /// Recursive size in bytes (from drive index, None if not indexed)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub recursive_size: Option<u64>,
+    /// Recursive physical size on disk in bytes (from drive index, None if not indexed)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub recursive_physical_size: Option<u64>,
     /// Recursive file count (from drive index, None if not indexed)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub recursive_file_count: Option<u64>,

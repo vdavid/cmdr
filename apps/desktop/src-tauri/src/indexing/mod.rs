@@ -1260,6 +1260,7 @@ pub fn get_dir_stats(path: &str) -> Result<Option<DirStats>, String> {
         Ok(stats.map(|s| DirStats {
             path: normalized.clone(),
             recursive_size: s.recursive_logical_size,
+            recursive_physical_size: s.recursive_physical_size,
             recursive_file_count: s.recursive_file_count,
             recursive_dir_count: s.recursive_dir_count,
         }))
@@ -1294,6 +1295,7 @@ pub fn get_dir_stats_batch(paths: &[String]) -> Result<Vec<Option<DirStats>>, St
                 results[idx] = stats_opt.map(|s| DirStats {
                     path: normalized,
                     recursive_size: s.recursive_logical_size,
+                    recursive_physical_size: s.recursive_physical_size,
                     recursive_file_count: s.recursive_file_count,
                     recursive_dir_count: s.recursive_dir_count,
                 });
@@ -1360,6 +1362,7 @@ mod tests {
             is_directory,
             is_symlink: false,
             size: if is_directory { None } else { Some(100) },
+            physical_size: None,
             modified_at: None,
             created_at: None,
             added_at: None,
@@ -1370,6 +1373,7 @@ mod tests {
             icon_id: String::new(),
             extended_metadata_loaded: false,
             recursive_size: None,
+            recursive_physical_size: None,
             recursive_file_count: None,
             recursive_dir_count: None,
         }

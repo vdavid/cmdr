@@ -59,16 +59,18 @@ export function buildDateTooltip(e: FileEntry): string {
     return lines.join('\n')
 }
 
-/** Determines size display for an entry */
+/** Determines size display for an entry, using the display size based on the mode */
 export function getSizeDisplay(
     entry: FileEntry | null,
     isBrokenSymlink: boolean,
     isPermissionDenied: boolean,
+    displaySize?: number,
 ): { value: string; tierClass: string }[] | 'DIR' | null {
     if (!entry || isBrokenSymlink || isPermissionDenied) return null
     if (entry.isDirectory) return 'DIR'
-    if (entry.size === undefined) return null
-    return formatSizeTriads(entry.size)
+    const size = displaySize ?? entry.size
+    if (size === undefined) return null
+    return formatSizeTriads(size)
 }
 
 /** Determines date display for an entry */

@@ -109,6 +109,8 @@ pub struct FileEntry {
     pub is_directory: bool,
     pub is_symlink: bool,
     pub size: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub physical_size: Option<u64>,
     pub modified_at: Option<u64>,
     pub created_at: Option<u64>,
     pub added_at: Option<u64>,

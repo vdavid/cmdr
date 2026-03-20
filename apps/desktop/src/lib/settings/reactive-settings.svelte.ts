@@ -11,6 +11,7 @@ import {
     type DateTimeFormat,
     type FileSizeFormat,
     type DirectorySortMode,
+    type SizeDisplayMode,
     type AppColor,
     densityMappings,
 } from '$lib/settings'
@@ -28,6 +29,7 @@ let fileSizeFormat = $state<FileSizeFormat>('binary')
 let useAppIconsForDocuments = $state<boolean>(true)
 let directorySortMode = $state<DirectorySortMode>('likeFiles')
 let appColor = $state<AppColor>('cmdr-gold')
+let sizeDisplay = $state<SizeDisplayMode>('smart')
 
 let initialized = false
 let unsubscribe: (() => void) | undefined
@@ -51,6 +53,7 @@ export async function initReactiveSettings(): Promise<void> {
         useAppIconsForDocuments = getSetting('appearance.useAppIconsForDocuments')
         directorySortMode = getSetting('listing.directorySortMode')
         appColor = getSetting('appearance.appColor')
+        sizeDisplay = getSetting('listing.sizeDisplay')
 
         // Subscribe to changes (including cross-window changes)
         unsubscribe = onSettingChange((id, value) => {
@@ -85,6 +88,9 @@ export async function initReactiveSettings(): Promise<void> {
                     break
                 case 'appearance.appColor':
                     appColor = value as AppColor
+                    break
+                case 'listing.sizeDisplay':
+                    sizeDisplay = value as SizeDisplayMode
                     break
             }
         })
@@ -132,6 +138,11 @@ export function getDirectorySortMode(): DirectorySortMode {
 /** Whether the user has selected Cmdr gold as their app color */
 export function getIsCmdrGold(): boolean {
     return appColor === 'cmdr-gold'
+}
+
+/** Get current size display mode (smart, logical, or physical) */
+export function getSizeDisplayMode(): SizeDisplayMode {
+    return sizeDisplay
 }
 
 // ============================================================================

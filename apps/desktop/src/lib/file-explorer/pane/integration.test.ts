@@ -128,6 +128,7 @@ vi.mock('$lib/settings/reactive-settings.svelte', () => ({
     formatDateTime: vi.fn().mockReturnValue('2025-01-01 00:00'),
     formatFileSize: vi.fn().mockReturnValue('1.0 KB'),
     getUseAppIconsForDocuments: vi.fn().mockReturnValue(true),
+    getSizeDisplayMode: vi.fn().mockReturnValue('smart'),
 }))
 
 vi.mock('$lib/drag-drop', () => ({

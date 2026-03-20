@@ -165,7 +165,9 @@
         }
     }
 
-    /** Formats item size for display. Folders show recursive info when available. */
+    /** Formats item size for display. Folders show recursive info when available.
+     *  Always uses logical (content) sizes — not worth plumbing the display mode setting
+     *  through the delete dialog infrastructure for a transient confirmation dialog. */
     function formatItemSize(item: DeleteSourceItem): string {
         if (item.isDirectory) {
             const size = item.recursiveSize

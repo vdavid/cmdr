@@ -1575,7 +1575,10 @@ mod tests {
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
         let stats = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();
         // Initial 200 + insert propagated 200 + update propagated +100 = 500
-        assert_eq!(stats.recursive_logical_size, 500, "parent should reflect insert + update deltas");
+        assert_eq!(
+            stats.recursive_logical_size, 500,
+            "parent should reflect insert + update deltas"
+        );
         assert_eq!(stats.recursive_file_count, 2, "file_count: 1 initial + 1 from insert");
     }
 

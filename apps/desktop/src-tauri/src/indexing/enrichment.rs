@@ -179,6 +179,7 @@ pub(super) fn enrich_via_parent_id_on(
         let normalized_name = store::normalize_for_comparison(basename);
         if let Some(stats) = name_to_stats.get(&normalized_name) {
             entry.recursive_size = Some(stats.recursive_logical_size);
+            entry.recursive_physical_size = Some(stats.recursive_physical_size);
             entry.recursive_file_count = Some(stats.recursive_file_count);
             entry.recursive_dir_count = Some(stats.recursive_dir_count);
         }
@@ -224,6 +225,7 @@ pub(super) fn enrich_via_individual_paths_on(entries: &mut [FileEntry], conn: &C
         let normalized = firmlinks::normalize_path(&entry.path);
         if let Some(stats) = stats_map.get(&normalized) {
             entry.recursive_size = Some(stats.recursive_logical_size);
+            entry.recursive_physical_size = Some(stats.recursive_physical_size);
             entry.recursive_file_count = Some(stats.recursive_file_count);
             entry.recursive_dir_count = Some(stats.recursive_dir_count);
         }

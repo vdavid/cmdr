@@ -1279,6 +1279,47 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
             }
         };
 
+    // ── Fallback: if pass 2 got 0 results and had searchPaths, retry without them ──
+    let (pass2_result, pass2_query) = if pass2_result.total_count == 0
+        && refined_translate
+            .query
+            .include_paths
+            .as_ref()
+            .is_some_and(|p| !p.is_empty())
+    {
+        log::info!(
+            "MCP ai_search: pass 2 returned 0 results with searchPaths {:?}, retrying full-drive",
+            refined_translate.query.include_paths
+        );
+        let mut fallback_query = pass2_query;
+        fallback_query.include_paths = None;
+        fallback_query.include_path_ids = None;
+        let fallback_query_clone = fallback_query.clone();
+        let index_clone = index.clone();
+        let t = std::time::Instant::now();
+        match tokio::task::spawn_blocking(move || run_search_and_postprocess(&index_clone, &fallback_query_clone)).await
+        {
+            Ok(Ok(result)) => {
+                log::info!(
+                    "MCP ai_search: pass 2 fallback search completed in {:.1}s, {} results",
+                    t.elapsed().as_secs_f64(),
+                    result.total_count
+                );
+                (result, fallback_query)
+            }
+            Ok(Err(e)) => {
+                log::error!("MCP ai_search: pass 2 fallback search failed: {}", e.message);
+                return Err(e);
+            }
+            Err(e) => {
+                log::error!("MCP ai_search: pass 2 fallback spawn_blocking failed: {e}");
+                return Err(ToolError::internal(format!("Search failed: {e}")));
+            }
+        }
+    } else {
+        (pass2_result, pass2_query)
+    };
+
     // Regression guard: if pass 2 broadened results instead of narrowing, discard it
     let (final_result, final_query, refined_label) = if pass2_result.total_count > pass1_total {
         log::warn!(

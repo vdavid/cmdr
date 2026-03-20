@@ -14,6 +14,7 @@
     const shouldShow = $derived(createShouldShow(searchQuery))
 
     const dirSortDef = getSettingDefinition('listing.directorySortMode') ?? { label: '', description: '' }
+    const sizeDisplayDef = getSettingDefinition('listing.sizeDisplay') ?? { label: '', description: '' }
 </script>
 
 <SettingsSection title="Listing">
@@ -25,6 +26,16 @@
             {searchQuery}
         >
             <SettingToggleGroup id="listing.directorySortMode" />
+        </SettingRow>
+    {/if}
+    {#if shouldShow('listing.sizeDisplay')}
+        <SettingRow
+            id="listing.sizeDisplay"
+            label={sizeDisplayDef.label}
+            description={sizeDisplayDef.description}
+            {searchQuery}
+        >
+            <SettingToggleGroup id="listing.sizeDisplay" />
         </SettingRow>
     {/if}
 </SettingsSection>

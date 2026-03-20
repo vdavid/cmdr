@@ -18,6 +18,7 @@
         refetchIconsForEntries,
         updateIndexSizesInPlace,
     } from './file-list-utils'
+    import { buildDirSizeTooltip } from './full-list-utils'
     import { getRowHeight, formatFileSize } from '$lib/settings/reactive-settings.svelte'
     import { getSetting } from '$lib/settings/settings-store'
     import { formatNumber, pluralize } from '../selection/selection-info-utils'
@@ -434,12 +435,18 @@
     /** Build tooltip for a directory entry showing recursive size info. */
     function buildDirTooltip(file: FileEntry): string | undefined {
         if (!file.isDirectory) return undefined
-        if (file.recursiveSize !== undefined) {
-            const sizeInfo = `${formatFileSize(file.recursiveSize)} · ${formatNumber(file.recursiveFileCount ?? 0)} ${pluralize(file.recursiveFileCount ?? 0, 'file', 'files')} · ${formatNumber(file.recursiveDirCount ?? 0)} ${pluralize(file.recursiveDirCount ?? 0, 'folder', 'folders')}`
-            return indexing ? `${sizeInfo} — Might be outdated` : sizeInfo
-        }
-        if (indexing) return 'Scanning...'
-        return undefined
+        return (
+            buildDirSizeTooltip(
+                file.recursiveSize,
+                file.recursivePhysicalSize,
+                file.recursiveFileCount ?? 0,
+                file.recursiveDirCount ?? 0,
+                indexing,
+                formatFileSize,
+                formatNumber,
+                pluralize,
+            ) || undefined
+        )
     }
 
     // Report visible range to parent for MCP state sync

@@ -11,7 +11,8 @@
         calculatePercentage,
     } from './selection-info-utils'
     import { measureDateColumnWidth } from '../views/full-list-utils'
-    import { formatFileSize, formatDateTime } from '$lib/settings/reactive-settings.svelte'
+    import { formatFileSize, formatDateTime, getSizeDisplayMode } from '$lib/settings/reactive-settings.svelte'
+    import { getDisplaySize, buildFileSizeTooltip } from '../views/full-list-utils'
     import { isScanning } from '$lib/indexing/index-state.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import type { VolumeSpaceInfo } from '$lib/tauri-commands'
@@ -64,12 +65,18 @@
     // File info mode (Brief mode without selection)
     // ========================================================================
 
+    const sizeDisplayMode = $derived(getSizeDisplayMode())
     const displayName = $derived(entry?.name ?? '')
     const isDirectory = $derived(entry?.isDirectory ?? false)
     const isBrokenSymlink = $derived(checkBrokenSymlink(entry))
     const isPermissionDenied = $derived(checkPermissionDenied(entry))
-    const sizeDisplay = $derived(getSizeDisplay(entry, isBrokenSymlink, isPermissionDenied))
-    const sizeTooltip = $derived(entry?.size !== undefined && !isDirectory ? formatFileSize(entry.size) : undefined)
+    const fileDisplaySize = $derived(
+        entry && !isDirectory ? getDisplaySize(entry.size, entry.physicalSize, sizeDisplayMode) : undefined,
+    )
+    const sizeDisplay = $derived(getSizeDisplay(entry, isBrokenSymlink, isPermissionDenied, fileDisplaySize))
+    const sizeTooltip = $derived(
+        entry && !isDirectory ? buildFileSizeTooltip(entry.size, entry.physicalSize, formatFileSize) : undefined,
+    )
     // Use formatDateTime from reactive-settings for consistent date formatting with Full mode
     const dateDisplay = $derived.by(() => {
         if (!entry) return ''
@@ -197,10 +204,18 @@
     // Computed values for selection summary
     const selectedFiles = $derived(stats?.selectedFiles ?? 0)
     const selectedDirs = $derived(stats?.selectedDirs ?? 0)
-    const selectedSize = $derived(stats?.selectedSize ?? 0)
+    const selectedLogicalSize = $derived(stats?.selectedSize ?? 0)
+    const selectedPhysicalSize = $derived(stats?.selectedPhysicalSize ?? 0)
     const totalFiles = $derived(stats?.totalFiles ?? 0)
     const totalDirs = $derived(stats?.totalDirs ?? 0)
-    const totalSize = $derived(stats?.totalSize ?? 0)
+    const totalLogicalSize = $derived(stats?.totalSize ?? 0)
+    const totalPhysicalSize = $derived(stats?.totalPhysicalSize ?? 0)
+
+    // Apply the user's size display preference to selection totals
+    const selectedSize = $derived(
+        getDisplaySize(selectedLogicalSize, selectedPhysicalSize, sizeDisplayMode) ?? selectedLogicalSize,
+    )
+    const totalSize = $derived(getDisplaySize(totalLogicalSize, totalPhysicalSize, sizeDisplayMode) ?? totalLogicalSize)
 
     const hasFiles = $derived(totalFiles > 0)
     const hasDirs = $derived(totalDirs > 0)
@@ -215,10 +230,13 @@
     const selectedSizeTriads = $derived(formatSizeTriads(selectedSize))
     const totalSizeTriads = $derived(formatSizeTriads(totalSize))
 
-    // Tooltip with human-readable sizes
-    const selectionSizeTooltip = $derived(
-        totalSize > 0 ? `${formatFileSize(selectedSize)} of ${formatFileSize(totalSize)}` : undefined,
-    )
+    // Tooltip shows human-readable sizes; includes both content and on-disk when they differ
+    const selectionSizeTooltip = $derived.by(() => {
+        if (totalLogicalSize <= 0) return undefined
+        const selPart = buildFileSizeTooltip(selectedLogicalSize, selectedPhysicalSize, formatFileSize)
+        const totPart = buildFileSizeTooltip(totalLogicalSize, totalPhysicalSize, formatFileSize)
+        return `${selPart} of ${totPart}`
+    })
 </script>
 
 <div class="selection-info" bind:this={containerElement}>

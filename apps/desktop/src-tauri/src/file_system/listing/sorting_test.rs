@@ -15,6 +15,7 @@ fn make_entry(name: &str, is_dir: bool, size: Option<u64>, modified: Option<u64>
         is_directory: is_dir,
         is_symlink: false,
         size,
+        physical_size: None,
         modified_at: modified,
         created_at: modified, // Use same value for simplicity
         added_at: None,
@@ -25,6 +26,7 @@ fn make_entry(name: &str, is_dir: bool, size: Option<u64>, modified: Option<u64>
         icon_id: if is_dir { "dir".to_string() } else { "file".to_string() },
         extended_metadata_loaded: true,
         recursive_size: None,
+        recursive_physical_size: None,
         recursive_file_count: None,
         recursive_dir_count: None,
     }
@@ -402,6 +404,7 @@ fn make_symlink(name: &str, size: Option<u64>) -> FileEntry {
         is_directory: false,
         is_symlink: true,
         size,
+        physical_size: None,
         modified_at: None,
         created_at: None,
         added_at: None,
@@ -412,6 +415,7 @@ fn make_symlink(name: &str, size: Option<u64>) -> FileEntry {
         icon_id: "symlink".to_string(),
         extended_metadata_loaded: true,
         recursive_size: None,
+        recursive_physical_size: None,
         recursive_file_count: None,
         recursive_dir_count: None,
     }

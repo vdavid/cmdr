@@ -193,7 +193,12 @@ export async function updateIndexSizesInPlace(cachedEntries: FileEntry[]): Promi
     }
     if (dirPaths.length === 0) return
 
-    let stats: ({ recursiveSize: number; recursiveFileCount: number; recursiveDirCount: number } | null)[]
+    let stats: ({
+        recursiveSize: number
+        recursivePhysicalSize: number
+        recursiveFileCount: number
+        recursiveDirCount: number
+    } | null)[]
     try {
         stats = await getDirStatsBatch(dirPaths)
     } catch {
@@ -206,6 +211,7 @@ export async function updateIndexSizesInPlace(cachedEntries: FileEntry[]): Promi
         const stat = stats[j]
         if (stat) {
             entry.recursiveSize = stat.recursiveSize
+            entry.recursivePhysicalSize = stat.recursivePhysicalSize
             entry.recursiveFileCount = stat.recursiveFileCount
             entry.recursiveDirCount = stat.recursiveDirCount
         }

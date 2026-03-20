@@ -32,6 +32,7 @@ const ROOT_PARENT_ID: i64 = 0;
 pub struct DirStats {
     pub path: String,
     pub recursive_size: u64,
+    pub recursive_physical_size: u64,
     pub recursive_file_count: u64,
     pub recursive_dir_count: u64,
 }

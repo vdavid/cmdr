@@ -130,6 +130,7 @@ describe('buildTransferPropsFromSelection', () => {
             totalFiles: 2,
             totalDirs: 1,
             totalSize: 1000,
+            totalPhysicalSize: 1024,
             selectedFiles: 2,
             selectedDirs: 1,
         })
@@ -162,6 +163,7 @@ describe('buildTransferPropsFromSelection', () => {
             totalFiles: 1,
             totalDirs: 0,
             totalSize: 500,
+            totalPhysicalSize: 512,
             selectedFiles: 1,
             selectedDirs: 0,
         })

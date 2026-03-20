@@ -19,6 +19,7 @@ fn make_entry(name: &str, size: Option<u64>) -> FileEntry {
         is_directory: false,
         is_symlink: false,
         size,
+        physical_size: None,
         modified_at: None,
         created_at: None,
         added_at: None,
@@ -29,6 +30,7 @@ fn make_entry(name: &str, size: Option<u64>) -> FileEntry {
         icon_id: "ext:txt".to_string(),
         extended_metadata_loaded: true,
         recursive_size: None,
+        recursive_physical_size: None,
         recursive_file_count: None,
         recursive_dir_count: None,
     }

@@ -78,6 +78,7 @@ impl InMemoryVolume {
                     is_directory: is_dir,
                     is_symlink: i % 50 == 0,
                     size: Some(1024 * (i as u64)),
+                    physical_size: None,
                     modified_at: Some(1_640_000_000 + i as u64),
                     created_at: Some(1_639_000_000 + i as u64),
                     added_at: None,
@@ -92,6 +93,7 @@ impl InMemoryVolume {
                     },
                     extended_metadata_loaded: true,
                     recursive_size: None,
+                    recursive_physical_size: None,
                     recursive_file_count: None,
                     recursive_dir_count: None,
                 }
@@ -221,6 +223,7 @@ impl Volume for InMemoryVolume {
             is_directory: false,
             is_symlink: false,
             size: Some(content.len() as u64),
+            physical_size: None,
             modified_at: Some(Self::now_secs()),
             created_at: Some(Self::now_secs()),
             added_at: None,
@@ -231,6 +234,7 @@ impl Volume for InMemoryVolume {
             icon_id: "file".to_string(),
             extended_metadata_loaded: true,
             recursive_size: None,
+            recursive_physical_size: None,
             recursive_file_count: None,
             recursive_dir_count: None,
         };
@@ -265,6 +269,7 @@ impl Volume for InMemoryVolume {
             is_directory: true,
             is_symlink: false,
             size: None,
+            physical_size: None,
             modified_at: Some(Self::now_secs()),
             created_at: Some(Self::now_secs()),
             added_at: None,
@@ -275,6 +280,7 @@ impl Volume for InMemoryVolume {
             icon_id: "dir".to_string(),
             extended_metadata_loaded: true,
             recursive_size: None,
+            recursive_physical_size: None,
             recursive_file_count: None,
             recursive_dir_count: None,
         };

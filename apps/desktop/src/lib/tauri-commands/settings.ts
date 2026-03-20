@@ -84,6 +84,7 @@ export async function setIndexingEnabled(enabled: boolean): Promise<void> {
 export interface DirStats {
     path: string
     recursiveSize: number
+    recursivePhysicalSize: number
     recursiveFileCount: number
     recursiveDirCount: number
 }

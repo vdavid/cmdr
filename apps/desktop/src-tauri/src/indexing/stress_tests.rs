@@ -1024,6 +1024,7 @@ fn make_file_entry(name: &str, path: &str, is_directory: bool) -> FileEntry {
         is_directory,
         is_symlink: false,
         size: if is_directory { None } else { Some(100) },
+        physical_size: None,
         modified_at: None,
         created_at: None,
         added_at: None,
@@ -1034,6 +1035,7 @@ fn make_file_entry(name: &str, path: &str, is_directory: bool) -> FileEntry {
         icon_id: String::new(),
         extended_metadata_loaded: false,
         recursive_size: None,
+        recursive_physical_size: None,
         recursive_file_count: None,
         recursive_dir_count: None,
     }

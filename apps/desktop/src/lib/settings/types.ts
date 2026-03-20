@@ -80,6 +80,7 @@ export type NetworkTimeoutMode = 'normal' | 'slow' | 'custom'
 export type ThemeMode = 'light' | 'dark' | 'system'
 export type ExtensionChangePolicy = 'yes' | 'no' | 'ask'
 export type DirectorySortMode = 'likeFiles' | 'alwaysByName'
+export type SizeDisplayMode = 'smart' | 'logical' | 'physical'
 export type AppColor = 'system' | 'cmdr-gold'
 export type AiProvider = 'off' | 'openai-compatible' | 'local'
 export type AiLocalContextSize = '2048' | '4096' | '8192' | '16384' | '32768' | '65536' | '131072' | '262144'
@@ -95,6 +96,7 @@ export interface SettingsValues {
 
     // Listing
     'listing.directorySortMode': DirectorySortMode
+    'listing.sizeDisplay': SizeDisplayMode
 
     // File operations
     'fileOperations.allowFileExtensionChanges': ExtensionChangePolicy

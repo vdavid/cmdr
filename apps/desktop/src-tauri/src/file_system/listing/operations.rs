@@ -522,14 +522,18 @@ pub struct ListingStats {
     /// Not including directories.
     pub total_files: usize,
     pub total_dirs: usize,
-    /// Total size in bytes (files + directory recursive sizes).
+    /// Total logical size in bytes (files + directory recursive sizes).
     pub total_size: u64,
+    /// Total physical (on-disk) size in bytes. Mirrors `total_size` but uses `physical_size` / `recursive_physical_size`.
+    pub total_physical_size: u64,
     /// Present only if `selected_indices` was provided.
     pub selected_files: Option<usize>,
     /// Present only if `selected_indices` was provided.
     pub selected_dirs: Option<usize>,
-    /// Total size of selected entries in bytes (files + directory recursive sizes). Present only if `selected_indices` was provided.
+    /// Total logical size of selected entries in bytes. Present only if `selected_indices` was provided.
     pub selected_size: Option<u64>,
+    /// Total physical size of selected entries in bytes. Present only if `selected_indices` was provided.
+    pub selected_physical_size: Option<u64>,
 }
 
 /// Gets statistics about a cached listing.
@@ -558,6 +562,7 @@ pub fn get_listing_stats(
     let mut total_files: usize = 0;
     let mut total_dirs: usize = 0;
     let mut total_size: u64 = 0;
+    let mut total_physical_size: u64 = 0;
 
     for entry in &visible_entries {
         if entry.is_directory {
@@ -565,19 +570,27 @@ pub fn get_listing_stats(
             if let Some(size) = entry.recursive_size {
                 total_size += size;
             }
+            if let Some(size) = entry.recursive_physical_size {
+                total_physical_size += size;
+            }
         } else {
             total_files += 1;
             if let Some(size) = entry.size {
                 total_size += size;
             }
+            if let Some(size) = entry.physical_size {
+                total_physical_size += size;
+            }
         }
     }
 
     // Calculate selection stats if indices provided
-    let (selected_files, selected_dirs, selected_size) = if let Some(indices) = selected_indices {
+    let (selected_files, selected_dirs, selected_size, selected_physical_size) = if let Some(indices) = selected_indices
+    {
         let mut sel_files: usize = 0;
         let mut sel_dirs: usize = 0;
         let mut sel_size: u64 = 0;
+        let mut sel_physical_size: u64 = 0;
 
         for &idx in indices {
             if let Some(entry) = visible_entries.get(idx) {
@@ -586,27 +599,35 @@ pub fn get_listing_stats(
                     if let Some(size) = entry.recursive_size {
                         sel_size += size;
                     }
+                    if let Some(size) = entry.recursive_physical_size {
+                        sel_physical_size += size;
+                    }
                 } else {
                     sel_files += 1;
                     if let Some(size) = entry.size {
                         sel_size += size;
                     }
+                    if let Some(size) = entry.physical_size {
+                        sel_physical_size += size;
+                    }
                 }
             }
         }
 
-        (Some(sel_files), Some(sel_dirs), Some(sel_size))
+        (Some(sel_files), Some(sel_dirs), Some(sel_size), Some(sel_physical_size))
     } else {
-        (None, None, None)
+        (None, None, None, None)
     };
 
     Ok(ListingStats {
         total_files,
         total_dirs,
         total_size,
+        total_physical_size,
         selected_files,
         selected_dirs,
         selected_size,
+        selected_physical_size,
     })
 }
 

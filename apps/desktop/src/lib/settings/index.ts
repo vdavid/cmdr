@@ -12,6 +12,7 @@ export type {
     DurationUnit,
     EnumOption,
     DirectorySortMode,
+    SizeDisplayMode,
     ExtensionChangePolicy,
     FileSizeFormat,
     NetworkTimeoutMode,

@@ -127,6 +127,25 @@ export const settingsRegistry: SettingDefinition[] = [
         },
     },
 
+    {
+        id: 'listing.sizeDisplay',
+        section: ['General', 'Listing'],
+        label: 'Size display',
+        description:
+            'Smart shows the smaller of content and on-disk size. This helps with disk images and compressed files where the two differ.',
+        keywords: ['size', 'display', 'logical', 'physical', 'smart', 'disk', 'content', 'sparse'],
+        type: 'enum',
+        default: 'smart',
+        component: 'toggle-group',
+        constraints: {
+            options: [
+                { value: 'smart', label: 'Smart' },
+                { value: 'logical', label: 'Content' },
+                { value: 'physical', label: 'On disk' },
+            ],
+        },
+    },
+
     // ========================================================================
     // General › File operations
     // ========================================================================

@@ -134,6 +134,49 @@ export function measureDateColumnWidth(formatFn: (timestamp: number) => string):
 }
 
 // ============================================================================
+// Size Display Mode Helpers
+// ============================================================================
+
+/** Picks the display size based on the user's size display preference. */
+export function getDisplaySize(
+    logical: number | undefined,
+    physical: number | undefined,
+    mode: 'smart' | 'logical' | 'physical',
+): number | undefined {
+    if (mode === 'logical') return logical
+    // Fall back to logical when physical is unavailable — a visible size is better than blank.
+    if (mode === 'physical') return physical ?? logical
+    // smart: min of available values
+    if (logical !== undefined && physical !== undefined) return Math.min(logical, physical)
+    return logical ?? physical
+}
+
+/** Whether two sizes differ enough to show both (>1% difference). */
+export function sizesDifferSignificantly(a: number, b: number): boolean {
+    if (a === 0 && b === 0) return false
+    const larger = Math.max(a, b)
+    return Math.abs(a - b) / larger > 0.01
+}
+
+/**
+ * Build a tooltip for a file showing both content and on-disk sizes when they differ.
+ * Returns the single formatted size when they're essentially equal or only one is available.
+ */
+export function buildFileSizeTooltip(
+    logical: number | undefined,
+    physical: number | undefined,
+    formatSize: (bytes: number) => string,
+): string {
+    if (logical === undefined && physical === undefined) return ''
+    if (logical !== undefined && physical !== undefined && sizesDifferSignificantly(logical, physical)) {
+        return `Content: ${formatSize(logical)} \u00B7 On disk: ${formatSize(physical)}`
+    }
+    // Show whichever is available (or both are equal — just show one)
+    const size = logical ?? physical
+    return size !== undefined ? formatSize(size) : ''
+}
+
+// ============================================================================
 // Directory Size Display Helpers
 // ============================================================================
 
@@ -162,6 +205,7 @@ export function getDirSizeDisplayState(recursiveSize: number | undefined, indexi
  * Build the tooltip string for a directory's size column.
  *
  * @param recursiveSize - The recursive size in bytes, or undefined if not yet computed.
+ * @param recursivePhysicalSize - The recursive physical size in bytes, or undefined.
  * @param recursiveFileCount - The recursive file count, or 0 if unknown.
  * @param recursiveDirCount - The recursive folder count, or 0 if unknown.
  * @param scanning - Whether a scan is currently active.
@@ -171,6 +215,7 @@ export function getDirSizeDisplayState(recursiveSize: number | undefined, indexi
  */
 export function buildDirSizeTooltip(
     recursiveSize: number | undefined,
+    recursivePhysicalSize: number | undefined,
     recursiveFileCount: number,
     recursiveDirCount: number,
     scanning: boolean,
@@ -179,9 +224,17 @@ export function buildDirSizeTooltip(
     plural: (count: number, singular: string, pluralForm: string) => string,
 ): string {
     if (recursiveSize !== undefined) {
-        const sizeStr = formatSize(recursiveSize)
         const filesStr = `${formatNum(recursiveFileCount)} ${plural(recursiveFileCount, 'file', 'files')}`
         const foldersStr = `${formatNum(recursiveDirCount)} ${plural(recursiveDirCount, 'folder', 'folders')}`
+
+        // Show both sizes when they differ significantly
+        let sizeStr: string
+        if (recursivePhysicalSize !== undefined && sizesDifferSignificantly(recursiveSize, recursivePhysicalSize)) {
+            sizeStr = `Content: ${formatSize(recursiveSize)} \u00B7 On disk: ${formatSize(recursivePhysicalSize)}`
+        } else {
+            sizeStr = formatSize(recursiveSize)
+        }
+
         const base = `${sizeStr} \u00B7 ${filesStr} \u00B7 ${foldersStr}`
         return scanning ? `${base} \u2014 Might be outdated. Currently scanning...` : base
     }
