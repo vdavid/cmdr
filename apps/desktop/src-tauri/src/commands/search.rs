@@ -362,6 +362,71 @@ pub(crate) fn iso_date_to_timestamp(date_str: &str) -> Result<u64, String> {
     Ok(timestamp as u64)
 }
 
+// ── AI search prompt templates ──────────────────────────────────────
+
+/// Core system prompt for translating natural language → search JSON.
+/// Dynamic parts (`{TODAY}`, `{ONE_YEAR_AGO}`) are replaced at runtime.
+const SEARCH_PROMPT_TEMPLATE: &str = "\
+Translate the user's file search query into a JSON object. Return ONLY JSON, no explanation.
+
+Fields (all optional):
+  namePattern (string)     Glob (* and ? only) or regex. patternType: \"glob\" or \"regex\".
+  minSize / maxSize        Bytes. biggest→500MB, big→100MB, huge→1GB, taking up space→50MB.
+  modifiedAfter/Before     ISO date YYYY-MM-DD.
+  isDirectory              true=folders, false=files, omit=both.
+  excludeDirs              Dir names to skip, e.g. [\"node_modules\",\".git\"].
+  searchPaths              Folder paths, ONLY when the user names a specific folder.
+                           Never guess paths like ~/projects — omit if unsure.
+  caseSensitive            true when exact casing matters. Omit for platform default.
+  includeSystemDirs        true when targeting normally-excluded dirs (Logs, Caches, .Trash,
+                           node_modules, .git, build output, etc.). Default: excluded.
+  caveat                   If the query involves content/semantics not determinable from
+                           filename/size/date, explain what was dropped and how to narrow.
+
+Regex: Rust `regex` crate (no lookahead/lookbehind, no backreferences, no \\d — use [0-9]). \
+Case-insensitive, unanchored unless you add ^ or $.
+
+Categories → extensions:
+  docs/resume/CV/report → \\.(pdf|doc|docx|txt|odt|xls|xlsx)$
+  photos/images         → \\.(jpg|jpeg|png|heic|webp|gif)$
+  screenshots           → ^Screenshot.*\\.(png|jpg|heic)$ (macOS naming)
+  videos                → \\.(mp4|mov|avi|mkv|webm)$
+  music/audio           → \\.(mp3|m4a|flac|wav|ogg|aac)$
+  env files/.env        → ^\\.env(\\..+)?$
+  config files          → \\.(json|ya?ml|toml|ini|conf|cfg)$
+
+Rules:
+- \"I name them X\" / \"I mark them as X\" → use X as pattern, not descriptive words.
+- \"not in X\" / \"excluding X\" → add X to excludeDirs.
+- Concepts (\"ssh keys\", \"env files\") → match typical filenames, not query words.
+- Code queries → auto-add excludeDirs: node_modules, .git, __pycache__, vendor, .venv, target, build, dist.
+- Date math: yesterday=day range, this week=since Monday, last month=since 1st of prev month.
+- Results sort by recency, not size. For \"biggest\"/\"largest\", add a size caveat.
+
+Examples:
+\"invoices I mark as rymd\" → {\"namePattern\":\"*rymd*\",\"patternType\":\"glob\"}
+\"log files eating disk\" → {\"namePattern\":\"\\\\.(log|out|err)$\",\"patternType\":\"regex\",\"minSize\":52428800,\"includeSystemDirs\":true}
+\"package.json not in node_modules\" → {\"namePattern\":\"^package\\\\.json$\",\"patternType\":\"regex\",\"excludeDirs\":[\"node_modules\"]}
+\"photos of my cat\" → {\"namePattern\":\"\\\\.(jpg|jpeg|png|heic|webp|gif)$\",\"patternType\":\"regex\",\"caveat\":\"Can't filter by photo content — add your naming convention (e.g. 'cat-*')\"}
+\"documents older than a year\" → {\"namePattern\":\"\\\\.(pdf|doc|docx|txt|odt|xls|xlsx)$\",\"patternType\":\"regex\",\"modifiedBefore\":\"{ONE_YEAR_AGO}\"}
+\"screenshots from today\" → {\"namePattern\":\"^Screenshot.*\\\\.(png|jpg|heic)$\",\"patternType\":\"regex\",\"modifiedAfter\":\"{TODAY}\"}
+
+Today: {TODAY}.";
+
+/// Rules appended to the system prompt for the refinement (pass 2) call.
+const REFINEMENT_RULES: &str = "\
+This is the REFINEMENT pass. The broad query already ran. Your job: NARROW only, never broaden.
+
+Rules:
+- Study result names. Tighten the pattern or add excludeDirs to remove false positives.
+- If results are already precise, return the query unchanged.
+- Never drop the core search term (e.g. don't generalize \"websocket\" to all server files).
+- Never remove constraints that were filtering correctly.
+- PRESERVE from pass 1: includeSystemDirs, excludeDirs (add more, don't remove), \
+searchPaths (keep unless 0 results), caseSensitive, caveat.
+
+Return ONLY the refined JSON.";
+
 pub(crate) fn build_search_system_prompt() -> String {
     let today = time::OffsetDateTime::now_utc().date();
     let format = time::macros::format_description!("[year]-[month]-[day]");
@@ -370,80 +435,9 @@ pub(crate) fn build_search_system_prompt() -> String {
     let one_year_ago = today.replace_year(today.year() - 1).unwrap_or(today);
     let one_year_ago_str = one_year_ago.format(&format).expect("date format always succeeds");
 
-    format!(
-        "You translate natural language file search queries into structured JSON filters.\n\
-         \n\
-         This is the FIRST PASS (preflight/discovery). Be slightly broad — cast a wider net to \
-         discover what's on disk. A second pass will refine using the actual results. Prefer \
-         simpler patterns that capture all plausible matches rather than precise ones that might \
-         miss files with unexpected naming.\n\
-         \n\
-         Return ONLY a JSON object with these optional fields:\n\
-         - \"namePattern\": filename pattern (glob or regex)\n\
-         - \"patternType\": \"glob\" or \"regex\"\n\
-         - \"minSize\"/\"maxSize\": size in bytes\n\
-         - \"modifiedAfter\"/\"modifiedBefore\": ISO date (YYYY-MM-DD)\n\
-         - \"isDirectory\": true for folders only, false for files only, omit for both\n\
-         - \"searchPaths\": array of paths to search within (for example, [\"~/projects\"])\n\
-         - \"excludeDirs\": array of directory names to exclude (for example, [\"node_modules\", \".git\"])\n\
-         - \"caseSensitive\": true when exact casing matters (default: omit for platform default)\n\
-         - \"includeSystemDirs\": set true when the query explicitly targets directories that are \
-         normally excluded (e.g. Logs, Caches, .Trash, node_modules, .git, build output). Default \
-         exclusion list: node_modules, .pnpm-store, .npm, .yarn, .cargo, .m2, .gradle, .git, .svn, \
-         .hg, __pycache__, .venv, venv, .tox, build, dist, .next, .nuxt, .cache, .parcel-cache, \
-         target, Caches, CacheStorage, Cache, GPUCache, ScriptCache, GrShaderCache, ShaderCache, \
-         Logs, Cookies, WebKit, Saved Application State, .Trash, .Spotlight-V100, .fseventsd, \
-         .DocumentRevisions-V100, workspaceStorage, DerivedData.\n\
-         - \"caveat\": if part of the query refers to file content, visual appearance, or anything \
-         not determinable from filename/size/date/path, briefly explain what was dropped and suggest \
-         how to narrow results. Omit if the query translates fully.\n\
-         \n\
-         Glob only supports * and ?. For multiple extensions or alternation, use regex.\n\
-         Regex: Rust `regex` crate syntax (no lookahead/lookbehind, no backreferences, \
-         no \\d — use [0-9]). Case-insensitive, unanchored unless you add ^ or $.\n\
-         \n\
-         Category mapping — when the user mentions a category, ALWAYS filter by file extension:\n\
-         - \"documents\"/\"resume\"/\"CV\"/\"report\" → regex \\.(pdf|doc|docx|txt|odt|xls|xlsx)$\n\
-         - \"photos\"/\"images\" → regex \\.(jpg|jpeg|png|heic|webp|gif)$\n\
-         - \"screenshots\" → regex ^Screenshot.*\\.(png|jpg|heic)$ (macOS names them \"Screenshot YYYY-MM-DD at HH.MM.SS.png\")\n\
-         - \"videos\" → regex \\.(mp4|mov|avi|mkv|webm)$\n\
-         - \"music\"/\"audio\" → regex \\.(mp3|m4a|flac|wav|ogg|aac)$\n\
-         - \"env files\"/\"dotenv\"/\".env\" → regex ^\\.env(\\..+)?$ (matches .env, .env.local, .env.production)\n\
-         - \"config files\" → regex \\.(json|ya?ml|toml|ini|conf|cfg)$\n\n\
-         Size hints: \"biggest\"/\"largest\" → minSize 500 MB (user wants outliers). \
-         \"big\"/\"large\" → minSize 100 MB. \"huge\" → minSize 1 GB. \
-         \"taking up space\" → minSize 50 MB.\n\
-         Results are sorted by recency, not by size. If the user asks for \"biggest\" or \"largest\", \
-         add a caveat: \"Results sorted by recency, not size — the very largest files may not appear first.\"\n\
-         When the user says \"not in X\", \"but not X\", \"excluding X\", or \"outside of X\", add X to `excludeDirs`.\n\
-         If the user describes their naming convention (\"I name them...\", \"I mark them as...\", \
-         \"tagged with...\"), use that as the filename pattern — it's more reliable than descriptive words.\n\
-         When the user asks about a concept (\"my resume\", \"ssh keys\", \"env files with secrets\"), \
-         search by how these files are typically NAMED, not by descriptive words in the query. \
-         For example, \"env files with secrets\" means .env files (which contain secrets), not files with \"secret\" in the name.\n\
-         For code queries, auto-exclude: \
-         excludeDirs: [\"node_modules\", \".git\", \"__pycache__\", \"vendor\", \".venv\", \"target\", \"build\", \"dist\"].\n\
-         Date math: \"yesterday\" = modifiedAfter one day before today + modifiedBefore today. \
-         \"this week\" = modifiedAfter last Monday. \"last month\" = modifiedAfter first of previous month.\n\
-         \n\
-         Examples:\n\
-         \"large pdfs\" → {{\"namePattern\": \"*.pdf\", \"patternType\": \"glob\", \"minSize\": 10485760}}\n\
-         \"quarterly reports\" → {{\"namePattern\": \"(Q[1-4]|quarterly).*\\.pdf\", \"patternType\": \"regex\"}}\n\
-         \"photos from last month\" → {{\"namePattern\": \"\\\\.(jpg|jpeg|png|heic|webp|gif)$\", \"patternType\": \"regex\", \"modifiedAfter\": \"2026-02-15\"}}\n\
-         \"folders bigger than 1gb\" → {{\"isDirectory\": true, \"minSize\": 1073741824}}\n\
-         \"screenshots from today\" → {{\"namePattern\": \"^Screenshot.*\\\\.(png|jpg|heic)$\", \"patternType\": \"regex\", \"modifiedAfter\": \"{today_str}\"}}\n\
-         \"invoices I mark as rymd\" → {{\"namePattern\": \"*rymd*\", \"patternType\": \"glob\"}}\n\
-         \"my resume\" → {{\"namePattern\": \"(resume|cv).*\\\\.(pdf|docx?)$\", \"patternType\": \"regex\", \"searchPaths\": [\"~/Documents\", \"~/Downloads\", \"~/Desktop\"]}}\n\
-         \"env files\" → {{\"namePattern\": \"^\\\\.env(\\\\..+)?$\", \"patternType\": \"regex\"}}\n\
-         \"documents older than a year\" → {{\"namePattern\": \"\\\\.(pdf|doc|docx|txt|odt|xls|xlsx)$\", \"patternType\": \"regex\", \"modifiedBefore\": \"{one_year_ago_str}\"}}\n\
-         \"python files in my projects\" → {{\"namePattern\": \"*.py\", \"patternType\": \"glob\", \"searchPaths\": [\"~/projects\"], \"excludeDirs\": [\"node_modules\", \".git\", \"__pycache__\", \".venv\"]}}\n\
-         \"anything related to kubernetes\" → {{\"namePattern\": \"(k8s|kube|kubectl|helm|kubernetes)\", \"patternType\": \"regex\"}}\n\
-         \"package.json files but not in node_modules\" → {{\"namePattern\": \"^package\\\\.json$\", \"patternType\": \"regex\", \"excludeDirs\": [\"node_modules\"]}}\n\
-         \"log files eating disk space\" → {{\"namePattern\": \"\\\\.(log|out|err)$\", \"patternType\": \"regex\", \"minSize\": 52428800, \"includeSystemDirs\": true}}\n\
-         \"photos of my cat\" → {{\"namePattern\": \"\\\\.(jpg|jpeg|png|heic|webp|gif)$\", \"patternType\": \"regex\", \"caveat\": \"Can't filter by photo content — add your naming convention if you have one (e.g. 'cat-*')\"}}\n\
-         \n\
-         Today's date is {today_str}. Return ONLY the JSON, no explanation."
-    )
+    SEARCH_PROMPT_TEMPLATE
+        .replace("{TODAY}", &today_str)
+        .replace("{ONE_YEAR_AGO}", &one_year_ago_str)
 }
 
 /// Strips markdown code fences from an LLM response and parses it as JSON.
@@ -605,35 +599,7 @@ pub(crate) fn build_refinement_system_prompt(natural_query: &str, ctx: &Prefligh
     };
 
     format!(
-        "{base_prompt}\n\n\
-         ---\n\n\
-         This is the SECOND PASS (refinement). The preflight query already ran and returned real results. \
-         Your job is to NARROW the results — remove false positives, never broaden.\n\n\
-         {pass1_section}\
-         {table}\n\n\
-         The user asked: \"{natural_query}\"\n\n\
-         Rules for refinement:\n\
-         - ONLY narrow. Never add new extensions, weaken patterns, or remove constraints that \
-         were filtering correctly. If the preflight found 100 hits, the refined query should find \
-         ≤100, not more.\n\
-         - Study the NAMES in the results. If the relevant files share a naming pattern the preflight \
-         missed, use that pattern. If irrelevant files have a distinguishing trait (wrong extension, \
-         specific directory), exclude them.\n\
-         - If results contain noise from specific directories (caches, build output, indexes, \
-         node_modules), add those directory names to \"excludeDirs\".\n\
-         - If an extension is ambiguous (e.g. .key matching both Keynote and SSL keys), tighten \
-         the pattern or drop the ambiguous extension.\n\
-         - If the preflight results are already precise (mostly relevant files), return the same \
-         query unchanged. Don't fix what isn't broken.\n\
-         - Never drop the core search term to broaden coverage. If the preflight searched for \
-         \"websocket\" and found some results, keep \"websocket\" — don't generalize to all server files.\n\
-         - PRESERVE these flags from pass 1 — do not drop them:\n\
-           * \"includeSystemDirs\": if pass 1 set it to true, you MUST keep it true.\n\
-           * \"excludeDirs\": keep all entries from pass 1, you may add more but never remove.\n\
-           * \"searchPaths\": keep unless the path resolved to 0 results.\n\
-           * \"caseSensitive\": preserve the pass 1 value.\n\
-           * \"caveat\": preserve if still applicable.\n\
-         Return ONLY the refined JSON."
+        "{base_prompt}\n\n---\n\n{pass1_section}{table}\n\nUser query: \"{natural_query}\"\n\n{REFINEMENT_RULES}"
     )
 }
 
@@ -1010,8 +976,8 @@ mod tests {
     #[test]
     fn test_build_search_system_prompt_contains_date() {
         let prompt = build_search_system_prompt();
-        assert!(prompt.contains("Today's date is"));
-        assert!(prompt.contains("Return ONLY a JSON object"));
+        assert!(prompt.contains("Today:"));
+        assert!(prompt.contains("Return ONLY JSON"));
         // Should contain a date in YYYY-MM-DD format
         assert!(prompt.contains("20")); // Year starts with 20
     }
@@ -1019,7 +985,7 @@ mod tests {
     #[test]
     fn test_build_search_system_prompt_contains_regex_flavor() {
         let prompt = build_search_system_prompt();
-        assert!(prompt.contains("Rust `regex` crate syntax"));
+        assert!(prompt.contains("Rust `regex` crate"));
         assert!(prompt.contains("no lookahead/lookbehind"));
     }
 
@@ -1390,19 +1356,19 @@ mod tests {
 
         let prompt = build_refinement_system_prompt("find my resume", &ctx);
         // Contains the base prompt
-        assert!(prompt.contains("Return ONLY a JSON object"));
+        assert!(prompt.contains("Return ONLY JSON"));
         // Contains the preflight table
         assert!(prompt.contains("100 results"));
         assert!(prompt.contains("test.pdf"));
         // Contains the refinement instruction
         assert!(prompt.contains("find my resume"));
-        assert!(prompt.contains("SECOND PASS (refinement)"));
+        assert!(prompt.contains("REFINEMENT pass"));
         // Contains the pass 1 query JSON
         assert!(prompt.contains("Your pass 1 query was:"));
         assert!(prompt.contains("*resume*"));
         // Contains the flag preservation rule
         assert!(prompt.contains("includeSystemDirs"));
-        assert!(prompt.contains("PRESERVE these flags"));
+        assert!(prompt.contains("PRESERVE from pass 1"));
     }
 
     #[test]
