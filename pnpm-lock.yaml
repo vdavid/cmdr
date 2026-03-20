@@ -31,6 +31,9 @@ importers:
       '@lottiefiles/dotlottie-svelte':
         specifier: ^0.8.15
         version: 0.8.15(svelte@5.53.7)
+      '@lucide/svelte':
+        specifier: ^0.577.0
+        version: 0.577.0(svelte@5.53.7)
       '@tauri-apps/api':
         specifier: ^2.10.1
         version: 2.10.1
@@ -1405,6 +1408,11 @@ packages:
 
   '@lottiefiles/dotlottie-web@0.63.0':
     resolution: {integrity: sha512-oYIkvu6E4n8fZH7ciQsVqamlUDeBnd6JbNYa1UWC/npkNzEHqM5saL3vk/nNorqdfjYwdcdmhLtYbnuwVy+3/Q==}
+
+  '@lucide/svelte@0.577.0':
+    resolution: {integrity: sha512-0P6mkySd2MapIEgq08tADPmcN4DHndC/02PWwaLkOerXlx5Sv9aT4BxyXLIY+eccr0g/nEyCYiJesqS61YdBZQ==}
+    peerDependencies:
+      svelte: ^5
 
   '@napi-rs/wasm-runtime@1.1.1':
     resolution: {integrity: sha512-p64ah1M1ld8xjWv3qbvFwHiFVWrq1yFvV4f7w+mzaqiR4IlSgkqhcRdHwsGgomwzBH51sRY4NEowLxnaBjcW/A==}
@@ -8017,6 +8025,10 @@ snapshots:
       svelte: 5.53.7
 
   '@lottiefiles/dotlottie-web@0.63.0': {}
+
+  '@lucide/svelte@0.577.0(svelte@5.53.7)':
+    dependencies:
+      svelte: 5.53.7
 
   '@napi-rs/wasm-runtime@1.1.1':
     dependencies:

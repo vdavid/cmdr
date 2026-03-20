@@ -15,6 +15,7 @@
     import { getDisplaySize, buildFileSizeTooltip } from '../views/full-list-utils'
     import { isScanning } from '$lib/indexing/index-state.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import { Hourglass } from '@lucide/svelte'
     import type { VolumeSpaceInfo } from '$lib/tauri-commands'
     import { formatDiskSpaceStatus } from '../disk-space-utils'
 
@@ -282,7 +283,9 @@
                 {pluralize(totalDirs, 'dir', 'dirs')}{#if totalSize === 0}
                     selected{/if}.
                 {#if showSelectionStale}
-                    <span class="stale-indicator" use:tooltip={'Might be outdated. Currently scanning...'}>⚠️</span>
+                    <span class="stale-indicator" use:tooltip={'Updating index — size may change.'}
+                        ><Hourglass size={12} color="var(--color-accent)" /></span
+                    >
                 {/if}
             {:else if hasFiles}
                 <!-- Has files: show full summary -->
@@ -294,7 +297,9 @@
                     &nbsp;and {formatNumber(selectedDirs)} of {formatNumber(totalDirs)}
                     {pluralize(totalDirs, 'dir', 'dirs')}{/if}.
                 {#if showSelectionStale}
-                    <span class="stale-indicator" use:tooltip={'Might be outdated. Currently scanning...'}>⚠️</span>
+                    <span class="stale-indicator" use:tooltip={'Updating index — size may change.'}
+                        ><Hourglass size={12} color="var(--color-accent)" /></span
+                    >
                 {/if}
             {/if}
         </span>
@@ -353,7 +358,9 @@
     }
 
     .stale-indicator {
-        font-size: var(--font-size-xs);
+        display: inline-flex;
+        align-items: center;
+        vertical-align: middle;
         cursor: help;
     }
 </style>

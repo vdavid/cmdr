@@ -236,7 +236,7 @@ export function buildDirSizeTooltip(
         }
 
         const base = `${sizeStr} \u00B7 ${filesStr} \u00B7 ${foldersStr}`
-        return scanning ? `${base} \u2014 Might be outdated. Currently scanning...` : base
+        return scanning ? `${base} \u2014 Updating index \u2014 size may change.` : base
     }
     return scanning ? 'Scanning...' : ''
 }

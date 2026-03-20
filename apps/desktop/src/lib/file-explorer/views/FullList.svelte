@@ -36,6 +36,7 @@
     } from '$lib/settings/reactive-settings.svelte'
     import { iconCacheCleared } from '$lib/icon-cache'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import { Hourglass } from '@lucide/svelte'
     import type { RenameState } from '../rename/rename-state.svelte'
 
     interface Props {
@@ -489,9 +490,8 @@
                                         <span class={triad.tierClass}>{triad.value}</span>
                                     {/each}
                                     {#if indexing}
-                                        <span
-                                            class="size-stale"
-                                            use:tooltip={'Might be outdated. Currently scanning...'}>⚠️</span
+                                        <span class="size-stale" use:tooltip={'Updating index — size may change.'}
+                                            ><Hourglass size={12} color="var(--color-accent)" /></span
                                         >
                                     {/if}
                                 {:else if indexing}
@@ -606,8 +606,9 @@
     }
 
     .size-stale {
-        font-size: var(--font-size-xs);
-        line-height: 1;
+        display: inline-flex;
+        align-items: center;
+        vertical-align: middle;
         margin-left: var(--spacing-xxs);
         cursor: help;
     }

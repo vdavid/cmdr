@@ -79,7 +79,7 @@ describe('buildDirSizeTooltip', () => {
         expect(tooltip).toContain('1234 bytes')
         expect(tooltip).toContain('10 files')
         expect(tooltip).toContain('3 folders')
-        expect(tooltip).toContain('Might be outdated. Currently scanning...')
+        expect(tooltip).toContain('Updating index — size may change.')
     })
 
     it('uses singular form for 1 file', () => {
@@ -108,7 +108,7 @@ describe('buildDirSizeTooltip', () => {
     it('handles zero-size directory while scanning', () => {
         const tooltip = buildDirSizeTooltip(0, undefined, 0, 0, true, formatSize, formatNum, plural)
         expect(tooltip).toContain('0 bytes')
-        expect(tooltip).toContain('Might be outdated')
+        expect(tooltip).toContain('Updating index')
     })
 
     it('handles large file and folder counts', () => {

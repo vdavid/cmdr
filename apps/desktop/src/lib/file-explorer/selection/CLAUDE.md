@@ -47,8 +47,8 @@ In `selection-summary` mode, directory recursive sizes are included in the size 
 index). The `hasOnlyDirs` branch shows size triads when `totalSize > 0`; when sizes are unavailable (indexing off), it
 falls back to showing only dir count and percentage.
 
-Stale indicator (`⚠️`) appears in `selection-summary` when `isScanning()` is true and directories are selected, because
-dir sizes may be incomplete during scanning.
+Stale indicator (Lucide `Hourglass` icon in accent color) appears in `selection-summary` when `isScanning()` is true and
+directories are selected, because dir sizes may be incomplete during scanning.
 
 Filename truncation in `file-info` mode uses a ResizeObserver + throwaway `<span>` measurement for middle truncation
 (preserves file extension). The truncation runs binary search via `getTruncatedName`, triggered reactively by
