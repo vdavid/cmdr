@@ -720,6 +720,20 @@ pub fn resolve_include_paths(query: &mut SearchQuery, pool: &ReadPool) {
 /// Execute a search query against the in-memory index. Pure function.
 pub fn search(index: &SearchIndex, query: &SearchQuery) -> Result<SearchResult, String> {
     let t = std::time::Instant::now();
+
+    // Guard: reject unfiltered scans on large indexes. Without a namePattern,
+    // size filter, or directory filter, we'd scan every entry (~60s for 5M entries).
+    let has_name = query.name_pattern.as_ref().is_some_and(|p| !p.is_empty());
+    let has_size = query.min_size.is_some() || query.max_size.is_some();
+    let has_date = query.modified_after.is_some() || query.modified_before.is_some();
+    let has_dir_filter = query.is_directory.is_some();
+    if !has_name && !has_size && !has_dir_filter && !has_date && index.entries.len() > 100_000 {
+        return Err(
+            "Query too broad — add a filename pattern, size, date, or type filter to narrow results."
+                .to_string(),
+        );
+    }
+
     // Pre-resolve scope filter
     let scope_filter = prepare_scope_filter(query);
 

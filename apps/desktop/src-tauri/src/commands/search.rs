@@ -368,6 +368,8 @@ pub(crate) fn iso_date_to_timestamp(date_str: &str) -> Result<u64, String> {
 /// Dynamic parts (`{TODAY}`, `{ONE_YEAR_AGO}`) are replaced at runtime.
 const SEARCH_PROMPT_TEMPLATE: &str = "\
 Translate the user's file search query into a JSON object. Return ONLY JSON, no explanation.
+This is pass 1 (discovery) — prefer broader patterns that may include false positives over \
+precise ones that miss files. A second pass will refine using real results.
 
 Fields (all optional):
   namePattern (string)     Glob (* and ? only) or regex. patternType: \"glob\" or \"regex\".
@@ -383,8 +385,8 @@ Fields (all optional):
   caveat                   If the query involves content/semantics not determinable from
                            filename/size/date, explain what was dropped and how to narrow.
 
-Regex: Rust `regex` crate (no lookahead/lookbehind, no backreferences, no \\d — use [0-9]). \
-Case-insensitive, unanchored unless you add ^ or $.
+NEVER use lookahead (?=), lookbehind (?<=), or backreferences — Rust `regex` crate doesn't \
+support them. No \\d either — use [0-9]. Regex is case-insensitive, unanchored unless you add ^ or $.
 
 Categories → extensions:
   docs/resume/CV/report → \\.(pdf|doc|docx|txt|odt|xls|xlsx)$
@@ -402,6 +404,7 @@ Rules:
 - Code queries → auto-add excludeDirs: node_modules, .git, __pycache__, vendor, .venv, target, build, dist.
 - Date math: yesterday=day range, this week=since Monday, last month=since 1st of prev month.
 - Results sort by recency, not size. For \"biggest\"/\"largest\", add a size caveat.
+- ALWAYS include a namePattern when possible. Only omit it for pure size/date/directory queries.
 
 Examples:
 \"invoices I mark as rymd\" → {\"namePattern\":\"*rymd*\",\"patternType\":\"glob\"}
@@ -410,6 +413,9 @@ Examples:
 \"photos of my cat\" → {\"namePattern\":\"\\\\.(jpg|jpeg|png|heic|webp|gif)$\",\"patternType\":\"regex\",\"caveat\":\"Can't filter by photo content — add your naming convention (e.g. 'cat-*')\"}
 \"documents older than a year\" → {\"namePattern\":\"\\\\.(pdf|doc|docx|txt|odt|xls|xlsx)$\",\"patternType\":\"regex\",\"modifiedBefore\":\"{ONE_YEAR_AGO}\"}
 \"screenshots from today\" → {\"namePattern\":\"^Screenshot.*\\\\.(png|jpg|heic)$\",\"patternType\":\"regex\",\"modifiedAfter\":\"{TODAY}\"}
+\"node_modules taking up space\" → {\"namePattern\":\"^node_modules$\",\"patternType\":\"regex\",\"isDirectory\":true,\"minSize\":52428800,\"includeSystemDirs\":true}
+\"empty folders\" → {\"isDirectory\":true,\"maxSize\":0}
+\"anything related to kubernetes\" → {\"namePattern\":\"(k8s|kube|kubectl|helm|kubernetes)\",\"patternType\":\"regex\"}
 
 Today: {TODAY}.";
 
@@ -424,6 +430,7 @@ Rules:
 - Never remove constraints that were filtering correctly.
 - PRESERVE from pass 1: includeSystemDirs, excludeDirs (add more, don't remove), \
 searchPaths (keep unless 0 results), caseSensitive, caveat.
+- NEVER use lookahead (?=), lookbehind (?<=), or backreferences — they cause errors.
 
 Return ONLY the refined JSON.";
 
@@ -986,7 +993,7 @@ mod tests {
     fn test_build_search_system_prompt_contains_regex_flavor() {
         let prompt = build_search_system_prompt();
         assert!(prompt.contains("Rust `regex` crate"));
-        assert!(prompt.contains("no lookahead/lookbehind"));
+        assert!(prompt.contains("NEVER use lookahead"));
     }
 
     #[test]
