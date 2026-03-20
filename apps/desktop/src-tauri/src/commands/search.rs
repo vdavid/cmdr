@@ -771,6 +771,12 @@ pub(crate) async fn call_ai_translate(
         None => build_search_system_prompt(),
     };
 
+    log::debug!(
+        "AI search ({pass_label}): full system prompt ({} chars):\n{system_prompt}",
+        system_prompt.len()
+    );
+    log::debug!("AI search ({pass_label}): user message: {natural_query:?}");
+
     let options = ChatCompletionOptions {
         system_prompt,
         temperature: 0.3,
@@ -779,7 +785,6 @@ pub(crate) async fn call_ai_translate(
     };
 
     let t0 = std::time::Instant::now();
-    log::debug!("MCP ai_search: calling chat_completion ({pass_label})...");
     let response = match crate::ai::client::chat_completion(&backend, natural_query, &options).await {
         Ok(r) => {
             log::info!(
