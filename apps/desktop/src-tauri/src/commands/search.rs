@@ -605,9 +605,7 @@ pub(crate) fn build_refinement_system_prompt(natural_query: &str, ctx: &Prefligh
         None => String::new(),
     };
 
-    format!(
-        "{base_prompt}\n\n---\n\n{pass1_section}{table}\n\nUser query: \"{natural_query}\"\n\n{REFINEMENT_RULES}"
-    )
+    format!("{base_prompt}\n\n---\n\n{pass1_section}{table}\n\nUser query: \"{natural_query}\"\n\n{REFINEMENT_RULES}")
 }
 
 /// Converts a parsed `AiSearchQuery` into the final `TranslateResult`.

@@ -73,6 +73,11 @@ the dialog and trigger quick-search or navigation.
 `get_read_pool()` returns `None` (indexing disabled or not started). The dialog catches this and enters the disabled
 state.
 
+## References
+
+- [AI search eval history](../../../../../docs/notes/ai-search-eval-history.md) -- Four rounds of prompt tuning for the
+  AI natural language to structured query translation, with a 30-query test catalog and lessons learned.
+
 ## Dependencies
 
 - `$lib/tauri-commands` -- `prepareSearchIndex`, `searchFiles`, `releaseSearchIndex`, `translateSearchQuery`,
