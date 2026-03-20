@@ -4,6 +4,7 @@
  */
 
 import { getSetting } from '$lib/settings/settings-store'
+import { formatSizeTriads } from '../selection/selection-info-utils'
 
 /** Layout constants for Full mode */
 export const FULL_LIST_ROW_HEIGHT = 20
@@ -158,22 +159,62 @@ export function sizesDifferSignificantly(a: number, b: number): boolean {
     return Math.abs(a - b) / larger > 0.01
 }
 
+/** Formats a byte count as colored HTML digit triads (same colors as the size column). */
+function formatBytesHtml(bytes: number): string {
+    return formatSizeTriads(bytes)
+        .map((t) => `<span class="${t.tierClass}">${t.value}</span>`)
+        .join('')
+}
+
+/** Formats a single size line: "Label: 1.23 GB (1 234 567 890 bytes)" with colored triads. */
+function sizeLineHtml(label: string, bytes: number, formatSize: (b: number) => string): string {
+    return `${label}: ${formatSize(bytes)} (${formatBytesHtml(bytes)} bytes)`
+}
+
 /**
- * Build a tooltip for a file showing both content and on-disk sizes when they differ.
- * Returns the single formatted size when they're essentially equal or only one is available.
+ * Build a rich HTML tooltip for a file showing both content and on-disk sizes when they differ.
+ * Returns a plain string when only one size is available, or an `{ html }` object for rich display.
  */
 export function buildFileSizeTooltip(
     logical: number | undefined,
     physical: number | undefined,
     formatSize: (bytes: number) => string,
-): string {
+): string | { html: string } {
     if (logical === undefined && physical === undefined) return ''
     if (logical !== undefined && physical !== undefined && sizesDifferSignificantly(logical, physical)) {
-        return `Content: ${formatSize(logical)} \u00B7 On disk: ${formatSize(physical)}`
+        return {
+            html: `${sizeLineHtml('Content', logical, formatSize)}<br>${sizeLineHtml('On disk', physical, formatSize)}`,
+        }
     }
-    // Show whichever is available (or both are equal — just show one)
     const size = logical ?? physical
-    return size !== undefined ? formatSize(size) : ''
+    if (size === undefined) return ''
+    return { html: `${formatSize(size)} (${formatBytesHtml(size)} bytes)` }
+}
+
+/**
+ * Build a rich HTML tooltip for the selection summary bar.
+ * Shows "Selected" and "Of total" lines, with a separate "On disk" section when sizes differ.
+ */
+export function buildSelectionSizeTooltip(
+    selectedLogical: number,
+    selectedPhysical: number,
+    totalLogical: number,
+    totalPhysical: number,
+    formatSize: (bytes: number) => string,
+): { html: string } | undefined {
+    if (totalLogical <= 0) return undefined
+
+    const selLine = (label: string, bytes: number) => `${label}: ${formatSize(bytes)} (${formatBytesHtml(bytes)} bytes)`
+    const lines: string[] = [selLine('Selected', selectedLogical), selLine('Of total', totalLogical)]
+
+    const showDisk =
+        sizesDifferSignificantly(selectedLogical, selectedPhysical) ||
+        sizesDifferSignificantly(totalLogical, totalPhysical)
+    if (showDisk) {
+        lines.push('', 'On disk:', selLine('Selected', selectedPhysical), selLine('Of total', totalPhysical))
+    }
+
+    return { html: lines.join('<br>') }
 }
 
 // ============================================================================
@@ -222,21 +263,34 @@ export function buildDirSizeTooltip(
     formatSize: (bytes: number) => string,
     formatNum: (n: number) => string,
     plural: (count: number, singular: string, pluralForm: string) => string,
-): string {
+): string | { html: string } {
     if (recursiveSize !== undefined) {
-        const filesStr = `${formatNum(recursiveFileCount)} ${plural(recursiveFileCount, 'file', 'files')}`
-        const foldersStr = `${formatNum(recursiveDirCount)} ${plural(recursiveDirCount, 'folder', 'folders')}`
+        const lines: string[] = []
 
-        // Show both sizes when they differ significantly
-        let sizeStr: string
+        // Size lines with colored byte triads
         if (recursivePhysicalSize !== undefined && sizesDifferSignificantly(recursiveSize, recursivePhysicalSize)) {
-            sizeStr = `Content: ${formatSize(recursiveSize)} \u00B7 On disk: ${formatSize(recursivePhysicalSize)}`
+            lines.push(sizeLineHtml('Content', recursiveSize, formatSize))
+            lines.push(sizeLineHtml('On disk', recursivePhysicalSize, formatSize))
         } else {
-            sizeStr = formatSize(recursiveSize)
+            lines.push(`${formatSize(recursiveSize)} (${formatBytesHtml(recursiveSize)} bytes)`)
         }
 
-        const base = `${sizeStr} \u00B7 ${filesStr} \u00B7 ${foldersStr}`
-        return scanning ? `${base} \u2014 Updating index \u2014 size may change.` : base
+        // File/folder counts with "no" for zero
+        const filesStr =
+            recursiveFileCount === 0
+                ? 'No files'
+                : `${formatNum(recursiveFileCount)} ${plural(recursiveFileCount, 'file', 'files')}`
+        const foldersStr =
+            recursiveDirCount === 0
+                ? 'no folders'
+                : `${formatNum(recursiveDirCount)} ${plural(recursiveDirCount, 'folder', 'folders')}`
+        lines.push(`${filesStr}, ${foldersStr}`)
+
+        if (scanning) {
+            lines.push('Updating index \u2014 size may change.')
+        }
+
+        return { html: lines.join('<br>') }
     }
     return scanning ? 'Scanning...' : ''
 }

@@ -433,7 +433,7 @@
     })
 
     /** Build tooltip for a directory entry showing recursive size info. */
-    function buildDirTooltip(file: FileEntry): string | undefined {
+    function buildDirTooltip(file: FileEntry): string | { html: string } | undefined {
         if (!file.isDirectory) return undefined
         return (
             buildDirSizeTooltip(

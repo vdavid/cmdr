@@ -45,6 +45,37 @@ To add a new dialog:
 1. Add an entry to `SOFT_DIALOG_REGISTRY` in `dialog-registry.ts`.
 2. Pass the new id as `dialogId` to `ModalDialog` — MCP tracking is then automatic.
 
+## Tooltip (`../tooltip/tooltip.ts`)
+
+Global tooltip system via Svelte action. Apple-style frosted glass appearance, 400ms show delay, auto-flips above/below
+viewport.
+
+Usage:
+
+```svelte
+import { tooltip } from '$lib/tooltip/tooltip'
+
+<!-- Plain text -->
+<span use:tooltip="Simple tooltip">...</span>
+
+<!-- Rich HTML (supports <br>, <span class="...">, etc.) -->
+<span use:tooltip={{ html: 'Line one<br>Line two' }}>...</span>
+
+<!-- Text + keyboard shortcut badge -->
+<span use:tooltip={{ text: 'Save', shortcut: '⌘S' }}>...</span>
+
+<!-- Only show when text overflows -->
+<span use:tooltip={{ text: longText, overflowOnly: true }}>...</span>
+
+<!-- No tooltip (pass undefined or '') -->
+<span use:tooltip={undefined}>...</span>
+```
+
+`TooltipParam` type: `string | { text?, html?, shortcut?, overflowOnly? } | null | undefined`.
+
+The tooltip element has `white-space: pre-line` and uses global CSS classes, so `<span class="size-mb">` etc. work
+inside `{ html }` tooltips. The `html` variant renders via `innerHTML` — only use with trusted content.
+
 ## Button
 
 Variants: `primary` | `secondary` (default) | `danger`. Sizes: `regular` (default) | `mini`. Extends

@@ -12,7 +12,7 @@
     } from './selection-info-utils'
     import { measureDateColumnWidth } from '../views/full-list-utils'
     import { formatFileSize, formatDateTime, getSizeDisplayMode } from '$lib/settings/reactive-settings.svelte'
-    import { getDisplaySize, buildFileSizeTooltip } from '../views/full-list-utils'
+    import { getDisplaySize, buildFileSizeTooltip, buildSelectionSizeTooltip } from '../views/full-list-utils'
     import { isScanning } from '$lib/indexing/index-state.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { Hourglass } from '@lucide/svelte'
@@ -232,12 +232,15 @@
     const totalSizeTriads = $derived(formatSizeTriads(totalSize))
 
     // Tooltip shows human-readable sizes; includes both content and on-disk when they differ
-    const selectionSizeTooltip = $derived.by(() => {
-        if (totalLogicalSize <= 0) return undefined
-        const selPart = buildFileSizeTooltip(selectedLogicalSize, selectedPhysicalSize, formatFileSize)
-        const totPart = buildFileSizeTooltip(totalLogicalSize, totalPhysicalSize, formatFileSize)
-        return `${selPart} of ${totPart}`
-    })
+    const selectionSizeTooltip = $derived(
+        buildSelectionSizeTooltip(
+            selectedLogicalSize,
+            selectedPhysicalSize,
+            totalLogicalSize,
+            totalPhysicalSize,
+            formatFileSize,
+        ),
+    )
 </script>
 
 <div class="selection-info" bind:this={containerElement}>
