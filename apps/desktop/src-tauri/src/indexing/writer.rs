@@ -115,6 +115,10 @@ pub enum WriteMessage {
     /// Periodic housekeeping: reclaim free pages from deletes/rescans.
     /// Sent by a background timer, not counted in WriterStats.
     IncrementalVacuum,
+    /// Emit `index-dir-updated` for the given paths. Enqueued after a batch
+    /// of writes so the UI notification fires only after all prior messages
+    /// (deletes, upserts, deltas) are committed.
+    EmitDirUpdated(Vec<String>),
     /// Shut down the writer thread.
     Shutdown,
 }
@@ -780,6 +784,11 @@ fn process_message(
                 }
                 Ok(_) => {} // No free pages, nothing to do
                 Err(e) => log::warn!("Writer: freelist_count query failed: {e}"),
+            }
+        }
+        WriteMessage::EmitDirUpdated(paths) => {
+            if let Some(app) = app_handle {
+                crate::indexing::reconciler::emit_dir_updated(app, paths);
             }
         }
         WriteMessage::Shutdown => return true,

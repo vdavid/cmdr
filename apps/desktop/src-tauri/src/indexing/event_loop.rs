@@ -188,7 +188,9 @@ pub(super) async fn run_live_event_loop(
                             &writer, &mut pending_paths,
                         );
                         if !pending_paths.is_empty() {
-                            reconciler::emit_dir_updated(&app, pending_paths.drain().collect());
+                            let _ = writer.send(WriteMessage::EmitDirUpdated(
+                                pending_paths.drain().collect(),
+                            ));
                         }
                         break;
                     }
@@ -221,7 +223,13 @@ pub(super) async fn run_live_event_loop(
                     &writer, &mut pending_paths,
                 );
                 if !pending_paths.is_empty() {
-                    reconciler::emit_dir_updated(&app, pending_paths.drain().collect());
+                    // Enqueue the notification as a writer message so it fires
+                    // after all prior writes (deletes, upserts, deltas) commit.
+                    // Without this, multi-message operations (e.g. rename =
+                    // delete + insert) show intermediate dir_stats to the UI.
+                    let _ = writer.send(WriteMessage::EmitDirUpdated(
+                        pending_paths.drain().collect(),
+                    ));
                 }
             }
         }

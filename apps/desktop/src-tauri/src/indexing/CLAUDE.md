@@ -52,7 +52,7 @@ Live mode:
   |-- macOS: FSEvents -> reconciler (resolve_path -> entry IDs) -> UpsertEntryV2/DeleteEntryById/DeleteSubtreeById -> writer -> SQLite
   |-- Linux: inotify (via notify crate) -> same pipeline
   |-- Reconciler and event loops hold a read connection for integer-keyed path resolution
-  |-- Events deduplicated by normalized path in HashMap, flushed every 1s via index-dir-updated event
+  |-- Events deduplicated by normalized path in HashMap, flushed every 1s, writer flush before emit ensures atomic dir_stats
   |
 Enrichment (every get_file_range call):
   |-- enrich_entries_with_index() -> resolve parent dir → id (one tree walk)
@@ -152,6 +152,8 @@ Key test files are alongside each module (test functions within `#[cfg(test)]` b
 ## Gotchas
 
 **INSERT OR REPLACE on a populated DB is catastrophically slow**: The `platform_case` collation (NFD + case fold on macOS) runs for every B-tree comparison during unique index lookups. On an empty DB a full scan takes ~2.5 min; on a populated DB with 5.5M entries the same scan takes ~30 min because each `INSERT OR REPLACE` triggers ~20 collation calls to traverse the B-tree. `start_scan()` truncates `entries` and `dir_stats` via `TruncateData` + `flush_blocking()` before every scan to avoid this. Additionally, without truncation, old rows accumulate as orphaned subtrees (3-4x DB bloat per scan cycle) because `INSERT OR REPLACE` only deduplicates at the root level.
+
+**Live event notifications are enqueued as writer messages**: `emit_dir_updated` is sent via `WriteMessage::EmitDirUpdated(paths)` instead of being called directly from the event loop. Since the writer processes messages in order, the notification fires only after all prior writes (deletes, upserts, deltas) from the same batch are committed. Without this, multi-message operations (e.g. rename = `DeleteEntryById` + `UpsertEntryV2`) show intermediate `dir_stats` to the UI (e.g. parent dir size drops by the renamed file's size). The replay path uses a different approach (explicit flush + batched emit) because it accumulates paths over thousands of events.
 
 **Cold-start replay enters live mode immediately after flush**: `run_replay_event_loop` (in `event_loop.rs`) doesn't emit `index-dir-updated` during Phase 1 (replay). It collects affected paths, flushes the writer (ensuring all writes are committed), emits a single batched notification, and enters live mode right away (~100ms from startup). Post-replay verification (`verify_affected_dirs`) runs in a background task (`run_background_verification`) concurrently with live events. This is safe because the writer serializes all writes. Any corrections found by verification are emitted as a separate `index-dir-updated` batch.
 
