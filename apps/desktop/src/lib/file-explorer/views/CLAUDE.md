@@ -11,7 +11,12 @@ without DOM performance issues.
 - **FullList.svelte** – Vertical rows, full metadata display, vertical scrolling
 - **virtual-scroll.ts** – Pure math functions for calculating visible windows
 - **file-list-utils.ts** – Shared helpers: entry caching, icon prefetching, sync status
-- **brief-list-utils.ts** / **full-list-utils.ts** – Mode-specific rendering logic
+- **brief-list-utils.ts** / **full-list-utils.ts** – Mode-specific rendering logic. `full-list-utils.ts` includes
+  dual-size display helpers: `getDisplaySize()` (picks logical/physical/smart), `hasSizeMismatch()`,
+  `buildFileSizeTooltip()`, `buildDirSizeTooltip()`, `buildSelectionSizeTooltip()`
+- **FullList.svelte** – Reads `listing.sizeDisplay` (via `getSizeDisplayMode()`) and `listing.sizeMismatchWarning`
+  (via `getSizeMismatchWarning()`) settings. Uses Lucide `CircleAlert` for size mismatch warnings and `Hourglass` for
+  stale index indicators
 - **dir-size-display.test.ts** – Tests for `getDirSizeDisplayState` / `buildDirSizeTooltip` (functions in
   `full-list-utils.ts`)
 - **view-modes.test.ts** – Integration tests for hidden-file filtering and directory listing structure (uses

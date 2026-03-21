@@ -9,10 +9,10 @@ Backend directory reading, caching, sorting, and streaming for the file explorer
 - **mod.rs** – Public API exports, re-exports for crate-internal use
 - **reading.rs** – Low-level disk I/O (`list_directory_core()`, `get_single_entry()`, macOS metadata)
 - **streaming.rs** – Async streaming with progress events, cancellation
-- **operations.rs** – Synchronous frontend-facing API (lifecycle, cache accessors)
+- **operations.rs** – Synchronous frontend-facing API (lifecycle, cache accessors). `ListingStats` includes `total_physical_size` and `selected_physical_size` for dual-size display
 - **caching.rs** – `LISTING_CACHE` global state, `CachedListing` struct, cache helpers for incremental updates
 - **sorting.rs** – `SortColumn`, `SortOrder`, `sort_entries()`
-- **metadata.rs** – `FileEntry` struct, macOS extended metadata
+- **metadata.rs** – `FileEntry` struct, macOS extended metadata. `FileEntry` has `physical_size: Option<u64>` (populated from `st_blocks * 512`) and `recursive_physical_size: Option<u64>` (populated from drive index)
 
 ### Data flow
 

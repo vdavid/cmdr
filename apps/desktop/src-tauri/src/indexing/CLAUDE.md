@@ -58,7 +58,7 @@ Enrichment (every get_file_range call):
   |-- enrich_entries_with_index() -> resolve parent dir → id (one tree walk)
   |-- list_child_dir_ids_and_names(parent_id) → (id, name) pairs
   |-- get_dir_stats_batch_by_ids(child_ids) → batch stats
-  |-- Match by normalized name → populate FileEntry.recursive_size/file_count/dir_count
+  |-- Match by normalized name → populate FileEntry.recursive_size/recursive_physical_size/file_count/dir_count
   |-- Fallback: individual path resolution if fast path fails (mixed-parent edge case)
   |
 Navigation verification (after enrichment):
@@ -125,7 +125,7 @@ Key test files are alongside each module (test functions within `#[cfg(test)]` b
 
 **IPC boundary stays path-based**: Frontend sends filesystem paths, backend resolves path→ID internally via `store::resolve_path()`. No frontend changes needed. IPC dir stats queries (`get_dir_stats`, `get_dir_stats_batch`) use `ReadPool` for lock-free reads, same as enrichment.
 
-**Dual sizes (logical + physical)**: Both `meta.len()` (logical) and `st_blocks * 512` (physical) are stored. Logical size is displayed by default (mapped to `recursive_size` at the IPC boundary). Physical size is stored in DB but not yet exposed to the frontend. Physical sizes may overcount ~10-20% for APFS clones (shared blocks). Volume usage bar uses `statfs()` for true totals.
+**Dual sizes (logical + physical)**: Both `meta.len()` (logical) and `st_blocks * 512` (physical) are stored. Both sizes are exposed to the frontend via `FileEntry.physical_size`, `FileEntry.recursive_physical_size`, and `ListingStats` physical totals (`total_physical_size`, `selected_physical_size`). Physical sizes may overcount ~10-20% for APFS clones (shared blocks). Volume usage bar uses `statfs()` for true totals.
 
 **Hardlink inode dedup at scan time**: Files with `nlink > 1` are tracked by inode in a `HashSet<u64>` local to `run_scan`. The second+ link for the same inode gets `logical_size = None, physical_size = None`, so aggregation counts each inode's bytes exactly once. The `nlink > 1` check is a fast path: single-link files (the vast majority) skip the HashSet entirely, so there's no overhead for typical workloads. Memory cost is ~8 bytes per unique hardlinked inode. The set lives for one scan and is dropped with the scan's stack frame. Only applies to the scanner (full/subtree scans); the reconciler handles individual live events where cross-event dedup isn't applicable.
 
