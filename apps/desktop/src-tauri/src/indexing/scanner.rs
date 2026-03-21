@@ -474,7 +474,13 @@ fn entry_size_and_mtime(path: &Path) -> (Option<u64>, Option<u64>, Option<u64>, 
             let physical_size = if blocks > 0 { blocks * 512 } else { meta.len() };
             let mtime = meta.mtime();
             let mtime_u64 = if mtime >= 0 { Some(mtime as u64) } else { None };
-            (Some(logical_size), Some(physical_size), mtime_u64, meta.ino(), meta.nlink())
+            (
+                Some(logical_size),
+                Some(physical_size),
+                mtime_u64,
+                meta.ino(),
+                meta.nlink(),
+            )
         }
         Err(_) => (None, None, None, 0, 1),
     }

@@ -25,7 +25,7 @@ describe('applyDiff', () => {
     describe('basic operations', () => {
         it('adds a file at the correct sorted position', () => {
             const files = [file('a.txt'), file('c.txt')]
-            const changes: DiffChange[] = [{ type: 'add', entry: file('b.txt') }]
+            const changes: DiffChange[] = [{ type: 'add', entry: file('b.txt'), index: 0 }]
 
             const newIndex = applyDiff(files, 0, changes)
 
@@ -35,7 +35,7 @@ describe('applyDiff', () => {
 
         it('removes a file', () => {
             const files = [file('a.txt'), file('b.txt'), file('c.txt')]
-            const changes: DiffChange[] = [{ type: 'remove', entry: file('b.txt') }]
+            const changes: DiffChange[] = [{ type: 'remove', entry: file('b.txt'), index: 0 }]
 
             const newIndex = applyDiff(files, 0, changes)
 
@@ -49,7 +49,7 @@ describe('applyDiff', () => {
             const files = [original]
             const modified = file('a.txt')
             modified.size = 200
-            const changes: DiffChange[] = [{ type: 'modify', entry: modified }]
+            const changes: DiffChange[] = [{ type: 'modify', entry: modified, index: 0 }]
 
             const newIndex = applyDiff(files, 0, changes)
 
@@ -61,7 +61,7 @@ describe('applyDiff', () => {
     describe('cursor preservation - single file operations', () => {
         it('keeps cursor on same file when file added before cursor', () => {
             const files = [file('c.txt'), file('d.txt')]
-            const changes: DiffChange[] = [{ type: 'add', entry: file('b.txt') }]
+            const changes: DiffChange[] = [{ type: 'add', entry: file('b.txt'), index: 0 }]
 
             const newIndex = applyDiff(files, 1, changes) // cursor on d.txt
 
@@ -71,7 +71,7 @@ describe('applyDiff', () => {
 
         it('keeps cursor on same file when file added after cursor', () => {
             const files = [file('a.txt'), file('b.txt')]
-            const changes: DiffChange[] = [{ type: 'add', entry: file('c.txt') }]
+            const changes: DiffChange[] = [{ type: 'add', entry: file('c.txt'), index: 0 }]
 
             const newIndex = applyDiff(files, 0, changes) // cursor on a.txt
 
@@ -81,7 +81,7 @@ describe('applyDiff', () => {
 
         it('keeps cursor on same file when file removed before cursor', () => {
             const files = [file('a.txt'), file('b.txt'), file('c.txt')]
-            const changes: DiffChange[] = [{ type: 'remove', entry: file('a.txt') }]
+            const changes: DiffChange[] = [{ type: 'remove', entry: file('a.txt'), index: 0 }]
 
             const newIndex = applyDiff(files, 2, changes) // cursor on c.txt
 
@@ -91,7 +91,7 @@ describe('applyDiff', () => {
 
         it('keeps cursor on same file when file removed after cursor', () => {
             const files = [file('a.txt'), file('b.txt'), file('c.txt')]
-            const changes: DiffChange[] = [{ type: 'remove', entry: file('c.txt') }]
+            const changes: DiffChange[] = [{ type: 'remove', entry: file('c.txt'), index: 0 }]
 
             const newIndex = applyDiff(files, 0, changes) // cursor on a.txt
 
@@ -101,7 +101,7 @@ describe('applyDiff', () => {
 
         it('stays at same position index when cursor file is removed', () => {
             const files = [file('a.txt'), file('b.txt'), file('c.txt')]
-            const changes: DiffChange[] = [{ type: 'remove', entry: file('b.txt') }]
+            const changes: DiffChange[] = [{ type: 'remove', entry: file('b.txt'), index: 0 }]
 
             const newIndex = applyDiff(files, 1, changes) // cursor on b.txt
 
@@ -115,10 +115,10 @@ describe('applyDiff', () => {
             const files = [file('b.txt'), file('d.txt'), file('f.txt')]
             // Cursor on d.txt (index 1)
             const changes: DiffChange[] = [
-                { type: 'add', entry: file('a.txt') }, // before d.txt
-                { type: 'add', entry: file('c.txt') }, // before d.txt
-                { type: 'add', entry: file('e.txt') }, // after d.txt
-                { type: 'remove', entry: file('b.txt') }, // before d.txt
+                { type: 'add', entry: file('a.txt'), index: 0 }, // before d.txt
+                { type: 'add', entry: file('c.txt'), index: 0 }, // before d.txt
+                { type: 'add', entry: file('e.txt'), index: 0 }, // after d.txt
+                { type: 'remove', entry: file('b.txt'), index: 0 }, // before d.txt
             ]
 
             const newIndex = applyDiff(files, 1, changes) // cursor on d.txt
@@ -130,11 +130,11 @@ describe('applyDiff', () => {
         it('handles large batch of changes (simulating git pull)', () => {
             const files = [file('keep1.txt'), file('keep2.txt'), file('remove1.txt'), file('remove2.txt')]
             const changes: DiffChange[] = [
-                { type: 'remove', entry: file('remove1.txt') },
-                { type: 'remove', entry: file('remove2.txt') },
-                { type: 'add', entry: file('add1.txt') },
-                { type: 'add', entry: file('add2.txt') },
-                { type: 'add', entry: file('add3.txt') },
+                { type: 'remove', entry: file('remove1.txt'), index: 0 },
+                { type: 'remove', entry: file('remove2.txt'), index: 0 },
+                { type: 'add', entry: file('add1.txt'), index: 0 },
+                { type: 'add', entry: file('add2.txt'), index: 0 },
+                { type: 'add', entry: file('add3.txt'), index: 0 },
             ]
 
             const newIndex = applyDiff(files, 1, changes) // cursor on keep2.txt
@@ -146,9 +146,9 @@ describe('applyDiff', () => {
         it('stays at same position when cursor file is one of many removed', () => {
             const files = [file('a.txt'), file('b.txt'), file('c.txt')]
             const changes: DiffChange[] = [
-                { type: 'add', entry: file('d.txt') },
-                { type: 'remove', entry: file('b.txt') }, // this is the one under the cursor
-                { type: 'remove', entry: file('c.txt') },
+                { type: 'add', entry: file('d.txt'), index: 0 },
+                { type: 'remove', entry: file('b.txt'), index: 0 }, // this is the one under the cursor
+                { type: 'remove', entry: file('c.txt'), index: 0 },
             ]
 
             const newIndex = applyDiff(files, 1, changes) // cursor on b.txt
@@ -162,8 +162,8 @@ describe('applyDiff', () => {
         it('maintains directories before files', () => {
             const files = [file('aDir', true), file('zDir', true), file('aFile.txt')]
             const changes: DiffChange[] = [
-                { type: 'add', entry: file('mDir', true) },
-                { type: 'add', entry: file('mFile.txt') },
+                { type: 'add', entry: file('mDir', true), index: 0 },
+                { type: 'add', entry: file('mFile.txt'), index: 0 },
             ]
 
             applyDiff(files, 0, changes)
@@ -173,7 +173,7 @@ describe('applyDiff', () => {
 
         it('keeps ".." at the top always', () => {
             const files = [parentEntry(), file('a.txt')]
-            const changes: DiffChange[] = [{ type: 'add', entry: file('0-first.txt') }]
+            const changes: DiffChange[] = [{ type: 'add', entry: file('0-first.txt'), index: 0 }]
 
             applyDiff(files, 0, changes)
 
@@ -184,7 +184,7 @@ describe('applyDiff', () => {
     describe('edge cases', () => {
         it('handles empty file list with add', () => {
             const files: FileEntry[] = []
-            const changes: DiffChange[] = [{ type: 'add', entry: file('first.txt') }]
+            const changes: DiffChange[] = [{ type: 'add', entry: file('first.txt'), index: 0 }]
 
             const newIndex = applyDiff(files, 0, changes)
 
@@ -194,7 +194,7 @@ describe('applyDiff', () => {
 
         it('handles removing last file leaving empty list', () => {
             const files = [file('only.txt')]
-            const changes: DiffChange[] = [{ type: 'remove', entry: file('only.txt') }]
+            const changes: DiffChange[] = [{ type: 'remove', entry: file('only.txt'), index: 0 }]
 
             const newIndex = applyDiff(files, 0, changes)
 
@@ -204,7 +204,7 @@ describe('applyDiff', () => {
 
         it('clamps cursor to end when removed file was at the last position', () => {
             const files = [file('a.txt'), file('b.txt'), file('c.txt')]
-            const changes: DiffChange[] = [{ type: 'remove', entry: file('c.txt') }]
+            const changes: DiffChange[] = [{ type: 'remove', entry: file('c.txt'), index: 0 }]
 
             const newIndex = applyDiff(files, 2, changes) // cursor on c.txt (last)
 
@@ -214,7 +214,7 @@ describe('applyDiff', () => {
 
         it('keeps cursor at same position when middle file removed from a large list', () => {
             const files = [file('a.txt'), file('b.txt'), file('c.txt'), file('d.txt'), file('e.txt')]
-            const changes: DiffChange[] = [{ type: 'remove', entry: file('c.txt') }]
+            const changes: DiffChange[] = [{ type: 'remove', entry: file('c.txt'), index: 0 }]
 
             const newIndex = applyDiff(files, 2, changes) // cursor on c.txt
 
@@ -224,7 +224,7 @@ describe('applyDiff', () => {
 
         it('handles removing non-existent file (no-op)', () => {
             const files = [file('a.txt'), file('b.txt')]
-            const changes: DiffChange[] = [{ type: 'remove', entry: file('nonexistent.txt') }]
+            const changes: DiffChange[] = [{ type: 'remove', entry: file('nonexistent.txt'), index: 0 }]
 
             const newIndex = applyDiff(files, 1, changes)
 
@@ -236,7 +236,7 @@ describe('applyDiff', () => {
             const files = [file('a.txt')]
             const modified = file('nonexistent.txt')
             modified.size = 999
-            const changes: DiffChange[] = [{ type: 'modify', entry: modified }]
+            const changes: DiffChange[] = [{ type: 'modify', entry: modified, index: 0 }]
 
             const newIndex = applyDiff(files, 0, changes)
 
@@ -247,7 +247,7 @@ describe('applyDiff', () => {
 
         it('handles cursorIndex beyond array bounds', () => {
             const files = [file('a.txt')]
-            const changes: DiffChange[] = [{ type: 'add', entry: file('b.txt') }]
+            const changes: DiffChange[] = [{ type: 'add', entry: file('b.txt'), index: 0 }]
 
             // Invalid index should return 0 since pathUnderCursor is undefined
             const newIndex = applyDiff(files, 999, changes)
@@ -261,7 +261,7 @@ describe('applyDiff', () => {
         // This test verifies the raw list is correct before filtering
         it('adds hidden files in correct alphabetical position', () => {
             const files = [file('a.txt'), file('b.txt')]
-            const changes: DiffChange[] = [{ type: 'add', entry: file('.hidden') }]
+            const changes: DiffChange[] = [{ type: 'add', entry: file('.hidden'), index: 0 }]
 
             applyDiff(files, 0, changes)
 

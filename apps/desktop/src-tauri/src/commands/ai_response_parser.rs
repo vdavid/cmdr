@@ -83,8 +83,7 @@ pub fn validate_time(value: &str) -> Option<String> {
     let v = value.trim().to_lowercase();
     match v.as_str() {
         "today" | "yesterday" | "this_week" | "last_week" | "this_month" | "last_month" | "this_quarter"
-        | "last_quarter" | "this_year" | "last_year" | "recent" | "last_3_months" | "last_6_months"
-        | "old" => Some(v),
+        | "last_quarter" | "this_year" | "last_year" | "recent" | "last_3_months" | "last_6_months" | "old" => Some(v),
         _ => {
             // Accept YYYY or YYYY..YYYY / YYYY-YYYY / YYYY to YYYY / YYYY–YYYY
             let trimmed = value.trim();

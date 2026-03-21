@@ -506,18 +506,11 @@ fn regex_escape(s: &str) -> String {
 /// Known file extensions that, when used as keywords alongside a matching type,
 /// are redundant — the type pattern already covers them.
 const EXTENSION_KEYWORDS: &[&str] = &[
-    "heic", "jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "tiff",
-    "mp4", "mov", "avi", "mkv", "webm",
-    "pdf", "doc", "docx", "txt", "odt", "xls", "xlsx",
-    "ppt", "pptx", "odp",
-    "zip", "tar", "gz", "tgz", "bz2", "xz", "7z", "rar",
-    "mp3", "m4a", "flac", "wav", "ogg", "aac",
-    "rs", "py", "js", "ts", "go", "java", "c", "cpp", "rb", "swift",
-    "json", "yml", "yaml", "toml", "ini", "conf", "cfg",
-    "log", "out", "err",
-    "ttf", "otf", "woff", "woff2",
-    "sqlite", "sqlite3", "db",
-    "sh", "bash", "zsh",
+    "heic", "jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "tiff", "mp4", "mov", "avi", "mkv", "webm", "pdf",
+    "doc", "docx", "txt", "odt", "xls", "xlsx", "ppt", "pptx", "odp", "zip", "tar", "gz", "tgz", "bz2", "xz", "7z",
+    "rar", "mp3", "m4a", "flac", "wav", "ogg", "aac", "rs", "py", "js", "ts", "go", "java", "c", "cpp", "rb", "swift",
+    "json", "yml", "yaml", "toml", "ini", "conf", "cfg", "log", "out", "err", "ttf", "otf", "woff", "woff2", "sqlite",
+    "sqlite3", "db", "sh", "bash", "zsh",
 ];
 
 /// Check if a keyword is redundant with the type filter.
@@ -529,7 +522,10 @@ fn keyword_redundant_with_type(kw_pattern: &str, type_pattern: &str) -> bool {
     let core = extract_keyword_core(kw_pattern);
     let core_lower = core.to_lowercase();
     // Strip leading dot and regex escapes for comparison
-    let clean = core_lower.strip_prefix("\\.").or(core_lower.strip_prefix('.')).unwrap_or(&core_lower);
+    let clean = core_lower
+        .strip_prefix("\\.")
+        .or(core_lower.strip_prefix('.'))
+        .unwrap_or(&core_lower);
     let clean = clean.strip_prefix("\\").unwrap_or(clean);
 
     // Check if keyword is a known extension that appears in the type's pattern
@@ -539,8 +535,19 @@ fn keyword_redundant_with_type(kw_pattern: &str, type_pattern: &str) -> bool {
     // Check if keyword matches the type concept itself (e.g., "fonts" keyword with fonts type)
     // by checking if the keyword text appears as a substring in common type names
     let type_names = [
-        "photos", "screenshots", "videos", "documents", "presentations", "archives",
-        "music", "code", "config", "logs", "fonts", "databases", "shell-scripts",
+        "photos",
+        "screenshots",
+        "videos",
+        "documents",
+        "presentations",
+        "archives",
+        "music",
+        "code",
+        "config",
+        "logs",
+        "fonts",
+        "databases",
+        "shell-scripts",
     ];
     for name in type_names {
         if clean == name || clean == name.strip_suffix('s').unwrap_or(name) {
@@ -1077,7 +1084,10 @@ mod tests {
         assert_eq!(pt, PatternType::Regex);
         let pattern = pattern.unwrap();
         // Should NOT contain "heic.*" prefix — just the photos pattern
-        assert!(!pattern.contains("heic.*"), "redundant keyword should be dropped: {pattern}");
+        assert!(
+            !pattern.contains("heic.*"),
+            "redundant keyword should be dropped: {pattern}"
+        );
         assert!(pattern.contains("jpg"));
     }
 
@@ -1089,7 +1099,10 @@ mod tests {
         let (pattern, pt) = merge_keyword_and_type(kw, tf.as_ref());
         assert_eq!(pt, PatternType::Regex);
         let pattern = pattern.unwrap();
-        assert!(!pattern.contains("sqlite.*"), "redundant keyword should be dropped: {pattern}");
+        assert!(
+            !pattern.contains("sqlite.*"),
+            "redundant keyword should be dropped: {pattern}"
+        );
         assert!(pattern.contains("db"));
     }
 
@@ -1100,7 +1113,10 @@ mod tests {
         let tf = type_to_filter("documents");
         let (pattern, _) = merge_keyword_and_type(kw, tf.as_ref());
         let pattern = pattern.unwrap();
-        assert!(pattern.contains("rymd"), "non-redundant keyword should be preserved: {pattern}");
+        assert!(
+            pattern.contains("rymd"),
+            "non-redundant keyword should be preserved: {pattern}"
+        );
     }
 
     #[test]
