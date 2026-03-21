@@ -22,6 +22,7 @@ export {
     getPathLimits,
     pathExists,
     createDirectory,
+    createFile,
     getSyncStatus,
     storeFontMetrics,
     hasFontMetrics,

@@ -34,12 +34,14 @@ Single source of truth for all settings. Each `SettingDefinition` contains:
 ### Sections (`sections/`)
 
 13 section components rendered inside the settings window. `ListingSection` includes:
-- `listing.sizeDisplay` — enum (smart/logical/physical), default smart, toggle-group. Reactive getter: `getSizeDisplayMode()`.
+
+- `listing.sizeDisplay` — enum (smart/logical/physical), default smart, toggle-group. Reactive getter:
+  `getSizeDisplayMode()`.
 - `listing.sizeMismatchWarning` — boolean, default true, switch. Reactive getter: `getSizeMismatchWarning()`.
 
-Full list: `AppearanceSection`, `ListingSection`,
-`FileOperationsSection`, `KeyboardShortcutsSection`, `NetworkSection`, `LoggingSection`, `McpServerSection`,
-`UpdatesSection`, `ThemesSection`, `AdvancedSection`, `DriveIndexingSection`, `AiSection`, `LicenseSection`.
+Full list: `AppearanceSection`, `ListingSection`, `FileOperationsSection`, `KeyboardShortcutsSection`, `NetworkSection`,
+`LoggingSection`, `McpServerSection`, `UpdatesSection`, `ThemesSection`, `AdvancedSection`, `DriveIndexingSection`,
+`AiSection`, `LicenseSection`.
 
 `AiSection` is a hybrid special section (like `LicenseSection` above): it combines dynamic runtime state from the
 backend (via `getAiRuntimeStatus()` and Tauri events) with registry settings (`ai.provider`, `ai.cloudProvider`,

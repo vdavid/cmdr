@@ -4,11 +4,13 @@
     import TransferErrorDialog from '../../file-operations/transfer/TransferErrorDialog.svelte'
     import DeleteDialog from '$lib/file-operations/delete/DeleteDialog.svelte'
     import NewFolderDialog from '$lib/file-operations/mkdir/NewFolderDialog.svelte'
+    import NewFileDialog from '$lib/file-operations/mkfile/NewFileDialog.svelte'
     import AlertDialog from '$lib/ui/AlertDialog.svelte'
     import type { TransferDialogPropsData } from './transfer-operations'
     import type {
         TransferProgressPropsData,
         NewFolderDialogPropsData,
+        NewFileDialogPropsData,
         AlertDialogPropsData,
         TransferErrorPropsData,
         DeleteDialogPropsData,
@@ -23,6 +25,8 @@
         transferProgressProps,
         showNewFolderDialog,
         newFolderDialogProps,
+        showNewFileDialog,
+        newFileDialogProps,
         showAlertDialog,
         alertDialogProps,
         showTransferErrorDialog,
@@ -37,6 +41,8 @@
         onTransferErrorClose,
         onNewFolderCreated,
         onNewFolderCancel,
+        onNewFileCreated,
+        onNewFileCancel,
         onAlertClose,
         onDeleteConfirm,
         onDeleteCancel,
@@ -48,6 +54,8 @@
         transferProgressProps: TransferProgressPropsData | null
         showNewFolderDialog: boolean
         newFolderDialogProps: NewFolderDialogPropsData | null
+        showNewFileDialog: boolean
+        newFileDialogProps: NewFileDialogPropsData | null
         showAlertDialog: boolean
         alertDialogProps: AlertDialogPropsData | null
         showTransferErrorDialog: boolean
@@ -68,6 +76,8 @@
         onTransferErrorClose: () => void
         onNewFolderCreated: (folderName: string) => void
         onNewFolderCancel: () => void
+        onNewFileCreated: (fileName: string) => void
+        onNewFileCancel: () => void
         onAlertClose: () => void
         onDeleteConfirm: (previewId: string | null) => void
         onDeleteCancel: () => void
@@ -143,6 +153,18 @@
         volumeId={newFolderDialogProps.volumeId}
         onCreated={onNewFolderCreated}
         onCancel={onNewFolderCancel}
+    />
+{/if}
+
+{#if showNewFileDialog && newFileDialogProps}
+    <NewFileDialog
+        currentPath={newFileDialogProps.currentPath}
+        listingId={newFileDialogProps.listingId}
+        showHiddenFiles={newFileDialogProps.showHiddenFiles}
+        initialName={newFileDialogProps.initialName}
+        volumeId={newFileDialogProps.volumeId}
+        onCreated={onNewFileCreated}
+        onCancel={onNewFileCancel}
     />
 {/if}
 

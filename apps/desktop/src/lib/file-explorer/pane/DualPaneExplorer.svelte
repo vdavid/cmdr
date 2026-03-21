@@ -5,7 +5,7 @@
     import LoadingIcon from '$lib/ui/LoadingIcon.svelte'
     import DialogManager from './DialogManager.svelte'
     import { toBackendCursorIndex, toBackendIndices } from '$lib/file-operations/transfer/transfer-dialog-utils'
-    import { getFileAt } from '$lib/tauri-commands'
+    import { getFileAt, openInEditor } from '$lib/tauri-commands'
     import {
         loadAppStatus,
         saveAppStatus,
@@ -100,6 +100,7 @@
     import type { TransferOperationType } from '../types'
     import type { DeleteSourceItem } from '$lib/file-operations/delete/delete-dialog-utils'
     import { getInitialFolderName } from '$lib/file-operations/mkdir/new-folder-operations'
+    import { getInitialFileName } from '$lib/file-operations/mkfile/new-file-operations'
     import { createDialogState } from './dialog-state.svelte'
     import { getCurrentWebview } from '@tauri-apps/api/webview'
     import { recalculateWebviewOffset, toViewportPosition } from '../drag/drag-position'
@@ -236,6 +237,7 @@
         getFocusedPaneSide: () => focusedPane,
         getShowHiddenFiles: () => showHiddenFiles,
         onRefocus: () => containerElement?.focus(),
+        onOpenInEditor: (path: string) => void openInEditor(path),
     })
 
     // Guards against stale background path corrections from determineNavigationPath.
@@ -1359,7 +1361,28 @@
         })
     }
 
-    /** Closes any confirmation dialog (new folder or transfer) if open (for MCP). */
+    /** Opens the new file dialog. Pre-fills with the filename under cursor. */
+    export async function openNewFileDialog() {
+        const paneRef = getPaneRef(focusedPane)
+        const path = getPanePath(focusedPane)
+        const volumeIdForPane = getPaneVolumeId(focusedPane)
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const paneListingId = paneRef?.getListingId?.() as string | undefined
+        if (!paneListingId) return
+
+        const initialName = await getInitialFileName(paneRef, paneListingId, showHiddenFiles, getFileAt)
+
+        dialogs.showNewFile({
+            currentPath: path,
+            listingId: paneListingId,
+            showHiddenFiles,
+            initialName,
+            volumeId: volumeIdForPane,
+        })
+    }
+
+    /** Closes any confirmation dialog (new folder, new file, or transfer) if open (for MCP). */
     export function closeConfirmationDialog() {
         dialogs.closeConfirmationDialog()
     }
@@ -2296,6 +2319,8 @@
     transferProgressProps={dialogs.transferProgressProps}
     showNewFolderDialog={dialogs.showNewFolderDialog}
     newFolderDialogProps={dialogs.newFolderDialogProps}
+    showNewFileDialog={dialogs.showNewFileDialog}
+    newFileDialogProps={dialogs.newFileDialogProps}
     showAlertDialog={dialogs.showAlertDialog}
     alertDialogProps={dialogs.alertDialogProps}
     showTransferErrorDialog={dialogs.showTransferErrorDialog}
@@ -2329,6 +2354,12 @@
     }}
     onNewFolderCancel={() => {
         dialogs.handleNewFolderCancel()
+    }}
+    onNewFileCreated={(name: string) => {
+        dialogs.handleNewFileCreated(name)
+    }}
+    onNewFileCancel={() => {
+        dialogs.handleNewFileCancel()
     }}
     onAlertClose={() => {
         dialogs.handleAlertClose()

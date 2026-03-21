@@ -6,6 +6,7 @@
         onEdit?: () => void
         onCopy?: () => void
         onMove?: () => void
+        onNewFile?: () => void
         onNewFolder?: () => void
         onDelete?: () => void
         onDeletePermanently?: () => void
@@ -18,6 +19,7 @@
         onEdit,
         onCopy,
         onMove,
+        onNewFile,
         onNewFolder,
         onDelete,
         onDeletePermanently,
@@ -55,8 +57,8 @@
             <button disabled tabindex={-1} aria-label="F3 — no shift action">
                 <kbd>F3</kbd>
             </button>
-            <button disabled tabindex={-1} aria-label="F4 — no shift action">
-                <kbd>F4</kbd>
+            <button onclick={onNewFile} tabindex={-1} aria-label="Create new file (Shift+F4)">
+                <kbd>⇧F4</kbd><span>New file</span>
             </button>
             <button disabled tabindex={-1} aria-label="F5 — no shift action">
                 <kbd>F5</kbd>

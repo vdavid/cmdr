@@ -70,6 +70,7 @@ pub async fn execute_tool<R: Runtime>(app: &AppHandle<R>, name: &str, params: &V
         "copy" => execute_copy(app),
         "delete" => execute_delete(app),
         "mkdir" => execute_mkdir(app),
+        "mkfile" => execute_mkfile(app),
         "refresh" => execute_refresh(app),
         // Selection command
         "select" => execute_select_command(app, params),
@@ -457,6 +458,12 @@ fn execute_mkdir<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
     Ok(json!("OK: Create folder dialog opened."))
 }
 
+/// Execute mkfile command.
+fn execute_mkfile<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
+    app.emit("mcp-mkfile", ())?;
+    Ok(json!("OK: Create file dialog opened."))
+}
+
 /// Execute refresh command.
 fn execute_refresh<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
     app.emit("mcp-refresh", ())?;
@@ -594,9 +601,11 @@ fn execute_dialog_open<R: Runtime>(
             app.emit_to("main", "execute-command", json!({"commandId": "app.about"}))?;
             Ok(json!("OK: Opened about dialog"))
         }
-        "copy-confirmation" | "mkdir-confirmation" | "delete-confirmation" => Err(ToolError::invalid_params(
-            "Cannot open confirmation dialogs directly. Use copy, delete, or mkdir tools instead.",
-        )),
+        "copy-confirmation" | "mkdir-confirmation" | "new-file-confirmation" | "delete-confirmation" => {
+            Err(ToolError::invalid_params(
+                "Cannot open confirmation dialogs directly. Use copy, delete, mkdir, or mkfile tools instead.",
+            ))
+        }
         _ => Err(ToolError::invalid_params(format!("Invalid dialog type: {dialog_type}"))),
     }
 }
@@ -626,7 +635,7 @@ fn execute_dialog_focus<R: Runtime>(app: &AppHandle<R>, dialog_type: &str, path:
             app.emit("focus-about", ())?;
             Ok(json!("OK: Focused about dialog"))
         }
-        "copy-confirmation" | "mkdir-confirmation" | "delete-confirmation" => {
+        "copy-confirmation" | "mkdir-confirmation" | "new-file-confirmation" | "delete-confirmation" => {
             app.emit("focus-confirmation", ())?;
             Ok(json!("OK: Focused confirmation dialog"))
         }
@@ -659,7 +668,7 @@ fn execute_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_type: &str, path:
             app.emit("close-about", ())?;
             Ok(json!("OK: Closed about dialog"))
         }
-        "copy-confirmation" | "mkdir-confirmation" | "delete-confirmation" => {
+        "copy-confirmation" | "mkdir-confirmation" | "new-file-confirmation" | "delete-confirmation" => {
             app.emit("close-confirmation", ())?;
             Ok(json!("OK: Cancelled confirmation dialog"))
         }

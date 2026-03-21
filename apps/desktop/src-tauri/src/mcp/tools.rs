@@ -150,6 +150,7 @@ fn get_file_op_tools() -> Vec<Tool> {
         Tool::no_params("copy", "Copy selected files to other pane (triggers native dialog)"),
         Tool::no_params("delete", "Delete selected files (triggers confirmation dialog)"),
         Tool::no_params("mkdir", "Create folder in focused pane (triggers naming dialog)"),
+        Tool::no_params("mkfile", "Create file in focused pane (triggers naming dialog)"),
         Tool::no_params("refresh", "Refresh focused pane"),
     ]
 }
@@ -309,7 +310,7 @@ fn get_dialog_tools() -> Vec<Tool> {
                 },
                 "type": {
                     "type": "string",
-                    "enum": ["settings", "file-viewer", "about", "copy-confirmation", "mkdir-confirmation", "delete-confirmation"],
+                    "enum": ["settings", "file-viewer", "about", "copy-confirmation", "mkdir-confirmation", "new-file-confirmation", "delete-confirmation"],
                     "description": "Dialog type"
                 },
                 "section": {
@@ -460,8 +461,8 @@ mod tests {
     #[test]
     fn test_file_op_tools_count() {
         let tools = get_file_op_tools();
-        // copy, delete, mkdir, refresh
-        assert_eq!(tools.len(), 4);
+        // copy, delete, mkdir, mkfile, refresh
+        assert_eq!(tools.len(), 5);
     }
 
     #[test]
@@ -503,8 +504,8 @@ mod tests {
     #[test]
     fn test_all_tools_count() {
         let tools = get_all_tools();
-        // 6 nav + 2 cursor + 1 selection + 4 file_op + 3 view + 2 tab + 1 dialog + 3 app + 2 search = 24
-        assert_eq!(tools.len(), 24);
+        // 6 nav + 2 cursor + 1 selection + 5 file_op + 3 view + 2 tab + 1 dialog + 3 app + 2 search = 25
+        assert_eq!(tools.len(), 25);
     }
 
     #[test]
@@ -597,6 +598,7 @@ mod tests {
         assert!(type_enum.contains(&json!("about")));
         assert!(type_enum.contains(&json!("copy-confirmation")));
         assert!(type_enum.contains(&json!("mkdir-confirmation")));
+        assert!(type_enum.contains(&json!("new-file-confirmation")));
         assert!(type_enum.contains(&json!("delete-confirmation")));
 
         // Check required fields

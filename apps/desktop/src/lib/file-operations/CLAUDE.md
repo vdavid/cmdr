@@ -1,11 +1,11 @@
 # File operations
 
-Transfer (copy/move), delete/trash, and mkdir dialogs with progress tracking and conflict resolution.
+Transfer (copy/move), delete/trash, mkfile, and mkdir dialogs with progress tracking and conflict resolution.
 
 ## Purpose
 
-Provides unified UI for file operations triggered by F5 (copy), F6 (move), F7 (new folder), and F8/Shift+F8
-(trash/delete). Transfer and delete operations share `TransferProgressDialog`, parameterized by
+Provides unified UI for file operations triggered by Shift+F4 (new file), F5 (copy), F6 (move), F7 (new folder), and
+F8/Shift+F8 (trash/delete). Transfer and delete operations share `TransferProgressDialog`, parameterized by
 `operationType: 'copy' | 'move' | 'delete' | 'trash'`.
 
 ## Architecture
@@ -49,6 +49,17 @@ Provides unified UI for file operations triggered by F5 (copy), F6 (move), F7 (n
 - F8 = trash, Shift+F8 = permanent delete. On no-trash volumes, dialog forces permanent mode with warning banner.
 - After confirm, transitions to `TransferProgressDialog` with `operationType: 'delete' | 'trash'`
 - See `delete/CLAUDE.md` for full details
+
+### New file (`mkfile/`)
+
+- **mkfile/NewFileDialog.svelte**: Shift+F4 opens dialog pre-filled with cursor item name (keeping extension for files;
+  empty for directories and ".."). Uses same validators as NewFolderDialog (`validateDisallowedChars`,
+  `validateNameLength`, `validatePathLength`) for sync checks, then async `findFileIndex()` for conflict detection.
+  Simpler than NewFolderDialog: no AI suggestions (users always know what filename they want), no timeout warning banner
+  (file creation is near-instant). On confirm, creates empty file via `createFile` then opens it in the default editor
+  via `openInEditor`.
+- **mkfile/new-file-operations.ts**: `getInitialFileName()` extracts filename from cursor entry. Reuses
+  `moveCursorToNewFolder` from `mkdir/` for post-creation cursor positioning (it's entry-type-agnostic).
 
 ### New folder (`mkdir/`)
 

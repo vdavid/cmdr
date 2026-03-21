@@ -584,6 +584,7 @@ pub fn run() {
             commands::file_system::get_path_limits,
             commands::file_system::path_exists,
             commands::file_system::create_directory,
+            commands::file_system::create_file,
             commands::file_system::benchmark_log,
             commands::file_system::copy_files,
             commands::file_system::move_files,

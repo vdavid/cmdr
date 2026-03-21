@@ -80,6 +80,7 @@
         cutToClipboard: () => Promise<void>
         pasteFromClipboard: (forceMove: boolean) => Promise<void>
         openNewFolderDialog: () => Promise<void>
+        openNewFileDialog: () => Promise<void>
         openDeleteDialog: (permanent: boolean) => Promise<void>
         closeConfirmationDialog: () => void
         isConfirmationDialogOpen: () => boolean
@@ -404,6 +405,10 @@
             void explorerRef?.openNewFolderDialog()
         })
 
+        await safeListenTauri('mcp-mkfile', () => {
+            void explorerRef?.openNewFileDialog()
+        })
+
         await safeListenTauri('mcp-delete', () => {
             void explorerRef?.openDeleteDialog(false)
         })
@@ -663,6 +668,10 @@
         explorerRef?.startRename()
     }
 
+    function handleFnNewFile() {
+        void explorerRef?.openNewFileDialog()
+    }
+
     function handleFnNewFolder() {
         void explorerRef?.openNewFolderDialog()
     }
@@ -874,6 +883,10 @@
                 void explorerRef?.openNewFolderDialog()
                 return
 
+            case 'file.newFile':
+                void explorerRef?.openNewFileDialog()
+                return
+
             case 'file.delete':
                 void explorerRef?.openDeleteDialog(false)
                 return
@@ -1066,6 +1079,7 @@
             onEdit={() => void handleFnEdit()}
             onCopy={handleFnCopy}
             onMove={handleFnMove}
+            onNewFile={handleFnNewFile}
             onNewFolder={handleFnNewFolder}
             onDelete={handleFnDelete}
             onDeletePermanently={handleFnDeletePermanently}

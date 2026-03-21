@@ -90,8 +90,8 @@ Frontend                          Backend
 **Decision**: Incremental watcher path with fallback to full re-read
 **Why**: Most FS changes are a few files (save, rename, drop). Re-reading an entire 50k-entry directory for one changed file is wasteful. The incremental path processes individual events: stat each changed path, classify as add/remove/modify against the cache, then use `insert_entry_sorted`/`remove_entry_by_path`/`update_entry_sorted` to patch the cache in-place. Falls back to full `handle_directory_change` when events exceed 500 or contain unknown event kinds (`Any`/`Other`), since those can't be reliably classified.
 
-**Decision**: Synthetic diff for mkdir (`emit_synthetic_mkdir_diff`)
-**Why**: `create_directory` returns before the watcher fires. Without a synthetic diff, the new folder wouldn't appear until the next debounce cycle (~200ms). The command handler stats the new directory, inserts it into all affected listings via `insert_entry_sorted`, and emits a `directory-diff` event immediately. The watcher later sees the same change but `has_entry` prevents duplicates.
+**Decision**: Synthetic diff for entry creation (`emit_synthetic_entry_diff`)
+**Why**: `create_directory` and `create_file` return before the watcher fires. Without a synthetic diff, the new entry wouldn't appear until the next debounce cycle (~200ms). The command handler stats the new entry, inserts it into all affected listings via `insert_entry_sorted`, and emits a `directory-diff` event immediately. The watcher later sees the same change but `has_entry` prevents duplicates.
 
 **Decision**: Re-sort `new_entries` before `compute_diff` in full re-read path
 **Why**: `list_directory_core` always returns entries sorted by Name/Asc, but the cached listing may use a different sort. Without re-sorting, diff indices would be wrong (comparing two differently-ordered lists). The re-sort aligns `new_entries` with the cached sort order so `compute_diff` produces correct indices.

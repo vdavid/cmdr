@@ -39,6 +39,14 @@ export interface NewFolderDialogPropsData {
     volumeId: string
 }
 
+export interface NewFileDialogPropsData {
+    currentPath: string
+    listingId: string
+    showHiddenFiles: boolean
+    initialName: string
+    volumeId: string
+}
+
 export interface AlertDialogPropsData {
     title: string
     message: string
@@ -68,6 +76,7 @@ export interface DialogStateDeps {
     getFocusedPaneSide: () => 'left' | 'right'
     getShowHiddenFiles: () => boolean
     onRefocus: () => void
+    onOpenInEditor: (path: string) => void
 }
 
 /** Force a backend re-read on a pane's listing so file diffs are emitted promptly. */
@@ -89,6 +98,10 @@ export function createDialogState(deps: DialogStateDeps) {
     // New folder dialog state
     let showNewFolderDialog = $state(false)
     let newFolderDialogProps = $state<NewFolderDialogPropsData | null>(null)
+
+    // New file dialog state
+    let showNewFileDialog = $state(false)
+    let newFileDialogProps = $state<NewFileDialogPropsData | null>(null)
 
     // Alert dialog state
     let showAlertDialog = $state(false)
@@ -182,6 +195,12 @@ export function createDialogState(deps: DialogStateDeps) {
         get newFolderDialogProps() {
             return newFolderDialogProps
         },
+        get showNewFileDialog() {
+            return showNewFileDialog
+        },
+        get newFileDialogProps() {
+            return newFileDialogProps
+        },
         get showAlertDialog() {
             return showAlertDialog
         },
@@ -223,6 +242,11 @@ export function createDialogState(deps: DialogStateDeps) {
         showNewFolder(props: NewFolderDialogPropsData) {
             newFolderDialogProps = props
             showNewFolderDialog = true
+        },
+
+        showNewFile(props: NewFileDialogPropsData) {
+            newFileDialogProps = props
+            showNewFileDialog = true
         },
 
         showDeleteConfirmation(props: DeleteDialogPropsData) {
@@ -394,6 +418,41 @@ export function createDialogState(deps: DialogStateDeps) {
             deps.onRefocus()
         },
 
+        handleNewFileCreated(fileName: string) {
+            const paneRef = deps.getFocusedPaneRef()
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            const paneListingId = paneRef?.getListingId?.() as string | undefined
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            const hasParent = paneRef?.hasParentEntry?.() as boolean | undefined
+            const currentPath = newFileDialogProps?.currentPath ?? ''
+
+            showNewFileDialog = false
+            newFileDialogProps = null
+            deps.onRefocus()
+
+            if (paneListingId) {
+                void moveCursorToNewFolder(
+                    paneListingId,
+                    fileName,
+                    paneRef,
+                    hasParent ?? false,
+                    deps.getShowHiddenFiles(),
+                    listen,
+                    findFileIndex,
+                )
+            }
+
+            // Open the newly created file in the default editor
+            const fullPath = currentPath === '/' ? `/${fileName}` : `${currentPath}/${fileName}`
+            deps.onOpenInEditor(fullPath)
+        },
+
+        handleNewFileCancel() {
+            showNewFileDialog = false
+            newFileDialogProps = null
+            deps.onRefocus()
+        },
+
         handleAlertClose() {
             showAlertDialog = false
             alertDialogProps = null
@@ -402,11 +461,16 @@ export function createDialogState(deps: DialogStateDeps) {
 
         // --- Query methods ---
 
-        /** Closes any confirmation dialog (new folder, transfer, or delete) if open (for MCP). */
+        /** Closes any confirmation dialog (new folder, new file, transfer, or delete) if open (for MCP). */
         closeConfirmationDialog() {
             if (showNewFolderDialog) {
                 showNewFolderDialog = false
                 newFolderDialogProps = null
+                deps.onRefocus()
+            }
+            if (showNewFileDialog) {
+                showNewFileDialog = false
+                newFileDialogProps = null
                 deps.onRefocus()
             }
             if (showTransferDialog) {
@@ -422,7 +486,7 @@ export function createDialogState(deps: DialogStateDeps) {
         },
 
         isConfirmationDialogOpen(): boolean {
-            return showNewFolderDialog || showTransferDialog || showDeleteDialog
+            return showNewFolderDialog || showNewFileDialog || showTransferDialog || showDeleteDialog
         },
 
         /** Whether any transfer/delete-related dialog is open (used by canSwapPanes). */

@@ -81,7 +81,20 @@ pub async fn create_directory(
 ) -> Result<String, IpcError> {
     let (new_path, expanded_path) = create_directory_core(volume_id, &parent_path, &name).await?;
 
-    emit_synthetic_mkdir_diff(&app, &new_path, &PathBuf::from(&expanded_path));
+    emit_synthetic_entry_diff(&app, &new_path, &PathBuf::from(&expanded_path));
+    Ok(new_path.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+pub async fn create_file(
+    app: tauri::AppHandle,
+    volume_id: Option<String>,
+    parent_path: String,
+    name: String,
+) -> Result<String, IpcError> {
+    let (new_path, expanded_path) = create_file_core(volume_id, &parent_path, &name).await?;
+
+    emit_synthetic_entry_diff(&app, &new_path, &PathBuf::from(&expanded_path));
     Ok(new_path.to_string_lossy().to_string())
 }
 
@@ -129,7 +142,7 @@ async fn create_directory_core(
                             name_owned, parent_path_owned
                         )
                     }
-                    _ => format!("Failed to create folder: {}", e),
+                    _ => format!("Couldn't create folder: {}", e),
                 })
             }),
         )
@@ -150,7 +163,77 @@ async fn create_directory_core(
             std::io::ErrorKind::PermissionDenied => {
                 format!("Permission denied: cannot create '{}' in '{}'", name, parent_path)
             }
-            _ => format!("Failed to create folder: {}", e),
+            _ => format!("Couldn't create folder: {}", e),
+        })
+        .map_err(IpcError::from_err)?;
+
+    Ok((new_path, expanded_path))
+}
+
+/// Core file creation logic, separated from the Tauri command so it can be tested without `AppHandle`.
+async fn create_file_core(
+    volume_id: Option<String>,
+    parent_path: &str,
+    name: &str,
+) -> Result<(PathBuf, String), IpcError> {
+    if name.is_empty() {
+        return Err(IpcError::from_err("File name cannot be empty"));
+    }
+    if name.contains('/') || name.contains('\0') {
+        return Err(IpcError::from_err("File name contains invalid characters"));
+    }
+
+    let volume_id = volume_id.unwrap_or_else(|| "root".to_string());
+
+    // For local volumes, expand tilde
+    let expanded_path = if volume_id == "root" {
+        expand_tilde(parent_path)
+    } else {
+        parent_path.to_string()
+    };
+
+    // Try to use Volume abstraction
+    if let Some(volume) = get_volume_manager().get(&volume_id) {
+        let new_path = PathBuf::from(&expanded_path).join(name);
+        let new_path_clone = new_path.clone();
+        let parent_path_owned = parent_path.to_string();
+        let name_owned = name.to_string();
+
+        tokio::time::timeout(
+            Duration::from_secs(5),
+            tokio::task::spawn_blocking(move || {
+                volume.create_file(&new_path_clone, b"").map_err(|e| match e {
+                    crate::file_system::VolumeError::AlreadyExists(_) => {
+                        format!("'{}' already exists", name_owned)
+                    }
+                    crate::file_system::VolumeError::PermissionDenied(_) => {
+                        format!(
+                            "Permission denied: cannot create '{}' in '{}'",
+                            name_owned, parent_path_owned
+                        )
+                    }
+                    _ => format!("Couldn't create file: {}", e),
+                })
+            }),
+        )
+        .await
+        .map_err(|_| IpcError::timeout())?
+        .map_err(|e| IpcError::from_err(format!("Task failed: {}", e)))?
+        .map_err(IpcError::from_err)?;
+
+        return Ok((new_path, expanded_path));
+    }
+
+    // Fallback for unknown volumes (shouldn't happen in practice)
+    let mut new_path = PathBuf::from(&expanded_path);
+    new_path.push(name);
+    std::fs::File::create_new(&new_path)
+        .map_err(|e| match e.kind() {
+            std::io::ErrorKind::AlreadyExists => format!("'{}' already exists", name),
+            std::io::ErrorKind::PermissionDenied => {
+                format!("Permission denied: cannot create '{}' in '{}'", name, parent_path)
+            }
+            _ => format!("Couldn't create file: {}", e),
         })
         .map_err(IpcError::from_err)?;
 
@@ -688,21 +771,21 @@ pub fn clear_self_drag_overlay() {
 #[tauri::command]
 pub fn clear_self_drag_overlay() {}
 
-/// Emits a synthetic `directory-diff` event for a newly created directory.
+/// Emits a synthetic `directory-diff` event for a newly created entry (file or directory).
 ///
 /// Best-effort: if any step fails (stat, cache lookup, etc.) we log a warning
 /// and return — the watcher will pick up the change later.
-fn emit_synthetic_mkdir_diff(app: &tauri::AppHandle, new_dir_path: &Path, parent_path: &Path) {
+fn emit_synthetic_entry_diff(app: &tauri::AppHandle, entry_path: &Path, parent_path: &Path) {
     use crate::file_system::listing::reading::get_single_entry;
     use crate::file_system::listing::{find_listings_for_path, insert_entry_sorted};
     use crate::file_system::watcher::{DiffChange, DirectoryDiff, WATCHER_MANAGER};
     use tauri::Emitter;
 
-    // 1. Construct a FileEntry for the new folder
-    let mut entry = match get_single_entry(new_dir_path) {
+    // 1. Construct a FileEntry for the new entry
+    let mut entry = match get_single_entry(entry_path) {
         Ok(e) => e,
         Err(e) => {
-            log::warn!("Synthetic mkdir diff: couldn't stat new directory: {}", e);
+            log::warn!("Synthetic entry diff: couldn't stat new entry: {}", e);
             return;
         }
     };
@@ -748,7 +831,7 @@ fn emit_synthetic_mkdir_diff(app: &tauri::AppHandle, new_dir_path: &Path, parent
         };
 
         if let Err(e) = app.emit("directory-diff", &diff) {
-            log::warn!("Synthetic mkdir diff: couldn't emit event: {}", e);
+            log::warn!("Synthetic entry diff: couldn't emit event: {}", e);
         }
     }
 }
@@ -851,6 +934,54 @@ mod tests {
     async fn test_create_directory_nonexistent_parent() {
         let result = create_directory_core(None, "/nonexistent_path_12345", "test").await;
         assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_create_file_success() {
+        let tmp = create_test_dir("create_file_success");
+        let parent = tmp.to_string_lossy().to_string();
+        let result = create_file_core(None, &parent, "new-file.txt").await;
+        assert!(result.is_ok());
+        let (created_path, _) = result.unwrap();
+        assert!(created_path.is_file());
+        assert!(created_path.to_string_lossy().ends_with("new-file.txt"));
+        assert_eq!(fs::read(&created_path).unwrap(), b"");
+        cleanup_test_dir(&tmp);
+    }
+
+    #[tokio::test]
+    async fn test_create_file_already_exists() {
+        let tmp = create_test_dir("create_file_exists");
+        let parent = tmp.to_string_lossy().to_string();
+        fs::write(tmp.join("existing.txt"), b"hello").unwrap();
+        let result = create_file_core(None, &parent, "existing.txt").await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().message.contains("already exists"));
+        cleanup_test_dir(&tmp);
+    }
+
+    #[tokio::test]
+    async fn test_create_file_empty_name() {
+        let tmp = create_test_dir("create_file_empty");
+        let parent = tmp.to_string_lossy().to_string();
+        let result = create_file_core(None, &parent, "").await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().message.contains("cannot be empty"));
+        cleanup_test_dir(&tmp);
+    }
+
+    #[tokio::test]
+    async fn test_create_file_invalid_chars() {
+        let tmp = create_test_dir("create_file_invalid");
+        let parent = tmp.to_string_lossy().to_string();
+        let result = create_file_core(None, &parent, "foo/bar.txt").await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().message.contains("invalid characters"));
+
+        let result = create_file_core(None, &parent, "foo\0bar.txt").await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().message.contains("invalid characters"));
+        cleanup_test_dir(&tmp);
     }
 
     #[tokio::test]

@@ -273,6 +273,13 @@ export const commands: Command[] = [
         shortcuts: ['F7'],
     },
     {
+        id: 'file.newFile',
+        name: 'Create new file',
+        scope: 'Main window/File list',
+        showInPalette: true,
+        shortcuts: ['⇧F4'],
+    },
+    {
         id: 'file.delete',
         name: 'Delete',
         scope: 'Main window/File list',

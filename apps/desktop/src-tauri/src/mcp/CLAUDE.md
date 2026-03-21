@@ -21,10 +21,10 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 
 ### Tools (`tools.rs`)
 
-24 semantic tools grouped by category:
+25 semantic tools grouped by category:
 - Navigation (6): `select_volume`, `nav_to_path`, `nav_to_parent`, `nav_back`, `nav_forward`, `scroll_to`
 - Cursor/Selection (3): `move_cursor`, `open_under_cursor`, `select`
-- File operations (4): `copy`, `delete`, `mkdir`, `refresh`
+- File operations (5): `copy`, `delete`, `mkdir`, `mkfile`, `refresh`
 - View (3): `sort`, `toggle_hidden`, `set_view_mode`
 - Tabs (2): `activate_tab` (switch to a specific tab by pane + tab ID), `pin_tab` (pin/unpin a tab)
 - Dialogs (1): `dialog` (unified open/focus/close)

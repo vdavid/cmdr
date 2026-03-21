@@ -259,6 +259,17 @@ export async function createDirectory(parentPath: string, name: string, volumeId
     return invoke<string>('create_directory', { volumeId, parentPath, name })
 }
 
+/**
+ * Creates a new empty file.
+ * @param parentPath - The parent directory path.
+ * @param name - The file name to create.
+ * @param volumeId - Optional volume ID. Defaults to "root" for local filesystem.
+ * @returns The full path of the created file.
+ */
+export async function createFile(parentPath: string, name: string, volumeId?: string): Promise<string> {
+    return invoke<string>('create_file', { volumeId, parentPath, name })
+}
+
 // ============================================================================
 // Sync status and font metrics (support file list display)
 // ============================================================================
