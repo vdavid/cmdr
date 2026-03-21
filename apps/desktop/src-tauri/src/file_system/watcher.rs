@@ -1,20 +1,26 @@
-//! File system watcher with debouncing and diff computation.
+//! File system watcher with debouncing, incremental processing, and diff computation.
 //!
-//! Watches directories for changes, computes diffs, and emits events to frontend.
+//! Watches directories for changes and emits `directory-diff` events to frontend.
 //! Uses the unified LISTING_CACHE from operations.rs (no duplicate cache).
+//! Two processing paths: incremental (stat + classify individual events, patch cache
+//! in-place via cache helpers) and full re-read fallback (> 500 events or unknown
+//! event kinds).
 
 use notify_debouncer_full::{
-    DebounceEventResult, Debouncer, RecommendedCache, new_debouncer,
-    notify::{RecommendedWatcher, RecursiveMode},
+    DebounceEventResult, DebouncedEvent, Debouncer, RecommendedCache, new_debouncer,
+    notify::{RecommendedWatcher, RecursiveMode, event::EventKind},
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::{LazyLock, RwLock};
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
 
-use crate::file_system::listing::{FileEntry, get_listing_entries, list_directory_core, update_listing_entries};
+use crate::file_system::listing::{
+    FileEntry, ModifyResult, get_listing_entries, get_listing_path, get_single_entry, has_entry, insert_entry_sorted,
+    list_directory_core, remove_entry_by_path, update_entry_sorted, update_listing_entries,
+};
 
 /// Default debounce duration in milliseconds (used if not configured)
 const DEFAULT_DEBOUNCE_MS: u64 = 200;
@@ -35,7 +41,8 @@ fn get_debounce_ms() -> u64 {
 }
 
 /// Global watcher manager
-static WATCHER_MANAGER: LazyLock<RwLock<WatcherManager>> = LazyLock::new(|| RwLock::new(WatcherManager::new()));
+pub(crate) static WATCHER_MANAGER: LazyLock<RwLock<WatcherManager>> =
+    LazyLock::new(|| RwLock::new(WatcherManager::new()));
 
 /// A single directory diff change
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -69,15 +76,15 @@ pub struct DirectoryDeletedEvent {
 
 /// State for a watched directory.
 /// NOTE: No `entries` field - we use the unified LISTING_CACHE instead.
-struct WatchedDirectory {
-    sequence: u64,
+pub(crate) struct WatchedDirectory {
+    pub(crate) sequence: u64,
     #[allow(dead_code, reason = "Debouncer must be held to keep watching")]
     debouncer: Debouncer<RecommendedWatcher, RecommendedCache>,
 }
 
 /// Manages file watchers for directories
-pub struct WatcherManager {
-    watches: HashMap<String, WatchedDirectory>,
+pub(crate) struct WatcherManager {
+    pub(crate) watches: HashMap<String, WatchedDirectory>,
     app_handle: Option<AppHandle>,
 }
 
@@ -116,9 +123,8 @@ pub fn start_watching(listing_id: &str, path: &Path) -> Result<(), String> {
         None, // No tick rate limit
         move |result: DebounceEventResult| {
             match result {
-                Ok(_events) => {
-                    // Events occurred - re-read directory and compute diff
-                    handle_directory_change(&listing_for_closure);
+                Ok(events) => {
+                    handle_directory_change_incremental(&listing_for_closure, events);
                 }
                 Err(_errors) => {
                     // Watcher errors often mean the watched directory was deleted.
@@ -150,6 +156,189 @@ pub fn stop_watching(listing_id: &str) {
     if let Ok(mut manager) = WATCHER_MANAGER.write() {
         // Dropping the WatchedDirectory will drop the debouncer
         manager.watches.remove(listing_id);
+    }
+}
+
+/// Processes individual file-system events incrementally instead of re-reading the whole directory.
+///
+/// Falls back to `handle_directory_change` when events are too numerous or ambiguous.
+fn handle_directory_change_incremental(listing_id: &str, events: Vec<DebouncedEvent>) {
+    // Fallback: too many events or ambiguous event kinds
+    if events.len() > 500
+        || events
+            .iter()
+            .any(|e| matches!(e.kind, EventKind::Any | EventKind::Other))
+    {
+        handle_directory_change(listing_id);
+        return;
+    }
+
+    // Get watched directory path from the cache (without cloning all entries)
+    let Some(dir_path) = get_listing_path(listing_id) else {
+        return;
+    };
+
+    // Collect unique direct-child paths, skipping access events
+    let mut unique_paths: HashSet<PathBuf> = HashSet::new();
+    for event in &events {
+        if matches!(event.kind, EventKind::Access(_)) {
+            continue;
+        }
+        for path in &event.paths {
+            if path.parent() == Some(dir_path.as_path()) {
+                unique_paths.insert(path.clone());
+            }
+        }
+    }
+
+    if unique_paths.is_empty() {
+        return;
+    }
+
+    // Stat all paths BEFORE acquiring any locks
+    let mut stat_results: HashMap<PathBuf, Option<FileEntry>> = HashMap::new();
+    for path in &unique_paths {
+        let entry = get_single_entry(path).ok();
+        stat_results.insert(path.clone(), entry);
+    }
+
+    // Classify changes against the cache
+    let mut adds: Vec<FileEntry> = Vec::new();
+    let mut removes: Vec<PathBuf> = Vec::new();
+    let mut modifies: Vec<FileEntry> = Vec::new();
+
+    for (path, stat_entry) in &stat_results {
+        let path_str = path.to_string_lossy();
+        let in_cache = has_entry(listing_id, &path_str);
+        match (in_cache, stat_entry) {
+            (true, Some(entry)) => modifies.push(entry.clone()),
+            (true, None) => removes.push(path.clone()),
+            (false, Some(entry)) => adds.push(entry.clone()),
+            (false, None) => {} // Not in cache and gone from disk — ignore
+        }
+    }
+
+    if adds.is_empty() && removes.is_empty() && modifies.is_empty() {
+        return;
+    }
+
+    // Enrich new/modified entries with index data
+    for entry in &mut adds {
+        crate::indexing::enrich_entries_with_index(std::slice::from_mut(entry));
+    }
+    for entry in &mut modifies {
+        crate::indexing::enrich_entries_with_index(std::slice::from_mut(entry));
+    }
+
+    // Apply changes: removes first (indices refer to OLD listing), then adds, then modifies.
+    // Look up original indices BEFORE mutating the cache, so all remove indices are in the
+    // same (original) listing space. Then apply removes in reverse index order so earlier
+    // removals don't shift later ones' positions.
+    let mut changes: Vec<DiffChange> = Vec::new();
+
+    // Collect original indices for removes before any mutations
+    let mut remove_items: Vec<(usize, PathBuf)> = Vec::new();
+    {
+        use crate::file_system::listing::caching::LISTING_CACHE;
+        let cache = match LISTING_CACHE.read() {
+            Ok(c) => c,
+            Err(_) => return,
+        };
+        if let Some(listing) = cache.get(listing_id) {
+            for path in &removes {
+                let path_str = path.to_string_lossy();
+                if let Some(idx) = listing.entries.iter().position(|e| e.path == *path_str) {
+                    remove_items.push((idx, path.clone()));
+                }
+            }
+        }
+    }
+
+    // Sort removes by index descending so we remove from the end first (preserves indices)
+    remove_items.sort_by(|a, b| b.0.cmp(&a.0));
+
+    for (original_index, path) in &remove_items {
+        if let Some((_mutated_index, removed_entry)) = remove_entry_by_path(listing_id, path) {
+            // Emit the original (pre-mutation) index, not the mutated one
+            changes.push(DiffChange {
+                change_type: "remove".to_string(),
+                entry: removed_entry,
+                index: *original_index,
+            });
+        }
+    }
+
+    for entry in adds {
+        if let Some(new_index) = insert_entry_sorted(listing_id, entry.clone()) {
+            changes.push(DiffChange {
+                change_type: "add".to_string(),
+                entry,
+                index: new_index,
+            });
+        }
+    }
+
+    for entry in modifies {
+        match update_entry_sorted(listing_id, entry.clone()) {
+            Some(ModifyResult::UpdatedInPlace { index }) => {
+                changes.push(DiffChange {
+                    change_type: "modify".to_string(),
+                    entry,
+                    index,
+                });
+            }
+            Some(ModifyResult::Moved { old_index, new_index }) => {
+                // A moved entry is a remove + add from the frontend's perspective
+                changes.push(DiffChange {
+                    change_type: "remove".to_string(),
+                    entry: entry.clone(),
+                    index: old_index,
+                });
+                changes.push(DiffChange {
+                    change_type: "add".to_string(),
+                    entry,
+                    index: new_index,
+                });
+            }
+            None => {}
+        }
+    }
+
+    if changes.is_empty() {
+        return;
+    }
+
+    // Increment sequence and emit
+    let app_handle = {
+        let manager = match WATCHER_MANAGER.read() {
+            Ok(m) => m,
+            Err(_) => return,
+        };
+        manager.app_handle.clone()
+    };
+
+    let sequence = {
+        let mut manager = match WATCHER_MANAGER.write() {
+            Ok(m) => m,
+            Err(_) => return,
+        };
+        let watch = match manager.watches.get_mut(listing_id) {
+            Some(w) => w,
+            None => return,
+        };
+        watch.sequence += 1;
+        watch.sequence
+    };
+
+    if let Some(app) = app_handle {
+        let diff = DirectoryDiff {
+            listing_id: listing_id.to_string(),
+            sequence,
+            changes,
+        };
+        if let Err(e) = app.emit("directory-diff", &diff) {
+            log::warn!("Watcher: Failed to emit incremental diff event: {}", e);
+        }
     }
 }
 
@@ -197,6 +386,27 @@ pub fn handle_directory_change(listing_id: &str) {
             return;
         }
     };
+
+    // Re-sort new_entries by the listing's sort params so compute_diff compares
+    // two lists in the same order (list_directory_core always sorts Name/Asc).
+    // Also enrich with index data so diff entries have recursive_size etc.
+    let mut new_entries = new_entries;
+    {
+        use crate::file_system::listing::caching::LISTING_CACHE;
+        use crate::file_system::listing::sorting::sort_entries;
+
+        if let Ok(cache) = LISTING_CACHE.read()
+            && let Some(listing) = cache.get(listing_id)
+        {
+            crate::indexing::enrich_entries_with_index(&mut new_entries);
+            sort_entries(
+                &mut new_entries,
+                listing.sort_by,
+                listing.sort_order,
+                listing.directory_sort_mode,
+            );
+        }
+    }
 
     // Compute diff
     let changes = compute_diff(&old_entries, &new_entries);
@@ -246,8 +456,7 @@ pub fn compute_diff(old: &[FileEntry], new: &[FileEntry]) -> Vec<DiffChange> {
     let mut changes = Vec::new();
 
     // Create lookup maps by path
-    let old_map: HashMap<&str, &FileEntry> =
-        old.iter().map(|e| (e.path.as_str(), e)).collect();
+    let old_map: HashMap<&str, &FileEntry> = old.iter().map(|e| (e.path.as_str(), e)).collect();
     let new_map: HashSet<&str> = new.iter().map(|e| e.path.as_str()).collect();
 
     // Find additions and modifications (index refers to position in new listing)

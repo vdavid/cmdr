@@ -26,6 +26,8 @@ Dual-pane file explorer with keyboard-driven navigation, file selection, sorting
   (or `'all'` sentinel if all selected)
 - **Diff-driven adjustment** — on each `directory-diff` during an operation, selection is re-resolved via
   `findFileIndices` batch IPC. A `diffGeneration` counter discards stale async results.
+- **Cursor adjustment** — cursor index is also adjusted on structural diffs using the same `adjustSelectionIndices`
+  mechanism (treating cursor as a single-element selection)
 - **Source-item-done deselection** — `write-source-item-done` events individually deselect completed items (for copy and
   other ops that don't trigger diffs)
 - **Clear on complete/error** — safety net clears all selection on the source pane
@@ -111,6 +113,8 @@ Dual-pane file explorer with keyboard-driven navigation, file selection, sorting
 ## Operations (`operations/`)
 
 - **apply-diff.ts** — Applies file-watcher diffs (add/remove/modify events) to a cached listing in-place
+- **adjust-selection-indices.ts** — Pure function that maps selected indices from an old listing to their positions in a
+  new listing, given removed and added indices. Also used for cursor index adjustment on structural diffs.
 
 ## Rename (`rename/`)
 

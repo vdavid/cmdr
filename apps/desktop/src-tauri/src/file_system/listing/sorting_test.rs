@@ -692,3 +692,68 @@ fn test_dir_sort_like_files_equal_size_secondary_name() {
     // Equal size → secondary sort by name ascending
     assert_eq!(names, vec!["alpha_dir", "zebra_dir"]);
 }
+
+// ============================================================================
+// entry_comparator tests
+// ============================================================================
+
+use super::sorting::entry_comparator;
+
+#[test]
+fn test_entry_comparator_matches_sort_entries_name_asc() {
+    let entries = vec![
+        make_entry("zebra.txt", false, Some(100), None),
+        make_entry("alpha", true, None, None),
+        make_entry("apple.txt", false, Some(200), None),
+        make_entry("docs", true, None, None),
+        make_entry(".hidden", false, Some(50), None),
+    ];
+
+    let mut via_sort = entries.clone();
+    sort_entries(
+        &mut via_sort,
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+    );
+
+    let mut via_cmp = entries;
+    via_cmp.sort_by(entry_comparator(
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+    ));
+
+    let names_sort: Vec<&str> = via_sort.iter().map(|e| e.name.as_str()).collect();
+    let names_cmp: Vec<&str> = via_cmp.iter().map(|e| e.name.as_str()).collect();
+    assert_eq!(names_sort, names_cmp);
+}
+
+#[test]
+fn test_entry_comparator_matches_sort_entries_size_desc_dirs_first() {
+    let mut entries = vec![
+        make_dir_with_recursive_size("big_dir", Some(10000), None),
+        make_dir_with_recursive_size("small_dir", Some(100), None),
+        make_dir_with_recursive_size("unknown_dir", None, None),
+        make_entry("medium.txt", false, Some(500), None),
+        make_entry("tiny.txt", false, Some(10), None),
+    ];
+
+    let mut via_sort = entries.clone();
+    sort_entries(
+        &mut via_sort,
+        SortColumn::Size,
+        SortOrder::Descending,
+        DirectorySortMode::LikeFiles,
+    );
+
+    entries.sort_by(entry_comparator(
+        SortColumn::Size,
+        SortOrder::Descending,
+        DirectorySortMode::LikeFiles,
+    ));
+
+    let names_sort: Vec<&str> = via_sort.iter().map(|e| e.name.as_str()).collect();
+    let names_cmp: Vec<&str> = entries.iter().map(|e| e.name.as_str()).collect();
+    assert_eq!(names_sort, names_cmp);
+}

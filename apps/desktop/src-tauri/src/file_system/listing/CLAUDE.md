@@ -10,7 +10,7 @@ Backend directory reading, caching, sorting, and streaming for the file explorer
 - **reading.rs** – Low-level disk I/O (`list_directory_core()`, `get_single_entry()`, macOS metadata)
 - **streaming.rs** – Async streaming with progress events, cancellation
 - **operations.rs** – Synchronous frontend-facing API (lifecycle, cache accessors)
-- **caching.rs** – `LISTING_CACHE` global state, `CachedListing` struct
+- **caching.rs** – `LISTING_CACHE` global state, `CachedListing` struct, cache helpers for incremental updates
 - **sorting.rs** – `SortColumn`, `SortOrder`, `sort_entries()`
 - **metadata.rs** – `FileEntry` struct, macOS extended metadata
 
@@ -87,10 +87,29 @@ Frontend                          Backend
 **Decision**: File watcher starts AFTER listing complete
 **Why**: Watcher diffs rely on cached entries. Starting before cache is populated would miss initial state.
 
+**Decision**: Incremental watcher path with fallback to full re-read
+**Why**: Most FS changes are a few files (save, rename, drop). Re-reading an entire 50k-entry directory for one changed file is wasteful. The incremental path processes individual events: stat each changed path, classify as add/remove/modify against the cache, then use `insert_entry_sorted`/`remove_entry_by_path`/`update_entry_sorted` to patch the cache in-place. Falls back to full `handle_directory_change` when events exceed 500 or contain unknown event kinds (`Any`/`Other`), since those can't be reliably classified.
+
+**Decision**: Synthetic diff for mkdir (`emit_synthetic_mkdir_diff`)
+**Why**: `create_directory` returns before the watcher fires. Without a synthetic diff, the new folder wouldn't appear until the next debounce cycle (~200ms). The command handler stats the new directory, inserts it into all affected listings via `insert_entry_sorted`, and emits a `directory-diff` event immediately. The watcher later sees the same change but `has_entry` prevents duplicates.
+
+**Decision**: Re-sort `new_entries` before `compute_diff` in full re-read path
+**Why**: `list_directory_core` always returns entries sorted by Name/Asc, but the cached listing may use a different sort. Without re-sorting, diff indices would be wrong (comparing two differently-ordered lists). The re-sort aligns `new_entries` with the cached sort order so `compute_diff` produces correct indices.
+
 **Decision**: File metadata tiers — Tier 1-2 eagerly (stat + uid→name), Tier 3-4 deferred.
 **Why**: With 50k+ files, each metadata piece has different performance cost. Tier 1 (name, size, dates, permissions) is free from a single `stat()`. Tier 2 (owner name, symlink target) is ~1μs and cacheable. Tier 3 (macOS Spotlight/NSURL metadata) costs ~50-100μs/file. Tier 4 (EXIF, PDF) costs 1-100ms+ and reads file content. See [full tier table](../../../../../../docs/notes/file-metadata-tiers.md).
 
 ## Gotchas
+
+### Cache helpers (caching.rs)
+
+Used by the watcher's incremental path and synthetic mkdir to patch listings without full re-reads:
+- `find_listings_for_path(path)` — returns all listing IDs whose directory matches the given path (multiple panes/tabs may show the same directory)
+- `insert_entry_sorted(listing_id, entry)` — inserts an entry in sorted position, returns the insertion index
+- `remove_entry_by_path(listing_id, path)` — removes an entry by its file path, returns the removed index and entry
+- `update_entry_sorted(listing_id, entry)` — updates an existing entry (remove + re-insert if sort position changed), returns `ModifyResult`
+- `has_entry(listing_id, path)` — checks if a path exists in the cached listing (used to classify watcher events as add vs modify)
+- `get_listing_path(listing_id)` — returns the directory path for a listing (used to filter watcher events to direct children)
 
 **Gotcha**: Background task runs to completion even if cancelled on frontend
 **Why**: `loadGeneration` discards stale results, but Rust keeps iterating. Mitigation: `AtomicBool` checked per-entry stops early.
@@ -109,3 +128,6 @@ Frontend                          Backend
 
 **Gotcha**: `CANCELLATION_POLL_INTERVAL` is 100ms, but check happens per-entry
 **Why**: Named confusingly. The interval is for waiting on channels, not polling the flag. Actual cancellation is checked on EVERY entry iteration.
+
+**Gotcha**: Double-sort in the full re-read watcher path is intentional
+**Why**: `list_directory_core` returns entries in Name/Asc order. The watcher's `handle_directory_change` re-sorts them to match the listing's current sort params before calling `compute_diff`. This looks redundant but is required — without it, diff indices would be computed against a differently-ordered list, producing incorrect add/remove positions.

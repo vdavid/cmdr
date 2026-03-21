@@ -74,10 +74,23 @@ pub async fn path_exists(volume_id: Option<String>, path: String) -> bool {
 
 #[tauri::command]
 pub async fn create_directory(
+    app: tauri::AppHandle,
     volume_id: Option<String>,
     parent_path: String,
     name: String,
 ) -> Result<String, IpcError> {
+    let (new_path, expanded_path) = create_directory_core(volume_id, &parent_path, &name).await?;
+
+    emit_synthetic_mkdir_diff(&app, &new_path, &PathBuf::from(&expanded_path));
+    Ok(new_path.to_string_lossy().to_string())
+}
+
+/// Core mkdir logic, separated from the Tauri command so it can be tested without `AppHandle`.
+async fn create_directory_core(
+    volume_id: Option<String>,
+    parent_path: &str,
+    name: &str,
+) -> Result<(PathBuf, String), IpcError> {
     if name.is_empty() {
         return Err(IpcError::from_err("Folder name cannot be empty"));
     }
@@ -89,17 +102,17 @@ pub async fn create_directory(
 
     // For local volumes, expand tilde
     let expanded_path = if volume_id == "root" {
-        expand_tilde(&parent_path)
+        expand_tilde(parent_path)
     } else {
-        parent_path.clone()
+        parent_path.to_string()
     };
 
     // Try to use Volume abstraction
     if let Some(volume) = get_volume_manager().get(&volume_id) {
-        let new_path = PathBuf::from(&expanded_path).join(&name);
+        let new_path = PathBuf::from(&expanded_path).join(name);
         let new_path_clone = new_path.clone();
-        let parent_path_clone = parent_path.clone();
-        let name_clone = name.clone();
+        let parent_path_owned = parent_path.to_string();
+        let name_owned = name.to_string();
 
         // Use spawn_blocking to run the Volume operation in a context where
         // tokio::runtime::Handle::current() is available (needed for MtpVolume)
@@ -108,12 +121,12 @@ pub async fn create_directory(
             tokio::task::spawn_blocking(move || {
                 volume.create_directory(&new_path_clone).map_err(|e| match e {
                     crate::file_system::VolumeError::AlreadyExists(_) => {
-                        format!("'{}' already exists", name_clone)
+                        format!("'{}' already exists", name_owned)
                     }
                     crate::file_system::VolumeError::PermissionDenied(_) => {
                         format!(
                             "Permission denied: cannot create '{}' in '{}'",
-                            name_clone, parent_path_clone
+                            name_owned, parent_path_owned
                         )
                     }
                     _ => format!("Failed to create folder: {}", e),
@@ -125,12 +138,12 @@ pub async fn create_directory(
         .map_err(|e| IpcError::from_err(format!("Task failed: {}", e)))?
         .map_err(IpcError::from_err)?;
 
-        return Ok(new_path.to_string_lossy().to_string());
+        return Ok((new_path, expanded_path));
     }
 
     // Fallback for unknown volumes (shouldn't happen in practice)
     let mut new_path = PathBuf::from(&expanded_path);
-    new_path.push(&name);
+    new_path.push(name);
     std::fs::create_dir(&new_path)
         .map_err(|e| match e.kind() {
             std::io::ErrorKind::AlreadyExists => format!("'{}' already exists", name),
@@ -140,7 +153,8 @@ pub async fn create_directory(
             _ => format!("Failed to create folder: {}", e),
         })
         .map_err(IpcError::from_err)?;
-    Ok(new_path.to_string_lossy().to_string())
+
+    Ok((new_path, expanded_path))
 }
 
 // ============================================================================
@@ -674,6 +688,71 @@ pub fn clear_self_drag_overlay() {
 #[tauri::command]
 pub fn clear_self_drag_overlay() {}
 
+/// Emits a synthetic `directory-diff` event for a newly created directory.
+///
+/// Best-effort: if any step fails (stat, cache lookup, etc.) we log a warning
+/// and return — the watcher will pick up the change later.
+fn emit_synthetic_mkdir_diff(app: &tauri::AppHandle, new_dir_path: &Path, parent_path: &Path) {
+    use crate::file_system::listing::reading::get_single_entry;
+    use crate::file_system::listing::{find_listings_for_path, insert_entry_sorted};
+    use crate::file_system::watcher::{DiffChange, DirectoryDiff, WATCHER_MANAGER};
+    use tauri::Emitter;
+
+    // 1. Construct a FileEntry for the new folder
+    let mut entry = match get_single_entry(new_dir_path) {
+        Ok(e) => e,
+        Err(e) => {
+            log::warn!("Synthetic mkdir diff: couldn't stat new directory: {}", e);
+            return;
+        }
+    };
+
+    // 2. Enrich with index data
+    crate::indexing::enrich_entries_with_index(std::slice::from_mut(&mut entry));
+
+    // 3. Find affected listings
+    let listings = find_listings_for_path(parent_path);
+    if listings.is_empty() {
+        return;
+    }
+
+    // 4. For each listing, insert and emit
+    for (listing_id, _sort_by, _sort_order, _dir_sort_mode) in listings {
+        // insert_entry_sorted acquires LISTING_CACHE write lock and releases it on return
+        let Some(index) = insert_entry_sorted(&listing_id, entry.clone()) else {
+            continue; // Already exists or listing gone
+        };
+
+        // Increment sequence in WATCHER_MANAGER (after LISTING_CACHE lock is released)
+        let sequence = {
+            let mut manager = match WATCHER_MANAGER.write() {
+                Ok(m) => m,
+                Err(_) => continue,
+            };
+            let watch = match manager.watches.get_mut(&listing_id) {
+                Some(w) => w,
+                None => continue,
+            };
+            watch.sequence += 1;
+            watch.sequence
+        };
+
+        let diff = DirectoryDiff {
+            listing_id: listing_id.clone(),
+            sequence,
+            changes: vec![DiffChange {
+                change_type: "add".to_string(),
+                entry: entry.clone(),
+                index,
+            }],
+        };
+
+        if let Err(e) = app.emit("directory-diff", &diff) {
+            log::warn!("Synthetic mkdir diff: couldn't emit event: {}", e);
+        }
+    }
+}
+
 /// Expands tilde (~) to the user's home directory.
 pub(crate) fn expand_tilde(path: &str) -> String {
     if (path.starts_with("~/") || path == "~")
@@ -725,11 +804,11 @@ mod tests {
     async fn test_create_directory_success() {
         let tmp = create_test_dir("create_success");
         let parent = tmp.to_string_lossy().to_string();
-        let result = create_directory(None, parent, "new-folder".to_string()).await;
+        let result = create_directory_core(None, &parent, "new-folder").await;
         assert!(result.is_ok());
-        let created_path = result.unwrap();
-        assert!(PathBuf::from(&created_path).is_dir());
-        assert!(created_path.ends_with("new-folder"));
+        let (created_path, _) = result.unwrap();
+        assert!(created_path.is_dir());
+        assert!(created_path.to_string_lossy().ends_with("new-folder"));
         cleanup_test_dir(&tmp);
     }
 
@@ -738,7 +817,7 @@ mod tests {
         let tmp = create_test_dir("create_exists");
         let parent = tmp.to_string_lossy().to_string();
         fs::create_dir(tmp.join("existing")).unwrap();
-        let result = create_directory(None, parent, "existing".to_string()).await;
+        let result = create_directory_core(None, &parent, "existing").await;
         assert!(result.is_err());
         assert!(result.unwrap_err().message.contains("already exists"));
         cleanup_test_dir(&tmp);
@@ -748,7 +827,7 @@ mod tests {
     async fn test_create_directory_empty_name() {
         let tmp = create_test_dir("create_empty");
         let parent = tmp.to_string_lossy().to_string();
-        let result = create_directory(None, parent, "".to_string()).await;
+        let result = create_directory_core(None, &parent, "").await;
         assert!(result.is_err());
         assert!(result.unwrap_err().message.contains("cannot be empty"));
         cleanup_test_dir(&tmp);
@@ -758,11 +837,11 @@ mod tests {
     async fn test_create_directory_invalid_chars() {
         let tmp = create_test_dir("create_invalid");
         let parent = tmp.to_string_lossy().to_string();
-        let result = create_directory(None, parent.clone(), "foo/bar".to_string()).await;
+        let result = create_directory_core(None, &parent, "foo/bar").await;
         assert!(result.is_err());
         assert!(result.unwrap_err().message.contains("invalid characters"));
 
-        let result = create_directory(None, parent, "foo\0bar".to_string()).await;
+        let result = create_directory_core(None, &parent, "foo\0bar").await;
         assert!(result.is_err());
         assert!(result.unwrap_err().message.contains("invalid characters"));
         cleanup_test_dir(&tmp);
@@ -770,7 +849,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_directory_nonexistent_parent() {
-        let result = create_directory(None, "/nonexistent_path_12345".to_string(), "test".to_string()).await;
+        let result = create_directory_core(None, "/nonexistent_path_12345", "test").await;
         assert!(result.is_err());
     }
 

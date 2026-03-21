@@ -44,6 +44,13 @@ describe('adjustSelectionIndices', () => {
         })
     })
 
+    describe('cursor (single element)', () => {
+        it('works for single-element arrays (cursor adjustment)', () => {
+            // Cursor at index 3, file added at index 1
+            expect(adjustSelectionIndices([3], [], [1])).toEqual([4])
+        })
+    })
+
     describe('remove only', () => {
         it('shifts selected index when unselected item is removed before it', () => {
             // Old [a,b,c], new [b,c] → removes=[0]. Selected {2}

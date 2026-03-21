@@ -71,20 +71,17 @@ fn compare_names_natural(a: &str, b: &str) -> std::cmp::Ordering {
     alphanumeric_sort::compare_str(a.to_lowercase(), b.to_lowercase())
 }
 
-/// Sorts file entries by the specified column and order.
-/// Directories always come first, then files.
-/// Uses natural sorting for string comparisons (for example, "img_2" before "img_10").
+/// Returns a comparator that orders `FileEntry` values according to the given sort params.
 ///
-/// `dir_sort_mode` controls how directories are sorted among themselves:
-/// - `LikeFiles`: directories sort by the same column as files (using `recursive_size` for Size)
-/// - `AlwaysByName`: directories always sort by name, regardless of the active sort column
-pub fn sort_entries(
-    entries: &mut [FileEntry],
+/// Directories always come first, then files. Within each group the comparator
+/// applies the requested column, order, and directory sort mode (including the
+/// `recursive_size: None` sorts-last rule for Size).
+pub fn entry_comparator(
     sort_by: SortColumn,
     sort_order: SortOrder,
     dir_sort_mode: DirectorySortMode,
-) {
-    entries.sort_by(|a, b| {
+) -> impl Fn(&FileEntry, &FileEntry) -> std::cmp::Ordering {
+    move |a, b| {
         // Directories always come first
         match (a.is_directory, b.is_directory) {
             (true, false) => return std::cmp::Ordering::Less,
@@ -138,7 +135,7 @@ pub fn sort_entries(
                 let (a_dotfile, a_has_ext, a_ext) = extract_extension_for_sort(&a.name);
                 let (b_dotfile, b_has_ext, b_ext) = extract_extension_for_sort(&b.name);
 
-                // Dotfiles first, then no extension, then by extension
+                // Dotfiles first, then no extension, then by extension alphabetically
                 match (a_dotfile, b_dotfile) {
                     (true, false) => std::cmp::Ordering::Less,
                     (false, true) => std::cmp::Ordering::Greater,
@@ -183,5 +180,21 @@ pub fn sort_entries(
             SortOrder::Ascending => primary,
             SortOrder::Descending => primary.reverse(),
         }
-    });
+    }
+}
+
+/// Sorts file entries by the specified column and order.
+/// Directories always come first, then files.
+/// Uses natural sorting for string comparisons (for example, "img_2" before "img_10").
+///
+/// `dir_sort_mode` controls how directories are sorted among themselves:
+/// - `LikeFiles`: directories sort by the same column as files (using `recursive_size` for Size)
+/// - `AlwaysByName`: directories always sort by name, regardless of the active sort column
+pub fn sort_entries(
+    entries: &mut [FileEntry],
+    sort_by: SortColumn,
+    sort_order: SortOrder,
+    dir_sort_mode: DirectorySortMode,
+) {
+    entries.sort_by(entry_comparator(sort_by, sort_order, dir_sort_mode));
 }
