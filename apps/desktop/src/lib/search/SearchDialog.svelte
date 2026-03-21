@@ -24,7 +24,7 @@
         formatBytes,
     } from '$lib/tauri-commands'
     import { getCachedIcon, iconCacheVersion } from '$lib/icon-cache'
-    import type { UnlistenFn, PreflightContext } from '$lib/tauri-commands'
+    import type { UnlistenFn } from '$lib/tauri-commands'
     import { getSetting } from '$lib/settings'
     import { isScanning, getEntriesScanned } from '$lib/indexing'
     import { tooltip } from '$lib/tooltip/tooltip'
@@ -73,8 +73,6 @@
         setScope,
         getExcludeSystemDirs,
         setExcludeSystemDirs,
-        getPreflightText,
-        setPreflightText,
         getCaveat,
         setCaveat,
         buildSearchQuery,
@@ -160,7 +158,6 @@
     const caseSensitive = $derived(getCaseSensitive())
     const scope = $derived(getScope())
     const excludeSystemDirs = $derived(getExcludeSystemDirs())
-    const preflightText = $derived(getPreflightText())
     const caveatText = $derived(getCaveat())
     const scanning = $derived(isScanning())
     const entriesScanned = $derived(getEntriesScanned())
@@ -171,7 +168,6 @@
     const inputsDisabled = $derived(!isIndexAvailable)
 
     let aiError = $state('')
-    let aiGeneration = 0
     let highlightedFields = new SvelteSet<string>()
     /** True once the user has triggered at least one search (so we can distinguish "no query yet" from "0 results"). */
     let hasSearched = $state(false)
@@ -389,14 +385,6 @@
         }, 1500)
     }
 
-    /** Shows search results in the UI and marks that a search has been performed. */
-    function showResults(entries: Parameters<typeof setResults>[0], totalCount: number): void {
-        setResults(entries)
-        setTotalCount(totalCount)
-        setCursorIndex(0)
-        hasSearched = true
-    }
-
     /** Focuses the first result row for keyboard navigation. */
     async function focusFirstResult(): Promise<void> {
         await tick()
@@ -404,185 +392,35 @@
         firstResult?.focus()
     }
 
-    /** Builds a preflight search query with scope and system dir exclusions applied. */
-    async function buildPreflightQuery(): Promise<ReturnType<typeof buildSearchQuery>> {
-        const preflightQuery = buildSearchQuery()
-        preflightQuery.limit = 50
-        const scopeStr = getScope().trim()
-        if (scopeStr) {
-            const parsed = await parseSearchScope(scopeStr)
-            if (parsed.includePaths.length > 0) preflightQuery.includePaths = parsed.includePaths
-            if (parsed.excludePatterns.length > 0) preflightQuery.excludeDirNames = parsed.excludePatterns
-        }
-        return preflightQuery
-    }
-
-    /** Phase 1: Calls the LLM for an initial broad translation. Returns null on failure or staleness. */
-    async function aiPhase1BroadQuery(
-        query: string,
-        providerLabel: string,
-        isStale: () => boolean,
-    ): Promise<Awaited<ReturnType<typeof translateSearchQuery>> | null> {
-        setAiStatus(`Calling ${providerLabel}...`)
-        try {
-            const result = await translateSearchQuery(query)
-            if (isStale()) return null
-            return result
-        } catch (e: unknown) {
-            if (isStale()) return null
-            aiError = typeof e === 'string' ? e : e instanceof Error ? e.message : String(e)
-            setAiStatus('')
-            setPreflightText('')
-            return null
-        }
-    }
-
-    /** Phase 2: Runs preflight search. Returns null on failure (falls back to pass 1 search). */
-    async function aiPhase2Preflight(isStale: () => boolean): Promise<Awaited<ReturnType<typeof searchFiles>> | null> {
-        setAiStatus('Running preflight...')
-        try {
-            const preflightQuery = await buildPreflightQuery()
-            const result = await searchFiles(preflightQuery)
-            if (isStale()) return null
-            return result
-        } catch {
-            if (isStale()) return null
-            setAiStatus('Searching...')
-            await executeSearch()
-            setAiStatus('')
-            return null
-        }
-    }
-
-    /** Phase 4: Refines query with preflight context and runs final search. */
-    async function aiPhase4Refine(
-        query: string,
-        hitCount: number,
-        entries: Awaited<ReturnType<typeof searchFiles>>['entries'],
-        summaryPrefix: string,
-        pass1QueryJson: string | undefined,
-        isStale: () => boolean,
-    ): Promise<void> {
-        setAiStatus('Refining query...')
-        const preflightContext: PreflightContext = {
-            totalCount: hitCount,
-            sampleEntries: entries.slice(0, 50).map((e) => ({
-                name: e.name,
-                size: e.size,
-                modifiedAt: e.modifiedAt,
-                isDirectory: e.isDirectory,
-            })),
-            pass1QueryJson,
-        }
-
-        let pass2Result
-        try {
-            pass2Result = await translateSearchQuery(query, preflightContext)
-        } catch {
-            if (isStale()) return
-            setPreflightText(`${summaryPrefix} → ${hitCount.toLocaleString()} hits · Refinement failed`)
-            setAiStatus('')
-            return
-        }
-        if (isStale()) return
-
-        applyAiFiltersWithHighlight(pass2Result)
-        setCaveat(pass2Result.caveat ?? '')
-        setPreflightText(`${summaryPrefix} → ${hitCount.toLocaleString()} hits · Refined`)
-
-        setAiStatus('Searching...')
-        await executeSearch()
-        setAiStatus('')
-        await focusFirstResult()
-    }
-
-    /** When pass 1 gets 0 hits and the LLM guessed searchPaths, retry without include paths. */
-    async function aiSearchPathFallback(
-        pass1Result: Awaited<ReturnType<typeof translateSearchQuery>>,
-        summaryPrefix: string,
-        isStale: () => boolean,
-    ): Promise<boolean> {
-        const includePaths = pass1Result.query.includePaths
-        const hadIncludePaths = includePaths != null && includePaths.length > 0
-        if (!hadIncludePaths) return false
-
-        // Remove include paths from scope, keep only excludes (! prefixed)
-        const excludeOnly = getScope()
-            .split(',')
-            .map((s) => s.trim())
-            .filter((s) => s.startsWith('!'))
-            .join(', ')
-        setScope(excludeOnly)
-        setAiStatus('Retrying full-drive search...')
-        const fallbackQuery = await buildPreflightQuery()
-        try {
-            const fallbackResult = await searchFiles(fallbackQuery)
-            if (isStale()) return true
-            showResults(fallbackResult.entries, fallbackResult.totalCount)
-            const fallbackCount = fallbackResult.totalCount
-            setPreflightText(`${summaryPrefix} → 0 hits (path guess failed) → ${String(fallbackCount)} hits`)
-            setAiStatus('')
-            if (fallbackCount > 0) await focusFirstResult()
-            return true
-        } catch {
-            return false
-        }
-    }
-
-    /** Runs the two-pass AI translation for a given query text, populates filters, and auto-runs search. */
+    /** Runs AI translation for a given query text, populates filters, and searches. */
     async function executeAiSearch(queryText: string): Promise<void> {
         const query = queryText.trim()
         if (!query) return
 
-        const generation = ++aiGeneration
-        const isStale = (): boolean => generation !== aiGeneration
-
         aiError = ''
-        setPreflightText('')
         setCaveat('')
         const provider = getSetting('ai.provider')
         const providerLabel = provider === 'local' ? 'local LLM' : provider
 
-        // Phase 1: Broad query (no preflight context)
-        const pass1Result = await aiPhase1BroadQuery(query, providerLabel, isStale)
-        if (!pass1Result) return
-
-        const pass1Summary = pass1Result.preflightSummary ?? ''
-        setPreflightText(pass1Summary ? `Preflight: ${pass1Summary}` : '')
-        setCaveat(pass1Result.caveat ?? '')
-        applyAiFiltersWithHighlight(pass1Result)
-
-        // Phase 2: Run preflight search with broad filters
-        const preflightResult = await aiPhase2Preflight(isStale)
-        if (!preflightResult) return
-
-        const hitCount = preflightResult.totalCount
-        const summaryPrefix = pass1Summary ? `Preflight: ${pass1Summary}` : 'Preflight'
-
-        // Phase 3: Check if refinement is needed
-        if (hitCount === 0) {
-            if (await aiSearchPathFallback(pass1Result, summaryPrefix, isStale)) return
-            showResults(preflightResult.entries, hitCount)
-            setPreflightText(`${summaryPrefix} → 0 hits`)
+        // Translate query via LLM
+        setAiStatus(`Calling ${providerLabel}...`)
+        let translateResult: Awaited<ReturnType<typeof translateSearchQuery>>
+        try {
+            translateResult = await translateSearchQuery(query)
+        } catch (e: unknown) {
+            aiError = typeof e === 'string' ? e : e instanceof Error ? e.message : String(e)
             setAiStatus('')
             return
         }
 
-        if (hitCount <= 10) {
-            showResults(preflightResult.entries, hitCount)
-            setPreflightText(`${summaryPrefix} → ${String(hitCount)} hits`)
-            setAiStatus('')
-            await focusFirstResult()
-            return
-        }
+        applyAiFiltersWithHighlight(translateResult)
+        setCaveat(translateResult.caveat ?? '')
 
-        // Show intermediate results while refining
-        showResults(preflightResult.entries, hitCount)
-        setPreflightText(`${summaryPrefix} → ${hitCount.toLocaleString()} hits · Refining...`)
-
-        // Phase 4–5: Refinement and final search
-        const pass1QueryJson = JSON.stringify(pass1Result.query)
-        await aiPhase4Refine(query, hitCount, preflightResult.entries, summaryPrefix, pass1QueryJson, isStale)
+        // Search using the translated query directly
+        setAiStatus('Searching...')
+        await executeSearch()
+        setAiStatus('')
+        await focusFirstResult()
     }
 
     function bytesToDisplaySize(bytes: number): { value: string; unit: 'KB' | 'MB' | 'GB' } {
@@ -875,15 +713,6 @@
                 >
                     Ask AI
                 </button>
-            </div>
-            <!-- Preflight row (read-only status display) -->
-            <div class="preflight-row">
-                {#if preflightText}
-                    <span class="preflight-label">Preflight:</span>
-                    <span class="preflight-content">{preflightText.replace(/^Preflight:\s*/, '')}</span>
-                {:else}
-                    <span class="preflight-placeholder">AI will analyze results to refine your search</span>
-                {/if}
             </div>
             {#if caveatText}
                 <div class="caveat-row">{caveatText}</div>
@@ -1466,33 +1295,6 @@
     .scope-info-button:not(:disabled):hover {
         border-color: var(--color-border-strong);
         color: var(--color-text-secondary);
-    }
-
-    /* Preflight row — read-only status between AI prompt and pattern row */
-    .preflight-row {
-        padding: var(--spacing-xs) var(--spacing-md);
-        border-bottom: 1px solid var(--color-border-strong);
-        border-left: 2px solid color-mix(in srgb, var(--color-accent) 60%, transparent);
-        background: var(--color-bg-secondary);
-        font-family: var(--font-mono);
-        font-size: var(--font-size-sm);
-        color: var(--color-text-secondary);
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-    }
-
-    .preflight-label {
-        color: var(--color-text-tertiary);
-    }
-
-    .preflight-content {
-        color: var(--color-text-primary);
-    }
-
-    .preflight-placeholder {
-        color: var(--color-text-tertiary);
-        font-style: italic;
     }
 
     .caveat-row {

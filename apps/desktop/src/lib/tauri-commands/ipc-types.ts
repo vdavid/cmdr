@@ -111,21 +111,7 @@ export interface TranslateDisplay {
 export interface TranslateResult {
     query: TranslatedQuery
     display: TranslateDisplay
-    preflightSummary?: string
     caveat?: string
-}
-
-export interface PreflightContext {
-    totalCount: number
-    sampleEntries: PreflightEntry[]
-    pass1QueryJson?: string
-}
-
-export interface PreflightEntry {
-    name: string
-    size: number | null
-    modifiedAt: number | null
-    isDirectory: boolean
 }
 
 export interface ParsedScope {

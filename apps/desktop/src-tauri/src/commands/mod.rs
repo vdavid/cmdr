@@ -1,5 +1,7 @@
 //! Tauri commands module.
 
+pub mod ai_query_builder;
+pub mod ai_response_parser;
 pub mod clipboard;
 pub mod e2e;
 pub mod file_system;

@@ -41,7 +41,6 @@ let caseSensitive = $state(false)
 // AI state
 let aiStatus = $state('')
 let aiPrompt = $state('')
-let preflightText = $state('')
 let caveat = $state('')
 
 // Scope (folder filter)
@@ -116,9 +115,6 @@ export function getCaseSensitive(): boolean {
 export function getScope(): string {
     return scope
 }
-export function getPreflightText(): string {
-    return preflightText
-}
 export function getCaveat(): string {
     return caveat
 }
@@ -189,9 +185,6 @@ export function setCaseSensitive(value: boolean): void {
 }
 export function setScope(value: string): void {
     scope = value
-}
-export function setPreflightText(text: string): void {
-    preflightText = text
 }
 export function setCaveat(text: string): void {
     caveat = text
@@ -292,7 +285,6 @@ export function resetSearchState(): void {
     caseSensitive = false
     aiStatus = ''
     aiPrompt = ''
-    preflightText = ''
     caveat = ''
     scope = ''
     excludeSystemDirs = true

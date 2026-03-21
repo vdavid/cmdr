@@ -323,6 +323,4 @@ export type {
     TranslatedQuery,
     TranslateDisplay,
     ParsedScope,
-    PreflightContext,
-    PreflightEntry,
 } from './ipc-types'

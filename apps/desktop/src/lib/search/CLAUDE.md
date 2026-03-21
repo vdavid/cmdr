@@ -49,6 +49,10 @@ row, with "AI" label and accent border) and focused by default. The pattern row 
 visible too. Enter in the AI prompt row triggers AI translation; Enter in the pattern row runs manual search. `⌘Enter`
 from anywhere triggers AI search. When AI is disabled, only the pattern row is shown.
 
+**AI single-pass flow**: `executeAiSearch()` calls `translateSearchQuery()` once (LLM classifies intent into enums +
+extracts keywords, Rust builds the query deterministically), then runs `executeSearch()`. No preflight, no refinement
+pass. See `docs/specs/ai-search-v2-plan.md` for the full design.
+
 **AI prompt state**: `aiPrompt` in `search-state.svelte.ts` holds the natural language query separately from
 `namePattern` (the glob/regex pattern).
 
