@@ -61,7 +61,7 @@ The Docker container (`docker/Dockerfile`) includes: Ubuntu 24.04, WebKitGTK run
 Most common operation: `docker volume rm cmdr-target-cache` after Rust/Svelte changes.
 
 Why two node_modules volumes? Both must be Docker volumes to prevent Linux binaries from contaminating the host's
-node_modules (which would break macOS smoke tests).
+node_modules.
 
 ### Interactive debugging
 

@@ -22,7 +22,6 @@ Core structure:
 - `/apps/`
     - `analytics-dashboard/` - Private metrics dashboard (SvelteKit + CF Pages)
     - `desktop/` - The Tauri desktop app
-        - `test/e2e-smoke/` - Playwright smoke tests (browser-based, works on macOS)
         - `test/e2e-linux/` - WebDriverIO + tauri-driver tests (Docker, tests real Tauri app)
         - `src/` - Svelte frontend. Uses SvelteKit with static adapter. TypeScript strict mode. Tailwind v4.
             - `lib/` - Components

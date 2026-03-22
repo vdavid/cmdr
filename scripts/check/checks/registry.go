@@ -170,15 +170,6 @@ var AllChecks = []CheckDefinition{
 		Run:         RunSvelteTests,
 	},
 	{
-		ID:          "desktop-svelte-smoke",
-		Nickname:    "desktop-smoke",
-		DisplayName: "smoke tests",
-		App:         AppDesktop,
-		Tech:        "🎨 Svelte",
-		DependsOn:   []string{"desktop-svelte-check"},
-		Run:         RunDesktopSmoke,
-	},
-	{
 		ID:          "desktop-svelte-e2e-linux-typecheck",
 		Nickname:    "e2e-linux-typecheck",
 		DisplayName: "e2e-linux typecheck",

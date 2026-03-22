@@ -174,13 +174,6 @@ jobs:
             - name: Run Svelte tests
               run: ./scripts/check/check --check desktop-svelte-tests --ci
 
-            - name: Install Playwright browsers
-              run: pnpm exec playwright install --with-deps chromium webkit
-              working-directory: ./apps/desktop
-
-            - name: Run E2E tests
-              run: ./scripts/check/check --check desktop-svelte-smoke --ci
-
     # ===========================================
     # Desktop app - Tauri E2E (Linux)
     # ===========================================

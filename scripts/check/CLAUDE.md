@@ -157,7 +157,7 @@ tests, type checkers before tests.
 | App | Tech | Checks |
 |-----|------|--------|
 | Desktop | Rust | rustfmt, clippy, cargo-audit, cargo-deny, cargo-udeps, jscpd, tests, tests-linux (slow) |
-| Desktop | Svelte | prettier, eslint, stylelint, css-unused, svelte-check, import-cycles, knip, type-drift, tests, smoke, e2e-linux-typecheck, e2e-linux (slow) |
+| Desktop | Svelte | prettier, eslint, stylelint, css-unused, svelte-check, import-cycles, knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow) |
 | Website | Astro | prettier, eslint, typecheck, build, html-validate, e2e |
 | Website | Docker | docker-build |
 | License server | TS | prettier, eslint, typecheck, tests |

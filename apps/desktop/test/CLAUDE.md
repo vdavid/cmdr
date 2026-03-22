@@ -2,18 +2,17 @@
 
 ## E2E test suites
 
-Three complementary approaches, each covering what the others can't:
+Two complementary approaches, each covering what the others can't:
 
-| Suite                        | Tech                         | Runs on         | What it tests                                               | CI?                    |
-| ---------------------------- | ---------------------------- | --------------- | ----------------------------------------------------------- | ---------------------- |
-| **Smoke** (`e2e-smoke/`)     | Playwright (Chromium/WebKit) | macOS, Linux    | UI renders correctly (no Tauri backend)                     | Yes                    |
-| **Linux E2E** (`e2e-linux/`) | WebDriverIO + tauri-driver   | Docker (Ubuntu) | Full app: dialogs, keyboard nav, file ops, settings, viewer | Yes (slow)             |
-| **macOS E2E** (`e2e-macos/`) | WebDriverIO + CrabNebula     | macOS only      | Platform integration: APFS ops, volume detection, WKWebView | No (local pre-release) |
+| Suite                        | Tech                       | Runs on         | What it tests                                               | CI?                    |
+| ---------------------------- | -------------------------- | --------------- | ----------------------------------------------------------- | ---------------------- |
+| **Linux E2E** (`e2e-linux/`) | WebDriverIO + tauri-driver | Docker (Ubuntu) | Full app: dialogs, keyboard nav, file ops, settings, viewer | Yes (slow)             |
+| **macOS E2E** (`e2e-macos/`) | WebDriverIO + CrabNebula   | macOS only      | Platform integration: APFS ops, volume detection, WKWebView | No (local pre-release) |
 
 **Why separate?** macOS WKWebView has no Apple-provided WebDriver, so standard tauri-driver only works on Linux
 (WebKitGTK has WebKitWebDriver). CrabNebula provides a commercial WKWebView bridge for macOS, but GitHub Actions charges
 macOS minutes at 10x — too expensive for CI. So: Linux E2E is the workhorse (all platform-independent logic), macOS E2E
-covers platform-specific behavior, and smoke tests catch UI regressions without needing a Tauri build.
+covers platform-specific behavior.
 
 ## Shared fixture system
 
