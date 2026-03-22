@@ -179,12 +179,12 @@ describe('FunctionKeyBar', () => {
 
         const kbds = target.querySelectorAll('kbd')
         const keys = Array.from(kbds).map((kbd) => kbd.textContent)
-        expect(keys).toEqual(['F2', 'F3', 'F4', 'F5', '\u21E7F6', 'F7', '\u21E7F8'])
+        expect(keys).toEqual(['F2', 'F3', '\u21E7F4', 'F5', '\u21E7F6', 'F7', '\u21E7F8'])
 
-        // Shift+F6 and Shift+F8 should have labels
+        // Shift+F4, Shift+F6, and Shift+F8 should have labels
         const buttons = target.querySelectorAll('button')
         const labels = Array.from(buttons).map((btn) => btn.querySelector('span')?.textContent ?? null)
-        expect(labels).toEqual([null, null, null, null, 'Rename', null, 'Permanently'])
+        expect(labels).toEqual([null, null, 'New file', null, 'Rename', null, 'Permanently'])
 
         await releaseShift()
         document.body.removeChild(target)
@@ -227,16 +227,21 @@ describe('FunctionKeyBar', () => {
         document.body.appendChild(target)
         mount(FunctionKeyBar, {
             target,
-            props: { visible: true, onRename: () => {}, onDeletePermanently: () => {} },
+            props: {
+                visible: true,
+                onNewFile: () => {},
+                onRename: () => {},
+                onDeletePermanently: () => {},
+            },
         })
 
         await pressShift()
 
         const buttons = target.querySelectorAll('button')
-        // All disabled except Shift+F6 (index 4) and Shift+F8 (index 6)
+        // All disabled except Shift+F4 (index 2), Shift+F6 (index 4), and Shift+F8 (index 6)
         expect(buttons[0].disabled).toBe(true)
         expect(buttons[1].disabled).toBe(true)
-        expect(buttons[2].disabled).toBe(true)
+        expect(buttons[2].disabled).toBe(false)
         expect(buttons[3].disabled).toBe(true)
         expect(buttons[4].disabled).toBe(false)
         expect(buttons[5].disabled).toBe(true)
