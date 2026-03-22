@@ -130,7 +130,7 @@ var AllChecks = []CheckDefinition{
 		DisplayName: "svelte-check",
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
-		DependsOn:   []string{"desktop-svelte-eslint"},
+		DependsOn:   []string{"desktop-svelte-prettier"},
 		Run:         RunSvelteCheck,
 	},
 	{
