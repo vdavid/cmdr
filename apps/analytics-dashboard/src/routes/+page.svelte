@@ -37,6 +37,17 @@
         return [allTimestamps, allDays.map((d) => byDay.get(d) ?? 0)]
     }
 
+    /** Compares two semver strings, descending (higher version first). */
+    function compareSemverDesc(a: string, b: string): number {
+        const pa = a.split('.').map(Number)
+        const pb = b.split('.').map(Number)
+        for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+            const diff = (pb[i] ?? 0) - (pa[i] ?? 0)
+            if (diff !== 0) return diff
+        }
+        return 0
+    }
+
     /** Finds the max daily download value across a set of groups. */
     function maxDailyAcrossGroups(
         rows: DownloadRow[],
@@ -63,10 +74,12 @@
 <script lang="ts">
     import Chart from '$lib/components/Chart.svelte'
     import MiniTimeline from '$lib/components/MiniTimeline.svelte'
+    import PieChart from '$lib/components/PieChart.svelte'
 
     let { data } = $props()
 
     const ranges = ['24h', '7d', '30d'] as const
+    const downloadSyncKey = 'dl-timelines'
 
     const regionNames = new Intl.DisplayNames(['en'], { type: 'region' })
     function formatCountry(code: string): string {
@@ -79,6 +92,17 @@
     let hoveredCountry: string | null = $state(null)
     let tooltipX = $state(0)
     let tooltipY = $state(0)
+
+    // Data-point hover state
+    let hoveredDayIdx: number | null = $state(null)
+    let dayTooltipVisible = $state(false)
+    let dayTooltipX = $state(0)
+    let dayTooltipY = $state(0)
+
+    function handleDayHover(idx: number | null) {
+        hoveredDayIdx = idx
+        dayTooltipVisible = idx != null
+    }
 
     function handleDownloadWheel(e: WheelEvent, dataXMin: number, dataXMax: number) {
         e.preventDefault()
@@ -263,7 +287,7 @@
                         {@const cf = data.cloudflare.data}
                         {@const totalDownloads = cf.downloads.reduce((sum, r) => sum + r.downloads, 0)}
                         {@const { days: allDays, timestamps: allTimestamps } = getDayAxis(cf.downloads)}
-                        {@const versions = aggregateBy(cf.downloads, 'version', 'downloads').slice(0, 8)}
+                        {@const versions = aggregateBy(cf.downloads, 'version', 'downloads').sort((a, b) => compareSemverDesc(a.x, b.x)).slice(0, 8)}
                         {@const versionMaxY = maxDailyAcrossGroups(cf.downloads, 'version', versions.map((v) => v.x), allDays)}
 
                         {@render metricRow([
@@ -278,6 +302,7 @@
                             <div
                                 class="grid gap-4 md:grid-cols-3"
                                 onwheel={(e) => handleDownloadWheel(e, allTimestamps[0], allTimestamps[allTimestamps.length - 1])}
+                                onmousemove={(e: MouseEvent) => { dayTooltipX = e.clientX; dayTooltipY = e.clientY }}
                             >
                                 <div>
                                     <h3 class="mb-2 text-sm font-medium text-text-secondary">By version</h3>
@@ -292,7 +317,7 @@
                                                 <span class="text-text-primary">{version.x}</span>
                                                 <span class="tabular-nums text-text-secondary">{formatNumber(version.y)}</span>
                                             </div>
-                                            <MiniTimeline data={timelineData} height={48} maxY={versionMaxY} xMin={zoomXMin} xMax={zoomXMax} />
+                                            <MiniTimeline data={timelineData} height={48} maxY={versionMaxY} xMin={zoomXMin} xMax={zoomXMax} syncKey={downloadSyncKey} onhover={handleDayHover} />
                                         </div>
                                     {/each}
                                     <p class="text-xs text-text-tertiary">Scroll to zoom timeline</p>
@@ -306,12 +331,40 @@
                                     {@render countryTable(cf.downloads, allDays, allTimestamps)}
                                 </div>
                             </div>
+
+                            <!-- Data-point hover tooltip with pie charts -->
+                            {#if dayTooltipVisible && hoveredDayIdx != null && hoveredDayIdx < allDays.length}
+                                {@const day = allDays[hoveredDayIdx]}
+                                {@const dayRows = cf.downloads.filter((r) => r.day === day)}
+                                {@const dayTotal = dayRows.reduce((sum, r) => sum + r.downloads, 0)}
+                                {#if dayTotal > 0}
+                                    <div
+                                        class="pointer-events-none fixed z-50 rounded-lg border border-border bg-surface-elevated p-3 shadow-lg"
+                                        style="left: {dayTooltipX + 16}px; top: {Math.max(16, dayTooltipY - 100)}px;"
+                                    >
+                                        <p class="mb-2 text-sm font-medium text-text-primary">
+                                            {day}
+                                            <span class="ml-2 tabular-nums text-text-secondary">{formatNumber(dayTotal)} downloads</span>
+                                        </p>
+                                        <div class="flex items-start gap-5">
+                                            <div>
+                                                <p class="mb-1 text-xs font-medium text-text-tertiary">Architecture</p>
+                                                <PieChart slices={aggregateBy(dayRows, 'arch', 'downloads').map((a) => ({ label: a.x, value: a.y }))} />
+                                            </div>
+                                            <div>
+                                                <p class="mb-1 text-xs font-medium text-text-tertiary">Country</p>
+                                                <PieChart slices={aggregateBy(dayRows, 'country', 'downloads').slice(0, 8).map((c) => ({ label: c.x.toUpperCase(), value: c.y }))} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                {/if}
+                            {/if}
                         {:else if cf.downloads.length > 0}
                             <!-- Fewer than 2 days of data — show tables only -->
                             <div class="grid gap-4 md:grid-cols-3">
                                 <div>
                                     <h3 class="mb-2 text-sm font-medium text-text-secondary">By version</h3>
-                                    {@render metricTable(aggregateBy(cf.downloads, 'version', 'downloads').slice(0, 8), 'Version', 'Downloads')}
+                                    {@render metricTable(aggregateBy(cf.downloads, 'version', 'downloads').sort((a, b) => compareSemverDesc(a.x, b.x)).slice(0, 8), 'Version', 'Downloads')}
                                 </div>
                                 <div>
                                     <h3 class="mb-2 text-sm font-medium text-text-secondary">By architecture</h3>
