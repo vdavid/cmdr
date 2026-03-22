@@ -119,7 +119,9 @@ pub fn get_sync_statuses(paths: Vec<String>) -> HashMap<String, SyncStatus> {
         return HashMap::new();
     }
 
-    let num_threads = paths.len().min(std::thread::available_parallelism().map_or(4, |n| n.get()));
+    let num_threads = paths
+        .len()
+        .min(std::thread::available_parallelism().map_or(4, |n| n.get()));
 
     std::thread::scope(|scope| {
         let chunk_size = paths.len().div_ceil(num_threads);
