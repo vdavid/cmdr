@@ -643,6 +643,7 @@ mod tests {
             logical_size: None,
             physical_size: None,
             modified_at: None,
+            inode: None,
         }
     }
 
@@ -656,6 +657,7 @@ mod tests {
             logical_size: Some(size),
             physical_size: Some(size),
             modified_at: None,
+            inode: None,
         }
     }
 

@@ -997,6 +997,14 @@ fn verify_affected_dirs(affected_paths: &HashSet<String>, writer: &IndexWriter) 
                 reconciler::entry_size_and_mtime(&metadata)
             };
 
+            #[cfg(unix)]
+            let (inode, nlink) = {
+                use std::os::unix::fs::MetadataExt;
+                (Some(metadata.ino()), Some(metadata.nlink()))
+            };
+            #[cfg(not(unix))]
+            let (inode, nlink) = (None, None);
+
             let _ = writer.send(WriteMessage::UpsertEntryV2 {
                 parent_id: *parent_id,
                 name,
@@ -1005,6 +1013,8 @@ fn verify_affected_dirs(affected_paths: &HashSet<String>, writer: &IndexWriter) 
                 logical_size,
                 physical_size,
                 modified_at,
+                inode,
+                nlink,
             });
 
             // UpsertEntryV2 auto-propagates deltas in the writer.

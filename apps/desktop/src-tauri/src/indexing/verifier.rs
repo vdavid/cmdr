@@ -103,6 +103,8 @@ struct DiskEntry {
     logical_size: Option<u64>,
     physical_size: Option<u64>,
     modified_at: Option<u64>,
+    inode: Option<u64>,
+    nlink: Option<u64>,
 }
 
 /// Compare disk contents of `dir_path` against the index DB, sending corrections
@@ -161,6 +163,14 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
             reconciler::entry_size_and_mtime(&metadata)
         };
 
+        #[cfg(unix)]
+        let (inode, nlink) = {
+            use std::os::unix::fs::MetadataExt;
+            (Some(metadata.ino()), Some(metadata.nlink()))
+        };
+        #[cfg(not(unix))]
+        let (inode, nlink) = (None, None);
+
         let key = store::normalize_for_comparison(&name);
         disk_map.insert(
             key,
@@ -171,6 +181,8 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
                 logical_size,
                 physical_size,
                 modified_at,
+                inode,
+                nlink,
             },
         );
     }
@@ -222,6 +234,8 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
                     logical_size: disk_entry.logical_size,
                     physical_size: disk_entry.physical_size,
                     modified_at: disk_entry.modified_at,
+                    inode: disk_entry.inode,
+                    nlink: disk_entry.nlink,
                 });
 
                 // UpsertEntryV2 auto-propagates deltas in the writer.
@@ -254,6 +268,8 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
                         logical_size: disk_entry.logical_size,
                         physical_size: disk_entry.physical_size,
                         modified_at: disk_entry.modified_at,
+                        inode: disk_entry.inode,
+                        nlink: disk_entry.nlink,
                     });
                     // UpsertEntryV2 auto-propagates deltas in the writer.
                     if disk_entry.is_dir {
@@ -270,10 +286,13 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
                     continue;
                 }
 
-                // Modified file: compare size and mtime
-                // Modified file: UpsertEntryV2 auto-propagates the size delta.
+                // Modified file: compare size and mtime.
+                // Skip size comparison when DB has NULL size for a hardlink (nlink > 1):
+                // the NULL is intentional dedup, not a real mismatch.
                 if !db_entry.is_directory {
-                    let size_changed = db_entry.logical_size != disk_entry.logical_size;
+                    let is_deduped_hardlink =
+                        db_entry.logical_size.is_none() && matches!(disk_entry.nlink, Some(n) if n > 1);
+                    let size_changed = !is_deduped_hardlink && db_entry.logical_size != disk_entry.logical_size;
                     let mtime_changed = db_entry.modified_at != disk_entry.modified_at;
                     if size_changed || mtime_changed {
                         let _ = writer.send(WriteMessage::UpsertEntryV2 {
@@ -284,6 +303,8 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
                             logical_size: disk_entry.logical_size,
                             physical_size: disk_entry.physical_size,
                             modified_at: disk_entry.modified_at,
+                            inode: disk_entry.inode,
+                            nlink: disk_entry.nlink,
                         });
                         modified_count += 1;
                         if samples.len() < 5 {
@@ -449,7 +470,8 @@ mod tests {
         for component in components {
             parent_id = match IndexStore::resolve_component(&conn, parent_id, component) {
                 Ok(Some(id)) => id,
-                _ => IndexStore::insert_entry_v2(&conn, parent_id, component, true, false, None, None, None).unwrap(),
+                _ => IndexStore::insert_entry_v2(&conn, parent_id, component, true, false, None, None, None, None)
+                    .unwrap(),
             };
         }
         parent_id
@@ -467,6 +489,14 @@ mod tests {
             } else {
                 reconciler::entry_size_and_mtime(&metadata)
             };
+            #[cfg(unix)]
+            let (inode, nlink) = {
+                use std::os::unix::fs::MetadataExt;
+                (Some(metadata.ino()), Some(metadata.nlink()))
+            };
+            #[cfg(not(unix))]
+            let (inode, nlink) = (None, None);
+
             let _ = writer.send(WriteMessage::UpsertEntryV2 {
                 parent_id,
                 name,
@@ -475,6 +505,8 @@ mod tests {
                 logical_size,
                 physical_size,
                 modified_at,
+                inode,
+                nlink,
             });
         }
         writer.flush_blocking().unwrap();

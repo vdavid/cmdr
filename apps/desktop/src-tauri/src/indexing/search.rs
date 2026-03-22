@@ -1801,8 +1801,10 @@ mod tests {
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
         // Insert test entries
-        let users_id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None, None).unwrap();
-        let alice_id = IndexStore::insert_entry_v2(&conn, users_id, "alice", true, false, None, None, None).unwrap();
+        let users_id =
+            IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None, None, None).unwrap();
+        let alice_id =
+            IndexStore::insert_entry_v2(&conn, users_id, "alice", true, false, None, None, None, None).unwrap();
         let _pdf_id = IndexStore::insert_entry_v2(
             &conn,
             alice_id,
@@ -1812,6 +1814,7 @@ mod tests {
             Some(1_000_000),
             Some(1_000_000),
             Some(1700000000),
+            None,
         )
         .unwrap();
         let _txt_id = IndexStore::insert_entry_v2(
@@ -1823,6 +1826,7 @@ mod tests {
             Some(500),
             Some(500),
             Some(1700000100),
+            None,
         )
         .unwrap();
 

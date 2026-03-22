@@ -69,6 +69,8 @@ pub enum WriteMessage {
         logical_size: Option<u64>,
         physical_size: Option<u64>,
         modified_at: Option<u64>,
+        inode: Option<u64>,
+        nlink: Option<u64>,
     },
     /// Watcher: delete a single entry and its dir_stats by entry ID.
     DeleteEntryById(i64),
@@ -488,13 +490,30 @@ fn process_message(
             logical_size,
             physical_size,
             modified_at,
+            inode,
+            nlink,
         } => {
+            // Hardlink dedup: if this file has nlink > 1, check whether another entry
+            // for the same inode already has non-NULL sizes. If so, override sizes to
+            // None so each inode's bytes are counted exactly once.
+            let should_dedup = inode.is_some() && matches!(nlink, Some(n) if n > 1) && logical_size.is_some();
+
             // Check if an entry already exists at (parent_id, name).
             // Auto-propagates size deltas to ancestor dir_stats on both
             // insert and update, so callers never need a separate
             // PropagateDeltaById for upserted entries.
             match IndexStore::resolve_component(conn, parent_id, &name) {
                 Ok(Some(existing_id)) => {
+                    // Dedup: override sizes if another entry already has sizes for this inode
+                    let (logical_size, physical_size) = if should_dedup
+                        && IndexStore::has_sized_entry_for_inode(conn, inode.unwrap(), Some(existing_id))
+                            .unwrap_or(false)
+                    {
+                        (None, None)
+                    } else {
+                        (logical_size, physical_size)
+                    };
+
                     // Read old entry to compute delta after update
                     let old_entry = IndexStore::get_entry_by_id(conn, existing_id).ok().flatten();
                     if let Err(e) = IndexStore::update_entry(
@@ -505,6 +524,7 @@ fn process_message(
                         logical_size,
                         physical_size,
                         modified_at,
+                        inode,
                     ) {
                         log::warn!("Index writer: update_entry failed for id={existing_id}: {e}");
                     } else if let Some(old) = old_entry {
@@ -530,6 +550,15 @@ fn process_message(
                     }
                 }
                 Ok(None) => {
+                    // Dedup: override sizes if another entry already has sizes for this inode
+                    let (logical_size, physical_size) = if should_dedup
+                        && IndexStore::has_sized_entry_for_inode(conn, inode.unwrap(), None).unwrap_or(false)
+                    {
+                        (None, None)
+                    } else {
+                        (logical_size, physical_size)
+                    };
+
                     match IndexStore::insert_entry_v2(
                         conn,
                         parent_id,
@@ -539,6 +568,7 @@ fn process_message(
                         logical_size,
                         physical_size,
                         modified_at,
+                        inode,
                     ) {
                         Ok(new_id) => {
                             log::debug!(
@@ -926,6 +956,7 @@ mod tests {
             logical_size: Some(1024),
             physical_size: Some(1024),
             modified_at: Some(1700000000),
+            inode: None,
         }];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
         writer.shutdown();
@@ -954,6 +985,8 @@ mod tests {
                 logical_size: Some(256),
                 physical_size: Some(256),
                 modified_at: Some(1700000000),
+                inode: None,
+                nlink: None,
             })
             .unwrap();
         thread::sleep(Duration::from_millis(100));
@@ -968,6 +1001,8 @@ mod tests {
                 logical_size: Some(512),
                 physical_size: Some(512),
                 modified_at: Some(1700000001),
+                inode: None,
+                nlink: None,
             })
             .unwrap();
         writer.shutdown();
@@ -995,6 +1030,8 @@ mod tests {
                 logical_size: None,
                 physical_size: None,
                 modified_at: None,
+                inode: None,
+                nlink: None,
             })
             .unwrap();
         writer.shutdown();
@@ -1029,6 +1066,7 @@ mod tests {
             logical_size: Some(100),
             physical_size: Some(100),
             modified_at: None,
+            inode: None,
         }];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
         thread::sleep(Duration::from_millis(100));
@@ -1059,6 +1097,7 @@ mod tests {
                 logical_size: None,
                 physical_size: None,
                 modified_at: None,
+                inode: None,
             },
             EntryRow {
                 id: 11,
@@ -1069,6 +1108,7 @@ mod tests {
                 logical_size: Some(50),
                 physical_size: Some(50),
                 modified_at: None,
+                inode: None,
             },
             EntryRow {
                 id: 12,
@@ -1079,6 +1119,7 @@ mod tests {
                 logical_size: None,
                 physical_size: None,
                 modified_at: None,
+                inode: None,
             },
         ];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
@@ -1112,6 +1153,7 @@ mod tests {
                 logical_size: None,
                 physical_size: None,
                 modified_at: None,
+                inode: None,
             },
             EntryRow {
                 id: 11,
@@ -1122,6 +1164,7 @@ mod tests {
                 logical_size: Some(500),
                 physical_size: Some(500),
                 modified_at: None,
+                inode: None,
             },
         ];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
@@ -1175,6 +1218,7 @@ mod tests {
                 logical_size: None,
                 physical_size: None,
                 modified_at: None,
+                inode: None,
             },
             EntryRow {
                 id: 11,
@@ -1185,6 +1229,7 @@ mod tests {
                 logical_size: None,
                 physical_size: None,
                 modified_at: None,
+                inode: None,
             },
             EntryRow {
                 id: 12,
@@ -1195,6 +1240,7 @@ mod tests {
                 logical_size: Some(300),
                 physical_size: Some(300),
                 modified_at: None,
+                inode: None,
             },
         ];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
@@ -1260,6 +1306,7 @@ mod tests {
             logical_size: None,
             physical_size: None,
             modified_at: None,
+            inode: None,
         }];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
         thread::sleep(Duration::from_millis(100));
@@ -1314,6 +1361,7 @@ mod tests {
             logical_size: None,
             physical_size: None,
             modified_at: None,
+            inode: None,
         }];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
         thread::sleep(Duration::from_millis(100));
@@ -1360,6 +1408,7 @@ mod tests {
                 logical_size: None,
                 physical_size: None,
                 modified_at: None,
+                inode: None,
             },
             EntryRow {
                 id: 11,
@@ -1370,6 +1419,7 @@ mod tests {
                 logical_size: Some(100),
                 physical_size: Some(100),
                 modified_at: None,
+                inode: None,
             },
         ];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
@@ -1426,6 +1476,7 @@ mod tests {
             logical_size: Some(512),
             physical_size: Some(512),
             modified_at: Some(1700000000),
+            inode: None,
         }];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
         writer.flush().await.unwrap();
@@ -1477,6 +1528,7 @@ mod tests {
             logical_size: None,
             physical_size: None,
             modified_at: None,
+            inode: None,
         }];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
         thread::sleep(Duration::from_millis(100));
@@ -1506,6 +1558,8 @@ mod tests {
                 logical_size: Some(500),
                 physical_size: Some(500),
                 modified_at: Some(1700000000),
+                inode: None,
+                nlink: None,
             })
             .unwrap();
         writer.shutdown();
@@ -1533,6 +1587,7 @@ mod tests {
             logical_size: None,
             physical_size: None,
             modified_at: None,
+            inode: None,
         }];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
         thread::sleep(Duration::from_millis(100));
@@ -1562,6 +1617,8 @@ mod tests {
                 logical_size: Some(200),
                 physical_size: Some(200),
                 modified_at: Some(1700000000),
+                inode: None,
+                nlink: None,
             })
             .unwrap();
         thread::sleep(Duration::from_millis(100));
@@ -1576,6 +1633,8 @@ mod tests {
                 logical_size: Some(300),
                 physical_size: Some(300),
                 modified_at: Some(1700000001),
+                inode: None,
+                nlink: None,
             })
             .unwrap();
         writer.shutdown();
@@ -1622,6 +1681,8 @@ mod tests {
                 logical_size: None,
                 physical_size: None,
                 modified_at: None,
+                inode: None,
+                nlink: None,
             })
             .unwrap();
         writer.shutdown();
@@ -1632,5 +1693,411 @@ mod tests {
         assert_eq!(stats.recursive_dir_count, 1, "root should count the new dir");
         assert_eq!(stats.recursive_file_count, 0);
         assert_eq!(stats.recursive_logical_size, 0);
+    }
+
+    // ── Hardlink dedup tests ────────────────────────────────────────
+
+    #[test]
+    fn hardlink_dedup_insert_primary_stores_sizes_and_inode() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+        writer
+            .send(WriteMessage::UpsertEntryV2 {
+                parent_id: ROOT_ID,
+                name: "primary.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                logical_size: Some(1000),
+                physical_size: Some(1000),
+                modified_at: Some(1700000000),
+                inode: Some(100),
+                nlink: Some(2),
+            })
+            .unwrap();
+        writer.shutdown();
+        thread::sleep(Duration::from_millis(100));
+
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        let id = IndexStore::resolve_component(&conn, ROOT_ID, "primary.txt")
+            .unwrap()
+            .unwrap();
+        let entry = IndexStore::get_entry_by_id(&conn, id).unwrap().unwrap();
+        assert_eq!(entry.logical_size, Some(1000), "primary should keep its sizes");
+        assert_eq!(entry.inode, Some(100), "inode should be stored");
+    }
+
+    #[test]
+    fn hardlink_dedup_insert_secondary_gets_null_sizes() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+        // Insert primary link
+        writer
+            .send(WriteMessage::UpsertEntryV2 {
+                parent_id: ROOT_ID,
+                name: "primary.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                logical_size: Some(1000),
+                physical_size: Some(1000),
+                modified_at: Some(1700000000),
+                inode: Some(100),
+                nlink: Some(2),
+            })
+            .unwrap();
+        thread::sleep(Duration::from_millis(100));
+
+        // Insert secondary link (same inode, different name)
+        writer
+            .send(WriteMessage::UpsertEntryV2 {
+                parent_id: ROOT_ID,
+                name: "secondary.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                logical_size: Some(1000),
+                physical_size: Some(1000),
+                modified_at: Some(1700000000),
+                inode: Some(100),
+                nlink: Some(2),
+            })
+            .unwrap();
+        writer.shutdown();
+        thread::sleep(Duration::from_millis(100));
+
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        let sec_id = IndexStore::resolve_component(&conn, ROOT_ID, "secondary.txt")
+            .unwrap()
+            .unwrap();
+        let entry = IndexStore::get_entry_by_id(&conn, sec_id).unwrap().unwrap();
+        assert_eq!(entry.logical_size, None, "secondary should have NULL sizes");
+        assert_eq!(entry.physical_size, None);
+        assert_eq!(entry.inode, Some(100), "inode should still be stored");
+    }
+
+    #[test]
+    fn hardlink_dedup_update_secondary_keeps_null_sizes() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+        // Insert primary
+        writer
+            .send(WriteMessage::UpsertEntryV2 {
+                parent_id: ROOT_ID,
+                name: "primary.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                logical_size: Some(1000),
+                physical_size: Some(1000),
+                modified_at: Some(1700000000),
+                inode: Some(100),
+                nlink: Some(2),
+            })
+            .unwrap();
+        thread::sleep(Duration::from_millis(100));
+
+        // Insert secondary (gets NULL sizes via dedup)
+        writer
+            .send(WriteMessage::UpsertEntryV2 {
+                parent_id: ROOT_ID,
+                name: "secondary.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                logical_size: Some(1000),
+                physical_size: Some(1000),
+                modified_at: Some(1700000000),
+                inode: Some(100),
+                nlink: Some(2),
+            })
+            .unwrap();
+        thread::sleep(Duration::from_millis(100));
+
+        // Reconciler sends update for secondary with full sizes — dedup should fire again
+        writer
+            .send(WriteMessage::UpsertEntryV2 {
+                parent_id: ROOT_ID,
+                name: "secondary.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                logical_size: Some(1000),
+                physical_size: Some(1000),
+                modified_at: Some(1700000001),
+                inode: Some(100),
+                nlink: Some(2),
+            })
+            .unwrap();
+        writer.shutdown();
+        thread::sleep(Duration::from_millis(100));
+
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        let sec_id = IndexStore::resolve_component(&conn, ROOT_ID, "secondary.txt")
+            .unwrap()
+            .unwrap();
+        let entry = IndexStore::get_entry_by_id(&conn, sec_id).unwrap().unwrap();
+        assert_eq!(
+            entry.logical_size, None,
+            "secondary sizes should stay NULL after update"
+        );
+    }
+
+    #[test]
+    fn hardlink_dedup_self_healing_after_primary_deleted() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+        // Pre-populate root dir_stats so delta propagation works
+        {
+            let conn = IndexStore::open_write_connection(&db_path).unwrap();
+            IndexStore::upsert_dir_stats_by_id(
+                &conn,
+                &[DirStatsById {
+                    entry_id: ROOT_ID,
+                    recursive_logical_size: 0,
+                    recursive_physical_size: 0,
+                    recursive_file_count: 0,
+                    recursive_dir_count: 0,
+                }],
+            )
+            .unwrap();
+        }
+
+        // Insert primary
+        writer
+            .send(WriteMessage::UpsertEntryV2 {
+                parent_id: ROOT_ID,
+                name: "primary.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                logical_size: Some(1000),
+                physical_size: Some(1000),
+                modified_at: Some(1700000000),
+                inode: Some(100),
+                nlink: Some(2),
+            })
+            .unwrap();
+        thread::sleep(Duration::from_millis(100));
+
+        // Insert secondary (gets NULL sizes)
+        writer
+            .send(WriteMessage::UpsertEntryV2 {
+                parent_id: ROOT_ID,
+                name: "secondary.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                logical_size: Some(1000),
+                physical_size: Some(1000),
+                modified_at: Some(1700000000),
+                inode: Some(100),
+                nlink: Some(2),
+            })
+            .unwrap();
+        thread::sleep(Duration::from_millis(100));
+
+        // Delete primary
+        let primary_id = {
+            let conn = IndexStore::open_write_connection(&db_path).unwrap();
+            IndexStore::resolve_component(&conn, ROOT_ID, "primary.txt")
+                .unwrap()
+                .unwrap()
+        };
+        writer.send(WriteMessage::DeleteEntryById(primary_id)).unwrap();
+        thread::sleep(Duration::from_millis(100));
+
+        // Reconciler sends update for secondary — nlink=1 since it's the only link now
+        writer
+            .send(WriteMessage::UpsertEntryV2 {
+                parent_id: ROOT_ID,
+                name: "secondary.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                logical_size: Some(1000),
+                physical_size: Some(1000),
+                modified_at: Some(1700000001),
+                inode: Some(100),
+                nlink: Some(1),
+            })
+            .unwrap();
+        writer.shutdown();
+        thread::sleep(Duration::from_millis(100));
+
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        let sec_id = IndexStore::resolve_component(&conn, ROOT_ID, "secondary.txt")
+            .unwrap()
+            .unwrap();
+        let entry = IndexStore::get_entry_by_id(&conn, sec_id).unwrap().unwrap();
+        assert_eq!(
+            entry.logical_size,
+            Some(1000),
+            "secondary should recover sizes after primary deleted"
+        );
+        assert_eq!(entry.physical_size, Some(1000));
+    }
+
+    #[test]
+    fn hardlink_dedup_nlink_1_skips_dedup() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+        // Insert two files with the same inode but nlink=1 (not actually hardlinked)
+        writer
+            .send(WriteMessage::UpsertEntryV2 {
+                parent_id: ROOT_ID,
+                name: "file_a.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                logical_size: Some(500),
+                physical_size: Some(500),
+                modified_at: None,
+                inode: Some(200),
+                nlink: Some(1),
+            })
+            .unwrap();
+        thread::sleep(Duration::from_millis(100));
+
+        writer
+            .send(WriteMessage::UpsertEntryV2 {
+                parent_id: ROOT_ID,
+                name: "file_b.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                logical_size: Some(500),
+                physical_size: Some(500),
+                modified_at: None,
+                inode: Some(200),
+                nlink: Some(1),
+            })
+            .unwrap();
+        writer.shutdown();
+        thread::sleep(Duration::from_millis(100));
+
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        let b_id = IndexStore::resolve_component(&conn, ROOT_ID, "file_b.txt")
+            .unwrap()
+            .unwrap();
+        let entry = IndexStore::get_entry_by_id(&conn, b_id).unwrap().unwrap();
+        assert_eq!(entry.logical_size, Some(500), "nlink=1 should never trigger dedup");
+    }
+
+    #[test]
+    fn hardlink_dedup_no_inode_skips_dedup() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+        // Insert first file with inode
+        writer
+            .send(WriteMessage::UpsertEntryV2 {
+                parent_id: ROOT_ID,
+                name: "file_a.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                logical_size: Some(500),
+                physical_size: Some(500),
+                modified_at: None,
+                inode: None,
+                nlink: None,
+            })
+            .unwrap();
+        thread::sleep(Duration::from_millis(100));
+
+        // Insert second file with no inode (non-Unix)
+        writer
+            .send(WriteMessage::UpsertEntryV2 {
+                parent_id: ROOT_ID,
+                name: "file_b.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                logical_size: Some(500),
+                physical_size: Some(500),
+                modified_at: None,
+                inode: None,
+                nlink: None,
+            })
+            .unwrap();
+        writer.shutdown();
+        thread::sleep(Duration::from_millis(100));
+
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        let b_id = IndexStore::resolve_component(&conn, ROOT_ID, "file_b.txt")
+            .unwrap()
+            .unwrap();
+        let entry = IndexStore::get_entry_by_id(&conn, b_id).unwrap().unwrap();
+        assert_eq!(entry.logical_size, Some(500), "no inode should never trigger dedup");
+    }
+
+    #[test]
+    fn hardlink_dedup_dir_stats_only_counts_primary_size() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+        // Insert a parent directory and pre-populate its dir_stats
+        let entries = vec![EntryRow {
+            id: 10,
+            parent_id: ROOT_ID,
+            name: "mydir".into(),
+            is_directory: true,
+            is_symlink: false,
+            logical_size: None,
+            physical_size: None,
+            modified_at: None,
+            inode: None,
+        }];
+        writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
+        thread::sleep(Duration::from_millis(100));
+
+        {
+            let conn = IndexStore::open_write_connection(&db_path).unwrap();
+            IndexStore::upsert_dir_stats_by_id(
+                &conn,
+                &[DirStatsById {
+                    entry_id: 10,
+                    recursive_logical_size: 0,
+                    recursive_physical_size: 0,
+                    recursive_file_count: 0,
+                    recursive_dir_count: 0,
+                }],
+            )
+            .unwrap();
+        }
+
+        // Insert primary hardlink into dir
+        writer
+            .send(WriteMessage::UpsertEntryV2 {
+                parent_id: 10,
+                name: "primary.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                logical_size: Some(1000),
+                physical_size: Some(1000),
+                modified_at: None,
+                inode: Some(100),
+                nlink: Some(2),
+            })
+            .unwrap();
+        thread::sleep(Duration::from_millis(100));
+
+        // Insert secondary hardlink into dir (same inode)
+        writer
+            .send(WriteMessage::UpsertEntryV2 {
+                parent_id: 10,
+                name: "secondary.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                logical_size: Some(1000),
+                physical_size: Some(1000),
+                modified_at: None,
+                inode: Some(100),
+                nlink: Some(2),
+            })
+            .unwrap();
+        writer.shutdown();
+        thread::sleep(Duration::from_millis(100));
+
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        let stats = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();
+        assert_eq!(
+            stats.recursive_logical_size, 1000,
+            "dir should only count the primary's size"
+        );
+        assert_eq!(stats.recursive_file_count, 2, "both links count as files");
     }
 }

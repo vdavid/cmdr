@@ -1403,6 +1403,7 @@ mod tests {
                 logical_size: None,
                 physical_size: None,
                 modified_at: None,
+                inode: None,
             },
             EntryRow {
                 id: 3,
@@ -1413,6 +1414,7 @@ mod tests {
                 logical_size: None,
                 physical_size: None,
                 modified_at: None,
+                inode: None,
             },
             EntryRow {
                 id: 4,
@@ -1423,6 +1425,7 @@ mod tests {
                 logical_size: Some(100),
                 physical_size: Some(100),
                 modified_at: None,
+                inode: None,
             },
             EntryRow {
                 id: 5,
@@ -1433,6 +1436,7 @@ mod tests {
                 logical_size: Some(200),
                 physical_size: Some(200),
                 modified_at: None,
+                inode: None,
             },
             EntryRow {
                 id: 6,
@@ -1443,6 +1447,7 @@ mod tests {
                 logical_size: None,
                 physical_size: None,
                 modified_at: None,
+                inode: None,
             },
             EntryRow {
                 id: 7,
@@ -1453,6 +1458,7 @@ mod tests {
                 logical_size: Some(300),
                 physical_size: Some(300),
                 modified_at: None,
+                inode: None,
             },
             EntryRow {
                 id: 8,
@@ -1463,6 +1469,7 @@ mod tests {
                 logical_size: Some(50),
                 physical_size: Some(50),
                 modified_at: None,
+                inode: None,
             },
         ];
         IndexStore::insert_entries_v2_batch(&conn, &entries).expect("insert entries");
@@ -1538,6 +1545,7 @@ mod tests {
                 logical_size: None,
                 physical_size: None,
                 modified_at: None,
+                inode: None,
             },
             EntryRow {
                 id: 3,
@@ -1548,6 +1556,7 @@ mod tests {
                 logical_size: Some(500),
                 physical_size: Some(500),
                 modified_at: None,
+                inode: None,
             },
         ];
         IndexStore::insert_entries_v2_batch(&conn, &entries).expect("insert");
@@ -1596,6 +1605,7 @@ mod tests {
                 logical_size: None,
                 physical_size: None,
                 modified_at: None,
+                inode: None,
             },
             EntryRow {
                 id: 3,
@@ -1606,6 +1616,7 @@ mod tests {
                 logical_size: None,
                 physical_size: None,
                 modified_at: None,
+                inode: None,
             },
             EntryRow {
                 id: 4,
@@ -1616,6 +1627,7 @@ mod tests {
                 logical_size: Some(10),
                 physical_size: Some(10),
                 modified_at: None,
+                inode: None,
             },
         ];
         IndexStore::insert_entries_v2_batch(&conn, &entries).expect("insert");
@@ -1644,6 +1656,7 @@ mod tests {
                 logical_size: None,
                 physical_size: None,
                 modified_at: None,
+                inode: None,
             },
             EntryRow {
                 id: 3,
@@ -1654,6 +1667,7 @@ mod tests {
                 logical_size: None,
                 physical_size: None,
                 modified_at: None,
+                inode: None,
             },
             EntryRow {
                 id: 4,
@@ -1664,6 +1678,7 @@ mod tests {
                 logical_size: Some(1000),
                 physical_size: Some(1000),
                 modified_at: None,
+                inode: None,
             },
         ];
         IndexStore::insert_entries_v2_batch(&conn, &entries).expect("insert");
@@ -1684,7 +1699,7 @@ mod tests {
         assert_eq!(listing[0].recursive_dir_count, Some(0));
 
         // Phase 3: Simulate a watcher event (new file added via reconciler)
-        IndexStore::insert_entry_v2(&conn, 3, "notes.txt", false, false, Some(500), Some(500), None)
+        IndexStore::insert_entry_v2(&conn, 3, "notes.txt", false, false, Some(500), Some(500), None, None)
             .expect("insert new file");
 
         // Simulate delta propagation (as the writer would do)
@@ -1736,6 +1751,7 @@ mod tests {
                 logical_size: None,
                 physical_size: None,
                 modified_at: None,
+                inode: None,
             },
             EntryRow {
                 id: 3,
@@ -1746,6 +1762,7 @@ mod tests {
                 logical_size: Some(5000),
                 physical_size: Some(5000),
                 modified_at: None,
+                inode: None,
             },
             EntryRow {
                 id: 4,
@@ -1756,6 +1773,7 @@ mod tests {
                 logical_size: None,
                 physical_size: None,
                 modified_at: None,
+                inode: None,
             },
             EntryRow {
                 id: 5,
@@ -1766,6 +1784,7 @@ mod tests {
                 logical_size: None,
                 physical_size: None,
                 modified_at: None,
+                inode: None,
             },
         ];
         IndexStore::insert_entries_v2_batch(&conn, &entries).expect("insert");
@@ -1806,6 +1825,7 @@ mod tests {
                 logical_size: None,
                 physical_size: None,
                 modified_at: None,
+                inode: None,
             },
             EntryRow {
                 id: 3,
@@ -1816,6 +1836,7 @@ mod tests {
                 logical_size: Some(42),
                 physical_size: Some(42),
                 modified_at: None,
+                inode: None,
             },
         ];
         IndexStore::insert_entries_v2_batch(&conn, &entries).expect("insert");

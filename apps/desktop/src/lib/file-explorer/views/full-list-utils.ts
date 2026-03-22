@@ -147,8 +147,8 @@ export function getDisplaySize(
     if (mode === 'logical') return logical
     // Fall back to logical when physical is unavailable — a visible size is better than blank.
     if (mode === 'physical') return physical ?? logical
-    // smart: min of available values
-    if (logical !== undefined && physical !== undefined) return Math.min(logical, physical)
+    // smart: min of available values, but show logical for cloud/dataless files (physical=0, logical>0)
+    if (logical !== undefined && physical !== undefined) return physical > 0 ? Math.min(logical, physical) : logical
     return logical ?? physical
 }
 

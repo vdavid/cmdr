@@ -347,6 +347,14 @@ pub(super) fn reconcile_subtree(
             let norm_name = store::normalize_for_comparison(name);
             let is_dir = meta.is_dir();
 
+            #[cfg(unix)]
+            let (inode, nlink) = {
+                use std::os::unix::fs::MetadataExt;
+                (Some(meta.ino()), Some(meta.nlink()))
+            };
+            #[cfg(not(unix))]
+            let (inode, nlink) = (None, None);
+
             if let Some(db_row) = db_by_name.get(&norm_name) {
                 matched_db_keys.insert(norm_name);
 
@@ -377,6 +385,8 @@ pub(super) fn reconcile_subtree(
                         logical_size,
                         physical_size,
                         modified_at,
+                        inode,
+                        nlink,
                     });
                     updated += 1;
                 }
@@ -398,6 +408,8 @@ pub(super) fn reconcile_subtree(
                     logical_size,
                     physical_size,
                     modified_at,
+                    inode,
+                    nlink,
                 });
 
                 // UpsertEntryV2 auto-propagates deltas in the writer.
@@ -625,6 +637,14 @@ fn handle_creation_or_modification(
         entry_size_and_mtime(&metadata)
     };
 
+    #[cfg(unix)]
+    let (inode, nlink) = {
+        use std::os::unix::fs::MetadataExt;
+        (Some(metadata.ino()), Some(metadata.nlink()))
+    };
+    #[cfg(not(unix))]
+    let (inode, nlink) = (None, None);
+
     let _ = writer.send(WriteMessage::UpsertEntryV2 {
         parent_id,
         name,
@@ -633,6 +653,8 @@ fn handle_creation_or_modification(
         logical_size,
         physical_size,
         modified_at,
+        inode,
+        nlink,
     });
 
     // UpsertEntryV2 auto-propagates deltas in the writer, so no separate
@@ -683,7 +705,7 @@ pub(super) fn entry_size_and_mtime(metadata: &std::fs::Metadata) -> (Option<u64>
     use std::os::unix::fs::MetadataExt;
     let logical_size = metadata.len();
     let blocks = metadata.blocks();
-    let physical_size = if blocks > 0 { blocks * 512 } else { metadata.len() };
+    let physical_size = if blocks > 0 { blocks * 512 } else { 0 };
     let mtime = metadata.mtime();
     let mtime_u64 = if mtime >= 0 { Some(mtime as u64) } else { None };
     (Some(logical_size), Some(physical_size), mtime_u64)
@@ -951,9 +973,20 @@ mod tests {
         // Pre-populate the parent dir and entry using integer-keyed inserts
         {
             let wconn = IndexStore::open_write_connection(&db_path).unwrap();
-            let gone_id = IndexStore::insert_entry_v2(&wconn, ROOT_ID, "gone", true, false, None, None, None).unwrap();
-            IndexStore::insert_entry_v2(&wconn, gone_id, "deleted.txt", false, false, Some(100), Some(100), None)
-                .unwrap();
+            let gone_id =
+                IndexStore::insert_entry_v2(&wconn, ROOT_ID, "gone", true, false, None, None, None, None).unwrap();
+            IndexStore::insert_entry_v2(
+                &wconn,
+                gone_id,
+                "deleted.txt",
+                false,
+                false,
+                Some(100),
+                Some(100),
+                None,
+                None,
+            )
+            .unwrap();
         }
 
         let event = make_event("/gone/deleted.txt", 60, removed_file_flags());
@@ -1012,9 +1045,10 @@ mod tests {
         {
             let wconn = IndexStore::open_write_connection(&db_path).unwrap();
             let parent_id =
-                IndexStore::insert_entry_v2(&wconn, ROOT_ID, "parent", true, false, None, None, None).unwrap();
+                IndexStore::insert_entry_v2(&wconn, ROOT_ID, "parent", true, false, None, None, None, None).unwrap();
             let removed_dir_id =
-                IndexStore::insert_entry_v2(&wconn, parent_id, "removed_dir", true, false, None, None, None).unwrap();
+                IndexStore::insert_entry_v2(&wconn, parent_id, "removed_dir", true, false, None, None, None, None)
+                    .unwrap();
             IndexStore::insert_entry_v2(
                 &wconn,
                 removed_dir_id,
@@ -1023,6 +1057,7 @@ mod tests {
                 false,
                 Some(50),
                 Some(50),
+                None,
                 None,
             )
             .unwrap();
@@ -1083,6 +1118,7 @@ mod tests {
                 Some(100),
                 Some(100),
                 None,
+                None,
             )
             .unwrap();
         }
@@ -1138,6 +1174,7 @@ mod tests {
                 Some(50),
                 Some(50),
                 Some(1000),
+                None,
             )
             .unwrap();
         }
@@ -1194,11 +1231,13 @@ mod tests {
 
             let meta1 = std::fs::symlink_metadata(sub_dir.join("child1.txt")).unwrap();
             let (size1, _phys1, mtime1) = entry_size_and_mtime(&meta1);
-            IndexStore::insert_entry_v2(&wconn, sub_id, "child1.txt", false, false, size1, size1, mtime1).unwrap();
+            IndexStore::insert_entry_v2(&wconn, sub_id, "child1.txt", false, false, size1, size1, mtime1, None)
+                .unwrap();
 
             let meta2 = std::fs::symlink_metadata(sub_dir.join("child2.txt")).unwrap();
             let (size2, _phys2, mtime2) = entry_size_and_mtime(&meta2);
-            IndexStore::insert_entry_v2(&wconn, sub_id, "child2.txt", false, false, size2, size2, mtime2).unwrap();
+            IndexStore::insert_entry_v2(&wconn, sub_id, "child2.txt", false, false, size2, size2, mtime2, None)
+                .unwrap();
         }
 
         // Run reconcile_subtree (what MustScanSubDirs triggers)
@@ -1256,6 +1295,7 @@ mod tests {
                 Some(100),
                 Some(100),
                 Some(1000),
+                None,
             )
             .unwrap();
         }
@@ -1354,6 +1394,7 @@ mod tests {
                 Some(42),
                 Some(42),
                 Some(1000),
+                None,
             )
             .unwrap();
         }
@@ -1394,7 +1435,8 @@ mod tests {
             let wconn = IndexStore::open_write_connection(&db_path).unwrap();
             let parent_str = test_dir.path().to_string_lossy().to_string();
             let parent_id = store::resolve_path(&wconn, &parent_str).unwrap().unwrap();
-            IndexStore::insert_entry_v2(&wconn, parent_id, "stable.txt", false, false, size, size, mtime).unwrap();
+            IndexStore::insert_entry_v2(&wconn, parent_id, "stable.txt", false, false, size, size, mtime, None)
+                .unwrap();
         }
 
         let cancelled = AtomicBool::new(false);
@@ -1433,6 +1475,7 @@ mod tests {
                 Some(999),
                 Some(999),
                 Some(0),
+                None,
             )
             .unwrap();
         }
@@ -1532,8 +1575,19 @@ mod tests {
             let wconn = IndexStore::open_write_connection(&db_path).unwrap();
             let parent_id = store::resolve_path(&wconn, &parent.to_string_lossy()).unwrap().unwrap();
             let item_id =
-                IndexStore::insert_entry_v2(&wconn, parent_id, "item", true, false, None, None, None).unwrap();
-            IndexStore::insert_entry_v2(&wconn, item_id, "child.txt", false, false, Some(50), Some(50), None).unwrap();
+                IndexStore::insert_entry_v2(&wconn, parent_id, "item", true, false, None, None, None, None).unwrap();
+            IndexStore::insert_entry_v2(
+                &wconn,
+                item_id,
+                "child.txt",
+                false,
+                false,
+                Some(50),
+                Some(50),
+                None,
+                None,
+            )
+            .unwrap();
         }
 
         let cancelled = AtomicBool::new(false);
@@ -1837,7 +1891,7 @@ mod tests {
                 Some(id) => current_id = id,
                 None => {
                     current_id =
-                        IndexStore::insert_entry_v2(&conn, current_id, component, true, false, None, None, None)
+                        IndexStore::insert_entry_v2(&conn, current_id, component, true, false, None, None, None, None)
                             .unwrap();
                 }
             }

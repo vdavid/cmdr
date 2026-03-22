@@ -333,15 +333,16 @@ fn run_scan(
         let is_symlink = entry.file_type().is_symlink();
 
         // Get metadata for size and modified time
-        let (logical_size, physical_size, modified_at) = if is_dir || is_symlink {
-            (None, None, entry_modified_at(&path))
+        let (logical_size, physical_size, modified_at, inode) = if is_dir || is_symlink {
+            (None, None, entry_modified_at(&path), None)
         } else {
             let (ls, ps, mtime, ino, nlink) = entry_size_and_mtime(&path);
+            let inode = if ino != 0 { Some(ino) } else { None };
             // Deduplicate hardlinks: if nlink > 1, only count each inode's size once
             if nlink > 1 && !seen_inodes.insert(ino) {
-                (None, None, mtime)
+                (None, None, mtime, inode)
             } else {
-                (ls, ps, mtime)
+                (ls, ps, mtime, inode)
             }
         };
 
@@ -379,6 +380,7 @@ fn run_scan(
             logical_size,
             physical_size,
             modified_at,
+            inode,
         };
 
         total_entries += 1;
@@ -471,7 +473,7 @@ fn entry_size_and_mtime(path: &Path) -> (Option<u64>, Option<u64>, Option<u64>, 
         Ok(meta) => {
             let logical_size = meta.len();
             let blocks = meta.blocks();
-            let physical_size = if blocks > 0 { blocks * 512 } else { meta.len() };
+            let physical_size = if blocks > 0 { blocks * 512 } else { 0 };
             let mtime = meta.mtime();
             let mtime_u64 = if mtime >= 0 { Some(mtime as u64) } else { None };
             (
@@ -610,7 +612,8 @@ mod tests {
         for component in components {
             parent_id = match IndexStore::resolve_component(&conn, parent_id, component) {
                 Ok(Some(id)) => id,
-                _ => IndexStore::insert_entry_v2(&conn, parent_id, component, true, false, None, None, None).unwrap(),
+                _ => IndexStore::insert_entry_v2(&conn, parent_id, component, true, false, None, None, None, None)
+                    .unwrap(),
             };
         }
     }
@@ -1000,9 +1003,10 @@ mod tests {
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
         // Insert a directory chain: ROOT → Volumes → "NO NAME"
-        let volumes_id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Volumes", true, false, None, None, None).unwrap();
+        let volumes_id =
+            IndexStore::insert_entry_v2(&conn, ROOT_ID, "Volumes", true, false, None, None, None, None).unwrap();
         let noname_id =
-            IndexStore::insert_entry_v2(&conn, volumes_id, "NO NAME", true, false, None, None, None).unwrap();
+            IndexStore::insert_entry_v2(&conn, volumes_id, "NO NAME", true, false, None, None, None, None).unwrap();
         assert_ne!(noname_id, ROOT_ID);
 
         // Create ScanContext for the subtree root

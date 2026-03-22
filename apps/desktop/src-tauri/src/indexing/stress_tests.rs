@@ -58,6 +58,7 @@ fn build_synthetic_tree(levels: usize, dirs_per_level: usize, files_per_dir: usi
                     logical_size: None,
                     physical_size: None,
                     modified_at: None,
+                    inode: None,
                 });
                 next_parents.push(dir_id);
             }
@@ -75,6 +76,7 @@ fn build_synthetic_tree(levels: usize, dirs_per_level: usize, files_per_dir: usi
                     logical_size: Some(file_size),
                     physical_size: Some(file_size),
                     modified_at: Some(1_700_000_000),
+                    inode: None,
                 });
             }
         }
@@ -96,6 +98,7 @@ fn build_synthetic_tree(levels: usize, dirs_per_level: usize, files_per_dir: usi
                 logical_size: Some(file_size),
                 physical_size: Some(file_size),
                 modified_at: Some(1_700_000_000),
+                inode: None,
             });
         }
     }
@@ -156,7 +159,7 @@ fn check_db_consistency(conn: &Connection) {
     // Build in-memory tree, then compute expected stats bottom-up.
     let all_entries: Vec<EntryRow> = {
         let mut stmt = conn
-            .prepare("SELECT id, parent_id, name, is_directory, is_symlink, logical_size, physical_size, modified_at FROM entries")
+            .prepare("SELECT id, parent_id, name, is_directory, is_symlink, logical_size, physical_size, modified_at, inode FROM entries")
             .unwrap();
         stmt.query_map([], |row| {
             Ok(EntryRow {
@@ -168,6 +171,7 @@ fn check_db_consistency(conn: &Connection) {
                 logical_size: row.get(5)?,
                 physical_size: row.get(6)?,
                 modified_at: row.get(7)?,
+                inode: row.get(8)?,
             })
         })
         .unwrap()
@@ -451,6 +455,7 @@ fn concurrent_batch_inserts_with_aggregation() {
                 logical_size: None,
                 physical_size: None,
                 modified_at: None,
+                inode: None,
             });
 
             // Add 5 subdirs with 10 files each
@@ -466,6 +471,7 @@ fn concurrent_batch_inserts_with_aggregation() {
                     logical_size: None,
                     physical_size: None,
                     modified_at: None,
+                    inode: None,
                 });
                 for f in 0..10 {
                     let file_id = next_id;
@@ -479,6 +485,7 @@ fn concurrent_batch_inserts_with_aggregation() {
                         logical_size: Some(512),
                         physical_size: Some(512),
                         modified_at: Some(1_700_000_000),
+                        inode: None,
                     });
                 }
             }
@@ -584,6 +591,7 @@ fn concurrent_scan_with_enrichment_reads() {
                 logical_size: Some(2048),
                 physical_size: Some(2048),
                 modified_at: Some(1_700_001_000),
+                inode: None,
             }
         })
         .collect();

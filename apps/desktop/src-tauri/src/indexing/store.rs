@@ -15,7 +15,7 @@
 use rusqlite::{Connection, OptionalExtension, params};
 use std::path::{Path, PathBuf};
 
-const SCHEMA_VERSION: &str = "7";
+const SCHEMA_VERSION: &str = "8";
 
 /// Root entry sentinel ID. All top-level entries have `parent_id = ROOT_ID`.
 pub const ROOT_ID: i64 = 1;
@@ -59,6 +59,7 @@ pub struct EntryRow {
     pub logical_size: Option<u64>,
     pub physical_size: Option<u64>,
     pub modified_at: Option<u64>,
+    pub inode: Option<u64>,
 }
 
 /// Mutable context held during a scan for assigning parent IDs.
@@ -251,10 +252,12 @@ const CREATE_TABLES_SQL: &str = "
         is_symlink    INTEGER NOT NULL DEFAULT 0,
         logical_size  INTEGER,
         physical_size INTEGER,
-        modified_at   INTEGER
+        modified_at   INTEGER,
+        inode         INTEGER
     );
 
     CREATE INDEX IF NOT EXISTS idx_parent_name_folded ON entries (parent_id, name_folded);
+    CREATE INDEX IF NOT EXISTS idx_inode ON entries (inode);
 
     CREATE TABLE IF NOT EXISTS dir_stats (
         entry_id                 INTEGER PRIMARY KEY,
@@ -280,10 +283,12 @@ const CREATE_TABLES_SQL: &str = "
         is_symlink    INTEGER NOT NULL DEFAULT 0,
         logical_size  INTEGER,
         physical_size INTEGER,
-        modified_at   INTEGER
+        modified_at   INTEGER,
+        inode         INTEGER
     );
 
     CREATE INDEX IF NOT EXISTS idx_parent_name ON entries (parent_id, name);
+    CREATE INDEX IF NOT EXISTS idx_inode ON entries (inode);
 
     CREATE TABLE IF NOT EXISTS dir_stats (
         entry_id                 INTEGER PRIMARY KEY,
@@ -577,7 +582,7 @@ impl IndexStore {
     /// List children of a directory by parent entry ID on a given connection.
     pub fn list_children_on(parent_id: i64, conn: &Connection) -> Result<Vec<EntryRow>, IndexStoreError> {
         let mut stmt = conn.prepare_cached(
-            "SELECT id, parent_id, name, is_directory, is_symlink, logical_size, physical_size, modified_at
+            "SELECT id, parent_id, name, is_directory, is_symlink, logical_size, physical_size, modified_at, inode
              FROM entries WHERE parent_id = ?1",
         )?;
         let rows = stmt.query_map(params![parent_id], |row| {
@@ -590,6 +595,7 @@ impl IndexStore {
                 logical_size: row.get(5)?,
                 physical_size: row.get(6)?,
                 modified_at: row.get(7)?,
+                inode: row.get(8)?,
             })
         })?;
         rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
@@ -613,7 +619,7 @@ impl IndexStore {
     /// Look up an entry by its integer ID.
     pub fn get_entry_by_id(conn: &Connection, id: i64) -> Result<Option<EntryRow>, IndexStoreError> {
         let mut stmt = conn.prepare_cached(
-            "SELECT id, parent_id, name, is_directory, is_symlink, logical_size, physical_size, modified_at
+            "SELECT id, parent_id, name, is_directory, is_symlink, logical_size, physical_size, modified_at, inode
              FROM entries WHERE id = ?1",
         )?;
         let result = stmt
@@ -627,6 +633,7 @@ impl IndexStore {
                     logical_size: row.get(5)?,
                     physical_size: row.get(6)?,
                     modified_at: row.get(7)?,
+                    inode: row.get(8)?,
                 })
             })
             .optional()?;
@@ -712,6 +719,28 @@ impl IndexStore {
         Ok(result)
     }
 
+    /// Check if another entry with the same inode already has non-NULL sizes.
+    pub fn has_sized_entry_for_inode(
+        conn: &Connection,
+        inode: u64,
+        exclude_id: Option<i64>,
+    ) -> Result<bool, IndexStoreError> {
+        let found = match exclude_id {
+            Some(eid) => {
+                let mut stmt = conn.prepare_cached(
+                    "SELECT 1 FROM entries WHERE inode = ?1 AND logical_size IS NOT NULL AND id != ?2 LIMIT 1",
+                )?;
+                stmt.query_row(params![inode, eid], |_| Ok(())).optional()?
+            }
+            None => {
+                let mut stmt =
+                    conn.prepare_cached("SELECT 1 FROM entries WHERE inode = ?1 AND logical_size IS NOT NULL LIMIT 1")?;
+                stmt.query_row(params![inode], |_| Ok(())).optional()?
+            }
+        };
+        Ok(found.is_some())
+    }
+
     /// Resolve a path component under a given parent. Returns the child entry ID.
     pub fn resolve_component(conn: &Connection, parent_id: i64, name: &str) -> Result<Option<i64>, IndexStoreError> {
         #[cfg(target_os = "macos")]
@@ -756,13 +785,14 @@ impl IndexStore {
         logical_size: Option<u64>,
         physical_size: Option<u64>,
         modified_at: Option<u64>,
+        inode: Option<u64>,
     ) -> Result<i64, IndexStoreError> {
         #[cfg(target_os = "macos")]
         {
             let name_folded = normalize_for_comparison(name);
             conn.execute(
-                "INSERT INTO entries (parent_id, name, name_folded, is_directory, is_symlink, logical_size, physical_size, modified_at)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                "INSERT INTO entries (parent_id, name, name_folded, is_directory, is_symlink, logical_size, physical_size, modified_at, inode)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
                 params![
                     parent_id,
                     name,
@@ -771,15 +801,16 @@ impl IndexStore {
                     is_symlink as i32,
                     logical_size,
                     physical_size,
-                    modified_at
+                    modified_at,
+                    inode,
                 ],
             )?;
         }
         #[cfg(not(target_os = "macos"))]
         {
             conn.execute(
-                "INSERT INTO entries (parent_id, name, is_directory, is_symlink, logical_size, physical_size, modified_at)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                "INSERT INTO entries (parent_id, name, is_directory, is_symlink, logical_size, physical_size, modified_at, inode)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
                 params![
                     parent_id,
                     name,
@@ -787,7 +818,8 @@ impl IndexStore {
                     is_symlink as i32,
                     logical_size,
                     physical_size,
-                    modified_at
+                    modified_at,
+                    inode,
                 ],
             )?;
         }
@@ -808,13 +840,13 @@ impl IndexStore {
         // truncated before full scans and descendants are deleted before subtree scans.
         #[cfg(target_os = "macos")]
         let mut stmt = conn.prepare_cached(
-            "INSERT INTO entries (id, parent_id, name, name_folded, is_directory, is_symlink, logical_size, physical_size, modified_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            "INSERT INTO entries (id, parent_id, name, name_folded, is_directory, is_symlink, logical_size, physical_size, modified_at, inode)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
         )?;
         #[cfg(not(target_os = "macos"))]
         let mut stmt = conn.prepare_cached(
-            "INSERT INTO entries (id, parent_id, name, is_directory, is_symlink, logical_size, physical_size, modified_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            "INSERT INTO entries (id, parent_id, name, is_directory, is_symlink, logical_size, physical_size, modified_at, inode)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
         )?;
         let result: Result<(), IndexStoreError> = (|| {
             for e in entries {
@@ -831,6 +863,7 @@ impl IndexStore {
                         e.logical_size,
                         e.physical_size,
                         e.modified_at,
+                        e.inode,
                     ])?;
                 }
                 #[cfg(not(target_os = "macos"))]
@@ -843,6 +876,7 @@ impl IndexStore {
                     e.logical_size,
                     e.physical_size,
                     e.modified_at,
+                    e.inode,
                 ])?;
             }
             Ok(())
@@ -860,6 +894,7 @@ impl IndexStore {
     }
 
     /// Update an existing entry by ID.
+    #[allow(clippy::too_many_arguments, reason = "mirrors insert_entry_v2 signature")]
     pub fn update_entry(
         conn: &Connection,
         id: i64,
@@ -868,11 +903,20 @@ impl IndexStore {
         logical_size: Option<u64>,
         physical_size: Option<u64>,
         modified_at: Option<u64>,
+        inode: Option<u64>,
     ) -> Result<(), IndexStoreError> {
         conn.execute(
-            "UPDATE entries SET is_directory = ?1, is_symlink = ?2, logical_size = ?3, physical_size = ?4, modified_at = ?5
-             WHERE id = ?6",
-            params![is_directory as i32, is_symlink as i32, logical_size, physical_size, modified_at, id],
+            "UPDATE entries SET is_directory = ?1, is_symlink = ?2, logical_size = ?3, physical_size = ?4, \
+             modified_at = ?5, inode = ?6 WHERE id = ?7",
+            params![
+                is_directory as i32,
+                is_symlink as i32,
+                logical_size,
+                physical_size,
+                modified_at,
+                inode,
+                id
+            ],
         )?;
         Ok(())
     }
@@ -1191,7 +1235,7 @@ mod tests {
 
     /// Helper: insert an entry using integer-keyed API. Returns the new ID.
     fn insert_entry(conn: &Connection, parent_id: i64, name: &str, is_dir: bool, size: Option<u64>) -> i64 {
-        IndexStore::insert_entry_v2(conn, parent_id, name, is_dir, false, size, size, None).unwrap()
+        IndexStore::insert_entry_v2(conn, parent_id, name, is_dir, false, size, size, None, None).unwrap()
     }
 
     #[test]
@@ -1459,6 +1503,7 @@ mod tests {
             Some(512),
             Some(512),
             Some(1700000000),
+            None,
         )
         .unwrap();
 
@@ -1496,6 +1541,7 @@ mod tests {
             Some(100),
             Some(100),
             Some(1000),
+            None,
         )
         .unwrap();
 
@@ -1503,7 +1549,7 @@ mod tests {
         assert_eq!(result.logical_size, Some(100));
 
         // Update with new size
-        IndexStore::update_entry(&conn, file_id, false, false, Some(200), Some(200), Some(2000)).unwrap();
+        IndexStore::update_entry(&conn, file_id, false, false, Some(200), Some(200), Some(2000), None).unwrap();
 
         let result = IndexStore::get_entry_by_id(&conn, file_id).unwrap().unwrap();
         assert_eq!(result.logical_size, Some(200));
@@ -1520,8 +1566,10 @@ mod tests {
         assert_eq!(resolve_path(&conn, "/").unwrap(), Some(ROOT_ID));
 
         // Insert /Users/test
-        let users_id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None, None).unwrap();
-        let test_id = IndexStore::insert_entry_v2(&conn, users_id, "test", true, false, None, None, None).unwrap();
+        let users_id =
+            IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None, None, None).unwrap();
+        let test_id =
+            IndexStore::insert_entry_v2(&conn, users_id, "test", true, false, None, None, None, None).unwrap();
 
         assert_eq!(resolve_path(&conn, "/Users").unwrap(), Some(users_id));
         assert_eq!(resolve_path(&conn, "/Users/test").unwrap(), Some(test_id));
@@ -1535,7 +1583,8 @@ mod tests {
         let db_path = dir.path().join("test-index.db");
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
-        let users_id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None, None).unwrap();
+        let users_id =
+            IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None, None, None).unwrap();
         assert_eq!(resolve_path(&conn, "/Users/").unwrap(), Some(users_id));
     }
 
@@ -1554,6 +1603,7 @@ mod tests {
             Some(4096),
             Some(4096),
             Some(999),
+            None,
         )
         .unwrap();
         assert!(id > ROOT_ID);
@@ -1571,9 +1621,32 @@ mod tests {
         let (store, _dir) = open_temp_store();
         let write_conn = IndexStore::open_write_connection(store.db_path()).unwrap();
 
-        let dir_id = IndexStore::insert_entry_v2(&write_conn, ROOT_ID, "mydir", true, false, None, None, None).unwrap();
-        IndexStore::insert_entry_v2(&write_conn, dir_id, "a.txt", false, false, Some(100), Some(100), None).unwrap();
-        IndexStore::insert_entry_v2(&write_conn, dir_id, "b.txt", false, false, Some(200), Some(200), None).unwrap();
+        let dir_id =
+            IndexStore::insert_entry_v2(&write_conn, ROOT_ID, "mydir", true, false, None, None, None, None).unwrap();
+        IndexStore::insert_entry_v2(
+            &write_conn,
+            dir_id,
+            "a.txt",
+            false,
+            false,
+            Some(100),
+            Some(100),
+            None,
+            None,
+        )
+        .unwrap();
+        IndexStore::insert_entry_v2(
+            &write_conn,
+            dir_id,
+            "b.txt",
+            false,
+            false,
+            Some(200),
+            Some(200),
+            None,
+            None,
+        )
+        .unwrap();
 
         let children = store.list_children(dir_id).unwrap();
         assert_eq!(children.len(), 2);
@@ -1594,10 +1667,11 @@ mod tests {
             Some(100),
             Some(100),
             Some(1000),
+            None,
         )
         .unwrap();
 
-        IndexStore::update_entry(&conn, id, false, false, Some(999), Some(999), Some(2000)).unwrap();
+        IndexStore::update_entry(&conn, id, false, false, Some(999), Some(999), Some(2000), None).unwrap();
         let entry = IndexStore::get_entry_by_id(&conn, id).unwrap().unwrap();
         assert_eq!(entry.logical_size, Some(999));
         assert_eq!(entry.modified_at, Some(2000));
@@ -1609,10 +1683,10 @@ mod tests {
         let db_path = dir.path().join("test-index.db");
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
-        let dir_a = IndexStore::insert_entry_v2(&conn, ROOT_ID, "dir_a", true, false, None, None, None).unwrap();
-        let dir_b = IndexStore::insert_entry_v2(&conn, ROOT_ID, "dir_b", true, false, None, None, None).unwrap();
+        let dir_a = IndexStore::insert_entry_v2(&conn, ROOT_ID, "dir_a", true, false, None, None, None, None).unwrap();
+        let dir_b = IndexStore::insert_entry_v2(&conn, ROOT_ID, "dir_b", true, false, None, None, None, None).unwrap();
         let file_id =
-            IndexStore::insert_entry_v2(&conn, dir_a, "old.txt", false, false, Some(50), Some(50), None).unwrap();
+            IndexStore::insert_entry_v2(&conn, dir_a, "old.txt", false, false, Some(50), Some(50), None, None).unwrap();
 
         // Rename
         IndexStore::rename_entry(&conn, file_id, "new.txt").unwrap();
@@ -1631,8 +1705,18 @@ mod tests {
         let db_path = dir.path().join("test-index.db");
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
-        let id =
-            IndexStore::insert_entry_v2(&conn, ROOT_ID, "file.txt", false, false, Some(100), Some(100), None).unwrap();
+        let id = IndexStore::insert_entry_v2(
+            &conn,
+            ROOT_ID,
+            "file.txt",
+            false,
+            false,
+            Some(100),
+            Some(100),
+            None,
+            None,
+        )
+        .unwrap();
         assert!(IndexStore::get_entry_by_id(&conn, id).unwrap().is_some());
 
         IndexStore::delete_entry_by_id(&conn, id).unwrap();
@@ -1646,9 +1730,9 @@ mod tests {
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
         // Build tree: /a/b/c.txt
-        let a = IndexStore::insert_entry_v2(&conn, ROOT_ID, "a", true, false, None, None, None).unwrap();
-        let b = IndexStore::insert_entry_v2(&conn, a, "b", true, false, None, None, None).unwrap();
-        let c = IndexStore::insert_entry_v2(&conn, b, "c.txt", false, false, Some(42), Some(42), None).unwrap();
+        let a = IndexStore::insert_entry_v2(&conn, ROOT_ID, "a", true, false, None, None, None, None).unwrap();
+        let b = IndexStore::insert_entry_v2(&conn, a, "b", true, false, None, None, None, None).unwrap();
+        let c = IndexStore::insert_entry_v2(&conn, b, "c.txt", false, false, Some(42), Some(42), None, None).unwrap();
 
         // Add dir_stats for a and b
         IndexStore::upsert_dir_stats_by_id(
@@ -1688,11 +1772,11 @@ mod tests {
         let db_path = dir.path().join("test-index.db");
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
-        let a = IndexStore::insert_entry_v2(&conn, ROOT_ID, "a", true, false, None, None, None).unwrap();
-        IndexStore::insert_entry_v2(&conn, a, "f1.txt", false, false, Some(100), Some(100), None).unwrap();
-        IndexStore::insert_entry_v2(&conn, a, "f2.txt", false, false, Some(200), Some(200), None).unwrap();
-        let b = IndexStore::insert_entry_v2(&conn, a, "b", true, false, None, None, None).unwrap();
-        IndexStore::insert_entry_v2(&conn, b, "f3.txt", false, false, Some(300), Some(300), None).unwrap();
+        let a = IndexStore::insert_entry_v2(&conn, ROOT_ID, "a", true, false, None, None, None, None).unwrap();
+        IndexStore::insert_entry_v2(&conn, a, "f1.txt", false, false, Some(100), Some(100), None, None).unwrap();
+        IndexStore::insert_entry_v2(&conn, a, "f2.txt", false, false, Some(200), Some(200), None, None).unwrap();
+        let b = IndexStore::insert_entry_v2(&conn, a, "b", true, false, None, None, None, None).unwrap();
+        IndexStore::insert_entry_v2(&conn, b, "f3.txt", false, false, Some(300), Some(300), None, None).unwrap();
 
         let (logical_size, physical_size, file_count, dir_count) =
             IndexStore::get_subtree_totals_by_id(&conn, a).unwrap();
@@ -1708,7 +1792,7 @@ mod tests {
         let db_path = dir.path().join("test-index.db");
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
-        let dir_id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "mydir", true, false, None, None, None).unwrap();
+        let dir_id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "mydir", true, false, None, None, None, None).unwrap();
         IndexStore::upsert_dir_stats_by_id(
             &conn,
             &[DirStatsById {
@@ -1733,8 +1817,8 @@ mod tests {
         let db_path = dir.path().join("test-index.db");
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
-        let d1 = IndexStore::insert_entry_v2(&conn, ROOT_ID, "d1", true, false, None, None, None).unwrap();
-        let d2 = IndexStore::insert_entry_v2(&conn, ROOT_ID, "d2", true, false, None, None, None).unwrap();
+        let d1 = IndexStore::insert_entry_v2(&conn, ROOT_ID, "d1", true, false, None, None, None, None).unwrap();
+        let d2 = IndexStore::insert_entry_v2(&conn, ROOT_ID, "d2", true, false, None, None, None, None).unwrap();
 
         IndexStore::upsert_dir_stats_by_id(
             &conn,
@@ -1776,7 +1860,7 @@ mod tests {
         let next = IndexStore::get_next_id(&conn).unwrap();
         assert_eq!(next, 2);
 
-        IndexStore::insert_entry_v2(&conn, ROOT_ID, "file.txt", false, false, None, None, None).unwrap();
+        IndexStore::insert_entry_v2(&conn, ROOT_ID, "file.txt", false, false, None, None, None, None).unwrap();
         let next = IndexStore::get_next_id(&conn).unwrap();
         assert!(next >= 3);
     }
@@ -1789,9 +1873,10 @@ mod tests {
 
         assert_eq!(IndexStore::reconstruct_path(&conn, ROOT_ID).unwrap(), "/");
 
-        let users = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None, None).unwrap();
-        let foo = IndexStore::insert_entry_v2(&conn, users, "foo", true, false, None, None, None).unwrap();
-        let file = IndexStore::insert_entry_v2(&conn, foo, "bar.txt", false, false, Some(10), Some(10), None).unwrap();
+        let users = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None, None, None).unwrap();
+        let foo = IndexStore::insert_entry_v2(&conn, users, "foo", true, false, None, None, None, None).unwrap();
+        let file =
+            IndexStore::insert_entry_v2(&conn, foo, "bar.txt", false, false, Some(10), Some(10), None, None).unwrap();
 
         assert_eq!(IndexStore::reconstruct_path(&conn, users).unwrap(), "/Users");
         assert_eq!(IndexStore::reconstruct_path(&conn, foo).unwrap(), "/Users/foo");
@@ -1804,7 +1889,7 @@ mod tests {
         let db_path = dir.path().join("test-index.db");
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
-        let users = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None, None).unwrap();
+        let users = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None, None, None).unwrap();
         assert_eq!(
             IndexStore::resolve_component(&conn, ROOT_ID, "Users").unwrap(),
             Some(users)
@@ -1821,7 +1906,7 @@ mod tests {
         let db_path = dir.path().join("test-index.db");
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
-        let users = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None, None).unwrap();
+        let users = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None, None, None).unwrap();
         assert_eq!(IndexStore::get_parent_id(&conn, users).unwrap(), Some(ROOT_ID));
         assert_eq!(IndexStore::get_parent_id(&conn, ROOT_ID).unwrap(), Some(ROOT_PARENT_ID));
         assert_eq!(IndexStore::get_parent_id(&conn, 999999).unwrap(), None);
@@ -1835,7 +1920,8 @@ mod tests {
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
         // Insert "Users" dir
-        let users_id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None, None).unwrap();
+        let users_id =
+            IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None, None, None).unwrap();
 
         // Resolve with different case should work on macOS
         assert_eq!(resolve_path(&conn, "/users").unwrap(), Some(users_id));
@@ -1844,7 +1930,7 @@ mod tests {
 
         // With idx_parent (non-unique), case-variant names are allowed at the SQL level.
         // Deduplication is handled by the scanner/reconciler, not by a DB constraint.
-        let result = IndexStore::insert_entry_v2(&conn, ROOT_ID, "users", true, false, None, None, None);
+        let result = IndexStore::insert_entry_v2(&conn, ROOT_ID, "users", true, false, None, None, None, None);
         assert!(
             result.is_ok(),
             "No unique constraint on (parent_id, name) — dedup is done in application code"
@@ -1867,6 +1953,7 @@ mod tests {
                 logical_size: None,
                 physical_size: None,
                 modified_at: None,
+                inode: None,
             },
             EntryRow {
                 id: 101,
@@ -1877,6 +1964,7 @@ mod tests {
                 logical_size: Some(42),
                 physical_size: Some(42),
                 modified_at: Some(1234),
+                inode: None,
             },
         ];
         IndexStore::insert_entries_v2_batch(&conn, &entries).unwrap();
@@ -1897,7 +1985,8 @@ mod tests {
         let db_path = dir.path().join("test-index.db");
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
-        let users_id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None, None).unwrap();
+        let users_id =
+            IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None, None, None).unwrap();
 
         // Different casings should all resolve to the same ID
         assert_eq!(
@@ -1928,7 +2017,7 @@ mod tests {
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
         let name = "MyFolder";
-        let id = IndexStore::insert_entry_v2(&conn, ROOT_ID, name, true, false, None, None, None).unwrap();
+        let id = IndexStore::insert_entry_v2(&conn, ROOT_ID, name, true, false, None, None, None, None).unwrap();
 
         let folded: String = conn
             .query_row("SELECT name_folded FROM entries WHERE id = ?1", params![id], |row| {
@@ -1955,6 +2044,7 @@ mod tests {
                 logical_size: None,
                 physical_size: None,
                 modified_at: None,
+                inode: None,
             },
             EntryRow {
                 id: 201,
@@ -1965,6 +2055,7 @@ mod tests {
                 logical_size: Some(10),
                 physical_size: Some(10),
                 modified_at: None,
+                inode: None,
             },
         ];
         IndexStore::insert_entries_v2_batch(&conn, &entries).unwrap();
@@ -1985,10 +2076,10 @@ mod tests {
         let db_path = dir.path().join("test-index.db");
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
-        let dir_id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "mydir", true, false, None, None, None).unwrap();
-        IndexStore::insert_entry_v2(&conn, dir_id, "f1.txt", false, false, Some(100), Some(100), None).unwrap();
-        IndexStore::insert_entry_v2(&conn, dir_id, "f2.txt", false, false, Some(200), Some(200), None).unwrap();
-        IndexStore::insert_entry_v2(&conn, dir_id, "subdir", true, false, None, None, None).unwrap();
+        let dir_id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "mydir", true, false, None, None, None, None).unwrap();
+        IndexStore::insert_entry_v2(&conn, dir_id, "f1.txt", false, false, Some(100), Some(100), None, None).unwrap();
+        IndexStore::insert_entry_v2(&conn, dir_id, "f2.txt", false, false, Some(200), Some(200), None, None).unwrap();
+        IndexStore::insert_entry_v2(&conn, dir_id, "subdir", true, false, None, None, None, None).unwrap();
 
         let (logical_size, physical_size, files, dirs) = IndexStore::get_children_stats_by_id(&conn, dir_id).unwrap();
         assert_eq!(logical_size, 300);
@@ -2008,7 +2099,7 @@ mod tests {
         let names = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"];
         let mut ids = Vec::new();
         for name in &names {
-            let id = IndexStore::insert_entry_v2(&conn, parent_id, name, true, false, None, None, None).unwrap();
+            let id = IndexStore::insert_entry_v2(&conn, parent_id, name, true, false, None, None, None, None).unwrap();
             ids.push(id);
             parent_id = id;
         }
@@ -2023,5 +2114,75 @@ mod tests {
 
         // Partial path
         assert_eq!(resolve_path(&conn, "/a/b/c").unwrap(), Some(ids[2]));
+    }
+
+    // ── has_sized_entry_for_inode tests ──────────────────────────────
+
+    /// Helper: insert an entry with explicit inode and size. Returns the new ID.
+    fn insert_entry_with_inode(
+        conn: &Connection,
+        parent_id: i64,
+        name: &str,
+        size: Option<u64>,
+        inode: Option<u64>,
+    ) -> i64 {
+        IndexStore::insert_entry_v2(conn, parent_id, name, false, false, size, size, None, inode).unwrap()
+    }
+
+    #[test]
+    fn has_sized_entry_for_inode_returns_false_when_no_entry() {
+        let (_store, dir) = open_temp_store();
+        let conn = IndexStore::open_write_connection(&dir.path().join("test-index.db")).unwrap();
+
+        let result = IndexStore::has_sized_entry_for_inode(&conn, 12345, None).unwrap();
+        assert!(!result);
+    }
+
+    #[test]
+    fn has_sized_entry_for_inode_returns_true_when_sized_entry_exists() {
+        let (_store, dir) = open_temp_store();
+        let conn = IndexStore::open_write_connection(&dir.path().join("test-index.db")).unwrap();
+
+        insert_entry_with_inode(&conn, ROOT_ID, "primary.txt", Some(1000), Some(100));
+
+        assert!(IndexStore::has_sized_entry_for_inode(&conn, 100, None).unwrap());
+    }
+
+    #[test]
+    fn has_sized_entry_for_inode_returns_false_when_sizes_are_null() {
+        let (_store, dir) = open_temp_store();
+        let conn = IndexStore::open_write_connection(&dir.path().join("test-index.db")).unwrap();
+
+        // Secondary link: same inode but NULL sizes (deduped)
+        insert_entry_with_inode(&conn, ROOT_ID, "secondary.txt", None, Some(100));
+
+        assert!(!IndexStore::has_sized_entry_for_inode(&conn, 100, None).unwrap());
+    }
+
+    #[test]
+    fn has_sized_entry_for_inode_exclude_id_skips_self() {
+        let (_store, dir) = open_temp_store();
+        let conn = IndexStore::open_write_connection(&dir.path().join("test-index.db")).unwrap();
+
+        let id = insert_entry_with_inode(&conn, ROOT_ID, "only.txt", Some(1000), Some(100));
+
+        // Excluding the only sized entry should return false
+        assert!(!IndexStore::has_sized_entry_for_inode(&conn, 100, Some(id)).unwrap());
+        // Without excluding, it should return true
+        assert!(IndexStore::has_sized_entry_for_inode(&conn, 100, None).unwrap());
+    }
+
+    #[test]
+    fn has_sized_entry_for_inode_multiple_entries_one_has_sizes() {
+        let (_store, dir) = open_temp_store();
+        let conn = IndexStore::open_write_connection(&dir.path().join("test-index.db")).unwrap();
+
+        let primary_id = insert_entry_with_inode(&conn, ROOT_ID, "primary.txt", Some(1000), Some(100));
+        let secondary_id = insert_entry_with_inode(&conn, ROOT_ID, "secondary.txt", None, Some(100));
+
+        // From secondary's perspective (exclude self): primary has sizes
+        assert!(IndexStore::has_sized_entry_for_inode(&conn, 100, Some(secondary_id)).unwrap());
+        // From primary's perspective (exclude self): secondary has no sizes
+        assert!(!IndexStore::has_sized_entry_for_inode(&conn, 100, Some(primary_id)).unwrap());
     }
 }
