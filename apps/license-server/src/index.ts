@@ -19,6 +19,8 @@ type Bindings = {
     DOWNLOADS: AnalyticsEngineDataset
     // Analytics Engine for device count tracking (fair use monitoring)
     DEVICE_COUNTS: AnalyticsEngineDataset
+    // Analytics Engine for update check tracking (active user counting)
+    UPDATE_CHECKS: AnalyticsEngineDataset
     // Paddle webhook secrets (both optional to support gradual rollout)
     PADDLE_WEBHOOK_SECRET_LIVE?: string
     PADDLE_WEBHOOK_SECRET_SANDBOX?: string
@@ -37,6 +39,8 @@ type Bindings = {
     // Price IDs for license type mapping
     PRICE_ID_COMMERCIAL_SUBSCRIPTION?: string
     PRICE_ID_COMMERCIAL_PERPETUAL?: string
+    // Dedicated admin API token for /admin/stats (separate from Paddle secrets)
+    ADMIN_API_TOKEN?: string
 }
 
 interface PaddleWebhookPayload {
@@ -58,6 +62,10 @@ interface PaddleWebhookPayload {
 }
 
 const maxOrganizationNameLength = 500
+
+// KV key for the activation counter, read by /admin/stats.
+// Starts from zero on deploy — initialize via the CF API if you need historical count.
+const activationCountKey = '_meta:activation_count'
 const maxTransactionIdLength = 200
 
 function isValidEmail(email: string): boolean {
@@ -110,11 +118,33 @@ app.post('/activate', async (c) => {
         return c.json({ error: 'License code not found or expired' }, 404)
     }
 
+    // Increment activation counter (fire-and-forget, non-blocking)
+    const counterPromise = incrementActivationCount(c.env.LICENSE_CODES)
+    try {
+        c.executionCtx.waitUntil(counterPromise)
+    } catch {
+        // executionCtx unavailable (for example, in tests) — await inline as fallback
+        await counterPromise
+    }
+
     return c.json({
         licenseKey: stored.fullKey,
         organizationName: stored.organizationName ?? null,
     })
 })
+
+/** Increment the KV activation counter. Failures are logged but never surface to the caller. */
+async function incrementActivationCount(kv: KVNamespace): Promise<void> {
+    try {
+        const current = parseInt((await kv.get(activationCountKey)) ?? '0', 10)
+        await kv.put(activationCountKey, String(current + 1))
+    } catch (error) {
+        console.error(
+            'Activation counter increment failed (non-fatal):',
+            error instanceof Error ? error.message : String(error),
+        )
+    }
+}
 
 const maxDeviceIdLength = 200
 const deviceAlertThreshold = 6
@@ -560,9 +590,61 @@ app.post('/admin/generate', async (c) => {
     return c.json({ code: shortCode, type, organizationName: organizationName ?? null })
 })
 
+// Admin stats — returns activation count and device count
+// Auth: dedicated ADMIN_API_TOKEN, separate from the Paddle secrets used by /admin/generate
+app.get('/admin/stats', async (c) => {
+    const token = c.env.ADMIN_API_TOKEN
+    if (!token) {
+        return c.json({ error: 'Admin API not configured' }, 500)
+    }
+
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader || !constantTimeEqual(authHeader, `Bearer ${token}`)) {
+        return c.json({ error: 'Unauthorized' }, 401)
+    }
+
+    const raw = await c.env.LICENSE_CODES.get(activationCountKey)
+    const totalActivations = parseInt(raw ?? '0', 10)
+
+    // TODO: `activeDevices` requires querying the CF Analytics Engine SQL API
+    // (`POST /v4/accounts/{id}/analytics_engine/sql`), which is an external HTTP call,
+    // not available via the `DEVICE_COUNTS` binding (bindings only support `writeDataPoint`).
+    // For v1, return null. The analytics dashboard queries CF Analytics Engine directly.
+    const activeDevices: number | null = null
+
+    return c.json({ totalActivations, activeDevices })
+})
+
+const versionPattern = /^\d+\.\d+\.\d+$/
+
+// Update check proxy — tracks version and arch for active user counting, then redirects to latest.json
+app.get('/update-check/:version', async (c) => {
+    const { version } = c.req.param()
+
+    if (!versionPattern.test(version)) {
+        return c.json({ error: 'Invalid version' }, 400)
+    }
+
+    const arch = c.req.query('arch') ?? 'unknown'
+
+    // Hash IP with daily salt for deduplication without storing PII
+    const ip = c.req.header('cf-connecting-ip') ?? c.req.header('x-forwarded-for') ?? 'unknown'
+    const dailySalt = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
+    const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ip + dailySalt))
+    const hashedIp = [...new Uint8Array(hashBuffer)].map((b) => b.toString(16).padStart(2, '0')).join('')
+
+    // Fire-and-forget — writeDataPoint is non-blocking
+    c.env.UPDATE_CHECKS.writeDataPoint({
+        indexes: [hashedIp],
+        blobs: [version, arch],
+        doubles: [1],
+    })
+
+    return c.redirect('https://getcmdr.com/latest.json', 302)
+})
+
 // Download redirect — tracks version, arch, and country, then redirects to GitHub Releases
 const validArchitectures = new Set(['aarch64', 'x86_64', 'universal'])
-const versionPattern = /^\d+\.\d+\.\d+$/
 
 app.get('/download/:version/:arch', (c) => {
     const { version, arch } = c.req.param()

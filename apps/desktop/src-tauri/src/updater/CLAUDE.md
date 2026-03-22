@@ -53,7 +53,9 @@ The admin-privilege path (`rsync -a`) already uses atomic rename by default.
 - **Privilege escalation via `osascript`.** Only triggers when direct writes to `/Applications/Cmdr.app` are denied.
   Users who run from `~/Applications` or a dev build won't see the auth dialog.
 - **CI guard.** `check_for_update` returns `None` when the `CI` env var is set, avoiding network calls in tests.
-- **Manifest URL is hardcoded** (`https://getcmdr.com/latest.json`), not configurable from the frontend.
+- **Manifest URL routes through the license server** (`https://license.getcmdr.com/update-check/{version}?arch={arch}`),
+  which logs the check to Analytics Engine for active user counting, then 302-redirects to `https://getcmdr.com/latest.json`.
+  The URL is constructed at runtime from the compile-time version and architecture.
 
 ## Dependencies
 

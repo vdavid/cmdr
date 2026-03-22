@@ -9,6 +9,8 @@
         "build": "pnpm --filter @cmdr/desktop tauri build",
         "dev:website": "pnpm --filter @cmdr/website dev",
         "build:website": "pnpm --filter @cmdr/website build",
+        "dev:dashboard": "pnpm --filter @cmdr/analytics-dashboard dev",
+        "build:dashboard": "pnpm --filter @cmdr/analytics-dashboard build",
         "dev:license-server": "pnpm --filter @cmdr/license-server dev",
         "deploy:license-server": "pnpm --filter @cmdr/license-server deploy",
         "check": "./scripts/check.sh"

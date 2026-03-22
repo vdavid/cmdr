@@ -15,19 +15,22 @@ license keys, stores short activation codes in KV, and emails keys via Resend.
 | `src/device-tracking.ts`                    | Device set helpers: prune stale devices, alert threshold      |
 | `src/license.test.ts`, `src/paddle.test.ts` | Vitest tests                                                  |
 | `src/device-tracking.test.ts`               | Tests for device tracking helpers                             |
+| `src/admin-stats.test.ts`                   | Tests for `/admin/stats` endpoint and activation counter      |
 | `scripts/generate-keys.js`                  | Ed25519 key pair generation (run once at setup)               |
 | `scripts/setup-cf-infra.sh`                 | Cloudflare KV namespace provisioning                          |
 
 ## Routes
 
-| Method | Path                       | Auth         | Purpose                                            |
-| ------ | -------------------------- | ------------ | -------------------------------------------------- |
-| GET    | `/`                        | —            | Health check                                       |
-| POST   | `/webhook/paddle`          | HMAC sig     | Purchase completed → generate & email key(s)       |
-| POST   | `/activate`                | —            | Exchange short code → full cryptographic key       |
-| POST   | `/validate`                | —            | Check subscription status via Paddle API           |
-| POST   | `/admin/generate`          | Bearer token | Manual key generation (customer service / testing) |
-| GET    | `/download/:version/:arch` | —            | Log download to Analytics Engine, 302 → GitHub     |
+| Method | Path                       | Auth         | Purpose                                                   |
+| ------ | -------------------------- | ------------ | --------------------------------------------------------- |
+| GET    | `/`                        | —            | Health check                                              |
+| POST   | `/webhook/paddle`          | HMAC sig     | Purchase completed → generate & email key(s)              |
+| POST   | `/activate`                | —            | Exchange short code → full cryptographic key              |
+| POST   | `/validate`                | —            | Check subscription status via Paddle API                  |
+| POST   | `/admin/generate`          | Bearer token | Manual key generation (customer service / testing)        |
+| GET    | `/admin/stats`             | Bearer token | Activation count + device count (for analytics dashboard) |
+| GET    | `/download/:version/:arch` | —            | Log download to Analytics Engine, 302 → GitHub            |
+| GET    | `/update-check/:version`   | —            | Log update check to Analytics Engine, 302 → latest.json   |
 
 ## Environments
 
@@ -79,6 +82,8 @@ Subscription validation: POST /validate → Paddle API transactions + subscripti
   → if device count >= 6 and not recently alerted: send alert email to legal@getcmdr.com
 
 Download redirect: GET /download/:version/:arch → log to Analytics Engine → 302 to GitHub Releases
+
+Update check proxy: GET /update-check/:version → hash IP with daily salt → log to Analytics Engine → 302 to latest.json
 ```
 
 ## Key patterns
@@ -99,7 +104,12 @@ Paddle's retry re-generates and re-sends — intentional design.
 compatibility.
 
 **Security:** Admin bearer token compared with `constantTimeEqual` (XOR-accumulate, timing-safe). All secrets are
-Cloudflare secrets (`wrangler secret put`), never in `wrangler.toml`.
+Cloudflare secrets (`wrangler secret put`), never in `wrangler.toml`. `/admin/stats` uses a dedicated `ADMIN_API_TOKEN`
+secret, separate from the Paddle webhook secrets used by `/admin/generate`.
+
+**Activation counter:** `/activate` increments a KV counter at `_meta:activation_count` on each successful activation.
+Read by `/admin/stats`. The counter starts from zero when deployed — initialize via the CF API if historical count is
+needed.
 
 **No database:** All state lives in Cloudflare KV. Short codes never expire (perpetual licenses last forever);
 subscription validity is checked live via Paddle API.
@@ -112,6 +122,11 @@ status on transient Paddle outages instead of overwriting a valid "active" cache
 **Download tracking:** Uses Cloudflare Analytics Engine (binding: `DOWNLOADS`, dataset: `cmdr_downloads`).
 `writeDataPoint` is fire-and-forget. Data schema: indexes=[version], blobs=[version, arch, country, continent],
 doubles=[1]. Query via CF Analytics Engine SQL API.
+
+**Update check tracking:** Uses Cloudflare Analytics Engine (binding: `UPDATE_CHECKS`, dataset: `cmdr_update_checks`).
+Counts active users (free + licensed) by proxying update checks through `GET /update-check/:version`. Data schema:
+indexes=[hashedIp], blobs=[version, arch], doubles=[1]. IP is hashed with SHA-256 + daily salt for deduplication without
+storing PII. Fire-and-forget, same pattern as download tracking.
 
 **Device tracking (fair use):** On each `/validate` call with a `deviceId`, the server tracks the device in KV
 (`devices:{seatTransactionId}`) and logs to Analytics Engine (binding: `DEVICE_COUNTS`, dataset: `cmdr_device_counts`).
@@ -206,6 +221,10 @@ changes. `.dev.vars` has sandbox IDs; wrangler secrets have live IDs.
 **Gotcha**: `verifyPaddleWebhookMulti` tries both webhook secrets even though environments are separated. **Why**:
 Safety net. If a sandbox webhook somehow reaches the production endpoint (or vice versa), it still verifies rather than
 silently failing. Costs one extra HMAC check on mismatch.
+
+**Gotcha**: The activation counter (`_meta:activation_count` in KV) uses read-then-write, which has a race condition
+under concurrent `/activate` requests. **Why**: KV doesn't support atomic increment. The counter is approximate — if
+exact counts matter, query the CF API to list KV keys, or switch to Durable Objects / D1.
 
 ## Dependencies
 

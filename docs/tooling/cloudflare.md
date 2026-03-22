@@ -23,7 +23,7 @@ curl -s "https://api.cloudflare.com/client/v4/..." \
 ```
 
 **Token permissions** (as of 2026-03): Workers Scripts Edit, Workers KV Storage Edit, Workers Routes Edit,
-Zone DNS Edit, Account Analytics Read. If a deploy fails with a permissions error, check
+Zone DNS Edit, Account Analytics Read, Cloudflare Pages Edit. If a deploy fails with a permissions error, check
 https://dash.cloudflare.com/profile/api-tokens and add the missing permission. The token value doesn't change
 when permissions are updated.
 
@@ -37,6 +37,10 @@ when permissions are updated.
 | Worker | Domain | Config |
 | --- | --- | --- |
 | `cmdr-license-server` | `license.getcmdr.com` | `apps/license-server/wrangler.toml` |
+
+| Pages project | Domain | Notes |
+| --- | --- | --- |
+| `cmdr-analytics-dashboard` | `analdash.getcmdr.com` | SvelteKit dashboard, auth via CF Access. Token needs `Cloudflare Pages: Edit` permission. |
 
 ## Common API operations
 
@@ -76,3 +80,24 @@ curl -s "https://api.cloudflare.com/client/v4/accounts/{account_id}/analytics_en
 ```
 
 The dataset is created automatically on the first write — no setup needed beyond deploying the license server.
+
+## Update check tracking (Analytics Engine)
+
+The license server has a `GET /update-check/:version` endpoint that logs update checks to Analytics Engine
+(dataset: `cmdr_update_checks`) and 302-redirects to `https://getcmdr.com/latest.json`. The desktop app routes all
+update checks through this endpoint.
+
+**Data schema**: indexes=[hashedIp], blobs=[version, arch], doubles=[1]. The IP is hashed with a daily salt for
+deduplication without storing PII.
+
+**Query unique active users** (deduplicated by hashed IP):
+
+```bash
+curl -s "https://api.cloudflare.com/client/v4/accounts/{account_id}/analytics_engine/sql" \
+  -H "Authorization: Bearer {api_token}" \
+  -d "SELECT blob1 AS version, COUNT(DISTINCT index1) AS unique_checks
+      FROM cmdr_update_checks
+      WHERE timestamp > NOW() - INTERVAL '30' DAY
+      GROUP BY version
+      ORDER BY unique_checks DESC"
+```

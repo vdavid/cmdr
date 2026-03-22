@@ -1,0 +1,467 @@
+<script lang="ts" module>
+    import type { DownloadRow } from '$lib/server/sources/cloudflare.js'
+
+    /** Aggregates rows by a string field, summing a numeric field. */
+    function aggregateBy(
+        rows: DownloadRow[],
+        groupField: keyof DownloadRow,
+        sumField: keyof DownloadRow
+    ): Array<{ x: string; y: number }> {
+        const map = new Map<string, number>()
+        for (const row of rows) {
+            const key = String(row[groupField])
+            map.set(key, (map.get(key) ?? 0) + Number(row[sumField]))
+        }
+        return [...map.entries()]
+            .map(([x, y]) => ({ x, y }))
+            .sort((a, b) => b.y - a.y)
+    }
+</script>
+
+<script lang="ts">
+    import Chart from '$lib/components/Chart.svelte'
+
+    let { data } = $props()
+
+    const ranges = ['24h', '7d', '30d'] as const
+
+    function formatNumber(n: number): string {
+        return n.toLocaleString('en-US')
+    }
+
+    function formatCurrency(cents: string | number, currency = 'USD'): string {
+        const value = Number(cents) / 100
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(value)
+    }
+
+    function formatDelta(current: number, previous: number): { text: string; positive: boolean } {
+        if (previous === 0) return { text: 'N/A', positive: true }
+        const pct = ((current - previous) / previous) * 100
+        const sign = pct >= 0 ? '+' : ''
+        return { text: `${sign}${pct.toFixed(1)}%`, positive: pct >= 0 }
+    }
+
+    function formatTime(iso: string): string {
+        return new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+    }
+
+    /** Converts daily rows ({day, views/count}) into uPlot's AlignedData format [timestamps[], values[]]. */
+    function toChartData(rows: Array<{ day: string; views?: number; count?: number }>): [number[], number[]] {
+        const timestamps = rows.map((r) => new Date(r.day).getTime() / 1000)
+        const values = rows.map((r) => r.views ?? r.count ?? 0)
+        return [timestamps, values]
+    }
+</script>
+
+<div class="mx-auto max-w-6xl px-6 py-8">
+    <!-- Header -->
+    <header class="mb-8 flex flex-wrap items-center justify-between gap-4">
+        <h1 class="text-2xl font-bold text-text-primary">Cmdr analytics</h1>
+
+        <div class="flex items-center gap-3">
+            <div class="flex rounded-lg border border-border bg-surface p-0.5">
+                {#each ranges as r}
+                    <a
+                        href="?range={r}"
+                        class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors
+                            {data.range === r
+                            ? 'bg-accent text-accent-contrast'
+                            : 'text-text-secondary hover:text-text-primary'}"
+                    >
+                        {r}
+                    </a>
+                {/each}
+            </div>
+            <span class="text-xs text-text-tertiary">
+                Updated {formatTime(data.updatedAt)}
+            </span>
+        </div>
+    </header>
+
+    <!-- Sections -->
+    <div class="space-y-8">
+        <!-- 1. Awareness -->
+        <section class="rounded-xl border border-border bg-surface p-6">
+            <div class="mb-4">
+                <h2 class="text-lg font-semibold text-text-primary">Awareness</h2>
+                <p class="text-sm text-text-tertiary">How many people see Cmdr content?</p>
+            </div>
+
+            {#if !data.umami.ok}
+                {@render errorState(data.umami.error)}
+            {:else}
+                {@const umami = data.umami.data}
+                {@const totalPageviews = umami.blog.pageviews.value + umami.website.pageviews.value}
+                {@const prevPageviews = umami.blog.pageviews.prev + umami.website.pageviews.prev}
+                {@const delta = formatDelta(totalPageviews, prevPageviews)}
+
+                {@render metricRow([
+                    { label: 'Total page views', value: formatNumber(totalPageviews), delta },
+                    { label: 'Blog views', value: formatNumber(umami.blog.pageviews.value) },
+                    { label: 'Website views', value: formatNumber(umami.website.pageviews.value) },
+                ])}
+
+                {#if umami.websiteReferrers.length > 0}
+                    <div class="mt-4">
+                        <h3 class="mb-2 text-sm font-medium text-text-secondary">Top referrers</h3>
+                        {@render metricTable(umami.websiteReferrers.slice(0, 10), 'Source', 'Views')}
+                    </div>
+                {/if}
+
+                {@render externalLinks([
+                    { label: 'View blog in Umami', href: 'https://anal.veszelovszki.com' },
+                    { label: 'View website in Umami', href: 'https://anal.veszelovszki.com' },
+                ])}
+            {/if}
+        </section>
+
+        <!-- 2. Interest -->
+        <section class="rounded-xl border border-border bg-surface p-6">
+            <div class="mb-4">
+                <h2 class="text-lg font-semibold text-text-primary">Interest</h2>
+                <p class="text-sm text-text-tertiary">How many engage with the product page?</p>
+            </div>
+
+            {#if !data.umami.ok && !data.posthog.ok}
+                {@render errorState(
+                    [!data.umami.ok ? data.umami.error : '', !data.posthog.ok ? data.posthog.error : '']
+                        .filter(Boolean)
+                        .join('; ')
+                )}
+            {:else}
+                <div class="space-y-4">
+                    {#if data.umami.ok}
+                        {@const umami = data.umami.data}
+                        {@const delta = formatDelta(umami.website.pageviews.value, umami.website.pageviews.prev)}
+
+                        {@render metricRow([
+                            { label: 'getcmdr.com page views', value: formatNumber(umami.website.pageviews.value), delta },
+                            { label: 'Unique visitors', value: formatNumber(umami.website.visitors.value) },
+                        ])}
+
+                        {#if data.posthog.ok && data.posthog.data.dailyPageviews.length > 0}
+                            <Chart data={toChartData(data.posthog.data.dailyPageviews)} labels={['Page views']} height={180} />
+                        {/if}
+
+                        {#if umami.downloadEvents.length > 0}
+                            <div>
+                                <h3 class="mb-2 text-sm font-medium text-text-secondary">Download button clicks</h3>
+                                {@render metricTable(umami.downloadEvents.slice(0, 10), 'Event', 'Count')}
+                            </div>
+                        {/if}
+
+                        {#if umami.websitePages.length > 0}
+                            <div>
+                                <h3 class="mb-2 text-sm font-medium text-text-secondary">Top pages</h3>
+                                {@render metricTable(umami.websitePages.slice(0, 10), 'Page', 'Views')}
+                            </div>
+                        {/if}
+                    {:else if !data.umami.ok}
+                        {@render errorState(data.umami.error)}
+                    {/if}
+                </div>
+
+                {@render externalLinks([
+                    { label: 'View in Umami', href: 'https://anal.veszelovszki.com' },
+                    { label: 'View in PostHog', href: 'https://eu.posthog.com/project/136072' },
+                ])}
+            {/if}
+        </section>
+
+        <!-- 3. Download -->
+        <section class="rounded-xl border border-border bg-surface p-6">
+            <div class="mb-4">
+                <h2 class="text-lg font-semibold text-text-primary">Download</h2>
+                <p class="text-sm text-text-tertiary">How many actually download?</p>
+            </div>
+
+            {#if !data.cloudflare.ok && !data.github.ok}
+                {@render errorState(
+                    [!data.cloudflare.ok ? data.cloudflare.error : '', !data.github.ok ? data.github.error : '']
+                        .filter(Boolean)
+                        .join('; ')
+                )}
+            {:else}
+                <div class="space-y-4">
+                    {#if data.cloudflare.ok}
+                        {@const cf = data.cloudflare.data}
+                        {@const totalDownloads = cf.downloads.reduce((sum, r) => sum + r.downloads, 0)}
+
+                        {@render metricRow([
+                            { label: 'Downloads (Analytics Engine)', value: formatNumber(totalDownloads) },
+                            ...(data.github.ok
+                                ? [{ label: 'Downloads (GitHub, all-time)', value: formatNumber(data.github.data.totalDownloads) }]
+                                : []),
+                        ])}
+
+                        {#if cf.downloads.length > 0}
+                            <div class="grid gap-4 md:grid-cols-3">
+                                <div>
+                                    <h3 class="mb-2 text-sm font-medium text-text-secondary">By version</h3>
+                                    {@render metricTable(aggregateBy(cf.downloads, 'version', 'downloads').slice(0, 8), 'Version', 'Downloads')}
+                                </div>
+                                <div>
+                                    <h3 class="mb-2 text-sm font-medium text-text-secondary">By architecture</h3>
+                                    {@render metricTable(aggregateBy(cf.downloads, 'arch', 'downloads').slice(0, 8), 'Architecture', 'Downloads')}
+                                </div>
+                                <div>
+                                    <h3 class="mb-2 text-sm font-medium text-text-secondary">By country</h3>
+                                    {@render metricTable(aggregateBy(cf.downloads, 'country', 'downloads').slice(0, 8), 'Country', 'Downloads')}
+                                </div>
+                            </div>
+                        {/if}
+                    {:else if !data.cloudflare.ok}
+                        {@render errorState(data.cloudflare.error)}
+                    {/if}
+
+                    {#if data.github.ok && data.github.data.releases.length > 0}
+                        <div>
+                            <h3 class="mb-2 text-sm font-medium text-text-secondary">GitHub releases</h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-sm">
+                                    <thead>
+                                        <tr class="border-b border-border-subtle text-text-tertiary">
+                                            <th class="pb-2 pr-4 font-medium">Release</th>
+                                            <th class="pb-2 text-right font-medium tabular-nums">Downloads</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {#each data.github.data.releases.slice(0, 5) as release}
+                                            <tr class="border-b border-border-subtle/50">
+                                                <td class="py-1.5 pr-4 text-text-primary">{release.tagName}</td>
+                                                <td class="py-1.5 text-right tabular-nums text-text-secondary">{formatNumber(release.totalDownloads)}</td>
+                                            </tr>
+                                        {/each}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    {/if}
+                </div>
+
+                {@render externalLinks([
+                    { label: 'View in Cloudflare', href: 'https://dash.cloudflare.com' },
+                    { label: 'View on GitHub', href: 'https://github.com/vdavid/cmdr/releases' },
+                ])}
+            {/if}
+        </section>
+
+        <!-- 4. Active use -->
+        <section class="rounded-xl border border-border bg-surface p-6">
+            <div class="mb-4">
+                <h2 class="text-lg font-semibold text-text-primary">Active use</h2>
+                <p class="text-sm text-text-tertiary">How many run the app?</p>
+            </div>
+
+            {#if !data.cloudflare.ok}
+                {@render errorState(data.cloudflare.error)}
+            {:else}
+                {@const cf = data.cloudflare.data}
+                {@const totalChecks = cf.updateChecks.reduce((sum, r) => sum + r.checks, 0)}
+
+                {@render metricRow([
+                    { label: 'Update checks (approximate active users)', value: formatNumber(totalChecks) },
+                ])}
+
+                {#if cf.updateChecks.length > 0}
+                    <div class="mt-4">
+                        <h3 class="mb-2 text-sm font-medium text-text-secondary">By version</h3>
+                        {@render metricTable(
+                            cf.updateChecks.slice(0, 10).map((r) => ({ x: r.version, y: r.checks })),
+                            'Version',
+                            'Checks'
+                        )}
+                    </div>
+                {:else}
+                    {@render emptyState()}
+                {/if}
+
+                {#if data.license.ok}
+                    {@const lic = data.license.data}
+                    <div class="mt-4 flex gap-6">
+                        <div>
+                            <p class="text-xs text-text-tertiary">Total activations</p>
+                            <p class="text-lg font-semibold tabular-nums text-text-primary">{formatNumber(lic.totalActivations)}</p>
+                        </div>
+                        {#if lic.activeDevices !== null}
+                            <div>
+                                <p class="text-xs text-text-tertiary">Active devices</p>
+                                <p class="text-lg font-semibold tabular-nums text-text-primary">{formatNumber(lic.activeDevices)}</p>
+                            </div>
+                        {/if}
+                    </div>
+                {/if}
+
+                {@render externalLinks([
+                    { label: 'View in Cloudflare', href: 'https://dash.cloudflare.com' },
+                ])}
+            {/if}
+        </section>
+
+        <!-- 5. Payment -->
+        <section class="rounded-xl border border-border bg-surface p-6">
+            <div class="mb-4">
+                <h2 class="text-lg font-semibold text-text-primary">Payment</h2>
+                <p class="text-sm text-text-tertiary">How many pay?</p>
+            </div>
+
+            {#if !data.paddle.ok}
+                {@render errorState(data.paddle.error)}
+            {:else}
+                {@const paddle = data.paddle.data}
+                {@const totalRevenue = paddle.transactions.reduce((sum, t) => sum + Number(t.total), 0)}
+                {@const currency = paddle.transactions[0]?.currencyCode ?? 'USD'}
+
+                {@render metricRow([
+                    { label: 'Revenue', value: formatCurrency(totalRevenue, currency) },
+                    { label: 'Transactions', value: formatNumber(paddle.transactions.length) },
+                    { label: 'Active subscriptions', value: formatNumber(paddle.activeSubscriptions.length) },
+                ])}
+
+                {#if paddle.transactions.length > 0}
+                    <div class="mt-4">
+                        <h3 class="mb-2 text-sm font-medium text-text-secondary">Recent transactions</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead>
+                                    <tr class="border-b border-border-subtle text-text-tertiary">
+                                        <th class="pb-2 pr-4 font-medium">Date</th>
+                                        <th class="pb-2 pr-4 font-medium">Status</th>
+                                        <th class="pb-2 text-right font-medium">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {#each paddle.transactions.slice(0, 10) as txn}
+                                        <tr class="border-b border-border-subtle/50">
+                                            <td class="py-1.5 pr-4 tabular-nums text-text-primary">{txn.createdAt.split('T')[0]}</td>
+                                            <td class="py-1.5 pr-4 text-text-secondary">{txn.status}</td>
+                                            <td class="py-1.5 text-right tabular-nums text-text-secondary">{formatCurrency(txn.total, txn.currencyCode)}</td>
+                                        </tr>
+                                    {/each}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                {:else}
+                    {@render emptyState()}
+                {/if}
+
+                {@render externalLinks([
+                    { label: 'View in Paddle', href: 'https://vendors.paddle.com' },
+                ])}
+            {/if}
+        </section>
+
+        <!-- 6. Retention -->
+        <section class="rounded-xl border border-border bg-surface p-6">
+            <div class="mb-4">
+                <h2 class="text-lg font-semibold text-text-primary">Retention</h2>
+                <p class="text-sm text-text-tertiary">Do they stay?</p>
+            </div>
+
+            {#if !data.paddle.ok}
+                {@render errorState(data.paddle.error)}
+            {:else}
+                {@const paddle = data.paddle.data}
+                {@const statusEntries = Object.entries(paddle.subscriptionsByStatus)}
+                {@const totalSubs = statusEntries.reduce((sum, entry) => sum + entry[1], 0)}
+                {@const activeSubs = paddle.subscriptionsByStatus['active'] ?? 0}
+                {@const canceledSubs = paddle.subscriptionsByStatus['canceled'] ?? 0}
+                {@const churnDisplay = totalSubs > 0 ? `${((canceledSubs / totalSubs) * 100).toFixed(1)}%` : 'N/A'}
+
+                {@render metricRow([
+                    { label: 'Active subscriptions', value: formatNumber(activeSubs) },
+                    { label: 'Churn rate', value: churnDisplay },
+                ])}
+
+                {#if statusEntries.length > 0}
+                    <div class="mt-4">
+                        <h3 class="mb-2 text-sm font-medium text-text-secondary">Subscriptions by status</h3>
+                        {@render metricTable(
+                            statusEntries.map((entry) => ({ x: entry[0], y: entry[1] })),
+                            'Status',
+                            'Count'
+                        )}
+                    </div>
+                {:else}
+                    {@render emptyState()}
+                {/if}
+
+                {@render externalLinks([
+                    { label: 'View in Paddle', href: 'https://vendors.paddle.com' },
+                ])}
+            {/if}
+        </section>
+    </div>
+</div>
+
+<!-- Shared snippets -->
+{#snippet errorState(error: string)}
+    <div class="rounded-lg border border-border-subtle bg-surface-elevated px-4 py-6 text-center">
+        <p class="text-sm text-text-secondary">Couldn't load this data</p>
+        <p class="mt-1 text-xs text-text-tertiary">{error}</p>
+        <a href="?range={data.range}" class="mt-2 inline-block text-xs text-accent hover:text-accent-hover">
+            Try again
+        </a>
+    </div>
+{/snippet}
+
+{#snippet emptyState()}
+    <div class="rounded-lg border border-border-subtle bg-surface-elevated px-4 py-6 text-center">
+        <p class="text-sm text-text-secondary">No data yet for this period</p>
+    </div>
+{/snippet}
+
+{#snippet metricRow(metrics: Array<{ label: string; value: string; delta?: { text: string; positive: boolean } }>)}
+    <div class="flex flex-wrap gap-6">
+        {#each metrics as metric}
+            <div>
+                <p class="text-xs text-text-tertiary">{metric.label}</p>
+                <div class="flex items-baseline gap-2">
+                    <p class="text-2xl font-bold tabular-nums text-text-primary">{metric.value}</p>
+                    {#if metric.delta}
+                        <span class="text-sm tabular-nums {metric.delta.positive ? 'text-success' : 'text-danger'}">
+                            {metric.delta.text}
+                        </span>
+                    {/if}
+                </div>
+            </div>
+        {/each}
+    </div>
+{/snippet}
+
+{#snippet metricTable(items: Array<{ x: string; y: number }>, colLabel: string, colValue: string)}
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+            <thead>
+                <tr class="border-b border-border-subtle text-text-tertiary">
+                    <th class="pb-2 pr-4 font-medium">{colLabel}</th>
+                    <th class="pb-2 text-right font-medium">{colValue}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {#each items as item}
+                    <tr class="border-b border-border-subtle/50">
+                        <td class="py-1.5 pr-4 text-text-primary">{item.x || '(direct)'}</td>
+                        <td class="py-1.5 text-right tabular-nums text-text-secondary">{formatNumber(item.y)}</td>
+                    </tr>
+                {/each}
+            </tbody>
+        </table>
+    </div>
+{/snippet}
+
+{#snippet externalLinks(links: Array<{ label: string; href: string }>)}
+    <div class="mt-4 flex flex-wrap gap-3 border-t border-border-subtle pt-3">
+        {#each links as link}
+            <a
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-xs text-text-tertiary transition-colors hover:text-accent"
+            >
+                {link.label} &#x2197;
+            </a>
+        {/each}
+    </div>
+{/snippet}

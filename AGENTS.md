@@ -12,6 +12,7 @@ Downloadable at [the website](https://getcmdr.com).
 
 This is a monorepo containing these apps:
 - Cmdr: Currently for macOS only. Rust, Tauri 2, Svelte 5, TypeScript, and custom CSS.
+- Analytics dashboard: Private SvelteKit metrics dashboard. Deployed to Cloudflare Pages.
 - getcmdr.com website: Astro + Tailwind v4. Deployed via Docker + Caddy.
 - License server: Cloudflare Worker + Hono. Generates and verifies Ed25519-signed keys for Cmdr.
 
@@ -19,6 +20,7 @@ Core structure:
 
 - `/.github/workflows/` - GitHub Actions workflows
 - `/apps/`
+    - `analytics-dashboard/` - Private metrics dashboard (SvelteKit + CF Pages)
     - `desktop/` - The Tauri desktop app
         - `test/e2e-smoke/` - Playwright smoke tests (browser-based, works on macOS)
         - `test/e2e-linux/` - WebDriverIO + tauri-driver tests (Docker, tests real Tauri app)

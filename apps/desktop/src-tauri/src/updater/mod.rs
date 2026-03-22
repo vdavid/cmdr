@@ -32,9 +32,8 @@ impl UpdateState {
     }
 }
 
-const MANIFEST_URL: &str = "https://getcmdr.com/latest.json";
-
-/// Fetches `latest.json` and returns update info if a newer version is available.
+/// Fetches `latest.json` (via the update check proxy for analytics) and returns update info
+/// if a newer version is available.
 ///
 /// Returns `None` when:
 /// - The `CI` env var is set (CI guard — avoids network calls in tests)
@@ -50,7 +49,10 @@ pub async fn check_for_update() -> Result<Option<UpdateInfo>, String> {
     let current_version = env!("CARGO_PKG_VERSION");
     log::info!("Checking for updates (current version: {current_version})");
 
-    let response = reqwest::get(MANIFEST_URL)
+    let arch = manifest::platform_key().strip_prefix("darwin-").unwrap_or("unknown");
+    let url = format!("https://license.getcmdr.com/update-check/{current_version}?arch={arch}");
+
+    let response = reqwest::get(&url)
         .await
         .map_err(|e| format!("Couldn't fetch update manifest: {e}"))?;
 

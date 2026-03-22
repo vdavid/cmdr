@@ -27,6 +27,11 @@ dataset = "cmdr_downloads"
 binding = "DEVICE_COUNTS"
 dataset = "cmdr_device_counts"
 
+# Analytics Engine for update check tracking (active user counting)
+[[analytics_engine_datasets]]
+binding = "UPDATE_CHECKS"
+dataset = "cmdr_update_checks"
+
 [vars]
 # Non-secret config
 PRODUCT_NAME = "Cmdr"
@@ -44,3 +49,4 @@ PADDLE_ENVIRONMENT = "sandbox"
 # - RESEND_API_KEY                 (from resend.com)
 # - PRICE_ID_COMMERCIAL_SUBSCRIPTION (Price ID for $59/yr subscription)
 # - PRICE_ID_COMMERCIAL_PERPETUAL  (Price ID for $199 perpetual)
+# - ADMIN_API_TOKEN                (dedicated token for /admin/stats)
