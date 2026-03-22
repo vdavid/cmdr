@@ -12,7 +12,7 @@ import (
 func RunWebsiteE2E(ctx *CheckContext) (CheckResult, error) {
 	websiteDir := filepath.Join(ctx.RootDir, "apps", "website")
 
-	cmd := exec.Command("pnpm", "test:e2e")
+	cmd := exec.Command("pnpm", "exec", "playwright", "test", "--reporter=list")
 	cmd.Dir = websiteDir
 	output, err := RunCommand(cmd, true)
 	if err != nil {
