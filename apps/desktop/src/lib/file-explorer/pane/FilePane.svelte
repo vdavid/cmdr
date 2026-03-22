@@ -1414,28 +1414,28 @@
                     })
                 }
 
-                // Fallback: adjust selection and cursor for structural diffs outside file operations
-                if (operationSelectedNames === null) {
-                    const hasStructuralChanges = diff.changes.some((c) => c.type === 'add' || c.type === 'remove')
-                    if (hasStructuralChanges) {
-                        const removeIndices = diff.changes.filter((c) => c.type === 'remove').map((c) => c.index)
-                        const addIndices = diff.changes.filter((c) => c.type === 'add').map((c) => c.index)
+                // Adjust cursor and selection after structural diffs (adds/removes)
+                const hasStructuralChanges = diff.changes.some((c) => c.type === 'add' || c.type === 'remove')
+                if (hasStructuralChanges) {
+                    const removeIndices = diff.changes.filter((c) => c.type === 'remove').map((c) => c.index)
+                    const addIndices = diff.changes.filter((c) => c.type === 'add').map((c) => c.index)
 
-                        const offset = hasParent ? 1 : 0
+                    const offset = hasParent ? 1 : 0
 
-                        if (selection.selectedIndices.size > 0) {
-                            const backendSelected = selection.getSelectedIndices().map((i) => i - offset)
-                            const adjusted = adjustSelectionIndices(backendSelected, removeIndices, addIndices)
-                            selection.setSelectedIndices(adjusted.map((i) => i + offset))
-                        }
+                    // Selection: only adjust outside operations (operations handle via findFileIndices)
+                    if (operationSelectedNames === null && selection.selectedIndices.size > 0) {
+                        const backendSelected = selection.getSelectedIndices().map((i) => i - offset)
+                        const adjusted = adjustSelectionIndices(backendSelected, removeIndices, addIndices)
+                        selection.setSelectedIndices(adjusted.map((i) => i + offset))
+                    }
 
-                        const backendCursor = cursorIndex - offset
-                        const adjustedCursor = adjustSelectionIndices([backendCursor], removeIndices, addIndices)
-                        if (adjustedCursor.length > 0) {
-                            cursorIndex = adjustedCursor[0] + offset
-                        } else {
-                            cursorIndex = Math.max(0, Math.min(cursorIndex, count - 1 + offset))
-                        }
+                    // Cursor: always adjust (no operation-specific cursor handling exists)
+                    const backendCursor = cursorIndex - offset
+                    const adjustedCursor = adjustSelectionIndices([backendCursor], removeIndices, addIndices)
+                    if (adjustedCursor.length > 0) {
+                        cursorIndex = adjustedCursor[0] + offset
+                    } else {
+                        cursorIndex = Math.max(0, Math.min(cursorIndex, count - 1 + offset))
                     }
                 }
             })
