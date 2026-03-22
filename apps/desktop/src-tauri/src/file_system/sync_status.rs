@@ -1,4 +1,4 @@
-//! Dropbox sync status detection for macOS File Provider.
+//! Cloud sync status detection for macOS File Provider.
 //!
 //! Detects file sync states:
 //! - Synced: Local content matches cloud
@@ -8,8 +8,13 @@
 //!
 //! Detection uses stat() for fast online-only detection.
 //! For uploading/downloading states, we use NSURL resource values.
+//!
+//! Parallelism uses dedicated OS threads (not rayon) because the NSURL calls
+//! make synchronous XPC round-trips to FileProvider daemons. These are I/O-bound
+//! and can consume deep stack frames (FileProvider override chains), so they need
+//! a larger stack than rayon's default 2 MB. Using dedicated threads also avoids
+//! starving rayon's pool, which is reserved for CPU-bound work.
 
-use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
@@ -82,7 +87,7 @@ fn get_ubiquitous_bool(path: &Path, key: &str) -> Option<bool> {
     use objc2_foundation::{NSNumber, NSString, NSURL};
 
     // Drain autoreleased ObjC objects (NSURL, NSString) created per call.
-    // Called from rayon par_iter threads that lack AppKit's autorelease pool.
+    // Called from spawned threads that lack AppKit's autorelease pool.
     autoreleasepool(|_| {
         let path_str = path.to_str()?;
         let ns_path = NSString::from_str(path_str);
@@ -100,37 +105,48 @@ fn get_ubiquitous_bool(path: &Path, key: &str) -> Option<bool> {
     })
 }
 
-/// Gets sync status for multiple paths in parallel.
+/// 8 MB stack per thread — enough for deep FileProvider XPC call chains.
+const THREAD_STACK_SIZE: usize = 8 * 1024 * 1024;
+
+/// Gets sync status for multiple paths in parallel using dedicated OS threads.
 ///
-/// Uses Rayon's default thread pool (auto-detects CPU cores).
+/// Each NSURL resource-value lookup makes a synchronous XPC call into the
+/// FileProvider daemon, which can build deep stack frames through override
+/// chains. Dedicated threads with an explicit 8 MB stack prevent the stack
+/// overflows that occur on rayon's default 2 MB worker threads.
 pub fn get_sync_statuses(paths: Vec<String>) -> HashMap<String, SyncStatus> {
-    paths
-        .par_iter()
-        .map(|path| {
-            let status = get_sync_status(Path::new(path));
-            (path.clone(), status)
-        })
-        .collect()
-}
+    if paths.is_empty() {
+        return HashMap::new();
+    }
 
-/// Gets sync status for multiple paths with configurable parallelism.
-///
-/// Uses a Rayon thread pool with the specified number of threads.
-#[allow(dead_code, reason = "Used for benchmarking")]
-pub fn get_sync_statuses_with_threads(paths: Vec<String>, num_threads: usize) -> HashMap<String, SyncStatus> {
-    let pool = rayon::ThreadPoolBuilder::new()
-        .num_threads(num_threads)
-        .build()
-        .unwrap_or_else(|_| rayon::ThreadPoolBuilder::new().build().unwrap());
+    let num_threads = paths.len().min(std::thread::available_parallelism().map_or(4, |n| n.get()));
 
-    pool.install(|| {
-        paths
-            .par_iter()
-            .map(|path| {
-                let status = get_sync_status(Path::new(path));
-                (path.clone(), status)
+    std::thread::scope(|scope| {
+        let chunk_size = paths.len().div_ceil(num_threads);
+        let handles: Vec<_> = paths
+            .chunks(chunk_size)
+            .map(|chunk| {
+                let chunk = chunk.to_vec();
+                std::thread::Builder::new()
+                    .stack_size(THREAD_STACK_SIZE)
+                    .spawn_scoped(scope, move || {
+                        chunk
+                            .into_iter()
+                            .map(|path| {
+                                let status = get_sync_status(Path::new(&path));
+                                (path, status)
+                            })
+                            .collect::<Vec<_>>()
+                    })
+                    .expect("failed to spawn sync-status thread")
             })
-            .collect()
+            .collect();
+
+        let mut result = HashMap::with_capacity(paths.len());
+        for handle in handles {
+            result.extend(handle.join().expect("sync-status thread panicked"));
+        }
+        result
     })
 }
 
