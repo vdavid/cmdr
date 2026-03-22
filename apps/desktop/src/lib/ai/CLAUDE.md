@@ -58,6 +58,9 @@ provide checksums) — file size check only.
 - **Model switch requires app restart**: Changing selected model in Settings requires download + restart. No hot-swap.
 - **`opted_out` flag is legacy**: The `opted_out` field in `AiState` is superseded by `ai.provider` setting. It remains
   in the struct but is no longer checked. `ai.provider` in the frontend settings store is the source of truth.
+- **`resetForTesting()` must stay in sync with module state**: When adding new `$state` fields to `ai-state.svelte.ts`,
+  update `resetForTesting()` to clear them. Tests use this instead of `vi.resetModules()` to avoid ~8s module re-parse
+  penalty per test.
 
 ## Development
 

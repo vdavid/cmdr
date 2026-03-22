@@ -9,6 +9,12 @@ vi.mock('$lib/tauri-commands', () => ({
 
 import type { LicenseStatus } from '$lib/tauri-commands'
 import { getLicenseStatus, needsLicenseValidation, validateLicenseWithServer } from '$lib/tauri-commands'
+import {
+    getCachedStatus,
+    loadLicenseStatus,
+    triggerValidationIfNeeded,
+    resetForTesting,
+} from './licensing-store.svelte'
 
 const personalStatus: LicenseStatus = { type: 'personal', showCommercialReminder: false }
 const commercialStatus: LicenseStatus = {
@@ -27,24 +33,18 @@ const expiredStatus: LicenseStatus = {
 describe('licensing-store', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        vi.resetModules()
+        resetForTesting()
     })
 
-    async function loadStore() {
-        return await import('./licensing-store.svelte')
-    }
-
     describe('getCachedStatus', () => {
-        it('returns null before status is loaded', async () => {
-            const { getCachedStatus } = await loadStore()
+        it('returns null before status is loaded', () => {
             expect(getCachedStatus()).toBeNull()
-        }, 15_000)
+        })
     })
 
     describe('loadLicenseStatus', () => {
         it('fetches status from backend and caches it', async () => {
             vi.mocked(getLicenseStatus).mockResolvedValue(personalStatus)
-            const { loadLicenseStatus, getCachedStatus } = await loadStore()
 
             const result = await loadLicenseStatus()
 
@@ -56,7 +56,6 @@ describe('licensing-store', () => {
     describe('triggerValidationIfNeeded', () => {
         it('skips validation when not needed', async () => {
             vi.mocked(needsLicenseValidation).mockResolvedValue(false)
-            const { triggerValidationIfNeeded } = await loadStore()
 
             const result = await triggerValidationIfNeeded()
 
@@ -67,7 +66,6 @@ describe('licensing-store', () => {
         it('validates with server and updates cache when needed', async () => {
             vi.mocked(needsLicenseValidation).mockResolvedValue(true)
             vi.mocked(validateLicenseWithServer).mockResolvedValue(commercialStatus)
-            const { triggerValidationIfNeeded, getCachedStatus } = await loadStore()
 
             const result = await triggerValidationIfNeeded()
 
@@ -79,7 +77,6 @@ describe('licensing-store', () => {
             vi.mocked(getLicenseStatus).mockResolvedValue(personalStatus)
             vi.mocked(needsLicenseValidation).mockResolvedValue(true)
             vi.mocked(validateLicenseWithServer).mockRejectedValue(new Error('Network error'))
-            const { loadLicenseStatus, triggerValidationIfNeeded, getCachedStatus } = await loadStore()
 
             await loadLicenseStatus()
             const result = await triggerValidationIfNeeded()
@@ -91,7 +88,6 @@ describe('licensing-store', () => {
         it('caches expired status from server validation', async () => {
             vi.mocked(needsLicenseValidation).mockResolvedValue(true)
             vi.mocked(validateLicenseWithServer).mockResolvedValue(expiredStatus)
-            const { triggerValidationIfNeeded, getCachedStatus } = await loadStore()
 
             const result = await triggerValidationIfNeeded()
 

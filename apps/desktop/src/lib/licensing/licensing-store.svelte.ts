@@ -20,6 +20,13 @@ const licenseState = {
     pendingVerification: false,
 }
 
+/** Resets all state to initial values. For use in tests only. */
+export function resetForTesting(): void {
+    licenseState.cachedStatus = null
+    licenseState.shouldShowModal = false
+    licenseState.pendingVerification = false
+}
+
 /**
  * Loads the license status from the backend.
  * Should be called once at app startup.

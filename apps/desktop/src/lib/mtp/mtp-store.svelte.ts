@@ -364,6 +364,21 @@ export async function initialize(): Promise<void> {
     logger.debug('MTP store initialized')
 }
 
+/** Resets all state to initial values. For use in tests only. */
+export function resetForTesting(): void {
+    state = {
+        devices: new SvelteMap(),
+        initialized: false,
+        scanning: false,
+    }
+    unlistenConnected = undefined
+    unlistenDisconnected = undefined
+    unlistenExclusiveAccess = undefined
+    unlistenPermissionError = undefined
+    unlistenDeviceDetected = undefined
+    unlistenDeviceRemoved = undefined
+}
+
 /**
  * Cleans up the MTP store.
  * Should be called when the app is shutting down.

@@ -34,6 +34,14 @@ export function getAiState(): AiStateData {
     return aiState
 }
 
+/** Resets all state to initial values. For use in tests only. */
+export function resetForTesting(): void {
+    aiState.notificationState = 'hidden'
+    aiState.downloadProgress = null
+    aiState.progressText = ''
+    aiState.modelInfo = null
+}
+
 export async function initAiState(): Promise<() => void> {
     // Don't show toast when provider is off or openai-compatible
     const aiProvider = getSetting('ai.provider')

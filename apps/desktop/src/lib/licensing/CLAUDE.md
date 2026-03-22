@@ -52,6 +52,9 @@ dismiss). The About window and modals read the cached value on mount.
 
 ## Gotchas
 
+- **`resetForTesting()` must stay in sync with module state** — when adding new fields to `licenseState` in
+  `licensing-store.svelte.ts`, update `resetForTesting()` to clear them. Tests use this instead of `vi.resetModules()`
+  to avoid module re-parse penalty per test.
 - **Mock mode only in debug builds** — `CMDR_MOCK_LICENSE` env var bypasses validation. Silently ignored in release.
 - **Ed25519 public key embedded** — hardcoded in `verification.rs`. Must match license server's private key.
 - **Commercial reminder timing** — tracked in `license.json` via `firstRunTimestamp`. Shows 30 days after first launch,

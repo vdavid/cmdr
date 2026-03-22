@@ -64,3 +64,6 @@ clipboard requires local file paths, which MTP virtual paths can't provide — t
   device. Not granular (don't know which directory changed without extra MTP calls).
 - **30-second timeout is intentional**: Some Android devices are slow (USB 2.0, old hardware). MTP operations have 30s
   timeout, not the usual 10s.
+- **`resetForTesting()` must stay in sync with module state**: When adding new module-level state to
+  `mtp-store.svelte.ts`, update `resetForTesting()` to clear it. Tests use this instead of `vi.resetModules()` to avoid
+  ~8s module re-parse penalty per test.

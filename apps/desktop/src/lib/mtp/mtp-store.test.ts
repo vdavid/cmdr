@@ -32,6 +32,21 @@ import {
     onMtpDeviceDetected,
     onMtpDeviceRemoved,
 } from '$lib/tauri-commands'
+import {
+    getDevices,
+    getDevice,
+    getConnectedDevices,
+    hasConnectedDevices,
+    isInitialized,
+    isScanning,
+    scanDevices,
+    connect,
+    disconnect,
+    initialize,
+    cleanup,
+    getMtpVolumes,
+    resetForTesting,
+} from './mtp-store.svelte'
 
 const mockDevice: MtpDeviceInfo = {
     id: 'mtp-336592896',
@@ -59,7 +74,7 @@ const mockConnectedInfo: ConnectedMtpDeviceInfo = {
 describe('mtp-store', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        vi.resetModules()
+        resetForTesting()
 
         // Default mock for event listeners - return unlisten functions
         vi.mocked(onMtpDeviceConnected).mockResolvedValue(vi.fn())
@@ -70,19 +85,13 @@ describe('mtp-store', () => {
         vi.mocked(onMtpDeviceRemoved).mockResolvedValue(vi.fn())
     })
 
-    async function loadModule() {
-        return await import('./mtp-store.svelte')
-    }
-
     describe('initial state', () => {
-        it('returns empty devices before initialization', async () => {
-            const { getDevices, isInitialized } = await loadModule()
+        it('returns empty devices before initialization', () => {
             expect(getDevices()).toEqual([])
             expect(isInitialized()).toBe(false)
-        }, 15_000)
+        })
 
-        it('has no connected devices initially', async () => {
-            const { hasConnectedDevices, getConnectedDevices } = await loadModule()
+        it('has no connected devices initially', () => {
             expect(hasConnectedDevices()).toBe(false)
             expect(getConnectedDevices()).toEqual([])
         })
@@ -92,13 +101,11 @@ describe('mtp-store', () => {
         it('scans and adds new devices, then auto-connects', async () => {
             vi.mocked(listMtpDevices).mockResolvedValue([mockDevice])
             vi.mocked(connectMtpDevice).mockResolvedValue(mockConnectedInfo)
-            const { scanDevices, getDevices, getDevice } = await loadModule()
 
             await scanDevices()
             // Wait for auto-connect to complete (it runs asynchronously)
             await vi.waitFor(() => {
-                const device = getDevice('mtp-336592896')
-                expect(device?.connectionState).toBe('connected')
+                expect(getDevice('mtp-336592896')?.connectionState).toBe('connected')
             })
 
             const devices = getDevices()
@@ -115,7 +122,6 @@ describe('mtp-store', () => {
         it('preserves connection state for known devices', async () => {
             vi.mocked(listMtpDevices).mockResolvedValue([mockDevice])
             vi.mocked(connectMtpDevice).mockResolvedValue(mockConnectedInfo)
-            const { scanDevices, connect, getDevice } = await loadModule()
 
             await scanDevices()
             await connect('mtp-336592896')
@@ -137,7 +143,6 @@ describe('mtp-store', () => {
                         }, 100)
                     }),
             )
-            const { scanDevices, isScanning } = await loadModule()
 
             const promise1 = scanDevices()
             expect(isScanning()).toBe(true)
@@ -151,7 +156,6 @@ describe('mtp-store', () => {
 
         it('handles scan errors gracefully', async () => {
             vi.mocked(listMtpDevices).mockRejectedValue(new Error('USB error'))
-            const { scanDevices, getDevices, isScanning } = await loadModule()
 
             await scanDevices()
 
@@ -161,7 +165,6 @@ describe('mtp-store', () => {
 
         it('removes devices no longer present after scan', async () => {
             vi.mocked(listMtpDevices).mockResolvedValueOnce([mockDevice])
-            const { scanDevices, getDevices } = await loadModule()
 
             await scanDevices()
             expect(getDevices()).toHaveLength(1)
@@ -178,13 +181,11 @@ describe('mtp-store', () => {
         it('auto-connects devices after scan and updates state', async () => {
             vi.mocked(listMtpDevices).mockResolvedValue([mockDevice])
             vi.mocked(connectMtpDevice).mockResolvedValue(mockConnectedInfo)
-            const { scanDevices, getDevice, getConnectedDevices, hasConnectedDevices } = await loadModule()
 
             await scanDevices()
             // Wait for auto-connect to complete
             await vi.waitFor(() => {
-                const device = getDevice('mtp-336592896')
-                expect(device?.connectionState).toBe('connected')
+                expect(getDevice('mtp-336592896')?.connectionState).toBe('connected')
             })
 
             const device = getDevice('mtp-336592896')
@@ -197,8 +198,6 @@ describe('mtp-store', () => {
         })
 
         it('returns undefined for unknown device', async () => {
-            const { connect } = await loadModule()
-
             const result = await connect('mtp-unknown')
 
             expect(result).toBeUndefined()
@@ -207,7 +206,6 @@ describe('mtp-store', () => {
         it('returns existing info for already connected device', async () => {
             vi.mocked(listMtpDevices).mockResolvedValue([mockDevice])
             vi.mocked(connectMtpDevice).mockResolvedValue(mockConnectedInfo)
-            const { scanDevices, connect } = await loadModule()
 
             await scanDevices()
             await connect('mtp-336592896')
@@ -222,13 +220,11 @@ describe('mtp-store', () => {
         it('sets error state on auto-connect failure', async () => {
             vi.mocked(listMtpDevices).mockResolvedValue([mockDevice])
             vi.mocked(connectMtpDevice).mockRejectedValue(new Error('Exclusive access error'))
-            const { scanDevices, getDevice } = await loadModule()
 
             await scanDevices()
             // Wait for auto-connect to fail
             await vi.waitFor(() => {
-                const device = getDevice('mtp-336592896')
-                expect(device?.connectionState).toBe('error')
+                expect(getDevice('mtp-336592896')?.connectionState).toBe('error')
             })
 
             const device = getDevice('mtp-336592896')
@@ -242,7 +238,6 @@ describe('mtp-store', () => {
             vi.mocked(listMtpDevices).mockResolvedValue([mockDevice])
             vi.mocked(connectMtpDevice).mockResolvedValue(mockConnectedInfo)
             vi.mocked(disconnectMtpDevice).mockResolvedValue(undefined)
-            const { scanDevices, connect, disconnect, getDevice, hasConnectedDevices } = await loadModule()
 
             await scanDevices()
             await connect('mtp-336592896')
@@ -257,8 +252,6 @@ describe('mtp-store', () => {
         })
 
         it('handles disconnect for unknown device gracefully', async () => {
-            const { disconnect } = await loadModule()
-
             // Should not throw
             await disconnect('mtp-unknown')
         })
@@ -267,13 +260,11 @@ describe('mtp-store', () => {
             vi.mocked(listMtpDevices).mockResolvedValue([mockDevice])
             vi.mocked(connectMtpDevice).mockResolvedValue(mockConnectedInfo)
             vi.mocked(disconnectMtpDevice).mockResolvedValue(undefined)
-            const { scanDevices, disconnect, getDevice } = await loadModule()
 
             await scanDevices()
             // Wait for auto-connect to complete
             await vi.waitFor(() => {
-                const device = getDevice('mtp-336592896')
-                expect(device?.connectionState).toBe('connected')
+                expect(getDevice('mtp-336592896')?.connectionState).toBe('connected')
             })
 
             // First disconnect
@@ -289,7 +280,6 @@ describe('mtp-store', () => {
     describe('initialize', () => {
         it('sets up event listeners and scans devices', async () => {
             vi.mocked(listMtpDevices).mockResolvedValue([mockDevice])
-            const { initialize, isInitialized, getDevices } = await loadModule()
 
             await initialize()
 
@@ -305,7 +295,6 @@ describe('mtp-store', () => {
 
         it('is idempotent (only initializes once)', async () => {
             vi.mocked(listMtpDevices).mockResolvedValue([mockDevice])
-            const { initialize } = await loadModule()
 
             await initialize()
             await initialize()
@@ -331,8 +320,6 @@ describe('mtp-store', () => {
             vi.mocked(onMtpDeviceRemoved).mockResolvedValue(unlistenRemoved)
             vi.mocked(listMtpDevices).mockResolvedValue([mockDevice])
 
-            const { initialize, cleanup, isInitialized, getDevices } = await loadModule()
-
             await initialize()
             expect(isInitialized()).toBe(true)
             expect(getDevices()).toHaveLength(1)
@@ -351,15 +338,12 @@ describe('mtp-store', () => {
     })
 
     describe('getMtpVolumes', () => {
-        it('returns empty array when no devices', async () => {
-            const { getMtpVolumes } = await loadModule()
-
+        it('returns empty array when no devices', () => {
             expect(getMtpVolumes()).toEqual([])
         })
 
         it('returns single volume for disconnected device', async () => {
             vi.mocked(listMtpDevices).mockResolvedValue([mockDevice])
-            const { scanDevices, getMtpVolumes } = await loadModule()
 
             await scanDevices()
 
@@ -389,7 +373,6 @@ describe('mtp-store', () => {
             }
             vi.mocked(listMtpDevices).mockResolvedValue([mockDevice])
             vi.mocked(connectMtpDevice).mockResolvedValue(multiStorageInfo)
-            const { scanDevices, connect, getMtpVolumes } = await loadModule()
 
             await scanDevices()
             await connect('mtp-336592896')
@@ -421,7 +404,6 @@ describe('mtp-store', () => {
             }
             vi.mocked(listMtpDevices).mockResolvedValue([mockDevice])
             vi.mocked(connectMtpDevice).mockResolvedValue(readOnlyStorageInfo)
-            const { scanDevices, connect, getMtpVolumes } = await loadModule()
 
             await scanDevices()
             await connect('mtp-336592896')
@@ -434,7 +416,6 @@ describe('mtp-store', () => {
         it('uses device name for single storage device', async () => {
             vi.mocked(listMtpDevices).mockResolvedValue([mockDevice])
             vi.mocked(connectMtpDevice).mockResolvedValue(mockConnectedInfo)
-            const { scanDevices, connect, getMtpVolumes } = await loadModule()
 
             await scanDevices()
             await connect('mtp-336592896')
@@ -454,7 +435,6 @@ describe('mtp-store', () => {
                 return Promise.resolve(vi.fn())
             })
             vi.mocked(listMtpDevices).mockResolvedValue([mockDevice])
-            const { initialize, getDevice } = await loadModule()
 
             await initialize()
 
@@ -476,7 +456,6 @@ describe('mtp-store', () => {
             })
             vi.mocked(listMtpDevices).mockResolvedValue([mockDevice])
             vi.mocked(connectMtpDevice).mockResolvedValue(mockConnectedInfo)
-            const { initialize, connect, getDevice } = await loadModule()
 
             await initialize()
             await connect('mtp-336592896')
@@ -497,7 +476,6 @@ describe('mtp-store', () => {
                 return Promise.resolve(vi.fn())
             })
             vi.mocked(listMtpDevices).mockResolvedValue([mockDevice])
-            const { initialize, getDevice } = await loadModule()
 
             await initialize()
 
@@ -518,7 +496,6 @@ describe('mtp-store', () => {
                 return Promise.resolve(vi.fn())
             })
             vi.mocked(listMtpDevices).mockResolvedValue([])
-            const { initialize } = await loadModule()
 
             await initialize()
             expect(listMtpDevices).toHaveBeenCalledTimes(1)
@@ -538,7 +515,6 @@ describe('mtp-store', () => {
                 return Promise.resolve(vi.fn())
             })
             vi.mocked(listMtpDevices).mockResolvedValue([mockDevice])
-            const { initialize, getDevice } = await loadModule()
 
             await initialize()
             expect(getDevice('mtp-336592896')).toBeDefined()
@@ -555,7 +531,6 @@ describe('mtp-store', () => {
     describe('display name generation', () => {
         it('uses product name when available', async () => {
             vi.mocked(listMtpDevices).mockResolvedValue([mockDevice])
-            const { scanDevices, getDevice } = await loadModule()
 
             await scanDevices()
 
@@ -571,7 +546,6 @@ describe('mtp-store', () => {
                 manufacturer: 'Samsung',
             }
             vi.mocked(listMtpDevices).mockResolvedValue([deviceWithoutProduct])
-            const { scanDevices, getDevice } = await loadModule()
 
             await scanDevices()
 
@@ -586,7 +560,6 @@ describe('mtp-store', () => {
                 productId: 0x5678,
             }
             vi.mocked(listMtpDevices).mockResolvedValue([deviceWithoutNames])
-            const { scanDevices, getDevice } = await loadModule()
 
             await scanDevices()
 

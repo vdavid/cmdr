@@ -16,6 +16,15 @@ vi.mock('$lib/tauri-commands', async () => {
 })
 
 import { getAiStatus, getAiModelInfo, startAiDownload, cancelAiDownload, dismissAiOffer } from '$lib/tauri-commands'
+import {
+    getAiState,
+    initAiState,
+    handleDownload,
+    handleCancel,
+    handleDismiss,
+    handleGotIt,
+    resetForTesting,
+} from './ai-state.svelte'
 
 const mockModelInfo = {
     id: 'ministral-3b-instruct-q4km',
@@ -29,28 +38,22 @@ const mockModelInfo = {
 describe('ai-state', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        vi.resetModules()
+        resetForTesting()
     })
 
-    async function loadModule() {
-        return await import('./ai-state.svelte')
-    }
-
     describe('getAiState', () => {
-        it('returns initial hidden state', async () => {
-            const { getAiState } = await loadModule()
+        it('returns initial hidden state', () => {
             const state = getAiState()
             expect(state.notificationState).toBe('hidden')
             expect(state.downloadProgress).toBeNull()
             expect(state.progressText).toBe('')
-        }, 15_000)
+        })
     })
 
     describe('initAiState', () => {
         it('sets offer state when status is offer', async () => {
             vi.mocked(getAiStatus).mockResolvedValue('offer')
             vi.mocked(getAiModelInfo).mockResolvedValue(mockModelInfo)
-            const { initAiState, getAiState } = await loadModule()
 
             await initAiState()
 
@@ -61,7 +64,6 @@ describe('ai-state', () => {
         it('stays hidden when status is available', async () => {
             vi.mocked(getAiStatus).mockResolvedValue('available')
             vi.mocked(getAiModelInfo).mockResolvedValue(mockModelInfo)
-            const { initAiState, getAiState } = await loadModule()
 
             await initAiState()
 
@@ -72,7 +74,6 @@ describe('ai-state', () => {
         it('stays hidden when status is unavailable', async () => {
             vi.mocked(getAiStatus).mockResolvedValue('unavailable')
             vi.mocked(getAiModelInfo).mockResolvedValue(mockModelInfo)
-            const { initAiState, getAiState } = await loadModule()
 
             await initAiState()
 
@@ -91,7 +92,6 @@ describe('ai-state', () => {
                 .mockResolvedValueOnce(unlistenFns[3])
                 .mockResolvedValueOnce(unlistenFns[4])
 
-            const { initAiState } = await loadModule()
             const cleanup = await initAiState()
 
             expect(listen).toHaveBeenCalledTimes(5)
@@ -114,7 +114,6 @@ describe('ai-state', () => {
             vi.mocked(getAiModelInfo).mockResolvedValue(mockModelInfo)
             vi.mocked(startAiDownload).mockResolvedValue(undefined)
 
-            const { initAiState, handleDownload, getAiState } = await loadModule()
             await initAiState()
 
             await handleDownload()
@@ -129,7 +128,6 @@ describe('ai-state', () => {
             vi.mocked(getAiModelInfo).mockResolvedValue(mockModelInfo)
             vi.mocked(startAiDownload).mockRejectedValue(new Error('Network error'))
 
-            const { initAiState, handleDownload, getAiState } = await loadModule()
             await initAiState()
 
             await handleDownload()
@@ -146,7 +144,6 @@ describe('ai-state', () => {
             vi.mocked(getAiModelInfo).mockResolvedValue(mockModelInfo)
             vi.mocked(cancelAiDownload).mockResolvedValue(undefined)
 
-            const { initAiState, handleCancel, getAiState } = await loadModule()
             await initAiState()
 
             await handleCancel()
@@ -164,7 +161,6 @@ describe('ai-state', () => {
             vi.mocked(getAiModelInfo).mockResolvedValue(mockModelInfo)
             vi.mocked(dismissAiOffer).mockResolvedValue(undefined)
 
-            const { initAiState, handleDismiss, getAiState } = await loadModule()
             await initAiState()
             expect(getAiState().notificationState).toBe('offer')
 
@@ -179,7 +175,6 @@ describe('ai-state', () => {
         it('hides the notification', async () => {
             vi.mocked(getAiStatus).mockResolvedValue('offer')
             vi.mocked(getAiModelInfo).mockResolvedValue(mockModelInfo)
-            const { initAiState, handleGotIt, getAiState } = await loadModule()
             await initAiState()
 
             handleGotIt()
@@ -200,7 +195,6 @@ describe('ai-state', () => {
                 return Promise.resolve(() => {})
             })
 
-            const { initAiState, getAiState } = await loadModule()
             await initAiState()
 
             progressCallback?.({
@@ -224,7 +218,6 @@ describe('ai-state', () => {
                 return Promise.resolve(() => {})
             })
 
-            const { initAiState, getAiState } = await loadModule()
             await initAiState()
 
             progressCallback?.({ payload: { bytesDownloaded: 0, totalBytes: 0, speed: 0, etaSeconds: 0 } })
@@ -244,7 +237,6 @@ describe('ai-state', () => {
                 return Promise.resolve(() => {})
             })
 
-            const { initAiState, getAiState } = await loadModule()
             await initAiState()
 
             installingCallback?.()
@@ -265,7 +257,6 @@ describe('ai-state', () => {
                 return Promise.resolve(() => {})
             })
 
-            const { initAiState, getAiState } = await loadModule()
             await initAiState()
 
             completeCallback?.()
