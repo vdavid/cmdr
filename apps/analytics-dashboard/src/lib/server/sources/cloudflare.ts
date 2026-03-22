@@ -6,6 +6,7 @@ export interface DownloadRow {
     version: string
     arch: string
     country: string
+    day: string
     downloads: number
 }
 
@@ -49,6 +50,7 @@ export function parseDownloadRows(raw: AnalyticsEngineResponse): DownloadRow[] {
         version: String(row.version ?? row.blob1 ?? ''),
         arch: String(row.arch ?? row.blob2 ?? ''),
         country: String(row.country ?? row.blob3 ?? ''),
+        day: String(row.day ?? ''),
         downloads: Number(row.downloads ?? row.count ?? 0),
     }))
 }
@@ -70,11 +72,12 @@ export async function fetchCloudflareData(env: CloudflareEnv, range: TimeRange):
         const [downloadsResult, updateChecksResult] = await Promise.all([
             querySql(
                 env,
-                `SELECT blob1 AS version, blob2 AS arch, blob3 AS country, SUM(_sample_interval) AS downloads
+                `SELECT blob1 AS version, blob2 AS arch, blob3 AS country,
+                        toDate(timestamp) AS day, SUM(_sample_interval) AS downloads
                  FROM cmdr_downloads
                  WHERE timestamp > NOW() - INTERVAL ${interval}
-                 GROUP BY version, arch, country
-                 ORDER BY downloads DESC`
+                 GROUP BY version, arch, country, day
+                 ORDER BY day ASC, downloads DESC`
             ),
             querySql(
                 env,

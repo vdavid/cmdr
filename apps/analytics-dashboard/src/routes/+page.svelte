@@ -16,14 +16,90 @@
             .map(([x, y]) => ({ x, y }))
             .sort((a, b) => b.y - a.y)
     }
+
+    /** Returns sorted unique day strings and their unix timestamps from download rows. */
+    function getDayAxis(rows: DownloadRow[]): { days: string[]; timestamps: number[] } {
+        const days = [...new Set(rows.map((r) => r.day))].sort()
+        const timestamps = days.map((d) => new Date(d).getTime() / 1000)
+        return { days, timestamps }
+    }
+
+    /** Builds uPlot [timestamps[], values[]] for a filtered subset, aligned to the full day axis. */
+    function buildTimeline(
+        rows: DownloadRow[],
+        allDays: string[],
+        allTimestamps: number[]
+    ): [number[], number[]] {
+        const byDay = new Map<string, number>()
+        for (const row of rows) {
+            byDay.set(row.day, (byDay.get(row.day) ?? 0) + row.downloads)
+        }
+        return [allTimestamps, allDays.map((d) => byDay.get(d) ?? 0)]
+    }
+
+    /** Finds the max daily download value across a set of groups. */
+    function maxDailyAcrossGroups(
+        rows: DownloadRow[],
+        groupField: keyof DownloadRow,
+        groupKeys: string[],
+        allDays: string[]
+    ): number {
+        let max = 1
+        for (const key of groupKeys) {
+            const byDay = new Map<string, number>()
+            for (const row of rows) {
+                if (String(row[groupField]) === key) {
+                    byDay.set(row.day, (byDay.get(row.day) ?? 0) + row.downloads)
+                }
+            }
+            for (const v of byDay.values()) {
+                if (v > max) max = v
+            }
+        }
+        return max
+    }
 </script>
 
 <script lang="ts">
     import Chart from '$lib/components/Chart.svelte'
+    import MiniTimeline from '$lib/components/MiniTimeline.svelte'
 
     let { data } = $props()
 
     const ranges = ['24h', '7d', '30d'] as const
+
+    const regionNames = new Intl.DisplayNames(['en'], { type: 'region' })
+    function formatCountry(code: string): string {
+        const name = regionNames.of(code.toUpperCase())
+        return name && name !== code ? `${name} (${code.toUpperCase()})` : code
+    }
+
+    let zoomXMin: number | null = $state(null)
+    let zoomXMax: number | null = $state(null)
+    let hoveredCountry: string | null = $state(null)
+    let tooltipX = $state(0)
+    let tooltipY = $state(0)
+
+    function handleDownloadWheel(e: WheelEvent, dataXMin: number, dataXMax: number) {
+        e.preventDefault()
+        const zoomFactor = e.deltaY > 0 ? 1.3 : 1 / 1.3
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+        const fraction = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+
+        const curMin = zoomXMin ?? dataXMin
+        const curMax = zoomXMax ?? dataXMax
+        const range = curMax - curMin
+        const center = curMin + range * fraction
+        const newRange = Math.min(range * zoomFactor, dataXMax - dataXMin)
+
+        if (newRange >= dataXMax - dataXMin) {
+            zoomXMin = null
+            zoomXMax = null
+        } else {
+            zoomXMin = Math.max(dataXMin, center - newRange * fraction)
+            zoomXMax = Math.min(dataXMax, zoomXMin + newRange)
+        }
+    }
 
     function formatNumber(n: number): string {
         return n.toLocaleString('en-US')
@@ -186,6 +262,9 @@
                     {#if data.cloudflare.ok}
                         {@const cf = data.cloudflare.data}
                         {@const totalDownloads = cf.downloads.reduce((sum, r) => sum + r.downloads, 0)}
+                        {@const { days: allDays, timestamps: allTimestamps } = getDayAxis(cf.downloads)}
+                        {@const versions = aggregateBy(cf.downloads, 'version', 'downloads').slice(0, 8)}
+                        {@const versionMaxY = maxDailyAcrossGroups(cf.downloads, 'version', versions.map((v) => v.x), allDays)}
 
                         {@render metricRow([
                             { label: 'Downloads (Analytics Engine)', value: formatNumber(totalDownloads) },
@@ -194,7 +273,43 @@
                                 : []),
                         ])}
 
-                        {#if cf.downloads.length > 0}
+                        {#if cf.downloads.length > 0 && allDays.length > 1}
+                            <!-- Version timelines — scroll to zoom on x-axis -->
+                            <!-- svelte-ignore a11y_no_static_element_interactions -->
+                            <div
+                                class="space-y-3"
+                                onwheel={(e) => handleDownloadWheel(e, allTimestamps[0], allTimestamps[allTimestamps.length - 1])}
+                            >
+                                <h3 class="mb-2 text-sm font-medium text-text-secondary">By version</h3>
+                                {#each versions as version}
+                                    {@const timelineData = buildTimeline(
+                                        cf.downloads.filter((r) => r.version === version.x),
+                                        allDays,
+                                        allTimestamps
+                                    )}
+                                    <div>
+                                        <div class="flex items-baseline justify-between text-sm">
+                                            <span class="text-text-primary">{version.x}</span>
+                                            <span class="tabular-nums text-text-secondary">{formatNumber(version.y)}</span>
+                                        </div>
+                                        <MiniTimeline data={timelineData} maxY={versionMaxY} xMin={zoomXMin} xMax={zoomXMax} />
+                                    </div>
+                                {/each}
+                                <p class="text-xs text-text-tertiary">Scroll to zoom timeline</p>
+                            </div>
+
+                            <div class="grid gap-4 md:grid-cols-2">
+                                <div>
+                                    <h3 class="mb-2 text-sm font-medium text-text-secondary">By architecture</h3>
+                                    {@render metricTable(aggregateBy(cf.downloads, 'arch', 'downloads').slice(0, 8), 'Architecture', 'Downloads')}
+                                </div>
+                                <div class="relative">
+                                    <h3 class="mb-2 text-sm font-medium text-text-secondary">By country</h3>
+                                    {@render countryTable(cf.downloads, allDays, allTimestamps)}
+                                </div>
+                            </div>
+                        {:else if cf.downloads.length > 0}
+                            <!-- Fewer than 2 days of data — show tables only -->
                             <div class="grid gap-4 md:grid-cols-3">
                                 <div>
                                     <h3 class="mb-2 text-sm font-medium text-text-secondary">By version</h3>
@@ -206,7 +321,10 @@
                                 </div>
                                 <div>
                                     <h3 class="mb-2 text-sm font-medium text-text-secondary">By country</h3>
-                                    {@render metricTable(aggregateBy(cf.downloads, 'country', 'downloads').slice(0, 8), 'Country', 'Downloads')}
+                                    {@render metricTable(
+                                        aggregateBy(cf.downloads, 'country', 'downloads').slice(0, 8).map((item) => ({ ...item, x: formatCountry(item.x) })),
+                                        'Country', 'Downloads'
+                                    )}
                                 </div>
                             </div>
                         {/if}
@@ -449,6 +567,75 @@
             </tbody>
         </table>
     </div>
+{/snippet}
+
+{#snippet countryTable(downloads: DownloadRow[], allDays: string[], allTimestamps: number[])}
+    {@const countries = aggregateBy(downloads, 'country', 'downloads').slice(0, 8)}
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+            <thead>
+                <tr class="border-b border-border-subtle text-text-tertiary">
+                    <th class="pb-2 pr-4 font-medium">Country</th>
+                    <th class="pb-2 text-right font-medium">Downloads</th>
+                </tr>
+            </thead>
+            <tbody>
+                {#each countries as item}
+                    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+                    <tr
+                        class="border-b border-border-subtle/50"
+                        onmouseenter={(e: MouseEvent) => { hoveredCountry = item.x; tooltipX = e.clientX; tooltipY = e.clientY }}
+                        onmouseleave={() => { hoveredCountry = null }}
+                    >
+                        <td class="py-1.5 pr-4 text-text-primary">{formatCountry(item.x)}</td>
+                        <td class="py-1.5 text-right tabular-nums text-text-secondary">{formatNumber(item.y)}</td>
+                    </tr>
+                {/each}
+            </tbody>
+        </table>
+    </div>
+
+    {#if hoveredCountry}
+        {@const countryRows = downloads.filter((r) => r.country === hoveredCountry)}
+        {@const arches = aggregateBy(countryRows, 'arch', 'downloads')}
+        {@const countryVersions = aggregateBy(countryRows, 'version', 'downloads').slice(0, 5)}
+        {@const archMaxY = maxDailyAcrossGroups(countryRows, 'arch', arches.map((a) => a.x), allDays)}
+        {@const verMaxY = maxDailyAcrossGroups(countryRows, 'version', countryVersions.map((v) => v.x), allDays)}
+        <div
+            class="pointer-events-none fixed z-50 w-80 rounded-lg border border-border bg-surface-elevated p-3 shadow-lg"
+            style="left: {Math.max(16, tooltipX - 336)}px; top: {Math.max(16, tooltipY - 120)}px;"
+        >
+            <p class="mb-2 text-sm font-medium text-text-primary">{formatCountry(hoveredCountry)}</p>
+
+            {#if arches.length > 0}
+                <p class="mb-1 text-xs text-text-tertiary">By architecture</p>
+                {#each arches as arch}
+                    {@const td = buildTimeline(countryRows.filter((r) => r.arch === arch.x), allDays, allTimestamps)}
+                    <div class="mb-1">
+                        <div class="flex items-baseline justify-between text-xs">
+                            <span class="text-text-secondary">{arch.x}</span>
+                            <span class="tabular-nums text-text-tertiary">{formatNumber(arch.y)}</span>
+                        </div>
+                        <MiniTimeline data={td} height={48} maxY={archMaxY} xMin={zoomXMin} xMax={zoomXMax} />
+                    </div>
+                {/each}
+            {/if}
+
+            {#if countryVersions.length > 0}
+                <p class="mt-2 mb-1 text-xs text-text-tertiary">By version</p>
+                {#each countryVersions as ver}
+                    {@const td = buildTimeline(countryRows.filter((r) => r.version === ver.x), allDays, allTimestamps)}
+                    <div class="mb-1">
+                        <div class="flex items-baseline justify-between text-xs">
+                            <span class="text-text-secondary">{ver.x}</span>
+                            <span class="tabular-nums text-text-tertiary">{formatNumber(ver.y)}</span>
+                        </div>
+                        <MiniTimeline data={td} height={48} maxY={verMaxY} xMin={zoomXMin} xMax={zoomXMax} />
+                    </div>
+                {/each}
+            {/if}
+        </div>
+    {/if}
 {/snippet}
 
 {#snippet externalLinks(links: Array<{ label: string; href: string }>)}

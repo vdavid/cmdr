@@ -9,14 +9,15 @@ const mockEnv = {
 
 const sampleDownloadsResponse = {
     data: [
-        { version: '1.2.0', arch: 'aarch64', country: 'US', downloads: 150 },
-        { version: '1.2.0', arch: 'x86_64', country: 'DE', downloads: 80 },
-        { version: '1.1.0', arch: 'aarch64', country: 'GB', downloads: 45 },
+        { version: '1.2.0', arch: 'aarch64', country: 'US', day: '2025-03-20', downloads: 150 },
+        { version: '1.2.0', arch: 'x86_64', country: 'DE', day: '2025-03-20', downloads: 80 },
+        { version: '1.1.0', arch: 'aarch64', country: 'GB', day: '2025-03-21', downloads: 45 },
     ],
     meta: [
         { name: 'version', type: 'String' },
         { name: 'arch', type: 'String' },
         { name: 'country', type: 'String' },
+        { name: 'day', type: 'Date' },
         { name: 'downloads', type: 'UInt64' },
     ],
     rows: 3,
@@ -38,8 +39,8 @@ describe('parseDownloadRows', () => {
     it('parses download data with named columns', () => {
         const rows = parseDownloadRows(sampleDownloadsResponse)
         expect(rows).toHaveLength(3)
-        expect(rows[0]).toEqual({ version: '1.2.0', arch: 'aarch64', country: 'US', downloads: 150 })
-        expect(rows[2]).toEqual({ version: '1.1.0', arch: 'aarch64', country: 'GB', downloads: 45 })
+        expect(rows[0]).toEqual({ version: '1.2.0', arch: 'aarch64', country: 'US', day: '2025-03-20', downloads: 150 })
+        expect(rows[2]).toEqual({ version: '1.1.0', arch: 'aarch64', country: 'GB', day: '2025-03-21', downloads: 45 })
     })
 
     it('handles blob-style column names', () => {
@@ -49,7 +50,7 @@ describe('parseDownloadRows', () => {
             rows: 1,
         }
         const rows = parseDownloadRows(blobResponse)
-        expect(rows[0]).toEqual({ version: '1.2.0', arch: 'aarch64', country: 'US', downloads: 100 })
+        expect(rows[0]).toEqual({ version: '1.2.0', arch: 'aarch64', country: 'US', day: '', downloads: 100 })
     })
 
     it('handles empty data', () => {
