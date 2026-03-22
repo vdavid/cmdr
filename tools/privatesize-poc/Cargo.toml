@@ -1,0 +1,11 @@
+[package]
+name = "privatesize-poc"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[[bin]]
+name = "privatesize-poc"
+path = "main.rs"
