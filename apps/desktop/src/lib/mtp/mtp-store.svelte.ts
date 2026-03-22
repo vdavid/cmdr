@@ -399,14 +399,6 @@ export function cleanup(): void {
 }
 
 /**
- * Gets device state for use in reactive contexts.
- * This is a helper that returns the raw state for components.
- */
-export function getMtpState(): MtpStoreState {
-    return state
-}
-
-/**
  * Represents a single MTP volume (one storage on a device).
  * This is used to show each storage as a separate entry in the volume picker.
  */

@@ -47,6 +47,9 @@
         "file-explorer/views/full-list-utils.ts": {
             "reason": "measureDateColumnWidth depends on Canvas API for text measurement"
         },
+        "file-operations/mkfile/NewFileDialog.svelte": {
+            "reason": "UI modal, logic tested in new-file-operations.test.ts and filename-validation.test.ts"
+        },
         "file-operations/mkdir/NewFolderDialog.svelte": {
             "reason": "UI modal, logic tested in new-folder-utils.test.ts"
         },
