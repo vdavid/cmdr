@@ -25,7 +25,14 @@ Deployed to Cloudflare Pages at `analdash.getcmdr.com`. Auth via Cloudflare Acce
 | `svelte.config.js` | Adapter-cloudflare config |
 | `vitest.config.ts` | Vitest config for unit tests |
 
-## Data sources (milestone 2)
+## Running locally
+
+1. Copy `.env.example` to `.env` and fill in real values. Values containing `$` must use `\$` (Vite's dotenv expands
+   `$VAR` in double-quoted values).
+2. `pnpm install` from the repo root, then `pnpm dev:dashboard`.
+3. Open `http://localhost:4830`.
+
+## Data sources
 
 Each source gets its own module under `src/lib/server/sources/`:
 
@@ -81,9 +88,15 @@ All set as CF Pages secrets, never in code.
 
 **Decision**: uPlot for charts. **Why**: ~45 KB, fast canvas rendering, simple API. No wrapper needed.
 
-**Decision**: Local dev reads env vars from `process.env` (populated by Vite from `.env` files) when `platform?.env` is
-undefined. **Why**: CF Pages `platform.env` only exists in deployed environments. This fallback lets `pnpm dev:dashboard`
-work with live data by copying `.env.example` to `.env` and filling in real values.
+**Decision**: Local dev reads env vars via SvelteKit's `$env/dynamic/private` when `platform?.env` is undefined.
+**Why**: CF Pages `platform.env` only exists in deployed environments. SvelteKit's env module properly loads `.env` files
+with escaping support. Copy `.env.example` to `.env` and fill in real values.
+
+**Decision**: PostHog uses the HogQL query API (`/api/projects/{id}/query/`), not the legacy Trends API
+(`/insights/trend/`). **Why**: The Trends API returns "Legacy insight endpoints are not available" for newer accounts.
+
+**Decision**: Umami metrics use `type=path` (not `type=url`). **Why**: Umami's API changed the type name. `url` and
+`page` return 400, but `path`, `referrer`, `event`, and `country` work.
 
 ## Gotchas
 
