@@ -274,31 +274,29 @@
                         ])}
 
                         {#if cf.downloads.length > 0 && allDays.length > 1}
-                            <!-- Version timelines — scroll to zoom on x-axis -->
                             <!-- svelte-ignore a11y_no_static_element_interactions -->
                             <div
-                                class="space-y-3"
+                                class="grid gap-4 md:grid-cols-3"
                                 onwheel={(e) => handleDownloadWheel(e, allTimestamps[0], allTimestamps[allTimestamps.length - 1])}
                             >
-                                <h3 class="mb-2 text-sm font-medium text-text-secondary">By version</h3>
-                                {#each versions as version}
-                                    {@const timelineData = buildTimeline(
-                                        cf.downloads.filter((r) => r.version === version.x),
-                                        allDays,
-                                        allTimestamps
-                                    )}
-                                    <div>
-                                        <div class="flex items-baseline justify-between text-sm">
-                                            <span class="text-text-primary">{version.x}</span>
-                                            <span class="tabular-nums text-text-secondary">{formatNumber(version.y)}</span>
+                                <div>
+                                    <h3 class="mb-2 text-sm font-medium text-text-secondary">By version</h3>
+                                    {#each versions as version}
+                                        {@const timelineData = buildTimeline(
+                                            cf.downloads.filter((r) => r.version === version.x),
+                                            allDays,
+                                            allTimestamps
+                                        )}
+                                        <div class="mb-1">
+                                            <div class="flex items-baseline justify-between text-xs">
+                                                <span class="text-text-primary">{version.x}</span>
+                                                <span class="tabular-nums text-text-secondary">{formatNumber(version.y)}</span>
+                                            </div>
+                                            <MiniTimeline data={timelineData} height={48} maxY={versionMaxY} xMin={zoomXMin} xMax={zoomXMax} />
                                         </div>
-                                        <MiniTimeline data={timelineData} maxY={versionMaxY} xMin={zoomXMin} xMax={zoomXMax} />
-                                    </div>
-                                {/each}
-                                <p class="text-xs text-text-tertiary">Scroll to zoom timeline</p>
-                            </div>
-
-                            <div class="grid gap-4 md:grid-cols-2">
+                                    {/each}
+                                    <p class="text-xs text-text-tertiary">Scroll to zoom timeline</p>
+                                </div>
                                 <div>
                                     <h3 class="mb-2 text-sm font-medium text-text-secondary">By architecture</h3>
                                     {@render metricTable(aggregateBy(cf.downloads, 'arch', 'downloads').slice(0, 8), 'Architecture', 'Downloads')}
