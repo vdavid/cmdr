@@ -119,7 +119,7 @@
                     addToast(CrashReportToastContent, {
                         id: 'crash-report-sent',
                         level: 'info',
-                        timeoutMs: 6000,
+                        dismissal: 'persistent',
                     })
                     crashLog.info('Crash report auto-sent')
                 } catch (e) {

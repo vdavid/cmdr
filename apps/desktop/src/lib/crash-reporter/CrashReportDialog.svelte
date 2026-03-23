@@ -18,8 +18,15 @@
     let detailsExpanded = $state(false)
     let alwaysSend = $state(false)
     let sending = $state(false)
+    let copied = $state(false)
 
     const reportJson = $derived(JSON.stringify(report, null, 2))
+
+    async function handleCopy() {
+        await navigator.clipboard.writeText(reportJson)
+        copied = true
+        setTimeout(() => (copied = false), 2000)
+    }
 
     async function handleSend() {
         sending = true
@@ -79,7 +86,10 @@
 
         {#if detailsExpanded}
             <div class="details-container">
-                <pre class="details-json">{reportJson}</pre>
+                <button class="copy-button" onclick={() => void handleCopy()}>
+                    {copied ? 'Copied' : 'Copy'}
+                </button>
+                <pre class="details-json" style="user-select: text">{reportJson}</pre>
             </div>
         {/if}
 
@@ -142,11 +152,30 @@
     }
 
     .details-container {
+        position: relative;
         margin-bottom: var(--spacing-md);
         border: 1px solid var(--color-border-strong);
         border-radius: var(--radius-md);
         max-height: 200px;
         overflow-y: auto;
+    }
+
+    .copy-button {
+        position: sticky;
+        top: var(--spacing-xs);
+        float: right;
+        margin: var(--spacing-xs) var(--spacing-xs) 0 0;
+        padding: var(--spacing-xxs) var(--spacing-sm);
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+        cursor: default;
+        z-index: 1;
+    }
+
+    .copy-button:hover {
+        color: var(--color-text-primary);
     }
 
     .details-json {

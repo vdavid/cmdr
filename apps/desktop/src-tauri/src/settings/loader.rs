@@ -1,7 +1,9 @@
 //! Settings loading from tauri-plugin-store JSON file.
 //!
 //! Reads settings from the settings.json file created by tauri-plugin-store.
-//! Used to initialize app state (menu checkboxes, MCP config) on startup.
+//! The backend reads the file directly at startup so it can configure itself
+//! (MCP server, hidden files, indexing, crash reporter) before the frontend loads.
+//! The frontend owns all writes via tauri-plugin-store; this module is read-only.
 
 use serde::Deserialize;
 use std::fs;
@@ -38,9 +40,15 @@ pub struct Settings {
     #[serde(alias = "updates.crashReports", default)]
     #[allow(
         dead_code,
-        reason = "Crash reporter reads settings.json directly via cache_active_settings()"
+        reason = "Read by frontend; Rust Settings struct preserves it for crash reporter"
     )]
     pub crash_reports_enabled: Option<bool>,
+    #[serde(alias = "ai.provider", default)]
+    #[allow(dead_code, reason = "Included in crash reports for feature correlation")]
+    pub ai_provider: Option<String>,
+    #[serde(alias = "developer.verboseLogging", default)]
+    #[allow(dead_code, reason = "Included in crash reports for feature correlation")]
+    pub verbose_logging: Option<bool>,
 }
 
 fn default_show_hidden() -> bool {
@@ -56,6 +64,8 @@ impl Default for Settings {
             developer_mcp_port: None,
             indexing_enabled: None,
             crash_reports_enabled: None,
+            ai_provider: None,
+            verbose_logging: None,
         }
     }
 }
@@ -100,6 +110,8 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
     let indexing_enabled = json.get("indexing.enabled").and_then(|v| v.as_bool());
 
     let crash_reports_enabled = json.get("updates.crashReports").and_then(|v| v.as_bool());
+    let ai_provider = json.get("ai.provider").and_then(|v| v.as_str()).map(String::from);
+    let verbose_logging = json.get("developer.verboseLogging").and_then(|v| v.as_bool());
 
     Ok(Settings {
         show_hidden_files,
@@ -108,5 +120,7 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         developer_mcp_port,
         indexing_enabled,
         crash_reports_enabled,
+        ai_provider,
+        verbose_logging,
     })
 }

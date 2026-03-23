@@ -1,6 +1,5 @@
-//! Settings module for legacy settings loading.
+//! Settings module — loads settings from tauri-plugin-store's JSON file at startup.
 
-mod legacy;
+mod loader;
 
-// Re-export only what's used externally
-pub use legacy::load_settings;
+pub use loader::load_settings;

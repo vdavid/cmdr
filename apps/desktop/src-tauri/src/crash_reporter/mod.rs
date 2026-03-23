@@ -10,6 +10,7 @@ mod symbolicate;
 mod tests;
 
 use crate::config;
+use crate::settings;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -70,8 +71,8 @@ pub fn init<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
     let crash_path = data_dir.join(CRASH_FILE_NAME);
     let raw_crash_path = data_dir.join(RAW_CRASH_FILE_NAME);
 
-    // Cache active settings from settings.json for crash reports
-    cache_active_settings(&data_dir);
+    // Cache active settings for crash reports, using the same loader as the rest of the app
+    cache_active_settings(app);
 
     // Process any pending crash file from a previous session
     process_pending_crash(&crash_path, &raw_crash_path);
@@ -462,20 +463,18 @@ fn process_pending_crash(crash_json_path: &Path, raw_crash_path: &Path) {
     }
 }
 
-/// Read active settings from settings.json for crash report metadata.
-fn cache_active_settings(data_dir: &Path) {
-    let settings_path = data_dir.join("settings.json");
-    let settings = if let Ok(contents) = std::fs::read_to_string(&settings_path)
-        && let Ok(json) = serde_json::from_str::<serde_json::Value>(&contents)
-    {
-        ActiveSettings {
-            indexing_enabled: json.get("indexing.enabled").and_then(|v| v.as_bool()),
-            ai_provider: json.get("ai.provider").and_then(|v| v.as_str()).map(String::from),
-            mcp_enabled: json.get("developer.mcpEnabled").and_then(|v| v.as_bool()),
-            verbose_logging: json.get("developer.verboseLogging").and_then(|v| v.as_bool()),
-        }
-    } else {
-        ActiveSettings::default()
+/// Cache active settings for crash reports, using the app's settings loader.
+/// This piggybacks on `settings::load_settings` so defaults stay in sync.
+/// Fields that are `None` in the settings struct mean "user hasn't changed this" —
+/// the frontend registry owns the defaults. We pass through `None` as-is; the crash
+/// report consumer can interpret null as "default."
+fn cache_active_settings<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
+    let s = settings::load_settings(app);
+    let settings = ActiveSettings {
+        indexing_enabled: s.indexing_enabled,
+        ai_provider: s.ai_provider,
+        mcp_enabled: s.developer_mcp_enabled,
+        verbose_logging: s.verbose_logging,
     };
     let _ = CACHED_SETTINGS.set(settings);
 }
@@ -492,7 +491,33 @@ fn uptime_secs() -> f64 {
 }
 
 fn current_thread_count() -> usize {
-    // Read /proc/self/status on Linux, use sysinfo on macOS as best effort
+    #[cfg(target_os = "macos")]
+    {
+        // Mach API: get thread list for the current task, return the count.
+        unsafe extern "C" {
+            fn mach_task_self() -> libc::mach_port_t;
+        }
+        unsafe {
+            let mut thread_list: libc::mach_port_t = 0;
+            let mut thread_count: u32 = 0;
+            let kr = libc::task_threads(
+                mach_task_self(),
+                std::ptr::addr_of_mut!(thread_list) as *mut *mut libc::mach_port_t,
+                std::ptr::addr_of_mut!(thread_count) as *mut u32,
+            );
+            if kr == libc::KERN_SUCCESS {
+                // Deallocate the thread list (we only needed the count)
+                libc::vm_deallocate(
+                    mach_task_self(),
+                    thread_list as libc::vm_address_t,
+                    (thread_count as usize) * size_of::<libc::mach_port_t>(),
+                );
+                thread_count as usize
+            } else {
+                0
+            }
+        }
+    }
     #[cfg(target_os = "linux")]
     {
         if let Ok(status) = std::fs::read_to_string("/proc/self/status") {
@@ -504,10 +529,8 @@ fn current_thread_count() -> usize {
         }
         0
     }
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
     {
-        // On macOS, getting thread count without sysinfo is non-trivial.
-        // Return 0 rather than pulling in a heavy dependency just for this.
         0
     }
 }

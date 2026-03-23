@@ -6,8 +6,8 @@ Thin read-only settings loader used during Rust startup. The frontend owns all s
 
 | File | Purpose |
 |---|---|
-| `mod.rs` | Re-exports `load_settings` from `legacy` |
-| `legacy.rs` | `Settings` struct + `load_settings`: reads `settings.json`, falls back to defaults |
+| `mod.rs` | Re-exports `load_settings` from `loader` |
+| `loader.rs` | `Settings` struct + `load_settings`: reads `settings.json`, falls back to defaults |
 
 ## Settings struct
 
@@ -19,6 +19,8 @@ Settings {
     developer_mcp_port: Option<u16>,
     indexing_enabled: Option<bool>,
     crash_reports_enabled: Option<bool>,  // from "updates.crashReports"
+    ai_provider: Option<String>,           // from "ai.provider", for crash reports
+    verbose_logging: Option<bool>,         // from "developer.verboseLogging", for crash reports
 }
 ```
 
@@ -43,7 +45,7 @@ These are top-level keys — the dot is part of the key name, not a nesting sepa
 ## Key patterns
 
 - **One-way read only.** This module never writes. All writes go through the frontend's settings store.
-- Module is named `legacy` because ideally the frontend would push relevant values via IPC at startup rather than requiring Rust to parse the store file directly.
+- Direct file reading is the correct design — multiple backend systems (MCP, indexing, crash reporter) need settings before the frontend loads.
 - `full_disk_access_choice` is marked `#[allow(dead_code)]` — it is persisted by the frontend but the backend takes no action on it.
 - Falls back gracefully: missing file → use `Default`.
 
