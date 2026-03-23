@@ -525,6 +525,16 @@
     // Finalizing state (read_dir done, now sorting/caching)
     let finalizingCount = $state<number | undefined>(undefined)
     let unlistenReadComplete: UnlistenFn | undefined
+    function resetLoadingState(errorMessage?: string, preserveTotalCount = false) {
+        if (errorMessage) error = errorMessage
+        listingId = ''
+        if (!preserveTotalCount) totalCount = 0
+        loading = false
+        openingFolder = false
+        loadingCount = undefined
+        finalizingCount = undefined
+    }
+
     // Sync status map for visible files
     let syncStatusMap = $state<Record<string, SyncStatus>>({})
     const syncPollIntervalMs = 3000
@@ -775,13 +785,7 @@
                     if (event.payload.listingId === newListingId && thisGeneration === loadGeneration) {
                         // For MTP volumes, trigger fallback on error (device likely disconnected)
                         if (isMtpView) {
-                            error = event.payload.message
-                            listingId = ''
-                            totalCount = 0
-                            loading = false
-                            openingFolder = false
-                            loadingCount = undefined
-                            finalizingCount = undefined
+                            resetLoadingState(event.payload.message)
                             log.warn('MTP listing error, triggering fallback: {error}', {
                                 error: event.payload.message,
                             })
@@ -803,13 +807,7 @@
                                 })
                             } else {
                                 // Path exists but has another error (permission denied, etc.)
-                                error = event.payload.message
-                                listingId = ''
-                                totalCount = 0
-                                loading = false
-                                openingFolder = false
-                                loadingCount = undefined
-                                finalizingCount = undefined
+                                resetLoadingState(event.payload.message)
                             }
                         })
                     }
@@ -817,11 +815,7 @@
                 listen<ListingCancelledEvent>('listing-cancelled', (event) => {
                     if (event.payload.listingId === newListingId && thisGeneration === loadGeneration) {
                         // Cancellation handled by onCancelLoading callback
-                        listingId = ''
-                        loading = false
-                        openingFolder = false
-                        loadingCount = undefined
-                        finalizingCount = undefined
+                        resetLoadingState(undefined, true)
                     }
                 }),
             ])
@@ -854,13 +848,7 @@
             }
         } catch (e) {
             if (thisGeneration !== loadGeneration) return
-            error = e instanceof Error ? e.message : String(e)
-            listingId = ''
-            totalCount = 0
-            loading = false
-            openingFolder = false
-            loadingCount = undefined
-            finalizingCount = undefined
+            resetLoadingState(e instanceof Error ? e.message : String(e))
         }
     }
 

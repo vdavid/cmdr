@@ -63,29 +63,23 @@ export async function initReactiveSettings(): Promise<void> {
 
             switch (id) {
                 case 'appearance.uiDensity':
-                    log.debug('Applying UI density change: {value}', { value })
                     uiDensity = value as UiDensity
                     break
                 case 'appearance.dateTimeFormat':
-                    log.debug('Applying date/time format change: {value}', { value })
                     dateTimeFormat = value as DateTimeFormat
                     break
                 case 'appearance.customDateTimeFormat':
-                    log.debug('Applying custom date format change: {value}', { value })
                     customDateTimeFormat = value as string
                     break
                 case 'appearance.fileSizeFormat':
-                    log.debug('Applying file size format change: {value}', { value })
                     fileSizeFormat = value as FileSizeFormat
                     break
                 case 'appearance.useAppIconsForDocuments':
-                    log.debug('Applying app icons for documents change: {value}', { value })
                     useAppIconsForDocuments = value as boolean
                     // Clear the icon cache so icons are re-fetched with the new setting
                     void clearExtensionIconCache()
                     break
                 case 'listing.directorySortMode':
-                    log.debug('Applying directory sort mode change: {value}', { value })
                     directorySortMode = value as DirectorySortMode
                     break
                 case 'appearance.appColor':

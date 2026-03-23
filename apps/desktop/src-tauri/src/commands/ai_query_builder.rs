@@ -94,11 +94,11 @@ pub fn time_to_range(t: &str) -> (Option<u64>, Option<u64>) {
         "last_month" => (Some(first_of_last_month(now)), Some(first_of_this_month(now))),
         "this_quarter" => (Some(first_of_this_quarter(now)), None),
         "last_quarter" => (Some(first_of_last_quarter(now)), Some(first_of_this_quarter(now))),
-        "this_year" => (Some(jan1_this_year(now)), None),
-        "last_year" => (Some(jan1_last_year(now)), Some(jan1_this_year(now))),
-        "recent" => (Some(three_months_ago(now)), None),
-        "last_3_months" => (Some(three_months_ago(now)), None),
-        "last_6_months" => (Some(six_months_ago(now)), None),
+        "this_year" => (Some(jan1(now, 0)), None),
+        "last_year" => (Some(jan1(now, -1)), Some(jan1(now, 0))),
+        "recent" => (Some(n_months_ago(now, 3)), None),
+        "last_3_months" => (Some(n_months_ago(now, 3)), None),
+        "last_6_months" => (Some(n_months_ago(now, 6)), None),
         "old" => (None, Some(one_year_ago(now))),
         _ => {
             if is_year(t) {
@@ -194,42 +194,20 @@ fn first_of_last_quarter(now: OffsetDateTime) -> u64 {
     to_timestamp(first.with_hms(0, 0, 0).expect("valid").assume_utc())
 }
 
-fn jan1_this_year(now: OffsetDateTime) -> u64 {
-    let first = time::Date::from_calendar_date(now.year(), time::Month::January, 1).unwrap_or(now.date());
+fn jan1(now: OffsetDateTime, year_offset: i32) -> u64 {
+    let first = time::Date::from_calendar_date(now.year() + year_offset, time::Month::January, 1).unwrap_or(now.date());
     to_timestamp(first.with_hms(0, 0, 0).expect("valid").assume_utc())
 }
 
-fn jan1_last_year(now: OffsetDateTime) -> u64 {
-    let first = time::Date::from_calendar_date(now.year() - 1, time::Month::January, 1).unwrap_or(now.date());
-    to_timestamp(first.with_hms(0, 0, 0).expect("valid").assume_utc())
-}
-
-fn three_months_ago(now: OffsetDateTime) -> u64 {
-    let date = now.date();
-    // Subtract 3 months
-    let mut year = date.year();
-    let mut month_num = date.month() as u8;
-    if month_num <= 3 {
-        year -= 1;
-        month_num += 9; // wrap around
-    } else {
-        month_num -= 3;
-    }
-    let month = time::Month::try_from(month_num).unwrap_or(time::Month::January);
-    let day = date.day().min(days_in_month(year, month));
-    let target = time::Date::from_calendar_date(year, month, day).unwrap_or(date);
-    to_timestamp(target.with_hms(0, 0, 0).expect("valid").assume_utc())
-}
-
-fn six_months_ago(now: OffsetDateTime) -> u64 {
+fn n_months_ago(now: OffsetDateTime, n: u8) -> u64 {
     let date = now.date();
     let mut year = date.year();
     let mut month_num = date.month() as u8;
-    if month_num <= 6 {
+    if month_num <= n {
         year -= 1;
-        month_num += 6; // wrap around
+        month_num += 12 - n;
     } else {
-        month_num -= 6;
+        month_num -= n;
     }
     let month = time::Month::try_from(month_num).unwrap_or(time::Month::January);
     let day = date.day().min(days_in_month(year, month));

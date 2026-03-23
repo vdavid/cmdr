@@ -23,8 +23,9 @@ export interface DashboardData {
     license: SourceResult<LicenseData>
 }
 
-function missingEnv(name: string): SourceResult<never> {
-    return { ok: false, error: `${name}: not configured (missing env vars)` }
+/** Runs `fn` if `envKey` is set, otherwise returns a "not configured" error. */
+function guardedFetch<T>(envKey: string | undefined, name: string, fn: () => Promise<SourceResult<T>>): Promise<SourceResult<T>> {
+    return envKey ? fn() : Promise.resolve({ ok: false, error: `${name}: not configured (missing env vars)` })
 }
 
 /** Returns the env object from CF Pages platform, falling back to $env/dynamic/private for local dev. */
@@ -59,41 +60,27 @@ export async function fetchDashboardData(
     const env = await resolveEnv(platform)
 
     const [umami, cloudflare, paddle, github, posthog, license] = await Promise.all([
-        env?.UMAMI_API_URL
-            ? fetchUmamiData(
-                  {
-                      UMAMI_API_URL: env.UMAMI_API_URL,
-                      UMAMI_USERNAME: env.UMAMI_USERNAME,
-                      UMAMI_PASSWORD: env.UMAMI_PASSWORD,
-                      UMAMI_WEBSITE_ID: env.UMAMI_WEBSITE_ID,
-                      UMAMI_BLOG_WEBSITE_ID: env.UMAMI_BLOG_WEBSITE_ID,
-                  },
-                  range
-              )
-            : Promise.resolve(missingEnv('Umami')),
-        env?.CLOUDFLARE_API_TOKEN
-            ? fetchCloudflareData(
-                  { CLOUDFLARE_API_TOKEN: env.CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID },
-                  range
-              )
-            : Promise.resolve(missingEnv('Cloudflare')),
-        env?.PADDLE_API_KEY_LIVE
-            ? fetchPaddleData({ PADDLE_API_KEY_LIVE: env.PADDLE_API_KEY_LIVE }, range)
-            : Promise.resolve(missingEnv('Paddle')),
+        guardedFetch(env?.UMAMI_API_URL, 'Umami', () =>
+            fetchUmamiData({
+                UMAMI_API_URL: env.UMAMI_API_URL,
+                UMAMI_USERNAME: env.UMAMI_USERNAME,
+                UMAMI_PASSWORD: env.UMAMI_PASSWORD,
+                UMAMI_WEBSITE_ID: env.UMAMI_WEBSITE_ID,
+                UMAMI_BLOG_WEBSITE_ID: env.UMAMI_BLOG_WEBSITE_ID,
+            }, range)),
+        guardedFetch(env?.CLOUDFLARE_API_TOKEN, 'Cloudflare', () =>
+            fetchCloudflareData({ CLOUDFLARE_API_TOKEN: env.CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID }, range)),
+        guardedFetch(env?.PADDLE_API_KEY_LIVE, 'Paddle', () =>
+            fetchPaddleData({ PADDLE_API_KEY_LIVE: env.PADDLE_API_KEY_LIVE }, range)),
         fetchGitHubData({ GITHUB_TOKEN: env?.GITHUB_TOKEN }),
-        env?.POSTHOG_API_KEY
-            ? fetchPostHogData(
-                  {
-                      POSTHOG_API_KEY: env.POSTHOG_API_KEY,
-                      POSTHOG_PROJECT_ID: env.POSTHOG_PROJECT_ID,
-                      POSTHOG_API_URL: env.POSTHOG_API_URL,
-                  },
-                  range
-              )
-            : Promise.resolve(missingEnv('PostHog')),
-        env?.LICENSE_SERVER_ADMIN_TOKEN
-            ? fetchLicenseData({ LICENSE_SERVER_ADMIN_TOKEN: env.LICENSE_SERVER_ADMIN_TOKEN })
-            : Promise.resolve(missingEnv('License server')),
+        guardedFetch(env?.POSTHOG_API_KEY, 'PostHog', () =>
+            fetchPostHogData({
+                POSTHOG_API_KEY: env.POSTHOG_API_KEY,
+                POSTHOG_PROJECT_ID: env.POSTHOG_PROJECT_ID,
+                POSTHOG_API_URL: env.POSTHOG_API_URL,
+            }, range)),
+        guardedFetch(env?.LICENSE_SERVER_ADMIN_TOKEN, 'License server', () =>
+            fetchLicenseData({ LICENSE_SERVER_ADMIN_TOKEN: env.LICENSE_SERVER_ADMIN_TOKEN })),
     ])
 
     return { range, updatedAt: new Date().toISOString(), umami, cloudflare, paddle, github, posthog, license }

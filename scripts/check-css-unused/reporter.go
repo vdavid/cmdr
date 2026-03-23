@@ -90,44 +90,24 @@ func isLikelyExternalClass(className string) bool {
 
 // Report prints the issues to stdout.
 func (issues *Issues) Report(verbose bool) {
-	if len(issues.UnusedVars) > 0 {
-		fmt.Printf("%s\n=== Unused CSS variables ===%s\n", colorYellow, colorReset)
-		for _, varName := range issues.UnusedVars {
-			if verbose {
-				files := issues.VarDefs[varName]
-				fmt.Printf("  --%s  (defined in: %s)\n", varName, strings.Join(files, ", "))
-			} else {
-				fmt.Printf("  --%s\n", varName)
-			}
-		}
-		fmt.Println()
-	}
+	printIssueSection("Unused CSS variables", issues.UnusedVars, "--", issues.VarDefs, "defined in", verbose)
+	printIssueSection("Unused CSS classes", issues.UnusedClasses, ".", issues.ClassDefs, "defined in", verbose)
+	printIssueSection("Undefined CSS classes (used but not defined)", issues.UndefinedClasses, ".", issues.ClassUseLocs, "used in", verbose)
+}
 
-	if len(issues.UnusedClasses) > 0 {
-		fmt.Printf("%s\n=== Unused CSS classes ===%s\n", colorYellow, colorReset)
-		for _, className := range issues.UnusedClasses {
-			if verbose {
-				files := issues.ClassDefs[className]
-				fmt.Printf("  .%s  (defined in: %s)\n", className, strings.Join(files, ", "))
-			} else {
-				fmt.Printf("  .%s\n", className)
-			}
-		}
-		fmt.Println()
+func printIssueSection(title string, items []string, prefix string, locs map[string][]string, locLabel string, verbose bool) {
+	if len(items) == 0 {
+		return
 	}
-
-	if len(issues.UndefinedClasses) > 0 {
-		fmt.Printf("%s\n=== Undefined CSS classes (used but not defined) ===%s\n", colorYellow, colorReset)
-		for _, className := range issues.UndefinedClasses {
-			if verbose {
-				files := issues.ClassUseLocs[className]
-				fmt.Printf("  .%s  (used in: %s)\n", className, strings.Join(files, ", "))
-			} else {
-				fmt.Printf("  .%s\n", className)
-			}
+	fmt.Printf("%s\n=== %s ===%s\n", colorYellow, title, colorReset)
+	for _, name := range items {
+		if verbose {
+			fmt.Printf("  %s%s  (%s: %s)\n", prefix, name, locLabel, strings.Join(locs[name], ", "))
+		} else {
+			fmt.Printf("  %s%s\n", prefix, name)
 		}
-		fmt.Println()
 	}
+	fmt.Println()
 }
 
 // HasIssues returns true if any issues were found.

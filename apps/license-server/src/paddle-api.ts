@@ -135,17 +135,22 @@ async function fetchSubscription(
     return extractSubscriptionData(json)
 }
 
+/** Unwraps the `{ data: ... }` envelope common to all Paddle API responses. */
+function unwrapPaddleData(json: unknown): Record<string, unknown> | null {
+    if (!json || typeof json !== 'object') return null
+    const obj = json as Record<string, unknown>
+    if (!obj.data || typeof obj.data !== 'object') return null
+    return obj.data as Record<string, unknown>
+}
+
 /** Extract transaction data from Paddle API response */
 function extractTransactionData(json: unknown): {
     subscriptionId: string | undefined
     customData: { organizationName?: string } | undefined
     customerId: string | null
 } | null {
-    if (!json || typeof json !== 'object') return null
-    const obj = json as Record<string, unknown>
-
-    if (!obj.data || typeof obj.data !== 'object') return null
-    const data = obj.data as Record<string, unknown>
+    const data = unwrapPaddleData(json)
+    if (!data) return null
 
     const subscriptionId = typeof data.subscription_id === 'string' ? data.subscription_id : undefined
     const customerId = typeof data.customer_id === 'string' ? data.customer_id : null
@@ -166,11 +171,8 @@ function extractSubscriptionData(json: unknown): {
     status: 'active' | 'expired' | 'canceled'
     expiresAt: string | undefined
 } | null {
-    if (!json || typeof json !== 'object') return null
-    const obj = json as Record<string, unknown>
-
-    if (!obj.data || typeof obj.data !== 'object') return null
-    const data = obj.data as Record<string, unknown>
+    const data = unwrapPaddleData(json)
+    if (!data) return null
 
     const paddleStatus = typeof data.status === 'string' ? data.status : 'unknown'
     const status = mapPaddleStatus(paddleStatus)
@@ -248,11 +250,8 @@ export async function getCustomerDetails(customerId: string, config: PaddleConfi
 
 /** Extract customer data from Paddle API response */
 function extractCustomerData(json: unknown): CustomerDetails | null {
-    if (!json || typeof json !== 'object') return null
-    const obj = json as Record<string, unknown>
-
-    if (!obj.data || typeof obj.data !== 'object') return null
-    const data = obj.data as Record<string, unknown>
+    const data = unwrapPaddleData(json)
+    if (!data) return null
 
     const email = typeof data.email === 'string' ? data.email : null
     if (!email) return null

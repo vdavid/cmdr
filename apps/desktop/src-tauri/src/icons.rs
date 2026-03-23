@@ -13,7 +13,7 @@ use rayon::prelude::*;
 use std::collections::HashMap;
 use std::io::Cursor;
 use std::path::{Path, PathBuf};
-use std::sync::RwLock;
+use std::sync::{LazyLock, RwLock};
 
 // file_icon_provider uses GTK on Linux which requires main-thread access and
 // fails silently from rayon/tokio threads. On Linux we use freedesktop-icons instead.
@@ -21,57 +21,33 @@ use std::sync::RwLock;
 use file_icon_provider::get_file_icon;
 
 /// Cache for generated icons (icon_id -> base64 WebP data URL)
-static ICON_CACHE: RwLock<Option<HashMap<String, String>>> = RwLock::new(None);
-
-/// Initializes the icon cache if not already done.
-fn ensure_cache() {
-    let cache = ICON_CACHE.read().unwrap();
-    if cache.is_some() {
-        return;
-    }
-    drop(cache);
-    let mut cache = ICON_CACHE.write().unwrap();
-    if cache.is_none() {
-        *cache = Some(HashMap::new());
-    }
-}
+static ICON_CACHE: LazyLock<RwLock<HashMap<String, String>>> = LazyLock::new(|| RwLock::new(HashMap::new()));
 
 /// Gets cached icon data URL for the given icon ID, if available.
 fn get_cached_icon(icon_id: &str) -> Option<String> {
-    ensure_cache();
-    let cache = ICON_CACHE.read().unwrap();
-    cache.as_ref()?.get(icon_id).cloned()
+    ICON_CACHE.read().unwrap().get(icon_id).cloned()
 }
 
 /// Caches an icon data URL.
 fn cache_icon(icon_id: String, data_url: String) {
-    ensure_cache();
-    let mut cache = ICON_CACHE.write().unwrap();
-    if let Some(ref mut map) = *cache {
-        map.insert(icon_id, data_url);
-    }
+    ICON_CACHE.write().unwrap().insert(icon_id, data_url);
 }
 
 /// Clears all cached icons for extension-based entries.
 /// Called when the "use app icons for documents" setting changes.
 pub fn clear_extension_icon_cache() {
-    ensure_cache();
-    let mut cache = ICON_CACHE.write().unwrap();
-    if let Some(ref mut map) = *cache {
-        // Only remove extension-based icons (ext:xxx), keep directory icons
-        map.retain(|key, _| !key.starts_with("ext:"));
-    }
+    // Only remove extension-based icons (ext:xxx), keep directory icons
+    ICON_CACHE.write().unwrap().retain(|key, _| !key.starts_with("ext:"));
 }
 
 /// Clears all cached icons for directory entries (`dir`, `symlink-dir`, `path:*`).
 /// Called when the system theme or accent color changes, since macOS folder icons
 /// are tinted by the current appearance.
 pub fn clear_directory_icon_cache() {
-    ensure_cache();
-    let mut cache = ICON_CACHE.write().unwrap();
-    if let Some(ref mut map) = *cache {
-        map.retain(|key, _| key != "dir" && key != "symlink-dir" && !key.starts_with("path:"));
-    }
+    ICON_CACHE
+        .write()
+        .unwrap()
+        .retain(|key, _| key != "dir" && key != "symlink-dir" && !key.starts_with("path:"));
 }
 
 /// Converts an image to a base64 WebP data URL.

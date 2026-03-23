@@ -349,38 +349,19 @@ pub(crate) fn format_size(bytes: u64) -> String {
     const MB: u64 = 1_024 * KB;
     const GB: u64 = 1_024 * MB;
     const TB: u64 = 1_024 * GB;
+    const UNITS: &[(u64, &str)] = &[(TB, "TB"), (GB, "GB"), (MB, "MB"), (KB, "KB")];
 
-    if bytes >= TB {
-        let val = bytes as f64 / TB as f64;
-        if val.fract() == 0.0 {
-            format!("{} TB", val as u64)
-        } else {
-            format!("{val:.1} TB")
+    for &(threshold, unit) in UNITS {
+        if bytes >= threshold {
+            let val = bytes as f64 / threshold as f64;
+            return if val.fract() == 0.0 {
+                format!("{} {unit}", val as u64)
+            } else {
+                format!("{val:.1} {unit}")
+            };
         }
-    } else if bytes >= GB {
-        let val = bytes as f64 / GB as f64;
-        if val.fract() == 0.0 {
-            format!("{} GB", val as u64)
-        } else {
-            format!("{val:.1} GB")
-        }
-    } else if bytes >= MB {
-        let val = bytes as f64 / MB as f64;
-        if val.fract() == 0.0 {
-            format!("{} MB", val as u64)
-        } else {
-            format!("{val:.1} MB")
-        }
-    } else if bytes >= KB {
-        let val = bytes as f64 / KB as f64;
-        if val.fract() == 0.0 {
-            format!("{} KB", val as u64)
-        } else {
-            format!("{val:.1} KB")
-        }
-    } else {
-        format!("{bytes} B")
     }
+    format!("{bytes} B")
 }
 
 pub(crate) fn format_timestamp(ts: u64) -> String {
