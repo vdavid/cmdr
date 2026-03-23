@@ -503,7 +503,7 @@ fn current_thread_count() -> usize {
             let kr = libc::task_threads(
                 mach_task_self(),
                 std::ptr::addr_of_mut!(thread_list) as *mut *mut libc::mach_port_t,
-                std::ptr::addr_of_mut!(thread_count) as *mut u32,
+                &raw mut thread_count,
             );
             if kr == libc::KERN_SUCCESS {
                 // Deallocate the thread list (we only needed the count)

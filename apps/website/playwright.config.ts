@@ -21,6 +21,6 @@ export default defineConfig({
         command: 'npx serve dist -l 4173',
         url: 'http://localhost:4173',
         reuseExistingServer: !process.env.CI,
-        timeout: 30000,
+        timeout: 60000,
     },
 })

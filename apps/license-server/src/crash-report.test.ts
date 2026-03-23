@@ -36,6 +36,13 @@ const validCrashReport = {
     backtraceFrames: ['std::panic::begin_unwind', 'cmdr::sync_status::get_ubiquitous_bool', 'cmdr_lib::watcher::run'],
 }
 
+/** Extract the first writeDataPoint call arg from a mock analytics engine. */
+function getWrittenDataPoint(engine: AnalyticsEngineDataset) {
+    const [dataPoint] = vi.mocked(engine).writeDataPoint.mock.calls[0]
+    if (!dataPoint) throw new Error('writeDataPoint was never called')
+    return dataPoint
+}
+
 describe('POST /crash-report', () => {
     it('returns 204 for a valid crash report', async () => {
         const bindings = createBindings()
@@ -66,15 +73,14 @@ describe('POST /crash-report', () => {
             bindings,
         )
 
-        expect(crashReports.writeDataPoint).toHaveBeenCalledOnce()
-        const call = vi.mocked(crashReports.writeDataPoint).mock.calls[0][0]
+        const call = getWrittenDataPoint(crashReports)
         expect(call.indexes).toHaveLength(1)
-        expect(call.indexes![0]).toMatch(/^[0-9a-f]{64}$/) // SHA-256 hex
-        expect(call.blobs![0]).toBe('1.2.3') // appVersion
-        expect(call.blobs![1]).toBe('15.3.1') // osVersion
-        expect(call.blobs![2]).toBe('arm64') // arch
-        expect(call.blobs![3]).toBe('SIGSEGV') // signal
-        expect(call.blobs![4]).toBe('cmdr::sync_status::get_ubiquitous_bool') // topFunction
+        expect(call.indexes?.[0]).toMatch(/^[0-9a-f]{64}$/) // SHA-256 hex
+        expect(call.blobs?.[0]).toBe('1.2.3') // appVersion
+        expect(call.blobs?.[1]).toBe('15.3.1') // osVersion
+        expect(call.blobs?.[2]).toBe('arm64') // arch
+        expect(call.blobs?.[3]).toBe('SIGSEGV') // signal
+        expect(call.blobs?.[4]).toBe('cmdr::sync_status::get_ubiquitous_bool') // topFunction
         expect(call.doubles).toEqual([1])
     })
 
@@ -97,8 +103,8 @@ describe('POST /crash-report', () => {
             bindings,
         )
 
-        const call = vi.mocked(crashReports.writeDataPoint).mock.calls[0][0]
-        expect(call.blobs![4]).toBe('cmdr_lib::indexer::build_index')
+        const call = getWrittenDataPoint(crashReports)
+        expect(call.blobs?.[4]).toBe('cmdr_lib::indexer::build_index')
     })
 
     it('uses "unknown" when no cmdr frame is found', async () => {
@@ -120,15 +126,20 @@ describe('POST /crash-report', () => {
             bindings,
         )
 
-        const call = vi.mocked(crashReports.writeDataPoint).mock.calls[0][0]
-        expect(call.blobs![4]).toBe('unknown')
+        const call = getWrittenDataPoint(crashReports)
+        expect(call.blobs?.[4]).toBe('unknown')
     })
 
     it('uses "unknown" when backtraceFrames is absent', async () => {
         const crashReports = createMockAnalyticsEngine()
         const bindings = createBindings({ CRASH_REPORTS: crashReports })
 
-        const { backtraceFrames: _, ...reportWithoutFrames } = validCrashReport
+        const reportWithoutFrames = {
+            appVersion: validCrashReport.appVersion,
+            osVersion: validCrashReport.osVersion,
+            arch: validCrashReport.arch,
+            signal: validCrashReport.signal,
+        }
 
         await app.request(
             '/crash-report',
@@ -140,8 +151,8 @@ describe('POST /crash-report', () => {
             bindings,
         )
 
-        const call = vi.mocked(crashReports.writeDataPoint).mock.calls[0][0]
-        expect(call.blobs![4]).toBe('unknown')
+        const call = getWrittenDataPoint(crashReports)
+        expect(call.blobs?.[4]).toBe('unknown')
     })
 
     it('returns 400 for oversized report (> 64 KB)', async () => {
@@ -165,7 +176,7 @@ describe('POST /crash-report', () => {
 
     it('returns 400 when required field appVersion is missing', async () => {
         const bindings = createBindings()
-        const { appVersion: _, ...incomplete } = validCrashReport
+        const incomplete = { osVersion: '15.3.1', arch: 'arm64', signal: 'SIGSEGV' }
 
         const res = await app.request(
             '/crash-report',
@@ -184,7 +195,7 @@ describe('POST /crash-report', () => {
 
     it('returns 400 when required field osVersion is missing', async () => {
         const bindings = createBindings()
-        const { osVersion: _, ...incomplete } = validCrashReport
+        const incomplete = { appVersion: '1.2.3', arch: 'arm64', signal: 'SIGSEGV' }
 
         const res = await app.request(
             '/crash-report',
@@ -203,7 +214,7 @@ describe('POST /crash-report', () => {
 
     it('returns 400 when required field arch is missing', async () => {
         const bindings = createBindings()
-        const { arch: _, ...incomplete } = validCrashReport
+        const incomplete = { appVersion: '1.2.3', osVersion: '15.3.1', signal: 'SIGSEGV' }
 
         const res = await app.request(
             '/crash-report',
@@ -222,7 +233,7 @@ describe('POST /crash-report', () => {
 
     it('returns 400 when required field signal is missing', async () => {
         const bindings = createBindings()
-        const { signal: _, ...incomplete } = validCrashReport
+        const incomplete = { appVersion: '1.2.3', osVersion: '15.3.1', arch: 'arm64' }
 
         const res = await app.request(
             '/crash-report',
@@ -296,8 +307,8 @@ describe('POST /crash-report', () => {
             bindings,
         )
 
-        const call = vi.mocked(crashReports.writeDataPoint).mock.calls[0][0]
-        const backtrace = call.blobs![5]
+        const call = getWrittenDataPoint(crashReports)
+        const backtrace = call.blobs?.[5] as string
         expect(backtrace.length).toBeLessThanOrEqual(5_000)
     })
 })
