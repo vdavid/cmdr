@@ -340,6 +340,20 @@ fn format_bytes(bytes: u64) -> String {
     }
 }
 
+/// Extension trait for converting `io::Result` to `Result<T, WriteOperationError>` with path context.
+pub(super) trait IoResultExt<T> {
+    fn with_path(self, path: &Path) -> Result<T, WriteOperationError>;
+}
+
+impl<T> IoResultExt<T> for std::io::Result<T> {
+    fn with_path(self, path: &Path) -> Result<T, WriteOperationError> {
+        self.map_err(|e| WriteOperationError::IoError {
+            path: path.display().to_string(),
+            message: e.to_string(),
+        })
+    }
+}
+
 impl From<std::io::Error> for WriteOperationError {
     fn from(err: std::io::Error) -> Self {
         match err.kind() {

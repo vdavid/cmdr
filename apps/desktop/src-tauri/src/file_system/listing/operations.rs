@@ -21,6 +21,14 @@ fn is_visible(entry: &FileEntry) -> bool {
     !entry.name.starts_with('.')
 }
 
+fn visible_entries<'a>(entries: &'a [FileEntry], include_hidden: bool) -> Box<dyn Iterator<Item = &'a FileEntry> + 'a> {
+    if include_hidden {
+        Box::new(entries.iter())
+    } else {
+        Box::new(entries.iter().filter(|e| is_visible(e)))
+    }
+}
+
 // ============================================================================
 // Listing lifecycle
 // ============================================================================
@@ -82,12 +90,7 @@ pub fn list_directory_start_with_volume(
     // Generate listing ID
     let listing_id = Uuid::new_v4().to_string();
 
-    // Count visible entries based on include_hidden setting
-    let total_count = if include_hidden {
-        all_entries.len()
-    } else {
-        all_entries.iter().filter(|e| is_visible(e)).count()
-    };
+    let total_count = visible_entries(&all_entries, include_hidden).count();
 
     // Enrich directory entries with index data (recursive_size etc.) before sorting,
     // so that sort-by-size works correctly for directories.
@@ -165,19 +168,11 @@ pub fn get_file_range(
         .get(listing_id)
         .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
 
-    // Filter entries if not including hidden
-    // Cache entries are already enriched by the path that stored them (streaming,
-    // watcher update, re-sort). Index freshness is handled separately by
-    // `index-dir-updated` → `refreshIndexSizes` → `getDirStatsBatch`.
-    let entries: Vec<FileEntry> = if include_hidden {
-        let end = (start + count).min(listing.entries.len());
-        listing.entries[start..end].to_vec()
-    } else {
-        // Need to filter and then slice
-        let visible: Vec<&FileEntry> = listing.entries.iter().filter(|e| is_visible(e)).collect();
-        let end = (start + count).min(visible.len());
-        visible[start..end].iter().cloned().cloned().collect()
-    };
+    let entries: Vec<FileEntry> = visible_entries(&listing.entries, include_hidden)
+        .skip(start)
+        .take(count)
+        .cloned()
+        .collect();
 
     Ok(entries)
 }
@@ -190,11 +185,7 @@ pub fn get_total_count(listing_id: &str, include_hidden: bool) -> Result<usize, 
         .get(listing_id)
         .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
 
-    if include_hidden {
-        Ok(listing.entries.len())
-    } else {
-        Ok(listing.entries.iter().filter(|e| is_visible(e)).count())
-    }
+    Ok(visible_entries(&listing.entries, include_hidden).count())
 }
 
 /// Gets the maximum filename width for a cached listing.
@@ -210,18 +201,10 @@ pub fn get_max_filename_width(listing_id: &str, include_hidden: bool) -> Result<
 
     let font_id = "system-400-12"; // Default font (must match list_directory_start_with_volume)
 
-    let max_width = if include_hidden {
-        let filenames: Vec<&str> = listing.entries.iter().map(|e| e.name.as_str()).collect();
-        crate::font_metrics::calculate_max_width(&filenames, font_id)
-    } else {
-        let filenames: Vec<&str> = listing
-            .entries
-            .iter()
-            .filter(|e| is_visible(e))
-            .map(|e| e.name.as_str())
-            .collect();
-        crate::font_metrics::calculate_max_width(&filenames, font_id)
-    };
+    let filenames: Vec<&str> = visible_entries(&listing.entries, include_hidden)
+        .map(|e| e.name.as_str())
+        .collect();
+    let max_width = crate::font_metrics::calculate_max_width(&filenames, font_id);
 
     Ok(max_width)
 }
@@ -234,13 +217,7 @@ pub fn find_file_index(listing_id: &str, name: &str, include_hidden: bool) -> Re
         .get(listing_id)
         .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
 
-    if include_hidden {
-        Ok(listing.entries.iter().position(|e| e.name == name))
-    } else {
-        // Find index in filtered list
-        let visible: Vec<&FileEntry> = listing.entries.iter().filter(|e| is_visible(e)).collect();
-        Ok(visible.iter().position(|e| e.name == name))
-    }
+    Ok(visible_entries(&listing.entries, include_hidden).position(|e| e.name == name))
 }
 
 /// Finds the indices of multiple files by name in a cached listing (batch version of `find_file_index`).
@@ -260,13 +237,7 @@ pub fn find_file_indices(
     let lookup: std::collections::HashSet<&str> = names.iter().map(|n| n.as_str()).collect();
     let mut result = HashMap::with_capacity(names.len());
 
-    let entries: Box<dyn Iterator<Item = &FileEntry>> = if include_hidden {
-        Box::new(listing.entries.iter())
-    } else {
-        Box::new(listing.entries.iter().filter(|e| is_visible(e)))
-    };
-
-    for (idx, entry) in entries.enumerate() {
+    for (idx, entry) in visible_entries(&listing.entries, include_hidden).enumerate() {
         if lookup.contains(entry.name.as_str()) {
             result.insert(entry.name.clone(), idx);
         }
@@ -283,28 +254,16 @@ pub fn get_file_at(listing_id: &str, index: usize, include_hidden: bool) -> Resu
         .get(listing_id)
         .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
 
-    if include_hidden {
-        let result = listing.entries.get(index).cloned();
-        if result.is_none() {
-            log::error!(
-                "get_file_at: index {} out of bounds (listing has {} entries) - frontend/backend index mismatch!",
-                index,
-                listing.entries.len()
-            );
-        }
-        Ok(result)
-    } else {
-        let visible: Vec<&FileEntry> = listing.entries.iter().filter(|e| is_visible(e)).collect();
-        let result = visible.get(index).cloned().cloned();
-        if result.is_none() {
-            log::error!(
-                "get_file_at: index {} out of bounds (listing has {} visible entries) - frontend/backend index mismatch!",
-                index,
-                visible.len()
-            );
-        }
-        Ok(result)
+    let result = visible_entries(&listing.entries, include_hidden).nth(index).cloned();
+    if result.is_none() {
+        let total = visible_entries(&listing.entries, include_hidden).count();
+        log::error!(
+            "get_file_at: index {} out of bounds (listing has {} entries) - frontend/backend index mismatch!",
+            index,
+            total
+        );
     }
+    Ok(result)
 }
 
 /// Gets file paths at specific indices from a cached listing.
@@ -322,12 +281,7 @@ pub fn get_paths_at_indices(
         .get(listing_id)
         .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
 
-    // Build visible entries view (with or without hidden files)
-    let visible: Vec<&FileEntry> = if include_hidden {
-        listing.entries.iter().collect()
-    } else {
-        listing.entries.iter().filter(|e| is_visible(e)).collect()
-    };
+    let visible: Vec<&FileEntry> = visible_entries(&listing.entries, include_hidden).collect();
 
     let mut paths = Vec::with_capacity(selected_indices.len());
     for &frontend_idx in selected_indices {
@@ -392,11 +346,7 @@ pub fn resort_listing(
         None
     } else {
         selected_indices.map(|indices| {
-            let entries_for_index = if include_hidden {
-                listing.entries.iter().collect::<Vec<_>>()
-            } else {
-                listing.entries.iter().filter(|e| is_visible(e)).collect()
-            };
+            let entries_for_index: Vec<_> = visible_entries(&listing.entries, include_hidden).collect();
             indices
                 .iter()
                 .filter_map(|&idx| entries_for_index.get(idx).map(|e| e.name.clone()))
@@ -414,34 +364,16 @@ pub fn resort_listing(
     listing.sort_order = sort_order;
 
     // Find the new cursor position
-    let new_cursor_index = cursor_filename.and_then(|name| {
-        if include_hidden {
-            listing.entries.iter().position(|e| e.name == name)
-        } else {
-            listing
-                .entries
-                .iter()
-                .filter(|e| is_visible(e))
-                .position(|e| e.name == name)
-        }
-    });
+    let new_cursor_index =
+        cursor_filename.and_then(|name| visible_entries(&listing.entries, include_hidden).position(|e| e.name == name));
 
     // Find new indices of selected files
     let new_selected_indices = if all_selected {
-        // All files are still selected after re-sort
-        let count = if include_hidden {
-            listing.entries.len()
-        } else {
-            listing.entries.iter().filter(|e| is_visible(e)).count()
-        };
+        let count = visible_entries(&listing.entries, include_hidden).count();
         Some((0..count).collect())
     } else {
         selected_filenames.map(|filenames| {
-            let entries_for_lookup: Vec<_> = if include_hidden {
-                listing.entries.iter().collect()
-            } else {
-                listing.entries.iter().filter(|e| is_visible(e)).collect()
-            };
+            let entries_for_lookup: Vec<_> = visible_entries(&listing.entries, include_hidden).collect();
             filenames
                 .iter()
                 .filter_map(|name| entries_for_lookup.iter().position(|e| e.name == *name))
@@ -551,12 +483,7 @@ pub fn get_listing_stats(
         .get(listing_id)
         .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
 
-    // Get visible entries based on include_hidden setting
-    let visible_entries: Vec<&FileEntry> = if include_hidden {
-        listing.entries.iter().collect()
-    } else {
-        listing.entries.iter().filter(|e| is_visible(e)).collect()
-    };
+    let visible: Vec<&FileEntry> = visible_entries(&listing.entries, include_hidden).collect();
 
     // Calculate totals
     let mut total_files: usize = 0;
@@ -564,7 +491,7 @@ pub fn get_listing_stats(
     let mut total_size: u64 = 0;
     let mut total_physical_size: u64 = 0;
 
-    for entry in &visible_entries {
+    for entry in &visible {
         if entry.is_directory {
             total_dirs += 1;
             if let Some(size) = entry.recursive_size {
@@ -593,7 +520,7 @@ pub fn get_listing_stats(
         let mut sel_physical_size: u64 = 0;
 
         for &idx in indices {
-            if let Some(entry) = visible_entries.get(idx) {
+            if let Some(entry) = visible.get(idx) {
                 if entry.is_directory {
                     sel_dirs += 1;
                     if let Some(size) = entry.recursive_size {

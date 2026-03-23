@@ -10,25 +10,14 @@ use std::path::Path;
 /// Creates a sample file entry for testing.
 fn create_test_entry(name: &str, is_dir: bool) -> FileEntry {
     FileEntry {
-        name: name.to_string(),
-        path: format!("/{}", name),
-        is_directory: is_dir,
-        is_symlink: false,
         size: if is_dir { None } else { Some(1024) },
-        physical_size: None,
         modified_at: Some(1_640_000_000),
         created_at: Some(1_639_000_000),
-        added_at: None,
-        opened_at: None,
         permissions: if is_dir { 0o755 } else { 0o644 },
         owner: "testuser".to_string(),
         group: "staff".to_string(),
-        icon_id: if is_dir { "dir".to_string() } else { "file".to_string() },
         extended_metadata_loaded: true,
-        recursive_size: None,
-        recursive_physical_size: None,
-        recursive_file_count: None,
-        recursive_dir_count: None,
+        ..FileEntry::new(name.to_string(), format!("/{}", name), is_dir, false)
     }
 }
 
@@ -95,7 +84,6 @@ fn test_inmemory_volume_nested_directories() {
         FileEntry {
             name: "level2".to_string(),
             path: "/level1/level2".to_string(),
-            is_directory: true,
             ..create_test_entry("", true)
         },
         FileEntry {

@@ -14,25 +14,12 @@ use super::watcher::compute_diff;
 
 fn make_entry(name: &str, size: Option<u64>) -> FileEntry {
     FileEntry {
-        name: name.to_string(),
-        path: format!("/test/{}", name),
-        is_directory: false,
-        is_symlink: false,
         size,
-        physical_size: None,
-        modified_at: None,
-        created_at: None,
-        added_at: None,
-        opened_at: None,
         permissions: 0o644,
         owner: "user".to_string(),
         group: "group".to_string(),
-        icon_id: "ext:txt".to_string(),
         extended_metadata_loaded: true,
-        recursive_size: None,
-        recursive_physical_size: None,
-        recursive_file_count: None,
-        recursive_dir_count: None,
+        ..FileEntry::new(name.to_string(), format!("/test/{}", name), false, false)
     }
 }
 

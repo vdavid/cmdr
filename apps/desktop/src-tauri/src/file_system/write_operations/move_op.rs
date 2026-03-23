@@ -12,7 +12,7 @@ use super::helpers::{is_same_filesystem, resolve_conflict, safe_overwrite_dir, s
 use super::scan::{SourceItemTracker, handle_dry_run, scan_sources};
 use super::state::{CopyTransaction, WriteOperationState, update_operation_status};
 use super::types::{
-    ConflictResolution, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig,
+    ConflictResolution, IoResultExt, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig,
     WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 
@@ -132,10 +132,7 @@ fn move_with_rename(
             let _ = fs::remove_dir_all(&backup_path);
         } else {
             // For files or non-overwrite: rename() handles it (atomic for files)
-            fs::rename(source, &actual_dest).map_err(|e| WriteOperationError::IoError {
-                path: source.display().to_string(),
-                message: e.to_string(),
-            })?;
+            fs::rename(source, &actual_dest).with_path(source)?;
         }
 
         files_done += 1;
@@ -418,15 +415,9 @@ fn delete_sources_after_move(
         // Use symlink_metadata to check if it still exists
         if fs::symlink_metadata(source).is_ok() {
             if source.is_dir() {
-                fs::remove_dir_all(source).map_err(|e| WriteOperationError::IoError {
-                    path: source.display().to_string(),
-                    message: e.to_string(),
-                })?;
+                fs::remove_dir_all(source).with_path(source)?;
             } else {
-                fs::remove_file(source).map_err(|e| WriteOperationError::IoError {
-                    path: source.display().to_string(),
-                    message: e.to_string(),
-                })?;
+                fs::remove_file(source).with_path(source)?;
             }
 
             let _ = app.emit(

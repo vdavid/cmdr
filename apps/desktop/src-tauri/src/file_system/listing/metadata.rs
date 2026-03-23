@@ -105,6 +105,33 @@ pub struct FileEntry {
     pub recursive_dir_count: Option<u64>,
 }
 
+impl FileEntry {
+    /// Creates a `FileEntry` with the four essential fields set and everything else defaulted.
+    pub(crate) fn new(name: String, path: String, is_dir: bool, is_symlink: bool) -> Self {
+        Self {
+            icon_id: get_icon_id(is_dir, is_symlink, &name),
+            name,
+            path,
+            is_directory: is_dir,
+            is_symlink,
+            size: None,
+            physical_size: None,
+            modified_at: None,
+            created_at: None,
+            added_at: None,
+            opened_at: None,
+            permissions: 0,
+            owner: String::new(),
+            group: String::new(),
+            extended_metadata_loaded: false,
+            recursive_size: None,
+            recursive_physical_size: None,
+            recursive_file_count: None,
+            recursive_dir_count: None,
+        }
+    }
+}
+
 /// Default value for extended_metadata_loaded (for backwards compatibility)
 fn default_extended_loaded() -> bool {
     true

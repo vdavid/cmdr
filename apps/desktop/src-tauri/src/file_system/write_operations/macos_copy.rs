@@ -10,6 +10,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::file_system::write_operations::WriteOperationError;
+use crate::file_system::write_operations::types::IoResultExt;
 
 // ============================================================================
 // Type aliases for progress callbacks
@@ -366,10 +367,7 @@ pub fn copy_single_file_native(
     copy_file_native(source, destination, options, context)?;
 
     // Return the file size
-    let metadata = std::fs::metadata(destination).map_err(|e| WriteOperationError::IoError {
-        path: destination.display().to_string(),
-        message: e.to_string(),
-    })?;
+    let metadata = std::fs::metadata(destination).with_path(destination)?;
 
     Ok(metadata.len())
 }

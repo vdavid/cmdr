@@ -87,84 +87,55 @@ pub use volume_copy::{copy_between_volumes, scan_for_volume_copy};
 // Public API functions
 // ============================================================================
 
-/// Starts a copy operation in the background.
+/// Spawns a write operation in the background with state management and panic handling.
 ///
-/// # Arguments
-/// * `app` - Tauri app handle for event emission
-/// * `sources` - List of source file/directory paths (absolute)
-/// * `destination` - Destination directory path (absolute)
-/// * `config` - Operation configuration
-///
-/// # Events emitted
-/// * `write-progress` - Every progress_interval_ms with WriteProgressEvent
-/// * `write-complete` - On success with WriteCompleteEvent
-/// * `write-error` - On error with WriteErrorEvent
-/// * `write-cancelled` - If cancelled with WriteCancelledEvent
-/// * `write-conflict` - When Stop mode encounters a conflict
-pub async fn copy_files_start(
+/// Creates `WriteOperationState`, registers the operation, spawns `tokio::spawn` +
+/// `spawn_blocking`, and handles cleanup and panic recovery. Callers do validation
+/// and logging before calling this, then pass a closure for the actual work.
+async fn start_write_operation<F>(
     app: tauri::AppHandle,
-    sources: Vec<PathBuf>,
-    destination: PathBuf,
-    config: WriteOperationConfig,
-) -> Result<WriteOperationStartResult, WriteOperationError> {
-    // Validate inputs
-    validate_sources(&sources)?;
-    validate_destination(&destination)?;
-    validate_destination_writable(&destination)?;
-    validate_not_same_location(&sources, &destination)?;
-    validate_destination_not_inside_source(&sources, &destination)?;
-
+    operation_type: WriteOperationType,
+    progress_interval_ms: u64,
+    handler: F,
+) -> Result<WriteOperationStartResult, WriteOperationError>
+where
+    F: FnOnce(tauri::AppHandle, String, Arc<WriteOperationState>) -> Result<(), WriteOperationError> + Send + 'static,
+{
     let operation_id = Uuid::new_v4().to_string();
-    log::info!(
-        "copy_files_start: operation_id={}, sources={:?}, destination={:?}, dry_run={}",
-        operation_id,
-        sources,
-        destination,
-        config.dry_run
-    );
     let state = Arc::new(WriteOperationState {
         cancelled: Arc::new(AtomicBool::new(false)),
         skip_rollback: AtomicBool::new(false),
-        progress_interval: Duration::from_millis(config.progress_interval_ms),
+        progress_interval: Duration::from_millis(progress_interval_ms),
         pending_resolution: std::sync::RwLock::new(None),
         conflict_condvar: std::sync::Condvar::new(),
         conflict_mutex: std::sync::Mutex::new(false),
     });
 
-    // Store state for cancellation
     if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
         cache.insert(operation_id.clone(), Arc::clone(&state));
     }
-
-    // Register operation status for query APIs
-    register_operation_status(&operation_id, WriteOperationType::Copy);
+    register_operation_status(&operation_id, operation_type);
 
     let operation_id_for_spawn = operation_id.clone();
 
-    // Spawn background task
     tokio::spawn(async move {
         let operation_id_for_cleanup = operation_id_for_spawn.clone();
         let app_for_error = app.clone();
 
-        let result = tokio::task::spawn_blocking(move || {
-            copy_files_with_progress(&app, &operation_id_for_spawn, &state, &sources, &destination, &config)
-        })
-        .await;
+        let result = tokio::task::spawn_blocking(move || handler(app, operation_id_for_spawn, state)).await;
 
-        // Clean up state
         if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
             cache.remove(&operation_id_for_cleanup);
         }
         unregister_operation_status(&operation_id_for_cleanup);
 
-        // Handle task panic
         if let Err(e) = result {
             use tauri::Emitter;
             let _ = app_for_error.emit(
                 "write-error",
                 WriteErrorEvent {
                     operation_id: operation_id_for_cleanup,
-                    operation_type: WriteOperationType::Copy,
+                    operation_type,
                     error: WriteOperationError::IoError {
                         path: String::new(),
                         message: format!("Task failed: {}", e),
@@ -176,8 +147,37 @@ pub async fn copy_files_start(
 
     Ok(WriteOperationStartResult {
         operation_id,
-        operation_type: WriteOperationType::Copy,
+        operation_type,
     })
+}
+
+/// Starts a copy operation in the background.
+pub async fn copy_files_start(
+    app: tauri::AppHandle,
+    sources: Vec<PathBuf>,
+    destination: PathBuf,
+    config: WriteOperationConfig,
+) -> Result<WriteOperationStartResult, WriteOperationError> {
+    validate_sources(&sources)?;
+    validate_destination(&destination)?;
+    validate_destination_writable(&destination)?;
+    validate_not_same_location(&sources, &destination)?;
+    validate_destination_not_inside_source(&sources, &destination)?;
+
+    log::info!(
+        "copy_files_start: sources={:?}, destination={:?}, dry_run={}",
+        sources,
+        destination,
+        config.dry_run
+    );
+
+    start_write_operation(
+        app,
+        WriteOperationType::Copy,
+        config.progress_interval_ms,
+        move |app, op_id, state| copy_files_with_progress(&app, &op_id, &state, &sources, &destination, &config),
+    )
+    .await
 }
 
 /// Starts a move operation in the background.
@@ -190,70 +190,26 @@ pub async fn move_files_start(
     destination: PathBuf,
     config: WriteOperationConfig,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
-    // Validate inputs
     validate_sources(&sources)?;
     validate_destination(&destination)?;
     validate_destination_writable(&destination)?;
     validate_not_same_location(&sources, &destination)?;
     validate_destination_not_inside_source(&sources, &destination)?;
 
-    let operation_id = Uuid::new_v4().to_string();
-    let state = Arc::new(WriteOperationState {
-        cancelled: Arc::new(AtomicBool::new(false)),
-        skip_rollback: AtomicBool::new(false),
-        progress_interval: Duration::from_millis(config.progress_interval_ms),
-        pending_resolution: std::sync::RwLock::new(None),
-        conflict_condvar: std::sync::Condvar::new(),
-        conflict_mutex: std::sync::Mutex::new(false),
-    });
+    log::info!(
+        "move_files_start: sources={:?}, destination={:?}, dry_run={}",
+        sources,
+        destination,
+        config.dry_run
+    );
 
-    // Store state for cancellation
-    if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
-        cache.insert(operation_id.clone(), Arc::clone(&state));
-    }
-
-    // Register operation status for query APIs
-    register_operation_status(&operation_id, WriteOperationType::Move);
-
-    let operation_id_for_spawn = operation_id.clone();
-
-    // Spawn background task
-    tokio::spawn(async move {
-        let operation_id_for_cleanup = operation_id_for_spawn.clone();
-        let app_for_error = app.clone();
-
-        let result = tokio::task::spawn_blocking(move || {
-            move_files_with_progress(&app, &operation_id_for_spawn, &state, &sources, &destination, &config)
-        })
-        .await;
-
-        // Clean up state
-        if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
-            cache.remove(&operation_id_for_cleanup);
-        }
-        unregister_operation_status(&operation_id_for_cleanup);
-
-        // Handle task panic
-        if let Err(e) = result {
-            use tauri::Emitter;
-            let _ = app_for_error.emit(
-                "write-error",
-                WriteErrorEvent {
-                    operation_id: operation_id_for_cleanup,
-                    operation_type: WriteOperationType::Move,
-                    error: WriteOperationError::IoError {
-                        path: String::new(),
-                        message: format!("Task failed: {}", e),
-                    },
-                },
-            );
-        }
-    });
-
-    Ok(WriteOperationStartResult {
-        operation_id,
-        operation_type: WriteOperationType::Move,
-    })
+    start_write_operation(
+        app,
+        WriteOperationType::Move,
+        config.progress_interval_ms,
+        move |app, op_id, state| move_files_with_progress(&app, &op_id, &state, &sources, &destination, &config),
+    )
+    .await
 }
 
 /// Starts a delete operation in the background.
@@ -267,7 +223,6 @@ pub async fn delete_files_start(
     config: WriteOperationConfig,
     volume_id: Option<String>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
-    // Resolve volume for non-default volume IDs
     let volume_id_str = volume_id.unwrap_or_else(|| "root".to_string());
     let volume = if volume_id_str != "root" {
         Some(
@@ -279,72 +234,30 @@ pub async fn delete_files_start(
                 })?,
         )
     } else {
-        // Only validate sources on local filesystem — MTP paths can't be checked with symlink_metadata
         validate_sources(&sources)?;
         None
     };
 
-    let operation_id = Uuid::new_v4().to_string();
-    let state = Arc::new(WriteOperationState {
-        cancelled: Arc::new(AtomicBool::new(false)),
-        skip_rollback: AtomicBool::new(false),
-        progress_interval: Duration::from_millis(config.progress_interval_ms),
-        pending_resolution: std::sync::RwLock::new(None),
-        conflict_condvar: std::sync::Condvar::new(),
-        conflict_mutex: std::sync::Mutex::new(false),
-    });
+    log::info!(
+        "delete_files_start: sources={:?}, volume={}, dry_run={}",
+        sources,
+        volume_id_str,
+        config.dry_run
+    );
 
-    // Store state for cancellation
-    if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
-        cache.insert(operation_id.clone(), Arc::clone(&state));
-    }
-
-    // Register operation status for query APIs
-    register_operation_status(&operation_id, WriteOperationType::Delete);
-
-    let operation_id_for_spawn = operation_id.clone();
-
-    // Spawn background task
-    tokio::spawn(async move {
-        let operation_id_for_cleanup = operation_id_for_spawn.clone();
-        let app_for_error = app.clone();
-
-        let result = tokio::task::spawn_blocking(move || {
+    start_write_operation(
+        app,
+        WriteOperationType::Delete,
+        config.progress_interval_ms,
+        move |app, op_id, state| {
             if let Some(vol) = volume {
-                delete_volume_files_with_progress(vol, &app, &operation_id_for_spawn, &state, &sources, &config)
+                delete_volume_files_with_progress(vol, &app, &op_id, &state, &sources, &config)
             } else {
-                delete_files_with_progress(&app, &operation_id_for_spawn, &state, &sources, &config)
+                delete_files_with_progress(&app, &op_id, &state, &sources, &config)
             }
-        })
-        .await;
-
-        // Clean up state
-        if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
-            cache.remove(&operation_id_for_cleanup);
-        }
-        unregister_operation_status(&operation_id_for_cleanup);
-
-        // Handle task panic
-        if let Err(e) = result {
-            use tauri::Emitter;
-            let _ = app_for_error.emit(
-                "write-error",
-                WriteErrorEvent {
-                    operation_id: operation_id_for_cleanup,
-                    operation_type: WriteOperationType::Delete,
-                    error: WriteOperationError::IoError {
-                        path: String::new(),
-                        message: format!("Task failed: {}", e),
-                    },
-                },
-            );
-        }
-    });
-
-    Ok(WriteOperationStartResult {
-        operation_id,
-        operation_type: WriteOperationType::Delete,
-    })
+        },
+    )
+    .await
 }
 
 /// Starts a trash operation in the background.
@@ -352,78 +265,23 @@ pub async fn delete_files_start(
 /// Moves top-level items to the macOS Trash via `NSFileManager.trashItemAtURL`.
 /// Supports cancellation between items and partial failure (some items may fail
 /// while others succeed).
-///
-/// # Arguments
-/// * `app` - Tauri app handle for event emission
-/// * `sources` - Top-level items to trash
-/// * `item_sizes` - Optional per-item sizes for byte-level progress
-/// * `config` - Operation configuration (only `progress_interval_ms` is used)
 pub async fn trash_files_start(
     app: tauri::AppHandle,
     sources: Vec<PathBuf>,
     item_sizes: Option<Vec<u64>>,
     config: WriteOperationConfig,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
-    // Validate inputs
     validate_sources(&sources)?;
 
-    let operation_id = Uuid::new_v4().to_string();
-    let state = Arc::new(WriteOperationState {
-        cancelled: Arc::new(AtomicBool::new(false)),
-        skip_rollback: AtomicBool::new(false),
-        progress_interval: Duration::from_millis(config.progress_interval_ms),
-        pending_resolution: std::sync::RwLock::new(None),
-        conflict_condvar: std::sync::Condvar::new(),
-        conflict_mutex: std::sync::Mutex::new(false),
-    });
+    log::info!("trash_files_start: sources={:?}", sources);
 
-    // Store state for cancellation
-    if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
-        cache.insert(operation_id.clone(), Arc::clone(&state));
-    }
-
-    // Register operation status for query APIs
-    register_operation_status(&operation_id, WriteOperationType::Trash);
-
-    let operation_id_for_spawn = operation_id.clone();
-
-    // Spawn background task
-    tokio::spawn(async move {
-        let operation_id_for_cleanup = operation_id_for_spawn.clone();
-        let app_for_error = app.clone();
-
-        let result = tokio::task::spawn_blocking(move || {
-            trash_files_with_progress(&app, &operation_id_for_spawn, &state, &sources, item_sizes.as_deref())
-        })
-        .await;
-
-        // Clean up state
-        if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
-            cache.remove(&operation_id_for_cleanup);
-        }
-        unregister_operation_status(&operation_id_for_cleanup);
-
-        // Handle task panic
-        if let Err(e) = result {
-            use tauri::Emitter;
-            let _ = app_for_error.emit(
-                "write-error",
-                WriteErrorEvent {
-                    operation_id: operation_id_for_cleanup,
-                    operation_type: WriteOperationType::Trash,
-                    error: WriteOperationError::IoError {
-                        path: String::new(),
-                        message: format!("Task failed: {}", e),
-                    },
-                },
-            );
-        }
-    });
-
-    Ok(WriteOperationStartResult {
-        operation_id,
-        operation_type: WriteOperationType::Trash,
-    })
+    start_write_operation(
+        app,
+        WriteOperationType::Trash,
+        config.progress_interval_ms,
+        move |app, op_id, state| trash_files_with_progress(&app, &op_id, &state, &sources, item_sizes.as_deref()),
+    )
+    .await
 }
 
 #[cfg(test)]

@@ -417,6 +417,28 @@ pub struct IndexStore {
     read_conn: Connection,
 }
 
+/// Runs `f` inside a SQLite savepoint. Releases on success, rolls back on error.
+///
+/// SAFETY: `name` is interpolated into SQL. Only pass hardcoded string literals.
+fn with_savepoint<F, T>(conn: &Connection, name: &str, f: F) -> Result<T, IndexStoreError>
+where
+    F: FnOnce(&Connection) -> Result<T, IndexStoreError>,
+{
+    conn.execute_batch(&format!("SAVEPOINT {name}"))?;
+    match f(conn) {
+        Ok(val) => {
+            conn.execute_batch(&format!("RELEASE {name}"))?;
+            Ok(val)
+        }
+        Err(e) => {
+            // Rollback failure is intentionally silenced — the savepoint may already
+            // be released or the connection may be in an error state.
+            let _ = conn.execute_batch(&format!("ROLLBACK TO {name}"));
+            Err(e)
+        }
+    }
+}
+
 impl IndexStore {
     /// Open (or create) the index database at `db_path`.
     ///
@@ -834,21 +856,20 @@ impl IndexStore {
         if entries.is_empty() {
             return Ok(());
         }
-        conn.execute_batch("SAVEPOINT insert_entries")?;
-        // Plain INSERT: the only unique constraint is the integer PK (`id`), and
-        // ScanContext assigns unique IDs, so conflicts shouldn't occur. The table is
-        // truncated before full scans and descendants are deleted before subtree scans.
-        #[cfg(target_os = "macos")]
-        let mut stmt = conn.prepare_cached(
-            "INSERT INTO entries (id, parent_id, name, name_folded, is_directory, is_symlink, logical_size, physical_size, modified_at, inode)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
-        )?;
-        #[cfg(not(target_os = "macos"))]
-        let mut stmt = conn.prepare_cached(
-            "INSERT INTO entries (id, parent_id, name, is_directory, is_symlink, logical_size, physical_size, modified_at, inode)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
-        )?;
-        let result: Result<(), IndexStoreError> = (|| {
+        with_savepoint(conn, "insert_entries", |conn| {
+            // Plain INSERT: the only unique constraint is the integer PK (`id`), and
+            // ScanContext assigns unique IDs, so conflicts shouldn't occur. The table is
+            // truncated before full scans and descendants are deleted before subtree scans.
+            #[cfg(target_os = "macos")]
+            let mut stmt = conn.prepare_cached(
+                "INSERT INTO entries (id, parent_id, name, name_folded, is_directory, is_symlink, logical_size, physical_size, modified_at, inode)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+            )?;
+            #[cfg(not(target_os = "macos"))]
+            let mut stmt = conn.prepare_cached(
+                "INSERT INTO entries (id, parent_id, name, is_directory, is_symlink, logical_size, physical_size, modified_at, inode)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            )?;
             for e in entries {
                 #[cfg(target_os = "macos")]
                 {
@@ -880,17 +901,7 @@ impl IndexStore {
                 ])?;
             }
             Ok(())
-        })();
-        match result {
-            Ok(()) => {
-                conn.execute_batch("RELEASE insert_entries")?;
-                Ok(())
-            }
-            Err(e) => {
-                let _ = conn.execute_batch("ROLLBACK TO insert_entries");
-                Err(e)
-            }
-        }
+        })
     }
 
     /// Update an existing entry by ID.
@@ -952,8 +963,7 @@ impl IndexStore {
         if stats.is_empty() {
             return Ok(());
         }
-        conn.execute_batch("SAVEPOINT upsert_stats")?;
-        let result: Result<(), IndexStoreError> = (|| {
+        with_savepoint(conn, "upsert_stats", |conn| {
             let mut stmt = conn.prepare_cached(
                 "INSERT OR REPLACE INTO dir_stats
                      (entry_id, recursive_logical_size, recursive_physical_size, recursive_file_count, recursive_dir_count)
@@ -969,17 +979,7 @@ impl IndexStore {
                 ])?;
             }
             Ok(())
-        })();
-        match result {
-            Ok(()) => {
-                conn.execute_batch("RELEASE upsert_stats")?;
-                Ok(())
-            }
-            Err(e) => {
-                let _ = conn.execute_batch("ROLLBACK TO upsert_stats");
-                Err(e)
-            }
-        }
+        })
     }
 
     /// Set a meta key-value pair.

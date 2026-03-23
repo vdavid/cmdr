@@ -14,6 +14,8 @@ use uuid::Uuid;
 use super::macos_copy::{CopyProgressContext, copy_single_file_native};
 
 use super::state::WriteOperationState;
+#[cfg(not(target_os = "macos"))]
+use super::types::IoResultExt;
 use super::types::{ConflictInfo, ConflictResolution, WriteConflictEvent, WriteOperationConfig, WriteOperationError};
 use crate::ignore_poison::IgnorePoison;
 
@@ -500,10 +502,7 @@ pub(super) fn safe_overwrite_file(
     #[cfg(target_os = "macos")]
     let bytes = copy_single_file_native(source, &temp_path, false, context)?;
     #[cfg(not(target_os = "macos"))]
-    let bytes = fs::copy(source, &temp_path).map_err(|e| WriteOperationError::IoError {
-        path: source.display().to_string(),
-        message: e.to_string(),
-    })?;
+    let bytes = fs::copy(source, &temp_path).with_path(source)?;
 
     // Step 2: Rename original dest to backup
     if let Err(e) = fs::rename(dest, &backup_path) {

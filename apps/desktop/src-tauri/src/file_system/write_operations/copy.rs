@@ -18,7 +18,7 @@ use super::helpers::{
 use super::scan::{SourceItemTracker, handle_dry_run, scan_sources, take_cached_scan_result};
 use super::state::{CopyTransaction, WriteOperationState, update_operation_status};
 use super::types::{
-    ConflictResolution, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig,
+    ConflictResolution, IoResultExt, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig,
     WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 
@@ -375,10 +375,7 @@ pub(super) fn copy_single_item(
     }
 
     // Get metadata for size tracking
-    let metadata = fs::symlink_metadata(source).map_err(|e| WriteOperationError::IoError {
-        path: source.display().to_string(),
-        message: e.to_string(),
-    })?;
+    let metadata = fs::symlink_metadata(source).with_path(source)?;
 
     let file_name = source.file_name().unwrap_or_default();
 
@@ -411,15 +408,9 @@ pub(super) fn copy_single_item(
 
         if needs_safe_overwrite {
             if actual_dest.is_dir() {
-                fs::remove_dir_all(&actual_dest).map_err(|e| WriteOperationError::IoError {
-                    path: actual_dest.display().to_string(),
-                    message: e.to_string(),
-                })?;
+                fs::remove_dir_all(&actual_dest).with_path(&actual_dest)?;
             } else {
-                fs::remove_file(&actual_dest).map_err(|e| WriteOperationError::IoError {
-                    path: actual_dest.display().to_string(),
-                    message: e.to_string(),
-                })?;
+                fs::remove_file(&actual_dest).with_path(&actual_dest)?;
             }
         }
 

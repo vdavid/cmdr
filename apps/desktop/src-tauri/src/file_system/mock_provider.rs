@@ -23,12 +23,7 @@ impl MockFileSystemProvider {
                 let is_dir = i % 10 == 0;
                 let name = format!("file_{:06}.txt", i);
                 FileEntry {
-                    name: name.clone(),
-                    path: format!("/mock/file_{:06}.txt", i),
-                    is_directory: is_dir,
-                    is_symlink: i % 50 == 0, // Every 50th is a symlink for testing
                     size: Some(1024 * (i as u64)),
-                    physical_size: None,
                     modified_at: Some(1640000000 + i as u64),
                     created_at: Some(1639000000 + i as u64),
                     added_at: Some(1638000000 + i as u64),
@@ -36,16 +31,8 @@ impl MockFileSystemProvider {
                     permissions: 0o644,
                     owner: "testuser".to_string(),
                     group: "staff".to_string(),
-                    icon_id: if is_dir {
-                        "dir".to_string()
-                    } else {
-                        "ext:txt".to_string()
-                    },
                     extended_metadata_loaded: true,
-                    recursive_size: None,
-                    recursive_physical_size: None,
-                    recursive_file_count: None,
-                    recursive_dir_count: None,
+                    ..FileEntry::new(name, format!("/mock/file_{:06}.txt", i), is_dir, i % 50 == 0)
                 }
             })
             .collect();
@@ -68,12 +55,7 @@ mod tests {
     fn test_mock_provider_returns_entries() {
         let entries = vec![
             FileEntry {
-                name: "test.txt".to_string(),
-                path: "/test/test.txt".to_string(),
-                is_directory: false,
-                is_symlink: false,
                 size: Some(1024),
-                physical_size: None,
                 modified_at: Some(1640000000),
                 created_at: Some(1639000000),
                 added_at: Some(1638000000),
@@ -81,33 +63,18 @@ mod tests {
                 permissions: 0o644,
                 owner: "testuser".to_string(),
                 group: "staff".to_string(),
-                icon_id: "ext:txt".to_string(),
                 extended_metadata_loaded: true,
-                recursive_size: None,
-                recursive_physical_size: None,
-                recursive_file_count: None,
-                recursive_dir_count: None,
+                ..FileEntry::new("test.txt".to_string(), "/test/test.txt".to_string(), false, false)
             },
             FileEntry {
-                name: "folder".to_string(),
-                path: "/test/folder".to_string(),
-                is_directory: true,
-                is_symlink: false,
-                size: None,
-                physical_size: None,
                 modified_at: Some(1640000000),
                 created_at: Some(1639000000),
                 added_at: Some(1638000000),
-                opened_at: None,
                 permissions: 0o755,
                 owner: "testuser".to_string(),
                 group: "staff".to_string(),
-                icon_id: "dir".to_string(),
                 extended_metadata_loaded: true,
-                recursive_size: None,
-                recursive_physical_size: None,
-                recursive_file_count: None,
-                recursive_dir_count: None,
+                ..FileEntry::new("folder".to_string(), "/test/folder".to_string(), true, false)
             },
         ];
 

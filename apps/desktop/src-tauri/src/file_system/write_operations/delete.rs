@@ -10,7 +10,7 @@ use super::helpers::spawn_async_sync;
 use super::scan::{SourceItemTracker, scan_sources};
 use super::state::{WriteOperationState, update_operation_status};
 use super::types::{
-    DryRunResult, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig, WriteOperationError,
+    DryRunResult, IoResultExt, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig, WriteOperationError,
     WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 use crate::file_system::volume::Volume;
@@ -83,10 +83,7 @@ pub(super) fn delete_files_with_progress(
         // Use the size from FileInfo (already captured during scan)
         let file_size = file_info.size;
 
-        fs::remove_file(&file_info.path).map_err(|e| WriteOperationError::IoError {
-            path: file_info.path.display().to_string(),
-            message: e.to_string(),
-        })?;
+        fs::remove_file(&file_info.path).with_path(&file_info.path)?;
 
         files_done += 1;
         bytes_done += file_size;

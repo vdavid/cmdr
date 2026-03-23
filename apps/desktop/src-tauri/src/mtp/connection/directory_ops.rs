@@ -426,25 +426,18 @@ impl MtpConnectionManager {
             cache_updates.push((child_path.clone(), info.handle));
 
             entries.push(FileEntry {
-                name: info.filename.clone(),
-                path: child_path.to_string_lossy().to_string(),
-                is_directory: is_dir,
-                is_symlink: false,
                 size: if is_dir { None } else { Some(info.size) },
-                physical_size: None,
                 modified_at: info.modified.map(convert_mtp_datetime),
                 created_at: info.created.map(convert_mtp_datetime),
-                added_at: None,
-                opened_at: None,
                 permissions: if is_dir { 0o755 } else { 0o644 },
-                owner: String::new(),
-                group: String::new(),
                 icon_id: get_mtp_icon_id(is_dir, &info.filename),
                 extended_metadata_loaded: true,
-                recursive_size: None,
-                recursive_physical_size: None,
-                recursive_file_count: None,
-                recursive_dir_count: None,
+                ..FileEntry::new(
+                    info.filename.clone(),
+                    child_path.to_string_lossy().to_string(),
+                    is_dir,
+                    false,
+                )
             });
 
             // Report progress periodically
@@ -664,25 +657,18 @@ fn convert_object_infos(
         cache_updates.push((child_path.clone(), info.handle));
 
         entries.push(FileEntry {
-            name: info.filename.clone(),
-            path: child_path.to_string_lossy().to_string(),
-            is_directory: is_dir,
-            is_symlink: false,
             size: if is_dir { None } else { Some(info.size) },
-            physical_size: None,
             modified_at: info.modified.map(convert_mtp_datetime),
             created_at: info.created.map(convert_mtp_datetime),
-            added_at: None,
-            opened_at: None,
             permissions: if is_dir { 0o755 } else { 0o644 },
-            owner: String::new(),
-            group: String::new(),
             icon_id: get_mtp_icon_id(is_dir, &info.filename),
             extended_metadata_loaded: true,
-            recursive_size: None,
-            recursive_physical_size: None,
-            recursive_file_count: None,
-            recursive_dir_count: None,
+            ..FileEntry::new(
+                info.filename.clone(),
+                child_path.to_string_lossy().to_string(),
+                is_dir,
+                false,
+            )
         });
     }
 

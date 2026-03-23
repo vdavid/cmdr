@@ -10,25 +10,14 @@ use super::{FileEntry, SortColumn, SortOrder};
 /// Creates a test entry with the given name and properties.
 fn make_entry(name: &str, is_dir: bool, size: Option<u64>, modified: Option<u64>) -> FileEntry {
     FileEntry {
-        name: name.to_string(),
-        path: format!("/{}", name),
-        is_directory: is_dir,
-        is_symlink: false,
         size,
-        physical_size: None,
         modified_at: modified,
         created_at: modified, // Use same value for simplicity
-        added_at: None,
-        opened_at: None,
         permissions: if is_dir { 0o755 } else { 0o644 },
         owner: "testuser".to_string(),
         group: "staff".to_string(),
-        icon_id: if is_dir { "dir".to_string() } else { "file".to_string() },
         extended_metadata_loaded: true,
-        recursive_size: None,
-        recursive_physical_size: None,
-        recursive_file_count: None,
-        recursive_dir_count: None,
+        ..FileEntry::new(name.to_string(), format!("/{}", name), is_dir, false)
     }
 }
 
@@ -399,25 +388,13 @@ fn test_long_filenames() {
 /// Creates a test entry that is a symlink
 fn make_symlink(name: &str, size: Option<u64>) -> FileEntry {
     FileEntry {
-        name: name.to_string(),
-        path: format!("/{}", name),
-        is_directory: false,
-        is_symlink: true,
         size,
-        physical_size: None,
-        modified_at: None,
-        created_at: None,
-        added_at: None,
-        opened_at: None,
         permissions: 0o777,
         owner: "testuser".to_string(),
         group: "staff".to_string(),
         icon_id: "symlink".to_string(),
         extended_metadata_loaded: true,
-        recursive_size: None,
-        recursive_physical_size: None,
-        recursive_file_count: None,
-        recursive_dir_count: None,
+        ..FileEntry::new(name.to_string(), format!("/{}", name), false, true)
     }
 }
 

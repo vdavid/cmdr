@@ -73,29 +73,14 @@ impl InMemoryVolume {
                 let is_dir = i % 10 == 0;
                 let file_name = format!("file_{:06}.txt", i);
                 FileEntry {
-                    name: file_name.clone(),
-                    path: format!("/{}", file_name),
-                    is_directory: is_dir,
-                    is_symlink: i % 50 == 0,
                     size: Some(1024 * (i as u64)),
-                    physical_size: None,
                     modified_at: Some(1_640_000_000 + i as u64),
                     created_at: Some(1_639_000_000 + i as u64),
-                    added_at: None,
-                    opened_at: None,
                     permissions: 0o644,
                     owner: "testuser".to_string(),
                     group: "staff".to_string(),
-                    icon_id: if is_dir {
-                        "dir".to_string()
-                    } else {
-                        "ext:txt".to_string()
-                    },
                     extended_metadata_loaded: true,
-                    recursive_size: None,
-                    recursive_physical_size: None,
-                    recursive_file_count: None,
-                    recursive_dir_count: None,
+                    ..FileEntry::new(file_name.clone(), format!("/{}", file_name), is_dir, i % 50 == 0)
                 }
             })
             .collect();
@@ -218,25 +203,14 @@ impl Volume for InMemoryVolume {
             .unwrap_or_default();
 
         let metadata = FileEntry {
-            name: name.clone(),
-            path: normalized.display().to_string(),
-            is_directory: false,
-            is_symlink: false,
             size: Some(content.len() as u64),
-            physical_size: None,
             modified_at: Some(Self::now_secs()),
             created_at: Some(Self::now_secs()),
-            added_at: None,
-            opened_at: None,
             permissions: 0o644,
             owner: "testuser".to_string(),
             group: "staff".to_string(),
-            icon_id: "file".to_string(),
             extended_metadata_loaded: true,
-            recursive_size: None,
-            recursive_physical_size: None,
-            recursive_file_count: None,
-            recursive_dir_count: None,
+            ..FileEntry::new(name, normalized.display().to_string(), false, false)
         };
 
         entries.insert(
@@ -264,25 +238,13 @@ impl Volume for InMemoryVolume {
             .unwrap_or_default();
 
         let metadata = FileEntry {
-            name,
-            path: normalized.display().to_string(),
-            is_directory: true,
-            is_symlink: false,
-            size: None,
-            physical_size: None,
             modified_at: Some(Self::now_secs()),
             created_at: Some(Self::now_secs()),
-            added_at: None,
-            opened_at: None,
             permissions: 0o755,
             owner: "testuser".to_string(),
             group: "staff".to_string(),
-            icon_id: "dir".to_string(),
             extended_metadata_loaded: true,
-            recursive_size: None,
-            recursive_physical_size: None,
-            recursive_file_count: None,
-            recursive_dir_count: None,
+            ..FileEntry::new(name, normalized.display().to_string(), true, false)
         };
 
         entries.insert(

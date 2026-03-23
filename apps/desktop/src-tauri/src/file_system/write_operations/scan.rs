@@ -16,9 +16,9 @@ use super::state::{
     WriteOperationState, update_operation_status,
 };
 use super::types::{
-    ConflictInfo, ScanPreviewCancelledEvent, ScanPreviewCompleteEvent, ScanPreviewErrorEvent, ScanPreviewProgressEvent,
-    ScanPreviewStartResult, ScanProgressEvent, WriteOperationError, WriteOperationPhase, WriteOperationType,
-    WriteProgressEvent,
+    ConflictInfo, IoResultExt, ScanPreviewCancelledEvent, ScanPreviewCompleteEvent, ScanPreviewErrorEvent,
+    ScanPreviewProgressEvent, ScanPreviewStartResult, ScanProgressEvent, WriteOperationError, WriteOperationPhase,
+    WriteOperationType, WriteProgressEvent,
 };
 use crate::file_system::listing::{SortColumn, SortOrder};
 
@@ -634,10 +634,7 @@ fn dry_run_scan_recursive(
     }
 
     // Use symlink_metadata to not follow symlinks
-    let metadata = fs::symlink_metadata(path).map_err(|e| WriteOperationError::IoError {
-        path: path.display().to_string(),
-        message: e.to_string(),
-    })?;
+    let metadata = fs::symlink_metadata(path).with_path(path)?;
 
     // Calculate destination path
     let dest_path = calculate_dest_path(path, source_root, dest_root)?;
@@ -677,10 +674,7 @@ fn dry_run_scan_recursive(
         }
 
         // Scan contents
-        let entries = fs::read_dir(path).map_err(|e| WriteOperationError::IoError {
-            path: path.display().to_string(),
-            message: e.to_string(),
-        })?;
+        let entries = fs::read_dir(path).with_path(path)?;
 
         for entry in entries.flatten() {
             dry_run_scan_recursive(

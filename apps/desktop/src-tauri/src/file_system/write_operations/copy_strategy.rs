@@ -20,6 +20,8 @@ use super::macos_copy::{CopyProgressContext, copy_single_file_native};
 
 use super::chunked_copy::{ChunkedCopyProgressFn, chunked_copy_with_metadata, is_network_filesystem};
 use super::helpers::safe_overwrite_file;
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+use super::types::IoResultExt;
 use super::types::WriteOperationError;
 
 /// Copies file contents using the appropriate strategy based on destination type.
@@ -92,10 +94,7 @@ pub(super) fn copy_file_with_strategy(
     } else if needs_safe_overwrite {
         safe_overwrite_file(source, dest)
     } else {
-        fs::copy(source, dest).map_err(|e| WriteOperationError::IoError {
-            path: source.display().to_string(),
-            message: e.to_string(),
-        })
+        fs::copy(source, dest).with_path(source)
     }
 }
 

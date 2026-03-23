@@ -12,25 +12,12 @@ use super::sorting::{DirectorySortMode, SortColumn, SortOrder};
 /// Creates a minimal test entry.
 fn make_entry(name: &str, is_dir: bool, size: Option<u64>) -> FileEntry {
     FileEntry {
-        name: name.to_string(),
-        path: format!("/test/{}", name),
-        is_directory: is_dir,
-        is_symlink: false,
         size,
-        physical_size: None,
-        modified_at: None,
-        created_at: None,
-        added_at: None,
-        opened_at: None,
         permissions: if is_dir { 0o755 } else { 0o644 },
         owner: "test".to_string(),
         group: "staff".to_string(),
-        icon_id: if is_dir { "dir".to_string() } else { "file".to_string() },
         extended_metadata_loaded: true,
-        recursive_size: None,
-        recursive_physical_size: None,
-        recursive_file_count: None,
-        recursive_dir_count: None,
+        ..FileEntry::new(name.to_string(), format!("/test/{}", name), is_dir, false)
     }
 }
 

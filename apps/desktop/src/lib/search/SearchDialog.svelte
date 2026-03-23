@@ -438,71 +438,19 @@
         scheduleSearch()
     }
 
-    function toggleCaseSensitive(): void {
-        setCaseSensitive(!getCaseSensitive())
-        scheduleSearch()
+    function inputHandler(setter: (v: string) => void, search = true) {
+        return (e: Event) => {
+            setter((e.target as HTMLInputElement).value)
+            if (search) scheduleSearch()
+        }
     }
 
-    function handlePatternInput(e: Event): void {
-        const target = e.target as HTMLInputElement
-        setNamePattern(target.value)
-        scheduleSearch()
-    }
-
-    function handleAiPromptInput(e: Event): void {
-        const target = e.target as HTMLInputElement
-        setAiPrompt(target.value)
-    }
-
-    function handleScopeInput(e: Event): void {
-        const target = e.target as HTMLInputElement
-        setScope(target.value)
-        scheduleSearch()
-    }
-
-    function toggleExcludeSystemDirs(): void {
-        setExcludeSystemDirs(!getExcludeSystemDirs())
-        scheduleSearch()
-    }
-
-    function handleSizeFilterChange(e: Event): void {
-        setSizeFilter((e.target as HTMLSelectElement).value as SizeFilter)
-        scheduleSearch()
-    }
-
-    function handleSizeValueInput(e: Event): void {
-        setSizeValue((e.target as HTMLInputElement).value)
-        scheduleSearch()
-    }
-
-    function handleSizeUnitChange(e: Event): void {
-        setSizeUnit((e.target as HTMLSelectElement).value as SizeUnit)
-        scheduleSearch()
-    }
-
-    function handleSizeValueMaxInput(e: Event): void {
-        setSizeValueMax((e.target as HTMLInputElement).value)
-        scheduleSearch()
-    }
-
-    function handleSizeUnitMaxChange(e: Event): void {
-        setSizeUnitMax((e.target as HTMLSelectElement).value as SizeUnit)
-        scheduleSearch()
-    }
-
-    function handleDateFilterChange(e: Event): void {
-        setDateFilter((e.target as HTMLSelectElement).value as DateFilter)
-        scheduleSearch()
-    }
-
-    function handleDateValueInput(e: Event): void {
-        setDateValue((e.target as HTMLInputElement).value)
-        scheduleSearch()
-    }
-
-    function handleDateValueMaxInput(e: Event): void {
-        setDateValueMax((e.target as HTMLInputElement).value)
-        scheduleSearch()
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- T constrains the setter's param type to match the cast
+    function selectHandler<T extends string>(setter: (v: T) => void, search = true) {
+        return (e: Event) => {
+            setter((e.target as HTMLSelectElement).value as T)
+            if (search) scheduleSearch()
+        }
     }
 
     /** Traps Tab focus within the dialog. Returns true if the event was handled. */
@@ -698,7 +646,7 @@
                     class="name-input"
                     placeholder="Describe what you're looking for..."
                     value={aiPrompt}
-                    oninput={handleAiPromptInput}
+                    oninput={inputHandler(setAiPrompt, false)}
                     disabled={inputsDisabled}
                     aria-label="Natural language search query"
                     spellcheck="false"
@@ -742,7 +690,7 @@
                     ? 'Regular expression pattern'
                     : 'Filename pattern (use * and ? as wildcards)'}
                 value={namePattern}
-                oninput={handlePatternInput}
+                oninput={inputHandler(setNamePattern)}
                 disabled={inputsDisabled}
                 aria-label="Filename pattern"
                 spellcheck="false"
@@ -753,7 +701,10 @@
                 class="pattern-type-toggle"
                 class:active={caseSensitive}
                 class:ai-highlight={highlightedFields.has('caseSensitive')}
-                onclick={toggleCaseSensitive}
+                onclick={() => {
+                    setCaseSensitive(!getCaseSensitive())
+                    scheduleSearch()
+                }}
                 disabled={inputsDisabled}
                 title={caseSensitive ? 'Case-sensitive' : 'Case-insensitive'}
                 aria-label={caseSensitive ? 'Case-sensitive' : 'Case-insensitive'}
@@ -796,7 +747,7 @@
                 class:ai-highlight={highlightedFields.has('scope')}
                 placeholder="All folders"
                 value={scope}
-                oninput={handleScopeInput}
+                oninput={inputHandler(setScope)}
                 disabled={inputsDisabled}
                 aria-label="Search scope"
                 spellcheck="false"
@@ -830,7 +781,10 @@
             <button
                 class="pattern-type-toggle"
                 class:active={excludeSystemDirs}
-                onclick={toggleExcludeSystemDirs}
+                onclick={() => {
+                    setExcludeSystemDirs(!getExcludeSystemDirs())
+                    scheduleSearch()
+                }}
                 disabled={inputsDisabled}
                 use:tooltip={{ html: systemDirExcludeTooltip }}
                 aria-label={excludeSystemDirs ? 'System folders excluded' : 'System folders included'}
@@ -879,7 +833,7 @@
                     id="size-filter"
                     class="filter-select"
                     value={sizeFilter}
-                    onchange={handleSizeFilterChange}
+                    onchange={selectHandler<SizeFilter>(setSizeFilter)}
                     disabled={inputsDisabled}
                     aria-label="Size filter"
                 >
@@ -893,7 +847,7 @@
                         type="number"
                         class="filter-input size-input"
                         value={sizeValue}
-                        oninput={handleSizeValueInput}
+                        oninput={inputHandler(setSizeValue)}
                         disabled={inputsDisabled}
                         aria-label="Minimum size value"
                         min="0"
@@ -902,7 +856,7 @@
                     <select
                         class="filter-select unit-select"
                         value={sizeUnit}
-                        onchange={handleSizeUnitChange}
+                        onchange={selectHandler<SizeUnit>(setSizeUnit)}
                         disabled={inputsDisabled}
                         aria-label="Size unit"
                     >
@@ -917,7 +871,7 @@
                         type="number"
                         class="filter-input size-input"
                         value={sizeValueMax}
-                        oninput={handleSizeValueMaxInput}
+                        oninput={inputHandler(setSizeValueMax)}
                         disabled={inputsDisabled}
                         aria-label="Maximum size value"
                         min="0"
@@ -926,7 +880,7 @@
                     <select
                         class="filter-select unit-select"
                         value={sizeUnitMax}
-                        onchange={handleSizeUnitMaxChange}
+                        onchange={selectHandler<SizeUnit>(setSizeUnitMax)}
                         disabled={inputsDisabled}
                         aria-label="Maximum size unit"
                     >
@@ -943,7 +897,7 @@
                     id="date-filter"
                     class="filter-select"
                     value={dateFilter}
-                    onchange={handleDateFilterChange}
+                    onchange={selectHandler<DateFilter>(setDateFilter)}
                     disabled={inputsDisabled}
                     aria-label="Date filter"
                 >
@@ -957,7 +911,7 @@
                         type="date"
                         class="filter-input date-input"
                         value={dateValue}
-                        oninput={handleDateValueInput}
+                        oninput={inputHandler(setDateValue)}
                         disabled={inputsDisabled}
                         aria-label="Date value"
                     />
@@ -968,7 +922,7 @@
                         type="date"
                         class="filter-input date-input"
                         value={dateValueMax}
-                        oninput={handleDateValueMaxInput}
+                        oninput={inputHandler(setDateValueMax)}
                         disabled={inputsDisabled}
                         aria-label="Maximum date value"
                     />

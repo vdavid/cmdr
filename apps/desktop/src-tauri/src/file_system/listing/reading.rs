@@ -13,7 +13,7 @@ use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::path::Path;
 
 use crate::benchmark;
-use crate::file_system::listing::metadata::{ExtendedMetadata, FileEntry, get_group_name, get_icon_id, get_owner_name};
+use crate::file_system::listing::metadata::{ExtendedMetadata, FileEntry, get_group_name, get_owner_name};
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder, sort_entries};
 
 /// Lists the contents of a directory with full metadata (including macOS extended metadata).
@@ -103,29 +103,13 @@ fn list_directory_core_impl(
                 let is_symlink = entry.file_type().map(|ft| ft.is_symlink()).unwrap_or(false);
                 let name = entry.file_name().to_string_lossy().to_string();
                 entries.push(FileEntry {
-                    name: name.clone(),
-                    path: entry.path().to_string_lossy().to_string(),
-                    is_directory: false,
-                    is_symlink,
-                    size: None,
-                    physical_size: None,
-                    modified_at: None,
-                    created_at: None,
-                    added_at: None,
-                    opened_at: None,
-                    permissions: 0,
-                    owner: String::new(),
-                    group: String::new(),
                     icon_id: if is_symlink {
                         "symlink-broken".to_string()
                     } else {
                         "file".to_string()
                     },
                     extended_metadata_loaded: true, // Nothing to load for broken entries
-                    recursive_size: None,
-                    recursive_physical_size: None,
-                    recursive_file_count: None,
-                    recursive_dir_count: None,
+                    ..FileEntry::new(name, entry.path().to_string_lossy().to_string(), false, is_symlink)
                 });
             }
         }
@@ -208,25 +192,14 @@ pub fn get_single_entry(path: &Path) -> Result<FileEntry, std::io::Error> {
     };
 
     Ok(FileEntry {
-        name: name.clone(),
-        path: path.to_string_lossy().to_string(),
-        is_directory: is_dir,
-        is_symlink,
         size: if metadata.is_file() { Some(metadata.len()) } else { None },
         physical_size,
         modified_at: modified,
         created_at: created,
-        added_at: None,
-        opened_at: None,
         permissions: metadata.permissions().mode(),
         owner,
         group,
-        icon_id: get_icon_id(is_dir, is_symlink, &name),
-        extended_metadata_loaded: false,
-        recursive_size: None,
-        recursive_physical_size: None,
-        recursive_file_count: None,
-        recursive_dir_count: None,
+        ..FileEntry::new(name, path.to_string_lossy().to_string(), is_dir, is_symlink)
     })
 }
 
@@ -275,25 +248,14 @@ pub(crate) fn process_dir_entry(entry: &fs::DirEntry) -> Option<FileEntry> {
     };
 
     Some(FileEntry {
-        name: name.clone(),
-        path: entry.path().to_string_lossy().to_string(),
-        is_directory: is_dir,
-        is_symlink,
         size: if metadata.is_file() { Some(metadata.len()) } else { None },
         physical_size,
         modified_at: modified,
         created_at: created,
-        added_at: None,
-        opened_at: None,
         permissions: metadata.permissions().mode(),
         owner,
         group,
-        icon_id: get_icon_id(is_dir, is_symlink, &name),
-        extended_metadata_loaded: false,
-        recursive_size: None,
-        recursive_physical_size: None,
-        recursive_file_count: None,
-        recursive_dir_count: None,
+        ..FileEntry::new(name, entry.path().to_string_lossy().to_string(), is_dir, is_symlink)
     })
 }
 

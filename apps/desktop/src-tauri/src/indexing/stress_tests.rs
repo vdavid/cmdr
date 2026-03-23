@@ -1027,24 +1027,8 @@ fn lifecycle_transitions_under_load() {
 /// Create a `FileEntry` for enrichment testing.
 fn make_file_entry(name: &str, path: &str, is_directory: bool) -> FileEntry {
     FileEntry {
-        name: name.to_string(),
-        path: path.to_string(),
-        is_directory,
-        is_symlink: false,
         size: if is_directory { None } else { Some(100) },
-        physical_size: None,
-        modified_at: None,
-        created_at: None,
-        added_at: None,
-        opened_at: None,
         permissions: 0o755,
-        owner: String::new(),
-        group: String::new(),
-        icon_id: String::new(),
-        extended_metadata_loaded: false,
-        recursive_size: None,
-        recursive_physical_size: None,
-        recursive_file_count: None,
-        recursive_dir_count: None,
+        ..FileEntry::new(name.to_string(), path.to_string(), is_directory, false)
     }
 }
