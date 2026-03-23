@@ -17,7 +17,9 @@ Deployed to Cloudflare Pages at `analdash.getcmdr.com`. Auth via Cloudflare Acce
 | `src/app.css` | Tailwind v4 theme (dark palette matching getcmdr.com) |
 | `src/app.d.ts` | Platform env type declarations for CF Pages |
 | `src/routes/+page.svelte` | Single-page dashboard with 6 acquisition stage sections |
-| `src/routes/+page.server.ts` | Server load: reads `?range=` param, calls all 6 sources in parallel |
+| `src/routes/+page.server.ts` | Server load: reads `?range=` param, delegates to `fetch-all.ts` |
+| `src/routes/api/report/+server.ts` | Agent-readable plain-text report with all breakdowns |
+| `src/lib/server/fetch-all.ts` | Shared data-fetching logic used by both the page and report API |
 | `src/lib/components/Chart.svelte` | Reusable uPlot chart with ResizeObserver and dark theme |
 | `src/lib/server/types.ts` | Shared types: `TimeRange`, `SourceResult`, time window helpers |
 | `src/lib/server/cache.ts` | CF Cache API wrapper with in-memory Map fallback for local dev |
@@ -39,7 +41,7 @@ Each source gets its own module under `src/lib/server/sources/`:
 | Module | Auth | Data |
 | --- | --- | --- |
 | `umami.ts` | JWT (username/password login) | Page views, visitors, referrers, countries, download events for blog + getcmdr.com |
-| `cloudflare.ts` | Bearer token | Analytics Engine SQL: download counts, update check counts by version/arch/country |
+| `cloudflare.ts` | Bearer token | Analytics Engine SQL: download counts, update check counts by version/arch/country. Note: `cmdr_crash_reports` dataset is also available for crash data (not yet integrated). |
 | `paddle.ts` | Bearer token, cursor pagination | Completed transactions, subscriptions by status |
 | `github.ts` | Optional Bearer token | Release download counts per asset |
 | `posthog.ts` | Bearer personal API key | Pageview trends via Trends API (EU endpoint) |
