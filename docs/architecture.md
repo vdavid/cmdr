@@ -57,6 +57,7 @@ All under `apps/desktop/src-tauri/src/`.
 | `menu/` | Native menu bar: platform-specific construction, dispatch mapping, accelerator sync, context-aware enable/disable |
 | `drag_image_detection.rs` | macOS method swizzle for drag image size detection |
 | `drag_image_swap.rs` | Rich/transparent drag image swap for self-drags |
+| `crash_reporter/` | Crash capture (panic hook + signal handler), next-launch detection, report sending |
 | `commands/` | Tauri command definitions (IPC entry points) |
 | `capabilities/` | Per-window Tauri API permissions — must be updated when using new Tauri APIs from a window |
 | `icons/` | App icons for all platforms + macOS Tahoe Liquid Glass (Assets.car). See [CLAUDE.md](../apps/desktop/src-tauri/icons/CLAUDE.md) for regeneration steps |

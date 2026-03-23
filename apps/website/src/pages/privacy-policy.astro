@@ -5,7 +5,7 @@ import LegalLayout from '../layouts/LegalLayout.astro'
 <LegalLayout
     title="Privacy policy"
     description="How Cmdr collects, uses, and protects your personal data. GDPR compliant."
-    lastUpdated="2026-03-11"
+    lastUpdated="2026-03-22"
 >
     <p>
         Your privacy matters to us a lot. This policy explains what data we collect, why, and how we protect it. We've
@@ -15,8 +15,8 @@ import LegalLayout from '../layouts/LegalLayout.astro'
     <div class="highlight-box">
         <p>
             <strong>The short version:</strong> We collect minimal data. The website uses privacy-friendly analytics and collects
-            your email if you subscribe. The desktop app doesn't phone home. It only validates your license periodically.
-            We don't sell your data.
+            your email if you subscribe. The desktop app only validates your license periodically and checks for updates.
+            You can optionally send crash reports. We don't sell your data.
         </p>
     </div>
 
@@ -76,12 +76,17 @@ import LegalLayout from '../layouts/LegalLayout.astro'
             <strong>Organization name</strong>: for commercial licenses, we store the organization name you provide at
             checkout, to display it in the app's About window.
         </li>
+        <li>
+            <strong>Crash reports</strong> (opt-in): if you choose to send crash reports, Cmdr sends the app version, macOS
+            version, and the location in our code where the crash happened. It doesn't include file names, personal data,
+            or anything from your file system. You can enable or disable this anytime in Settings &gt; General &gt; Updates.
+        </li>
     </ul>
 
     <p>
-        That's it. The desktop app has <strong>no usage telemetry</strong>—it doesn't report which features you use, how
-        often you use them, or anything like that. The only network calls it makes are license validation (including the
-        device identifier mentioned above) and checking for updates.
+        The desktop app has <strong>no usage telemetry</strong>—it doesn't report which features you use, how often you
+        use them, or anything like that. The only network calls it makes are license validation (including the device
+        identifier mentioned above), checking for updates, and sending crash reports if you've opted in.
     </p>
 
     <h3>What we DON'T collect</h3>
@@ -91,6 +96,10 @@ import LegalLayout from '../layouts/LegalLayout.astro'
             Your prompts, the AI's answers, tool calls, etc. The communication is all private between you and your AI,
             unless you use a provider (OpenAI, Anthropic, etc.) that have different terms. But with Cmdr, you always
             have the option to keep ALL communications private with a local model.
+        </li>
+        <li>
+            Crash reports, if you opt in, contain only technical diagnostics (code locations, app and system
+            version)—never file names, file contents, or anything from your file system.
         </li>
         <li>Your keystrokes, screenshots, or clicks from the app.</li>
         <li>And we never train models on your data!</li>
@@ -115,6 +124,9 @@ import LegalLayout from '../layouts/LegalLayout.astro'
         <li>
             <strong>Consent</strong>: Email addresses to send you news that hopefully interest you. (You can unsubscribe
             anytime from all communications we send, except for stuff we <em>need</em> to send like updates to this very policy.)
+        </li>
+        <li>
+            <strong>Consent</strong>: Crash reports, if you choose to send them. You can opt out anytime in Settings.
         </li>
     </ul>
 
@@ -143,8 +155,8 @@ import LegalLayout from '../layouts/LegalLayout.astro'
             <a href="https://posthog.com/privacy" target="_blank" rel="noopener noreferrer">PostHog's privacy policy</a>
         </li>
         <li>
-            <strong>Cloudflare</strong> (hosting) — hosts our license validation and download tracking on its global CDN.
-            Download events (version, architecture, country) are stored in Cloudflare Analytics Engine.
+            <strong>Cloudflare</strong> (hosting) — hosts our license validation, download tracking, and crash report ingestion
+            on its global CDN. Download events (version, architecture, country) are stored in Cloudflare Analytics Engine.
             <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener noreferrer"
                 >Cloudflare's privacy policy</a
             >
@@ -181,6 +193,9 @@ import LegalLayout from '../layouts/LegalLayout.astro'
         </li>
         <li>
             <strong>Analytics data</strong> — typically 2 years, then aggregated further, or deleted. Old data is less helpful.
+        </li>
+        <li>
+            <strong>Crash reports</strong> — 90 days (Cloudflare Analytics Engine retention limit)
         </li>
     </ul>
 

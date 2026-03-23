@@ -35,6 +35,12 @@ pub struct Settings {
     pub developer_mcp_port: Option<u16>,
     #[serde(alias = "indexing.enabled", default)]
     pub indexing_enabled: Option<bool>,
+    #[serde(alias = "updates.crashReports", default)]
+    #[allow(
+        dead_code,
+        reason = "Crash reporter reads settings.json directly via cache_active_settings()"
+    )]
+    pub crash_reports_enabled: Option<bool>,
 }
 
 fn default_show_hidden() -> bool {
@@ -49,6 +55,7 @@ impl Default for Settings {
             developer_mcp_enabled: None,
             developer_mcp_port: None,
             indexing_enabled: None,
+            crash_reports_enabled: None,
         }
     }
 }
@@ -92,11 +99,14 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
 
     let indexing_enabled = json.get("indexing.enabled").and_then(|v| v.as_bool());
 
+    let crash_reports_enabled = json.get("updates.crashReports").and_then(|v| v.as_bool());
+
     Ok(Settings {
         show_hidden_files,
         full_disk_access_choice,
         developer_mcp_enabled,
         developer_mcp_port,
         indexing_enabled,
+        crash_reports_enabled,
     })
 }

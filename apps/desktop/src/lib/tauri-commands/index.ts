@@ -171,6 +171,10 @@ export type {
     ScanPreviewCancelledEvent,
 } from '../file-explorer/types'
 
+// Crash reporter
+export { checkPendingCrashReport, dismissCrashReport, sendCrashReport } from './crash-reporter'
+export type { CrashReport } from './crash-reporter'
+
 // Licensing
 export {
     getLicenseStatus,

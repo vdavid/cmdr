@@ -18,6 +18,7 @@ Settings {
     developer_mcp_enabled: Option<bool>,
     developer_mcp_port: Option<u16>,
     indexing_enabled: Option<bool>,
+    crash_reports_enabled: Option<bool>,  // from "updates.crashReports"
 }
 ```
 

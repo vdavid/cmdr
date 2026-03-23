@@ -106,6 +106,7 @@ export interface SettingsValues {
 
     // Updates
     'updates.autoCheck': boolean
+    'updates.crashReports': boolean
 
     // Network
     'network.shareCacheDuration': number

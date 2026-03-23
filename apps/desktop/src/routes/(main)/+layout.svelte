@@ -16,21 +16,34 @@
         connectMtpDevice,
         cancelAllWriteOperations,
         configureAi,
+        checkPendingCrashReport,
+        sendCrashReport,
         type MtpExclusiveAccessErrorEvent,
         type MtpPermissionErrorEvent,
+        type CrashReport,
     } from '$lib/tauri-commands'
     import { getSetting, resolveCloudConfig } from '$lib/settings'
     import { initAiState } from '$lib/ai/ai-state.svelte'
     import { initAiToastSync } from '$lib/ai/ai-toast-sync.svelte'
+    import { addToast } from '$lib/ui/toast'
     import ToastContainer from '$lib/ui/toast/ToastContainer.svelte'
     import { MtpPermissionDialog, PtpcameradDialog } from '$lib/mtp'
+    import CrashReportDialog from '$lib/crash-reporter/CrashReportDialog.svelte'
+    import CrashReportToastContent from '$lib/crash-reporter/CrashReportToastContent.svelte'
+    import { getAppLogger } from '$lib/logging/logger'
     import type { Snippet } from 'svelte'
+
+    const crashLog = getAppLogger('crashReporter')
 
     interface Props {
         children?: Snippet
     }
 
     const { children }: Props = $props()
+
+    // State for crash report dialog
+    let showCrashReportDialog = $state(false)
+    let pendingCrashReport = $state<CrashReport | null>(null)
 
     // State for ptpcamerad dialog (macOS)
     let showPtpcameradDialog = $state(false)
@@ -87,6 +100,43 @@
         }
     }
 
+    function closeCrashReportDialog() {
+        showCrashReportDialog = false
+        pendingCrashReport = null
+    }
+
+    async function checkForPendingCrashReport() {
+        try {
+            const report = await checkPendingCrashReport()
+            if (!report) return
+
+            const autoSend = getSetting('updates.crashReports')
+
+            if (autoSend && !report.possibleCrashLoop) {
+                // Auto-send without dialog
+                try {
+                    await sendCrashReport(report)
+                    addToast(CrashReportToastContent, {
+                        id: 'crash-report-sent',
+                        level: 'info',
+                        timeoutMs: 6000,
+                    })
+                    crashLog.info('Crash report auto-sent')
+                } catch (e) {
+                    crashLog.warn('Auto-send crash report returned an error: {error}', {
+                        error: String(e),
+                    })
+                }
+            } else {
+                // Show dialog for user to decide
+                pendingCrashReport = report
+                showCrashReportDialog = true
+            }
+        } catch (e) {
+            crashLog.warn('Crash report check returned an error: {error}', { error: String(e) })
+        }
+    }
+
     // Cleanup functions stored for onDestroy
     let mtpExclusiveUnlistenPromise: Promise<() => void> | undefined
     let mtpPermissionUnlistenPromise: Promise<() => void> | undefined
@@ -132,6 +182,9 @@
             mtpExclusiveUnlistenPromise = onMtpExclusiveAccessError(handleMtpExclusiveAccessError)
             mtpPermissionUnlistenPromise = onMtpPermissionError(handleMtpPermissionError)
 
+            // Check for pending crash reports from a previous session
+            void checkForPendingCrashReport()
+
             // Start checking for updates (skips in dev mode)
             updateCleanup = startUpdateChecker()
 
@@ -167,6 +220,9 @@
 </script>
 
 <ToastContainer />
+{#if showCrashReportDialog && pendingCrashReport}
+    <CrashReportDialog report={pendingCrashReport} onClose={closeCrashReportDialog} />
+{/if}
 {#if showPtpcameradDialog}
     <PtpcameradDialog
         blockingProcess={ptpcameradBlockingProcess}

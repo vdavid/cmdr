@@ -235,6 +235,17 @@ export const settingsRegistry: SettingDefinition[] = [
         default: true,
         component: 'switch',
     },
+    {
+        id: 'updates.crashReports',
+        section: ['General', 'Updates'],
+        label: 'Send crash reports',
+        description:
+            'Automatically send crash reports when Cmdr quits unexpectedly. Includes app version, macOS version, and crash location — no file names or personal data.',
+        keywords: ['crash', 'report', 'privacy', 'telemetry', 'bug', 'error'],
+        type: 'boolean',
+        default: false,
+        component: 'switch',
+    },
 
     // ========================================================================
     // Network › SMB/Network shares

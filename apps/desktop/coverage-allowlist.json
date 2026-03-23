@@ -216,6 +216,15 @@
         },
         "ui/ProgressOverlay.svelte": {
             "reason": "Pure UI component, no logic to test beyond rendering"
+        },
+        "crash-reporter/CrashReportDialog.svelte": {
+            "reason": "UI dialog, depends on Tauri commands for send/dismiss"
+        },
+        "crash-reporter/CrashReportToastContent.svelte": {
+            "reason": "UI toast content, depends on Tauri window APIs"
+        },
+        "tauri-commands/crash-reporter.ts": {
+            "reason": "Tauri command wrappers, tested via integration"
         }
     }
 }

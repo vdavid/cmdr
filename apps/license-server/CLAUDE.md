@@ -16,6 +16,7 @@ license keys, stores short activation codes in KV, and emails keys via Resend.
 | `src/license.test.ts`, `src/paddle.test.ts` | Vitest tests                                                  |
 | `src/device-tracking.test.ts`               | Tests for device tracking helpers                             |
 | `src/admin-stats.test.ts`                   | Tests for `/admin/stats` endpoint and activation counter      |
+| `src/crash-report.test.ts`                  | Tests for `POST /crash-report` endpoint                       |
 | `scripts/generate-keys.js`                  | Ed25519 key pair generation (run once at setup)               |
 | `scripts/setup-cf-infra.sh`                 | Cloudflare KV namespace provisioning                          |
 
@@ -30,6 +31,7 @@ license keys, stores short activation codes in KV, and emails keys via Resend.
 | POST   | `/admin/generate`          | Bearer token | Manual key generation (customer service / testing)        |
 | GET    | `/admin/stats`             | Bearer token | Activation count + device count (for analytics dashboard) |
 | GET    | `/download/:version/:arch` | —            | Log download to Analytics Engine, 302 → GitHub            |
+| POST   | `/crash-report`            | —            | Ingest crash report to Analytics Engine                   |
 | GET    | `/update-check/:version`   | —            | Log update check to Analytics Engine, 302 → latest.json   |
 
 ## Environments
@@ -83,6 +85,8 @@ Subscription validation: POST /validate → Paddle API transactions + subscripti
 
 Download redirect: GET /download/:version/:arch → log to Analytics Engine → 302 to GitHub Releases
 
+Crash report: POST /crash-report → validate payload (size + required fields) → hash IP with daily salt → write to Analytics Engine (fire-and-forget) → 204
+
 Update check proxy: GET /update-check/:version → hash IP with daily salt → log to Analytics Engine → 302 to latest.json
 ```
 
@@ -127,6 +131,12 @@ doubles=[1]. Query via CF Analytics Engine SQL API.
 Counts active users (free + licensed) by proxying update checks through `GET /update-check/:version`. Data schema:
 indexes=[hashedIp], blobs=[version, arch], doubles=[1]. IP is hashed with SHA-256 + daily salt for deduplication without
 storing PII. Fire-and-forget, same pattern as download tracking.
+
+**Crash report tracking:** Uses Cloudflare Analytics Engine (binding: `CRASH_REPORTS`, dataset: `cmdr_crash_reports`).
+Receives crash reports from the desktop app via `POST /crash-report`. Data schema: indexes=[hashedIp],
+blobs=[appVersion, osVersion, arch, signal, topFunction, backtraceTruncated], doubles=[1]. IP is hashed with SHA-256 +
+daily salt (same pattern as update checks). Validates payload size (max 64 KB) and required fields before writing.
+Fire-and-forget, same pattern as download tracking. No authentication required.
 
 **Device tracking (fair use):** On each `/validate` call with a `deviceId`, the server tracks the device in KV
 (`devices:{seatTransactionId}`) and logs to Analytics Engine (binding: `DEVICE_COUNTS`, dataset: `cmdr_device_counts`).

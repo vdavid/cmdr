@@ -32,6 +32,11 @@ dataset = "cmdr_device_counts"
 binding = "UPDATE_CHECKS"
 dataset = "cmdr_update_checks"
 
+# Analytics Engine for crash report tracking
+[[analytics_engine_datasets]]
+binding = "CRASH_REPORTS"
+dataset = "cmdr_crash_reports"
+
 [vars]
 # Non-secret config
 PRODUCT_NAME = "Cmdr"

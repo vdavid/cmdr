@@ -76,6 +76,7 @@ pub mod benchmark;
 mod clipboard;
 mod commands;
 pub mod config;
+mod crash_reporter;
 #[cfg(target_os = "macos")]
 mod drag_image_detection;
 #[cfg(target_os = "macos")]
@@ -274,6 +275,9 @@ pub fn run() {
             if std::env::var("RUST_LOG").is_err() {
                 log::set_max_level(log::LevelFilter::Info);
             }
+
+            // Initialize crash reporter early, before anything that might crash
+            crash_reporter::init(app.handle());
 
             // Log the resolved app data directory (shows -dev suffix in debug builds)
             config::log_app_data_dir(app.handle());
@@ -831,6 +835,10 @@ pub fn run() {
             stubs::permissions::open_privacy_settings,
             #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::permissions::open_appearance_settings,
+            // Crash reporter commands
+            commands::crash_reporter::check_pending_crash_report,
+            commands::crash_reporter::dismiss_crash_report,
+            commands::crash_reporter::send_crash_report,
             // Licensing commands
             commands::licensing::get_license_status,
             commands::licensing::get_window_title,

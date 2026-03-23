@@ -61,6 +61,9 @@ Core structure:
 - **Logging**: Frontend and backend logs appear together in terminal and in
   `~/Library/Logs/com.veszelovszki.cmdr/`. Full reference with `RUST_LOG` recipes:
   [docs/tooling/logging.md](docs/tooling/logging.md).
+- **Crash reports**: When the app crashes, it writes a crash file to the data dir (`crash-report.json` alongside
+  `settings.json`). On next launch, the app detects this file and offers to send a crash report. See
+  `src-tauri/src/crash_reporter/CLAUDE.md` for architecture details.
 - **Hot reload**: `pnpm dev` hot-reloads. Max 15s for Rust, max 3s for frontend.
 - **Index DB queries**: The index SQLite DB uses a custom `platform_case` collation, so the `sqlite3` CLI can't query
   it. Use `cargo run -p index-query -- <db_path> "<sql>"` instead. See

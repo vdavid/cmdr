@@ -14,6 +14,7 @@
     const shouldShow = $derived(createShouldShow(searchQuery))
 
     const autoCheckDef = getSettingDefinition('updates.autoCheck') ?? { label: '', description: '' }
+    const crashReportsDef = getSettingDefinition('updates.crashReports') ?? { label: '', description: '' }
 </script>
 
 <SettingsSection title="Updates">
@@ -25,6 +26,16 @@
             {searchQuery}
         >
             <SettingSwitch id="updates.autoCheck" />
+        </SettingRow>
+    {/if}
+    {#if shouldShow('updates.crashReports')}
+        <SettingRow
+            id="updates.crashReports"
+            label={crashReportsDef.label}
+            description={crashReportsDef.description}
+            {searchQuery}
+        >
+            <SettingSwitch id="updates.crashReports" />
         </SettingRow>
     {/if}
 </SettingsSection>

@@ -3,6 +3,7 @@
 pub mod ai_query_builder;
 pub mod ai_response_parser;
 pub mod clipboard;
+pub mod crash_reporter;
 pub mod e2e;
 pub mod file_system;
 pub mod file_viewer;
