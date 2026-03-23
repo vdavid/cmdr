@@ -130,6 +130,34 @@ pub fn kill_and_reap_in_background(pid: u32) {
     });
 }
 
+/// Stops any running llama-server processes spawned from the given AI directory.
+/// Belt-and-suspenders defense against orphan processes from race conditions or crashes.
+pub fn kill_stale_llama_servers(ai_dir: &Path) {
+    #[cfg(unix)]
+    {
+        let binary_path = ai_dir.join(LLAMA_SERVER_BINARY);
+        let binary_str = binary_path.to_string_lossy();
+
+        if let Ok(output) = std::process::Command::new("pgrep")
+            .arg("-f")
+            .arg(&*binary_str)
+            .output()
+        {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            for line in stdout.lines() {
+                if let Ok(pid) = line.trim().parse::<u32>() {
+                    log::info!("AI: stopping stale llama-server (PID {pid})");
+                    kill_process(pid);
+                }
+            }
+        }
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = ai_dir;
+    }
+}
+
 /// Returns true if the process with the given PID is still running.
 pub fn is_process_alive(pid: u32) -> bool {
     #[cfg(unix)]

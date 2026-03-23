@@ -15,7 +15,7 @@ Three provider modes:
 | `manager.rs` | Central coordinator. Global `Mutex<Option<ManagerState>>` singleton. Most Tauri commands live here. Stores provider + OpenAI config in `ManagerState`. |
 | `download.rs` | HTTP streaming download with Range-based resume. Emits `ai-download-progress` events (200ms throttle). Cooperative cancellation via function parameter (`Fn() -> bool`). |
 | `extract.rs` | Copies bundled `llama-server` binary + dylibs from `resources/ai/` to the AI data dir. Sets Unix permissions, handles symlinks. |
-| `process.rs` | Spawns child process with `DYLD_LIBRARY_PATH` set. Instant SIGKILL to stop (llama-server is stateless; macOS reclaims all GPU/mmap resources). `kill_process` for fire-and-forget (quit, orphans), `kill_and_reap_in_background` for normal operation (reaps zombie in bg thread). Port discovery via `bind(:0)`. Takes `ctx_size` param. |
+| `process.rs` | Spawns child process with `DYLD_LIBRARY_PATH` set. Instant SIGKILL to stop (llama-server is stateless; macOS reclaims all GPU/mmap resources). `kill_process` for fire-and-forget (quit, orphans), `kill_and_reap_in_background` for normal operation (reaps zombie in bg thread). `kill_stale_llama_servers` for belt-and-suspenders orphan cleanup by process name. Port discovery via `bind(:0)`. |
 | `client.rs` | reqwest client with `AiBackend` enum: `Local { port }` or `OpenAi { api_key, base_url, model }`. Routes requests accordingly. |
 | `suggestions.rs` | Builds few-shot prompt from listing cache, routes to configured backend, sanitizes response. |
 
@@ -37,7 +37,8 @@ Frontend loads
        openaiApiKey, openaiBaseUrl, openaiModel
      })
        -> backend: if provider === 'local' && model installed && local AI supported
-            -> start_server_inner(ctx_size)
+            -> spawn_and_track_server() (sync, inside lock — PID tracked immediately)
+            -> wait_for_server_health() (async — polls up to 60s)
             -> emit 'ai-server-ready' when healthy
 ```
 
@@ -111,8 +112,14 @@ The frontend (`AiSection.svelte`) tracks `installStep` state and displays "Step 
 **Gotcha**: `get_folder_suggestions` returns `Ok(Vec::new())` on AI errors, not `Err`.
 **Why**: AI suggestions are a nice-to-have enhancement. Returning empty gracefully hides the failure.
 
-**Gotcha**: `configure_ai` must NOT block. Server start is spawned in background via `tauri::async_runtime::spawn`.
-**Why**: `start_server_inner` takes 5-60s for health check polling. Blocking would freeze the frontend on startup.
+**Gotcha**: `configure_ai` must NOT block. Only the health check runs async via `tauri::async_runtime::spawn`.
+**Why**: Health check polling takes 5-60s. Blocking would freeze the frontend on startup.
+
+**Gotcha**: The process spawn and `child_pid` assignment must happen synchronously inside the MANAGER lock.
+**Why**: Previously, spawn happened inside an async task, creating a race window where a process existed but wasn't tracked in `child_pid`. Rapid provider switching (Local → OpenAI → Local → OpenAI) could orphan processes that survived app quit. Fixed by splitting into `spawn_and_track_server` (sync, inside lock) + `wait_for_server_health` (async).
+
+**Gotcha**: `wait_for_server_health` kills the process on timeout or early death — don't remove that cleanup.
+**Why**: Without it, a process that fails health check would be orphaned (PID tracked but never cleaned up until explicit stop).
 
 ## Dependencies
 

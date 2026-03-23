@@ -9,7 +9,7 @@ use super::download::{cleanup_partial, download_file};
 use super::extract::{LLAMA_SERVER_BINARY, REQUIRED_DYLIB, extract_bundled_llama_server};
 use super::process::{
     SERVER_LOG_FILENAME, find_available_port, is_process_alive, kill_and_reap_in_background, kill_process,
-    log_diagnostics, read_log_tail, spawn_llama_server,
+    kill_stale_llama_servers, log_diagnostics, read_log_tail, spawn_llama_server,
 };
 use super::{AiState, AiStatus, ModelInfo, get_default_model, get_model_by_id, is_local_ai_supported};
 use crate::ignore_poison::IgnorePoison;
@@ -73,16 +73,16 @@ pub fn init<R: Runtime>(app: &AppHandle<R>) {
         openai_model: String::from("gpt-4o-mini"),
     });
 
-    // Clean up stale PID from a previous session (crash, force-quit, or normal restart)
+    // Belt-and-suspenders: stop ALL llama-server processes from our AI directory,
+    // not just the tracked PID. Catches orphans from race conditions or crashes.
+    if let Some(ref m) = *manager {
+        kill_stale_llama_servers(&m.ai_dir);
+    }
+
+    // Clean up tracked PID from a previous session
     if let Some(ref mut m) = *manager
-        && let Some(pid) = m.state.pid
+        && m.state.pid.is_some()
     {
-        if is_process_alive(pid) {
-            log::info!("AI manager: stopping orphaned llama-server (PID {pid}) from previous session");
-            kill_process(pid); // Can't reap — it's a child of the old app process, not ours
-        } else {
-            log::debug!("AI manager: clearing dead PID {pid} from previous session");
-        }
         m.state.pid = None;
         m.state.port = None;
         save_state(&m.ai_dir, &m.state);
@@ -490,57 +490,59 @@ pub fn configure_ai<R: Runtime>(
         "AI configure: provider={provider}, context_size={context_size}, base_url={openai_base_url}, model={openai_model}"
     );
 
-    let should_start_local;
-    let should_stop;
+    // Single lock: decide, stop, spawn — no race window for orphan processes
+    let spawn_result;
     {
         let mut manager = MANAGER.lock_ignore_poison();
-        if let Some(ref mut m) = *manager {
-            // Stop server if switching away from local while one is running
-            should_stop = provider != "local" && m.child_pid.is_some();
+        let Some(ref mut m) = *manager else { return };
 
-            m.provider = provider.clone();
-            m.context_size = context_size;
-            m.openai_api_key = openai_api_key;
-            m.openai_base_url = openai_base_url;
-            m.openai_model = openai_model;
-
-            should_start_local =
-                provider == "local" && is_local_ai_supported() && is_fully_installed(m) && m.child_pid.is_none();
-        } else {
-            return;
-        }
-    }
-
-    // Stop local server if provider changed away from local
-    if should_stop {
-        log::info!("AI configure: provider changed away from local, stopping server");
-        let mut manager = MANAGER.lock_ignore_poison();
-        if let Some(ref mut m) = *manager
+        // Stop server if switching away from local while one is running
+        if provider != "local"
             && let Some(pid) = m.child_pid.take()
         {
+            log::info!("AI configure: provider changed away from local, stopping server");
             kill_and_reap_in_background(pid);
             m.state.port = None;
             m.state.pid = None;
             save_state(&m.ai_dir, &m.state);
         }
+
+        m.provider = provider.clone();
+        m.context_size = context_size;
+        m.openai_api_key = openai_api_key;
+        m.openai_base_url = openai_base_url;
+        m.openai_model = openai_model;
+
+        // Spawn server synchronously so child_pid is set before the lock is released.
+        // Only the health check (up to 60s) runs async.
+        spawn_result =
+            if provider == "local" && is_local_ai_supported() && is_fully_installed(m) && m.child_pid.is_none() {
+                match spawn_and_track_server(m) {
+                    Ok((pid, port)) => {
+                        m.server_starting = true;
+                        Some((pid, port))
+                    }
+                    Err(e) => {
+                        log::error!("AI configure: couldn't spawn server: {e}");
+                        None
+                    }
+                }
+            } else {
+                None
+            };
     }
 
-    if should_start_local {
-        let app_clone = app.clone();
+    // Health check asynchronously (the slow part, up to 60s)
+    if let Some((pid, port)) = spawn_result {
         let _ = app.emit("ai-starting", ());
-        {
-            let mut manager = MANAGER.lock_ignore_poison();
-            if let Some(ref mut m) = *manager {
-                m.server_starting = true;
-            }
-        }
+        let ai_dir = get_ai_dir(&app);
         tauri::async_runtime::spawn(async move {
-            match start_server_inner(&app_clone).await {
+            match wait_for_server_health(&ai_dir, pid, port).await {
                 Ok(()) => {
                     log::info!("AI: server ready");
-                    let _ = app_clone.emit("ai-server-ready", ());
+                    let _ = app.emit("ai-server-ready", ());
                 }
-                Err(e) => log::error!("AI manager: failed to start server: {e}"),
+                Err(e) => log::error!("AI manager: server didn't start: {e}"),
             }
             let mut manager = MANAGER.lock_ignore_poison();
             if let Some(ref mut m) = *manager {
@@ -573,33 +575,44 @@ pub fn start_ai_server<R: Runtime>(app: AppHandle<R>, ctx_size: u32) -> Result<(
         return Err(String::from("Local AI not supported on this hardware"));
     }
 
-    let should_start;
-    {
-        let mut manager = MANAGER.lock_ignore_poison();
-        if let Some(ref mut m) = *manager {
-            m.context_size = ctx_size;
-            should_start = is_fully_installed(m) && m.child_pid.is_none();
-        } else {
-            return Err(String::from("AI manager not initialized"));
-        }
+    // Recovery: re-extract binary if missing (before acquiring lock)
+    let ai_dir = get_ai_dir(&app);
+    let binary_path = ai_dir.join(LLAMA_SERVER_BINARY);
+    if !binary_path.exists() {
+        log::debug!("AI manager: binary missing, attempting re-extraction...");
+        extract_bundled_llama_server(&app, &ai_dir)?;
     }
 
-    if should_start {
-        let app_clone = app.clone();
-        let _ = app.emit("ai-starting", ());
-        {
-            let mut manager = MANAGER.lock_ignore_poison();
-            if let Some(ref mut m) = *manager {
-                m.server_starting = true;
+    let spawn_result;
+    {
+        let mut manager = MANAGER.lock_ignore_poison();
+        let Some(ref mut m) = *manager else {
+            return Err(String::from("AI manager not initialized"));
+        };
+        m.context_size = ctx_size;
+
+        spawn_result = if is_fully_installed(m) && m.child_pid.is_none() {
+            match spawn_and_track_server(m) {
+                Ok((pid, port)) => {
+                    m.server_starting = true;
+                    Some((pid, port))
+                }
+                Err(e) => return Err(e),
             }
-        }
+        } else {
+            None
+        };
+    }
+
+    if let Some((pid, port)) = spawn_result {
+        let _ = app.emit("ai-starting", ());
         tauri::async_runtime::spawn(async move {
-            match start_server_inner(&app_clone).await {
+            match wait_for_server_health(&ai_dir, pid, port).await {
                 Ok(()) => {
                     log::info!("AI: server ready");
-                    let _ = app_clone.emit("ai-server-ready", ());
+                    let _ = app.emit("ai-server-ready", ());
                 }
-                Err(e) => log::error!("AI manager: failed to start server: {e}"),
+                Err(e) => log::error!("AI manager: server didn't start: {e}"),
             }
             let mut manager = MANAGER.lock_ignore_poison();
             if let Some(ref mut m) = *manager {
@@ -919,9 +932,16 @@ async fn do_download<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
     // Emit installing event so UI shows "Setting up AI..." while server starts
     let _ = app.emit("ai-installing", ());
 
-    // Start the server FIRST, then emit install complete
-    // This ensures the server is healthy before showing "AI ready"
-    start_server_inner(app).await?;
+    // Start the server FIRST, then emit install complete.
+    // Spawn synchronously so PID is tracked immediately, then health-check async.
+    let (pid, port) = {
+        let mut manager = MANAGER.lock_ignore_poison();
+        let Some(ref mut m) = *manager else {
+            return Err(String::from("AI manager not initialized"));
+        };
+        spawn_and_track_server(m)?
+    };
+    wait_for_server_health(&ai_dir, pid, port).await?;
 
     // Emit install complete only after server is healthy
     let _ = app.emit("ai-install-complete", ());
@@ -934,58 +954,49 @@ fn is_cancel_requested() -> bool {
     manager.as_ref().is_some_and(|m| m.cancel_requested)
 }
 
-async fn start_server_inner<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
-    let ai_dir = get_ai_dir(app);
-    let model = get_current_model();
-
-    // Recovery: if model exists but binary is missing, try re-extraction
-    let binary_path = ai_dir.join(LLAMA_SERVER_BINARY);
-    if !binary_path.exists() {
-        log::debug!("AI manager: binary missing, attempting re-extraction...");
-        extract_bundled_llama_server(app, &ai_dir)?;
-    }
-
-    // Read context size from manager state
-    let ctx_size = {
-        let manager = MANAGER.lock_ignore_poison();
-        manager.as_ref().map(|m| m.context_size).unwrap_or(4096)
-    };
-
-    // Find an available port
+/// Spawns llama-server and immediately tracks its PID in manager state.
+/// Must be called while holding the MANAGER lock.
+/// Returns (pid, port) for the caller to health-check asynchronously.
+fn spawn_and_track_server(m: &mut ManagerState) -> Result<(u32, u16), String> {
+    let model = get_model_by_id(&m.state.installed_model_id).unwrap_or_else(get_default_model);
     let port = find_available_port().ok_or("No available port")?;
-    log::debug!("AI server: starting llama-server on port {port} with context size {ctx_size}");
 
-    // Spawn the server process
-    let pid = spawn_llama_server(&ai_dir, model.filename, port, ctx_size)?;
+    log::debug!("AI server: starting llama-server on port {port} with context size {}", m.context_size);
 
-    // Brief pause to let the process initialize, then check if it's still alive
+    // Belt-and-suspenders: stop any stale llama-servers before spawning a new one
+    kill_stale_llama_servers(&m.ai_dir);
+
+    let pid = spawn_llama_server(&m.ai_dir, model.filename, port, m.context_size)?;
+
+    // Track PID immediately — no race window where a process exists untracked
+    m.child_pid = Some(pid);
+    m.state.port = Some(port);
+    m.state.pid = Some(pid);
+    save_state(&m.ai_dir, &m.state);
+
+    Ok((pid, port))
+}
+
+/// Waits for the server to become healthy (polls every 500ms, up to 60s).
+/// On failure, kills the process and clears state.
+async fn wait_for_server_health(ai_dir: &Path, pid: u32, port: u16) -> Result<(), String> {
+    // Brief pause to let the process initialize
     tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     if !is_process_alive(pid) {
-        let last_lines = read_log_tail(&ai_dir, 20);
+        cleanup_failed_server(pid);
+        let last_lines = read_log_tail(ai_dir, 20);
         log::error!("AI server: process died immediately. Last log lines:\n{last_lines}");
         let log_path = ai_dir.join(SERVER_LOG_FILENAME);
         return Err(format!("llama-server crashed on startup. Check log at: {log_path:?}"));
     }
 
-    // Update state
-    {
-        let mut manager = MANAGER.lock_ignore_poison();
-        if let Some(ref mut m) = *manager {
-            m.state.port = Some(port);
-            m.state.pid = Some(pid);
-            m.child_pid = Some(pid);
-            save_state(&m.ai_dir, &m.state);
-        }
-    }
-
-    // Wait for health check (poll every 500ms, up to 60s)
     log::debug!("AI server: waiting for health check on port {port}...");
     for i in 0..120 {
         tokio::time::sleep(std::time::Duration::from_millis(500)).await;
 
-        // Check if process is still alive
         if !is_process_alive(pid) {
-            let last_lines = read_log_tail(&ai_dir, 20);
+            cleanup_failed_server(pid);
+            let last_lines = read_log_tail(ai_dir, 20);
             log::error!("AI server: process died during startup. Last log lines:\n{last_lines}");
             return Err(format!("llama-server process (PID {pid}) died during startup"));
         }
@@ -995,20 +1006,34 @@ async fn start_server_inner<R: Runtime>(app: &AppHandle<R>) -> Result<(), String
             return Ok(());
         }
 
-        // Log progress every 5 seconds
         if i % 10 == 9 {
             log::debug!("AI server: still waiting for health check ({}s)...", (i + 1) / 2);
-            if let Some((line_count, last_line)) = log_diagnostics(&ai_dir) {
+            if let Some((line_count, last_line)) = log_diagnostics(ai_dir) {
                 log::debug!("AI server: log has {line_count} lines, last: {last_line}");
             }
         }
     }
 
-    // Timed out - read the log for diagnostics
-    let last_lines = read_log_tail(&ai_dir, 20);
+    // Timed out — kill the process instead of leaving it orphaned
+    cleanup_failed_server(pid);
+    let last_lines = read_log_tail(ai_dir, 20);
     log::error!("AI server: health check timed out. Last log lines:\n{last_lines}");
-
     Err(String::from("llama-server failed to become healthy within 60s"))
+}
+
+/// Kills a server process and clears its tracking state.
+/// Only clears state if the tracked PID still matches (avoids clobbering a newer spawn).
+fn cleanup_failed_server(pid: u32) {
+    kill_and_reap_in_background(pid);
+    let mut manager = MANAGER.lock_ignore_poison();
+    if let Some(ref mut m) = *manager
+        && m.child_pid == Some(pid)
+    {
+        m.child_pid = None;
+        m.state.port = None;
+        m.state.pid = None;
+        save_state(&m.ai_dir, &m.state);
+    }
 }
 
 #[cfg(test)]
