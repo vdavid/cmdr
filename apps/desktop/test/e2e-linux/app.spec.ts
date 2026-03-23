@@ -17,7 +17,14 @@
  *   pnpm test:e2e:linux:native # Run natively on Linux
  */
 
-import { ensureAppReady, getEntryName, findFileIndex, MKDIR_DIALOG, TRANSFER_DIALOG } from '../e2e-shared/helpers.js'
+import {
+    ensureAppReady,
+    getEntryName,
+    findFileIndex,
+    skipParentEntry,
+    MKDIR_DIALOG,
+    TRANSFER_DIALOG,
+} from '../e2e-shared/helpers.js'
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -426,14 +433,11 @@ describe('Transfer dialogs', () => {
     it('opens copy dialog with F5', async () => {
         await ensureAppReady()
 
-        // Move cursor to a file (skip ".." entry)
-        const cursorEntry = browser.$('.file-entry.is-under-cursor') as unknown as WebdriverIO.Element
-        const cursorText = await getEntryName(cursorEntry)
-
-        if (cursorText === '..') {
+        // Skip ".." entry
+        await skipParentEntry(async () => {
             await browser.keys('ArrowDown')
             await browser.pause(300)
-        }
+        })
 
         // Press F5 to open copy dialog
         await browser.keys('F5')
@@ -472,14 +476,11 @@ describe('Transfer dialogs', () => {
     it('opens move dialog with F6', async () => {
         await ensureAppReady()
 
-        // Move cursor to a file (skip ".." entry)
-        const cursorEntry = browser.$('.file-entry.is-under-cursor') as unknown as WebdriverIO.Element
-        const cursorText = await getEntryName(cursorEntry)
-
-        if (cursorText === '..') {
+        // Skip ".." entry
+        await skipParentEntry(async () => {
             await browser.keys('ArrowDown')
             await browser.pause(300)
-        }
+        })
 
         // Press F6 to open move dialog
         await browser.keys('F6')

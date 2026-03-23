@@ -20,7 +20,7 @@ import { createHistory } from '../navigation/navigation-history'
 import { DEFAULT_SORT_BY, defaultSortOrders, type SortColumn } from '../types'
 import { getAppLogger } from '$lib/logging/logger'
 import { addToast } from '$lib/ui/toast'
-import type FilePane from './FilePane.svelte'
+import type { FilePaneAPI } from './types'
 
 const log = getAppLogger('fileExplorer')
 
@@ -317,12 +317,11 @@ export function cycleTab(
     direction: 'next' | 'prev',
     focusedPane: 'left' | 'right',
     getTabMgr: (pane: 'left' | 'right') => TabManager,
-    getPaneRef: (pane: 'left' | 'right') => FilePane | undefined,
+    getPaneRef: (pane: 'left' | 'right') => FilePaneAPI | undefined,
 ) {
     const mgr = getTabMgr(focusedPane)
     const paneRef = getPaneRef(focusedPane)
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    const cursorFilename = (paneRef?.getFilenameUnderCursor?.() as string | undefined) ?? null
+    const cursorFilename = paneRef?.getFilenameUnderCursor() ?? null
     cycleTabInManager(mgr, direction, cursorFilename)
     saveTabsForPane(focusedPane, getTabMgr)
     syncPinTabMenuForPane(focusedPane, getTabMgr)
@@ -333,13 +332,12 @@ export function switchToTab(
     pane: 'left' | 'right',
     tabId: TabId,
     getTabMgr: (pane: 'left' | 'right') => TabManager,
-    getPaneRef: (pane: 'left' | 'right') => FilePane | undefined,
+    getPaneRef: (pane: 'left' | 'right') => FilePaneAPI | undefined,
     focusedPane: 'left' | 'right',
 ) {
     const mgr = getTabMgr(pane)
     const paneRef = getPaneRef(pane)
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    const cursorFilename = (paneRef?.getFilenameUnderCursor?.() as string | undefined) ?? null
+    const cursorFilename = paneRef?.getFilenameUnderCursor() ?? null
     const switched = switchTab(mgr, tabId, cursorFilename)
     if (!switched) {
         log.warn(`MCP activate_tab: tab ${tabId} not found in ${pane} pane`)

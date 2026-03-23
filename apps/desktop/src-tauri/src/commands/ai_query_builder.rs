@@ -9,7 +9,8 @@ use time::OffsetDateTime;
 use crate::commands::search::{TranslateDisplay, TranslatedQuery};
 use crate::indexing::search::{PatternType, SearchQuery, format_timestamp};
 
-use super::ai_response_parser::ParsedLlmResponse;
+use super::ai_response_parser::{ParsedLlmResponse, is_range, is_year};
+use super::file_system::expand_tilde;
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -258,27 +259,6 @@ fn days_in_month(year: i32, month: time::Month) -> u8 {
     last_day.day()
 }
 
-fn is_year(s: &str) -> bool {
-    s.len() == 4 && s.chars().all(|c| c.is_ascii_digit())
-}
-
-fn is_range(s: &str) -> bool {
-    for sep in &["..", " to ", "\u{2013}"] {
-        if s.contains(sep) {
-            return true;
-        }
-    }
-    // Single hyphen: only YYYY-YYYY (not YYYY-MM which is 7 chars with 4+2)
-    if let Some((left, right)) = s.split_once('-') {
-        let left = left.trim();
-        let right = right.trim();
-        if is_year(left) && is_year(right) {
-            return true;
-        }
-    }
-    false
-}
-
 fn year_range(y: &str) -> (Option<u64>, Option<u64>) {
     let year: i32 = match y.parse() {
         Ok(v) => v,
@@ -426,16 +406,6 @@ pub fn scope_to_paths(s: &str) -> ScopeResult {
             name_prefix: None,
         },
     }
-}
-
-/// Expand `~` at the start of a path to the home directory.
-fn expand_tilde(path: &str) -> String {
-    if let Some(rest) = path.strip_prefix('~')
-        && let Some(home) = dirs::home_dir()
-    {
-        return format!("{}{rest}", home.display());
-    }
-    path.to_string()
 }
 
 // ── Keyword pattern ──────────────────────────────────────────────────

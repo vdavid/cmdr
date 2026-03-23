@@ -267,79 +267,6 @@ pub enum WriteOperationError {
     },
 }
 
-impl WriteOperationError {
-    /// Returns a user-friendly error message.
-    #[allow(dead_code, reason = "Public API for future error display UI")]
-    pub fn user_message(&self) -> String {
-        match self {
-            WriteOperationError::SourceNotFound { path } => {
-                format!("Cannot find \"{}\". It may have been moved or deleted.", path)
-            }
-            WriteOperationError::DestinationExists { path } => {
-                let filename = Path::new(path)
-                    .file_name()
-                    .map(|n| n.to_string_lossy())
-                    .unwrap_or_default();
-                format!("\"{}\" already exists at the destination.", filename)
-            }
-            WriteOperationError::PermissionDenied { path, .. } => {
-                format!(
-                    "Cannot write to \"{}\": permission denied. Check folder permissions in Finder.",
-                    path
-                )
-            }
-            WriteOperationError::InsufficientSpace {
-                required,
-                available,
-                volume_name,
-            } => {
-                let volume = volume_name.as_deref().unwrap_or("the destination");
-                format!(
-                    "Not enough space on {}. Need {}, but only {} available.",
-                    volume,
-                    format_bytes(*required),
-                    format_bytes(*available)
-                )
-            }
-            WriteOperationError::SameLocation { path } => {
-                format!("\"{}\" is already in this location.", path)
-            }
-            WriteOperationError::DestinationInsideSource { source, .. } => {
-                format!("Cannot copy \"{}\" into itself.", source)
-            }
-            WriteOperationError::SymlinkLoop { path } => {
-                format!("Symlink loop detected at \"{}\". Cannot continue.", path)
-            }
-            WriteOperationError::Cancelled { .. } => "Operation was cancelled.".to_string(),
-            WriteOperationError::IoError { path, message } => {
-                if path.is_empty() {
-                    format!("An error occurred: {}", message)
-                } else {
-                    format!("Error with \"{}\": {}", path, message)
-                }
-            }
-        }
-    }
-}
-
-/// Formats bytes in human-readable form.
-#[allow(dead_code, reason = "Utility kept for future progress display formatting")]
-fn format_bytes(bytes: u64) -> String {
-    const KB: u64 = 1024;
-    const MB: u64 = KB * 1024;
-    const GB: u64 = MB * 1024;
-
-    if bytes >= GB {
-        format!("{:.1} GB", bytes as f64 / GB as f64)
-    } else if bytes >= MB {
-        format!("{:.1} MB", bytes as f64 / MB as f64)
-    } else if bytes >= KB {
-        format!("{:.1} KB", bytes as f64 / KB as f64)
-    } else {
-        format!("{} bytes", bytes)
-    }
-}
-
 /// Extension trait for converting `io::Result` to `Result<T, WriteOperationError>` with path context.
 pub(super) trait IoResultExt<T> {
     fn with_path(self, path: &Path) -> Result<T, WriteOperationError>;
@@ -353,7 +280,6 @@ impl<T> IoResultExt<T> for std::io::Result<T> {
         })
     }
 }
-
 impl From<std::io::Error> for WriteOperationError {
     fn from(err: std::io::Error) -> Self {
         match err.kind() {

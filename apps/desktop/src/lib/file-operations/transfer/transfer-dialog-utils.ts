@@ -32,6 +32,7 @@ export function generateTitle(operationType: TransferOperationType, files: numbe
 
 /**
  * Extracts the folder name from a full path.
+ * Handles root paths, trailing slashes, and GVFS SMB share directories.
  * @param path - Full path like "/Users/john/Documents"
  * @returns The last path component, like "Documents"
  */
@@ -39,7 +40,11 @@ export function getFolderName(path: string): string {
     if (path === '/') return '/'
     const normalized = path.endsWith('/') ? path.slice(0, -1) : path
     const parts = normalized.split('/')
-    return parts[parts.length - 1] || '/'
+    const last = parts[parts.length - 1] || '/'
+    // GVFS SMB share directories: extract just the share name
+    const smbMatch = last.match(/^smb-share:.*share=([^,]+)/)
+    if (smbMatch) return smbMatch[1]
+    return last
 }
 
 /**

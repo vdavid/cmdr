@@ -16,15 +16,6 @@ use mtp_rs::MtpDevice;
 ///
 /// A vector of `MtpDeviceInfo` structs describing available devices.
 /// Returns an empty vector if no devices are found or if enumeration fails.
-///
-/// # Example
-///
-/// ```ignore
-/// let devices = list_mtp_devices();
-/// for device in devices {
-///     println!("Found: {}", device.display_name());
-/// }
-/// ```
 pub fn list_mtp_devices() -> Vec<MtpDeviceInfo> {
     match MtpDevice::list_devices() {
         Ok(devices) => {

@@ -1,4 +1,4 @@
-import type FilePane from '$lib/file-explorer/pane/FilePane.svelte'
+import type { FilePaneAPI } from '$lib/file-explorer/pane/types'
 import type { DirectoryDiff } from '$lib/file-explorer/types'
 import { removeExtension } from './new-folder-utils'
 
@@ -6,7 +6,7 @@ type ListenFn = (event: string, handler: (event: { payload: DirectoryDiff }) => 
 type FindFileIndexFn = (listingId: string, filename: string, showHiddenFiles: boolean) => Promise<number | null>
 
 export async function getInitialFolderName(
-    paneRef: FilePane | undefined,
+    paneRef: FilePaneAPI | undefined,
     paneListingId: string,
     showHiddenFiles: boolean,
     getFileAt: (
@@ -16,10 +16,8 @@ export async function getInitialFolderName(
     ) => Promise<{ name: string; isDirectory: boolean } | null>,
 ): Promise<string> {
     try {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const cursorIndex = paneRef?.getCursorIndex?.() as number | undefined
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const hasParent = paneRef?.hasParentEntry?.() as boolean | undefined
+        const cursorIndex = paneRef?.getCursorIndex()
+        const hasParent = paneRef?.hasParentEntry()
         if (cursorIndex === undefined || cursorIndex < 0) return ''
         const backendIndex = hasParent ? cursorIndex - 1 : cursorIndex
         if (backendIndex < 0) return ''
@@ -34,7 +32,7 @@ export async function getInitialFolderName(
 export async function moveCursorToNewFolder(
     paneListingId: string,
     folderName: string,
-    paneRef: FilePane | undefined,
+    paneRef: FilePaneAPI | undefined,
     hasParent: boolean,
     showHiddenFiles: boolean,
     listen: ListenFn,
@@ -47,8 +45,7 @@ export async function moveCursorToNewFolder(
             void findFileIndex(paneListingId, folderName, showHiddenFiles).then((index) => {
                 if (index !== null) {
                     const frontendIndex = hasParent ? index + 1 : index
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                    paneRef?.setCursorIndex?.(frontendIndex)
+                    void paneRef?.setCursorIndex(frontendIndex)
                     unlisten()
                 }
             })

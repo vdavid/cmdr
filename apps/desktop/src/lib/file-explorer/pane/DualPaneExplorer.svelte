@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy, untrack } from 'svelte'
     import FilePane from './FilePane.svelte'
+    import type { FilePaneAPI } from './types'
     import PaneResizer from './PaneResizer.svelte'
     import LoadingIcon from '$lib/ui/LoadingIcon.svelte'
     import DialogManager from './DialogManager.svelte'
@@ -158,7 +159,7 @@
     let leftPaneWidthPercent = $state(50)
 
     let containerElement: HTMLDivElement | undefined = $state()
-    const paneRefs = $state<Record<'left' | 'right', FilePane | undefined>>({ left: undefined, right: undefined })
+    const paneRefs = $state<Record<'left' | 'right', FilePaneAPI | undefined>>({ left: undefined, right: undefined })
     let unlistenSettings: UnlistenFn | undefined
     let unlistenViewMode: UnlistenFn | undefined
     let unlistenVolumeMount: UnlistenFn | undefined
@@ -247,7 +248,7 @@
 
     // --- Pane accessor helpers ---
 
-    function getPaneRef(pane: 'left' | 'right'): FilePane | undefined {
+    function getPaneRef(pane: 'left' | 'right'): FilePaneAPI | undefined {
         return paneRefs[pane]
     }
 
@@ -426,12 +427,10 @@
 
     async function handleSortChange(pane: 'left' | 'right', newColumn: SortColumn) {
         // Cancel any active rename on the affected pane (sort invalidates indices)
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        getPaneRef(pane)?.cancelRename?.()
+        getPaneRef(pane)?.cancelRename()
 
         const paneRef = getPaneRef(pane)
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const listingId = paneRef?.getListingId?.() as string | undefined
+        const listingId = paneRef?.getListingId()
         if (!listingId) return
 
         const { sortBy, sortOrder } = getPaneSort(pane)
@@ -459,8 +458,7 @@
     /** Re-sorts a single pane in-place using its current column/order but a new directorySortMode. */
     async function resortPaneWithCurrentSort(pane: 'left' | 'right') {
         const paneRef = getPaneRef(pane)
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const listingId = paneRef?.getListingId?.() as string | undefined
+        const listingId = paneRef?.getListingId()
         if (!listingId) return
 
         const { sortBy, sortOrder } = getPaneSort(pane)
@@ -600,8 +598,7 @@
             setPanePath(pane, entry.path)
             setPaneVolumeId(pane, 'network')
             saveAppStatus({ [paneKey(pane, 'volumeId')]: 'network', [paneKey(pane, 'path')]: entry.path })
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            paneRef?.setNetworkHost?.(entry.networkHost ?? null)
+            paneRef?.setNetworkHost(entry.networkHost ?? null)
             saveTabsForPaneSide(pane)
             containerElement?.focus()
             return
@@ -630,8 +627,7 @@
 
         // Listing didn't complete — history still points at the previous folder (correct destination).
         // setPanePath won't trigger FilePane's $effect (path unchanged), so call navigateToPath directly.
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        paneRef?.navigateToPath?.(entry.path, selectName)
+        paneRef?.navigateToPath(entry.path, selectName)
         containerElement?.focus()
     }
 
@@ -694,10 +690,8 @@
         // This is important because F1/F2 can open a volume chooser on the non-focused pane
         for (const side of ['left', 'right'] as const) {
             const ref = getPaneRef(side)
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            if (ref?.isVolumeChooserOpen?.()) {
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                if (ref.handleVolumeChooserKeyDown?.(e)) {
+            if (ref?.isVolumeChooserOpen()) {
+                if (ref.handleVolumeChooserKeyDown(e)) {
                     return true
                 }
             }
@@ -707,10 +701,8 @@
 
     function handleEscapeDuringLoading(): boolean {
         const paneRef = getPaneRef(focusedPane)
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        if (paneRef?.isLoading?.()) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            paneRef.handleCancelLoading?.()
+        if (paneRef?.isLoading()) {
+            paneRef.handleCancelLoading()
             return true
         }
         return false
@@ -743,17 +735,13 @@
         }
 
         // Forward arrow keys and Enter to the focused pane
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- TypeScript thinks FilePane methods are unused without this
-        const activePaneRef = getPaneRef(focusedPane) as FilePane | undefined
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const activePaneRef = getPaneRef(focusedPane)
         activePaneRef?.handleKeyDown(e)
     }
 
     function handleKeyUp(e: KeyboardEvent) {
         // Forward to the focused pane for range selection finalization
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- TypeScript thinks FilePane methods are unused without this
-        const activePaneRef = getPaneRef(focusedPane) as FilePane | undefined
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const activePaneRef = getPaneRef(focusedPane)
         activePaneRef?.handleKeyUp(e)
     }
 
@@ -910,14 +898,13 @@
         shouldRefresh: boolean,
         throttleUntil: number,
         setThrottle: (v: number) => void,
-        paneRef: FilePane | undefined,
+        paneRef: FilePaneAPI | undefined,
     ) {
         if (!shouldRefresh) return
         const now = Date.now()
         if (now < throttleUntil) return
         setThrottle(now + indexRefreshCooldownMs)
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        paneRef?.refreshIndexSizes?.()
+        paneRef?.refreshIndexSizes()
     }
 
     /** Called when the drive index updates directory stats. Refreshes only index sizes (no full list rebuild). */
@@ -1135,10 +1122,8 @@
 
         // Refresh both panes when aggregation completes (all dir_stats are now in the DB)
         unlistenIndexAggregationComplete = await listen('index-aggregation-complete', () => {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            getPaneRef('left')?.refreshIndexSizes?.()
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            getPaneRef('right')?.refreshIndexSizes?.()
+            getPaneRef('left')?.refreshIndexSizes()
+            getPaneRef('right')?.refreshIndexSizes()
         })
 
         // Listen for MCP activate_tab events
@@ -1246,8 +1231,7 @@
         void saveLastUsedPathForVolume(entry.volumeId, targetPath)
 
         if (entry.volumeId === 'network') {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            paneRef?.setNetworkHost?.(entry.networkHost ?? null)
+            paneRef?.setNetworkHost(entry.networkHost ?? null)
         }
     }
 
@@ -1256,7 +1240,6 @@
         const paneRef = getPaneRef(pane)
 
         if (action === 'parent') {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
             await paneRef?.navigateToParent()
             return
         }
@@ -1320,23 +1303,20 @@
         }
 
         const paneRef = getPaneRef(focusedPane)
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         paneRef?.startRename()
     }
 
     /** Cancels any active inline rename on either pane. */
     export function cancelRename() {
         for (const side of ['left', 'right'] as const) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            getPaneRef(side)?.cancelRename?.()
+            getPaneRef(side)?.cancelRename()
         }
     }
 
     /** Returns whether inline rename is active on either pane. */
     export function isRenaming(): boolean {
         return (['left', 'right'] as const).some((side) => {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            return getPaneRef(side)?.isRenaming?.() as boolean
+            return getPaneRef(side)?.isRenaming()
         })
     }
 
@@ -1346,8 +1326,7 @@
         const path = getPanePath(focusedPane)
         const volumeIdForPane = getPaneVolumeId(focusedPane)
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const paneListingId = paneRef?.getListingId?.() as string | undefined
+        const paneListingId = paneRef?.getListingId()
         if (!paneListingId) return
 
         const initialName = await getInitialFolderName(paneRef, paneListingId, showHiddenFiles, getFileAt)
@@ -1367,8 +1346,7 @@
         const path = getPanePath(focusedPane)
         const volumeIdForPane = getPaneVolumeId(focusedPane)
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const paneListingId = paneRef?.getListingId?.() as string | undefined
+        const paneListingId = paneRef?.getListingId()
         if (!paneListingId) return
 
         const initialName = await getInitialFileName(paneRef, paneListingId, showHiddenFiles, getFileAt)
@@ -1395,13 +1373,10 @@
     /** Opens the file viewer for the file under the cursor. */
     export async function openViewerForCursor() {
         const paneRef = getPaneRef(focusedPane)
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const listingId = paneRef?.getListingId?.() as string | undefined
+        const listingId = paneRef?.getListingId()
         if (!listingId) return
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const cursorIndex = paneRef?.getCursorIndex?.() as number | undefined
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const hasParent = paneRef?.hasParentEntry?.() as boolean | undefined
+        const cursorIndex = paneRef?.getCursorIndex()
+        const hasParent = paneRef?.hasParentEntry()
         const backendIndex = toBackendCursorIndex(cursorIndex ?? -1, hasParent ?? false)
         if (backendIndex === null) return
 
@@ -1429,17 +1404,14 @@
     /** Opens the unified transfer dialog for all volume types (local, MTP, etc.). */
     async function openUnifiedTransferDialog(
         operationType: TransferOperationType,
-        sourcePaneRef: FilePane | undefined,
+        sourcePaneRef: FilePaneAPI | undefined,
         pane: 'left' | 'right',
     ) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const listingId = sourcePaneRef?.getListingId?.() as string | undefined
+        const listingId = sourcePaneRef?.getListingId()
         if (!listingId) return
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const hasParent = sourcePaneRef?.hasParentEntry?.() as boolean | undefined
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const selectedIndices = sourcePaneRef?.getSelectedIndices?.() as number[] | undefined
+        const hasParent = sourcePaneRef?.hasParentEntry()
+        const selectedIndices = sourcePaneRef?.getSelectedIndices()
         const hasSelection = selectedIndices && selectedIndices.length > 0
 
         const context = buildTransferContext(pane)
@@ -1498,16 +1470,12 @@
     /** Gathers pane state needed for clipboard copy/cut. Returns null if unavailable. */
     function getClipboardPaneState() {
         const sourcePaneRef = getPaneRef(focusedPane)
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const listingId = sourcePaneRef?.getListingId?.() as string | undefined
+        const listingId = sourcePaneRef?.getListingId()
         if (!listingId) return null
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const hasParent = (sourcePaneRef?.hasParentEntry?.() as boolean | undefined) ?? false
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const selectedIndices = (sourcePaneRef?.getSelectedIndices?.() as number[] | undefined) ?? []
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const cursorIndex = (sourcePaneRef?.getCursorIndex?.() as number | undefined) ?? 0
+        const hasParent = sourcePaneRef?.hasParentEntry() ?? false
+        const selectedIndices = sourcePaneRef?.getSelectedIndices() ?? []
+        const cursorIndex = sourcePaneRef?.getCursorIndex() ?? 0
         const volumeId = getPaneVolumeId(focusedPane)
 
         return { listingId, hasParent, selectedIndices, cursorIndex, volumeId }
@@ -1610,21 +1578,17 @@
     /** Opens the delete confirmation dialog for the current selection or cursor item. */
     export async function openDeleteDialog(permanent: boolean) {
         const sourcePaneRef = getPaneRef(focusedPane)
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const listingId = sourcePaneRef?.getListingId?.() as string | undefined
+        const listingId = sourcePaneRef?.getListingId()
         if (!listingId) return
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const hasParent = sourcePaneRef?.hasParentEntry?.() as boolean | undefined
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const selectedIndices = sourcePaneRef?.getSelectedIndices?.() as number[] | undefined
+        const hasParent = sourcePaneRef?.hasParentEntry()
+        const selectedIndices = sourcePaneRef?.getSelectedIndices()
         const hasSelection = selectedIndices && selectedIndices.length > 0
 
         const backendIndices = hasSelection
             ? toBackendIndices(selectedIndices, hasParent ?? false)
             : (() => {
-                  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                  const cursorIndex = sourcePaneRef?.getCursorIndex?.() as number | undefined
+                  const cursorIndex = sourcePaneRef?.getCursorIndex()
                   const idx = toBackendCursorIndex(cursorIndex ?? -1, hasParent ?? false)
                   return idx !== null ? [idx] : []
               })()
@@ -1695,9 +1659,7 @@
      * Switch focus to the other pane.
      */
     export function switchPane() {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         getPaneRef('left')?.closeVolumeChooser()
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         getPaneRef('right')?.closeVolumeChooser()
         const newFocus = otherPane(focusedPane)
         focusedPane = newFocus
@@ -1711,8 +1673,7 @@
         const leftRef = getPaneRef('left')
         const rightRef = getPaneRef('right')
         if (!leftRef || !rightRef) return false
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        if (leftRef.isLoading?.() || rightRef.isLoading?.()) return false
+        if (leftRef.isLoading() || rightRef.isLoading()) return false
         return !dialogs.isAnyTransferDialogOpen()
     }
 
@@ -1741,20 +1702,15 @@
         if (!leftRef || !rightRef) return
 
         // 1. Snapshot both panes' listing state
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
-        const leftSwap = leftRef.getSwapState?.()
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
-        const rightSwap = rightRef.getSwapState?.()
-        if (!leftSwap || !rightSwap) return
+        const leftSwap = leftRef.getSwapState()
+        const rightSwap = rightRef.getSwapState()
 
         // 2. Swap DualPaneExplorer state variables
         swapDualPaneState()
 
         // 3. Each pane adopts the other's listing (no backend calls)
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        leftRef.adoptListing?.(rightSwap)
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        rightRef.adoptListing?.(leftSwap)
+        leftRef.adoptListing(rightSwap)
+        rightRef.adoptListing(leftSwap)
 
         // 4. Persist
         saveAppStatus({
@@ -1778,9 +1734,7 @@
      * Closes the other pane's volume chooser to ensure only one is open at a time.
      */
     export function toggleVolumeChooser(pane: 'left' | 'right') {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         getPaneRef(otherPane(pane))?.closeVolumeChooser()
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         getPaneRef(pane)?.toggleVolumeChooser()
     }
 
@@ -1789,9 +1743,7 @@
      * Closes the other pane's volume chooser first.
      */
     export function openVolumeChooser() {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         getPaneRef(otherPane(focusedPane))?.closeVolumeChooser()
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         getPaneRef(focusedPane)?.openVolumeChooser()
     }
 
@@ -1800,7 +1752,6 @@
      */
     export function closeVolumeChooser() {
         for (const side of ['left', 'right'] as const) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
             getPaneRef(side)?.closeVolumeChooser()
         }
     }
@@ -1837,8 +1788,7 @@
     export function getFileAndPathUnderCursor(): { path: string; filename: string } | null {
         const paneRef = getPaneRef(focusedPane)
         const currentPath = getPanePath(focusedPane)
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const filename = paneRef?.getFilenameUnderCursor?.() as string | undefined
+        const filename = paneRef?.getFilenameUnderCursor()
         if (!filename || filename === '..') return null
         const path = `${currentPath}/${filename}`
         return { path, filename }
@@ -1850,7 +1800,6 @@
     export function sendKeyToFocusedPane(key: string) {
         const paneRef = getPaneRef(focusedPane)
         const event = new KeyboardEvent('keydown', { key, bubbles: false })
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         paneRef?.handleKeyDown(event)
     }
 
@@ -1890,8 +1839,7 @@
      */
     export async function setSort(column: SortColumn, order: 'asc' | 'desc', pane: 'left' | 'right') {
         const paneRef = getPaneRef(pane)
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const listingId = paneRef?.getListingId?.() as string | undefined
+        const listingId = paneRef?.getListingId()
         if (!listingId) return
 
         const newOrder: SortOrder = order === 'asc' ? 'ascending' : 'descending'
@@ -1982,21 +1930,17 @@
         switch (action) {
             case 'clear':
             case 'deselectAll':
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                paneRef.clearSelection?.()
+                paneRef.clearSelection()
                 break
             case 'selectAll':
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                paneRef.selectAll?.()
+                paneRef.selectAll()
                 break
             case 'toggleAtCursor':
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                paneRef.toggleSelectionAtCursor?.()
+                paneRef.toggleSelectionAtCursor()
                 break
             case 'selectRange':
                 if (startIndex !== undefined && endIndex !== undefined) {
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                    paneRef.selectRange?.(startIndex, endIndex)
+                    paneRef.selectRange(startIndex, endIndex)
                 }
                 break
         }
@@ -2008,8 +1952,7 @@
      */
     export function navigateToPath(pane: 'left' | 'right', path: string) {
         const paneRef = getPaneRef(pane)
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        paneRef?.navigateToPath?.(path)
+        paneRef?.navigateToPath(path)
     }
 
     /**
@@ -2021,23 +1964,19 @@
         if (!paneRef) return
 
         if (typeof to === 'number') {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            paneRef.setCursorIndex?.(to)
+            void paneRef.setCursorIndex(to)
         } else {
             await moveCursorByName(paneRef, to)
         }
     }
 
     async function moveCursorByName(paneRef: NonNullable<ReturnType<typeof getPaneRef>>, name: string) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-        const inNetwork: boolean = paneRef.isInNetworkView?.() ?? false
+        const inNetwork: boolean = paneRef.isInNetworkView()
         if (inNetwork) {
             // Network views handle name lookup locally
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-            const idx: number = paneRef.findNetworkItemIndex?.(name) ?? -1
+            const idx: number = paneRef.findNetworkItemIndex(name)
             if (idx >= 0) {
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                paneRef.setCursorIndex?.(idx)
+                void paneRef.setCursorIndex(idx)
             }
         } else {
             await moveCursorByNameInFileListing(paneRef, name)
@@ -2045,19 +1984,16 @@
     }
 
     async function moveCursorByNameInFileListing(paneRef: NonNullable<ReturnType<typeof getPaneRef>>, name: string) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-        const listingId: string | undefined = paneRef.getListingId?.()
+        const listingId: string = paneRef.getListingId()
         if (!listingId) return
 
         const backendIndex = await findFileIndex(listingId, name, showHiddenFiles)
         if (backendIndex === null) return
 
         // Backend index doesn't include ".." entry, but frontend does
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-        const hasParent: boolean = paneRef.hasParentEntry?.() ?? false
+        const hasParent: boolean = paneRef.hasParentEntry()
         const frontendIndex = hasParent ? backendIndex + 1 : backendIndex
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        paneRef.setCursorIndex?.(frontendIndex)
+        void paneRef.setCursorIndex(frontendIndex)
     }
 
     /**
@@ -2067,8 +2003,7 @@
     export function scrollTo(pane: 'left' | 'right', index: number) {
         const paneRef = getPaneRef(pane)
         // For now, just set cursor to that index - virtualization handles the rest
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        paneRef?.setCursorIndex?.(index)
+        void paneRef?.setCursorIndex(index)
     }
 
     /**
@@ -2096,15 +2031,13 @@
      */
     export function refreshPane() {
         const paneRef = getPaneRef(focusedPane)
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        paneRef?.refreshView?.()
+        paneRef?.refreshView()
     }
 
     /** Refresh network hosts in the focused pane (used by ⌘R shortcut). */
     export function refreshNetworkHosts() {
         const paneRef = getPaneRef(focusedPane)
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        paneRef?.refreshNetworkHosts?.()
+        paneRef?.refreshNetworkHosts()
     }
 
     /**
@@ -2119,20 +2052,18 @@
         if (!paneRef) return
 
         // Get current selection for add/subtract modes (local Set, not reactive state)
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, svelte/prefer-svelte-reactivity
-        const currentSelection = new Set<number>(paneRef.getSelectedIndices?.() ?? [])
+        // eslint-disable-next-line svelte/prefer-svelte-reactivity
+        const currentSelection = new Set<number>(paneRef.getSelectedIndices())
 
         if (count === 0) {
             // Clear selection
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            paneRef.setSelectedIndices?.([])
+            paneRef.setSelectedIndices([])
             return
         }
 
         if (count === 'all') {
             // Select all
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            paneRef.selectAll?.()
+            paneRef.selectAll()
             return
         }
 
@@ -2157,8 +2088,7 @@
             newSelection = targetIndices
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        paneRef.setSelectedIndices?.(newSelection)
+        paneRef.setSelectedIndices(newSelection)
     }
 
     // --- Tab bar handler functions (logic in tab-operations.ts) ---

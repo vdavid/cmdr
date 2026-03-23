@@ -225,6 +225,9 @@
         },
         "tauri-commands/crash-reporter.ts": {
             "reason": "Tauri command wrappers, tested via integration"
+        },
+        "ai/ai-toast-sync.svelte.ts": {
+            "reason": "Svelte $effect reactive sync, depends on Svelte runtime"
         }
     }
 }

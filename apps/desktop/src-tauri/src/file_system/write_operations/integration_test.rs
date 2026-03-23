@@ -213,61 +213,6 @@ fn test_find_unique_name_no_extension() {
 }
 
 // ============================================================================
-// Error handling tests
-// ============================================================================
-
-#[test]
-fn test_error_user_message_source_not_found() {
-    let error = WriteOperationError::SourceNotFound {
-        path: "/path/to/missing.txt".to_string(),
-    };
-    let message = error.user_message();
-    assert!(message.contains("Cannot find"));
-    assert!(message.contains("/path/to/missing.txt"));
-}
-
-#[test]
-fn test_error_user_message_destination_exists() {
-    let error = WriteOperationError::DestinationExists {
-        path: "/path/to/existing.txt".to_string(),
-    };
-    let message = error.user_message();
-    assert!(message.contains("already exists"));
-}
-
-#[test]
-fn test_error_user_message_permission_denied() {
-    let error = WriteOperationError::PermissionDenied {
-        path: "/protected/folder".to_string(),
-        message: "Operation not permitted".to_string(),
-    };
-    let message = error.user_message();
-    assert!(message.contains("permission denied"));
-    assert!(message.contains("Finder"));
-}
-
-#[test]
-fn test_error_user_message_insufficient_space() {
-    let error = WriteOperationError::InsufficientSpace {
-        required: 1_073_741_824, // 1 GB
-        available: 524_288_000,  // 500 MB
-        volume_name: Some("Macintosh HD".to_string()),
-    };
-    let message = error.user_message();
-    assert!(message.contains("Not enough space"));
-    assert!(message.contains("Macintosh HD"));
-}
-
-#[test]
-fn test_error_user_message_symlink_loop() {
-    let error = WriteOperationError::SymlinkLoop {
-        path: "/path/to/loop".to_string(),
-    };
-    let message = error.user_message();
-    assert!(message.contains("Symlink loop"));
-}
-
-// ============================================================================
 // Edge case tests
 // ============================================================================
 

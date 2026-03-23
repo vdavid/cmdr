@@ -15,23 +15,9 @@
  *   pnpm test:e2e:macos
  */
 
-import { ensureAppReady, MKDIR_DIALOG, TRANSFER_DIALOG } from '../e2e-shared/helpers.js'
+import { ensureAppReady, dispatchKey, skipParentEntry, MKDIR_DIALOG, TRANSFER_DIALOG } from '../e2e-shared/helpers.js'
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
-
-/**
- * Dispatches a keyboard event via JavaScript. CrabNebula's WebDriver doesn't
- * deliver browser.keys() to the app, so we dispatch events directly on the
- * focused element or the explorer container.
- */
-async function dispatchKey(key: string): Promise<void> {
-    await browser.execute((k: string) => {
-        const target = document.querySelector('.dual-pane-explorer') ?? document.activeElement ?? document.body
-        target.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }))
-        target.dispatchEvent(new KeyboardEvent('keyup', { key: k, bubbles: true, cancelable: true }))
-    }, key)
-    await browser.pause(300)
-}
 
 /** Returns the cursor index in the focused pane via JS (avoids element ref issues). */
 async function getCursorIndex(): Promise<number> {
@@ -133,13 +119,7 @@ describe('Keyboard navigation', () => {
         await ensureAppReady()
 
         // Skip ".." entry
-        const cursorText = await browser.execute(() => {
-            const entry = document.querySelector('.file-entry.is-under-cursor')
-            return entry?.querySelector('.col-name')?.textContent ?? entry?.querySelector('.name')?.textContent ?? ''
-        })
-        if (cursorText === '..') {
-            await dispatchKey('ArrowDown')
-        }
+        await skipParentEntry(() => dispatchKey('ArrowDown'))
 
         // Verify not selected initially
         const initialSelected = await browser.execute(() => {
@@ -251,13 +231,7 @@ describe('Transfer dialogs', () => {
         await ensureAppReady()
 
         // Skip ".." entry
-        const cursorText = await browser.execute(() => {
-            const entry = document.querySelector('.file-entry.is-under-cursor')
-            return entry?.querySelector('.col-name')?.textContent ?? entry?.querySelector('.name')?.textContent ?? ''
-        })
-        if (cursorText === '..') {
-            await dispatchKey('ArrowDown')
-        }
+        await skipParentEntry(() => dispatchKey('ArrowDown'))
 
         await dispatchKey('F5')
 

@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { TabState, TabId } from './tab-types'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import { getFolderName } from '$lib/file-operations/transfer/transfer-dialog-utils'
 
     interface Props {
         tabs: TabState[]
@@ -30,17 +31,6 @@
 
     const isSingleTab = $derived(tabs.length === 1)
     const isAtMax = $derived(tabs.length >= maxTabs)
-
-    /** Extracts the last path segment as a display name */
-    function getFolderName(path: string): string {
-        const segments = path.split('/')
-        const last = segments[segments.length - 1]
-        if (!last) return path
-        // GVFS SMB share directories: extract just the share name
-        const smbMatch = last.match(/^smb-share:.*share=([^,]+)/)
-        if (smbMatch) return smbMatch[1]
-        return last
-    }
 
     function handleTabMouseDown(event: MouseEvent, tabId: TabId) {
         // Middle click

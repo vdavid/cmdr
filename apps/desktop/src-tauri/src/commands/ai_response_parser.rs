@@ -124,12 +124,12 @@ pub fn validate_folders(value: &str) -> Option<String> {
 }
 
 /// Check if a string is a 4-digit year.
-fn is_year(s: &str) -> bool {
+pub(crate) fn is_year(s: &str) -> bool {
     s.len() == 4 && s.chars().all(|c| c.is_ascii_digit())
 }
 
 /// Check if a string is a year range (YYYY..YYYY, YYYY-YYYY, YYYY to YYYY, YYYY–YYYY).
-fn is_range(s: &str) -> bool {
+pub(crate) fn is_range(s: &str) -> bool {
     // Try each separator
     for sep in &["..", " to ", "\u{2013}"] {
         // \u{2013} = en-dash –

@@ -19,19 +19,6 @@ export function getVisibleItemsCount(containerHeight: number, rowHeight: number 
     return Math.ceil(containerHeight / rowHeight)
 }
 
-/** Formats timestamp as YYYY-MM-DD hh:mm (shorter than SelectionInfo format) */
-export function formatDateShort(timestamp: number | undefined): string {
-    if (timestamp === undefined) return ''
-    const date = new Date(timestamp * 1000)
-    const pad = (n: number) => String(n).padStart(2, '0')
-    const year = date.getFullYear()
-    const month = pad(date.getMonth() + 1)
-    const day = pad(date.getDate())
-    const hours = pad(date.getHours())
-    const mins = pad(date.getMinutes())
-    return `${String(year)}-${month}-${day} ${hours}:${mins}`
-}
-
 // ============================================================================
 // Date Column Width Measurement
 // ============================================================================

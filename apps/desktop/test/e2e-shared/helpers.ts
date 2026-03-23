@@ -3,8 +3,9 @@
  * macOS test suites. These run in the WebDriverIO Node.js process and use
  * the global `browser` object.
  *
- * Platform-specific input helpers (dispatchKey, jsClick, pressSpaceKey)
- * stay in each platform's spec files.
+ * Platform-specific input helpers (jsClick, pressSpaceKey) stay in each
+ * platform's spec files. `dispatchKey` is shared across macOS spec files
+ * (CrabNebula's WebDriver doesn't deliver `browser.keys()`).
  */
 
 // ── App readiness ────────────────────────────────────────────────────────────
@@ -128,4 +129,48 @@ export async function findFileIndex(
         }
         return { targetIndex, total: entries.length }
     }, fileName)
+}
+
+// ── macOS helpers (CrabNebula) ──────────────────────────────────────────────
+
+/**
+ * Dispatches a keyboard event via JavaScript. CrabNebula's WebDriver doesn't
+ * deliver browser.keys() to the app, so we dispatch events directly on the
+ * focused element or the explorer container.
+ *
+ * Used by macOS spec files only — Linux tests use browser.keys() directly.
+ */
+export async function dispatchKey(key: string): Promise<void> {
+    await browser.execute((k: string) => {
+        const target = document.querySelector('.dual-pane-explorer') ?? document.activeElement ?? document.body
+        target.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }))
+        target.dispatchEvent(new KeyboardEvent('keyup', { key: k, bubbles: true, cancelable: true }))
+    }, key)
+    await browser.pause(300)
+}
+
+// ── Fixture helpers ─────────────────────────────────────────────────────────
+
+/** Returns the fixture root path from the CMDR_E2E_START_PATH environment variable. */
+export function getFixtureRoot(): string {
+    const root = process.env.CMDR_E2E_START_PATH
+    if (!root) throw new Error('CMDR_E2E_START_PATH env var is not set')
+    return root
+}
+
+// ── Cursor helpers ──────────────────────────────────────────────────────────
+
+/**
+ * If the cursor is on the ".." parent entry, moves it down one position.
+ * Accepts a platform-specific `moveDown` callback (dispatchKey('ArrowDown')
+ * on macOS, browser.keys('ArrowDown') on Linux).
+ */
+export async function skipParentEntry(moveDown: () => Promise<void>): Promise<void> {
+    const cursorText = await browser.execute(() => {
+        const entry = document.querySelector('.file-entry.is-under-cursor')
+        return entry?.querySelector('.col-name')?.textContent ?? entry?.querySelector('.name')?.textContent ?? ''
+    })
+    if (cursorText === '..') {
+        await moveDown()
+    }
 }

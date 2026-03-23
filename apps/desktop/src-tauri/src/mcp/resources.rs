@@ -8,6 +8,7 @@ use tauri::{Manager, Runtime, WebviewWindow};
 
 use super::dialog_state::SoftDialogTracker;
 use super::pane_state::{FileEntry, PaneState, PaneStateStore, TabInfo};
+use crate::indexing::search::format_size;
 #[cfg(target_os = "macos")]
 use crate::volumes;
 
@@ -92,23 +93,6 @@ fn format_file_compact(
     }
 
     parts.join(" ")
-}
-
-/// Format file size in human-readable format.
-fn format_size(bytes: u64) -> String {
-    const KB: u64 = 1024;
-    const MB: u64 = KB * 1024;
-    const GB: u64 = MB * 1024;
-
-    if bytes >= GB {
-        format!("{:.1}G", bytes as f64 / GB as f64)
-    } else if bytes >= MB {
-        format!("{:.1}M", bytes as f64 / MB as f64)
-    } else if bytes >= KB {
-        format!("{:.1}K", bytes as f64 / KB as f64)
-    } else {
-        format!("{}B", bytes)
-    }
 }
 
 /// Build YAML for a single pane.
@@ -532,11 +516,11 @@ mod tests {
 
     #[test]
     fn test_format_size() {
-        assert_eq!(format_size(500), "500B");
-        assert_eq!(format_size(1024), "1.0K");
-        assert_eq!(format_size(1536), "1.5K");
-        assert_eq!(format_size(1048576), "1.0M");
-        assert_eq!(format_size(1073741824), "1.0G");
+        assert_eq!(format_size(500), "500 B");
+        assert_eq!(format_size(1024), "1 KB");
+        assert_eq!(format_size(1536), "1.5 KB");
+        assert_eq!(format_size(1048576), "1 MB");
+        assert_eq!(format_size(1073741824), "1 GB");
     }
 
     #[test]
@@ -564,7 +548,7 @@ mod tests {
 
         // With details
         let formatted = format_file_compact(&file, 0, true, true, true);
-        assert_eq!(formatted, "i:0 f test.txt 1.0K 2024-01-15 [cur] [sel]");
+        assert_eq!(formatted, "i:0 f test.txt 1 KB 2024-01-15 [cur] [sel]");
 
         // Directory
         let dir = FileEntry {
@@ -588,7 +572,7 @@ mod tests {
             modified: Some("2026-03-19T17:33:53.000Z".to_string()),
         };
         let formatted = format_file_compact(&dir_with_size, 5, false, false, true);
-        assert_eq!(formatted, "i:5 d src 169B 2026-03-19T17:33:53.000Z");
+        assert_eq!(formatted, "i:5 d src 169 B 2026-03-19T17:33:53.000Z");
     }
 
     #[test]

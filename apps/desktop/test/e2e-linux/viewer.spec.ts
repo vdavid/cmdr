@@ -45,32 +45,32 @@ async function navigateToViewer(filePath?: string): Promise<void> {
     await navigateToViewerRoute(viewerPath)
 }
 
+/**
+ * Navigates to the viewer for a given file and waits for file content to render.
+ * Throws a diagnostic error if the viewer loads but file content doesn't appear.
+ */
+async function navigateAndWaitForViewer(filePath: string): Promise<void> {
+    await navigateToViewer(filePath)
+
+    const viewer = browser.$('.viewer-container')
+    await viewer.waitForExist({ timeout: 15000 })
+
+    const fileContent = browser.$('.file-content')
+    try {
+        await fileContent.waitForExist({ timeout: 10000 })
+    } catch {
+        const statusMsg = browser.$('.status-message')
+        if (await statusMsg.isExisting()) {
+            const text = await statusMsg.getText()
+            throw new Error(`Viewer did not load file content. Status: "${text}"`)
+        }
+        throw new Error('Viewer did not load file content and no status message found')
+    }
+}
+
 describe('File viewer', () => {
     before(async () => {
-        // Wait for the main app to fully load on first launch
-        const explorer = browser.$('.dual-pane-explorer')
-        await explorer.waitForExist({ timeout: 15000 })
-
-        // Navigate to viewer via SvelteKit client-side routing
-        await navigateToViewerRoute(`/viewer?path=${encodeURIComponent(testFilePath)}`)
-
-        // Wait for viewer to load
-        const viewer = browser.$('.viewer-container')
-        await viewer.waitForExist({ timeout: 15000 })
-
-        // Wait for file content to render (viewerOpen() Tauri IPC must succeed)
-        const fileContent = browser.$('.file-content')
-        try {
-            await fileContent.waitForExist({ timeout: 10000 })
-        } catch {
-            // Diagnostic: check what state the viewer is in
-            const statusMsg = browser.$('.status-message')
-            if (await statusMsg.isExisting()) {
-                const text = await statusMsg.getText()
-                throw new Error(`Viewer did not load file content. Status: "${text}"`)
-            }
-            throw new Error('Viewer did not load file content and no status message found')
-        }
+        await navigateAndWaitForViewer(testFilePath)
     })
 
     it('renders the viewer container', async () => {
@@ -118,22 +118,7 @@ describe('File viewer', () => {
 
 describe('File viewer search', () => {
     before(async () => {
-        await navigateToViewer(testFilePath)
-
-        const viewer = browser.$('.viewer-container')
-        await viewer.waitForExist({ timeout: 15000 })
-
-        const fileContent = browser.$('.file-content')
-        try {
-            await fileContent.waitForExist({ timeout: 10000 })
-        } catch {
-            const statusMsg = browser.$('.status-message')
-            if (await statusMsg.isExisting()) {
-                const text = await statusMsg.getText()
-                throw new Error(`Viewer did not load file content. Status: "${text}"`)
-            }
-            throw new Error('Viewer did not load file content and no status message found')
-        }
+        await navigateAndWaitForViewer(testFilePath)
     })
 
     it('opens search bar with Ctrl+F', async () => {

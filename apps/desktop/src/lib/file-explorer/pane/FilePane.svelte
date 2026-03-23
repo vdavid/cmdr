@@ -178,11 +178,13 @@
     // Disk space info for the current volume (fetched on mount, volume change, and after file ops)
     let volumeSpace: VolumeSpaceInfo | null = $state(null)
 
+    import type { ListViewAPI, VolumeBreadcrumbAPI, NetworkMountViewAPI } from './types'
+
     // Component refs for keyboard navigation
-    let fullListRef: FullList | undefined = $state()
-    let briefListRef: BriefList | undefined = $state()
-    let volumeBreadcrumbRef: VolumeBreadcrumb | undefined = $state()
-    let networkMountViewRef: NetworkMountView | undefined = $state()
+    let fullListRef: ListViewAPI | undefined = $state()
+    let briefListRef: ListViewAPI | undefined = $state()
+    let volumeBreadcrumbRef: VolumeBreadcrumbAPI | undefined = $state()
+    let networkMountViewRef: NetworkMountViewAPI | undefined = $state()
 
     // Check if we're viewing the network (special virtual volume)
     const isNetworkView = $derived(volumeId === 'network')
@@ -226,31 +228,26 @@
 
     // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function toggleVolumeChooser() {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         volumeBreadcrumbRef?.toggle()
     }
 
     // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function isVolumeChooserOpen(): boolean {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
         return volumeBreadcrumbRef?.getIsOpen() ?? false
     }
 
     // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function closeVolumeChooser() {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         volumeBreadcrumbRef?.close()
     }
 
     // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function openVolumeChooser() {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         volumeBreadcrumbRef?.open()
     }
 
     // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function handleVolumeChooserKeyDown(e: KeyboardEvent): boolean {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
         return volumeBreadcrumbRef?.handleKeyDown(e) ?? false
     }
 
@@ -270,7 +267,6 @@
     /** Also scrolls to make the cursor visible and syncs state to MCP. */
     export async function setCursorIndex(index: number): Promise<void> {
         if (isNetworkView) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte bind:this ref
             networkMountViewRef?.setCursorIndex(index)
             return
         }
@@ -278,7 +274,6 @@
         // fetchEntryUnderCursor is handled by the $effect tracking cursorIndex
         // Scroll to make cursor visible
         const listRef = viewMode === 'brief' ? briefListRef : fullListRef
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         listRef?.scrollToIndex(index)
         // Wait for scroll effects to complete before syncing to MCP
         await tick()
@@ -292,8 +287,7 @@
 
     /** Find an item by name in network views. Returns index or -1. */
     export function findNetworkItemIndex(name: string): number {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte bind:this ref
-        return (networkMountViewRef?.findItemIndex(name) as number | undefined) ?? -1
+        return networkMountViewRef?.findItemIndex(name) ?? -1
     }
 
     export function isInNetworkView(): boolean {
@@ -302,7 +296,6 @@
 
     /** Refresh network hosts (used by ⌘R shortcut). */
     export function refreshNetworkHosts(): void {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         networkMountViewRef?.refreshNetworkHosts()
     }
 
@@ -423,8 +416,7 @@
     /** Re-fetches index sizes (recursive_size, etc.) without a full list rebuild. */
     export function refreshIndexSizes(): void {
         const listRef = viewMode === 'brief' ? briefListRef : fullListRef
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        listRef?.refreshIndexSizes?.()
+        listRef?.refreshIndexSizes()
         // Re-enrich backend cache entries so fetchListingStats sees fresh recursive_size values
         if (listingId) {
             void refreshListingIndexSizes(listingId).then(() => fetchListingStats())
@@ -477,7 +469,6 @@
         // Scroll to cursor position
         void tick().then(() => {
             const listRef = viewMode === 'brief' ? briefListRef : fullListRef
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
             listRef?.scrollToIndex(cursorIndex)
         })
     }
@@ -499,7 +490,6 @@
     // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function setNetworkHost(host: NetworkHost | null): void {
         currentNetworkHost = host
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         networkMountViewRef?.setNetworkHost(host)
     }
 
@@ -915,7 +905,6 @@
         // Scroll to cursor after DOM updates
         void tick().then(() => {
             const listRef = viewMode === 'brief' ? briefListRef : fullListRef
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
             listRef?.scrollToIndex(cursorIndex)
         })
     }
@@ -1097,8 +1086,7 @@
 
     // Helper: Handle brief mode key navigation
     function handleBriefModeKeys(e: KeyboardEvent): boolean {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-        const newIndex: number | undefined = briefListRef?.handleKeyNavigation(e.key, e)
+        const newIndex: number | undefined = briefListRef?.handleKeyNavigation?.(e.key, e)
         if (newIndex !== undefined) {
             e.preventDefault()
             applyNavigation(newIndex, briefListRef, e.shiftKey)
@@ -1109,8 +1097,7 @@
 
     // Helper: Handle full mode key navigation
     function handleFullModeKeys(e: KeyboardEvent): boolean {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-        const visibleItems: number = fullListRef?.getVisibleItemsCount() ?? 20
+        const visibleItems: number = fullListRef?.getVisibleItemsCount?.() ?? 20
         const shortcutResult = handleNavigationShortcut(e, {
             currentIndex: cursorIndex,
             totalCount: effectiveTotalCount,
@@ -1172,7 +1159,6 @@
     /** Gets the file entry under the cursor from the current list view */
     function getEntryUnderCursor(): FileEntry | undefined {
         const listRef = viewMode === 'brief' ? briefListRef : fullListRef
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return
         return listRef?.getEntryAt(cursorIndex)
     }
 
@@ -1188,7 +1174,6 @@
         cancelClickToRename()
 
         if (isNetworkView) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
             networkMountViewRef?.handleKeyDown(e)
             return
         }
@@ -1351,7 +1336,6 @@
         void viewMode
         void tick().then(() => {
             const listRef = viewMode === 'brief' ? briefListRef : fullListRef
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
             listRef?.scrollToIndex(cursorIndex)
         })
     })
@@ -1508,7 +1492,6 @@
             if (action === 'open') {
                 // Use the list component's cached entry for consistency
                 const listRef = viewMode === 'brief' ? briefListRef : fullListRef
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
                 const entry: FileEntry | undefined = listRef?.getEntryAt(cursorIndex)
                 if (entry) {
                     void handleNavigate(entry)

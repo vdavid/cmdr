@@ -303,29 +303,6 @@ pub fn update_host_resolution(host_id: &str, hostname: String, ip_address: Optio
     }
 }
 
-/// Resolves a network host by its ID (synchronous version for testing).
-/// For async resolution, use the async command in commands/network.rs.
-#[allow(dead_code, reason = "Sync version kept for testing and potential future use")]
-pub fn resolve_network_host_sync(host_id: &str) -> Option<NetworkHost> {
-    // Get host info (brief mutex hold)
-    let info = get_host_for_resolution(host_id)?;
-
-    // If already resolved, return current state
-    if info.ip_address.is_some() {
-        let state = get_discovery_state().lock_ignore_poison();
-        return state.hosts.get(host_id).cloned();
-    }
-
-    // Generate hostname
-    let hostname = info.hostname.unwrap_or_else(|| service_name_to_hostname(&info.name));
-
-    // Do DNS resolution (this is the slow blocking part - but mutex is NOT held!)
-    let ip_address = resolve_host_ip(&hostname);
-
-    // Update host (brief mutex hold)
-    update_host_resolution(host_id, hostname, ip_address)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

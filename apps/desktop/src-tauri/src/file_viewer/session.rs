@@ -10,6 +10,7 @@ use std::sync::{Arc, LazyLock, Mutex};
 use std::thread;
 use std::time::Duration;
 
+use crate::commands::file_system::expand_tilde;
 use crate::ignore_poison::IgnorePoison;
 use log::debug;
 use serde::Serialize;
@@ -116,16 +117,6 @@ const INDEXING_TIMEOUT_SECS: u64 = 5;
 /// Generates a unique session ID.
 fn generate_session_id() -> String {
     uuid::Uuid::new_v4().to_string()
-}
-
-/// Expands tilde (~) to the user's home directory.
-fn expand_tilde(path: &str) -> String {
-    if (path.starts_with("~/") || path == "~")
-        && let Some(home) = dirs::home_dir()
-    {
-        return path.replacen("~", &home.to_string_lossy(), 1);
-    }
-    path.to_string()
 }
 
 /// Opens a viewer session for the given file path.

@@ -26,22 +26,6 @@ pub struct MtpDeviceInfo {
     pub serial_number: Option<String>,
 }
 
-impl MtpDeviceInfo {
-    /// Returns a display name for the device.
-    ///
-    /// Prefers product name, falls back to "MTP Device (vendor:product)".
-    #[allow(dead_code, reason = "Tested, not yet used in production paths")]
-    pub fn display_name(&self) -> String {
-        if let Some(product) = &self.product {
-            return product.clone();
-        }
-        if let Some(manufacturer) = &self.manufacturer {
-            return format!("{} device", manufacturer);
-        }
-        format!("MTP device ({:04x}:{:04x})", self.vendor_id, self.product_id)
-    }
-}
-
 /// Information about a storage area on an MTP device.
 ///
 /// Android devices typically have one or more storages: "Internal Storage", "SD Card", etc.
@@ -65,48 +49,6 @@ pub struct MtpStorageInfo {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_device_display_name_with_product() {
-        let device = MtpDeviceInfo {
-            id: "mtp-336592896".to_string(),
-            location_id: 336592896,
-            vendor_id: 0x18d1,
-            product_id: 0x4ee1,
-            manufacturer: Some("Google".to_string()),
-            product: Some("Pixel 8".to_string()),
-            serial_number: None,
-        };
-        assert_eq!(device.display_name(), "Pixel 8");
-    }
-
-    #[test]
-    fn test_device_display_name_with_manufacturer() {
-        let device = MtpDeviceInfo {
-            id: "mtp-336592897".to_string(),
-            location_id: 336592897,
-            vendor_id: 0x04e8,
-            product_id: 0x6860,
-            manufacturer: Some("Samsung".to_string()),
-            product: None,
-            serial_number: None,
-        };
-        assert_eq!(device.display_name(), "Samsung device");
-    }
-
-    #[test]
-    fn test_device_display_name_fallback() {
-        let device = MtpDeviceInfo {
-            id: "mtp-336592898".to_string(),
-            location_id: 336592898,
-            vendor_id: 0x1234,
-            product_id: 0x5678,
-            manufacturer: None,
-            product: None,
-            serial_number: None,
-        };
-        assert_eq!(device.display_name(), "MTP device (1234:5678)");
-    }
 
     #[test]
     fn test_device_serialization() {

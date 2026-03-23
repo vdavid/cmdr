@@ -89,7 +89,7 @@ On Linux, `keychain_linux.rs` tries Secret Service (GNOME Keyring / KDE Wallet) 
 
 ## Gotchas
 
-- **Don't hold mutex during DNS resolution**: `resolve_network_host_sync` extracts host info, releases mutex, does blocking DNS, re-acquires mutex to update. Old code held mutex across network call (deadlock risk).
+- **Don't hold mutex during DNS resolution**: `get_host_for_resolution` / `update_host_resolution` extract host info and release the mutex before blocking DNS, then re-acquire to update. Holding the mutex across network calls risks deadlock.
 - **Auth mode is a guess**: `GuestAllowed` means "guest worked, creds might also work." `CredsRequired` means "guest failed, must have creds." Can't detect guest-only vs guest-or-creds without trying both.
 - **NetFS error 17 (EEXIST) is success** (macOS): Share already mounted. Return existing mount path, set `already_mounted: true`. Not an error.
 - **mDNS service type must include `.local.`**: `mdns-sd` requires full form `"_smb._tcp.local."` (trailing dot). Without it, browse() fails silently.

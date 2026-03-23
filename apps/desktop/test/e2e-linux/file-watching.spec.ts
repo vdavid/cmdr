@@ -7,14 +7,7 @@
 
 import fs from 'fs'
 import path from 'path'
-import { ensureAppReady, fileExistsInFocusedPane } from '../e2e-shared/helpers.js'
-
-/** Returns the fixture root path from the environment variable. */
-function getFixtureRoot(): string {
-    const root = process.env.CMDR_E2E_START_PATH
-    if (!root) throw new Error('CMDR_E2E_START_PATH env var is not set')
-    return root
-}
+import { ensureAppReady, getFixtureRoot, fileExistsInFocusedPane } from '../e2e-shared/helpers.js'
 
 describe('File watching', () => {
     const createdDirs: string[] = []

@@ -6,7 +6,7 @@ import { moveCursorToNewFolder } from '$lib/file-operations/mkdir/new-folder-ope
 import type { TransferDialogPropsData } from './transfer-operations'
 import type { DeleteSourceItem } from '$lib/file-operations/delete/delete-dialog-utils'
 import type { TransferOperationType, SortColumn, SortOrder, ConflictResolution, WriteOperationError } from '../types'
-import type FilePane from './FilePane.svelte'
+import type { FilePaneAPI } from './types'
 
 const log = getAppLogger('fileExplorer')
 
@@ -70,9 +70,9 @@ export interface DeleteDialogPropsData {
 }
 
 export interface DialogStateDeps {
-    getLeftPaneRef: () => FilePane | undefined
-    getRightPaneRef: () => FilePane | undefined
-    getFocusedPaneRef: () => FilePane | undefined
+    getLeftPaneRef: () => FilePaneAPI | undefined
+    getRightPaneRef: () => FilePaneAPI | undefined
+    getFocusedPaneRef: () => FilePaneAPI | undefined
     getFocusedPaneSide: () => 'left' | 'right'
     getShowHiddenFiles: () => boolean
     onRefocus: () => void
@@ -80,9 +80,8 @@ export interface DialogStateDeps {
 }
 
 /** Force a backend re-read on a pane's listing so file diffs are emitted promptly. */
-function refreshPaneListing(paneRef: FilePane | undefined): void {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    const listingId = paneRef?.getListingId?.() as string | undefined
+function refreshPaneListing(paneRef: FilePaneAPI | undefined): void {
+    const listingId = paneRef?.getListingId()
     if (listingId) void refreshListing(listingId)
 }
 
@@ -115,28 +114,24 @@ export function createDialogState(deps: DialogStateDeps) {
     let showDeleteDialog = $state(false)
     let deleteDialogProps = $state<DeleteDialogPropsData | null>(null)
 
-    function getSourcePaneRef(): FilePane | undefined {
+    function getSourcePaneRef(): FilePaneAPI | undefined {
         return transferProgressProps?.sourcePaneSide === 'left' ? deps.getLeftPaneRef() : deps.getRightPaneRef()
     }
 
     function clearSourcePaneSelection(): void {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        getSourcePaneRef()?.clearSelection?.()
+        getSourcePaneRef()?.clearSelection()
     }
 
     function snapshotSourcePaneSelection(): void {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        void getSourcePaneRef()?.snapshotSelectionForOperation?.()
+        void getSourcePaneRef()?.snapshotSelectionForOperation()
     }
 
     /** Adjusts source pane selection after a cancelled operation based on the snapshot state. */
     function adjustSelectionAfterCancel(op: TransferOperationType): void {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const prevSnapshot = getSourcePaneRef()?.clearOperationSnapshot?.() as string[] | 'all' | null | undefined
+        const prevSnapshot = getSourcePaneRef()?.clearOperationSnapshot()
         if (prevSnapshot === 'all' && op !== 'copy') {
             // Re-select all survivors (move/delete/trash changed the source listing)
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            getSourcePaneRef()?.selectAll?.()
+            getSourcePaneRef()?.selectAll()
         } else if (prevSnapshot == null) {
             // No snapshot taken — fall back to milestone 1 behavior
             clearSourcePaneSelection()
@@ -169,10 +164,8 @@ export function createDialogState(deps: DialogStateDeps) {
         }
 
         // Refresh disk space on both panes — both might be on the same volume
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        void deps.getLeftPaneRef()?.refreshVolumeSpace?.()
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        void deps.getRightPaneRef()?.refreshVolumeSpace?.()
+        void deps.getLeftPaneRef()?.refreshVolumeSpace()
+        void deps.getRightPaneRef()?.refreshVolumeSpace()
     }
 
     return {
@@ -340,8 +333,7 @@ export function createDialogState(deps: DialogStateDeps) {
             addToast(toastMessage)
 
             refreshPanesAfterTransfer()
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            getSourcePaneRef()?.clearOperationSnapshot?.()
+            getSourcePaneRef()?.clearOperationSnapshot()
             clearSourcePaneSelection()
 
             showTransferProgressDialog = false
@@ -372,8 +364,7 @@ export function createDialogState(deps: DialogStateDeps) {
             })
 
             refreshPanesAfterTransfer()
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            getSourcePaneRef()?.clearOperationSnapshot?.()
+            getSourcePaneRef()?.clearOperationSnapshot()
             clearSourcePaneSelection()
 
             showTransferProgressDialog = false
@@ -391,10 +382,8 @@ export function createDialogState(deps: DialogStateDeps) {
 
         handleNewFolderCreated(folderName: string) {
             const paneRef = deps.getFocusedPaneRef()
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            const paneListingId = paneRef?.getListingId?.() as string | undefined
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            const hasParent = paneRef?.hasParentEntry?.() as boolean | undefined
+            const paneListingId = paneRef?.getListingId()
+            const hasParent = paneRef?.hasParentEntry()
 
             showNewFolderDialog = false
             newFolderDialogProps = null
@@ -420,10 +409,8 @@ export function createDialogState(deps: DialogStateDeps) {
 
         handleNewFileCreated(fileName: string) {
             const paneRef = deps.getFocusedPaneRef()
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            const paneListingId = paneRef?.getListingId?.() as string | undefined
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            const hasParent = paneRef?.hasParentEntry?.() as boolean | undefined
+            const paneListingId = paneRef?.getListingId()
+            const hasParent = paneRef?.hasParentEntry()
             const currentPath = newFileDialogProps?.currentPath ?? ''
 
             showNewFileDialog = false

@@ -3,6 +3,7 @@
     import { mountNetworkShare, listVolumes, findContainingVolume } from '$lib/tauri-commands'
     import { getMountTimeoutMs } from '$lib/settings/network-settings'
     import { getAppLogger } from '$lib/logging/logger'
+    import type { NetworkBrowserAPI, BrowserAPI } from './types'
     import NetworkBrowser from '../network/NetworkBrowser.svelte'
     import ShareBrowser from '../network/ShareBrowser.svelte'
     import Button from '$lib/ui/Button.svelte'
@@ -42,8 +43,8 @@
     } | null>(null)
 
     // Component refs for keyboard navigation
-    let networkBrowserRef: NetworkBrowser | undefined = $state()
-    let shareBrowserRef: ShareBrowser | undefined = $state()
+    let networkBrowserRef: NetworkBrowserAPI | undefined = $state()
+    let shareBrowserRef: BrowserAPI | undefined = $state()
 
     // Sync when parent changes the prop (for example, history navigation)
     $effect(() => {
@@ -128,10 +129,8 @@
 
     export function handleKeyDown(e: KeyboardEvent) {
         if (currentNetworkHost) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
             shareBrowserRef?.handleKeyDown(e)
         } else {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
             networkBrowserRef?.handleKeyDown(e)
         }
     }
@@ -139,10 +138,8 @@
     /** Move cursor to a specific index (used by MCP move_cursor tool). */
     export function setCursorIndex(index: number) {
         if (currentNetworkHost) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte bind:this ref
             shareBrowserRef?.setCursorIndex(index)
         } else {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte bind:this ref
             networkBrowserRef?.setCursorIndex(index)
         }
     }
@@ -150,16 +147,13 @@
     /** Find an item by name, returns its index or -1. */
     export function findItemIndex(name: string): number {
         if (currentNetworkHost) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte bind:this ref
-            return (shareBrowserRef?.findItemIndex(name) as number | undefined) ?? -1
+            return shareBrowserRef?.findItemIndex(name) ?? -1
         }
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte bind:this ref
-        return (networkBrowserRef?.findItemIndex(name) as number | undefined) ?? -1
+        return networkBrowserRef?.findItemIndex(name) ?? -1
     }
 
     /** Refresh network hosts (used by ⌘R shortcut). */
     export function refreshNetworkHosts() {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte bind:this ref
         networkBrowserRef?.refresh()
     }
 

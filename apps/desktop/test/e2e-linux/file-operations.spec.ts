@@ -23,6 +23,7 @@ import path from 'path'
 import {
     ensureAppReady,
     getEntryName,
+    getFixtureRoot,
     fileExistsInFocusedPane,
     fileExistsInPane,
     findFileIndex,
@@ -87,13 +88,6 @@ async function moveCursorToFile(targetName: string): Promise<boolean> {
     }
     await browser.pause(100)
     return true
-}
-
-/** Returns the fixture root path from the environment variable. */
-function getFixtureRoot(): string {
-    const root = process.env.CMDR_E2E_START_PATH
-    if (!root) throw new Error('CMDR_E2E_START_PATH env var is not set')
-    return root
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────────

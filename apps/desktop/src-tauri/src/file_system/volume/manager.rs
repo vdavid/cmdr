@@ -3,9 +3,6 @@
 //! The VolumeManager is the central registry for all mounted volumes.
 //! It tracks both the available volumes and which one is the current default.
 
-// TODO: Remove this once VolumeManager is used in lib.rs (Phase 4)
-#![allow(dead_code, reason = "VolumeManager not yet integrated into lib.rs")]
-
 use super::Volume;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};

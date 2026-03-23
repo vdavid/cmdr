@@ -70,21 +70,6 @@ impl McpResponse {
             }),
         }
     }
-
-    /// Create an error response with additional data.
-    #[allow(dead_code, reason = "Reserved for future use")]
-    pub fn error_with_data(id: Option<Value>, code: i32, message: impl Into<String>, data: Value) -> Self {
-        Self {
-            jsonrpc: "2.0".to_string(),
-            id,
-            result: None,
-            error: Some(McpError {
-                code,
-                message: message.into(),
-                data: Some(data),
-            }),
-        }
-    }
 }
 
 /// Server capabilities returned during initialization.
@@ -215,18 +200,5 @@ mod tests {
         let caps = ServerCapabilities::default();
         assert_eq!(caps.server_info.name, "cmdr");
         assert!(!caps.capabilities.tools.list_changed);
-    }
-
-    #[test]
-    fn test_error_with_data() {
-        let response = McpResponse::error_with_data(
-            Some(json!(1)),
-            INVALID_PARAMS,
-            "Invalid params",
-            json!({"details": "missing field"}),
-        );
-        let json = serde_json::to_value(&response).unwrap();
-
-        assert_eq!(json["error"]["data"]["details"], "missing field");
     }
 }

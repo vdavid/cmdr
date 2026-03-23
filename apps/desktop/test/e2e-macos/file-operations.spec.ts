@@ -20,6 +20,8 @@ import fs from 'fs'
 import path from 'path'
 import {
     ensureAppReady,
+    dispatchKey,
+    getFixtureRoot,
     fileExistsInFocusedPane,
     fileExistsInPane,
     findFileIndex,
@@ -27,20 +29,6 @@ import {
 } from '../e2e-shared/helpers.js'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-
-/**
- * Dispatches a keyboard event via JavaScript. CrabNebula's WebDriver doesn't
- * deliver browser.keys() to the app, so we dispatch events directly on the
- * focused element or the explorer container.
- */
-async function dispatchKey(key: string): Promise<void> {
-    await browser.execute((k: string) => {
-        const target = document.querySelector('.dual-pane-explorer') ?? document.activeElement ?? document.body
-        target.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }))
-        target.dispatchEvent(new KeyboardEvent('keyup', { key: k, bubbles: true, cancelable: true }))
-    }, key)
-    await browser.pause(300)
-}
 
 /**
  * Moves the cursor to a specific file by name in the focused pane.
@@ -57,13 +45,6 @@ async function moveCursorToFile(fileName: string): Promise<boolean> {
         await dispatchKey('ArrowDown')
     }
     return true
-}
-
-/** Returns the fixture root path from the environment variable. */
-function getFixtureRoot(): string {
-    const root = process.env.CMDR_E2E_START_PATH
-    if (!root) throw new Error('CMDR_E2E_START_PATH env var is not set')
-    return root
 }
 
 /**

@@ -1,7 +1,7 @@
 import { getFileAt, getListingStats } from '$lib/tauri-commands'
 import { toBackendIndices, toBackendCursorIndex } from '$lib/file-operations/transfer/transfer-dialog-utils'
 import type { SortColumn, SortOrder, TransferOperationType, VolumeInfo } from '../types'
-import type FilePane from './FilePane.svelte'
+import type { FilePaneAPI } from './types'
 
 export interface TransferContext {
     showHiddenFiles: boolean
@@ -86,13 +86,12 @@ export async function buildTransferPropsFromSelection(
 export async function buildTransferPropsFromCursor(
     operationType: TransferOperationType,
     listingId: string,
-    paneRef: FilePane | undefined,
+    paneRef: FilePaneAPI | undefined,
     hasParent: boolean,
     isLeft: boolean,
     context: TransferContext,
 ): Promise<TransferDialogPropsData | null> {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    const cursorIndex = paneRef?.getCursorIndex?.() as number | undefined
+    const cursorIndex = paneRef?.getCursorIndex()
     const backendIndex = toBackendCursorIndex(cursorIndex ?? -1, hasParent)
     if (backendIndex === null) return null
 

@@ -50,7 +50,7 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
 
 ## Integration status
 
-Both `VolumeManager` and parts of `Volume` are gated with `#[allow(dead_code)]` pending Phase 2/4 integration into `operations.rs` and `lib.rs`. `LocalPosixVolume` is already wired into the indexing subsystem.
+`LocalPosixVolume` is wired into the indexing subsystem. `VolumeManager` is actively used.
 
 ## Key decisions
 
