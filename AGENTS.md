@@ -42,13 +42,18 @@ Core structure:
 - Feature-level docs live in **colocated `CLAUDE.md` files** next to the code (for example,
   `src/lib/settings/CLAUDE.md`). Claude Code auto-discovers these. See `docs/architecture.md` for the full map.
 
-## Testing
+## Testing and checking
 
-- Rust test: `cd apps/desktop/src-tauri && cargo nextest run <test_name>`
-- Svelte test: `cd apps/desktop && pnpm vitest run -t "<test_name>"`
-- All Rust/Svelte tests: `./scripts/check.sh --rust` or `--svelte`
-- Specific checks: `./scripts/check.sh --check <name>` (use `--help` for the full list, or multiple `--check` flags)
+Always use the checker script for compilation, linting, formatting, and tests. Its output is concise and focused —
+no `2>&1`, `head`, or `tail` needed. Don't run raw `cargo check`, `cargo clippy`, `cargo fmt`, etc.
+
+- Specific checks: `./scripts/check.sh --check <name>` (e.g. `--check clippy`, `--check rustfmt`).
+  Use `--help` for the full list, or multiple `--check` flags.
+- All Rust/Svelte checks: `./scripts/check.sh --rust` or `--svelte`
 - All checks: `./scripts/check.sh`
+- Specific tests by name (the one exception where direct commands are fine):
+  - Rust: `cd apps/desktop/src-tauri && cargo nextest run <test_name>`
+  - Svelte: `cd apps/desktop && pnpm vitest run -t "<test_name>"`
 - E2E: See colocated CLAUDE.md files in `apps/desktop/test/e2e-linux/` and `apps/desktop/test/e2e-macos/`
 - Ubuntu test VM: See `apps/desktop/test/e2e-linux/CLAUDE.md` § "Ubuntu test VM"
 - CI: Runs on PRs and pushes to main for changed files. Full run: Actions → CI → "Run workflow".
