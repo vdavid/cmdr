@@ -5,6 +5,51 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 and we use [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-03-23
+
+### Added
+
+- Add whole-drive file search (⌘F) — in-memory index with rayon parallel scan, glob/regex patterns, size/date filters, scope filtering, keyboard-navigable dialog, AI mode via configured LLM, two-pass AI search with preflight refinement, case sensitivity toggle, system folder exclusion, MCP `search` and `ai_search` tools ([058136](https://github.com/vdavid/cmdr/commit/058136), [15110c](https://github.com/vdavid/cmdr/commit/15110c), [8c3546](https://github.com/vdavid/cmdr/commit/8c3546), [cf5827](https://github.com/vdavid/cmdr/commit/cf5827), [415db3](https://github.com/vdavid/cmdr/commit/415db3), [21d32e](https://github.com/vdavid/cmdr/commit/21d32e), [26d682](https://github.com/vdavid/cmdr/commit/26d682))
+- Add opt-in crash reporting — panic hook + signal handler write crash files, dialog lets users inspect and send on next launch, crash loop protection, no PII ([016ee3](https://github.com/vdavid/cmdr/commit/016ee3), [be29af](https://github.com/vdavid/cmdr/commit/be29af))
+- Add Shift+F4: create new file and open in default editor, Total Commander style ([da8ca9](https://github.com/vdavid/cmdr/commit/da8ca9))
+- Add smart size display — store both logical and physical sizes, show `min(logical, physical)` by default with setting to switch, dual-size tooltips with colored byte triads, hardlink dedup via inode tracking, size mismatch warning icon, hourglass icon for stale sizes ([1d666a](https://github.com/vdavid/cmdr/commit/1d666a), [b302d0](https://github.com/vdavid/cmdr/commit/b302d0), [065820](https://github.com/vdavid/cmdr/commit/065820), [1d588f](https://github.com/vdavid/cmdr/commit/1d588f), [a93a8b](https://github.com/vdavid/cmdr/commit/a93a8b), [9c450c](https://github.com/vdavid/cmdr/commit/9c450c))
+- Add Ext column in Full mode — sortable, between Name and Size ([e834b4](https://github.com/vdavid/cmdr/commit/e834b4))
+- Add replay progress overlay — shows "Updating index..." with progress bar and ETA during cold-start replay ([f166b0](https://github.com/vdavid/cmdr/commit/f166b0))
+- MTP: show live disk space in volume breadcrumb dropdown and status bar ([b155f1](https://github.com/vdavid/cmdr/commit/b155f1), [c4cc26](https://github.com/vdavid/cmdr/commit/c4cc26))
+- MTP: show loading progress when opening large folders ([77ebaa](https://github.com/vdavid/cmdr/commit/77ebaa))
+- Add missing focus indicators on search and command palette inputs ([179221](https://github.com/vdavid/cmdr/commit/179221))
+- Selection summary now includes directory sizes ([392819](https://github.com/vdavid/cmdr/commit/392819))
+- MCP: show directory sizes in state resource ([9cb775](https://github.com/vdavid/cmdr/commit/9cb775))
+
+### Fixed
+
+- Fix macOS multi-GB memory leak — add `autoreleasepool` wrappers around all ObjC API calls on background threads, 50M retained objects / 5 GB after 20h of runtime ([777f9e](https://github.com/vdavid/cmdr/commit/777f9e))
+- Fix stack overflow crash in sync status — use dedicated OS threads with 8 MB stacks instead of rayon for NSURL/XPC calls ([fa28cd](https://github.com/vdavid/cmdr/commit/fa28cd))
+- Fix size overcounting — hardlink dedup via inode column, cloud-only files no longer counted as local, smart size mode for dataless files ([fe5eff](https://github.com/vdavid/cmdr/commit/fe5eff))
+- Fix file watcher: instant updates in large dirs via incremental stat-and-compare instead of full re-read, synthetic diffs for mkdir ([df558e](https://github.com/vdavid/cmdr/commit/df558e))
+- Fix selection clearing after file operations — clear on source pane after move/copy/delete/trash, gradual deselection per source item ([538ec5](https://github.com/vdavid/cmdr/commit/538ec5))
+- Fix selection indices drifting after external file changes — pure index adjustment on structural diffs ([453ec0](https://github.com/vdavid/cmdr/commit/453ec0))
+- Fix cursor lost after deleting all files ([17808d](https://github.com/vdavid/cmdr/commit/17808d))
+- Fix stale dir sizes on rename — writer now emits notifications after both delete+insert commit ([10213d](https://github.com/vdavid/cmdr/commit/10213d))
+- Fix indexing won't start on fresh DB — `scanning` flag moved to correct path ([a61376](https://github.com/vdavid/cmdr/commit/a61376))
+- Fix "Scanning..." stuck after replay — clear scanning in replay-complete handler ([4a44d7](https://github.com/vdavid/cmdr/commit/4a44d7), [fb796e](https://github.com/vdavid/cmdr/commit/fb796e))
+- Fix verifier + replay transaction conflict — use named savepoints instead of nested transactions ([72ca9f](https://github.com/vdavid/cmdr/commit/72ca9f))
+- Fix MTP browsing panic and show device name instead of storage name for single-storage devices ([d37b8a](https://github.com/vdavid/cmdr/commit/d37b8a))
+- Fix MTP duplicate directory listing on connect ([17efe8](https://github.com/vdavid/cmdr/commit/17efe8))
+- Fix MCP stale state after server crash, auto-probe port when configured port is in use ([0369d2](https://github.com/vdavid/cmdr/commit/0369d2), [d69f87](https://github.com/vdavid/cmdr/commit/d69f87))
+- Fix OpenAI compatibility ([795a67](https://github.com/vdavid/cmdr/commit/795a67))
+- Hide misleading rollback button for move operations ([fbdba5](https://github.com/vdavid/cmdr/commit/fbdba5))
+- Raise replay and journal gap thresholds to reduce unnecessary full rescans ([377919](https://github.com/vdavid/cmdr/commit/377919), [af2bf7](https://github.com/vdavid/cmdr/commit/af2bf7))
+
+### Non-app
+
+- Analytics dashboard: full-stack metrics view with 6 data sources, rich download timelines, agent-readable report ([b4f740](https://github.com/vdavid/cmdr/commit/b4f740), [0766c4](https://github.com/vdavid/cmdr/commit/0766c4), [b97028](https://github.com/vdavid/cmdr/commit/b97028))
+- Tooling: enforce CSS design tokens via Stylelint — spacing, colors, font sizes, border radius, z-index ([50f2b4](https://github.com/vdavid/cmdr/commit/50f2b4), [e3259b](https://github.com/vdavid/cmdr/commit/e3259b), [36b340](https://github.com/vdavid/cmdr/commit/36b340))
+- Testing: remove desktop smoke tests (covered by Vitest + Linux E2E), speed up store tests by ~20s ([c6210a](https://github.com/vdavid/cmdr/commit/c6210a), [dab071](https://github.com/vdavid/cmdr/commit/dab071))
+- Refactors: reduce structural code duplication across write ops, listing, events, and search dialog ([33ec2f](https://github.com/vdavid/cmdr/commit/33ec2f))
+- Website: add story + testimonials sections, landing page polish, fix Docker healthcheck, fix Remark42 CSP ([d5a7f4](https://github.com/vdavid/cmdr/commit/d5a7f4), [51acd8](https://github.com/vdavid/cmdr/commit/51acd8), [424a80](https://github.com/vdavid/cmdr/commit/424a80), [dd5e34](https://github.com/vdavid/cmdr/commit/dd5e34))
+- MTP: upgrade mtp-rs to v0.2.0 ([634255](https://github.com/vdavid/cmdr/commit/634255))
+
 ## [0.8.2] - 2026-03-15
 
 ### Fixed
