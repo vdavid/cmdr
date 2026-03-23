@@ -21,6 +21,9 @@ go run ./scripts/check --check rustfmt --check clippy
 # Include slow checks
 go run ./scripts/check --include-slow
 
+# Run only slow checks
+go run ./scripts/check --only-slow
+
 # CI mode (no auto-fixing, stop on first failure)
 go run ./scripts/check --ci --fail-fast
 ```
@@ -36,6 +39,7 @@ go run ./scripts/check --ci --fail-fast
 | `--ci` | Disable auto-fixing (for CI) |
 | `--verbose` | Show detailed output |
 | `--include-slow` | Include slow checks (excluded by default) |
+| `--only-slow` | Run only slow checks |
 | `--fail-fast` | Stop on first failure |
 | `--no-log` | Disable CSV stats logging |
 | `-h`, `--help` | Show help message |

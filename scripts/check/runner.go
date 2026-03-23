@@ -79,7 +79,7 @@ func NewRunner(ctx *checks.CheckContext, defs []checks.CheckDefinition, failFast
 	// Calculate max prefix width for alignment
 	for _, state := range r.checks {
 		def := state.Definition
-		prefix := fmt.Sprintf("%s: %s / %s", checks.AppDisplayName(def.App), def.Tech, def.DisplayName)
+		prefix := fmt.Sprintf("%s: %s / %s", checks.AppDisplayName(def.App), def.Tech, def.CLIName())
 		width := utf8.RuneCountInString(prefix)
 		if width > r.prefixWidth {
 			r.prefixWidth = width
@@ -231,7 +231,7 @@ func (r *Runner) printResult(state *CheckState) {
 	r.clearStatusLineUnsafe()
 
 	def := state.Definition
-	prefix := fmt.Sprintf("%s: %s / %s", checks.AppDisplayName(def.App), def.Tech, def.DisplayName)
+	prefix := fmt.Sprintf("%s: %s / %s", checks.AppDisplayName(def.App), def.Tech, def.CLIName())
 	paddedPrefix := r.padPrefix(prefix)
 
 	switch state.Status {
@@ -273,7 +273,7 @@ func (r *Runner) printBlocked(state *CheckState, depID string) {
 	r.clearStatusLineUnsafe()
 
 	def := state.Definition
-	prefix := fmt.Sprintf("%s: %s / %s", checks.AppDisplayName(def.App), def.Tech, def.DisplayName)
+	prefix := fmt.Sprintf("%s: %s / %s", checks.AppDisplayName(def.App), def.Tech, def.CLIName())
 	paddedPrefix := r.padPrefix(prefix)
 	fmt.Printf("• %s... %sBLOCKED%s (dependency %s failed)\n", paddedPrefix, colorYellow, colorReset, depID)
 	if !r.noLog {

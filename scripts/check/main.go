@@ -40,6 +40,7 @@ type cliFlags struct {
 	ciMode      bool
 	verbose     bool
 	includeSlow bool
+	onlySlow    bool
 	failFast    bool
 	noLog       bool
 }
@@ -85,6 +86,16 @@ func main() {
 
 	checksToRun = checks.FilterSlowChecks(checksToRun, flags.includeSlow)
 
+	if flags.onlySlow {
+		var slow []checks.CheckDefinition
+		for _, c := range checksToRun {
+			if c.IsSlow {
+				slow = append(slow, c)
+			}
+		}
+		checksToRun = slow
+	}
+
 	if len(checksToRun) == 0 {
 		fmt.Println("No checks to run.")
 		os.Exit(0)
@@ -115,6 +126,7 @@ func parseFlags() *cliFlags {
 		ciMode      = flag.Bool("ci", false, "Disable auto-fixing (for CI)")
 		verbose     = flag.Bool("verbose", false, "Show detailed output")
 		includeSlow = flag.Bool("include-slow", false, "Include slow checks (excluded by default)")
+		onlySlow    = flag.Bool("only-slow", false, "Run only slow checks")
 		failFast    = flag.Bool("fail-fast", false, "Stop on first failure")
 		noLog       = flag.Bool("no-log", false, "Disable CSV stats logging")
 		help        = flag.Bool("help", false, "Show help message")
@@ -136,7 +148,8 @@ func parseFlags() *cliFlags {
 		checkNames:  checkNames,
 		ciMode:      *ciMode,
 		verbose:     *verbose,
-		includeSlow: *includeSlow || len(checkNames) > 0,
+		includeSlow: *includeSlow || *onlySlow || len(checkNames) > 0,
+		onlySlow:    *onlySlow,
 		failFast:    *failFast,
 		noLog:       *noLog || *ciMode,
 	}
@@ -292,6 +305,7 @@ func showUsage() {
 	fmt.Println("    --ci                     Disable auto-fixing (for CI)")
 	fmt.Println("    --verbose                Show detailed output")
 	fmt.Println("    --include-slow           Include slow checks (excluded by default)")
+	fmt.Println("    --only-slow              Run only slow checks")
 	fmt.Println("    --fail-fast              Stop on first failure")
 	fmt.Println("    --no-log                 Disable CSV stats logging (~/cmdr-check-log.csv)")
 	fmt.Println("    -h, --help               Show this help message")
