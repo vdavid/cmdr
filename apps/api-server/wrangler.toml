@@ -31,7 +31,7 @@ dataset = "cmdr_device_counts"
 [[d1_databases]]
 binding = "TELEMETRY_DB"
 database_name = "cmdr-telemetry"
-database_id = "placeholder-will-be-set-on-deploy"
+database_id = "537fdb4a-cd66-4faf-a2fe-3e51b5f6f915"
 
 [triggers]
 crons = ["0 */12 * * *"]
