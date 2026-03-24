@@ -6,8 +6,8 @@ description:
     e-reader support), shipping in Cmdr v0.9.1.
 ---
 
-Cmdr can browse Android phones and e-readers over USB via [MTP](https://github.com/vdavid/mtp-v1_1-spec-md). But
-Kindles weren't detected. As of v0.9.1, they are.
+Cmdr can browse Android phones and e-readers over USB via [MTP](https://github.com/vdavid/mtp-v1_1-spec-md). But Kindles
+weren't detected. As of v0.9.1, they are.
 
 <!-- more -->
 
@@ -29,8 +29,8 @@ to abstract away the file system to allow for other stuff like S3 buckets, git r
 When I started looking into MTP support, I found that the only real option, `libmtp`, is a C library from ~20 years ago.
 I thought: can we do this in pure Rust? Turns out yes. And it's a lot cleaner and faster, too.
 
-[`mtp-rs`](https://github.com/vdavid/mtp-rs) is a pure-Rust, async MTP library. No C dependencies, no FFI, no
-`unsafe`. Built on top of [`nusb`](https://crates.io/crates/nusb) for USB access.
+[`mtp-rs`](https://github.com/vdavid/mtp-rs) is a pure-Rust, async MTP library. No C dependencies, no FFI, no `unsafe`.
+Built on top of [`nusb`](https://crates.io/crates/nusb) for USB access.
 
 The benchmarks are pretty happy. On a Pixel 9 Pro XL, `mtp-rs` is **1.06–4.04x faster** than `libmtp` across all
 operations. And the consistency: for 100 MB downloads, `libmtp`'s times ranged from 3.7s to 18.2s (a 5x spread).

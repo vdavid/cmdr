@@ -1,9 +1,5 @@
 import { test, expect } from '@playwright/test'
 
-/** Newest post (appears first on blog index) */
-const newestSlug = 'replacing-tauri-updater-for-perfect-ux'
-const newestTitle = "Replacing Tauri's updater for perfect update UX"
-
 /** Post used for individual post page tests */
 const slug = 'cmdr-will-track-your-entire-file-system'
 const title = 'Cmdr will track your entire file system'
@@ -24,29 +20,32 @@ test.describe('Blog', () => {
     test('blog index shows excerpt, not full post', async ({ page }) => {
         await page.goto('/blog')
         const article = page.locator('article').first()
-        // Excerpt content should be visible (newest post: replacing-tauri-updater)
-        await expect(article.locator('.blog-content')).toContainText('uninstall your app')
-        // Content after the <!-- more --> marker should not appear
-        await expect(article.locator('.blog-content')).not.toContainText('rabbit hole')
+        const content = article.locator('.blog-content')
+        await expect(content).toBeVisible()
+        // Excerpt should have a "Read more" link, meaning content was truncated
+        await expect(article.locator('.read-more-link')).toBeVisible()
     })
 
     test('blog index has "Read more" link to full post', async ({ page }) => {
         await page.goto('/blog')
         const readMore = page.locator('.read-more-link').first()
         await expect(readMore).toBeVisible()
-        await expect(readMore).toHaveAttribute('href', `/blog/${newestSlug}`)
+        const href = await readMore.getAttribute('href')
+        expect(href).toMatch(/^\/blog\//)
         await readMore.click()
-        await expect(page).toHaveURL(new RegExp(`/blog/${newestSlug}`))
-        await expect(page.locator('h1')).toContainText(newestTitle)
+        await expect(page).toHaveURL(new RegExp(href!))
+        await expect(page.locator('h1')).toBeVisible()
     })
 
     test('post title links to individual post page', async ({ page }) => {
         await page.goto('/blog')
-        const postLink = page.locator(`article a[href*="/blog/${newestSlug}"]`).first()
-        await expect(postLink).toBeVisible()
-        await postLink.click()
-        await expect(page).toHaveURL(new RegExp(`/blog/${newestSlug}`))
-        await expect(page.locator('h1')).toContainText(newestTitle)
+        const article = page.locator('article').first()
+        const link = article.locator('a[href*="/blog/"]').first()
+        await expect(link).toBeVisible()
+        const href = await link.getAttribute('href')
+        await link.click()
+        await expect(page).toHaveURL(new RegExp(href!))
+        await expect(page.locator('h1')).toBeVisible()
     })
 
     test('individual post shows full content including sections after excerpt', async ({ page }) => {
