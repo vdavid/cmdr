@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"vmail/scripts/check/checks"
+	"cmdr/scripts/check/checks"
 )
 
 // stringSlice implements flag.Value for accumulating multiple flag values

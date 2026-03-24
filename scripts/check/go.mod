@@ -1,4 +1,4 @@
-module vmail/scripts/check
+module cmdr/scripts/check
 
 go 1.25
 

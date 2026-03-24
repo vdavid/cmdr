@@ -9,7 +9,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"vmail/scripts/check/checks"
+	"cmdr/scripts/check/checks"
 
 	"golang.org/x/term"
 )
