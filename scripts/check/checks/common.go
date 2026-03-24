@@ -222,8 +222,25 @@ func indentOutput(output string) string {
 }
 
 // EnsurePnpmDependencies runs pnpm install to ensure all dependencies are installed.
-// In CI mode, uses --frozen-lockfile to fail if lockfile is out of sync.
-func EnsurePnpmDependencies(ctx *CheckContext) error {
+// Skips the install if pnpm-lock.yaml hasn't changed since the last successful run.
+// In CI mode, uses --frozen-lockfile and always runs (never skips).
+// Returns true if the install was skipped.
+func EnsurePnpmDependencies(ctx *CheckContext) (skipped bool, err error) {
+	lockfilePath := filepath.Join(ctx.RootDir, "pnpm-lock.yaml")
+	markerPath := filepath.Join(ctx.RootDir, "node_modules", ".pnpm-install-marker")
+
+	if !ctx.CI {
+		if lockInfo, lockErr := os.Stat(lockfilePath); lockErr == nil {
+			if markerContent, markerErr := os.ReadFile(markerPath); markerErr == nil {
+				recorded := string(markerContent)
+				current := lockInfo.ModTime().UTC().Format("2006-01-02T15:04:05.000000000Z")
+				if recorded == current {
+					return true, nil
+				}
+			}
+		}
+	}
+
 	args := []string{"install"}
 	if ctx.CI {
 		args = append(args, "--frozen-lockfile")
@@ -233,9 +250,16 @@ func EnsurePnpmDependencies(ctx *CheckContext) error {
 	cmd.Dir = ctx.RootDir
 	output, err := RunCommand(cmd, true)
 	if err != nil {
-		return fmt.Errorf("pnpm install failed:\n%s", indentOutput(output))
+		return false, fmt.Errorf("pnpm install failed:\n%s", indentOutput(output))
 	}
-	return nil
+
+	// Write marker with lockfile's current mtime
+	if lockInfo, lockErr := os.Stat(lockfilePath); lockErr == nil {
+		mtime := lockInfo.ModTime().UTC().Format("2006-01-02T15:04:05.000000000Z")
+		_ = os.WriteFile(markerPath, []byte(mtime), 0644)
+	}
+
+	return false, nil
 }
 
 // Pluralize returns singular if count is 1, plural otherwise.

@@ -202,6 +202,12 @@ Use `CommandExists()` to check if a tool is installed, and auto-install if possi
 **Decision**: Auto-fix locally, check-only in CI.
 **Why**: Developers get instant fixes locally (less friction), CI ensures code is properly formatted before merge. Controlled by the `--ci` flag.
 
+**Decision**: Skip `pnpm install` when lockfile is unchanged.
+**Why**: `pnpm install` takes ~20s and pegs all CPUs even when deps haven't changed. A marker file
+(`node_modules/.pnpm-install-marker`) stores `pnpm-lock.yaml`'s mtime after each successful install.
+On the next run, if the mtime matches, install is skipped. The marker lives inside `node_modules/` so
+it's automatically invalidated if `node_modules` is deleted. Always runs in CI (`--ci`).
+
 ## Dependencies
 
 `golang.org/x/term`, `golang.org/x/sys` (transitive). Go 1.25.

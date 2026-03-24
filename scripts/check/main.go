@@ -280,13 +280,18 @@ func ensurePnpmDependencies(ctx *checks.CheckContext) error {
 	fmt.Print("📦 Ensuring pnpm dependencies are installed... ")
 	startTime := time.Now()
 
-	if err := checks.EnsurePnpmDependencies(ctx); err != nil {
+	skipped, err := checks.EnsurePnpmDependencies(ctx)
+	if err != nil {
 		fmt.Printf("%sFAILED%s\n", colorRed, colorReset)
 		return err
 	}
 
 	duration := time.Since(startTime)
-	fmt.Printf("%sOK%s (%s)\n\n", colorGreen, colorReset, formatDuration(duration))
+	if skipped {
+		fmt.Printf("%sOK%s (skipped, lockfile unchanged)\n\n", colorGreen, colorReset)
+	} else {
+		fmt.Printf("%sOK%s (%s)\n\n", colorGreen, colorReset, formatDuration(duration))
+	}
 	return nil
 }
 
