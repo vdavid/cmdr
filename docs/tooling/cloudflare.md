@@ -58,45 +58,25 @@ curl -s "https://api.cloudflare.com/client/v4/accounts/6a4433bf11c3cf86feda057f7
   -H "Authorization: Bearer ${TOKEN}" | jq '.result[]'
 ```
 
-## Download tracking (Analytics Engine)
+## Telemetry (D1)
 
-The API server has a `GET /download/:version/:arch` endpoint that logs downloads to D1 and 302-redirects to the
-GitHub Releases .dmg. The website routes download links through this endpoint when `PUBLIC_DOWNLOAD_BASE_URL` is set.
+Downloads, update checks, and crash reports are stored in D1 (database: `cmdr-telemetry`). The only remaining Analytics
+Engine dataset is `DEVICE_COUNTS` for fair-use device monitoring.
 
-**Data schema**: indexes=[version], blobs=[version, arch, country, continent], doubles=[1].
-
-**Query downloads** via the [CF Analytics Engine SQL API](https://developers.cloudflare.com/analytics/analytics-engine/sql-api/).
-Create an API token with `Account Analytics Read` permission, then:
+**Query via admin endpoints** (authenticated with `ADMIN_API_TOKEN`):
 
 ```bash
-curl -s "https://api.cloudflare.com/client/v4/accounts/{account_id}/analytics_engine/sql" \
-  -H "Authorization: Bearer {api_token}" \
-  -d "SELECT blob1 AS version, blob2 AS arch, blob3 AS country, SUM(_sample_interval) AS downloads
-      FROM cmdr_downloads
-      WHERE timestamp > NOW() - INTERVAL '30' DAY
-      GROUP BY version, arch, country
-      ORDER BY downloads DESC"
+# Downloads (ranges: 24h, 7d, 30d, all)
+curl -s "https://api.getcmdr.com/admin/downloads?range=30d" \
+  -H "Authorization: Bearer ${ADMIN_API_TOKEN}"
+
+# Active users (ranges: 7d, 30d, 90d, all)
+curl -s "https://api.getcmdr.com/admin/active-users?range=30d" \
+  -H "Authorization: Bearer ${ADMIN_API_TOKEN}"
+
+# Crash reports (ranges: 7d, 30d, 90d, all)
+curl -s "https://api.getcmdr.com/admin/crashes?range=30d" \
+  -H "Authorization: Bearer ${ADMIN_API_TOKEN}"
 ```
 
-The dataset is created automatically on the first write — no setup needed beyond deploying the API server.
-
-## Update check tracking (Analytics Engine)
-
-The API server has a `GET /update-check/:version` endpoint that logs update checks to D1
-(dataset: `cmdr_update_checks`) and 302-redirects to `https://getcmdr.com/latest.json`. The desktop app routes all
-update checks through this endpoint.
-
-**Data schema**: indexes=[hashedIp], blobs=[version, arch], doubles=[1]. The IP is hashed with a daily salt for
-deduplication without storing PII.
-
-**Query unique active users** (deduplicated by hashed IP):
-
-```bash
-curl -s "https://api.cloudflare.com/client/v4/accounts/{account_id}/analytics_engine/sql" \
-  -H "Authorization: Bearer {api_token}" \
-  -d "SELECT blob1 AS version, COUNT(DISTINCT index1) AS unique_checks
-      FROM cmdr_update_checks
-      WHERE timestamp > NOW() - INTERVAL '30' DAY
-      GROUP BY version
-      ORDER BY unique_checks DESC"
-```
+The analytics dashboard fetches from these endpoints automatically.
