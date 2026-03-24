@@ -64,14 +64,12 @@ the codebase.
 | `UMAMI_PASSWORD` | Yes | Umami login password | Umami admin panel |
 | `UMAMI_WEBSITE_ID` | Yes | getcmdr.com website UUID | Umami > Websites |
 | `UMAMI_BLOG_WEBSITE_ID` | Yes | Blog website UUID | Umami > Websites |
-| `CLOUDFLARE_API_TOKEN` | Yes | Needs "Account Analytics Read" permission | CF dashboard > API Tokens |
-| `CLOUDFLARE_ACCOUNT_ID` | Yes | Cloudflare account ID | CF dashboard > Overview |
 | `PADDLE_API_KEY_LIVE` | Yes | Live API key (not sandbox) | Paddle > Developer Tools > API Keys |
 | `POSTHOG_API_KEY` | Yes | Personal API key (`phx_...`), not the public project key | PostHog > Settings > Personal API Keys |
 | `POSTHOG_PROJECT_ID` | Yes | PostHog project ID | PostHog > Settings > Project |
 | `POSTHOG_API_URL` | Yes | Must be `https://eu.posthog.com` for EU projects | PostHog region setting |
 | `GITHUB_TOKEN` | No | Avoids GitHub API rate limits on public repo endpoints | GitHub > Settings > Developer Settings > PAT |
-| `LICENSE_SERVER_ADMIN_TOKEN` | Yes | Admin secret for the license server `/admin/stats` endpoint | License server config |
+| `LICENSE_SERVER_ADMIN_TOKEN` | Yes | Admin secret for the API server `/admin/stats` endpoint | API server config |
 
 ## Further reading
 

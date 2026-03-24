@@ -1,24 +1,29 @@
-# License server
+# API server
 
-Cloudflare Worker (Hono) that handles the full license lifecycle: verifies Paddle webhooks, generates Ed25519-signed
-license keys, stores short activation codes in KV, and emails keys via Resend.
+Cloudflare Worker (Hono) that serves as the backend API for Cmdr. Handles licensing (Paddle webhooks, Ed25519 key
+generation, activation codes in KV), telemetry (crash reports, downloads, update checks in D1), admin endpoints, and
+cron-based notifications. Deployed at `api.getcmdr.com` (`license.getcmdr.com` remains as a permanent alias for existing
+app versions).
 
 ## Key files
 
-| File                                        | Purpose                                                       |
-| ------------------------------------------- | ------------------------------------------------------------- |
-| `src/index.ts`                              | Hono app: all routes, webhook processing, admin endpoint      |
-| `src/license.ts`                            | Short code + license key generation, `LicenseType` enum       |
-| `src/paddle.ts`                             | HMAC-SHA256 webhook verification, `constantTimeEqual`         |
-| `src/paddle-api.ts`                         | Paddle REST client: transaction/subscription/customer fetch   |
-| `src/email.ts`                              | Resend email delivery (HTML + plain text, multi-seat support) |
-| `src/device-tracking.ts`                    | Device set helpers: prune stale devices, alert threshold      |
-| `src/license.test.ts`, `src/paddle.test.ts` | Vitest tests                                                  |
-| `src/device-tracking.test.ts`               | Tests for device tracking helpers                             |
-| `src/admin-stats.test.ts`                   | Tests for `/admin/stats` endpoint and activation counter      |
-| `src/crash-report.test.ts`                  | Tests for `POST /crash-report` endpoint                       |
-| `scripts/generate-keys.js`                  | Ed25519 key pair generation (run once at setup)               |
-| `scripts/setup-cf-infra.sh`                 | Cloudflare KV namespace provisioning                          |
+| File                                        | Purpose                                                               |
+| ------------------------------------------- | --------------------------------------------------------------------- |
+| `src/index.ts`                              | Hono app: all routes, webhook processing, admin endpoint              |
+| `src/license.ts`                            | Short code + license key generation, `LicenseType` enum               |
+| `src/paddle.ts`                             | HMAC-SHA256 webhook verification, `constantTimeEqual`                 |
+| `src/paddle-api.ts`                         | Paddle REST client: transaction/subscription/customer fetch           |
+| `src/email.ts`                              | Resend email delivery (HTML + plain text, multi-seat support)         |
+| `src/device-tracking.ts`                    | Device set helpers: prune stale devices, alert threshold              |
+| `src/license.test.ts`, `src/paddle.test.ts` | Vitest tests                                                          |
+| `src/device-tracking.test.ts`               | Tests for device tracking helpers                                     |
+| `src/admin-stats.test.ts`                   | Tests for `/admin/stats` endpoint and activation counter              |
+| `src/admin-endpoints.test.ts`               | Tests for `/admin/downloads`, `/admin/active-users`, `/admin/crashes` |
+| `src/crash-report.test.ts`                  | Tests for `POST /crash-report` endpoint                               |
+| `src/download-and-update-check.test.ts`     | Tests for download redirect and update check routes                   |
+| `src/scheduled.test.ts`                     | Tests for cron handler (crash notifications, aggregation)             |
+| `scripts/generate-keys.js`                  | Ed25519 key pair generation (run once at setup)                       |
+| `scripts/setup-cf-infra.sh`                 | Cloudflare KV namespace provisioning                                  |
 
 ## Routes
 
@@ -30,9 +35,12 @@ license keys, stores short activation codes in KV, and emails keys via Resend.
 | POST   | `/validate`                | —            | Check subscription status via Paddle API                  |
 | POST   | `/admin/generate`          | Bearer token | Manual key generation (customer service / testing)        |
 | GET    | `/admin/stats`             | Bearer token | Activation count + device count (for analytics dashboard) |
-| GET    | `/download/:version/:arch` | —            | Log download to Analytics Engine, 302 → GitHub            |
-| POST   | `/crash-report`            | —            | Ingest crash report to Analytics Engine                   |
-| GET    | `/update-check/:version`   | —            | Log update check to Analytics Engine, 302 → latest.json   |
+| GET    | `/admin/downloads`         | Bearer token | Aggregated download data by day/version/arch/country      |
+| GET    | `/admin/active-users`      | Bearer token | Aggregated daily active users by version/arch             |
+| GET    | `/admin/crashes`           | Bearer token | Aggregated crash data by day/crash site/signal            |
+| GET    | `/download/:version/:arch` | —            | Log download to D1, 302 → GitHub                          |
+| POST   | `/crash-report`            | —            | Ingest crash report to D1                                 |
+| GET    | `/update-check/:version`   | —            | Log update check to D1 (deduped), 302 → latest.json       |
 
 ## Environments
 
@@ -56,6 +64,7 @@ API key the server uses. Set to `"sandbox"` by default (from `wrangler.toml`). T
 | `PRICE_ID_COMMERCIAL_PERPETUAL`    | Sandbox price ID                 | Live price ID                     |
 | `ED25519_PRIVATE_KEY`              | Private key hex                  | Same private key hex              |
 | `RESEND_API_KEY`                   | Resend key                       | Same Resend key                   |
+| `CRASH_NOTIFICATION_EMAIL`         | `veszelovszki@gmail.com`         | Recipient email for crash alerts  |
 
 **Paddle dashboards**: [sandbox](https://sandbox-vendors.paddle.com) | [live](https://vendors.paddle.com)
 
@@ -63,7 +72,7 @@ API key the server uses. Set to `"sandbox"` by default (from `wrangler.toml`). T
 
 `verifyPaddleWebhookMulti` tries both `PADDLE_WEBHOOK_SECRET_LIVE` and `PADDLE_WEBHOOK_SECRET_SANDBOX` when verifying
 incoming webhooks. This is a safety net — in practice, the sandbox dashboard sends webhooks only to the sandbox
-destination (ngrok for local dev), and the live dashboard sends only to the live destination (`license.getcmdr.com`).
+destination (ngrok for local dev), and the live dashboard sends only to the live destination (`api.getcmdr.com`).
 
 ## Data flow
 
@@ -83,12 +92,34 @@ Subscription validation: POST /validate → Paddle API transactions + subscripti
   → if deviceId present: track device in KV (devices:{seatTransactionId}), log to Analytics Engine
   → if device count >= 6 and not recently alerted: send alert email to legal@getcmdr.com
 
-Download redirect: GET /download/:version/:arch → log to Analytics Engine → 302 to GitHub Releases
+Download redirect: GET /download/:version/:arch → write to D1 (fire-and-forget) → 302 to GitHub Releases
 
-Crash report: POST /crash-report → validate payload (size + required fields) → hash IP with daily salt → write to Analytics Engine (fire-and-forget) → 204
+Crash report: POST /crash-report → validate payload (size + required fields) → hash IP with daily salt → write to D1 (fire-and-forget via waitUntil) → 204
 
-Update check proxy: GET /update-check/:version → hash IP with daily salt → log to Analytics Engine → 302 to latest.json
+Update check proxy: GET /update-check/:version → hash IP with daily salt → INSERT OR IGNORE into D1 (fire-and-forget) → 302 to latest.json
+
+Cron (every 12h): scheduled handler runs three jobs:
+  1. Crash notifications: query un-notified crash_reports → group by top_function → mark notified → email summary
+  2. Daily aggregation (00:00 UTC only): aggregate update_checks → daily_active_users, prune raw data older than 7 days
+  3. DB size check (00:00 UTC only): query pragma_page_count/pragma_page_size → email alert if over 100 MB
 ```
+
+## Cron handler
+
+A single `scheduled` handler runs every 12 hours (`0 */12 * * *`). It runs three independent jobs, each in its own
+try-catch so one failure doesn't block the others:
+
+1. **Crash notifications** (every invocation): queries `crash_reports WHERE notified_at IS NULL`, groups by
+   `top_function`, marks rows as notified, then sends a summary email via Resend. Marks before sending to prefer missed
+   notifications over duplicates. Requires `CRASH_NOTIFICATION_EMAIL` and `RESEND_API_KEY`.
+
+2. **Daily aggregation** (00:00 UTC only): aggregates yesterday's `update_checks` into `daily_active_users` via
+   `INSERT OR IGNORE ... GROUP BY`, then prunes raw update checks older than 7 days. Idempotent via existence check.
+
+3. **DB size check** (00:00 UTC only): queries D1 pragma for total database size. Sends an alert email if over 100 MB.
+
+The default export uses the object form (`{ fetch, scheduled }`) required for cron support. The Hono `app` is also
+exported as a named export so tests can use `app.request()`.
 
 ## Key patterns
 
@@ -115,28 +146,31 @@ secret, separate from the Paddle webhook secrets used by `/admin/generate`.
 Read by `/admin/stats`. The counter starts from zero when deployed — initialize via the CF API if historical count is
 needed.
 
-**No database:** All state lives in Cloudflare KV. Short codes never expire (perpetual licenses last forever);
-subscription validity is checked live via Paddle API.
+**D1 for telemetry:** Crash reports, downloads, and update checks are stored in D1 (binding: `TELEMETRY_DB`, database:
+`cmdr-telemetry`). Migrations live in `migrations/`. Apply with `wrangler d1 migrations apply cmdr-telemetry` before
+deploying changes that add new tables. The only remaining Analytics Engine dataset is `DEVICE_COUNTS` for fair-use
+monitoring. All other state (license codes, activation counter, device sets) lives in Cloudflare KV. Short codes never
+expire (perpetual licenses last forever); subscription validity is checked live via Paddle API.
 
 **Validation error granularity:** `/validate` distinguishes "Paddle says invalid" (HTTP 200 + `status: "invalid"`) from
 "Paddle is unreachable" (HTTP 502 + `{ error: "upstream_error" }`). `paddle-api.ts` throws `PaddleApiError` on
 network/5xx errors and returns `null` on 404 (transaction not found). This lets the desktop app fall back to cached
 status on transient Paddle outages instead of overwriting a valid "active" cache with "invalid."
 
-**Download tracking:** Uses Cloudflare Analytics Engine (binding: `DOWNLOADS`, dataset: `cmdr_downloads`).
-`writeDataPoint` is fire-and-forget. Data schema: indexes=[version], blobs=[version, arch, country, continent],
-doubles=[1]. Query via CF Analytics Engine SQL API.
+**Download tracking:** Uses D1 (binding: `TELEMETRY_DB`, table: `downloads`). One row per download event with
+app_version, arch, country, and continent. D1 write is fire-and-forget via `waitUntil` + `.catch(() => {})`.
 
-**Update check tracking:** Uses Cloudflare Analytics Engine (binding: `UPDATE_CHECKS`, dataset: `cmdr_update_checks`).
-Counts active users (free + licensed) by proxying update checks through `GET /update-check/:version`. Data schema:
-indexes=[hashedIp], blobs=[version, arch], doubles=[1]. IP is hashed with SHA-256 + daily salt for deduplication without
-storing PII. Fire-and-forget, same pattern as download tracking.
+**Update check tracking:** Uses D1 (binding: `TELEMETRY_DB`, table: `update_checks`). Counts active users (free +
+licensed) by proxying update checks through `GET /update-check/:version`. Each unique (date, hashed_ip, app_version,
+arch) combo gets one row — `INSERT OR IGNORE` with a UNIQUE constraint handles deduplication for free. IP is hashed with
+SHA-256 + daily salt for deduplication without storing PII. D1 write is fire-and-forget via `waitUntil` +
+`.catch(() => {})`. The cron handler aggregates raw data into the `daily_active_users` summary table daily.
 
-**Crash report tracking:** Uses Cloudflare Analytics Engine (binding: `CRASH_REPORTS`, dataset: `cmdr_crash_reports`).
-Receives crash reports from the desktop app via `POST /crash-report`. Data schema: indexes=[hashedIp],
-blobs=[appVersion, osVersion, arch, signal, topFunction, backtraceTruncated], doubles=[1]. IP is hashed with SHA-256 +
-daily salt (same pattern as update checks). Validates payload size (max 64 KB) and required fields before writing.
-Fire-and-forget, same pattern as download tracking. No authentication required.
+**Crash report tracking:** Uses D1 (binding: `TELEMETRY_DB`, table: `crash_reports`). Receives crash reports from the
+desktop app via `POST /crash-report`. Columns: hashed_ip, app_version, os_version, arch, signal, top_function,
+backtrace. IP is hashed with SHA-256 + daily salt (same pattern as update checks). Validates payload size (max 64 KB)
+and required fields before writing. D1 write is fire-and-forget via `waitUntil` + `.catch(() => {})`. No authentication
+required.
 
 **Device tracking (fair use):** On each `/validate` call with a `deviceId`, the server tracks the device in KV
 (`devices:{seatTransactionId}`) and logs to Analytics Engine (binding: `DEVICE_COUNTS`, dataset: `cmdr_device_counts`).
@@ -170,7 +204,7 @@ sandbox webhook secret as the bearer token:
 
 ```bash
 curl -X POST http://localhost:8787/admin/generate \
-  -H "Authorization: Bearer $(grep PADDLE_WEBHOOK_SECRET_SANDBOX apps/license-server/.dev.vars | cut -d= -f2-)" \
+  -H "Authorization: Bearer $(grep PADDLE_WEBHOOK_SECRET_SANDBOX apps/api-server/.dev.vars | cut -d= -f2-)" \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","type":"commercial_subscription","organizationName":"Test Corp"}'
 ```
@@ -190,16 +224,20 @@ payment link in the sandbox dashboard. This is an interactive, human-driven flow
 ## Deployment
 
 ```bash
-cd apps/license-server && npx wrangler deploy
+cd apps/api-server
+npx wrangler d1 migrations apply cmdr-telemetry  # apply any new D1 migrations first
+npx wrangler deploy
 ```
 
-Deployed to `license.getcmdr.com` via Cloudflare custom domain (declared in `wrangler.toml` `[[routes]]`). Fallback URL:
-`cmdr-license-server.veszelovszki.workers.dev`.
+Deployed to `api.getcmdr.com` via Cloudflare custom domain (declared in `wrangler.toml` `[[routes]]`).
+`license.getcmdr.com` is a permanent alias for existing app versions. Fallback URL:
+`cmdr-license-server.veszelovszki.workers.dev`. The cron trigger (`0 */12 * * *`) is declared in `wrangler.toml` under
+`[triggers]` and is deployed automatically with `wrangler deploy`.
 
 ### Troubleshooting deployment
 
-- **522 on `license.getcmdr.com`**: Custom domain isn't routing to the Worker. Check `npx wrangler deploy` output shows
-  `license.getcmdr.com (custom domain)`. The `[[routes]]` block in `wrangler.toml` may be missing, or a DNS record is
+- **522 on `api.getcmdr.com`**: Custom domain isn't routing to the Worker. Check `npx wrangler deploy` output shows
+  `api.getcmdr.com (custom domain)`. The `[[routes]]` block in `wrangler.toml` may be missing, or a DNS record is
   blocking it.
 - **"externally managed DNS records"**: Delete the manual DNS record via CF API/dashboard, then redeploy.
 - **"kv bindings require kv write perms"**: API token missing "Workers KV Storage: Edit". Update at
@@ -223,6 +261,14 @@ accounts have different price IDs for the same products. Env vars let each envir
 changes. `.dev.vars` has sandbox IDs; wrangler secrets have live IDs.
 
 ## Gotchas
+
+**Gotcha**: `index.ts` is a monolith (all routes, cron handlers, helpers in one file). **Why**: Hono's pattern
+encourages co-located routes, and the file was already monolithic before the telemetry migration. If it keeps growing,
+consider extracting admin endpoints and cron handlers into separate modules.
+
+**Gotcha**: `verifyAdminAuth` uses a manual type annotation for `c` instead of Hono's `Context` type. **Why**: Using
+`Context<{ Bindings: Bindings }>` would require importing Hono's internal generic types and threading them through. The
+manual shape `{ env: Bindings; req: { header: ... } }` is simpler and avoids coupling to Hono internals.
 
 **Gotcha**: Paddle preserves `custom_data` key casing exactly as passed in from checkout. **Why**: The checkout passes
 `organizationName` (camelCase), and both webhook payloads and API responses return it in camelCase. The code must use

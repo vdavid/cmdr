@@ -1,6 +1,6 @@
-//! HTTP client for license server validation.
+//! HTTP client for API server license validation.
 //!
-//! Communicates with the license server to validate subscription status.
+//! Communicates with the API server to validate subscription status.
 
 use crate::licensing::verification::LicenseActivationError;
 use serde::{Deserialize, Serialize};
@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 const LICENSE_SERVER_URL: &str = "http://localhost:8787";
 
 #[cfg(not(debug_assertions))]
-const LICENSE_SERVER_URL: &str = "https://license.getcmdr.com";
+const LICENSE_SERVER_URL: &str = "https://api.getcmdr.com";
 
 /// Response from the /validate endpoint.
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -1,5 +1,5 @@
 {
-    "name": "@cmdr/license-server",
+    "name": "@cmdr/api-server",
     "version": "0.0.1",
     "private": true,
     "type": "module",

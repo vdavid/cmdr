@@ -38,8 +38,6 @@ async function resolveEnv(platform: App.Platform | undefined): Promise<App.Platf
         UMAMI_PASSWORD: env.UMAMI_PASSWORD ?? '',
         UMAMI_WEBSITE_ID: env.UMAMI_WEBSITE_ID ?? '',
         UMAMI_BLOG_WEBSITE_ID: env.UMAMI_BLOG_WEBSITE_ID ?? '',
-        CLOUDFLARE_API_TOKEN: env.CLOUDFLARE_API_TOKEN ?? '',
-        CLOUDFLARE_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID ?? '',
         PADDLE_API_KEY_LIVE: env.PADDLE_API_KEY_LIVE ?? '',
         POSTHOG_API_KEY: env.POSTHOG_API_KEY ?? '',
         POSTHOG_PROJECT_ID: env.POSTHOG_PROJECT_ID ?? '',
@@ -68,8 +66,8 @@ export async function fetchDashboardData(
                 UMAMI_WEBSITE_ID: env.UMAMI_WEBSITE_ID,
                 UMAMI_BLOG_WEBSITE_ID: env.UMAMI_BLOG_WEBSITE_ID,
             }, range)),
-        guardedFetch(env?.CLOUDFLARE_API_TOKEN, 'Cloudflare', () =>
-            fetchCloudflareData({ CLOUDFLARE_API_TOKEN: env.CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID }, range)),
+        guardedFetch(env?.LICENSE_SERVER_ADMIN_TOKEN, 'Cloudflare', () =>
+            fetchCloudflareData({ LICENSE_SERVER_ADMIN_TOKEN: env.LICENSE_SERVER_ADMIN_TOKEN }, range)),
         guardedFetch(env?.PADDLE_API_KEY_LIVE, 'Paddle', () =>
             fetchPaddleData({ PADDLE_API_KEY_LIVE: env.PADDLE_API_KEY_LIVE }, range)),
         fetchGitHubData({ GITHUB_TOKEN: env?.GITHUB_TOKEN }),

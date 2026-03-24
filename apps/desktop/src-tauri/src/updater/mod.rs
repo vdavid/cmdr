@@ -50,7 +50,7 @@ pub async fn check_for_update() -> Result<Option<UpdateInfo>, String> {
     log::info!("Checking for updates (current version: {current_version})");
 
     let arch = manifest::platform_key().strip_prefix("darwin-").unwrap_or("unknown");
-    let url = format!("https://license.getcmdr.com/update-check/{current_version}?arch={arch}");
+    let url = format!("https://api.getcmdr.com/update-check/{current_version}?arch={arch}");
 
     let response = reqwest::get(&url)
         .await

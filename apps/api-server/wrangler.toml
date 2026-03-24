@@ -2,9 +2,14 @@ name = "cmdr-license-server"
 main = "src/index.ts"
 compatibility_date = "2025-01-01"
 
-# license.getcmdr.com is a proxied CNAME → *.workers.dev (handles IPv4 + IPv6).
+# api.getcmdr.com is a proxied CNAME → *.workers.dev (handles IPv4 + IPv6).
 # The zone-level route tells Cloudflare to send matching requests to this Worker.
+# license.getcmdr.com is kept as a permanent alias — existing app versions hardcode it.
 workers_dev = true
+
+[[routes]]
+pattern = "api.getcmdr.com/*"
+zone_name = "getcmdr.com"
 
 [[routes]]
 pattern = "license.getcmdr.com/*"
@@ -17,25 +22,19 @@ zone_name = "getcmdr.com"
 binding = "LICENSE_CODES"
 id = "64418f5cb33e4c629fe0ccf51be76399"
 
-# Analytics Engine for download tracking (created automatically on first write)
-[[analytics_engine_datasets]]
-binding = "DOWNLOADS"
-dataset = "cmdr_downloads"
-
 # Analytics Engine for device count tracking (fair use monitoring)
 [[analytics_engine_datasets]]
 binding = "DEVICE_COUNTS"
 dataset = "cmdr_device_counts"
 
-# Analytics Engine for update check tracking (active user counting)
-[[analytics_engine_datasets]]
-binding = "UPDATE_CHECKS"
-dataset = "cmdr_update_checks"
+# D1 database for telemetry persistence (crash reports, downloads, update checks)
+[[d1_databases]]
+binding = "TELEMETRY_DB"
+database_name = "cmdr-telemetry"
+database_id = "placeholder-will-be-set-on-deploy"
 
-# Analytics Engine for crash report tracking
-[[analytics_engine_datasets]]
-binding = "CRASH_REPORTS"
-dataset = "cmdr_crash_reports"
+[triggers]
+crons = ["0 */12 * * *"]
 
 [vars]
 # Non-secret config
@@ -55,3 +54,4 @@ PADDLE_ENVIRONMENT = "sandbox"
 # - PRICE_ID_COMMERCIAL_SUBSCRIPTION (Price ID for $59/yr subscription)
 # - PRICE_ID_COMMERCIAL_PERPETUAL  (Price ID for $199 perpetual)
 # - ADMIN_API_TOKEN                (dedicated token for /admin/stats)
+# - CRASH_NOTIFICATION_EMAIL      (recipient for crash alert emails)

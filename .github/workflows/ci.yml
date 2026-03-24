@@ -23,7 +23,7 @@ jobs:
             svelte: ${{ steps.filter.outputs.svelte }}
             desktop: ${{ steps.filter.outputs.desktop }}
             website: ${{ steps.filter.outputs.website }}
-            license-server: ${{ steps.filter.outputs.license-server }}
+            api-server: ${{ steps.filter.outputs.api-server }}
             scripts: ${{ steps.filter.outputs.scripts }}
             packages: ${{ steps.filter.outputs.packages }}
         steps:
@@ -52,8 +52,8 @@ jobs:
                         - 'apps/website/**'
                         - '.dockerignore'
                         - 'CHANGELOG.md'
-                      license-server:
-                        - 'apps/license-server/**'
+                      api-server:
+                        - 'apps/api-server/**'
                       scripts:
                         - 'scripts/**'
                       packages:
@@ -323,13 +323,13 @@ jobs:
                   retention-days: 7
 
     # ===========================================
-    # License server
+    # API server
     # ===========================================
-    license-server:
-        name: License server
+    api-server:
+        name: API server
         runs-on: ubuntu-latest
         needs: changes
-        if: inputs.run_all || needs.changes.outputs.license-server == 'true'
+        if: inputs.run_all || needs.changes.outputs.api-server == 'true'
 
         steps:
             - name: Checkout code
@@ -345,29 +345,29 @@ jobs:
               uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
               with:
                   path: ~/.pnpm-store
-                  key: ${{ runner.os }}-pnpm-license-server-${{ hashFiles('apps/license-server/pnpm-lock.yaml') }}
+                  key: ${{ runner.os }}-pnpm-api-server-${{ hashFiles('apps/api-server/pnpm-lock.yaml') }}
                   restore-keys: |
-                      ${{ runner.os }}-pnpm-license-server-
+                      ${{ runner.os }}-pnpm-api-server-
 
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
-              working-directory: ./apps/license-server
+              working-directory: ./apps/api-server
 
             - name: Build check tool
               run: go build -o check .
               working-directory: ./scripts/check
 
             - name: Check Prettier
-              run: ./scripts/check/check --check license-server-prettier --ci
+              run: ./scripts/check/check --check api-server-prettier --ci
 
             - name: Run ESLint
-              run: ./scripts/check/check --check license-server-eslint --ci
+              run: ./scripts/check/check --check api-server-eslint --ci
 
             - name: Run typecheck
-              run: ./scripts/check/check --check license-server-typecheck --ci
+              run: ./scripts/check/check --check api-server-typecheck --ci
 
             - name: Run tests
-              run: ./scripts/check/check --check license-server-tests --ci
+              run: ./scripts/check/check --check api-server-tests --ci
 
     # ===========================================
     # Scripts (Go checks)
@@ -447,7 +447,7 @@ jobs:
     ci-ok:
         name: CI OK
         runs-on: ubuntu-latest
-        needs: [desktop-rust, desktop-svelte, desktop-e2e-linux, website, license-server, scripts]
+        needs: [desktop-rust, desktop-svelte, desktop-e2e-linux, website, api-server, scripts]
         if: always()
         steps:
             - name: Check all jobs passed

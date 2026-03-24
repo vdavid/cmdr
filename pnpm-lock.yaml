@@ -220,7 +220,7 @@ importers:
         specifier: ^9.27.0
         version: 9.27.0(puppeteer-core@22.15.0)
 
-  apps/license-server:
+  apps/api-server:
     dependencies:
       '@noble/ed25519':
         specifier: ^3.0.0

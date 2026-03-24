@@ -8,9 +8,9 @@ import (
 	"strconv"
 )
 
-// RunLicenseServerTests runs tests on the license server.
-func RunLicenseServerTests(ctx *CheckContext) (CheckResult, error) {
-	serverDir := filepath.Join(ctx.RootDir, "apps", "license-server")
+// RunApiServerTests runs tests on the API server.
+func RunApiServerTests(ctx *CheckContext) (CheckResult, error) {
+	serverDir := filepath.Join(ctx.RootDir, "apps", "api-server")
 
 	cmd := exec.Command("pnpm", "test")
 	cmd.Dir = serverDir

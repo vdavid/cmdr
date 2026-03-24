@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 )
 
-// RunLicenseServerTypecheck runs TypeScript checking on the license server.
-func RunLicenseServerTypecheck(ctx *CheckContext) (CheckResult, error) {
-	serverDir := filepath.Join(ctx.RootDir, "apps", "license-server")
+// RunApiServerTypecheck runs TypeScript checking on the API server.
+func RunApiServerTypecheck(ctx *CheckContext) (CheckResult, error) {
+	serverDir := filepath.Join(ctx.RootDir, "apps", "api-server")
 
 	cmd := exec.Command("pnpm", "typecheck")
 	cmd.Dir = serverDir

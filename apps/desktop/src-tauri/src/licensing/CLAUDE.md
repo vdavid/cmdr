@@ -11,7 +11,7 @@ License keys are self-contained: `base64(JSON payload).base64(Ed25519 signature)
 | `mod.rs` | `LicenseData` struct, `redact_email` helper, re-exports from sub-modules |
 | `verification.rs` | Ed25519 crypto. `LicenseActivationError` typed error enum. Validates key format, verifies signature, caches result in `Mutex`. Split into verify/commit: `verify_license_async` (read-only check + short-code exchange), `commit_license` (persist to disk + update caches). Legacy wrappers: `activate_license` (sync verify+commit), `activate_license_async` (async verify+commit). `get_license_info` (lazy, cached). `VerifyResult` struct wraps `LicenseInfo` + `full_key` + `short_code`. |
 | `app_status.rs` | `AppStatus` enum. 7-day server re-validation, 30-day offline grace period. Commercial use reminder timer. Debug: `CMDR_MOCK_LICENSE` env var overrides everything. |
-| `validation_client.rs` | HTTP client: `POST /validate`, `POST /activate`. Debug → `localhost:8787`, release → `license.getcmdr.com`. Mock mode skips network entirely. Returns `ValidationOutcome` enum (Success/UpstreamError/NetworkError). `ValidationRequest` includes an optional `deviceId` for fair-use tracking. |
+| `validation_client.rs` | HTTP client: `POST /validate`, `POST /activate`. Debug → `localhost:8787`, release → `api.getcmdr.com`. Mock mode skips network entirely. Returns `ValidationOutcome` enum (Success/UpstreamError/NetworkError). `ValidationRequest` includes an optional `deviceId` for fair-use tracking. |
 | `device_id.rs` | Stable hashed device identifier for fair-use license tracking. Reads `IOPlatformUUID` via IOKit FFI (macOS), salts with `"cmdr:"`, SHA-256 hashes, prefixes with `v1:`. Cached in `OnceLock`. Returns `None` on failure (best-effort, never blocks validation). Linux stub returns `None`. |
 
 ## AppStatus variants
@@ -69,8 +69,8 @@ Legacy `activate_license`/`activate_license_async` wrappers still exist for back
 - Key format: `base64(JSON).base64(signature)` — split on single `.`.
 - Public key embedded at compile time as hex in `verification.rs` (`PUBLIC_KEY_HEX`).
 - Mock values (`CMDR_MOCK_LICENSE`): `personal`, `personal_reminder`, `commercial`, `perpetual`, `expired`, `expired_no_modal`.
-- Key gen: see [license server CLAUDE.md](../../../../apps/license-server/CLAUDE.md) and
-  [README.md](../../../../apps/license-server/README.md#first-time-setup) for the full setup.
+- Key gen: see [API server CLAUDE.md](../../../../apps/api-server/CLAUDE.md) and
+  [README.md](../../../../apps/api-server/README.md#first-time-setup) for the full setup.
 
 ## Key decisions
 
@@ -105,7 +105,7 @@ Legacy `activate_license`/`activate_license_async` wrappers still exist for back
 **Why**: During activation, the key isn't stored yet, so the function can't read the transaction ID from the store. The frontend passes it explicitly. For periodic re-validation (7-day cycle), the parameter is `None` and the function falls back to reading from the stored license. This avoids storing the key just to read the transaction ID back.
 
 **Decision**: `CMDR_MOCK_LICENSE` env var bypasses all license logic including server calls.
-**Why**: License UX testing requires seeing every state (personal, commercial, expired, with/without modals). Without mocking, you'd need real license keys for each variant and a running license server. The mock skips network entirely, making UI development fast.
+**Why**: License UX testing requires seeing every state (personal, commercial, expired, with/without modals). Without mocking, you'd need real license keys for each variant and a running API server. The mock skips network entirely, making UI development fast.
 
 ## Gotchas
 
@@ -113,10 +113,10 @@ Legacy `activate_license`/`activate_license_async` wrappers still exist for back
 **Why**: On first launch, the user hasn't had a chance to evaluate the app yet. Showing a "get a commercial license" modal immediately would be a hostile first impression. The 30-day timer starts silently on first launch so the reminder only appears after the user has been using the app for a month.
 
 **Gotcha**: `ValidationResponse` uses manual `#[serde(rename)]` on individual fields instead of `#[serde(rename_all)]` on the struct.
-**Why**: The license server API returns a mix of naming conventions — `status` is lowercase, but `organizationName` and `expiresAt` are camelCase, and `type` is a Rust keyword requiring rename. The struct matches the API as-is rather than imposing a consistent naming convention that would break deserialization.
+**Why**: The API server returns a mix of naming conventions — `status` is lowercase, but `organizationName` and `expiresAt` are camelCase, and `type` is a Rust keyword requiring rename. The struct matches the API as-is rather than imposing a consistent naming convention that would break deserialization.
 
 **Gotcha**: `validate_with_server` returns `ValidationOutcome` (an enum with `Success`/`UpstreamError`/`NetworkError`), not `Option<ValidationResponse>`.
-**Why**: The license server returns HTTP 502 when it can't reach Paddle (upstream error) vs HTTP 200 with `status: "invalid"` when Paddle actively says the transaction is unknown. The old code collapsed both into `None`, causing `validate_license_async` to trust a stale "invalid" response from a transient Paddle outage and overwrite the cached "active" status. Now `UpstreamError` and `NetworkError` both fall back to cached status without overwriting, while `Success` (even with `status: "invalid"`) is treated as definitive and cached.
+**Why**: The API server returns HTTP 502 when it can't reach Paddle (upstream error) vs HTTP 200 with `status: "invalid"` when Paddle actively says the transaction is unknown. The old code collapsed both into `None`, causing `validate_license_async` to trust a stale "invalid" response from a transient Paddle outage and overwrite the cached "active" status. Now `UpstreamError` and `NetworkError` both fall back to cached status without overwriting, while `Success` (even with `status: "invalid"`) is treated as definitive and cached.
 
 **Gotcha**: `validate_license_async` returns `Result<AppStatus, String>`, not bare `AppStatus`.
 **Why**: The Tauri command must propagate network/upstream errors to the frontend so it can distinguish "server actively rejected the key" (`Ok(Personal)`) from "couldn't reach the server" (`Err`). Without this, the frontend's catch block never fires — Tauri's `invoke` only throws on `Err` — and stale cached `Personal` status gets misinterpreted as a server rejection.

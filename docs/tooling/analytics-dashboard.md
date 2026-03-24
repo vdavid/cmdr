@@ -1,7 +1,7 @@
 # Analytics dashboard
 
 Private SvelteKit dashboard at `https://analdash.getcmdr.com`. Consolidates metrics from Umami, Cloudflare, Paddle,
-GitHub, PostHog, and the license server into a single page organized by acquisition stage.
+GitHub, PostHog, and the API server into a single page organized by acquisition stage.
 
 - **Code**: `apps/analytics-dashboard/`
 - **Architecture docs**: `apps/analytics-dashboard/CLAUDE.md`

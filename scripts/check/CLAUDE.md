@@ -79,7 +79,7 @@ go run ./scripts/check --ci --fail-fast
 | `utils.go` | `findRootDir()` (walks up until `apps/desktop/src-tauri/Cargo.toml` is found) |
 | `checks/desktop-rust-*.go` | One file per Rust check |
 | `checks/desktop-svelte-*.go` | One file per Svelte/TS check |
-| `checks/website-*.go`, `checks/license-server-*.go`, `checks/scripts-go-*.go` | One file per check |
+| `checks/website-*.go`, `checks/api-server-*.go`, `checks/scripts-go-*.go` | One file per check |
 | `checks/file-length.go` | Informational file-length scanner (warn-only, never fails) |
 
 ## Key patterns
@@ -164,7 +164,7 @@ tests, type checkers before tests.
 | Desktop | Svelte | prettier, eslint, stylelint, css-unused, svelte-check, import-cycles, knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow) |
 | Website | Astro | prettier, eslint, typecheck, build, html-validate, e2e |
 | Website | Docker | docker-build |
-| License server | TS | prettier, eslint, typecheck, tests |
+| API server | TS | prettier, eslint, typecheck, tests |
 | Scripts | Go | gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, deadcode, go-tests |
 | Other | Metrics | file-length (warn-only) |
 

@@ -10,7 +10,7 @@ use crate::crash_reporter;
 const CRASH_REPORT_URL: &str = "http://localhost:8787/crash-report";
 
 #[cfg(not(debug_assertions))]
-const CRASH_REPORT_URL: &str = "https://license.getcmdr.com/crash-report";
+const CRASH_REPORT_URL: &str = "https://api.getcmdr.com/crash-report";
 
 /// Checks for a pending crash report from a previous session.
 /// Returns the report as a JSON value, or `null` if none exists.

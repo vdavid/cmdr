@@ -56,7 +56,7 @@ dismiss). The About window and modals read the cached value on mount.
   `licensing-store.svelte.ts`, update `resetForTesting()` to clear them. Tests use this instead of `vi.resetModules()`
   to avoid module re-parse penalty per test.
 - **Mock mode only in debug builds** — `CMDR_MOCK_LICENSE` env var bypasses validation. Silently ignored in release.
-- **Ed25519 public key embedded** — hardcoded in `verification.rs`. Must match license server's private key.
+- **Ed25519 public key embedded** — hardcoded in `verification.rs`. Must match the API server's private key.
 - **Commercial reminder timing** — tracked in `license.json` via `firstRunTimestamp`. Shows 30 days after first launch,
   then every 30 days.
 - **Server validation grace period** — 14 days. After that, expired license shows modal on next launch.
@@ -117,4 +117,4 @@ security delete-generic-password -s "com.veszelovszki.cmdr" -a "trial-*"
 `~/Library/Application Support/com.veszelovszki.cmdr/license.json` to 31 days ago.
 
 **Generate a test license key**: See
-[license server CLAUDE.md](../../../../apps/license-server/CLAUDE.md#generate-a-test-license-key).
+[API server CLAUDE.md](../../../../apps/api-server/CLAUDE.md#generate-a-test-license-key).

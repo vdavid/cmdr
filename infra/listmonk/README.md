@@ -1,7 +1,7 @@
 # Listmonk newsletter setup
 
 Self-hosted [Listmonk](https://listmonk.app/) for the Cmdr newsletter, using [Resend](https://resend.com) as the SMTP
-relay (same provider the license server uses for transactional emails).
+relay (same provider the API server uses for transactional emails).
 
 ## Architecture
 
@@ -37,7 +37,7 @@ Cloudflare dashboard > getcmdr.com > Email > Email Routing > Routes > add `newsl
 
 ### 3. Resend
 
-Domain verification (`getcmdr.com`) is already done — the license server uses Resend too. No extra DNS
+Domain verification (`getcmdr.com`) is already done — the API server uses Resend too. No extra DNS
 records needed. Just grab your API key from the [Resend dashboard](https://resend.com/api-keys) (or create
 a new one scoped to sending).
 

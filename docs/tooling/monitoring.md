@@ -19,4 +19,4 @@ We use [UptimeRobot](https://uptimerobot.com/) (free tier) to monitor `getcmdr.c
 ## Notes
 
 - Free tier allows 50 monitors at 5-minute intervals.
-- If we need to monitor more endpoints later (for example, the license server), add them in the UptimeRobot dashboard.
+- If we need to monitor more endpoints later (for example, the API server), add them in the UptimeRobot dashboard.

@@ -3,66 +3,55 @@ import { fetchCloudflareData, parseDownloadRows, parseUpdateCheckRows } from './
 import { clearMemoryCache } from '../cache.js'
 
 const mockEnv = {
-    CLOUDFLARE_API_TOKEN: 'test-cf-token',
-    CLOUDFLARE_ACCOUNT_ID: '6a4433bf11c3cf86feda057f76f47991',
+    LICENSE_SERVER_ADMIN_TOKEN: 'test-admin-token',
 }
 
-const sampleDownloadsResponse = {
-    data: [
-        { version: '1.2.0', arch: 'aarch64', country: 'US', day: '2025-03-20', downloads: 150 },
-        { version: '1.2.0', arch: 'x86_64', country: 'DE', day: '2025-03-20', downloads: 80 },
-        { version: '1.1.0', arch: 'aarch64', country: 'GB', day: '2025-03-21', downloads: 45 },
-    ],
-    meta: [
-        { name: 'version', type: 'String' },
-        { name: 'arch', type: 'String' },
-        { name: 'country', type: 'String' },
-        { name: 'day', type: 'Date' },
-        { name: 'downloads', type: 'UInt64' },
-    ],
-    rows: 3,
-}
+const sampleDownloadsResponse = [
+    { date: '2025-03-20', version: '1.2.0', arch: 'aarch64', country: 'US', count: 150 },
+    { date: '2025-03-20', version: '1.2.0', arch: 'x86_64', country: 'DE', count: 80 },
+    { date: '2025-03-21', version: '1.1.0', arch: 'aarch64', country: 'GB', count: 45 },
+]
 
-const sampleUpdateChecksResponse = {
-    data: [
-        { version: '1.2.0', checks: 500 },
-        { version: '1.1.0', checks: 200 },
-    ],
-    meta: [
-        { name: 'version', type: 'String' },
-        { name: 'checks', type: 'UInt64' },
-    ],
-    rows: 2,
-}
+const sampleActiveUsersResponse = [
+    { date: '2025-03-20', version: '1.2.0', arch: 'aarch64', uniqueUsers: 300 },
+    { date: '2025-03-20', version: '1.2.0', arch: 'x86_64', uniqueUsers: 200 },
+    { date: '2025-03-20', version: '1.1.0', arch: 'aarch64', uniqueUsers: 100 },
+]
 
 describe('parseDownloadRows', () => {
-    it('parses download data with named columns', () => {
+    it('maps worker response to DownloadRow format', () => {
         const rows = parseDownloadRows(sampleDownloadsResponse)
         expect(rows).toHaveLength(3)
         expect(rows[0]).toEqual({ version: '1.2.0', arch: 'aarch64', country: 'US', day: '2025-03-20', downloads: 150 })
         expect(rows[2]).toEqual({ version: '1.1.0', arch: 'aarch64', country: 'GB', day: '2025-03-21', downloads: 45 })
     })
 
-    it('handles blob-style column names', () => {
-        const blobResponse = {
-            data: [{ blob1: '1.2.0', blob2: 'aarch64', blob3: 'US', count: 100 }],
-            meta: [],
-            rows: 1,
-        }
-        const rows = parseDownloadRows(blobResponse)
-        expect(rows[0]).toEqual({ version: '1.2.0', arch: 'aarch64', country: 'US', day: '', downloads: 100 })
-    })
-
     it('handles empty data', () => {
-        expect(parseDownloadRows({ data: [], meta: [], rows: 0 })).toEqual([])
+        expect(parseDownloadRows([])).toEqual([])
     })
 })
 
 describe('parseUpdateCheckRows', () => {
-    it('parses update check data', () => {
-        const rows = parseUpdateCheckRows(sampleUpdateChecksResponse)
+    it('aggregates active users across architectures by version', () => {
+        const rows = parseUpdateCheckRows(sampleActiveUsersResponse)
         expect(rows).toHaveLength(2)
+        // 1.2.0: 300 + 200 = 500
         expect(rows[0]).toEqual({ version: '1.2.0', checks: 500 })
+        // 1.1.0: 100
+        expect(rows[1]).toEqual({ version: '1.1.0', checks: 100 })
+    })
+
+    it('sorts by checks descending', () => {
+        const rows = parseUpdateCheckRows([
+            { date: '2025-03-20', version: '0.1.0', arch: 'aarch64', uniqueUsers: 10 },
+            { date: '2025-03-20', version: '0.2.0', arch: 'aarch64', uniqueUsers: 50 },
+        ])
+        expect(rows[0].version).toBe('0.2.0')
+        expect(rows[1].version).toBe('0.1.0')
+    })
+
+    it('handles empty data', () => {
+        expect(parseUpdateCheckRows([])).toEqual([])
     })
 })
 
@@ -74,8 +63,15 @@ describe('fetchCloudflareData', () => {
 
     it('returns parsed data on success', async () => {
         const fetchMock = vi.fn()
-        fetchMock.mockResolvedValueOnce({ ok: true, json: async () => sampleDownloadsResponse })
-        fetchMock.mockResolvedValueOnce({ ok: true, json: async () => sampleUpdateChecksResponse })
+        fetchMock.mockImplementation((url: string) => {
+            if (String(url).includes('/admin/downloads')) {
+                return Promise.resolve({ ok: true, json: async () => sampleDownloadsResponse })
+            }
+            if (String(url).includes('/admin/active-users')) {
+                return Promise.resolve({ ok: true, json: async () => sampleActiveUsersResponse })
+            }
+            return Promise.resolve({ ok: false, status: 404, text: async () => 'Not found' })
+        })
         vi.stubGlobal('fetch', fetchMock)
 
         const result = await fetchCloudflareData(mockEnv, '7d')
@@ -85,29 +81,26 @@ describe('fetchCloudflareData', () => {
         expect(result.data.downloads).toHaveLength(3)
         expect(result.data.updateChecks).toHaveLength(2)
 
-        // Verify SQL was sent as POST body
-        expect(fetchMock.mock.calls[0][1]?.method).toBe('POST')
+        // Verify auth header is sent
         expect(fetchMock.mock.calls[0][1]?.headers).toEqual({
-            Authorization: 'Bearer test-cf-token',
+            Authorization: 'Bearer test-admin-token',
         })
-        // Verify the SQL references the correct dataset
-        const sqlBody = fetchMock.mock.calls[0][1]?.body as string
-        expect(sqlBody).toContain('cmdr_downloads')
     })
 
-    it('includes correct interval for different time ranges', async () => {
-        const fetchMock = vi.fn()
-        fetchMock.mockResolvedValue({ ok: true, json: async () => ({ data: [], meta: [], rows: 0 }) })
+    it('uses correct range parameters', async () => {
+        const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => [] })
         vi.stubGlobal('fetch', fetchMock)
 
         await fetchCloudflareData(mockEnv, '24h')
-        const sql24h = fetchMock.mock.calls[0][1]?.body as string
-        expect(sql24h).toContain("'1' DAY")
+        const downloadUrl = fetchMock.mock.calls[0][0] as string
+        const activeUserUrl = fetchMock.mock.calls[1][0] as string
+        expect(downloadUrl).toContain('range=24h')
+        expect(activeUserUrl).toContain('range=7d') // 24h maps to 7d for active users
 
         fetchMock.mockClear()
         await fetchCloudflareData(mockEnv, '30d')
-        const sql30d = fetchMock.mock.calls[0][1]?.body as string
-        expect(sql30d).toContain("'30' DAY")
+        const downloadUrl30 = fetchMock.mock.calls[0][0] as string
+        expect(downloadUrl30).toContain('range=30d')
     })
 
     it('returns error when API fails', async () => {

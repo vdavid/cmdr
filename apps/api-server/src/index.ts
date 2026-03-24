@@ -1,6 +1,12 @@
 import { Hono } from 'hono'
 import { generateLicenseKey, generateShortCode, isValidShortCode, licenseTypes, type LicenseType } from './license'
-import { sendDeviceCountAlert, sendLicenseEmail } from './email'
+import {
+    sendDeviceCountAlert,
+    sendLicenseEmail,
+    sendCrashNotificationEmail,
+    sendDbSizeAlert,
+    type CrashSummaryEntry,
+} from './email'
 import { constantTimeEqual, verifyPaddleWebhookMulti } from './paddle'
 import {
     getSubscriptionStatus,
@@ -15,14 +21,10 @@ import { pruneStaleDevices, shouldAlert, type DeviceSet } from './device-trackin
 type Bindings = {
     // KV namespace for license code -> full key mappings
     LICENSE_CODES: KVNamespace
-    // Analytics Engine for download tracking
-    DOWNLOADS: AnalyticsEngineDataset
     // Analytics Engine for device count tracking (fair use monitoring)
     DEVICE_COUNTS: AnalyticsEngineDataset
-    // Analytics Engine for update check tracking (active user counting)
-    UPDATE_CHECKS: AnalyticsEngineDataset
-    // Analytics Engine for crash report tracking
-    CRASH_REPORTS: AnalyticsEngineDataset
+    // D1 database for telemetry persistence (crash reports, downloads, update checks)
+    TELEMETRY_DB: D1Database
     // Paddle webhook secrets (both optional to support gradual rollout)
     PADDLE_WEBHOOK_SECRET_LIVE?: string
     PADDLE_WEBHOOK_SECRET_SANDBOX?: string
@@ -43,6 +45,8 @@ type Bindings = {
     PRICE_ID_COMMERCIAL_PERPETUAL?: string
     // Dedicated admin API token for /admin/stats (separate from Paddle secrets)
     ADMIN_API_TOKEN?: string
+    // Crash notification email recipient (for cron-based crash alerts)
+    CRASH_NOTIFICATION_EMAIL?: string
 }
 
 interface PaddleWebhookPayload {
@@ -90,7 +94,7 @@ const app = new Hono<{ Bindings: Bindings }>()
 
 // Health check
 app.get('/', (c) => {
-    return c.json({ status: 'ok', service: 'cmdr-license-server' })
+    return c.json({ status: 'ok', service: 'cmdr-api-server' })
 })
 
 /** Stored license data in KV */
@@ -617,7 +621,101 @@ app.get('/admin/stats', async (c) => {
     return c.json({ totalActivations, activeDevices })
 })
 
-// Crash report ingestion — writes to CF Analytics Engine for crash analysis
+/** Verify admin auth and return error response if unauthorized, or null if authorized. */
+function verifyAdminAuth(c: { env: Bindings; req: { header: (name: string) => string | undefined } }): Response | null {
+    const token = c.env.ADMIN_API_TOKEN
+    if (!token) {
+        return Response.json({ error: 'Admin API not configured' }, { status: 500 })
+    }
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader || !constantTimeEqual(authHeader, `Bearer ${token}`)) {
+        return Response.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    return null
+}
+
+const validDownloadRanges = new Set(['24h', '7d', '30d', 'all'])
+const validActiveUserRanges = new Set(['7d', '30d', '90d', 'all'])
+const validCrashRanges = new Set(['7d', '30d', '90d', 'all'])
+
+// Values are hardcoded, never from user input — safe to interpolate into SQL.
+const rangeToSqliteInterval: Record<string, string> = {
+    '24h': '-1 day',
+    '7d': '-7 days',
+    '30d': '-30 days',
+    '90d': '-90 days',
+}
+
+// Admin downloads — aggregated download data from D1
+app.get('/admin/downloads', async (c) => {
+    const authError = verifyAdminAuth(c)
+    if (authError) return authError
+
+    const range = c.req.query('range') ?? '7d'
+    if (!validDownloadRanges.has(range)) {
+        return c.json({ error: 'Invalid range. Use 24h, 7d, 30d, or all' }, 400)
+    }
+
+    const interval = rangeToSqliteInterval[range]
+    const whereClause = interval ? `WHERE created_at >= datetime('now', '${interval}')` : ''
+
+    const { results } = await c.env.TELEMETRY_DB.prepare(
+        `SELECT date(created_at) AS date, app_version AS version, arch, country, COUNT(*) AS count
+         FROM downloads ${whereClause}
+         GROUP BY date, version, arch, country
+         ORDER BY date ASC`,
+    ).all<{ date: string; version: string; arch: string; country: string; count: number }>()
+
+    return c.json(results)
+})
+
+// Admin active users — aggregated daily active user data from D1
+app.get('/admin/active-users', async (c) => {
+    const authError = verifyAdminAuth(c)
+    if (authError) return authError
+
+    const range = c.req.query('range') ?? '7d'
+    if (!validActiveUserRanges.has(range)) {
+        return c.json({ error: 'Invalid range. Use 7d, 30d, 90d, or all' }, 400)
+    }
+
+    const interval = rangeToSqliteInterval[range]
+    const whereClause = interval ? `WHERE date >= date('now', '${interval}')` : ''
+
+    const { results } = await c.env.TELEMETRY_DB.prepare(
+        `SELECT date, app_version AS version, arch, unique_users AS uniqueUsers
+         FROM daily_active_users ${whereClause}
+         ORDER BY date ASC`,
+    ).all<{ date: string; version: string; arch: string; uniqueUsers: number }>()
+
+    return c.json(results)
+})
+
+// Admin crashes — aggregated crash data from D1
+app.get('/admin/crashes', async (c) => {
+    const authError = verifyAdminAuth(c)
+    if (authError) return authError
+
+    const range = c.req.query('range') ?? '7d'
+    if (!validCrashRanges.has(range)) {
+        return c.json({ error: 'Invalid range. Use 7d, 30d, 90d, or all' }, 400)
+    }
+
+    const interval = rangeToSqliteInterval[range]
+    const whereClause = interval ? `WHERE created_at >= datetime('now', '${interval}')` : ''
+
+    const { results } = await c.env.TELEMETRY_DB.prepare(
+        `SELECT date(created_at) AS date, top_function AS topFunction, signal,
+                COUNT(*) AS count, GROUP_CONCAT(DISTINCT app_version) AS versions
+         FROM crash_reports ${whereClause}
+         GROUP BY date, topFunction, signal
+         ORDER BY date ASC`,
+    ).all<{ date: string; topFunction: string; signal: string; count: number; versions: string }>()
+
+    return c.json(results)
+})
+
+// Crash report ingestion — writes to D1 for crash analysis
 const maxCrashReportBytes = 64 * 1024
 const crashReportRequiredFields = ['appVersion', 'osVersion', 'arch', 'signal'] as const
 const maxBacktraceBytes = 5_000
@@ -683,12 +781,29 @@ app.post('/crash-report', async (c) => {
     const topFunction = extractTopFunction(report.backtraceFrames)
     const backtraceTruncated = JSON.stringify(report.backtraceFrames ?? []).slice(0, maxBacktraceBytes)
 
-    // Fire-and-forget — writeDataPoint is non-blocking
-    c.env.CRASH_REPORTS.writeDataPoint({
-        indexes: [hashedIp],
-        blobs: [report.appVersion, report.osVersion, report.arch, report.signal, topFunction, backtraceTruncated],
-        doubles: [1],
-    })
+    // Write to D1 (fire-and-forget)
+    const dbWrite = c.env.TELEMETRY_DB.prepare(
+        `INSERT INTO crash_reports (hashed_ip, app_version, os_version, arch, signal, top_function, backtrace)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    )
+        .bind(
+            hashedIp,
+            report.appVersion,
+            report.osVersion,
+            report.arch,
+            report.signal,
+            topFunction,
+            backtraceTruncated,
+        )
+        .run()
+        .catch(() => {}) // Don't let D1 failure block the response
+
+    try {
+        c.executionCtx.waitUntil(dbWrite)
+    } catch {
+        // executionCtx unavailable (for example, in tests) — await inline as fallback
+        await dbWrite
+    }
 
     return c.body(null, 204)
 })
@@ -711,12 +826,20 @@ app.get('/update-check/:version', async (c) => {
     const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ip + dailySalt))
     const hashedIp = [...new Uint8Array(hashBuffer)].map((b) => b.toString(16).padStart(2, '0')).join('')
 
-    // Fire-and-forget — writeDataPoint is non-blocking
-    c.env.UPDATE_CHECKS.writeDataPoint({
-        indexes: [hashedIp],
-        blobs: [version, arch],
-        doubles: [1],
-    })
+    // Write to D1 (fire-and-forget). INSERT OR IGNORE deduplicates via UNIQUE constraint.
+    const dbWrite = c.env.TELEMETRY_DB.prepare(
+        `INSERT OR IGNORE INTO update_checks (date, hashed_ip, app_version, arch) VALUES (?, ?, ?, ?)`,
+    )
+        .bind(dailySalt, hashedIp, version, arch)
+        .run()
+        .catch(() => {})
+
+    try {
+        c.executionCtx.waitUntil(dbWrite)
+    } catch {
+        // executionCtx unavailable (for example, in tests) — await inline as fallback
+        await dbWrite
+    }
 
     return c.redirect('https://getcmdr.com/latest.json', 302)
 })
@@ -724,7 +847,7 @@ app.get('/update-check/:version', async (c) => {
 // Download redirect — tracks version, arch, and country, then redirects to GitHub Releases
 const validArchitectures = new Set(['aarch64', 'x86_64', 'universal'])
 
-app.get('/download/:version/:arch', (c) => {
+app.get('/download/:version/:arch', async (c) => {
     const { version, arch } = c.req.param()
 
     if (!versionPattern.test(version) || !validArchitectures.has(arch)) {
@@ -735,14 +858,168 @@ app.get('/download/:version/:arch', (c) => {
     const country = cf?.country ?? 'unknown'
     const continent = cf?.continent ?? 'unknown'
 
-    // Fire-and-forget — writeDataPoint is non-blocking
-    c.env.DOWNLOADS.writeDataPoint({
-        indexes: [version],
-        blobs: [version, arch, country, continent],
-        doubles: [1],
-    })
+    // Write to D1 (fire-and-forget)
+    const dbWrite = c.env.TELEMETRY_DB.prepare(
+        `INSERT INTO downloads (app_version, arch, country, continent) VALUES (?, ?, ?, ?)`,
+    )
+        .bind(version, arch, country, continent)
+        .run()
+        .catch(() => {})
+
+    try {
+        c.executionCtx.waitUntil(dbWrite)
+    } catch {
+        // executionCtx unavailable (for example, in tests) — await inline as fallback
+        await dbWrite
+    }
 
     return c.redirect(`https://github.com/vdavid/cmdr/releases/download/v${version}/Cmdr_${version}_${arch}.dmg`, 302)
 })
 
-export default app
+export { app }
+
+// --- Scheduled handler (cron) ---
+
+const dbSizeThresholdBytes = 100 * 1024 * 1024 // 100 MB
+
+async function handleCrashNotifications(env: Bindings): Promise<void> {
+    if (!env.CRASH_NOTIFICATION_EMAIL || !env.RESEND_API_KEY) return
+
+    const { results } = await env.TELEMETRY_DB.prepare(
+        `SELECT id, app_version, os_version, arch, signal, top_function, created_at
+         FROM crash_reports WHERE notified_at IS NULL`,
+    ).all<{
+        id: number
+        app_version: string
+        os_version: string
+        arch: string
+        signal: string
+        top_function: string
+        created_at: string
+    }>()
+
+    if (results.length === 0) return
+
+    // Group by top_function
+    const grouped = new Map<string, { count: number; versions: Set<string>; mostRecent: string }>()
+    for (const row of results) {
+        const existing = grouped.get(row.top_function)
+        if (existing) {
+            existing.count++
+            existing.versions.add(row.app_version)
+            if (row.created_at > existing.mostRecent) existing.mostRecent = row.created_at
+        } else {
+            grouped.set(row.top_function, {
+                count: 1,
+                versions: new Set([row.app_version]),
+                mostRecent: row.created_at,
+            })
+        }
+    }
+
+    const crashes: CrashSummaryEntry[] = [...grouped.entries()].map(([topFunction, data]) => ({
+        topFunction,
+        count: data.count,
+        versions: [...data.versions],
+        mostRecent: data.mostRecent,
+    }))
+
+    const ids = results.map((r) => r.id)
+    const now = new Date().toISOString()
+
+    // Mark as notified BEFORE sending email (prefer missed notification over duplicate)
+    const placeholders = ids.map(() => '?').join(', ')
+    await env.TELEMETRY_DB.prepare(`UPDATE crash_reports SET notified_at = ? WHERE id IN (${placeholders})`)
+        .bind(now, ...ids)
+        .run()
+
+    await sendCrashNotificationEmail({
+        crashes,
+        totalCount: results.length,
+        to: env.CRASH_NOTIFICATION_EMAIL,
+        resendApiKey: env.RESEND_API_KEY,
+    })
+}
+
+async function handleDailyAggregation(env: Bindings): Promise<void> {
+    // Compute yesterday's date
+    const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10)
+
+    // Check if already aggregated
+    const existing = await env.TELEMETRY_DB.prepare(`SELECT 1 FROM daily_active_users WHERE date = ? LIMIT 1`)
+        .bind(yesterday)
+        .first()
+
+    if (existing) return
+
+    // Aggregate raw update checks into daily_active_users
+    await env.TELEMETRY_DB.prepare(
+        `INSERT OR IGNORE INTO daily_active_users (date, app_version, arch, unique_users)
+         SELECT date, app_version, arch, COUNT(*) AS unique_users
+         FROM update_checks
+         WHERE date = ?
+         GROUP BY date, app_version, arch`,
+    )
+        .bind(yesterday)
+        .run()
+
+    // Prune raw update checks older than 7 days
+    await env.TELEMETRY_DB.prepare(`DELETE FROM update_checks WHERE date < date('now', '-7 days')`).run()
+}
+
+async function handleDbSizeCheck(env: Bindings): Promise<void> {
+    if (!env.CRASH_NOTIFICATION_EMAIL || !env.RESEND_API_KEY) return
+
+    const sizeRow = await env.TELEMETRY_DB.prepare(
+        `SELECT page_count * page_size AS total_size FROM pragma_page_count, pragma_page_size`,
+    ).first<{ total_size: number }>()
+
+    if (!sizeRow || sizeRow.total_size <= dbSizeThresholdBytes) return
+
+    const sizeMb = sizeRow.total_size / (1024 * 1024)
+
+    // Get row counts for each table
+    const tables = ['crash_reports', 'downloads', 'update_checks', 'daily_active_users']
+    const tableCounts: Record<string, number> = {}
+    for (const table of tables) {
+        const row = await env.TELEMETRY_DB.prepare(`SELECT COUNT(*) AS cnt FROM ${table}`).first<{ cnt: number }>()
+        tableCounts[table] = row?.cnt ?? 0
+    }
+
+    await sendDbSizeAlert({
+        sizeMb,
+        tableCounts,
+        to: env.CRASH_NOTIFICATION_EMAIL,
+        resendApiKey: env.RESEND_API_KEY,
+    })
+}
+
+export default {
+    fetch: app.fetch.bind(app),
+    async scheduled(event: ScheduledEvent, env: Bindings) {
+        try {
+            await handleCrashNotifications(env)
+        } catch (e) {
+            console.error('Crash notifications failed:', e)
+        }
+
+        // Daily jobs: only run on the 00:00 UTC invocation
+        const hour = new Date(event.scheduledTime).getUTCHours()
+        if (hour === 0) {
+            try {
+                await handleDailyAggregation(env)
+            } catch (e) {
+                console.error('Daily aggregation failed:', e)
+            }
+
+            try {
+                await handleDbSizeCheck(env)
+            } catch (e) {
+                console.error('DB size check failed:', e)
+            }
+        }
+    },
+}
+
+// Export handler functions for testing
+export { handleCrashNotifications, handleDailyAggregation, handleDbSizeCheck }

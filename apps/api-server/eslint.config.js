@@ -1,5 +1,5 @@
 /**
- * ESLint configuration for license-server
+ * ESLint configuration for api-server
  *
  * Strict TypeScript checking for the Cloudflare Worker.
  */

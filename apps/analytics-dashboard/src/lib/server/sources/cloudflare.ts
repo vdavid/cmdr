@@ -1,5 +1,4 @@
 import type { TimeRange, SourceResult } from '../types.js'
-import { toSqlInterval } from '../types.js'
 import { cacheGet, cacheSet } from '../cache.js'
 
 export interface DownloadRow {
@@ -21,45 +20,69 @@ export interface CloudflareData {
 }
 
 interface CloudflareEnv {
-    CLOUDFLARE_API_TOKEN: string
-    CLOUDFLARE_ACCOUNT_ID: string
+    LICENSE_SERVER_ADMIN_TOKEN: string
 }
 
-interface AnalyticsEngineResponse {
-    data: Array<Record<string, string | number>>
-    meta: Array<{ name: string; type: string }>
-    rows: number
+/** Maps dashboard TimeRange to worker endpoint range param. */
+const downloadRangeMap: Record<TimeRange, string> = {
+    '24h': '24h',
+    '7d': '7d',
+    '30d': '30d',
 }
 
-async function querySql(env: CloudflareEnv, sql: string): Promise<AnalyticsEngineResponse> {
-    const url = `https://api.cloudflare.com/client/v4/accounts/${env.CLOUDFLARE_ACCOUNT_ID}/analytics_engine/sql`
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${env.CLOUDFLARE_API_TOKEN}` },
-        body: sql,
+const activeUserRangeMap: Record<TimeRange, string> = {
+    '24h': '7d',
+    '7d': '7d',
+    '30d': '30d',
+}
+
+const workerBaseUrl = 'https://api.getcmdr.com'
+
+async function fetchWorkerEndpoint<T>(env: CloudflareEnv, path: string): Promise<T> {
+    const response = await fetch(`${workerBaseUrl}${path}`, {
+        headers: { Authorization: `Bearer ${env.LICENSE_SERVER_ADMIN_TOKEN}` },
     })
     if (!response.ok) {
         const text = await response.text()
-        throw new Error(`CF Analytics Engine returned ${response.status}: ${text}`)
+        throw new Error(`Worker ${path} returned ${String(response.status)}: ${text}`)
     }
-    return (await response.json()) as AnalyticsEngineResponse
+    return (await response.json()) as T
 }
 
-export function parseDownloadRows(raw: AnalyticsEngineResponse): DownloadRow[] {
-    return raw.data.map((row) => ({
-        version: String(row.version ?? row.blob1 ?? ''),
-        arch: String(row.arch ?? row.blob2 ?? ''),
-        country: String(row.country ?? row.blob3 ?? ''),
-        day: String(row.day ?? ''),
-        downloads: Number(row.downloads ?? row.count ?? 0),
+interface WorkerDownloadRow {
+    date: string
+    version: string
+    arch: string
+    country: string
+    count: number
+}
+
+interface WorkerActiveUserRow {
+    date: string
+    version: string
+    arch: string
+    uniqueUsers: number
+}
+
+export function parseDownloadRows(raw: WorkerDownloadRow[]): DownloadRow[] {
+    return raw.map((row) => ({
+        version: row.version,
+        arch: row.arch,
+        country: row.country,
+        day: row.date,
+        downloads: row.count,
     }))
 }
 
-export function parseUpdateCheckRows(raw: AnalyticsEngineResponse): UpdateCheckRow[] {
-    return raw.data.map((row) => ({
-        version: String(row.version ?? row.blob1 ?? ''),
-        checks: Number(row.checks ?? row.count ?? 0),
-    }))
+/** Aggregates per-arch active user rows into per-version totals. */
+export function parseUpdateCheckRows(raw: WorkerActiveUserRow[]): UpdateCheckRow[] {
+    const byVersion = new Map<string, number>()
+    for (const row of raw) {
+        byVersion.set(row.version, (byVersion.get(row.version) ?? 0) + row.uniqueUsers)
+    }
+    return [...byVersion.entries()]
+        .map(([version, checks]) => ({ version, checks }))
+        .sort((a, b) => b.checks - a.checks)
 }
 
 export async function fetchCloudflareData(env: CloudflareEnv, range: TimeRange): Promise<SourceResult<CloudflareData>> {
@@ -67,31 +90,14 @@ export async function fetchCloudflareData(env: CloudflareEnv, range: TimeRange):
     if (cached) return { ok: true, data: cached }
 
     try {
-        const interval = toSqlInterval(range)
-
-        const [downloadsResult, updateChecksResult] = await Promise.all([
-            querySql(
-                env,
-                `SELECT blob1 AS version, blob2 AS arch, blob3 AS country,
-                        toDate(timestamp) AS day, SUM(_sample_interval) AS downloads
-                 FROM cmdr_downloads
-                 WHERE timestamp > NOW() - INTERVAL ${interval}
-                 GROUP BY version, arch, country, day
-                 ORDER BY day ASC, downloads DESC`
-            ),
-            querySql(
-                env,
-                `SELECT blob1 AS version, COUNT(DISTINCT index1) AS checks
-                 FROM cmdr_update_checks
-                 WHERE timestamp > NOW() - INTERVAL ${interval}
-                 GROUP BY version
-                 ORDER BY checks DESC`
-            ),
+        const [downloadsRaw, activeUsersRaw] = await Promise.all([
+            fetchWorkerEndpoint<WorkerDownloadRow[]>(env, `/admin/downloads?range=${downloadRangeMap[range]}`),
+            fetchWorkerEndpoint<WorkerActiveUserRow[]>(env, `/admin/active-users?range=${activeUserRangeMap[range]}`),
         ])
 
         const data: CloudflareData = {
-            downloads: parseDownloadRows(downloadsResult),
-            updateChecks: parseUpdateCheckRows(updateChecksResult),
+            downloads: parseDownloadRows(downloadsRaw),
+            updateChecks: parseUpdateCheckRows(activeUsersRaw),
         }
         await cacheSet('cloudflare', range, data)
         return { ok: true, data }

@@ -1,6 +1,7 @@
-# License server
+# API server
 
-Cloudflare Worker that handles Paddle webhooks and generates Ed25519-signed license keys for Cmdr.
+Cloudflare Worker that serves as the backend for Cmdr: licensing, telemetry, crash reports, downloads, and admin
+endpoints.
 
 For architecture, data flow, environments, and dev instructions, see [CLAUDE.md](CLAUDE.md).
 
@@ -32,7 +33,7 @@ in [CLAUDE.md](CLAUDE.md).
     - Commercial perpetual: $199, one-time
 7. **Paddle (both environments)**: Create notification destination → webhook URL, subscribe to `transaction.completed`.
     - Sandbox: `https://unsickerly-acclivitous-lala.ngrok-free.dev/webhook/paddle` (for local dev via ngrok)
-    - Live: `https://license.getcmdr.com/webhook/paddle`
+    - Live: `https://api.getcmdr.com/webhook/paddle`
 8. **Cloudflare**: Set `CLOUDFLARE_API_TOKEN` — see [cloudflare.md](../../docs/tooling/cloudflare.md#api-token).
 9. **Wrangler secrets** (deployed worker — live values):
     ```
@@ -48,7 +49,7 @@ in [CLAUDE.md](CLAUDE.md).
     ```
 10. **`.dev.vars`** (local dev — sandbox values): see [CLAUDE.md](CLAUDE.md#configuration) for the full table.
 11. Save `keys/private.key` in a secure store, then delete it from the filesystem.
-12. Deploy: `cd apps/license-server && npx wrangler deploy`
+12. Deploy: `cd apps/api-server && npx wrangler deploy`
 
 ## Testing Paddle checkout
 
@@ -63,8 +64,8 @@ Test the full purchase flow through Paddle's sandbox. Only works with sandbox cr
 
 ### Run the test
 
-Start the local website (`pnpm dev` in `apps/website`) and the local license server (`pnpm dev` in `apps/license-server`
-\+ ngrok). Then use the buy buttons on http://localhost:4321/pricing/.
+Start the local website (`pnpm dev` in `apps/website`) and the local API server (`pnpm dev` in `apps/api-server` \+
+ngrok). Then use the buy buttons on http://localhost:4321/pricing/.
 
 Use test card `4000 0566 5566 5556` / CVC `100`. More test cards:
 https://developer.paddle.com/concepts/payment-methods/credit-debit-card#test-payment-details

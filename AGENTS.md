@@ -14,7 +14,7 @@ This is a monorepo containing these apps:
 - Cmdr: Currently for macOS only. Rust, Tauri 2, Svelte 5, TypeScript, and custom CSS.
 - Analytics dashboard: Private SvelteKit metrics dashboard. Deployed to Cloudflare Pages.
 - getcmdr.com website: Astro + Tailwind v4. Deployed via Docker + Caddy.
-- License server: Cloudflare Worker + Hono. Generates and verifies Ed25519-signed keys for Cmdr.
+- API server: Cloudflare Worker + Hono. Licensing, telemetry, crash reports, downloads, and admin endpoints.
 
 Core structure:
 
@@ -29,7 +29,7 @@ Core structure:
         - `src-tauri/` - Latest Rust, Tauri 2, serde, notify, tokio
         - `static/` - Static assets
         - `test/` - Vitest unit tests
-    - `license-server/` - Cloudflare Worker (Hono). Receives Paddle webhooks, generates & validates Ed25519-signed keys.
+    - `api-server/` - Cloudflare Worker (Hono). Licensing, telemetry, crash reports, downloads, and admin endpoints.
     - `website/` - Marketing website (getcmdr.com)
 - `/scripts/check/` - Go-based unified check runner
 - `/docs/` - Dev docs

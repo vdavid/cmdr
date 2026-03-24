@@ -13,19 +13,6 @@ export function toTimeWindow(range: TimeRange): { startAt: number; endAt: number
     return { startAt: endAt - durationMs[range], endAt }
 }
 
-/**
- * Converts a TimeRange to an Analytics Engine SQL interval string.
- * For example, '7d' becomes `'7' DAY`.
- */
-export function toSqlInterval(range: TimeRange): string {
-    const intervalMap: Record<TimeRange, string> = {
-        '24h': "'1' DAY",
-        '7d': "'7' DAY",
-        '30d': "'30' DAY",
-    }
-    return intervalMap[range]
-}
-
 /** Wraps a data source result. Either the data or an error message for the UI. */
 export type SourceResult<T> =
     | { ok: true; data: T }

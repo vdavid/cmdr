@@ -10,7 +10,7 @@ interface LicenseEnv {
     LICENSE_SERVER_ADMIN_TOKEN: string
 }
 
-const licenseServerUrl = 'https://license.getcmdr.com'
+const licenseServerUrl = 'https://api.getcmdr.com'
 
 export function parseLicenseStats(raw: unknown): LicenseData {
     const r = raw as { totalActivations: number; activeDevices: number | null }
@@ -21,7 +21,7 @@ export function parseLicenseStats(raw: unknown): LicenseData {
 }
 
 /**
- * Fetches activation and device stats from the license server.
+ * Fetches activation and device stats from the API server.
  * Not time-range-dependent (returns current totals).
  * Cached under '30d' since the data changes slowly.
  */

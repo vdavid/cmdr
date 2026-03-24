@@ -5,7 +5,7 @@ import LegalLayout from '../layouts/LegalLayout.astro'
 <LegalLayout
     title="Privacy policy"
     description="How Cmdr collects, uses, and protects your personal data. GDPR compliant."
-    lastUpdated="2026-03-22"
+    lastUpdated="2026-03-24"
 >
     <p>
         Your privacy matters to us a lot. This policy explains what data we collect, why, and how we protect it. We've
@@ -155,8 +155,9 @@ import LegalLayout from '../layouts/LegalLayout.astro'
             <a href="https://posthog.com/privacy" target="_blank" rel="noopener noreferrer">PostHog's privacy policy</a>
         </li>
         <li>
-            <strong>Cloudflare</strong> (hosting) — hosts our license validation, download tracking, and crash report ingestion
-            on its global CDN. Download events (version, architecture, country) are stored in Cloudflare Analytics Engine.
+            <strong>Cloudflare</strong> (hosting) — hosts our API server for license validation, download tracking, and crash
+            report ingestion on its global CDN. Download events (version, architecture, country) and crash reports are stored
+            in Cloudflare D1 (SQLite).
             <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener noreferrer"
                 >Cloudflare's privacy policy</a
             >
@@ -195,7 +196,12 @@ import LegalLayout from '../layouts/LegalLayout.astro'
             <strong>Analytics data</strong> — typically 2 years, then aggregated further, or deleted. Old data is less helpful.
         </li>
         <li>
-            <strong>Crash reports</strong> — 90 days (Cloudflare Analytics Engine retention limit)
+            <strong>Crash reports</strong> — kept permanently until manually pruned, to help us track down long-standing stability
+            issues
+        </li>
+        <li>
+            <strong>Download counts and active user data</strong> — kept permanently in aggregated form (version, architecture,
+            country). No personal information is stored.
         </li>
     </ul>
 

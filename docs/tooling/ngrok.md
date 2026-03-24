@@ -1,7 +1,7 @@
 # ngrok (tunnels)
 
 ngrok exposes local servers to the internet — useful for testing webhooks (for example, Paddle) against a local
-license server instance.
+API server instance.
 
 - **Dashboard**: https://dashboard.ngrok.com
 - **API base**: `https://api.ngrok.com`

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import app from './index'
+import { app } from './index'
 
 /** Minimal KV mock that supports get/put. Handles the `'json'` format used by Hono. */
 function createMockKv(store: Record<string, string> = {}): KVNamespace {
@@ -21,11 +21,17 @@ function createMockAnalyticsEngine(): AnalyticsEngineDataset {
     return { writeDataPoint: vi.fn() } as unknown as AnalyticsEngineDataset
 }
 
+function createMockD1(): D1Database {
+    const run = vi.fn(() => Promise.resolve({ success: true }))
+    const bind = vi.fn(() => ({ run }))
+    const prepare = vi.fn(() => ({ bind }))
+    return { prepare } as unknown as D1Database
+}
+
 const baseBindings = {
     LICENSE_CODES: createMockKv(),
-    DOWNLOADS: createMockAnalyticsEngine(),
     DEVICE_COUNTS: createMockAnalyticsEngine(),
-    UPDATE_CHECKS: createMockAnalyticsEngine(),
+    TELEMETRY_DB: createMockD1(),
     ED25519_PRIVATE_KEY: 'deadbeef'.repeat(8),
     RESEND_API_KEY: 'test-resend-key',
     PRODUCT_NAME: 'Cmdr',

@@ -15,11 +15,11 @@ import (
 type App string
 
 const (
-	AppDesktop       App = "desktop"
-	AppWebsite       App = "website"
-	AppLicenseServer App = "license-server"
-	AppScripts       App = "scripts"
-	AppOther         App = "other"
+	AppDesktop   App = "desktop"
+	AppWebsite   App = "website"
+	AppApiServer App = "api-server"
+	AppScripts   App = "scripts"
+	AppOther     App = "other"
 )
 
 // AppDisplayName returns a human-readable name for an app with icon.
@@ -29,8 +29,8 @@ func AppDisplayName(app App) string {
 		return "🖥️  Desktop"
 	case AppWebsite:
 		return "🌐 Website"
-	case AppLicenseServer:
-		return "🔑 License server"
+	case AppApiServer:
+		return "🌐 API server"
 	case AppScripts:
 		return "📜 Scripts"
 	default:

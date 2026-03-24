@@ -121,7 +121,7 @@ func parseFlags() *cliFlags {
 		svelteOnly2 = flag.Bool("svelte-only", false, "Run only Svelte/desktop checks")
 		goOnly      = flag.Bool("go", false, "Run only Go checks (scripts)")
 		goOnly2     = flag.Bool("go-only", false, "Run only Go checks (scripts)")
-		appName     = flag.String("app", "", "Run checks for a specific app (desktop, website, license-server, scripts)")
+		appName     = flag.String("app", "", "Run checks for a specific app (desktop, website, api-server, scripts)")
 		checkNames  stringSlice
 		ciMode      = flag.Bool("ci", false, "Disable auto-fixing (for CI)")
 		verbose     = flag.Bool("verbose", false, "Show detailed output")
@@ -221,12 +221,12 @@ func selectChecksByApp(appName string) ([]checks.CheckDefinition, error) {
 		return checks.GetChecksByApp(checks.AppDesktop), nil
 	case "website":
 		return checks.GetChecksByApp(checks.AppWebsite), nil
-	case "license-server":
-		return checks.GetChecksByApp(checks.AppLicenseServer), nil
+	case "api-server":
+		return checks.GetChecksByApp(checks.AppApiServer), nil
 	case "scripts":
 		return checks.GetChecksByApp(checks.AppScripts), nil
 	default:
-		return nil, fmt.Errorf("unknown app: %s\nAvailable apps: desktop, website, license-server, scripts", appName)
+		return nil, fmt.Errorf("unknown app: %s\nAvailable apps: desktop, website, api-server, scripts", appName)
 	}
 }
 
@@ -266,9 +266,9 @@ func printFailure(failedChecks []string) {
 // needsPnpmInstall returns true if any of the checks require pnpm dependencies.
 func needsPnpmInstall(checksToRun []checks.CheckDefinition) bool {
 	for _, check := range checksToRun {
-		// Checks that need pnpm: Svelte, Astro, TS (license-server)
+		// Checks that need pnpm: Svelte, Astro, TS (api-server)
 		switch check.App {
-		case checks.AppDesktop, checks.AppWebsite, checks.AppLicenseServer:
+		case checks.AppDesktop, checks.AppWebsite, checks.AppApiServer:
 			return true
 		}
 	}
@@ -297,7 +297,7 @@ func showUsage() {
 	fmt.Println("Run code quality checks for the Cmdr project.")
 	fmt.Println()
 	fmt.Println("OPTIONS:")
-	fmt.Println("    --app NAME               Run checks for a specific app (desktop, website, license-server, scripts)")
+	fmt.Println("    --app NAME               Run checks for a specific app (desktop, website, api-server, scripts)")
 	fmt.Println("    --rust, --rust-only      Run only Rust checks (desktop)")
 	fmt.Println("    --svelte, --svelte-only  Run only Svelte checks (desktop)")
 	fmt.Println("    --go, --go-only          Run only Go checks (scripts)")

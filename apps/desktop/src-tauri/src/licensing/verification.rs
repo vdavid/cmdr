@@ -54,7 +54,7 @@ impl std::error::Error for LicenseActivationError {}
 static LICENSE_CACHE: Mutex<Option<LicenseInfo>> = Mutex::new(None);
 
 // Ed25519 public key (32 bytes, hex-encoded).
-// Generate this with: cd apps/license-server && pnpm run generate-keys
+// Generate this with: cd apps/api-server && pnpm run generate-keys
 // Then copy the public key here.
 //noinspection SpellCheckingInspection
 const PUBLIC_KEY_HEX: &str = "c3b18e765fc5c74f9fb7f3a9869d14c6bdeda1f28ec85aa6182de78113930d26";

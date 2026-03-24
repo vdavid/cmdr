@@ -9,11 +9,11 @@ key generation, and activation in the desktop app.
   ([checkout settings](https://sandbox-vendors.paddle.com/checkout-settings))
 - Paddle sandbox client-side token (starts with `test_`) in `apps/website/.env` as `PUBLIC_PADDLE_CLIENT_TOKEN`
   ([create one](https://sandbox-vendors.paddle.com/authentication-v2))
-- Sandbox price IDs in `apps/website/.env` (`PUBLIC_PADDLE_PRICE_ID_*`) and `apps/license-server/.dev.vars`
+- Sandbox price IDs in `apps/website/.env` (`PUBLIC_PADDLE_PRICE_ID_*`) and `apps/api-server/.dev.vars`
   (`PRICE_ID_*`)
 - ngrok installed (`brew install ngrok`) with auth token configured
 
-See [license server README](../../apps/license-server/README.md) and
+See [API server README](../../apps/api-server/README.md) and
 [website .env.example](../../apps/website/.env.example) for full setup.
 
 ## Start the services
@@ -21,10 +21,10 @@ See [license server README](../../apps/license-server/README.md) and
 Three terminals:
 
 ```bash
-# 1. License server
-cd apps/license-server && pnpm dev
+# 1. API server
+cd apps/api-server && pnpm dev
 
-# 2. ngrok tunnel (exposes license server for Paddle webhooks)
+# 2. ngrok tunnel (exposes API server for Paddle webhooks)
 ngrok http 8787 --url unsickerly-acclivitous-lala.ngrok-free.dev
 
 # 3. Website
@@ -50,7 +50,7 @@ More test cards: https://developer.paddle.com/concepts/payment-methods/credit-de
 
 ## Verify the webhook
 
-After checkout completes, the ngrok terminal should show a `POST /webhook/paddle` request, and the license server
+After checkout completes, the ngrok terminal should show a `POST /webhook/paddle` request, and the API server
 terminal should log the key generation. The test email address receives a license key via Resend.
 
 If the webhook doesn't arrive, check the Paddle sandbox
@@ -60,13 +60,13 @@ If the webhook doesn't arrive, check the Paddle sandbox
 
 1. Open the desktop app (dev mode)
 2. Open Settings (or About) and enter the license key or short code from the email
-3. The app verifies the Ed25519 signature locally, then validates with the license server
+3. The app verifies the Ed25519 signature locally, then validates with the API server
 
 For quicker activation testing without the full purchase flow, generate a test key directly:
 
 ```bash
 curl -X POST http://localhost:8787/admin/generate \
-  -H "Authorization: Bearer $(grep PADDLE_WEBHOOK_SECRET_SANDBOX apps/license-server/.dev.vars | cut -d= -f2-)" \
+  -H "Authorization: Bearer $(grep PADDLE_WEBHOOK_SECRET_SANDBOX apps/api-server/.dev.vars | cut -d= -f2-)" \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","type":"commercial_subscription","organizationName":"Test Corp"}'
 ```
@@ -76,7 +76,7 @@ work for offline crypto and UI testing only.
 
 ## Detailed docs
 
-- [License server CLAUDE.md](../../apps/license-server/CLAUDE.md) — environments, webhook flow, local dev
-- [License server README](../../apps/license-server/README.md) — first-time setup, standalone checkout playground
+- [API server CLAUDE.md](../../apps/api-server/CLAUDE.md) — environments, webhook flow, local dev
+- [API server README](../../apps/api-server/README.md) — first-time setup, standalone checkout playground
 - [Desktop licensing CLAUDE.md](../../apps/desktop/src/lib/licensing/CLAUDE.md) — activation flow, license types
 - [ngrok tooling](../tooling/ngrok.md) — tunnel setup

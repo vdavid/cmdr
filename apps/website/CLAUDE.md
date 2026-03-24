@@ -76,7 +76,7 @@ The website uses three analytics layers. The desktop app has **no telemetry**.
 - **PostHog** (`public/scripts/posthog-init.js`): Session replay, heatmaps, click tracking. Configured with
   `persistence: 'memory'` (no cookies, no localStorage) and `person_profiles: 'identified_only'` (no anonymous person
   profiles). This keeps PostHog fully cookieless.
-- **CF Analytics Engine** (license server): Download redirect endpoint logs version, arch, and country.
+- **D1** (API server): Download redirect endpoint logs version, arch, and country.
 
 **Decision/Why**: We avoid cookies to not need a cookie consent banner. All three analytics tools are configured to work
 without cookies. If you add or change analytics tooling, preserve this property — no cookies unless absolutely

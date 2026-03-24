@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Sets up Cloudflare infrastructure for the license server.
+# Sets up Cloudflare infrastructure for the API server.
 # This script is idempotent - safe to run multiple times.
 #
 # Prerequisites:
@@ -8,7 +8,7 @@
 #   - Logged into Cloudflare: npx wrangler login
 #
 # Usage:
-#   cd apps/license-server
+#   cd apps/api-server
 #   ./scripts/setup-cf-infra.sh
 #
 

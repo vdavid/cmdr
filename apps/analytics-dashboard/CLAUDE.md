@@ -41,7 +41,7 @@ Each source gets its own module under `src/lib/server/sources/`:
 | Module | Auth | Data |
 | --- | --- | --- |
 | `umami.ts` | JWT (username/password login) | Page views, visitors, referrers, countries, download events for blog + getcmdr.com |
-| `cloudflare.ts` | Bearer token | Analytics Engine SQL: download counts, update check counts by version/arch/country. Note: `cmdr_crash_reports` dataset is also available for crash data (not yet integrated). |
+| `cloudflare.ts` | Bearer token (via `LICENSE_SERVER_ADMIN_TOKEN`) | Download counts, active users by version/arch/country — fetched from worker endpoints (`/admin/downloads`, `/admin/active-users`) |
 | `paddle.ts` | Bearer token, cursor pagination | Completed transactions, subscriptions by status |
 | `github.ts` | Optional Bearer token | Release download counts per asset |
 | `posthog.ts` | Bearer personal API key | Pageview trends via Trends API (EU endpoint) |
@@ -57,7 +57,7 @@ Workflow: `.github/workflows/deploy-dashboard.yml`. Steps: checkout, install dep
 
 **Manual setup required** (not in code):
 - Create CF Pages project `cmdr-analytics-dashboard` in the CF dashboard (or `wrangler pages project create`)
-- Add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` to GitHub repo secrets
+- Add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` to GitHub repo secrets (for wrangler deploy)
 - Set all env vars below as CF Pages secrets (via `wrangler pages secret put` or CF dashboard)
 - Configure custom domain `analdash.getcmdr.com` in CF Pages settings
 - Set up Cloudflare Access policy for `analdash.getcmdr.com` in the CF dashboard
@@ -73,14 +73,12 @@ All set as CF Pages secrets, never in code.
 | `UMAMI_PASSWORD` | Existing Umami credentials |
 | `UMAMI_WEBSITE_ID` | getcmdr.com website ID |
 | `UMAMI_BLOG_WEBSITE_ID` | Blog website ID |
-| `CLOUDFLARE_API_TOKEN` | Needs `Account Analytics Read` permission |
-| `CLOUDFLARE_ACCOUNT_ID` | `6a4433bf...` |
 | `PADDLE_API_KEY_LIVE` | Live API key (not sandbox) |
 | `POSTHOG_API_KEY` | Personal `phx_...` key (not the public `phc_...` project key) |
 | `POSTHOG_PROJECT_ID` | `136072` |
 | `POSTHOG_API_URL` | `https://eu.posthog.com` (must be EU) |
 | `GITHUB_TOKEN` | Optional, avoids rate limits on public repo API |
-| `LICENSE_SERVER_ADMIN_TOKEN` | Dedicated admin secret, also set on the license server |
+| `LICENSE_SERVER_ADMIN_TOKEN` | Dedicated admin secret, also set on the API server |
 
 ## Key decisions
 
@@ -101,9 +99,6 @@ with escaping support. Copy `.env.example` to `.env` and fill in real values.
 `page` return 400, but `path`, `referrer`, `event`, and `country` work.
 
 ## Gotchas
-
-**Gotcha**: CF Analytics Engine data is only retained for 90 days. **Why**: CF limitation. Historical comparisons beyond
-90 days are not possible for download/update-check metrics.
 
 **Gotcha**: `caches.default` and `caches.open()` are not available in `wrangler pages dev` local development. **Why**: CF
 Workers Cache API isn't emulated locally. Use a simple in-memory Map as fallback.

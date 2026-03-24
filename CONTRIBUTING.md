@@ -179,9 +179,9 @@ Or add it via CLI like:
 Since the agent shares the context with your IDE/client, enabling the MCP server makes the tools available to the agent
 automatically.
 
-## Cloudflare access (license server)
+## Cloudflare access (API server)
 
-The license server is a Cloudflare Worker. To deploy it or run `wrangler` commands, you need a Cloudflare API token.
+The API server is a Cloudflare Worker. To deploy it or run `wrangler` commands, you need a Cloudflare API token.
 
 1. Go to https://dash.cloudflare.com/profile/api-tokens → **Create Token** → **Custom token**
 2. Permissions:
@@ -232,7 +232,7 @@ See [paddle.md](docs/tooling/paddle.md) for API recipes.
 ## ngrok access (tunnels)
 
 ngrok exposes local servers to the internet — useful for testing webhooks (for example, Paddle) against your local
-license server.
+API server.
 
 1. Go to https://dashboard.ngrok.com → **Your Authtoken** (or **API** → **API Keys** for the API key)
 2. Add to `~/.zshenv`:
@@ -243,10 +243,10 @@ license server.
 
 See [ngrok.md](docs/tooling/ngrok.md) for API recipes.
 
-## License server local dev
+## API server local dev
 
-To run the license server locally (for testing license activation, generating test keys, etc.), you need a `.dev.vars`
-file with Paddle and Resend secrets. See the [license server README](apps/license-server/README.md#local-development)
+To run the API server locally (for testing license activation, generating test keys, etc.), you need a `.dev.vars`
+file with Paddle and Resend secrets. See the [API server README](apps/api-server/README.md#local-development)
 for the full setup. Ask a maintainer for the current values if you don't have dashboard access.
 
 ## Self-hosted GitHub Actions macOS runner (maintainers)

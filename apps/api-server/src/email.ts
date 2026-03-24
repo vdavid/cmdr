@@ -1,6 +1,129 @@
 import { Resend } from 'resend'
 import type { LicenseType } from './license'
 
+export interface CrashSummaryEntry {
+    topFunction: string
+    count: number
+    versions: string[]
+    mostRecent: string
+}
+
+interface CrashNotificationParams {
+    crashes: CrashSummaryEntry[]
+    totalCount: number
+    to: string
+    resendApiKey: string
+}
+
+export async function sendCrashNotificationEmail(params: CrashNotificationParams): Promise<void> {
+    const resend = new Resend(params.resendApiKey)
+    const subject = `Cmdr: ${String(params.totalCount)} new crash report${params.totalCount === 1 ? '' : 's'}`
+
+    const tableRows = params.crashes
+        .map(
+            (entry) => `
+        <tr>
+            <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-family: monospace; font-size: 13px;">${escapeHtml(entry.topFunction)}</td>
+            <td style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: center;">${String(entry.count)}</td>
+            <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-size: 13px;">${escapeHtml(entry.versions.join(', '))}</td>
+            <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-size: 13px;">${escapeHtml(entry.mostRecent)}</td>
+        </tr>`,
+        )
+        .join('\n')
+
+    await resend.emails.send({
+        from: 'Cmdr Crash Alerts <noreply@getcmdr.com>',
+        to: params.to,
+        subject,
+        html: `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h2 style="color: #dc2626;">${escapeHtml(subject)}</h2>
+
+    <table style="border-collapse: collapse; width: 100%; margin: 16px 0;">
+        <thead>
+            <tr>
+                <th style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: left; background: #f9fafb;">Crash site</th>
+                <th style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: center; background: #f9fafb;">Count</th>
+                <th style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: left; background: #f9fafb;">Versions</th>
+                <th style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: left; background: #f9fafb;">Most recent</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${tableRows}
+        </tbody>
+    </table>
+
+    <p style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 13px; color: #6b7280;">
+        This alert was generated automatically by the Cmdr API server.
+    </p>
+</body>
+</html>
+        `.trim(),
+    })
+}
+
+interface DbSizeAlertParams {
+    sizeMb: number
+    tableCounts: Record<string, number>
+    to: string
+    resendApiKey: string
+}
+
+export async function sendDbSizeAlert(params: DbSizeAlertParams): Promise<void> {
+    const resend = new Resend(params.resendApiKey)
+    const subject = `Cmdr: telemetry DB is ${String(Math.round(params.sizeMb))} MB`
+
+    const tableRows = Object.entries(params.tableCounts)
+        .map(
+            ([table, count]) => `
+        <tr>
+            <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-family: monospace;">${escapeHtml(table)}</td>
+            <td style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: right;">${String(count)}</td>
+        </tr>`,
+        )
+        .join('\n')
+
+    await resend.emails.send({
+        from: 'Cmdr Crash Alerts <noreply@getcmdr.com>',
+        to: params.to,
+        subject,
+        html: `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h2 style="color: #d97706;">${escapeHtml(subject)}</h2>
+
+    <p>The telemetry D1 database has reached <strong>${String(Math.round(params.sizeMb))} MB</strong>. Consider reviewing and pruning old data.</p>
+
+    <table style="border-collapse: collapse; width: 100%; margin: 16px 0;">
+        <thead>
+            <tr>
+                <th style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: left; background: #f9fafb;">Table</th>
+                <th style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: right; background: #f9fafb;">Row count</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${tableRows}
+        </tbody>
+    </table>
+
+    <p style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 13px; color: #6b7280;">
+        This alert was generated automatically by the Cmdr API server. Threshold: 100 MB.
+    </p>
+</body>
+</html>
+        `.trim(),
+    })
+}
+
 interface DeviceCountAlertParams {
     seatTransactionId: string
     baseTransactionId: string
@@ -58,7 +181,7 @@ export async function sendDeviceCountAlert(params: DeviceCountAlertParams): Prom
     </ol>
 
     <p style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 13px; color: #6b7280;">
-        This alert was generated automatically by the Cmdr license server. Re-alerts are suppressed for 30 days per seat.
+        This alert was generated automatically by the Cmdr API server. Re-alerts are suppressed for 30 days per seat.
     </p>
 </body>
 </html>

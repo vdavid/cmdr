@@ -59,7 +59,7 @@ tauri-plugin-log = "2"
 log = "0.4"
 # Memory allocator: returns memory to OS faster than system malloc, reduces fragmentation
 mimalloc = "0.1"
-# HTTP client for license server validation and AI downloads
+# HTTP client for API server validation and AI downloads
 reqwest = { version = "0.12", features = ["json", "rustls-tls", "stream"], default-features = false }
 # MCP server
 axum = "0.8"

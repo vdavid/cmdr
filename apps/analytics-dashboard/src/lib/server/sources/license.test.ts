@@ -49,7 +49,7 @@ describe('fetchLicenseData', () => {
 
         await fetchLicenseData(mockEnv)
 
-        expect(fetchMock.mock.calls[0][0]).toBe('https://license.getcmdr.com/admin/stats')
+        expect(fetchMock.mock.calls[0][0]).toBe('https://api.getcmdr.com/admin/stats')
         expect(fetchMock.mock.calls[0][1]?.headers).toEqual({
             Authorization: 'Bearer test-admin-token',
         })

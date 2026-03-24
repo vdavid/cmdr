@@ -1,13 +1,13 @@
 # Cloudflare (DNS, Workers, analytics)
 
-DNS, Workers, and analytics for `getcmdr.com` run on Cloudflare. For license-server-specific deployment,
+DNS, Workers, and analytics for `getcmdr.com` run on Cloudflare. For API server deployment,
 custom domain config, and troubleshooting, see the
-[license server README](../../apps/license-server/README.md#deployment).
+[API server README](../../apps/api-server/README.md#deployment).
 
 ## API token
 
 `CLOUDFLARE_API_TOKEN` lives in `~/.zshenv`. Wrangler picks it up automatically for deploys. See
-[CONTRIBUTING.md](../../CONTRIBUTING.md#cloudflare-access-license-server) for setup.
+[CONTRIBUTING.md](../../CONTRIBUTING.md#cloudflare-access-api-server) for setup.
 
 **Account ID**: `6a4433bf11c3cf86feda057f76f47991`
 
@@ -36,7 +36,7 @@ when permissions are updated.
 
 | Worker | Domain | Config |
 | --- | --- | --- |
-| `cmdr-license-server` | `license.getcmdr.com` | `apps/license-server/wrangler.toml` |
+| `cmdr-license-server` | `api.getcmdr.com` (`license.getcmdr.com` is a legacy alias) | `apps/api-server/wrangler.toml` |
 
 | Pages project | Domain | Notes |
 | --- | --- | --- |
@@ -60,9 +60,8 @@ curl -s "https://api.cloudflare.com/client/v4/accounts/6a4433bf11c3cf86feda057f7
 
 ## Download tracking (Analytics Engine)
 
-The license server has a `GET /download/:version/:arch` endpoint that logs downloads to Cloudflare Analytics Engine
-(dataset: `cmdr_downloads`) and 302-redirects to the GitHub Releases .dmg. The website routes download links through
-this endpoint when `PUBLIC_DOWNLOAD_BASE_URL` is set.
+The API server has a `GET /download/:version/:arch` endpoint that logs downloads to D1 and 302-redirects to the
+GitHub Releases .dmg. The website routes download links through this endpoint when `PUBLIC_DOWNLOAD_BASE_URL` is set.
 
 **Data schema**: indexes=[version], blobs=[version, arch, country, continent], doubles=[1].
 
@@ -79,11 +78,11 @@ curl -s "https://api.cloudflare.com/client/v4/accounts/{account_id}/analytics_en
       ORDER BY downloads DESC"
 ```
 
-The dataset is created automatically on the first write — no setup needed beyond deploying the license server.
+The dataset is created automatically on the first write — no setup needed beyond deploying the API server.
 
 ## Update check tracking (Analytics Engine)
 
-The license server has a `GET /update-check/:version` endpoint that logs update checks to Analytics Engine
+The API server has a `GET /update-check/:version` endpoint that logs update checks to D1
 (dataset: `cmdr_update_checks`) and 302-redirects to `https://getcmdr.com/latest.json`. The desktop app routes all
 update checks through this endpoint.
 
