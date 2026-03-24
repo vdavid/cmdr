@@ -104,6 +104,7 @@ mod network;
 mod permissions;
 #[cfg(target_os = "linux")]
 mod permissions_linux;
+pub mod search;
 mod settings;
 #[cfg(target_os = "macos")]
 mod updater;

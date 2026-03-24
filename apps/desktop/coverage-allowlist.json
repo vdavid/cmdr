@@ -205,8 +205,17 @@
         "settings/sections/AiSection.svelte": {
             "reason": "UI section, depends on Tauri commands and event listeners"
         },
+        "search/AiSearchRow.svelte": {
+            "reason": "Search sub-component, UI only, depends on parent orchestration"
+        },
         "search/SearchDialog.svelte": {
             "reason": "Search dialog UI, depends on Tauri commands and event listeners"
+        },
+        "search/SearchInputArea.svelte": {
+            "reason": "Search sub-component, UI only, depends on parent orchestration and Tauri tooltip action"
+        },
+        "search/SearchResults.svelte": {
+            "reason": "Search sub-component, UI only, display and formatting"
         },
         "tauri-commands/search.ts": {
             "reason": "Tauri command wrappers, tested via integration"

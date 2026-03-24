@@ -138,11 +138,7 @@ pub fn kill_stale_llama_servers(ai_dir: &Path) {
         let binary_path = ai_dir.join(LLAMA_SERVER_BINARY);
         let binary_str = binary_path.to_string_lossy();
 
-        if let Ok(output) = std::process::Command::new("pgrep")
-            .arg("-f")
-            .arg(&*binary_str)
-            .output()
-        {
+        if let Ok(output) = std::process::Command::new("pgrep").arg("-f").arg(&*binary_str).output() {
             let stdout = String::from_utf8_lossy(&output.stdout);
             for line in stdout.lines() {
                 if let Ok(pid) = line.trim().parse::<u32>() {

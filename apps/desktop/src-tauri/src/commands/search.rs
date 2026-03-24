@@ -1,6 +1,6 @@
 //! IPC commands for drive search.
 //!
-//! Thin wrappers around `indexing::search` module functions, exposed to the frontend via Tauri commands.
+//! Thin wrappers around `search` module functions, exposed to the frontend via Tauri commands.
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -9,14 +9,13 @@ use serde::Serialize;
 
 use crate::ai::client::{AiBackend, ChatCompletionOptions};
 use crate::indexing::get_read_pool;
-use crate::indexing::search::{
+use crate::search::{
     self, DIALOG_OPEN, ParsedScope, SEARCH_INDEX, SearchIndexState, SearchQuery, SearchResult, drop_search_index,
     fill_directory_sizes, start_backstop_timer, start_idle_timer, touch_activity,
 };
 
-use super::ai_query_builder;
-use super::ai_response_parser;
 use crate::indexing::writer::WRITER_GENERATION;
+use crate::search::ai::{self, query_builder as ai_query_builder};
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -313,76 +312,6 @@ pub struct TranslateDisplay {
     pub case_sensitive: Option<bool>,
 }
 
-/// Converts an ISO date string (YYYY-MM-DD) to a unix timestamp (seconds since epoch).
-pub(crate) fn iso_date_to_timestamp(date_str: &str) -> Result<u64, String> {
-    let format = time::macros::format_description!("[year]-[month]-[day]");
-    let date = time::Date::parse(date_str, &format).map_err(|e| format!("Invalid date '{date_str}': {e}"))?;
-    let datetime = date.with_hms(0, 0, 0).expect("midnight is always valid");
-    let timestamp = datetime.assume_utc().unix_timestamp();
-    if timestamp < 0 {
-        return Err(format!("Date '{date_str}' is before unix epoch"));
-    }
-    Ok(timestamp as u64)
-}
-
-// ── AI search classification prompt ──────────────────────────────────
-
-/// Classification prompt for the LLM. The LLM classifies intent into predefined
-/// enums and extracts filename keywords. Rust handles all structural/technical work.
-/// `{TODAY}` is replaced at runtime.
-const CLASSIFICATION_PROMPT: &str = "\
-Extract search parameters from the user's file search query.
-Return one field per line. Omit fields that don't apply.
-
-keywords:  filename words, space-separated, in the user's language
-type:      photos|screenshots|videos|documents|presentations|archives|music|\
-code|rust|python|javascript|typescript|go|java|config|logs|fonts|\
-databases|xcode|shell-scripts|ssh-keys|docker-compose|env-files|none
-time:      today|yesterday|this_week|last_week|this_month|last_month|\
-this_quarter|last_quarter|this_year|last_year|last_3_months|last_6_months|\
-recent|old|YYYY|YYYY..YYYY
-size:      empty|tiny|small|large|huge|>NUMBERmb|>NUMBERgb|<NUMBERmb
-scope:     downloads|documents|desktop|dotfiles|PATH
-exclude:   dirname1 dirname2
-folders:   yes|no
-note:      brief limitation caveat if query involves unfilterable concepts
-
-Rules:
-- \"keywords\" = words likely in FILENAMES. Not descriptions.
-- Use singular forms for keywords (contract, not contracts).
-- \"I name them X\" / \"I mark them as X\" → keywords: X (not the descriptive words)
-- Only set `time` when the user explicitly mentions a time period (yesterday, last week, recent, 2024, etc.). Never default to recent/today.
-- Prefer `type` over `keywords` for well-known file categories. Don't put the type name in keywords.
-- Don't put the file format in keywords when using a type. \"PDF documents\" → type: documents. \"sqlite databases\" → type: databases.
-- If the user wants ONLY a specific format (not all files of that category), use the format as keyword without type: \"HEIC photos I haven't converted\" → keywords: .heic / note: can't determine conversion status
-- \"not in X\" / \"but not in X\" / \"excluding X\" / \"except in X\" → ALWAYS use exclude: X
-- \"ssh keys\"/\"env files\"/\"docker compose\"/\"shell scripts\" → type handles this, no keywords needed
-- For content/semantic queries (\"photos of my cat\"), set type + add a note
-
-Examples:
-\"recent invoices, I mark them rymd\" → keywords: rymd / type: documents / time: recent
-\"\u{5927}\u{304d}\u{306a}\u{52d5}\u{753b}\u{3092}\u{524a}\u{9664}\u{3057}\u{305f}\u{3044}\" → type: videos / size: large / note: can't determine safe to delete
-\"node_modules folders taking up space\" → keywords: node_modules / folders: yes / size: large
-\"screenshots from this week\" → type: screenshots / time: this_week
-\"package.json not in node_modules\" → keywords: package.json / exclude: node_modules
-\"empty folders\" → folders: yes / size: empty
-\"ssh keys\" → type: ssh-keys
-\"foton fr\u{00e5}n f\u{00f6}rra veckan\" → type: photos / time: last_week
-\"that rust file with the websocket server\" → keywords: websocket / type: rust
-\"old xcode projects\" → type: xcode / time: old
-\"contracts I signed in the last 6 months\" → keywords: contract / type: documents / time: last_6_months / note: \"signed\" is not filterable
-\"shell scripts in my dotfiles\" → type: shell-scripts / scope: dotfiles
-\"HEIC photos I haven't converted\" → keywords: .heic / note: can't determine conversion status
-
-Today: {TODAY}.";
-
-fn build_classification_prompt() -> String {
-    let today = time::OffsetDateTime::now_utc().date();
-    let format = time::macros::format_description!("[year]-[month]-[day]");
-    let today_str = today.format(&format).expect("date format always succeeds");
-    CLASSIFICATION_PROMPT.replace("{TODAY}", &today_str)
-}
-
 /// Resolves the AI backend from the current provider configuration.
 fn resolve_ai_backend() -> Result<AiBackend, String> {
     let provider = crate::ai::manager::get_provider();
@@ -415,7 +344,7 @@ fn resolve_ai_backend() -> Result<AiBackend, String> {
 #[tauri::command]
 pub async fn translate_search_query(natural_query: String) -> Result<TranslateResult, String> {
     let backend = resolve_ai_backend()?;
-    let system_prompt = build_classification_prompt();
+    let system_prompt = ai::build_classification_prompt();
 
     log::debug!(
         "AI search: classification prompt ({} chars), query={natural_query:?}",
@@ -448,16 +377,16 @@ pub async fn translate_search_query(natural_query: String) -> Result<TranslateRe
     log::debug!("AI search: raw response: {response:?}");
 
     // Parse key-value response
-    let parsed = ai_response_parser::parse_llm_response(&response);
+    let parsed = ai::parse_llm_response(&response);
 
     // Fallback: if parser returned nothing useful, use raw query keywords
     let parsed = if parsed.is_empty() {
         log::info!("AI search: LLM returned empty/garbage response, falling back to raw keywords");
-        let fallback_kw = ai_response_parser::fallback_keywords(&natural_query);
+        let fallback_kw = ai::fallback_keywords(&natural_query);
         if fallback_kw.is_empty() {
             parsed
         } else {
-            ai_response_parser::ParsedLlmResponse {
+            ai::ParsedLlmResponse {
                 keywords: Some(fallback_kw),
                 ..Default::default()
             }
@@ -482,27 +411,6 @@ pub async fn translate_search_query(natural_query: String) -> Result<TranslateRe
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_iso_date_to_timestamp() {
-        // 2025-01-01 00:00:00 UTC = 1735689600
-        let ts = iso_date_to_timestamp("2025-01-01").unwrap();
-        assert_eq!(ts, 1_735_689_600);
-    }
-
-    #[test]
-    fn test_iso_date_to_timestamp_mid_year() {
-        // 2026-06-15 00:00:00 UTC = 1781481600
-        let ts = iso_date_to_timestamp("2026-06-15").unwrap();
-        assert_eq!(ts, 1_781_481_600);
-    }
-
-    #[test]
-    fn test_iso_date_to_timestamp_invalid() {
-        assert!(iso_date_to_timestamp("not-a-date").is_err());
-        assert!(iso_date_to_timestamp("2025-13-01").is_err());
-        assert!(iso_date_to_timestamp("2025-01-32").is_err());
-    }
 
     #[test]
     fn test_translate_result_serialization() {
@@ -538,27 +446,5 @@ mod tests {
         assert!(json.contains("namePattern"));
         assert!(json.contains("patternType"));
         assert!(json.contains("2025-01-01"));
-    }
-
-    #[test]
-    fn test_classification_prompt_contains_date() {
-        let prompt = build_classification_prompt();
-        assert!(prompt.contains("Today:"));
-        assert!(prompt.contains("Extract search parameters"));
-        // Should contain a date in YYYY-MM-DD format
-        assert!(prompt.contains("20")); // Year starts with 20
-    }
-
-    #[test]
-    fn test_classification_prompt_contains_type_enums() {
-        let prompt = build_classification_prompt();
-        assert!(prompt.contains("photos|screenshots|videos"));
-        assert!(prompt.contains("shell-scripts|ssh-keys|docker-compose|env-files"));
-    }
-
-    #[test]
-    fn test_classification_prompt_contains_time_enums() {
-        let prompt = build_classification_prompt();
-        assert!(prompt.contains("last_3_months|last_6_months"));
     }
 }

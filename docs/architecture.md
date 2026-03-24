@@ -26,7 +26,7 @@ All under `apps/desktop/src/lib/`.
 | `logging/` | Unified logging: LogTape config, batching bridge to Rust, verbose toggle |
 | `ai/` | Local LLM features (folder suggestions), download flow |
 | `indexing/` | Drive index state, events, priority triggers, scan status overlay |
-| `search/` | Whole-drive file search dialog (glob/regex, size/date filters, AI mode) |
+| `search/` | Whole-drive file search dialog: orchestrator + `AiSearchRow`, `SearchInputArea`, `SearchResults` components |
 | `mtp/` | MTP (Android device) file browsing UI |
 | `onboarding/` | Full Disk Access prompt for first-launch onboarding |
 | `ui/` | Shared UI primitives: ModalDialog, Button, AlertDialog, LoadingIcon, Notification, dialog registry |
@@ -50,7 +50,7 @@ All under `apps/desktop/src-tauri/src/`.
 | `licensing/` | Ed25519 license verification, server validation |
 | `settings/` | Settings persistence (tauri-plugin-store) |
 | `indexing/` | Background drive indexing (SQLite, jwalk, FSEvents), recursive directory sizes |
-| `indexing/search.rs` | In-memory search index for whole-drive file search (lazy load, rayon parallel scan, glob/regex) |
+| `search/` | In-memory search index (lazy load, rayon parallel scan, glob/regex) and AI query translation pipeline (`search/ai/`) |
 | `font_metrics/` | Binary font metrics cache, per-directory width calculation |
 | `volumes/` | Volume abstraction (local, network, MTP), scanner/watcher traits |
 | `stubs/` | Linux compilation stubs for macOS-only modules (used by Docker E2E pipeline) |
@@ -75,9 +75,9 @@ All under `apps/desktop/src-tauri/src/`.
 
 Whole-drive file search powered by the index DB. The search index loads all entries into memory (~600 MB for 5M files), scans them with rayon in parallel, and returns results sorted by recency. The index is loaded lazily when the search dialog opens and dropped after idle timeout.
 
-**Backend** (`indexing/search.rs`): `SearchIndex` holds a `Vec<SearchEntry>` + `id_to_index` HashMap. `search()` is a pure function accepting a `SearchQuery` (glob/regex pattern, size/date filters, directory flag, limit) and returning `SearchResult` with path-reconstructed entries. `WRITER_GENERATION` (in `writer.rs`) tracks DB mutations; stale indexes trigger background reload.
+**Backend** (`search/`): `engine.rs` has a pure `search()` function (no I/O) that accepts `&SearchIndex` + `&SearchQuery` and returns `SearchResult`. `types.rs` defines data structures, `query.rs` handles DB-touching operations (scope resolution, directory sizes), `index.rs` manages global index state with idle/backstop timers. `search/ai/` contains the AI query translation pipeline (prompt, parser, query builder). See `src-tauri/src/search/CLAUDE.md`.
 
-**IPC** (`commands/search.rs`): Four commands: `prepare_search_index` (starts async load, emits `search-index-ready` event), `search_files` (returns empty if not loaded), `release_search_index` (starts 5-min idle timer, cancels in-progress loads), `translate_search_query` (AI natural language → structured filters).
+**IPC** (`commands/search.rs`): Thin wrappers. `prepare_search_index` (starts async load, emits `search-index-ready` event), `search_files` (returns empty if not loaded), `release_search_index` (starts 5-min idle timer), `translate_search_query` (orchestrates `search::ai` pipeline). `resolve_ai_backend` handles AI provider config.
 
 **Lifecycle**: Load on dialog open (2-3s for 5M rows with cancellation check every 100K rows) -> search while loaded -> idle timeout (5 min) or backstop timeout (10 min) drops the index.
 

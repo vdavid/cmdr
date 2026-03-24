@@ -961,7 +961,10 @@ fn spawn_and_track_server(m: &mut ManagerState) -> Result<(u32, u16), String> {
     let model = get_model_by_id(&m.state.installed_model_id).unwrap_or_else(get_default_model);
     let port = find_available_port().ok_or("No available port")?;
 
-    log::debug!("AI server: starting llama-server on port {port} with context size {}", m.context_size);
+    log::debug!(
+        "AI server: starting llama-server on port {port} with context size {}",
+        m.context_size
+    );
 
     // Belt-and-suspenders: stop any stale llama-servers before spawning a new one
     kill_stale_llama_servers(&m.ai_dir);

@@ -25,9 +25,7 @@ immediately to business-logic modules. No significant logic lives here.
 | `indexing.rs` | Drive index | `start_drive_index`, `stop_drive_index`, `get_index_status`, `get_dir_stats`, `get_dir_stats_batch`, `clear_drive_index`, `set_indexing_enabled`, `get_index_debug_status` (dev-only extended stats). Uses `State<IndexManagerState>`. |
 | `clipboard.rs` | Clipboard file ops | `copy_files_to_clipboard`, `cut_files_to_clipboard`, `read_clipboard_files`, `clear_clipboard_cut_state`. macOS uses NSPasteboard via `clipboard::pasteboard`; non-macOS stubs return errors. |
 | `crash_reporter.rs` | Crash reporting | `check_pending_crash_report`, `dismiss_crash_report`, `send_crash_report`. Delegates to `crash_reporter` module. Send is skipped in dev/CI. |
-| `search.rs` | Drive search | `prepare_search_index`, `search_files`, `release_search_index`, `translate_search_query`, `parse_search_scope`. Thin wrappers over `indexing::search` module. Post-filters directory sizes after `fill_directory_sizes`. AI search uses single-pass classification prompt → `ai_response_parser` → `ai_query_builder` pipeline. |
-| `ai_response_parser.rs` | AI search parser | Key-value line parser for LLM classification responses. Validates enum fields, extracts keywords. Fallback keyword extraction when LLM fails. |
-| `ai_query_builder.rs` | AI search builder | Maps parsed LLM enums (type, time, size, scope) into `SearchQuery` fields. Merges keywords + type into single regex pattern. Deterministic date/size computation. |
+| `search.rs` | Drive search | Thin IPC wrappers over `search` module. `resolve_ai_backend` for AI provider config. Post-filters directory sizes after `fill_directory_sizes`. |
 | `sync_status.rs` | Cloud sync status | `get_sync_status` — macOS delegates to `file_system::sync_status`; non-macOS returns empty map via `#[cfg]` on the function itself (not the module). |
 
 ## Key decisions

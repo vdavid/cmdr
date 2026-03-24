@@ -8,6 +8,9 @@
      * Input layout:
      * - AI enabled: two rows — AI prompt row (top, focused) + pattern row (bottom)
      * - AI disabled: single pattern row with Search button
+     *
+     * This is the orchestrator: overlay, mount/unmount, keyboard dispatch, search
+     * execution, state wiring to child components via props/callbacks.
      */
     import { onMount, onDestroy, tick } from 'svelte'
     import { SvelteSet } from 'svelte/reactivity'
@@ -21,13 +24,11 @@
         parseSearchScope,
         getSystemDirExcludes,
         onSearchIndexReady,
-        formatBytes,
     } from '$lib/tauri-commands'
-    import { getCachedIcon, iconCacheVersion } from '$lib/icon-cache'
+    import { iconCacheVersion } from '$lib/icon-cache'
     import type { UnlistenFn } from '$lib/tauri-commands'
     import { getSetting } from '$lib/settings'
     import { isScanning, getEntriesScanned } from '$lib/indexing'
-    import { tooltip } from '$lib/tooltip/tooltip'
     import {
         getNamePattern,
         setNamePattern,
@@ -77,11 +78,11 @@
         setCaveat,
         buildSearchQuery,
         resetSearchState,
-        type SizeFilter,
-        type DateFilter,
-        type SizeUnit,
         type PatternType,
     } from './search-state.svelte'
+    import AiSearchRow from './AiSearchRow.svelte'
+    import SearchInputArea from './SearchInputArea.svelte'
+    import SearchResults from './SearchResults.svelte'
 
     interface Props {
         /** Called when user selects a result: receives the full path */
@@ -97,7 +98,7 @@
     let aiPromptInputElement: HTMLInputElement | undefined = $state()
     let patternInputElement: HTMLInputElement | undefined = $state()
     let dialogElement: HTMLDivElement | undefined = $state()
-    let resultsContainer: HTMLDivElement | undefined = $state()
+    let searchResultsComponent: SearchResults | undefined = $state()
     let hoveredIndex = $state<number | null>(null)
     let debounceTimer: ReturnType<typeof setTimeout> | undefined
     let unlistenReady: UnlistenFn | undefined
@@ -173,12 +174,7 @@
     let hasSearched = $state(false)
 
     // Subscribe to icon cache version for reactivity
-    const _iconVersion = $derived($iconCacheVersion)
-
-    function getIconUrl(iconId: string): string | undefined {
-        void _iconVersion
-        return getCachedIcon(iconId)
-    }
+    const iconVersion = $derived($iconCacheVersion)
 
     /** Focuses the appropriate input based on whether AI is enabled. */
     function focusActiveInput(): void {
@@ -388,8 +384,8 @@
     /** Focuses the first result row for keyboard navigation. */
     async function focusFirstResult(): Promise<void> {
         await tick()
-        const firstResult = resultsContainer?.querySelector('.result-row') as HTMLElement | null
-        firstResult?.focus()
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte 5 bind:this lacks type info for exports
+        searchResultsComponent?.scrollCursorIntoView()
     }
 
     /** Runs AI translation for a given query text, populates filters, and searches. */
@@ -520,7 +516,8 @@
             setCursorIndex(Math.max(getCursorIndex() - 1, 0))
         }
         hoveredIndex = null
-        scrollCursorIntoView()
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte 5 bind:this lacks type info for exports
+        searchResultsComponent?.scrollCursorIntoView()
     }
 
     function handleKeyDown(e: KeyboardEvent): void {
@@ -561,13 +558,6 @@
         }
     }
 
-    function scrollCursorIntoView(): void {
-        void tick().then(() => {
-            const cursor = resultsContainer?.querySelector('.result-row.is-under-cursor')
-            cursor?.scrollIntoView({ block: 'nearest' })
-        })
-    }
-
     function handleResultClick(index: number): void {
         if (index < results.length) {
             onNavigate(results[index].path)
@@ -578,49 +568,6 @@
         if (e.target === e.currentTarget) {
             onClose()
         }
-    }
-
-    function formatSize(bytes: number | null | undefined): string {
-        if (bytes == null) return ''
-        return formatBytes(bytes)
-    }
-
-    /** Formats a unix timestamp (seconds) as YYYY-MM-DD. */
-    function formatDate(timestamp: number | null | undefined): string {
-        if (timestamp == null) return ''
-
-        const d = new Date(timestamp * 1000)
-        const year = d.getFullYear()
-        const month = String(d.getMonth() + 1).padStart(2, '0')
-        const day = String(d.getDate()).padStart(2, '0')
-        return `${String(year)}-${month}-${day}`
-    }
-
-    function formatEntryCount(count: number): string {
-        if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`
-        if (count >= 1_000) return `${(count / 1_000).toFixed(1)}K`
-        return String(count)
-    }
-
-    function getStatusText(): string {
-        if (!isIndexAvailable) {
-            if (scanning && entriesScanned > 0) {
-                return `Scanning in progress (${formatEntryCount(entriesScanned)} entries)...`
-            }
-            if (scanning) return 'Scan in progress...'
-            return 'Drive index not available'
-        }
-        if (isIndexReady) {
-            if (isSearching) return 'Searching...'
-            if (!hasSearched || (!namePattern.trim() && sizeFilter === 'any' && dateFilter === 'any')) {
-                return `Index ready (${formatEntryCount(indexEntryCount)} entries)`
-            }
-            if (totalCount === 0) return 'No results'
-            return `${String(results.length)} of ${totalCount.toLocaleString()} results`
-        }
-        // Index loading — only show status if user has triggered a search
-        if (hasSearched) return 'Loading index...'
-        return ''
     }
 </script>
 
@@ -636,422 +583,77 @@
     <div class="search-dialog" bind:this={dialogElement}>
         <h2 id="search-dialog-title" class="sr-only">Search files</h2>
 
-        <!-- AI prompt row (visible when AI is enabled) -->
         {#if aiEnabled}
-            <div class="input-row ai-prompt-row">
-                <span class="row-label ai-label">AI</span>
-                <input
-                    bind:this={aiPromptInputElement}
-                    type="text"
-                    class="name-input"
-                    placeholder="Describe what you're looking for..."
-                    value={aiPrompt}
-                    oninput={inputHandler(setAiPrompt, false)}
-                    disabled={inputsDisabled}
-                    aria-label="Natural language search query"
-                    spellcheck="false"
-                    autocomplete="off"
-                    autocapitalize="off"
-                />
-                <button
-                    class="action-button ai-active"
-                    onclick={() => void executeAiSearch(getAiPrompt())}
-                    disabled={inputsDisabled || !aiPrompt.trim()}
-                    title="Ask AI (⌘Enter)"
-                >
-                    Ask AI
-                </button>
-            </div>
-            {#if caveatText}
-                <div class="caveat-row">{caveatText}</div>
-            {/if}
-        {/if}
-
-        <!-- Pattern / search row (always visible) -->
-        <div class="input-row">
-            <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5" />
-                <line
-                    x1="10.5"
-                    y1="10.5"
-                    x2="14.5"
-                    y2="14.5"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                />
-            </svg>
-            <input
-                bind:this={patternInputElement}
-                type="text"
-                class="name-input"
-                class:ai-highlight={highlightedFields.has('name')}
-                placeholder={patternType === 'regex'
-                    ? 'Regular expression pattern'
-                    : 'Filename pattern (use * and ? as wildcards)'}
-                value={namePattern}
-                oninput={inputHandler(setNamePattern)}
+            <AiSearchRow
+                bind:inputElement={aiPromptInputElement}
+                {aiPrompt}
+                onPromptInput={inputHandler(setAiPrompt, false)}
+                onAiSearch={(query: string) => void executeAiSearch(query)}
                 disabled={inputsDisabled}
-                aria-label="Filename pattern"
-                spellcheck="false"
-                autocomplete="off"
-                autocapitalize="off"
+                {caveatText}
+                {aiStatus}
+                {aiError}
             />
-            <button
-                class="pattern-type-toggle"
-                class:active={caseSensitive}
-                class:ai-highlight={highlightedFields.has('caseSensitive')}
-                onclick={() => {
-                    setCaseSensitive(!getCaseSensitive())
-                    scheduleSearch()
-                }}
-                disabled={inputsDisabled}
-                title={caseSensitive ? 'Case-sensitive' : 'Case-insensitive'}
-                aria-label={caseSensitive ? 'Case-sensitive' : 'Case-insensitive'}
-            >
-                Aa
-            </button>
-            <button
-                class="pattern-type-toggle"
-                class:ai-highlight={highlightedFields.has('patternType')}
-                onclick={togglePatternType}
-                disabled={inputsDisabled}
-                title="Toggle between glob and regex matching"
-                aria-label="Pattern type: {patternType === 'regex' ? 'Regex' : 'Glob'}"
-            >
-                {patternType === 'regex' ? 'Regex' : 'Glob'}
-            </button>
-            <button
-                class="action-button"
-                onclick={() => void executeSearch()}
-                disabled={inputsDisabled}
-                title="Search (Enter)"
-            >
-                Search
-            </button>
-        </div>
-
-        <!-- Scope row -->
-        <div class="input-row">
-            <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path
-                    d="M2 4.5V12.5C2 13.05 2.45 13.5 3 13.5H13C13.55 13.5 14 13.05 14 12.5V6.5C14 5.95 13.55 5.5 13 5.5H8L6.5 3.5H3C2.45 3.5 2 3.95 2 4.5Z"
-                    stroke="currentColor"
-                    stroke-width="1.3"
-                    fill="none"
-                />
-            </svg>
-            <input
-                type="text"
-                class="name-input"
-                class:ai-highlight={highlightedFields.has('scope')}
-                placeholder="All folders"
-                value={scope}
-                oninput={inputHandler(setScope)}
-                disabled={inputsDisabled}
-                aria-label="Search scope"
-                spellcheck="false"
-                autocomplete="off"
-                autocapitalize="off"
-            />
-            <div class="scope-info-wrapper">
-                <button
-                    class="scope-info-button"
-                    use:tooltip={{
-                        html:
-                            '<div style="max-width:380px">' +
-                            '<div style="font-weight:600;margin-bottom:4px">Search scope — which folders to search in</div>' +
-                            '<div style="color:var(--color-text-secondary);margin-bottom:8px">Comma-separated paths. Use ! to exclude.</div>' +
-                            '<table style="border-spacing:0;margin-bottom:8px;width:100%">' +
-                            '<tr><td style="padding:2px 12px 2px 0;white-space:nowrap"><code>~/projects</code></td><td style="color:var(--color-text-secondary)">Search in one folder</td></tr>' +
-                            '<tr><td style="padding:2px 12px 2px 0;white-space:nowrap"><code>~/projects, ~/Documents</code></td><td style="color:var(--color-text-secondary)">Search in multiple folders</td></tr>' +
-                            '<tr><td style="padding:2px 12px 2px 0;white-space:nowrap"><code>!node_modules, !.git</code></td><td style="color:var(--color-text-secondary)">Exclude folders by name</td></tr>' +
-                            '<tr><td style="padding:2px 12px 2px 0;white-space:nowrap"><code>~/projects, !node_modules</code></td><td style="color:var(--color-text-secondary)">Combine include and exclude</td></tr>' +
-                            '<tr><td style="padding:2px 12px 2px 0;white-space:nowrap"><code>!.*</code></td><td style="color:var(--color-text-secondary)">Exclude hidden folders</td></tr>' +
-                            '</table>' +
-                            '<div style="color:var(--color-text-secondary)">Wildcards * and ? work in folder names.<br>Use quotes or backslash to escape commas.</div>' +
-                            '</div>',
-                    }}
-                    disabled={inputsDisabled}
-                    aria-label="Scope syntax help"
-                >
-                    i
-                </button>
-            </div>
-            <button
-                class="pattern-type-toggle"
-                class:active={excludeSystemDirs}
-                onclick={() => {
-                    setExcludeSystemDirs(!getExcludeSystemDirs())
-                    scheduleSearch()
-                }}
-                disabled={inputsDisabled}
-                use:tooltip={{ html: systemDirExcludeTooltip }}
-                aria-label={excludeSystemDirs ? 'System folders excluded' : 'System folders included'}
-            >
-                Filter
-            </button>
-            <button
-                class="pattern-type-toggle"
-                onclick={() => {
-                    setScope(currentFolderPath)
-                    scheduleSearch()
-                }}
-                disabled={inputsDisabled}
-                title="Scope to current folder (⌥F)"
-                aria-label="Scope to current folder"
-            >
-                ⌥F
-            </button>
-            <button
-                class="pattern-type-toggle"
-                onclick={() => {
-                    setScope('')
-                    scheduleSearch()
-                }}
-                disabled={inputsDisabled}
-                title="Search entire drive (⌥D)"
-                aria-label="Search entire drive"
-            >
-                ⌥D
-            </button>
-        </div>
-
-        <!-- AI status / error -->
-        {#if aiStatus}
-            <div class="ai-status">{aiStatus}</div>
-        {/if}
-        {#if aiError}
-            <div class="ai-error">{aiError}</div>
         {/if}
 
-        <!-- Filter row -->
-        <div class="filter-row">
-            <div class="filter-group" class:ai-highlight={highlightedFields.has('size')}>
-                <label class="filter-label" for="size-filter">Size</label>
-                <select
-                    id="size-filter"
-                    class="filter-select"
-                    value={sizeFilter}
-                    onchange={selectHandler<SizeFilter>(setSizeFilter)}
-                    disabled={inputsDisabled}
-                    aria-label="Size filter"
-                >
-                    <option value="any">any</option>
-                    <option value="gte">&ge;</option>
-                    <option value="lte">&le;</option>
-                    <option value="between">between</option>
-                </select>
-                {#if sizeFilter !== 'any'}
-                    <input
-                        type="number"
-                        class="filter-input size-input"
-                        value={sizeValue}
-                        oninput={inputHandler(setSizeValue)}
-                        disabled={inputsDisabled}
-                        aria-label="Minimum size value"
-                        min="0"
-                        step="any"
-                    />
-                    <select
-                        class="filter-select unit-select"
-                        value={sizeUnit}
-                        onchange={selectHandler<SizeUnit>(setSizeUnit)}
-                        disabled={inputsDisabled}
-                        aria-label="Size unit"
-                    >
-                        <option value="KB">KB</option>
-                        <option value="MB">MB</option>
-                        <option value="GB">GB</option>
-                    </select>
-                {/if}
-                {#if sizeFilter === 'between'}
-                    <span class="filter-separator">–</span>
-                    <input
-                        type="number"
-                        class="filter-input size-input"
-                        value={sizeValueMax}
-                        oninput={inputHandler(setSizeValueMax)}
-                        disabled={inputsDisabled}
-                        aria-label="Maximum size value"
-                        min="0"
-                        step="any"
-                    />
-                    <select
-                        class="filter-select unit-select"
-                        value={sizeUnitMax}
-                        onchange={selectHandler<SizeUnit>(setSizeUnitMax)}
-                        disabled={inputsDisabled}
-                        aria-label="Maximum size unit"
-                    >
-                        <option value="KB">KB</option>
-                        <option value="MB">MB</option>
-                        <option value="GB">GB</option>
-                    </select>
-                {/if}
-            </div>
+        <SearchInputArea
+            bind:patternInputElement
+            {namePattern}
+            {patternType}
+            {caseSensitive}
+            {scope}
+            {excludeSystemDirs}
+            {currentFolderPath}
+            {sizeFilter}
+            {sizeValue}
+            {sizeUnit}
+            {sizeValueMax}
+            {sizeUnitMax}
+            {dateFilter}
+            {dateValue}
+            {dateValueMax}
+            {systemDirExcludeTooltip}
+            {highlightedFields}
+            disabled={inputsDisabled}
+            onInput={inputHandler}
+            onSelect={selectHandler}
+            onSearch={() => void executeSearch()}
+            onTogglePatternType={togglePatternType}
+            onToggleCaseSensitive={() => {
+                setCaseSensitive(!getCaseSensitive())
+                scheduleSearch()
+            }}
+            onToggleExcludeSystemDirs={() => {
+                setExcludeSystemDirs(!getExcludeSystemDirs())
+                scheduleSearch()
+            }}
+            onSetScope={setScope}
+            {scheduleSearch}
+        />
 
-            <div class="filter-group" class:ai-highlight={highlightedFields.has('date')}>
-                <label class="filter-label" for="date-filter">Modified</label>
-                <select
-                    id="date-filter"
-                    class="filter-select"
-                    value={dateFilter}
-                    onchange={selectHandler<DateFilter>(setDateFilter)}
-                    disabled={inputsDisabled}
-                    aria-label="Date filter"
-                >
-                    <option value="any">any</option>
-                    <option value="after">after</option>
-                    <option value="before">before</option>
-                    <option value="between">between</option>
-                </select>
-                {#if dateFilter !== 'any'}
-                    <input
-                        type="date"
-                        class="filter-input date-input"
-                        value={dateValue}
-                        oninput={inputHandler(setDateValue)}
-                        disabled={inputsDisabled}
-                        aria-label="Date value"
-                    />
-                {/if}
-                {#if dateFilter === 'between'}
-                    <span class="filter-separator">–</span>
-                    <input
-                        type="date"
-                        class="filter-input date-input"
-                        value={dateValueMax}
-                        oninput={inputHandler(setDateValueMax)}
-                        disabled={inputsDisabled}
-                        aria-label="Maximum date value"
-                    />
-                {/if}
-            </div>
-        </div>
-
-        <!-- Column headers -->
-        <div class="column-header" style:grid-template-columns={gridTemplate}>
-            <span class="col-label col-icon"></span>
-            <span class="col-label">
-                Name
-                <span
-                    class="col-resize-handle"
-                    role="separator"
-                    onmousedown={(e: MouseEvent) => {
-                        handleColumnDragStart('name', e)
-                    }}
-                ></span>
-            </span>
-            <span class="col-label">
-                Path
-                <span
-                    class="col-resize-handle"
-                    role="separator"
-                    onmousedown={(e: MouseEvent) => {
-                        handleColumnDragStart('path', e)
-                    }}
-                ></span>
-            </span>
-            <span class="col-label col-right">
-                Size
-                <span
-                    class="col-resize-handle"
-                    role="separator"
-                    onmousedown={(e: MouseEvent) => {
-                        handleColumnDragStart('size', e)
-                    }}
-                ></span>
-            </span>
-            <span class="col-label col-right">
-                Modified
-                <span
-                    class="col-resize-handle"
-                    role="separator"
-                    onmousedown={(e: MouseEvent) => {
-                        handleColumnDragStart('modified', e)
-                    }}
-                ></span>
-            </span>
-        </div>
-
-        <!-- Results list -->
-        <div class="results-container" bind:this={resultsContainer} role="listbox" aria-label="Search results">
-            {#if !isIndexAvailable}
-                <div class="index-unavailable">
-                    <p class="unavailable-message">
-                        Drive index not ready. Search is available after the initial scan completes.
-                    </p>
-                    {#if scanning}
-                        <p class="unavailable-progress">
-                            Scan in progress{entriesScanned > 0
-                                ? ` (${formatEntryCount(entriesScanned)} entries)`
-                                : ''}...
-                        </p>
-                    {/if}
-                </div>
-            {:else if !isIndexReady && hasSearched}
-                <div class="loading-state">
-                    <span class="loading-pulse" aria-hidden="true"></span>
-                    Loading drive index...
-                </div>
-            {:else if isSearching && results.length === 0}
-                <div class="loading-state">
-                    <span class="loading-pulse" aria-hidden="true"></span>
-                    Searching...
-                </div>
-            {:else if results.length === 0 && hasSearched && !isSearching && (namePattern.trim() || sizeFilter !== 'any' || dateFilter !== 'any')}
-                <div class="no-results">No files found</div>
-            {:else}
-                {#each results as entry, index (entry.path)}
-                    <div
-                        class="result-row"
-                        class:is-under-cursor={index === cursorIndex}
-                        class:is-hovered={hoveredIndex === index && index !== cursorIndex}
-                        style:grid-template-columns={gridTemplate}
-                        onclick={() => {
-                            handleResultClick(index)
-                        }}
-                        onmouseenter={() => {
-                            hoveredIndex = index
-                        }}
-                        onmouseleave={() => {
-                            hoveredIndex = null
-                        }}
-                        role="option"
-                        tabindex="-1"
-                        aria-selected={index === cursorIndex}
-                    >
-                        <span class="result-icon">
-                            {#if getIconUrl(entry.iconId)}
-                                <img class="icon-img" src={getIconUrl(entry.iconId)} alt="" width="16" height="16" />
-                            {:else if entry.isDirectory}
-                                <span class="icon-emoji">📁</span>
-                            {:else}
-                                <span class="icon-emoji">📄</span>
-                            {/if}
-                        </span>
-                        <span class="result-name" title={entry.name}>
-                            {entry.name}
-                        </span>
-                        <span class="result-path" title={entry.parentPath}>
-                            {entry.parentPath}
-                        </span>
-                        <span class="result-size">
-                            {formatSize(entry.size)}
-                        </span>
-                        <span class="result-modified">
-                            {formatDate(entry.modifiedAt)}
-                        </span>
-                    </div>
-                {/each}
-            {/if}
-        </div>
-
-        <!-- Status bar -->
-        <div class="status-bar" aria-live="polite">
-            <span class="status-text">{getStatusText()}</span>
-        </div>
+        <SearchResults
+            bind:this={searchResultsComponent}
+            bind:hoveredIndex
+            {results}
+            {cursorIndex}
+            {isIndexAvailable}
+            {isIndexReady}
+            {isSearching}
+            {hasSearched}
+            {namePattern}
+            {sizeFilter}
+            {dateFilter}
+            {scanning}
+            {entriesScanned}
+            {totalCount}
+            {indexEntryCount}
+            {gridTemplate}
+            iconCacheVersion={iconVersion}
+            onResultClick={handleResultClick}
+            onColumnDragStart={(col: string, e: MouseEvent) => {
+                handleColumnDragStart(col as keyof typeof colWidths, e)
+            }}
+        />
     </div>
 </div>
 
@@ -1078,444 +680,6 @@
         overflow: hidden;
     }
 
-    /* Input rows */
-    .input-row {
-        display: flex;
-        align-items: center;
-        padding: var(--spacing-sm) var(--spacing-md);
-        border-bottom: 1px solid var(--color-border-strong);
-        background: var(--color-bg-primary);
-        gap: var(--spacing-sm);
-    }
-
-    /* AI prompt row styling — subtle left accent border */
-    .ai-prompt-row {
-        border-left: 2px solid var(--color-accent);
-        background: var(--color-bg-secondary);
-        animation: slide-down 150ms ease-out;
-    }
-
-    @keyframes slide-down {
-        from {
-            max-height: 0;
-            opacity: 0;
-            padding-top: 0;
-            padding-bottom: 0;
-        }
-
-        to {
-            max-height: 60px;
-            opacity: 1;
-        }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-        .ai-prompt-row {
-            animation: none;
-        }
-    }
-
-    .row-label {
-        flex-shrink: 0;
-        font-size: var(--font-size-sm);
-        color: var(--color-text-tertiary);
-        font-weight: 500;
-        user-select: none;
-    }
-
-    .ai-label {
-        color: var(--color-accent);
-    }
-
-    .search-icon {
-        flex-shrink: 0;
-        color: var(--color-text-tertiary);
-    }
-
-    .name-input {
-        flex: 1;
-        font-size: var(--font-size-md);
-        border: 1px solid transparent;
-        background: transparent;
-        color: var(--color-text-primary);
-        outline: none;
-        min-width: 0;
-    }
-
-    .name-input:focus {
-        border-color: var(--color-accent);
-        box-shadow: var(--shadow-focus);
-    }
-
-    .name-input::placeholder {
-        color: var(--color-text-tertiary);
-    }
-
-    .name-input.ai-highlight {
-        background: var(--color-accent-subtle);
-        border-radius: var(--radius-sm);
-        transition: background 1.5s ease-out;
-    }
-
-    /* Shared button style for Search and Ask AI */
-    .action-button {
-        flex-shrink: 0;
-        padding: var(--spacing-xxs) var(--spacing-sm);
-        font-size: var(--font-size-sm);
-        border: 1px solid var(--color-border-strong);
-        border-radius: var(--radius-sm);
-        background: var(--color-bg-secondary);
-        color: var(--color-text-secondary);
-        white-space: nowrap;
-    }
-
-    .action-button:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .action-button:not(:disabled):hover {
-        background: var(--color-bg-tertiary);
-    }
-
-    .action-button.ai-active {
-        background: var(--color-accent-subtle);
-        border-color: var(--color-accent);
-        color: var(--color-text-primary);
-    }
-
-    .pattern-type-toggle {
-        flex-shrink: 0;
-        padding: var(--spacing-xxs) var(--spacing-xs);
-        font-size: var(--font-size-xs);
-        border: 1px solid var(--color-border-strong);
-        border-radius: var(--radius-sm);
-        background: var(--color-bg-secondary);
-        color: var(--color-text-tertiary);
-        white-space: nowrap;
-        font-family: var(--font-mono);
-        min-width: 40px;
-        text-align: center;
-    }
-
-    .pattern-type-toggle:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .pattern-type-toggle:not(:disabled):hover {
-        background: var(--color-bg-tertiary);
-        color: var(--color-text-secondary);
-    }
-
-    .pattern-type-toggle.active {
-        background: var(--color-accent-subtle);
-        border-color: var(--color-accent);
-        color: var(--color-text-primary);
-    }
-
-    .pattern-type-toggle.ai-highlight {
-        background: var(--color-accent-subtle);
-        border-radius: var(--radius-sm);
-        transition: background 1.5s ease-out;
-    }
-
-    /* Scope info button and tooltip */
-    .scope-info-wrapper {
-        position: relative;
-        flex-shrink: 0;
-    }
-
-    .scope-info-button {
-        width: 18px;
-        height: 18px;
-        border-radius: var(--radius-full);
-        border: 1px solid var(--color-border);
-        font-size: var(--font-size-xs);
-        font-style: italic;
-        font-family: var(--font-system);
-        color: var(--color-text-tertiary);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        line-height: 1;
-    }
-
-    .scope-info-button:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .scope-info-button:not(:disabled):hover {
-        border-color: var(--color-border-strong);
-        color: var(--color-text-secondary);
-    }
-
-    .caveat-row {
-        padding: var(--spacing-xs) var(--spacing-md);
-        font-size: var(--font-size-sm);
-        color: var(--color-text-tertiary);
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-    }
-
-    .ai-status {
-        padding: var(--spacing-xs) var(--spacing-md);
-        font-size: var(--font-size-sm);
-        color: var(--color-text-secondary);
-    }
-
-    .ai-error {
-        padding: var(--spacing-xs) var(--spacing-md);
-        font-size: var(--font-size-sm);
-        color: var(--color-text-secondary);
-    }
-
-    /* Filter row */
-    .filter-row {
-        display: flex;
-        align-items: center;
-        padding: var(--spacing-xs) var(--spacing-md);
-        gap: var(--spacing-lg);
-        border-bottom: 1px solid var(--color-border-strong);
-        flex-wrap: wrap;
-    }
-
-    .filter-group {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-xs);
-    }
-
-    .filter-label {
-        font-size: var(--font-size-sm);
-        color: var(--color-text-secondary);
-        flex-shrink: 0;
-    }
-
-    .filter-select {
-        font-size: var(--font-size-sm);
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
-        padding: 1px 4px;
-        border: 1px solid var(--color-border-strong);
-        border-radius: var(--radius-sm);
-        background: var(--color-bg-primary);
-        color: var(--color-text-primary);
-        outline: none;
-    }
-
-    .filter-select:focus {
-        border-color: var(--color-accent);
-        box-shadow: var(--shadow-focus);
-    }
-
-    .filter-input {
-        font-size: var(--font-size-sm);
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
-        padding: 1px 4px;
-        border: 1px solid var(--color-border-strong);
-        border-radius: var(--radius-sm);
-        background: var(--color-bg-primary);
-        color: var(--color-text-primary);
-        outline: none;
-    }
-
-    .filter-input:focus {
-        border-color: var(--color-accent);
-        box-shadow: var(--shadow-focus);
-    }
-
-    .size-input {
-        width: 70px;
-    }
-
-    .date-input {
-        width: 130px;
-    }
-
-    .unit-select {
-        width: auto;
-    }
-
-    .filter-separator {
-        font-size: var(--font-size-sm);
-        color: var(--color-text-tertiary);
-    }
-
-    .filter-group.ai-highlight {
-        background: var(--color-accent-subtle);
-        border-radius: var(--radius-sm);
-        padding: var(--spacing-xxs) var(--spacing-xs);
-        transition: background 1.5s ease-out;
-    }
-
-    /* Column headers */
-    .column-header {
-        display: grid;
-        gap: var(--spacing-xs);
-        align-items: center;
-        padding: var(--spacing-xxs) var(--spacing-md);
-        border-bottom: 1px solid var(--color-border-strong);
-        user-select: none;
-    }
-
-    .col-label {
-        font-size: var(--font-size-sm);
-        color: var(--color-text-tertiary);
-        position: relative;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .col-label.col-icon {
-        width: 24px;
-    }
-
-    .col-label.col-right {
-        text-align: right;
-    }
-
-    .col-resize-handle {
-        position: absolute;
-        top: 0;
-        right: -2px;
-        width: 5px;
-        height: 100%;
-        cursor: col-resize;
-    }
-
-    .col-resize-handle:hover {
-        background: var(--color-border-strong);
-    }
-
-    /* Results list */
-    .results-container {
-        overflow-y: auto;
-        max-height: 400px;
-    }
-
-    .loading-state {
-        padding: var(--spacing-lg);
-        text-align: center;
-        color: var(--color-text-tertiary);
-        font-size: var(--font-size-md);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: var(--spacing-sm);
-    }
-
-    .loading-pulse {
-        display: inline-block;
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--color-text-tertiary);
-        animation: pulse 1.2s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-        0%,
-        100% {
-            opacity: 0.3;
-        }
-
-        50% {
-            opacity: 1;
-        }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-        .loading-pulse {
-            animation: none;
-            opacity: 0.6;
-        }
-    }
-
-    .no-results {
-        padding: var(--spacing-lg);
-        text-align: center;
-        color: var(--color-text-tertiary);
-        font-size: var(--font-size-md);
-    }
-
-    .result-row {
-        display: grid;
-        gap: var(--spacing-xs);
-        align-items: center;
-        padding: var(--spacing-xs) var(--spacing-md);
-        font-size: var(--font-size-sm);
-        color: var(--color-text-primary);
-    }
-
-    .result-row.is-under-cursor {
-        background: var(--color-accent-subtle);
-    }
-
-    .result-row.is-hovered {
-        background: var(--color-tint-hover);
-    }
-
-    .result-icon {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 16px;
-        font-size: var(--font-size-md);
-        line-height: 1;
-    }
-
-    .icon-img {
-        width: 16px;
-        height: 16px;
-        object-fit: contain;
-    }
-
-    .icon-emoji {
-        font-size: var(--font-size-md);
-        line-height: 1;
-    }
-
-    .result-name {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        font-weight: 500;
-    }
-
-    .result-path {
-        color: var(--color-text-tertiary);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .result-size {
-        color: var(--color-text-secondary);
-        white-space: nowrap;
-        text-align: right;
-    }
-
-    .result-modified {
-        color: var(--color-text-tertiary);
-        white-space: nowrap;
-        text-align: right;
-    }
-
-    /* Status bar */
-    .status-bar {
-        padding: var(--spacing-xs) var(--spacing-md);
-        border-top: 1px solid var(--color-border-strong);
-        font-size: var(--font-size-sm);
-        color: var(--color-text-tertiary);
-    }
-
-    .status-text {
-        user-select: none;
-    }
-
     /* Visually hidden but accessible to screen readers */
     .sr-only {
         position: absolute;
@@ -1529,24 +693,4 @@
         white-space: nowrap;
         border: 0;
     }
-
-    /* Index unavailable message */
-    .index-unavailable {
-        padding: var(--spacing-lg) var(--spacing-md);
-        text-align: center;
-    }
-
-    .unavailable-message {
-        color: var(--color-text-secondary);
-        font-size: var(--font-size-md);
-        margin: 0;
-    }
-
-    .unavailable-progress {
-        color: var(--color-text-tertiary);
-        font-size: var(--font-size-sm);
-        margin: var(--spacing-xs) 0 0;
-    }
-
-    /* Light mode handled by --color-tint-hover token */
 </style>

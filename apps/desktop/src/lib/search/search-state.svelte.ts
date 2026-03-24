@@ -47,7 +47,7 @@ let caveat = $state('')
 let scope = $state('')
 
 // System/build directory exclusion toggle (on by default).
-// The actual exclude list lives in Rust: `SYSTEM_DIR_EXCLUDES` in `indexing/search.rs`.
+// The actual exclude list lives in Rust: `SYSTEM_DIR_EXCLUDES` in `search/query.rs`.
 // The frontend only controls the boolean — Rust does the filtering.
 let excludeSystemDirs = $state(true)
 

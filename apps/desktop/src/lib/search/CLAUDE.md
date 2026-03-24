@@ -3,16 +3,19 @@
 Whole-drive file search dialog. Searches the in-memory index by filename (glob/regex), size, date, and scope (folder
 include/exclude) filters. Optional AI mode translates natural language queries into structured filters.
 
-Backend: `src-tauri/src/indexing/search.rs` (in-memory index), `src-tauri/src/commands/search.rs` (IPC commands). Full
-design: `docs/specs/drive-search-plan.md`.
+Backend: `src-tauri/src/search/` (index, engine, query, AI pipeline), `src-tauri/src/commands/search.rs` (thin IPC
+wrappers). Full design: `docs/specs/drive-search-plan.md`.
 
 ## Files
 
-| File                     | Purpose                                                                       |
-| ------------------------ | ----------------------------------------------------------------------------- |
-| `SearchDialog.svelte`    | Dialog UI: input, filters, results list, keyboard nav, AI mode, accessibility |
-| `search-state.svelte.ts` | Module-level `$state` for query fields, results, index readiness, AI state    |
-| `search-state.test.ts`   | Vitest tests for state helpers (`parseSizeToBytes`, `buildSearchQuery`, etc.) |
+| File                     | Purpose                                                                                 |
+| ------------------------ | --------------------------------------------------------------------------------------- |
+| `SearchDialog.svelte`    | Orchestrator: overlay, mount/unmount, keyboard dispatch, search execution, state wiring |
+| `AiSearchRow.svelte`     | AI prompt input + Ask AI button + caveat + status/error display                         |
+| `SearchInputArea.svelte` | Pattern row + scope row + filter row (all query configuration inputs)                   |
+| `SearchResults.svelte`   | Column headers + results list + all states (loading, empty, populated) + status bar     |
+| `search-state.svelte.ts` | Module-level `$state` for query fields, results, index readiness, AI state              |
+| `search-state.test.ts`   | Vitest tests for state helpers (`parseSizeToBytes`, `buildSearchQuery`, etc.)           |
 
 ## Data flow
 

@@ -8,7 +8,7 @@ use tauri::{Manager, Runtime, WebviewWindow};
 
 use super::dialog_state::SoftDialogTracker;
 use super::pane_state::{FileEntry, PaneState, PaneStateStore, TabInfo};
-use crate::indexing::search::format_size;
+use crate::search::format_size;
 #[cfg(target_os = "macos")]
 use crate::volumes;
 

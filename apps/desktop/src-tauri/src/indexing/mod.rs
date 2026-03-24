@@ -9,7 +9,6 @@ mod enrichment;
 mod event_loop;
 mod events;
 pub mod firmlinks;
-pub(crate) mod search;
 pub mod store;
 pub mod writer;
 

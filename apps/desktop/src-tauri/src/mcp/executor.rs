@@ -678,8 +678,8 @@ fn execute_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_type: &str, path:
 
 // ── Search tools ──────────────────────────────────────────────────────
 
-use crate::indexing::search::PatternType;
-use crate::indexing::search::{
+use crate::search::PatternType;
+use crate::search::{
     self, DIALOG_OPEN, SEARCH_INDEX, SearchIndexState, SearchQuery, SearchResult, fill_directory_sizes, format_size,
     format_timestamp, summarize_query,
 };
@@ -919,13 +919,13 @@ async fn execute_search(params: &Value) -> ToolResult {
     let modified_after = params
         .get("modified_after")
         .and_then(|v| v.as_str())
-        .map(crate::commands::search::iso_date_to_timestamp)
+        .map(search::ai::iso_date_to_timestamp)
         .transpose()
         .map_err(ToolError::invalid_params)?;
     let modified_before = params
         .get("modified_before")
         .and_then(|v| v.as_str())
-        .map(crate::commands::search::iso_date_to_timestamp)
+        .map(search::ai::iso_date_to_timestamp)
         .transpose()
         .map_err(ToolError::invalid_params)?;
     let is_directory = match params.get("type").and_then(|v| v.as_str()) {
@@ -1263,7 +1263,7 @@ mod tests {
 
     #[test]
     fn test_format_search_results_with_entries() {
-        use crate::indexing::search::SearchResultEntry;
+        use crate::search::SearchResultEntry;
         let result = SearchResult {
             entries: vec![SearchResultEntry {
                 name: "test.pdf".to_string(),
@@ -1285,7 +1285,7 @@ mod tests {
 
     #[test]
     fn test_format_search_results_directory_trailing_slash() {
-        use crate::indexing::search::SearchResultEntry;
+        use crate::search::SearchResultEntry;
         let result = SearchResult {
             entries: vec![SearchResultEntry {
                 name: "Projects".to_string(),
