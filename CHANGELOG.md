@@ -5,6 +5,22 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 and we use [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1] - 2026-03-24
+
+### Fixed
+
+- Fix orphaned llama-server processes — rapid AI provider switching (Local → OpenAI → Local) could leave `llama-server` running after app quit. Spawn + PID tracking now happen in a single lock, plus `pgrep`-based cleanup on startup ([b3382e](https://github.com/vdavid/cmdr/commit/b3382e))
+- Fix vendor-specific MTP device detection (Kindle, USB class `0xFF` devices) via `mtp-rs` 0.4.1 upgrade, also fixes indefinite event polling blocking MTP operations on idle devices ([1a170d](https://github.com/vdavid/cmdr/commit/1a170d))
+
+### Non-app
+
+- API server: migrate telemetry from Analytics Engine to D1, add crash email notifications via Resend, add admin endpoints for downloads/active-users/crashes, rename `license-server` → `api-server` ([7dc0da](https://github.com/vdavid/cmdr/commit/7dc0da))
+- Refactor: split `search.rs` (2361 lines) and `SearchDialog.svelte` (1552 lines) into focused modules ([c17c21](https://github.com/vdavid/cmdr/commit/c17c21))
+- Refactor: deduplicate repeated code patterns across Rust, Svelte, TypeScript, and Go ([52afe3](https://github.com/vdavid/cmdr/commit/52afe3))
+- Upgrade 9 Rust dependencies — `reqwest` 0.13, `rusqlite` 0.39, `notify-debouncer-full` 0.7, and more ([929556](https://github.com/vdavid/cmdr/commit/929556))
+- Tooling: skip `pnpm install` when lockfile unchanged, saving ~20s per run ([8d2b39](https://github.com/vdavid/cmdr/commit/8d2b39))
+- Blog: add Kindle support article ([5c9d5b](https://github.com/vdavid/cmdr/commit/5c9d5b))
+
 ## [0.9.0] - 2026-03-23
 
 ### Added
