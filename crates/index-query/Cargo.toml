@@ -6,4 +6,4 @@ publish = false
 
 [dependencies]
 cmdr = { path = "../../apps/desktop/src-tauri" }
-rusqlite = { version = "0.32", features = ["bundled", "collation"] }
+rusqlite = { version = "0.39", features = ["bundled", "collation"] }

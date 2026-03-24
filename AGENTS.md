@@ -45,7 +45,7 @@ Core structure:
 ## Testing and checking
 
 Always use the checker script for compilation, linting, formatting, and tests. Its output is concise and focused —
-no `2>&1`, `head`, or `tail` needed. Don't run raw `cargo check`, `cargo clippy`, `cargo fmt`, etc.
+no `2>&1`, `head`, or `tail` needed. Don't run raw `cargo check`, `cargo clippy`, `cargo fmt`, `cargo nextest run`, etc.
 
 - Specific checks: `./scripts/check.sh --check <name>` (e.g. `--check clippy`, `--check rustfmt`).
   Use `--help` for the full list, or multiple `--check` flags.

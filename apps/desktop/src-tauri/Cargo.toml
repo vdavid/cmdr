@@ -31,7 +31,7 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri = { version = "2", features = [] }
 tauri-plugin-opener = "2"
-tauri-plugin-mcp-bridge = "0.6"
+tauri-plugin-mcp-bridge = "0.10"
 tauri-plugin-store = "2"
 tauri-plugin-dialog = "2.6"
 serde = { version = "1", features = ["derive"] }
@@ -39,13 +39,13 @@ serde_json = "1"
 notify = "8"
 dirs = "6"
 uzers = "0.12.2"
-image = "0.25.9"
+image = "0.25.10"
 base64 = "0.22.1"
 rayon = "1.11.0"
 regex = "1"
 uuid = { version = "1.19.0", features = ["v4"] }
 tauri-plugin-clipboard-manager = "2"
-notify-debouncer-full = "0.6.0"
+notify-debouncer-full = "0.7.0"
 bincode2 = "2"
 tauri-plugin-drag = "2.1.0"
 drag = "2.1.0"
@@ -60,7 +60,7 @@ log = "0.4"
 # Memory allocator: returns memory to OS faster than system malloc, reduces fragmentation
 mimalloc = "0.1"
 # HTTP client for API server validation and AI downloads
-reqwest = { version = "0.12", features = ["json", "rustls-tls", "stream"], default-features = false }
+reqwest = { version = "0.13", features = ["json", "rustls", "stream"], default-features = false }
 # MCP server
 axum = "0.8"
 tokio = { version = "1", features = ["rt-multi-thread", "net", "time", "sync", "macros"] }
@@ -72,7 +72,7 @@ memchr = "2"
 walkdir = "2"
 # Drive indexing: parallel directory walker, SQLite store, and macOS FSEvents watcher
 jwalk = "0.8"
-rusqlite = { version = "0.32", features = ["bundled", "collation"] }
+rusqlite = { version = "0.39", features = ["bundled", "collation", "fallible_uint"] }
 # For chunked copy metadata preservation (network filesystems)
 xattr = "1"
 filetime = "0.2"
@@ -103,10 +103,10 @@ mime_guess = "2"
 # MTP (Android device) support via pure Rust implementation
 mtp-rs = "0.4.1"
 # USB hotplug detection for MTP device watcher
-nusb = "0.2.2"
+nusb = "0.2.3"
 bytes = "1"
 # mDNS discovery for network host browsing (pure Rust, cross-platform)
-mdns-sd = { version = "0.17", features = ["logging"] }
+mdns-sd = { version = "0.18", features = ["logging"] }
 # SMB protocol client for share enumeration (pure Rust)
 smb = "0.11.1"
 smb-rpc = "=0.11.1"
@@ -114,10 +114,10 @@ smb-rpc = "=0.11.1"
 [target.'cfg(target_os = "macos")'.dependencies]
 # Drive indexing: NFD normalization for APFS case-insensitive collation
 unicode-normalization = "0.1"
-file_icon_provider = "0.4.0"
+file_icon_provider = "1.0.0"
 core-foundation = "0.10.1"
 core-services = "1.0.0"
-icns = "0.3.1"
+icns = "0.4.0"
 plist = "1.8.0"
 urlencoding = "2.1.3"
 objc2 = { version = "0.6", features = ["std", "exception"] }
