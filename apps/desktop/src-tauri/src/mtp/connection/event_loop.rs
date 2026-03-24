@@ -51,13 +51,17 @@ impl MtpConnectionManager {
                         break;
                     }
 
-                    // Poll for next event (with timeout built into next_event)
+                    // Poll for next event (mtp-rs 0.4+ awaits indefinitely, so we
+                    // wrap in a timeout to release the device lock periodically)
                     result = async {
                         // Try to lock the device - use a timeout to prevent deadlocks
                         match tokio::time::timeout(Duration::from_secs(5), device.lock()).await {
                             Ok(guard) => {
-                                // Poll for event
-                                guard.next_event().await
+                                // Poll for event with timeout so the lock is released periodically,
+                                // allowing other MTP operations to proceed
+                                tokio::time::timeout(Duration::from_secs(5), guard.next_event())
+                                    .await
+                                    .unwrap_or(Err(mtp_rs::Error::Timeout))
                             }
                             Err(_) => {
                                 // Timeout acquiring lock - device might be busy with another operation
