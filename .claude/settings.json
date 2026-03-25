@@ -3,18 +3,5 @@
     "cmdr": {
       "url": "http://localhost:9225/mcp"
     }
-  },
-  "hooks": {
-    "SessionStart": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash -c '\"$(git rev-parse --show-toplevel)/.claude/hooks/session-start.sh\"'"
-          }
-        ]
-      }
-    ]
   }
 }
