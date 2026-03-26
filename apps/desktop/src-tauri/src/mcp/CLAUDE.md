@@ -39,7 +39,9 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 
 ### Executor (`executor.rs`)
 
-Routes tool calls to implementations. Most tools emit Tauri events that trigger the same code paths as keyboard shortcuts or menu clicks.
+ Routes tool calls to implementations. Most tools are fire-and-forget: emit a Tauri event and return "OK" immediately.
+
+Tools where the backend can't fully validate preconditions use `mcp_round_trip`: emit an event with a `requestId`, wait for the frontend to respond via `mcp-response` with `{ requestId, ok, error? }`, and return the actual outcome. Currently used by `nav_to_path` (the frontend knows whether the pane's volume supports local path navigation). Use this pattern for any new tool where the backend would otherwise need to replicate frontend knowledge.
 
 ### Configuration (`config.rs`)
 
@@ -133,7 +135,7 @@ This separation keeps main window overhead minimal.
 
 ### Tool execution is async but mostly synchronous
 
-`execute_tool()` is an async function. Most tools are synchronous — they emit a Tauri event and return immediately (for example, "OK: Copy dialog opened" not "OK: Files copied"). The `search` and `ai_search` tools are truly async: they load the search index via `spawn_blocking` and (for `ai_search`) call the LLM API.
+`execute_tool()` is an async function. Most tools are fire-and-forget — they emit a Tauri event and return immediately (for example, "OK: Copy dialog opened" not "OK: Files copied"). Three categories of async tools exist: (1) `mcp_round_trip` tools (`nav_to_path`) that wait up to 5s for the frontend to confirm success/failure, (2) search tools (`search`, `ai_search`) that load the search index via `spawn_blocking` and (for `ai_search`) call the LLM API.
 
 ### Error codes are JSON-RPC standard
 

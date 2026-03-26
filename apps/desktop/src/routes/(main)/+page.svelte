@@ -373,9 +373,17 @@
             explorerRef?.handleMcpSelect(pane, start, count, mode)
         })
 
-        await safeListenTauri('mcp-nav-to-path', (event) => {
-            const { pane, path } = event.payload as { pane: 'left' | 'right'; path: string }
-            explorerRef?.navigateToPath(pane, path)
+        await safeListenTauri('mcp-nav-to-path', async (event) => {
+            const { pane, path, requestId } = event.payload as {
+                pane: 'left' | 'right'
+                path: string
+                requestId?: string
+            }
+            const error = explorerRef?.navigateToPath(pane, path)
+            if (requestId) {
+                const { emit } = await import('@tauri-apps/api/event')
+                await emit('mcp-response', { requestId, ok: !error, error })
+            }
         })
 
         await safeListenTauri('mcp-move-cursor', (event) => {

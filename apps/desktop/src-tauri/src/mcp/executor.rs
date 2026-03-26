@@ -8,7 +8,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use serde_json::{Value, json};
-use tauri::{AppHandle, Emitter, Manager, Runtime};
+use tauri::{AppHandle, Emitter, Listener, Manager, Runtime};
 
 use super::pane_state::PaneStateStore;
 use super::protocol::{INTERNAL_ERROR, INVALID_PARAMS};
@@ -46,6 +46,56 @@ impl From<tauri::Error> for ToolError {
     }
 }
 
+/// Emit an event to the frontend and wait for a response.
+///
+/// The frontend must emit `mcp-response` with `{ requestId, ok, error? }`.
+/// Returns `success_msg` on success, or the frontend's error message on failure.
+/// Times out after 5 seconds.
+async fn mcp_round_trip<R: Runtime>(
+    app: &AppHandle<R>,
+    event: &str,
+    mut payload: Value,
+    success_msg: String,
+) -> ToolResult {
+    let request_id = uuid::Uuid::new_v4().to_string();
+    payload["requestId"] = json!(request_id);
+
+    let (tx, rx) = tokio::sync::oneshot::channel::<Result<(), String>>();
+    let expected_id = request_id.clone();
+
+    // Use a Mutex to allow the closure to consume tx exactly once
+    let tx = std::sync::Mutex::new(Some(tx));
+    let listener_id = app.listen("mcp-response", move |event| {
+        if let Ok(resp) = serde_json::from_str::<Value>(event.payload())
+            && resp.get("requestId").and_then(|v| v.as_str()) == Some(&expected_id)
+                && let Some(tx) = tx.lock().unwrap().take() {
+                    let result = if resp.get("ok").and_then(|v| v.as_bool()).unwrap_or(false) {
+                        Ok(())
+                    } else {
+                        let err = resp
+                            .get("error")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("Unknown error")
+                            .to_string();
+                        Err(err)
+                    };
+                    let _ = tx.send(result);
+                }
+    });
+
+    app.emit(event, payload)?;
+
+    let result = tokio::time::timeout(std::time::Duration::from_secs(5), rx).await;
+    app.unlisten(listener_id);
+
+    match result {
+        Ok(Ok(Ok(()))) => Ok(json!(success_msg)),
+        Ok(Ok(Err(err))) => Err(ToolError::internal(err)),
+        Ok(Err(_)) => Err(ToolError::internal("Frontend response channel dropped")),
+        Err(_) => Err(ToolError::internal("Frontend did not respond within 5 seconds")),
+    }
+}
+
 /// Execute a tool by name.
 pub async fn execute_tool<R: Runtime>(app: &AppHandle<R>, name: &str, params: &Value) -> ToolResult {
     match name {
@@ -61,7 +111,7 @@ pub async fn execute_tool<R: Runtime>(app: &AppHandle<R>, name: &str, params: &V
         "open_under_cursor" | "nav_to_parent" | "nav_back" | "nav_forward" => execute_nav_command(app, name),
         // Navigation commands (with params)
         "select_volume" | "nav_to_path" | "move_cursor" | "scroll_to" => {
-            execute_nav_command_with_params(app, name, params)
+            execute_nav_command_with_params(app, name, params).await
         }
         // Tab commands
         "tab" => execute_tab(app, params),
@@ -160,23 +210,25 @@ fn execute_tab<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
     };
 
     // Validate tab_id exists (for actions that need it)
-    if action != "new" && !resolved_tab_id.is_empty()
-        && let Some(store) = app.try_state::<PaneStateStore>() {
-            let pane_state = match pane {
-                "left" => store.get_left(),
-                "right" => store.get_right(),
-                _ => unreachable!(),
-            };
-            if !pane_state.tabs.is_empty() && !pane_state.tabs.iter().any(|t| t.id == resolved_tab_id) {
-                let available_ids: Vec<&str> = pane_state.tabs.iter().map(|t| t.id.as_str()).collect();
-                return Err(ToolError::invalid_params(format!(
-                    "Tab '{}' not found in {} pane. Available tabs: {}",
-                    resolved_tab_id,
-                    pane,
-                    available_ids.join(", ")
-                )));
-            }
+    if action != "new"
+        && !resolved_tab_id.is_empty()
+        && let Some(store) = app.try_state::<PaneStateStore>()
+    {
+        let pane_state = match pane {
+            "left" => store.get_left(),
+            "right" => store.get_right(),
+            _ => unreachable!(),
+        };
+        if !pane_state.tabs.is_empty() && !pane_state.tabs.iter().any(|t| t.id == resolved_tab_id) {
+            let available_ids: Vec<&str> = pane_state.tabs.iter().map(|t| t.id.as_str()).collect();
+            return Err(ToolError::invalid_params(format!(
+                "Tab '{}' not found in {} pane. Available tabs: {}",
+                resolved_tab_id,
+                pane,
+                available_ids.join(", ")
+            )));
         }
+    }
 
     match action {
         "new" => {
@@ -320,7 +372,7 @@ fn execute_nav_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolResult
 }
 
 /// Execute a navigation command with parameters.
-fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, name: &str, params: &Value) -> ToolResult {
+async fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, name: &str, params: &Value) -> ToolResult {
     match name {
         "select_volume" => {
             let pane = params
@@ -378,12 +430,17 @@ fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, name: &str, p
                 return Err(ToolError::invalid_params(format!("Path does not exist: {}", path)));
             }
 
-            if let Some(store) = app.try_state::<PaneStateStore>() {
+             if let Some(store) = app.try_state::<PaneStateStore>() {
                 store.set_focused_pane(pane.to_string());
             }
 
-            app.emit("mcp-nav-to-path", json!({"pane": pane, "path": path}))?;
-            Ok(json!(format!("OK: Navigated {pane} pane to {path}")))
+            mcp_round_trip(
+                app,
+                "mcp-nav-to-path",
+                json!({"pane": pane, "path": path}),
+                format!("OK: Navigated {pane} pane to {path}"),
+            )
+            .await
         }
         "move_cursor" => {
             let pane = params

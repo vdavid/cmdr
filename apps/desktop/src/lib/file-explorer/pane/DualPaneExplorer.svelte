@@ -1985,10 +1985,18 @@
     /**
      * Navigate a pane to a specific path.
      * Used by MCP nav_to_path tool.
+     * Returns an error message if navigation can't proceed, or undefined on success.
      */
-    export function navigateToPath(pane: 'left' | 'right', path: string) {
+    export function navigateToPath(pane: 'left' | 'right', path: string): string | undefined {
+        const volumeId = pane === 'left' ? leftVolumeId : rightVolumeId
+        if (volumeId === 'network' || volumeId.startsWith('mtp-')) {
+            const volumeName = pane === 'left' ? leftVolumeName : rightVolumeName
+            return `Pane is on the ${volumeName ?? volumeId} volume. Use select_volume to switch to a local volume first.`
+        }
         const paneRef = getPaneRef(pane)
-        paneRef?.navigateToPath(path)
+        if (!paneRef) return 'Pane not available'
+        paneRef.navigateToPath(path)
+        return undefined
     }
 
     /**
