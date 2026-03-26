@@ -68,19 +68,20 @@ async fn mcp_round_trip<R: Runtime>(
     let listener_id = app.listen("mcp-response", move |event| {
         if let Ok(resp) = serde_json::from_str::<Value>(event.payload())
             && resp.get("requestId").and_then(|v| v.as_str()) == Some(&expected_id)
-                && let Some(tx) = tx.lock().unwrap().take() {
-                    let result = if resp.get("ok").and_then(|v| v.as_bool()).unwrap_or(false) {
-                        Ok(())
-                    } else {
-                        let err = resp
-                            .get("error")
-                            .and_then(|v| v.as_str())
-                            .unwrap_or("Unknown error")
-                            .to_string();
-                        Err(err)
-                    };
-                    let _ = tx.send(result);
-                }
+            && let Some(tx) = tx.lock().unwrap().take()
+        {
+            let result = if resp.get("ok").and_then(|v| v.as_bool()).unwrap_or(false) {
+                Ok(())
+            } else {
+                let err = resp
+                    .get("error")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("Unknown error")
+                    .to_string();
+                Err(err)
+            };
+            let _ = tx.send(result);
+        }
     });
 
     app.emit(event, payload)?;
@@ -128,6 +129,8 @@ pub async fn execute_tool<R: Runtime>(app: &AppHandle<R>, name: &str, params: &V
         // Search commands
         "search" => execute_search(params).await,
         "ai_search" => execute_ai_search(params).await,
+        // Settings commands
+        "set_setting" => execute_set_setting(app, params).await,
         _ => Err(ToolError::invalid_params(format!("Unknown tool: {name}"))),
     }
 }
@@ -430,7 +433,7 @@ async fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, name: &
                 return Err(ToolError::invalid_params(format!("Path does not exist: {}", path)));
             }
 
-             if let Some(store) = app.try_state::<PaneStateStore>() {
+            if let Some(store) = app.try_state::<PaneStateStore>() {
                 store.set_focused_pane(pane.to_string());
             }
 
@@ -1260,6 +1263,26 @@ async fn execute_ai_search(params: &Value) -> ToolResult {
         output.len()
     );
     Ok(json!(output))
+}
+
+/// Execute set_setting command via round-trip to the frontend.
+async fn execute_set_setting<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+    let id = params
+        .get("id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ToolError::invalid_params("Missing 'id' parameter"))?;
+
+    let value = params
+        .get("value")
+        .ok_or_else(|| ToolError::invalid_params("Missing 'value' parameter"))?;
+
+    mcp_round_trip(
+        app,
+        "mcp-set-setting",
+        json!({"settingId": id, "value": value}),
+        format!("OK: Set '{id}' to {value}"),
+    )
+    .await
 }
 
 #[cfg(test)]

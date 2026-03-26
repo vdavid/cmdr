@@ -4,7 +4,8 @@
 //! Resources are read-only state that agents can query.
 
 use serde::{Deserialize, Serialize};
-use tauri::{Manager, Runtime, WebviewWindow};
+use serde_json::{Value, json};
+use tauri::{Emitter, Listener, Manager, Runtime, WebviewWindow};
 
 use super::dialog_state::SoftDialogTracker;
 use super::pane_state::{FileEntry, PaneState, PaneStateStore, TabInfo};
@@ -51,6 +52,12 @@ pub fn get_all_resources() -> Vec<Resource> {
             name: "Indexing status".to_string(),
             description: "Current drive indexing phase, timeline history, and database stats".to_string(),
             mime_type: "text/plain".to_string(),
+        },
+        Resource {
+            uri: "cmdr://settings".to_string(),
+            name: "Settings".to_string(),
+            description: "All settings with current values, defaults, types, and constraints".to_string(),
+            mime_type: "text/yaml".to_string(),
         },
     ]
 }
@@ -236,8 +243,57 @@ fn build_available_dialogs_yaml<R: Runtime>(app: &tauri::AppHandle<R>) -> String
     yaml
 }
 
+/// Emit an event to the frontend and wait for a response containing data.
+///
+/// Similar to `mcp_round_trip` in executor.rs, but returns the `data` field from the response
+/// instead of a fixed success message. The frontend must emit `mcp-response` with
+/// `{ requestId, ok, data?, error? }`. Times out after 5 seconds.
+async fn resource_round_trip<R: Runtime>(
+    app: &tauri::AppHandle<R>,
+    event: &str,
+    mut payload: Value,
+) -> Result<String, String> {
+    let request_id = uuid::Uuid::new_v4().to_string();
+    payload["requestId"] = json!(request_id);
+
+    let (tx, rx) = tokio::sync::oneshot::channel::<Result<String, String>>();
+    let expected_id = request_id.clone();
+
+    let tx = std::sync::Mutex::new(Some(tx));
+    let listener_id = app.listen("mcp-response", move |event| {
+        if let Ok(resp) = serde_json::from_str::<Value>(event.payload())
+            && resp.get("requestId").and_then(|v| v.as_str()) == Some(&expected_id)
+            && let Some(tx) = tx.lock().unwrap().take()
+        {
+            let result = if resp.get("ok").and_then(|v| v.as_bool()).unwrap_or(false) {
+                let data = resp.get("data").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                Ok(data)
+            } else {
+                let err = resp
+                    .get("error")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("Unknown error")
+                    .to_string();
+                Err(err)
+            };
+            let _ = tx.send(result);
+        }
+    });
+
+    app.emit(event, payload).map_err(|e| e.to_string())?;
+
+    let result = tokio::time::timeout(std::time::Duration::from_secs(5), rx).await;
+    app.unlisten(listener_id);
+
+    match result {
+        Ok(Ok(data)) => data,
+        Ok(Err(_)) => Err("Frontend response channel dropped".to_string()),
+        Err(_) => Err("Frontend did not respond within 5 seconds".to_string()),
+    }
+}
+
 /// Read a resource by URI.
-pub fn read_resource<R: Runtime>(app: &tauri::AppHandle<R>, uri: &str) -> Result<ResourceContent, String> {
+pub async fn read_resource<R: Runtime>(app: &tauri::AppHandle<R>, uri: &str) -> Result<ResourceContent, String> {
     let (content, mime_type) = match uri {
         "cmdr://state" => {
             let store = app.try_state::<PaneStateStore>().ok_or("Pane state not available")?;
@@ -323,6 +379,10 @@ pub fn read_resource<R: Runtime>(app: &tauri::AppHandle<R>, uri: &str) -> Result
         "cmdr://indexing" => {
             let text = build_indexing_status_text();
             (text, "text/plain")
+        }
+        "cmdr://settings" => {
+            let text = resource_round_trip(app, "mcp-get-all-settings", json!({})).await?;
+            (text, "text/yaml")
         }
         _ => return Err(format!("Unknown resource URI: {}", uri)),
     };
@@ -472,7 +532,7 @@ mod tests {
     #[test]
     fn test_resource_count() {
         let resources = get_all_resources();
-        assert_eq!(resources.len(), 3);
+        assert_eq!(resources.len(), 4);
     }
 
     #[test]

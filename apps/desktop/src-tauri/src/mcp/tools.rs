@@ -394,6 +394,27 @@ fn get_search_tools() -> Vec<Tool> {
     ]
 }
 
+/// Get settings tools.
+fn get_settings_tools() -> Vec<Tool> {
+    vec![Tool {
+        name: "set_setting".to_string(),
+        description: "Set a setting value. Use the cmdr://settings resource to discover available settings and their constraints.".to_string(),
+        input_schema: json!({
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Setting ID, for example 'appearance.appColor'"
+                },
+                "value": {
+                    "description": "New value for the setting"
+                }
+            },
+            "required": ["id", "value"]
+        }),
+    }]
+}
+
 /// Get all available tools.
 pub fn get_all_tools() -> Vec<Tool> {
     let mut tools = Vec::new();
@@ -406,6 +427,7 @@ pub fn get_all_tools() -> Vec<Tool> {
     tools.extend(get_dialog_tools());
     tools.extend(get_app_tools());
     tools.extend(get_search_tools());
+    tools.extend(get_settings_tools());
     tools
 }
 
@@ -493,10 +515,34 @@ mod tests {
     }
 
     #[test]
+    fn test_settings_tools_count() {
+        let tools = get_settings_tools();
+        // set_setting
+        assert_eq!(tools.len(), 1);
+    }
+
+    #[test]
+    fn test_set_setting_tool_schema() {
+        let tools = get_settings_tools();
+        let tool = &tools[0];
+        assert_eq!(tool.name, "set_setting");
+
+        let schema = &tool.input_schema;
+        let props = schema.get("properties").unwrap();
+        assert!(props.get("id").is_some());
+        assert!(props.get("value").is_some());
+
+        let required = schema.get("required").unwrap().as_array().unwrap();
+        assert_eq!(required.len(), 2);
+        assert!(required.contains(&json!("id")));
+        assert!(required.contains(&json!("value")));
+    }
+
+    #[test]
     fn test_all_tools_count() {
         let tools = get_all_tools();
-        // 6 nav + 2 cursor + 1 selection + 5 file_op + 3 view + 1 tab + 1 dialog + 3 app + 2 search = 24
-        assert_eq!(tools.len(), 24);
+        // 6 nav + 2 cursor + 1 selection + 5 file_op + 3 view + 1 tab + 1 dialog + 3 app + 2 search + 1 settings = 25
+        assert_eq!(tools.len(), 25);
     }
 
     #[test]

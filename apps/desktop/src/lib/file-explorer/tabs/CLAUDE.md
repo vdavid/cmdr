@@ -78,7 +78,8 @@ load.
 
 ## MCP
 
-- `tab` tool with `action`: `new` (create tab), `close` (close tab), `close_others` (close all but target + pinned), `activate` (switch to tab), `set_pinned` (pin/unpin)
+- `tab` tool with `action`: `new` (create tab), `close` (close tab), `close_others` (close all but target + pinned),
+  `activate` (switch to tab), `set_pinned` (pin/unpin)
 - `tab_id` defaults to active tab for close/close_others/set_pinned; required for activate
 - `close` on the last tab returns an error instead of closing the window
 - `close` skips the pinned-tab confirmation dialog (agents know what they're doing)

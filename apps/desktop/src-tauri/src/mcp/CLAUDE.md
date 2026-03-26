@@ -21,7 +21,7 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 
 ### Tools (`tools.rs`)
 
-24 semantic tools grouped by category:
+25 semantic tools grouped by category:
 - Navigation (6): `select_volume`, `nav_to_path`, `nav_to_parent`, `nav_back`, `nav_forward`, `scroll_to`
 - Cursor/Selection (3): `move_cursor`, `open_under_cursor`, `select`
 - File operations (5): `copy`, `delete`, `mkdir`, `mkfile`, `refresh`
@@ -30,18 +30,20 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 - Dialogs (1): `dialog` (unified open/focus/close)
 - App (3): `switch_pane`, `swap_panes`, `quit`
 - Search (2): `search` (structured file search across the drive index, optional `scope` for path/exclude filtering), `ai_search` (natural language search using configured LLM, optional `scope` merged with AI-inferred scope)
+- Settings (1): `set_setting` (change a setting value via round-trip to frontend)
 
 ### Resources (`resources.rs`)
 
 - `cmdr://state`: Complete app state in YAML (both panes, volumes, dialogs)
 - `cmdr://dialogs/available`: Static metadata about available dialogs
 - `cmdr://indexing`: Drive indexing status in plain text (current phase, timeline history, DB stats). Calls `indexing::get_debug_status()` and formats as human-readable text.
+- `cmdr://settings`: All settings with current values, defaults, types, and constraints. Fetched via round-trip to the frontend (`mcp-get-all-settings` event).
 
 ### Executor (`executor.rs`)
 
  Routes tool calls to implementations. Most tools are fire-and-forget: emit a Tauri event and return "OK" immediately.
 
-Tools where the backend can't fully validate preconditions use `mcp_round_trip`: emit an event with a `requestId`, wait for the frontend to respond via `mcp-response` with `{ requestId, ok, error? }`, and return the actual outcome. Currently used by `nav_to_path` (the frontend knows whether the pane's volume supports local path navigation). Use this pattern for any new tool where the backend would otherwise need to replicate frontend knowledge.
+Tools where the backend can't fully validate preconditions use `mcp_round_trip`: emit an event with a `requestId`, wait for the frontend to respond via `mcp-response` with `{ requestId, ok, error? }`, and return the actual outcome. Used by `nav_to_path` and `set_setting`. Resources that need frontend data use `resource_round_trip` (same pattern but returns `data` from the response). Used by `cmdr://settings`. Use these patterns for any new tool/resource where the backend would otherwise need to replicate frontend knowledge.
 
 ### Configuration (`config.rs`)
 
@@ -55,9 +57,8 @@ Constants and configuration for the MCP server (port, bind address, transport se
 
 - `PaneStateStore`: Current state of left/right panes (path, files, cursor, selection, tabs)
 - `SoftDialogTracker`: Which dialogs MCP thinks are open (in `dialog_state.rs`)
-- `SettingsStateStore`: Current settings window state (section, settings, shortcuts)
 
-Frontend syncs state to these stores via Tauri commands (`update_left_pane_state`, `update_pane_tabs`, `mcp_update_settings_sections`, etc.).
+Frontend syncs state to these stores via Tauri commands (`update_left_pane_state`, `update_pane_tabs`, etc.). Settings are fetched on-demand via round-trip to the frontend rather than stored in a state store.
 
 ## Key decisions
 
@@ -87,7 +88,7 @@ Binding to `0.0.0.0` would expose the server to the network. An attacker could q
 
 ### Why separate state stores?
 
-`PaneStateStore` is always synced (file pane changes frequently). `SettingsStateStore` is only synced when settings window is open (rare). `SoftDialogTracker` is updated by MCP tools themselves. Separating concerns keeps each store simple.
+`PaneStateStore` is always synced (file pane changes frequently). `SoftDialogTracker` is updated by MCP tools themselves. Separating concerns keeps each store simple. Settings are fetched on-demand via `resource_round_trip` rather than stored, since they rarely change and can be queried from the frontend when needed.
 
 ## Gotchas
 
@@ -123,15 +124,9 @@ Large directories (50k+ files) are paginated. The `totalFiles`, `loadedStart`, `
 
 Unlike tools (which need a session via `initialize`), resources can be read immediately after server start. This is by design for debugging with curl.
 
-### Settings state sync is window-specific
+### Settings are fetched on-demand, not synced
 
-The settings window calls `syncSettingsState()` on mount and section changes. The main window doesn't sync settings state (it doesn't need to). This means `cmdr://state` only includes settings when the settings window is open.
-
-### MCP-settings bridge vs MCP-shortcuts listener
-
-Settings window: full bridge (`mcp-settings-bridge.ts`) syncs all state and handles all MCP events.
-Main window: lightweight listener (`mcp-shortcuts-listener.ts`) only handles shortcut changes.
-This separation keeps main window overhead minimal.
+The `cmdr://settings` resource and `set_setting` tool both use round-trips to the main window frontend. This means settings are always fetched fresh from the source of truth, rather than being synced to a Rust-side store. The tradeoff is a ~5s timeout if the frontend is unresponsive, but this avoids stale state issues.
 
 ### Tool execution is async but mostly synchronous
 

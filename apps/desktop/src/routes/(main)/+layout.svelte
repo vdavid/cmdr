@@ -10,6 +10,7 @@
     import { initReactiveSettings, cleanupReactiveSettings } from '$lib/settings/reactive-settings.svelte'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
     import { initializeShortcuts, setupMcpShortcutsListener, cleanupMcpShortcutsListener } from '$lib/shortcuts'
+    import { setupMcpMainBridge, cleanupMcpMainBridge } from '$lib/settings'
     import {
         onMtpExclusiveAccessError,
         onMtpPermissionError,
@@ -174,6 +175,9 @@
             // Set up MCP shortcuts listener (allows MCP tools to modify shortcuts)
             await setupMcpShortcutsListener()
 
+            // Set up MCP settings bridge (allows MCP tools to query/modify settings)
+            await setupMcpMainBridge()
+
             // Initialize window state persistence on resize
             // This ensures window size/position survives hot reloads
             void initWindowStateListener()
@@ -216,6 +220,7 @@
         cleanupReactiveSettings()
         cleanupSettingsApplier()
         cleanupMcpShortcutsListener()
+        cleanupMcpMainBridge()
     })
 </script>
 

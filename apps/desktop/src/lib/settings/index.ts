@@ -75,3 +75,6 @@ export type { CloudProviderPreset, CloudProviderConfig } from './cloud-providers
 
 // Network settings helpers
 export { getMountTimeoutMs, getNetworkTimeoutMs, getShareCacheTtlMs } from './network-settings'
+
+// MCP main bridge (settings event handlers for the main window)
+export { setupMcpMainBridge, cleanupMcpMainBridge } from './mcp-main-bridge'

@@ -388,9 +388,6 @@ pub fn run() {
             // Initialize soft dialog tracker for MCP (overlays like about, license, confirmations)
             app.manage(mcp::SoftDialogTracker::new());
 
-            // Initialize settings state store for MCP settings tools
-            app.manage(mcp::SettingsStateStore::new());
-
             // Start MCP server for AI agent integration
             // Use settings from user preferences, with env vars as override for dev
             let mcp_config = mcp::McpConfig::from_settings_and_env(
@@ -651,12 +648,6 @@ pub fn run() {
             mcp::dialog_state::notify_dialog_opened,
             mcp::dialog_state::notify_dialog_closed,
             mcp::dialog_state::register_known_dialogs,
-            mcp::settings_state::mcp_update_settings_state,
-            mcp::settings_state::mcp_update_settings_open,
-            mcp::settings_state::mcp_update_settings_section,
-            mcp::settings_state::mcp_update_settings_sections,
-            mcp::settings_state::mcp_update_current_settings,
-            mcp::settings_state::mcp_update_shortcuts,
             // Sync status (macOS uses real implementation, others use stub in commands)
             commands::sync_status::get_sync_status,
             // MTP commands (macOS + Linux - Android device support)

@@ -513,7 +513,7 @@ async fn process_request<R: Runtime>(
                 }
             };
 
-            match read_resource(&state.app, uri) {
+            match read_resource(&state.app, uri).await {
                 Ok(content) => (McpResponse::success(request.id, json!({"contents": [content]})), None),
                 Err(e) => (McpResponse::error(request.id, INVALID_PARAMS, e), None),
             }

@@ -103,6 +103,7 @@
             "reason": "UI section, pure logic extracted to license-section-utils.ts and tested"
         },
         "settings/sections/LoggingSection.svelte": { "reason": "UI section, simple rendering" },
+        "settings/mcp-main-bridge.ts": { "reason": "MCP bridge, depends on Tauri event APIs (listen/emit)" },
         "settings/mcp-settings-bridge.ts": { "reason": "MCP bridge, depends on Tauri APIs and events" },
         "settings/sections/McpServerSection.svelte": { "reason": "UI section, depends on Tauri APIs" },
         "settings/sections/NetworkSection.svelte": { "reason": "UI section, simple rendering" },

@@ -9,12 +9,6 @@
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
     import { getMatchingSections } from '$lib/settings/settings-search'
     import { loadLastSettingsSection, saveLastSettingsSection } from '$lib/app-status-store'
-    import {
-        syncSettingsState,
-        notifySettingsWindowOpen,
-        setupMcpEventListeners,
-        cleanupMcpEventListeners,
-    } from '$lib/settings/mcp-settings-bridge'
     import { getAppLogger } from '$lib/logging/logger'
 
     const log = getAppLogger('settings')
@@ -46,8 +40,6 @@
         selectedSection = sectionPath
         // Save last section to app status store
         void saveLastSettingsSection(sectionPath)
-        // Sync state to MCP backend
-        void syncSettingsState(sectionPath)
         // Scroll to the section in content area
         if (contentElement) {
             const sectionId = sectionPath
@@ -64,11 +56,6 @@
                 })
             }
         }
-    }
-
-    // Handle setting value changed (for MCP sync)
-    function handleSettingChanged() {
-        void syncSettingsState(selectedSection)
     }
 
     // Handle keyboard events
@@ -138,11 +125,6 @@
                 setTimeout(() => void getCurrentWindow().setFocus(), 0)
             })
 
-            // Set up MCP event listeners and sync initial state
-            await setupMcpEventListeners(handleSectionSelect, handleSettingChanged)
-            await notifySettingsWindowOpen(true)
-            await syncSettingsState(selectedSection)
-
             log.debug('Settings page ready')
         } catch (error) {
             log.error('Failed to initialize settings: {error}', { error })
@@ -154,11 +136,9 @@
         log.debug('Settings page destroying, flushing pending saves')
         // Fire and forget - we can't await in onDestroy
         void Promise.all([forceSettingsSave(), flushShortcutsSave()])
-        // Clean up event listeners and notify backend
+        // Clean up event listeners
         unlistenFocusSelf?.()
-        cleanupMcpEventListeners()
         cleanupAccentColor()
-        void notifySettingsWindowOpen(false)
     })
 
     // Also handle beforeunload for when window is closed directly

@@ -133,8 +133,8 @@ fn test_resource_count() {
     let resources = get_all_resources();
     assert_eq!(
         resources.len(),
-        3,
-        "Expected 3 resources (cmdr://state, cmdr://dialogs/available, cmdr://indexing)"
+        4,
+        "Expected 4 resources (cmdr://state, cmdr://dialogs/available, cmdr://indexing, cmdr://settings)"
     );
 }
 

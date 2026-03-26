@@ -93,8 +93,9 @@ row intentionally spans the full width.
 - **network-settings.ts** — Network-specific setting helpers (proxy config, SMB auth defaults)
 - **settings-window.ts** — Logic for opening/focusing/closing the settings window (Tauri window management)
 - **format-utils.ts** — Shared formatters used in settings UI (e.g., duration, file-size display strings)
-- **mcp-settings-bridge.ts** — MCP bridge functionality for settings; enables AI agents to query and modify settings
-  programmatically
+- **mcp-main-bridge.ts** — MCP bridge for settings; handles `mcp-get-all-settings` and `mcp-set-setting` round-trip
+  events in the main window (always alive), enabling AI agents to query and modify settings without the settings window
+  open
 
 ### Shortcuts (separate subsystem)
 

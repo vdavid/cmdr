@@ -10,7 +10,6 @@ pub mod pane_state;
 mod protocol;
 mod resources;
 mod server;
-pub mod settings_state;
 mod tools;
 
 #[cfg(test)]
@@ -20,4 +19,3 @@ pub use config::McpConfig;
 pub use dialog_state::SoftDialogTracker;
 pub use pane_state::PaneStateStore;
 pub use server::{get_mcp_actual_port, is_mcp_running, start_mcp_server, start_mcp_server_background, stop_mcp_server};
-pub use settings_state::SettingsStateStore;
