@@ -1,0 +1,37 @@
+/interface-design I've just added a light/dark version of the hero image for the website. It looks super good. This is the last needed piece then to split all pages to light/dark versions. The website already detects the user preference correctly for other pages but not the landing because so far we only had the dark themed hero img. So now that we have both (and they are in place!), we can enable it there too, and actually we need a toggle icon too. I want to use this: https://github.com/AlfieJones/theme-toggles/blob/main/packages/core/src/toggles/within.scss, but please without the library, make this just a Svelte component, attribute the creator ("MIT License / Copyright (c) 2021 Alfred Jones") if needed. Feel free to gh clone the repo into /tmp or sg if you need to see the rest of the source code for this.
+That's it I think, but any questions, lmk
+
+---
+
+1. 2-state with sys default, absolutely
+2. Yup, add it
+3. Exactly
+4. Yes! The main thing is that there should be absolutely no black or white flicker for users with light/dark preferences.
+
+/execute
+
+---
+
+[Image #1]
+- The light colors are not good. The #fafaf8 background is fine, but the bg color of all the content boxes, that's pretty dead. Not sure what to do. Some yellow? It's just not good
+- Similarly for the darker gray :hover bg colors, they are dead/meh. Think and do something to them pls
+- Also the accent color feels dirty on the light theme. It should be more saturated and lighter I think. It's also make the fg text easier to read.
+- The glow of the download button doesn't come across in the light version
+
+---
+
+Better, but (all about the light theme):
+1. The accent could still be a bit lighter, happier, warm autumn-y yellow
+2. Not sure if when hovering an item, it should become _darker_ or _lighter_ in the light theme. What's the standard? Currently, when I hover an item, it feels like my cursor makes it dirty. But maybe that's only the wrong color-accent-hover choice. Pls think about this
+3. If we make the accent even lighter for the button bgs, we must start thinking about those link foregrounds on the light background, which are already a bit hard to read. I think we must split the accent color to keep the buttons nice and happy, and the links readable.
+4. The dl button glow should intensify when I hover it
+
+Btw, I know we use this dirty yellow in the app but 1. I'm not sure if it's even the right choice there, 2. But there it looks more OK because it's used very sparingly.
+
+---
+
+When I click Changelog, Roadmap, or anywhere, it goes back to dark mode (my system preference). Why doesn't it remember when I set for the site across navi?
+
+---
+
+Nit: increase line height for "Indexes your entire drive in minutes. Directory sizes everywhere, instant search, keyboard-driven everything. Built in Rust, free for personal use."
