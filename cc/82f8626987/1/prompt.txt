@@ -1,0 +1,57 @@
+/commit-draft
+
+---
+
+Committed, app is running. Pls try it with a few settings, then revert them. It should work AND be convenient/intuitive.
+
+---
+
+Yes, pls mask those!
+
+---
+
+Try now, I've restarted it
+
+---
+
+Yup, I completely messed up the app state, so once again resize and set up the folders, colors, etc.
+
+---
+
+Almost good. Cursor should've been left on the left side. Please document this in the hero/CLAUDE.md file while I take the shots
+
+---
+
+They are in place!
+
+---
+
+Hey, no worries, we can subtract 6px, update the docs, and I can recreate both screenshots. No biggie! Let's keep the planned sizes! Or is this size better?
+
+---
+
+Sure, do that, just make sure to update whatever scripts or docs need updating so next time we follow this exact process
+
+---
+
+The cutout needs to be smaller:
+- its top should be 56px further down
+- the bottom should be 90px higher (so height should be 146px smaller overall)
+- this goes for both left nad right cutout
+- now, horizontally, I think both cutouts are perfect
+
+Pls try to re-cut with these dimensions and overwrite the pieces in the target
+
+---
+
+The cutout needs to be smaller:
+- its top should be 56px further down
+- the bottom should be 90px higher (so height should be 146px smaller overall)
+- this goes for both left nad right cutout
+- horizontally: the left cut's right side should be 5px to the left, and the right cut's left side should be 5px to the right, so basically, both should be 5px narrower, leaving larger space out in the middle (we added a resize bar in the middle, that messes things up)
+
+Pls try to re-cut with these dimensions and overwrite the pieces in the target. And update the docs
+
+---
+
+left cutout is now perfect. Right cutout is 44px too small vertically. Make its height +44px (the bottom of it must come lower), same height as the left one. Then it'll be just perfect.
