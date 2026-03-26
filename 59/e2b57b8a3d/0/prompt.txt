@@ -83,3 +83,7 @@ Make sure you implement all of these elegantly, and update the related CLAUDE.md
 ---
 
 Are you satisfied with this result? Is this elegant? Are you confident that it'll work well?
+
+---
+
+Option A, accept for now. However, this: "chunked_copy.rs — Added #[allow(dead_code)] with reason on the macOS is_network_filesystem (still used by tests, but no longer by copy strategy on macOS)." → Why not just delete it? Any reason?
