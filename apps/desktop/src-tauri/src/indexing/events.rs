@@ -1,5 +1,8 @@
 //! Tauri event payloads and response types for the indexing system.
 
+use std::sync::LazyLock;
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter};
 
@@ -203,3 +206,130 @@ pub struct IndexDebugStatusResponse {
     /// SQLite freelist pages (unused space)
     pub db_freelist_count: Option<u64>,
 }
+
+// ── Debug stats (shared atomics for the debug window) ────────────────
+
+/// Shared counters for MustScanSubDirs events and live FS events.
+/// Updated by event loops, read by the debug status IPC command.
+pub(crate) struct DebugStats {
+    pub(crate) must_scan_sub_dirs_count: AtomicU64,
+    pub(crate) must_scan_rescans_completed: AtomicU64,
+    pub(crate) live_event_count: AtomicU64,
+    pub(crate) watcher_active: AtomicBool,
+    /// Recent MustScanSubDirs paths: (timestamp, path). Ring buffer.
+    pub(crate) recent_must_scan_paths: std::sync::Mutex<Vec<(String, String)>>,
+    /// Timeline of indexing phases. Append-only, capped at 20 entries.
+    pub(crate) phase_history: std::sync::Mutex<Vec<PhaseRecord>>,
+    /// When the current phase started (for duration computation).
+    pub(crate) phase_started: std::sync::Mutex<Option<std::time::Instant>>,
+    /// Whether background verification is running concurrently.
+    pub(crate) verifying: AtomicBool,
+}
+
+impl DebugStats {
+    fn new() -> Self {
+        let now = chrono::Local::now().format("%H:%M:%S%.3f").to_string();
+        Self {
+            must_scan_sub_dirs_count: AtomicU64::new(0),
+            must_scan_rescans_completed: AtomicU64::new(0),
+            live_event_count: AtomicU64::new(0),
+            watcher_active: AtomicBool::new(false),
+            recent_must_scan_paths: std::sync::Mutex::new(Vec::new()),
+            phase_history: std::sync::Mutex::new(vec![PhaseRecord {
+                phase: ActivityPhase::Idle,
+                started_at: now,
+                duration_ms: None,
+                trigger: "app launch".to_string(),
+                stats: Vec::new(),
+            }]),
+            phase_started: std::sync::Mutex::new(Some(std::time::Instant::now())),
+            verifying: AtomicBool::new(false),
+        }
+    }
+
+    pub(crate) fn record_must_scan(&self, path: &str) {
+        self.must_scan_sub_dirs_count.fetch_add(1, Ordering::Relaxed);
+        if let Ok(mut paths) = self.recent_must_scan_paths.lock() {
+            let now = chrono::Local::now().format("%H:%M:%S%.3f").to_string();
+            paths.push((now, path.to_string()));
+            if paths.len() > 50 {
+                let excess = paths.len() - 50;
+                paths.drain(..excess);
+            }
+        }
+    }
+
+    pub(crate) fn record_rescan_completed(&self) {
+        self.must_scan_rescans_completed.fetch_add(1, Ordering::Relaxed);
+    }
+
+    pub(crate) fn reset(&self) {
+        self.must_scan_sub_dirs_count.store(0, Ordering::Relaxed);
+        self.must_scan_rescans_completed.store(0, Ordering::Relaxed);
+        self.live_event_count.store(0, Ordering::Relaxed);
+        self.watcher_active.store(false, Ordering::Relaxed);
+        if let Ok(mut paths) = self.recent_must_scan_paths.lock() {
+            paths.clear();
+        }
+        let now = chrono::Local::now().format("%H:%M:%S%.3f").to_string();
+        if let Ok(mut history) = self.phase_history.lock() {
+            history.clear();
+            history.push(PhaseRecord {
+                phase: ActivityPhase::Idle,
+                started_at: now,
+                duration_ms: None,
+                trigger: "reset".to_string(),
+                stats: Vec::new(),
+            });
+        }
+        if let Ok(mut started) = self.phase_started.lock() {
+            *started = Some(std::time::Instant::now());
+        }
+        self.verifying.store(false, Ordering::Relaxed);
+    }
+
+    pub(crate) fn set_phase(&self, phase: ActivityPhase, trigger: &str) {
+        let now_formatted = chrono::Local::now().format("%H:%M:%S%.3f").to_string();
+        let now_instant = std::time::Instant::now();
+
+        if let Ok(mut history) = self.phase_history.lock() {
+            // Close the current (last) entry if it's still in progress
+            if let Some(last) = history.last_mut()
+                && last.duration_ms.is_none()
+                && let Ok(started) = self.phase_started.lock()
+                && let Some(start) = *started
+            {
+                last.duration_ms = Some(start.elapsed().as_millis() as u64);
+            }
+
+            // Append new phase
+            history.push(PhaseRecord {
+                phase,
+                started_at: now_formatted,
+                duration_ms: None,
+                trigger: trigger.to_string(),
+                stats: Vec::new(),
+            });
+
+            // Cap at 20 entries
+            if history.len() > 20 {
+                let excess = history.len() - 20;
+                history.drain(..excess);
+            }
+        }
+
+        if let Ok(mut started) = self.phase_started.lock() {
+            *started = Some(now_instant);
+        }
+    }
+
+    pub(crate) fn close_phase_with_stats(&self, stats: Vec<(&str, String)>) {
+        if let Ok(mut history) = self.phase_history.lock()
+            && let Some(last) = history.last_mut()
+        {
+            last.stats = stats.into_iter().map(|(k, v)| (k.to_string(), v)).collect();
+        }
+    }
+}
+
+pub(crate) static DEBUG_STATS: LazyLock<DebugStats> = LazyLock::new(DebugStats::new);

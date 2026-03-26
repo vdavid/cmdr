@@ -12,6 +12,7 @@ use tauri::AppHandle;
 
 use super::enrichment::get_read_pool;
 use super::firmlinks;
+use super::metadata::extract_metadata;
 use super::reconciler;
 use super::scanner;
 use super::store::{self, IndexStore};
@@ -157,19 +158,7 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
 
         let is_dir = metadata.is_dir();
         let is_symlink = metadata.is_symlink();
-        let (logical_size, physical_size, modified_at) = if is_dir || is_symlink {
-            (None, None, reconciler::entry_modified_at(&metadata))
-        } else {
-            reconciler::entry_size_and_mtime(&metadata)
-        };
-
-        #[cfg(unix)]
-        let (inode, nlink) = {
-            use std::os::unix::fs::MetadataExt;
-            (Some(metadata.ino()), Some(metadata.nlink()))
-        };
-        #[cfg(not(unix))]
-        let (inode, nlink) = (None, None);
+        let snap = extract_metadata(&metadata, is_dir, is_symlink);
 
         let key = store::normalize_for_comparison(&name);
         disk_map.insert(
@@ -178,11 +167,11 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
                 name,
                 is_dir,
                 is_symlink,
-                logical_size,
-                physical_size,
-                modified_at,
-                inode,
-                nlink,
+                logical_size: snap.logical_size,
+                physical_size: snap.physical_size,
+                modified_at: snap.modified_at,
+                inode: snap.inode,
+                nlink: snap.nlink,
             },
         );
     }
@@ -484,29 +473,18 @@ mod tests {
             let metadata = fs::symlink_metadata(entry.path()).unwrap();
             let is_dir = metadata.is_dir();
             let is_symlink = metadata.is_symlink();
-            let (logical_size, physical_size, modified_at) = if is_dir || is_symlink {
-                (None, None, reconciler::entry_modified_at(&metadata))
-            } else {
-                reconciler::entry_size_and_mtime(&metadata)
-            };
-            #[cfg(unix)]
-            let (inode, nlink) = {
-                use std::os::unix::fs::MetadataExt;
-                (Some(metadata.ino()), Some(metadata.nlink()))
-            };
-            #[cfg(not(unix))]
-            let (inode, nlink) = (None, None);
+            let snap = extract_metadata(&metadata, is_dir, is_symlink);
 
             let _ = writer.send(WriteMessage::UpsertEntryV2 {
                 parent_id,
                 name,
                 is_directory: is_dir,
                 is_symlink,
-                logical_size,
-                physical_size,
-                modified_at,
-                inode,
-                nlink,
+                logical_size: snap.logical_size,
+                physical_size: snap.physical_size,
+                modified_at: snap.modified_at,
+                inode: snap.inode,
+                nlink: snap.nlink,
             });
         }
         writer.flush_blocking().unwrap();

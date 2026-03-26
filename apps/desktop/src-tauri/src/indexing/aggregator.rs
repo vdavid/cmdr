@@ -147,40 +147,7 @@ fn compute_and_write(
     let compute_report_interval = (dir_count / 100).max(1000).min(dir_count.max(1)) as usize;
 
     on_progress(AggregationProgress::new(AggregationPhase::Computing, 0, dir_count));
-    let mut computed: HashMap<i64, DirStatsById> = HashMap::with_capacity(sorted.len());
-
-    for (i, &dir_id) in sorted.iter().enumerate() {
-        let (logical_size_sum, physical_size_sum, file_count, child_dir_count) =
-            direct_stats.get(&dir_id).copied().unwrap_or((0, 0, 0, 0));
-
-        let mut recursive_logical_size = logical_size_sum;
-        let mut recursive_physical_size = physical_size_sum;
-        let mut recursive_file_count = file_count;
-        let mut recursive_dir_count = child_dir_count;
-
-        // Add already-computed recursive stats from child directories
-        if let Some(children) = child_dirs_map.get(&dir_id) {
-            for &child_id in children {
-                if let Some(child_stats) = computed.get(&child_id) {
-                    recursive_logical_size += child_stats.recursive_logical_size;
-                    recursive_physical_size += child_stats.recursive_physical_size;
-                    recursive_file_count += child_stats.recursive_file_count;
-                    recursive_dir_count += child_stats.recursive_dir_count;
-                }
-            }
-        }
-
-        computed.insert(
-            dir_id,
-            DirStatsById {
-                entry_id: dir_id,
-                recursive_logical_size,
-                recursive_physical_size,
-                recursive_file_count,
-                recursive_dir_count,
-            },
-        );
-
+    let computed = compute_bottom_up(&sorted, direct_stats, child_dirs_map, None, |i| {
         if (i + 1) % compute_report_interval == 0 {
             on_progress(AggregationProgress::new(
                 AggregationPhase::Computing,
@@ -193,7 +160,7 @@ fn compute_and_write(
                 start.elapsed().as_secs_f64()
             );
         }
-    }
+    });
 
     // Batch-write all computed stats in chunks of 1000
     log::debug!("Aggregation: writing {} dir_stats rows to DB...", computed.len());
@@ -218,6 +185,62 @@ fn compute_and_write(
     );
 
     Ok(count)
+}
+
+/// Bottom-up aggregation over a topologically sorted list of directory IDs.
+///
+/// For each directory (leaves first), sums direct children stats from `direct_stats`,
+/// then adds recursive stats from already-computed child directories. When
+/// `existing_stats` is provided, falls back to it for children not yet in the
+/// computed map (used by `backfill_missing_dir_stats` where some children already
+/// have DB rows). Calls `on_iter(index)` after each directory for progress reporting.
+fn compute_bottom_up(
+    sorted_ids: &[i64],
+    direct_stats: &ChildrenStatsMap,
+    child_dirs: &HashMap<i64, Vec<i64>>,
+    existing_stats: Option<&HashMap<i64, DirStatsById>>,
+    mut on_iter: impl FnMut(usize),
+) -> HashMap<i64, DirStatsById> {
+    let mut computed: HashMap<i64, DirStatsById> = HashMap::with_capacity(sorted_ids.len());
+
+    for (i, &dir_id) in sorted_ids.iter().enumerate() {
+        let (logical_size_sum, physical_size_sum, file_count, child_dir_count) =
+            direct_stats.get(&dir_id).copied().unwrap_or((0, 0, 0, 0));
+
+        let mut recursive_logical_size = logical_size_sum;
+        let mut recursive_physical_size = physical_size_sum;
+        let mut recursive_file_count = file_count;
+        let mut recursive_dir_count = child_dir_count;
+
+        if let Some(children) = child_dirs.get(&dir_id) {
+            for &child_id in children {
+                let child_stats = computed
+                    .get(&child_id)
+                    .or_else(|| existing_stats.and_then(|m| m.get(&child_id)));
+                if let Some(cs) = child_stats {
+                    recursive_logical_size += cs.recursive_logical_size;
+                    recursive_physical_size += cs.recursive_physical_size;
+                    recursive_file_count += cs.recursive_file_count;
+                    recursive_dir_count += cs.recursive_dir_count;
+                }
+            }
+        }
+
+        computed.insert(
+            dir_id,
+            DirStatsById {
+                entry_id: dir_id,
+                recursive_logical_size,
+                recursive_physical_size,
+                recursive_file_count,
+                recursive_dir_count,
+            },
+        );
+
+        on_iter(i);
+    }
+
+    computed
 }
 
 /// Compute `dir_stats` for directories under `root` only (bottom-up).
@@ -257,40 +280,7 @@ pub fn compute_subtree_aggregates(conn: &Connection, root: &str) -> Result<u64, 
 
     // Topological sort: leaves first
     let sorted = topological_sort_bottom_up(&dir_entries);
-
-    let mut computed: HashMap<i64, DirStatsById> = HashMap::with_capacity(sorted.len());
-
-    for &dir_id in &sorted {
-        let (logical_size_sum, physical_size_sum, file_count, child_dir_count) =
-            direct_stats.get(&dir_id).copied().unwrap_or((0, 0, 0, 0));
-
-        let mut recursive_logical_size = logical_size_sum;
-        let mut recursive_physical_size = physical_size_sum;
-        let mut recursive_file_count = file_count;
-        let mut recursive_dir_count = child_dir_count;
-
-        if let Some(children) = child_dirs_map.get(&dir_id) {
-            for &child_id in children {
-                if let Some(child_stats) = computed.get(&child_id) {
-                    recursive_logical_size += child_stats.recursive_logical_size;
-                    recursive_physical_size += child_stats.recursive_physical_size;
-                    recursive_file_count += child_stats.recursive_file_count;
-                    recursive_dir_count += child_stats.recursive_dir_count;
-                }
-            }
-        }
-
-        computed.insert(
-            dir_id,
-            DirStatsById {
-                entry_id: dir_id,
-                recursive_logical_size,
-                recursive_physical_size,
-                recursive_file_count,
-                recursive_dir_count,
-            },
-        );
-    }
+    let computed = compute_bottom_up(&sorted, &direct_stats, &child_dirs_map, None, |_| {});
 
     // Batch-write all computed stats
     log::debug!(
@@ -339,6 +329,10 @@ pub fn backfill_missing_dir_stats(conn: &Connection) -> Result<u64, IndexStoreEr
     let direct_stats = bulk_get_children_stats_by_id(conn)?;
     let child_dirs_map = bulk_get_child_dir_ids(conn)?;
 
+    // Bulk-load existing dir_stats so the bottom-up pass can use them as
+    // fallback for children that already have stats (avoids N+1 queries).
+    let existing_stats = bulk_get_all_dir_stats(conn)?;
+
     // Topological sort all dirs (we need correct ordering)
     let sorted = topological_sort_bottom_up(&all_dir_entries);
 
@@ -349,48 +343,11 @@ pub fn backfill_missing_dir_stats(conn: &Connection) -> Result<u64, IndexStoreEr
     // We need to compute all because a missing dir's stats depend on its
     // children (which might have existing stats in the DB or might also be
     // missing).
-    let mut computed: HashMap<i64, DirStatsById> = HashMap::with_capacity(sorted.len());
-    let mut to_write: Vec<DirStatsById> = Vec::with_capacity(count);
-
-    for &dir_id in &sorted {
-        let (logical_size_sum, physical_size_sum, file_count, child_dir_count) =
-            direct_stats.get(&dir_id).copied().unwrap_or((0, 0, 0, 0));
-
-        let mut recursive_logical_size = logical_size_sum;
-        let mut recursive_physical_size = physical_size_sum;
-        let mut recursive_file_count = file_count;
-        let mut recursive_dir_count = child_dir_count;
-
-        if let Some(children) = child_dirs_map.get(&dir_id) {
-            for &child_id in children {
-                // Prefer freshly computed stats, fall back to existing DB stats
-                if let Some(child_stats) = computed.get(&child_id) {
-                    recursive_logical_size += child_stats.recursive_logical_size;
-                    recursive_physical_size += child_stats.recursive_physical_size;
-                    recursive_file_count += child_stats.recursive_file_count;
-                    recursive_dir_count += child_stats.recursive_dir_count;
-                } else if let Ok(Some(db_stats)) = IndexStore::get_dir_stats_by_id(conn, child_id) {
-                    recursive_logical_size += db_stats.recursive_logical_size;
-                    recursive_physical_size += db_stats.recursive_physical_size;
-                    recursive_file_count += db_stats.recursive_file_count;
-                    recursive_dir_count += db_stats.recursive_dir_count;
-                }
-            }
-        }
-
-        let stats = DirStatsById {
-            entry_id: dir_id,
-            recursive_logical_size,
-            recursive_physical_size,
-            recursive_file_count,
-            recursive_dir_count,
-        };
-
-        if missing_set.contains(&dir_id) {
-            to_write.push(stats.clone());
-        }
-        computed.insert(dir_id, stats);
-    }
+    let computed = compute_bottom_up(&sorted, &direct_stats, &child_dirs_map, Some(&existing_stats), |_| {});
+    let to_write: Vec<DirStatsById> = computed
+        .into_values()
+        .filter(|s| missing_set.contains(&s.entry_id))
+        .collect();
 
     // Batch-write only the missing stats
     for chunk in to_write.chunks(1000) {
@@ -544,6 +501,33 @@ fn bulk_get_child_dir_ids(conn: &Connection) -> Result<HashMap<i64, Vec<i64>>, I
     for row in rows {
         let (parent_id, child_id) = row?;
         map.entry(parent_id).or_default().push(child_id);
+    }
+    Ok(map)
+}
+
+/// Bulk-load all existing `dir_stats` rows into a map keyed by `entry_id`.
+///
+/// Used by `backfill_missing_dir_stats` so the bottom-up pass can fall back to
+/// existing stats for children that already have rows (avoiding N+1 queries).
+fn bulk_get_all_dir_stats(conn: &Connection) -> Result<HashMap<i64, DirStatsById>, IndexStoreError> {
+    let mut stmt = conn.prepare(
+        "SELECT entry_id, recursive_logical_size, recursive_physical_size,
+                recursive_file_count, recursive_dir_count
+         FROM dir_stats",
+    )?;
+    let rows = stmt.query_map([], |row| {
+        Ok(DirStatsById {
+            entry_id: row.get(0)?,
+            recursive_logical_size: row.get(1)?,
+            recursive_physical_size: row.get(2)?,
+            recursive_file_count: row.get(3)?,
+            recursive_dir_count: row.get(4)?,
+        })
+    })?;
+    let mut map = HashMap::new();
+    for row in rows {
+        let stats = row?;
+        map.insert(stats.entry_id, stats);
     }
     Ok(map)
 }

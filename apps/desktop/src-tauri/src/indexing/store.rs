@@ -15,7 +15,7 @@
 use rusqlite::{Connection, OptionalExtension, params};
 use std::path::{Path, PathBuf};
 
-const SCHEMA_VERSION: &str = "8";
+const SCHEMA_VERSION: &str = "9";
 
 /// Root entry sentinel ID. All top-level entries have `parent_id = ROOT_ID`.
 pub const ROOT_ID: i64 = 1;
@@ -241,7 +241,6 @@ pub fn normalize_for_comparison(s: &str) -> String {
 
 // ── Schema ───────────────────────────────────────────────────────────
 
-#[cfg(target_os = "macos")]
 const CREATE_TABLES_SQL: &str = "
     CREATE TABLE IF NOT EXISTS entries (
         id            INTEGER PRIMARY KEY,
@@ -273,45 +272,12 @@ const CREATE_TABLES_SQL: &str = "
     ) WITHOUT ROWID;
 ";
 
-#[cfg(not(target_os = "macos"))]
-const CREATE_TABLES_SQL: &str = "
-    CREATE TABLE IF NOT EXISTS entries (
-        id            INTEGER PRIMARY KEY,
-        parent_id     INTEGER NOT NULL,
-        name          TEXT    NOT NULL COLLATE platform_case,
-        is_directory  INTEGER NOT NULL DEFAULT 0,
-        is_symlink    INTEGER NOT NULL DEFAULT 0,
-        logical_size  INTEGER,
-        physical_size INTEGER,
-        modified_at   INTEGER,
-        inode         INTEGER
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_parent_name ON entries (parent_id, name);
-    CREATE INDEX IF NOT EXISTS idx_inode ON entries (inode);
-
-    CREATE TABLE IF NOT EXISTS dir_stats (
-        entry_id                 INTEGER PRIMARY KEY,
-        recursive_logical_size   INTEGER NOT NULL DEFAULT 0,
-        recursive_physical_size  INTEGER NOT NULL DEFAULT 0,
-        recursive_file_count     INTEGER NOT NULL DEFAULT 0,
-        recursive_dir_count      INTEGER NOT NULL DEFAULT 0
-    );
-
-    CREATE TABLE IF NOT EXISTS meta (
-        key   TEXT PRIMARY KEY,
-        value TEXT NOT NULL
-    ) WITHOUT ROWID;
-";
-
 /// Insert the root sentinel entry if it doesn't exist.
 fn ensure_root_sentinel(conn: &Connection) -> Result<(), IndexStoreError> {
-    #[cfg(target_os = "macos")]
-    let sql =
-        "INSERT OR IGNORE INTO entries (id, parent_id, name, name_folded, is_directory) VALUES (?1, ?2, '', '', 1)";
-    #[cfg(not(target_os = "macos"))]
-    let sql = "INSERT OR IGNORE INTO entries (id, parent_id, name, is_directory) VALUES (?1, ?2, '', 1)";
-    conn.execute(sql, params![ROOT_ID, ROOT_PARENT_ID])?;
+    conn.execute(
+        "INSERT OR IGNORE INTO entries (id, parent_id, name, name_folded, is_directory) VALUES (?1, ?2, '', '', 1)",
+        params![ROOT_ID, ROOT_PARENT_ID],
+    )?;
     Ok(())
 }
 
@@ -765,24 +731,13 @@ impl IndexStore {
 
     /// Resolve a path component under a given parent. Returns the child entry ID.
     pub fn resolve_component(conn: &Connection, parent_id: i64, name: &str) -> Result<Option<i64>, IndexStoreError> {
-        #[cfg(target_os = "macos")]
-        {
-            let mut stmt =
-                conn.prepare_cached("SELECT id FROM entries WHERE parent_id = ?1 AND name_folded = ?2 LIMIT 1")?;
-            let folded = normalize_for_comparison(name);
-            let result = stmt
-                .query_row(params![parent_id, folded], |row| row.get::<_, i64>(0))
-                .optional()?;
-            Ok(result)
-        }
-        #[cfg(not(target_os = "macos"))]
-        {
-            let mut stmt = conn.prepare_cached("SELECT id FROM entries WHERE parent_id = ?1 AND name = ?2 LIMIT 1")?;
-            let result = stmt
-                .query_row(params![parent_id, name], |row| row.get::<_, i64>(0))
-                .optional()?;
-            Ok(result)
-        }
+        let mut stmt =
+            conn.prepare_cached("SELECT id FROM entries WHERE parent_id = ?1 AND name_folded = ?2 LIMIT 1")?;
+        let folded = normalize_for_comparison(name);
+        let result = stmt
+            .query_row(params![parent_id, folded], |row| row.get::<_, i64>(0))
+            .optional()?;
+        Ok(result)
     }
 
     /// Reconstruct the full path for an entry by walking up the parent chain.
@@ -809,42 +764,22 @@ impl IndexStore {
         modified_at: Option<u64>,
         inode: Option<u64>,
     ) -> Result<i64, IndexStoreError> {
-        #[cfg(target_os = "macos")]
-        {
-            let name_folded = normalize_for_comparison(name);
-            conn.execute(
-                "INSERT INTO entries (parent_id, name, name_folded, is_directory, is_symlink, logical_size, physical_size, modified_at, inode)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
-                params![
-                    parent_id,
-                    name,
-                    name_folded,
-                    is_directory as i32,
-                    is_symlink as i32,
-                    logical_size,
-                    physical_size,
-                    modified_at,
-                    inode,
-                ],
-            )?;
-        }
-        #[cfg(not(target_os = "macos"))]
-        {
-            conn.execute(
-                "INSERT INTO entries (parent_id, name, is_directory, is_symlink, logical_size, physical_size, modified_at, inode)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-                params![
-                    parent_id,
-                    name,
-                    is_directory as i32,
-                    is_symlink as i32,
-                    logical_size,
-                    physical_size,
-                    modified_at,
-                    inode,
-                ],
-            )?;
-        }
+        let name_folded = normalize_for_comparison(name);
+        conn.execute(
+            "INSERT INTO entries (parent_id, name, name_folded, is_directory, is_symlink, logical_size, physical_size, modified_at, inode)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            params![
+                parent_id,
+                name,
+                name_folded,
+                is_directory as i32,
+                is_symlink as i32,
+                logical_size,
+                physical_size,
+                modified_at,
+                inode,
+            ],
+        )?;
         Ok(conn.last_insert_rowid())
     }
 
@@ -860,38 +795,17 @@ impl IndexStore {
             // Plain INSERT: the only unique constraint is the integer PK (`id`), and
             // ScanContext assigns unique IDs, so conflicts shouldn't occur. The table is
             // truncated before full scans and descendants are deleted before subtree scans.
-            #[cfg(target_os = "macos")]
             let mut stmt = conn.prepare_cached(
                 "INSERT INTO entries (id, parent_id, name, name_folded, is_directory, is_symlink, logical_size, physical_size, modified_at, inode)
                  VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
             )?;
-            #[cfg(not(target_os = "macos"))]
-            let mut stmt = conn.prepare_cached(
-                "INSERT INTO entries (id, parent_id, name, is_directory, is_symlink, logical_size, physical_size, modified_at, inode)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
-            )?;
             for e in entries {
-                #[cfg(target_os = "macos")]
-                {
-                    let name_folded = normalize_for_comparison(&e.name);
-                    stmt.execute(params![
-                        e.id,
-                        e.parent_id,
-                        e.name,
-                        name_folded,
-                        e.is_directory as i32,
-                        e.is_symlink as i32,
-                        e.logical_size,
-                        e.physical_size,
-                        e.modified_at,
-                        e.inode,
-                    ])?;
-                }
-                #[cfg(not(target_os = "macos"))]
+                let name_folded = normalize_for_comparison(&e.name);
                 stmt.execute(params![
                     e.id,
                     e.parent_id,
                     e.name,
+                    name_folded,
                     e.is_directory as i32,
                     e.is_symlink as i32,
                     e.logical_size,
@@ -935,13 +849,10 @@ impl IndexStore {
     /// Rename an entry (update its name).
     #[cfg(test)]
     pub fn rename_entry(conn: &Connection, id: i64, new_name: &str) -> Result<(), IndexStoreError> {
-        #[cfg(target_os = "macos")]
         conn.execute(
             "UPDATE entries SET name = ?1, name_folded = ?2 WHERE id = ?3",
             params![new_name, normalize_for_comparison(new_name), id],
         )?;
-        #[cfg(not(target_os = "macos"))]
-        conn.execute("UPDATE entries SET name = ?1 WHERE id = ?2", params![new_name, id])?;
         Ok(())
     }
 
@@ -2009,7 +1920,6 @@ mod tests {
         );
     }
 
-    #[cfg(target_os = "macos")]
     #[test]
     fn name_folded_populated_on_single_insert() {
         let (_store, dir) = open_temp_store();
@@ -2027,7 +1937,6 @@ mod tests {
         assert_eq!(folded, normalize_for_comparison(name));
     }
 
-    #[cfg(target_os = "macos")]
     #[test]
     fn name_folded_populated_on_batch_insert() {
         let (_store, dir) = open_temp_store();

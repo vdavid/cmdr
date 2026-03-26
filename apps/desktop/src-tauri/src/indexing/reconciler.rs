@@ -27,6 +27,7 @@ use tauri::{AppHandle, Emitter};
 
 use crate::indexing::DEBUG_STATS;
 use crate::indexing::firmlinks;
+use crate::indexing::metadata::extract_metadata;
 use crate::indexing::scanner;
 use crate::indexing::store::{self, IndexStore};
 use crate::indexing::watcher::FsChangeEvent;
@@ -346,23 +347,15 @@ pub(super) fn reconcile_subtree(
         for (name, meta, is_symlink) in &fs_children {
             let norm_name = store::normalize_for_comparison(name);
             let is_dir = meta.is_dir();
-
-            #[cfg(unix)]
-            let (inode, nlink) = {
-                use std::os::unix::fs::MetadataExt;
-                (Some(meta.ino()), Some(meta.nlink()))
-            };
-            #[cfg(not(unix))]
-            let (inode, nlink) = (None, None);
+            let snap = extract_metadata(meta, is_dir, *is_symlink);
 
             if let Some(db_row) = db_by_name.get(&norm_name) {
                 matched_db_keys.insert(norm_name);
 
                 let changed = if is_dir || *is_symlink {
-                    entry_modified_at(meta) != db_row.modified_at
+                    snap.modified_at != db_row.modified_at
                 } else {
-                    let (fs_logical, _fs_physical, fs_mtime) = entry_size_and_mtime(meta);
-                    fs_logical != db_row.logical_size || fs_mtime != db_row.modified_at
+                    snap.logical_size != db_row.logical_size || snap.modified_at != db_row.modified_at
                 };
 
                 if changed {
@@ -372,21 +365,16 @@ pub(super) fn reconcile_subtree(
                         let _ = writer.send(WriteMessage::DeleteSubtreeById(db_row.id));
                     }
 
-                    let (logical_size, physical_size, modified_at) = if is_dir || *is_symlink {
-                        (None, None, entry_modified_at(meta))
-                    } else {
-                        entry_size_and_mtime(meta)
-                    };
                     let _ = writer.send(WriteMessage::UpsertEntryV2 {
                         parent_id: dir_id,
                         name: name.clone(),
                         is_directory: is_dir,
                         is_symlink: *is_symlink,
-                        logical_size,
-                        physical_size,
-                        modified_at,
-                        inode,
-                        nlink,
+                        logical_size: snap.logical_size,
+                        physical_size: snap.physical_size,
+                        modified_at: snap.modified_at,
+                        inode: snap.inode,
+                        nlink: snap.nlink,
                     });
                     updated += 1;
                 }
@@ -395,21 +383,16 @@ pub(super) fn reconcile_subtree(
                     queue.push_back((dir_path.join(name), db_row.id));
                 }
             } else {
-                let (logical_size, physical_size, modified_at) = if is_dir || *is_symlink {
-                    (None, None, entry_modified_at(meta))
-                } else {
-                    entry_size_and_mtime(meta)
-                };
                 let _ = writer.send(WriteMessage::UpsertEntryV2 {
                     parent_id: dir_id,
                     name: name.clone(),
                     is_directory: is_dir,
                     is_symlink: *is_symlink,
-                    logical_size,
-                    physical_size,
-                    modified_at,
-                    inode,
-                    nlink,
+                    logical_size: snap.logical_size,
+                    physical_size: snap.physical_size,
+                    modified_at: snap.modified_at,
+                    inode: snap.inode,
+                    nlink: snap.nlink,
                 });
 
                 // UpsertEntryV2 auto-propagates deltas in the writer.
@@ -631,30 +614,18 @@ fn handle_creation_or_modification(
         .map(|n| n.to_string_lossy().to_string())
         .unwrap_or_default();
 
-    let (logical_size, physical_size, modified_at) = if is_dir || is_symlink {
-        (None, None, entry_modified_at(&metadata))
-    } else {
-        entry_size_and_mtime(&metadata)
-    };
-
-    #[cfg(unix)]
-    let (inode, nlink) = {
-        use std::os::unix::fs::MetadataExt;
-        (Some(metadata.ino()), Some(metadata.nlink()))
-    };
-    #[cfg(not(unix))]
-    let (inode, nlink) = (None, None);
+    let snap = extract_metadata(&metadata, is_dir, is_symlink);
 
     let _ = writer.send(WriteMessage::UpsertEntryV2 {
         parent_id,
         name,
         is_directory: is_dir,
         is_symlink,
-        logical_size,
-        physical_size,
-        modified_at,
-        inode,
-        nlink,
+        logical_size: snap.logical_size,
+        physical_size: snap.physical_size,
+        modified_at: snap.modified_at,
+        inode: snap.inode,
+        nlink: snap.nlink,
     });
 
     // UpsertEntryV2 auto-propagates deltas in the writer, so no separate
@@ -697,46 +668,6 @@ fn collect_ancestor_paths(path: &str) -> Vec<String> {
         current = parent;
     }
     ancestors
-}
-
-/// Get logical size, physical size, and modified time from metadata.
-#[cfg(unix)]
-pub(super) fn entry_size_and_mtime(metadata: &std::fs::Metadata) -> (Option<u64>, Option<u64>, Option<u64>) {
-    use std::os::unix::fs::MetadataExt;
-    let logical_size = metadata.len();
-    let blocks = metadata.blocks();
-    let physical_size = if blocks > 0 { blocks * 512 } else { 0 };
-    let mtime = metadata.mtime();
-    let mtime_u64 = if mtime >= 0 { Some(mtime as u64) } else { None };
-    (Some(logical_size), Some(physical_size), mtime_u64)
-}
-
-#[cfg(not(unix))]
-pub(super) fn entry_size_and_mtime(metadata: &std::fs::Metadata) -> (Option<u64>, Option<u64>, Option<u64>) {
-    let size = metadata.len();
-    let mtime = metadata
-        .modified()
-        .ok()
-        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-        .map(|d| d.as_secs());
-    (Some(size), Some(size), mtime)
-}
-
-/// Get modified time from metadata.
-#[cfg(unix)]
-pub(super) fn entry_modified_at(metadata: &std::fs::Metadata) -> Option<u64> {
-    use std::os::unix::fs::MetadataExt;
-    let mtime = metadata.mtime();
-    if mtime >= 0 { Some(mtime as u64) } else { None }
-}
-
-#[cfg(not(unix))]
-pub(super) fn entry_modified_at(metadata: &std::fs::Metadata) -> Option<u64> {
-    metadata
-        .modified()
-        .ok()
-        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-        .map(|d| d.as_secs())
 }
 
 /// Emit an `index-dir-updated` event to the frontend.
@@ -1230,14 +1161,34 @@ mod tests {
                 .unwrap();
 
             let meta1 = std::fs::symlink_metadata(sub_dir.join("child1.txt")).unwrap();
-            let (size1, _phys1, mtime1) = entry_size_and_mtime(&meta1);
-            IndexStore::insert_entry_v2(&wconn, sub_id, "child1.txt", false, false, size1, size1, mtime1, None)
-                .unwrap();
+            let snap1 = extract_metadata(&meta1, false, false);
+            IndexStore::insert_entry_v2(
+                &wconn,
+                sub_id,
+                "child1.txt",
+                false,
+                false,
+                snap1.logical_size,
+                snap1.logical_size,
+                snap1.modified_at,
+                None,
+            )
+            .unwrap();
 
             let meta2 = std::fs::symlink_metadata(sub_dir.join("child2.txt")).unwrap();
-            let (size2, _phys2, mtime2) = entry_size_and_mtime(&meta2);
-            IndexStore::insert_entry_v2(&wconn, sub_id, "child2.txt", false, false, size2, size2, mtime2, None)
-                .unwrap();
+            let snap2 = extract_metadata(&meta2, false, false);
+            IndexStore::insert_entry_v2(
+                &wconn,
+                sub_id,
+                "child2.txt",
+                false,
+                false,
+                snap2.logical_size,
+                snap2.logical_size,
+                snap2.modified_at,
+                None,
+            )
+            .unwrap();
         }
 
         // Run reconcile_subtree (what MustScanSubDirs triggers)
@@ -1430,13 +1381,23 @@ mod tests {
 
         // Get the file's actual metadata and insert a matching DB entry
         let meta = std::fs::symlink_metadata(&file_path).unwrap();
-        let (size, _phys, mtime) = entry_size_and_mtime(&meta);
+        let snap = extract_metadata(&meta, false, false);
         {
             let wconn = IndexStore::open_write_connection(&db_path).unwrap();
             let parent_str = test_dir.path().to_string_lossy().to_string();
             let parent_id = store::resolve_path(&wconn, &parent_str).unwrap().unwrap();
-            IndexStore::insert_entry_v2(&wconn, parent_id, "stable.txt", false, false, size, size, mtime, None)
-                .unwrap();
+            IndexStore::insert_entry_v2(
+                &wconn,
+                parent_id,
+                "stable.txt",
+                false,
+                false,
+                snap.logical_size,
+                snap.logical_size,
+                snap.modified_at,
+                None,
+            )
+            .unwrap();
         }
 
         let cancelled = AtomicBool::new(false);

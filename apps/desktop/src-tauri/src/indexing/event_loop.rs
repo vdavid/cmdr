@@ -990,31 +990,18 @@ fn verify_affected_dirs(affected_paths: &HashSet<String>, writer: &IndexWriter) 
 
             let is_dir = metadata.is_dir();
             let is_symlink = metadata.is_symlink();
-
-            let (logical_size, physical_size, modified_at) = if is_dir || is_symlink {
-                (None, None, reconciler::entry_modified_at(&metadata))
-            } else {
-                reconciler::entry_size_and_mtime(&metadata)
-            };
-
-            #[cfg(unix)]
-            let (inode, nlink) = {
-                use std::os::unix::fs::MetadataExt;
-                (Some(metadata.ino()), Some(metadata.nlink()))
-            };
-            #[cfg(not(unix))]
-            let (inode, nlink) = (None, None);
+            let snap = super::metadata::extract_metadata(&metadata, is_dir, is_symlink);
 
             let _ = writer.send(WriteMessage::UpsertEntryV2 {
                 parent_id: *parent_id,
                 name,
                 is_directory: is_dir,
                 is_symlink,
-                logical_size,
-                physical_size,
-                modified_at,
-                inode,
-                nlink,
+                logical_size: snap.logical_size,
+                physical_size: snap.physical_size,
+                modified_at: snap.modified_at,
+                inode: snap.inode,
+                nlink: snap.nlink,
             });
 
             // UpsertEntryV2 auto-propagates deltas in the writer.

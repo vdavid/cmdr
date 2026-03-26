@@ -333,18 +333,30 @@ fn run_scan(
         let is_symlink = entry.file_type().is_symlink();
 
         // Get metadata for size and modified time
-        let (logical_size, physical_size, modified_at, inode) = if is_dir || is_symlink {
-            (None, None, entry_modified_at(&path), None)
-        } else {
-            let (ls, ps, mtime, ino, nlink) = entry_size_and_mtime(&path);
-            let inode = if ino != 0 { Some(ino) } else { None };
-            // Deduplicate hardlinks: if nlink > 1, only count each inode's size once
-            if nlink > 1 && !seen_inodes.insert(ino) {
-                (None, None, mtime, inode)
-            } else {
-                (ls, ps, mtime, inode)
-            }
+        let snap = match std::fs::symlink_metadata(&path) {
+            Ok(meta) => super::metadata::extract_metadata(&meta, is_dir, is_symlink),
+            Err(_) => super::metadata::MetadataSnapshot {
+                logical_size: None,
+                physical_size: None,
+                modified_at: None,
+                inode: None,
+                nlink: None,
+            },
         };
+
+        // Deduplicate hardlinks: if nlink > 1, only count each inode's size once.
+        // Files with nlink == 1 (the vast majority) skip the set entirely.
+        let (logical_size, physical_size, modified_at, inode) =
+            if !is_dir && !is_symlink && matches!(snap.nlink, Some(n) if n > 1) {
+                let ino = snap.inode.unwrap_or(0);
+                if !seen_inodes.insert(ino) {
+                    (None, None, snap.modified_at, snap.inode)
+                } else {
+                    (snap.logical_size, snap.physical_size, snap.modified_at, snap.inode)
+                }
+            } else {
+                (snap.logical_size, snap.physical_size, snap.modified_at, snap.inode)
+            };
 
         // Look up parent_id from the scan context
         let parent_path = normalized_path.parent().unwrap_or(root);
@@ -465,65 +477,6 @@ pub(super) fn should_exclude(path_str: &str) -> bool {
     false
 }
 
-/// Get logical size, physical size (st_blocks * 512), modified time, inode, and nlink for a file.
-#[cfg(unix)]
-fn entry_size_and_mtime(path: &Path) -> (Option<u64>, Option<u64>, Option<u64>, u64, u64) {
-    use std::os::unix::fs::MetadataExt;
-    match std::fs::symlink_metadata(path) {
-        Ok(meta) => {
-            let logical_size = meta.len();
-            let blocks = meta.blocks();
-            let physical_size = if blocks > 0 { blocks * 512 } else { 0 };
-            let mtime = meta.mtime();
-            let mtime_u64 = if mtime >= 0 { Some(mtime as u64) } else { None };
-            (
-                Some(logical_size),
-                Some(physical_size),
-                mtime_u64,
-                meta.ino(),
-                meta.nlink(),
-            )
-        }
-        Err(_) => (None, None, None, 0, 1),
-    }
-}
-
-#[cfg(not(unix))]
-fn entry_size_and_mtime(path: &Path) -> (Option<u64>, Option<u64>, Option<u64>, u64, u64) {
-    match std::fs::symlink_metadata(path) {
-        Ok(meta) => {
-            let size = meta.len();
-            let mtime = meta
-                .modified()
-                .ok()
-                .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-                .map(|d| d.as_secs());
-            (Some(size), Some(size), mtime, 0, 1)
-        }
-        Err(_) => (None, None, None, 0, 1),
-    }
-}
-
-/// Get modified time for a directory or symlink entry.
-fn entry_modified_at(path: &Path) -> Option<u64> {
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::MetadataExt;
-        std::fs::symlink_metadata(path).ok().and_then(|meta| {
-            let mtime = meta.mtime();
-            if mtime >= 0 { Some(mtime as u64) } else { None }
-        })
-    }
-    #[cfg(not(unix))]
-    {
-        std::fs::symlink_metadata(path)
-            .ok()
-            .and_then(|meta| meta.modified().ok())
-            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-            .map(|d| d.as_secs())
-    }
-}
-
 /// Compute parent path from a normalized path. No trailing slashes.
 ///
 /// Examples:
@@ -564,8 +517,6 @@ mod tests {
     use crate::indexing::store::{self, IndexStore, ROOT_ID};
     use crate::indexing::writer::IndexWriter;
     use std::fs;
-    use std::thread;
-    use std::time::Duration;
 
     /// Create a temp dir for volume-scan tests. On Linux, `/tmp/` is in the exclusion list,
     /// so we use the current directory to avoid false rejections.
@@ -724,9 +675,8 @@ mod tests {
         assert_eq!(dirs, summary.total_dirs);
 
         // Wait for writer to process all messages + aggregation
-        thread::sleep(Duration::from_millis(500));
+        writer.flush_blocking().unwrap();
         writer.shutdown();
-        thread::sleep(Duration::from_millis(100));
 
         // Verify entries are in the DB using integer-keyed API.
         // The scanner maps the scan root to ROOT_ID, so children are under ROOT_ID.
@@ -768,9 +718,8 @@ mod tests {
         assert_eq!(summary.total_dirs, 1, "expected 1 directory (deep/)");
 
         // Wait for writer to process
-        thread::sleep(Duration::from_millis(500));
+        writer.flush_blocking().unwrap();
         writer.shutdown();
-        thread::sleep(Duration::from_millis(100));
 
         // The subtree scan resolves the actual entry ID for the subtree root.
         // Children should be listed under that ID, not ROOT_ID.
@@ -846,9 +795,8 @@ mod tests {
         let (_handle, join_handle) = scan_volume(config, &writer).unwrap();
         let _summary = join_handle.join().expect("scan thread panicked").unwrap();
 
-        thread::sleep(Duration::from_millis(300));
+        writer.flush_blocking().unwrap();
         writer.shutdown();
-        thread::sleep(Duration::from_millis(100));
 
         let store = IndexStore::open(&db_path).unwrap();
         let children = store.list_children(ROOT_ID).unwrap();
@@ -885,9 +833,8 @@ mod tests {
         let (_handle, join_handle) = scan_volume(config, &writer).unwrap();
         let _summary = join_handle.join().expect("scan thread panicked").unwrap();
 
-        thread::sleep(Duration::from_millis(300));
+        writer.flush_blocking().unwrap();
         writer.shutdown();
-        thread::sleep(Duration::from_millis(100));
 
         let store = IndexStore::open(&db_path).unwrap();
         let children = store.list_children(ROOT_ID).unwrap();
@@ -928,9 +875,8 @@ mod tests {
         let (_handle, join_handle) = scan_volume(config, &writer).unwrap();
         let _summary = join_handle.join().expect("scan thread panicked").unwrap();
 
-        thread::sleep(Duration::from_millis(500));
+        writer.flush_blocking().unwrap();
         writer.shutdown();
-        thread::sleep(Duration::from_millis(100));
 
         let store = IndexStore::open(&db_path).unwrap();
 

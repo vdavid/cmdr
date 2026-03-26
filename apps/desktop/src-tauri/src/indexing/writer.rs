@@ -456,31 +456,7 @@ fn process_message(
     match msg {
         // ── Integer-keyed variants ───────────────────────────────────
         WriteMessage::InsertEntriesV2(entries) => {
-            let count = entries.len();
-            accumulator.accumulate(&entries);
-            let t = Instant::now();
-            if let Err(e) = IndexStore::insert_entries_v2_batch(conn, &entries) {
-                log::warn!("Index writer: insert_entries_v2_batch failed: {e}");
-            }
-            let elapsed = t.elapsed().as_millis();
-            if elapsed > 100 {
-                log::debug!("Writer: insert_entries_v2_batch ({count} entries) took {elapsed}ms");
-            }
-            WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
-            // Emit flushing progress when we know the expected total
-            let expected = expected_total_entries.load(Ordering::Relaxed);
-            if expected > 0
-                && let Some(app) = app_handle
-            {
-                let _ = app.emit(
-                    "index-aggregation-progress",
-                    AggregationProgressEvent {
-                        phase: phase_to_str(AggregationPhase::SavingEntries),
-                        current: accumulator.entries_inserted,
-                        total: expected,
-                    },
-                );
-            }
+            handle_insert_entries_v2(conn, entries, accumulator, app_handle, expected_total_entries);
         }
         WriteMessage::UpsertEntryV2 {
             parent_id,
@@ -493,172 +469,24 @@ fn process_message(
             inode,
             nlink,
         } => {
-            // Hardlink dedup: if this file has nlink > 1, check whether another entry
-            // for the same inode already has non-NULL sizes. If so, override sizes to
-            // None so each inode's bytes are counted exactly once.
-            let should_dedup = inode.is_some() && matches!(nlink, Some(n) if n > 1) && logical_size.is_some();
-
-            // Check if an entry already exists at (parent_id, name).
-            // Auto-propagates size deltas to ancestor dir_stats on both
-            // insert and update, so callers never need a separate
-            // PropagateDeltaById for upserted entries.
-            match IndexStore::resolve_component(conn, parent_id, &name) {
-                Ok(Some(existing_id)) => {
-                    // Dedup: override sizes if another entry already has sizes for this inode
-                    let (logical_size, physical_size) = if should_dedup
-                        && IndexStore::has_sized_entry_for_inode(conn, inode.unwrap(), Some(existing_id))
-                            .unwrap_or(false)
-                    {
-                        (None, None)
-                    } else {
-                        (logical_size, physical_size)
-                    };
-
-                    // Read old entry to compute delta after update
-                    let old_entry = IndexStore::get_entry_by_id(conn, existing_id).ok().flatten();
-                    if let Err(e) = IndexStore::update_entry(
-                        conn,
-                        existing_id,
-                        is_directory,
-                        is_symlink,
-                        logical_size,
-                        physical_size,
-                        modified_at,
-                        inode,
-                    ) {
-                        log::warn!("Index writer: update_entry failed for id={existing_id}: {e}");
-                    } else if let Some(old) = old_entry {
-                        // Type change (file↔dir) via update is not supported — callers must
-                        // delete+insert for type changes so counts propagate correctly.
-                        if old.is_directory != is_directory {
-                            log::warn!(
-                                "Writer: UpsertEntryV2 type change detected for id={existing_id} \
-                                 (was_dir={}, now_dir={is_directory}). Callers should delete+insert instead.",
-                                old.is_directory
-                            );
-                        }
-                        // Propagate size delta if anything changed
-                        let old_logical = old.logical_size.unwrap_or(0) as i64;
-                        let new_logical = logical_size.unwrap_or(0) as i64;
-                        let old_physical = old.physical_size.unwrap_or(0) as i64;
-                        let new_physical = physical_size.unwrap_or(0) as i64;
-                        let logical_delta = new_logical - old_logical;
-                        let physical_delta = new_physical - old_physical;
-                        if logical_delta != 0 || physical_delta != 0 {
-                            propagate_delta_by_id(conn, parent_id, logical_delta, physical_delta, 0, 0);
-                        }
-                    }
-                }
-                Ok(None) => {
-                    // Dedup: override sizes if another entry already has sizes for this inode
-                    let (logical_size, physical_size) = if should_dedup
-                        && IndexStore::has_sized_entry_for_inode(conn, inode.unwrap(), None).unwrap_or(false)
-                    {
-                        (None, None)
-                    } else {
-                        (logical_size, physical_size)
-                    };
-
-                    match IndexStore::insert_entry_v2(
-                        conn,
-                        parent_id,
-                        &name,
-                        is_directory,
-                        is_symlink,
-                        logical_size,
-                        physical_size,
-                        modified_at,
-                        inode,
-                    ) {
-                        Ok(new_id) => {
-                            log::debug!(
-                                "Writer: UpsertEntryV2 inserted \"{name}\" (parent_id={parent_id}) → id={new_id}"
-                            );
-                            if is_directory {
-                                // Initialize empty dir_stats for new directories so enrichment
-                                // always has a row. Child events will update it incrementally.
-                                if let Err(e) = IndexStore::upsert_dir_stats_by_id(
-                                    conn,
-                                    &[DirStatsById {
-                                        entry_id: new_id,
-                                        recursive_logical_size: 0,
-                                        recursive_physical_size: 0,
-                                        recursive_file_count: 0,
-                                        recursive_dir_count: 0,
-                                    }],
-                                ) {
-                                    log::warn!("Writer: init dir_stats for new dir id={new_id} failed: {e}");
-                                }
-                                propagate_delta_by_id(conn, parent_id, 0, 0, 0, 1);
-                            } else {
-                                let logical = logical_size.unwrap_or(0) as i64;
-                                let physical = physical_size.unwrap_or(0) as i64;
-                                if logical != 0 || physical != 0 {
-                                    propagate_delta_by_id(conn, parent_id, logical, physical, 1, 0);
-                                } else {
-                                    propagate_delta_by_id(conn, parent_id, 0, 0, 1, 0);
-                                }
-                            }
-                        }
-                        Err(e) => {
-                            log::warn!("Index writer: insert_entry_v2 failed for {name}: {e}");
-                        }
-                    }
-                }
-                Err(e) => {
-                    log::warn!("Index writer: resolve_component failed for {name}: {e}");
-                }
-            }
-            WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
+            handle_upsert_entry_v2(
+                conn,
+                parent_id,
+                name,
+                is_directory,
+                is_symlink,
+                logical_size,
+                physical_size,
+                modified_at,
+                inode,
+                nlink,
+            );
         }
         WriteMessage::DeleteEntryById(entry_id) => {
-            // Read old entry before deleting to get accurate delta
-            let old_entry = IndexStore::get_entry_by_id(conn, entry_id).ok().flatten();
-            if let Err(e) = IndexStore::delete_entry_by_id(conn, entry_id) {
-                log::warn!("Index writer: delete_entry_by_id failed for id={entry_id}: {e}");
-            }
-            // Auto-propagate accurate negative delta via parent_id chain
-            if let Some(entry) = old_entry {
-                let (logical_delta, physical_delta, file_delta, dir_delta) = if entry.is_directory {
-                    (0i64, 0i64, 0i32, -1i32)
-                } else {
-                    (
-                        -(entry.logical_size.unwrap_or(0) as i64),
-                        -(entry.physical_size.unwrap_or(0) as i64),
-                        -1,
-                        0,
-                    )
-                };
-                propagate_delta_by_id(
-                    conn,
-                    entry.parent_id,
-                    logical_delta,
-                    physical_delta,
-                    file_delta,
-                    dir_delta,
-                );
-            }
-            WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
+            handle_delete_entry_by_id(conn, entry_id);
         }
         WriteMessage::DeleteSubtreeById(root_id) => {
-            // Read subtree totals before deleting to get accurate delta
-            let totals = IndexStore::get_subtree_totals_by_id(conn, root_id).ok();
-            let parent_id = IndexStore::get_parent_id(conn, root_id).ok().flatten();
-            if let Err(e) = IndexStore::delete_subtree_by_id(conn, root_id) {
-                log::warn!("Index writer: delete_subtree_by_id failed for id={root_id}: {e}");
-            }
-            // Auto-propagate accurate negative delta via parent_id chain
-            if let (Some((logical_size, physical_size, file_count, dir_count)), Some(pid)) = (totals, parent_id) {
-                propagate_delta_by_id(
-                    conn,
-                    pid,
-                    -(logical_size as i64),
-                    -(physical_size as i64),
-                    -(file_count as i32),
-                    -(dir_count as i32),
-                );
-            }
-            WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
+            handle_delete_subtree_by_id(conn, root_id);
         }
         WriteMessage::DeleteDescendantsById(root_id) => {
             // No delta propagation: the subtree will be immediately re-scanned and
@@ -684,72 +512,13 @@ fn process_message(
             );
         }
         WriteMessage::TruncateData => {
-            accumulator.clear();
-            expected_total_entries.store(0, Ordering::Relaxed);
-            let t = Instant::now();
-            match conn.execute_batch(
-                "DELETE FROM dir_stats; DELETE FROM entries; INSERT OR IGNORE INTO entries (id, parent_id, name, is_directory, is_symlink) VALUES (1, 0, '', 1, 0);",
-            ) {
-                Ok(()) => {
-                    log::info!(
-                        "Writer: truncated entries + dir_stats ({}ms)",
-                        t.elapsed().as_millis(),
-                    );
-                    // Reclaim free pages from the truncation
-                    if let Err(e) = conn.execute_batch("PRAGMA incremental_vacuum;") {
-                        log::warn!("Writer: incremental_vacuum after truncate failed: {e}");
-                    }
-                }
-                Err(e) => log::warn!("Writer: truncate failed: {e}"),
-            }
-            WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
+            handle_truncate_data(conn, accumulator, expected_total_entries);
         }
         WriteMessage::ComputeAllAggregates => {
-            let t = Instant::now();
-            let use_maps = !accumulator.direct_stats.is_empty();
-            log::info!(
-                "ComputeAllAggregates: using {} (direct_stats={} parents, child_dirs={} parents)",
-                if use_maps { "in-memory maps" } else { "SQL fallback" },
-                accumulator.direct_stats.len(),
-                accumulator.child_dirs.len(),
-            );
-            let mut on_progress = build_progress_callback(app_handle);
-            let result = if !use_maps {
-                aggregator::compute_all_aggregates_reported(conn, &mut on_progress)
-            } else {
-                aggregator::compute_all_aggregates_with_maps(
-                    conn,
-                    &accumulator.direct_stats,
-                    &accumulator.child_dirs,
-                    &mut on_progress,
-                )
-            };
-            // Maps are consumed; clear to free memory.
-            // Reset expected_total so subtree-scan inserts don't emit
-            // spurious saving_entries progress events after the full scan.
-            accumulator.clear();
-            expected_total_entries.store(0, Ordering::Relaxed);
-            match result {
-                Ok(count) => {
-                    log::info!(
-                        "ComputeAllAggregates: done — {count} directories in {:.1}s",
-                        t.elapsed().as_secs_f64(),
-                    );
-                }
-                Err(e) => log::warn!("Index writer: compute_all_aggregates failed: {e}"),
-            }
+            handle_compute_all_aggregates(conn, accumulator, app_handle, expected_total_entries);
         }
         WriteMessage::ComputeSubtreeAggregates { root } => {
-            let t = Instant::now();
-            match aggregator::compute_subtree_aggregates(conn, &root) {
-                Ok(count) => {
-                    log::debug!(
-                        "Index writer: computed subtree aggregates for {count} dirs under {root} ({}ms)",
-                        t.elapsed().as_millis(),
-                    );
-                }
-                Err(e) => log::warn!("Index writer: compute_subtree_aggregates({root}) failed: {e}"),
-            }
+            handle_compute_subtree_aggregates(conn, &root);
         }
         WriteMessage::UpdateLastEventId(id) => {
             if let Err(e) = IndexStore::update_meta(conn, "last_event_id", &id.to_string()) {
@@ -789,32 +558,10 @@ fn process_message(
             log::debug!("Writer: COMMIT transaction ({}ms)", t.elapsed().as_millis());
         }
         WriteMessage::BackfillMissingDirStats => {
-            let t = Instant::now();
-            match aggregator::backfill_missing_dir_stats(conn) {
-                Ok(0) => {
-                    log::debug!("BackfillMissingDirStats: no dirs missing stats");
-                }
-                Ok(count) => {
-                    log::info!(
-                        "BackfillMissingDirStats: computed stats for {count} dirs in {:.1}s",
-                        t.elapsed().as_secs_f64(),
-                    );
-                }
-                Err(e) => log::warn!("BackfillMissingDirStats failed: {e}"),
-            }
+            handle_backfill_missing_dir_stats(conn);
         }
         WriteMessage::IncrementalVacuum => {
-            match conn.pragma_query_value(None, "freelist_count", |row| row.get::<_, i64>(0)) {
-                Ok(free) if free > 0 => {
-                    if let Err(e) = conn.execute_batch("PRAGMA incremental_vacuum(2000)") {
-                        log::warn!("Writer: incremental_vacuum failed: {e}");
-                    } else {
-                        log::debug!("Writer: incremental_vacuum reclaimed up to 2000 of {free} free pages");
-                    }
-                }
-                Ok(_) => {} // No free pages, nothing to do
-                Err(e) => log::warn!("Writer: freelist_count query failed: {e}"),
-            }
+            handle_incremental_vacuum(conn);
         }
         WriteMessage::EmitDirUpdated(paths) => {
             if let Some(app) = app_handle {
@@ -824,6 +571,389 @@ fn process_message(
         WriteMessage::Shutdown => return true,
     }
     false
+}
+
+// ── Extracted message handlers ──────────────────────────────────────
+
+fn handle_insert_entries_v2(
+    conn: &rusqlite::Connection,
+    entries: Vec<EntryRow>,
+    accumulator: &mut AccumulatorMaps,
+    app_handle: &Option<AppHandle>,
+    expected_total_entries: &AtomicU64,
+) {
+    let count = entries.len();
+    accumulator.accumulate(&entries);
+    let t = Instant::now();
+    if let Err(e) = IndexStore::insert_entries_v2_batch(conn, &entries) {
+        log::warn!("Index writer: insert_entries_v2_batch failed: {e}");
+    }
+    let elapsed = t.elapsed().as_millis();
+    if elapsed > 100 {
+        log::debug!("Writer: insert_entries_v2_batch ({count} entries) took {elapsed}ms");
+    }
+    WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
+    // Emit flushing progress when we know the expected total
+    let expected = expected_total_entries.load(Ordering::Relaxed);
+    if expected > 0
+        && let Some(app) = app_handle
+    {
+        let _ = app.emit(
+            "index-aggregation-progress",
+            AggregationProgressEvent {
+                phase: phase_to_str(AggregationPhase::SavingEntries),
+                current: accumulator.entries_inserted,
+                total: expected,
+            },
+        );
+    }
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "mirrors the DB columns for a single upsert operation"
+)]
+fn handle_upsert_entry_v2(
+    conn: &rusqlite::Connection,
+    parent_id: i64,
+    name: String,
+    is_directory: bool,
+    is_symlink: bool,
+    logical_size: Option<u64>,
+    physical_size: Option<u64>,
+    modified_at: Option<u64>,
+    inode: Option<u64>,
+    nlink: Option<u64>,
+) {
+    // Hardlink dedup: if this file has nlink > 1, check whether another entry
+    // for the same inode already has non-NULL sizes. If so, override sizes to
+    // None so each inode's bytes are counted exactly once.
+    let should_dedup = inode.is_some() && matches!(nlink, Some(n) if n > 1) && logical_size.is_some();
+
+    // Check if an entry already exists at (parent_id, name).
+    // Auto-propagates size deltas to ancestor dir_stats on both
+    // insert and update, so callers never need a separate
+    // PropagateDeltaById for upserted entries.
+    match IndexStore::resolve_component(conn, parent_id, &name) {
+        Ok(Some(existing_id)) => {
+            upsert_update_existing(
+                conn,
+                existing_id,
+                parent_id,
+                is_directory,
+                is_symlink,
+                logical_size,
+                physical_size,
+                modified_at,
+                inode,
+                should_dedup,
+            );
+        }
+        Ok(None) => {
+            upsert_insert_new(
+                conn,
+                parent_id,
+                &name,
+                is_directory,
+                is_symlink,
+                logical_size,
+                physical_size,
+                modified_at,
+                inode,
+                should_dedup,
+            );
+        }
+        Err(e) => {
+            log::warn!("Index writer: resolve_component failed for {name}: {e}");
+        }
+    }
+    WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
+}
+
+/// Update an existing entry during `UpsertEntryV2`, with hardlink dedup and delta propagation.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "mirrors the DB columns for an existing-entry update"
+)]
+fn upsert_update_existing(
+    conn: &rusqlite::Connection,
+    existing_id: i64,
+    parent_id: i64,
+    is_directory: bool,
+    is_symlink: bool,
+    logical_size: Option<u64>,
+    physical_size: Option<u64>,
+    modified_at: Option<u64>,
+    inode: Option<u64>,
+    should_dedup: bool,
+) {
+    // Dedup: override sizes if another entry already has sizes for this inode
+    let (logical_size, physical_size) = if should_dedup
+        && IndexStore::has_sized_entry_for_inode(conn, inode.unwrap(), Some(existing_id)).unwrap_or(false)
+    {
+        (None, None)
+    } else {
+        (logical_size, physical_size)
+    };
+
+    // Read old entry to compute delta after update
+    let old_entry = IndexStore::get_entry_by_id(conn, existing_id).ok().flatten();
+    if let Err(e) = IndexStore::update_entry(
+        conn,
+        existing_id,
+        is_directory,
+        is_symlink,
+        logical_size,
+        physical_size,
+        modified_at,
+        inode,
+    ) {
+        log::warn!("Index writer: update_entry failed for id={existing_id}: {e}");
+    } else if let Some(old) = old_entry {
+        // Type change (file↔dir) via update is not supported — callers must
+        // delete+insert for type changes so counts propagate correctly.
+        if old.is_directory != is_directory {
+            log::warn!(
+                "Writer: UpsertEntryV2 type change detected for id={existing_id} \
+                 (was_dir={}, now_dir={is_directory}). Callers should delete+insert instead.",
+                old.is_directory
+            );
+        }
+        // Propagate size delta if anything changed
+        let old_logical = old.logical_size.unwrap_or(0) as i64;
+        let new_logical = logical_size.unwrap_or(0) as i64;
+        let old_physical = old.physical_size.unwrap_or(0) as i64;
+        let new_physical = physical_size.unwrap_or(0) as i64;
+        let logical_delta = new_logical - old_logical;
+        let physical_delta = new_physical - old_physical;
+        if logical_delta != 0 || physical_delta != 0 {
+            propagate_delta_by_id(conn, parent_id, logical_delta, physical_delta, 0, 0);
+        }
+    }
+}
+
+/// Insert a new entry during `UpsertEntryV2`, with hardlink dedup and delta propagation.
+#[allow(clippy::too_many_arguments, reason = "mirrors the DB columns for a new-entry insert")]
+fn upsert_insert_new(
+    conn: &rusqlite::Connection,
+    parent_id: i64,
+    name: &str,
+    is_directory: bool,
+    is_symlink: bool,
+    logical_size: Option<u64>,
+    physical_size: Option<u64>,
+    modified_at: Option<u64>,
+    inode: Option<u64>,
+    should_dedup: bool,
+) {
+    // Dedup: override sizes if another entry already has sizes for this inode
+    let (logical_size, physical_size) =
+        if should_dedup && IndexStore::has_sized_entry_for_inode(conn, inode.unwrap(), None).unwrap_or(false) {
+            (None, None)
+        } else {
+            (logical_size, physical_size)
+        };
+
+    match IndexStore::insert_entry_v2(
+        conn,
+        parent_id,
+        name,
+        is_directory,
+        is_symlink,
+        logical_size,
+        physical_size,
+        modified_at,
+        inode,
+    ) {
+        Ok(new_id) => {
+            log::debug!("Writer: UpsertEntryV2 inserted \"{name}\" (parent_id={parent_id}) → id={new_id}");
+            if is_directory {
+                // Initialize empty dir_stats for new directories so enrichment
+                // always has a row. Child events will update it incrementally.
+                if let Err(e) = IndexStore::upsert_dir_stats_by_id(
+                    conn,
+                    &[DirStatsById {
+                        entry_id: new_id,
+                        recursive_logical_size: 0,
+                        recursive_physical_size: 0,
+                        recursive_file_count: 0,
+                        recursive_dir_count: 0,
+                    }],
+                ) {
+                    log::warn!("Writer: init dir_stats for new dir id={new_id} failed: {e}");
+                }
+                propagate_delta_by_id(conn, parent_id, 0, 0, 0, 1);
+            } else {
+                let logical = logical_size.unwrap_or(0) as i64;
+                let physical = physical_size.unwrap_or(0) as i64;
+                propagate_delta_by_id(conn, parent_id, logical, physical, 1, 0);
+            }
+        }
+        Err(e) => {
+            log::warn!("Index writer: insert_entry_v2 failed for {name}: {e}");
+        }
+    }
+}
+
+fn handle_delete_entry_by_id(conn: &rusqlite::Connection, entry_id: i64) {
+    // Read old entry before deleting to get accurate delta
+    let old_entry = IndexStore::get_entry_by_id(conn, entry_id).ok().flatten();
+    if let Err(e) = IndexStore::delete_entry_by_id(conn, entry_id) {
+        log::warn!("Index writer: delete_entry_by_id failed for id={entry_id}: {e}");
+    }
+    // Auto-propagate accurate negative delta via parent_id chain
+    if let Some(entry) = old_entry {
+        let (logical_delta, physical_delta, file_delta, dir_delta) = if entry.is_directory {
+            (0i64, 0i64, 0i32, -1i32)
+        } else {
+            (
+                -(entry.logical_size.unwrap_or(0) as i64),
+                -(entry.physical_size.unwrap_or(0) as i64),
+                -1,
+                0,
+            )
+        };
+        propagate_delta_by_id(
+            conn,
+            entry.parent_id,
+            logical_delta,
+            physical_delta,
+            file_delta,
+            dir_delta,
+        );
+    }
+    WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
+}
+
+fn handle_delete_subtree_by_id(conn: &rusqlite::Connection, root_id: i64) {
+    // Read subtree totals before deleting to get accurate delta
+    let totals = IndexStore::get_subtree_totals_by_id(conn, root_id).ok();
+    let parent_id = IndexStore::get_parent_id(conn, root_id).ok().flatten();
+    if let Err(e) = IndexStore::delete_subtree_by_id(conn, root_id) {
+        log::warn!("Index writer: delete_subtree_by_id failed for id={root_id}: {e}");
+    }
+    // Auto-propagate accurate negative delta via parent_id chain
+    if let (Some((logical_size, physical_size, file_count, dir_count)), Some(pid)) = (totals, parent_id) {
+        propagate_delta_by_id(
+            conn,
+            pid,
+            -(logical_size as i64),
+            -(physical_size as i64),
+            -(file_count as i32),
+            -(dir_count as i32),
+        );
+    }
+    WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
+}
+
+fn handle_truncate_data(
+    conn: &rusqlite::Connection,
+    accumulator: &mut AccumulatorMaps,
+    expected_total_entries: &AtomicU64,
+) {
+    accumulator.clear();
+    expected_total_entries.store(0, Ordering::Relaxed);
+    let t = Instant::now();
+    match conn.execute_batch(
+        "DELETE FROM dir_stats; DELETE FROM entries; INSERT OR IGNORE INTO entries (id, parent_id, name, is_directory, is_symlink) VALUES (1, 0, '', 1, 0);",
+    ) {
+        Ok(()) => {
+            log::info!(
+                "Writer: truncated entries + dir_stats ({}ms)",
+                t.elapsed().as_millis(),
+            );
+            // Reclaim free pages from the truncation
+            if let Err(e) = conn.execute_batch("PRAGMA incremental_vacuum;") {
+                log::warn!("Writer: incremental_vacuum after truncate failed: {e}");
+            }
+        }
+        Err(e) => log::warn!("Writer: truncate failed: {e}"),
+    }
+    WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
+}
+
+fn handle_compute_all_aggregates(
+    conn: &rusqlite::Connection,
+    accumulator: &mut AccumulatorMaps,
+    app_handle: &Option<AppHandle>,
+    expected_total_entries: &AtomicU64,
+) {
+    let t = Instant::now();
+    let use_maps = !accumulator.direct_stats.is_empty();
+    log::info!(
+        "ComputeAllAggregates: using {} (direct_stats={} parents, child_dirs={} parents)",
+        if use_maps { "in-memory maps" } else { "SQL fallback" },
+        accumulator.direct_stats.len(),
+        accumulator.child_dirs.len(),
+    );
+    let mut on_progress = build_progress_callback(app_handle);
+    let result = if !use_maps {
+        aggregator::compute_all_aggregates_reported(conn, &mut on_progress)
+    } else {
+        aggregator::compute_all_aggregates_with_maps(
+            conn,
+            &accumulator.direct_stats,
+            &accumulator.child_dirs,
+            &mut on_progress,
+        )
+    };
+    // Maps are consumed; clear to free memory.
+    // Reset expected_total so subtree-scan inserts don't emit
+    // spurious saving_entries progress events after the full scan.
+    accumulator.clear();
+    expected_total_entries.store(0, Ordering::Relaxed);
+    match result {
+        Ok(count) => {
+            log::info!(
+                "ComputeAllAggregates: done — {count} directories in {:.1}s",
+                t.elapsed().as_secs_f64(),
+            );
+        }
+        Err(e) => log::warn!("Index writer: compute_all_aggregates failed: {e}"),
+    }
+}
+
+fn handle_compute_subtree_aggregates(conn: &rusqlite::Connection, root: &str) {
+    let t = Instant::now();
+    match aggregator::compute_subtree_aggregates(conn, root) {
+        Ok(count) => {
+            log::debug!(
+                "Index writer: computed subtree aggregates for {count} dirs under {root} ({}ms)",
+                t.elapsed().as_millis(),
+            );
+        }
+        Err(e) => log::warn!("Index writer: compute_subtree_aggregates({root}) failed: {e}"),
+    }
+}
+
+fn handle_backfill_missing_dir_stats(conn: &rusqlite::Connection) {
+    let t = Instant::now();
+    match aggregator::backfill_missing_dir_stats(conn) {
+        Ok(0) => {
+            log::debug!("BackfillMissingDirStats: no dirs missing stats");
+        }
+        Ok(count) => {
+            log::info!(
+                "BackfillMissingDirStats: computed stats for {count} dirs in {:.1}s",
+                t.elapsed().as_secs_f64(),
+            );
+        }
+        Err(e) => log::warn!("BackfillMissingDirStats failed: {e}"),
+    }
+}
+
+fn handle_incremental_vacuum(conn: &rusqlite::Connection) {
+    match conn.pragma_query_value(None, "freelist_count", |row| row.get::<_, i64>(0)) {
+        Ok(free) if free > 0 => {
+            if let Err(e) = conn.execute_batch("PRAGMA incremental_vacuum(2000)") {
+                log::warn!("Writer: incremental_vacuum failed: {e}");
+            } else {
+                log::debug!("Writer: incremental_vacuum reclaimed up to 2000 of {free} free pages");
+            }
+        }
+        Ok(_) => {} // No free pages, nothing to do
+        Err(e) => log::warn!("Writer: freelist_count query failed: {e}"),
+    }
 }
 
 /// Build a progress callback that emits `index-aggregation-progress` events via the AppHandle.
@@ -907,8 +1037,6 @@ fn propagate_delta_by_id(
 
 #[cfg(test)]
 mod tests {
-    use std::time::Duration;
-
     use super::*;
     use crate::indexing::store::{DirStatsById, IndexStore, ROOT_ID};
 
@@ -932,8 +1060,6 @@ mod tests {
         let (db_path, _dir) = setup_db();
         let writer = IndexWriter::spawn(&db_path, None).unwrap();
         writer.shutdown();
-        // Give the thread a moment to process shutdown
-        thread::sleep(Duration::from_millis(50));
         // Further sends should fail
         let result = writer.send(WriteMessage::Shutdown);
         // Might succeed or fail depending on timing, but shouldn't panic
@@ -959,8 +1085,7 @@ mod tests {
             inode: None,
         }];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
-        writer.shutdown();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         let store = open_read(&db_path);
         let children = store.list_children(ROOT_ID).unwrap();
@@ -968,6 +1093,8 @@ mod tests {
         assert_eq!(children[0].name, "file.txt");
         assert_eq!(children[0].logical_size, Some(1024));
         assert_eq!(children[0].id, 10);
+
+        writer.shutdown();
     }
 
     #[test]
@@ -989,7 +1116,7 @@ mod tests {
                 nlink: None,
             })
             .unwrap();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         // Update via UpsertEntryV2 (entry now exists)
         writer
@@ -1005,14 +1132,15 @@ mod tests {
                 nlink: None,
             })
             .unwrap();
-        writer.shutdown();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         let store = open_read(&db_path);
         let children = store.list_children(ROOT_ID).unwrap();
         assert_eq!(children.len(), 1);
         assert_eq!(children[0].name, "new.txt");
         assert_eq!(children[0].logical_size, Some(512), "size should be updated to 512");
+
+        writer.shutdown();
     }
 
     #[test]
@@ -1034,8 +1162,7 @@ mod tests {
                 nlink: None,
             })
             .unwrap();
-        writer.shutdown();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         // The new directory should have a zero-valued dir_stats row
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
@@ -1049,6 +1176,8 @@ mod tests {
         assert_eq!(stats.recursive_logical_size, 0);
         assert_eq!(stats.recursive_file_count, 0);
         assert_eq!(stats.recursive_dir_count, 0);
+
+        writer.shutdown();
     }
 
     #[test]
@@ -1069,16 +1198,17 @@ mod tests {
             inode: None,
         }];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         // Delete by ID
         writer.send(WriteMessage::DeleteEntryById(20)).unwrap();
-        writer.shutdown();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         let store = open_read(&db_path);
         let children = store.list_children(ROOT_ID).unwrap();
         assert!(children.is_empty(), "entry should be deleted");
+
+        writer.shutdown();
     }
 
     #[test]
@@ -1123,18 +1253,19 @@ mod tests {
             },
         ];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         // Delete the subtree rooted at id=10
         writer.send(WriteMessage::DeleteSubtreeById(10)).unwrap();
-        writer.shutdown();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         let store = open_read(&db_path);
         let root_children = store.list_children(ROOT_ID).unwrap();
         assert!(root_children.is_empty(), "dir /a should be deleted");
         let a_children = store.list_children(10).unwrap();
         assert!(a_children.is_empty(), "children of /a should be deleted");
+
+        writer.shutdown();
     }
 
     #[test]
@@ -1170,10 +1301,7 @@ mod tests {
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
 
         // Pre-populate dir_stats for the parent
-        writer
-            .send(WriteMessage::InsertEntriesV2(Vec::new())) // no-op, just to sequence
-            .unwrap();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         // Manually set dir_stats for parent via direct DB write (using the by-id API)
         {
@@ -1193,13 +1321,14 @@ mod tests {
 
         // Delete the file — writer should auto-propagate (-500, -1, 0) to parent id=10
         writer.send(WriteMessage::DeleteEntryById(11)).unwrap();
-        writer.shutdown();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
         let stats = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();
         assert_eq!(stats.recursive_logical_size, 0, "size should be 0 after file deletion");
         assert_eq!(stats.recursive_file_count, 0, "file count should be 0");
+
+        writer.shutdown();
     }
 
     #[test]
@@ -1244,7 +1373,7 @@ mod tests {
             },
         ];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         // Pre-populate dir_stats for ancestors
         {
@@ -1273,8 +1402,7 @@ mod tests {
 
         // Delete the /root/sub subtree (id=11)
         writer.send(WriteMessage::DeleteSubtreeById(11)).unwrap();
-        writer.shutdown();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
@@ -1289,6 +1417,8 @@ mod tests {
         assert_eq!(vol_stats.recursive_logical_size, 0);
         assert_eq!(vol_stats.recursive_file_count, 0);
         assert_eq!(vol_stats.recursive_dir_count, 1); // root_dir(10) still exists
+
+        writer.shutdown();
     }
 
     #[test]
@@ -1309,7 +1439,7 @@ mod tests {
             inode: None,
         }];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         // Pre-populate dir_stats
         {
@@ -1337,13 +1467,14 @@ mod tests {
                 dir_count_delta: 0,
             })
             .unwrap();
-        writer.shutdown();
-        thread::sleep(Duration::from_millis(200));
+        writer.flush_blocking().unwrap();
 
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
         let result = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();
         assert_eq!(result.recursive_logical_size, 1250);
         assert_eq!(result.recursive_file_count, 6);
+
+        writer.shutdown();
     }
 
     #[test]
@@ -1364,7 +1495,7 @@ mod tests {
             inode: None,
         }];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         {
             let conn = IndexStore::open_write_connection(&db_path).unwrap();
@@ -1383,13 +1514,14 @@ mod tests {
 
         // Delete a non-existent entry — should not propagate any delta
         writer.send(WriteMessage::DeleteEntryById(999)).unwrap();
-        writer.shutdown();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
         let stats = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();
         assert_eq!(stats.recursive_logical_size, 100, "stats should be unchanged");
         assert_eq!(stats.recursive_file_count, 1);
+
+        writer.shutdown();
     }
 
     #[test]
@@ -1423,9 +1555,7 @@ mod tests {
             },
         ];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
-
-        // Give the writer time to process the insert
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         let (tx, rx) = oneshot::channel();
         writer.send(WriteMessage::GetEntryCount(tx)).unwrap();
@@ -1448,8 +1578,7 @@ mod tests {
                 value: "test_value".into(),
             })
             .unwrap();
-        writer.shutdown();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         let store = open_read(&db_path);
         let status = store.get_index_status().unwrap();
@@ -1459,6 +1588,8 @@ mod tests {
         assert_eq!(val.as_deref(), Some("test_value"));
         drop(store);
         drop(status);
+
+        writer.shutdown();
     }
 
     #[tokio::test]
@@ -1497,12 +1628,13 @@ mod tests {
         let writer = IndexWriter::spawn(&db_path, None).unwrap();
 
         writer.send(WriteMessage::UpdateLastEventId(12345)).unwrap();
-        writer.shutdown();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         let store = open_read(&db_path);
         let status = store.get_index_status().unwrap();
         assert_eq!(status.last_event_id.as_deref(), Some("12345"));
+
+        writer.shutdown();
     }
 
     #[test]
@@ -1531,7 +1663,7 @@ mod tests {
             inode: None,
         }];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         {
             let conn = IndexStore::open_write_connection(&db_path).unwrap();
@@ -1562,14 +1694,15 @@ mod tests {
                 nlink: None,
             })
             .unwrap();
-        writer.shutdown();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
         let stats = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();
         assert_eq!(stats.recursive_logical_size, 500, "parent should have file's size");
         assert_eq!(stats.recursive_file_count, 1, "parent should count the new file");
         assert_eq!(stats.recursive_dir_count, 0);
+
+        writer.shutdown();
     }
 
     #[test]
@@ -1590,7 +1723,7 @@ mod tests {
             inode: None,
         }];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         {
             let conn = IndexStore::open_write_connection(&db_path).unwrap();
@@ -1621,7 +1754,7 @@ mod tests {
                 nlink: None,
             })
             .unwrap();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         // Update the same file with a larger size — should propagate +100 delta
         writer
@@ -1637,8 +1770,7 @@ mod tests {
                 nlink: None,
             })
             .unwrap();
-        writer.shutdown();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
         let stats = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();
@@ -1648,6 +1780,8 @@ mod tests {
             "parent should reflect insert + update deltas"
         );
         assert_eq!(stats.recursive_file_count, 2, "file_count: 1 initial + 1 from insert");
+
+        writer.shutdown();
     }
 
     #[test]
@@ -1685,14 +1819,15 @@ mod tests {
                 nlink: None,
             })
             .unwrap();
-        writer.shutdown();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
         let stats = IndexStore::get_dir_stats_by_id(&conn, ROOT_ID).unwrap().unwrap();
         assert_eq!(stats.recursive_dir_count, 1, "root should count the new dir");
         assert_eq!(stats.recursive_file_count, 0);
         assert_eq!(stats.recursive_logical_size, 0);
+
+        writer.shutdown();
     }
 
     // ── Hardlink dedup tests ────────────────────────────────────────
@@ -1715,8 +1850,7 @@ mod tests {
                 nlink: Some(2),
             })
             .unwrap();
-        writer.shutdown();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
         let id = IndexStore::resolve_component(&conn, ROOT_ID, "primary.txt")
@@ -1725,6 +1859,8 @@ mod tests {
         let entry = IndexStore::get_entry_by_id(&conn, id).unwrap().unwrap();
         assert_eq!(entry.logical_size, Some(1000), "primary should keep its sizes");
         assert_eq!(entry.inode, Some(100), "inode should be stored");
+
+        writer.shutdown();
     }
 
     #[test]
@@ -1746,7 +1882,7 @@ mod tests {
                 nlink: Some(2),
             })
             .unwrap();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         // Insert secondary link (same inode, different name)
         writer
@@ -1762,8 +1898,7 @@ mod tests {
                 nlink: Some(2),
             })
             .unwrap();
-        writer.shutdown();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
         let sec_id = IndexStore::resolve_component(&conn, ROOT_ID, "secondary.txt")
@@ -1773,6 +1908,8 @@ mod tests {
         assert_eq!(entry.logical_size, None, "secondary should have NULL sizes");
         assert_eq!(entry.physical_size, None);
         assert_eq!(entry.inode, Some(100), "inode should still be stored");
+
+        writer.shutdown();
     }
 
     #[test]
@@ -1794,7 +1931,7 @@ mod tests {
                 nlink: Some(2),
             })
             .unwrap();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         // Insert secondary (gets NULL sizes via dedup)
         writer
@@ -1810,7 +1947,7 @@ mod tests {
                 nlink: Some(2),
             })
             .unwrap();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         // Reconciler sends update for secondary with full sizes — dedup should fire again
         writer
@@ -1826,8 +1963,7 @@ mod tests {
                 nlink: Some(2),
             })
             .unwrap();
-        writer.shutdown();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
         let sec_id = IndexStore::resolve_component(&conn, ROOT_ID, "secondary.txt")
@@ -1838,6 +1974,8 @@ mod tests {
             entry.logical_size, None,
             "secondary sizes should stay NULL after update"
         );
+
+        writer.shutdown();
     }
 
     #[test]
@@ -1875,7 +2013,7 @@ mod tests {
                 nlink: Some(2),
             })
             .unwrap();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         // Insert secondary (gets NULL sizes)
         writer
@@ -1891,7 +2029,7 @@ mod tests {
                 nlink: Some(2),
             })
             .unwrap();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         // Delete primary
         let primary_id = {
@@ -1901,7 +2039,7 @@ mod tests {
                 .unwrap()
         };
         writer.send(WriteMessage::DeleteEntryById(primary_id)).unwrap();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         // Reconciler sends update for secondary — nlink=1 since it's the only link now
         writer
@@ -1917,8 +2055,7 @@ mod tests {
                 nlink: Some(1),
             })
             .unwrap();
-        writer.shutdown();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
         let sec_id = IndexStore::resolve_component(&conn, ROOT_ID, "secondary.txt")
@@ -1931,6 +2068,8 @@ mod tests {
             "secondary should recover sizes after primary deleted"
         );
         assert_eq!(entry.physical_size, Some(1000));
+
+        writer.shutdown();
     }
 
     #[test]
@@ -1952,7 +2091,7 @@ mod tests {
                 nlink: Some(1),
             })
             .unwrap();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         writer
             .send(WriteMessage::UpsertEntryV2 {
@@ -1967,8 +2106,7 @@ mod tests {
                 nlink: Some(1),
             })
             .unwrap();
-        writer.shutdown();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
         let b_id = IndexStore::resolve_component(&conn, ROOT_ID, "file_b.txt")
@@ -1976,6 +2114,8 @@ mod tests {
             .unwrap();
         let entry = IndexStore::get_entry_by_id(&conn, b_id).unwrap().unwrap();
         assert_eq!(entry.logical_size, Some(500), "nlink=1 should never trigger dedup");
+
+        writer.shutdown();
     }
 
     #[test]
@@ -1997,7 +2137,7 @@ mod tests {
                 nlink: None,
             })
             .unwrap();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         // Insert second file with no inode (non-Unix)
         writer
@@ -2013,8 +2153,7 @@ mod tests {
                 nlink: None,
             })
             .unwrap();
-        writer.shutdown();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
         let b_id = IndexStore::resolve_component(&conn, ROOT_ID, "file_b.txt")
@@ -2022,6 +2161,8 @@ mod tests {
             .unwrap();
         let entry = IndexStore::get_entry_by_id(&conn, b_id).unwrap().unwrap();
         assert_eq!(entry.logical_size, Some(500), "no inode should never trigger dedup");
+
+        writer.shutdown();
     }
 
     #[test]
@@ -2042,7 +2183,7 @@ mod tests {
             inode: None,
         }];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         {
             let conn = IndexStore::open_write_connection(&db_path).unwrap();
@@ -2073,7 +2214,7 @@ mod tests {
                 nlink: Some(2),
             })
             .unwrap();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         // Insert secondary hardlink into dir (same inode)
         writer
@@ -2089,8 +2230,7 @@ mod tests {
                 nlink: Some(2),
             })
             .unwrap();
-        writer.shutdown();
-        thread::sleep(Duration::from_millis(100));
+        writer.flush_blocking().unwrap();
 
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
         let stats = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();
@@ -2099,5 +2239,7 @@ mod tests {
             "dir should only count the primary's size"
         );
         assert_eq!(stats.recursive_file_count, 2, "both links count as files");
+
+        writer.shutdown();
     }
 }
