@@ -75,3 +75,7 @@ In summary:
 #2 noop
 #3 same APFS copyfile otherwise chunked
 Make sure you implement all of these elegantly, and update the related CLAUDE.md file(s) to make sure the next agent understands we thought about exFAT, FAT32, NTFS-3G, HFS+, USB drives, network drives, and then clonefule, permissions, creation dates, and we want to display progress reliably, and implement good cancellation.
+
+---
+
+/commit-draft for only these 4 files
