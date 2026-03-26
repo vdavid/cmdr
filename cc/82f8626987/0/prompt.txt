@@ -36,3 +36,11 @@ Read the output file to retrieve the result: /private/tmp/claude-501/-Users-vesz
 ---
 
 Awesome! Anything else that seems buggy or fragile in this area?
+
+---
+
+What would be the solution to each?
+
+#1: How elegant is the tomicBool solution? Is it very simple, worth it?
+#2: What'd be the solution?
+#3: Hmm, could we urn it around and _only_ use `copyfile` between the main drive, or only between an APFS and the same APFS drive? The goal of using `copyfile` at all is that APFS only creates a pointer to the stuff, it doesn't deep-copy anything within the drive. In my current understanding, in _ALL_ other cases, our custom copy is better because it's the same speed and we can disply progress and cancel nicely. Please think about this and advise, this is quite important and my understanding of file systems is incomplete.
