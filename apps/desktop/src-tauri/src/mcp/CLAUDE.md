@@ -21,12 +21,12 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 
 ### Tools (`tools.rs`)
 
-25 semantic tools grouped by category:
+24 semantic tools grouped by category:
 - Navigation (6): `select_volume`, `nav_to_path`, `nav_to_parent`, `nav_back`, `nav_forward`, `scroll_to`
 - Cursor/Selection (3): `move_cursor`, `open_under_cursor`, `select`
 - File operations (5): `copy`, `delete`, `mkdir`, `mkfile`, `refresh`
 - View (3): `sort`, `toggle_hidden`, `set_view_mode`
-- Tabs (2): `activate_tab` (switch to a specific tab by pane + tab ID), `pin_tab` (pin/unpin a tab)
+- Tabs (1): `tab` (unified: `action` = `new` | `close` | `close_others` | `activate` | `set_pinned`; `tab_id` defaults to active tab for close/close_others/set_pinned, required for activate; `pinned` boolean for set_pinned)
 - Dialogs (1): `dialog` (unified open/focus/close)
 - App (3): `switch_pane`, `swap_panes`, `quit`
 - Search (2): `search` (structured file search across the drive index, optional `scope` for path/exclude filtering), `ai_search` (natural language search using configured LLM, optional `scope` merged with AI-inferred scope)
@@ -141,7 +141,7 @@ This separation keeps main window overhead minimal.
 
 ### Tab state is synced separately from pane state
 
-Tab info (id, path, pinned, active) is synced to `PaneState.tabs` via a separate `update_pane_tabs` command, debounced at ~100ms in the frontend. The `cmdr://state` resource shows a `tabs:` section per pane only when tabs are synced (non-empty). The `activate_tab` tool emits an `mcp-activate-tab` Tauri event that the frontend handles by switching to the specified tab.
+Tab info (id, path, pinned, active) is synced to `PaneState.tabs` via a separate `update_pane_tabs` command, debounced at ~100ms in the frontend. The `cmdr://state` resource shows a `tabs:` section per pane only when tabs are synced (non-empty). The `tab` tool emits an `mcp-tab` Tauri event that the frontend handles for all tab actions (new, close, close_others, activate, set_pinned).
 
 ### Schema version doesn't apply to MCP state
 

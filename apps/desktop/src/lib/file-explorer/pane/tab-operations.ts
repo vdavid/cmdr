@@ -340,7 +340,7 @@ export function switchToTab(
     const cursorFilename = paneRef?.getFilenameUnderCursor() ?? null
     const switched = switchTab(mgr, tabId, cursorFilename)
     if (!switched) {
-        log.warn(`MCP activate_tab: tab ${tabId} not found in ${pane} pane`)
+        log.warn(`MCP tab activate: tab ${tabId} not found in ${pane} pane`)
         return false
     }
     saveTabsForPane(pane, getTabMgr)

@@ -78,6 +78,10 @@ load.
 
 ## MCP
 
-- `activate_tab` tool switches to a tab by ID
+- `tab` tool with `action`: `new` (create tab), `close` (close tab), `close_others` (close all but target + pinned), `activate` (switch to tab), `set_pinned` (pin/unpin)
+- `tab_id` defaults to active tab for close/close_others/set_pinned; required for activate
+- `close` on the last tab returns an error instead of closing the window
+- `close` skips the pinned-tab confirmation dialog (agents know what they're doing)
+- `set_pinned` is idempotent
 - Tab list shown in `cmdr://state` YAML resource
 - Frontend syncs tab state to backend via debounced `updatePaneTabs` IPC

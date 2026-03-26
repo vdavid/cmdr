@@ -61,6 +61,9 @@
         createTabManager,
         getActiveTab,
         getAllTabs,
+        getTabCount,
+        closeTab,
+        closeOtherTabs as closeOtherTabsInMgr,
         MAX_TABS_PER_PANE,
         pinTab,
         unpinTab,
@@ -169,8 +172,7 @@
     let unlistenDragModifiers: UnlistenFn | undefined
     let unlistenIndexEvents: UnlistenFn | undefined
     let unlistenIndexAggregationComplete: UnlistenFn | undefined
-    let unlistenMcpActivateTab: UnlistenFn | undefined
-    let unlistenMcpPinTab: UnlistenFn | undefined
+    let unlistenMcpTab: UnlistenFn | undefined
 
     // Debounced tab sync to MCP backend (~100ms trailing)
     let tabSyncTimer: ReturnType<typeof setTimeout> | null = null
@@ -1126,28 +1128,63 @@
             getPaneRef('right')?.refreshIndexSizes()
         })
 
-        // Listen for MCP activate_tab events
-        unlistenMcpActivateTab = await listen<{ pane: string; tabId: string }>('mcp-activate-tab', (event) => {
-            const { pane, tabId } = event.payload
-            if (pane === 'left' || pane === 'right') {
-                switchToTab(pane, tabId)
-            }
-        })
-
-        // Listen for MCP pin_tab events
-        unlistenMcpPinTab = await listen<{ pane: string; tabId: string; pinned: boolean }>('mcp-pin-tab', (event) => {
-            const { pane, tabId, pinned } = event.payload
-            if (pane !== 'left' && pane !== 'right') return
+        // Listen for MCP tab events (new, close, close_others, activate, set_pinned)
+        unlistenMcpTab = await listen<{
+            action: string
+            pane: string
+            tabId?: string
+            pinned?: boolean
+        }>('mcp-tab', (event) => {
+            const { action, pane: paneStr, tabId, pinned } = event.payload
+            if (paneStr !== 'left' && paneStr !== 'right') return
+            const pane = paneStr as 'left' | 'right'
             const mgr = getTabMgr(pane)
-            const tab = getAllTabs(mgr).find((t) => t.id === tabId)
-            if (!tab) return
-            if (pinned) {
-                pinTab(mgr, tabId)
-            } else {
-                unpinTab(mgr, tabId)
+
+            switch (action) {
+                case 'new': {
+                    const success = tabOpsNewTab(pane, getTabMgr, (h) => $state.snapshot(h))
+                    if (!success) {
+                        log.warn(`MCP tab new: tab limit reached in ${pane} pane`)
+                    }
+                    break
+                }
+                case 'close': {
+                    if (getTabCount(mgr) <= 1) {
+                        log.warn(`MCP tab close: can't close last tab in ${pane} pane`)
+                        break
+                    }
+                    const closeId = tabId ?? mgr.activeTabId
+                    closeTab(mgr, closeId)
+                    saveTabsForPaneSide(pane)
+                    if (pane === focusedPane) syncPinTabMenu()
+                    break
+                }
+                case 'close_others': {
+                    const keepId = tabId ?? mgr.activeTabId
+                    closeOtherTabsInMgr(mgr, keepId)
+                    saveTabsForPaneSide(pane)
+                    break
+                }
+                case 'activate': {
+                    if (tabId) {
+                        switchToTab(pane, tabId)
+                    }
+                    break
+                }
+                case 'set_pinned': {
+                    const pinId = tabId ?? mgr.activeTabId
+                    const tab = getAllTabs(mgr).find((t) => t.id === pinId)
+                    if (!tab) break
+                    if (pinned && !tab.pinned) {
+                        pinTab(mgr, pinId)
+                    } else if (!pinned && tab.pinned) {
+                        unpinTab(mgr, pinId)
+                    }
+                    saveTabsForPaneSide(pane)
+                    if (pane === focusedPane && pinId === mgr.activeTabId) syncPinTabMenu()
+                    break
+                }
             }
-            saveTabsForPaneSide(pane)
-            if (pane === focusedPane && tabId === mgr.activeTabId) syncPinTabMenu()
         })
 
         // Register drag-and-drop target handler for external and pane-to-pane drops
@@ -1270,8 +1307,7 @@
         unlistenDragDrop?.()
         unlistenIndexEvents?.()
         unlistenIndexAggregationComplete?.()
-        unlistenMcpActivateTab?.()
-        unlistenMcpPinTab?.()
+        unlistenMcpTab?.()
         if (tabSyncTimer) clearTimeout(tabSyncTimer)
         // No cleanup needed for throttle (no pending timers)
         cleanupNetworkDiscovery()

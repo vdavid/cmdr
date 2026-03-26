@@ -33,51 +33,34 @@ impl Tool {
 
 /// Get tab tools.
 fn get_tab_tools() -> Vec<Tool> {
-    vec![
-        Tool {
-            name: "activate_tab".to_string(),
-            description: "Switch to a specific tab in a pane".to_string(),
-            input_schema: json!({
-                "type": "object",
-                "properties": {
-                    "pane": {
-                        "type": "string",
-                        "enum": ["left", "right"],
-                        "description": "Which pane to switch tab in"
-                    },
-                    "tab_id": {
-                        "type": "string",
-                        "description": "ID of the tab to activate"
-                    }
+    vec![Tool {
+        name: "tab".to_string(),
+        description: "Create, close, activate, or pin tabs".to_string(),
+        input_schema: json!({
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "enum": ["new", "close", "close_others", "activate", "set_pinned"],
+                    "description": "Action to perform on the tab"
                 },
-                "required": ["pane", "tab_id"]
-            }),
-        },
-        Tool {
-            name: "pin_tab".to_string(),
-            description: "Pin or unpin a tab. Pinned tabs stay in place when navigating to a new directory."
-                .to_string(),
-            input_schema: json!({
-                "type": "object",
-                "properties": {
-                    "pane": {
-                        "type": "string",
-                        "enum": ["left", "right"],
-                        "description": "Which pane the tab is in"
-                    },
-                    "tab_id": {
-                        "type": "string",
-                        "description": "ID of the tab to pin/unpin"
-                    },
-                    "pinned": {
-                        "type": "boolean",
-                        "description": "true to pin, false to unpin"
-                    }
+                "pane": {
+                    "type": "string",
+                    "enum": ["left", "right"],
+                    "description": "Which pane to operate on"
                 },
-                "required": ["pane", "tab_id", "pinned"]
-            }),
-        },
-    ]
+                "tab_id": {
+                    "type": "string",
+                    "description": "Tab ID. Defaults to active tab for close, close_others, set_pinned. Required for activate."
+                },
+                "pinned": {
+                    "type": "boolean",
+                    "description": "Pin state (only for set_pinned action)"
+                }
+            },
+            "required": ["action", "pane"]
+        }),
+    }]
 }
 
 /// Get app-level command tools.
@@ -468,21 +451,29 @@ mod tests {
     #[test]
     fn test_tab_tools_count() {
         let tools = get_tab_tools();
-        // activate_tab, pin_tab
-        assert_eq!(tools.len(), 2);
+        // tab (unified)
+        assert_eq!(tools.len(), 1);
     }
 
     #[test]
-    fn test_activate_tab_tool_schema() {
+    fn test_tab_tool_schema() {
         let tools = get_tab_tools();
-        let tool = tools.iter().find(|t| t.name == "activate_tab").unwrap();
+        let tool = tools.iter().find(|t| t.name == "tab").unwrap();
 
         let schema = &tool.input_schema;
         let props = schema.get("properties").unwrap();
 
+        assert!(props.get("action").is_some());
         assert!(props.get("pane").is_some());
         assert!(props.get("tab_id").is_some());
-        assert_eq!(props["tab_id"]["type"], "string");
+        assert!(props.get("pinned").is_some());
+
+        let action_enum = props.get("action").unwrap().get("enum").unwrap().as_array().unwrap();
+        assert!(action_enum.contains(&json!("new")));
+        assert!(action_enum.contains(&json!("close")));
+        assert!(action_enum.contains(&json!("close_others")));
+        assert!(action_enum.contains(&json!("activate")));
+        assert!(action_enum.contains(&json!("set_pinned")));
 
         let pane_enum = props.get("pane").unwrap().get("enum").unwrap().as_array().unwrap();
         assert!(pane_enum.contains(&json!("left")));
@@ -490,8 +481,8 @@ mod tests {
 
         let required = schema.get("required").unwrap().as_array().unwrap();
         assert_eq!(required.len(), 2);
+        assert!(required.contains(&json!("action")));
         assert!(required.contains(&json!("pane")));
-        assert!(required.contains(&json!("tab_id")));
     }
 
     #[test]
@@ -504,8 +495,8 @@ mod tests {
     #[test]
     fn test_all_tools_count() {
         let tools = get_all_tools();
-        // 6 nav + 2 cursor + 1 selection + 5 file_op + 3 view + 2 tab + 1 dialog + 3 app + 2 search = 25
-        assert_eq!(tools.len(), 25);
+        // 6 nav + 2 cursor + 1 selection + 5 file_op + 3 view + 1 tab + 1 dialog + 3 app + 2 search = 24
+        assert_eq!(tools.len(), 24);
     }
 
     #[test]
