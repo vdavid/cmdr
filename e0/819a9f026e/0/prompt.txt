@@ -1,0 +1,29 @@
+Copy cancellation doesn't work! I've started copying a file, canceled it after a few seconds, the "Copy" dialog disappeared, I thought it canceled. But then, the file was growing in size, and I've got a ton of logs.
+
+Full logs here:
+
+```
+21:15:19.747 INFO  file_system::write_operations::volume_copy  copy_between_volumes: both volumes are local, delegating to native copy (src=/Volumes/naspi, dest=/)
+21:15:19.747 INFO  file_system::write_operations  copy_files_start: sources=["/Volumes/naspi/third-party/movies/dori-david watchlist/Bram Stoker's Dracula.1992.BRRip.XviD-VLiS/Bram Stoker's Dracula.1992.BRRip.XviD-VLiS.avi"], destination="/Users/veszelovszki/Downloads", dry_run=false
+21:15:19.748 INFO  file_system::write_operations::copy  copy_files_with_progress: scan complete for operation_id=96a4ab50-dde3-4ff6-bb9b-9f0cbc6cc44a, files=1, bytes=1466068992
+21:15:19.748 INFO  file_system::write_operations::copy  copy_files_with_progress: starting disk space check for operation_id=96a4ab50-dde3-4ff6-bb9b-9f0cbc6cc44a
+21:15:19.748 INFO  file_system::write_operations::copy  copy_files_with_progress: disk space check complete for operation_id=96a4ab50-dde3-4ff6-bb9b-9f0cbc6cc44a
+21:15:19.748 INFO  file_system::write_operations::copy  copy_files_with_progress: starting copy loop for operation_id=96a4ab50-dde3-4ff6-bb9b-9f0cbc6cc44a, 1 files
+21:15:19.748 INFO  file_system::write_operations::macos_copy  copyfile: starting copy from /Volumes/naspi/third-party/movies/dori-david watchlist/Bram Stoker's Dracula.1992.BRRip.XviD-VLiS/Bram Stoker's Dracula.1992.BRRip.XviD-VLiS.avi to /Users/veszelovszki/Downloads/Bram Stoker's Dracula.1992.BRRip.XviD-VLiS.avi (flags=0x106000f)
+21:15:19.840 INFO  FE:transferProgress  Starting copy operation: 1 sources
+21:15:19.840 INFO  FE:transferProgress  Copy operation started with operationId: 96a4ab50-dde3-4ff6-bb9b-9f0cbc6cc44a
+21:15:34.630 INFO  file_system::write_operations::macos_copy  copyfile callback: cancellation detected, returning COPYFILE_QUIT
+21:15:34.631 INFO  file_system::write_operations::macos_copy  copyfile callback: cancellation detected, returning COPYFILE_QUIT
+21:15:34.685 INFO  file_system::write_operations::macos_copy  copyfile callback: cancellation detected, returning COPYFILE_QUIT
+21:15:34.685 INFO  file_system::write_operations::macos_copy  copyfile callback: cancellation detected, returning COPYFILE_QUIT
+21:15:34.696 INFO  FE:transferProgress  Cancelling operation (keeping partial files): 96a4ab50-dde3-4ff6-bb9b-9f0cbc6cc44a
+21:15:34.696 INFO  FE:fileExplorer  Copy cancelled after 0 files
+21:15:34.749 INFO  file_system::write_operations::macos_copy  copyfile callback: cancellation detected, returning COPYFILE_QUIT
+...Removed 983 lines of this same log!...
+21:16:09.670 INFO  file_system::write_operations::macos_copy  copyfile callback: cancellation detected, returning COPYFILE_QUIT
+21:16:09.676 INFO  file_system::write_operations::macos_copy  copyfile: completed with result=0
+21:16:09.681 INFO  file_system::write_operations::copy  copy_files_with_progress: completed op=96a4ab50-dde3-4ff6-bb9b-9f0cbc6cc44a files=1 bytes=1466068992
+```
+
+Pls find the bug and advise for a solution which is solid, elegant, and prevents a back-end write operation to continue after the front-end sent a cancel signal ever again! This is terrible, imagine if it was a "delete" operation! Cancellation should be extremely stable for copy, move, and delete ops too!
+Pls help me debug
