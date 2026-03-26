@@ -73,5 +73,4 @@ the codebase.
 
 ## Further reading
 
-- [Plan doc](../../docs/specs/analytics-dashboard-plan.md)
 - [CLAUDE.md](CLAUDE.md) (architecture decisions, gotchas, and AI agent context)

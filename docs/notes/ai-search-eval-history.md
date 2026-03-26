@@ -27,7 +27,7 @@ Key files:
 - `ai_query_builder.rs` — maps enums to `SearchQuery` fields, merges keyword+type patterns
 - `search.rs` — contains `CLASSIFICATION_PROMPT`, orchestrates the pipeline
 
-The v2 design is documented in `docs/specs/ai-search-v2-plan.md`.
+The v2 design history is in git (former `docs/specs/ai-search-v2-plan.md`).
 
 ## Iteration summary
 

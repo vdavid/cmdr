@@ -104,6 +104,10 @@ The frontend (`AiSection.svelte`) tracks `installStep` state and displays "Step 
 **Decision**: Suggestion sanitization strips bullets, markdown, numbering, and deduplicates case-insensitively.
 **Why**: Small LLMs (3B params) inconsistently follow formatting instructions.
 
+**Decision**: Default provider is `local` (temporary). **Why**: Matches the current onboarding toast flow. Long-term
+direction is to make OpenAI-compatible the primary recommended path, with local LLM as the secondary option for
+privacy-focused users. The architecture doesn't fight this switch — it's just a default value change.
+
 ## Gotchas
 
 **Gotcha**: `tauri::async_runtime::spawn` is used in `configure_ai` and `start_ai_server` instead of `tokio::spawn`.

@@ -92,7 +92,7 @@ poor (no template auto-tinting).
 ## Menu structure
 
 Both platforms share: File, Edit, View (with Sort by submenu), Go, Tab, Help.
-macOS adds: cmdr (app menu), Window. See `docs/specs/native-menus-plan.md` for the full item table.
+macOS adds: cmdr (app menu), Window. See the menu item ID constants in `mod.rs` for the full item list.
 
 Viewer windows get a minimal menu: File (Close), Edit (clipboard), View (Word wrap), and on macOS
 also Window and Help.

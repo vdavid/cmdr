@@ -2,7 +2,7 @@
 
 Background-indexes local volumes into per-volume SQLite databases, tracking every file and directory with recursive size aggregates. The key UX win: showing directory sizes in file listings.
 
-Full design: `docs/specs/drive-indexing/plan.md`
+Design history is in git (former `docs/specs/drive-indexing/`).
 
 ## Architecture
 
@@ -119,6 +119,10 @@ Key test files are alongside each module (test functions within `#[cfg(test)]` b
 - stress_tests.rs: concurrency stress tests — concurrent scan + replay, concurrent batch inserts, concurrent scan + enrichment reads, live event storm + reads, lifecycle transitions under load
 
 ## Key decisions
+
+**`getattrlistbulk` (via jwalk) for scanning, not `enumeratorAtURL` or `searchfs`**: Benchmarked on ~5M files (macOS, Apple Silicon, APFS). `getattrlistbulk` recursive walk: 1m49s with sizes. `enumeratorAtURL` with prefetched keys: 2m05s (+11%), found ~500K fewer entries. `searchfs`: fast for name lookup but can't return sizes. `mdfind`: undercounts (Spotlight excludes `.git/`, `node_modules/`, caches). `getattrlistbulk` is what jwalk uses under the hood on macOS, and adding size collection costs only ~4% overhead (packed in the same bulk buffer, no extra syscalls).
+
+**Physical sizes may overcount ~10-20% due to APFS clones**: Per-file `st_blocks * 512` sums to ~905 GB vs ~746 GB true volume usage (`statfs()`). APFS clones (Xcode, simulators, Time Machine, `cp` since Ventura) share underlying blocks but each clone reports full allocation. Volume usage bar always uses `statfs()` for true totals.
 
 **Single-writer thread, not connection pooling**: SQLite write concurrency is limited by its single-writer design. Instead of fighting it with `BUSY_TIMEOUT` and retries, one dedicated thread owns the write connection. Eliminates contention entirely.
 

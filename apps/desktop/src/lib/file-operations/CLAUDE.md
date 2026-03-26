@@ -104,10 +104,11 @@ When directory has parent entry shown at index 0, frontend indices are offset by
 
 ## Gotchas
 
-- **MTP move is copy + delete**: Moves involving MTP volumes are implemented as a two-phase operation in
-  `TransferProgressDialog`: first `copyBetweenVolumes`, then `deleteFiles` on the source. The progress UI shows three
-  stages (Scanning → Copying → Removing source). If copy succeeds but delete fails, the user keeps files in both places
-  (safer than losing data). Rollback is hidden during the delete phase since the copy is already done.
+- **MTP move is interleaved copy + delete per file**: Moves involving MTP volumes copy and then delete each file
+  individually (not copy-all-then-delete-all). This minimizes duplicates on partial failure — if it fails mid-way, only
+  the current file exists in both places. The progress UI shows three stages (Scanning → Copying → Removing source). If
+  copy succeeds but delete fails, the user keeps files in both places (safer than losing data). Rollback is hidden during
+  the delete phase since the copy is already done.
 - **Dry-run conflict sampling**: If >200 conflicts, `DryRunResult.conflicts` contains random sample. Check
   `conflictsSampled: true` and `conflictsTotal` for exact count.
 - **Progress dialog edge case**: Same-FS move completes so fast that the complete event may fire before dialog mounts.

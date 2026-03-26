@@ -199,6 +199,9 @@ Use `CommandExists()` to check if a tool is installed, and auto-install if possi
 **Decision**: `cargo-deny` advisories check disabled; use `cargo-audit` instead.
 **Why**: Tauri's transitive dependencies (gtk3-rs, unic-*, fxhash, proc-macro-error, etc.) trigger unmaintained-crate advisories we can't control. `cargo-audit` still catches critical security vulnerabilities. License, bans, and sources checks in `cargo-deny` remain active. See comment in `src-tauri/deny.toml`.
 
+**Decision**: `cfg-gate` check to catch ungated macOS-only crate imports.
+**Why**: Rust code using macOS-only crates (from `[target.'cfg(target_os = "macos")'.dependencies]`) compiles fine on macOS but fails on Linux if the `use` isn't wrapped in `#[cfg(target_os = "macos")]`. CI catches this after push, but the check catches it locally and instantly. It parses `Cargo.toml` for macOS-only crate names, detects module-level gating (for example, `#[cfg(target_os = "macos")] mod foo;` in `lib.rs` makes everything inside `foo` inherently safe), and scans remaining files for ungated `use` statements.
+
 **Decision**: Auto-fix locally, check-only in CI.
 **Why**: Developers get instant fixes locally (less friction), CI ensures code is properly formatted before merge. Controlled by the `--ci` flag.
 

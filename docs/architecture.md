@@ -69,6 +69,7 @@ All under `apps/desktop/src-tauri/src/`.
 | `apps/analytics-dashboard/` | Private SvelteKit dashboard on CF Pages. Aggregates metrics from Umami, CF Analytics Engine, Paddle, PostHog, GitHub. See [CLAUDE.md](../apps/analytics-dashboard/CLAUDE.md) |
 | `apps/api-server/` | Cloudflare Worker + Hono. Licensing, telemetry, crash reports, downloads, and admin endpoints. See [CLAUDE.md](../apps/api-server/CLAUDE.md) (technical reference) and [README](../apps/api-server/README.md) (first-time setup) |
 | `apps/website/` | getcmdr.com marketing site (Astro + Tailwind v4). See [README](../apps/website/README.md) and [CLAUDE.md](../apps/website/CLAUDE.md) |
+| `apps/website/public/hero/` | Hero illustration assets (frame + pane cutouts, dark/light). See [CLAUDE.md](../apps/website/public/hero/CLAUDE.md) for reshoot process |
 | `scripts/check/` | Go unified check runner (~40 checks, parallel with dependency graph) |
 
 ## Search
@@ -80,8 +81,6 @@ Whole-drive file search powered by the index DB. The search index loads all entr
 **IPC** (`commands/search.rs`): Thin wrappers. `prepare_search_index` (starts async load, emits `search-index-ready` event), `search_files` (returns empty if not loaded), `release_search_index` (starts 5-min idle timer), `translate_search_query` (orchestrates `search::ai` pipeline). `resolve_ai_backend` handles AI provider config.
 
 **Lifecycle**: Load on dialog open (2-3s for 5M rows with cancellation check every 100K rows) -> search while loaded -> idle timeout (5 min) or backstop timeout (10 min) drops the index.
-
-See `docs/specs/drive-search-plan.md` for the full design.
 
 ## Cross-cutting patterns
 
@@ -102,7 +101,7 @@ Rules that cut across many modules. All existing commands follow these — apply
 2. **Network mount blocking syscalls.** `statfs`, `readdir`, `metadata()`, NSURL resource queries,
    and `realpath` can all block indefinitely on slow/hung network mounts (kernel waits 30–120s).
    Every Tauri command that calls these is wrapped in `blocking_with_timeout`. New commands MUST
-   do the same. See `docs/specs/blocking-ipc-hardening-plan.md` for the full audit.
+   do the same. See `commands/CLAUDE.md` for the full pattern and timeout tiers.
 
 3. **Two-layer timeout defense.** Backend: `blocking_with_timeout` (2–15s) wraps syscalls in
    `tokio::time::timeout`. Frontend: `withTimeout` (500ms–3s) races IPC calls and returns a

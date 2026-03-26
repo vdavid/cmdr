@@ -37,6 +37,9 @@ Mounts under `/run/media/$USER/` or `/media/$USER/` are marked as ejectable (`is
 **Decision**: Filter virtual filesystems by an explicit allowlist of types to exclude, not by mount path patterns
 **Why**: Filtering by path (e.g., skip `/proc`, `/sys`) misses virtual filesystems mounted at unusual locations (bind mounts, containers) and is fragile against distro differences. Filtering by `fstype` is definitive — `tmpfs` is always `tmpfs` regardless of where it's mounted.
 
+**Decision**: Use `/proc/self/mountinfo` (not `statfs()`) for filesystem type detection and network mount classification
+**Why**: `statfs()` collapses all FUSE mounts to a single `FUSE_SUPER_MAGIC`, making it impossible to distinguish `sshfs` from `ntfs-3g`. It also blocks for minutes on hung NFS mounts and triggers automounts as a side effect. `/proc/self/mountinfo` is a single file read that correctly identifies FUSE-based network mounts (for example, `fuse.sshfs`, `fuse.rclone`) via fstype substrings, never blocks, and doesn't trigger automounts. This data is reused by both volume discovery and copy strategy (network FS detection routes to chunked copy).
+
 **Decision**: Detect removable volumes by mount path (`/run/media/$USER/` or `/media/$USER/`), not by querying udev
 **Why**: udev queries require the `udev` crate or shelling out to `udevadm`, adding a dependency and complexity. The FreeDesktop standard specifies that `udisks2` mounts removable media under `/run/media/$USER/`, so path-based detection is reliable on all modern distros. The path convention is simpler and sufficient.
 

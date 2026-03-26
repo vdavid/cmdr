@@ -128,6 +128,11 @@ Defining all settings in a registry enables:
 3. UI generation for Advanced section (technical settings don't need custom UI)
 4. Schema migration (registry knows what's valid, can transform old data)
 
+### Why store OpenAI API key in `settings.json`, not keychain?
+
+Simpler first version. The file is already in the user's private app support directory. Keychain integration can come
+later if needed. The key is never sent anywhere except the user's configured endpoint.
+
 ### Why debounced saves?
 
 Users often change multiple related settings in quick succession (e.g., tweaking slider values). Debouncing reduces disk

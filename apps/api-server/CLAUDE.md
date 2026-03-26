@@ -177,7 +177,12 @@ required.
 Devices older than 90 days are pruned on each write. If 6+ devices are active and no alert was sent in the past 30 days,
 an internal email is sent to `legal@getcmdr.com` via Resend. Device tracking is fire-and-forget and never affects the
 validation response. The KV value stores a `DeviceSet` with device hashes mapped to last-seen timestamps plus an
-optional `lastAlertedAt`. See `docs/specs/fair-use-device-tracking-plan.md` for the full plan.
+optional `lastAlertedAt`. Device tracking is per seat — each seat in a multi-seat purchase has its own transaction ID
+and its own 6-device allowance.
+
+**Update check proxy:** `GET /update-check/:version` routes update checks through the worker to count all users (free +
+licensed). Without this, there's no signal for how many people actually run the app — Umami only tracks website visitors
+and download tracking only captures installs.
 
 ## Local development
 
@@ -259,6 +264,11 @@ dev; the deployed worker overrides to `"live"` via a wrangler secret.
 **Decision**: Price IDs stored as env vars (`PRICE_ID_*`) rather than hardcoded. **Why**: Sandbox and live Paddle
 accounts have different price IDs for the same products. Env vars let each environment use its own IDs without code
 changes. `.dev.vars` has sandbox IDs; wrangler secrets have live IDs.
+
+**Decision**: No hard enforcement of device limits — the server never rejects a validation because of device count.
+**Why**: Suspension is a manual decision after human review. The goal is to detect obvious key sharing (one key on 6+
+devices), not to restrict legitimate power users. Alert threshold is 6 because 3-4 Macs is normal, 5 is plausible, 6 is
+hard to explain as one person. The threshold is not published in the ToS to avoid gaming.
 
 ## Gotchas
 

@@ -98,6 +98,15 @@ one window and "New folder" in another if their scopes don't overlap.
 Users often mis-press keys or change their mind mid-capture. The delay lets them press multiple combos rapidly and only
 the final one (after 500ms of silence) is saved. Prevents accidental captures.
 
+### Why two tiers (action vs navigation commands)?
+
+Tier 1 commands (~20 "action" commands like F-keys and Cmd+ combos) go through centralized dispatch. Tier 2 commands
+(~40 navigation keys like arrows, Space, Enter, Backspace) stay in component-level handlers. Centralizing Tier 2 would
+require a `when`-clause system (like VS Code's `fileListFocused && !renameActive`) because these keys mean different
+things depending on context (file list vs volume chooser vs command palette). That's a significant architecture
+investment with low payoff for Cmdr's current scope. Tier 1 commands are the ones where the "two sources of truth" bug
+hurt (adding F8 to the registry but forgetting to add it to the keydown handler).
+
 ### Why separate MCP listener for main window?
 
 The settings window has a full MCP bridge that syncs all state. The main window only needs to react to shortcut changes.

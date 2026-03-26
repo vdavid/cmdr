@@ -54,8 +54,10 @@ Frontend
 **Two-layer cancellation.** `AtomicBool` for fast in-loop checks. `run_cancellable` wraps blocking operations (e.g.,
 network-mount copies that may block indefinitely) in a separate thread, polling the flag every 100ms via `mpsc::channel`.
 
-**`CopyTransaction` rollback.** Records created files and dirs in creation order. Rollback deletes files in reverse order
-first, then dirs in reverse order (deepest first). `commit()` just drops the vecs. Delete operations are not rollbackable.
+**`CopyTransaction` rollback with auto-rollback on panic.** Records created files and dirs in creation order. Rollback
+deletes files in reverse order first, then dirs in reverse order (deepest first). `commit()` sets a `committed` flag and
+drops the vecs. `Drop` impl checks `committed` — if false (panic unwind or forgotten commit), it auto-rolls back.
+Delete operations are not rollbackable.
 
 **Symlinks never dereferenced.** All stat calls use `symlink_metadata`. Symlink loop detection uses a `HashSet<PathBuf>`
 of canonicalized paths.
@@ -90,6 +92,10 @@ actual `copy_files_start` can consume the cache via `preview_id` in `WriteOperat
 doesn't need the recursive scan that delete/copy use. Progress tracks top-level items, with optional byte-level progress
 from pre-computed item sizes. Partial failure is supported: if some items fail, others still succeed. The core
 `move_to_trash_sync()` is extracted to `trash.rs` and reused by `commands/rename.rs`.
+
+**`cancel_all_write_operations` for teardown safety.** A `beforeunload` listener calls this to cancel all active
+operations (with rollback) on hot-reload, tab close, window close, or navigation. Prevents orphaned background
+operations when the frontend is destroyed.
 
 **Special files skipped.** Sockets, FIFOs, and device files are filtered out during scan.
 

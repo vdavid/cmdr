@@ -4,7 +4,7 @@ Whole-drive file search dialog. Searches the in-memory index by filename (glob/r
 include/exclude) filters. Optional AI mode translates natural language queries into structured filters.
 
 Backend: `src-tauri/src/search/` (index, engine, query, AI pipeline), `src-tauri/src/commands/search.rs` (thin IPC
-wrappers). Full design: `docs/specs/drive-search-plan.md`.
+wrappers).
 
 ## Files
 
@@ -54,7 +54,7 @@ from anywhere triggers AI search. When AI is disabled, only the pattern row is s
 
 **AI single-pass flow**: `executeAiSearch()` calls `translateSearchQuery()` once (LLM classifies intent into enums +
 extracts keywords, Rust builds the query deterministically), then runs `executeSearch()`. No preflight, no refinement
-pass. See `docs/specs/ai-search-v2-plan.md` for the full design.
+pass. The previous two-pass system caused ~15% regressions; deterministic structure means there's nothing to refine.
 
 **AI prompt state**: `aiPrompt` in `search-state.svelte.ts` holds the natural language query separately from
 `namePattern` (the glob/regex pattern).

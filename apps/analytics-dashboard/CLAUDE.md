@@ -82,6 +82,10 @@ All set as CF Pages secrets, never in code.
 
 ## Key decisions
 
+**Decision**: Metrics are organized by acquisition stage, not as a cohort funnel. **Why**: Tracking is cookieless and
+anonymous — there's no way to follow an individual from blog visit to download to payment. The stages show independent
+aggregate numbers. A true funnel would require cross-site user identity tracking and a cookie banner.
+
 **Decision**: Dark mode only. **Why**: Internal tool, always viewed on a laptop. Saves effort.
 
 **Decision**: Single page, not multi-page. **Why**: Only six sections. Scroll is simpler than navigation.

@@ -27,6 +27,15 @@ types.rs defines  ->  query.rs prepares (resolve_include_paths)
 
 ## Key decisions
 
+**Decision**: In-memory `Vec` + rayon instead of SQLite queries for search.
+**Why**: The index has ~5M entries. SQLite `LIKE '%query%'` takes 1-3s (full table scan). Loading entries into a `Vec` and scanning with rayon gives sub-second results. The index is loaded lazily on dialog open and dropped after idle (5 min timer + 10 min backstop). ~600 MB resident while active.
+
+**Decision**: Structured `SearchQuery` model, not free-text SQL.
+**Why**: Safe (no injection), composable (AI mode fills the same struct), and simple to execute (single pass over the in-memory Vec). The frontend owns query building; the backend is a pure filter engine.
+
+**Decision**: Path reconstruction at search time, not stored in index.
+**Why**: Storing full paths would double memory usage. Reconstructing by walking the parent chain is O(depth) per result. For 30 results with average depth 8, that's ~240 HashMap lookups -- microseconds.
+
 **Decision**: `engine.rs` is pure -- no I/O, no DB access.
 **Why**: It takes `&SearchIndex` + `&SearchQuery`, scans in-memory with rayon, and returns results. Trivially testable with synthetic data, no mocks. The hot path is isolated from all side effects.
 
@@ -35,6 +44,15 @@ types.rs defines  ->  query.rs prepares (resolve_include_paths)
 
 **Decision**: AI pipeline lives in `search::ai`, not `commands/`.
 **Why**: The parser, prompt, and query builder are search domain logic, not IPC concerns. `commands/search.rs` remains a thin IPC wrapper that calls into `search::ai`.
+
+**Decision**: AI uses key-value line output, not JSON.
+**Why**: JSON generation is the #1 failure mode for small LLMs (13% parse failure on 2B models). Key-value lines (`keywords: rymd\ntype: documents\ntime: recent`) are trivial to produce and parse. Missing lines = no filter. Malformed lines are individually skippable without losing the whole response.
+
+**Decision**: LLM classifies intent into enums, Rust computes values deterministically.
+**Why**: Even small (2B) LLMs understand natural language across languages and can map "last week" to the token `last_week`. But asking them to generate regex, compute ISO dates, or produce valid JSON fails ~60% of the time on local models. Separating classification (LLM) from computation (Rust) makes the pipeline reliable regardless of model size.
+
+**Decision**: Single LLM pass, no refinement.
+**Why**: The previous two-pass system (translate + refine) caused regressions ~15% of the time (over-narrowing, flag dropping). With deterministic structure, there's nothing to refine. Also halves LLM latency.
 
 ## Coupling to `indexing/`
 

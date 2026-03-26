@@ -2,7 +2,7 @@
 //!
 //! Background-indexes local volumes into a per-volume SQLite database,
 //! tracking every file and directory with recursive size aggregates.
-//! See `docs/specs/drive-indexing/plan.md` for the full design.
+//! Design history is in git (former `docs/specs/drive-indexing/`).
 
 pub mod aggregator;
 mod enrichment;
