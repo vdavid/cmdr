@@ -206,11 +206,10 @@ update project settings), you need a personal API key.
 
 1. Go to https://eu.posthog.com/settings/user-api-keys → **Create personal API key**
 2. Scope it to the Cmdr project
-3. Add to `~/.zshenv`:
+3. Add to macOS Keychain:
    ```sh
-   export POSTHOG_API_KEY="phx_your-key"
+   security add-generic-password -a "$USER" -s "POSTHOG_API_KEY" -w "phx_your-key"
    ```
-4. Restart your shell or `source ~/.zshenv`
 
 See [posthog.md](docs/tooling/posthog.md) for API recipes.
 
@@ -220,14 +219,27 @@ Paddle handles payments and subscriptions. Two API keys are needed — one for l
 
 1. Go to https://vendors.paddle.com → **Developer tools** → **Authentication** → **Generate API key**
 2. Repeat for sandbox at https://sandbox-vendors.paddle.com
-3. Add both to `~/.zshenv`:
+3. Add both to macOS Keychain:
    ```sh
-   export PADDLE_LIVE_API_KEY="your-live-key"
-   export PADDLE_SANDBOX_API_KEY="your-sandbox-key"
+   security add-generic-password -a "$USER" -s "PADDLE_LIVE_API_KEY" -w "your-live-key"
+   security add-generic-password -a "$USER" -s "PADDLE_SANDBOX_API_KEY" -w "your-sandbox-key"
    ```
-4. Restart your shell or `source ~/.zshenv`
 
 See [paddle.md](docs/tooling/paddle.md) for API recipes.
+
+## Cloudflare Access (analytics dashboard)
+
+The analytics dashboard at `analdash.getcmdr.com` is behind Cloudflare Access. To fetch reports via the API, you
+need a service token.
+
+1. Go to https://one.dash.cloudflare.com → **Access** → **Service Auth** → **Create Service Token**
+2. Add both values to macOS Keychain:
+   ```sh
+   security add-generic-password -a "$USER" -s "CF_ACCESS_CLIENT_ID_EXPIRES_2027_03_22" -w "your-client-id"
+   security add-generic-password -a "$USER" -s "CF_ACCESS_CLIENT_SECRET_EXPIRES_2027_03_22" -w "your-client-secret"
+   ```
+
+The token expires 2027-03-22. See [analytics-dashboard.md](docs/tooling/analytics-dashboard.md) for usage.
 
 ## ngrok access (tunnels)
 
@@ -235,11 +247,10 @@ ngrok exposes local servers to the internet — useful for testing webhooks (for
 API server.
 
 1. Go to https://dashboard.ngrok.com → **Your Authtoken** (or **API** → **API Keys** for the API key)
-2. Add to `~/.zshenv`:
+2. Add to macOS Keychain:
    ```sh
-   export NGROK_API_KEY="your-api-key"
+   security add-generic-password -a "$USER" -s "NGROK_API_KEY" -w "your-api-key"
    ```
-3. Restart your shell or `source ~/.zshenv`
 
 See [ngrok.md](docs/tooling/ngrok.md) for API recipes.
 

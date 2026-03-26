@@ -11,12 +11,11 @@ custom domain config, and troubleshooting, see the
 
 **Account ID**: `6a4433bf11c3cf86feda057f76f47991`
 
-**Gotcha**: The token is a scoped API token (not a global API key). It works with wrangler and the REST API, but
-the Bash tool's subshell doesn't always inherit it from `~/.zshenv`. Read it from the file when calling the API
-directly:
+**Gotcha**: The token is a scoped API token (not a global API key). It works with wrangler and the REST API.
+If `$CLOUDFLARE_API_TOKEN` isn't inherited by a subshell, read it from the environment export in `~/.zshenv`:
 
 ```bash
-TOKEN=$(grep CLOUDFLARE_API_TOKEN ~/.zshenv | head -1 | sed 's/.*=//' | tr -d '"' | tr -d "'")
+TOKEN=${CLOUDFLARE_API_TOKEN:-$(grep CLOUDFLARE_API_TOKEN ~/.zshenv | head -1 | sed 's/.*=//' | tr -d '"' | tr -d "'")}
 curl -s "https://api.cloudflare.com/client/v4/..." \
   -H "Authorization: Bearer ${TOKEN}" \
   -H "Content-Type: application/json"

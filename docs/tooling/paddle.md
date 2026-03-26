@@ -9,19 +9,16 @@ Paddle handles payments and subscriptions for Cmdr. There are two environments:
 
 ## API access
 
-Two API keys live in `~/.zshenv`: `PADDLE_LIVE_API_KEY` and `PADDLE_SANDBOX_API_KEY`. See
+Two API keys are stored in macOS Keychain: `PADDLE_LIVE_API_KEY` and `PADDLE_SANDBOX_API_KEY`. See
 [CONTRIBUTING.md](../../CONTRIBUTING.md#paddle-access-payments) for setup.
-
-**Gotcha**: Like other env vars, the Bash tool's subshell doesn't always inherit from `~/.zshenv`. Read them from
-the file when calling the API directly:
 
 ```bash
 # For sandbox (use this for development and testing)
-PADDLE_KEY=$(grep PADDLE_SANDBOX_API_KEY ~/.zshenv | head -1 | sed 's/export PADDLE_SANDBOX_API_KEY=//' | tr -d '"' | tr -d "'")
+PADDLE_KEY=$(security find-generic-password -a "$USER" -s "PADDLE_SANDBOX_API_KEY" -w)
 PADDLE_API=https://sandbox-api.paddle.com
 
 # For live (use carefully — real customer data)
-PADDLE_KEY=$(grep PADDLE_LIVE_API_KEY ~/.zshenv | head -1 | sed 's/export PADDLE_LIVE_API_KEY=//' | tr -d '"' | tr -d "'")
+PADDLE_KEY=$(security find-generic-password -a "$USER" -s "PADDLE_LIVE_API_KEY" -w)
 PADDLE_API=https://api.paddle.com
 ```
 

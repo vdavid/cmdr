@@ -8,11 +8,10 @@ API server instance.
 
 ## API access
 
-`NGROK_API_KEY` lives in `~/.zshenv`. See [CONTRIBUTING.md](../../CONTRIBUTING.md#ngrok-access-tunnels) for setup.
+`NGROK_API_KEY` is stored in macOS Keychain. See [CONTRIBUTING.md](../../CONTRIBUTING.md#ngrok-access-tunnels) for setup.
 
 ```bash
-# Read the key (Bash tool subshells don't inherit from .zshenv)
-NGROK_KEY=$(grep NGROK_API_KEY ~/.zshenv | head -1 | sed 's/export NGROK_API_KEY=//' | tr -d '"' | tr -d "'")
+NGROK_KEY=$(security find-generic-password -a "$USER" -s "NGROK_API_KEY" -w)
 
 # List active endpoints
 curl -s "https://api.ngrok.com/endpoints" \

@@ -11,11 +11,10 @@ on getcmdr.com (not the desktop app — that has no analytics). Free tier: 5K se
 
 ## API access
 
-A personal API key (`phx_...`) is needed for the management API. It lives in `~/.zshenv` as `POSTHOG_API_KEY`.
+A personal API key (`phx_...`) is needed for the management API. It's stored in macOS Keychain.
 
 ```bash
-# Read the key (Bash tool subshells don't inherit from .zshenv)
-POSTHOG_API_KEY=$(grep POSTHOG_API_KEY ~/.zshenv | head -1 | sed 's/export POSTHOG_API_KEY=//' | tr -d '"')
+POSTHOG_API_KEY=$(security find-generic-password -a "$USER" -s "POSTHOG_API_KEY" -w)
 
 # Get project settings
 curl -s "https://eu.posthog.com/api/projects/136072/" \

@@ -28,19 +28,11 @@ The report includes:
 
 ### Fetching the report
 
-The dashboard is behind Cloudflare Access. Authenticate with the service token stored in `~/.zshenv`:
+The dashboard is behind Cloudflare Access. Authenticate with the service token stored in macOS Keychain:
 
 ```bash
-curl -s "https://analdash.getcmdr.com/api/report?range=7d" \
-  -H "CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID}" \
-  -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET}"
-```
-
-**Gotcha**: The Bash tool's subshell doesn't always inherit env vars from `~/.zshenv`. Read them from the file:
-
-```bash
-CF_ID=$(grep CF_ACCESS_CLIENT_ID ~/.zshenv | head -1 | sed 's/.*=//' | tr -d '"')
-CF_SECRET=$(grep CF_ACCESS_CLIENT_SECRET ~/.zshenv | head -1 | sed 's/.*=//' | tr -d '"')
+CF_ID=$(security find-generic-password -a "$USER" -s "CF_ACCESS_CLIENT_ID_EXPIRES_2027_03_22" -w)
+CF_SECRET=$(security find-generic-password -a "$USER" -s "CF_ACCESS_CLIENT_SECRET_EXPIRES_2027_03_22" -w)
 curl -s "https://analdash.getcmdr.com/api/report?range=7d" \
   -H "CF-Access-Client-Id: ${CF_ID}" \
   -H "CF-Access-Client-Secret: ${CF_SECRET}"
