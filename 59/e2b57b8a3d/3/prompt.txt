@@ -67,3 +67,7 @@ Small things:
 1. Can we not round the progress? The progress bar movement should be more granular.
 2. Could we maybe add some low-opacity white, 45° stripe shine/reflection overlay anim over the colored part of the progress bar to make ti a bit more interesting?
 3. Can we calculate the ETA not based on the overall progress but based on a 10-second sliding window? Or maybe 20% overall, 10% sliding window? What I did was to start copying a 5 GB file from my NAS, then cancel it at 1 GB, start the copy again, and because it was already in memory, it got to 20% very fast, and then the ETA was completely off.
+
+---
+
+Sure, do them
