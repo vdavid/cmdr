@@ -44,3 +44,6 @@ target/
 apps/desktop/src-tauri/resources/ai/
 
 .cargo-docker/
+
+# Entire.io
+.entire/
