@@ -17,3 +17,13 @@ That's it I think, but any questions, lmk
 - Similarly for the darker gray :hover bg colors, they are dead/meh. Think and do something to them pls
 - Also the accent color feels dirty on the light theme. It should be more saturated and lighter I think. It's also make the fg text easier to read.
 - The glow of the download button doesn't come across in the light version
+
+---
+
+Better, but (all about the light theme):
+1. The accent could still be a bit lighter, happier, warm autumn-y yellow
+2. Not sure if when hovering an item, it should become _darker_ or _lighter_ in the light theme. What's the standard? Currently, when I hover an item, it feels like my cursor makes it dirty. But maybe that's only the wrong color-accent-hover choice. Pls think about this
+3. If we make the accent even lighter for the button bgs, we must start thinking about those link foregrounds on the light background, which are already a bit hard to read. I think we must split the accent color to keep the buttons nice and happy, and the links readable.
+4. The dl button glow should intensify when I hover it
+
+Btw, I know we use this dirty yellow in the app but 1. I'm not sure if it's even the right choice there, 2. But there it looks more OK because it's used very sparingly.
