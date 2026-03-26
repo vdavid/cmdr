@@ -1,0 +1,25 @@
+I've been testing Cmdr by copying a file within my NAS, from one folder to another, and then cancelling it at about 2%.
+What happened was that the "Copy" dialog correctly closed right away, but then, the drive appeared frozen in Cmdr AND in another file manager I checked (which is okay I guess, a SMB glitch, SMB sucks as far as I have experience with it so okay), but my problem is that Cmdr also had macOS's rainbow spinner cursor and the UI was unresponsive the whole time, for like 1 min. This is totally unacceptable. The drive can be unavailable, and we should display it actively, but the UI must never freeze. Can you advise what happened here?
+
+Also teh full logs:
+```
+22:57:10.899 INFO  file_system::write_operations::volume_copy  copy_between_volumes: both volumes are local, delegating to native copy (src=/Volumes/naspi, dest=/Volumes/naspi)
+22:57:10.900 INFO  file_system::write_operations  copy_files_start: sources=["/Volumes/naspi/third-party/movies/dori-david watchlist/Bram Stoker's Dracula.1992.BRRip.XviD-VLiS/Bram Stoker's Dracula.1992.BRRip.XviD-VLiS.avi"], destination="/Volumes/naspi", dry_run=false
+22:57:10.900 INFO  file_system::write_operations::copy  copy_files_with_progress: scan complete for operation_id=1b5982b0-425d-4ab7-8ec0-9d283ff7ed39, files=1, bytes=1466068992
+22:57:10.900 INFO  file_system::write_operations::copy  copy_files_with_progress: starting disk space check for operation_id=1b5982b0-425d-4ab7-8ec0-9d283ff7ed39
+22:57:10.901 INFO  file_system::write_operations::copy  copy_files_with_progress: disk space check complete for operation_id=1b5982b0-425d-4ab7-8ec0-9d283ff7ed39
+22:57:10.901 INFO  file_system::write_operations::copy  copy_files_with_progress: starting copy loop for operation_id=1b5982b0-425d-4ab7-8ec0-9d283ff7ed39, 1 files
+22:57:10.901 INFO  file_system::write_operations::chunked_copy  chunked_copy: starting chunked copy from /Volumes/naspi/third-party/movies/dori-david watchlist/Bram Stoker's Dracula.1992.BRRip.XviD-VLiS/Bram Stoker's Dracula.1992.BRRip.XviD-VLiS.avi to /Volumes/naspi/Bram Stoker's Dracula.1992.BRRip.XviD-VLiS.avi
+22:57:10.993 INFO  FE:transferProgress  Starting copy operation: 1 sources
+22:57:10.993 INFO  FE:transferProgress  Copy operation started with operationId: 1b5982b0-425d-4ab7-8ec0-9d283ff7ed39
+22:57:11.270 INFO  indexing::reconciler  MustScanSubDirs: reconcile starting for /Volumes/naspi
+22:57:11.271 INFO  indexing::reconciler  MustScanSubDirs: reconcile complete for /Volumes/naspi (+0 -0 ~0, 0ms)
+22:57:16.929 INFO  FE:transferProgress  Cancelling operation (keeping partial files): 1b5982b0-425d-4ab7-8ec0-9d283ff7ed39
+22:57:16.929 INFO  FE:fileExplorer  Copy cancelled after 0 files
+22:57:24.852 INFO  file_system::write_operations::chunked_copy  chunked_copy: cancellation detected after 169869312 bytes, cleaning up
+22:58:09.376 INFO  file_system::write_operations::copy  copy_files_with_progress: cancelled op=1b5982b0-425d-4ab7-8ec0-9d283ff7ed39, rolling back 0 files
+22:58:09.377 WARN  file_system::write_operations::state  CopyTransaction dropped without commit, rolling back 0 files and 0 dirs
+22:58:09.611 INFO  FE:fileExplorer  Directory /Volumes/naspi/tailscale_1.96.2_amd64 no longer exists, navigating to nearest valid parent under /Volumes/naspi
+22:58:10.331 INFO  indexing::reconciler  MustScanSubDirs: reconcile starting for /Volumes/naspi
+22:58:10.332 INFO  indexing::reconciler  MustScanSubDirs: reconcile complete for /Volumes/naspi (+0 -0 ~0, 0ms)
+```
