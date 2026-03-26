@@ -79,3 +79,7 @@ Make sure you implement all of these elegantly, and update the related CLAUDE.md
 ---
 
 /commit-draft for only these 4 files
+
+---
+
+Are you satisfied with this result? Is this elegant? Are you confident that it'll work well?

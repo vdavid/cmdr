@@ -3,35 +3,21 @@
   "checkpoint_id": "59e2b57b8a3d",
   "session_id": "04b58e3a-adb6-4666-a68a-f5e00ff6e6a3",
   "strategy": "manual-commit",
-  "created_at": "2026-03-26T23:30:33.010831Z",
+  "created_at": "2026-03-26T23:43:04.128318Z",
   "branch": "main",
-  "checkpoints_count": 7,
-  "files_touched": [
-    "apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md",
-    "apps/desktop/src-tauri/src/file_system/write_operations/chunked_copy.rs",
-    "apps/desktop/src-tauri/src/file_system/write_operations/copy_strategy.rs",
-    "apps/desktop/src-tauri/src/file_system/write_operations/macos_copy.rs"
-  ],
+  "checkpoints_count": 3,
+  "files_touched": [],
   "agent": "Claude Code",
   "model": "claude-opus-4-6[1m]",
-  "turn_id": "e0aa22828773",
+  "turn_id": "9eba2a82e2d3",
   "token_usage": {
-    "input_tokens": 98,
-    "cache_creation_tokens": 110128,
-    "cache_read_tokens": 5750097,
-    "output_tokens": 31125,
-    "api_call_count": 76
+    "input_tokens": 110,
+    "cache_creation_tokens": 117581,
+    "cache_read_tokens": 6729261,
+    "output_tokens": 35163,
+    "api_call_count": 84
   },
   "session_metrics": {
-    "turn_count": 9
-  },
-  "initial_attribution": {
-    "calculated_at": "2026-03-26T23:30:32.479142Z",
-    "agent_lines": 157,
-    "human_added": 0,
-    "human_modified": 0,
-    "human_removed": 0,
-    "total_committed": 157,
-    "agent_percentage": 100
+    "turn_count": 11
   }
 }
