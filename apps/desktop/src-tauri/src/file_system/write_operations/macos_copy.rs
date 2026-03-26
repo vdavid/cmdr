@@ -89,6 +89,8 @@ type CopyfileCallback = extern "C" fn(
 pub struct CopyProgressContext {
     /// Cancellation flag - checked during copy
     pub cancelled: Arc<AtomicBool>,
+    /// Whether we've already logged the cancellation (avoids log spam from repeated callbacks)
+    cancel_logged: AtomicBool,
     /// Callback to report progress (bytes_copied for current file)
     pub on_progress: Option<ProgressCallback>,
     /// Callback when starting a new file
@@ -101,6 +103,7 @@ impl Default for CopyProgressContext {
     fn default() -> Self {
         Self {
             cancelled: Arc::new(AtomicBool::new(false)),
+            cancel_logged: AtomicBool::new(false),
             on_progress: None,
             on_file_start: None,
             on_file_finish: None,
@@ -113,6 +116,7 @@ impl CopyProgressContext {
     pub fn with_cancellation(cancelled: Arc<AtomicBool>) -> Self {
         Self {
             cancelled,
+            cancel_logged: AtomicBool::new(false),
             on_progress: None,
             on_file_start: None,
             on_file_finish: None,
@@ -144,9 +148,12 @@ extern "C" fn copy_progress_callback(
     // SAFETY: ctx is a pointer to CopyProgressContext that we passed in
     let context = unsafe { &*(ctx as *const CopyProgressContext) };
 
-    // Check cancellation
+    // Check cancellation (log only once to avoid spam — macOS may call this hundreds of times
+    // after COPYFILE_QUIT while draining buffers)
     if context.cancelled.load(Ordering::Relaxed) {
-        log::info!("copyfile callback: cancellation detected, returning COPYFILE_QUIT");
+        if !context.cancel_logged.swap(true, Ordering::Relaxed) {
+            log::info!("copyfile callback: cancellation detected, returning COPYFILE_QUIT");
+        }
         return COPYFILE_QUIT;
     }
 
@@ -332,18 +339,21 @@ pub fn copy_file_native(
         copyfile_state_free(state);
     }
 
+    // Check cancellation regardless of result — macOS copyfile(3) can return 0 (success)
+    // even after the callback returned COPYFILE_QUIT, because it may continue draining
+    // buffered I/O (especially common when the source is on a network mount).
+    if let Some(ctx) = context
+        && ctx.cancelled.load(Ordering::Relaxed)
+    {
+        let _ = std::fs::remove_file(destination);
+        return Err(WriteOperationError::Cancelled {
+            message: "Operation cancelled by user".to_string(),
+        });
+    }
+
     if result == 0 {
         Ok(())
     } else {
-        // Check if cancelled
-        if let Some(ctx) = context
-            && ctx.cancelled.load(Ordering::Relaxed)
-        {
-            return Err(WriteOperationError::Cancelled {
-                message: "Operation cancelled by user".to_string(),
-            });
-        }
-
         // Get the actual error
         let err = std::io::Error::last_os_error();
         Err(map_io_error_with_path(err, source, destination))

@@ -24,7 +24,7 @@ network mounts, cross-filesystem moves, and name/path length limits.
 | `copy_strategy.rs` | Strategy selection per file: network FS → chunked copy; overwrite → temp+rename; macOS → `copyfile(3)`; Linux → `copy_file_range(2)`. |
 | `macos_copy.rs` | FFI to macOS `copyfile(3)`. Preserves xattrs, ACLs, resource forks, Finder metadata. Supports APFS `clonefile`. |
 | `linux_copy.rs` | Linux `copy_file_range(2)` with reflink support on btrfs/XFS. 4 MB chunks, cancellation between iterations. |
-| `chunked_copy.rs` | 1 MB chunked read/write for network mounts. Checks cancellation between chunks. Copies xattrs, ACLs, timestamps. |
+| `chunked_copy.rs` | 1 MB chunked read/write — the default copy method for all non-APFS-clonefile copies on macOS and network copies on Linux. Checks cancellation between chunks. Copies xattrs, ACLs, timestamps. |
 | `volume_copy.rs`, `volume_conflict.rs`, `volume_strategy.rs` | Volume-to-volume copy (Local↔MTP abstraction). Publicly re-exported from `mod.rs` and at least partially wired up. |
 | `tests.rs`, `integration_test.rs` | Unit and integration tests. |
 
@@ -82,10 +82,10 @@ actual `copy_files_start` can consume the cache via `preview_id` in `WriteOperat
 `.cmdr-staging-<uuid>` dir at the destination root, then atomic `rename` into place, then source deletion.
 
 **Copy strategy selection** (`copy_strategy.rs`):
-- Destination is a network mount → `chunked_copy_with_metadata` (macOS `copyfile` ignores `COPYFILE_QUIT` on network mounts)
-- Needs safe overwrite → `safe_overwrite_file`
-- macOS → `copy_single_file_native` (macOS `copyfile(3)`, supports `COPYFILE_CLONE` for APFS instant copies)
-- Linux → `copy_single_file_linux` (Linux `copy_file_range(2)`, supports reflink on btrfs/XFS)
+- macOS, same APFS volume → `copyfile(3)` with `COPYFILE_CLONE` for instant clonefile
+- macOS, everything else → `chunked_copy_with_metadata` (1 MB chunks, cancellation between chunks)
+- Linux, network → `chunked_copy_with_metadata`
+- Linux, local → `copy_single_file_linux` (`copy_file_range(2)`, supports reflink on btrfs/XFS)
 - Other platforms → `std::fs::copy` fallback
 
 **Trash has no scan phase.** `trashItemAtURL` is atomic per top-level item (the OS moves the entire tree), so trash
@@ -124,6 +124,27 @@ operations when the frontend is destroyed.
 
 **Decision**: Keep `exacl` crate for ACL copy in chunked copies (not custom FFI bindings).
 **Why**: `exacl` adds zero new transitive dependencies (all of its deps — `bitflags`, `log`, `scopeguard`, `uuid` — are already in our tree). It provides cross-platform ACL support (macOS, Linux, FreeBSD) and full ACL parsing/manipulation for potential future UI features. The crate appears unmaintained (last release Feb 2024) but ACL APIs are stable and don't change. Our usage is best-effort with graceful fallback — if `exacl` ever breaks, files still copy, they just lose ACLs. MIT licensed (compatible with BSL).
+
+**Decision**: On macOS, use `copyfile(3)` only for same-APFS-volume copies; use chunked copy for everything else.
+**Why**: The only practical benefit of `copyfile(3)` is APFS clonefile (instant copy-on-write, zero extra disk usage),
+which only works on the same APFS volume. We evaluated `copyfile` on other filesystems:
+- **HFS+**: No clonefile. Marginal metadata edge (birthtime, file flags), but HFS+ is rare since Apple converted all
+  Macs to APFS in 2017.
+- **exFAT / FAT32**: No clonefile, no xattrs, no ACLs, no file flags — the metadata `copyfile` would preserve doesn't
+  exist on these filesystems. No practical benefit.
+- **NTFS-3G**: FUSE-based, so `copyfile` goes through userspace with the same I/O buffering issues as network mounts.
+  `COPYFILE_QUIT` is unreliable. No benefit.
+- **Network mounts (SMB, NFS, AFP, WebDAV)**: `copyfile` ignores `COPYFILE_QUIT` while draining buffered I/O, causing
+  cancellation to take 30+ seconds or complete the copy entirely. This applies when *either* the source or destination
+  is on a network mount (for example, NAS-to-local copies).
+- **USB / external drives**: Typically exFAT or HFS+ — no clonefile. Different volume from the internal drive, so no
+  same-volume benefits.
+
+Our chunked copy (1 MB read/write chunks) provides: identical speed for non-clonefile copies, reliable cancellation
+between chunks, and granular progress callbacks. It preserves xattrs (including resource forks), ACLs, timestamps, and
+permissions. The only metadata it doesn't preserve is birthtime (creation date) and file flags (`chflags`), which
+matter only on same-volume copies where we use `copyfile` anyway. Detection uses `st_dev` (device ID) for same-volume
+and `statfs.f_fstypename` for APFS. See `copy_strategy.rs` for the implementation.
 
 ## Dependencies
 

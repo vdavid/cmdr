@@ -30,55 +30,12 @@ const CHUNK_SIZE: usize = 1024 * 1024;
 ///
 /// Returns `true` for SMB, NFS, AFP, and WebDAV filesystems.
 /// Returns `false` for local filesystems (APFS, HFS+, etc.) or if detection fails.
-#[cfg(target_os = "macos")]
-pub fn is_network_filesystem(path: &Path) -> bool {
-    use std::ffi::CString;
-
-    // For non-existent paths, check the parent directory
-    let check_path = if path.exists() {
-        path.to_path_buf()
-    } else {
-        match path.parent() {
-            Some(p) if p.exists() => p.to_path_buf(),
-            _ => return false,
-        }
-    };
-
-    let c_path = match CString::new(check_path.to_string_lossy().as_bytes()) {
-        Ok(p) => p,
-        Err(_) => return false,
-    };
-
-    let mut stat: libc::statfs = unsafe { std::mem::zeroed() };
-    if unsafe { libc::statfs(c_path.as_ptr(), &mut stat) } != 0 {
-        return false;
-    }
-
-    // SAFETY: f_fstypename is a null-terminated C string
-    let fstype = unsafe { std::ffi::CStr::from_ptr(stat.f_fstypename.as_ptr()).to_string_lossy() };
-
-    let is_network = matches!(fstype.as_ref(), "smbfs" | "nfs" | "afpfs" | "webdav");
-
-    if is_network {
-        log::debug!(
-            "is_network_filesystem: {} is on network filesystem type '{}'",
-            path.display(),
-            fstype
-        );
-    }
-
-    is_network
-}
-
+///
+/// On macOS, copy strategy uses `is_same_apfs_volume` instead (see `copy_strategy.rs`).
+/// This function is only used on Linux.
 #[cfg(target_os = "linux")]
 pub fn is_network_filesystem(path: &Path) -> bool {
     crate::file_system::linux_mounts::is_network_filesystem_linux(path)
-}
-
-#[cfg(not(any(target_os = "macos", target_os = "linux")))]
-pub fn is_network_filesystem(_path: &Path) -> bool {
-    // On unsupported platforms, assume local filesystem
-    false
 }
 
 // ============================================================================
@@ -345,20 +302,6 @@ mod tests {
 
     fn cleanup_temp_dir(path: &std::path::PathBuf) {
         let _ = fs::remove_dir_all(path);
-    }
-
-    #[test]
-    fn test_is_network_filesystem_local() {
-        // Local paths should return false
-        assert!(!is_network_filesystem(Path::new("/")));
-        assert!(!is_network_filesystem(Path::new("/tmp")));
-        assert!(!is_network_filesystem(Path::new("/Users")));
-    }
-
-    #[test]
-    fn test_is_network_filesystem_nonexistent() {
-        // Non-existent paths should check parent
-        assert!(!is_network_filesystem(Path::new("/tmp/nonexistent_file_12345")));
     }
 
     #[test]

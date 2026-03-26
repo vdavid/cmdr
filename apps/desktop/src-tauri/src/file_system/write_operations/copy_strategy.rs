@@ -1,11 +1,22 @@
 //! Copy strategy selection for file operations.
 //!
-//! Encapsulates the decision of which copy method to use:
-//! - Network filesystems: chunked copy for responsive cancellation
-//! - Safe overwrite needed: temp file + rename pattern
-//! - macOS: native copyfile(3) with APFS clonefile support
-//! - Linux: copy_file_range(2) with reflink support on btrfs/XFS
-//! - Other platforms: std::fs::copy fallback
+//! The only reason to use platform-native copy APIs (`copyfile(3)`, `copy_file_range(2)`) is
+//! filesystem-level cloning (APFS clonefile, btrfs/XFS reflink) — instant, zero-cost copies
+//! that create a copy-on-write pointer instead of copying bytes. In all other cases, our chunked
+//! copy is equivalent in speed and strictly better for progress reporting and cancellation.
+//!
+//! Strategy (macOS):
+//! - Same APFS volume → `copyfile(3)` with `COPYFILE_CLONE` for instant clonefile
+//! - Everything else → chunked copy (1 MB chunks, cancellation between chunks)
+//!
+//! Strategy (Linux):
+//! - Local, non-network → `copy_file_range(2)` (kernel handles reflink on btrfs/XFS)
+//! - Network → chunked copy
+//!
+//! We evaluated `copyfile` on non-APFS filesystems (HFS+, exFAT, FAT32, NTFS-3G) and found no
+//! practical benefit: no clonefile support, and the metadata advantages (birthtime, file flags)
+//! either don't apply (exFAT/FAT32 don't store them) or aren't worth the cancellation tradeoff
+//! (NTFS-3G is FUSE-based and has the same buffering issues as network mounts). See CLAUDE.md.
 
 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
 use std::fs;
@@ -18,20 +29,82 @@ use super::linux_copy::copy_single_file_linux;
 #[cfg(target_os = "macos")]
 use super::macos_copy::{CopyProgressContext, copy_single_file_native};
 
-use super::chunked_copy::{ChunkedCopyProgressFn, chunked_copy_with_metadata, is_network_filesystem};
+use super::chunked_copy::ChunkedCopyProgressFn;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+use super::chunked_copy::chunked_copy_with_metadata;
+#[cfg(target_os = "linux")]
+use super::chunked_copy::is_network_filesystem;
 use super::helpers::safe_overwrite_file;
 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
 use super::types::IoResultExt;
 use super::types::WriteOperationError;
 
-/// Copies file contents using the appropriate strategy based on destination type.
+// ============================================================================
+// macOS: APFS clonefile detection
+// ============================================================================
+
+/// Returns true if source and dest are on the same APFS volume (clonefile is possible).
 ///
-/// Strategy selection:
-/// - Network filesystems: chunked copy for responsive cancellation
-/// - Safe overwrite needed: temp file + rename pattern to preserve original on failure
-/// - macOS: native copyfile(3) with APFS clonefile support
-/// - Linux: copy_file_range(2) with reflink support on btrfs/XFS
-/// - Other platforms: std::fs::copy fallback
+/// Checks two things:
+/// 1. Same volume via `st_dev` (device ID from `stat`) — same approach as `is_same_filesystem`
+/// 2. Filesystem type is APFS via `statfs.f_fstypename`
+///
+/// Handles non-existent destination paths by checking the parent directory.
+#[cfg(target_os = "macos")]
+fn is_same_apfs_volume(source: &Path, dest: &Path) -> bool {
+    use std::os::unix::fs::MetadataExt;
+
+    // Check same volume via device ID (works even when dest doesn't exist — we check parent)
+    let src_dev = match std::fs::metadata(source) {
+        Ok(m) => m.dev(),
+        Err(_) => return false,
+    };
+    let dest_check_path = if dest.exists() {
+        dest.to_path_buf()
+    } else {
+        match dest.parent() {
+            Some(p) if p.exists() => p.to_path_buf(),
+            _ => return false,
+        }
+    };
+    let dest_dev = match std::fs::metadata(&dest_check_path) {
+        Ok(m) => m.dev(),
+        Err(_) => return false,
+    };
+    if src_dev != dest_dev {
+        return false;
+    }
+
+    // Same volume — now check if it's APFS (only APFS supports clonefile)
+    is_apfs(source)
+}
+
+/// Returns true if the path is on an APFS volume.
+#[cfg(target_os = "macos")]
+fn is_apfs(path: &Path) -> bool {
+    use std::ffi::CString;
+
+    let c_path = match CString::new(path.to_string_lossy().as_bytes()) {
+        Ok(p) => p,
+        Err(_) => return false,
+    };
+    let mut stat: libc::statfs = unsafe { std::mem::zeroed() };
+    if unsafe { libc::statfs(c_path.as_ptr(), &mut stat) } != 0 {
+        return false;
+    }
+    let fstype = unsafe { std::ffi::CStr::from_ptr(stat.f_fstypename.as_ptr()).to_string_lossy() };
+    fstype == "apfs"
+}
+
+// ============================================================================
+// Strategy selection
+// ============================================================================
+
+/// Copies file contents using the best strategy for the source/destination combination.
+///
+/// On macOS, uses `copyfile(3)` only for same-APFS-volume copies (APFS clonefile — instant,
+/// zero-cost copy-on-write). All other cases use chunked copy for reliable cancellation and
+/// progress reporting.
 #[cfg(target_os = "macos")]
 pub(super) fn copy_file_with_strategy(
     source: &Path,
@@ -40,18 +113,25 @@ pub(super) fn copy_file_with_strategy(
     cancelled: &Arc<AtomicBool>,
     progress_callback: Option<ChunkedCopyProgressFn>,
 ) -> Result<u64, WriteOperationError> {
-    if is_network_filesystem(dest) {
+    if is_same_apfs_volume(source, dest) {
         log::debug!(
-            "copy_file_with_strategy: using chunked copy for network destination {}",
+            "copy_file_with_strategy: same APFS volume, using copyfile for clonefile (src={}, dest={})",
+            source.display(),
+            dest.display()
+        );
+        let context = CopyProgressContext::with_cancellation(Arc::clone(cancelled));
+        if needs_safe_overwrite {
+            safe_overwrite_file(source, dest, Some(&context))
+        } else {
+            copy_single_file_native(source, dest, false, Some(&context))
+        }
+    } else {
+        log::debug!(
+            "copy_file_with_strategy: different volumes or non-APFS, using chunked copy (src={}, dest={})",
+            source.display(),
             dest.display()
         );
         chunked_copy_with_metadata(source, dest, cancelled, progress_callback)
-    } else if needs_safe_overwrite {
-        let context = CopyProgressContext::with_cancellation(Arc::clone(cancelled));
-        safe_overwrite_file(source, dest, Some(&context))
-    } else {
-        let context = CopyProgressContext::with_cancellation(Arc::clone(cancelled));
-        copy_single_file_native(source, dest, false, Some(&context))
     }
 }
 
@@ -63,9 +143,10 @@ pub(super) fn copy_file_with_strategy(
     cancelled: &Arc<AtomicBool>,
     progress_callback: Option<ChunkedCopyProgressFn>,
 ) -> Result<u64, WriteOperationError> {
-    if is_network_filesystem(dest) {
+    if is_network_filesystem(source) || is_network_filesystem(dest) {
         log::debug!(
-            "copy_file_with_strategy: using chunked copy for network destination {}",
+            "copy_file_with_strategy: using chunked copy for network path (src={}, dest={})",
+            source.display(),
             dest.display()
         );
         chunked_copy_with_metadata(source, dest, cancelled, progress_callback)
@@ -84,14 +165,8 @@ pub(super) fn copy_file_with_strategy(
     cancelled: &Arc<AtomicBool>,
     progress_callback: Option<ChunkedCopyProgressFn>,
 ) -> Result<u64, WriteOperationError> {
-    let _ = progress_callback; // Unused on this platform
-    if is_network_filesystem(dest) {
-        log::debug!(
-            "copy_file_with_strategy: using chunked copy for network destination {}",
-            dest.display()
-        );
-        chunked_copy_with_metadata(source, dest, cancelled, None)
-    } else if needs_safe_overwrite {
+    let _ = (cancelled, progress_callback); // Unused on this platform
+    if needs_safe_overwrite {
         safe_overwrite_file(source, dest)
     } else {
         fs::copy(source, dest).with_path(source)
