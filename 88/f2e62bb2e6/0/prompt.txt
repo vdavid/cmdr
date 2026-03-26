@@ -75,3 +75,8 @@ Sure, do them
 ---
 
 I don't see the shimmer TBH :/ Check @apps/desktop/src/lib/ui/ProgressBar.svelte to see if the agent did it correctly
+
+---
+
+- I see no speed and ETA in the beginning. It should be visible from the beginning, even if imprecise.
+- The calculation still seems incorrect; It shows like double speed from what I'd expect. Please look into the algorithm used
