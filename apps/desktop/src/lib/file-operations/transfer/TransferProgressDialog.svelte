@@ -38,6 +38,7 @@
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import ProgressBar from '$lib/ui/ProgressBar.svelte'
     import { getAppLogger } from '$lib/logging/logger'
 
     /** Returns CSS class for size coloring based on bytes (kb/mb/gb/tb) */
@@ -133,6 +134,8 @@
     let bytesDone = $state(0)
     let bytesTotal = $state(0)
     let startTime = $state(0)
+    /** When the active phase (copying/deleting) started, for accurate speed calculation. */
+    let activePhaseStartTime = 0
     let isCancelling = $state(false)
     let isRollingBack = $state(false)
     let destroyed = false
@@ -185,16 +188,40 @@
     let conflictEvent = $state<WriteConflictEvent | null>(null)
     let isResolvingConflict = $state(false)
 
-    // Calculated stats
-    const percentComplete = $derived(bytesTotal > 0 ? (bytesDone / bytesTotal) * 100 : 0)
+    // Sliding window speed samples for blended ETA calculation
+    let progressSamples: { timestamp: number; bytesDone: number }[] = []
 
-    // Speed and ETA calculation
+    const SPEED_WINDOW_MS = 10_000
+
+    /** Blended speed: 90% recent (10s window) + 10% overall average. */
+    function getBlendedSpeed(): number {
+        if (activePhaseStartTime === 0) return 0
+
+        const now = Date.now()
+        const elapsedSeconds = (now - activePhaseStartTime) / 1000
+        const overallSpeed = elapsedSeconds > 0 ? bytesDone / elapsedSeconds : 0
+
+        // Discard samples older than the window
+        const cutoff = now - SPEED_WINDOW_MS
+        progressSamples = progressSamples.filter((s) => s.timestamp >= cutoff)
+
+        if (progressSamples.length < 2) return overallSpeed
+
+        const oldest = progressSamples[0]
+        const newest = progressSamples[progressSamples.length - 1]
+        const windowSeconds = (newest.timestamp - oldest.timestamp) / 1000
+        if (windowSeconds <= 0) return overallSpeed
+
+        const recentSpeed = (newest.bytesDone - oldest.bytesDone) / windowSeconds
+        return 0.9 * recentSpeed + 0.1 * overallSpeed
+    }
+
+    // Speed and ETA calculation (both use the same blended speed)
     const stats = $derived.by(() => {
-        if (startTime === 0 || bytesDone === 0) {
+        if (startTime === 0) {
             return { bytesPerSecond: 0, estimatedSecondsRemaining: null }
         }
-        const elapsedSeconds = (Date.now() - startTime) / 1000
-        const bytesPerSecond = elapsedSeconds > 0 ? bytesDone / elapsedSeconds : 0
+        const bytesPerSecond = getBlendedSpeed()
         const bytesRemaining = bytesTotal - bytesDone
         const estimatedSecondsRemaining = bytesPerSecond > 0 ? bytesRemaining / bytesPerSecond : null
         return { bytesPerSecond, estimatedSecondsRemaining }
@@ -256,12 +283,24 @@
             bytesTotal: event.bytesTotal,
         })
 
+        // Reset speed samples on phase transition (scanning → copying resets bytesDone to 0,
+        // which would create negative speed if old scanning samples remain in the window)
+        if (event.phase !== phase) {
+            progressSamples = []
+            activePhaseStartTime = Date.now()
+        }
+
         phase = event.phase
         currentFile = event.currentFile
         filesDone = event.filesDone
         filesTotal = event.filesTotal
         bytesDone = event.bytesDone
         bytesTotal = event.bytesTotal
+
+        // Only collect speed samples during active phases (not scanning)
+        if (event.phase !== 'scanning') {
+            progressSamples.push({ timestamp: Date.now(), bytesDone: event.bytesDone })
+        }
     }
 
     /** Accumulated totals from the copy phase of an MTP move, added to the final result. */
@@ -453,6 +492,8 @@
         filesTotal = 0
         bytesDone = 0
         bytesTotal = 0
+        progressSamples = []
+        activePhaseStartTime = 0
 
         log.info('Starting MTP move delete phase: removing {count} source files', {
             count: sourcePaths.length,
@@ -796,36 +837,31 @@
             {/each}
         </div>
 
-        <!-- Progress bar -->
-        <div class="progress-section">
-            <div class="progress-bar-container">
-                <div class="progress-bar" style="width: {percentComplete}%"></div>
-            </div>
-            <div class="progress-info">
-                <span class="progress-percent">{Math.round(percentComplete)}%</span>
-                {#if stats.estimatedSecondsRemaining !== null}
-                    <span class="eta">~{formatDuration(stats.estimatedSecondsRemaining)} remaining</span>
+        <!-- Dual progress bars (hidden during scanning, bars have no data yet) -->
+        {#if phase !== 'scanning'}
+            <div class="progress-grid">
+                {#if bytesTotal > 0}
+                    <span class="progress-label">Size</span>
+                    <ProgressBar value={bytesDone / bytesTotal} ariaLabel="Size progress" />
+                    <span class="progress-detail">
+                        {formatBytes(bytesDone)} / {formatBytes(bytesTotal)}
+                        ({Math.round((bytesDone / bytesTotal) * 100)}%)
+                    </span>
                 {/if}
-            </div>
-        </div>
 
-        <!-- Stats -->
-        <div class="stats-section">
-            <div class="stat-row">
-                <span class="stat-label">{operationType === 'trash' ? 'Items:' : 'Files:'}</span>
-                <span class="stat-value">{filesDone} / {filesTotal}</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-label">Size:</span>
-                <span class="stat-value">{formatBytes(bytesDone)} / {formatBytes(bytesTotal)}</span>
-            </div>
-            {#if stats.bytesPerSecond > 0}
-                <div class="stat-row">
-                    <span class="stat-label">Speed:</span>
-                    <span class="stat-value">{formatBytes(stats.bytesPerSecond)}/s</span>
+                <span class="progress-label">{operationType === 'trash' ? 'Items' : 'Files'}</span>
+                <ProgressBar value={filesTotal > 0 ? filesDone / filesTotal : 0} ariaLabel="File progress" />
+                <span class="progress-detail">{filesDone} / {filesTotal}</span>
+                <div class="progress-meta">
+                    {#if stats.bytesPerSecond > 0}
+                        <span class="progress-speed">{formatBytes(stats.bytesPerSecond)}/s</span>
+                    {/if}
+                    {#if stats.estimatedSecondsRemaining !== null}
+                        <span class="progress-eta">~{formatDuration(stats.estimatedSecondsRemaining)} remaining</span>
+                    {/if}
                 </div>
-            {/if}
-        </div>
+            </div>
+        {/if}
 
         <!-- Current file -->
         {#if currentFile}
@@ -910,63 +946,42 @@
         background: var(--color-allow);
     }
 
-    /* Progress bar */
-    .progress-section {
+    /* Dual progress bars */
+    .progress-grid {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: var(--spacing-xs) var(--spacing-sm);
+        align-items: center;
         padding: 0 var(--spacing-xl);
         margin-bottom: var(--spacing-md);
     }
 
-    .progress-bar-container {
-        width: 100%;
-        height: 8px;
-        background: var(--color-bg-tertiary);
-        border-radius: var(--radius-sm);
-        overflow: hidden;
-    }
-
-    .progress-bar {
-        height: 100%;
-        background: var(--color-accent);
-        border-radius: var(--radius-sm);
-        transition: width 0.1s ease-out;
-    }
-
-    .progress-info {
-        display: flex;
-        justify-content: space-between;
-        margin-top: var(--spacing-xs);
+    .progress-label {
         font-size: var(--font-size-sm);
-    }
-
-    .progress-percent {
-        color: var(--color-text-primary);
-        font-weight: 500;
-    }
-
-    .eta {
         color: var(--color-text-tertiary);
     }
 
-    /* Stats */
-    .stats-section {
-        padding: 0 var(--spacing-xl);
-        margin-bottom: var(--spacing-md);
-    }
-
-    .stat-row {
-        display: flex;
-        justify-content: space-between;
+    .progress-detail {
         font-size: var(--font-size-sm);
-        padding: var(--spacing-xxs) 0;
-    }
-
-    .stat-label {
-        color: var(--color-text-tertiary);
-    }
-
-    .stat-value {
         color: var(--color-text-secondary);
         font-variant-numeric: tabular-nums;
+        text-align: right;
+    }
+
+    .progress-meta {
+        grid-column: 1 / -1;
+        display: flex;
+        justify-content: space-between;
+        font-size: var(--font-size-sm);
+    }
+
+    .progress-speed {
+        color: var(--color-text-secondary);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .progress-eta {
+        color: var(--color-text-tertiary);
     }
 
     /* Current file */

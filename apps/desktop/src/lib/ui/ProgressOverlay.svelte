@@ -1,4 +1,6 @@
 <script lang="ts">
+    import ProgressBar from './ProgressBar.svelte'
+
     const {
         visible,
         label,
@@ -28,15 +30,7 @@
                 {/if}
                 {#if percent != null}
                     <div class="progress-row">
-                        <div
-                            class="progress-bar"
-                            role="progressbar"
-                            aria-valuenow={percent}
-                            aria-valuemin={0}
-                            aria-valuemax={100}
-                        >
-                            <div class="progress-fill" style="width: {percent}%"></div>
-                        </div>
+                        <ProgressBar value={progress ?? 0} size="sm" />
                         <span class="progress-text">{percent}%</span>
                         {#if eta}
                             <span class="progress-eta">{eta}</span>
@@ -88,21 +82,6 @@
         display: flex;
         align-items: center;
         gap: var(--spacing-xs);
-    }
-
-    .progress-bar {
-        flex: 1;
-        height: 4px;
-        background: var(--color-bg-tertiary);
-        border-radius: var(--radius-xs);
-        overflow: hidden;
-    }
-
-    .progress-fill {
-        height: 100%;
-        background: var(--color-accent);
-        border-radius: var(--radius-xs);
-        transition: width 0.3s ease-out;
     }
 
     .progress-text {

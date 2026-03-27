@@ -12,6 +12,7 @@ Reusable UI components used across the entire desktop app.
 | `CommandBox.svelte`      | Copyable terminal command (monospace + Copy button)                      |
 | `LoadingIcon.svelte`     | Animated spinner with progressive status text                            |
 | `AlertDialog.svelte`     | Single-action confirmation dialog built on `ModalDialog`                 |
+| `ProgressBar.svelte`     | Reusable progress bar (just the bar, no labels or layout)                |
 | `ProgressOverlay.svelte` | Floating top-right progress indicator: spinner, progress bar, ETA        |
 | `toast/`                 | Centralized toast notification system — store, container, item           |
 
@@ -92,6 +93,23 @@ Progressive status text driven by props (mutually exclusive, evaluated top-down)
 
 `showCancelHint` adds "Press ESC to cancel and go back" below the spinner. The container uses a 400ms `fadeIn` animation
 where the first 50% is invisible (effectively 200ms before fade begins), avoiding flash for fast loads.
+
+## ProgressBar
+
+Reusable progress bar component — just the bar, no labels or layout. Consumers arrange their own labels around it.
+
+Props:
+
+| Prop        | Type           | Notes                                                                      |
+| ----------- | -------------- | -------------------------------------------------------------------------- |
+| `value`     | `number`       | 0–1 fractional progress                                                    |
+| `size`      | `'sm' \| 'md'` | Bar height + radius. `sm` = 4px / `--radius-xs`, `md` = 8px / `--radius-sm`. Default `'md'` |
+| `ariaLabel` | `string?`      | Accessible label for screen readers                                        |
+
+Uses `role="progressbar"` with `aria-valuenow` / `aria-valuemin` / `aria-valuemax`. Fill transitions via
+`transition: width 0.15s ease-out`.
+
+Consumers: `ProgressOverlay` (size `sm`), `TransferProgressDialog` (size `md`, dual bars for size + file count).
 
 ## ProgressOverlay
 
