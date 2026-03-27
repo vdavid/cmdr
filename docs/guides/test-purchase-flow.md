@@ -79,4 +79,4 @@ work for offline crypto and UI testing only.
 - [API server CLAUDE.md](../../apps/api-server/CLAUDE.md) — environments, webhook flow, local dev
 - [API server README](../../apps/api-server/README.md) — first-time setup, standalone checkout playground
 - [Desktop licensing CLAUDE.md](../../apps/desktop/src/lib/licensing/CLAUDE.md) — activation flow, license types
-- [ngrok tooling](../tooling/ngrok.md) — tunnel setup
+- ngrok generic tooling doc — tunnel setup

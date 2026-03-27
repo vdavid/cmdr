@@ -191,13 +191,12 @@ The API server is a Cloudflare Worker. To deploy it or run `wrangler` commands, 
     - `Zone / Workers Routes / Edit`
     - `Zone / DNS / Edit`
 3. Account resources: the Cmdr account only
-4. Add to `~/.zshenv` (sourced for all shells, including non-interactive agent sessions):
+4. Add to macOS Keychain:
    ```sh
-   export CLOUDFLARE_API_TOKEN="your-token"
+   security add-generic-password -a "$USER" -s "CLOUDFLARE_API_TOKEN" -w "your-token"
    ```
-5. Restart your shell or `source ~/.zshenv`
 
-Wrangler picks up `CLOUDFLARE_API_TOKEN` automatically — no `wrangler login` needed.
+Wrangler picks up `CLOUDFLARE_API_TOKEN` from the environment — the shell profile exports it from Keychain on startup.
 
 ## PostHog access (website analytics)
 
@@ -225,7 +224,7 @@ Paddle handles payments and subscriptions. Two API keys are needed — one for l
    security add-generic-password -a "$USER" -s "PADDLE_SANDBOX_API_KEY" -w "your-sandbox-key"
    ```
 
-See [paddle.md](docs/tooling/paddle.md) for API recipes.
+See the Paddle generic tooling doc for API recipes.
 
 ## Cloudflare Access (analytics dashboard)
 
@@ -252,7 +251,7 @@ API server.
    security add-generic-password -a "$USER" -s "NGROK_API_KEY" -w "your-api-key"
    ```
 
-See [ngrok.md](docs/tooling/ngrok.md) for API recipes.
+See the ngrok generic tooling doc for API recipes.
 
 ## API server local dev
 

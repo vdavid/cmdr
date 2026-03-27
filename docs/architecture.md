@@ -157,10 +157,8 @@ patches get immediate auto-merging PRs regardless of schedule.
 |-----|---------|
 | [hetzner-vps.md](tooling/hetzner-vps.md) | Production VPS: SSH access, layout, deploy commands |
 | [umami.md](tooling/umami.md) | Website analytics: API access, DB queries, troubleshooting |
-| [cloudflare.md](tooling/cloudflare.md) | DNS, Workers, API token, download tracking (Analytics Engine) |
-| [posthog.md](tooling/posthog.md) | Session replay and heatmaps (EU instance), API access |
-| [paddle.md](tooling/paddle.md) | Payments API (live + sandbox), common operations |
-| [ngrok.md](tooling/ngrok.md) | Tunnels for webhook testing |
+| [cloudflare.md](tooling/cloudflare.md) | Cmdr zones, workers, Pages, D1 telemetry |
+| [posthog.md](tooling/posthog.md) | Cmdr project ID and settings |
 | [monitoring.md](tooling/monitoring.md) | UptimeRobot: uptime checks, alerts |
 
 ONLY do read-only operations with these services unless specifically asked to make changes.

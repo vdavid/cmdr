@@ -1,30 +1,7 @@
-# Cloudflare (DNS, Workers, analytics)
+# Cloudflare (Cmdr-specific)
 
-DNS, Workers, and analytics for `getcmdr.com` run on Cloudflare. For API server deployment,
-custom domain config, and troubleshooting, see the
-[API server README](../../apps/api-server/README.md#deployment).
-
-## API token
-
-`CLOUDFLARE_API_TOKEN` lives in `~/.zshenv`. Wrangler picks it up automatically for deploys. See
-[CONTRIBUTING.md](../../CONTRIBUTING.md#cloudflare-access-api-server) for setup.
-
-**Account ID**: `6a4433bf11c3cf86feda057f76f47991`
-
-**Gotcha**: The token is a scoped API token (not a global API key). It works with wrangler and the REST API.
-If `$CLOUDFLARE_API_TOKEN` isn't inherited by a subshell, read it from the environment export in `~/.zshenv`:
-
-```bash
-TOKEN=${CLOUDFLARE_API_TOKEN:-$(grep CLOUDFLARE_API_TOKEN ~/.zshenv | head -1 | sed 's/.*=//' | tr -d '"' | tr -d "'")}
-curl -s "https://api.cloudflare.com/client/v4/..." \
-  -H "Authorization: Bearer ${TOKEN}" \
-  -H "Content-Type: application/json"
-```
-
-**Token permissions** (as of 2026-03): Workers Scripts Edit, Workers KV Storage Edit, Workers Routes Edit,
-Zone DNS Edit, Account Analytics Read, Cloudflare Pages Edit. If a deploy fails with a permissions error, check
-https://dash.cloudflare.com/profile/api-tokens and add the missing permission. The token value doesn't change
-when permissions are updated.
+DNS, Workers, and analytics for Cmdr run on Cloudflare. For API server deployment, custom domain config, and
+troubleshooting, see the [API server README](../../apps/api-server/README.md#deployment).
 
 ## Zones and Workers
 
@@ -40,22 +17,6 @@ when permissions are updated.
 | Pages project | Domain | Notes |
 | --- | --- | --- |
 | `cmdr-analytics-dashboard` | `analdash.getcmdr.com` | SvelteKit dashboard, auth via CF Access. Token needs `Cloudflare Pages: Edit` permission. |
-
-## Common API operations
-
-```bash
-# List DNS records for a zone
-curl -s "https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records" \
-  -H "Authorization: Bearer ${TOKEN}" | jq '.result[] | {id, type, name, content, proxied}'
-
-# Delete a DNS record
-curl -s -X DELETE "https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{record_id}" \
-  -H "Authorization: Bearer ${TOKEN}"
-
-# List Worker custom domains
-curl -s "https://api.cloudflare.com/client/v4/accounts/6a4433bf11c3cf86feda057f76f47991/workers/domains" \
-  -H "Authorization: Bearer ${TOKEN}" | jq '.result[]'
-```
 
 ## Telemetry (D1)
 

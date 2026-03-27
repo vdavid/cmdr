@@ -1,16 +1,7 @@
-# Hetzner VPS
+# Hetzner VPS (Cmdr-specific)
 
-Production server for getcmdr.com and related services. SSH access is configured in the maintainer's `~/.ssh/config`
-as `hetzner`.
-
-```bash
-ssh hetzner
-```
-
-## Layout
-
-The repo is cloned at `/opt/cmdr`, owned by the `deploy-cmdr` user. The `david` user (SSH login) is in the
-`deploy-cmdr` group and has write access.
+The Cmdr repo is cloned at `/opt/cmdr` on the Hetzner VPS, owned by the `deploy-cmdr` user. The `david` user
+(SSH login) is in the `deploy-cmdr` group and has write access.
 
 ```
 /opt/cmdr/                          # git clone of this repo
@@ -21,12 +12,6 @@ The repo is cloned at `/opt/cmdr`, owned by the `deploy-cmdr` user. The `david` 
     ├── listmonk/                   # Newsletter (Docker + Postgres)
     └── deploy-webhook/             # GitHub Actions deploy hook
 ```
-
-Caddy, Umami, and other non-Cmdr services are managed in the separate **`hetzner-server`** repo (`~/hetzner-server`
-on the server, `~/projects-git/vdavid/hetzner-server` locally). **Never edit those files directly on the server** —
-commit and push locally, then `git pull` on the server.
-
-Caddy runs as a reverse proxy in front of everything on the `proxy-net` Docker network.
 
 ## Common operations
 
