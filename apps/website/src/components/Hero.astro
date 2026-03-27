@@ -31,7 +31,7 @@ import DownloadButton from './DownloadButton.astro'
         </h1>
 
         <!-- Subheadline - Step 4 -->
-        <p class="animate-blur-in stagger-4 mb-10 max-w-xl text-lg text-[var(--color-text-secondary)] md:text-xl">
+        <p class="animate-blur-in stagger-4 mb-10 max-w-xl text-lg leading-relaxed text-[var(--color-text-secondary)] md:text-xl">
             Indexes your entire drive in minutes. Directory sizes everywhere, instant search, keyboard-driven
             everything. Built in Rust, free for personal use.
         </p>
@@ -64,12 +64,18 @@ import DownloadButton from './DownloadButton.astro'
     <div class="hero-illustration" aria-hidden="true">
         <div class="hero-perspective">
             <div class="hero-base">
-                <!-- Frame (always visible) -->
-                <img src="/hero/cmdr-hero-frame-dark.png" alt="" class="hero-layer hero-frame" />
-                <!-- Right pane (animates in first) -->
-                <img src="/hero/cmdr-hero-right-pane-dark.png" alt="" class="hero-layer hero-right-pane" />
-                <!-- Left pane (animates in second) -->
-                <img src="/hero/cmdr-hero-left-pane-dark.png" alt="" class="hero-layer hero-left-pane" />
+                <!-- Dark variant -->
+                <div class="hero-variant hero-variant--dark">
+                    <img src="/hero/cmdr-hero-frame-dark.png" alt="" class="hero-layer hero-frame" />
+                    <img src="/hero/cmdr-hero-right-pane-dark.png" alt="" class="hero-layer hero-right-pane" />
+                    <img src="/hero/cmdr-hero-left-pane-dark.png" alt="" class="hero-layer hero-left-pane" />
+                </div>
+                <!-- Light variant -->
+                <div class="hero-variant hero-variant--light">
+                    <img src="/hero/cmdr-hero-frame-light.png" alt="" class="hero-layer hero-frame" />
+                    <img src="/hero/cmdr-hero-right-pane-light.png" alt="" class="hero-layer hero-right-pane" />
+                    <img src="/hero/cmdr-hero-left-pane-light.png" alt="" class="hero-layer hero-left-pane" />
+                </div>
             </div>
         </div>
     </div>
@@ -187,6 +193,35 @@ import DownloadButton from './DownloadButton.astro'
             width: 94vw;
             height: calc(94vw * 9 / 16);
         }
+    }
+
+    /* Variant containers fill the hero-base and stack on top of each other */
+    .hero-variant {
+        position: absolute;
+        inset: 0;
+    }
+
+    /* Default: show dark, hide light */
+    .hero-variant--light {
+        display: none;
+    }
+
+    /* System light preference, no explicit dark override */
+    @media (prefers-color-scheme: light) {
+        :global(:root:not([data-theme='dark'])) .hero-variant--dark {
+            display: none;
+        }
+        :global(:root:not([data-theme='dark'])) .hero-variant--light {
+            display: block;
+        }
+    }
+
+    /* Explicit light override */
+    :global(:root[data-theme='light']) .hero-variant--dark {
+        display: none;
+    }
+    :global(:root[data-theme='light']) .hero-variant--light {
+        display: block;
     }
 
     .hero-layer {

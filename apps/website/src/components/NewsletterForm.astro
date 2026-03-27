@@ -165,7 +165,7 @@ const uniqueId = `newsletter-${variant}-${Math.random().toString(36).slice(2, 8)
 
             function showFeedback(text: string, type: 'success' | 'error') {
                 feedback.textContent = text
-                feedback.style.color = type === 'success' ? 'var(--color-accent)' : 'var(--color-warning)'
+                feedback.style.color = type === 'success' ? 'var(--color-accent-text)' : 'var(--color-warning)'
             }
 
             form.addEventListener('submit', async (e: SubmitEvent) => {

@@ -61,7 +61,7 @@ const htmlContent = await marked.parse(changelogContent)
         border-bottom: 1px solid var(--color-border);
         font-size: 1.25rem;
         font-weight: 600;
-        color: var(--color-accent);
+        color: var(--color-accent-text);
     }
 
     .changelog-content :global(h2:first-of-type) {
@@ -101,7 +101,7 @@ const htmlContent = await marked.parse(changelogContent)
     }
 
     .changelog-content :global(a) {
-        color: var(--color-accent);
+        color: var(--color-accent-text);
         text-decoration: underline;
         text-underline-offset: 2px;
         transition: color 0.2s;
@@ -145,7 +145,7 @@ const htmlContent = await marked.parse(changelogContent)
     }
 
     .changelog-content :global(summary:hover) {
-        color: var(--color-accent);
+        color: var(--color-accent-text);
     }
 
     .changelog-content :global(details[open] summary) {

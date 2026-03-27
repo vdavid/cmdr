@@ -47,7 +47,7 @@ const postsWithExcerpts = await Promise.all(
                                 <h2 class="mt-1 text-2xl font-bold tracking-tight">
                                     <a
                                         href={`/blog/${post.id}`}
-                                        class="text-[var(--color-text-primary)] no-underline transition-colors hover:text-[var(--color-accent)]"
+                                        class="text-[var(--color-text-primary)] no-underline transition-colors hover:text-[var(--color-accent-text)]"
                                     >
                                         {post.data.title}
                                     </a>
@@ -88,7 +88,7 @@ const postsWithExcerpts = await Promise.all(
     .read-more-link {
         display: inline-block;
         margin-top: 0.5rem;
-        color: var(--color-accent);
+        color: var(--color-accent-text);
         font-weight: 500;
         text-decoration: none;
         transition: text-decoration 0.2s;

@@ -28,6 +28,7 @@
     /* Accent - mustard yellow (use dark text on buttons for accessibility) */
     --color-accent: #ffc206;
     --color-accent-hover: #ffd23f;
+    --color-accent-text: #ffc206;
     --color-accent-glow: rgba(255, 194, 6, 0.4);
     --color-accent-contrast: #14130f;
 
@@ -80,7 +81,21 @@ body {
     -webkit-text-fill-color: transparent;
 }
 
-/* Shiki dual theme: default to dark, switch to light via prefers-color-scheme.
+@media (prefers-color-scheme: light) {
+    :root:not([data-theme='dark']) .gradient-text {
+        background: linear-gradient(135deg, #1a1917 0%, #5c5c66 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+    }
+}
+
+:root[data-theme='light'] .gradient-text {
+    background: linear-gradient(135deg, #1a1917 0%, #5c5c66 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+/* Shiki dual theme: default to dark, switch to light via prefers-color-scheme or data-theme.
    Blog code blocks override this to stay dark (see blog-prose.css). */
 .astro-code,
 .astro-code span {
@@ -92,8 +107,8 @@ body {
 }
 
 @media (prefers-color-scheme: light) {
-    :root:not([data-force-dark]) .astro-code,
-    :root:not([data-force-dark]) .astro-code span {
+    :root:not([data-theme='dark']) .astro-code,
+    :root:not([data-theme='dark']) .astro-code span {
         color: var(--shiki-light) !important;
         background-color: var(--shiki-light-bg) !important;
         font-style: var(--shiki-light-font-style) !important;
@@ -102,9 +117,25 @@ body {
     }
 }
 
+:root[data-theme='light'] .astro-code,
+:root[data-theme='light'] .astro-code span {
+    color: var(--shiki-light) !important;
+    background-color: var(--shiki-light-bg) !important;
+    font-style: var(--shiki-light-font-style) !important;
+    font-weight: var(--shiki-light-font-weight) !important;
+    text-decoration: var(--shiki-light-text-decoration) !important;
+}
+
 /* Glow effect */
 .glow {
     box-shadow: 0 0 40px var(--color-accent-glow);
+    transition: box-shadow var(--duration-normal);
+}
+
+.glow:hover {
+    box-shadow:
+        0 0 60px var(--color-accent-glow),
+        0 0 20px var(--color-accent-glow);
 }
 
 /* Fade in animation - GPU optimized to avoid layout shifts */
@@ -162,26 +193,48 @@ body {
     animation-delay: 400ms;
 }
 
-/* Light mode tokens for sub-pages (landing page overrides to stay dark) */
+/* Light mode tokens — system preference fallback (no explicit theme set) */
 @media (prefers-color-scheme: light) {
-    :root:not([data-force-dark]) {
+    :root:not([data-theme='dark']) {
         --color-background: #fafaf8;
-        --color-surface: #f0efec;
-        --color-surface-elevated: #e8e7e3;
-        --color-border: #d8d7d3;
-        --color-border-subtle: #e2e1dd;
+        --color-surface: #f3f1ea;
+        --color-surface-elevated: #eae7df;
+        --color-border: #d9d5cb;
+        --color-border-subtle: #e4e0d7;
 
         --color-text-primary: #1a1917;
-        --color-text-secondary: #5c5c66;
-        --color-text-tertiary: #84848e;
+        --color-text-secondary: #56554e;
+        --color-text-tertiary: #7e7d75;
 
-        --color-accent: #d4a006;
-        --color-accent-hover: #b8900a;
-        --color-accent-glow: rgba(212, 160, 6, 0.25);
+        --color-accent: #f0b400;
+        --color-accent-hover: #dca400;
+        --color-accent-text: #9a7400;
+        --color-accent-glow: rgba(240, 180, 0, 0.4);
         --color-accent-contrast: #14130f;
 
         --color-warning: #d4365c;
     }
+}
+
+/* Light mode tokens — explicit toggle override */
+:root[data-theme='light'] {
+    --color-background: #fafaf8;
+    --color-surface: #f3f1ea;
+    --color-surface-elevated: #eae7df;
+    --color-border: #d9d5cb;
+    --color-border-subtle: #e4e0d7;
+
+    --color-text-primary: #1a1917;
+    --color-text-secondary: #56554e;
+    --color-text-tertiary: #7e7d75;
+
+    --color-accent: #f0b400;
+    --color-accent-hover: #dca400;
+    --color-accent-text: #9a7400;
+    --color-accent-glow: rgba(240, 180, 0, 0.4);
+    --color-accent-contrast: #14130f;
+
+    --color-warning: #d4365c;
 }
 
 /* Reduced motion: disable decorative hover scale effects, keep color transitions */

@@ -50,22 +50,30 @@ See `docs/guides/writing-blog-posts.md`.
 
 ## Color scheme (light/dark mode)
 
-Sub-pages (blog, legal, pricing, changelog, roadmap) support both light and dark mode via `prefers-color-scheme`. The
-landing page is dark-only.
+All pages support both light and dark mode. Users can override their system preference via a theme toggle in the header.
 
 **How it works:**
 
-- `global.css` defines dark tokens in `@theme` (the default) and light tokens in `@media (prefers-color-scheme: light)`
-  scoped to `:root:not([data-force-dark])`.
-- `Layout.astro` accepts a `forceDark` prop. When true, it adds `data-force-dark` to `<html>`, which blocks the light
-  media query from applying. Only `index.astro` passes `forceDark`.
+- `global.css` defines dark tokens in `@theme` (the default) and light tokens in two places: a
+  `@media (prefers-color-scheme: light)` block scoped to `:root:not([data-theme='dark'])` (system preference fallback),
+  and a `:root[data-theme='light']` block (explicit toggle override). Both contain the same token values.
+- `Layout.astro` includes an inline `<script>` in `<head>` that reads `localStorage('theme')` and sets `data-theme` on
+  `<html>` before first paint, preventing FOUC. A matching inline `<style>` sets the background color for all
+  combinations (system pref + explicit override).
+- `ThemeToggle.astro` is an animated sun/moon toggle (based on theme-toggles by Alfred Jones). It sets `data-theme` on
+  `<html>` and persists the choice to `localStorage`. On first visit (no localStorage entry), the site follows the
+  system preference.
 - On accent-colored buttons, use `--color-accent-contrast` for text (not `--color-background`), because the background
   color changes between modes but button text on accent should always be dark.
 - Blog code blocks stay dark in light mode: `blog-prose.css` forces Shiki's `--shiki-dark` variables on `pre` elements,
   and uses hardcoded dark surface/border colors.
 - Shiki is configured with dual themes (`github-dark` + `github-light`) and `defaultColor: false` in `astro.config.mjs`.
   The theme switching CSS is in `global.css`.
-- Remark42 comments detect the user's color scheme preference at load time.
+- Remark42 comments detect `data-theme` attribute, falling back to `prefers-color-scheme`.
+- Hero images have dark and light variants; `Hero.astro` switches between them using the same CSS selector pattern.
+
+**Decision/Why**: The dual-selector pattern (media query + `data-theme` attribute) ensures the site works correctly
+without JS (falls back to system preference) while supporting explicit overrides via the toggle.
 
 ## Analytics
 
@@ -88,6 +96,6 @@ inevitable. See `docs/tooling/umami.md` and `docs/tooling/posthog.md` for API ac
   affect the build.
 - `site` must be set in `astro.config.mjs` for RSS and OG image URLs to work.
 - Font files for OG image generation (`inter-400.ttf`, `inter-700.ttf`) live in `public/fonts/`.
-- When adding new pages, don't pass `forceDark` to `Layout` unless the page should be dark-only like the landing page.
+- All pages support both light and dark mode. Don't hardcode colors — use CSS variables from `global.css`.
 - **Deploy order**: Always `docker compose build` before `docker compose down`. Building first keeps the old container
   serving traffic. `down → build → up` causes ~15s downtime while the image builds.

@@ -5,15 +5,14 @@ into a frame + two pane cutouts so they can animate independently in `Hero.astro
 
 ## Files
 
-| File                              | Purpose                                                                             |
-| --------------------------------- | ----------------------------------------------------------------------------------- |
-| `cmdr-hero-frame-{dark,light}.png`     | Window chrome (title bar, toolbar, borders, status bar) with transparent pane areas |
-| `cmdr-hero-left-pane-{dark,light}.png` | Left pane screenshot content on transparent canvas                                  |
-| `cmdr-hero-right-pane-{dark,light}.png`| Right pane screenshot content on transparent canvas                                 |
+| File                                    | Purpose                                                                             |
+| --------------------------------------- | ----------------------------------------------------------------------------------- |
+| `cmdr-hero-frame-{dark,light}.png`      | Window chrome (title bar, toolbar, borders, status bar) with transparent pane areas |
+| `cmdr-hero-left-pane-{dark,light}.png`  | Left pane screenshot content on transparent canvas                                  |
+| `cmdr-hero-right-pane-{dark,light}.png` | Right pane screenshot content on transparent canvas                                 |
 
-All six files share the same canvas size: **2508 x 1634 px** (2x retina).
-
-TODO: Light variants and `Hero.astro` update to use dark/light files (currently uses unsuffixed dark-only files).
+All six files share the same canvas size: **2508 x 1634 px** (2x retina). `Hero.astro` switches between dark and light
+variants using CSS selectors on `data-theme` / `prefers-color-scheme`.
 
 ## How to reshoot
 
@@ -58,12 +57,14 @@ After the screenshots, revert the color: `set_setting id: "appearance.appColor",
 ### 4. Take screenshots (by a human)
 
 Subprocess (read this first but dont execute): How to take a screenshot:
+
 - Make sure [CleanShot](https://cleanshot.com/) is running.
 - Open CleanShot's top menu, and click Capture Window. Important not to use the ⌘⇧4 shortcut because Cmdr bottom bar
   looks different with Shift held.
 - Once taken, click Edit → switch background to None. Then Save.
 
 So, the process:
+
 - Make sure you're in dark mode
 - Dark mode: take screenshot with CleanShot, save as `~/Downloads/cmdr-scrshot-dark.png`
 - Press ⌘D, switch to light mode
@@ -126,11 +127,11 @@ Red should only show through the shadow, not in the content area.
 
 All coordinates are in 2x retina pixels on the 2508 x 1634 canvas (which includes ~112 px macOS shadow on each side).
 
-| Region                     | Origin (x, y) | Size (w x h) | Notes                                            |
-| -------------------------- | ------------- | ------------ | ------------------------------------------------ |
-| Window (excl. shadow)      | (112, 76)     | 2284 x 1410  | The actual window chrome boundary                |
-| Left pane cutout           | (114, 281)    | 1133 x 1107  | Starts below column headers, ends above status bar |
-| Right pane cutout          | (1261, 281)   | 1133 x 1107  | Same size as left pane                           |
-| Pane divider gap           | (1247, 281)   | 14 px wide   | Between the two cutouts (includes resize bar)    |
-| Left pane mask rectangle   | (114, 281) to (1246, 1387)  | | Used in the `-draw` command        |
-| Right pane mask rectangle  | (1261, 281) to (2393, 1387) | | Used in the `-draw` command        |
+| Region                    | Origin (x, y)               | Size (w x h) | Notes                                              |
+| ------------------------- | --------------------------- | ------------ | -------------------------------------------------- |
+| Window (excl. shadow)     | (112, 76)                   | 2284 x 1410  | The actual window chrome boundary                  |
+| Left pane cutout          | (114, 281)                  | 1133 x 1107  | Starts below column headers, ends above status bar |
+| Right pane cutout         | (1261, 281)                 | 1133 x 1107  | Same size as left pane                             |
+| Pane divider gap          | (1247, 281)                 | 14 px wide   | Between the two cutouts (includes resize bar)      |
+| Left pane mask rectangle  | (114, 281) to (1246, 1387)  |              | Used in the `-draw` command                        |
+| Right pane mask rectangle | (1261, 281) to (2393, 1387) |              | Used in the `-draw` command                        |

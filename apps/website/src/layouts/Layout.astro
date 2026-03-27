@@ -5,39 +5,25 @@ interface Props {
     title: string
     description?: string
     ogImage?: string
-    /** Force dark mode regardless of system preference (used by landing page) */
-    forceDark?: boolean
 }
 
 const {
     title,
     description = 'The fastest two-pane file manager for macOS. Indexes your entire drive in minutes — directory sizes, instant search, keyboard-driven everything. Built in Rust, free for personal use.',
     ogImage,
-    forceDark = false,
 } = Astro.props
 ---
 
 <!doctype html>
-<html lang="en" {...forceDark ? { 'data-force-dark': '' } : {}}>
+<html lang="en">
     <head>
         <ClientRouter />
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="description" content={description} />
-        {
-            forceDark ? (
-                <>
-                    <meta name="theme-color" content="#14130f" />
-                    <meta name="color-scheme" content="dark" />
-                </>
-            ) : (
-                <>
-                    <meta name="theme-color" content="#14130f" media="(prefers-color-scheme: dark)" />
-                    <meta name="theme-color" content="#fafaf8" media="(prefers-color-scheme: light)" />
-                    <meta name="color-scheme" content="dark light" />
-                </>
-            )
-        }
+        <meta name="theme-color" content="#14130f" media="(prefers-color-scheme: dark)" />
+        <meta name="theme-color" content="#fafaf8" media="(prefers-color-scheme: light)" />
+        <meta name="color-scheme" content="dark light" />
 
         <!-- Open Graph -->
         <meta property="og:title" content={title} />
@@ -78,12 +64,34 @@ const {
             })}
         />
 
-        {/* Prevent light-mode FOUC: set background before first paint */}
+        {/* Apply persisted theme choice before first paint to prevent FOUC */}
+        <script is:inline>
+            ;(function () {
+                try {
+                    var t = localStorage.getItem('theme')
+                    if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t
+                } catch (e) {}
+                // Preserve theme across Client Router navigations (register once)
+                if (!window.__themeSwapRegistered) {
+                    window.__themeSwapRegistered = true
+                    document.addEventListener('astro:before-swap', function (e) {
+                        var theme = document.documentElement.dataset.theme
+                        if (theme) e.newDocument.documentElement.dataset.theme = theme
+                    })
+                }
+            })()
+        </script>
         <style is:inline>
             @media (prefers-color-scheme: light) {
-                html:not([data-force-dark]) {
+                html:not([data-theme='dark']) {
                     background-color: #fafaf8;
                 }
+            }
+            html[data-theme='light'] {
+                background-color: #fafaf8;
+            }
+            html[data-theme='dark'] {
+                background-color: #14130f;
             }
         </style>
 

@@ -1,6 +1,7 @@
 ---
 import DownloadButton from './DownloadButton.astro'
 import NewsletterForm from './NewsletterForm.astro'
+import ThemeToggle from './ThemeToggle.astro'
 
 const navLinks = [
     { href: '/#features', label: 'Features' },
@@ -74,36 +75,42 @@ const navLinks = [
                 </svg>
             </button>
 
+            <!-- Theme toggle (desktop) -->
+            <ThemeToggle />
+
             <!-- CTA Button -->
             <DownloadButton variant="header" />
         </div>
 
-        <!-- Hamburger button (mobile) -->
-        <button
-            type="button"
-            class="mobile-menu-toggle flex items-center justify-center md:hidden"
-            aria-label="Open menu"
-            aria-expanded="false"
-            aria-controls="mobile-menu"
-            data-mobile-menu-toggle
-        >
-            <svg
-                class="hamburger-icon"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
+        <!-- Theme toggle + hamburger (mobile) -->
+        <div class="flex items-center md:hidden">
+            <ThemeToggle />
+            <button
+                type="button"
+                class="mobile-menu-toggle flex items-center justify-center"
+                aria-label="Open menu"
+                aria-expanded="false"
+                aria-controls="mobile-menu"
+                data-mobile-menu-toggle
             >
-                <line class="hamburger-line hamburger-line--top" x1="3" y1="6" x2="21" y2="6"></line>
-                <line class="hamburger-line hamburger-line--middle" x1="3" y1="12" x2="21" y2="12"></line>
-                <line class="hamburger-line hamburger-line--bottom" x1="3" y1="18" x2="21" y2="18"></line>
-            </svg>
-        </button>
+                <svg
+                    class="hamburger-icon"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                >
+                    <line class="hamburger-line hamburger-line--top" x1="3" y1="6" x2="21" y2="6"></line>
+                    <line class="hamburger-line hamburger-line--middle" x1="3" y1="12" x2="21" y2="12"></line>
+                    <line class="hamburger-line hamburger-line--bottom" x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+        </div>
     </nav>
 
     <!-- Mobile menu -->
