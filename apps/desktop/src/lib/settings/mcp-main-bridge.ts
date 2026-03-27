@@ -12,7 +12,7 @@
 import { emit, listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { settingsRegistry } from './settings-registry'
 import { getSetting, setSetting, isModified } from './settings-store'
-import type { SettingId, SettingsValues } from './types'
+import type { SettingDefinition, SettingId, SettingsValues } from './types'
 import { getEffectiveShortcuts, getDefaultShortcuts, isShortcutModified } from '$lib/shortcuts'
 import { commands } from '$lib/commands/command-registry'
 import { getAppLogger } from '$lib/logging/logger'
@@ -27,6 +27,39 @@ let unlistenFns: UnlistenFn[] = []
 
 interface GetAllSettingsPayload {
     requestId: string
+}
+
+const maskedPlaceholder = '********'
+
+/** Returns true for settings that contain secrets (API keys, tokens, etc.). */
+function isSensitive(def: SettingDefinition): boolean {
+    return def.component === 'password-input' || def.id === 'ai.cloudProviderConfigs'
+}
+
+/** Mask a sensitive value for safe display. Password-input fields are fully masked.
+ *  `ai.cloudProviderConfigs` is a JSON blob — we redact any `apiKey` fields inside it. */
+function maskValue(def: SettingDefinition, value: unknown): unknown {
+    if (def.component === 'password-input') {
+        // Fully mask; show placeholder only when a value is actually set
+        return typeof value === 'string' && value.length > 0 ? maskedPlaceholder : ''
+    }
+
+    if (def.id === 'ai.cloudProviderConfigs' && typeof value === 'string') {
+        try {
+            const parsed: Record<string, Record<string, unknown>> = JSON.parse(value)
+            for (const providerConfig of Object.values(parsed)) {
+                if (typeof providerConfig.apiKey === 'string' && providerConfig.apiKey.length > 0) {
+                    providerConfig.apiKey = maskedPlaceholder
+                }
+            }
+            return JSON.stringify(parsed)
+        } catch {
+            // Not valid JSON — mask the entire value to be safe
+            return value.length > 2 ? maskedPlaceholder : value
+        }
+    }
+
+    return value
 }
 
 /** Build a YAML representation of all settings grouped by section. */
@@ -49,12 +82,16 @@ function buildAllSettingsYaml(): string {
             const id = def.id as SettingId
             const value = getSetting(id)
             const modified = isModified(id)
+            const sensitive = isSensitive(def)
+
+            const displayValue = sensitive ? maskValue(def, value) : value
+            const displayDefault = sensitive ? maskValue(def, def.default) : def.default
 
             lines.push(`  - id: ${def.id}`)
             lines.push(`    label: "${def.label}"`)
             lines.push(`    type: ${def.type}`)
-            lines.push(`    value: ${formatYamlValue(value)}`)
-            lines.push(`    default: ${formatYamlValue(def.default)}`)
+            lines.push(`    value: ${formatYamlValue(displayValue)}`)
+            lines.push(`    default: ${formatYamlValue(displayDefault)}`)
             lines.push(`    modified: ${String(modified)}`)
             if (def.constraints) {
                 lines.push(`    constraints: ${JSON.stringify(def.constraints)}`)
