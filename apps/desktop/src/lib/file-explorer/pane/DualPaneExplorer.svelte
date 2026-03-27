@@ -1137,54 +1137,7 @@
         }>('mcp-tab', (event) => {
             const { action, pane: paneStr, tabId, pinned } = event.payload
             if (paneStr !== 'left' && paneStr !== 'right') return
-            const pane = paneStr as 'left' | 'right'
-            const mgr = getTabMgr(pane)
-
-            switch (action) {
-                case 'new': {
-                    const success = tabOpsNewTab(pane, getTabMgr, (h) => $state.snapshot(h))
-                    if (!success) {
-                        log.warn(`MCP tab new: tab limit reached in ${pane} pane`)
-                    }
-                    break
-                }
-                case 'close': {
-                    if (getTabCount(mgr) <= 1) {
-                        log.warn(`MCP tab close: can't close last tab in ${pane} pane`)
-                        break
-                    }
-                    const closeId = tabId ?? mgr.activeTabId
-                    closeTab(mgr, closeId)
-                    saveTabsForPaneSide(pane)
-                    if (pane === focusedPane) syncPinTabMenu()
-                    break
-                }
-                case 'close_others': {
-                    const keepId = tabId ?? mgr.activeTabId
-                    closeOtherTabsInMgr(mgr, keepId)
-                    saveTabsForPaneSide(pane)
-                    break
-                }
-                case 'activate': {
-                    if (tabId) {
-                        switchToTab(pane, tabId)
-                    }
-                    break
-                }
-                case 'set_pinned': {
-                    const pinId = tabId ?? mgr.activeTabId
-                    const tab = getAllTabs(mgr).find((t) => t.id === pinId)
-                    if (!tab) break
-                    if (pinned && !tab.pinned) {
-                        pinTab(mgr, pinId)
-                    } else if (!pinned && tab.pinned) {
-                        unpinTab(mgr, pinId)
-                    }
-                    saveTabsForPaneSide(pane)
-                    if (pane === focusedPane && pinId === mgr.activeTabId) syncPinTabMenu()
-                    break
-                }
-            }
+            handleMcpTabAction(paneStr, action, tabId, pinned)
         })
 
         // Register drag-and-drop target handler for external and pane-to-pane drops
@@ -2171,6 +2124,48 @@
 
     export function closeOtherTabs(): void {
         tabOpsCloseOtherTabs(focusedPane, getTabMgr)
+    }
+
+    function handleMcpTabAction(
+        pane: 'left' | 'right',
+        action: string,
+        tabId: string | undefined,
+        pinned: boolean | undefined,
+    ) {
+        const mgr = getTabMgr(pane)
+        const mcpTabHandlers: Partial<Record<string, () => void>> = {
+            new: () => {
+                if (!tabOpsNewTab(pane, getTabMgr, (h) => $state.snapshot(h))) {
+                    log.warn(`MCP tab new: tab limit reached in ${pane} pane`)
+                }
+            },
+            close: () => {
+                if (getTabCount(mgr) <= 1) {
+                    log.warn(`MCP tab close: can't close last tab in ${pane} pane`)
+                    return
+                }
+                closeTab(mgr, tabId ?? mgr.activeTabId)
+                saveTabsForPaneSide(pane)
+                if (pane === focusedPane) syncPinTabMenu()
+            },
+            close_others: () => {
+                closeOtherTabsInMgr(mgr, tabId ?? mgr.activeTabId)
+                saveTabsForPaneSide(pane)
+            },
+            activate: () => {
+                if (tabId) switchToTab(pane, tabId)
+            },
+            set_pinned: () => {
+                const pinId = tabId ?? mgr.activeTabId
+                const tab = getAllTabs(mgr).find((t) => t.id === pinId)
+                if (!tab) return
+                if (pinned && !tab.pinned) pinTab(mgr, pinId)
+                else if (!pinned && tab.pinned) unpinTab(mgr, pinId)
+                saveTabsForPaneSide(pane)
+                if (pane === focusedPane && pinId === mgr.activeTabId) syncPinTabMenu()
+            },
+        }
+        mcpTabHandlers[action]?.()
     }
 
     function syncPinTabMenu() {

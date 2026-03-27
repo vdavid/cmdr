@@ -8,7 +8,7 @@ export default defineConfig({
     workers: process.env.CI ? 1 : undefined,
     reporter: process.env.CI ? 'github' : 'html',
     use: {
-        baseURL: 'http://localhost:4173',
+        baseURL: 'http://localhost:18473',
         trace: 'on-first-retry',
     },
     projects: [
@@ -18,9 +18,9 @@ export default defineConfig({
         },
     ],
     webServer: {
-        command: 'npx serve dist -l 4173',
-        url: 'http://localhost:4173',
+        command: 'pnpm exec serve dist -l 18473',
+        url: 'http://localhost:18473',
         reuseExistingServer: !process.env.CI,
-        timeout: 60000,
+        timeout: 120000,
     },
 })

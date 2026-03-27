@@ -23,6 +23,9 @@ var allowedUnusedClasses = map[string]bool{
 	"btn-danger":    true,
 	"btn-mini":      true,
 	"btn-regular":   true,
+	// ProgressBar.svelte - applied dynamically via class="track {size}" template string
+	"sm": true,
+	"md": true,
 	// Tooltip - singleton DOM node created/managed by tooltip.ts action, not in Svelte templates
 	"cmdr-tooltip":     true,
 	"cmdr-tooltip-kbd": true,

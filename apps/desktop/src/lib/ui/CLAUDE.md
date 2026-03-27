@@ -100,11 +100,11 @@ Reusable progress bar component — just the bar, no labels or layout. Consumers
 
 Props:
 
-| Prop        | Type           | Notes                                                                      |
-| ----------- | -------------- | -------------------------------------------------------------------------- |
-| `value`     | `number`       | 0–1 fractional progress                                                    |
+| Prop        | Type           | Notes                                                                                       |
+| ----------- | -------------- | ------------------------------------------------------------------------------------------- |
+| `value`     | `number`       | 0–1 fractional progress                                                                     |
 | `size`      | `'sm' \| 'md'` | Bar height + radius. `sm` = 4px / `--radius-xs`, `md` = 8px / `--radius-sm`. Default `'md'` |
-| `ariaLabel` | `string?`      | Accessible label for screen readers                                        |
+| `ariaLabel` | `string?`      | Accessible label for screen readers                                                         |
 
 Uses `role="progressbar"` with `aria-valuenow` / `aria-valuemin` / `aria-valuemax`. Fill transitions via
 `transition: width 0.15s ease-out`.

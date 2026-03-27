@@ -46,7 +46,7 @@ function maskValue(def: SettingDefinition, value: unknown): unknown {
 
     if (def.id === 'ai.cloudProviderConfigs' && typeof value === 'string') {
         try {
-            const parsed: Record<string, Record<string, unknown>> = JSON.parse(value)
+            const parsed = JSON.parse(value) as Record<string, Record<string, unknown>>
             for (const providerConfig of Object.values(parsed)) {
                 if (typeof providerConfig.apiKey === 'string' && providerConfig.apiKey.length > 0) {
                     providerConfig.apiKey = maskedPlaceholder
