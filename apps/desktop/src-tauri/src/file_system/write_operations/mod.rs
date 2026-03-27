@@ -129,19 +129,37 @@ where
         }
         unregister_operation_status(&operation_id_for_cleanup);
 
-        if let Err(e) = result {
-            use tauri::Emitter;
-            let _ = app_for_error.emit(
-                "write-error",
-                WriteErrorEvent {
-                    operation_id: operation_id_for_cleanup,
-                    operation_type,
-                    error: WriteOperationError::IoError {
-                        path: String::new(),
-                        message: format!("Task failed: {}", e),
+        use tauri::Emitter;
+        match result {
+            Ok(Ok(())) => {} // Handler already emitted write-complete or write-cancelled
+            Ok(Err(ref e)) if matches!(e, WriteOperationError::Cancelled { .. }) => {
+                // Handler already emitted write-cancelled
+            }
+            Ok(Err(e)) => {
+                // Handler error (validation, I/O, etc.) — emit write-error as safety net
+                let _ = app_for_error.emit(
+                    "write-error",
+                    WriteErrorEvent {
+                        operation_id: operation_id_for_cleanup,
+                        operation_type,
+                        error: e,
                     },
-                },
-            );
+                );
+            }
+            Err(join_error) => {
+                // Panic/abort in spawn_blocking
+                let _ = app_for_error.emit(
+                    "write-error",
+                    WriteErrorEvent {
+                        operation_id: operation_id_for_cleanup,
+                        operation_type,
+                        error: WriteOperationError::IoError {
+                            path: String::new(),
+                            message: format!("Task failed: {}", join_error),
+                        },
+                    },
+                );
+            }
         }
     });
 
@@ -158,12 +176,6 @@ pub async fn copy_files_start(
     destination: PathBuf,
     config: WriteOperationConfig,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
-    validate_sources(&sources)?;
-    validate_destination(&destination)?;
-    validate_destination_writable(&destination)?;
-    validate_not_same_location(&sources, &destination)?;
-    validate_destination_not_inside_source(&sources, &destination)?;
-
     log::info!(
         "copy_files_start: sources={:?}, destination={:?}, dry_run={}",
         sources,
@@ -175,7 +187,14 @@ pub async fn copy_files_start(
         app,
         WriteOperationType::Copy,
         config.progress_interval_ms,
-        move |app, op_id, state| copy_files_with_progress(&app, &op_id, &state, &sources, &destination, &config),
+        move |app, op_id, state| {
+            validate_sources(&sources)?;
+            validate_destination(&destination)?;
+            validate_destination_writable(&destination)?;
+            validate_not_same_location(&sources, &destination)?;
+            validate_destination_not_inside_source(&sources, &destination)?;
+            copy_files_with_progress(&app, &op_id, &state, &sources, &destination, &config)
+        },
     )
     .await
 }
@@ -190,12 +209,6 @@ pub async fn move_files_start(
     destination: PathBuf,
     config: WriteOperationConfig,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
-    validate_sources(&sources)?;
-    validate_destination(&destination)?;
-    validate_destination_writable(&destination)?;
-    validate_not_same_location(&sources, &destination)?;
-    validate_destination_not_inside_source(&sources, &destination)?;
-
     log::info!(
         "move_files_start: sources={:?}, destination={:?}, dry_run={}",
         sources,
@@ -207,7 +220,14 @@ pub async fn move_files_start(
         app,
         WriteOperationType::Move,
         config.progress_interval_ms,
-        move |app, op_id, state| move_files_with_progress(&app, &op_id, &state, &sources, &destination, &config),
+        move |app, op_id, state| {
+            validate_sources(&sources)?;
+            validate_destination(&destination)?;
+            validate_destination_writable(&destination)?;
+            validate_not_same_location(&sources, &destination)?;
+            validate_destination_not_inside_source(&sources, &destination)?;
+            move_files_with_progress(&app, &op_id, &state, &sources, &destination, &config)
+        },
     )
     .await
 }
@@ -224,19 +244,6 @@ pub async fn delete_files_start(
     volume_id: Option<String>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     let volume_id_str = volume_id.unwrap_or_else(|| "root".to_string());
-    let volume = if volume_id_str != "root" {
-        Some(
-            crate::file_system::get_volume_manager()
-                .get(&volume_id_str)
-                .ok_or_else(|| WriteOperationError::IoError {
-                    path: volume_id_str.clone(),
-                    message: format!("Volume '{}' not found", volume_id_str),
-                })?,
-        )
-    } else {
-        validate_sources(&sources)?;
-        None
-    };
 
     log::info!(
         "delete_files_start: sources={:?}, volume={}, dry_run={}",
@@ -250,9 +257,16 @@ pub async fn delete_files_start(
         WriteOperationType::Delete,
         config.progress_interval_ms,
         move |app, op_id, state| {
-            if let Some(vol) = volume {
-                delete_volume_files_with_progress(vol, &app, &op_id, &state, &sources, &config)
+            if volume_id_str != "root" {
+                let volume = crate::file_system::get_volume_manager()
+                    .get(&volume_id_str)
+                    .ok_or_else(|| WriteOperationError::IoError {
+                        path: volume_id_str.clone(),
+                        message: format!("Volume '{}' not found", volume_id_str),
+                    })?;
+                delete_volume_files_with_progress(volume, &app, &op_id, &state, &sources, &config)
             } else {
+                validate_sources(&sources)?;
                 delete_files_with_progress(&app, &op_id, &state, &sources, &config)
             }
         },
@@ -271,15 +285,16 @@ pub async fn trash_files_start(
     item_sizes: Option<Vec<u64>>,
     config: WriteOperationConfig,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
-    validate_sources(&sources)?;
-
     log::info!("trash_files_start: sources={:?}", sources);
 
     start_write_operation(
         app,
         WriteOperationType::Trash,
         config.progress_interval_ms,
-        move |app, op_id, state| trash_files_with_progress(&app, &op_id, &state, &sources, item_sizes.as_deref()),
+        move |app, op_id, state| {
+            validate_sources(&sources)?;
+            trash_files_with_progress(&app, &op_id, &state, &sources, item_sizes.as_deref())
+        },
     )
     .await
 }

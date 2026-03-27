@@ -389,6 +389,33 @@ impl CopyTransaction {
         }
     }
 
+    /// Rolls back on a detached thread. Returns immediately.
+    /// Use for user-initiated cancel where the calling thread must not block.
+    /// Best-effort: if the background thread fails, files remain on disk.
+    pub fn rollback_in_background(mut self) {
+        let files = std::mem::take(&mut self.created_files);
+        let dirs = std::mem::take(&mut self.created_dirs);
+        self.committed = true; // Prevent Drop from synchronous double-rollback
+        if files.is_empty() && dirs.is_empty() {
+            return;
+        }
+        log::info!(
+            "rollback_in_background: cleaning up {} files and {} dirs",
+            files.len(),
+            dirs.len()
+        );
+        std::thread::spawn(move || {
+            for file in files.iter().rev() {
+                if let Err(e) = std::fs::remove_file(file) {
+                    log::warn!("rollback: failed to remove {}: {}", file.display(), e);
+                }
+            }
+            for dir in dirs.iter().rev() {
+                let _ = std::fs::remove_dir(dir);
+            }
+        });
+    }
+
     /// Marks the transaction as committed, preventing rollback on drop.
     pub fn commit(mut self) {
         self.committed = true;

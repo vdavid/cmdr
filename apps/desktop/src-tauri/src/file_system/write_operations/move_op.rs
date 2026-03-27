@@ -8,7 +8,9 @@ use std::sync::atomic::Ordering;
 use std::time::Instant;
 
 use super::copy::copy_single_item;
-use super::helpers::{is_same_filesystem, resolve_conflict, safe_overwrite_dir, spawn_async_sync};
+use super::helpers::{
+    is_same_filesystem, remove_dir_all_in_background, resolve_conflict, safe_overwrite_dir, spawn_async_sync,
+};
 use super::scan::{SourceItemTracker, handle_dry_run, scan_sources};
 use super::state::{CopyTransaction, WriteOperationState, update_operation_status};
 use super::types::{
@@ -275,8 +277,8 @@ fn move_with_staging(
     })();
 
     if let Err(e) = copy_result {
-        // Cleanup staging directory on failure
-        let _ = fs::remove_dir_all(&staging_dir);
+        // Cleanup staging directory in background (may block on network mounts)
+        remove_dir_all_in_background(staging_dir.clone());
         let _ = app.emit(
             "write-error",
             WriteErrorEvent {
@@ -350,8 +352,8 @@ fn move_with_staging(
     })();
 
     if let Err(e) = rename_result {
-        // Cleanup staging directory on failure
-        let _ = fs::remove_dir_all(&staging_dir);
+        // Cleanup staging directory in background (may block on network mounts)
+        remove_dir_all_in_background(staging_dir);
         let _ = app.emit(
             "write-error",
             WriteErrorEvent {

@@ -268,7 +268,7 @@ pub(super) fn copy_files_with_progress(
                         operation_id,
                         transaction.created_files.len()
                     );
-                    transaction.rollback();
+                    transaction.rollback_in_background();
                 }
 
                 let _ = app.emit(

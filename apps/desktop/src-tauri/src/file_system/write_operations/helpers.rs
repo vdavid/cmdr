@@ -260,6 +260,24 @@ pub(crate) fn is_same_filesystem(_source: &Path, _destination: &Path) -> std::io
 // Async sync for durability
 // ============================================================================
 
+/// Deletes a file on a detached thread. Returns immediately. Best-effort.
+pub(super) fn remove_file_in_background(path: PathBuf) {
+    std::thread::spawn(move || {
+        if let Err(e) = fs::remove_file(&path) {
+            log::warn!("background cleanup: failed to remove {}: {}", path.display(), e);
+        }
+    });
+}
+
+/// Deletes a directory tree on a detached thread. Returns immediately. Best-effort.
+pub(super) fn remove_dir_all_in_background(path: PathBuf) {
+    std::thread::spawn(move || {
+        if let Err(e) = fs::remove_dir_all(&path) {
+            log::warn!("background cleanup: failed to remove {}: {}", path.display(), e);
+        }
+    });
+}
+
 /// Spawns a background thread to call sync() for durability.
 /// This ensures writes are flushed to disk without blocking the completion event.
 pub(super) fn spawn_async_sync() {

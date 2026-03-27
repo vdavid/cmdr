@@ -122,9 +122,9 @@ fn copy_data_chunked(
                 "chunked_copy: cancellation detected after {} bytes, cleaning up",
                 total_bytes
             );
-            // Clean up partial file
+            // Clean up partial file in background (may block on network mounts)
             drop(dst_file);
-            let _ = std::fs::remove_file(dest);
+            super::helpers::remove_file_in_background(dest.to_path_buf());
             return Err(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),
             });
@@ -338,8 +338,8 @@ mod tests {
         let result = chunked_copy_with_metadata(&src, &dst, &cancelled, None);
 
         assert!(matches!(result, Err(WriteOperationError::Cancelled { .. })));
-        // Partial file should be cleaned up
-        assert!(!dst.exists());
+        // Partial file cleanup is now async/best-effort (fires on a detached thread),
+        // so we don't assert file absence here — it may or may not be deleted yet.
 
         cleanup_temp_dir(&temp_dir);
     }

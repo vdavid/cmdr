@@ -12,10 +12,10 @@ network mounts, cross-filesystem moves, and name/path length limits.
 
 | File | Responsibility |
 |------|----------------|
-| `mod.rs` | Public API: `copy_files_start`, `move_files_start`, `delete_files_start`, `trash_files_start`. Each validates inputs, then delegates to `start_write_operation` which handles state creation, spawn lifecycle, cleanup, and panic recovery. |
+| `mod.rs` | Public API: `copy_files_start`, `move_files_start`, `delete_files_start`, `trash_files_start`. Each delegates to `start_write_operation` which handles state creation, spawn lifecycle, cleanup, and error/panic recovery. Validation runs inside the handler closure on the blocking thread pool — never on the async executor. |
 | `types.rs` | All serializable types: events, config, errors, results. `WriteOperationConfig`, `ConflictResolution`, `WriteOperationError`, `DryRunResult`, scan preview events. |
 | `state.rs` | Two `LazyLock<RwLock<HashMap>>` caches (`WRITE_OPERATION_STATE`, `OPERATION_STATUS_CACHE`). `WriteOperationState`, `CopyTransaction`, `ScanResult`, `FileInfo`. |
-| `helpers.rs` | Validation (`validate_sources`, `validate_destination_writable` via `libc::access`, `validate_disk_space` via `statvfs`). Conflict resolution (condvar wait for Stop mode). `safe_overwrite_file`/`safe_overwrite_dir` (temp+rename). `find_unique_name`. `run_cancellable`. `is_same_filesystem` (device IDs). |
+| `helpers.rs` | Validation (`validate_sources`, `validate_destination_writable` via `libc::access`, `validate_disk_space` via `statvfs`). Conflict resolution (condvar wait for Stop mode). `safe_overwrite_file`/`safe_overwrite_dir` (temp+rename). `find_unique_name`. `run_cancellable`. `is_same_filesystem` (device IDs). Background cleanup helpers: `remove_file_in_background`, `remove_dir_all_in_background`. |
 | `scan.rs` | `scan_sources` (recursive walk, emits progress), `dry_run_scan`, scan preview subsystem (`start_scan_preview`, `cancel_scan_preview`). |
 | `copy.rs` | `copy_files_with_progress`: scan → disk space check → per-file copy via `copy_single_item`. `CopyTransaction` for rollback. |
 | `move_op.rs` | Same-fs: `fs::rename`. Cross-fs: copy to `.cmdr-staging-<uuid>`, atomic rename, delete sources. |
@@ -32,18 +32,20 @@ network mounts, cross-filesystem moves, and name/path length limits.
 
 ```
 Frontend
-  → validate (sources exist, dest writable, not same location, dest not inside source)
   → WriteOperationState created (AtomicBool cancelled, Condvar for Stop conflicts)
   → stored in WRITE_OPERATION_STATE + OPERATION_STATUS_CACHE
+  → operationId returned to frontend immediately (dialog opens, cancel is possible)
   → tokio::spawn (async wrapper)
       → tokio::task::spawn_blocking (all blocking I/O here)
+          → validate (sources exist, dest writable, not same location, dest not inside source)
           → scan phase: walk_dir_recursive, emit scan-progress events
           → disk space check (statvfs)
           → execute phase: per-file copy/delete
               → throttled write-progress events (200ms default)
           → success: CopyTransaction::commit(), emit write-complete
-          → cancel: CopyTransaction::rollback(), emit write-cancelled
+          → cancel: CopyTransaction::rollback_in_background(), emit write-cancelled
           → error: CopyTransaction::rollback(), emit write-error
+      → safety net: start_write_operation emits write-error for unhandled handler errors
   → state removed from both caches
 ```
 
@@ -54,10 +56,11 @@ Frontend
 **Two-layer cancellation.** `AtomicBool` for fast in-loop checks. `run_cancellable` wraps blocking operations (e.g.,
 network-mount copies that may block indefinitely) in a separate thread, polling the flag every 100ms via `mpsc::channel`.
 
-**`CopyTransaction` rollback with auto-rollback on panic.** Records created files and dirs in creation order. Rollback
-deletes files in reverse order first, then dirs in reverse order (deepest first). `commit()` sets a `committed` flag and
-drops the vecs. `Drop` impl checks `committed` — if false (panic unwind or forgotten commit), it auto-rolls back.
-Delete operations are not rollbackable.
+**`CopyTransaction` rollback: sync vs async.** Two rollback paths: `rollback()` (synchronous, for error paths where
+cleanup must complete before the error event) and `rollback_in_background()` (fire-and-forget on a detached thread, for
+user-initiated cancel where the UI must respond instantly). `rollback_in_background` sets `committed = true` to prevent
+`Drop` from triggering a synchronous double-rollback, then moves the file/dir lists into the detached thread. The
+synchronous `rollback()` and auto-rollback-on-panic via `Drop` remain unchanged. Delete operations are not rollbackable.
 
 **Symlinks never dereferenced.** All stat calls use `symlink_metadata`. Symlink loop detection uses a `HashSet<PathBuf>`
 of canonicalized paths.
@@ -99,6 +102,20 @@ operations when the frontend is destroyed.
 
 **Special files skipped.** Sockets, FIFOs, and device files are filtered out during scan.
 
+**Validation runs inside `spawn_blocking`.** The `*_files_start` functions return an `operationId` immediately, before
+any filesystem I/O. Validation (`validate_sources`, `validate_destination_writable`, etc.) runs inside the handler
+closure on the blocking thread pool. This keeps the Tauri IPC handler non-blocking, so the frontend can always open
+the progress dialog and offer cancel, even if a network mount is stalled.
+
+**`start_write_operation` emits `write-error` for handler errors.** The spawn wrapper matches on the handler's
+`Result`: `Ok(Ok(()))` and `Ok(Err(Cancelled))` are no-ops (handlers already emitted the right events), `Ok(Err(e))`
+emits `write-error` as a safety net, and `Err(join_error)` handles panics. Double-emit is harmless because the
+frontend's `handleError` removes all listeners on first receipt.
+
+**Background cleanup is best-effort.** `rollback_in_background`, `remove_file_in_background`, and
+`remove_dir_all_in_background` run on detached threads. If the network mount disconnects or the app exits, partial
+files or staging directories may remain on disk. These use the `.cmdr-` prefix, so they're recognizable.
+
 **`volume_copy` path is incomplete.** The three `volume_*` files are Phase 5 work, but are publicly re-exported from `mod.rs` and at least partially wired up.
 
 ## Events emitted
@@ -109,7 +126,7 @@ operations when the frontend is destroyed.
 | `write-conflict` | Stop mode hit a conflicting destination file |
 | `write-complete` | Operation finished successfully |
 | `write-cancelled` | Operation cancelled (includes `rolled_back` flag) |
-| `write-error` | Operation failed |
+| `write-error` | Operation failed (emitted by handler and/or `start_write_operation` safety net) |
 | `write-source-item-done` | All files for a top-level source item processed (for gradual deselection) |
 | `dry-run-complete` | `config.dry_run == true` (returns `DryRunResult`) |
 | `scan-preview-progress` | During `start_scan_preview` |
