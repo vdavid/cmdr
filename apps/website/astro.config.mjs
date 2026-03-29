@@ -2,13 +2,15 @@
 import { defineConfig } from 'astro/config'
 import tailwindcss from '@tailwindcss/vite'
 import rehypeExternalLinks from 'rehype-external-links'
+import remarkSmartypants from 'remark-smartypants'
 import sitemap from '@astrojs/sitemap'
+import { smartQuotesIntegration } from './src/plugins/smart-quotes.mjs'
 
 // https://astro.build/config
 export default defineConfig({
     site: 'https://getcmdr.com',
     output: 'static',
-    integrations: [sitemap()],
+    integrations: [sitemap(), smartQuotesIntegration()],
     server: {
         port: parseInt(process.env.PORT || '4321'),
     },
@@ -20,6 +22,8 @@ export default defineConfig({
             },
             defaultColor: false,
         },
+        // @ts-expect-error remark-smartypants types use generic Node, Astro expects Root
+        remarkPlugins: [remarkSmartypants],
         rehypePlugins: [[rehypeExternalLinks, { target: '_blank', rel: ['noopener', 'noreferrer'] }]],
     },
     vite: {

@@ -6,17 +6,12 @@ import CheckIcon from '../components/CheckIcon.astro'
 import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro'
 ---
 
-<Layout
-    title="Roadmap - Cmdr"
-    description="See what's coming to Cmdr. From completed features to future AI-powered capabilities."
->
+<Layout title="Roadmap - Cmdr" description="What we've shipped and what's coming next in Cmdr.">
     <Header />
     <main class="mx-auto max-w-4xl px-6 pt-32 pb-24">
         <header class="mb-10">
             <h1 class="mb-4 text-3xl font-bold tracking-tight text-[var(--color-text-primary)] md:text-4xl">Roadmap</h1>
-            <p class="text-[var(--color-text-secondary)]">
-                What's shipped, what's next. Building the future of file management, one feature at a time.
-            </p>
+            <p class="text-[var(--color-text-secondary)]">What's shipped, what's next.</p>
         </header>
 
         <div class="roadmap-content">
@@ -265,8 +260,18 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
                 <ul class="milestone-list">
                     <li>
                         <CheckIcon checked={false} />
+                        <span class="title">Browse git repos</span>
+                        <span class="description">Browse git history and branches like any folder</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={false} />
                         <span class="title">Handle zips</span>
-                        <span class="description">Compress/uncompress files, and browse/modify zips</span>
+                        <span class="description">Compress/extract files, browse/modify zips</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={false} />
+                        <span class="title">Support more file systems</span>
+                        <span class="description">S3 buckets, FTP(S), SFTP, SCP, WebDAV, NFS, etc.</span>
                     </li>
                 </ul>
             </section>
@@ -278,7 +283,7 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
                     <li>
                         <CheckIcon checked={false} />
                         <span class="title">AI-powered smart selection</span>
-                        <span class="description">"Select all error logs from last week" just like that</span>
+                        <span class="description">Support queries like "Select all error logs from last week"</span>
                     </li>
                     <li>
                         <CheckIcon checked={false} />
@@ -380,20 +385,26 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
         font-family: var(--font-mono) monospace;
     }
 
-    /* Responsive adjustments */
+    /* Mobile: use grid so checkbox + title share a row, date + description indent below */
     @media (max-width: 640px) {
         .milestone-list li {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 0.25rem;
+            display: grid;
+            grid-template-columns: 1.25rem 1fr;
+            gap: 0.125rem 0.5rem;
+            align-items: start;
+        }
+
+        .title {
+            grid-column: 2;
+            grid-row: 1;
         }
 
         .date {
-            margin-left: 1.75rem;
+            grid-column: 2;
         }
 
         .description {
-            margin-left: 1.75rem;
+            grid-column: 2;
         }
     }
 </style>

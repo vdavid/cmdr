@@ -22,7 +22,7 @@ const currentYear = new Date().getFullYear()
                 <ul class="space-y-2 text-sm">
                     <li>
                         <a
-                            href="/#features"
+                            href="/features"
                             class="text-[var(--color-text-secondary)] underline decoration-[var(--color-border)] underline-offset-2 transition-colors hover:text-[var(--color-text-primary)] hover:decoration-[var(--color-text-tertiary)]"
                         >
                             Features
@@ -124,7 +124,7 @@ const currentYear = new Date().getFullYear()
         >
             <div>
                 <p class="font-semibold text-[var(--color-text-primary)]">Stay in the loop</p>
-                <p class="text-sm text-[var(--color-text-secondary)]">Product updates and Cmdr news. No spam, ever.</p>
+                <p class="text-sm text-[var(--color-text-secondary)]">Product updates and news. No spam, ever.</p>
             </div>
             <div class="w-full md:w-auto md:min-w-[320px]">
                 <NewsletterForm variant="inline" />
@@ -133,12 +133,16 @@ const currentYear = new Date().getFullYear()
 
         <!-- Bottom bar -->
         <div
-            class="flex flex-col items-center justify-between gap-4 border-t border-[var(--color-border-subtle)] pt-8 md:flex-row"
+            class="flex flex-wrap items-center justify-center gap-x-1 border-t border-[var(--color-border-subtle)] pt-8 text-sm text-[var(--color-text-tertiary)]"
         >
-            <p class="text-sm text-[var(--color-text-tertiary)]">
-                © {currentYear} Rymdskottkärra AB. All rights reserved.
-            </p>
-            <p class="text-sm text-[var(--color-text-tertiary)]">Made with ❤️ in Sweden</p>
+            <span>© {currentYear} David Veszelovszki ·</span>
+            <a href="https://veszelovszki.com" target="_blank" rel="noopener noreferrer" class="underline decoration-[var(--color-border)] underline-offset-2 transition-colors hover:text-[var(--color-text-primary)] hover:decoration-[var(--color-text-tertiary)]">veszelovszki.com</a>
+            <span>·</span>
+            <a href="https://github.com/vdavid" target="_blank" rel="noopener noreferrer" class="underline decoration-[var(--color-border)] underline-offset-2 transition-colors hover:text-[var(--color-text-primary)] hover:decoration-[var(--color-text-tertiary)]">GitHub</a>
+            <span>·</span>
+            <a href="https://x.com/vdavid" target="_blank" rel="noopener noreferrer" class="underline decoration-[var(--color-border)] underline-offset-2 transition-colors hover:text-[var(--color-text-primary)] hover:decoration-[var(--color-text-tertiary)]">X</a>
+            <span>·</span>
+            <a href="https://www.linkedin.com/in/veszelovszki/" target="_blank" rel="noopener noreferrer" class="underline decoration-[var(--color-border)] underline-offset-2 transition-colors hover:text-[var(--color-text-primary)] hover:decoration-[var(--color-text-tertiary)]">LinkedIn</a>
         </div>
     </div>
 </footer>

@@ -16,7 +16,7 @@ const paddleConfig = {
 const isPaddleConfigured = paddleConfig.clientToken !== ''
 ---
 
-<Layout title="Pricing — Cmdr" description="Cmdr is free forever for personal use. Commercial licenses from $59/year.">
+<Layout title="Pricing - Cmdr" description="Cmdr is free forever for personal use. Commercial licenses from $59/year.">
     <Header />
     <main class="mx-auto max-w-5xl px-6 pt-32 pb-24">
         <!-- Hero -->
@@ -25,7 +25,7 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
                 Free forever for personal use
             </h1>
             <p class="text-lg text-[var(--color-text-secondary)]">
-                Use Cmdr at home without paying a cent. Using it at work? We'd appreciate your support.
+                Use Cmdr at home without paying a cent. Less than a coffee a month for work.
             </p>
         </header>
 
@@ -38,7 +38,7 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
         <!-- Pricing Cards -->
         <div class="mb-16 grid gap-6 md:grid-cols-3">
             <!-- Personal (Free) -->
-            <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+            <div class="flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
                 <div class="mb-4">
                     <h3 class="text-lg font-semibold text-[var(--color-text-primary)]">Personal</h3>
                     <p class="text-sm text-[var(--color-text-tertiary)]">For hobbyists and side projects</p>
@@ -65,12 +65,12 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
                         <span class="text-[var(--color-text-tertiary)]">Commercial use</span>
                     </li>
                 </ul>
-                <div class="text-center text-sm text-[var(--color-text-tertiary)]">Just download and use it</div>
+                <div class="mt-auto py-2 text-center text-sm text-[var(--color-text-tertiary)]">Just download and use it</div>
             </div>
 
             <!-- Commercial Subscription -->
             <div
-                class="relative mt-4 rounded-2xl border-2 border-[var(--color-accent)] bg-[var(--color-surface)] p-6 shadow-lg md:mt-0"
+                class="relative mt-4 flex flex-col rounded-2xl border-2 border-[var(--color-accent)] bg-[var(--color-surface)] p-6 shadow-lg md:mt-0"
             >
                 <div
                     class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[var(--color-accent)] px-3 py-1 text-xs font-medium text-[var(--color-accent-contrast)]"
@@ -109,14 +109,14 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
                     type="button"
                     data-paddle-price="commercialSubscription"
                     disabled={!isPaddleConfigured}
-                    class="block w-full cursor-pointer rounded-lg bg-[var(--color-accent)] py-2 text-center text-sm font-medium text-[var(--color-accent-contrast)] transition-all duration-200 hover:bg-[var(--color-accent-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+                    class="mt-auto block w-full cursor-pointer rounded-lg bg-[var(--color-accent)] py-2 text-center text-sm font-medium text-[var(--color-accent-contrast)] transition-all duration-200 hover:bg-[var(--color-accent-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                     Buy commercial license
                 </button>
             </div>
 
             <!-- Commercial Perpetual -->
-            <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+            <div class="flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
                 <div class="mb-4">
                     <h3 class="text-lg font-semibold text-[var(--color-text-primary)]">Perpetual</h3>
                     <p class="text-sm text-[var(--color-text-tertiary)]">Buy once, use forever</p>
@@ -147,7 +147,7 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
                     type="button"
                     data-paddle-price="commercialPerpetual"
                     disabled={!isPaddleConfigured}
-                    class="block w-full cursor-pointer rounded-lg border border-[var(--color-border)] py-2 text-center text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-elevated)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-50"
+                    class="mt-auto block w-full cursor-pointer rounded-lg border border-[var(--color-border)] py-2 text-center text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-elevated)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                     Buy perpetual license
                 </button>
@@ -164,7 +164,7 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
                     "name": "What counts as \"commercial use\"?",
                     "acceptedAnswer": {
                         "@type": "Answer",
-                        "text": "If you're using Cmdr as part of your job (employment, freelancing, consulting), that's commercial use. Side projects, open source work, and personal file management are all fine without a commercial license.",
+                        "text": "If you're making money (getting a salary, having contracts, etc.) in relation to what you use those files for, that's commercial use. Can be employment, freelancing, consulting. These cases need a Commercial license at $59/year. Organizing your family photos, copying files for your hobby projects, doing your open source work or volunteering, these are Personal use and Cmdr is 100% free for these things.",
                     },
                 },
                 {
@@ -172,15 +172,15 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
                     "name": "Can I use it on multiple machines?",
                     "acceptedAnswer": {
                         "@type": "Answer",
-                        "text": "Yes! Use Cmdr on as many machines as you like — laptop, desktop, remote debugging rig, whatever. Just make sure you're the one using your license.",
+                        "text": "Yes! Use Cmdr on as many machines as you like with a single Commercial license, as long as you're the only person using it. You can install it on your laptop, desktop, remote debugging VM thing, whatever you like. The license is per person, not per machine.",
                     },
                 },
                 {
                     "@type": "Question",
-                    "name": "What's the difference between subscription and perpetual?",
+                    "name": "What's the Commercial vs. Perpetual license?",
                     "acceptedAnswer": {
                         "@type": "Answer",
-                        "text": "Subscription ($59/year) auto-renews annually and always includes the latest updates. Perpetual ($199) is a one-time purchase that includes 3 years of updates — after that, you can keep using your current version forever or renew updates at a reduced rate.",
+                        "text": "The perpetual license is a bigger initial commitment, but it's better for budgeting at some companies. Then they are the same for the first three years: you get all updates, etc. After that, the perpetual license allows you to keep it forever.",
                     },
                 },
                 {
@@ -188,7 +188,7 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
                     "name": "Can I see the source code?",
                     "acceptedAnswer": {
                         "@type": "Answer",
-                        "text": "Yes! Cmdr is source-available on GitHub. You can view, learn from, and modify the code. The license (BSL 1.1) converts to AGPL-3.0 after 3 years.",
+                        "text": "Yes! Cmdr is source-available. You can view the code, learn from it, verify that there are no nasty backdoors or any other weird stuff going on. You just can't reuse or republish the code or the app. The BSL 1.1 license converts to AGPL-3.0 after 3 years, meaning that if the dev gets hit by a bus, you won't end up without updates forever.",
                     },
                 },
                 {
@@ -196,7 +196,7 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
                     "name": "What if I regret the purchase?",
                     "acceptedAnswer": {
                         "@type": "Answer",
-                        "text": "30-day, no-questions-asked refund. Just email to sort it out.",
+                        "text": "30-day, no-questions-asked refund. Send an email and we'll sort it out.",
                     },
                 },
                 {
@@ -204,7 +204,7 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
                     "name": "Do you offer team licenses?",
                     "acceptedAnswer": {
                         "@type": "Answer",
-                        "text": "Each person needs their own license. For teams of 5+, email us at legal@getcmdr.com for volume pricing.",
+                        "text": "Each person needs their own license. For teams of 10+ people, email us at legal@getcmdr.com for volume pricing.",
                     },
                 },
             ],
@@ -220,9 +220,11 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
                         What counts as "commercial use"?
                     </h3>
                     <p class="text-[var(--color-text-secondary)]">
-                        If you're using Cmdr as part of your job (employment, freelancing, consulting), that's
-                        commercial use. Side projects, open source work, and personal file management are all fine
-                        without a commercial license.
+                        Well, you know. If you're making money (getting a salary, having contracts, etc.) in relation to
+                        what you use those files for, that's commercial use. Can be employment, freelancing, consulting.
+                        These cases need a Commercial license at $59/year. Organizing your family photos, copying files
+                        for your hobby projects, doing your open source work or volunteering, these are Personal use and
+                        Cmdr is 100% free for these things.
                     </p>
                 </div>
 
@@ -231,19 +233,20 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
                         Can I use it on multiple machines?
                     </h3>
                     <p class="text-[var(--color-text-secondary)]">
-                        Yes! Use Cmdr on as many machines as you like — laptop, desktop, remote debugging rig, whatever.
-                        Just make sure you're the one using your license.
+                        Yes! Use Cmdr on as many machines as you like with a single Commercial license, as long as
+                        you're the only person using it. You can install it on your laptop, desktop, remote debugging VM
+                        thing, whatever you like. The license is per person, not per machine.
                     </p>
                 </div>
 
                 <div class="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-5">
                     <h3 class="mb-2 font-semibold text-[var(--color-text-primary)]">
-                        What's the difference between subscription and perpetual?
+                        What's the Commercial vs. Perpetual license?
                     </h3>
                     <p class="text-[var(--color-text-secondary)]">
-                        Subscription ($59/year) auto-renews annually and always includes the latest updates. Perpetual
-                        ($199) is a one-time purchase that includes 3 years of updates — after that, you can keep using
-                        your current version forever or renew updates at a reduced rate.
+                        The perpetual license is a bigger initial commitment, but it's better for budgeting at some
+                        companies. Then they are the same for the first three years: you get all updates, etc. After
+                        that, the perpetual license allows you to keep it forever.
                     </p>
                 </div>
 
@@ -255,9 +258,11 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
                             target="_blank"
                             rel="noopener noreferrer"
                             class="text-[var(--color-accent-text)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]"
-                            >source-available on GitHub</a
-                        >. You can view, learn from, and modify the code. The license (BSL 1.1) converts to AGPL-3.0
-                        after 3 years.
+                            >source-available</a
+                        >. You can view the code, learn from it, verify that there are no nasty backdoors or any other
+                        weird stuff going on. Just you can't reuse/republish the code or the app. The BSL 1.1
+                        license converts to AGPL-3.0 after 3 years, meaning that if the dev gets hit by a bus, you won't
+                        end up without updates forever.
                     </p>
                 </div>
 
@@ -268,14 +273,14 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
                             href="/refund"
                             class="text-[var(--color-accent-text)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]"
                             >30-day, no-questions-asked refund</a
-                        >. Just email to sort it out.
+                        >. Send an email and we'll sort it out.
                     </p>
                 </div>
 
                 <div class="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-5">
                     <h3 class="mb-2 font-semibold text-[var(--color-text-primary)]">Do you offer team licenses?</h3>
                     <p class="text-[var(--color-text-secondary)]">
-                        Each person needs their own license. For teams of 5+, email us at <a
+                        Each person needs their own license. For teams of 10+ people, email us at <a
                             href="mailto:legal@getcmdr.com"
                             class="text-[var(--color-accent-text)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]"
                             >legal@getcmdr.com</a

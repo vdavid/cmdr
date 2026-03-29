@@ -289,6 +289,9 @@ importers:
       rehype-external-links:
         specifier: 3.0.0
         version: 3.0.0
+      remark-smartypants:
+        specifier: ^3.0.2
+        version: 3.0.2
       satori:
         specifier: 0.19.2
         version: 0.19.2

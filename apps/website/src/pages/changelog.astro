@@ -15,7 +15,7 @@ const changelogContent = fs.readFileSync(changelogPath, 'utf-8')
 const htmlContent = await marked.parse(changelogContent)
 ---
 
-<Layout title="Changelog - Cmdr" description="See what's new in Cmdr. All notable changes documented here.">
+<Layout title="Changelog - Cmdr" description="All notable changes to Cmdr, version by version.">
     <Header />
     <main class="mx-auto max-w-4xl px-6 pt-32 pb-24">
         <header class="mb-12">

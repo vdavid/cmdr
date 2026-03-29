@@ -1,0 +1,253 @@
+---
+import Layout from '../layouts/Layout.astro'
+import Header from '../components/Header.astro'
+import Footer from '../components/Footer.astro'
+import DownloadButton from '../components/DownloadButton.astro'
+import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro'
+---
+
+<Layout
+    title="Features - Cmdr"
+    description="What Cmdr can do today and what's coming next. Full-disk indexing, on-device AI, keyboard-first navigation, and more."
+>
+    <Header />
+    <main class="mx-auto max-w-5xl px-6 pt-32 pb-24">
+        <!-- Hero -->
+        <header class="mb-16 text-center">
+            <h1 class="mb-4 text-3xl font-bold tracking-tight text-[var(--color-text-primary)] md:text-4xl lg:text-5xl">
+                What Cmdr can do
+            </h1>
+            <p class="text-lg text-[var(--color-text-secondary)]">
+                Shipped features you can use today, and what's coming next.
+            </p>
+        </header>
+
+        <!-- Shipped features -->
+        <div class="space-y-12">
+            <!-- Full-disk index -->
+            <section
+                id="full-disk-index"
+                class="scroll-mt-24 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8"
+            >
+                <div class="mb-1 flex items-center gap-3">
+                    <img src="/icons/database.svg" alt="" class="size-8" />
+                    <h3 class="text-xl font-semibold text-[var(--color-text-primary)]">Live full-disk index</h3>
+                </div>
+                <div class="mt-4 space-y-3 text-[var(--color-text-secondary)]">
+                    <p>
+                        Cmdr indexes your entire drive in ~4 minutes. After that, it stays current forever through
+                        real-time file system events (FSEvents on macOS, inotify on Linux). No re-scans, no cron jobs.
+                        Restart the app and the index picks up right where it left off.
+                    </p>
+                    <p>
+                        The index tracks every file and directory with recursive size aggregates. That means you see
+                        folder sizes right in the file listing, no waiting. The whole thing runs on a single-writer
+                        SQLite architecture with WAL mode, so reads never block the UI.
+                    </p>
+                    <p>
+                        On top of that, Cmdr runs a background verifier: every time you navigate to a directory, it
+                        quietly diffs the index against disk and fixes any drift. Belt and suspenders.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Private LLM -->
+            <section
+                id="private-llm"
+                class="scroll-mt-24 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8"
+            >
+                <div class="mb-1 flex items-center gap-3">
+                    <img src="/icons/sparkles.svg" alt="" class="size-8" />
+                    <h3 class="text-xl font-semibold text-[var(--color-text-primary)]">Private LLM included</h3>
+                </div>
+                <div class="mt-4 space-y-3 text-[var(--color-text-secondary)]">
+                    <p>
+                        Cmdr ships with a 3B parameter language model that runs entirely on your Mac. No internet
+                        connection needed, no data leaves your machine. It powers features like folder name suggestions
+                        and smart search. The model is small (it's a 3B, not GPT-4), but it's fully private.
+                    </p>
+                    <p>
+                        If you want more capable AI, connect your own API key for OpenAI, Anthropic, Google, Groq, or
+                        any OpenAI-compatible endpoint. Local models hosted outside Cmdr (like Ollama) work too. The
+                        settings panel auto-detects available models from your provider and lets you pick one.
+                    </p>
+                    <p>The on-device model requires Apple Silicon. Cloud providers work on any hardware.</p>
+                </div>
+            </section>
+
+            <!-- Speed -->
+            <section
+                id="speed"
+                class="scroll-mt-24 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8"
+            >
+                <div class="mb-1 flex items-center gap-3">
+                    <img src="/icons/rocket.svg" alt="" class="size-8" />
+                    <h3 class="text-xl font-semibold text-[var(--color-text-primary)]">Blazing fast</h3>
+                </div>
+                <div class="mt-4 space-y-3 text-[var(--color-text-secondary)]">
+                    <p>
+                        Built in Rust with a Tauri frontend. Cmdr opens a 100,000-file folder in ~4 seconds with icons,
+                        sizes, and dates. Try that in Finder.
+                    </p>
+                    <p>
+                        Large directories stream in progressively: you see the first files immediately while the rest
+                        load in the background. The UI stays responsive throughout (Tab works, Escape cancels). Sorting
+                        50,000 entries takes ~15ms.
+                    </p>
+                    <p>
+                        The file listing uses on-demand fetching: only visible rows get sent over the IPC bridge. Scroll
+                        through a million files without breaking a sweat.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Keyboard-first -->
+            <section
+                id="keyboard-first"
+                class="scroll-mt-24 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8"
+            >
+                <div class="mb-1 flex items-center gap-3">
+                    <img src="/icons/keyboard.svg" alt="" class="size-8" />
+                    <h3 class="text-xl font-semibold text-[var(--color-text-primary)]">Keyboard-first</h3>
+                </div>
+                <div class="mt-4 space-y-3 text-[var(--color-text-secondary)]">
+                    <p>
+                        Two panes, tabs, a command palette, and fully customizable keyboard shortcuts. Navigate, select,
+                        copy, move, rename, create files and folders, all without touching the mouse.
+                    </p>
+                    <p>
+                        Shortcuts are scope-aware: the same key combo can do different things in different contexts
+                        (file list vs. settings window vs. search dialog). Conflict detection warns you when scopes
+                        overlap. Customize any shortcut, and menu accelerators update automatically.
+                    </p>
+                    <p>
+                        Three density modes (compact, comfortable, spacious) let you fit more files on screen or give
+                        yourself breathing room. The whole UI adapts.
+                    </p>
+                </div>
+            </section>
+        </div>
+
+        <!-- Coming next separator -->
+        <p class="my-12 text-center text-sm font-medium tracking-wide text-[var(--color-text-tertiary)] uppercase">
+            Coming next
+        </p>
+
+        <!-- Upcoming features -->
+        <div class="space-y-12">
+            <!-- Smart search -->
+            <section
+                id="smart-search"
+                class="scroll-mt-24 rounded-2xl border border-[var(--color-accent)]/30 bg-gradient-to-br from-[var(--color-surface)] to-[var(--color-accent)]/5 p-8"
+            >
+                <div class="mb-1 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <img src="/icons/search.svg" alt="" class="size-8" />
+                        <h3 class="text-xl font-semibold text-[var(--color-text-primary)]">Smart search</h3>
+                    </div>
+                    <a
+                        href="/roadmap"
+                        class="rounded-full bg-[var(--color-accent)]/20 px-2.5 py-1 text-xs font-medium text-[var(--color-accent-text)] transition-colors hover:bg-[var(--color-accent)]/30"
+                    >
+                        Works but early stage
+                    </a>
+                </div>
+                <div class="mt-4 space-y-3 text-[var(--color-text-secondary)]">
+                    <p>
+                        Find files by describing them in plain language: "that PDF contract from last month" or
+                        "screenshots with error messages." The LLM classifies your intent into structured filters (file
+                        type, time range, size, scope), and Rust does the actual search deterministically.
+                    </p>
+                    <p>
+                        The search runs against the in-memory index (~5 million entries), scanned in parallel with
+                        rayon. Sub-second results for most queries. The AI layer uses a key-value line format instead of
+                        JSON, because even small LLMs can produce key-value pairs reliably (JSON generation fails ~13%
+                        of the time on 2B models).
+                    </p>
+                    <p>
+                        This feature works today but it's still rough around the edges. We're improving accuracy and
+                        adding more filter types.
+                    </p>
+                </div>
+            </section>
+
+            <!-- AI rename -->
+            <section
+                id="ai-rename"
+                class="scroll-mt-24 rounded-2xl border border-[var(--color-accent)]/30 bg-gradient-to-br from-[var(--color-surface)] to-[var(--color-accent)]/5 p-8"
+            >
+                <div class="mb-1 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <img src="/icons/brain.svg" alt="" class="size-8" />
+                        <h3 class="text-xl font-semibold text-[var(--color-text-primary)]">Natural language rename</h3>
+                    </div>
+                    <a
+                        href="/roadmap"
+                        class="rounded-full bg-[var(--color-accent)]/20 px-2.5 py-1 text-xs font-medium text-[var(--color-accent-text)] transition-colors hover:bg-[var(--color-accent)]/30"
+                    >
+                        Coming soon
+                    </a>
+                </div>
+                <div class="mt-4 space-y-3 text-[var(--color-text-secondary)]">
+                    <p>
+                        Select files, type "make these lowercase and add date prefix," and watch it happen. No regex, no
+                        scripts, no renaming tools with 47 checkboxes.
+                    </p>
+                    <p>
+                        Cmdr shows you a preview of all renames before applying them. If something looks off, tweak your
+                        instruction and try again. Works with the on-device model or your cloud provider.
+                    </p>
+                </div>
+            </section>
+
+            <!-- AI batch -->
+            <section
+                id="ai-batch"
+                class="scroll-mt-24 rounded-2xl border border-[var(--color-accent)]/30 bg-gradient-to-br from-[var(--color-surface)] to-[var(--color-accent)]/5 p-8"
+            >
+                <div class="mb-1 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <img src="/icons/zap.svg" alt="" class="size-8" />
+                        <h3 class="text-xl font-semibold text-[var(--color-text-primary)]">AI batch operations</h3>
+                    </div>
+                    <a
+                        href="/roadmap"
+                        class="rounded-full bg-[var(--color-accent)]/20 px-2.5 py-1 text-xs font-medium text-[var(--color-accent-text)] transition-colors hover:bg-[var(--color-accent)]/30"
+                    >
+                        Coming soon
+                    </a>
+                </div>
+                <div class="mt-4 space-y-3 text-[var(--color-text-secondary)]">
+                    <p>
+                        Organize hundreds of files with a single command. "Sort these into folders by project name."
+                        "Move all receipts to ~/Documents/Receipts and rename them by date." Describe the outcome you
+                        want, and Cmdr figures out the steps.
+                    </p>
+                    <p>
+                        Like AI rename, you'll see a full preview before anything moves. Batch operations are the big
+                        one we're working toward. The file index, AI pipeline, and file operations infrastructure are
+                        all in place. Now it's about connecting them.
+                    </p>
+                </div>
+            </section>
+        </div>
+
+        <!-- Download CTA -->
+        <div class="mt-20 text-center">
+            <h2 class="mb-4 text-2xl font-bold text-[var(--color-text-primary)]">Wanna see it for yourself? Get Cmdr now.</h2>
+            <p class="mb-8 text-[var(--color-text-secondary)]">
+                Free forever for personal use. No signup, no trial period.
+            </p>
+            <div class="mx-auto max-w-xs">
+                <DownloadButton variant="card" class="w-full" />
+            </div>
+            <p class="mt-3 text-sm text-[var(--color-text-tertiary)]">macOS only · Source-available (BSL 1.1)</p>
+        </div>
+
+        <!-- Newsletter -->
+        <div class="mt-16">
+            <NewsletterInlineWrapper label="Get notified about new features and releases:" />
+        </div>
+    </main>
+    <Footer />
+</Layout>
