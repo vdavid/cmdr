@@ -2,22 +2,14 @@
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
     import { formatDateTime, formatFileSize } from '$lib/settings/reactive-settings.svelte'
-
-    export interface ConflictFileInfo {
-        name: string
-        size: number
-        /** Unix timestamp in seconds, or undefined if unavailable */
-        modifiedAt: number | undefined
-    }
-
-    export type ConflictResolution = 'overwrite-trash' | 'overwrite-delete' | 'cancel' | 'continue'
+    import type { ConflictFileInfo, RenameConflictResolution } from './rename-operations'
 
     interface Props {
         /** The file being renamed (source) */
         renamedFile: ConflictFileInfo
         /** The existing file that would be overwritten */
         existingFile: ConflictFileInfo
-        onResolve: (resolution: ConflictResolution) => void
+        onResolve: (resolution: RenameConflictResolution) => void
     }
 
     const { renamedFile, existingFile, onResolve }: Props = $props()

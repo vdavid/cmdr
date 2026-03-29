@@ -5,6 +5,15 @@
  */
 
 import { getExtension } from '$lib/utils/filename-validation'
+
+export interface ConflictFileInfo {
+    name: string
+    size: number
+    /** Unix timestamp in seconds, or undefined if unavailable */
+    modifiedAt: number | undefined
+}
+
+export type RenameConflictResolution = 'overwrite-trash' | 'overwrite-delete' | 'cancel' | 'continue'
 import {
     checkRenamePermission,
     checkRenameValidity,

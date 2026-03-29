@@ -205,13 +205,13 @@ Use `CommandExists()` to check if a tool is installed, and auto-install if possi
 **Decision**: Auto-fix locally, check-only in CI.
 **Why**: Developers get instant fixes locally (less friction), CI ensures code is properly formatted before merge. Controlled by the `--ci` flag.
 
-**Decision**: Split `desktop-svelte-eslint` into fast (non-type-aware) and slow (type-aware) checks.
+**Decision**: Split `desktop-svelte-eslint` into fast (non-type-aware) and slow (full) checks.
 **Why**: Type-aware rules (`no-floating-promises`, `no-unsafe-*`, etc.) take ~45% of lint time due to
-TypeScript project service startup. The split uses env vars (`ESLINT_NO_TYPECHECK=1` and
-`ESLINT_TYPECHECK_ONLY=1`) read by `eslint.config.js` to toggle between `tseslint.configs.strict`
-(no type info) and `tseslint.configs.strictTypeChecked` (with `projectService`). The fast check runs
-by default; the type-aware check is `IsSlow: true`. Known side effect: `eslint-disable` comments
-targeting type-aware rules produce "unused directive" warnings during the fast run.
+TypeScript project service startup. The fast check sets `ESLINT_NO_TYPECHECK=1`, which
+`eslint.config.js` reads to use `tseslint.configs.strict` (no type info) and suppress
+`reportUnusedDisableDirectives` (since disable comments for type-aware rules would look unused).
+The slow check (`IsSlow: true`) runs the full config with all rules and `reportUnusedDisableDirectives`
+on, so stale disable comments are still caught.
 
 **Decision**: Skip `pnpm install` when lockfile is unchanged.
 **Why**: `pnpm install` takes ~20s and pegs all CPUs even when deps haven't changed. A marker file

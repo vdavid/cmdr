@@ -14,9 +14,10 @@
  * 4. Svelte files (Svelte-specific parsing + TypeScript)
  *
  * Environment variables:
- * - ESLINT_TYPECHECK_ONLY=1: Run only type-aware rules (requires projectService)
- * - ESLINT_NO_TYPECHECK=1: Run everything except type-aware rules (no projectService)
- * - Neither set: Run all rules (default, full check)
+ * - ESLINT_NO_TYPECHECK=1: Run everything except type-aware rules (no projectService).
+ *   Also suppresses reportUnusedDisableDirectives since disable comments for
+ *   type-aware rules would look unused. The full run catches stale comments.
+ * - Without the env var: Run all rules (default, full check)
  */
 import js from '@eslint/js'
 import prettier from 'eslint-plugin-prettier'
@@ -28,7 +29,6 @@ import globals from 'globals'
 import noIsolatedTests from './eslint-plugins/no-isolated-tests.js'
 
 /* global process */
-const typecheckOnly = process.env.ESLINT_TYPECHECK_ONLY === '1'
 const noTypecheck = process.env.ESLINT_NO_TYPECHECK === '1'
 
 // Rules that require TypeScript's project service (type information).
@@ -98,10 +98,6 @@ const sharedTypeAwareRules = {
 
 // Build rule sets based on mode.
 function buildTsRules() {
-    if (typecheckOnly) {
-        // Only type-aware rules; disable everything else from the base config.
-        return sharedTypeAwareRules
-    }
     if (noTypecheck) {
         // All rules except type-aware ones.
         return { ...sharedNonTypeAwareRules, ...typeAwareRulesOff }
@@ -115,6 +111,9 @@ const projectServiceConfig =
     noTypecheck ? {} : { projectService: true, tsconfigRootDir: import.meta.dirname }
 
 export default tseslint.config(
+    // The fast check skips type-aware rules, so eslint-disable comments targeting
+    // those rules look "unused." Suppress that — the full (slow) run catches stale comments.
+    ...(noTypecheck ? [{ linterOptions: { reportUnusedDisableDirectives: 'off' } }] : []),
     {
         ignores: [
             'dist',
@@ -154,43 +153,39 @@ export default tseslint.config(
         },
         rules: buildTsRules(),
     },
-    ...(typecheckOnly
-        ? []
-        : [
-              {
-                  // Node.js scripts (like tauri-wrapper.js) need Node globals
-                  files: ['scripts/*.js'],
-                  plugins: {
-                      prettier,
-                  },
-                  languageOptions: {
-                      ecmaVersion: 'latest',
-                      sourceType: 'module',
-                      globals: {
-                          ...globals.node,
-                      },
-                  },
-                  rules: {
-                      'prettier/prettier': 'error',
-                  },
-              },
-              {
-                  files: ['vite.config.js', 'vitest.config.ts', 'playwright.config.ts'],
-                  plugins: {
-                      prettier,
-                  },
-                  languageOptions: {
-                      ecmaVersion: 'latest',
-                      sourceType: 'module',
-                      globals: {
-                          ...globals.node,
-                      },
-                  },
-                  rules: {
-                      'prettier/prettier': 'error',
-                  },
-              },
-          ]),
+    {
+        // Node.js scripts (like tauri-wrapper.js) need Node globals
+        files: ['scripts/*.js'],
+        plugins: {
+            prettier,
+        },
+        languageOptions: {
+            ecmaVersion: 'latest',
+            sourceType: 'module',
+            globals: {
+                ...globals.node,
+            },
+        },
+        rules: {
+            'prettier/prettier': 'error',
+        },
+    },
+    {
+        files: ['vite.config.js', 'vitest.config.ts', 'playwright.config.ts'],
+        plugins: {
+            prettier,
+        },
+        languageOptions: {
+            ecmaVersion: 'latest',
+            sourceType: 'module',
+            globals: {
+                ...globals.node,
+            },
+        },
+        rules: {
+            'prettier/prettier': 'error',
+        },
+    },
     {
         // Svelte 5 runes files (.svelte.ts) - TypeScript with Svelte runes support
         files: ['**/*.svelte.ts'],
@@ -224,37 +219,26 @@ export default tseslint.config(
                 extraFileExtensions: ['.svelte'],
             },
         },
-        rules: typecheckOnly
-            ? {}
-            : {
-                  'prettier/prettier': 'error',
-                  '@typescript-eslint/no-unused-vars': 'error',
-                  'no-console': 'warn',
-                  complexity: [
-                      'error',
-                      {
-                          max: 15,
-                      },
-                  ],
-              },
+        rules: {
+            'prettier/prettier': 'error',
+            '@typescript-eslint/no-unused-vars': 'error',
+            'no-console': 'warn',
+            complexity: ['error', { max: 15 }],
+        },
     },
-    ...(typecheckOnly
-        ? []
-        : [
-              {
-                  // Test files - ensure they actually test source code
-                  // Excludes e2e tests (Playwright) which test through the browser, not via imports
-                  files: ['src/**/*.test.ts'],
-                  plugins: {
-                      custom: {
-                          rules: {
-                              'no-isolated-tests': noIsolatedTests,
-                          },
-                      },
-                  },
-                  rules: {
-                      'custom/no-isolated-tests': 'error',
-                  },
-              },
-          ]),
+    {
+        // Test files - ensure they actually test source code
+        // Excludes e2e tests (Playwright) which test through the browser, not via imports
+        files: ['src/**/*.test.ts'],
+        plugins: {
+            custom: {
+                rules: {
+                    'no-isolated-tests': noIsolatedTests,
+                },
+            },
+        },
+        rules: {
+            'custom/no-isolated-tests': 'error',
+        },
+    },
 )

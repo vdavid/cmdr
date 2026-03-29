@@ -96,7 +96,7 @@ export async function fileExistsInPane(targetName: string, paneIndex: number): P
     return browser.execute(
         (name: string, idx: number) => {
             const panes = document.querySelectorAll('.file-pane')
-            const pane = panes[idx]
+            const pane = panes[idx] as HTMLElement | undefined
 
             if (!pane) return false
             const entries = pane.querySelectorAll('.file-entry')

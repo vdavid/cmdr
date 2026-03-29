@@ -4,7 +4,7 @@ import { validateFilename, getExtension } from '$lib/utils/filename-validation'
 import { cancelClickToRename } from '../rename/rename-activation'
 import { executeRenameSave, performRename, checkPermission, type RenameResult } from '../rename/rename-operations'
 import { getSetting } from '$lib/settings'
-import type { ConflictResolution } from '../rename/RenameConflictDialog.svelte'
+import type { RenameConflictResolution } from '../rename/rename-operations'
 import { addToast, dismissTransientToasts } from '$lib/ui/toast'
 import type { FileEntry } from '../types'
 import type { createRenameState } from '../rename/rename-state.svelte'
@@ -235,7 +235,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
             void executeFlow(true)
         },
 
-        handleConflictResolve(resolution: ConflictResolution) {
+        handleConflictResolve(resolution: RenameConflictResolution) {
             const target = rename.target
             const trimmedName = conflictDialogState?.trimmedName
             conflictDialogState = null

@@ -2,15 +2,15 @@ package checks
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 )
 
-// RunDesktopESLintTypecheck runs only the type-aware ESLint rules.
-// This is the slow half of the ESLint split — it loads TypeScript's project service
-// to power rules like no-floating-promises, no-unsafe-*, and no-misused-promises.
+// RunDesktopESLintTypecheck runs the full ESLint config (all rules including type-aware).
+// This is the slow counterpart to RunDesktopESLint (which skips type-aware rules).
+// Running all rules here also catches stale eslint-disable comments that the fast
+// check can't detect (since it suppresses reportUnusedDisableDirectives).
 func RunDesktopESLintTypecheck(ctx *CheckContext) (CheckResult, error) {
 	dir := filepath.Join(ctx.RootDir, "apps", "desktop")
 
@@ -31,14 +31,14 @@ func RunDesktopESLintTypecheck(ctx *CheckContext) (CheckResult, error) {
 		cmd = exec.Command("pnpm", "lint:fix")
 	}
 	cmd.Dir = dir
-	cmd.Env = append(os.Environ(), "ESLINT_TYPECHECK_ONLY=1")
+	// No env var override — runs the full config with all rules + projectService.
 
 	output, err := RunCommand(cmd, true)
 	if err != nil {
 		if ctx.CI {
 			return CheckResult{}, fmt.Errorf("type-aware lint errors found, run pnpm lint:fix locally\n%s", indentOutput(output))
 		}
-		return CheckResult{}, fmt.Errorf("type-aware eslint found unfixable errors\n%s", indentOutput(output))
+		return CheckResult{}, fmt.Errorf("eslint found unfixable errors\n%s", indentOutput(output))
 	}
 
 	if fileCount > 0 {
