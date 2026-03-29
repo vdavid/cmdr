@@ -107,6 +107,16 @@ var AllChecks = []CheckDefinition{
 		Run:         RunDesktopESLint,
 	},
 	{
+		ID:          "desktop-svelte-eslint-typecheck",
+		Nickname:    "eslint-typecheck",
+		DisplayName: "eslint (type-aware)",
+		App:         AppDesktop,
+		Tech:        "🎨 Svelte",
+		IsSlow:      true,
+		DependsOn:   []string{"desktop-svelte-eslint"},
+		Run:         RunDesktopESLintTypecheck,
+	},
+	{
 		ID:          "desktop-svelte-stylelint",
 		Nickname:    "stylelint",
 		DisplayName: "stylelint",

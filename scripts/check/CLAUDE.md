@@ -161,7 +161,7 @@ tests, type checkers before tests.
 | App | Tech | Checks |
 |-----|------|--------|
 | Desktop | Rust | rustfmt, clippy, cargo-audit, cargo-deny, cargo-udeps, jscpd, tests, tests-linux (slow) |
-| Desktop | Svelte | prettier, eslint, stylelint, css-unused, svelte-check, import-cycles, knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow) |
+| Desktop | Svelte | prettier, eslint, eslint-typecheck (slow), stylelint, css-unused, svelte-check, import-cycles, knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow) |
 | Website | Astro | prettier, eslint, typecheck, build, html-validate, e2e |
 | Website | Docker | docker-build |
 | API server | TS | prettier, eslint, typecheck, tests |
@@ -204,6 +204,14 @@ Use `CommandExists()` to check if a tool is installed, and auto-install if possi
 
 **Decision**: Auto-fix locally, check-only in CI.
 **Why**: Developers get instant fixes locally (less friction), CI ensures code is properly formatted before merge. Controlled by the `--ci` flag.
+
+**Decision**: Split `desktop-svelte-eslint` into fast (non-type-aware) and slow (type-aware) checks.
+**Why**: Type-aware rules (`no-floating-promises`, `no-unsafe-*`, etc.) take ~45% of lint time due to
+TypeScript project service startup. The split uses env vars (`ESLINT_NO_TYPECHECK=1` and
+`ESLINT_TYPECHECK_ONLY=1`) read by `eslint.config.js` to toggle between `tseslint.configs.strict`
+(no type info) and `tseslint.configs.strictTypeChecked` (with `projectService`). The fast check runs
+by default; the type-aware check is `IsSlow: true`. Known side effect: `eslint-disable` comments
+targeting type-aware rules produce "unused directive" warnings during the fast run.
 
 **Decision**: Skip `pnpm install` when lockfile is unchanged.
 **Why**: `pnpm install` takes ~20s and pegs all CPUs even when deps haven't changed. A marker file
