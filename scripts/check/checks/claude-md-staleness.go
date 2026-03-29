@@ -1,6 +1,7 @@
 package checks
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
@@ -63,18 +64,25 @@ func RunClaudeMdStaleness(ctx *CheckContext) (CheckResult, error) {
 		claudeDirs[filepath.Dir(f)] = true
 	}
 
-	// Step 2: For each CLAUDE.md, check staleness
+	// Step 2: Build a bulk map of file path → last modified timestamp
+	// using a single git log command instead of one per file.
+	timestamps, err := gitLastModifiedBulk(ctx.RootDir)
+	if err != nil {
+		return CheckResult{}, fmt.Errorf("failed to get git timestamps: %w", err)
+	}
+
+	// Step 3: For each CLAUDE.md, check staleness
 	var staleEntries []staleEntry
 
 	for _, claudePath := range claudeFiles {
 		dir := filepath.Dir(claudePath)
 
-		claudeTime := gitLastModified(ctx.RootDir, claudePath)
+		claudeTime := timestamps[claudePath]
 		if claudeTime == 0 {
 			continue // file not tracked by git or no history
 		}
 
-		newestSource := findNewestSourceTime(ctx.RootDir, dir, claudeDirs)
+		newestSource := findNewestSourceTimeBulk(ctx.RootDir, dir, claudeDirs, timestamps)
 		if newestSource == 0 {
 			continue // no source files found
 		}
@@ -147,26 +155,54 @@ func findClaudeMdFiles(rootDir string) ([]string, error) {
 	return files, err
 }
 
-// gitLastModified returns the unix timestamp of the last git commit that
-// touched the given file (relative to rootDir). Returns 0 if unknown.
-func gitLastModified(rootDir, relPath string) int64 {
-	cmd := exec.Command("git", "log", "-1", "--format=%ct", "--", relPath)
+// gitLastModifiedBulk returns a map of relative file path → unix timestamp of
+// the last git commit that touched each file. Runs a single git log command
+// instead of one per file, which is dramatically faster on large repos.
+func gitLastModifiedBulk(rootDir string) (map[string]int64, error) {
+	// git log --format="%ct" --name-only traverses the full history and emits
+	// each commit's timestamp followed by the files it touched. We scan through
+	// and keep only the first (most recent) timestamp per file.
+	cmd := exec.Command("git", "log", "--format=%ct", "--name-only")
 	cmd.Dir = rootDir
-	out, err := RunCommand(cmd, true)
-	if err != nil {
-		return 0
+
+	var stdout, stderr strings.Builder
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("git log failed: %w\n%s", err, stderr.String())
 	}
-	ts, err := strconv.ParseInt(strings.TrimSpace(out), 10, 64)
-	if err != nil {
-		return 0
+
+	result := make(map[string]int64, 2048)
+	var currentTS int64
+
+	scanner := bufio.NewScanner(strings.NewReader(stdout.String()))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line == "" {
+			continue
+		}
+		// Lines that are purely numeric are timestamps
+		if ts, err := strconv.ParseInt(line, 10, 64); err == nil && !strings.Contains(line, "/") && !strings.Contains(line, ".") {
+			currentTS = ts
+			continue
+		}
+		// Otherwise it's a filename — record only the first (newest) timestamp
+		if currentTS > 0 {
+			if _, exists := result[line]; !exists {
+				result[line] = currentTS
+			}
+		}
 	}
-	return ts
+
+	return result, nil
 }
 
-// findNewestSourceTime finds the most recent git-committed timestamp among
+// findNewestSourceTimeBulk finds the most recent git-committed timestamp among
 // source files in dir and its subdirectories (relative to rootDir), but stops
-// recursing into any subdirectory that has its own CLAUDE.md.
-func findNewestSourceTime(rootDir, dir string, claudeDirs map[string]bool) int64 {
+// recursing into any subdirectory that has its own CLAUDE.md. Uses the
+// pre-built timestamps map instead of spawning git subprocesses.
+func findNewestSourceTimeBulk(rootDir, dir string, claudeDirs map[string]bool, timestamps map[string]int64) int64 {
 	var newest int64
 	absDir := filepath.Join(rootDir, dir)
 
@@ -206,7 +242,7 @@ func findNewestSourceTime(rootDir, dir string, claudeDirs map[string]bool) int64
 		}
 
 		rel, _ := filepath.Rel(rootDir, path)
-		ts := gitLastModified(rootDir, rel)
+		ts := timestamps[rel]
 		if ts > newest {
 			newest = ts
 		}

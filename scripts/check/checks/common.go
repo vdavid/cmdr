@@ -288,7 +288,14 @@ func runPrettierCheck(ctx *CheckContext, dir string, extensions []string) (Check
 	// Check which files need formatting (--list-different lists them)
 	// Note: prettier exits with code 1 if files differ, so we ignore the error
 	// Prettier's default behavior respects .gitignore files in current dir and parents
-	checkCmd := exec.Command("pnpm", "exec", "prettier", "--list-different", ".")
+	prettierArgs := []string{"exec", "prettier", "--list-different"}
+	if !ctx.CI {
+		// Use --cache locally to skip unchanged files on re-runs (~2s vs ~17s).
+		// CI always checks all files fresh.
+		prettierArgs = append(prettierArgs, "--cache")
+	}
+	prettierArgs = append(prettierArgs, ".")
+	checkCmd := exec.Command("pnpm", prettierArgs...)
 	checkCmd.Dir = dir
 	checkOutput, _ := RunCommand(checkCmd, true)
 
