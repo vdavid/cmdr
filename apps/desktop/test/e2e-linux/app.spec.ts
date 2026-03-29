@@ -45,9 +45,22 @@ async function jsClick(element: WebdriverIO.Element): Promise<void> {
  * See: https://github.com/SeleniumHQ/selenium/issues/4334
  */
 async function pressSpaceKey(): Promise<void> {
+    // Capture selection state before the keypress so we can wait for it to change
+    const wasCursorSelected = await browser.execute(() => {
+        return document.querySelector('.file-entry.is-under-cursor')?.classList.contains('is-selected') ?? false
+    })
     await browser.action('key').down(' ').pause(50).up(' ').perform()
     await browser.releaseActions()
-    await browser.pause(300)
+    // Wait for the selection state to toggle
+    await browser.waitUntil(
+        async () => {
+            const isNowSelected = await browser.execute(() => {
+                return document.querySelector('.file-entry.is-under-cursor')?.classList.contains('is-selected') ?? false
+            })
+            return isNowSelected !== wasCursorSelected
+        },
+        { timeout: 3000 },
+    )
 }
 
 // ─── Tests ──────────────────────────────────────────────────────────────────
@@ -55,7 +68,8 @@ async function pressSpaceKey(): Promise<void> {
 describe('Basic rendering', () => {
     it('launches and shows the main window', async () => {
         // Wait for the app to fully load
-        await browser.pause(3000)
+        const explorer = browser.$('.dual-pane-explorer')
+        await explorer.waitForExist({ timeout: 15000 })
 
         // Get the window title
         const title = await browser.getTitle()
@@ -110,7 +124,19 @@ describe('Keyboard navigation', () => {
 
         // Press ArrowDown to move cursor
         await browser.keys('ArrowDown')
-        await browser.pause(300)
+
+        // Wait for cursor position to change
+        await browser.waitUntil(
+            async () => {
+                const entries = [...(await browser.$$('.file-entry'))]
+                for (let i = 0; i < entries.length; i++) {
+                    const cls = await entries[i].getAttribute('class')
+                    if (cls?.includes('is-under-cursor') && i !== initialCursorIndex) return true
+                }
+                return false
+            },
+            { timeout: 3000 },
+        )
 
         // Re-query entries and find new cursor position
         const updatedEntries = [...(await browser.$$('.file-entry'))]
@@ -142,7 +168,15 @@ describe('Keyboard navigation', () => {
 
         // Press Tab to switch to right pane
         await browser.keys('Tab')
-        await browser.pause(300)
+
+        // Wait for right pane to gain focus
+        await browser.waitUntil(
+            async () => {
+                const cls = await (await browser.$$('.file-pane'))[1].getAttribute('class')
+                return cls?.includes('is-focused') ?? false
+            },
+            { timeout: 3000 },
+        )
 
         // Re-query panes (DOM may have updated)
         panes = await browser.$$('.file-pane')
@@ -157,7 +191,15 @@ describe('Keyboard navigation', () => {
 
         // Press Tab again to go back to left pane
         await browser.keys('Tab')
-        await browser.pause(300)
+
+        // Wait for left pane to regain focus
+        await browser.waitUntil(
+            async () => {
+                const cls = await (await browser.$$('.file-pane'))[0].getAttribute('class')
+                return cls?.includes('is-focused') ?? false
+            },
+            { timeout: 3000 },
+        )
 
         panes = await browser.$$('.file-pane')
         const leftPaneClassFinal = await panes[0].getAttribute('class')
@@ -174,7 +216,16 @@ describe('Keyboard navigation', () => {
         // Skip ".." entry if that's where cursor is
         if (cursorText === '..') {
             await browser.keys('ArrowDown')
-            await browser.pause(300)
+            await browser.waitUntil(
+                async () => {
+                    const name = await browser.execute(() => {
+                        const entry = document.querySelector('.file-entry.is-under-cursor')
+                        return entry?.querySelector('.col-name')?.textContent ?? entry?.querySelector('.name')?.textContent ?? ''
+                    })
+                    return name !== '..'
+                },
+                { timeout: 3000 },
+            )
             cursorEntry = browser.$('.file-entry.is-under-cursor') as unknown as WebdriverIO.Element
         }
 
@@ -215,7 +266,16 @@ describe('Mouse interactions', () => {
 
         // Click on second entry via JS (WebKitGTK rejects native clicks on non-form elements)
         await jsClick(entries[1])
-        await browser.pause(300)
+
+        // Wait for cursor to move to the clicked entry
+        await browser.waitUntil(
+            async () => {
+                const updated = [...(await panes[0].$$('.file-entry'))]
+                const cls = await updated[1].getAttribute('class')
+                return cls?.includes('is-under-cursor') ?? false
+            },
+            { timeout: 3000 },
+        )
 
         // Re-query and verify cursor moved to clicked entry
         const updatedEntries = [...(await panes[0].$$('.file-entry'))]
@@ -232,7 +292,15 @@ describe('Mouse interactions', () => {
         // Click on a file entry in the right pane to transfer focus
         const rightPaneEntry = (await panes[1].$('.file-entry')) as unknown as WebdriverIO.Element
         await jsClick(rightPaneEntry)
-        await browser.pause(300)
+
+        // Wait for right pane to gain focus
+        await browser.waitUntil(
+            async () => {
+                const cls = await (await browser.$$('.file-pane'))[1].getAttribute('class')
+                return cls?.includes('is-focused') ?? false
+            },
+            { timeout: 3000 },
+        )
 
         // Re-query and verify right pane is focused
         panes = [...(await browser.$$('.file-pane'))]
@@ -242,7 +310,15 @@ describe('Mouse interactions', () => {
         // Click on a file entry in the left pane to transfer focus back
         const leftPaneEntry = (await panes[0].$('.file-entry')) as unknown as WebdriverIO.Element
         await jsClick(leftPaneEntry)
-        await browser.pause(300)
+
+        // Wait for left pane to regain focus
+        await browser.waitUntil(
+            async () => {
+                const cls = await (await browser.$$('.file-pane'))[0].getAttribute('class')
+                return cls?.includes('is-focused') ?? false
+            },
+            { timeout: 3000 },
+        )
 
         // Re-query and verify left pane is focused
         panes = [...(await browser.$$('.file-pane'))]
@@ -436,7 +512,16 @@ describe('Transfer dialogs', () => {
         // Skip ".." entry
         await skipParentEntry(async () => {
             await browser.keys('ArrowDown')
-            await browser.pause(300)
+            await browser.waitUntil(
+                async () => {
+                    const name = await browser.execute(() => {
+                        const entry = document.querySelector('.file-entry.is-under-cursor')
+                        return entry?.querySelector('.col-name')?.textContent ?? entry?.querySelector('.name')?.textContent ?? ''
+                    })
+                    return name !== '..'
+                },
+                { timeout: 3000 },
+            )
         })
 
         // Press F5 to open copy dialog
@@ -466,7 +551,12 @@ describe('Transfer dialogs', () => {
 
         // Close dialog with Escape
         await browser.keys('Escape')
-        await browser.pause(300)
+
+        // Wait for dialog to close
+        await browser.waitUntil(
+            async () => !(await browser.$('.modal-overlay').isExisting()),
+            { timeout: 3000 },
+        )
 
         // Verify dialog is closed
         const modalAfter = browser.$('.modal-overlay')
@@ -479,7 +569,16 @@ describe('Transfer dialogs', () => {
         // Skip ".." entry
         await skipParentEntry(async () => {
             await browser.keys('ArrowDown')
-            await browser.pause(300)
+            await browser.waitUntil(
+                async () => {
+                    const name = await browser.execute(() => {
+                        const entry = document.querySelector('.file-entry.is-under-cursor')
+                        return entry?.querySelector('.col-name')?.textContent ?? entry?.querySelector('.name')?.textContent ?? ''
+                    })
+                    return name !== '..'
+                },
+                { timeout: 3000 },
+            )
         })
 
         // Press F6 to open move dialog
@@ -511,7 +610,12 @@ describe('Transfer dialogs', () => {
 
         // Close dialog with Escape
         await browser.keys('Escape')
-        await browser.pause(300)
+
+        // Wait for dialog to close
+        await browser.waitUntil(
+            async () => !(await browser.$('.modal-overlay').isExisting()),
+            { timeout: 3000 },
+        )
 
         // Verify dialog is closed
         const modalAfter = browser.$('.modal-overlay')

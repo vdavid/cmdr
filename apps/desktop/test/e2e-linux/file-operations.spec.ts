@@ -59,12 +59,20 @@ async function executeViaCommandPalette(query: string): Promise<void> {
     await palette.waitForExist({ timeout: 5000 })
     const input = browser.$('.palette-overlay .search-input')
     await input.setValue(query)
-    await browser.pause(300)
+    // Wait for filtered results to appear
+    await browser.waitUntil(
+        async () => browser.$('.palette-overlay .result-item').isExisting(),
+        { timeout: 3000 },
+    )
     await browser.execute(() => {
         const item = document.querySelector('.palette-overlay .result-item') as HTMLElement | null
         item?.click()
     })
-    await browser.pause(500)
+    // Wait for palette to close after executing the command
+    await browser.waitUntil(
+        async () => !(await browser.$('.palette-overlay').isExisting()),
+        { timeout: 3000 },
+    )
 }
 
 /**
@@ -123,7 +131,15 @@ describe('Copy round-trip', () => {
 
         // Switch to right pane to verify the file appeared in DOM
         await browser.keys('Tab')
-        await browser.pause(500)
+
+        // Wait for right pane to gain focus
+        await browser.waitUntil(
+            async () => {
+                const cls = await (await browser.$$('.file-pane'))[1].getAttribute('class')
+                return cls?.includes('is-focused') ?? false
+            },
+            { timeout: 3000 },
+        )
 
         await browser.waitUntil(async () => fileExistsInFocusedPane('file-a.txt'), {
             timeout: 5000,
@@ -166,7 +182,6 @@ describe('Move round-trip', () => {
         // Wait for dialog to close (confirms move succeeded)
         const modalOverlay = browser.$('.modal-overlay')
         await modalOverlay.waitForExist({ timeout: 10000, reverse: true })
-        await browser.pause(500)
 
         // Verify file-b.txt is gone from left pane DOM
         const goneFromLeft = await browser.waitUntil(async () => !(await fileExistsInPane('file-b.txt', 0)), {
@@ -177,7 +192,15 @@ describe('Move round-trip', () => {
 
         // Switch to right pane and verify file-b.txt appeared
         await browser.keys('Tab')
-        await browser.pause(500)
+
+        // Wait for right pane to gain focus
+        await browser.waitUntil(
+            async () => {
+                const cls = await (await browser.$$('.file-pane'))[1].getAttribute('class')
+                return cls?.includes('is-focused') ?? false
+            },
+            { timeout: 3000 },
+        )
 
         await browser.waitUntil(async () => fileExistsInFocusedPane('file-b.txt'), {
             timeout: 5000,
@@ -201,7 +224,6 @@ describe('Rename round-trip', () => {
 
         // Press F2 to activate inline rename
         await browser.keys('F2')
-        await browser.pause(500)
 
         // Wait for the inline rename input to appear
         const renameInput = browser.$('.rename-input')
@@ -226,7 +248,6 @@ describe('Rename round-trip', () => {
             timeout: 5000,
             timeoutMsg: 'Rename input did not close after Enter',
         })
-        await browser.pause(500)
 
         // Verify new name appears in pane DOM
         await browser.waitUntil(async () => fileExistsInFocusedPane('renamed-file.txt'), {
@@ -272,7 +293,6 @@ describe('Create folder round-trip', () => {
         // Wait for dialog to close
         const modalOverlay = browser.$('.modal-overlay')
         await modalOverlay.waitForExist({ timeout: 5000, reverse: true })
-        await browser.pause(500)
 
         // Verify folder appears in listing
         await browser.waitUntil(async () => fileExistsInFocusedPane(folderName), {
@@ -331,7 +351,12 @@ describe('Hidden files toggle', () => {
         // Toggle hidden files via command palette (Cmd+Shift+. is a Tauri menu
         // accelerator that can't be triggered via dispatchEvent)
         await executeViaCommandPalette('Toggle hidden')
-        await browser.pause(300)
+
+        // Wait for the hidden file visibility to change
+        await browser.waitUntil(
+            async () => (await fileExistsInFocusedPane('.hidden-file')) !== initiallyVisible,
+            { timeout: 3000 },
+        )
 
         // After toggle, visibility should be inverted
         const afterToggleVisible = await fileExistsInFocusedPane('.hidden-file')
@@ -339,7 +364,12 @@ describe('Hidden files toggle', () => {
 
         // Toggle again to restore original state
         await executeViaCommandPalette('Toggle hidden')
-        await browser.pause(300)
+
+        // Wait for visibility to revert
+        await browser.waitUntil(
+            async () => (await fileExistsInFocusedPane('.hidden-file')) === initiallyVisible,
+            { timeout: 3000 },
+        )
 
         // Should be back to original state
         const afterSecondToggle = await fileExistsInFocusedPane('.hidden-file')
@@ -377,7 +407,15 @@ describe('Command palette', () => {
 
         // Type a query to filter results
         await searchInput.setValue('sort')
-        await browser.pause(300)
+
+        // Wait for filtered results to appear
+        await browser.waitUntil(
+            async () => {
+                const items = await browser.$$('.palette-overlay .result-item')
+                return (await items.length) > 0
+            },
+            { timeout: 3000 },
+        )
 
         // Verify filtered results contain matching items
         const resultItems = await browser.$$('.palette-overlay .result-item')
@@ -411,7 +449,15 @@ describe('Empty directory', () => {
 
         // Switch to right pane (which starts empty)
         await browser.keys('Tab')
-        await browser.pause(500)
+
+        // Wait for right pane to gain focus
+        await browser.waitUntil(
+            async () => {
+                const cls = await (await browser.$$('.file-pane'))[1].getAttribute('class')
+                return cls?.includes('is-focused') ?? false
+            },
+            { timeout: 3000 },
+        )
 
         // Verify right pane is focused
         const panes = await browser.$$('.file-pane')
@@ -439,7 +485,15 @@ describe('Empty directory', () => {
 
         // Can still switch back to left pane without issues
         await browser.keys('Tab')
-        await browser.pause(300)
+
+        // Wait for left pane to regain focus
+        await browser.waitUntil(
+            async () => {
+                const cls = await (await browser.$$('.file-pane'))[0].getAttribute('class')
+                return cls?.includes('is-focused') ?? false
+            },
+            { timeout: 3000 },
+        )
 
         const leftPaneClass = await panes[0].getAttribute('class')
         expect(leftPaneClass).toContain('is-focused')

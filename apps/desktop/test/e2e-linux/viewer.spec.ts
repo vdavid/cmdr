@@ -123,7 +123,6 @@ describe('File viewer search', () => {
 
     it('opens search bar with Ctrl+F', async () => {
         await browser.keys(['Control', 'f'])
-        await browser.pause(300)
 
         const searchBar = browser.$('.search-bar')
         await searchBar.waitForExist({ timeout: 5000 })
@@ -135,10 +134,17 @@ describe('File viewer search', () => {
         await searchInput.waitForExist({ timeout: 5000 })
 
         await searchInput.setValue('AAA')
-        // Wait for debounced search + poll to return results
-        await browser.pause(1000)
 
+        // Wait for search results to appear (debounced search + backend poll)
         const matchCount = browser.$('.match-count')
+        await browser.waitUntil(
+            async () => {
+                if (!(await matchCount.isExisting())) return false
+                const text = await matchCount.getText()
+                return text.includes('of')
+            },
+            { timeout: 5000 },
+        )
         const matchText = await matchCount.getText()
         // file-a.txt is all 'A' characters, so there should be at least one match
         expect(matchText).toContain('of')
@@ -149,7 +155,12 @@ describe('File viewer search', () => {
         expect(await searchBar.isExisting()).toBe(true)
 
         await browser.keys('Escape')
-        await browser.pause(300)
+
+        // Wait for search bar to close
+        await browser.waitUntil(
+            async () => !(await browser.$('.search-bar').isExisting()),
+            { timeout: 3000 },
+        )
 
         searchBar = browser.$('.search-bar')
         expect(await searchBar.isExisting()).toBe(false)

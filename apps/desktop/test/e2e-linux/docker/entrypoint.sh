@@ -8,8 +8,11 @@ echo "Starting Xvfb on display :99..."
 Xvfb :99 -screen 0 1920x1080x24 2>/dev/null &
 XVFB_PID=$!
 
-# Wait for Xvfb to start
-sleep 2
+# Wait for Xvfb to be ready (poll instead of fixed sleep)
+for i in $(seq 1 20); do
+  xdpyinfo -display :99 >/dev/null 2>&1 && break
+  sleep 0.1
+done
 
 # Set display environment variables
 export DISPLAY=:99

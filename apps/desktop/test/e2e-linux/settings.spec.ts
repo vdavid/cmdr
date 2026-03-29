@@ -68,7 +68,12 @@ describe('Settings page', () => {
         await searchInput.waitForExist({ timeout: 5000 })
 
         await searchInput.setValue('theme')
-        await browser.pause(300)
+
+        // Wait for the input value to be set
+        await browser.waitUntil(
+            async () => (await searchInput.getValue()) === 'theme',
+            { timeout: 3000 },
+        )
 
         const value = await searchInput.getValue()
         expect(value).toBe('theme')
@@ -82,7 +87,12 @@ describe('Settings page', () => {
                 input.dispatchEvent(new Event('input', { bubbles: true }))
             }
         })
-        await browser.pause(500)
+
+        // Wait for search to clear (input value should be empty)
+        await browser.waitUntil(
+            async () => (await browser.$('.search-input').getValue()) === '',
+            { timeout: 3000 },
+        )
     })
 
     it('navigates between sections when clicking', async () => {
@@ -99,7 +109,15 @@ describe('Settings page', () => {
 
         // Click second section via JS (WebKitGTK may reject native clicks on non-form elements)
         await browser.execute((el: HTMLElement) => el.click(), sectionItems[1] as unknown as HTMLElement)
-        await browser.pause(300)
+
+        // Wait for section to become selected
+        await browser.waitUntil(
+            async () => {
+                const cls = await sectionItems[1].getAttribute('class')
+                return cls?.includes('selected') ?? false
+            },
+            { timeout: 3000 },
+        )
 
         const classAttr = await sectionItems[1].getAttribute('class')
         expect(classAttr).toContain('selected')

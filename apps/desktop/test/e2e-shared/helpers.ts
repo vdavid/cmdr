@@ -36,14 +36,16 @@ export async function ensureAppReady(): Promise<void> {
         const overlay = document.querySelector('.modal-overlay')
         overlay?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
     })
-    await browser.pause(300)
+    // Wait until the modal overlay is gone
+    await browser.waitUntil(async () => !(await browser.$('.modal-overlay').isExisting()), { timeout: 3000 })
 
     // Dismiss any overlays (AI notification, etc.) via JS click to bypass
     // WebDriver strict clickability checks
     await browser.execute(() => {
         document.querySelector<HTMLElement>('.ai-notification .ai-button.secondary')?.click()
     })
-    await browser.pause(300)
+    // Wait until the AI notification is gone (or was never there)
+    await browser.waitUntil(async () => !(await browser.$('.ai-notification').isExisting()), { timeout: 3000 })
 
     // Click on a file entry in the left pane to ensure focus, then
     // focus the explorer container so keyboard events reach the handler.
@@ -51,7 +53,10 @@ export async function ensureAppReady(): Promise<void> {
         document.querySelector<HTMLElement>('.file-pane .file-entry')?.click()
         document.querySelector<HTMLElement>('.dual-pane-explorer')?.focus()
     })
-    await browser.pause(500)
+    // Wait until a file entry in the left pane has the cursor (focus confirmed)
+    await browser.waitUntil(async () => browser.$('.file-pane .file-entry.is-under-cursor').isExisting(), {
+        timeout: 3000,
+    })
 }
 
 // ── Selectors ────────────────────────────────────────────────────────────────
@@ -92,7 +97,7 @@ export async function fileExistsInPane(targetName: string, paneIndex: number): P
         (name: string, idx: number) => {
             const panes = document.querySelectorAll('.file-pane')
             const pane = panes[idx]
-            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard; TS lacks noUncheckedIndexedAccess here
+
             if (!pane) return false
             const entries = pane.querySelectorAll('.file-entry')
             return Array.from(entries).some(
@@ -146,7 +151,8 @@ export async function dispatchKey(key: string): Promise<void> {
         target.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }))
         target.dispatchEvent(new KeyboardEvent('keyup', { key: k, bubbles: true, cancelable: true }))
     }, key)
-    await browser.pause(300)
+    // Small delay for keydown/keyup to propagate (macOS CrabNebula dispatches are async)
+    await browser.pause(100)
 }
 
 // ── Fixture helpers ─────────────────────────────────────────────────────────
