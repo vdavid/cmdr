@@ -385,26 +385,11 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
         font-family: var(--font-mono) monospace;
     }
 
-    /* Mobile: use grid so checkbox + title share a row, date + description indent below */
+    /* Mobile: checkbox + date + title stay inline, description drops below */
     @media (max-width: 640px) {
-        .milestone-list li {
-            display: grid;
-            grid-template-columns: 1.25rem 1fr;
-            gap: 0.125rem 0.5rem;
-            align-items: start;
-        }
-
-        .title {
-            grid-column: 2;
-            grid-row: 1;
-        }
-
-        .date {
-            grid-column: 2;
-        }
-
         .description {
-            grid-column: 2;
+            flex-basis: 100%;
+            padding-left: 1.75rem;
         }
     }
 </style>

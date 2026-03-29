@@ -23,9 +23,12 @@ const softwareApplicationSchema = {
     softwareVersion: version,
     url: 'https://getcmdr.com',
 }
+
+const currentYear = new Date().getFullYear()
+const tagline = `Finally, a file manager from ${currentYear}`
 ---
 
-<Layout title="Cmdr — The file manager macOS deserves">
+<Layout title={`Cmdr - ${tagline}`}>
     <Header />
     <main>
         <script type="application/ld+json" set:html={JSON.stringify(softwareApplicationSchema)} />

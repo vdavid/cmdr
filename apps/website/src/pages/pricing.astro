@@ -14,6 +14,38 @@ const paddleConfig = {
     },
 }
 const isPaddleConfigured = paddleConfig.clientToken !== ''
+
+// FAQ data — single source of truth for both visible cards and ld+json structured data.
+// `answer` is plain text (used in ld+json). `answerHtml` is optional rich HTML for the visible card.
+const faq = [
+    {
+        question: 'What counts as "commercial use"?',
+        answer: "Well, you know. If you're making money (getting a salary, having contracts, etc.) in relation to what you use those files for, that's commercial use. Can be employment, freelancing, consulting. These cases need a Commercial license at $59/year. Organizing your family photos, copying files for your hobby projects, doing your open source work or volunteering, these are Personal use and Cmdr is 100% free for these things.",
+    },
+    {
+        question: 'Can I use it on multiple machines?',
+        answer: "Yes! Use Cmdr on as many machines as you like with a single Commercial license, as long as you're the only person using it. You can install it on your laptop, desktop, remote debugging VM thing, whatever you like. The license is per person, not per machine.",
+    },
+    {
+        question: "What's the Commercial vs. Perpetual license?",
+        answer: "The perpetual license is a bigger initial commitment, but it's better for budgeting at some companies. Then they are the same for the first three years: you get all updates, etc. After that, the perpetual license allows you to keep it forever.",
+    },
+    {
+        question: 'Can I see the source code?',
+        answer: "Yes! Cmdr is source-available. You can view the code, learn from it, verify that there are no nasty backdoors or any other weird stuff going on. You just can't reuse or republish the code or the app. The BSL 1.1 license converts to AGPL-3.0 after 3 years, meaning that if the dev gets hit by a bus, you won't end up without updates forever.",
+        answerHtml: 'Yes! Cmdr is <a href="https://github.com/vdavid/cmdr" target="_blank" rel="noopener noreferrer" class="text-[var(--color-accent-text)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]">source-available</a>. You can view the code, learn from it, verify that there are no nasty backdoors or any other weird stuff going on. Just you can\'t reuse/republish the code or the app. The BSL 1.1 license converts to AGPL-3.0 after 3 years, meaning that if the dev gets hit by a bus, you won\'t end up without updates forever.',
+    },
+    {
+        question: 'What if I regret the purchase?',
+        answer: "30-day, no-questions-asked refund. Send an email and we'll sort it out.",
+        answerHtml: '<a href="/refund" class="text-[var(--color-accent-text)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]">30-day, no-questions-asked refund</a>. Send an email and we\'ll sort it out.',
+    },
+    {
+        question: 'Do you offer team licenses?',
+        answer: 'Each person needs their own license. For teams of 10+ people, email us at legal@getcmdr.com for volume pricing.',
+        answerHtml: 'Each person needs their own license. For teams of 10+ people, email us at <a href="mailto:legal@getcmdr.com" class="text-[var(--color-accent-text)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]">legal@getcmdr.com</a> for volume pricing.',
+    },
+]
 ---
 
 <Layout title="Pricing - Cmdr" description="Cmdr is free forever for personal use. Commercial licenses from $59/year.">
@@ -154,60 +186,15 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
             </div>
         </div>
 
-        <!-- FAQ Section -->
+        <!-- FAQ Section — ld+json and visible cards both render from the `faq` array in frontmatter -->
         <script type="application/ld+json" set:html={JSON.stringify({
             "@context": "https://schema.org",
             "@type": "FAQPage",
-            "mainEntity": [
-                {
-                    "@type": "Question",
-                    "name": "What counts as \"commercial use\"?",
-                    "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "If you're making money (getting a salary, having contracts, etc.) in relation to what you use those files for, that's commercial use. Can be employment, freelancing, consulting. These cases need a Commercial license at $59/year. Organizing your family photos, copying files for your hobby projects, doing your open source work or volunteering, these are Personal use and Cmdr is 100% free for these things.",
-                    },
-                },
-                {
-                    "@type": "Question",
-                    "name": "Can I use it on multiple machines?",
-                    "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "Yes! Use Cmdr on as many machines as you like with a single Commercial license, as long as you're the only person using it. You can install it on your laptop, desktop, remote debugging VM thing, whatever you like. The license is per person, not per machine.",
-                    },
-                },
-                {
-                    "@type": "Question",
-                    "name": "What's the Commercial vs. Perpetual license?",
-                    "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "The perpetual license is a bigger initial commitment, but it's better for budgeting at some companies. Then they are the same for the first three years: you get all updates, etc. After that, the perpetual license allows you to keep it forever.",
-                    },
-                },
-                {
-                    "@type": "Question",
-                    "name": "Can I see the source code?",
-                    "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "Yes! Cmdr is source-available. You can view the code, learn from it, verify that there are no nasty backdoors or any other weird stuff going on. You just can't reuse or republish the code or the app. The BSL 1.1 license converts to AGPL-3.0 after 3 years, meaning that if the dev gets hit by a bus, you won't end up without updates forever.",
-                    },
-                },
-                {
-                    "@type": "Question",
-                    "name": "What if I regret the purchase?",
-                    "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "30-day, no-questions-asked refund. Send an email and we'll sort it out.",
-                    },
-                },
-                {
-                    "@type": "Question",
-                    "name": "Do you offer team licenses?",
-                    "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "Each person needs their own license. For teams of 10+ people, email us at legal@getcmdr.com for volume pricing.",
-                    },
-                },
-            ],
+            "mainEntity": faq.map(({ question, answer }) => ({
+                "@type": "Question",
+                "name": question,
+                "acceptedAnswer": { "@type": "Answer", "text": answer },
+            })),
         })} />
         <section>
             <h2 class="mb-8 text-center text-2xl font-bold text-[var(--color-text-primary)]">
@@ -215,78 +202,12 @@ const isPaddleConfigured = paddleConfig.clientToken !== ''
             </h2>
 
             <div class="grid gap-6 md:grid-cols-2">
-                <div class="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-5">
-                    <h3 class="mb-2 font-semibold text-[var(--color-text-primary)]">
-                        What counts as "commercial use"?
-                    </h3>
-                    <p class="text-[var(--color-text-secondary)]">
-                        Well, you know. If you're making money (getting a salary, having contracts, etc.) in relation to
-                        what you use those files for, that's commercial use. Can be employment, freelancing, consulting.
-                        These cases need a Commercial license at $59/year. Organizing your family photos, copying files
-                        for your hobby projects, doing your open source work or volunteering, these are Personal use and
-                        Cmdr is 100% free for these things.
-                    </p>
-                </div>
-
-                <div class="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-5">
-                    <h3 class="mb-2 font-semibold text-[var(--color-text-primary)]">
-                        Can I use it on multiple machines?
-                    </h3>
-                    <p class="text-[var(--color-text-secondary)]">
-                        Yes! Use Cmdr on as many machines as you like with a single Commercial license, as long as
-                        you're the only person using it. You can install it on your laptop, desktop, remote debugging VM
-                        thing, whatever you like. The license is per person, not per machine.
-                    </p>
-                </div>
-
-                <div class="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-5">
-                    <h3 class="mb-2 font-semibold text-[var(--color-text-primary)]">
-                        What's the Commercial vs. Perpetual license?
-                    </h3>
-                    <p class="text-[var(--color-text-secondary)]">
-                        The perpetual license is a bigger initial commitment, but it's better for budgeting at some
-                        companies. Then they are the same for the first three years: you get all updates, etc. After
-                        that, the perpetual license allows you to keep it forever.
-                    </p>
-                </div>
-
-                <div class="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-5">
-                    <h3 class="mb-2 font-semibold text-[var(--color-text-primary)]">Can I see the source code?</h3>
-                    <p class="text-[var(--color-text-secondary)]">
-                        Yes! Cmdr is <a
-                            href="https://github.com/vdavid/cmdr"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            class="text-[var(--color-accent-text)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]"
-                            >source-available</a
-                        >. You can view the code, learn from it, verify that there are no nasty backdoors or any other
-                        weird stuff going on. Just you can't reuse/republish the code or the app. The BSL 1.1
-                        license converts to AGPL-3.0 after 3 years, meaning that if the dev gets hit by a bus, you won't
-                        end up without updates forever.
-                    </p>
-                </div>
-
-                <div class="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-5">
-                    <h3 class="mb-2 font-semibold text-[var(--color-text-primary)]">What if I regret the purchase?</h3>
-                    <p class="text-[var(--color-text-secondary)]">
-                        <a
-                            href="/refund"
-                            class="text-[var(--color-accent-text)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]"
-                            >30-day, no-questions-asked refund</a
-                        >. Send an email and we'll sort it out.
-                    </p>
-                </div>
-
-                <div class="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-5">
-                    <h3 class="mb-2 font-semibold text-[var(--color-text-primary)]">Do you offer team licenses?</h3>
-                    <p class="text-[var(--color-text-secondary)]">
-                        Each person needs their own license. For teams of 10+ people, email us at <a
-                            href="mailto:legal@getcmdr.com"
-                            class="text-[var(--color-accent-text)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]"
-                            >legal@getcmdr.com</a
-                        > for volume pricing.
-                    </p>
-                </div>
+                {faq.map(({ question, answer, answerHtml }) => (
+                    <div class="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-5">
+                        <h3 class="mb-2 font-semibold text-[var(--color-text-primary)]">{question}</h3>
+                        <p class="text-[var(--color-text-secondary)]" set:html={answerHtml ?? answer} />
+                    </div>
+                ))}
             </div>
         </section>
     </main>
