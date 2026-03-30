@@ -32,17 +32,20 @@ func (s *stringSlice) Set(value string) error {
 
 // cliFlags holds the parsed command-line flags.
 type cliFlags struct {
-	rustOnly    bool
-	svelteOnly  bool
-	goOnly      bool
-	appName     string
-	checkNames  []string
-	ciMode      bool
-	verbose     bool
-	includeSlow bool
-	onlySlow    bool
-	failFast    bool
-	noLog       bool
+	rustOnly        bool
+	svelteOnly      bool
+	goOnly          bool
+	appName         string
+	checkNames      []string
+	ciMode          bool
+	verbose         bool
+	includeSlow     bool
+	onlySlow        bool
+	failFast        bool
+	noLog           bool
+	onlyFreestyle   bool
+	preferFreestyle bool
+	freestyleRemote bool // set on the VM side to filter FreestyleCompat checks
 }
 
 func main() {
@@ -72,6 +75,10 @@ func main() {
 		os.Exit(1)
 	}
 
+	if handled := handleFreestyleFlags(rootDir, flags); handled {
+		return
+	}
+
 	ctx := &checks.CheckContext{
 		CI:      flags.ciMode,
 		Verbose: flags.verbose,
@@ -85,6 +92,10 @@ func main() {
 	}
 
 	checksToRun = checks.FilterSlowChecks(checksToRun, flags.includeSlow)
+
+	if flags.freestyleRemote {
+		checksToRun = checks.FilterFreestyleCompat(checksToRun)
+	}
 
 	if flags.onlySlow {
 		var slow []checks.CheckDefinition
@@ -112,25 +123,55 @@ func main() {
 	runChecks(ctx, checksToRun, flags.failFast, flags.noLog)
 }
 
+// handleFreestyleFlags dispatches --only-freestyle / --prefer-freestyle if set.
+// Returns true if a freestyle mode was handled (caller should return).
+func handleFreestyleFlags(rootDir string, flags *cliFlags) bool {
+	if !flags.onlyFreestyle && !flags.preferFreestyle {
+		return false
+	}
+
+	args := os.Args
+	if len(args) > 1 {
+		args = args[1:]
+	} else {
+		args = nil
+	}
+
+	if flags.preferFreestyle {
+		os.Exit(preferFreestyleRun(rootDir, args, flags))
+		return true // unreachable, but keeps the compiler happy
+	}
+
+	// --only-freestyle
+	if err := freestyleRun(rootDir, args); err != nil {
+		printError("Freestyle error: %v", err)
+		os.Exit(1)
+	}
+	return true
+}
+
 // parseFlags parses command-line flags and returns nil if help was shown.
 func parseFlags() *cliFlags {
 	var (
-		rustOnly    = flag.Bool("rust", false, "Run only Rust checks")
-		rustOnly2   = flag.Bool("rust-only", false, "Run only Rust checks")
-		svelteOnly  = flag.Bool("svelte", false, "Run only Svelte/desktop checks")
-		svelteOnly2 = flag.Bool("svelte-only", false, "Run only Svelte/desktop checks")
-		goOnly      = flag.Bool("go", false, "Run only Go checks (scripts)")
-		goOnly2     = flag.Bool("go-only", false, "Run only Go checks (scripts)")
-		appName     = flag.String("app", "", "Run checks for a specific app (desktop, website, api-server, scripts)")
-		checkNames  stringSlice
-		ciMode      = flag.Bool("ci", false, "Disable auto-fixing (for CI)")
-		verbose     = flag.Bool("verbose", false, "Show detailed output")
-		includeSlow = flag.Bool("include-slow", false, "Include slow checks (excluded by default)")
-		onlySlow    = flag.Bool("only-slow", false, "Run only slow checks")
-		failFast    = flag.Bool("fail-fast", false, "Stop on first failure")
-		noLog       = flag.Bool("no-log", false, "Disable CSV stats logging")
-		help        = flag.Bool("help", false, "Show help message")
-		h           = flag.Bool("h", false, "Show help message")
+		rustOnly        = flag.Bool("rust", false, "Run only Rust checks")
+		rustOnly2       = flag.Bool("rust-only", false, "Run only Rust checks")
+		svelteOnly      = flag.Bool("svelte", false, "Run only Svelte/desktop checks")
+		svelteOnly2     = flag.Bool("svelte-only", false, "Run only Svelte/desktop checks")
+		goOnly          = flag.Bool("go", false, "Run only Go checks (scripts)")
+		goOnly2         = flag.Bool("go-only", false, "Run only Go checks (scripts)")
+		appName         = flag.String("app", "", "Run checks for a specific app (desktop, website, api-server, scripts)")
+		checkNames      stringSlice
+		ciMode          = flag.Bool("ci", false, "Disable auto-fixing (for CI)")
+		verbose         = flag.Bool("verbose", false, "Show detailed output")
+		includeSlow     = flag.Bool("include-slow", false, "Include slow checks (excluded by default)")
+		onlySlow        = flag.Bool("only-slow", false, "Run only slow checks")
+		failFast        = flag.Bool("fail-fast", false, "Stop on first failure")
+		noLog           = flag.Bool("no-log", false, "Disable CSV stats logging")
+		onlyFreestyle   = flag.Bool("only-freestyle", false, "Run only freestyle-compatible checks on a VM (skip the rest)")
+		preferFreestyle = flag.Bool("prefer-freestyle", false, "Run freestyle-compatible checks on VM + the rest locally in parallel")
+		freestyleRemote = flag.Bool("freestyle-remote", false, "Filter to freestyle-compatible checks only (used internally on the VM)")
+		help            = flag.Bool("help", false, "Show help message")
+		h               = flag.Bool("h", false, "Show help message")
 	)
 	flag.Var(&checkNames, "check", "Run specific checks by ID (can be repeated or comma-separated)")
 	flag.Parse()
@@ -141,17 +182,20 @@ func parseFlags() *cliFlags {
 	}
 
 	return &cliFlags{
-		rustOnly:    *rustOnly || *rustOnly2,
-		svelteOnly:  *svelteOnly || *svelteOnly2,
-		goOnly:      *goOnly || *goOnly2,
-		appName:     *appName,
-		checkNames:  checkNames,
-		ciMode:      *ciMode,
-		verbose:     *verbose,
-		includeSlow: *includeSlow || *onlySlow || len(checkNames) > 0,
-		onlySlow:    *onlySlow,
-		failFast:    *failFast,
-		noLog:       *noLog || *ciMode,
+		rustOnly:        *rustOnly || *rustOnly2,
+		svelteOnly:      *svelteOnly || *svelteOnly2,
+		goOnly:          *goOnly || *goOnly2,
+		appName:         *appName,
+		checkNames:      checkNames,
+		ciMode:          *ciMode,
+		verbose:         *verbose,
+		includeSlow:     *includeSlow || *onlySlow || len(checkNames) > 0,
+		onlySlow:        *onlySlow,
+		failFast:        *failFast,
+		noLog:           *noLog || *ciMode,
+		onlyFreestyle:   *onlyFreestyle,
+		preferFreestyle: *preferFreestyle,
+		freestyleRemote: *freestyleRemote,
 	}
 }
 
@@ -311,6 +355,8 @@ func showUsage() {
 	fmt.Println("    --verbose                Show detailed output")
 	fmt.Println("    --include-slow           Include slow checks (excluded by default)")
 	fmt.Println("    --only-slow              Run only slow checks")
+	fmt.Println("    --only-freestyle         Run freestyle-compatible checks on a VM (skip the rest)")
+	fmt.Println("    --prefer-freestyle       Run compat checks on VM + the rest locally in parallel")
 	fmt.Println("    --fail-fast              Stop on first failure")
 	fmt.Println("    --no-log                 Disable CSV stats logging (~/cmdr-check-log.csv)")
 	fmt.Println("    -h, --help               Show this help message")

@@ -84,14 +84,15 @@ type CheckFunc func(ctx *CheckContext) (CheckResult, error)
 
 // CheckDefinition defines a check's metadata and implementation.
 type CheckDefinition struct {
-	ID          string
-	Nickname    string // Short alias shown in --help and accepted by --check (if empty, ID is used)
-	DisplayName string
-	App         App
-	Tech        string
-	IsSlow      bool
-	DependsOn   []string
-	Run         CheckFunc
+	ID              string
+	Nickname        string // Short alias shown in --help and accepted by --check (if empty, ID is used)
+	DisplayName     string
+	App             App
+	Tech            string
+	IsSlow          bool
+	FreestyleCompat bool // true = can run on freestyle.sh VMs (false for Rust compilation, Docker, etc.)
+	DependsOn       []string
+	Run             CheckFunc
 }
 
 // processTracker keeps track of all running child processes so they can be

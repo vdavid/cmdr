@@ -32,6 +32,9 @@ build/
 # Go build files
 scripts/check/check
 
+# Freestyle.sh VM ID (local to each developer)
+.freestyle-vm-id
+
 # Test results
 playwright-report/
 test-results/

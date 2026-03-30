@@ -26,6 +26,12 @@ go run ./scripts/check --only-slow
 
 # CI mode (no auto-fixing, stop on first failure)
 go run ./scripts/check --ci --fail-fast
+
+# Run compat checks on freestyle VM, incompat checks locally, in parallel
+go run ./scripts/check --prefer-freestyle
+
+# Run only freestyle-compatible checks on the VM (skip Rust, Docker)
+go run ./scripts/check --only-freestyle
 ```
 
 ## Command-line options
@@ -40,6 +46,8 @@ go run ./scripts/check --ci --fail-fast
 | `--verbose` | Show detailed output |
 | `--include-slow` | Include slow checks (excluded by default) |
 | `--only-slow` | Run only slow checks |
+| `--only-freestyle` | Run freestyle-compatible checks on a VM (skip the rest) |
+| `--prefer-freestyle` | Run compat checks on VM + the rest locally in parallel |
 | `--fail-fast` | Stop on first failure |
 | `--no-log` | Disable CSV stats logging |
 | `-h`, `--help` | Show help message |
@@ -50,8 +58,15 @@ go run ./scripts/check --ci --fail-fast
 ./scripts/check.sh [flags]
   -> go run ./scripts/check [flags]
     -> ValidateCheckNames()          # startup: catch ID/nickname collisions
-    -> parseFlags()                  # --rust/--svelte/--go/--app/--check/--ci/--verbose/--fail-fast/--no-log
+    -> parseFlags()
     -> findRootDir()                 # walk up to repo root
+    -> handleFreestyleFlags():
+        --prefer-freestyle:          # parallel: VM (compat) + local (incompat)
+          goroutine: freestyleRun()  #   push sync branch, run on VM
+          local: Runner.Run()        #   FreestyleIncompat checks only
+          wait + reconcile results
+        --only-freestyle:            # VM only, skip incompat
+          freestyleRun()
     -> selectChecks()                # filter AllChecks by flags
     -> FilterSlowChecks()            # drop IsSlow=true unless --include-slow or --check used
     -> ensurePnpmDependencies()      # pnpm install once at root (skipped for Rust-only runs)
@@ -111,14 +126,15 @@ Disabled by `--no-log` or `--ci`. Implementation in `stats.go`.
 
 ```go
 CheckDefinition{
-    ID:          "desktop-rust-clippy",  // unique, always accepted by --check
-    Nickname:    "clippy",               // short alias, also accepted by --check (optional)
-    DisplayName: "clippy",              // shown in output
-    App:         AppDesktop,
-    Tech:        "Rust",
-    IsSlow:      false,
-    DependsOn:   []string{"desktop-rust-rustfmt"},
-    Run:         RunClippy,
+    ID:              "desktop-svelte-eslint",  // unique, always accepted by --check
+    Nickname:        "",                       // short alias, also accepted by --check (optional)
+    DisplayName:     "eslint",                 // shown in output
+    App:             AppDesktop,
+    Tech:            "🎨 Svelte",
+    IsSlow:          false,
+    FreestyleCompat: true,                     // can run on freestyle.sh VMs
+    DependsOn:       []string{"desktop-svelte-prettier"},
+    Run:             RunDesktopESLint,
 }
 ```
 
@@ -164,7 +180,7 @@ tests, type checkers before tests.
 | Desktop | Svelte | prettier, eslint, eslint-typecheck (slow), stylelint, css-unused, svelte-check, import-cycles, knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow) |
 | Website | Astro | prettier, eslint, typecheck, build, html-validate, e2e |
 | Website | Docker | docker-build |
-| API server | TS | prettier, eslint, typecheck, tests |
+| API server | TS | oxfmt, eslint, typecheck, tests |
 | Scripts | Go | gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, deadcode, go-tests |
 | Other | Metrics | file-length (warn-only) |
 
@@ -218,6 +234,50 @@ on, so stale disable comments are still caught.
 (`node_modules/.pnpm-install-marker`) stores `pnpm-lock.yaml`'s mtime after each successful install.
 On the next run, if the mtime matches, install is skipped. The marker lives inside `node_modules/` so
 it's automatically invalidated if `node_modules` is deleted. Always runs in CI (`--ci`).
+
+## Freestyle.sh remote execution
+
+Two modes for offloading checks to a freestyle.sh VM:
+
+- `--only-freestyle`: runs only `FreestyleCompat` checks on the VM, skips the rest entirely.
+- `--prefer-freestyle`: runs `FreestyleCompat` checks on the VM and the rest locally, in parallel.
+  This is the "run everything as fast as possible" mode — Rust checks run on your Mac while Node/Go
+  checks run on the VM simultaneously.
+
+**How it works:** Creates a temporary git commit of the full working tree (without modifying the local
+index/worktree), pushes it to a temp branch, fetches on the VM, runs checks, cleans up the branch.
+
+**What's freestyle-compatible:** Node/TS checks (Svelte, Astro, API server), Go checks, and metrics —
+any check with `FreestyleCompat: true`. The VM uses `--freestyle-remote` internally to filter to only
+these checks.
+
+**What's not:** Rust checks (dep compilation exceeds freestyle's ~15 min API timeout) and Docker
+checks (no Docker daemon on freestyle VMs). With `--prefer-freestyle` these run locally in parallel;
+with `--only-freestyle` they're skipped.
+
+**VM lifecycle:** The VM is created once (takes ~5.5 min for toolchain setup), then persists and
+auto-suspends after 5 min idle. Subsequent runs resume it in <1s. VM ID is stored in `.freestyle-vm-id`
+(gitignored). On wake, a health check verifies the toolchain; if it fails, the VM is replaced.
+
+**Key files:** `freestyle.go` (all freestyle logic including `preferFreestyleRun`), `main.go`
+(`handleFreestyleFlags` dispatches to the right mode).
+
+**Decision**: `FreestyleCompat` field on `CheckDefinition` instead of hardcoded check lists.
+**Why**: Keeps freestyle compatibility co-located with each check's definition. Easy to flip when
+freestyle constraints change. Positive-sense boolean (`true` = compatible) reads more naturally than
+the previous `NoFreestyle` negative.
+
+**Decision**: Skip Rust checks entirely on freestyle (not just slow ones).
+**Why**: Freestyle's free tier has a hard ~15 min server-side timeout on `exec-await`. Compiling the
+full Tauri dependency tree (clippy, cargo-udeps, etc.) on 4 x86 vCPUs exceeds this. The 8 GB RAM also
+causes swap pressure when Rust and Node run in parallel. Attempted workarounds (2-VM split, nohup
+background builds) all failed due to VM lifecycle issues (auto-suspend kills background processes,
+`stopped` VMs lose disk state).
+
+**Decision**: mise's standalone pnpm disabled on freestyle VMs.
+**Why**: The pnpm binary mise installs ships a baked-in V8 snapshot that crashes on freestyle's x86
+Linux VMs. We install pnpm via `npm install -g pnpm@10` instead, configured via
+`[settings] disable_tools = ["pnpm"]` in `/root/.config/mise/config.toml`.
 
 ## Dependencies
 
