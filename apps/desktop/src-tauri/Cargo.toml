@@ -11,6 +11,8 @@ publish = false  # Private application, not for crates.io
 [features]
 # CrabNebula automation plugin for macOS E2E testing. Never enable in production builds.
 automation = ["dep:tauri-plugin-automation"]
+# Playwright E2E testing plugin (socket bridge to real webview). Never enable in production builds.
+playwright-e2e = ["dep:tauri-plugin-playwright"]
 
 [[bin]]
 name = "Cmdr"
@@ -141,6 +143,9 @@ semver = "1"
 
 # CrabNebula automation plugin for macOS E2E testing (optional, feature-gated)
 tauri-plugin-automation = { version = "0.1", optional = true }
+
+# Playwright E2E testing plugin — socket bridge for direct webview injection (optional, feature-gated)
+tauri-plugin-playwright = { git = "https://github.com/vdavid/tauri-playwright", optional = true }
 
 [dev-dependencies]
 criterion = { version = "0.8.1", features = ["html_reports"] }

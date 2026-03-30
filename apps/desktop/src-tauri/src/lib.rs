@@ -181,6 +181,10 @@ pub fn run() {
     #[cfg(feature = "automation")]
     let builder = builder.plugin(tauri_plugin_automation::init());
 
+    // Playwright E2E testing plugin — socket bridge for direct webview injection
+    #[cfg(feature = "playwright-e2e")]
+    let builder = builder.plugin(tauri_plugin_playwright::init());
+
     // Skip Tauri updater plugin on macOS (custom updater preserves TCC permissions)
     // and in CI (avoids network dependency and latency during E2E tests)
     #[cfg(not(target_os = "macos"))]
