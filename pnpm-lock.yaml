@@ -199,6 +199,9 @@ importers:
       '@wdio/types':
         specifier: ^9.27.0
         version: 9.27.0
+      axe-core:
+        specifier: ^4.11.1
+        version: 4.11.1
       eslint:
         specifier: ^10.1.0
         version: 10.1.0(jiti@2.6.1)

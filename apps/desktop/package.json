@@ -68,6 +68,7 @@
         "@wdio/mocha-framework": "^9.27.0",
         "@wdio/spec-reporter": "^9.27.0",
         "@wdio/types": "^9.27.0",
+        "axe-core": "^4.11.1",
         "eslint": "^10.1.0",
         "eslint-config-prettier": "^10.1.8",
         "eslint-plugin-prettier": "^5.5.5",
