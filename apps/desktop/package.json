@@ -27,6 +27,8 @@
         "test:e2e:linux:vnc": "./scripts/e2e-linux.sh --vnc",
         "test:e2e:macos": "wdio run test/e2e-macos/wdio.conf.ts",
         "test:e2e:macos:build": "node scripts/tauri-wrapper.js build --debug --no-bundle --target $(rustc -vV | grep host | cut -d' ' -f2) -- --features automation",
+        "test:e2e:playwright": "npx playwright test --config test/e2e-playwright/playwright.config.ts --project tauri",
+        "test:e2e:playwright:build": "node scripts/tauri-wrapper.js build --no-bundle --target $(rustc -vV | grep host | cut -d' ' -f2) -- --features playwright-e2e",
         "knip": "knip",
         "check:type-drift": "tsx scripts/check-type-drift.ts"
     },
@@ -51,6 +53,8 @@
         "@crabnebula/tauri-driver": "^2.0.9",
         "@crabnebula/test-runner-backend": "^0.2.6",
         "@eslint/js": "^10.0.1",
+        "@playwright/test": "^1.58.2",
+        "@srsholmes/tauri-playwright": "^0.2.1",
         "@sveltejs/adapter-static": "^3.0.10",
         "@sveltejs/kit": "^2.55.0",
         "@sveltejs/vite-plugin-svelte": "^7.0.0",

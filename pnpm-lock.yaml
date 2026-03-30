@@ -154,6 +154,12 @@ importers:
       '@eslint/js':
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.1.0(jiti@2.6.1))
+      '@playwright/test':
+        specifier: ^1.58.2
+        version: 1.58.2
+      '@srsholmes/tauri-playwright':
+        specifier: ^0.2.1
+        version: 0.2.1(@playwright/test@1.58.2)
       '@sveltejs/adapter-static':
         specifier: ^3.0.10
         version: 3.0.10(@sveltejs/kit@2.55.0(@opentelemetry/api@1.9.0)(@sveltejs/vite-plugin-svelte@7.0.0(svelte@5.54.1)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.3)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.54.1)(typescript@5.9.3)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.3)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2)))
@@ -2356,6 +2362,12 @@ packages:
 
   '@speed-highlight/core@1.2.14':
     resolution: {integrity: sha512-G4ewlBNhUtlLvrJTb88d2mdy2KRijzs4UhnlrOSRT4bmjh/IqNElZa3zkrZ+TC47TwtlDWzVLFADljF1Ijp5hA==}
+
+  '@srsholmes/tauri-playwright@0.2.1':
+    resolution: {integrity: sha512-NdmGwi/1jehfBd4xzjAvZyKx2KcQpg9Zkl2hRdujSPNhcOqkAh1SxcV548hQvlGR8tXQxYHF6TWWGEIu5lnsmA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@playwright/test': ^1.40.0
 
   '@stablelib/base64@1.0.1':
     resolution: {integrity: sha512-1bnPQqSxSuc3Ii6MhBysoWCg58j97aUjuCSZrGSmDxNqtytIi0k8utUenAwTZN4V5mXXYGsVUI9zeBqy+jBOSQ==}
@@ -9545,6 +9557,10 @@ snapshots:
   '@sindresorhus/merge-streams@4.0.0': {}
 
   '@speed-highlight/core@1.2.14': {}
+
+  '@srsholmes/tauri-playwright@0.2.1(@playwright/test@1.58.2)':
+    dependencies:
+      '@playwright/test': 1.58.2
 
   '@stablelib/base64@1.0.1': {}
 
